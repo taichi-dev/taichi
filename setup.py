@@ -8,6 +8,7 @@ import sys
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 from setuptools.command.build_py import build_py
+from setuptools.command.egg_info import egg_info
 
 classifiers = [
     'Development Status :: 2 - Pre-Alpha',
@@ -55,30 +56,38 @@ def get_os_name():
     assert False, "Unknown platform name %s" % name
 
 
+def remove_tmp(taichi_dir):
+    shutil.rmtree(os.path.join(taichi_dir, 'assets'), ignore_errors=True)
+    shutil.rmtree(os.path.join(taichi_dir, 'examples'), ignore_errors=True)
+    shutil.rmtree(os.path.join(taichi_dir, 'tests'), ignore_errors=True)
+
+
 class CMakeExtension(Extension):
     def __init__(self, name):
         Extension.__init__(self, name, sources=[])
 
 
-# python setup.py build runs the following commands in order:
-#   python setup.py build_py
-#   python setup.py build_ext
-class BuildPy(build_py):
-    def remove_tmp(self, taichi_dir):
-        shutil.rmtree(os.path.join(taichi_dir, 'assets'), ignore_errors=True)
-        shutil.rmtree(os.path.join(taichi_dir, 'examples'), ignore_errors=True)
-        shutil.rmtree(os.path.join(taichi_dir, 'tests'), ignore_errors=True)
-
+class EggInfo(egg_info):
     def run(self):
         taichi_dir = os.path.join(package_dir, 'taichi')
-        self.remove_tmp(taichi_dir)
+        remove_tmp(taichi_dir)
         shutil.rmtree('build', ignore_errors=True)
 
         shutil.copytree('tests/python', os.path.join(taichi_dir, 'tests'))
         shutil.copytree('examples', os.path.join(taichi_dir, 'examples'))
         shutil.copytree('external/assets', os.path.join(taichi_dir, 'assets'))
 
+        egg_info.run(self)
+
+
+# python setup.py build runs the following commands in order:
+#   python setup.py build_py
+#   python setup.py build_ext
+class BuildPy(build_py):
+    def run(self):
         build_py.run(self)
+        taichi_dir = os.path.join(package_dir, 'taichi')
+        remove_tmp(taichi_dir)
 
 
 class CMakeBuild(build_ext):
@@ -197,5 +206,5 @@ setup(name=project_name,
       },
       classifiers=classifiers,
       ext_modules=[CMakeExtension('taichi_core')],
-      cmdclass=dict(build_py=BuildPy, build_ext=CMakeBuild),
+      cmdclass=dict(egg_info=EggInfo, build_py=BuildPy, build_ext=CMakeBuild),
       has_ext_modules=lambda: True)

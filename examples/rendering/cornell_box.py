@@ -485,7 +485,7 @@ def render():
 
 
 @ti.kernel
-def tonemap(accumulated : ti.f32) -> ti.f32:
+def tonemap(accumulated: ti.f32) -> ti.f32:
     sum = 0.0
     sum_sq = 0.0
     for i, j in color_buffer:

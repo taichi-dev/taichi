@@ -79,10 +79,10 @@ jobs:
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
 
-      #- name: Setup tmate session
-      #  uses: mxschmitt/action-tmate@v3
-      #  with:
-      #    limit-access-to-actor: true
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
 
       - name: Test
         run: |
@@ -91,8 +91,6 @@ jobs:
           # Note we only need this since we cannot write into system python package.
           export PATH=$PATH:$HOME/.local/bin
           hash -r
-          # AILING: remove
-          ls ~/.local/lib/python3.6/site-packages/taichi-0.7.26-py3.6-linux-x86_64.egg/taichi/tests/
           python examples/algorithm/laplace.py
           ti diagnose
           # TODO: make cpp tests work in both release & dev mode.
@@ -173,12 +171,6 @@ jobs:
           $PYTHON misc/ci_setup.py ci
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
-
-      #- name: Setup tmate session
-      #  uses: mxschmitt/action-tmate@v3
-      #  with:
-      #    limit-access-to-actor: true
-      #    sudo: false
 
       - name: Test
         run: |

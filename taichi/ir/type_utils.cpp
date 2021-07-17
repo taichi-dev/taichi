@@ -25,17 +25,11 @@ std::string data_type_format(DataType dt) {
   } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return "%u";
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-#if defined(TI_PLATFORM_UNIX)
+    // Use %lld on Windows.
+    // Discussion: https://github.com/taichi-dev/taichi/issues/2522
     return "%lld";
-#else
-    return "%I64d";
-#endif
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-#if defined(TI_PLATFORM_UNIX)
     return "%llu";
-#else
-    return "%I64u";
-#endif
   } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return "%f";
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {

@@ -70,6 +70,11 @@ jobs:
         env:
           CI_PLATFORM: ${{ matrix.os }}
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
+
       - name: Build
         run: |
           TAICHI_REPO_DIR=`pwd`

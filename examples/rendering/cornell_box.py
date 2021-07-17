@@ -483,12 +483,14 @@ def render():
         color_buffer[u, v] += acc_color
     count_var[0] = (count_var[0] + 1) % (stratify_res * stratify_res)
 
+
 @ti.kernel
 def tonemap() -> ti.f32:
     sum = 0.0
     sum_sq = 0.0
     for i, j in color_buffer:
-        luma = color_buffer[i, j][0] * 0.2126 + color_buffer[i, j][1] * 0.7152 + color_buffer[i, j][2] * 0.0722
+        luma = color_buffer[i, j][0] * 0.2126 + color_buffer[
+            i, j][1] * 0.7152 + color_buffer[i, j][2] * 0.0722
         sum += luma
         sum_sq += luma * luma
     mean = sum / (res[0] * res[1])
@@ -496,7 +498,7 @@ def tonemap() -> ti.f32:
     for i, j in tonemapped_buffer:
         tonemapped_buffer[i, j] = ti.sqrt(color_buffer[i, j] / mean * 0.6)
     return var
-    
+
 
 gui = ti.GUI('Cornell Box', res, fast_gui=True)
 gui.fps_limit = 300

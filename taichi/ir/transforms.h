@@ -14,6 +14,7 @@
 #include "taichi/transforms/lower_access.h"
 #include "taichi/transforms/make_block_local.h"
 #include "taichi/transforms/simplify.h"
+#include "taichi/common/trait.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -114,9 +115,18 @@ void optimize_bit_struct_stores(IRNode *root,
                                 const CompileConfig &config,
                                 AnalysisManager *amgr);
 
-enum class ExternalPtrAccess : int { NONE = 0, READ = 1, WRITE = 2 };
+ENUM_FLAGS(ExternalPtrAccess){NONE = 0, READ = 1, WRITE = 2};
 
-std::unordered_map<int, int> detect_external_ptr_access_in_task(
+/**
+ * Checks the access to external pointers in an offload.
+ *
+ * @param val1
+ *   The offloaded statement to check
+ *
+ * @return
+ *   The analyzed result.
+ */
+std::unordered_map<int, ExternalPtrAccess> detect_external_ptr_access_in_task(
     OffloadedStmt *offload);
 
 // compile_to_offloads does the basic compilation to create all the offloaded

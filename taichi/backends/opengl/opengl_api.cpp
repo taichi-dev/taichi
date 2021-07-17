@@ -184,11 +184,11 @@ struct GLBuffer {
   }
 
   void bind_to_index(GLuint location) {
-    bind_to_index(location, 0, size);
+    bind_to_index(location, /* offset */ 0, size);
   }
 
   void *map(GLenum access) {
-    return map_region(0, size, access);
+    return map_region(/* offset */ 0, size, access);
   }
 
   void *map_region(size_t offset, size_t size, GLenum access) {
@@ -223,21 +223,30 @@ struct GLBuffer {
   }
 
   void read_back(void *buffer) {
-    read_back(buffer, 0, size);
+    read_back(buffer, /* offset */ 0, size);
+  }
+
+  void upload(void *buffer, size_t offset, size_t size) {
+    memcpy(map_region(offset, size, GL_MAP_WRITE_BIT), buffer, size);
+    unmap();
+  }
+
+  void upload(void *buffer) {
+    upload(buffer, /* offset */ 0, size);
   }
 };
 
 struct GLBufferAllocator {
  private:
-  static constexpr size_t max_free_resident_size = 64 << 20;
+  static constexpr size_t kMaxFreeResidentSize = 64 << 20;
 
   struct BufferKey {
-    GLbitfield access;
-    size_t size;
+    GLbitfield access{0};
+    size_t size{0};
 
     struct Hash {
       size_t operator()(const BufferKey &k) const {
-        return (size_t(k.access) << 32) ^ k.size;
+        return (size_t(k.access) << 48) ^ k.size;
       }
     };
 
@@ -258,20 +267,16 @@ struct GLBufferAllocator {
 
   void new_frame() {
     size_t free_resident_size = 0;
-    for (auto &pair : free_mapping) {
+    for (auto pair : free_mapping) {
       free_resident_size += pair.first.size;
 
-      if (free_resident_size > max_free_resident_size) {
+      if (free_resident_size > kMaxFreeResidentSize) {
         GLBuffer *buf = pair.second;
 
-        // TI_WARN("Release {}", (void *)buf);
+        // TI_INFO("Release {}", (void *)buf);
 
-        {
-          auto buffer_iter =
-              std::find_if(buffers_storage_.begin(), buffers_storage_.end(),
-                           [buf](const auto &mo) { return mo.get() == buf; });
-          buffers_storage_.erase(buffer_iter);
-        }
+        buffers_storage_.remove_if(
+            [buf](const auto &p) { return p.get() == buf; });
 
         {
           auto buffer_iter =
@@ -299,7 +304,7 @@ struct GLBufferAllocator {
       buffer = buffers_storage_.back().get();
       buffers_mapping.insert(std::pair(BufferKey{access, size}, buffer));
 
-      // TI_WARN("New buffer {}, {}", size, (void *)buffer);
+      // TI_INFO("New buffer {}, {}", size, (void *)buffer);
     } else {
       // Reuse
       buffer = buffer_iter->second;
@@ -309,9 +314,11 @@ struct GLBufferAllocator {
         memcpy(buffer->map(GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT),
                base, size);
         buffer->unmap();
+      } else {
+        glInvalidateBufferData(buffer->id);
       }
 
-      // TI_WARN("Reuse buffer {}, {}", size, (void *)buffer);
+      // TI_INFO("Reuse buffer {}, {}", size, (void *)buffer);
     }
 
     return buffer;
@@ -325,7 +332,7 @@ struct GLBufferAllocator {
       // Insert back to free list
       free_mapping.insert(std::pair(buffer_iter->first, buf));
 
-      // TI_WARN("Dealloc {}", (void *)buf);
+      // TI_INFO("Dealloc {}", (void *)buf);
     }
   }
 };
@@ -489,8 +496,8 @@ struct CompiledKernel::Impl {
 struct CompiledProgram::Impl {
   std::vector<std::unique_ptr<CompiledKernel>> kernels;
   int arg_count, ret_count;
-  std::map<int, size_t> ext_arr_map;
-  std::map<int, int> ext_arr_access;
+  std::unordered_map<int, size_t> ext_arr_map;
+  std::unordered_map<int, irpass::ExternalPtrAccess> ext_arr_access;
   std::vector<std::string> str_table;
   UsedFeature used;
 
@@ -507,13 +514,13 @@ struct CompiledProgram::Impl {
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
            std::unique_ptr<ParallelSize> ps,
-           std::unordered_map<int, int> *ext_ptr_access) {
+           std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
     kernels.push_back(std::make_unique<CompiledKernel>(
         kernel_name, kernel_source_code, std::move(ps)));
     if (ext_ptr_access) {
       for (auto pair : *ext_ptr_access) {
         if (ext_arr_access.find(pair.first) != ext_arr_access.end()) {
-          ext_arr_access[pair.first] |= pair.second;
+          ext_arr_access[pair.first] = ext_arr_access[pair.first] | pair.second;
         } else {
           ext_arr_access[pair.first] = pair.second;
         }
@@ -571,57 +578,64 @@ struct CompiledProgram::Impl {
     runtime->unmap();
   }
 
+  GLbitfield get_ext_arr_access(size_t &total_ext_arr_size) const {
+    GLbitfield access = 0;
+    for (const auto &[i, size] : ext_arr_map) {
+      total_ext_arr_size += size;
+      if ((ext_arr_access.at(i) & irpass::ExternalPtrAccess::READ) !=
+          irpass::ExternalPtrAccess::NONE) {
+        access |= GL_MAP_WRITE_BIT;
+      }
+      if ((ext_arr_access.at(i) & irpass::ExternalPtrAccess::WRITE) !=
+          irpass::ExternalPtrAccess::NONE) {
+        access |= GL_MAP_READ_BIT;
+      }
+    }
+    return access;
+  }
+
   void launch(Context &ctx, GLSLLauncher *launcher) const {
     launcher->impl->gl_allocator.new_frame();
 
-    std::vector<char> base_arr;
-    std::vector<void *> saved_ctx_ptrs;
-
-    void *extptr = nullptr;
+    std::vector<void *> ext_arr_host_ptrs;
 
     GLBuffer *extr_buf = nullptr;
     GLBuffer *args_buf = nullptr;
     GLBuffer *retr_buf = nullptr;
     uint8_t *args_buf_mapped = nullptr;
 
+    // Prepare external array
     if (ext_arr_map.size()) {
-      if (ext_arr_map.size() == 1) {  // zero-copy for only one ext_arr
-        auto it = ext_arr_map.begin();
-        extptr = (void *)ctx.args[it->first];
-        ctx.args[it->first] = 0;
+      size_t total_ext_arr_size = 0;
+      GLbitfield access = get_ext_arr_access(total_ext_arr_size);
 
-        int access = ext_arr_access.begin()->second;
+      extr_buf = launcher->impl->gl_allocator.alloc_buffer(
+          total_ext_arr_size, nullptr, GL_SHADER_STORAGE_BUFFER, access);
 
-        if ((access & int(irpass::ExternalPtrAccess::READ)) != 0) {
-          extr_buf =
-              launcher->impl->gl_allocator.alloc_buffer(it->second, extptr);
-        } else {
-          extr_buf = launcher->impl->gl_allocator.alloc_buffer(
-              it->second, nullptr, GL_SHADER_STORAGE_BUFFER, GL_MAP_READ_BIT);
-        }
-      } else {
-        size_t accum_size = 0;
-        std::vector<void *> ptrarr;
-        for (const auto &[i, size] : ext_arr_map) {
-          accum_size += size;
-        }
-        base_arr.resize(accum_size);
-        void *baseptr = base_arr.data();
-        accum_size = 0;
-        for (const auto &[i, size] : ext_arr_map) {
-          auto ptr = (void *)ctx.args[i];
-          saved_ctx_ptrs.push_back(ptr);
+      void *baseptr = nullptr;
+      if (access & GL_MAP_WRITE_BIT) {
+        extr_buf->map(GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+      }
+
+      size_t accum_size = 0;
+      for (const auto &[i, size] : ext_arr_map) {
+        auto ptr = (void *)ctx.args[i];
+        ctx.args[i] = accum_size;
+        ext_arr_host_ptrs.push_back(ptr);
+        if ((ext_arr_access.at(i) & irpass::ExternalPtrAccess::READ) !=
+            irpass::ExternalPtrAccess::NONE) {
           std::memcpy((char *)baseptr + accum_size, ptr, size);
           ctx.args[i] = accum_size;
-          accum_size += size;
-        }  // concat all extptr into my baseptr
-        extr_buf =
-            launcher->impl->gl_allocator.alloc_buffer(accum_size, baseptr);
+        }
+        accum_size += size;
       }
+
+      if (baseptr)
+        extr_buf->unmap();
     }
 
+    // Prepare argument buffer
     {
-      // Allocate the argument buffer & coherently map it
       size_t args_buf_size = arg_count * sizeof(uint64_t);
       if (ext_arr_map.size()) {
         args_buf_size = taichi_opengl_earg_base +
@@ -644,12 +658,14 @@ struct CompiledProgram::Impl {
       }
     }
 
+    // Prepare return buffer
     if (ret_count > 0) {
       retr_buf = launcher->impl->gl_allocator.alloc_buffer(
           ret_count * sizeof(uint64_t), nullptr, GL_SHADER_STORAGE_BUFFER,
           GL_MAP_READ_BIT);
     }
 
+    // Prepare runtime
     if (used.print) {
       // TODO(archibate): use result_buffer for print results
       auto runtime_buf = launcher->impl->core_bufs.runtime;
@@ -672,6 +688,7 @@ struct CompiledProgram::Impl {
     if (extr_buf)
       extr_buf->bind_to_index(GLuint(GLBufId::Extr));
 
+    // Kernel dispatch
     for (const auto &ker : kernels) {
       ker->dispatch_compute(launcher);
     }
@@ -682,25 +699,16 @@ struct CompiledProgram::Impl {
     }
 
     if (extr_buf) {
-      if (ext_arr_map.size() == 1) {
-        int access = ext_arr_access.begin()->second;
-
-        if ((access & int(irpass::ExternalPtrAccess::WRITE)) != 0) {
-          extr_buf->read_back(extptr);
+      size_t accum_size = 0;
+      auto host_ptr_iter = ext_arr_host_ptrs.begin();
+      for (const auto &[i, size] : ext_arr_map) {
+        auto access = ext_arr_access.at(i);
+        if ((access & irpass::ExternalPtrAccess::WRITE) !=
+            irpass::ExternalPtrAccess::NONE) {
+          extr_buf->read_back(*host_ptr_iter, accum_size, size);
         }
-      } else {
-        auto cpit = saved_ctx_ptrs.begin();
-        auto access_map = ext_arr_access.begin();
-        size_t accum_size = 0;
-        for (const auto &[i, size] : ext_arr_map) {
-          int access = access_map->second;
-          if ((access & int(irpass::ExternalPtrAccess::WRITE)) != 0) {
-            extr_buf->read_back(*cpit, accum_size, size);
-            accum_size += size;
-            cpit++;
-            access_map++;
-          }
-        }
+        accum_size += size;
+        host_ptr_iter++;
       }
     }
 
@@ -773,7 +781,7 @@ struct CompiledProgram::Impl {
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
            std::unique_ptr<ParallelSize> ps,
-           std::unordered_map<int, int> *ext_ptr_access) {
+           std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
     TI_NOT_IMPLEMENTED;
   }
 
@@ -810,10 +818,11 @@ CompiledProgram::CompiledProgram(Kernel *kernel)
 
 CompiledProgram::~CompiledProgram() = default;
 
-void CompiledProgram::add(const std::string &kernel_name,
-                          const std::string &kernel_source_code,
-                          std::unique_ptr<ParallelSize> ps,
-                          std::unordered_map<int, int> *ext_ptr_access) {
+void CompiledProgram::add(
+    const std::string &kernel_name,
+    const std::string &kernel_source_code,
+    std::unique_ptr<ParallelSize> ps,
+    std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
   impl->add(kernel_name, kernel_source_code, std::move(ps), ext_ptr_access);
 }
 

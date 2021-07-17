@@ -29,6 +29,8 @@ namespace shaders {
 #undef TI_INSIDE_OPENGL_CODEGEN
 }  // namespace shaders
 
+using irpass::ExternalPtrAccess;
+
 int find_children_id(const SNode *snode) {
   auto parent = snode->parent;
   for (int i = 0; i < parent->ch.size(); i++) {
@@ -94,7 +96,7 @@ class KernelGen : public IRVisitor {
   std::string glsl_kernel_name_;
   std::unique_ptr<ParallelSize> ps;
   bool used_tls;  // TODO: move into UsedFeature?
-  std::unordered_map<int, int> extptr_access;
+  std::unordered_map<int, irpass::ExternalPtrAccess> extptr_access;
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -177,8 +179,8 @@ class KernelGen : public IRVisitor {
       bool read = false;
 
       for (auto pair : this->extptr_access) {
-        write |= (pair.second & int(irpass::ExternalPtrAccess::WRITE)) > 0;
-        read |= (pair.second & int(irpass::ExternalPtrAccess::WRITE)) > 0;
+        write |= (pair.second & irpass::ExternalPtrAccess::WRITE) != irpass::ExternalPtrAccess::NONE;
+        read |= (pair.second & irpass::ExternalPtrAccess::WRITE) != irpass::ExternalPtrAccess::NONE;
       }
 
       if (write && !read) {

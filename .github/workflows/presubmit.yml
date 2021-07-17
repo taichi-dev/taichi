@@ -70,11 +70,6 @@ jobs:
         env:
           CI_PLATFORM: ${{ matrix.os }}
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: true
-
       - name: Build
         run: |
           TAICHI_REPO_DIR=`pwd`
@@ -83,6 +78,11 @@ jobs:
           python misc/ci_setup.py ci
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
 
       - name: Test
         run: |
@@ -163,9 +163,6 @@ jobs:
     runs-on: [self-hosted, cuda, cn]
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
 
       - name: Build
         run: |
@@ -173,19 +170,26 @@ jobs:
           TAICHI_REPO_DIR=`pwd`
           export PATH=/home/github/taichi-llvm/bin/:$PATH
           export CXX=clang++-8
-          python misc/ci_setup.py ci
+          export PYTHON=/usr/bin/python3
+          $PYTHON misc/ci_setup.py ci
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
+
       - name: Test
         run: |
+          export PYTHON=/usr/bin/python3
           TAICHI_REPO_DIR=`pwd`
           export PATH=/home/github/taichi-llvm/bin/:$PATH
           export PATH=$PATH:$HOME/.local/bin
           export DISPLAY=:1
           hash -r
           glewinfo
-          python examples/algorithm/laplace.py
+          $PYTHON examples/algorithm/laplace.py
           ti diagnose
           ti test -vr2 -t2
 

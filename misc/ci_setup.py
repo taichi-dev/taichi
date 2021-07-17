@@ -260,7 +260,8 @@ class Installer:
             arg = environ.get('CI_SETUP_CMAKE_ARGS', '')
             os.makedirs('build', exist_ok=True)
             execute_command(
-                f'TAICHI_CMAKE_ARGS="{arg}" {sys.executable} setup.py install --user')
+                f'TAICHI_CMAKE_ARGS="{arg}" {sys.executable} setup.py install --user'
+            )
         return
         if test_installation():
             print('  Successfully Installed Taichi at {}.'.format(

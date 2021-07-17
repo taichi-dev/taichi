@@ -86,6 +86,7 @@ jobs:
 
       - name: Test
         run: |
+          set -ex
           TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           # Note we only need this since we cannot write into system python package.
@@ -142,6 +143,7 @@ jobs:
 
       - name: Test
         run: |
+          set -ex
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export PATH=$PATH:$HOME/.local/bin
           python examples/algorithm/laplace.py
@@ -173,6 +175,7 @@ jobs:
 
       - name: Test
         run: |
+          set -ex
           export PYTHON=/usr/bin/python3
           TAICHI_REPO_DIR=`pwd`
           export PATH=/home/github/taichi-llvm/bin/:$PATH

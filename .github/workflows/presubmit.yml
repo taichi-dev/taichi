@@ -86,11 +86,13 @@ jobs:
 
       - name: Test
         run: |
-          set -ex
           TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           # Note we only need this since we cannot write into system python package.
           export PATH=$PATH:$HOME/.local/bin
+          hash -r
+          # AILING: remove
+          ls ~/.local/lib/python3.6/site-packages/taichi-0.7.26-py3.6-linux-x86_64.egg/taichi/tests/
           python examples/algorithm/laplace.py
           ti diagnose
           # TODO: make cpp tests work in both release & dev mode.
@@ -143,9 +145,9 @@ jobs:
 
       - name: Test
         run: |
-          set -ex
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export PATH=$PATH:$HOME/.local/bin
+          hash -r
           python examples/algorithm/laplace.py
           ti diagnose
           # TODO: make cpp tests work in both release & dev mode.
@@ -161,6 +163,9 @@ jobs:
     runs-on: [self-hosted, cuda, cn]
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
 
       - name: Build
         run: |
@@ -168,21 +173,19 @@ jobs:
           TAICHI_REPO_DIR=`pwd`
           export PATH=/home/github/taichi-llvm/bin/:$PATH
           export CXX=clang++-8
-          export PYTHON=/usr/bin/python3
-          $PYTHON misc/ci_setup.py ci
+          python misc/ci_setup.py ci
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
 
       - name: Test
         run: |
-          set -ex
-          export PYTHON=/usr/bin/python3
           TAICHI_REPO_DIR=`pwd`
           export PATH=/home/github/taichi-llvm/bin/:$PATH
           export PATH=$PATH:$HOME/.local/bin
           export DISPLAY=:1
+          hash -r
           glewinfo
-          $PYTHON examples/algorithm/laplace.py
+          python examples/algorithm/laplace.py
           ti diagnose
           ti test -vr2 -t2
 

@@ -102,6 +102,8 @@ class KernelGen : public IRVisitor {
   }
 
   void generate_header() {
+    emit("const float inf = 1.0f / 0.0f;");
+    emit("const float nan = 0.0f / 0.0f;");
   }
 
   // Note that the following two functions not only returns the corresponding
@@ -150,26 +152,43 @@ class KernelGen : public IRVisitor {
       line_appender_header_.append_raw(shaders::kOpenGLListmanSourceCode);
 
     std::string kernel_header;
-#define DEFINE_LAYOUT(name, id, dt, dtype) \
-      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
-                    + ") buffer " #name "_" #dt " { " #dtype " _" \
+#define DEFINE_LAYOUT(layout, restype, name, id, dt, dtype) \
+      kernel_header += "layout("#layout", binding = " + fmt::format("{}", id) \
+                    + ") " #restype " " #name "_" #dt " { " #dtype " _" \
                     #name "_" #dt "_[]; };\n"
-#define REGISTER_BUFFER(name, id) do { \
-    if (used.int32) DEFINE_LAYOUT(name, id, i32, int); \
-    if (used.int64) DEFINE_LAYOUT(name, id, i64, int64_t); \
-    if (used.uint32) DEFINE_LAYOUT(name, id, u32, uint); \
-    if (used.uint64) DEFINE_LAYOUT(name, id, u64, uint64_t); \
-    if (used.float32) DEFINE_LAYOUT(name, id, f32, float); \
-    if (used.float64) DEFINE_LAYOUT(name, id, f64, double); \
+#define REGISTER_BUFFER(layout, restype, name, id) do { \
+    if (used.int32) DEFINE_LAYOUT(layout, restype, name, id, i32, int); \
+    if (used.int64) DEFINE_LAYOUT(layout, restype, name, id, i64, int64_t); \
+    if (used.uint32) DEFINE_LAYOUT(layout, restype, name, id, u32, uint); \
+    if (used.uint64) DEFINE_LAYOUT(layout, restype, name, id, u64, uint64_t); \
+    if (used.float32) DEFINE_LAYOUT(layout, restype, name, id, f32, float); \
+    if (used.float64) DEFINE_LAYOUT(layout, restype, name, id, f64, double); \
   } while (0)
 
-    REGISTER_BUFFER(data, GLBufId::Root);
+    REGISTER_BUFFER(std430, buffer, data, GLBufId::Root);
     if (used.buf_gtmp)
-      REGISTER_BUFFER(gtmp, GLBufId::Gtmp);
+      REGISTER_BUFFER(std430, buffer, gtmp, GLBufId::Gtmp);
     if (used.buf_args)
-      REGISTER_BUFFER(args, GLBufId::Args);
-    if (used.buf_extr)
-      REGISTER_BUFFER(extr, GLBufId::Extr);
+      REGISTER_BUFFER(std430, readonly buffer, args, GLBufId::Args);
+    if (used.buf_retr)
+      REGISTER_BUFFER(std430, writeonly buffer, retr, GLBufId::Retr);
+    if (used.buf_extr) {
+      bool write = false;
+      bool read = false;
+
+      for (auto pair : this->extptr_access) {
+        write |= (pair.second & int(irpass::ExternalPtrAccess::WRITE)) > 0;
+        read |= (pair.second & int(irpass::ExternalPtrAccess::WRITE)) > 0;
+      }
+
+      if (write && !read) {
+        REGISTER_BUFFER(std430, writeonly buffer, extr, GLBufId::Extr);
+      } else if (!write && read) {
+        REGISTER_BUFFER(std430, readonly buffer, extr, GLBufId::Extr);
+      } else {
+        REGISTER_BUFFER(std430, buffer, extr, GLBufId::Extr);
+      }
+    }
 
 #undef REGISTER_BUFFER
 #undef DEFINE_LAYOUT
@@ -682,10 +701,9 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(ReturnStmt *stmt) override {
-    used.buf_args = true;
-    // TODO: consider use _rets_{}_ instead of _args_{}_
+    used.buf_retr = true;
     // TODO: use stmt->ret_id instead of 0 as index
-    emit("_args_{}_[0] = {};",
+    emit("_retr_{}_[0] = {};",
          opengl_data_type_short_name(stmt->element_type()),
          stmt->value->short_name());
   }

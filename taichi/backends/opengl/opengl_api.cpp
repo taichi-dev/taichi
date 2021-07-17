@@ -155,147 +155,75 @@ struct GLProgram {
 // https://blog.csdn.net/ylbs110/article/details/52074826
 // https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
 // This is Shader Storage Buffer, we use it to share data between CPU & GPU
-struct GLSSBO {
-  GLuint id_;
+struct GLBuffer {
+  GLuint id;
+  GLenum type;
+  size_t size;
 
-  GLSSBO() {
-    glGenBuffers(1, &id_);
-  }
-
-  ~GLSSBO() {
-    glDeleteBuffers(1, &id_);
-  }
-
-  /***
-   GL_{frequency}_{nature}:
-
-
-   STREAM
-       The data store contents will be modified once and used at most a few
-   times.
-
-   STATIC
-       The data store contents will be modified once and used many times.
-
-   DYNAMIC
-       The data store contents will be modified repeatedly and used many times.
-
-
-   DRAW
-       The data store contents are modified by the application, and used as the
-   source for GL drawing and image specification commands.
-
-   READ
-       The data store contents are modified by reading data from the GL, and
-   used to return that data when queried by the application.
-
-   COPY
-       The data store contents are modified by reading data from the GL, and
-   used as the source for GL drawing and image specification commands.
-   ***/
-
-  void bind_data(void *data,
-                 size_t size,
-                 GLuint usage = GL_DYNAMIC_READ) const {
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
+  GLBuffer(size_t size,
+           void *initial_data = nullptr,
+           GLenum type = GL_SHADER_STORAGE_BUFFER,
+           GLbitfield access = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT)
+      : size(size), type(type) {
+    glGenBuffers(1, &id);
+    check_opengl_error("glGenBuffers");
+    glBindBuffer(type, id);
     check_opengl_error("glBindBuffer");
-    glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, usage);
-    check_opengl_error("glBufferData");
+
+    if (size) {
+      glBufferStorage(type, size, initial_data, access);
+      check_opengl_error("glBufferStorage");
+    }
   }
 
-  void bind_index(size_t index) const {
-    // SSBO index, is `layout(std430, binding = <index>)` in shader.
-    // We use only one SSBO though...
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, id_);
-    check_opengl_error("glBindBufferBase");
+  void bind_to_index(GLuint location, size_t offset, size_t size) {
+    if (size) {
+      glBindBufferRange(type, location, id, GLintptr(offset), GLsizeiptr(size));
+      check_opengl_error("glBindBufferRange");
+    }
   }
 
-  void bind_range(size_t index, size_t offset, size_t size) const {
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, index, id_, offset, size);
-    check_opengl_error("glBindBufferRange");
+  void bind_to_index(GLuint location) {
+    bind_to_index(location, 0, size);
   }
 
-  void as_indirect_buffer() {
-    glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, id_);
+  void *map(GLenum access) {
+    return map_region(0, size, access);
   }
 
-  void *map(size_t offset,
-            size_t length,
-            GLbitfield access = GL_READ_ONLY) const {
-    // map GPU memory to CPU address space, offset within SSBO data
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
+  void *map_region(size_t offset, size_t size, GLenum access) {
+    glBindBuffer(type, id);
     check_opengl_error("glBindBuffer");
-    void *p =
-        glMapBufferRange(GL_SHADER_STORAGE_BUFFER, offset, length, access);
+    void *mapped =
+        glMapBufferRange(type, GLintptr(offset), GLsizeiptr(size), access);
     check_opengl_error("glMapBufferRange");
-    TI_ASSERT_INFO(p, "glMapBufferRange returned NULL");
-    return p;
+    TI_ASSERT(mapped);
+    return mapped;
   }
 
-  void *map(GLbitfield access = GL_READ_ONLY) const {
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
+  void unmap() {
+    glBindBuffer(type, id);
     check_opengl_error("glBindBuffer");
-    void *p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, access);
-    check_opengl_error("glMapBuffer");
-    TI_ASSERT_INFO(p, "glMapBuffer returned NULL");
-    return p;
-  }
-
-  void unmap() const {
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
-    check_opengl_error("glBindBuffer");
-    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    glUnmapBuffer(type);
     check_opengl_error("glUnmapBuffer");
   }
 
-  void upload_data(void *data, size_t offset, size_t size) const {
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
+  void flush_mapped_region(size_t offset, size_t size) {
+    glBindBuffer(type, id);
     check_opengl_error("glBindBuffer");
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, offset, size, data);
-    check_opengl_error("glBufferData");
+    glFlushMappedBufferRange(type, offset, size);
+    check_opengl_error("glFlushMappedBufferRange");
   }
 
-  void read_back_data(void *data, size_t offset, size_t size) const {
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
+  void read_back(void *buffer, size_t offset, size_t size) {
+    glBindBuffer(type, id);
     check_opengl_error("glBindBuffer");
-    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, offset, size, data);
-    check_opengl_error("glBufferData");
-  }
-};
-
-struct GLBuffer : GLSSBO {
-  GLBufId index;
-  void *base;
-  size_t size;
-
-  GLBuffer(GLBufId index, void *base, size_t size)
-      : index(index), base(base), size(size) {
-    bind_data(base, size);
-    bind_index((int)index);
+    glGetBufferSubData(type, offset, size, buffer);
+    check_opengl_error("glGetBufferSubData");
   }
 
-  GLBuffer(GLBufId index) : index(index), base(nullptr), size(0) {
-    bind_index((int)index);
-  }
-
-  void copy_forward() {
-    bind_data(base, size);
-  }
-
-  void rebind(void *new_base, size_t new_size) {
-    base = new_base;
-    size = new_size;
-    bind_data(base, size);
-  }
-
-  void copy_back() {
-    copy_back(base, size);
-  }
-
-  void copy_back(void *ptr, size_t len) {
-    if (!len)
-      return;
-    this->read_back_data(ptr, 0, len);
+  void read_back(void *buffer) {
+    read_back(buffer, 0, size);
   }
 };
 
@@ -303,10 +231,26 @@ struct GLBufferAllocator {
  private:
   static constexpr size_t max_free_resident_size = 64 << 20;
 
+  struct BufferKey {
+    GLbitfield access;
+    size_t size;
+
+    struct Hash {
+      size_t operator()(const BufferKey &k) const {
+        return (size_t(k.access) << 32) ^ k.size;
+      }
+    };
+
+    bool operator==(const BufferKey &k) const {
+      return k.access == access && k.size == size;
+    }
+  };
+
   std::list<std::unique_ptr<GLBuffer>> buffers_storage_;
 
-  std::unordered_multimap<size_t, GLBuffer *> buffers_mapping;
-  std::unordered_multimap<size_t, GLBuffer *> free_mapping;
+  std::unordered_multimap<BufferKey, GLBuffer *, BufferKey::Hash>
+      buffers_mapping;
+  std::unordered_multimap<BufferKey, GLBuffer *, BufferKey::Hash> free_mapping;
 
  public:
   GLBufferAllocator() {
@@ -315,10 +259,12 @@ struct GLBufferAllocator {
   void new_frame() {
     size_t free_resident_size = 0;
     for (auto &pair : free_mapping) {
-      free_resident_size += pair.first;
+      free_resident_size += pair.first.size;
 
       if (free_resident_size > max_free_resident_size) {
         GLBuffer *buf = pair.second;
+
+        // TI_WARN("Release {}", (void *)buf);
 
         {
           auto buffer_iter =
@@ -339,25 +285,33 @@ struct GLBufferAllocator {
     }
   }
 
-  GLBuffer *alloc_buffer(GLBufId index, void *base, size_t size) {
+  GLBuffer *alloc_buffer(size_t size,
+                         void *base,
+                         GLenum type = GL_SHADER_STORAGE_BUFFER,
+                         GLbitfield access = GL_MAP_READ_BIT |
+                                             GL_MAP_WRITE_BIT) {
     GLBuffer *buffer;
-    auto buffer_iter = free_mapping.find(size);
+    auto buffer_iter = free_mapping.find(BufferKey{access, size});
     if (buffer_iter == free_mapping.end()) {
       // This buffer does not exist / can not be reused
-      buffers_storage_.push_back(std::make_unique<GLBuffer>(index, base, size));
+      buffers_storage_.push_back(
+          std::make_unique<GLBuffer>(size, base, type, access));
       buffer = buffers_storage_.back().get();
-      buffers_mapping.insert(std::pair(size, buffer));
+      buffers_mapping.insert(std::pair(BufferKey{access, size}, buffer));
 
-      // TI_WARN("New buffer {}, {}, {}", int(index), size, (void*)buffer);
+      // TI_WARN("New buffer {}, {}", size, (void *)buffer);
     } else {
       // Reuse
       buffer = buffer_iter->second;
       free_mapping.erase(buffer_iter);
 
-      buffer->rebind(base, size);
-      buffer->bind_index(int(index));
+      if (base) {
+        memcpy(buffer->map(GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT),
+               base, size);
+        buffer->unmap();
+      }
 
-      // TI_WARN("Reuse buffer {}, {}, {}", int(index), size, (void *)buffer);
+      // TI_WARN("Reuse buffer {}, {}", size, (void *)buffer);
     }
 
     return buffer;
@@ -376,41 +330,19 @@ struct GLBufferAllocator {
   }
 };
 
-struct GLBufferTable {
-  std::map<GLBufId, GLBuffer *> bufs;
-
-  GLBufferAllocator &allocator;
-
-  GLBufferTable(GLBufferAllocator &allocator) : allocator(allocator) {
-  }
-
-  GLBuffer *get(GLBufId id) {
-    return bufs.at(id);
-  }
-
-  void add_buffer(GLBufId index, void *base, size_t size) {
-    bufs[index] = allocator.alloc_buffer(index, base, size);
-  }
-
-  void clear() {
-    for (auto pair : bufs) {
-      allocator.dealloc_buffer(pair.second);
-    }
-    bufs.clear();
-  }
-};
-
 struct GLSLLauncherImpl {
   GLBufferAllocator gl_allocator;
 
-  GLBufferTable core_bufs;
-  GLBufferTable user_bufs;
+  struct {
+    GLBuffer *runtime = nullptr;
+    GLBuffer *listman = nullptr;
+    GLBuffer *root = nullptr;
+    GLBuffer *gtmp = nullptr;
+  } core_bufs;
 
-  GLSLLauncherImpl() : core_bufs(gl_allocator), user_bufs(gl_allocator) {
+  GLSLLauncherImpl() {
   }
 
-  std::vector<char> root_buffer;
-  std::vector<char> gtmp_buffer;
   std::unique_ptr<GLSLRuntime> runtime;
   std::unique_ptr<GLSLListman> listman;
 
@@ -601,8 +533,8 @@ struct CompiledProgram::Impl {
   }
 
   void dump_message_buffer(GLSLLauncher *launcher) const {
-    auto runtime = launcher->impl->core_bufs.get(GLBufId::Runtime);
-    auto rt_buf = (GLSLRuntime *)runtime->map();
+    auto runtime = launcher->impl->core_bufs.runtime;
+    auto rt_buf = (GLSLRuntime *)runtime->map(GL_MAP_READ_BIT);
 
     auto msg_count = rt_buf->msg_count;
     if (msg_count > MAX_MESSAGES) {
@@ -642,22 +574,17 @@ struct CompiledProgram::Impl {
   void launch(Context &ctx, GLSLLauncher *launcher) const {
     launcher->impl->gl_allocator.new_frame();
 
-    GLBufferTable &bufs = launcher->impl->user_bufs;
     std::vector<char> base_arr;
     std::vector<void *> saved_ctx_ptrs;
-    std::vector<char> args;
 
     void *extptr = nullptr;
 
-    args.resize(std::max(arg_count, ret_count) * sizeof(uint64_t));
-    // NOTE: these dirty codes are introduced by #694, TODO: RAII
-    /// DIRTY_BEGIN {{{
-    if (ext_arr_map.size()) {
-      args.resize(taichi_opengl_earg_base +
-                  arg_count * taichi_max_num_indices * sizeof(int));
-      std::memcpy(args.data() + taichi_opengl_earg_base, ctx.extra_args,
-                  arg_count * taichi_max_num_indices * sizeof(int));
+    GLBuffer *extr_buf = nullptr;
+    GLBuffer *args_buf = nullptr;
+    GLBuffer *retr_buf = nullptr;
+    uint8_t *args_buf_mapped = nullptr;
 
+    if (ext_arr_map.size()) {
       if (ext_arr_map.size() == 1) {  // zero-copy for only one ext_arr
         auto it = ext_arr_map.begin();
         extptr = (void *)ctx.args[it->first];
@@ -666,9 +593,11 @@ struct CompiledProgram::Impl {
         int access = ext_arr_access.begin()->second;
 
         if ((access & int(irpass::ExternalPtrAccess::READ)) != 0) {
-          bufs.add_buffer(GLBufId::Extr, extptr, it->second);
+          extr_buf =
+              launcher->impl->gl_allocator.alloc_buffer(it->second, extptr);
         } else {
-          bufs.add_buffer(GLBufId::Extr, nullptr, it->second);
+          extr_buf = launcher->impl->gl_allocator.alloc_buffer(
+              it->second, nullptr, GL_SHADER_STORAGE_BUFFER, GL_MAP_READ_BIT);
         }
       } else {
         size_t accum_size = 0;
@@ -686,57 +615,106 @@ struct CompiledProgram::Impl {
           ctx.args[i] = accum_size;
           accum_size += size;
         }  // concat all extptr into my baseptr
-        bufs.add_buffer(GLBufId::Extr, baseptr, accum_size);
+        extr_buf =
+            launcher->impl->gl_allocator.alloc_buffer(accum_size, baseptr);
       }
     }
-    /// DIRTY_END }}}
-    // TODO: This memcpy should not be needed. Should use a better & smarter
-    // memory management
-    std::memcpy(args.data(), ctx.args, arg_count * sizeof(uint64_t));
-    bufs.add_buffer(GLBufId::Args, args.data(), args.size());
+
+    {
+      // Allocate the argument buffer & coherently map it
+      size_t args_buf_size = arg_count * sizeof(uint64_t);
+      if (ext_arr_map.size()) {
+        args_buf_size = taichi_opengl_earg_base +
+                        arg_count * taichi_max_num_indices * sizeof(int);
+      }
+
+      if (args_buf_size > 0) {
+        args_buf = launcher->impl->gl_allocator.alloc_buffer(
+            args_buf_size, nullptr, GL_SHADER_STORAGE_BUFFER, GL_MAP_WRITE_BIT);
+
+        args_buf_mapped = (uint8_t *)args_buf->map(
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+        std::memcpy(args_buf_mapped, ctx.args, arg_count * sizeof(uint64_t));
+        if (ext_arr_map.size()) {
+          std::memcpy(args_buf_mapped + size_t(taichi_opengl_earg_base),
+                      ctx.extra_args,
+                      size_t(arg_count * taichi_max_num_indices) * sizeof(int));
+        }
+        args_buf->unmap();
+      }
+    }
+
+    if (ret_count > 0) {
+      retr_buf = launcher->impl->gl_allocator.alloc_buffer(
+          ret_count * sizeof(uint64_t), nullptr, GL_SHADER_STORAGE_BUFFER,
+          GL_MAP_READ_BIT);
+    }
+
     if (used.print) {
       // TODO(archibate): use result_buffer for print results
-      auto runtime_buf = launcher->impl->core_bufs.get(GLBufId::Runtime);
-      auto mapped = (GLSLRuntime *)runtime_buf->map();
+      auto runtime_buf = launcher->impl->core_bufs.runtime;
+      auto mapped = (GLSLRuntime *)runtime_buf->map(GL_MAP_WRITE_BIT);
       mapped->msg_count = 0;
       runtime_buf->unmap();
     }
+
+    // Bind uniforms (descriptors in low level APIs)
+    auto &core_bufs = launcher->impl->core_bufs;
+    core_bufs.runtime->bind_to_index(GLuint(GLBufId::Runtime));
+    core_bufs.listman->bind_to_index(GLuint(GLBufId::Listman));
+    core_bufs.root->bind_to_index(GLuint(GLBufId::Root));
+    core_bufs.gtmp->bind_to_index(GLuint(GLBufId::Gtmp));
+
+    if (args_buf)
+      args_buf->bind_to_index(GLuint(GLBufId::Args));
+    if (retr_buf)
+      retr_buf->bind_to_index(GLuint(GLBufId::Retr));
+    if (extr_buf)
+      extr_buf->bind_to_index(GLuint(GLBufId::Extr));
+
     for (const auto &ker : kernels) {
       ker->dispatch_compute(launcher);
     }
-    for (auto &[idx, buf] : launcher->impl->user_bufs.bufs) {
-      if (buf->index == GLBufId::Args) {
-        // Copying of data between host and device cause implicit
-        // synchronization Should avoid any synchronization if not needed
-        buf->copy_back(launcher->result_buffer, ret_count * sizeof(uint64_t));
-      } else if (buf->index == GLBufId::Extr && ext_arr_map.size() == 1) {
-        auto it = ext_arr_map.begin();
 
-        int access = ext_arr_access.begin()->second;
-
-        if ((access & int(irpass::ExternalPtrAccess::WRITE)) != 0) {
-          buf->copy_back(extptr, it->second);
-        }
-      } else {
-        buf->copy_back();
-      }
-    }
-    launcher->impl->user_bufs.clear();
+    // Data read-back
     if (used.print) {
       dump_message_buffer(launcher);
     }
-    /// DIRTY_BEGIN {{{
-    if (ext_arr_map.size() > 1) {
-      void *baseptr = base_arr.data();
-      auto cpit = saved_ctx_ptrs.begin();
-      size_t accum_size = 0;
-      for (const auto &[i, size] : ext_arr_map) {
-        std::memcpy(*cpit, (char *)baseptr + accum_size, size);
-        accum_size += size;
-        cpit++;
-      }  // extract back to all extptr from my baseptr
+
+    if (extr_buf) {
+      if (ext_arr_map.size() == 1) {
+        int access = ext_arr_access.begin()->second;
+
+        if ((access & int(irpass::ExternalPtrAccess::WRITE)) != 0) {
+          extr_buf->read_back(extptr);
+        }
+      } else {
+        auto cpit = saved_ctx_ptrs.begin();
+        auto access_map = ext_arr_access.begin();
+        size_t accum_size = 0;
+        for (const auto &[i, size] : ext_arr_map) {
+          int access = access_map->second;
+          if ((access & int(irpass::ExternalPtrAccess::WRITE)) != 0) {
+            extr_buf->read_back(*cpit, accum_size, size);
+            accum_size += size;
+            cpit++;
+            access_map++;
+          }
+        }
+      }
     }
-    /// DIRTY_END }}}
+
+    if (ret_count > 0) {
+      retr_buf->read_back(launcher->result_buffer, 0,
+                          ret_count * sizeof(uint64_t));
+    }
+
+    if (args_buf)
+      launcher->impl->gl_allocator.dealloc_buffer(args_buf);
+    if (retr_buf)
+      launcher->impl->gl_allocator.dealloc_buffer(retr_buf);
+    if (extr_buf)
+      launcher->impl->gl_allocator.dealloc_buffer(extr_buf);
   }
 };
 
@@ -745,20 +723,18 @@ GLSLLauncher::GLSLLauncher(size_t root_size) {
   impl = std::make_unique<GLSLLauncherImpl>();
 
   impl->runtime = std::make_unique<GLSLRuntime>();
-  impl->core_bufs.add_buffer(GLBufId::Runtime, impl->runtime.get(),
-                             sizeof(GLSLRuntime));
+  impl->core_bufs.runtime =
+      impl->gl_allocator.alloc_buffer(sizeof(GLSLRuntime), impl->runtime.get());
 
   impl->listman = std::make_unique<GLSLListman>();
-  impl->core_bufs.add_buffer(GLBufId::Listman, impl->listman.get(),
-                             sizeof(GLSLListman));
+  impl->core_bufs.listman =
+      impl->gl_allocator.alloc_buffer(sizeof(GLSLListman), impl->listman.get());
 
-  impl->root_buffer.resize(root_size, 0);
-  impl->core_bufs.add_buffer(GLBufId::Root, impl->root_buffer.data(),
-                             root_size);
+  impl->core_bufs.root = impl->gl_allocator.alloc_buffer(
+      root_size, nullptr, GL_SHADER_STORAGE_BUFFER, 0);
 
-  impl->gtmp_buffer.resize(taichi_global_tmp_buffer_size, 0);
-  impl->core_bufs.add_buffer(GLBufId::Gtmp, impl->gtmp_buffer.data(),
-                             taichi_global_tmp_buffer_size);
+  impl->core_bufs.gtmp = impl->gl_allocator.alloc_buffer(
+      taichi_global_tmp_buffer_size, nullptr, GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 void GLSLLauncher::keep(std::unique_ptr<CompiledProgram> program) {

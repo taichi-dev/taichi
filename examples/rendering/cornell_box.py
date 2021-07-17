@@ -1,6 +1,7 @@
 import time
 
 import numpy as np
+from numpy.lib.function_base import average
 
 import taichi as ti
 
@@ -8,6 +9,7 @@ ti.init(arch=ti.gpu)
 res = (800, 800)
 color_buffer = ti.Vector.field(3, dtype=ti.f32, shape=res)
 count_var = ti.field(ti.i32, shape=(1, ))
+tonemapped_buffer = ti.Vector.field(3, dtype=ti.f32, shape=res)
 
 max_ray_depth = 10
 eps = 1e-4
@@ -481,19 +483,33 @@ def render():
         color_buffer[u, v] += acc_color
     count_var[0] = (count_var[0] + 1) % (stratify_res * stratify_res)
 
+@ti.kernel
+def tonemap() -> ti.f32:
+    sum = 0.0
+    sum_sq = 0.0
+    for i, j in color_buffer:
+        luma = color_buffer[i, j][0] * 0.2126 + color_buffer[i, j][1] * 0.7152 + color_buffer[i, j][2] * 0.0722
+        sum += luma
+        sum_sq += luma * luma
+    mean = sum / (res[0] * res[1])
+    var = sum_sq / (res[0] * res[1]) - mean * mean
+    for i, j in tonemapped_buffer:
+        tonemapped_buffer[i, j] = ti.sqrt(color_buffer[i, j] / mean * 0.6)
+    return var
+    
 
-gui = ti.GUI('Cornell Box', res)
+gui = ti.GUI('Cornell Box', res, fast_gui=True)
+gui.fps_limit = 300
 last_t = time.time()
 i = 0
 while gui.running:
     render()
     interval = 10
-    if i % interval == 0 and i > 0:
-        img = color_buffer.to_numpy() * (1 / (i + 1))
-        img = np.sqrt(img / img.mean() * 0.24)
+    if i % interval == 0:
+        var = tonemap()
         print("{:.2f} samples/s ({} iters, var={})".format(
-            interval / (time.time() - last_t), i, np.var(img)))
+            interval / (time.time() - last_t), i, var))
         last_t = time.time()
-        gui.set_image(img)
+        gui.set_image(tonemapped_buffer)
         gui.show()
     i += 1

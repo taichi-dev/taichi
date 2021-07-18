@@ -74,7 +74,7 @@ jobs:
         run: |
           TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export CXX=clang++
+          export CXX=clang++-10
           python misc/ci_setup.py ci
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
@@ -95,24 +95,22 @@ jobs:
 
   build_and_test_cpu:
     name: Build and Test (CPU)
-    # FIXME: remove this
-    #needs: build_and_test_cpu_required
+    needs: build_and_test_cpu_required
     strategy:
       matrix:
         include:
-          # FIXME:
-          #- os: macos-latest
-          #  python: 3.7
-          #  with_cc: OFF
-          #  with_cpp_tests: ON
+          - os: macos-latest
+            python: 3.7
+            with_cc: OFF
+            with_cpp_tests: ON
           - os: ubuntu-latest
             python: 3.9
             with_cc: OFF
             with_cpp_tests: OFF
-          #- os: ubuntu-latest
-          #  python: 3.8
-          #  with_cc: ON
-          #  with_cpp_tests: OFF
+          - os: ubuntu-latest
+            python: 3.8
+            with_cc: ON
+            with_cpp_tests: OFF
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -133,17 +131,16 @@ jobs:
         run: |
           TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export CXX=clang++
+          export CXX=clang++-10
           python misc/ci_setup.py ci
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
 
-      # [DEBUG] Copy this code block around to enable
-      # debugging inside Github Action instances.
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: true
+      # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
+      #- name: Setup tmate session
+      #  uses: mxschmitt/action-tmate@v3
+      #  with:
+      #    limit-access-to-actor: true
 
       - name: Test
         run: |

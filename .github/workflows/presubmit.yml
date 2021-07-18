@@ -139,13 +139,14 @@ jobs:
 
       # [DEBUG] Copy this code block around to enable
       # debugging inside Github Action instances.
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: true
+      #- name: Setup tmate session
+      #  uses: mxschmitt/action-tmate@v3
+      #  with:
+      #    limit-access-to-actor: true
 
       - name: Test
         run: |
+          TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export PATH=$PATH:$HOME/.local/bin
           hash -r

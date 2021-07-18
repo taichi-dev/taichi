@@ -80,7 +80,7 @@ if (TI_WITH_CUDA)
     set(CUDA_ARCH "cuda")
 endif()
 
-find_program(CLANG_EXECUTABLE NAMES clang-7 clang-8 clang-9 clang-10 clang)
+find_program(CLANG_EXECUTABLE NAMES clang clang-7 clang-8 clang-9 clang-10)
 if (NOT CLANG_EXECUTABLE)
     message(FATAL_ERROR "Cannot find any clang executable.")
 endif()

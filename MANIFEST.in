@@ -1,0 +1,14 @@
+include MANIFEST.in
+include python/*.txt
+include python/*.py
+include *.cfg
+include python/taichi/*.md
+include python/taichi/assets/*
+include python/taichi/examples/*
+include python/taichi/tests/*
+include python/taichi/lib/*.so
+include python/taichi/lib/*.pyd
+include python/taichi/lib/*.bc
+
+global-exclude *.pyc *.pyo
+global-exclude ffmpeg

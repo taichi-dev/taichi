@@ -100,18 +100,19 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
-            python: 3.7
-            with_cc: OFF
-            with_cpp_tests: ON
+          # FIXME:
+          #- os: macos-latest
+          #  python: 3.7
+          #  with_cc: OFF
+          #  with_cpp_tests: ON
           - os: ubuntu-latest
             python: 3.9
             with_cc: OFF
             with_cpp_tests: OFF
-          - os: ubuntu-latest
-            python: 3.8
-            with_cc: ON
-            with_cpp_tests: OFF
+          #- os: ubuntu-latest
+          #  python: 3.8
+          #  with_cc: ON
+          #  with_cpp_tests: OFF
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -139,10 +140,10 @@ jobs:
 
       # [DEBUG] Copy this code block around to enable
       # debugging inside Github Action instances.
-      #- name: Setup tmate session
-      #  uses: mxschmitt/action-tmate@v3
-      #  with:
-      #    limit-access-to-actor: true
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
 
       - name: Test
         run: |

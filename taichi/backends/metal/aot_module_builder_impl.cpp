@@ -58,7 +58,7 @@ void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
                                                  bool is_scalar,
                                                  DataType dt,
                                                  std::vector<int> shape,
-                                                 int column_num, 
+                                                 int column_num,
                                                  int row_num) {
   CompiledFieldData field_data;
   field_data.field_name = identifier;

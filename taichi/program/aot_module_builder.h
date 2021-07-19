@@ -18,7 +18,7 @@ class AotModuleBuilder {
                  bool is_scalar,
                  DataType dt,
                  std::vector<int> shape,
-                 int column_num, 
+                 int column_num,
                  int row_num);
 
   void add_kernel_template(const std::string &identifier,

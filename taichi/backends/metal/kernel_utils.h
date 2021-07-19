@@ -224,7 +224,13 @@ struct CompiledFieldData {
   int column_num{0};
   int row_num{0};
 
-  TI_IO_DEF(field_name, dtype, dtype_name, dimension, is_scalar, column_num, row_num);
+  TI_IO_DEF(field_name,
+            dtype,
+            dtype_name,
+            dimension,
+            is_scalar,
+            column_num,
+            row_num);
 };
 
 struct BufferMetaData {

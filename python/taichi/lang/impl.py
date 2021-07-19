@@ -128,7 +128,7 @@ def subscript(value, *indices):
                 raise TypeError(
                     'Subscription (e.g., "a[i, j]") only works on fields or external arrays.'
                 )
-            if not value.ptr.snode():
+            if not value.ptr.is_external_var() and value.ptr.snode() is None:
                 if not value.ptr.is_primal():
                     raise RuntimeError(
                         f"Gradient {value.ptr.get_expr_name()} has not been placed, check whether `needs_grad=True`"

@@ -257,12 +257,11 @@ class Installer:
             execute_command('echo $PYTHONPATH')
         elif get_os_name() != 'win':
             # compile ..
-            os.makedirs('build', exist_ok=True)
             arg = environ.get('CI_SETUP_CMAKE_ARGS', '')
+            os.makedirs('build', exist_ok=True)
             execute_command(
-                f'cd build && cmake .. -DPYTHON_EXECUTABLE={sys.executable} {arg}'
+                f'TAICHI_CMAKE_ARGS="{arg}" {sys.executable} setup.py install --user'
             )
-            execute_command('cd build && make -j 10')
         return
         if test_installation():
             print('  Successfully Installed Taichi at {}.'.format(

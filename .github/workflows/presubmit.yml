@@ -72,7 +72,7 @@ jobs:
 
       - name: Build
         run: |
-          export TAICHI_REPO_DIR=`pwd`
+          TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
           python misc/ci_setup.py ci
@@ -81,13 +81,16 @@ jobs:
 
       - name: Test
         run: |
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/bin:$PATH
+          TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export PYTHONPATH=$TAICHI_REPO_DIR/python
+          # Note we only need this since we cannot write into system python package.
+          export PATH=$PATH:$HOME/.local/bin
+          hash -r
           python examples/algorithm/laplace.py
           ti diagnose
-          ./build/taichi_cpp_tests
+          # TODO: make cpp tests work in both release & dev mode.
+          # Currently cpp tests only works in dev mode since it depends on the path set there.
+          TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
           ti test -vr2 -t2
 
   build_and_test_cpu:
@@ -126,22 +129,30 @@ jobs:
 
       - name: Build
         run: |
-          export TAICHI_REPO_DIR=`pwd`
+          TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
           python misc/ci_setup.py ci
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
 
+      # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
+      #- name: Setup tmate session
+      #  uses: mxschmitt/action-tmate@v3
+      #  with:
+      #    limit-access-to-actor: true
+
       - name: Test
         run: |
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/bin:$PATH
+          TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export PYTHONPATH=$TAICHI_REPO_DIR/python
+          export PATH=$PATH:$HOME/.local/bin
+          hash -r
           python examples/algorithm/laplace.py
           ti diagnose
-          [ "$RUN_CPP_TESTS" = "ON" ] && ./build/taichi_cpp_tests
+          # TODO: make cpp tests work in both release & dev mode.
+          # Currently cpp tests only works in dev mode since it depends on the path set there.
+          [ "$RUN_CPP_TESTS" = "ON" ] && TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
           ti test -vr2 -t2
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
@@ -156,7 +167,6 @@ jobs:
       - name: Build
         run: |
           git --version
-          export TAICHI_REPO_DIR=`pwd`
           export PATH=/home/github/taichi-llvm/bin/:$PATH
           export CXX=clang++-8
           export PYTHON=/usr/bin/python3
@@ -167,11 +177,10 @@ jobs:
       - name: Test
         run: |
           export PYTHON=/usr/bin/python3
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=/home/github/taichi-llvm/bin/:$PATH
-          export PYTHONPATH=$TAICHI_REPO_DIR/python
+          export PATH=$PATH:$HOME/.local/bin
           export DISPLAY=:1
+          hash -r
           glewinfo
           $PYTHON examples/algorithm/laplace.py
           ti diagnose
@@ -215,7 +224,7 @@ jobs:
           python misc/ci_setup.py ci
           mkdir build
           cd build
-          cmake .. -G"Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE="$env:PYTHON" -DLLVM_DIR="C:\taichi_llvm\lib\cmake\llvm" 
+          cmake .. -G"Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE="$env:PYTHON" -DLLVM_DIR="C:\taichi_llvm\lib\cmake\llvm"
           msbuild /p:Configuration=RelWithDebInfo /p:Platform=x64 /m taichi.sln
           cd ..
         env:

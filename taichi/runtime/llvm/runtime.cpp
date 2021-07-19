@@ -366,11 +366,11 @@ STRUCT_FIELD(StructMeta, is_active);
 STRUCT_FIELD(StructMeta, context);
 
 f32* access_with_offset_f32(f32* origin, i32 offset) {
-  return (f32*)((i64)origin + offset * 8);
+  return (f32*)((i64)origin + offset * 4);
 }
 
 i32* access_with_offset_i32(i32* origin, i32 offset) {
-  return (i32*)((i64)origin + offset * 8);
+  return (i32*)((i64)origin + offset * 4);
 }
 
 struct LLVMRuntime;

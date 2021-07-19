@@ -7,6 +7,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
 #include "taichi/transforms/scalar_pointer_lowerer.h"
+#include "taichi/transforms/utils.h"
 
 namespace taichi {
 namespace lang {
@@ -72,20 +73,19 @@ void ScalarPointerLowerer::run() {
     for (int k_ = 0; k_ < (int)indices_.size(); k_++) {
       int k = snode->physical_index_position[k_];
       if (k < 0) continue;
+      Stmt *extracted;
       if (get_current_program().config.packed) { // no dependence on POT
-        auto prev = lowered_->push_back<ConstStmt>(TypedConstant(total_shape[k]));
+        const int prev = total_shape[k];
         total_shape[k] /= snode->extractors[k].shape;
-        auto next = lowered_->push_back<ConstStmt>(TypedConstant(total_shape[k]));
-        auto mod = lowered_->push_back<BinaryOpStmt>(BinaryOpType::mod, indices_[k_], prev);
-        auto div = lowered_->push_back<BinaryOpStmt>(BinaryOpType::div, mod, next);
-        lowered_indices.push_back(div);
+        const int next = total_shape[k];
+        extracted = generate_mod_x_div_y(lowered_, indices_[k_], prev, next);
       } else {
         const int end = start_bits[k];
         start_bits[k] -= snode->extractors[k].num_bits;
         const int begin = start_bits[k];
-        auto extracted = lowered_->push_back<BitExtractStmt>(indices_[k_], begin, end);
-        lowered_indices.push_back(extracted);
+        extracted = lowered_->push_back<BitExtractStmt>(indices_[k_], begin, end);
       }
+      lowered_indices.push_back(extracted);
       strides.push_back(snode->extractors[k].shape);
     }
     // linearize

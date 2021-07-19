@@ -153,6 +153,18 @@ class LowerAccess : public IRVisitor {
     }
   }
 
+  // TODO: this seems to be redundant
+  void visit(GlobalTensorElementStmt *stmt) override {
+    if (stmt->origin->is<GlobalPtrStmt>()) {
+      auto ptr = stmt->origin->as<GlobalPtrStmt>();
+      // If ptr already has activate = false, no need to activate all the
+      // generated micro-access ops. Otherwise, activate the nodes.
+      auto lowered = lower_vector_ptr(ptr, ptr->activate);
+      stmt->origin = lowered.back().get();
+      modifier.insert_before(stmt, std::move(lowered));
+    }
+  }
+
   void visit(GlobalStoreStmt *stmt) override {
     if (stmt->dest->is<GlobalPtrStmt>()) {
       auto ptr = stmt->dest->as<GlobalPtrStmt>();

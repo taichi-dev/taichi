@@ -1378,6 +1378,16 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
   }
 }
 
+void CodeGenLLVM::visit(GlobalTensorElementStmt *stmt) {
+  if (stmt->ret_type.ptr_removed()->is_primitive(PrimitiveTypeID::f32)) {
+    llvm_val[stmt] =
+        create_call("access_with_offset_f32", {llvm_val[stmt->origin], llvm_val[stmt->offset]});
+  } else if (stmt->ret_type.ptr_removed()->is_primitive(PrimitiveTypeID::i32)) {
+    llvm_val[stmt] =
+        create_call("access_with_offset_i32", {llvm_val[stmt->origin], llvm_val[stmt->offset]});
+  }
+}
+
 void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
 

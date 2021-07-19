@@ -679,6 +679,10 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
+  m.def("subscript_with_offset", [](const Expr &origin_expr, const Expr &offset) {
+    return Expr::make<GlobalTensorElementExpression>(origin_expr, offset);
+  });
+
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
     return Expr::make<GlobalPtrExpression>(snode, indices.loaded());
   });

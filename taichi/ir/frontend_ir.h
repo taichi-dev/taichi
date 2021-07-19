@@ -430,6 +430,26 @@ class GlobalPtrExpression : public Expression {
   }
 };
 
+class GlobalTensorElementExpression : public Expression {
+ public:
+  Expr origin_expr;
+  Expr offset;
+
+  GlobalTensorElementExpression(const Expr &origin_expr, const Expr &offset)
+      : origin_expr(origin_expr), offset(offset) {
+  }
+
+  std::string serialize() override {
+    return "@@";
+  }
+
+  void flatten(FlattenContext *ctx) override;
+
+  bool is_lvalue() const override {
+    return true;
+  }
+};
+
 class EvalExpression : public Expression {
  public:
   Stmt *stmt_ptr;

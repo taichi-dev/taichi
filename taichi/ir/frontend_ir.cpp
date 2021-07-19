@@ -219,6 +219,15 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
+    origin_expr->flatten(ctx);
+    Stmt *origin_stmt = ctx->back_stmt();
+    offset->flatten(ctx);
+    ctx->push_back(std::make_unique<GlobalTensorElementStmt>(
+            origin_stmt, ctx->back_stmt()));
+    stmt = ctx->back_stmt();
+}
+
 void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   input->flatten(ctx);
   base->flatten(ctx);

@@ -158,6 +158,11 @@ class TypeCheck : public IRVisitor {
     }
   }
 
+  void visit(GlobalTensorElementStmt *stmt) override {
+    // TODO: do actual type_check
+      stmt->ret_type.set_is_pointer(true);
+  }
+
   void visit(GlobalStoreStmt *stmt) override {
     auto dst_value_type = stmt->dest->ret_type.ptr_removed();
     if (dst_value_type->is<CustomIntType>() ||

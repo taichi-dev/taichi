@@ -134,7 +134,8 @@ def subscript(value, *indices):
                         f"Gradient {value.ptr.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                     )
                 else:
-                    raise RuntimeError(f"{value.ptr.get_expr_name()} has not been placed.")
+                    raise RuntimeError(
+                        f"{value.ptr.get_expr_name()} has not been placed.")
             field_dim = int(value.ptr.get_attribute("dim"))
         else:
             # When reading bit structure we only support the 0-D case for now.
@@ -469,7 +470,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
         # adjoint
         x_grad = Expr(_ti_core.make_id_expr(""))
         x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
-        x_grad.ptr.set_name(name+".grad")
+        x_grad.ptr.set_name(name + ".grad")
         x_grad.ptr.set_is_primal(False)
         x.set_grad(x_grad)
 

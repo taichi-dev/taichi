@@ -72,9 +72,10 @@ void ScalarPointerLowerer::run() {
     // extract lowered indices
     for (int k_ = 0; k_ < (int)indices_.size(); k_++) {
       int k = snode->physical_index_position[k_];
-      if (k < 0) continue;
+      if (k < 0)
+        continue;
       Stmt *extracted;
-      if (get_current_program().config.packed) { // no dependence on POT
+      if (get_current_program().config.packed) {  // no dependence on POT
         const int prev = total_shape[k];
         total_shape[k] /= snode->extractors[k].shape;
         const int next = total_shape[k];
@@ -83,7 +84,8 @@ void ScalarPointerLowerer::run() {
         const int end = start_bits[k];
         start_bits[k] -= snode->extractors[k].num_bits;
         const int begin = start_bits[k];
-        extracted = lowered_->push_back<BitExtractStmt>(indices_[k_], begin, end);
+        extracted =
+            lowered_->push_back<BitExtractStmt>(indices_[k_], begin, end);
       }
       lowered_indices.push_back(extracted);
       strides.push_back(snode->extractors[k].shape);

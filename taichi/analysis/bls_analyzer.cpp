@@ -25,8 +25,7 @@ void BLSAnalyzer::generate_block_indices(SNode *snode, BlockIndices *indices) {
   // NOTE: Assuming not vectorized
   for (int i = 0; i < snode->num_active_indices; i++) {
     auto j = snode->physical_index_position[i];
-    indices->push_back(
-        {/*low=*/0, /*high=*/snode->extractors[j].shape - 1});
+    indices->push_back({/*low=*/0, /*high=*/snode->extractors[j].shape - 1});
   }
 }
 

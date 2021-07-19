@@ -65,7 +65,7 @@ struct CompileConfig {
 
   // C backend options:
   std::string cc_compile_cmd;
-  std::string cc_link_cmd;
+  std::string cc_linkage_cmd;
 
   // Async options
   int async_opt_passes{3};

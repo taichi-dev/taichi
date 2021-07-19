@@ -25,7 +25,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                              bool is_scalar,
                              DataType dt,
                              std::vector<int> shape,
-                             int column_num, 
+                             int column_num,
                              int row_num) override;
   void add_per_backend_tmpl(const std::string &identifier,
                             const std::string &key,

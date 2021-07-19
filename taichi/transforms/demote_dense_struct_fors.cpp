@@ -2,6 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/transforms/utils.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -67,21 +68,15 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   if (get_current_program().config.packed) {  // no dependence on POT
     for (int i = 0; i < (int)snodes.size(); i++) {
       auto snode = snodes[i];
-      auto prev_n = body_header.push_back<ConstStmt>(TypedConstant(total_n));
+      auto extracted = generate_mod_x_div_y(&body_header, main_loop_var, total_n, total_n / snode->n);
       total_n /= snode->n;
-      auto next_n = body_header.push_back<ConstStmt>(TypedConstant(total_n));
-      auto mod_n = body_header.push_back<BinaryOpStmt>(BinaryOpType::mod, main_loop_var, prev_n);
-      auto div_n = body_header.push_back<BinaryOpStmt>(BinaryOpType::div, mod_n, next_n);
       for (int j = 0; j < (int)physical_indices.size(); j++) {
         auto p = physical_indices[j];
         auto ext = snode->extractors[p];
-        auto prev_acc_shape = body_header.push_back<ConstStmt>(TypedConstant(ext.acc_shape * ext.shape));
-        auto next_acc_shape = body_header.push_back<ConstStmt>(TypedConstant(ext.acc_shape));
-        auto mod_acc_shape = body_header.push_back<BinaryOpStmt>(BinaryOpType::mod, div_n, prev_acc_shape);
-        auto div_acc_shape = body_header.push_back<BinaryOpStmt>(BinaryOpType::div, mod_acc_shape, next_acc_shape);
+        auto index = generate_mod_x_div_y(&body_header, extracted, ext.acc_shape * ext.shape, ext.acc_shape);
         total_shape[p] /= ext.shape;
         auto multiplier = body_header.push_back<ConstStmt>(TypedConstant(total_shape[p]));
-        auto delta = body_header.push_back<BinaryOpStmt>(BinaryOpType::mul, div_acc_shape, multiplier);
+        auto delta = body_header.push_back<BinaryOpStmt>(BinaryOpType::mul, index, multiplier);
         new_loop_vars[j] = body_header.push_back<BinaryOpStmt>(BinaryOpType::add, new_loop_vars[j], delta);
       }
     }

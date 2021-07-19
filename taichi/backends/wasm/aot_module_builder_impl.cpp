@@ -46,8 +46,9 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
                                                  bool is_scalar,
                                                  DataType dt,
-                                                 std::pair<int, int> shape,
-                                                 int vector_size) {
+                                                 std::vector<int> shape,
+                                                 int column_num,
+                                                 int row_num) {
 }
 
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,

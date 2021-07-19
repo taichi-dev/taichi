@@ -48,7 +48,9 @@ class Module:
     serialized module can later be loaded to run on that backend, without the
     Python environment.
 
-    Example::
+    Example:
+
+      Usage::
 
         m = ti.aot.Module(ti.metal)
         m.add_kernel(foo)
@@ -69,29 +71,36 @@ class Module:
 
     def add_field(self, name, field):
         """Add a taichi field to the AOT module.
+
         Args:
-        name: name of taichi field
-        field: taichi field
+          name: name of taichi field
+          field: taichi field
 
-        a = ti.field(ti.f32, shape=(4,4))
-        b = ti.field("something")
+        Example:
 
-        m.add_field(a)
-        m.add_field(b)
+          Usage::
 
-        Must add in sequence
+          a = ti.field(ti.f32, shape=(4,4))
+          b = ti.field("something")
+
+          m.add_field(a)
+          m.add_field(b)
+
+          # Must add in sequence
       """
         is_scalar = True
         self._fields[name] = field
-        vector_size = 1
+        column_num = 1
+        row_num = 1
         if type(field) is matrix.Matrix:
             assert isinstance(field, matrix.Matrix)
             is_scalar = False
-            vector_size = field.n
+            column_num = field.n
+            row_num = field.m
         else:
             assert isinstance(field, expr.Expr)
         self._aot_builder.add_field(name, is_scalar, field.dtype,
-                                    tuple(field.snode.shape), vector_size)
+                                    field.snode.shape, column_num, row_num)
 
     def add_kernel(self, kernel_fn, name=None):
         """Add a taichi kernel to the AOT module.

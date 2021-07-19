@@ -57,15 +57,17 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
                                                  bool is_scalar,
                                                  DataType dt,
-                                                 std::pair<int, int> shape,
-                                                 int vector_size) {
+                                                 std::vector<int> shape,
+                                                 int column_num, 
+                                                 int row_num) {
   CompiledFieldData field_data;
   field_data.field_name = identifier;
   field_data.is_scalar = is_scalar;
   field_data.dtype = to_metal_type(dt);
   field_data.dtype_name = metal_data_type_name(dt);
-  field_data.dimension = {shape.first, shape.second};
-  field_data.vector_size = vector_size;
+  field_data.dimension = shape;
+  field_data.column_num = column_num;
+  field_data.row_num = row_num;
   ti_aot_data_.fields.push_back(field_data);
 }
 

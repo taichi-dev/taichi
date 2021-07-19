@@ -17,8 +17,9 @@ class AotModuleBuilder {
   void add_field(const std::string &identifier,
                  bool is_scalar,
                  DataType dt,
-                 std::pair<int, int> shape,
-                 int vector_size);
+                 std::vector<int> shape,
+                 int column_num, 
+                 int row_num);
 
   void add_kernel_template(const std::string &identifier,
                            const std::string &key,
@@ -36,8 +37,9 @@ class AotModuleBuilder {
   virtual void add_per_backend_field(const std::string &identifier,
                                      bool is_scalar,
                                      DataType dt,
-                                     std::pair<int, int> shape,
-                                     int vector_size) = 0;
+                                     std::vector<int> shape,
+                                     int column_num,
+                                     int row_num) = 0;
   virtual void add_per_backend_tmpl(const std::string &identifier,
                                     const std::string &key,
                                     Kernel *kernel) = 0;

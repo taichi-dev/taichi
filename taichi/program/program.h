@@ -169,6 +169,8 @@ class Program {
    */
   void materialize_runtime();
 
+  int get_snode_tree_size();
+
   void visualize_layout(const std::string &fn);
 
   struct KernelProxy {

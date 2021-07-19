@@ -229,7 +229,10 @@ void export_lang(py::module &m) {
       .def("synchronize", &Program::synchronize)
       .def("async_flush", &Program::async_flush)
       .def("materialize_runtime", &Program::materialize_runtime)
-      .def("make_aot_module_builder", &Program::make_aot_module_builder);
+      .def("make_aot_module_builder", &Program::make_aot_module_builder)
+      .def("get_snode_tree_size", &Program::get_snode_tree_size)
+      .def("get_snode_root", &Program::get_snode_root,
+           py::return_value_policy::reference);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add", &AotModuleBuilder::add)

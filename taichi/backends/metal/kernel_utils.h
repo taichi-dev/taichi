@@ -221,9 +221,10 @@ struct CompiledFieldData {
   std::string dtype_name;
   std::vector<int> dimension;
   bool is_scalar{false};
-  int vector_size{0};
+  int column_num{0};
+  int row_num{0};
 
-  TI_IO_DEF(field_name, dtype, dtype_name, dimension, is_scalar, vector_size);
+  TI_IO_DEF(field_name, dtype, dtype_name, dimension, is_scalar, column_num, row_num);
 };
 
 struct BufferMetaData {

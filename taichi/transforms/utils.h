@@ -1,7 +1,9 @@
 #pragma once
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 Stmt *generate_mod_x_div_y(VecStatement *stmts, Stmt *num, int x, int y);
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

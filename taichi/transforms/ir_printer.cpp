@@ -383,6 +383,13 @@ class IRPrinter : public IRVisitor {
     print_raw(s);
   }
 
+  void visit(GlobalTensorElementStmt *stmt) override {
+    // TODO: do actual ir_printer
+    std::string s =
+        fmt::format("{}{} = global tensor element {} {}", stmt->type_hint(), stmt->name(), stmt->origin->name(), stmt->offset->name());
+    print_raw(s);
+  }
+
   void visit(ArgLoadStmt *stmt) override {
     print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
   }

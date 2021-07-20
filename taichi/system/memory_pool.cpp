@@ -31,13 +31,18 @@ void MemoryPool::set_queue(MemRequestQueue *queue) {
   this->queue = queue;
 }
 
-void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
+void *MemoryPool::allocate(std::size_t size,
+                           std::size_t alignment,
+                           const int snode_tree_id = -1) {
   std::lock_guard<std::mutex> _(mut_allocators);
   void *ret = nullptr;
-  if (size >= critical_size) {
-    large_size_allocators.emplace_back(
+  if (snode_tree_id != -1 &&
+      size >= prog->config.memory_allocate_critical_size) {
+    // allocate a seperate memory for large SNode tree
+    allocator_snode_tree_id.push_back(snode_tree_id);
+    snode_tree_allocators.emplace_back(
         std::make_unique<UnifiedAllocator>(size, prog->config.arch));
-    ret = large_size_allocators.back()->allocate(size, alignment);
+    ret = snode_tree_allocators.back()->allocate(size, alignment);
   } else {
     if (!allocators.empty()) {
       ret = allocators.back()->allocate(size, alignment);
@@ -51,6 +56,17 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
   }
   TI_ASSERT(ret);
   return ret;
+}
+
+void MemoryPool::destroy_snode_tree(const int snode_tree_id) {
+  TI_TRACE("Destroying SNode tree {}.", snode_tree_id);
+  for (int i = 0; i < allocator_snode_tree_id.size(); i++) {
+    if (allocator_snode_tree_id[i] == snode_tree_id) {
+      snode_tree_allocators[i].reset();
+      return;
+    }
+  }
+  TI_DEBUG("SNode tree {} destroy failed.", snode_tree_id);
 }
 
 template <typename T>

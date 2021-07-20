@@ -50,8 +50,9 @@ void assert_failed_host(const char *msg) {
 
 void *taichi_allocate_aligned(Program *prog,
                               std::size_t size,
-                              std::size_t alignment) {
-  return prog->memory_pool->allocate(size, alignment);
+                              std::size_t alignment,
+                              const int snode_tree_id = -1) {
+  return prog->memory_pool->allocate(size, alignment, snode_tree_id);
 }
 
 inline uint64 *allocate_result_buffer_default(Program *prog) {
@@ -507,6 +508,10 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
     cc_program->compile_layout(root);
 #endif
   }
+}
+
+void Program::destroy_snode_tree(const int snode_tree_id) {
+  memory_pool->destroy_snode_tree(snode_tree_id);
 }
 
 void Program::check_runtime_error() {

@@ -550,9 +550,13 @@ def ti_print(*vars, sep=' ', end='\n'):
 @taichi_scope
 def ti_format(*args):
     content = args[0]
-    args = args[1:]
+    mixed = args[1:]
+    args = []
+    for x in mixed:
+        if isinstance(x, ti.Expr):
+            args.append(x)
 
-    content = content.format(*args)
+    content = content.format(*mixed)
     res = content.split('<ti.Expr>')
     assert len(res) == len(args) + 1, 'Number of args is different from number of positions provided in string'
 

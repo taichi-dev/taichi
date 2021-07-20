@@ -553,13 +553,21 @@ def ti_print(*vars, sep=' ', end='\n'):
 def ti_format(*args):
     content = args[0]
     mixed = args[1:]
+    new_mixed = []
     args = []
     for x in mixed:
         if isinstance(x, ti.Expr):
+            new_mixed.append('{}')
             args.append(x)
+        else:
+            new_mixed.append(x)
 
-    content = content.format(*mixed)
-    res = content.split('<ti.Expr>')
+    try:
+        content = content.format(*new_mixed)
+    except ValueError:
+        print('Number formatting is not supported with Taichi fields')
+        exit(1)
+    res = content.split('{}')
     assert len(res) == len(
         args
     ) + 1, 'Number of args is different from number of positions provided in string'

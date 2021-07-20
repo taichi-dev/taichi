@@ -17,6 +17,13 @@ void Bitmasked_activate(Ptr meta, Ptr node, int i) {
   auto num_elements = Bitmasked_get_num_elements(meta, node);
   auto data_section_size = element_size * num_elements;
   auto mask_begin = (u32 *)(node + data_section_size);
+  bool active = (mask_begin[i / 32]) & (1UL << (i % 32));
+  if (!active) {
+    auto rt = smeta->context->runtime;
+    for (int j = 0; j < smeta->num_ch_snode; j++) {
+      rt->element_lists[smeta->ch_snode_id[j]]->up_to_date = false;
+    }
+  }
   atomic_or_u32(&mask_begin[i / 32], 1UL << (i % 32));
 }
 
@@ -26,6 +33,10 @@ void Bitmasked_deactivate(Ptr meta, Ptr node, int i) {
   auto num_elements = Bitmasked_get_num_elements(meta, node);
   auto data_section_size = element_size * num_elements;
   auto mask_begin = (u32 *)(node + data_section_size);
+  auto rt = smeta->context->runtime;
+  for (int j = 0; j < smeta->num_ch_snode; j++) {
+    rt->element_lists[smeta->ch_snode_id[j]]->up_to_date = false;
+  }
   atomic_and_u32(&mask_begin[i / 32], ~(1UL << (i % 32)));
 }
 

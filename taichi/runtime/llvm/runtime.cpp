@@ -337,6 +337,8 @@ int32 Context_get_extra_args(Context *ctx, int32 i, int32 j) {
 // Common Attributes
 struct StructMeta {
   i32 snode_id;
+  i32 ch_snode_id[taichi_max_num_snodes];
+  i32 num_ch_snode;
   std::size_t element_size;
   i64 max_num_elements;
 
@@ -356,6 +358,8 @@ struct StructMeta {
 };
 
 STRUCT_FIELD(StructMeta, snode_id)
+STRUCT_FIELD_ARRAY(StructMeta, ch_snode_id)
+STRUCT_FIELD(StructMeta, num_ch_snode)
 STRUCT_FIELD(StructMeta, element_size)
 STRUCT_FIELD(StructMeta, max_num_elements)
 STRUCT_FIELD(StructMeta, get_num_elements);
@@ -401,6 +405,7 @@ struct ListManager {
   i32 log2chunk_num_elements;
   i32 lock;
   i32 num_elements;
+  bool up_to_date;
   LLVMRuntime *runtime;
 
   ListManager(LLVMRuntime *runtime,
@@ -414,6 +419,7 @@ struct ListManager {
     lock = 0;
     num_elements = 0;
     log2chunk_num_elements = taichi::log2int(num_elements_per_chunk);
+    up_to_date = false;
   }
 
   void append(void *data_ptr);
@@ -1115,7 +1121,17 @@ DEFINE_REDUCTION(xor, i32);
 
 void clear_list(LLVMRuntime *runtime, StructMeta *parent, StructMeta *child) {
   auto child_list = runtime->element_lists[child->snode_id];
+  if (child_list->up_to_date) {
+    return;
+  }
   child_list->clear();
+}
+
+void set_list_up_to_date(LLVMRuntime *runtime,
+                         StructMeta *parent,
+                         StructMeta *child) {
+  auto child_list = runtime->element_lists[child->snode_id];
+  child_list->up_to_date = true;
 }
 
 /*
@@ -1132,6 +1148,9 @@ void element_listgen_root(LLVMRuntime *runtime,
   // (instead of threads) to split the parent container
   auto parent_list = runtime->element_lists[parent->snode_id];
   auto child_list = runtime->element_lists[child->snode_id];
+  if (child_list->up_to_date) {
+    return;
+  }
   // Cache the func pointers here for better compiler optimization
   auto parent_lookup_element = parent->lookup_element;
   auto child_get_num_elements = child->get_num_elements;
@@ -1180,6 +1199,9 @@ void element_listgen_nonroot(LLVMRuntime *runtime,
   auto parent_list = runtime->element_lists[parent->snode_id];
   int num_parent_elements = parent_list->size();
   auto child_list = runtime->element_lists[child->snode_id];
+  if (child_list->up_to_date) {
+    return;
+  }
   // Cache the func pointers here for better compiler optimization
   auto parent_refine_coordinates = parent->refine_coordinates;
   auto parent_is_active = parent->is_active;
@@ -1449,6 +1471,7 @@ Ptr ListManager::allocate() {
 }
 
 void node_gc(LLVMRuntime *runtime, int snode_id) {
+  runtime->element_lists[snode_id]->up_to_date = false;
   runtime->node_allocators[snode_id]->gc_serial();
 }
 
@@ -1482,6 +1505,7 @@ void gc_parallel_0(Context *context, int snode_id) {
 
 void gc_parallel_1(Context *context, int snode_id) {
   LLVMRuntime *runtime = context->runtime;
+  runtime->element_lists[snode_id]->up_to_date = false;
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
 

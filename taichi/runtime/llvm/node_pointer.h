@@ -45,13 +45,16 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
   volatile Ptr *data_ptr = (Ptr *)(node + 8 * (num_elements + i));
 
   if (*data_ptr == nullptr) {
+    auto rt = meta->context->runtime;
+    for (int j = 0; j < meta->num_ch_snode; j++) {
+      rt->element_lists[meta->ch_snode_id[j]]->up_to_date = false;
+    }
     // The cuda_ calls will return 0 or do noop on CPUs
     u32 mask = cuda_active_mask();
     if (is_representative(mask, (u64)lock)) {
       locked_task(
           lock,
           [&] {
-            auto rt = meta->context->runtime;
             auto alloc = rt->node_allocators[meta->snode_id];
             auto allocated = (u64)alloc->allocate();
             // TODO: Not sure if we really need atomic_exchange here,
@@ -64,16 +67,19 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
   }
 }
 
-void Pointer_deactivate(Ptr meta, Ptr node, int i) {
-  auto num_elements = Pointer_get_num_elements(meta, node);
+void Pointer_deactivate(Ptr meta_, Ptr node, int i) {
+  auto num_elements = Pointer_get_num_elements(meta_, node);
   Ptr lock = node + 8 * i;
   Ptr &data_ptr = *(Ptr *)(node + 8 * (num_elements + i));
   if (data_ptr != nullptr) {
+    auto meta = (StructMeta *)meta_;
+    auto rt = meta->context->runtime;
+    for (int j = 0; j < meta->num_ch_snode; j++) {
+      rt->element_lists[meta->ch_snode_id[j]]->up_to_date = false;
+    }
     locked_task(lock, [&] {
       if (data_ptr != nullptr) {
-        auto smeta = (StructMeta *)meta;
-        auto rt = smeta->context->runtime;
-        auto alloc = rt->node_allocators[smeta->snode_id];
+        auto alloc = rt->node_allocators[meta->snode_id];
         alloc->recycle(data_ptr);
         data_ptr = nullptr;
       }

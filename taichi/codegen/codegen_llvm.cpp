@@ -236,6 +236,12 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
     element_size = tlctx->get_type_size(element_ty);
   }
   common.set("snode_id", tlctx->get_constant(snode->id));
+  auto num_ch_snode = snode->ch.size();
+  for (int i = 0; i < num_ch_snode; i++) {
+    common.set("ch_snode_id", tlctx->get_constant(i),
+               tlctx->get_constant(snode->ch[i]->id));
+  }
+  common.set("num_ch_snode", tlctx->get_constant((int32)num_ch_snode));
   common.set("element_size", tlctx->get_constant((uint64)element_size));
   common.set("max_num_elements",
              tlctx->get_constant(snode->max_num_elements()));
@@ -1869,6 +1875,14 @@ void CodeGenLLVM::visit(ClearListStmt *stmt) {
   auto meta_child = cast_pointer(emit_struct_meta(snode_child), "StructMeta");
   auto meta_parent = cast_pointer(emit_struct_meta(snode_parent), "StructMeta");
   call("clear_list", get_runtime(), meta_parent, meta_child);
+}
+
+void CodeGenLLVM::visit(SetListUpToDateStmt *stmt) {
+  auto snode_child = stmt->snode;
+  auto snode_parent = stmt->snode->parent;
+  auto meta_child = cast_pointer(emit_struct_meta(snode_child), "StructMeta");
+  auto meta_parent = cast_pointer(emit_struct_meta(snode_parent), "StructMeta");
+  call("set_list_up_to_date", get_runtime(), meta_parent, meta_child);
 }
 
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {

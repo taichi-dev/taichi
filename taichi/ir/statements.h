@@ -1221,6 +1221,21 @@ class ClearListStmt : public Stmt {
 // Checks if the task represented by |stmt| contains a single ClearListStmt.
 bool is_clear_list_task(const OffloadedStmt *stmt);
 
+/**
+ * The statement corresponding to a set list up-to-date task. This statement
+ * does not madify the list itself. It just sets a boolean variable marking the
+ * list as up-to-date
+ */
+class SetListUpToDateStmt : public Stmt {
+ public:
+  explicit SetListUpToDateStmt(SNode *snode);
+
+  SNode *snode;
+
+  TI_STMT_DEF_FIELDS(ret_type, snode);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 // TODO: remove this
 class InternalFuncStmt : public Stmt {
  public:

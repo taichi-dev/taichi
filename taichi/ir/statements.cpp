@@ -403,6 +403,10 @@ ClearListStmt::ClearListStmt(SNode *snode) : snode(snode) {
   TI_STMT_REG_FIELDS;
 }
 
+SetListUpToDateStmt::SetListUpToDateStmt(SNode *snode) : snode(snode) {
+  TI_STMT_REG_FIELDS;
+}
+
 int LoopIndexStmt::max_num_bits() const {
   if (auto range_for = loop->cast<RangeForStmt>()) {
     // Return the max number of bits only if both begin and end are

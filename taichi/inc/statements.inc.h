@@ -76,6 +76,7 @@ PER_STATEMENT(BlockCornerIndexStmt)
 PER_STATEMENT(BlockDimStmt)
 PER_STATEMENT(GlobalTemporaryStmt)
 PER_STATEMENT(ClearListStmt)
+PER_STATEMENT(SetListUpToDateStmt)
 
 // Local storage
 PER_STATEMENT(ThreadLocalPtrStmt)

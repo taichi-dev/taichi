@@ -10,7 +10,7 @@ namespace {
 
 using TaskType = OffloadedStmt::TaskType;
 
-void convert_to_range_for(OffloadedStmt *offloaded) {
+void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
   TI_ASSERT(offloaded->task_type == TaskType::struct_for);
 
   std::vector<SNode *> snodes;
@@ -65,7 +65,7 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
 
   Stmt *test = body_header.push_back<ConstStmt>(TypedConstant(-1));
   bool has_test = false;
-  if (get_current_program().config.packed) {  // no dependence on POT
+  if (packed) {  // no dependence on POT
     for (int i = 0; i < (int)snodes.size(); i++) {
       auto snode = snodes[i];
       auto extracted = generate_mod_x_div_y(&body_header, main_loop_var,
@@ -116,7 +116,8 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
       for (int j = 0; j < (int)physical_indices.size(); j++) {
         auto p = physical_indices[j];
         start_bits[p] -= snode->extractors[p].num_bits;
-        auto num_elements = snode->extractors[p].num_elements << start_bits[p];
+        auto num_elements = snode->extractors[p].num_elements_from_root
+                            << start_bits[p];
         if (!bit::is_power_of_two(num_elements)) {
           has_test = true;
           auto bound =
@@ -165,10 +166,10 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   offloaded->task_type = TaskType::range_for;
 }
 
-void maybe_convert(OffloadedStmt *stmt) {
+void maybe_convert(OffloadedStmt *stmt, bool packed) {
   if ((stmt->task_type == TaskType::struct_for) &&
       stmt->snode->is_path_all_dense) {
-    convert_to_range_for(stmt);
+    convert_to_range_for(stmt, packed);
   }
 }
 
@@ -176,15 +177,15 @@ void maybe_convert(OffloadedStmt *stmt) {
 
 namespace irpass {
 
-void demote_dense_struct_fors(IRNode *root) {
+void demote_dense_struct_fors(IRNode *root, bool packed) {
   if (auto *block = root->cast<Block>()) {
     for (auto &s_ : block->statements) {
       if (auto *s = s_->cast<OffloadedStmt>()) {
-        maybe_convert(s);
+        maybe_convert(s, packed);
       }
     }
   } else if (auto *s = root->cast<OffloadedStmt>()) {
-    maybe_convert(s);
+    maybe_convert(s, packed);
   }
   re_id(root);
 }

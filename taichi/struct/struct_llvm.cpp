@@ -192,7 +192,7 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
   auto outp_coords = args[1];
   auto l = args[2];
 
-  if (get_current_program().config.packed) {  // no dependence on POT
+  if (config_->packed) {  // no dependence on POT
     for (int i = 0; i < taichi_max_num_indices; i++) {
       auto addition = tlctx_->get_constant(0);
       if (snode->extractors[i].shape > 1) {

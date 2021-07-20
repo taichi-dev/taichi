@@ -1673,16 +1673,16 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
     auto coord_object = RuntimeObject(kLLVMPhysicalCoordinatesName, this,
                                       builder.get(), new_coordinates);
-    if (!get_current_program().config.packed) {
+    if (!prog->config.packed) {
       for (int i = 0; i < snode->num_active_indices; i++) {
         auto j = snode->physical_index_position[i];
-        if (!bit::is_power_of_two(snode->extractors[j].num_elements)) {
+        if (!bit::is_power_of_two(snode->extractors[j].num_elements_from_root)) {
           auto coord = coord_object.get("val", tlctx->get_constant(j));
           exec_cond = builder->CreateAnd(
               exec_cond,
               builder->CreateICmp(
                   llvm::CmpInst::ICMP_SLT, coord,
-                  tlctx->get_constant(snode->extractors[j].num_elements)));
+                  tlctx->get_constant(snode->extractors[j].num_elements_from_root)));
         }
       }
     }

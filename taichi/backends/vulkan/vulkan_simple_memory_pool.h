@@ -12,8 +12,11 @@ namespace vulkan {
 
 class VkBufferWithMemory {
  public:
-  VkBufferWithMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory mem,
-                     VkDeviceSize size, VkDeviceSize offset);
+  VkBufferWithMemory(VkDevice device,
+                     VkBuffer buffer,
+                     VkDeviceMemory mem,
+                     VkDeviceSize size,
+                     VkDeviceSize offset);
 
   // Just use std::unique_ptr to save all the trouble from crafting move ctors
   // on our own
@@ -24,11 +27,17 @@ class VkBufferWithMemory {
 
   ~VkBufferWithMemory();
 
-  VkBuffer buffer() const { return buffer_; }
+  VkBuffer buffer() const {
+    return buffer_;
+  }
 
-  VkDeviceSize size() const { return size_; }
+  VkDeviceSize size() const {
+    return size_;
+  }
 
-  VkDeviceSize offset_in_mem() const { return offset_in_mem_; }
+  VkDeviceSize offset_in_mem() const {
+    return offset_in_mem_;
+  }
 
   class Mapped {
    public:
@@ -37,16 +46,22 @@ class VkBufferWithMemory {
                   buf_->size(), /*flags=*/0, &data_);
     }
 
-    ~Mapped() { vkUnmapMemory(buf_->device_, buf_->backing_memory_); }
+    ~Mapped() {
+      vkUnmapMemory(buf_->device_, buf_->backing_memory_);
+    }
 
-    void *data() const { return data_; }
+    void *data() const {
+      return data_;
+    }
 
    private:
     VkBufferWithMemory *const buf_;  // not owned
     void *data_;
   };
 
-  Mapped map_mem() { return Mapped(this); }
+  Mapped map_mem() {
+    return Mapped(this);
+  }
 
  private:
   friend class Mapped;

@@ -18,8 +18,10 @@ VkDeviceSize roundup_aligned(VkDeviceSize size) {
 
 }  // namespace
 
-VkBufferWithMemory::VkBufferWithMemory(VkDevice device, VkBuffer buffer,
-                                       VkDeviceMemory mem, VkDeviceSize size,
+VkBufferWithMemory::VkBufferWithMemory(VkDevice device,
+                                       VkBuffer buffer,
+                                       VkDeviceMemory mem,
+                                       VkDeviceSize size,
                                        VkDeviceSize offset)
     : device_(device),
       buffer_(buffer),
@@ -37,7 +39,8 @@ VkBufferWithMemory::~VkBufferWithMemory() {
   }
 }
 
-LinearVkMemoryPool::LinearVkMemoryPool(const Params &params, VkDeviceMemory mem,
+LinearVkMemoryPool::LinearVkMemoryPool(const Params &params,
+                                       VkDeviceMemory mem,
                                        uint32_t mti)
     : device_(params.device),
       memory_(mem),

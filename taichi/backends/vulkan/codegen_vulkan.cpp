@@ -688,7 +688,7 @@ class TaskCodegen : public IRVisitor {
   friend class SectionGuard;
 
   template <typename... Args>
-  void emit(std::string f, Args &&...args) {
+  void emit(std::string f, Args &&... args) {
     // TI_INFO(f, args...);
     current_appender().append(std::move(f), std::forward<Args>(args)...);
   }

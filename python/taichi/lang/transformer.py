@@ -631,8 +631,6 @@ if 1:
             if attr_name == 'format':
                 node.args.insert(0, node.func.value)
                 node.func = self.parse_expr('ti.ti_format')
-            else:
-                pass
         if isinstance(node.func, ast.Name):
             func_name = node.func.id
             if func_name == 'print':

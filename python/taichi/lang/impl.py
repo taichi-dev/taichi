@@ -510,7 +510,8 @@ def ti_print(*vars, sep=' ', end='\n'):
             elif isinstance(var, (list, tuple)):
                 res = var
                 # If the first element is '__ti_format__', this list is the result of ti_format.
-                if len(var) > 0 and isinstance(var[0], str) and var[0] == '__ti_format__':
+                if len(var) > 0 and isinstance(
+                        var[0], str) and var[0] == '__ti_format__':
                     res = var[1:]
                 else:
                     res = list_ti_repr(var)

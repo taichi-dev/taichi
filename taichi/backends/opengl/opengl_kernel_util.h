@@ -29,6 +29,7 @@ struct UsedFeature {
   bool buf_earg{false};
   bool buf_extr{false};
   bool buf_gtmp{false};
+  bool buf_retr{false};
 
   // utilties:
   bool fast_pow{false};
@@ -48,6 +49,7 @@ enum class GLBufId {
   Listman = 7,
   Gtmp = 1,
   Args = 2,
+  Retr = 3,
   Extr = 4,
 };
 

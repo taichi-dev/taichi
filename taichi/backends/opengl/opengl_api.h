@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/common/core.h"
+#include "taichi/ir/transforms.h"
 
 #include <string>
 #include <vector>
@@ -79,7 +80,9 @@ struct CompiledProgram {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           std::unique_ptr<ParallelSize> ps);
+           std::unique_ptr<ParallelSize> ps,
+           std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access =
+               nullptr);
   void set_used(const UsedFeature &used);
   int lookup_or_add_string(const std::string &str);
   void launch(Context &ctx, GLSLLauncher *launcher) const;

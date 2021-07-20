@@ -103,8 +103,7 @@ class ScratchPad {
     block_size.resize(dim);
     for (int i = 0; i < dim; i++) {
       block_size[i] =
-          1 << snode->parent->extractors[snode->physical_index_position[i]]
-                   .num_bits;
+          snode->parent->extractors[snode->physical_index_position[i]].shape;
       TI_ASSERT(bounds[i].low != std::numeric_limits<int>::max());
       TI_ASSERT(bounds[i].high != std::numeric_limits<int>::min());
     }

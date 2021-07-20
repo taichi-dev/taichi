@@ -40,6 +40,14 @@ struct IndexExtractor {
    */
   int num_elements{1};
   /**
+   * POT shape or packed shape according to the config.
+   */
+  int shape{1};
+  /**
+   * Accumulated shape from the last activated index.
+   */
+  int acc_shape{1};
+  /**
    * Number of bits needed to store the coordinate at this index.
    *
    * ceil(log2(num_elements))
@@ -106,7 +114,7 @@ class SNode {
   int depth{0};
 
   std::string name;
-  int64 n{0};
+  int64 n{1};
   int total_num_bits{0};
   int total_bit_start{0};
   int chunk_size{0};
@@ -283,7 +291,7 @@ class SNode {
   }
 
   int64 max_num_elements() const {
-    return int64(1) << total_num_bits;
+    return n;
   }
 
   int shape_along_axis(int i) const;

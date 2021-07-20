@@ -14,6 +14,7 @@ struct CompileConfig {
   bool lazy_compilation;
   int external_optimization_level;
   int max_vector_width;
+  bool packed;
   bool print_ir;
   bool print_accessor_ir;
   bool print_evaluator_ir;

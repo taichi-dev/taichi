@@ -547,6 +547,7 @@ def ti_print(*vars, sep=' ', end='\n'):
     contentries = [entry2content(entry) for entry in entries]
     _ti_core.create_print(contentries)
 
+
 @taichi_scope
 def ti_format(*args):
     content = args[0]
@@ -558,12 +559,15 @@ def ti_format(*args):
 
     content = content.format(*mixed)
     res = content.split('<ti.Expr>')
-    assert len(res) == len(args) + 1, 'Number of args is different from number of positions provided in string'
+    assert len(res) == len(
+        args
+    ) + 1, 'Number of args is different from number of positions provided in string'
 
     for i in range(len(args)):
         res.insert(i * 2 + 1, args[i])
     res.insert(0, '__ti_format__')
     return res
+
 
 @taichi_scope
 def ti_assert(cond, msg, extra_args):

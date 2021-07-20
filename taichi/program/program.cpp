@@ -429,7 +429,7 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
 
 int Program::add_snode_tree(std::unique_ptr<SNode> root) {
   const int id = snode_trees_.size();
-  auto tree = std::make_unique<SNodeTree>(id, std::move(root));
+  auto tree = std::make_unique<SNodeTree>(id, std::move(root), config.packed);
   tree->root()->set_snode_tree_id(id);
   materialize_snode_tree(tree.get());
   snode_trees_.push_back(std::move(tree));

@@ -46,11 +46,12 @@ class LowerAccess : public IRVisitor {
   StructForStmt *current_struct_for;
   const std::vector<SNode *> &kernel_forces_no_activate;
   bool lower_atomic_ptr;
+  bool packed;
 
   LowerAccess(const std::vector<SNode *> &kernel_forces_no_activate,
-              bool lower_atomic_ptr)
+              bool lower_atomic_ptr, bool packed)
       : kernel_forces_no_activate(kernel_forces_no_activate),
-        lower_atomic_ptr(lower_atomic_ptr) {
+        lower_atomic_ptr(lower_atomic_ptr), packed(packed) {
     // TODO: change this to false
     allow_undefined_visitor = true;
     current_struct_for = nullptr;
@@ -100,7 +101,7 @@ class LowerAccess : public IRVisitor {
     }
 
     PtrLowererImpl lowerer{leaf_snode, indices, snode_op, is_bit_vectorized,
-                           lowered};
+                           lowered, packed};
     lowerer.set_pointer_needs_activation(pointer_needs_activation);
     lowerer.set_lower_access(this);
     lowerer.run();
@@ -211,8 +212,9 @@ class LowerAccess : public IRVisitor {
 
   static bool run(IRNode *node,
                   const std::vector<SNode *> &kernel_forces_no_activate,
-                  bool lower_atomic) {
-    LowerAccess inst(kernel_forces_no_activate, lower_atomic);
+                  bool lower_atomic,
+                  bool packed) {
+    LowerAccess inst(kernel_forces_no_activate, lower_atomic, packed);
     bool modified = false;
     while (true) {
       node->accept(&inst);
@@ -304,7 +306,7 @@ bool lower_access(IRNode *root,
                   const CompileConfig &config,
                   const LowerAccessPass::Args &args) {
   bool modified =
-      LowerAccess::run(root, args.kernel_forces_no_activate, args.lower_atomic);
+      LowerAccess::run(root, args.kernel_forces_no_activate, args.lower_atomic, config.packed);
   type_check(root, config);
   return modified;
 }

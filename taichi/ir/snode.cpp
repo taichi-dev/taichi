@@ -35,33 +35,13 @@ SNode &SNode::create_node(std::vector<Index> indices,
                    "hashed node must be child of root due to initialization "
                    "memset limitation.");
   auto &new_node = insert_children(type);
-  new_node.n = 1;
-  for (int i = 0; i < sizes.size(); i++) {
-    auto s = sizes[i];
-    TI_ASSERT(sizes[i] > 0);
-    if (!bit::is_power_of_two(s)) {
-      auto promoted_s = bit::least_pot_bound(s);
-      TI_DEBUG("Non-power-of-two node size {} promoted to {}.", s, promoted_s);
-      s = promoted_s;
-    }
-    TI_ASSERT(bit::is_power_of_two(s));
-    if (get_current_program().config.packed) {
-      new_node.n *= sizes[i];
-    } else {
-      new_node.n *= s;
-    }
-  }
   for (int i = 0; i < (int)indices.size(); i++) {
+    TI_ASSERT(sizes[i] > 0);
     auto &ind = indices[i];
     new_node.extractors[ind.value].activate(
         bit::log2int(bit::least_pot_bound(sizes[i])));
-    new_node.extractors[ind.value].num_elements = sizes[i];
-    if (get_current_program().config.packed) {
-      new_node.extractors[ind.value].shape = sizes[i];
-    } else {
-      new_node.extractors[ind.value].shape =
-          1 << new_node.extractors[ind.value].num_bits;
-    }
+    new_node.extractors[ind.value].shape = sizes[i];
+    new_node.extractors[ind.value].num_elements_from_root = sizes[i];
   }
   return new_node;
 }
@@ -110,7 +90,7 @@ SNode *SNode::get_least_sparse_ancestor() const {
 
 int SNode::shape_along_axis(int i) const {
   const auto &extractor = extractors[physical_index_position[i]];
-  return extractor.num_elements;
+  return extractor.num_elements_from_root;
 }
 
 SNode::SNode() : SNode(0, SNodeType::undefined) {

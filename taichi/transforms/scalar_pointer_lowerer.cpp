@@ -5,7 +5,6 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/statements.h"
-#include "taichi/program/program.h"
 #include "taichi/transforms/scalar_pointer_lowerer.h"
 #include "taichi/transforms/utils.h"
 
@@ -16,11 +15,13 @@ ScalarPointerLowerer::ScalarPointerLowerer(SNode *leaf_snode,
                                            const std::vector<Stmt *> &indices,
                                            const SNodeOpType snode_op,
                                            const bool is_bit_vectorized,
-                                           VecStatement *lowered)
+                                           VecStatement *lowered,
+                                           const bool packed)
     : indices_(indices),
       snode_op_(snode_op),
       is_bit_vectorized_(is_bit_vectorized),
-      lowered_(lowered) {
+      lowered_(lowered),
+      packed_(packed) {
   for (auto *s = leaf_snode; s != nullptr; s = s->parent) {
     snodes_.push_back(s);
   }
@@ -75,7 +76,7 @@ void ScalarPointerLowerer::run() {
       if (k < 0)
         continue;
       Stmt *extracted;
-      if (get_current_program().config.packed) {  // no dependence on POT
+      if (packed_) {  // no dependence on POT
         const int prev = total_shape[k];
         total_shape[k] /= snode->extractors[k].shape;
         const int next = total_shape[k];

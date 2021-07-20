@@ -12,7 +12,7 @@ namespace lang {
  *
  * @param snode The root SNode to compute.
  */
-void infer_snode_properties(SNode &snode);
+void infer_snode_properties(SNode &snode, bool packed);
 
 class StructCompiler {
  public:

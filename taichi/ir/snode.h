@@ -34,34 +34,34 @@ class Index {
  */
 struct IndexExtractor {
   /**
-   * Shape at the given index.
+   * Number of elements from root at this index.
    *
-   * This is the raw shape, *not* padded to power-of-two (POT).
+   * This is the raw number, *not* padded to power-of-two (POT).
    */
-  int num_elements{1};
+  int num_elements_from_root{1};
   /**
-   * POT shape or packed shape according to the config.
+   * Shape at this index (POT or packed) according to the config.
    */
   int shape{1};
   /**
-   * Accumulated shape from the last activated index.
+   * Accumulated shape from the last activated index to the first one.
    */
   int acc_shape{1};
   /**
    * Number of bits needed to store the coordinate at this index.
    *
-   * ceil(log2(num_elements))
+   * ceil(log2(shape))
    */
   int num_bits{0};
   /**
    * Accumulated offset from the last activated index to the first one.
    *
-   * This is the starting bit of this index in a linearized 1D coordiate. For
+   * This is the starting bit of this index in a linearized 1D coordinate. For
    * example, assuming an SNode of (ti.ijk, shape=(4, 8, 16)). ti.i takes 2
    * bits, ti.j 3 bits and ti.k 4 bits. Then for a linearized coordinate:
-   * ti.k uses bits [0, 3), acc_offset=0
-   * tk.j uses btis [3, 6), acc_offset=3
-   * ti.i uses bits [6, 8), acc_offset=6
+   * ti.k uses bits [0, 4), acc_offset=0
+   * ti.j uses bits [4, 7), acc_offset=4
+   * ti.i uses bits [7, 9), acc_offset=7
    */
   int acc_offset{0};
   /**

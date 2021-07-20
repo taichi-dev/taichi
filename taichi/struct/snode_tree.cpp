@@ -5,9 +5,9 @@
 namespace taichi {
 namespace lang {
 
-SNodeTree::SNodeTree(int id, std::unique_ptr<SNode> root)
+SNodeTree::SNodeTree(int id, std::unique_ptr<SNode> root, bool packed)
     : id_(id), root_(std::move(root)) {
-  infer_snode_properties(*root_);
+  infer_snode_properties(*root_, packed);
 }
 
 }  // namespace lang

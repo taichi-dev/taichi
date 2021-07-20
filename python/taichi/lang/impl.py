@@ -508,7 +508,12 @@ def ti_print(*vars, sep=' ', end='\n'):
             if hasattr(var, '__ti_repr__'):
                 res = var.__ti_repr__()
             elif isinstance(var, (list, tuple)):
-                res = list_ti_repr(var)
+                res = var
+                # If the first element is '__ti_format__', this list is the result of ti_format.
+                if var[0] == '__ti_format__':
+                    res = var[1:]
+                else:
+                    res = list_ti_repr(var)
             else:
                 yield var
                 continue
@@ -542,6 +547,19 @@ def ti_print(*vars, sep=' ', end='\n'):
     contentries = [entry2content(entry) for entry in entries]
     _ti_core.create_print(contentries)
 
+@taichi_scope
+def ti_format(*args):
+    content = args[0]
+    args = args[1:]
+
+    content = content.format(*args)
+    res = content.split('<ti.Expr>')
+    assert len(res) == len(args) + 1, 'Number of args is different from number of positions provided in string'
+
+    for i in range(len(args)):
+        res.insert(i * 2 + 1, args[i])
+    res.insert(0, '__ti_format__')
+    return res
 
 @taichi_scope
 def ti_assert(cond, msg, extra_args):

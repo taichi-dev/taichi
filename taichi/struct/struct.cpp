@@ -14,7 +14,8 @@ void infer_snode_properties(SNode &snode, bool packed) {
     auto &ch = snode.ch[ch_id];
     ch->parent = &snode;
     for (int i = 0; i < taichi_max_num_indices; i++) {
-      ch->extractors[i].num_elements_from_root *= snode.extractors[i].num_elements_from_root;
+      ch->extractors[i].num_elements_from_root *=
+          snode.extractors[i].num_elements_from_root;
       bool found = false;
       for (int k = 0; k < taichi_max_num_indices; k++) {
         if (snode.physical_index_position[k] == i) {

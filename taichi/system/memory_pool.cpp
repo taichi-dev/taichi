@@ -34,15 +34,20 @@ void MemoryPool::set_queue(MemRequestQueue *queue) {
 void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
   std::lock_guard<std::mutex> _(mut_allocators);
   void *ret = nullptr;
-  if (!allocators.empty()) {
-    ret = allocators.back()->allocate(size, alignment);
-  }
-  if (!ret) {
-    // allocation have failed
-    auto new_buffer_size = std::max(size, default_allocator_size);
-    allocators.emplace_back(
-        std::make_unique<UnifiedAllocator>(new_buffer_size, prog->config.arch));
-    ret = allocators.back()->allocate(size, alignment);
+  if (size >= critical_size) {
+    large_size_allocators.emplace_back(
+        std::make_unique<UnifiedAllocator>(size, prog->config.arch));
+    ret = large_size_allocators.back()->allocate(size, alignment);
+  } else {
+    if (!allocators.empty()) {
+      ret = allocators.back()->allocate(size, alignment);
+    }
+    if (!ret) {
+      // allocation have failed
+      allocators.emplace_back(std::make_unique<UnifiedAllocator>(
+          default_allocator_size, prog->config.arch));
+      ret = allocators.back()->allocate(size, alignment);
+    }
   }
   TI_ASSERT(ret);
   return ret;

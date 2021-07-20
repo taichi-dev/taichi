@@ -18,8 +18,10 @@ class Program;
 class MemoryPool {
  public:
   std::vector<std::unique_ptr<UnifiedAllocator>> allocators;
+  std::vector<std::unique_ptr<UnifiedAllocator>> large_size_allocators;
   static constexpr std::size_t default_allocator_size =
       1 << 30;  // 1 GB per allocator
+  static constexpr std::size_t critical_size = 1 << 25;
   bool terminating, killed;
   std::mutex mut;
   std::mutex mut_allocators;

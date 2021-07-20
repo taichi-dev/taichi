@@ -108,7 +108,7 @@ class RefineCoordinatesTest : public ::testing::Test {
     tlctx_ = prog_->llvm_context_host.get();
 
     root_snode_ = std::make_unique<SNode>(/*depth=*/0, /*t=*/SNodeType::root);
-    const std::vector<Index> indices = {Index{0}};
+    const std::vector<Axis> indices = {Axis{0}};
     ptr_snode_ = &(root_snode_->pointer(indices, kPointerSize));
     dense_snode_ = &(ptr_snode_->dense(indices, kDenseSize));
     // Must end with a `place` SNode.

@@ -87,11 +87,11 @@ T Eval(const T &t) {
 Expr copy(const Expr &expr);
 
 template <typename... indices>
-std::vector<Index> Indices(indices... ind) {
+std::vector<Axis> Indices(indices... ind) {
   auto ind_vec = std::vector<int>({ind...});
-  std::vector<Index> ret;
+  std::vector<Axis> ret;
   for (auto in : ind_vec) {
-    ret.push_back(Index(in));
+    ret.push_back(Axis(in));
   }
   return ret;
 }

@@ -19,7 +19,7 @@ constexpr int kBlockSize = 8;
 class BLSAnalyzerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    const std::vector<Index> indices = {Index{0}, Index{1}};
+    const std::vector<Axis> indices = {Axis{0}, Axis{1}};
     root_snode_ = std::make_unique<SNode>(/*depth=*/0, /*t=*/SNodeType::root);
     parent_snode_ = &(root_snode_->dense(indices, /*sizes=*/kBlockSize));
     child_snode_ = &(parent_snode_->insert_children(SNodeType::place));

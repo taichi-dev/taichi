@@ -34,7 +34,7 @@ void place_child(Expr *expr_arg,
                  SNodeGlobalVarExprMap *snode_to_exprs) {
   if (parent->type == SNodeType::root) {
     // never directly place to root
-    auto &ds = parent->dense(std::vector<Index>(), {});
+    auto &ds = parent->dense(std::vector<Axis>(), {});
     place_child(expr_arg, offset, &ds, snode_to_exprs);
   } else {
     TI_ASSERT(expr_arg->is<GlobalVariableExpression>());

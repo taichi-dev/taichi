@@ -246,27 +246,27 @@ void export_lang(py::module &m) {
       [&]() -> CompileConfig & { return get_current_program().config; },
       py::return_value_policy::reference);
 
-  py::class_<Index>(m, "Index").def(py::init<int>());
+  py::class_<Axis>(m, "Axis").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
       .def(py::init<>())
       .def_readwrite("parent", &SNode::parent)
       .def_readonly("type", &SNode::type)
       .def_readonly("id", &SNode::id)
       .def("dense",
-           (SNode & (SNode::*)(const std::vector<Index> &,
+           (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &))(&SNode::dense),
            py::return_value_policy::reference)
       .def("pointer",
-           (SNode & (SNode::*)(const std::vector<Index> &,
+           (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &))(&SNode::pointer),
            py::return_value_policy::reference)
       .def("hash",
-           (SNode & (SNode::*)(const std::vector<Index> &,
+           (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &))(&SNode::hash),
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic, py::return_value_policy::reference)
       .def("bitmasked",
-           (SNode & (SNode::*)(const std::vector<Index> &,
+           (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)

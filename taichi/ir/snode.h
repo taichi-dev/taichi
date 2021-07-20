@@ -198,8 +198,7 @@ class SNode {
     return SNode::bitmasked(std::vector<Axis>{index}, size);
   }
 
-  SNode &hash(const std::vector<Axis> &indices,
-              const std::vector<int> &sizes) {
+  SNode &hash(const std::vector<Axis> &indices, const std::vector<int> &sizes) {
     return create_node(indices, sizes, SNodeType::hash);
   }
 

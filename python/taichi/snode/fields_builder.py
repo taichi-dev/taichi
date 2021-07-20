@@ -34,6 +34,7 @@ class FieldsBuilder:
         #  +-- pointer +-- dense +-- place(y)
         fb.finalize()
     """
+
     def __init__(self):
         self._ptr = _snode_registry.create_root()
         self._root = snode.SNode(self._ptr)
@@ -145,3 +146,8 @@ class FieldsBuilder:
     def _check_not_finalized(self):
         if self._finalized:
             raise InvalidOperationError('FieldsBuilder finalized')
+
+    def destroy(self):
+        """Destroy the SNodeTree and release the memory."""
+        _ti_core.destroy_snode_tree(self._ptr, impl.get_runtime().prog)
+        self.destroyed = True

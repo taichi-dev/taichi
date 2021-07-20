@@ -18,10 +18,10 @@ class Program;
 class MemoryPool {
  public:
   std::vector<std::unique_ptr<UnifiedAllocator>> allocators;
-  std::vector<std::unique_ptr<UnifiedAllocator>> large_size_allocators;
+  std::vector<int> allocator_snode_tree_id;
+  std::vector<std::unique_ptr<UnifiedAllocator>> snode_tree_allocators;
   static constexpr std::size_t default_allocator_size =
       1 << 30;  // 1 GB per allocator
-  static constexpr std::size_t critical_size = 1 << 25;
   bool terminating, killed;
   std::mutex mut;
   std::mutex mut_allocators;
@@ -41,7 +41,11 @@ class MemoryPool {
   template <typename T>
   void push(volatile T *dest, const T &val);
 
-  void *allocate(std::size_t size, std::size_t alignment);
+  void *allocate(std::size_t size,
+                 std::size_t alignment,
+                 const int snode_tree_id);
+
+  void destroy_snode_tree(const int snode_tree_id);
 
   void set_queue(MemRequestQueue *queue);
 

@@ -362,6 +362,10 @@ void export_lang(py::module &m) {
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
       .def("is_external_var",
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
+      .def("is_primal",
+           [](Expr *expr) {
+             return expr->cast<GlobalVariableExpression>()->is_primal;
+           })
       .def("set_tb", &Expr::set_tb)
       .def("set_name",
            [&](Expr *expr, std::string na) {
@@ -373,6 +377,10 @@ void export_lang(py::module &m) {
            })
       .def("set_grad", &Expr::set_grad)
       .def("set_attribute", &Expr::set_attribute)
+      .def("get_expr_name",
+           [](Expr *expr) {
+             return expr->cast<GlobalVariableExpression>()->name;
+           })
       .def("get_attribute", &Expr::get_attribute)
       .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })
       .def("get_underlying_ptr_address", [](Expr *e) {

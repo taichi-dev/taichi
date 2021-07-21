@@ -592,16 +592,32 @@ struct CompiledProgram::Impl {
     runtime->unmap();
   }
 
+  bool check_ext_arr_read(int i) const {
+    auto iter = ext_arr_access.find(i);
+    if (iter == ext_arr_access.end())
+      return false;
+
+    return (iter->second & irpass::ExternalPtrAccess::READ) !=
+           irpass::ExternalPtrAccess::NONE;
+  }
+
+  bool check_ext_arr_write(int i) const {
+    auto iter = ext_arr_access.find(i);
+    if (iter == ext_arr_access.end())
+      return false;
+
+    return (iter->second & irpass::ExternalPtrAccess::WRITE) !=
+           irpass::ExternalPtrAccess::NONE;
+  }
+
   GLbitfield get_ext_arr_access(size_t &total_ext_arr_size) const {
     GLbitfield access = 0;
     for (const auto &[i, size] : ext_arr_map) {
       total_ext_arr_size += size;
-      if ((ext_arr_access.at(i) & irpass::ExternalPtrAccess::READ) !=
-          irpass::ExternalPtrAccess::NONE) {
+      if (check_ext_arr_read(i)) {
         access |= GL_MAP_WRITE_BIT;
       }
-      if ((ext_arr_access.at(i) & irpass::ExternalPtrAccess::WRITE) !=
-          irpass::ExternalPtrAccess::NONE) {
+      if (check_ext_arr_write(i)) {
         access |= GL_MAP_READ_BIT;
       }
     }
@@ -611,7 +627,7 @@ struct CompiledProgram::Impl {
   void launch(Context &ctx, GLSLLauncher *launcher) const {
     launcher->impl->gl_allocator.new_frame();
 
-    std::vector<void *> ext_arr_host_ptrs;
+    std::array<void *, taichi_max_num_args> ext_arr_host_ptrs;
 
     GLBuffer *extr_buf = nullptr;
     GLBuffer *args_buf = nullptr;
@@ -636,9 +652,8 @@ struct CompiledProgram::Impl {
       for (const auto &[i, size] : ext_arr_map) {
         auto ptr = (void *)ctx.args[i];
         ctx.args[i] = accum_size;
-        ext_arr_host_ptrs.push_back(ptr);
-        if ((ext_arr_access.at(i) & irpass::ExternalPtrAccess::READ) !=
-            irpass::ExternalPtrAccess::NONE) {
+        ext_arr_host_ptrs[i] = ptr;
+        if (check_ext_arr_read(i)) {
           std::memcpy((char *)baseptr + accum_size, ptr, size);
         }
         accum_size += size;
@@ -713,16 +728,10 @@ struct CompiledProgram::Impl {
     }
 
     if (extr_buf) {
-      size_t accum_size = 0;
-      auto host_ptr_iter = ext_arr_host_ptrs.begin();
       for (const auto &[i, size] : ext_arr_map) {
-        auto access = ext_arr_access.at(i);
-        if ((access & irpass::ExternalPtrAccess::WRITE) !=
-            irpass::ExternalPtrAccess::NONE) {
-          extr_buf->read_back(*host_ptr_iter, accum_size, size);
+        if (check_ext_arr_write(i)) {
+          extr_buf->read_back(ext_arr_host_ptrs[i], size_t(ctx.args[i]), size);
         }
-        accum_size += size;
-        host_ptr_iter++;
       }
     }
 

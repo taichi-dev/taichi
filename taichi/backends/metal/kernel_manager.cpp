@@ -816,9 +816,10 @@ class KernelManager::Impl {
         const auto &ext = sn->extractors[j];
         rtm_ext->extractors[j].num_bits = ext.num_bits;
         rtm_ext->extractors[j].acc_offset = ext.acc_offset;
-        rtm_ext->extractors[j].num_elements_from_root = ext.num_elements_from_root;
-        TI_DEBUG("  [{}] num_bits={} acc_offset={} num_elements_from_root={}", j,
-                 ext.num_bits, ext.acc_offset, ext.num_elements_from_root);
+        rtm_ext->extractors[j].num_elements_from_root =
+            ext.num_elements_from_root;
+        TI_DEBUG("  [{}] num_bits={} acc_offset={} num_elements_from_root={}",
+                 j, ext.num_bits, ext.acc_offset, ext.num_elements_from_root);
       }
       TI_DEBUG("");
     }

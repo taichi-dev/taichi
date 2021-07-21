@@ -29,6 +29,7 @@
 #include "taichi/struct/snode_tree.h"
 #include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/system/memory_pool.h"
+#include "taichi/system/snode_tree_buffer_manager.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
 
@@ -101,6 +102,7 @@ class Program {
   static std::atomic<int> num_instances;
   std::unique_ptr<ThreadPool> thread_pool{nullptr};
   std::unique_ptr<MemoryPool> memory_pool{nullptr};
+  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
   uint64 *result_buffer{nullptr};  // TODO: move this
   void *preallocated_device_buffer{
       nullptr};  // TODO: move this to memory allocator
@@ -304,6 +306,13 @@ class Program {
   inline SNodeRwAccessorsBank &get_snode_rw_accessors_bank() {
     return snode_rw_accessors_bank_;
   }
+
+  /**
+   * Destroys a specific SNode tree.
+   *
+   * @param snode_tree_id SNode tree ID.
+   */
+  void destroy_snode_tree(const int snode_tree_id);
 
   /**
    * Adds a new SNode tree.

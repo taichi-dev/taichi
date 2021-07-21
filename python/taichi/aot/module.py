@@ -13,7 +13,7 @@ class KernelTemplate:
         kernel = self._kernel_fn._primal
         assert isinstance(kernel, kernel_impl.Kernel)
         injected_args = []
-        key_p = ""
+        key_p = ''
         anno_index = 0
         template_args = {}
 
@@ -25,14 +25,15 @@ class KernelTemplate:
             if isinstance(anno, kernel_arguments.template):
                 (k, v) = template_args[anno_index]
                 key_p += k
+                if isinstance(v, int) or isinstance(v, float) or isinstance(v, bool):
+                    key_p += '=' + str(v) + '/'
                 for ky, val in self._aot_module._fields.items():
                     if (val is v):
-                        key_p += "=" + ky + "/"
+                        key_p += '=' + ky + '/'
                 injected_args.append(v)
                 anno_index += 1
             else:
                 injected_args.append(0)
-
         kernel.ensure_compiled(*injected_args)
         self._aot_module._aot_builder.add_kernel_template(
             name, key_p, kernel.kernel_cpp)
@@ -92,7 +93,7 @@ class Module:
         self._fields[name] = field
         column_num = 1
         row_num = 1
-        if type(field) is matrix.Matrix:
+        if isinstance(field, matrix.Matrix):
             assert isinstance(field, matrix.Matrix)
             is_scalar = False
             row_num = field.m

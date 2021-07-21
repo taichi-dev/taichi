@@ -16,6 +16,16 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
   ti_aot_data_.metadata = buffer_meta_data;
 }
 
+void AotModuleBuilderImpl::metalgen(const stdfs::path &dir,
+                                    const std::string &filename,
+                                    const CompiledKernelData &k) const {
+  const stdfs::path mtl_path =
+        dir / fmt::format("{}_{}.metal", filename, k.kernel_name);
+    std::ofstream fs{mtl_path.string()};
+    fs << k.source_code;
+    fs.close();
+}
+
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
   const stdfs::path dir{output_dir};
@@ -28,20 +38,12 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   ts.write_to_file(txt_path.string());
 
   for (const auto &k : ti_aot_data_.kernels) {
-    const stdfs::path mtl_path =
-        dir / fmt::format("{}_{}.metal", filename, k.kernel_name);
-    std::ofstream fs{mtl_path.string()};
-    fs << k.source_code;
-    fs.close();
+    metalgen(dir, filename, k);
   }
 
   for (const auto &k : ti_aot_data_.tmpl_kernels) {
     for (auto &ki : k.kernel_tmpl_map) {
-      const stdfs::path mtl_path =
-          dir / fmt::format("{}_{}.metal", filename, ki.second.kernel_name);
-      std::ofstream fs{mtl_path.string()};
-      fs << ki.second.source_code;
-      fs.close();
+      metalgen(dir, filename, ki.second);
     }
   }
 }

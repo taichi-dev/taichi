@@ -73,4 +73,4 @@ RUN strings build/libtaichi_core.so | grep GLIBC
 RUN $PYTHON -m pip install --user twine
 RUN ti test -t 2
 WORKDIR python/
-RUN $PYTHON build.py upload $TEST_OPTION 
+RUN $PYTHON build.py upload $TEST_OPTION

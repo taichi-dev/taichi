@@ -219,18 +219,18 @@ struct CompiledFieldData {
   std::string field_name;
   MetalDataType dtype;
   std::string dtype_name;
-  std::vector<int> dimension;
+  std::vector<int> shape;
   bool is_scalar{false};
-  int column_num{0};
   int row_num{0};
+  int column_num{0};
 
   TI_IO_DEF(field_name,
             dtype,
             dtype_name,
-            dimension,
+            shape,
             is_scalar,
-            column_num,
-            row_num);
+            row_num,
+            column_num);
 };
 
 struct BufferMetaData {

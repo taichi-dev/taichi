@@ -19,8 +19,8 @@ class AotModuleBuilder {
                  bool is_scalar,
                  DataType dt,
                  std::vector<int> shape,
-                 int column_num,
-                 int row_num);
+                 int row_num,
+                 int column_num);
 
   void add_kernel_template(const std::string &identifier,
                            const std::string &key,
@@ -39,8 +39,8 @@ class AotModuleBuilder {
                                      bool is_scalar,
                                      DataType dt,
                                      std::vector<int> shape,
-                                     int column_num,
-                                     int row_num) = 0;
+                                     int row_num,
+                                     int column_num) = 0;
   virtual void add_per_backend_tmpl(const std::string &identifier,
                                     const std::string &key,
                                     Kernel *kernel) = 0;

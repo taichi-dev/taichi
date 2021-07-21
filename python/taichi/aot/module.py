@@ -95,12 +95,12 @@ class Module:
         if type(field) is matrix.Matrix:
             assert isinstance(field, matrix.Matrix)
             is_scalar = False
-            column_num = field.n
             row_num = field.m
+            column_num = field.n
         else:
             assert isinstance(field, expr.Expr)
         self._aot_builder.add_field(name, is_scalar, field.dtype,
-                                    field.snode.shape, column_num, row_num)
+                                    field.snode.shape, row_num, column_num)
 
     def add_kernel(self, kernel_fn, name=None):
         """Add a taichi kernel to the AOT module.

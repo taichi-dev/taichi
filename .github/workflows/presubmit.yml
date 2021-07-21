@@ -99,14 +99,14 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
-            python: 3.7
-            with_cc: OFF
-            with_cpp_tests: ON
-          - os: ubuntu-latest
-            python: 3.9
-            with_cc: OFF
-            with_cpp_tests: OFF
+          #- os: macos-latest
+          #  python: 3.7
+          #  with_cc: OFF
+          #  with_cpp_tests: ON
+          #- os: ubuntu-latest
+          #  python: 3.9
+          #  with_cc: OFF
+          #  with_cpp_tests: OFF
           - os: ubuntu-latest
             python: 3.8
             with_cc: ON
@@ -157,6 +157,12 @@ jobs:
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
 
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
+
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
     needs: check_code_format
@@ -185,6 +191,13 @@ jobs:
           $PYTHON examples/algorithm/laplace.py
           ti diagnose
           ti test -vr2 -t2
+
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
+          sudo: false
 
   build_and_test_windows:
     name: Build and Test (Windows)

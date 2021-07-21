@@ -12,8 +12,7 @@ from pathlib import Path
 
 from colorama import Back, Fore, Style
 from taichi.core import ti_core as _ti_core
-from taichi.tools.video import (accelerate_video, crop_video, make_video,
-                                mp4_to_gif, scale_video)
+from taichi.tools import video
 
 import taichi as ti
 
@@ -320,7 +319,7 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        mp4_to_gif(args.input_file, args.output_file, args.framerate)
+        video.mp4_to_gif(args.input_file, args.output_file, args.framerate)
 
     @register
     def video_speed(self, arguments: list = sys.argv[2:]):
@@ -350,7 +349,7 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        accelerate_video(args.input_file, args.output_file, args.speed)
+        video.accelerate_video(args.input_file, args.output_file, args.speed)
 
     @register
     def video_crop(self, arguments: list = sys.argv[2:]):
@@ -392,7 +391,7 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        crop_video(args.input_file, args.output_file, args.x_begin, args.x_end,
+        video.crop_video(args.input_file, args.output_file, args.x_begin, args.x_end,
                    args.y_begin, args.y_end)
 
     @register
@@ -433,7 +432,7 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        scale_video(args.input_file, args.output_file, args.ratio_width,
+        video.scale_video(args.input_file, args.output_file, args.ratio_width,
                     args.ratio_height)
 
     @register
@@ -477,7 +476,7 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        make_video(args.inputs,
+        video.make_video(args.inputs,
                    output_path=str(args.output_file),
                    crf=args.crf,
                    frame_rate=args.framerate)

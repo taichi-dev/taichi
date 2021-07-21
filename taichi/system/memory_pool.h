@@ -43,7 +43,7 @@ class MemoryPool {
 
   void *allocate(std::size_t size,
                  std::size_t alignment,
-                 const int snode_tree_id);
+                 const int snode_tree_id = -1);
 
   void destroy_snode_tree(const int snode_tree_id);
 

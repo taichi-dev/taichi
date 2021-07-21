@@ -33,7 +33,7 @@ void MemoryPool::set_queue(MemRequestQueue *queue) {
 
 void *MemoryPool::allocate(std::size_t size,
                            std::size_t alignment,
-                           const int snode_tree_id = -1) {
+                           const int snode_tree_id) {
   std::lock_guard<std::mutex> _(mut_allocators);
   void *ret = nullptr;
   if (snode_tree_id != -1 &&

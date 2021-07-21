@@ -384,9 +384,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(GlobalTensorElementStmt *stmt) override {
-    // TODO: do actual ir_printer
     std::string s =
-        fmt::format("{}{} = global tensor element {} {}", stmt->type_hint(),
+        fmt::format("{}{} = shift ptr [{} + {}]", stmt->type_hint(),
                     stmt->name(), stmt->origin->name(), stmt->offset->name());
     print_raw(s);
   }

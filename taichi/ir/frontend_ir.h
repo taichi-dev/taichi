@@ -445,7 +445,15 @@ class GlobalTensorElementExpression : public Expression {
   }
 
   std::string serialize() override {
-    return "@@";
+    std::string s = fmt::format("{}[", var.serialize());
+    for (int i = 0; i < (int)indices.size(); i++) {
+      s += indices.exprs[i]->serialize();
+      if (i + 1 < (int)indices.size())
+        s += ", ";
+    }
+    s += "]";
+    s += " (col=" + std::to_string(cols) + (is_AOS ? ", AOS)" : ", SOA)");
+    return s;
   }
 
   void flatten(FlattenContext *ctx) override;

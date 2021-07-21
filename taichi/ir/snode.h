@@ -30,9 +30,9 @@ class Axis {
 };
 
 /**
- * SNode shape metadata at a specific Index.
+ * SNode shape metadata at a specific Axis.
  */
-struct IndexExtractor {
+struct AxisExtractor {
   /**
    * Shape at the given index.
    *
@@ -91,7 +91,7 @@ class SNode {
   };
   std::vector<std::unique_ptr<SNode>> ch;
 
-  IndexExtractor extractors[taichi_max_num_indices];
+  AxisExtractor extractors[taichi_max_num_indices];
   std::vector<int> index_offsets;
   int num_active_indices{0};
   int physical_index_position[taichi_max_num_indices]{};
@@ -154,61 +154,61 @@ class SNode {
 
   SNode &insert_children(SNodeType t);
 
-  SNode &create_node(std::vector<Axis> indices,
+  SNode &create_node(std::vector<Axis> axes,
                      std::vector<int> sizes,
                      SNodeType type);
 
   // SNodes maintains how flattened index bits are taken from indices
-  SNode &dense(const std::vector<Axis> &indices,
+  SNode &dense(const std::vector<Axis> &axes,
                const std::vector<int> &sizes) {
-    return create_node(indices, sizes, SNodeType::dense);
+    return create_node(axes, sizes, SNodeType::dense);
   }
 
-  SNode &dense(const std::vector<Axis> &indices, int sizes) {
-    return create_node(indices, std::vector<int>{sizes}, SNodeType::dense);
+  SNode &dense(const std::vector<Axis> &axes, int sizes) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::dense);
   }
 
-  SNode &dense(const Axis &index, int size) {
-    return SNode::dense(std::vector<Axis>{index}, size);
+  SNode &dense(const Axis &axis, int size) {
+    return SNode::dense(std::vector<Axis>{axis}, size);
   }
 
-  SNode &pointer(const std::vector<Axis> &indices,
+  SNode &pointer(const std::vector<Axis> &axes,
                  const std::vector<int> &sizes) {
-    return create_node(indices, sizes, SNodeType::pointer);
+    return create_node(axes, sizes, SNodeType::pointer);
   }
 
-  SNode &pointer(const std::vector<Axis> &indices, int sizes) {
-    return create_node(indices, std::vector<int>{sizes}, SNodeType::pointer);
+  SNode &pointer(const std::vector<Axis> &axes, int sizes) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::pointer);
   }
 
-  SNode &pointer(const Axis &index, int size) {
-    return SNode::pointer(std::vector<Axis>{index}, size);
+  SNode &pointer(const Axis &axis, int size) {
+    return SNode::pointer(std::vector<Axis>{axis}, size);
   }
 
-  SNode &bitmasked(const std::vector<Axis> &indices,
+  SNode &bitmasked(const std::vector<Axis> &axes,
                    const std::vector<int> &sizes) {
-    return create_node(indices, sizes, SNodeType::bitmasked);
+    return create_node(axes, sizes, SNodeType::bitmasked);
   }
 
-  SNode &bitmasked(const std::vector<Axis> &indices, int sizes) {
-    return create_node(indices, std::vector<int>{sizes}, SNodeType::bitmasked);
+  SNode &bitmasked(const std::vector<Axis> &axes, int sizes) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::bitmasked);
   }
 
-  SNode &bitmasked(const Axis &index, int size) {
-    return SNode::bitmasked(std::vector<Axis>{index}, size);
+  SNode &bitmasked(const Axis &axis, int size) {
+    return SNode::bitmasked(std::vector<Axis>{axis}, size);
   }
 
-  SNode &hash(const std::vector<Axis> &indices,
+  SNode &hash(const std::vector<Axis> &axes,
               const std::vector<int> &sizes) {
-    return create_node(indices, sizes, SNodeType::hash);
+    return create_node(axes, sizes, SNodeType::hash);
   }
 
-  SNode &hash(const std::vector<Axis> &indices, int sizes) {
-    return create_node(indices, std::vector<int>{sizes}, SNodeType::hash);
+  SNode &hash(const std::vector<Axis> &axes, int sizes) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::hash);
   }
 
-  SNode &hash(const Axis &index, int size) {
-    return hash(std::vector<Axis>{index}, size);
+  SNode &hash(const Axis &axis, int size) {
+    return hash(std::vector<Axis>{axis}, size);
   }
 
   std::string type_name() {
@@ -217,7 +217,7 @@ class SNode {
 
   SNode &bit_struct(int bits);
 
-  SNode &bit_array(const std::vector<Axis> &indices,
+  SNode &bit_array(const std::vector<Axis> &axes,
                    const std::vector<int> &sizes,
                    int bits);
 

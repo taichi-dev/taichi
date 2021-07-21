@@ -41,10 +41,10 @@ class MakeBlockLocalTest : public ::testing::Test {
     // |bls_snode_| has a larger shape than |struct_for_snode_|, because we
     // want to see if the tests can handle the loop index scaling multiplier
     // (block_size) and infer the BLS size correctly.
-    const std::vector<Axis> indices = {Axis{0}, Axis{1}};
-    pointer_snode_ = &(root_snode_->pointer(indices, pointer_size));
+    const std::vector<Axis> axes = {Axis{0}, Axis{1}};
+    pointer_snode_ = &(root_snode_->pointer(axes, pointer_size));
 
-    bls_snode_ = &(pointer_snode_->dense(indices, /*sizes=*/block_size));
+    bls_snode_ = &(pointer_snode_->dense(axes, /*sizes=*/block_size));
     bls_place_snode_ = &(bls_snode_->insert_children(SNodeType::place));
     bls_place_snode_->dt = PrimitiveType::f32;
 

@@ -409,21 +409,21 @@ void export_lang(py::module &m) {
           },
           py::return_value_policy::reference);
 
-  m.def("insert_deactivate", [](SNode *snode, const ExprGroup &indices) {
-    return Deactivate(snode, indices);
+  m.def("insert_deactivate", [](SNode *snode, const ExprGroup &axes) {
+    return Deactivate(snode, axes);
   });
 
-  m.def("insert_activate", [](SNode *snode, const ExprGroup &indices) {
-    return Activate(snode, indices);
+  m.def("insert_activate", [](SNode *snode, const ExprGroup &axes) {
+    return Activate(snode, axes);
   });
 
-  m.def("expr_get_addr", [](SNode *snode, const ExprGroup &indices) {
-    return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr, indices);
+  m.def("expr_get_addr", [](SNode *snode, const ExprGroup &axes) {
+    return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr, axes);
   });
 
   m.def("insert_append",
-        [](SNode *snode, const ExprGroup &indices, const Expr &val) {
-          return Append(snode, indices, val);
+        [](SNode *snode, const ExprGroup &axes, const Expr &val) {
+          return Append(snode, axes, val);
         });
 
   m.def("insert_external_func_call",
@@ -435,12 +435,12 @@ void export_lang(py::module &m) {
           current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
         });
 
-  m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
-    return is_active(snode, indices);
+  m.def("insert_is_active", [](SNode *snode, const ExprGroup &axes) {
+    return is_active(snode, axes);
   });
 
-  m.def("insert_len", [](SNode *snode, const ExprGroup &indices) {
-    return Length(snode, indices);
+  m.def("insert_len", [](SNode *snode, const ExprGroup &axes) {
+    return Length(snode, axes);
   });
 
   m.def("create_assert_stmt", [&](const Expr &cond, const std::string &msg,
@@ -469,8 +469,8 @@ void export_lang(py::module &m) {
         });
 
   m.def("begin_frontend_struct_for",
-        [&](const ExprGroup &indices, const Expr &global) {
-          auto stmt_unique = std::make_unique<FrontendForStmt>(indices, global);
+        [&](const ExprGroup &axes, const Expr &global) {
+          auto stmt_unique = std::make_unique<FrontendForStmt>(axes, global);
           auto stmt = stmt_unique.get();
           current_ast_builder().insert(std::move(stmt_unique));
           scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
@@ -687,8 +687,8 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
-  m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
-    return Expr::make<GlobalPtrExpression>(snode, indices.loaded());
+  m.def("subscript", [](SNode *snode, const ExprGroup &axes) {
+    return Expr::make<GlobalPtrExpression>(snode, axes.loaded());
   });
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {

@@ -146,8 +146,8 @@ def subscript(value, *indices):
         return value[indices]
 
 @taichi_scope
-def subscript_with_offset(origin, offset):
-    return Expr(_ti_core.subscript_with_offset(origin.ptr, make_constant_expr(offset).ptr))
+def subscript_with_offset(var, indices, cols, is_AOS):
+    return Expr(_ti_core.subscript_with_offset(var.ptr, make_expr_group(*indices), cols, is_AOS))
 
 @taichi_scope
 def chain_compare(comparators, ops):

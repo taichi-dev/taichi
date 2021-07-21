@@ -432,11 +432,13 @@ class GlobalPtrExpression : public Expression {
 
 class GlobalTensorElementExpression : public Expression {
  public:
-  Expr origin_expr;
-  Expr offset;
+  Expr var;
+  ExprGroup indices;
+  int cols;
+  bool is_AOS;
 
-  GlobalTensorElementExpression(const Expr &origin_expr, const Expr &offset)
-      : origin_expr(origin_expr), offset(offset) {
+  GlobalTensorElementExpression(const Expr &var, const ExprGroup &indices, int cols, bool is_AOS)
+      : var(var), indices(indices), cols(cols), is_AOS(is_AOS) {
   }
 
   std::string serialize() override {

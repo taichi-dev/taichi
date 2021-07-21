@@ -54,6 +54,7 @@ WORKDIR /taichi-dev
 ADD https://api.github.com/repos/taichi-dev/taichi/git/refs/heads/master version.json
 RUN git clone https://github.com/taichi-dev/taichi --branch=master
 WORKDIR ./taichi
+RUN git cat-file -t $COMMIT_SHA || exit 1
 RUN git checkout $COMMIT_SHA
 # Install Taichi's Python dependencies
 RUN $PYTHON -m pip install --user -r requirements.txt

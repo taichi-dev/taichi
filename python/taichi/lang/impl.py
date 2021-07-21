@@ -128,6 +128,14 @@ def subscript(value, *indices):
                 raise TypeError(
                     'Subscription (e.g., "a[i, j]") only works on fields or external arrays.'
                 )
+            if not value.ptr.is_external_var() and value.ptr.snode() is None:
+                if not value.ptr.is_primal():
+                    raise RuntimeError(
+                        f"Gradient {value.ptr.get_expr_name()} has not been placed, check whether `needs_grad=True`"
+                    )
+                else:
+                    raise RuntimeError(
+                        f"{value.ptr.get_expr_name()} has not been placed.")
             field_dim = int(value.ptr.get_attribute("dim"))
         else:
             # When reading bit structure we only support the 0-D case for now.
@@ -462,6 +470,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
         # adjoint
         x_grad = Expr(_ti_core.make_id_expr(""))
         x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
+        x_grad.ptr.set_name(name + ".grad")
         x_grad.ptr.set_is_primal(False)
         x.set_grad(x_grad)
 
@@ -508,7 +517,13 @@ def ti_print(*vars, sep=' ', end='\n'):
             if hasattr(var, '__ti_repr__'):
                 res = var.__ti_repr__()
             elif isinstance(var, (list, tuple)):
-                res = list_ti_repr(var)
+                res = var
+                # If the first element is '__ti_format__', this list is the result of ti_format.
+                if len(var) > 0 and isinstance(
+                        var[0], str) and var[0] == '__ti_format__':
+                    res = var[1:]
+                else:
+                    res = list_ti_repr(var)
             else:
                 yield var
                 continue
@@ -541,6 +556,35 @@ def ti_print(*vars, sep=' ', end='\n'):
     entries = fused_string(entries)
     contentries = [entry2content(entry) for entry in entries]
     _ti_core.create_print(contentries)
+
+
+@taichi_scope
+def ti_format(*args):
+    content = args[0]
+    mixed = args[1:]
+    new_mixed = []
+    args = []
+    for x in mixed:
+        if isinstance(x, ti.Expr):
+            new_mixed.append('{}')
+            args.append(x)
+        else:
+            new_mixed.append(x)
+
+    try:
+        content = content.format(*new_mixed)
+    except ValueError:
+        print('Number formatting is not supported with Taichi fields')
+        exit(1)
+    res = content.split('{}')
+    assert len(res) == len(
+        args
+    ) + 1, 'Number of args is different from number of positions provided in string'
+
+    for i in range(len(args)):
+        res.insert(i * 2 + 1, args[i])
+    res.insert(0, '__ti_format__')
+    return res
 
 
 @taichi_scope

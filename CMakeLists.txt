@@ -6,9 +6,9 @@ cmake_minimum_required(VERSION 3.12)
 
 project(taichi)
 
-SET(TI_VERSION_MAJOR 0)
-SET(TI_VERSION_MINOR 7)
-SET(TI_VERSION_PATCH 26)
+SET(TI_VERSION_MAJOR ${TI_VERSION_MAJOR})
+SET(TI_VERSION_MINOR ${TI_VERSION_MINOR})
+SET(TI_VERSION_PATCH ${TI_VERSION_PATCH})
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -80,7 +80,7 @@ if (TI_WITH_CUDA)
     set(CUDA_ARCH "cuda")
 endif()
 
-find_program(CLANG_EXECUTABLE NAMES clang-7 clang-8 clang-9 clang-10 clang)
+find_program(CLANG_EXECUTABLE NAMES clang clang-7 clang-8 clang-9 clang-10)
 if (NOT CLANG_EXECUTABLE)
     message(FATAL_ERROR "Cannot find any clang executable.")
 endif()

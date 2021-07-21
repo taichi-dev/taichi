@@ -1616,7 +1616,7 @@ struct printf_helper {
 };
 
 template <typename... Args>
-void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&...args) {
+void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args) {
 #if ARCH_cuda
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);

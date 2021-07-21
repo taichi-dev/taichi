@@ -50,8 +50,14 @@ void assert_failed_host(const char *msg) {
 
 void *taichi_allocate_aligned(Program *prog,
                               std::size_t size,
-                              std::size_t alignment) {
-  return prog->memory_pool->allocate(size, alignment);
+                              std::size_t alignment,
+                              const int snode_tree_id = -1) {
+  if (snode_tree_id == -1) {
+    return prog->memory_pool->allocate(size, alignment);
+  } else {
+    return prog->snode_tree_buffer_manager->allocate(size, alignment,
+                                                     snode_tree_id);
+  }
 }
 
 inline uint64 *allocate_result_buffer_default(Program *prog) {
@@ -135,6 +141,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   }
 
   memory_pool = std::make_unique<MemoryPool>(this);
+  snode_tree_buffer_manager = std::make_unique<SNodeTreeBufferManager>(this);
   TI_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
   total_compilation_time = 0;
   num_instances += 1;
@@ -507,6 +514,9 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
     cc_program->compile_layout(root);
 #endif
   }
+}
+void Program::destroy_snode_tree(const int snode_tree_id) {
+  snode_tree_buffer_manager->destroy(snode_tree_id);
 }
 
 void Program::check_runtime_error() {

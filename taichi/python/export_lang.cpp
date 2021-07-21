@@ -193,7 +193,9 @@ void export_lang(py::module &m) {
       .def_readwrite("quant_opt_store_fusion",
                      &CompileConfig::quant_opt_store_fusion)
       .def_readwrite("quant_opt_atomic_demotion",
-                     &CompileConfig::quant_opt_atomic_demotion);
+                     &CompileConfig::quant_opt_atomic_demotion)
+      .def_readwrite("memory_allocate_critical_size",
+                     &CompileConfig::memory_allocate_critical_size);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -859,6 +861,9 @@ void export_lang(py::module &m) {
         [](SNodeRegistry *registry, const SNode *root, Program *program) {
           program->add_snode_tree(registry->finalize(root));
         });
+  m.def("destroy_snode_tree", [](SNode *root, Program *program) {
+    program->destroy_snode_tree(root->get_snode_tree_id());
+  });
 }
 
 TI_NAMESPACE_END

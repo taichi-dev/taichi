@@ -20,10 +20,10 @@ void AotModuleBuilderImpl::metalgen(const stdfs::path &dir,
                                     const std::string &filename,
                                     const CompiledKernelData &k) const {
   const stdfs::path mtl_path =
-        dir / fmt::format("{}_{}.metal", filename, k.kernel_name);
-    std::ofstream fs{mtl_path.string()};
-    fs << k.source_code;
-    fs.close();
+      dir / fmt::format("{}_{}.metal", filename, k.kernel_name);
+  std::ofstream fs{mtl_path.string()};
+  fs << k.source_code;
+  fs.close();
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,

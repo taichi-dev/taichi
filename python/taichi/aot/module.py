@@ -25,7 +25,8 @@ class KernelTemplate:
             if isinstance(anno, kernel_arguments.template):
                 (k, v) = template_args[anno_index]
                 key_p += k
-                if isinstance(v, int) or isinstance(v, float) or isinstance(v, bool):
+                if isinstance(v, int) or isinstance(v, float) or isinstance(
+                        v, bool):
                     key_p += '=' + str(v) + '/'
                 for ky, val in self._aot_module._fields.items():
                     if (val is v):

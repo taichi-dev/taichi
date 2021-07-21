@@ -37,7 +37,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   PrintStringTable strtab_;
   TaichiAotData ti_aot_data_;
   void metalgen(const stdfs::path &dir,
-                const std::string &filename, 
+                const std::string &filename,
                 const CompiledKernelData &k) const;
 };
 

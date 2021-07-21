@@ -155,10 +155,24 @@ struct GLProgram {
 // https://blog.csdn.net/ylbs110/article/details/52074826
 // https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
 // This is Shader Storage Buffer, we use it to share data between CPU & GPU
-struct GLBuffer {
+class GLBuffer {
+ private:
   GLuint id;
   GLenum type;
   size_t size;
+
+ public:
+  GLuint gl_get_id() const {
+    return id;
+  }
+
+  GLuint gl_get_type() const {
+    return type;
+  }
+
+  size_t get_size() const {
+    return size;
+  }
 
   GLBuffer(size_t size,
            void *initial_data = nullptr,
@@ -184,11 +198,11 @@ struct GLBuffer {
   }
 
   void bind_to_index(GLuint location) {
-    bind_to_index(location, /* offset */ 0, size);
+    bind_to_index(location, /*offset=*/0, size);
   }
 
   void *map(GLenum access) {
-    return map_region(/* offset */ 0, size, access);
+    return map_region(/*offset=*/0, size, access);
   }
 
   void *map_region(size_t offset, size_t size, GLenum access) {
@@ -223,7 +237,7 @@ struct GLBuffer {
   }
 
   void read_back(void *buffer) {
-    read_back(buffer, /* offset */ 0, size);
+    read_back(buffer, /*offset=*/0, size);
   }
 
   void upload(void *buffer, size_t offset, size_t size) {
@@ -232,7 +246,7 @@ struct GLBuffer {
   }
 
   void upload(void *buffer) {
-    upload(buffer, /* offset */ 0, size);
+    upload(buffer, /*offset=*/0, size);
   }
 };
 
@@ -258,8 +272,8 @@ struct GLBufferAllocator {
   std::list<std::unique_ptr<GLBuffer>> buffers_storage_;
 
   std::unordered_multimap<BufferKey, GLBuffer *, BufferKey::Hash>
-      buffers_mapping;
-  std::unordered_multimap<BufferKey, GLBuffer *, BufferKey::Hash> free_mapping;
+      buffers_mapping_;
+  std::unordered_multimap<BufferKey, GLBuffer *, BufferKey::Hash> free_mapping_;
 
  public:
   GLBufferAllocator() {
@@ -267,7 +281,7 @@ struct GLBufferAllocator {
 
   void new_frame() {
     size_t free_resident_size = 0;
-    for (auto pair : free_mapping) {
+    for (auto pair : free_mapping_) {
       free_resident_size += pair.first.size;
 
       if (free_resident_size > kMaxFreeResidentSize) {
@@ -280,12 +294,12 @@ struct GLBufferAllocator {
 
         {
           auto buffer_iter =
-              std::find_if(buffers_mapping.begin(), buffers_mapping.end(),
+              std::find_if(buffers_mapping_.begin(), buffers_mapping_.end(),
                            [buf](const auto &mo) { return mo.second == buf; });
-          buffers_mapping.erase(buffer_iter);
+          buffers_mapping_.erase(buffer_iter);
         }
 
-        free_mapping.erase(pair.first);
+        free_mapping_.erase(pair.first);
       }
     }
   }
@@ -296,26 +310,26 @@ struct GLBufferAllocator {
                          GLbitfield access = GL_MAP_READ_BIT |
                                              GL_MAP_WRITE_BIT) {
     GLBuffer *buffer;
-    auto buffer_iter = free_mapping.find(BufferKey{access, size});
-    if (buffer_iter == free_mapping.end()) {
+    auto buffer_iter = free_mapping_.find(BufferKey{access, size});
+    if (buffer_iter == free_mapping_.end()) {
       // This buffer does not exist / can not be reused
       buffers_storage_.push_back(
           std::make_unique<GLBuffer>(size, base, type, access));
       buffer = buffers_storage_.back().get();
-      buffers_mapping.insert(std::pair(BufferKey{access, size}, buffer));
+      buffers_mapping_.insert(std::pair(BufferKey{access, size}, buffer));
 
       // TI_INFO("New buffer {}, {}", size, (void *)buffer);
     } else {
       // Reuse
       buffer = buffer_iter->second;
-      free_mapping.erase(buffer_iter);
+      free_mapping_.erase(buffer_iter);
 
       if (base) {
         memcpy(buffer->map(GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT),
                base, size);
         buffer->unmap();
       } else {
-        glInvalidateBufferData(buffer->id);
+        glInvalidateBufferData(buffer->gl_get_id());
       }
 
       // TI_INFO("Reuse buffer {}, {}", size, (void *)buffer);
@@ -326,11 +340,11 @@ struct GLBufferAllocator {
 
   void dealloc_buffer(GLBuffer *buf) {
     auto buffer_iter =
-        std::find_if(buffers_mapping.begin(), buffers_mapping.end(),
+        std::find_if(buffers_mapping_.begin(), buffers_mapping_.end(),
                      [buf](const auto &mo) { return mo.second == buf; });
-    if (buffer_iter != buffers_mapping.end()) {
+    if (buffer_iter != buffers_mapping_.end()) {
       // Insert back to free list
-      free_mapping.insert(std::pair(buffer_iter->first, buf));
+      free_mapping_.insert(std::pair(buffer_iter->first, buf));
 
       // TI_INFO("Dealloc {}", (void *)buf);
     }
@@ -614,7 +628,8 @@ struct CompiledProgram::Impl {
 
       void *baseptr = nullptr;
       if (access & GL_MAP_WRITE_BIT) {
-        extr_buf->map(GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+        baseptr =
+            extr_buf->map(GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
       }
 
       size_t accum_size = 0;
@@ -625,7 +640,6 @@ struct CompiledProgram::Impl {
         if ((ext_arr_access.at(i) & irpass::ExternalPtrAccess::READ) !=
             irpass::ExternalPtrAccess::NONE) {
           std::memcpy((char *)baseptr + accum_size, ptr, size);
-          ctx.args[i] = accum_size;
         }
         accum_size += size;
       }

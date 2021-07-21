@@ -679,9 +679,11 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
-  m.def("subscript_with_offset", [](const Expr &var, const ExprGroup &indices, int cols, bool is_AOS) {
-    return Expr::make<GlobalTensorElementExpression>(var, indices, cols, is_AOS);
-  });
+  m.def("subscript_with_offset",
+        [](const Expr &var, const ExprGroup &indices, int cols, bool is_AOS) {
+          return Expr::make<GlobalTensorElementExpression>(var, indices, cols,
+                                                           is_AOS);
+        });
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
     return Expr::make<GlobalPtrExpression>(snode, indices.loaded());

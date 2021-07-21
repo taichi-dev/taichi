@@ -312,9 +312,7 @@ class GlobalTensorElementStmt : public Stmt {
   bool is_bit_vectorized;  // TODO: remove this field
 
   GlobalTensorElementStmt(Stmt *origin, Stmt *offset)
-      : origin(origin),
-        offset(offset),
-        is_bit_vectorized(is_bit_vectorized) {
+      : origin(origin), offset(offset), is_bit_vectorized(is_bit_vectorized) {
     element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
     TI_STMT_REG_FIELDS;
   }

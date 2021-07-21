@@ -1379,11 +1379,14 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GlobalTensorElementStmt *stmt) {
-  auto origin_address = builder->CreatePtrToInt(llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
-  auto offset_address = builder->CreateSExt(llvm_val[stmt->offset], llvm::Type::getInt64Ty(*llvm_context));
+  auto origin_address = builder->CreatePtrToInt(
+      llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
+  auto offset_address = builder->CreateSExt(
+      llvm_val[stmt->offset], llvm::Type::getInt64Ty(*llvm_context));
   auto target_address = builder->CreateAdd(origin_address, offset_address);
   auto dt = stmt->ret_type.ptr_removed();
-  llvm_val[stmt] = builder->CreateIntToPtr(target_address, llvm::PointerType::get(tlctx->get_data_type(dt), 0));
+  llvm_val[stmt] = builder->CreateIntToPtr(
+      target_address, llvm::PointerType::get(tlctx->get_data_type(dt), 0));
 }
 
 void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {

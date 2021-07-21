@@ -437,7 +437,10 @@ class GlobalTensorElementExpression : public Expression {
   int cols;
   bool is_AOS;
 
-  GlobalTensorElementExpression(const Expr &var, const ExprGroup &indices, int cols, bool is_AOS)
+  GlobalTensorElementExpression(const Expr &var,
+                                const ExprGroup &indices,
+                                int cols,
+                                bool is_AOS)
       : var(var), indices(indices), cols(cols), is_AOS(is_AOS) {
   }
 

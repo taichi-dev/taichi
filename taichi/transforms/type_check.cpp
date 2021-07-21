@@ -160,7 +160,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(GlobalTensorElementStmt *stmt) override {
     // TODO: do actual type_check
-      stmt->ret_type.set_is_pointer(true);
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(GlobalStoreStmt *stmt) override {

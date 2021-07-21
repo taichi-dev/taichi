@@ -220,45 +220,54 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
 }
 
 void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
-    TI_ASSERT(var.is<GlobalPtrExpression>())
-    var->flatten(ctx);
-    Stmt *var_stmt = ctx->back_stmt();
-    SNode *snode = var.cast<GlobalPtrExpression>()->var.cast<GlobalVariableExpression>()->snode;
-    // Compute exact offset
-    // Type A[i, j][x, y]
-    //              ^^^^
-    TI_ASSERT(1 <= indices.size() && indices.size() <= 2)
-    if (indices.size() == 1) {
-      indices[0]->flatten(ctx);
-    } else {
-      indices[0]->flatten(ctx);
-      Stmt* i_stmt = ctx->back_stmt();
-      Stmt* cols_stmt = ctx->push_back(Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(cols)));
-      Stmt* i_mul_cols_stmt = ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, i_stmt, cols_stmt));
-      indices[1]->flatten(ctx);
-      Stmt* j_stmt = ctx->back_stmt();
-      ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::add, i_mul_cols_stmt, j_stmt));
-    }
-    // Type A[i, j][x, y]
-    //             ^    ^
-    if (!is_AOS) {
-      TI_ASSERT(snode->is_path_all_dense)
-      int size = 1;
-      for (int index = 0; index < taichi_max_num_indices; ++index)
-        size <<= snode->get_num_bits(index);
-      Stmt* offset_stmt = ctx->back_stmt();
-      Stmt* field_size_stmt = ctx->push_back(Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(size)));
-      ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, field_size_stmt));
-    }
-    // Type A[i, j][x, y]
-    // ^^^^
-    Stmt* offset_stmt = ctx->back_stmt();
-    Stmt* dt_size_stmt = ctx->push_back(Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(data_type_size(snode->dt))));
-    ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
+  TI_ASSERT(var.is<GlobalPtrExpression>())
+  var->flatten(ctx);
+  Stmt *var_stmt = ctx->back_stmt();
+  SNode *snode = var.cast<GlobalPtrExpression>()
+                     ->var.cast<GlobalVariableExpression>()
+                     ->snode;
+  // Compute exact offset
+  // Type A[i, j][x, y]
+  //              ^^^^
+  TI_ASSERT(1 <= indices.size() && indices.size() <= 2)
+  if (indices.size() == 1) {
+    indices[0]->flatten(ctx);
+  } else {
+    indices[0]->flatten(ctx);
+    Stmt *i_stmt = ctx->back_stmt();
+    Stmt *cols_stmt = ctx->push_back(
+        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(cols)));
+    Stmt *i_mul_cols_stmt = ctx->push_back(
+        Stmt::make<BinaryOpStmt>(BinaryOpType::mul, i_stmt, cols_stmt));
+    indices[1]->flatten(ctx);
+    Stmt *j_stmt = ctx->back_stmt();
+    ctx->push_back(
+        Stmt::make<BinaryOpStmt>(BinaryOpType::add, i_mul_cols_stmt, j_stmt));
+  }
+  // Type A[i, j][x, y]
+  //             ^    ^
+  if (!is_AOS) {
+    TI_ASSERT(snode->is_path_all_dense)
+    int size = 1;
+    for (int index = 0; index < taichi_max_num_indices; ++index)
+      size <<= snode->get_num_bits(index);
+    Stmt *offset_stmt = ctx->back_stmt();
+    Stmt *field_size_stmt = ctx->push_back(
+        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(size)));
+    ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
+                                            field_size_stmt));
+  }
+  // Type A[i, j][x, y]
+  // ^^^^
+  Stmt *offset_stmt = ctx->back_stmt();
+  Stmt *dt_size_stmt = ctx->push_back(Stmt::make<ConstStmt>(
+      LaneAttribute<TypedConstant>(data_type_size(snode->dt))));
+  ctx->push_back(
+      Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
 
-    ctx->push_back(std::make_unique<GlobalTensorElementStmt>(
-        var_stmt, ctx->back_stmt()));
-    stmt = ctx->back_stmt();
+  ctx->push_back(
+      std::make_unique<GlobalTensorElementStmt>(var_stmt, ctx->back_stmt()));
+  stmt = ctx->back_stmt();
 }
 
 void RangeAssumptionExpression::flatten(FlattenContext *ctx) {

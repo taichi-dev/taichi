@@ -236,7 +236,7 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
     indices[0]->flatten(ctx);
     Stmt *i_stmt = ctx->back_stmt();
     Stmt *cols_stmt = ctx->push_back(
-        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(cols)));
+        Stmt::make<ConstStmt>(TypedConstant(cols)));
     Stmt *i_mul_cols_stmt = ctx->push_back(
         Stmt::make<BinaryOpStmt>(BinaryOpType::mul, i_stmt, cols_stmt));
     indices[1]->flatten(ctx);
@@ -253,7 +253,7 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
       size <<= snode->get_num_bits(index);
     Stmt *offset_stmt = ctx->back_stmt();
     Stmt *field_size_stmt = ctx->push_back(
-        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(size)));
+        Stmt::make<ConstStmt>(TypedConstant(size)));
     ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
                                             field_size_stmt));
   }
@@ -261,7 +261,7 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
   // ^^^^
   Stmt *offset_stmt = ctx->back_stmt();
   Stmt *dt_size_stmt = ctx->push_back(Stmt::make<ConstStmt>(
-      LaneAttribute<TypedConstant>(data_type_size(snode->dt))));
+      TypedConstant(data_type_size(snode->dt))));
   ctx->push_back(
       Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
 

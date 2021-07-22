@@ -8,6 +8,19 @@ class KernelTemplate:
         self._kernel_fn = kernel_fn
         self._aot_module = aot_module
 
+    @staticmethod
+    def keygen(v, key_p, fields):
+        if isinstance(v, (int, float, bool)):
+            key_p += '=' + str(v) + '/'
+            return key_p
+        for ky, val in fields:
+            if (val is v):
+                key_p += '=' + ky + '/'
+                return key_p
+        raise RuntimeError('Arg type must be of type int/float/boolean' +
+                          'or taichi field. Type ' + str(type(v)) +
+                          ' is not supported')
+            
     def instantiate(self, **kwargs):
         name = self._kernel_fn.__name__
         kernel = self._kernel_fn._primal
@@ -25,12 +38,8 @@ class KernelTemplate:
             if isinstance(anno, kernel_arguments.template):
                 (k, v) = template_args[anno_index]
                 key_p += k
-                if isinstance(v, int) or isinstance(v, float) or isinstance(
-                        v, bool):
-                    key_p += '=' + str(v) + '/'
-                for ky, val in self._aot_module._fields.items():
-                    if (val is v):
-                        key_p += '=' + ky + '/'
+                key_p = self.keygen(v, key_p, 
+                                    self._aot_module._fields.items())
                 injected_args.append(v)
                 anno_index += 1
             else:
@@ -95,7 +104,6 @@ class Module:
         column_num = 1
         row_num = 1
         if isinstance(field, matrix.Matrix):
-            assert isinstance(field, matrix.Matrix)
             is_scalar = False
             row_num = field.m
             column_num = field.n

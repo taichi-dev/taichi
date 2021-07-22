@@ -18,9 +18,9 @@ class KernelTemplate:
                 key_p += '=' + ky + '/'
                 return key_p
         raise RuntimeError('Arg type must be of type int/float/boolean' +
-                          'or taichi field. Type ' + str(type(v)) +
-                          ' is not supported')
-            
+                           'or taichi field. Type ' + str(type(v)) +
+                           ' is not supported')
+
     def instantiate(self, **kwargs):
         name = self._kernel_fn.__name__
         kernel = self._kernel_fn._primal
@@ -38,8 +38,7 @@ class KernelTemplate:
             if isinstance(anno, kernel_arguments.template):
                 (k, v) = template_args[anno_index]
                 key_p += k
-                key_p = self.keygen(v, key_p, 
-                                    self._aot_module._fields.items())
+                key_p = self.keygen(v, key_p, self._aot_module._fields.items())
                 injected_args.append(v)
                 anno_index += 1
             else:

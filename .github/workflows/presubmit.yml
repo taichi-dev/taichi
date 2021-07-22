@@ -58,7 +58,7 @@ jobs:
 
       - name: Download Pre-Built LLVM 10.0.0
         run: |
-          /opt/hostedtoolcache/
+          ls /opt/hostedtoolcache/
           echo $CI_PLATFORM
           python misc/ci_download.py
           mkdir taichi-llvm

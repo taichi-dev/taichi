@@ -562,26 +562,6 @@ VkCommandBuffer record_copy_buffer_command(
   CopyBufferCommandBuilder cb{device};
   cb.copy(src_buffer, dst_buffer, size, direction);
   return cb.build();
-  // VkCommandBuffer command{VK_NULL_HANDLE};
-  // VkCommandBufferAllocateInfo alloc_info{};
-  // alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  // alloc_info.commandPool = device->command_pool();
-  // alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  // alloc_info.commandBufferCount = 1;
-  // BAIL_ON_VK_BAD_RESULT(
-  //     vkAllocateCommandBuffers(device->device(), &alloc_info, &command),
-  //     "failed to allocate copy command buffer");
-
-  // VkCommandBufferBeginInfo begin_info{};
-  // begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  // begin_info.flags = 0;
-  // begin_info.pInheritanceInfo = nullptr;
-  // BAIL_ON_VK_BAD_RESULT(vkBeginCommandBuffer(command, &begin_info),
-  //                       "failed to begin recording copy command buffer");
-
-  // BAIL_ON_VK_BAD_RESULT(vkEndCommandBuffer(command),
-  //                       "failed to record copy command buffer");
-  // return command;
 }
 
 VulkanStream::VulkanStream(const VulkanDevice *device) : device_(device) {

@@ -171,8 +171,7 @@ def test_matrix_non_constant_index():
             for j, k in ti.ndrange(2, 2):
                 m[i][j, k] = 12
 
-    with pytest.raises(ti.TaichiSyntaxError):
-        func()
+    func()
 
 
 @ti.test(arch=ti.cpu)

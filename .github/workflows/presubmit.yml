@@ -58,9 +58,8 @@ jobs:
 
       - name: Download Pre-Built LLVM 10.0.0
         run: |
-          ls /opt/hostedtoolcache/
           echo $CI_PLATFORM
-          python misc/ci_download.py
+          python3 misc/ci_download.py
           mkdir taichi-llvm
           cd taichi-llvm
           unzip ../taichi-llvm.zip
@@ -72,7 +71,7 @@ jobs:
           TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
-          python misc/ci_setup.py ci
+          python3 misc/ci_setup.py ci
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
 

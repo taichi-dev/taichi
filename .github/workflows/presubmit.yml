@@ -58,12 +58,13 @@ jobs:
 
       - name: Download Pre-Built LLVM 10.0.0
         run: |
+          echo $CI_PLATFORM
           python misc/ci_download.py
           mkdir taichi-llvm
           cd taichi-llvm
           unzip ../taichi-llvm.zip
         env:
-          CI_PLATFORM: linux-ubuntu-20.04
+          CI_PLATFORM: ubuntu-20.04
 
       - name: Build
         run: |

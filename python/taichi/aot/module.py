@@ -97,7 +97,7 @@ class Module:
           m.add_field(b)
 
           # Must add in sequence
-      """
+        """
         is_scalar = True
         self._fields[name] = field
         column_num = 1

@@ -49,17 +49,12 @@ jobs:
     # This job will be required to pass before merging to master branch.
     name: Required Build and Test (CPU)
     needs: check_code_format
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            python: 3.6
-    runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, cuda, aws]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python }}
+          python-version: 3.6
 
       - name: Download Pre-Built LLVM 10.0.0
         run: |

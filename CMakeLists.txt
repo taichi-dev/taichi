@@ -94,8 +94,8 @@ endif()
 foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
   add_custom_target(
       "generate_llvm_runtime_${arch}"
-      COMMAND ${CLANG_EXECUTABLE} -S runtime.cpp -o runtime.ll -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
-      COMMAND ${LLVM_AS_EXECUTABLE} runtime.ll -o "runtime_${arch}.bc"
+      COMMAND ${CLANG_EXECUTABLE} -S runtime.cpp -o "runtime_${arch}.ll" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
+      COMMAND ${LLVM_AS_EXECUTABLE} "runtime_${arch}.ll" -o "runtime_${arch}.bc"
       WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm"
   )
   add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${arch}")

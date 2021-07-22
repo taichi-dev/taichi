@@ -2,6 +2,7 @@ pipeline {
     agent any
     environment {
         PYPI_PWD = credentials("${PYPI_PWD}")
+        COMMIT_SHA = "${COMMIT_SHA}"
         PATH = "/opt/taichi-llvm-10.0.0/bin:/usr/local/cuda/bin/:$PATH"
         CC = "clang-10"
         CXX = "clang++-10"
@@ -87,6 +88,6 @@ void build_taichi() {
     git 'https://github.com/taichi-dev/taichi.git'
     sh label: '', script: '''
     cd ci
-    docker build . --build-arg UBUNTU=${UBUNTU} --build-arg PYTHON=${PYTHON} --build-arg TEST_OPTION="${TEST_OPTION}" --build-arg PYPI_PWD=${PYPI_PWD}
+    docker build . --build-arg UBUNTU=${UBUNTU} --build-arg PYTHON=${PYTHON} --build-arg TEST_OPTION="${TEST_OPTION}" --build-arg PYPI_PWD=${PYPI_PWD} --build-arg COMMIT_SHA=${COMMIT_SHA}
     '''
 }

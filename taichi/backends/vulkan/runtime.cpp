@@ -26,7 +26,6 @@ namespace taichi {
 namespace lang {
 namespace vulkan {
 
-#define TI_WITH_VULKAN
 #ifdef TI_WITH_VULKAN
 
 namespace {
@@ -339,11 +338,7 @@ class VkRuntime ::Impl {
       return;
     }
 
-    TI_AUTO_PROF;
-    StopWatch sw;
     stream_->synchronize();
-    TI_DEBUG("running {} kernels took {} us", num_pending_kernels_,
-             sw.GetMicros());
     num_pending_kernels_ = 0;
   }
 

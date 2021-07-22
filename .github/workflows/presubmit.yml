@@ -63,7 +63,7 @@ jobs:
           cd taichi-llvm
           unzip ../taichi-llvm.zip
         env:
-          CI_PLATFORM: ${{ matrix.os }}
+          CI_PLATFORM: linux-ubuntu-20.04
 
       - name: Build
         run: |

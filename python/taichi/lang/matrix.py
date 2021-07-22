@@ -232,8 +232,7 @@ class Matrix(TaichiOperations):
     def __call__(self, *args, **kwargs):
         _taichi_skip_traceback = 1
         assert kwargs == {}
-        # TODO: AOS hard-coded here
-        return ti.subscript_with_offset(self.entries[0], args, self.m, True)
+        return self.entries[self.linearize_entry_id(*args)]
 
     def get_field_members(self):
         return self.entries
@@ -269,7 +268,10 @@ class Matrix(TaichiOperations):
             assert len(indices) in [1, 2]
             i = indices[0]
             j = 0 if len(indices) == 1 else indices[1]
-            return self(i, j)
+            if is_taichi_class(self.entries[0]):
+                return ti.subscript_with_offset(self.entries[0], (i, j), self.m, True)
+            else:
+                return self(i, j)
 
     @property
     def x(self):

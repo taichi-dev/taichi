@@ -119,13 +119,10 @@ inline void Deactivate(SNode *snode, const ExprGroup &expr_group) {
 }
 
 inline Expr Append(SNode *snode, const ExprGroup &axes, const Expr &val) {
-  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::append, axes,
-                                       val);
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::append, axes, val);
 }
 
-inline Expr Append(const Expr &expr,
-                   const ExprGroup &axes,
-                   const Expr &val) {
+inline Expr Append(const Expr &expr, const ExprGroup &axes, const Expr &val) {
   return Append(expr.snode(), axes, val);
 }
 

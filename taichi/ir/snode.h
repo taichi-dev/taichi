@@ -159,8 +159,7 @@ class SNode {
                      SNodeType type);
 
   // SNodes maintains how flattened index bits are taken from indices
-  SNode &dense(const std::vector<Axis> &axes,
-               const std::vector<int> &sizes) {
+  SNode &dense(const std::vector<Axis> &axes, const std::vector<int> &sizes) {
     return create_node(axes, sizes, SNodeType::dense);
   }
 
@@ -172,8 +171,7 @@ class SNode {
     return SNode::dense(std::vector<Axis>{axis}, size);
   }
 
-  SNode &pointer(const std::vector<Axis> &axes,
-                 const std::vector<int> &sizes) {
+  SNode &pointer(const std::vector<Axis> &axes, const std::vector<int> &sizes) {
     return create_node(axes, sizes, SNodeType::pointer);
   }
 
@@ -198,8 +196,7 @@ class SNode {
     return SNode::bitmasked(std::vector<Axis>{axis}, size);
   }
 
-  SNode &hash(const std::vector<Axis> &axes,
-              const std::vector<int> &sizes) {
+  SNode &hash(const std::vector<Axis> &axes, const std::vector<int> &sizes) {
     return create_node(axes, sizes, SNodeType::hash);
   }
 

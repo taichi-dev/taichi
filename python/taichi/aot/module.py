@@ -59,7 +59,6 @@ class Module:
     Python environment.
 
     Example:
-
       Usage::
 
         m = ti.aot.Module(ti.metal)
@@ -87,7 +86,6 @@ class Module:
           field: taichi field
 
         Example:
-
           Usage::
 
           a = ti.field(ti.f32, shape=(4,4))
@@ -147,7 +145,6 @@ class Module:
           kernel_fn (Function): the function decorated by taichi `kernel`.
 
         Example:
-
           Usage::
 
             @ti.kernel

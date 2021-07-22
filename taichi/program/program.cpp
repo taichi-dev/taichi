@@ -434,13 +434,14 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 }
 
-int Program::add_snode_tree(std::unique_ptr<SNode> root) {
+SNodeTree * Program::add_snode_tree(
+    std::unique_ptr<SNode> root) {
   const int id = snode_trees_.size();
-  auto tree = std::make_unique<SNodeTree>(id, std::move(root));
+  auto tree = std::make_unique<SNodeTree>(id, std::move(root), this);
   tree->root()->set_snode_tree_id(id);
   materialize_snode_tree(tree.get());
   snode_trees_.push_back(std::move(tree));
-  return id;
+  return snode_trees_[id].get();
 }
 
 SNode *Program::get_snode_root(int tree_id) {
@@ -514,9 +515,6 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
     cc_program->compile_layout(root);
 #endif
   }
-}
-void Program::destroy_snode_tree(const int snode_tree_id) {
-  snode_tree_buffer_manager->destroy(snode_tree_id);
 }
 
 void Program::check_runtime_error() {

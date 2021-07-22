@@ -4,6 +4,7 @@
 TLANG_NAMESPACE_BEGIN
 
 SNodeTreeBufferManager::SNodeTreeBufferManager(Program *prog) : prog(prog) {
+  TI_TRACE("SNode tree buffer manager created.");
 }
 
 void *SNodeTreeBufferManager::allocate(std::size_t size,

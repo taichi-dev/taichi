@@ -268,7 +268,7 @@ class Matrix(TaichiOperations):
             assert len(indices) in [1, 2]
             i = indices[0]
             j = 0 if len(indices) == 1 else indices[1]
-            if is_taichi_class(self.entries[0]):
+            if is_taichi_class(self):
                 return ti.subscript_with_offset(self.entries[0], (i, j), self.m, True)
             else:
                 return self(i, j)

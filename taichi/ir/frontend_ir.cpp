@@ -231,14 +231,17 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
   //              ^^^^
   TI_ASSERT(1 <= indices.size() && indices.size() <= 2)
   if (indices.size() == 1) {
+    indices[0].set(load_if_ptr(indices[0]));
     indices[0]->flatten(ctx);
   } else {
+    indices[0].set(load_if_ptr(indices[0]));
     indices[0]->flatten(ctx);
     Stmt *i_stmt = ctx->back_stmt();
     Stmt *cols_stmt = ctx->push_back(
         Stmt::make<ConstStmt>(TypedConstant(cols)));
     Stmt *i_mul_cols_stmt = ctx->push_back(
         Stmt::make<BinaryOpStmt>(BinaryOpType::mul, i_stmt, cols_stmt));
+    indices[1].set(load_if_ptr(indices[1]));
     indices[1]->flatten(ctx);
     Stmt *j_stmt = ctx->back_stmt();
     ctx->push_back(

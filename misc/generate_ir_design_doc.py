@@ -1,7 +1,6 @@
 import os
 
 import yaml
-
 from taichi.core import settings
 
 

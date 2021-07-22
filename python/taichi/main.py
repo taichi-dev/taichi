@@ -11,8 +11,8 @@ from functools import wraps
 from pathlib import Path
 
 from colorama import Back, Fore, Style
-from taichi.core import ti_core as _ti_core
 from taichi.core import settings
+from taichi.core import ti_core as _ti_core
 from taichi.tools import video
 
 import taichi as ti
@@ -392,8 +392,8 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        video.crop_video(args.input_file, args.output_file, args.x_begin, args.x_end,
-                   args.y_begin, args.y_end)
+        video.crop_video(args.input_file, args.output_file, args.x_begin,
+                         args.x_end, args.y_begin, args.y_end)
 
     @register
     def video_scale(self, arguments: list = sys.argv[2:]):
@@ -434,7 +434,7 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
         video.scale_video(args.input_file, args.output_file, args.ratio_width,
-                    args.ratio_height)
+                          args.ratio_height)
 
     @register
     def video(self, arguments: list = sys.argv[2:]):
@@ -478,9 +478,9 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
         video.make_video(args.inputs,
-                   output_path=str(args.output_file),
-                   crf=args.crf,
-                   frame_rate=args.framerate)
+                         output_path=str(args.output_file),
+                         crf=args.crf,
+                         frame_rate=args.framerate)
         ti.info(f'Done! Output video file = {args.output_file}')
 
     @register

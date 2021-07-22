@@ -178,7 +178,8 @@ else:
     print("[Taichi] mode=development")
     if settings.get_os_name() == 'osx':
         bin_dir = settings.get_bin_directory()
-        os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = settings.get_runtime_directory()
+        os.environ[
+            'DYLD_FALLBACK_LIBRARY_PATH'] = settings.get_runtime_directory()
         lib_path = os.path.join(bin_dir, 'libtaichi_core.dylib')
         tmp_cwd = os.getcwd()
         tmp_dir = prepare_sandbox()
@@ -249,7 +250,8 @@ else:
             folder = os.path.join(settings.get_output_directory(), 'tmp',
                                   get_unique_task_id())
 
-            lib_dir = os.path.join(settings.get_repo_directory(), 'external', 'lib')
+            lib_dir = os.path.join(settings.get_repo_directory(), 'external',
+                                   'lib')
             os.environ['PATH'] += ';' + lib_dir
 
             os.makedirs(folder)

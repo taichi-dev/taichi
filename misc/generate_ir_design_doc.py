@@ -1,12 +1,11 @@
 import os
 
 import yaml
-
-import taichi as ti
+from taichi.core import settings
 
 
 def extract_doc(doc_filename=None):
-    repo_dir = ti.get_repo_directory()
+    repo_dir = settings.get_repo_directory()
     statements_fn = os.path.join(repo_dir, 'taichi/ir/statements.h')
     with open(statements_fn, 'r') as f:
         statements = f.readlines()

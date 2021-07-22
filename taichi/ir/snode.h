@@ -114,7 +114,7 @@ class SNode {
   int depth{0};
 
   std::string name;
-  int64 n{1}; // Product of shape at all activated indices
+  int64 n{1};  // Product of shape at all activated indices
   int total_num_bits{0};
   int total_bit_start{0};
   int chunk_size{0};

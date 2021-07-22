@@ -12,6 +12,7 @@ from pathlib import Path
 
 from colorama import Back, Fore, Style
 from taichi.core import ti_core as _ti_core
+from taichi.core import settings
 from taichi.tools import video
 
 import taichi as ti
@@ -122,7 +123,7 @@ class TaichiMain:
         import taichi as ti
 
         root_dir = ti.package_root() if ti.is_release(
-        ) else ti.get_repo_directory()
+        ) else settings.get_repo_directory()
         examples_dir = Path(root_dir) / 'examples'
         return examples_dir
 
@@ -269,11 +270,11 @@ class TaichiMain:
         import zipfile
 
         from git import Git
-        g = Git(ti.get_repo_directory())
+        g = Git(settings.get_repo_directory())
         g.init()
         with zipfile.ZipFile('release.zip', 'w') as zip:
             files = g.ls_files().split('\n')
-            os.chdir(ti.get_repo_directory())
+            os.chdir(settings.get_repo_directory())
             for f in files:
                 if not os.path.isdir(f):
                     zip.write(f)
@@ -492,7 +493,7 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
         os.system(
-            f'cd {ti.get_repo_directory()}/docs && sphinx-build -b html . build'
+            f'cd {settings.get_repo_directory()}/docs && sphinx-build -b html . build'
         )
 
     @register
@@ -709,7 +710,7 @@ class TaichiMain:
             root_dir = ti.package_root()
             test_dir = os.path.join(root_dir, 'tests')
         else:
-            root_dir = ti.get_repo_directory()
+            root_dir = settings.get_repo_directory()
             test_dir = os.path.join(root_dir, 'tests', 'python')
         pytest_args = []
 

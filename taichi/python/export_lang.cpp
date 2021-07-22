@@ -335,6 +335,10 @@ void export_lang(py::module &m) {
       .def("begin_shared_exp_placement", &SNode::begin_shared_exp_placement)
       .def("end_shared_exp_placement", &SNode::end_shared_exp_placement);
 
+  py::class_<SNodeTree>(m, "SNodeTree")
+      .def("destroy", &SNodeTree::destroy)
+      .def("id", &SNodeTree::id);
+
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_float", &Kernel::get_ret_float)
@@ -868,13 +872,13 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def("create_root", &SNodeRegistry::create_root,
            py::return_value_policy::reference);
-  m.def("finalize_snode_tree",
-        [](SNodeRegistry *registry, const SNode *root, Program *program) {
-          program->add_snode_tree(registry->finalize(root));
-        });
-  m.def("destroy_snode_tree", [](SNode *root, Program *program) {
-    program->destroy_snode_tree(root->get_snode_tree_id());
-  });
+  m.def(
+      "finalize_snode_tree",
+      [](SNodeRegistry *registry, const SNode *root,
+         Program *program) -> SNodeTree * {
+        return program->add_snode_tree(registry->finalize(root));
+      },
+      py::return_value_policy::reference);
 }
 
 TI_NAMESPACE_END

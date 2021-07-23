@@ -185,6 +185,11 @@ class ExprBuilder(Builder):
         return node
 
     @staticmethod
+    def build_Starred(ctx, node):
+        node.value = build_expr(ctx, node.value)
+        return node
+
+    @staticmethod
     def build_Name(ctx, node):
         return node
 

@@ -631,6 +631,11 @@ if 1:
             "Keyword 'global' not supported in Taichi kernels")
 
     @staticmethod
+    def build_Raise(ctx, node):
+        node.exc = build_expr(ctx, node.exc)
+        return node
+
+    @staticmethod
     def build_Expr(ctx, node):
         if isinstance(node.value, ast.Call):
             # A function call.

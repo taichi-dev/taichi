@@ -88,4 +88,4 @@ class BuilderContext:
         if self.var_declared(loop_var):
             raise TaichiSyntaxError(
                 "Variable '{}' is already declared in the outer scope and cannot be used as loop variable"
-                    .format(loop_var))
+                .format(loop_var))

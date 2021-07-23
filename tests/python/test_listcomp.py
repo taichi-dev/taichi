@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def test_listcomp_multiple_ifs():
-    x = ti.field(ti.i32, shape=(4,))
+    x = ti.field(ti.i32, shape=(4, ))
 
     @ti.kernel
     def test() -> ti.i32:

@@ -13,6 +13,14 @@ import taichi as ti
 
 class StmtBuilder(Builder):
     @staticmethod
+    def set_subscript_index(node, value):
+        assert isinstance(node, ast.Subscript), type(node)
+        if isinstance(node.slice, ast.Index):
+            node.slice.value = value
+        else:
+            node.slice = value
+
+    @staticmethod
     def make_single_statement(stmts):
         template = 'if 1: pass'
         t = ast.parse(template).body[0]
@@ -133,8 +141,8 @@ class StmtBuilder(Builder):
 
             def tuple_indexed(i):
                 indexing = parse_stmt('__tmp_tuple[0]')
-                set_subscript_index(indexing.value,
-                                    parse_expr("{}".format(i)))
+                StmtBuilder.set_subscript_index(indexing.value,
+                                                parse_expr("{}".format(i)))
                 return indexing.value
 
             for i, target in enumerate(targets):

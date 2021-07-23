@@ -10,6 +10,14 @@ import taichi as ti
 class ExprBuilder(Builder):
     @staticmethod
     def build_Subscript(ctx, node):
+        def get_subscript_index(node):
+            assert isinstance(node, ast.Subscript), type(node)
+            # ast.Index has been deprecated in Python 3.9,
+            # use the index value directly instead :)
+            if isinstance(node.slice, ast.Index):
+                return build_expr(ctx, node.slice.value)
+            return node.slice
+
         value = build_expr(ctx, node.value)
         indices = get_subscript_index(node)
         if isinstance(indices, ast.Tuple):

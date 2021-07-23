@@ -1,8 +1,5 @@
 #include "taichi/backends/vulkan/runtime.h"
 
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
-
 #include <chrono>
 #include <array>
 #include <iostream>
@@ -18,6 +15,9 @@
 #include "taichi/backends/vulkan/vulkan_simple_memory_pool.h"
 
 #ifdef TI_WITH_VULKAN
+#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
+
 #include "taichi/backends/vulkan/vulkan_utils.h"
 #endif  // TI_WITH_VULKAN
 

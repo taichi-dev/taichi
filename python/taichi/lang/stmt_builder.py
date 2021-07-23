@@ -645,9 +645,10 @@ if 1:
             # note that we can only return an ast.Expr instead of an ast.Call.
             return node
         # A statement with a single expression.
-        result = parse_stmt('ti.core.insert_expr_stmt(expr)')
-        result.value.args[0] = build_expr(ctx, node.value)
-        return ast.copy_location(result, node)
+        return node
+        # result = parse_stmt('ti.core.insert_expr_stmt(expr)')
+        # result.value.args[0] = build_expr(ctx, node.value)
+        # return ast.copy_location(result, node)
 
     @staticmethod
     def build_Import(ctx, node):

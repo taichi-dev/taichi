@@ -162,8 +162,10 @@ class StmtBuilder(Builder):
                         keywords=[],
                     )
                     ctx.create_variable(var_name)
-                    stmts.append(ast.Assign(targets=[target], value=rhs,
-                                            type_comment=None))
+                    stmts.append(
+                        ast.Assign(targets=[target],
+                                   value=rhs,
+                                   type_comment=None))
                 else:
                     # Assign
                     target.ctx = ast.Load()
@@ -194,7 +196,8 @@ class StmtBuilder(Builder):
                 )
                 ctx.create_variable(var_name)
                 return ast.copy_location(
-                    ast.Assign(targets=node.targets, value=rhs,
+                    ast.Assign(targets=node.targets,
+                               value=rhs,
                                type_comment=None), node)
             else:
                 # Assign
@@ -469,8 +472,8 @@ if 1:
             if decorator == 'static':
                 if double_decorator == 'static':
                     raise TaichiSyntaxError("'ti.static' cannot be nested")
-                return StmtBuilder.build_static_for(ctx, node,
-                                                    double_decorator == 'grouped')
+                return StmtBuilder.build_static_for(
+                    ctx, node, double_decorator == 'grouped')
             elif decorator == 'ndrange':
                 if double_decorator != '':
                     raise TaichiSyntaxError(
@@ -485,7 +488,8 @@ if 1:
                 elif double_decorator == 'grouped':
                     raise TaichiSyntaxError("'ti.grouped' cannot be nested")
                 else:
-                    return StmtBuilder.build_struct_for(ctx, node,
+                    return StmtBuilder.build_struct_for(ctx,
+                                                        node,
                                                         is_grouped=True)
             elif isinstance(node.iter, ast.Call) and isinstance(
                     node.iter.func, ast.Name) and node.iter.func.id == 'range':
@@ -544,8 +548,7 @@ if 1:
                     dt_expr = 'ti.' + ti.core.data_type_name(array_dt)
                     dt = parse_expr(dt_expr)
                     arg_init.value.args[0] = dt
-                    arg_init.value.args[1] = parse_expr(
-                        "{}".format(array_dim))
+                    arg_init.value.args[1] = parse_expr("{}".format(array_dim))
                     arg_decls.append(arg_init)
                 else:
                     arg_init = parse_stmt(
@@ -611,8 +614,7 @@ if 1:
                 ret_expr = parse_expr('ti.cast(ti.Expr(0), 0)')
                 ret_expr.args[0].args[0] = node.value
                 ret_expr.args[1] = ctx.returns
-                ret_stmt = parse_stmt(
-                    'ti.core.create_kernel_return(ret.ptr)')
+                ret_stmt = parse_stmt('ti.core.create_kernel_return(ret.ptr)')
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value

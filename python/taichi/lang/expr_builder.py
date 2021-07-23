@@ -1,5 +1,6 @@
 import ast
 
+from taichi.lang import impl
 from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.ast_builder_utils import *
@@ -83,6 +84,11 @@ class ExprBuilder(Builder):
             return node
         node.func = build_expr(ctx, node.func)
         node.args = build_exprs(ctx, node.args)
+        if isinstance(node.func, ast.Attribute):
+            attr_name = node.func.attr
+            if attr_name == 'format':
+                node.args.insert(0, node.func.value)
+                node.func = parse_expr('ti.ti_format')
         if isinstance(node.func, ast.Name):
             func_name = node.func.id
             if func_name == 'print':
@@ -202,4 +208,8 @@ build_expr = ExprBuilder()
 
 
 def build_exprs(ctx, exprs):
-    return [build_expr(ctx, expr) for expr in list(exprs)]
+    result = []
+    with ctx.variable_scope(result):
+        for expr in list(exprs):
+            result.append(build_expr(ctx, expr))
+    return result

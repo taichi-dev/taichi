@@ -660,4 +660,8 @@ build_stmt = StmtBuilder()
 
 
 def build_stmts(ctx, stmts):
-    return [build_stmt(ctx, stmt) for stmt in list(stmts)]
+    result = []
+    with ctx.variable_scope(result):
+        for stmt in list(stmts):
+            result.append(build_stmt(ctx, stmt))
+    return result

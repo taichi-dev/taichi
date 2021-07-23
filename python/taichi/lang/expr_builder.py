@@ -163,6 +163,11 @@ class ExprBuilder(Builder):
         return node
 
     @staticmethod
+    def build_Attribute(ctx, node):
+        node.value = build_expr(ctx, node.value)
+        return node
+
+    @staticmethod
     def build_List(ctx, node):
         node.elts = build_exprs(ctx, node.elts)
         return node
@@ -173,13 +178,21 @@ class ExprBuilder(Builder):
         return node
 
     @staticmethod
-    def build_Attribute(ctx, node):
-        node.value = build_expr(ctx, node.value)
+    def build_Dict(ctx, node):
+        node.keys = build_exprs(ctx, node.keys)
+        node.values = build_exprs(ctx, node.values)
         return node
 
     @staticmethod
     def build_ListComp(ctx, node):
         node.elt = build_expr(ctx, node.elt)
+        node.generators = build_exprs(ctx, node.generators)
+        return node
+
+    @staticmethod
+    def build_DictComp(ctx, node):
+        node.key = build_expr(ctx, node.value)
+        node.value = build_expr(ctx, node.value)
         node.generators = build_exprs(ctx, node.generators)
         return node
 

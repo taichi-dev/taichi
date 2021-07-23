@@ -32,10 +32,15 @@ class ScopeGuard:
 # TODO: ASTTransformerBase -> ASTTransformer
 # TODO: ASTTransformer -> ASTTransformerTotal
 class ASTTransformer(object):
-    def __init__(self, func=None, *args, **kwargs):
-        self.pass_Preprocess = ASTTransformerPreprocess(func=func,
-                                                        *args,
-                                                        **kwargs)
+    def __init__(self, func=None,
+                 excluded_paremeters=(),
+                 is_kernel=True,
+                 is_classfunc=False,  # unused
+                 arg_features=None):
+        self.func = func
+        self.excluded_parameters = excluded_paremeters
+        self.is_kernel = is_kernel
+        self.arg_features = arg_features
         self.pass_Checks = ASTTransformerChecks(func=func)
         self.pass_transform_function_call = TransformFunctionCallAsStmt(
             func=func)
@@ -50,15 +55,14 @@ class ASTTransformer(object):
         print(astor.to_source(tree.body[0], indent_with='    '))
 
     def visit(self, tree):
-        from taichi.lang.stmt_builder import build_stmt
         from taichi.lang.ast_builder_utils import BuilderContext
+        from taichi.lang.stmt_builder import build_stmt
         self.print_ast(tree, 'Initial AST')
-        ctx = BuilderContext(func=self.pass_Preprocess.func,
-                             excluded_parameters=self.pass_Preprocess.excluded_parameters,
-                             is_kernel=self.pass_Preprocess.is_kernel,
-                             arg_features=self.pass_Preprocess.arg_features)
+        ctx = BuilderContext(func=self.func,
+                             excluded_parameters=self.excluded_parameters,
+                             is_kernel=self.is_kernel,
+                             arg_features=self.arg_features)
         tree = build_stmt(ctx, tree)
-        # self.pass_Preprocess.visit(tree)
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Preprocessed')
         self.pass_Checks.visit(tree)

@@ -622,7 +622,9 @@ if 1:
     @staticmethod
     def build_Module(ctx, node):
         with ctx.variable_scope():
-            node.body = build_stmts(ctx, node.body)
+            # Do NOT use |build_stmts| which inserts 'del' statements to the
+            # end and deletes parameters passed into the module
+            node.body = [build_stmt(ctx, stmt) for stmt in list(node.body)]
         return node
 
     @staticmethod

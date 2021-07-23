@@ -14,3 +14,4 @@ PER_ARCH(opengl)  // OpenGL Compute Shaders
 PER_ARCH(dx)      // Microsoft DirectX, N/A
 PER_ARCH(opencl)  // OpenCL, N/A
 PER_ARCH(amdgpu)  // AMD GPU, N/A
+PER_ARCH(vulkan)  // Vulkan

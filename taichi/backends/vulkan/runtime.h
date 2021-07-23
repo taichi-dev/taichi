@@ -49,6 +49,8 @@ class VkRuntime {
   std::unique_ptr<Impl> impl_;
 };
 
+bool is_vulkan_api_available();
+
 }  // namespace vulkan
 }  // namespace lang
 }  // namespace taichi

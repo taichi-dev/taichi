@@ -457,6 +457,14 @@ void VkRuntime::synchronize() {
   impl_->synchronize();
 }
 
+bool is_vulkan_api_available() {
+#ifdef TI_WITH_VULKAN
+  return true;
+#else
+  return false;
+#endif  // TI_WITH_VULKAN
+}
+
 }  // namespace vulkan
 }  // namespace lang
 }  // namespace taichi

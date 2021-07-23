@@ -62,7 +62,9 @@ TEST_F(ScalarPointerLowererTest, Basic) {
       LowererImpl lowerer{leaf_snode_,
                           std::vector<Stmt *>{builder.get_int32(loop_index)},
                           SNodeOpType::undefined,
-                          /*is_bit_vectorized=*/false, &lowered};
+                          /*is_bit_vectorized=*/false,
+                          &lowered,
+                          /*packed=*/false};
       lowerer.run();
       // There are three linearized stmts:
       // 0: for root

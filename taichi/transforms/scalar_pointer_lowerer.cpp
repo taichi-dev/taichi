@@ -6,6 +6,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/statements.h"
 #include "taichi/transforms/scalar_pointer_lowerer.h"
+#include "taichi/transforms/utils.h"
 
 namespace taichi {
 namespace lang {
@@ -14,11 +15,13 @@ ScalarPointerLowerer::ScalarPointerLowerer(SNode *leaf_snode,
                                            const std::vector<Stmt *> &indices,
                                            const SNodeOpType snode_op,
                                            const bool is_bit_vectorized,
-                                           VecStatement *lowered)
+                                           VecStatement *lowered,
+                                           const bool packed)
     : indices_(indices),
       snode_op_(snode_op),
       is_bit_vectorized_(is_bit_vectorized),
-      lowered_(lowered) {
+      lowered_(lowered),
+      packed_(packed) {
   for (auto *s = leaf_snode; s != nullptr; s = s->parent) {
     snodes_.push_back(s);
   }
@@ -45,6 +48,14 @@ void ScalarPointerLowerer::run() {
       start_bits[j] += s->extractors[j].num_bits;
     }
   }
+  // general shape calculation - no dependence on POT
+  std::array<int, taichi_max_num_indices> total_shape;
+  total_shape.fill(1);
+  for (const auto *s : snodes_) {
+    for (int j = 0; j < taichi_max_num_indices; j++) {
+      total_shape[j] *= s->extractors[j].shape;
+    }
+  }
 
   if (path_length_ == 0)
     return;
@@ -59,19 +70,26 @@ void ScalarPointerLowerer::run() {
     }
     std::vector<Stmt *> lowered_indices;
     std::vector<int> strides;
-    // extract bits
+    // extract lowered indices
     for (int k_ = 0; k_ < (int)indices_.size(); k_++) {
-      for (int k = 0; k < taichi_max_num_indices; k++) {
-        if (snode->physical_index_position[k_] == k) {
-          start_bits[k] -= snode->extractors[k].num_bits;
-          const int begin = start_bits[k];
-          const int end = begin + snode->extractors[k].num_bits;
-          auto extracted = Stmt::make<BitExtractStmt>(indices_[k_], begin, end);
-          lowered_indices.push_back(extracted.get());
-          lowered_->push_back(std::move(extracted));
-          strides.push_back(1 << snode->extractors[k].num_bits);
-        }
+      int k = snode->physical_index_position[k_];
+      if (k < 0)
+        continue;
+      Stmt *extracted;
+      if (packed_) {  // no dependence on POT
+        const int prev = total_shape[k];
+        total_shape[k] /= snode->extractors[k].shape;
+        const int next = total_shape[k];
+        extracted = generate_mod_x_div_y(lowered_, indices_[k_], prev, next);
+      } else {
+        const int end = start_bits[k];
+        start_bits[k] -= snode->extractors[k].num_bits;
+        const int begin = start_bits[k];
+        extracted =
+            lowered_->push_back<BitExtractStmt>(indices_[k_], begin, end);
       }
+      lowered_indices.push_back(extracted);
+      strides.push_back(snode->extractors[k].shape);
     }
     // linearize
     auto *linearized =

@@ -192,20 +192,39 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
   auto outp_coords = args[1];
   auto l = args[2];
 
-  for (int i = 0; i < taichi_max_num_indices; i++) {
-    auto addition = tlctx_->get_constant(0);
-    if (snode->extractors[i].num_bits) {
-      auto mask = ((1 << snode->extractors[i].num_bits) - 1);
-      addition = builder.CreateAnd(
-          builder.CreateAShr(l, snode->extractors[i].acc_offset), mask);
+  if (config_->packed) {  // no dependence on POT
+    for (int i = 0; i < taichi_max_num_indices; i++) {
+      auto addition = tlctx_->get_constant(0);
+      if (snode->extractors[i].shape > 1) {
+        auto prev = tlctx_->get_constant(snode->extractors[i].acc_shape *
+                                         snode->extractors[i].shape);
+        auto next = tlctx_->get_constant(snode->extractors[i].acc_shape);
+        addition = builder.CreateSDiv(builder.CreateSRem(l, prev), next);
+      }
+      auto in = call(&builder, "PhysicalCoordinates_get_val", inp_coords,
+                     tlctx_->get_constant(i));
+      in = builder.CreateMul(in,
+                             tlctx_->get_constant(snode->extractors[i].shape));
+      auto added = builder.CreateAdd(in, addition);
+      call(&builder, "PhysicalCoordinates_set_val", outp_coords,
+           tlctx_->get_constant(i), added);
     }
-    auto in = call(&builder, "PhysicalCoordinates_get_val", inp_coords,
-                   tlctx_->get_constant(i));
-    in = builder.CreateShl(in,
-                           tlctx_->get_constant(snode->extractors[i].num_bits));
-    auto added = builder.CreateOr(in, addition);
-    call(&builder, "PhysicalCoordinates_set_val", outp_coords,
-         tlctx_->get_constant(i), added);
+  } else {
+    for (int i = 0; i < taichi_max_num_indices; i++) {
+      auto addition = tlctx_->get_constant(0);
+      if (snode->extractors[i].num_bits) {
+        auto mask = ((1 << snode->extractors[i].num_bits) - 1);
+        addition = builder.CreateAnd(
+            builder.CreateAShr(l, snode->extractors[i].acc_offset), mask);
+      }
+      auto in = call(&builder, "PhysicalCoordinates_get_val", inp_coords,
+                     tlctx_->get_constant(i));
+      in = builder.CreateShl(
+          in, tlctx_->get_constant(snode->extractors[i].num_bits));
+      auto added = builder.CreateOr(in, addition);
+      call(&builder, "PhysicalCoordinates_set_val", outp_coords,
+           tlctx_->get_constant(i), added);
+    }
   }
   builder.CreateRetVoid();
 }

@@ -164,6 +164,19 @@ class ExprBuilder(Builder):
         return node
 
     @staticmethod
+    def build_ListComp(ctx, node):
+        node.elt = build_expr(ctx, node.elt)
+        node.generators = build_exprs(ctx, node.generators)
+        return node
+
+    @staticmethod
+    def build_comprehension(ctx, node):
+        node.target = build_expr(ctx, node.target)
+        node.iter = build_expr(ctx, node.iter)
+        node.ifs = build_exprs(ctx, node.ifs)
+        return node
+
+    @staticmethod
     def build_Name(ctx, node):
         return node
 

@@ -7,7 +7,12 @@ class Builder(object):
     def __call__(self, ctx, node):
         method = getattr(self, 'build_' + node.__class__.__name__, None)
         if method is None:
-            raise Exception(f'Unsupported node {node}')
+            try:
+                import astpretty
+                error_msg = f'Unsupported node {node}:\n{astpretty.pformat(node)}'
+            except:
+                error_msg = f'Unsupported node {node}'
+            raise Exception(error_msg)
         return method(ctx, node)
 
 

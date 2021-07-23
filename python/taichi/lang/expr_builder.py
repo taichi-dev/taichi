@@ -149,6 +149,10 @@ class ExprBuilder(Builder):
         return node
 
     @staticmethod
+    def build_List(ctx, node):
+        return node
+
+    @staticmethod
     def build_Name(ctx, node):
         return node
 

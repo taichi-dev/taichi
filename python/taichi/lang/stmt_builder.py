@@ -317,11 +317,11 @@ if 1:
 
         assert len(node.iter.args) in [1, 2]
         if len(node.iter.args) == 2:
-            bgn = node.iter.args[0]
-            end = node.iter.args[1]
+            bgn = build_expr(ctx, node.iter.args[0])
+            end = build_expr(ctx, node.iter.args[1])
         else:
             bgn = StmtBuilder.make_constant(value=0)
-            end = node.iter.args[0]
+            end = build_expr(ctx, node.iter.args[0])
 
         t.body[1].value.args[0] = bgn
         t.body[2].value.args[0] = end

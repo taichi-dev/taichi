@@ -150,6 +150,12 @@ class ExprBuilder(Builder):
 
     @staticmethod
     def build_List(ctx, node):
+        node.elts = build_exprs(ctx, node.elts)
+        return node
+
+    @staticmethod
+    def build_Tuple(ctx, node):
+        node.elts = build_exprs(ctx, node.elts)
         return node
 
     @staticmethod

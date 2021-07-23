@@ -103,6 +103,7 @@ class RefineCoordinatesTest : public ::testing::Test {
  protected:
   void SetUp() override {
     arch_ = host_arch();
+    config_.packed = false;
     config_.print_kernel_llvm_ir = false;
     prog_ = std::make_unique<Program>(arch_);
     tlctx_ = prog_->llvm_context_host.get();

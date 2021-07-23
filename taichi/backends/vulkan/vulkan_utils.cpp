@@ -5,6 +5,7 @@
 namespace taichi {
 namespace lang {
 namespace vulkan {
+namespace {
 
 std::vector<VkExtensionProperties> GetInstanceExtensionProperties() {
   constexpr char *kNoLayerName = nullptr;
@@ -27,6 +28,8 @@ std::vector<VkExtensionProperties> GetDeviceExtensionProperties(
                                        extensions.data());
   return extensions;
 }
+
+}  // namespace
 
 GlslToSpirvCompiler::GlslToSpirvCompiler(const ErrorHandler &err_handler)
     : err_handler_(err_handler) {

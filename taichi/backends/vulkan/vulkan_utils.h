@@ -10,13 +10,7 @@
 
 namespace taichi {
 namespace lang {
-
 namespace vulkan {
-
-std::vector<VkExtensionProperties> GetInstanceExtensionProperties();
-
-std::vector<VkExtensionProperties> GetDeviceExtensionProperties(
-    VkPhysicalDevice physicalDevice);
 
 class VulkanEnvSettings {
  public:

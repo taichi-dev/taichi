@@ -17,6 +17,10 @@
 #include "taichi/backends/vulkan/vulkan_common.h"
 #include "taichi/backends/vulkan/vulkan_simple_memory_pool.h"
 
+#ifdef TI_WITH_VULKAN
+#include "taichi/backends/vulkan/vulkan_utils.h"
+#endif  // TI_WITH_VULKAN
+
 #include "taichi/math/arithmetic.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"

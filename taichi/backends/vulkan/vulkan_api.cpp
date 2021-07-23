@@ -6,16 +6,8 @@
 #include <unordered_set>
 #include <vector>
 
-#ifndef IN_TAI_VULKAN
-
 #include "taichi/backends/vulkan/vulkan_common.h"
 #include "taichi/common/logging.h"
-
-#else
-
-#include "vulkan_common_stub.h"
-
-#endif
 
 namespace taichi {
 namespace lang {

@@ -15,6 +15,7 @@
 #include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
+#include "taichi/backends/vulkan/runtime.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/aot_module_builder.h"
 #include "taichi/program/function.h"
@@ -30,10 +31,6 @@
 #include "taichi/system/memory_pool.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
-
-#ifdef TI_WITH_VULKAN
-#include "taichi/backends/vulkan/runtime.h"
-#endif
 
 namespace taichi {
 namespace lang {

@@ -261,9 +261,11 @@ FunctionType Program::compile(Kernel &kernel) {
     ret = cccp::compile_kernel(&kernel);
 #endif
   } else if (kernel.arch == Arch::vulkan) {
+#ifdef TI_WITH_VULKAN
     vulkan::lower(&kernel);
     ret = vulkan::compile_to_executable(
         &kernel, &vulkan_compiled_structs_.value(), vulkan_runtime_.get());
+#endif  // TI_WITH_VULKAN
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -515,12 +517,14 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
     cc_program->compile_layout(root);
 #endif
   } else if (config.arch == Arch::vulkan) {
+#ifdef TI_WITH_VULKAN
     result_buffer = allocate_result_buffer_default(this);
     vulkan_compiled_structs_ = vulkan::compile_snode_structs(*root);
     vulkan::VkRuntime::Params params;
     params.snode_descriptors = &(vulkan_compiled_structs_->snode_descriptors);
     params.host_result_buffer = result_buffer;
     vulkan_runtime_ = std::make_unique<vulkan::VkRuntime>(std::move(params));
+#endif
   }
 }
 

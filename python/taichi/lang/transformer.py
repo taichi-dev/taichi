@@ -1,6 +1,7 @@
 import ast
 
 from taichi.lang import impl
+from taichi.lang.ast_builder_utils import parse_expr
 from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 
@@ -114,5 +115,5 @@ class TransformFunctionCallAsStmt(ASTTransformerBase):
 
     def visit_Call(self, node):
         node.args = [node.func] + node.args
-        node.func = self.parse_expr('ti.maybe_transform_ti_func_call_to_stmt')
+        node.func = parse_expr('ti.maybe_transform_ti_func_call_to_stmt')
         return node

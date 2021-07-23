@@ -1,8 +1,5 @@
 #include "taichi/backends/vulkan/runtime.h"
 
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
-
 #include <chrono>
 #include <array>
 #include <iostream>
@@ -13,9 +10,16 @@
 #include <vector>
 
 #include "taichi/util/environ_config.h"
+
+#ifdef TI_WITH_VULKAN
+#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
+
 #include "taichi/backends/vulkan/vulkan_api.h"
 #include "taichi/backends/vulkan/vulkan_common.h"
 #include "taichi/backends/vulkan/vulkan_simple_memory_pool.h"
+#include "taichi/backends/vulkan/vulkan_utils.h"
+#endif  // TI_WITH_VULKAN
 
 #include "taichi/math/arithmetic.h"
 #define TI_RUNTIME_HOST
@@ -426,13 +430,6 @@ class VkRuntime::Impl {
   void synchronize() {
     TI_ERROR("Vulkan disabled");
   }
-
-  VkBufferWithMemory *root_buffer() {
-    return nullptr;
-  }
-  VkBufferWithMemory *global_tmps_buffer() {
-    return nullptr;
-  }
 };
 
 #endif  // TI_WITH_VULKAN
@@ -455,6 +452,14 @@ void VkRuntime::launch_kernel(KernelHandle handle, Context *host_ctx) {
 
 void VkRuntime::synchronize() {
   impl_->synchronize();
+}
+
+bool is_vulkan_api_available() {
+#ifdef TI_WITH_VULKAN
+  return true;
+#else
+  return false;
+#endif  // TI_WITH_VULKAN
 }
 
 }  // namespace vulkan

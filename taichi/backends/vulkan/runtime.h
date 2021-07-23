@@ -5,7 +5,6 @@
 
 #include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/backends/vulkan/kernel_utils.h"
-#include "taichi/backends/vulkan/vulkan_utils.h"
 #include "taichi/program/compile_config.h"
 
 namespace taichi {
@@ -48,6 +47,8 @@ class VkRuntime {
  private:
   std::unique_ptr<Impl> impl_;
 };
+
+bool is_vulkan_api_available();
 
 }  // namespace vulkan
 }  // namespace lang

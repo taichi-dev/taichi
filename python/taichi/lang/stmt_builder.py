@@ -70,7 +70,7 @@ class StmtBuilder(Builder):
 
     @staticmethod
     def _handle_string_mod_args(ctx, msg):
-        assert _is_string_mod_args(msg)
+        assert StmtBuilder._is_string_mod_args(msg)
         s = msg.left.s
         t = None
         if isinstance(msg.right, ast.Tuple):

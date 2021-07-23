@@ -383,7 +383,7 @@ class Kernel:
             KernelSimplicityASTChecker(self.func).visit(tree)
 
         visitor = ASTTransformer(
-            excluded_paremeters=self.template_slot_locations,
+            excluded_parameters=self.template_slot_locations,
             func=self,
             arg_features=arg_features)
 

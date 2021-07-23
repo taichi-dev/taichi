@@ -15,12 +15,12 @@ class ASTTransformer(object):
     def __init__(
             self,
             func=None,
-            excluded_paremeters=(),
+            excluded_parameters=(),
             is_kernel=True,
             is_classfunc=False,  # unused
             arg_features=None):
         self.func = func
-        self.excluded_parameters = excluded_paremeters
+        self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
         self.arg_features = arg_features
         self.pass_Checks = ASTTransformerChecks(func=func)

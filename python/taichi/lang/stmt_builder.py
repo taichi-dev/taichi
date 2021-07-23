@@ -2,9 +2,9 @@ import ast
 import copy
 
 from taichi.lang import impl
+from taichi.lang.ast_builder_utils import *
 from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.ast_builder_utils import *
 from taichi.lang.expr_builder import build_expr, build_exprs
 from taichi.lang.util import to_taichi_type
 
@@ -64,7 +64,8 @@ class StmtBuilder(Builder):
         t.value.func.value = node.target
         t.value.func.value.ctx = ast.Load()
         t.value.args[0] = node.value
-        t.value.args[1] = ast.Str(s=type(node.op).__name__, ctx=ast.Load(),
+        t.value.args[1] = ast.Str(s=type(node.op).__name__,
+                                  ctx=ast.Load(),
                                   kind=None)
         return ast.copy_location(t, node)
 
@@ -123,7 +124,7 @@ class StmtBuilder(Builder):
 
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
-            node.value.func, ti.static, globals())
+                node.value.func, ti.static, globals())
         if is_static_assign:
             return node
 
@@ -645,6 +646,7 @@ if 1:
             # note that we can only return an ast.Expr instead of an ast.Call.
             return node
         # A statement with a single expression.
+        # TODO(#2495): Deprecate maybe_transform_ti_func_call_to_stmt
         return node
         # result = parse_stmt('ti.core.insert_expr_stmt(expr)')
         # result.value.args[0] = build_expr(ctx, node.value)

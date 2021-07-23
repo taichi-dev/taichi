@@ -1,9 +1,8 @@
 import ast
 
-from taichi.lang import impl
+from taichi.lang.ast_builder_utils import *
 from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.ast_builder_utils import *
 
 import taichi as ti
 
@@ -63,7 +62,8 @@ class ExprBuilder(Builder):
             else:
                 raise Exception(f'Unknown operator {node.ops[i]}')
             operators += [
-                ast.copy_location(ast.Str(s=op_str, kind=None), node)]
+                ast.copy_location(ast.Str(s=op_str, kind=None), node)
+            ]
 
         call = ast.Call(
             func=parse_expr('ti.chain_compare'),

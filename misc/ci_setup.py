@@ -264,9 +264,7 @@ class Installer:
                     f'TAICHI_CMAKE_ARGS="{arg}" {sys.executable} setup.py install --user'
                 )
             else:
-                execute_command(
-                    f'{sys.executable} setup.py install --user'
-                )
+                execute_command(f'{sys.executable} setup.py install --user')
         return
         if test_installation():
             print('  Successfully Installed Taichi at {}.'.format(

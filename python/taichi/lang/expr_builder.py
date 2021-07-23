@@ -159,15 +159,16 @@ class ExprBuilder(Builder):
         return node
 
     @staticmethod
+    def build_Attribute(ctx, node):
+        node.value = build_expr(ctx, node.value)
+        return node
+
+    @staticmethod
     def build_Name(ctx, node):
         return node
 
     @staticmethod
     def build_Constant(ctx, node):
-        return node
-
-    @staticmethod
-    def build_Attribute(ctx, node):
         return node
 
 

@@ -33,7 +33,7 @@ class ExternalPtrAccessVisitor : public BasicStmtVisitor {
       : map_(map), BasicStmtVisitor() {
   }
 
-  void visit(GlobalLoadStmt *stmt) {
+  void visit(GlobalLoadStmt *stmt) override {
     if (!(stmt->src && stmt->src->is<ExternalPtrStmt>()))
       return;
 
@@ -46,7 +46,7 @@ class ExternalPtrAccessVisitor : public BasicStmtVisitor {
     }
   }
 
-  void visit(GlobalStoreStmt *stmt) {
+  void visit(GlobalStoreStmt *stmt) override {
     if (!(stmt->dest && stmt->dest->is<ExternalPtrStmt>()))
       return;
 
@@ -57,6 +57,16 @@ class ExternalPtrAccessVisitor : public BasicStmtVisitor {
     } else {
       map_[arg->arg_id] = ExternalPtrAccess::WRITE;
     }
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    if (!(stmt->dest && stmt->dest->is<ExternalPtrStmt>()))
+      return;
+
+    // Atomics modifies existing state (therefore both read & write)
+    ExternalPtrStmt *dst = stmt->dest->cast<ExternalPtrStmt>();
+    ArgLoadStmt *arg = dst->base_ptrs.data[0]->cast<ArgLoadStmt>();
+    map_[arg->arg_id] = ExternalPtrAccess::WRITE | ExternalPtrAccess::READ;
   }
 };
 

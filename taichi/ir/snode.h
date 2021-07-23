@@ -34,26 +34,34 @@ class Index {
  */
 struct IndexExtractor {
   /**
-   * Shape at the given index.
+   * Number of elements from root at this index.
    *
-   * This is the raw shape, *not* padded to power-of-two (POT).
+   * This is the raw number, *not* padded to power-of-two (POT).
    */
-  int num_elements{1};
+  int num_elements_from_root{1};
+  /**
+   * Shape at this index (POT or packed) according to the config.
+   */
+  int shape{1};
+  /**
+   * Accumulated shape from the last activated index to the first one.
+   */
+  int acc_shape{1};
   /**
    * Number of bits needed to store the coordinate at this index.
    *
-   * ceil(log2(num_elements))
+   * ceil(log2(shape))
    */
   int num_bits{0};
   /**
    * Accumulated offset from the last activated index to the first one.
    *
-   * This is the starting bit of this index in a linearized 1D coordiate. For
+   * This is the starting bit of this index in a linearized 1D coordinate. For
    * example, assuming an SNode of (ti.ijk, shape=(4, 8, 16)). ti.i takes 2
    * bits, ti.j 3 bits and ti.k 4 bits. Then for a linearized coordinate:
-   * ti.k uses bits [0, 3), acc_offset=0
-   * tk.j uses btis [3, 6), acc_offset=3
-   * ti.i uses bits [6, 8), acc_offset=6
+   * ti.k uses bits [0, 4), acc_offset=0
+   * ti.j uses bits [4, 7), acc_offset=4
+   * ti.i uses bits [7, 9), acc_offset=7
    */
   int acc_offset{0};
   /**
@@ -106,7 +114,7 @@ class SNode {
   int depth{0};
 
   std::string name;
-  int64 n{0};
+  int64 n{1};  // Product of shape at all activated indices
   int total_num_bits{0};
   int total_bit_start{0};
   int chunk_size{0};
@@ -283,7 +291,7 @@ class SNode {
   }
 
   int64 max_num_elements() const {
-    return int64(1) << total_num_bits;
+    return n;
   }
 
   int shape_along_axis(int i) const;
@@ -293,6 +301,15 @@ class SNode {
   void begin_shared_exp_placement();
 
   void end_shared_exp_placement();
+
+  // SNodeTree part
+
+  void set_snode_tree_id(int id);
+
+  int get_snode_tree_id();
+
+ private:
+  int snode_tree_id_{0};
 };
 
 }  // namespace lang

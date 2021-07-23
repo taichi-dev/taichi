@@ -912,7 +912,12 @@ class BitExtractStmt : public Stmt {
  */
 class GetRootStmt : public Stmt {
  public:
-  GetRootStmt() {
+  GetRootStmt(SNode *root = nullptr) : root_(root) {
+    if (this->root_ != nullptr) {
+      while (this->root_->parent) {
+        this->root_ = this->root_->parent;
+      }
+    }
     TI_STMT_REG_FIELDS;
   }
 
@@ -920,8 +925,15 @@ class GetRootStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type);
+  TI_STMT_DEF_FIELDS(ret_type, root_);
   TI_DEFINE_ACCEPT_AND_CLONE
+
+  SNode *root() {
+    return root_;
+  }
+
+ private:
+  SNode *root_;
 };
 
 /**

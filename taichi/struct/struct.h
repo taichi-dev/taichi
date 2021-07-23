@@ -12,7 +12,7 @@ namespace lang {
  *
  * @param snode The root SNode to compute.
  */
-void infer_snode_properties(SNode &snode);
+void infer_snode_properties(SNode &snode, bool packed);
 
 class StructCompiler {
  public:
@@ -30,8 +30,6 @@ class StructCompiler {
   virtual void generate_child_accessors(SNode &snode) = 0;
 
   virtual void run(SNode &node) = 0;
-
-  static std::unique_ptr<StructCompiler> make(Program *prog, Arch arch);
 };
 
 }  // namespace lang

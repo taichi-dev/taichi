@@ -39,10 +39,18 @@ def _test_reduction_single(dtype, criterion, op):
     a = ti.field(dtype, shape=N)
     tot = ti.field(dtype, shape=())
 
-    @ti.kernel
-    def fill():
-        for i in a:
-            a[i] = i
+    if dtype in [ti.f32, ti.f64]:
+
+        @ti.kernel
+        def fill():
+            for i in a:
+                a[i] = i + 0.5
+    else:
+
+        @ti.kernel
+        def fill():
+            for i in a:
+                a[i] = i
 
     ti_op = ti_ops[op]
 
@@ -62,7 +70,8 @@ def _test_reduction_single(dtype, criterion, op):
     reduce()
     tot2 = reduce_tmp()
 
-    ground_truth = np_ops[op](a.to_numpy())
+    np_arr = np.append(a.to_numpy(), [0])
+    ground_truth = np_ops[op](np_arr)
 
     assert criterion(tot[None], ground_truth)
     assert criterion(tot2, ground_truth)

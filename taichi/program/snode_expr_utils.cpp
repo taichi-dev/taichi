@@ -67,7 +67,11 @@ void place_child(Expr *expr_arg,
     }
     auto &child = parent->insert_children(SNodeType::place);
     glb_var_expr->set_snode(&child);
-    child.name = glb_var_expr->ident.raw_name();
+    if (glb_var_expr->name == "") {
+      child.name = glb_var_expr->ident.raw_name();
+    } else {
+      child.name = glb_var_expr->name;
+    }
     if (glb_var_expr->has_ambient) {
       glb_var_expr->snode->has_ambient = true;
       glb_var_expr->snode->ambient_val = glb_var_expr->ambient_value;

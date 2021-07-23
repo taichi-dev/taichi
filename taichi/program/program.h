@@ -169,6 +169,8 @@ class Program {
    */
   void materialize_runtime();
 
+  int get_snode_tree_size();
+
   void visualize_layout(const std::string &fn);
 
   struct KernelProxy {
@@ -342,6 +344,9 @@ class Program {
    */
   void initialize_llvm_runtime_snodes(const SNodeTree *tree,
                                       StructCompiler *scomp);
+
+  std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
+      TaichiLLVMContext *tlctx);
 
   // Metal related data structures
   std::optional<metal::CompiledStructs> metal_compiled_structs_;

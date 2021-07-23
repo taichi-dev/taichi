@@ -132,43 +132,6 @@ def test_init_bad_arg():
 
 
 @ti.test(arch=ti.cpu)
-def test_materialization_after_kernel():
-    x = ti.field(ti.f32, (3, 4))
-
-    @ti.kernel
-    def func():
-        print(x[2, 3])
-
-    func()
-
-    with pytest.raises(RuntimeError, match='declared after'):
-        y = ti.field(ti.f32, (2, 3))
-    # ERROR: No new variable should be declared after kernel invocation!
-
-
-@ti.test(arch=ti.cpu)
-def test_materialization_after_access():
-    x = ti.field(ti.f32, (3, 4))
-
-    print(x[2, 3])
-
-    with pytest.raises(RuntimeError, match='declared after'):
-        y = ti.field(ti.f32, (2, 3))
-    # ERROR: No new variable should be declared after Python-scope field access!
-
-
-@ti.test(arch=ti.cpu)
-def test_materialization_after_get_shape():
-    x = ti.field(ti.f32, (3, 4))
-
-    print(x.shape)
-
-    with pytest.raises(RuntimeError, match='declared after'):
-        y = ti.field(ti.f32, (2, 3))
-    # ERROR: No new variable should be declared after Python-scope field access!
-
-
-@ti.test(arch=ti.cpu)
 def test_materialize_callback():
     x = ti.field(ti.f32, (3, 4))
 

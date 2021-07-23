@@ -402,7 +402,7 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
   runtime_jit->call<void *, std::size_t, int, int>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
-      (int)snodes.size());
+      (int)snodes.size(), tree->id());
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
@@ -428,14 +428,9 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
 }
 
 int Program::add_snode_tree(std::unique_ptr<SNode> root) {
-  if (!snode_trees_.empty()) {
-    // TODO: remove this
-    TI_ERROR("Multiple SNodeTree not supported yet");
-    return -1;
-  }
-
   const int id = snode_trees_.size();
-  auto tree = std::make_unique<SNodeTree>(id, std::move(root));
+  auto tree = std::make_unique<SNodeTree>(id, std::move(root), config.packed);
+  tree->root()->set_snode_tree_id(id);
   materialize_snode_tree(tree.get());
   snode_trees_.push_back(std::move(tree));
   return id;
@@ -445,11 +440,20 @@ SNode *Program::get_snode_root(int tree_id) {
   return snode_trees_[tree_id]->root();
 }
 
+std::unique_ptr<llvm::Module> Program::clone_struct_compiler_initial_context(
+    TaichiLLVMContext *tlctx) {
+  if (!snode_trees_.empty())
+    return tlctx->clone_struct_module();
+  return tlctx->clone_runtime_module();
+}
+
 void Program::materialize_snode_tree(SNodeTree *tree) {
   auto *const root = tree->root();
   // always use host_arch() for host accessors
-  std::unique_ptr<StructCompiler> scomp =
-      StructCompiler::make(this, host_arch());
+  auto host_module =
+      clone_struct_compiler_initial_context(llvm_context_host.get());
+  std::unique_ptr<StructCompiler> scomp = std::make_unique<StructCompilerLLVM>(
+      host_arch(), this, std::move(host_module));
   scomp->run(*root);
   materialize_snode_expr_attributes();
 
@@ -460,8 +464,12 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
   if (arch_is_cpu(config.arch)) {
     initialize_llvm_runtime_snodes(tree, scomp.get());
   } else if (config.arch == Arch::cuda) {
+    auto device_module =
+        clone_struct_compiler_initial_context(llvm_context_device.get());
+
     std::unique_ptr<StructCompiler> scomp_gpu =
-        StructCompiler::make(this, Arch::cuda);
+        std::make_unique<StructCompilerLLVM>(Arch::cuda, this,
+                                             std::move(device_module));
     scomp_gpu->run(*root);
     initialize_llvm_runtime_snodes(tree, scomp_gpu.get());
   } else if (config.arch == Arch::metal) {
@@ -578,6 +586,10 @@ void Program::async_flush() {
   async_engine->flush();
 }
 
+int Program::get_snode_tree_size() {
+  return snode_trees_.size();
+}
+
 std::string capitalize_first(std::string s) {
   s[0] = std::toupper(s[0]);
   return s;
@@ -648,7 +660,9 @@ void Program::visualize_layout(const std::string &fn) {
       emit("]");
     };
 
-    visit(get_snode_root(SNodeTree::kFirstID));
+    for (auto &a : snode_trees_) {
+      visit(a->root());
+    }
 
     auto tail = R"(
 \end{tikzpicture}
@@ -884,7 +898,9 @@ void Program::print_memory_profiler_info() {
     }
   };
 
-  visit(get_snode_root(SNodeTree::kFirstID), /*depth=*/0);
+  for (auto &a : snode_trees_) {
+    visit(a->root(), /*depth=*/0);
+  }
 
   auto total_requested_memory = runtime_query<std::size_t>(
       "LLVMRuntime_get_total_requested_memory", llvm_runtime);

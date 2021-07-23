@@ -55,7 +55,6 @@ void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
 
 std::vector<std::unique_ptr<ASTBuilder::ScopeGuard>> scope_stack;
 
-void compile_runtimes();
 std::string libdevice_path();
 std::string get_runtime_dir();
 
@@ -120,6 +119,7 @@ void export_lang(py::module &m) {
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
+      .def_readwrite("packed", &CompileConfig::packed)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
@@ -230,10 +230,15 @@ void export_lang(py::module &m) {
       .def("synchronize", &Program::synchronize)
       .def("async_flush", &Program::async_flush)
       .def("materialize_runtime", &Program::materialize_runtime)
-      .def("make_aot_module_builder", &Program::make_aot_module_builder);
+      .def("make_aot_module_builder", &Program::make_aot_module_builder)
+      .def("get_snode_tree_size", &Program::get_snode_tree_size)
+      .def("get_snode_root", &Program::get_snode_root,
+           py::return_value_policy::reference);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
+      .def("add_field", &AotModuleBuilder::add_field)
       .def("add", &AotModuleBuilder::add)
+      .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
       .def("dump", &AotModuleBuilder::dump);
 
   m.def("get_current_program", get_current_program,
@@ -275,6 +280,7 @@ void export_lang(py::module &m) {
                          get_current_program().get_snode_to_glb_var_exprs());
            })
       .def("data_type", [](SNode *snode) { return snode->dt; })
+      .def("name", [](SNode *snode) { return snode->name; })
       .def("get_num_ch",
            [](SNode *snode) -> int { return (int)snode->ch.size(); })
       .def(
@@ -357,13 +363,25 @@ void export_lang(py::module &m) {
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
       .def("is_external_var",
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
+      .def("is_primal",
+           [](Expr *expr) {
+             return expr->cast<GlobalVariableExpression>()->is_primal;
+           })
       .def("set_tb", &Expr::set_tb)
+      .def("set_name",
+           [&](Expr *expr, std::string na) {
+             expr->cast<GlobalVariableExpression>()->name = na;
+           })
       .def("set_is_primal",
            [&](Expr *expr, bool v) {
              expr->cast<GlobalVariableExpression>()->is_primal = v;
            })
       .def("set_grad", &Expr::set_grad)
       .def("set_attribute", &Expr::set_attribute)
+      .def("get_expr_name",
+           [](Expr *expr) {
+             return expr->cast<GlobalVariableExpression>()->name;
+           })
       .def("get_attribute", &Expr::get_attribute)
       .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })
       .def("get_underlying_ptr_address", [](Expr *e) {
@@ -743,7 +761,6 @@ void export_lang(py::module &m) {
   m.def("test_throw", [] { throw IRModified(); });
   m.def("needs_grad", needs_grad);
 
-  m.def("compile_runtimes", compile_runtimes);
   m.def("libdevice_path", libdevice_path);
 
   m.def("host_arch", host_arch);

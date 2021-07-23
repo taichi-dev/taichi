@@ -81,7 +81,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   CodeGenLLVM(Kernel *kernel,
               IRNode *ir = nullptr,
-              std::unique_ptr<llvm::Module> &&M = nullptr);
+              std::unique_ptr<llvm::Module> &&module = nullptr);
 
   Arch current_arch() {
     return kernel->arch;
@@ -101,7 +101,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Type *get_xlogue_function_type();
 
-  llvm::Value *get_root();
+  llvm::Value *get_root(int snode_tree_id);
 
   llvm::Value *get_runtime();
 

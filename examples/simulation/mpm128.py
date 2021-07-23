@@ -148,7 +148,9 @@ for frame in range(20000):
         attractor_strength[None] = -1
     for s in range(int(2e-3 // dt)):
         substep()
-    colors = np.array([0x068587, 0xED553B, 0xEEEEF0], dtype=np.uint32)
-    gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
+    gui.circles(x.to_numpy(),
+                radius=1.5,
+                palette=[0x068587, 0xED553B, 0xEEEEF0],
+                palette_indices=material)
     gui.show(
     )  # Change to gui.show(f'{frame:06d}.png') to write images to disk

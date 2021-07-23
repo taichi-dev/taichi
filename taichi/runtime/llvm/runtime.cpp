@@ -525,8 +525,10 @@ struct LLVMRuntime {
   host_printf_type host_printf;
   host_vsnprintf_type host_vsnprintf;
   Ptr program;
-  Ptr root;
-  size_t root_mem_size;
+
+  Ptr roots[taichi_max_num_snode_trees];
+  size_t root_mem_sizes[taichi_max_num_snode_trees];
+
   Ptr thread_pool;
   parallel_for_type parallel_for;
   ListManager *element_lists[taichi_max_num_snodes];
@@ -573,8 +575,8 @@ struct LLVMRuntime {
 // TODO: are these necessary?
 STRUCT_FIELD_ARRAY(LLVMRuntime, element_lists);
 STRUCT_FIELD_ARRAY(LLVMRuntime, node_allocators);
-STRUCT_FIELD(LLVMRuntime, root);
-STRUCT_FIELD(LLVMRuntime, root_mem_size);
+STRUCT_FIELD_ARRAY(LLVMRuntime, roots);
+STRUCT_FIELD_ARRAY(LLVMRuntime, root_mem_sizes);
 STRUCT_FIELD(LLVMRuntime, temporaries);
 STRUCT_FIELD(LLVMRuntime, assert_failed);
 STRUCT_FIELD(LLVMRuntime, host_printf);
@@ -890,17 +892,18 @@ void runtime_initialize(
 
 void runtime_initialize_snodes(LLVMRuntime *runtime,
                                std::size_t root_size,
-                               int root_id,
-                               int num_snodes) {
+                               const int root_id,
+                               const int num_snodes,
+                               const int snode_tree_id) {
   // For Metal runtime, we have to make sure that both the beginning address
   // and the size of the root buffer memory are aligned to page size.
-  runtime->root_mem_size =
+  runtime->root_mem_sizes[snode_tree_id] =
       taichi::iroundup((size_t)root_size, taichi_page_size);
-  runtime->root =
-      runtime->allocate_aligned(runtime->root_mem_size, taichi_page_size);
+  runtime->roots[snode_tree_id] = runtime->allocate_aligned(
+      runtime->root_mem_sizes[snode_tree_id], taichi_page_size);
   // runtime->request_allocate_aligned ready to use
   // initialize the root node element list
-  for (int i = 0; i < num_snodes; i++) {
+  for (int i = root_id; i < root_id + num_snodes; i++) {
     // TODO: some SNodes do not actually need an element list.
     runtime->element_lists[i] =
         runtime->create<ListManager>(runtime, sizeof(Element), 1024 * 64);
@@ -908,7 +911,7 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
   Element elem;
   elem.loop_bounds[0] = 0;
   elem.loop_bounds[1] = 1;
-  elem.element = runtime->root;
+  elem.element = runtime->roots[snode_tree_id];
   for (int i = 0; i < taichi_max_num_indices; i++) {
     elem.pcoord.val[i] = 0;
   }
@@ -1080,19 +1083,19 @@ i32 op_xor_i32(i32 a, i32 b) {
   return a ^ b;
 }
 
-#define DEFINE_REDUCTION(op, dtype)                                   \
-  dtype warp_reduce_##op##_##dtype(dtype val) {                       \
-    for (int offset = 16; offset > 0; offset /= 2)                    \
-      val = op_##op##_##dtype(                                        \
-          val, cuda_shfl_down_sync_i32(0xFFFFFFFF, val, offset, 31)); \
-    return val;                                                       \
-  }                                                                   \
-  dtype reduce_##op##_##dtype(dtype *result, dtype val) {             \
-    dtype warp_result = warp_reduce_##op##_##dtype(val);              \
-    if ((thread_idx() & (warp_size() - 1)) == 0) {                    \
-      atomic_##op##_##dtype(result, warp_result);                     \
-    }                                                                 \
-    return val;                                                       \
+#define DEFINE_REDUCTION(op, dtype)                                       \
+  dtype warp_reduce_##op##_##dtype(dtype val) {                           \
+    for (int offset = 16; offset > 0; offset /= 2)                        \
+      val = op_##op##_##dtype(                                            \
+          val, cuda_shfl_down_sync_##dtype(0xFFFFFFFF, val, offset, 31)); \
+    return val;                                                           \
+  }                                                                       \
+  dtype reduce_##op##_##dtype(dtype *result, dtype val) {                 \
+    dtype warp_result = warp_reduce_##op##_##dtype(val);                  \
+    if ((thread_idx() & (warp_size() - 1)) == 0) {                        \
+      atomic_##op##_##dtype(result, warp_result);                         \
+    }                                                                     \
+    return val;                                                           \
   }
 
 DEFINE_REDUCTION(add, i32);
@@ -1743,9 +1746,18 @@ i32 wasm_materialize(Context *context) {
       (RandState *)((size_t)context->runtime + sizeof(LLVMRuntime));
   // set random seed to (1, 0, 0, 0)
   context->runtime->rand_states[0].x = 1;
-  context->runtime->root =
+  // TODO: remove hard coding on root id 0(SNodeTree::kFirstID)
+  context->runtime->roots[0] =
       (Ptr)((size_t)context->runtime->rand_states + sizeof(RandState));
-  return (i32)(size_t)context->runtime->root;
+  return (i32)(size_t)context->runtime->roots[0];
+}
+
+void wasm_set_kernel_parameter_i32(Context *context, int index, i32 value) {
+  *(i32 *)(&context->args[index]) = value;
+}
+
+void wasm_set_kernel_parameter_f32(Context *context, int index, f32 value) {
+  *(f32 *)(&context->args[index]) = value;
 }
 }
 

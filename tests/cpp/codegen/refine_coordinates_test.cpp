@@ -103,6 +103,7 @@ class RefineCoordinatesTest : public ::testing::Test {
  protected:
   void SetUp() override {
     arch_ = host_arch();
+    config_.packed = false;
     config_.print_kernel_llvm_ir = false;
     prog_ = std::make_unique<Program>(arch_);
     tlctx_ = prog_->llvm_context_host.get();
@@ -115,7 +116,8 @@ class RefineCoordinatesTest : public ::testing::Test {
     auto &leaf_snode = dense_snode_->insert_children(SNodeType::place);
     leaf_snode.dt = PrimitiveType::f32;
 
-    auto sc = std::make_unique<StructCompilerLLVM>(arch_, &config_, tlctx_);
+    auto sc = std::make_unique<StructCompilerLLVM>(
+        arch_, &config_, tlctx_, tlctx_->clone_runtime_module());
     sc->run(*root_snode_);
   }
 

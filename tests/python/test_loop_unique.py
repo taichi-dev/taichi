@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test(require=ti.extension.sparse)
+@ti.test(require=ti.extension.sparse, use_unified_memory=True)
 def test_loop_unique_simple_1d():
     x, y = ti.field(ti.i32), ti.field(ti.i32)
 
@@ -26,7 +26,7 @@ def test_loop_unique_simple_1d():
         assert y[i] == expected_result.get(i, 0)
 
 
-@ti.test(require=ti.extension.sparse)
+@ti.test(require=ti.extension.sparse, use_unified_memory=True)
 def test_loop_unique_binary_op_1d():
     x, y = ti.field(ti.i32), ti.field(ti.i32)
 
@@ -51,7 +51,7 @@ def test_loop_unique_binary_op_1d():
         assert y[i] == expected_result.get(i, 0)
 
 
-@ti.test(require=ti.extension.sparse)
+@ti.test(require=ti.extension.sparse, use_unified_memory=True)
 def test_loop_unique_nested_1d():
     x, y = ti.field(ti.i32), ti.field(ti.i32)
 
@@ -77,7 +77,7 @@ def test_loop_unique_nested_1d():
         assert y[i] == expected_result.get(i, 0)
 
 
-@ti.test(require=ti.extension.sparse)
+@ti.test(require=ti.extension.sparse, use_unified_memory=True)
 def test_loop_unique_2d():
     x, y, z = ti.field(ti.i32), ti.field(ti.i32), ti.field(ti.i32)
 

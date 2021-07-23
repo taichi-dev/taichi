@@ -140,6 +140,10 @@ class SNode:
     def loop_range(self):
         return Expr(_ti_core.global_var_expr_from_snode(self.ptr))
 
+    @property
+    def name(self):
+        return self.ptr.name()
+
     @deprecated('x.snode()', 'x.snode')
     def __call__(self):  # TODO: remove this after v0.7.0
         return self
@@ -147,6 +151,10 @@ class SNode:
     @property
     def snode(self):
         return self
+
+    @property
+    def needs_grad(self):
+        return self.ptr.has_grad()
 
     def get_children(self):
         children = []

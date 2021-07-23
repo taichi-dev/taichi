@@ -495,7 +495,8 @@ if 1:
                     node.iter.func, ast.Name) and node.iter.func.id == 'range':
                 return StmtBuilder.build_range_for(ctx, node)
             else:  # Struct for
-                return StmtBuilder.build_struct_for(ctx, node,
+                return StmtBuilder.build_struct_for(ctx,
+                                                    node,
                                                     is_grouped=False)
 
     @staticmethod

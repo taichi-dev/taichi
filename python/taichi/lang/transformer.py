@@ -11,11 +11,13 @@ import taichi as ti
 # TODO: ASTTransformerBase -> ASTTransformer
 # TODO: ASTTransformer -> ASTTransformerTotal
 class ASTTransformer(object):
-    def __init__(self, func=None,
-                 excluded_paremeters=(),
-                 is_kernel=True,
-                 is_classfunc=False,  # unused
-                 arg_features=None):
+    def __init__(
+            self,
+            func=None,
+            excluded_paremeters=(),
+            is_kernel=True,
+            is_classfunc=False,  # unused
+            arg_features=None):
         self.func = func
         self.excluded_parameters = excluded_paremeters
         self.is_kernel = is_kernel
@@ -37,11 +39,10 @@ class ASTTransformer(object):
         from taichi.lang.ast_builder_utils import BuilderContext
         from taichi.lang.stmt_builder import build_stmt
         self.print_ast(tree, 'Initial AST')
-        ctx = BuilderContext(
-            func=self.func,
-            excluded_parameters=self.excluded_parameters,
-            is_kernel=self.is_kernel,
-            arg_features=self.arg_features)
+        ctx = BuilderContext(func=self.func,
+                             excluded_parameters=self.excluded_parameters,
+                             is_kernel=self.is_kernel,
+                             arg_features=self.arg_features)
         tree = build_stmt(ctx, tree)
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Preprocessed')

@@ -882,7 +882,8 @@ class Matrix(TaichiOperations):
                     for i, e in enumerate(self.entries):
                         grad_var_list.append(e.grad)
                     ti.root.dense(impl.index_nd(dim),
-                                shape).place(*tuple(grad_var_list), offset=offset)
+                                  shape).place(*tuple(grad_var_list),
+                                               offset=offset)
         return self
 
     @classmethod

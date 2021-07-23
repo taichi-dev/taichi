@@ -127,7 +127,8 @@ class CMakeBuild(build_ext):
         cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
 
         # Assuming Makefiles
-        build_args += ['--', f'-j{multiprocessing.cpu_count()}']
+        if get_os_name() != 'win':
+            build_args += ['--', f'-j{multiprocessing.cpu_count()}']
 
         self.build_args = build_args
 
@@ -164,7 +165,7 @@ class CMakeBuild(build_ext):
                     os.path.join(self.build_temp, 'libtaichi_core.dylib'),
                     os.path.join(target, 'taichi_core.so'))
             else:
-                shutil.copy('../runtimes/RelWithDebInfo/taichi_core.dll',
+                shutil.copy('runtimes/Release/taichi_core.dll',
                             os.path.join(target, 'taichi_core.pyd'))
 
             if get_os_name() != 'osx':

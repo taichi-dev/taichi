@@ -54,7 +54,6 @@ void run_snode() {
   place->dt = PrimitiveType::i32;
   program.add_snode_tree(std::unique_ptr<SNode>(root));
 
-
   std::unique_ptr<Kernel> kernel_init, kernel_ret, kernel_ext;
 
   {
@@ -222,7 +221,6 @@ void autograd() {
   };
   auto *a = get_snode_grad(), *b = get_snode_grad(), *c = get_snode_grad();
   program.add_snode_tree(std::unique_ptr<SNode>(root));
-
 
   std::unique_ptr<Kernel> kernel_init, kernel_forward, kernel_backward,
       kernel_ext;

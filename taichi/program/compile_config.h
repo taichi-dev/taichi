@@ -84,7 +84,7 @@ struct CompileConfig {
   bool quant_opt_store_fusion{true};
   bool quant_opt_atomic_demotion{true};
 
-  int memory_allocate_critical_size{1 << 25};
+  // int memory_allocate_critical_size{1 << 25};
 
   CompileConfig();
 };

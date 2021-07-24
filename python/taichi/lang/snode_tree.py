@@ -13,12 +13,12 @@ class SNodeTree:
 
     def destroy(self):
         if self.destroyed:
-            raise InvalidOperationError('SNode tree has been finalized')
+            raise InvalidOperationError('SNode tree has been destroyed')
         self.ptr.destroy()
         self.destroyed = True
 
     @property
     def id(self):
         if self.destroyed:
-            raise InvalidOperationError('SNode tree has been finalized')
+            raise InvalidOperationError('SNode tree has been destroyed')
         return self.ptr.id()

@@ -22,12 +22,12 @@ SNode &SNode::insert_children(SNodeType t) {
   return *ch.back();
 }
 
-SNode &SNode::create_node(std::vector<Index> indices,
+SNode &SNode::create_node(std::vector<Axis> axes,
                           std::vector<int> sizes,
                           SNodeType type) {
-  TI_ASSERT(indices.size() == sizes.size() || sizes.size() == 1);
+  TI_ASSERT(axes.size() == sizes.size() || sizes.size() == 1);
   if (sizes.size() == 1) {
-    sizes = std::vector<int>(indices.size(), sizes[0]);
+    sizes = std::vector<int>(axes.size(), sizes[0]);
   }
 
   if (type == SNodeType::hash)
@@ -35,9 +35,9 @@ SNode &SNode::create_node(std::vector<Index> indices,
                    "hashed node must be child of root due to initialization "
                    "memset limitation.");
   auto &new_node = insert_children(type);
-  for (int i = 0; i < (int)indices.size(); i++) {
+  for (int i = 0; i < (int)axes.size(); i++) {
     TI_ASSERT(sizes[i] > 0);
-    auto &ind = indices[i];
+    auto &ind = axes[i];
     new_node.extractors[ind.value].activate(
         bit::log2int(bit::least_pot_bound(sizes[i])));
     new_node.extractors[ind.value].shape = sizes[i];
@@ -46,7 +46,7 @@ SNode &SNode::create_node(std::vector<Index> indices,
   return new_node;
 }
 
-SNode &SNode::dynamic(const Index &expr, int n, int chunk_size) {
+SNode &SNode::dynamic(const Axis &expr, int n, int chunk_size) {
   auto &snode = create_node({expr}, {n}, SNodeType::dynamic);
   snode.chunk_size = chunk_size;
   return snode;
@@ -59,10 +59,10 @@ SNode &SNode::bit_struct(int num_bits) {
   return snode;
 }
 
-SNode &SNode::bit_array(const std::vector<Index> &indices,
+SNode &SNode::bit_array(const std::vector<Axis> &axes,
                         const std::vector<int> &sizes,
                         int bits) {
-  auto &snode = create_node(indices, sizes, SNodeType::bit_array);
+  auto &snode = create_node(axes, sizes, SNodeType::bit_array);
   snode.physical_type =
       TypeFactory::get_instance().get_primitive_int_type(bits, false);
   return snode;

@@ -9,7 +9,7 @@ from taichi.misc.util import warning
 
 _snode_registry = _ti_core.SNodeRegistry()
 
-_Axis = _ti_core.Index
+_Axis = _ti_core.Axis
 
 
 class FieldsBuilder:

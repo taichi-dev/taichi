@@ -8,7 +8,7 @@ namespace taichi {
 namespace lang {
 
 /**
- * Computes the IndexExtractor from the SNode rooted in @param snode.
+ * Computes the AxisExtractor from the SNode rooted in @param snode.
  *
  * @param snode The root SNode to compute.
  */

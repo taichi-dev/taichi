@@ -2,6 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/ir/transforms.h"
 
 #include <algorithm>
 
@@ -21,6 +22,54 @@ void detect_read_only_in_task(OffloadedStmt *offload) {
   }
 }
 
+class ExternalPtrAccessVisitor : public BasicStmtVisitor {
+ private:
+  std::unordered_map<int, ExternalPtrAccess> &map_;
+
+ public:
+  using BasicStmtVisitor::visit;
+
+  ExternalPtrAccessVisitor(std::unordered_map<int, ExternalPtrAccess> &map)
+      : map_(map), BasicStmtVisitor() {
+  }
+
+  void visit(GlobalLoadStmt *stmt) override {
+    if (!(stmt->src && stmt->src->is<ExternalPtrStmt>()))
+      return;
+
+    ExternalPtrStmt *src = stmt->src->cast<ExternalPtrStmt>();
+    ArgLoadStmt *arg = src->base_ptrs.data[0]->cast<ArgLoadStmt>();
+    if (map_.find(arg->arg_id) != map_.end()) {
+      map_[arg->arg_id] = map_[arg->arg_id] | ExternalPtrAccess::READ;
+    } else {
+      map_[arg->arg_id] = ExternalPtrAccess::READ;
+    }
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    if (!(stmt->dest && stmt->dest->is<ExternalPtrStmt>()))
+      return;
+
+    ExternalPtrStmt *dst = stmt->dest->cast<ExternalPtrStmt>();
+    ArgLoadStmt *arg = dst->base_ptrs.data[0]->cast<ArgLoadStmt>();
+    if (map_.find(arg->arg_id) != map_.end()) {
+      map_[arg->arg_id] = map_[arg->arg_id] | ExternalPtrAccess::WRITE;
+    } else {
+      map_[arg->arg_id] = ExternalPtrAccess::WRITE;
+    }
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    if (!(stmt->dest && stmt->dest->is<ExternalPtrStmt>()))
+      return;
+
+    // Atomics modifies existing state (therefore both read & write)
+    ExternalPtrStmt *dst = stmt->dest->cast<ExternalPtrStmt>();
+    ArgLoadStmt *arg = dst->base_ptrs.data[0]->cast<ArgLoadStmt>();
+    map_[arg->arg_id] = ExternalPtrAccess::WRITE | ExternalPtrAccess::READ;
+  }
+};
+
 }  // namespace
 
 void detect_read_only(IRNode *root) {
@@ -31,6 +80,14 @@ void detect_read_only(IRNode *root) {
   } else {
     detect_read_only_in_task(root->as<OffloadedStmt>());
   }
+}
+
+std::unordered_map<int, ExternalPtrAccess> detect_external_ptr_access_in_task(
+    OffloadedStmt *offload) {
+  std::unordered_map<int, ExternalPtrAccess> map;
+  ExternalPtrAccessVisitor v(map);
+  offload->accept(&v);
+  return map;
 }
 
 }  // namespace irpass

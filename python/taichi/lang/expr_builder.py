@@ -216,6 +216,22 @@ class ExprBuilder(Builder):
     def build_Constant(ctx, node):
         return node
 
+    # Methods for Python 3.7 or lower
+    @staticmethod
+    def build_Num(ctx, node):
+        return node
+
+    @staticmethod
+    def build_Str(ctx, node):
+        return node
+
+    @staticmethod
+    def build_Bytes(ctx, node):
+        return node
+
+    @staticmethod
+    def build_NameConstant(ctx, node):
+        return node
 
 build_expr = ExprBuilder()
 

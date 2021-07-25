@@ -493,7 +493,7 @@ class VkRuntime ::Impl {
   const SNodeDescriptorsMap *const snode_descriptors_;
   uint64_t *const host_result_buffer_;
 
-  std::unique_ptr<  VulkanDevice> embedded_device_{nullptr};
+  std::unique_ptr<EmbeddedVulkanDevice> embedded_device_{nullptr};
   std::unique_ptr<VulkanStream> stream_{nullptr};
 
   std::unique_ptr<LinearVkMemoryPool> dev_local_memory_pool_;

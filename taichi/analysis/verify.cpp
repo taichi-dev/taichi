@@ -123,9 +123,12 @@ class IRVerifier : public BasicStmtVisitor {
       TI_ASSERT(stmt->loop->as<OffloadedStmt>()->task_type ==
                     OffloadedStmt::TaskType::struct_for ||
                 stmt->loop->as<OffloadedStmt>()->task_type ==
-                    OffloadedStmt::TaskType::range_for);
+                    OffloadedStmt::TaskType::range_for ||
+                stmt->loop->as<OffloadedStmt>()->task_type ==
+                    OffloadedStmt::TaskType::mesh_for);
     } else {
       TI_ASSERT(stmt->loop->is<StructForStmt>() ||
+                stmt->loop->is<MeshForStmt>() ||
                 stmt->loop->is<RangeForStmt>());
     }
   }

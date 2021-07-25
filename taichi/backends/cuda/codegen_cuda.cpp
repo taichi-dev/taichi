@@ -578,6 +578,98 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
                  tlctx->get_constant(stmt->tls_size)});
   }
 
+  void create_offload_mesh_for(OffloadedStmt *stmt) {
+
+    llvm::Function *body;
+    {
+      auto guard = get_function_creation_guard(
+          {llvm::PointerType::get(get_runtime_type("Context"), 0), tlctx->get_data_type<int>()});
+
+      llvm_val[stmt->bls_prologue->statements[0].get()] = get_arg(1);
+      std::vector<llvm::Value*> bounds;
+      for (int i = 1; i < stmt->bls_prologue->size(); i++) {
+        auto &s = stmt->bls_prologue->statements[i];
+        if (auto s_print = s->cast<PrintStmt>()) {
+          bounds.push_back(llvm_val[std::get<Stmt*>(s_print->contents.front())]);
+        }
+        else s->accept(this);
+      }
+      auto loop_test_bb = BasicBlock::Create(*llvm_context, "loop_test", func);
+      auto loop_body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
+      auto func_exit = BasicBlock::Create(*llvm_context, "func_exit", func);
+      auto loop_index =
+          create_entry_block_alloca(llvm::Type::getInt32Ty(*llvm_context));
+      llvm::Value *thread_idx = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
+      llvm::Value *block_dim = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
+      builder->CreateStore(builder->CreateAdd(thread_idx, bounds[0]), loop_index);
+      builder->CreateBr(loop_test_bb);
+
+      {
+        builder->SetInsertPoint(loop_test_bb);
+        auto cond =
+            builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                builder->CreateLoad(loop_index), bounds[1]);
+        builder->CreateCondBr(cond, loop_body_bb, func_exit);
+      }
+
+      {
+        builder->SetInsertPoint(loop_body_bb);
+        //loop_vars_llvm[stmt].push_back(get_arg(1));
+        loop_vars_llvm[stmt].push_back(loop_index);
+        stmt->body->accept(this);
+        builder->CreateStore(
+            builder->CreateAdd(builder->CreateLoad(loop_index), block_dim),
+            loop_index);
+        builder->CreateBr(loop_test_bb);
+        builder->SetInsertPoint(func_exit);
+      }
+      /*auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
+      loop_vars_llvm[stmt].push_back(loop_var);
+      builder->CreateStore(indices[0], loop_var);
+      stmt->body->accept(this);*/
+      
+      /*llvm::Value *thread_idx = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
+      llvm::Value *block_dim = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
+      llvm::Value *root = builder->CreateBitCast(
+        get_root(stmt->snode->parent->parent->get_snode_tree_id()),
+        llvm::PointerType::get(
+            StructCompiler::get_llvm_node_type(module.get(), stmt->root()),
+            0));
+      llvm::Value *lookup_0 = builder->CreateGEP(root, tlctx->get_constant(0));
+      llvm::Value *ch_0 = create_call(stmt->snode->parent->get_ch_from_parent_func_name(),
+                          {builder->CreateBitCast(
+                              lookup_0,
+                              llvm::PointerType::getInt8PtrTy(*llvm_context))});
+      llvm::Value *getch_0 = builder->CreateBitCast(
+        ch_0, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
+                                       module.get(), stmt->snode->parent),
+                                   0));
+      //TODO: activate snode?
+      llvm::Value *lookup_1 = call(snode, llvm_val[stmt->snode->parent], "lookup_element",
+                          {get_arg(1)});
+      llvm::Value *ch_1 = create_call(stmt->snode->get_ch_from_parent_func_name(),
+                          {builder->CreateBitCast(
+                              lookup_1,
+                              llvm::PointerType::getInt8PtrTy(*llvm_context))});
+      llvm::Value *getch_1 = builder->CreateBitCast(
+        ch_1, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
+                                       module.get(), stmt->snode),
+                                   0));
+      llvm::Value *load = builder->CreateLoad(tlctx->get_data_type<int>(), getch_1);
+      auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
+      loop_vars_llvm[stmt].push_back(loop_var);
+      builder->CreateStore(load, loop_var);
+      stmt->body->accept(this);*/
+
+
+      body = guard.body;
+    }
+
+
+    create_call("gpu_parallel_mesh_for",
+                {get_arg(0), tlctx->get_constant(int32(stmt->snode->parent->extractors[0].num_elements_from_root)), body});
+  }
+
   void emit_cuda_gc(OffloadedStmt *stmt) {
     auto snode_id = tlctx->get_constant(stmt->snode->id);
     {
@@ -701,6 +793,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         create_offload_range_for(stmt);
       } else if (stmt->task_type == Type::struct_for) {
         create_offload_struct_for(stmt, true);
+      } else if (stmt->task_type == Type::mesh_for) {
+        create_offload_mesh_for(stmt);
       } else if (stmt->task_type == Type::listgen) {
         emit_list_gen(stmt);
       } else {

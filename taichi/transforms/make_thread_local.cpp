@@ -97,7 +97,8 @@ std::vector<std::pair<T *, AtomicOpType>> find_global_reduction_destinations(
 
 void make_thread_local_offload(OffloadedStmt *offload) {
   if (offload->task_type != OffloadedTaskType::range_for &&
-      offload->task_type != OffloadedTaskType::struct_for)
+      offload->task_type != OffloadedTaskType::struct_for && 
+      offload->task_type != OffloadedTaskType::mesh_for)
     return;
 
   std::vector<std::pair<Stmt *, AtomicOpType>> valid_reduction_values;

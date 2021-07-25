@@ -312,6 +312,14 @@ class CFGBuilder : public IRVisitor {
     in_parallel_for = old_in_parallel_for;
   }
 
+  void visit(MeshForStmt *stmt) override {
+    auto old_in_parallel_for = in_parallel_for;
+    if (!current_offload)
+      in_parallel_for = true;
+    visit_loop(stmt->body.get(), new_node(-1), false);
+    in_parallel_for = old_in_parallel_for;
+  }
+
   /**
    * Structure:
    *

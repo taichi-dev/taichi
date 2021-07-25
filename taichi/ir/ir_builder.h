@@ -49,6 +49,7 @@ class IRBuilder {
     }
     if constexpr (std::is_same_v<DecayedType, RangeForStmt> ||
                   std::is_same_v<DecayedType, StructForStmt> ||
+                  std::is_same_v<DecayedType, MeshForStmt> ||
                   std::is_same_v<DecayedType, WhileStmt>) {
       set_insertion_point({loop->body.get(), 0});
     } else {
@@ -111,6 +112,8 @@ class IRBuilder {
                                    int bit_vectorize = -1,
                                    int num_cpu_threads = 0,
                                    int block_dim = 0);
+  MeshForStmt *create_mesh_for(SNode *snode,
+                                   int block_dim);
   WhileStmt *create_while_true();
   IfStmt *create_if(Stmt *cond);
   WhileControlStmt *create_break();

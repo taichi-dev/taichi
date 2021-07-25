@@ -53,6 +53,10 @@ class StatementUsageReplace : public IRVisitor {
     stmt->body->accept(this);
   }
 
+  void visit(MeshForStmt *stmt) override {
+    stmt->body->accept(this);
+  }
+
   void visit(OffloadedStmt *stmt) override {
     stmt->all_blocks_accept(this);
   }

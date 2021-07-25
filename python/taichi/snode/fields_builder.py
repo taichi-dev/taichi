@@ -42,7 +42,10 @@ class FieldsBuilder:
 
     @classmethod
     def finalized_roots(cls):
-        """
+        """Gets all the roots of the finalized SNodeTree.
+
+        Returns:
+            A list of the roots of the finalized SNodeTree.
         """
         roots_ptr = []
         size = impl.get_runtime().prog.get_snode_tree_size()

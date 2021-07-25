@@ -209,6 +209,11 @@ class ExprBuilder(Builder):
         return node
 
     @staticmethod
+    def build_Set(ctx, node):
+        node.elts = build_exprs(ctx, node.elts)
+        return node
+
+    @staticmethod
     def build_Name(ctx, node):
         return node
 
@@ -232,6 +237,7 @@ class ExprBuilder(Builder):
     @staticmethod
     def build_NameConstant(ctx, node):
         return node
+
 
 build_expr = ExprBuilder()
 

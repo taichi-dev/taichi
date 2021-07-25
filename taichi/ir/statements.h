@@ -798,6 +798,30 @@ class StructForStmt : public Stmt {
 };
 
 /**
+ * meshfor
+ */
+class MeshForStmt : public Stmt {
+ public:
+  SNode *snode;
+  std::unique_ptr<Block> body;
+  int block_dim;
+
+  MeshForStmt(SNode *snode,
+                std::unique_ptr<Block> &&body,
+                int block_dim);
+
+  bool is_container_statement() const override {
+    return true;
+  }
+
+  std::unique_ptr<Stmt> clone() const override;
+
+  TI_STMT_DEF_FIELDS(snode,
+                     block_dim);
+  TI_DEFINE_ACCEPT
+};
+
+/**
  * An inline Taichi function.
  * TODO: This statement seems unused.
  */

@@ -362,6 +362,12 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
+  void visit(MeshForStmt *for_stmt) override {
+    print("{} : mesh for {} {{", for_stmt->name(), for_stmt->block_dim);
+    for_stmt->body->accept(this);
+    print("}}");
+  }
+
   void visit(GlobalPtrStmt *stmt) override {
     std::string s =
         fmt::format("{}{} = global ptr [", stmt->type_hint(), stmt->name());
@@ -547,6 +553,10 @@ class IRPrinter : public IRVisitor {
           fmt::format("struct_for({}) grid_dim={} block_dim={} bls={}",
                       stmt->snode->get_node_type_name_hinted(), stmt->grid_dim,
                       stmt->block_dim, scratch_pad_info(stmt->mem_access_opt));
+    }
+    else if (stmt->task_type == OffloadedTaskType::mesh_for) {
+      details =
+          fmt::format("mesh_for");
     }
     if (stmt->task_type == OffloadedTaskType::listgen) {
       print("{} = offloaded listgen {}->{}", stmt->name(),

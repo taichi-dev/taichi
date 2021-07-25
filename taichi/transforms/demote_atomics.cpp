@@ -40,7 +40,8 @@ class DemoteAtomics : public BasicStmtVisitor {
       }
       if (!demote &&
           (current_offloaded->task_type == OffloadedTaskType::range_for ||
-           current_offloaded->task_type == OffloadedTaskType::struct_for) &&
+           current_offloaded->task_type == OffloadedTaskType::struct_for || 
+           current_offloaded->task_type == OffloadedTaskType::mesh_for) &&
           stmt->dest->is<GlobalPtrStmt>()) {
         demote = true;
         auto dest = stmt->dest->as<GlobalPtrStmt>();
@@ -126,7 +127,8 @@ class DemoteAtomics : public BasicStmtVisitor {
   void visit(OffloadedStmt *stmt) override {
     current_offloaded = stmt;
     if (stmt->task_type == OffloadedTaskType::range_for ||
-        stmt->task_type == OffloadedTaskType::struct_for) {
+        stmt->task_type == OffloadedTaskType::struct_for || 
+        stmt->task_type == OffloadedTaskType::mesh_for) {
       loop_unique_ptr_ =
           irpass::analysis::gather_uniquely_accessed_pointers(stmt);
     }

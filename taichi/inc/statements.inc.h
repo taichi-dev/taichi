@@ -19,6 +19,7 @@ PER_STATEMENT(FrontendReturnStmt)
 // Without per-lane attributes
 PER_STATEMENT(RangeForStmt)
 PER_STATEMENT(StructForStmt)
+PER_STATEMENT(MeshForStmt)
 PER_STATEMENT(IfStmt)
 PER_STATEMENT(WhileStmt)
 PER_STATEMENT(WhileControlStmt)

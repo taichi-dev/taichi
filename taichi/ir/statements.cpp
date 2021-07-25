@@ -286,6 +286,21 @@ std::unique_ptr<Stmt> StructForStmt::clone() const {
   return new_stmt;
 }
 
+MeshForStmt::MeshForStmt(SNode *snode,
+                             std::unique_ptr<Block> &&body,
+                             int block_dim)
+    : snode(snode),
+      body(std::move(body)),
+      block_dim(block_dim) {
+  this->body->parent_stmt = this;
+  TI_STMT_REG_FIELDS;
+}
+
+std::unique_ptr<Stmt> MeshForStmt::clone() const {
+  auto new_stmt = std::make_unique<MeshForStmt>(snode, body->clone(), block_dim);
+  return new_stmt;
+}
+
 FuncBodyStmt::FuncBodyStmt(const std::string &funcid,
                            std::unique_ptr<Block> &&body)
     : funcid(funcid), body(std::move(body)) {
@@ -339,6 +354,8 @@ std::string OffloadedStmt::task_name() const {
     return "range_for";
   } else if (task_type == TaskType::struct_for) {
     return "struct_for";
+  } else if (task_type == TaskType::mesh_for) {
+    return "mesh_for";
   } else if (task_type == TaskType::listgen) {
     TI_ASSERT(snode);
     return fmt::format("listgen_{}", snode->get_node_type_name_hinted());

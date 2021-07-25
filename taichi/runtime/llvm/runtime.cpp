@@ -35,6 +35,7 @@ using host_vsnprintf_type = int (*)(char *,
                                     std::va_list);
 using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
 using RangeForTaskFunc = void(RuntimeContext *, const char *tls, int i);
+using MeshForTaskFunc = void(RuntimeContext *, int i);
 using parallel_for_type = void (*)(void *thread_pool,
                                    int splits,
                                    int num_desired_threads,
@@ -1425,6 +1426,14 @@ void gpu_parallel_range_for(RuntimeContext *context,
   }
   if (epilogue)
     epilogue(context, tls_ptr);
+}
+
+void gpu_parallel_mesh_for(RuntimeContext *context,
+                            int snode_size,
+                            MeshForTaskFunc *func) {
+  for (int i = block_idx(); i < snode_size - 1; i += grid_dim()) {
+    func(context, i);
+  }
 }
 
 i32 linear_thread_idx(RuntimeContext *context) {

@@ -115,7 +115,7 @@ class SNode:
         return SNode(self.ptr.bit_array(axes, dimensions, num_bits))
 
     def place(self, *args, offset=None, shared_exponent=False):
-        """Places a list of Taichi fields under the `self` container. 
+        """Places a list of Taichi fields under the `self` container.
 
         Args:
             *args (List[ti.field]): A list of Taichi fields to place.

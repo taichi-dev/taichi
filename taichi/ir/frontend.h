@@ -86,12 +86,12 @@ T Eval(const T &t) {
 
 Expr copy(const Expr &expr);
 
-template <typename... axes>
-std::vector<Axis> Axes(axes... ind) {
-  auto ind_vec = std::vector<int>({ind...});
+template <typename... AX>
+std::vector<Axis> Axes(AX... axes) {
+  auto ax_vec = std::vector<int>({axes...});
   std::vector<Axis> ret;
-  for (auto in : ind_vec) {
-    ret.push_back(Axis(in));
+  for (auto ax : ax_vec) {
+    ret.push_back(Axis(ax));
   }
   return ret;
 }
@@ -103,7 +103,7 @@ inline Expr Atomic(Expr dest) {
   return dest;
 }
 
-// expr_group are axes
+// expr_group are indices
 inline void Activate(SNode *snode, const ExprGroup &expr_group) {
   current_ast_builder().insert(Stmt::make<FrontendSNodeOpStmt>(
       SNodeOpType::activate, snode, expr_group));
@@ -118,37 +118,40 @@ inline void Deactivate(SNode *snode, const ExprGroup &expr_group) {
       SNodeOpType::deactivate, snode, expr_group));
 }
 
-inline Expr Append(SNode *snode, const ExprGroup &axes, const Expr &val) {
-  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::append, axes, val);
+inline Expr Append(SNode *snode, const ExprGroup &indices, const Expr &val) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::append, indices,
+                                       val);
 }
 
-inline Expr Append(const Expr &expr, const ExprGroup &axes, const Expr &val) {
-  return Append(expr.snode(), axes, val);
+inline Expr Append(const Expr &expr,
+                   const ExprGroup &indices,
+                   const Expr &val) {
+  return Append(expr.snode(), indices, val);
 }
 
 inline void InsertAssert(const std::string &text, const Expr &cond) {
   current_ast_builder().insert(Stmt::make<FrontendAssertStmt>(cond, text));
 }
 
-inline void Clear(SNode *snode, const ExprGroup &axes) {
+inline void Clear(SNode *snode, const ExprGroup &indices) {
   current_ast_builder().insert(
-      Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::clear, snode, axes));
+      Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::clear, snode, indices));
 }
 
-inline Expr is_active(SNode *snode, const ExprGroup &axes) {
-  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::is_active, axes);
+inline Expr is_active(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::is_active, indices);
 }
 
-inline void Clear(const Expr &expr, const ExprGroup &axes) {
-  return Clear(expr.snode(), axes);
+inline void Clear(const Expr &expr, const ExprGroup &indices) {
+  return Clear(expr.snode(), indices);
 }
 
-inline Expr Length(SNode *snode, const ExprGroup &axes) {
-  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::length, axes);
+inline Expr Length(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::length, indices);
 }
 
-inline Expr Length(const Expr &expr, const ExprGroup &axes) {
-  return Length(expr.snode(), axes);
+inline Expr Length(const Expr &expr, const ExprGroup &indices) {
+  return Length(expr.snode(), indices);
 }
 
 inline Expr AssumeInRange(const Expr &expr,

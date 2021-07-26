@@ -308,7 +308,8 @@ class GlobalPtrStmt : public Stmt {
  */
 class GlobalTensorElementStmt : public Stmt {
  public:
-  Stmt *origin, *offset;
+  Stmt *origin{nullptr};
+  Stmt *offset{nullptr};
 
   GlobalTensorElementStmt(Stmt *origin, Stmt *offset)
       : origin(origin), offset(offset) {

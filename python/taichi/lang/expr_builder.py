@@ -210,8 +210,8 @@ class ExprBuilder(Builder):
 
     @staticmethod
     def build_Set(ctx, node):
-        node.elts = build_exprs(ctx, node.elts)
-        return node
+        raise TaichiSyntaxError(
+            'Python set is not supported in Taichi kernels.')
 
     @staticmethod
     def build_Name(ctx, node):

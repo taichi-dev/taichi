@@ -94,8 +94,9 @@ class BuildPy(build_py):
 class CMakeBuild(build_ext):
     def parse_cmake_args_from_env(self):
         # Source: TAICHI_CMAKE_ARGS=... python setup.py ...
+        import shlex
         cmake_args = os.getenv('TAICHI_CMAKE_ARGS', '')
-        return cmake_args.strip().split()
+        return shlex.split(cmake_args.strip())
 
     def run(self):
         try:

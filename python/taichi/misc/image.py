@@ -37,7 +37,7 @@ def imdisplay(img):
     Try to display image in interactive shell.
     
     Args:
-        img (ti.field or np.ndarray): A field of of array with shape `(width, height)` or `(height, width, 3)` or `(height, width, 4)`.
+        img (Union[ti.field, np.ndarray]): A field of of array with shape `(width, height)` or `(height, width, 3)` or `(height, width, 4)`.
     """
     try:
         get_ipython()

@@ -7,8 +7,6 @@
 namespace taichi {
 namespace lang {
 
-class Program;
-
 /**
  * Represents a tree of SNodes.
  *
@@ -17,7 +15,6 @@ class Program;
 class SNodeTree {
  public:
   constexpr static int kFirstID = 0;
-  Program *prog;
 
   /**
    * Constructor.

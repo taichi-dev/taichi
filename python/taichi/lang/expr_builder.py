@@ -16,7 +16,7 @@ class ExprBuilder(Builder):
             # use the index value directly instead :)
             if isinstance(node.slice, ast.Index):
                 return build_expr(ctx, node.slice.value)
-            return node.slice
+            return build_expr(ctx, node.slice)
 
         value = build_expr(ctx, node.value)
         indices = get_subscript_index(node)

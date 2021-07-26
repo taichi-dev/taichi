@@ -117,7 +117,7 @@ def imshow(img, window_name='imshow'):
     """Show image in a Taichi GUI.
 
     Args:
-        img (ti.field or np.ndarray): A field of of array with shape `(width, height)` or `(height, width, 3)` or `(height, width, 4)`.
+        img (Union[ti.field, np.ndarray]): A field of of array with shape `(width, height)` or `(height, width, 3)` or `(height, width, 4)`.
         window_name (str, optional): The title of GUI window. Default to `imshow`.
     """
     if not isinstance(img, np.ndarray):

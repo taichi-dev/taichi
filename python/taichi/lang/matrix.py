@@ -425,7 +425,7 @@ class Matrix(TaichiOperations):
         """Access to the element at the given indices in a matrix.
 
         Args:
-            indices(List, Tuple): the indices of the element.
+            indices (Sequence[Expr]): the indices of the element.
 
         Returns:
             The value of the element at a specific position of a matrix.

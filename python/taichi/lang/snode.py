@@ -46,6 +46,7 @@ class SNode:
 
     def hash(self, axes, dimensions):
         """Not supported."""
+        raise RuntimeError('hash not yet supported')
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
         return SNode(self.ptr.hash(axes, dimensions))
@@ -119,14 +120,14 @@ class SNode:
 
         Args:
             *args (List[ti.field]): A list of Taichi fields to place.
-            offsest (tupe[numbers.Number]): Offset of the field domain.
+            offsest (Union[Number, tuple[Number]]): Offset of the field domain.
             shared_exponent (bool): Only useful for quant types.
 
         Returns:
             The `self` container.
         """
         if offset is None:
-            offset = []
+            offset = ()
         if isinstance(offset, numbers.Number):
             offset = (offset, )
         if shared_exponent:

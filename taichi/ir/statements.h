@@ -309,10 +309,9 @@ class GlobalPtrStmt : public Stmt {
 class GlobalTensorElementStmt : public Stmt {
  public:
   Stmt *origin, *offset;
-  bool is_bit_vectorized;  // TODO: remove this field
 
   GlobalTensorElementStmt(Stmt *origin, Stmt *offset)
-      : origin(origin), offset(offset), is_bit_vectorized(is_bit_vectorized) {
+      : origin(origin), offset(offset) {
     element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -321,7 +320,7 @@ class GlobalTensorElementStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, origin, offset, is_bit_vectorized);
+  TI_STMT_DEF_FIELDS(ret_type, origin, offset);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

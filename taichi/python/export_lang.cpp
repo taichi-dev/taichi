@@ -682,9 +682,9 @@ void export_lang(py::module &m) {
   });
 
   m.def("subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices, int cols, bool is_AOS) {
+        [](const Expr &var, const ExprGroup &indices, int cols, bool is_aos) {
           return Expr::make<GlobalTensorElementExpression>(var, indices, cols,
-                                                           is_AOS);
+                                                           is_aos);
         });
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {

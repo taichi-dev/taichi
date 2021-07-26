@@ -435,13 +435,13 @@ class GlobalTensorElementExpression : public Expression {
   Expr var;
   ExprGroup indices;
   int cols;
-  bool is_AOS;
+  bool is_aos;
 
   GlobalTensorElementExpression(const Expr &var,
                                 const ExprGroup &indices,
                                 int cols,
-                                bool is_AOS)
-      : var(var), indices(indices), cols(cols), is_AOS(is_AOS) {
+                                bool is_aos)
+      : var(var), indices(indices), cols(cols), is_aos(is_aos) {
   }
 
   std::string serialize() override {
@@ -452,7 +452,7 @@ class GlobalTensorElementExpression : public Expression {
         s += ", ";
     }
     s += "]";
-    s += " (col=" + std::to_string(cols) + (is_AOS ? ", AOS)" : ", SOA)");
+    s += " (col=" + std::to_string(cols) + (is_aos ? ", AOS)" : ", SOA)");
     return s;
   }
 

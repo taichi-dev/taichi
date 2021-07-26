@@ -249,7 +249,7 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
   }
   // Type A[i, j][x, y]
   //             ^    ^
-  if (!is_AOS) {
+  if (!is_aos) {
     TI_ASSERT(snode->is_path_all_dense)
     int size = 1;
     for (int index = 0; index < taichi_max_num_indices; ++index)

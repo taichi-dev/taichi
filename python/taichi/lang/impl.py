@@ -147,10 +147,10 @@ def subscript(value, *indices):
 
 
 @taichi_scope
-def subscript_with_offset(var, indices, cols, is_AOS):
+def subscript_with_offset(var, indices, cols, is_aos):
     return Expr(
         _ti_core.subscript_with_offset(var.ptr, make_expr_group(*indices),
-                                       cols, is_AOS))
+                                       cols, is_aos))
 
 
 @taichi_scope

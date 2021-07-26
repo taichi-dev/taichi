@@ -58,7 +58,7 @@ def imresize(img, w, h=None):
     """Resize an image to a specific size.
 
     Args:
-        img (ti.field or np.ndarray): A field of of array with shape `(width, height, ...)`
+        img (Union[ti.field, np.ndarray]): A field of of array with shape `(width, height, ...)`
         w (int): The output width after resize.
         h (int, optional): The output height after resize, will be the same as width if not set. Default to `None`.
 

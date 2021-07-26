@@ -82,7 +82,7 @@ def imwrite(img, filename):
     """Save a field to a a specific file.
 
     Args:
-        img (ti.field or np.ndarray): A field of shape `(height, width)` or `(height, width, 3)` or `(height, width, 4)`, \
+        img (Union[ti.field, np.ndarray]): A field of shape `(height, width)` or `(height, width, 3)` or `(height, width, 4)`, \
             if dtype is float-type (`ti.f16`, `ti.f32`, `np.float32` etc), **the value of each pixel should be float between \[0.0, 1.0\]**. Otherwise `ti.imwrite` will first clip them into \[0.0, 1.0\]\
                 if dtype is int-type (`ti.u8`, `ti.u16`, `np.uint8` etc), , **the value of each pixel can be any valid integer in its own bounds**. These integers in this field will be scaled to \[0, 255\] by being divided over the upper bound of its basic type accordingly.
         filename (str): The filename to save to.

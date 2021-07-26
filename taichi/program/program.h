@@ -134,6 +134,33 @@ class Program {
     profiler->print();
   }
 
+
+  //copy from taichi/program/kernel_profiler.h/KernelProfileRecord
+  struct KernelProfilerQueringResult
+  {
+    int counter;
+    double min;
+    double max;
+    double avg;
+
+    KernelProfilerQueringResult()
+        : counter(0), min(0), max(0), avg(0) {
+    }
+  };
+
+  //reference KernelProxy kernel
+  KernelProfilerQueringResult kernel_profiler_query(const std::string &name) {//},KernelProfilerQueringResult &quering_result) {
+    KernelProfilerQueringResult quering_result;
+    profiler->query(
+      name, 
+      quering_result.counter, 
+      quering_result.min, 
+      quering_result.max, 
+      quering_result.avg);
+    return quering_result;
+  }
+
+
   void kernel_profiler_clear() {
     profiler->clear();
   }

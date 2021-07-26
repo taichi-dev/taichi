@@ -61,6 +61,35 @@ void KernelProfilerBase::print() {
       "=\n");
 }
 
+
+
+void KernelProfilerBase::query(const std::string &kernel_name, 
+                               int &counter, 
+                               double &min, 
+                               double &max, 
+                               double &avg) {
+  for (auto &rec : records) {
+    if(kernel_name.compare(0, kernel_name.length(), rec.name, 0, kernel_name.length())==0){
+      if(counter == 0){
+        counter = rec.counter;
+        min = rec.min;
+        max = rec.max;
+        avg = rec.total / rec.counter;
+        //fmt::print("[first]:{} min={:4.4f}\n",rec.name,rec.min);//TODO trace
+      }
+      else if(counter == rec.counter){
+        min += rec.min;
+        max += rec.max;
+        avg += rec.total / rec.counter;
+        //fmt::print("[subsequent]:{} min={:4.4f}\n",rec.name,rec.min);//TODO trace
+      }
+      else{
+        //WARN
+      }
+    }
+  }
+}
+
 double KernelProfilerBase::get_total_time() const {
   return total_time_ms / 1000.0;
 }

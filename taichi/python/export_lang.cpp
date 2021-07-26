@@ -204,10 +204,20 @@ void export_lang(py::module &m) {
       [&]() -> CompileConfig & { return default_compile_config; },
       py::return_value_policy::reference);
 
+  py::class_<Program::KernelProfilerQueringResult>(m, "KernelProfilerQueringResult")
+      .def_readwrite("counter", &Program::KernelProfilerQueringResult::counter)
+      .def_readwrite("min", &Program::KernelProfilerQueringResult::min)
+      .def_readwrite("max", &Program::KernelProfilerQueringResult::max)
+      .def_readwrite("avg", &Program::KernelProfilerQueringResult::avg);
+
   py::class_<Program>(m, "Program")
       .def(py::init<>())
       .def_readonly("config", &Program::config)
       .def("kernel_profiler_print", &Program::kernel_profiler_print)
+      .def("kernel_profiler_query", 
+          [](Program *program, const std::string &name) { //, Program::KernelProfilerQueringResult &quering_result) { 
+            return program->kernel_profiler_query(name);
+          })
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })
       .def("kernel_profiler_clear", &Program::kernel_profiler_clear)

@@ -17,26 +17,29 @@ namespace spirv {
 template <bool stop, std::size_t I, typename F>
 struct for_each_dispatcher {
   template <typename T, typename... Args>
-  static void run(const F& f, T&& value, Args&&... args) {  // NOLINT(*)
+  static void run(const F &f, T &&value, Args &&... args) {  // NOLINT(*)
     f(I, std::forward<T>(value));
-    for_each_dispatcher<sizeof...(Args) == 0, (I + 1), F>::run(f, std::forward<Args>(args)...);
+    for_each_dispatcher<sizeof...(Args) == 0, (I + 1), F>::run(
+        f, std::forward<Args>(args)...);
   }
 };
 
 template <std::size_t I, typename F>
 struct for_each_dispatcher<true, I, F> {
-  static void run(const F& f) {}  // NOLINT(*)
+  static void run(const F &f) {
+  }  // NOLINT(*)
 };
 
 template <typename F, typename... Args>
-inline void for_each(const F& f, Args&&... args) {  // NOLINT(*)
-  for_each_dispatcher<sizeof...(Args) == 0, 0, F>::run(f, std::forward<Args>(args)...);
+inline void for_each(const F &f, Args &&... args) {  // NOLINT(*)
+  for_each_dispatcher<sizeof...(Args) == 0, 0, F>::run(
+      f, std::forward<Args>(args)...);
 }
 
 enum class TypeKind {
   kPrimitive,
   kSNodeStruct,
-  kSNodeArray, // array components of a kSNodeStruct
+  kSNodeArray,  // array components of a kSNodeStruct
   kStruct,
   kPtr,
   kFunc,
@@ -50,7 +53,7 @@ struct SType {
   // corresponding Taichi type/Compiled SNode info
   DataType dt;
 
-  SNodeDescriptor snode_desc; // TODO: dt/snode_desc only need one at a time
+  SNodeDescriptor snode_desc;  // TODO: dt/snode_desc only need one at a time
   std::vector<uint32_t> snode_child_type_id;
 
   TypeKind flag{TypeKind::kPrimitive};
@@ -58,7 +61,7 @@ struct SType {
   // Content type id if it is a pointer/struct-array class
   // TODO: SNODE need a vector to store their childrens' element type id
   uint32_t element_type_id{0};
-  
+
   // The storage class, if it is a pointer
   spv::StorageClass storage_class{spv::StorageClassMax};
 };
@@ -97,7 +100,7 @@ class Instr {
     return word_count_;
   }
 
-  uint32_t& operator[](uint32_t idx) {
+  uint32_t &operator[](uint32_t idx) {
     TI_ASSERT(idx < word_count_);
     return (*data_)[begin_ + idx];
   }
@@ -105,7 +108,7 @@ class Instr {
  private:
   friend class InstrBuilder;
 
-  std::vector<uint32_t>* data_{nullptr};
+  std::vector<uint32_t> *data_{nullptr};
   uint32_t begin_{0};
   uint32_t word_count_{0};
 };
@@ -114,7 +117,7 @@ class Instr {
 struct PhiValue : public Value {
   Instr instr;
 
-  void set_incoming(uint32_t index, const Value& value, const Label& parent) {
+  void set_incoming(uint32_t index, const Value &value, const Label &parent) {
     TI_ASSERT(this->stype.id == value.stype.id);
     instr[3 + index * 2] = value.id;
     instr[3 + index * 2 + 1] = parent.id;
@@ -124,17 +127,17 @@ struct PhiValue : public Value {
 // Helper class to build SPIRV instruction
 class InstrBuilder {
  public:
-  InstrBuilder& begin(spv::Op op) {
+  InstrBuilder &begin(spv::Op op) {
     TI_ASSERT(data_.size() == 0U);
     op_ = op;
     data_.push_back(0);
     return *this;
   }
 
-#define ADD(var, id) \
-  InstrBuilder& add(const var& v) { \
-    data_.push_back(id); \
-    return *this; \
+#define ADD(var, id)                \
+  InstrBuilder &add(const var &v) { \
+    data_.push_back(id);            \
+    return *this;                   \
   }
 
   ADD(Value, v.id);
@@ -143,31 +146,32 @@ class InstrBuilder {
   ADD(uint32_t, v);
 #undef ADD
 
-  InstrBuilder& add(const std::vector<uint32_t>& v) {
+  InstrBuilder &add(const std::vector<uint32_t> &v) {
     for (const auto &v0 : v) {
       add(v0);
     }
     return *this;
   }
 
-  InstrBuilder& add(const std::string& v) {
+  InstrBuilder &add(const std::string &v) {
     const uint32_t word_size = sizeof(uint32_t);
-    const auto nwords = (static_cast<uint32_t>(v.length()) + word_size) / word_size;
+    const auto nwords =
+        (static_cast<uint32_t>(v.length()) + word_size) / word_size;
     size_t begin = data_.size();
     data_.resize(begin + nwords, 0U);
-    std::copy(v.begin(), v.end(), reinterpret_cast<char*>(&data_[begin]));
+    std::copy(v.begin(), v.end(), reinterpret_cast<char *>(&data_[begin]));
     return *this;
   }
 
   template <typename... Args>
-  InstrBuilder& add_seq(Args&&... args) {
+  InstrBuilder &add_seq(Args &&... args) {
     AddSeqHelper helper;
     helper.builder = this;
     vulkan::spirv::for_each(helper, std::forward<Args>(args)...);
     return *this;
   }
 
-  Instr commit(std::vector<uint32_t>* seg) {
+  Instr commit(std::vector<uint32_t> *seg) {
     Instr ret;
     ret.data_ = seg;
     ret.begin_ = seg->size();
@@ -186,10 +190,10 @@ class InstrBuilder {
   // helper class to support variadic arguments
   struct AddSeqHelper {
     // The reference to builder
-    InstrBuilder* builder;
+    InstrBuilder *builder;
     // invoke function
     template <typename T>
-    void operator()(size_t, const T& v) const {
+    void operator()(size_t, const T &v) const {
       builder->add(v);
     }
   };
@@ -198,29 +202,33 @@ class InstrBuilder {
 // Builder to build up a single SPIR-V module
 class IRBuilder {
  public:
-  template<typename... Args>
-  void debug(spv::Op op, Args&&... args) {
+  template <typename... Args>
+  void debug(spv::Op op, Args &&... args) {
     ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&debug_);
   }
 
-  template<typename... Args>
-  void execution_mode(Value func, Args&&... args) {
-    ib_.begin(spv::OpExecutionMode).add_seq(func, std::forward<Args>(args)...).commit(&exec_mode_);
+  template <typename... Args>
+  void execution_mode(Value func, Args &&... args) {
+    ib_.begin(spv::OpExecutionMode)
+        .add_seq(func, std::forward<Args>(args)...)
+        .commit(&exec_mode_);
   }
 
-  template<typename... Args>
-  void decorate(spv::Op op, Args&&... args) {
+  template <typename... Args>
+  void decorate(spv::Op op, Args &&... args) {
     ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&decorate_);
   }
 
   template <typename... Args>
-  void declare_global(spv::Op op, Args&&... args) {
+  void declare_global(spv::Op op, Args &&... args) {
     ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&global_);
   }
 
   template <typename... Args>
-  Instr make_inst(spv::Op op, Args&&... args) {
-    return ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&function_);
+  Instr make_inst(spv::Op op, Args &&... args) {
+    return ib_.begin(op)
+        .add_seq(std::forward<Args>(args)...)
+        .commit(&function_);
   }
 
   // Initialize header
@@ -230,15 +238,16 @@ class IRBuilder {
                    bool support_fp64 = false);
   // Initialize the predefined contents
   void init_pre_defs();
-  // Get the final binary built from the builder, return The finalized binary instruction
+  // Get the final binary built from the builder, return The finalized binary
+  // instruction
   std::vector<uint32_t> finalize();
 
-  Value ext_inst_import(const std::string& name) {
+  Value ext_inst_import(const std::string &name) {
     Value val = new_value(SType(), ValueKind::kExtInst);
     ib_.begin(spv::OpExtInstImport).add_seq(val, name).commit(&header_);
     return val;
   }
-  
+
   Label new_label() {
     Label label;
     label.id = id_counter_++;
@@ -251,34 +260,43 @@ class IRBuilder {
     curr_label_ = label;
   }
 
-  Label current_label() const { return curr_label_; }
+  Label current_label() const {
+    return curr_label_;
+  }
 
   // Make a new SSA value
-  template<typename... Args>
-  Value make_value(spv::Op op, const SType& out_type, Args&&... args) {
+  template <typename... Args>
+  Value make_value(spv::Op op, const SType &out_type, Args &&... args) {
     Value val = new_value(out_type, ValueKind::kNormal);
     make_inst(op, out_type, val, std::forward<Args>(args)...);
     return val;
   }
 
   // Make a phi value
-  PhiValue make_phi(const SType& out_type, uint32_t num_incoming);
+  PhiValue make_phi(const SType &out_type, uint32_t num_incoming);
 
   // Create Constant Primitive Value
-  // cache: if a variable is named, it should not be cached, or the name may have conflict.
-  Value int_immediate_number(const SType& dtype, int64_t value, bool cache = true);
-  Value uint_immediate_number(const SType& dtype, uint64_t value, bool cache = true);
-  Value float_immediate_number(const SType& dtype, double value, bool cache = true);
+  // cache: if a variable is named, it should not be cached, or the name may
+  // have conflict.
+  Value int_immediate_number(const SType &dtype,
+                             int64_t value,
+                             bool cache = true);
+  Value uint_immediate_number(const SType &dtype,
+                              uint64_t value,
+                              bool cache = true);
+  Value float_immediate_number(const SType &dtype,
+                               double value,
+                               bool cache = true);
 
   // Match zero type
   Value get_zero(const SType &stype) {
     TI_ASSERT(stype.flag == TypeKind::kPrimitive);
     if (is_integral(stype.dt)) {
       if (is_signed(stype.dt)) {
-        return int_immediate_number(stype, 0); 
+        return int_immediate_number(stype, 0);
       } else {
         return uint_immediate_number(stype, 0);
-      } 
+      }
     } else if (is_real(stype.dt)) {
       return float_immediate_number(stype, 0);
     } else {
@@ -286,20 +304,22 @@ class IRBuilder {
       return Value();
     }
   }
-  
+
   // Get null stype
   SType get_null_type();
   // Get the spirv type for a given Taichi data type
   SType get_primitive_type(const DataType &dt) const;
   // Get the pointer type that points to value_type
-  SType get_pointer_type(const SType& value_type, spv::StorageClass storage_class);
+  SType get_pointer_type(const SType &value_type,
+                         spv::StorageClass storage_class);
   // Get a struct{ value_type[num_elems] } type
-  SType get_struct_array_type(const SType& value_type, uint32_t num_elems);
+  SType get_struct_array_type(const SType &value_type, uint32_t num_elems);
 
   // Declare buffer argument of function
-  Value buffer_argument(const SType& value_type, uint32_t descriptor_set,
+  Value buffer_argument(const SType &value_type,
+                        uint32_t descriptor_set,
                         uint32_t binding);
-  Value struct_array_access(const SType& res_type, Value buffer, Value index);
+  Value struct_array_access(const SType &res_type, Value buffer, Value index);
 
   // Declare a new function
   // NOTE: only support void kernel function, i.e. main
@@ -308,8 +328,12 @@ class IRBuilder {
   }
 
   // Declare the entry point for a kernel function
-  void commit_kernel_function(const Value& func, const std::string& name, std::vector<Value> args, std::array<int, 3> local_size) {
-    ib_.begin(spv::OpEntryPoint).add_seq(spv::ExecutionModelGLCompute, func, name);
+  void commit_kernel_function(const Value &func,
+                              const std::string &name,
+                              std::vector<Value> args,
+                              std::array<int, 3> local_size) {
+    ib_.begin(spv::OpEntryPoint)
+        .add_seq(spv::ExecutionModelGLCompute, func, name);
     for (const auto &arg : args) {
       ib_.add(arg);
     }
@@ -320,14 +344,18 @@ class IRBuilder {
       ib_.add(gl_num_work_groups);
     }
     ib_.commit(&entry_);
-    ib_.begin(spv::OpExecutionMode).add_seq(func, spv::ExecutionModeLocalSize,
-              local_size[0], local_size[1], local_size[2]).commit(&entry_);
+    ib_.begin(spv::OpExecutionMode)
+        .add_seq(func, spv::ExecutionModeLocalSize, local_size[0],
+                 local_size[1], local_size[2])
+        .commit(&entry_);
   }
 
   // Start function scope
-  void start_function(const Value& func) {
+  void start_function(const Value &func) {
     // add function declaration to the header
-    ib_.begin(spv::OpFunction).add_seq(t_void_, func, 0, t_void_func_).commit(&func_header_);
+    ib_.begin(spv::OpFunction)
+        .add_seq(t_void_, func, 0, t_void_func_)
+        .commit(&func_header_);
 
     spirv::Label start_label = this->new_label();
     ib_.begin(spv::OpLabel).add_seq(start_label).commit(&func_header_);
@@ -355,21 +383,22 @@ class IRBuilder {
   Value select(Value cond, Value a, Value b);
 
   // Create a cast that cast value to dst_type
-  Value cast(const SType& dst_type, Value value);
+  Value cast(const SType &dst_type, Value value);
 
   // Create a GLSL450 call
   template <typename... Args>
-  Value call_glsl450(const SType& ret_type, uint32_t inst_id, Args&&... args) {
+  Value call_glsl450(const SType &ret_type, uint32_t inst_id, Args &&... args) {
     Value val = new_value(ret_type, ValueKind::kNormal);
-    ib_.begin(spv::OpExtInst).add_seq(ret_type, val, ext_glsl450_, inst_id)
-                             .add_seq(std::forward<Args>(args)...)
-                             .commit(&function_);
+    ib_.begin(spv::OpExtInst)
+        .add_seq(ret_type, val, ext_glsl450_, inst_id)
+        .add_seq(std::forward<Args>(args)...)
+        .commit(&function_);
     return val;
   }
 
   // Local allocate, load, store methods
-  Value alloca_variable(const SType& type);
-  Value load_variable(Value pointer, const SType& res_type);
+  Value alloca_variable(const SType &type);
+  Value load_variable(Value pointer, const SType &res_type);
   void store_variable(Value pointer, Value value);
 
   // Register name to corresponding Value/VariablePointer
@@ -378,11 +407,19 @@ class IRBuilder {
   Value query_value(std::string name) const;
 
   // Support easy access to trivial data types
-  SType i32_type() const { return t_int32_; }
-  SType u32_type() const { return t_uint32_; }
-  SType f32_type() const { return t_fp32_; }
-  SType bool_type() const { return t_bool_; }
-  
+  SType i32_type() const {
+    return t_int32_;
+  }
+  SType u32_type() const {
+    return t_uint32_;
+  }
+  SType f32_type() const {
+    return t_fp32_;
+  }
+  SType bool_type() const {
+    return t_bool_;
+  }
+
   // quick cache for const zero/one i32
   Value const_i32_zero_;
   Value const_i32_one_;
@@ -393,78 +430,72 @@ class IRBuilder {
   Value rand_f32(Value global_tmp_);
   Value rand_i32(Value global_tmp_);
 
-  private:
-    Value new_value(const SType& type, ValueKind flag) {
-      Value val;
-      val.id = id_counter_++;
-      val.stype = type;
-      val.flag = flag;
-      return val;
-    }
+ private:
+  Value new_value(const SType &type, ValueKind flag) {
+    Value val;
+    val.id = id_counter_++;
+    val.stype = type;
+    val.flag = flag;
+    return val;
+  }
 
-    Value get_const_(const SType& dtype, const uint64_t* pvalue, bool cache);
-    SType declare_primitive_type(DataType dt);
+  Value get_const_(const SType &dtype, const uint64_t *pvalue, bool cache);
+  SType declare_primitive_type(DataType dt);
 
-    void init_random_function(Value global_tmp_);
+  void init_random_function(Value global_tmp_);
 
-    // internal instruction builder
-    InstrBuilder ib_;
-    // Current label
-    Label curr_label_;
-    // The current maximum id
-    uint32_t id_counter_{1};
+  // internal instruction builder
+  InstrBuilder ib_;
+  // Current label
+  Label curr_label_;
+  // The current maximum id
+  uint32_t id_counter_{1};
 
-    // glsl 450 extension
-    Value ext_glsl450_;
-    // Special cached types
-    bool support_int8_,
-         support_int16_,
-         support_int64_,
-         support_fp64_;
-    SType t_bool_,
-          t_int8_, t_int16_, t_int32_, t_int64_, 
-          t_uint8_, t_uint16_, t_uint32_, t_uint64_, 
-          t_fp32_, t_fp64_, 
-          t_void_, t_void_func_;
-    // gl compute shader related type(s) and variables
-    SType t_v3_uint_;
-    Value gl_global_invocation_id;
-    Value gl_num_work_groups;
-    Value gl_work_group_size;
+  // glsl 450 extension
+  Value ext_glsl450_;
+  // Special cached types
+  bool support_int8_, support_int16_, support_int64_, support_fp64_;
+  SType t_bool_, t_int8_, t_int16_, t_int32_, t_int64_, t_uint8_, t_uint16_,
+      t_uint32_, t_uint64_, t_fp32_, t_fp64_, t_void_, t_void_func_;
+  // gl compute shader related type(s) and variables
+  SType t_v3_uint_;
+  Value gl_global_invocation_id;
+  Value gl_num_work_groups;
+  Value gl_work_group_size;
 
-    // Float type atomic add function
-    Value float_atomic_add_;
-    // Random function and variables
-    bool init_rand_;
-    Value _rand_x_, _rand_y_, _rand_z_, _rand_w_; // per-thread local variable
- 
-    // map from value to its pointer type
-    std::map<std::pair<uint32_t, spv::StorageClass>, SType> pointer_type_tbl_;
-    // map from constant int to its value
-    std::map<std::pair<uint32_t, uint64_t>, Value> const_tbl_;
-    // map from raw_name(string) to Value
-    std::unordered_map<std::string, Value> value_name_tbl_;
+  // Float type atomic add function
+  Value float_atomic_add_;
+  // Random function and variables
+  bool init_rand_;
+  Value _rand_x_, _rand_y_, _rand_z_, _rand_w_;  // per-thread local variable
 
-    // Header segment, include import
-    std::vector<uint32_t> header_;
-    // engtry point segment
-    std::vector<uint32_t> entry_;
-    // Header segment
-    std::vector<uint32_t> exec_mode_;
-    // Debug segment
-    std::vector<uint32_t> debug_;
-    // Annotation segment
-    std::vector<uint32_t> decorate_;
-    // Global segment: types, variables, types
-    std::vector<uint32_t> global_;
-    // Function header segment
-    std::vector<uint32_t> func_header_;
-    // Main Function segment
-    std::vector<uint32_t> function_;
-    // Random Function segment
-    std::vector<uint32_t> random_function_;
-    // Float Atomic Add Function segment
-    std::vector<uint32_t> float_atomic_add_function_;
+  // map from value to its pointer type
+  std::map<std::pair<uint32_t, spv::StorageClass>, SType> pointer_type_tbl_;
+  // map from constant int to its value
+  std::map<std::pair<uint32_t, uint64_t>, Value> const_tbl_;
+  // map from raw_name(string) to Value
+  std::unordered_map<std::string, Value> value_name_tbl_;
+
+  // Header segment, include import
+  std::vector<uint32_t> header_;
+  // engtry point segment
+  std::vector<uint32_t> entry_;
+  // Header segment
+  std::vector<uint32_t> exec_mode_;
+  // Debug segment
+  std::vector<uint32_t> debug_;
+  // Annotation segment
+  std::vector<uint32_t> decorate_;
+  // Global segment: types, variables, types
+  std::vector<uint32_t> global_;
+  // Function header segment
+  std::vector<uint32_t> func_header_;
+  // Main Function segment
+  std::vector<uint32_t> function_;
+  // Random Function segment
+  std::vector<uint32_t> random_function_;
+  // Float Atomic Add Function segment
+  std::vector<uint32_t> float_atomic_add_function_;
 };
 }  // namespace spirv
 }  // namespace vulkan

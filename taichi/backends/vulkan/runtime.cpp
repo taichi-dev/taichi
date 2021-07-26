@@ -300,7 +300,7 @@ class VkRuntime ::Impl {
       const auto &attribs = reg_params.kernel_attribs.tasks_attribs[i];
       const auto &spirv_src = reg_params.task_spirv_source_codes[i];
       const auto &task_name = attribs.name;
-      
+
       // If we can reach here, we have succeeded. Otherwise
       // std::optional::value() would have killed us.
       params.spirv_bins.push_back(std::move(spirv_src));

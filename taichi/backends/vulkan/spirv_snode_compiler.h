@@ -28,7 +28,9 @@ struct CompiledSpirvSNode {
   }
 };
 
-CompiledSpirvSNode compile_spirv_snode_structs(IRBuilder* builer, const CompiledSNodeStructs* compiled_structs);
+CompiledSpirvSNode compile_spirv_snode_structs(
+    IRBuilder *builer,
+    const CompiledSNodeStructs *compiled_structs);
 
 }  // namespace spirv
 }  // namespace vulkan

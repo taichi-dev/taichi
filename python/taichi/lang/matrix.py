@@ -17,7 +17,7 @@ import taichi as ti
 
 class Matrix(TaichiOperations):
     """The matrix class.
-    
+
     Args:
         n (int): the first dimension of a matrix.
         m (int): the second dimension of a matrix.
@@ -206,7 +206,7 @@ class Matrix(TaichiOperations):
 
     def __matmul__(self, other):
         """Matrix-matrix or matrix-vector multiply.
-        
+
         Args:
             other (Matrix or Vector): a matrix or a vector.
 
@@ -423,7 +423,7 @@ class Matrix(TaichiOperations):
     @python_scope
     def __getitem__(self, indices):
         """Access to the element at the given indices in a matrix.
-        
+
         Args:
             indices(List, Tuple): the indices of the element.
 
@@ -444,11 +444,11 @@ class Matrix(TaichiOperations):
     @python_scope
     def __setitem__(self, indices, item):
         """Set the element value at the given indices in a matrix.
-        
+
         Args:
             indices(List, Tuple): the indices of a element.
 
-        """        
+        """
         if self.is_global():
             if not isinstance(item, (list, tuple)):
                 item = list(item)
@@ -493,7 +493,7 @@ class Matrix(TaichiOperations):
     @taichi_scope
     def cast(self, dtype):
         """Cast the matrix element data type.
-        
+
         Args:
             dtype (data-type): the data type of the casted matrix element.
 
@@ -512,7 +512,7 @@ class Matrix(TaichiOperations):
 
         Returns:
             The sum of a matrix diagonal elements.
-        
+
         """
         assert self.n == self.m
         sum = self(0, 0)
@@ -523,7 +523,7 @@ class Matrix(TaichiOperations):
     @taichi_scope
     def inverse(self):
         """The inverse of a matrix.
-        
+
         Note:
             The matrix dimension should be less than or equal to 4.
 
@@ -589,8 +589,8 @@ class Matrix(TaichiOperations):
         """Normalize a vector.
 
         Args:
-            eps (Scalar): a safe-guard value for sqrt, usually 0.  
-        
+            eps (Scalar): a safe-guard value for sqrt, usually 0.
+
         Examples::
 
             a = ti.Vector([3, 4])
@@ -622,7 +622,7 @@ class Matrix(TaichiOperations):
 
         Returns:
             Get the transpose of a matrix.
-        
+
         """
         ret = Matrix([[self[i, j] for i in range(self.n)]
                       for j in range(self.m)])
@@ -631,7 +631,7 @@ class Matrix(TaichiOperations):
     @taichi_scope
     def determinant(a):
         """Get the determinant of a matrix.
-        
+
         Note:
             The matrix dimension should be less than or equal to 4.
 
@@ -676,10 +676,10 @@ class Matrix(TaichiOperations):
         Args:
             dim (int): the dimension of a square matrix.
             val (TypeVar): the diagonal elment value.
-        
+
         Returns:
             The constructed diagonal square matrix.
-        
+
         """
         ret = Matrix(dim, dim)
         for i in range(dim):
@@ -738,10 +738,10 @@ class Matrix(TaichiOperations):
     @kern_mod.pyfunc
     def norm(self, eps=0):
         """Return the square root of the sum of the absolute squares of its elements.
-        
+
         Args:
-            eps (Scalar): a safe-guard value for sqrt, usually 0. 
-        
+            eps (Scalar): a safe-guard value for sqrt, usually 0.
+
         Examples::
 
             a = ti.Vector([3, 4])
@@ -757,10 +757,10 @@ class Matrix(TaichiOperations):
     @kern_mod.pyfunc
     def norm_inv(self, eps=0):
         """Return the inverse of the matrix/vector `norm`. For `norm`: please see :func:`~taichi.lang.matrix.Matrix.norm`.
-        
+
         Args:
-            eps (Scalar): a safe-guard value for sqrt, usually 0. 
-        
+            eps (Scalar): a safe-guard value for sqrt, usually 0.
+
         Returns:
             The inverse of the matrix/vector `norm`.
 
@@ -784,7 +784,7 @@ class Matrix(TaichiOperations):
 
     def any(self):
         """Test whether any element not equal zero.
-        
+
         Returns:
             bool: True if any element is not equal zero, False otherwise.
 
@@ -796,7 +796,7 @@ class Matrix(TaichiOperations):
 
     def all(self):
         """Test whether all element not equal zero.
-        
+
         Returns:
             bool: True if all elements are not equal zero, False otherwise.
 
@@ -808,7 +808,7 @@ class Matrix(TaichiOperations):
 
     def fill(self, val):
         """Fill the element with values.
-        
+
         Args:
             val (Number, List, Tuple, Matrix): the dimension of val should be consistent with the dimension of element.
 

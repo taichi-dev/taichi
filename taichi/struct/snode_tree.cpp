@@ -1,4 +1,5 @@
 #include "taichi/struct/snode_tree.h"
+
 #include "taichi/struct/struct.h"
 
 namespace taichi {

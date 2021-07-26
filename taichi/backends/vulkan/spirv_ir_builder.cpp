@@ -146,6 +146,12 @@ namespace spirv {
     }
   }
 
+  SType IRBuilder::get_null_type() {
+    SType res;
+    res.id = id_counter_++;
+    return res;
+  }
+
   SType IRBuilder::get_primitive_type(const DataType &dt) const {
     if (dt->is_primitive(PrimitiveTypeID::u1)) {
       return t_bool_;
@@ -722,68 +728,6 @@ namespace spirv {
     Value tmp0 = rand_u32(global_tmp_);
     Value val = cast(t_int32_, tmp0);
     return val;
-  }
-
-  SType IRBuilder::get_snode_struct(const CompiledSNodeStructs* compiled_structs, const SNodeDescriptor& sn_desc) {
-    const auto &sn = sn_desc.snode;
-    if (sn->is_place()) {
-      // return get_primitive_type(sn->dt); // TODO(changyu): use type-based pointer
-      return t_int32_;
-    } else {
-      SType sn_type;
-      sn_type.id = id_counter_++;
-      sn_type.snode_desc = sn_desc;
-      sn_type.flag = TypeKind::kSNodeStruct;
-      ib_.begin(spv::OpName).add_seq(sn_type, sn->node_type_name).commit(&debug_);
-
-      uint32_t cn_cnt = 0;
-      for (const auto &ch : sn->ch) {
-        const SNodeDescriptor& ch_desc = compiled_structs->snode_descriptors.find(ch->id)->second;
-        const auto &ch_sn = ch_desc.snode;
-        SType ch_type = get_snode_struct(compiled_structs, ch_desc);
-        SType ch_type_array;
-        
-        if (!ch_sn->is_place()) {
-          ch_type_array.id = id_counter_++;
-          ch_type_array.flag = TypeKind::kSNodeArray;
-          ch_type_array.element_type_id = ch_type.id;
-
-          Value length = int_immediate_number(t_int32_, ch_desc.cells_per_container_pot());
-          ib_.begin(spv::OpTypeArray)
-              .add_seq(ch_type_array, ch_type, length)
-              .commit(&global_);   // Length
-          ib_.begin(spv::OpDecorate)
-              .add_seq(ch_type_array, spv::DecorationArrayStride, ch_desc.cell_stride)
-              .commit(&decorate_); // Stride
-        } else {
-          ch_type_array = ch_type;
-        }
-        ib_.begin(spv::OpMemberDecorate)
-            .add_seq(sn_type, cn_cnt++, spv::DecorationOffset, ch_desc.mem_offset_in_parent_cell)
-            .commit(&global_);   // Offset
-        sn_type.snode_child_type_id.push_back(ch_type_array.id);
-
-        TI_ASSERT(snode_id_struct_stype_tbl_.find(ch_sn->id) == snode_id_struct_stype_tbl_.end());
-        snode_id_struct_stype_tbl_[ch_sn->id] = std::move(ch_type);
-        TI_ASSERT(snode_id_array_stype_tbl_.find(ch_sn->id) == snode_id_array_stype_tbl_.end());
-        snode_id_array_stype_tbl_[ch_sn->id] = std::move(ch_type_array);
-      }
-
-      ib_.begin(spv::OpTypeStruct).add(sn_type);
-      for (const auto& ch : sn_type.snode_child_type_id) {
-        ib_.add(ch);
-      }
-      ib_.commit(&global_);
-      return sn_type;
-    }
-  }
-
-  SType IRBuilder::query_snode_struct_type(int id) {
-    return snode_id_struct_stype_tbl_.find(id)->second;
-  }
-  
-  SType IRBuilder::query_snode_array_type(int id) {
-    return snode_id_array_stype_tbl_.find(id)->second;
   }
  
   Value IRBuilder::get_const_(const SType& dtype, const uint64_t* pvalue, bool cache) {

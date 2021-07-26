@@ -51,7 +51,7 @@ struct SType {
   DataType dt;
 
   SNodeDescriptor snode_desc; // TODO: dt/snode_desc only need one at a time
-  [[maybe_unused]] std::vector<uint32_t> snode_child_type_id;
+  std::vector<uint32_t> snode_child_type_id;
 
   TypeKind flag{TypeKind::kPrimitive};
 
@@ -142,6 +142,13 @@ class InstrBuilder {
   ADD(Label, v.id);
   ADD(uint32_t, v);
 #undef ADD
+
+  InstrBuilder& add(const std::vector<uint32_t>& v) {
+    for (const auto &v0 : v) {
+      add(v0);
+    }
+    return *this;
+  }
 
   InstrBuilder& add(const std::string& v) {
     const uint32_t word_size = sizeof(uint32_t);
@@ -280,6 +287,8 @@ class IRBuilder {
     }
   }
   
+  // Get null stype
+  SType get_null_type();
   // Get the spirv type for a given Taichi data type
   SType get_primitive_type(const DataType &dt) const;
   // Get the pointer type that points to value_type
@@ -384,11 +393,6 @@ class IRBuilder {
   Value rand_f32(Value global_tmp_);
   Value rand_i32(Value global_tmp_);
 
-  // Build Snode structure in SPIR-V
-  SType get_snode_struct(const CompiledSNodeStructs* compiled_structs, const SNodeDescriptor& sn_desc);
-  SType query_snode_struct_type(int id);
-  SType query_snode_array_type(int id);
-
   private:
     Value new_value(const SType& type, ValueKind flag) {
       Value val;
@@ -440,10 +444,6 @@ class IRBuilder {
     std::map<std::pair<uint32_t, uint64_t>, Value> const_tbl_;
     // map from raw_name(string) to Value
     std::unordered_map<std::string, Value> value_name_tbl_;
-    // map from snode id to snode struct SType
-    std::unordered_map<int, SType> snode_id_struct_stype_tbl_;
-    // map from snode id to snode array SType
-    std::unordered_map<int, SType> snode_id_array_stype_tbl_;
 
     // Header segment, include import
     std::vector<uint32_t> header_;

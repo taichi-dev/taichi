@@ -12,6 +12,7 @@
 #include "taichi/backends/vulkan/runtime.h"
 #include "taichi/backends/opengl/opengl_data_types.h"
 #include "taichi/backends/vulkan/spirv_ir_builder.h"
+#include "taichi/backends/vulkan/spirv_snode_compiler.h"
 #include "taichi/ir/transforms.h"
 
 namespace taichi {
@@ -180,7 +181,7 @@ class TaskCodegen : public IRVisitor {
     // Should we assert |root_stmt_| is assigned only once?
     root_stmt_ = stmt;
     get_buffer_value(BuffersEnum::Root);
-    spirv::SType root_ptr = ir_->get_pointer_type(root_buffer_type_, spv::StorageClassStorageBuffer);
+    spirv::SType root_ptr = ir_->get_pointer_type(spirv_snode_.root_stype, spv::StorageClassStorageBuffer);
     spirv::Value root_val = ir_->make_value(spv::OpAccessChain, root_ptr, 
         get_buffer_value(BuffersEnum::Root), ir_->const_i32_zero_, ir_->const_i32_zero_);
     ir_->register_value(stmt->raw_name(), root_val);
@@ -203,7 +204,7 @@ class TaskCodegen : public IRVisitor {
       spirv::SType dt_ptr = ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassStorageBuffer); // TODO(changyu): use type-based pointer
       val = ir_->make_value(spv::OpAccessChain, dt_ptr, input_ptr_val, offset);
     } else {
-      spirv::SType snode_array = ir_->query_snode_array_type(out_snode->id);
+      spirv::SType snode_array = spirv_snode_.query_snode_array_stype(out_snode->id);
       spirv::SType snode_array_ptr = ir_->get_pointer_type(snode_array, spv::StorageClassStorageBuffer);
       val = ir_->make_value(spv::OpAccessChain, snode_array_ptr, 
           input_ptr_val, offset);
@@ -219,16 +220,16 @@ class TaskCodegen : public IRVisitor {
     if (stmt->input_snode) {
       parent = stmt->input_snode->raw_name();
       if (stmt->snode->id == 0) {
-        snode_struct = root_buffer_type_;
+        snode_struct = spirv_snode_.root_stype;
         is_root = true;
       }
       else {
-        snode_struct = ir_->query_snode_struct_type(stmt->snode->id);
+        snode_struct = spirv_snode_.query_snode_struct_stype(stmt->snode->id);
       }
     } else {
       TI_ASSERT(root_stmt_ != nullptr);
       parent = root_stmt_->raw_name();
-      snode_struct = root_buffer_type_;
+      snode_struct = spirv_snode_.root_stype;
       is_root = true;
     }
     const auto *sn = stmt->snode;
@@ -1018,8 +1019,8 @@ class TaskCodegen : public IRVisitor {
     
     spirv::Value buffer_value;
     if (buffer == BuffersEnum::Root) {
-      root_buffer_type_ = ir_->get_snode_struct(compiled_structs_, compiled_structs_->snode_descriptors.find(0)->second); // Support native SNode structure
-      buffer_value = ir_->buffer_argument(root_buffer_type_, 0, buffer_binding_map_[buffer]);
+      spirv_snode_ = compile_spirv_snode_structs(ir_.get(), compiled_structs_); // Support native SNode structure
+      buffer_value = ir_->buffer_argument(spirv_snode_.root_stype, 0, buffer_binding_map_[buffer]);
     } else {
       buffer_value = ir_->buffer_argument(ir_->i32_type(), 0, buffer_binding_map_[buffer]);
     }
@@ -1075,7 +1076,7 @@ class TaskCodegen : public IRVisitor {
   spirv::Value kernel_function_;
   spirv::Label kernel_return_label_;
   bool gen_label_{false};
-  spirv::SType root_buffer_type_;
+  spirv::CompiledSpirvSNode spirv_snode_;
 
   OffloadedStmt *const task_ir_;                        // not owned
   const CompiledSNodeStructs *const compiled_structs_;  // not owned

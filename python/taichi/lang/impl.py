@@ -247,8 +247,10 @@ class PyTaichi:
             self.prog = _ti_core.Program()
 
     def materialize_root_fb(self, first):
-        if (not root.finalized and not root.empty) or first:
+        if not root.finalized and not root.empty:
             root.finalize()
+        elif first:
+            root.finalize(raise_warning = False)
 
         if root.finalized:
             global _root_fb

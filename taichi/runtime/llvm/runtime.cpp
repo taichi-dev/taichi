@@ -32,10 +32,7 @@ using host_vsnprintf_type = int (*)(char *,
                                     std::size_t,
                                     const char *,
                                     std::va_list);
-using vm_allocator_type = void *(*)(void *,
-                                    std::size_t,
-                                    std::size_t,
-                                    const int);
+using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
 using RangeForTaskFunc = void(Context *, const char *tls, int i);
 using parallel_for_type = void (*)(void *thread_pool,
                                    int splits,
@@ -152,7 +149,7 @@ T ifloordiv(T a, T b) {
 
 struct LLVMRuntime;
 template <typename... Args>
-void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args);
+void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&...args);
 
 extern "C" {
 
@@ -541,9 +538,7 @@ struct LLVMRuntime {
   RandState *rand_states;
   MemRequestQueue *mem_req_queue;
   Ptr allocate(std::size_t size);
-  Ptr allocate_aligned(std::size_t size,
-                       std::size_t alignment,
-                       const int snode_tree_id);
+  Ptr allocate_aligned(std::size_t size, std::size_t alignment);
   Ptr request_allocate_aligned(std::size_t size, std::size_t alignment);
   Ptr allocate_from_buffer(std::size_t size, std::size_t alignment);
   Ptr profiler;
@@ -570,7 +565,7 @@ struct LLVMRuntime {
   }
 
   template <typename T, typename... Args>
-  T *create(Args &&... args) {
+  T *create(Args &&...args) {
     auto ptr = (T *)request_allocate_aligned(sizeof(T), 4096);
     new (ptr) T(std::forward<Args>(args)...);
     return ptr;
@@ -775,13 +770,11 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
   taichi_assert_format(runtime, test, msg, 0, nullptr);
 }
 
-Ptr LLVMRuntime::allocate_aligned(std::size_t size,
-                                  std::size_t alignment,
-                                  const int snode_tree_id = -1) {
+Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
   if (preallocated) {
     return allocate_from_buffer(size, alignment);
   }
-  return (Ptr)vm_allocator(program, size, alignment, snode_tree_id);
+  return (Ptr)vm_allocator(program, size, alignment);
 }
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
@@ -840,6 +833,13 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
   }
 }
 
+void runtime_snode_tree_allocate_aligned(LLVMRuntime *runtime,
+                                         Ptr *ptr,
+                                         std::size_t size,
+                                         std::size_t alignment) {
+  *ptr = runtime->allocate_aligned(size, alignment);
+}
+
 void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
   runtime->set_result(taichi_result_buffer_ret_value_id,
                       runtime->mem_req_queue);
@@ -867,8 +867,7 @@ void runtime_initialize(
     preallocated_buffer +=
         taichi::iroundup(sizeof(LLVMRuntime), taichi_page_size);
   } else {
-    runtime =
-        (LLVMRuntime *)vm_allocator(program, sizeof(LLVMRuntime), 128, -1);
+    runtime = (LLVMRuntime *)vm_allocator(program, sizeof(LLVMRuntime), 128);
   }
 
   runtime->preallocated = preallocated_size > 0;
@@ -902,13 +901,13 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
                                std::size_t root_size,
                                const int root_id,
                                const int num_snodes,
-                               const int snode_tree_id) {
+                               const int snode_tree_id,
+                               std::size_t rounded_size,
+                               Ptr ptr) {
   // For Metal runtime, we have to make sure that both the beginning address
   // and the size of the root buffer memory are aligned to page size.
-  runtime->root_mem_sizes[snode_tree_id] =
-      taichi::iroundup((size_t)root_size, taichi_page_size);
-  runtime->roots[snode_tree_id] = runtime->allocate_aligned(
-      runtime->root_mem_sizes[snode_tree_id], taichi_page_size, snode_tree_id);
+  runtime->root_mem_sizes[snode_tree_id] = rounded_size;
+  runtime->roots[snode_tree_id] = ptr;
   // runtime->request_allocate_aligned ready to use
   // initialize the root node element list
   for (int i = root_id; i < root_id + num_snodes; i++) {
@@ -1599,7 +1598,7 @@ struct printf_helper {
   }
 
   template <typename... Args, typename T>
-  void push_back(T t, Args &&... args) {
+  void push_back(T t, Args &&...args) {
     *(T *)&buffer[tail] = t;
     if (tail % sizeof(T) != 0)
       tail += sizeof(T) - tail % sizeof(T);
@@ -1616,7 +1615,7 @@ struct printf_helper {
 };
 
 template <typename... Args>
-void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args) {
+void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&...args) {
 #if ARCH_cuda
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);

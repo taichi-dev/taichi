@@ -195,8 +195,9 @@ void export_lang(py::module &m) {
                      &CompileConfig::quant_opt_store_fusion)
       .def_readwrite("quant_opt_atomic_demotion",
                      &CompileConfig::quant_opt_atomic_demotion)
-      .def_readwrite("memory_allocate_critical_size",
-                     &CompileConfig::memory_allocate_critical_size);
+      /*.def_readwrite("memory_allocate_critical_size",
+                     &CompileConfig::memory_allocate_critical_size)*/
+      ;
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

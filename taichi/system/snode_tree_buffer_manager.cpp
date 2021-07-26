@@ -7,29 +7,65 @@ SNodeTreeBufferManager::SNodeTreeBufferManager(Program *prog) : prog(prog) {
   TI_TRACE("SNode tree buffer manager created.");
 }
 
-void *SNodeTreeBufferManager::allocate(std::size_t size,
-                                       std::size_t alignment,
-                                       const int snode_tree_id) {
-  void *ret = nullptr;
-  if (size >= prog->config.memory_allocate_critical_size) {
-    // allocate a seperate memory for large SNode tree
-    allocators[snode_tree_id] =
-        std::make_unique<UnifiedAllocator>(size, prog->config.arch);
-    ret = allocators[snode_tree_id]->allocate(size, alignment);
-  } else {
-    ret = prog->memory_pool->allocate(size, alignment);
+Ptr SNodeTreeBufferManager::allocate(JITModule *runtime_jit,
+                                     void *runtime,
+                                     std::size_t size,
+                                     std::size_t alignment,
+                                     const int snode_tree_id) {
+  TI_TRACE("allocating memory for SNode Tree {}", snode_tree_id);
+  if (size == 0) {
+    return nullptr;
   }
-  TI_ASSERT(ret);
-  return ret;
+  Ptr ptr;
+  if (size_set.lower_bound(std::make_pair(size, nullptr)) == size_set.end()) {
+    runtime_jit->call<void *, void *, std::size_t, std::size_t>(
+        "runtime_snode_tree_allocate_aligned", runtime, &ptr, size, alignment);
+    size_set.insert(std::make_pair(size, ptr));
+    Ptr_map[ptr] = size;
+  }
+  std::pair<std::size_t, Ptr> x =
+      *size_set.lower_bound(std::make_pair(size, nullptr));
+  size_set.erase(x);
+  Ptr_map.erase(x.second);
+  if (x.first - size > 0) {
+    size_set.insert(std::make_pair(x.first - size, x.second + size));
+    Ptr_map[x.second + size] = x.first - size;
+  }
+  TI_ASSERT(x.second);
+  roots[snode_tree_id] = x.second;
+  sizes[snode_tree_id] = x.first;
+  return x.second;
 }
 
 void SNodeTreeBufferManager::destroy(const int snode_tree_id) {
   TI_TRACE("Destroying SNode tree {}.", snode_tree_id);
-  if (allocators.find(snode_tree_id) != allocators.end()) {
-    allocators[snode_tree_id].reset();
-  } else {
+  std::size_t size = sizes[snode_tree_id];
+  if (size == 0) {
     TI_DEBUG("SNode tree {} destroy failed.", snode_tree_id);
+    return;
   }
+  Ptr ptr = roots[snode_tree_id];
+  // merge with right block
+  while (Ptr_map[ptr + size]) {
+    std::size_t tmp = Ptr_map[ptr + size];
+    size_set.erase(std::make_pair(tmp, ptr + size));
+    Ptr_map.erase(ptr + size);
+    size += tmp;
+  }
+  // merge with left block
+  while (Ptr_map.lower_bound(ptr) != Ptr_map.begin()) {
+    std::pair<Ptr, std::size_t> x = *--Ptr_map.lower_bound(ptr);
+    if (x.first + x.second != ptr) {
+      break;
+    }
+    size_set.erase(std::make_pair(x.second, x.first));
+    Ptr_map.erase(x.first);
+    ptr = x.first;
+    size += x.second;
+  }
+  size_set.insert(std::make_pair(size, ptr));
+  Ptr_map[ptr] = size;
+  TI_DEBUG("SNode tree {} destroyed.", snode_tree_id);
 }
 
 TLANG_NAMESPACE_END

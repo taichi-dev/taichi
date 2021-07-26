@@ -446,7 +446,7 @@ class Matrix(TaichiOperations):
         """Set the element value at the given indices in a matrix.
 
         Args:
-            indices(List, Tuple): the indices of a element.
+            indices (Sequence[Expr]): the indices of a element.
 
         """
         if self.is_global():

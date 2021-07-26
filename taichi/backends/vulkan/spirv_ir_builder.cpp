@@ -1,7 +1,7 @@
 #include "taichi/backends/vulkan/spirv_ir_builder.h"
 
-TLANG_NAMESPACE_BEGIN
-
+namespace taichi {
+namespace lang {
 namespace vulkan {
 
 namespace spirv {
@@ -936,5 +936,5 @@ namespace spirv {
 
 }  // namespace spirv
 }  // namespace vulkan
-
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

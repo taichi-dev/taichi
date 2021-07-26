@@ -1,16 +1,15 @@
 #pragma once
 
+#include <glslang/SPIRV/spirv.hpp>
+#include <array>
+
 #include "taichi/lang_util.h"
 #include "taichi/ir/type.h"
 #include "taichi/util/testing.h"
-#include "taichi/backends/vulkan/spirv.hpp"
-
 #include "taichi/backends/vulkan/snode_struct_compiler.h"
 
-#include <array>
-
-TLANG_NAMESPACE_BEGIN
-
+namespace taichi {
+namespace lang {
 namespace vulkan {
 
 namespace spirv {
@@ -469,5 +468,5 @@ class IRBuilder {
 };
 }  // namespace spirv
 }  // namespace vulkan
-
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

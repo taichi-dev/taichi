@@ -161,7 +161,7 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     assert np.allclose(r2[None].value.to_numpy(), ops(a, c))
 
 
-@ti.test(arch=ti.cpu)
+@ti.test(arch=[ti.cpu, ti.gpu])
 def test_matrix_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
 

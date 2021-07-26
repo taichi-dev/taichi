@@ -133,7 +133,7 @@ class FieldsBuilder:
         self._empty = False
         self._root.lazy_grad()
 
-    def finalize(self, raise_warning = True):
+    def finalize(self, raise_warning=True):
         """Constructs the SNodeTree and finalizes this builder."""
         self._check_not_finalized()
         if self._empty and raise_warning:

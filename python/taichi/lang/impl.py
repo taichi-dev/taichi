@@ -250,7 +250,7 @@ class PyTaichi:
         if not root.finalized and not root.empty:
             root.finalize()
         elif first:
-            root.finalize(raise_warning = False)
+            root.finalize(raise_warning=False)
 
         if root.finalized:
             global _root_fb

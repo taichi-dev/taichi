@@ -25,38 +25,23 @@ class SNodeTree {
    * @param id Id of the tree
    * @param root Root of the tree
    */
-  explicit SNodeTree(int id,
-                     std::unique_ptr<SNode> root,
-                     bool packed,
-                     Program *prog);
-
-  void destroy();
+  explicit SNodeTree(int id, std::unique_ptr<SNode> root, bool packed);
 
   int id() const {
-    if (destroyed) {
-      TI_ERROR("SNode tree {} has been destroyed", id_);
-    }
     return id_;
   }
 
   const SNode *root() const {
-    if (destroyed) {
-      TI_ERROR("SNode tree {} has been destroyed", id_);
-    }
     return root_.get();
   }
 
   SNode *root() {
-    if (destroyed) {
-      TI_ERROR("SNode tree {} has been destroyed", id_);
-    }
     return root_.get();
   }
 
  private:
   int id_{0};
   std::unique_ptr<SNode> root_{nullptr};
-  bool destroyed{false};
 };
 
 }  // namespace lang

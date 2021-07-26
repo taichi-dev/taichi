@@ -444,10 +444,13 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 }
 
+void Program::destroy_snode_tree(int id) {
+  snode_tree_buffer_manager->destroy(id);
+}
+
 SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {
   const int id = snode_trees_.size();
-  auto tree =
-      std::make_unique<SNodeTree>(id, std::move(root), config.packed, this);
+  auto tree = std::make_unique<SNodeTree>(id, std::move(root), config.packed);
   tree->root()->set_snode_tree_id(id);
   materialize_snode_tree(tree.get());
   snode_trees_.push_back(std::move(tree));

@@ -336,9 +336,7 @@ void export_lang(py::module &m) {
       .def("begin_shared_exp_placement", &SNode::begin_shared_exp_placement)
       .def("end_shared_exp_placement", &SNode::end_shared_exp_placement);
 
-  py::class_<SNodeTree>(m, "SNodeTree")
-      .def("destroy", &SNodeTree::destroy)
-      .def("id", &SNodeTree::id);
+  py::class_<SNodeTree>(m, "SNodeTree").def("id", &SNodeTree::id);
 
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
@@ -880,6 +878,9 @@ void export_lang(py::module &m) {
         return program->add_snode_tree(registry->finalize(root));
       },
       py::return_value_policy::reference);
+  m.def("destroy_snode_tree", [](const int id, Program *program) {
+    program->destroy_snode_tree(id);
+  });
 }
 
 TI_NAMESPACE_END

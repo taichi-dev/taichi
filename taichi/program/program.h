@@ -308,6 +308,13 @@ class Program {
   }
 
   /**
+   * Destroys a new SNode tree.
+   *
+   * @param id The id of the SNode tree.
+   */
+  void destroy_snode_tree(int id);
+
+  /**
    * Adds a new SNode tree.
    *
    * @param root The root of the new SNode tree.

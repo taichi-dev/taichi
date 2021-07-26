@@ -3,6 +3,8 @@
 # loaded during the import procedure, it's probably still good to delay the
 # access to it.
 
+from taichi.core.util import ti_core as _ti_core
+from taichi.lang import impl
 from taichi.lang.exception import InvalidOperationError
 
 
@@ -14,7 +16,7 @@ class SNodeTree:
     def destroy(self):
         if self.destroyed:
             raise InvalidOperationError('SNode tree has been destroyed')
-        self.ptr.destroy()
+        _ti_core.destroy_snode_tree(self.ptr.id(), impl.get_runtime().prog)
         self.destroyed = True
 
     @property

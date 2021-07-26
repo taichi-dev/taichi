@@ -5,20 +5,9 @@
 namespace taichi {
 namespace lang {
 
-SNodeTree::SNodeTree(int id,
-                     std::unique_ptr<SNode> root,
-                     bool packed,
-                     Program *prog)
-    : id_(id), root_(std::move(root)), prog(prog) {
+SNodeTree::SNodeTree(int id, std::unique_ptr<SNode> root, bool packed)
+    : id_(id), root_(std::move(root)) {
   infer_snode_properties(*root_, packed);
-}
-
-void SNodeTree::destroy() {
-  if (destroyed) {
-    TI_ERROR("SNode tree {} has been destroyed", id_);
-  }
-  prog->snode_tree_buffer_manager->destroy(id_);
-  destroyed = true;
 }
 
 }  // namespace lang

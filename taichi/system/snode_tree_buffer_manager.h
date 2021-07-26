@@ -15,6 +15,8 @@ class SNodeTreeBufferManager {
  public:
   SNodeTreeBufferManager(Program *prog);
 
+  void merge_and_insert(Ptr ptr, std::size_t size);
+
   Ptr allocate(JITModule *runtime_jit,
                void *runtime,
                std::size_t size,

@@ -682,7 +682,9 @@ def data_oriented(cls):
                 wrapped = x
             assert inspect.isfunction(wrapped)
             if wrapped._is_classkernel:
-                return _BoundedDifferentiableMethod(self, wrapped)
+                ret = _BoundedDifferentiableMethod(self, wrapped)
+                ret.__name__ = wrapped.__name__
+                return ret
         return x
 
     cls.__getattribute__ = getattr

@@ -56,7 +56,8 @@ metal = _ti_core.metal
 opengl = _ti_core.opengl
 cc = _ti_core.cc
 wasm = _ti_core.wasm
-gpu = [cuda, metal, opengl]
+vulkan = _ti_core.vulkan
+gpu = [cuda, metal, opengl, vulkan]
 cpu = _ti_core.host_arch()
 kernel_profiler_print = lambda: impl.get_runtime().prog.kernel_profiler_print()
 kernel_profiler_clear = lambda: impl.get_runtime().prog.kernel_profiler_clear()
@@ -613,6 +614,7 @@ def is_arch_supported(arch):
         metal: _ti_core.with_metal,
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
+        vulkan: lambda: _ti_core.with_vulkan,
         wasm: lambda: True,
         cpu: lambda: True,
     }

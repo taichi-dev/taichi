@@ -34,6 +34,10 @@
 #include "taichi/backends/cc/cc_layout.h"
 #include "taichi/backends/cc/codegen_cc.h"
 #endif
+#ifdef TI_WITH_VULKAN
+#include "taichi/backends/vulkan/snode_struct_compiler.h"
+#include "taichi/backends/vulkan/codegen_vulkan.h"
+#endif
 
 #if defined(TI_ARCH_x64)
 // For _MM_SET_FLUSH_ZERO_MODE
@@ -256,6 +260,12 @@ FunctionType Program::compile(Kernel &kernel) {
   } else if (kernel.arch == Arch::cc) {
     ret = cccp::compile_kernel(&kernel);
 #endif
+  } else if (kernel.arch == Arch::vulkan) {
+#ifdef TI_WITH_VULKAN
+    vulkan::lower(&kernel);
+    ret = vulkan::compile_to_executable(
+        &kernel, &vulkan_compiled_structs_.value(), vulkan_runtime_.get());
+#endif  // TI_WITH_VULKAN
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -429,7 +439,7 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
 
 int Program::add_snode_tree(std::unique_ptr<SNode> root) {
   const int id = snode_trees_.size();
-  auto tree = std::make_unique<SNodeTree>(id, std::move(root));
+  auto tree = std::make_unique<SNodeTree>(id, std::move(root), config.packed);
   tree->root()->set_snode_tree_id(id);
   materialize_snode_tree(tree.get());
   snode_trees_.push_back(std::move(tree));
@@ -506,6 +516,15 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
     result_buffer = allocate_result_buffer_default(this);
     cc_program->compile_layout(root);
 #endif
+  } else if (config.arch == Arch::vulkan) {
+#ifdef TI_WITH_VULKAN
+    result_buffer = allocate_result_buffer_default(this);
+    vulkan_compiled_structs_ = vulkan::compile_snode_structs(*root);
+    vulkan::VkRuntime::Params params;
+    params.snode_descriptors = &(vulkan_compiled_structs_->snode_descriptors);
+    params.host_result_buffer = result_buffer;
+    vulkan_runtime_ = std::make_unique<vulkan::VkRuntime>(std::move(params));
+#endif
   }
 }
 
@@ -575,6 +594,8 @@ void Program::device_synchronize() {
 #endif
   } else if (config.arch == Arch::metal) {
     metal_kernel_mgr_->synchronize();
+  } else if (config.arch == Arch::vulkan) {
+    vulkan_runtime_->synchronize();
   }
 }
 

@@ -208,6 +208,31 @@ struct CompiledKernelData {
   TI_IO_DEF(kernel_name, ctx_attribs, kernel_attribs);
 };
 
+struct CompiledKernelTmplData {
+  std::string kernel_bundle_name;
+  std::unordered_map<std::string, CompiledKernelData> kernel_tmpl_map;
+
+  TI_IO_DEF(kernel_bundle_name, kernel_tmpl_map);
+};
+
+struct CompiledFieldData {
+  std::string field_name;
+  MetalDataType dtype;
+  std::string dtype_name;
+  std::vector<int> shape;
+  bool is_scalar{false};
+  int row_num{0};
+  int column_num{0};
+
+  TI_IO_DEF(field_name,
+            dtype,
+            dtype_name,
+            shape,
+            is_scalar,
+            row_num,
+            column_num);
+};
+
 struct BufferMetaData {
   int64_t root_buffer_size{0};
   int64_t runtime_buffer_size{0};

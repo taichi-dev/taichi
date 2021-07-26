@@ -526,7 +526,6 @@ def external_func_call(func, args=[], outputs=[]):
 
 
 def asm(source, inputs=[], outputs=[]):
-
     _ti_core.insert_external_func_call(0, source, make_expr_group(inputs),
                                        make_expr_group(outputs))
 
@@ -567,11 +566,11 @@ def rescale_index(a, b, I):
 
     """
     assert isinstance(a, Expr) and a.is_global(), \
-            f"first arguement must be a field"
+        f"first arguement must be a field"
     assert isinstance(b, Expr) and b.is_global(), \
-            f"second arguement must be a field"
+        f"second arguement must be a field"
     assert isinstance(I, matrix.Matrix) and not I.is_global(), \
-            f"third arguement must be a grouped index"
+        f"third arguement must be a grouped index"
     Ib = I.copy()
     for n in range(min(I.n, min(len(a.shape), len(b.shape)))):
         if a.shape[n] > b.shape[n]:

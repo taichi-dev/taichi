@@ -85,13 +85,3 @@ def get_asset_directory():
 
 def get_asset_path(path, *args):
     return os.path.join(get_asset_directory(), path, *args)
-
-
-__all__ = [
-    'get_output_directory',
-    'get_build_directory',
-    'get_bin_directory',
-    'get_repo_directory',
-    'get_runtime_directory',
-    'get_os_name',
-]

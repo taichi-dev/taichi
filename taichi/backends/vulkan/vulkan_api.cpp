@@ -6,16 +6,8 @@
 #include <unordered_set>
 #include <vector>
 
-#ifndef IN_TAI_VULKAN
-
 #include "taichi/backends/vulkan/vulkan_common.h"
 #include "taichi/common/logging.h"
-
-#else
-
-#include "vulkan_common_stub.h"
-
-#endif
 
 namespace taichi {
 namespace lang {
@@ -165,15 +157,24 @@ VkShaderModule create_shader_module(VkDevice device,
 
 }  // namespace
 
-VulkanDevice::VulkanDevice(const Params &params) {
+VulkanDevice::VulkanDevice(const Params &params) : rep_(params) {
+}
+
+ManagedVulkanDevice::ManagedVulkanDevice(const Params &params) {
   create_instance(params);
   setup_debug_messenger();
   pick_physical_device();
   create_logical_device();
   create_command_pool();
+
+  VulkanDevice::Params dparams;
+  dparams.device = device_;
+  dparams.compute_queue = compute_queue_;
+  dparams.command_pool = command_pool_;
+  owned_device_ = std::make_unique<VulkanDevice>(dparams);
 }
 
-VulkanDevice::~VulkanDevice() {
+ManagedVulkanDevice::~ManagedVulkanDevice() {
   if constexpr (kEnableValidationLayers) {
     destroy_debug_utils_messenger_ext(instance_, debug_messenger_,
                                       kNoVkAllocCallbacks);
@@ -183,7 +184,7 @@ VulkanDevice::~VulkanDevice() {
   vkDestroyInstance(instance_, kNoVkAllocCallbacks);
 }
 
-void VulkanDevice::create_instance(const Params &params) {
+void ManagedVulkanDevice::create_instance(const Params &params) {
   VkApplicationInfo app_info{};
   app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   app_info.pApplicationName = "Taichi Vulkan Backend";
@@ -222,7 +223,7 @@ void VulkanDevice::create_instance(const Params &params) {
       "failed to create instance");
 }
 
-void VulkanDevice::setup_debug_messenger() {
+void ManagedVulkanDevice::setup_debug_messenger() {
   if constexpr (!kEnableValidationLayers) {
     return;
   }
@@ -235,7 +236,7 @@ void VulkanDevice::setup_debug_messenger() {
       "failed to set up debug messenger");
 }
 
-void VulkanDevice::pick_physical_device() {
+void ManagedVulkanDevice::pick_physical_device() {
   uint32_t device_count = 0;
   vkEnumeratePhysicalDevices(instance_, &device_count, nullptr);
   TI_ASSERT_INFO(device_count > 0, "failed to find GPUs with Vulkan support");
@@ -255,7 +256,7 @@ void VulkanDevice::pick_physical_device() {
   queue_family_indices_ = find_queue_families(physical_device_);
 }
 
-void VulkanDevice::create_logical_device() {
+void ManagedVulkanDevice::create_logical_device() {
   VkDeviceQueueCreateInfo queue_create_info{};
   queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queue_create_info.queueFamilyIndex =
@@ -286,7 +287,7 @@ void VulkanDevice::create_logical_device() {
                    /*queueIndex=*/0, &compute_queue_);
 }
 
-void VulkanDevice::create_command_pool() {
+void ManagedVulkanDevice::create_command_pool() {
   VkCommandPoolCreateInfo pool_info{};
   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   pool_info.flags = 0;
@@ -467,8 +468,16 @@ VulkanCommandBuilder::~VulkanCommandBuilder() {
   }
 }
 
-void VulkanCommandBuilder::append(const VulkanPipeline &pipeline,
-                                  int group_count_x) {
+VkCommandBuffer VulkanCommandBuilder::build() {
+  BAIL_ON_VK_BAD_RESULT(vkEndCommandBuffer(command_buffer_),
+                        "failed to record command buffer");
+  VkCommandBuffer res = command_buffer_;
+  command_buffer_ = VK_NULL_HANDLE;
+  return res;
+}
+
+void VulkanComputeCommandBuilder::append(const VulkanPipeline &pipeline,
+                                         int group_count_x) {
   vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
                     pipeline.pipeline());
   vkCmdBindDescriptorSets(
@@ -500,13 +509,41 @@ void VulkanCommandBuilder::append(const VulkanPipeline &pipeline,
                        /*pImageMemoryBarriers=*/nullptr);
 }
 
-VkCommandBuffer VulkanCommandBuilder::build() {
-  BAIL_ON_VK_BAD_RESULT(vkEndCommandBuffer(command_buffer_),
-                        "failed to record command buffer");
-  VkCommandBuffer res = command_buffer_;
-  command_buffer_ = VK_NULL_HANDLE;
-  return res;
-}
+namespace {
+
+class CopyBufferCommandBuilder : public VulkanCommandBuilder {
+ public:
+  using VulkanCommandBuilder::VulkanCommandBuilder;
+
+  void copy(VkBuffer src_buffer,
+            VkBuffer dst_buffer,
+            VkDeviceSize size,
+            VulkanCopyBufferDirection direction) {
+    VkBufferCopy copy_region{};
+    copy_region.srcOffset = 0;
+    copy_region.dstOffset = 0;
+    copy_region.size = size;
+    vkCmdCopyBuffer(command_buffer_, src_buffer, dst_buffer, /*regionCount=*/1,
+                    &copy_region);
+    if (direction == VulkanCopyBufferDirection::H2D) {
+      VkMemoryBarrier barrier_info;
+      barrier_info.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+      barrier_info.pNext = nullptr;
+
+      barrier_info.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+      barrier_info.dstAccessMask =
+          VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
+      vkCmdPipelineBarrier(
+          command_buffer_,
+          /*srcStageMask=*/VK_PIPELINE_STAGE_TRANSFER_BIT,
+          /*dstStageMask=*/VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
+              VK_PIPELINE_STAGE_TRANSFER_BIT,
+          0, 1, &barrier_info, 0, nullptr, 0, nullptr);
+    }
+  }
+};
+
+}  // namespace
 
 VkCommandBuffer record_copy_buffer_command(
     const VulkanDevice *device,
@@ -514,46 +551,9 @@ VkCommandBuffer record_copy_buffer_command(
     VkBuffer dst_buffer,
     VkDeviceSize size,
     VulkanCopyBufferDirection direction) {
-  VkCommandBuffer command{VK_NULL_HANDLE};
-  VkCommandBufferAllocateInfo alloc_info{};
-  alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  alloc_info.commandPool = device->command_pool();
-  alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  alloc_info.commandBufferCount = 1;
-  BAIL_ON_VK_BAD_RESULT(
-      vkAllocateCommandBuffers(device->device(), &alloc_info, &command),
-      "failed to allocate copy command buffer");
-
-  VkCommandBufferBeginInfo begin_info{};
-  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  begin_info.flags = 0;
-  begin_info.pInheritanceInfo = nullptr;
-  BAIL_ON_VK_BAD_RESULT(vkBeginCommandBuffer(command, &begin_info),
-                        "failed to begin recording copy command buffer");
-
-  VkBufferCopy copy_region{};
-  copy_region.srcOffset = 0;
-  copy_region.dstOffset = 0;
-  copy_region.size = size;
-  vkCmdCopyBuffer(command, src_buffer, dst_buffer, /*regionCount=*/1,
-                  &copy_region);
-  if (direction == VulkanCopyBufferDirection::H2D) {
-    VkMemoryBarrier barrier_info;
-    barrier_info.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-    barrier_info.pNext = nullptr;
-
-    barrier_info.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    barrier_info.dstAccessMask =
-        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
-    vkCmdPipelineBarrier(command,
-                         /*srcStageMask=*/VK_PIPELINE_STAGE_TRANSFER_BIT,
-                         /*dstStageMask=*/VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                             VK_PIPELINE_STAGE_TRANSFER_BIT,
-                         0, 1, &barrier_info, 0, nullptr, 0, nullptr);
-  }
-  BAIL_ON_VK_BAD_RESULT(vkEndCommandBuffer(command),
-                        "failed to record copy command buffer");
-  return command;
+  CopyBufferCommandBuilder cb{device};
+  cb.copy(src_buffer, dst_buffer, size, direction);
+  return cb.build();
 }
 
 VulkanStream::VulkanStream(const VulkanDevice *device) : device_(device) {

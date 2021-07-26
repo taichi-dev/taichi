@@ -6,9 +6,9 @@ cmake_minimum_required(VERSION 3.12)
 
 project(taichi)
 
-SET(TI_VERSION_MAJOR 0)
-SET(TI_VERSION_MINOR 7)
-SET(TI_VERSION_PATCH 26)
+SET(TI_VERSION_MAJOR ${TI_VERSION_MAJOR})
+SET(TI_VERSION_MINOR ${TI_VERSION_MINOR})
+SET(TI_VERSION_PATCH ${TI_VERSION_PATCH})
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -80,7 +80,7 @@ if (TI_WITH_CUDA)
     set(CUDA_ARCH "cuda")
 endif()
 
-find_program(CLANG_EXECUTABLE NAMES clang-7 clang-8 clang-9 clang-10 clang)
+find_program(CLANG_EXECUTABLE NAMES clang clang-7 clang-8 clang-9 clang-10)
 if (NOT CLANG_EXECUTABLE)
     message(FATAL_ERROR "Cannot find any clang executable.")
 endif()
@@ -94,8 +94,8 @@ endif()
 foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
   add_custom_target(
       "generate_llvm_runtime_${arch}"
-      COMMAND ${CLANG_EXECUTABLE} -S runtime.cpp -o runtime.ll -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
-      COMMAND ${LLVM_AS_EXECUTABLE} runtime.ll -o "runtime_${arch}.bc"
+      COMMAND ${CLANG_EXECUTABLE} -S runtime.cpp -o "runtime_${arch}.ll" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
+      COMMAND ${LLVM_AS_EXECUTABLE} "runtime_${arch}.ll" -o "runtime_${arch}.bc"
       WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm"
   )
   add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${arch}")

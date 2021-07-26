@@ -103,14 +103,15 @@ class RefineCoordinatesTest : public ::testing::Test {
  protected:
   void SetUp() override {
     arch_ = host_arch();
+    config_.packed = false;
     config_.print_kernel_llvm_ir = false;
     prog_ = std::make_unique<Program>(arch_);
     tlctx_ = prog_->llvm_context_host.get();
 
     root_snode_ = std::make_unique<SNode>(/*depth=*/0, /*t=*/SNodeType::root);
-    const std::vector<Index> indices = {Index{0}};
-    ptr_snode_ = &(root_snode_->pointer(indices, kPointerSize));
-    dense_snode_ = &(ptr_snode_->dense(indices, kDenseSize));
+    const std::vector<Axis> axes = {Axis{0}};
+    ptr_snode_ = &(root_snode_->pointer(axes, kPointerSize));
+    dense_snode_ = &(ptr_snode_->dense(axes, kDenseSize));
     // Must end with a `place` SNode.
     auto &leaf_snode = dense_snode_->insert_children(SNodeType::place);
     leaf_snode.dt = PrimitiveType::f32;

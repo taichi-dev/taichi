@@ -119,6 +119,7 @@ void export_lang(py::module &m) {
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
+      .def_readwrite("packed", &CompileConfig::packed)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
@@ -235,7 +236,9 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
+      .def("add_field", &AotModuleBuilder::add_field)
       .def("add", &AotModuleBuilder::add)
+      .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
       .def("dump", &AotModuleBuilder::dump);
 
   m.def("get_current_program", get_current_program,
@@ -246,27 +249,27 @@ void export_lang(py::module &m) {
       [&]() -> CompileConfig & { return get_current_program().config; },
       py::return_value_policy::reference);
 
-  py::class_<Index>(m, "Index").def(py::init<int>());
+  py::class_<Axis>(m, "Axis").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
       .def(py::init<>())
       .def_readwrite("parent", &SNode::parent)
       .def_readonly("type", &SNode::type)
       .def_readonly("id", &SNode::id)
       .def("dense",
-           (SNode & (SNode::*)(const std::vector<Index> &,
+           (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &))(&SNode::dense),
            py::return_value_policy::reference)
       .def("pointer",
-           (SNode & (SNode::*)(const std::vector<Index> &,
+           (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &))(&SNode::pointer),
            py::return_value_policy::reference)
       .def("hash",
-           (SNode & (SNode::*)(const std::vector<Index> &,
+           (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &))(&SNode::hash),
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic, py::return_value_policy::reference)
       .def("bitmasked",
-           (SNode & (SNode::*)(const std::vector<Index> &,
+           (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
@@ -362,6 +365,10 @@ void export_lang(py::module &m) {
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
       .def("is_global_ptr",
            [](Expr *expr) { return expr->is<GlobalPtrExpression>(); })
+      .def("is_primal",
+           [](Expr *expr) {
+             return expr->cast<GlobalVariableExpression>()->is_primal;
+           })
       .def("set_tb", &Expr::set_tb)
       .def("set_name",
            [&](Expr *expr, std::string na) {
@@ -373,6 +380,10 @@ void export_lang(py::module &m) {
            })
       .def("set_grad", &Expr::set_grad)
       .def("set_attribute", &Expr::set_attribute)
+      .def("get_expr_name",
+           [](Expr *expr) {
+             return expr->cast<GlobalVariableExpression>()->name;
+           })
       .def("get_attribute", &Expr::get_attribute)
       .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })
       .def("get_underlying_ptr_address", [](Expr *e) {
@@ -462,13 +473,13 @@ void export_lang(py::module &m) {
           scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
         });
 
-  m.def("begin_frontend_struct_for",
-        [&](const ExprGroup &indices, const Expr &global) {
-          auto stmt_unique = std::make_unique<FrontendForStmt>(indices, global);
-          auto stmt = stmt_unique.get();
-          current_ast_builder().insert(std::move(stmt_unique));
-          scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
-        });
+  m.def("begin_frontend_struct_for", [&](const ExprGroup &loop_vars,
+                                         const Expr &global) {
+    auto stmt_unique = std::make_unique<FrontendForStmt>(loop_vars, global);
+    auto stmt = stmt_unique.get();
+    current_ast_builder().insert(std::move(stmt_unique));
+    scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
+  });
 
   m.def("end_frontend_range_for", [&]() { scope_stack.pop_back(); });
   m.def("pop_scope", [&]() { scope_stack.pop_back(); });

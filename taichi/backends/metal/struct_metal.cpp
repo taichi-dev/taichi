@@ -337,7 +337,7 @@ class StructCompiler {
     }
     sn_desc.total_num_elems_from_root = 1;
     for (const auto &e : sn->extractors) {
-      sn_desc.total_num_elems_from_root *= e.num_elements;
+      sn_desc.total_num_elems_from_root *= e.num_elements_from_root;
     }
 
     TI_ASSERT(snode_descriptors_.find(sn->id) == snode_descriptors_.end());

@@ -252,8 +252,8 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
   if (!is_aos) {
     TI_ASSERT(snode->is_path_all_dense)
     int size = 1;
-    for (int index = 0; index < taichi_max_num_indices; ++index)
-      size <<= snode->get_num_bits(index);
+    for (auto *s = snode; s != nullptr; s = s->parent)
+      size *= (int)s->max_num_elements();
     Stmt *offset_stmt = ctx->back_stmt();
     Stmt *field_size_stmt = ctx->push_back(
         Stmt::make<ConstStmt>(TypedConstant(size)));

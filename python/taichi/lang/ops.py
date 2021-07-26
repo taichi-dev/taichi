@@ -185,36 +185,43 @@ def _ternary_operation(taichi_op, python_op, a, b, c):
 
 @unary
 def neg(a):
+    "Element-wise -a."
     return _unary_operation(_ti_core.expr_neg, _bt_ops_mod.neg, a)
 
 
 @unary
 def sin(a):
+    "Element-wise sin(a)."
     return _unary_operation(_ti_core.expr_sin, math.sin, a)
 
 
 @unary
 def cos(a):
+    "Element-wise cos(a)."
     return _unary_operation(_ti_core.expr_cos, math.cos, a)
 
 
 @unary
 def asin(a):
+    "Element-wise asin(a)."
     return _unary_operation(_ti_core.expr_asin, math.asin, a)
 
 
 @unary
 def acos(a):
+    "Element-wise acos(a)."
     return _unary_operation(_ti_core.expr_acos, math.acos, a)
 
 
 @unary
 def sqrt(a):
+    "Element-wise sqrt(a)."
     return _unary_operation(_ti_core.expr_sqrt, math.sqrt, a)
 
 
 @unary
 def rsqrt(a):
+    "Element-wise 1/sqrt(a)."
     def _rsqrt(a):
         return 1 / math.sqrt(a)
 
@@ -223,50 +230,60 @@ def rsqrt(a):
 
 @unary
 def floor(a):
+    "Element-wise the greatest integer less than or equal to x."
     return _unary_operation(_ti_core.expr_floor, math.floor, a)
 
 
 @unary
 def ceil(a):
+    "Element-wise the least integer greater than or equal to x."
     return _unary_operation(_ti_core.expr_ceil, math.ceil, a)
 
 
 @unary
 def tan(a):
+    "Element-wise tan(a)."
     return _unary_operation(_ti_core.expr_tan, math.tan, a)
 
 
 @unary
 def tanh(a):
+    "Element-wise tanh(a)."
     return _unary_operation(_ti_core.expr_tanh, math.tanh, a)
 
 
 @unary
 def exp(a):
+    "Element-wise e ** a."
     return _unary_operation(_ti_core.expr_exp, math.exp, a)
 
 
 @unary
 def log(a):
+    "Element-wise log(a)."
     return _unary_operation(_ti_core.expr_log, math.log, a)
 
 
 @unary
 def abs(a):
+    "Element-wise abs(a)."
     return _unary_operation(_ti_core.expr_abs, builtins.abs, a)
 
 
 @unary
 def bit_not(a):
+    "Element-wise ~a."
     return _unary_operation(_ti_core.expr_bit_not, _bt_ops_mod.invert, a)
 
 
 @unary
 def logical_not(a):
+    "Element-wise (not a)."
     return _unary_operation(_ti_core.expr_logic_not, lambda x: int(not x), a)
 
 
 def random(dtype=float):
+    "Return a random variable whose type is dtype."
     dtype = cook_dtype(dtype)
     x = Expr(_ti_core.make_rand_expr(dtype))
     return impl.expr_init(x)
@@ -277,23 +294,27 @@ def random(dtype=float):
 
 @binary
 def add(a, b):
+    "Same as a + b."
     return _binary_operation(_ti_core.expr_add, _bt_ops_mod.add, a, b)
 
 
 @binary
 def sub(a, b):
+    "Same as a - b."
     return _binary_operation(_ti_core.expr_sub, _bt_ops_mod.sub, a, b)
 
 
 @binary
 def mul(a, b):
+    "Same as a * b."
     return _binary_operation(_ti_core.expr_mul, _bt_ops_mod.mul, a, b)
 
 
 @binary
 def mod(a, b):
+    "Same as a % b."
     def expr_python_mod(a, b):
-        # a % b = (a // b) * b - a
+        # a % b = a - (a // b) * b
         quotient = Expr(_ti_core.expr_floordiv(a, b))
         multiply = Expr(_ti_core.expr_mul(b, quotient.ptr))
         return _ti_core.expr_sub(a, multiply.ptr)
@@ -303,37 +324,44 @@ def mod(a, b):
 
 @binary
 def pow(a, b):
+    "Same as a ** b."
     return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, a, b)
 
 
 @binary
 def floordiv(a, b):
+    "Same as a // b."
     return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, a,
                              b)
 
 
 @binary
 def truediv(a, b):
+    "Same as a / b."
     return _binary_operation(_ti_core.expr_truediv, _bt_ops_mod.truediv, a, b)
 
 
 @binary
 def max(a, b):
+    "Same as max(a,b)."
     return _binary_operation(_ti_core.expr_max, builtins.max, a, b)
 
 
 @binary
 def min(a, b):
+    "Same as min(a,b)."
     return _binary_operation(_ti_core.expr_min, builtins.min, a, b)
 
 
 @binary
 def atan2(a, b):
+    "Same as atan2(a,b)."
     return _binary_operation(_ti_core.expr_atan2, math.atan2, a, b)
 
 
 @binary
 def raw_div(a, b):
+    "If a is int and b is int, then return a//b. Else return a/b."
     def c_div(a, b):
         if isinstance(a, int) and isinstance(b, int):
             return a // b
@@ -345,6 +373,7 @@ def raw_div(a, b):
 
 @binary
 def raw_mod(a, b):
+    "Same as a%b."
     def c_mod(a, b):
         return a - b * int(float(a) / b)
 

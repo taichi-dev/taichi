@@ -390,9 +390,9 @@ bool initialize_opengl(bool error_tolerance) {
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  // GLEW cannot load GL without a context
-  // And the best way to make context is by creating a window
-  // Then hide it immediately, LOL
+  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+  glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
+  // GL context needs a window (There's no true headless GL)
   GLFWwindow *window =
       glfwCreateWindow(1, 1, "Make OpenGL Context", nullptr, nullptr);
   if (!window) {
@@ -408,7 +408,6 @@ bool initialize_opengl(bool error_tolerance) {
     }
     TI_ERROR("[glsl] cannot create GLFW window: error {}: {}", status, desc);
   }
-  glfwHideWindow(window);
   glfwMakeContextCurrent(window);
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {

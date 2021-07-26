@@ -640,6 +640,8 @@ def indices(*x):
 
 index = indices
 
+Axis = _ti_core.Axis
+
 
 def static(x, *xs):
     _taichi_skip_traceback = 1

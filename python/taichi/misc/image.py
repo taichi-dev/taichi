@@ -33,7 +33,8 @@ def cook_image_to_bytes(img):
 
 
 def imdisplay(img):
-    """Try to display image in interactive shell.
+    """
+    Try to display image in interactive shell.
     
     Args:
         img (ti.field or np.ndarray): A field of of array with shape `(width, height)` or `(height, width, 3)` or `(height, width, 4)`.

@@ -8,6 +8,22 @@ from .util import core_veci, deprecated
 
 
 class GUI:
+    """Taichi Graphical User Interface class.
+
+    Args:
+        name (str, optional): The name of the GUI to be constructed.
+            Default is 'Taichi'.
+        res (Union[int, List[int]], optional): The resolution of created
+            GUI. Default is 512.
+        background_color (int, optional): The background color of creted GUI.
+            Default is 0x000000.
+        show_gui (bool, optional): Specify whether to render the GUI. Default is True.
+        fullscreen (bool, optional): Specify whether to render the GUI in
+            fullscreen mode. Default is False.
+        fast_gui (bool, optional): Specify whether to use fast gui mode of
+            Taichi. Default is False.
+
+    """
     class Event:
         pass
 
@@ -102,14 +118,23 @@ class GUI:
             self.gui.core.set_widget_value(self.wid, value)
 
     def slider(self, text, minimum, maximum, step=1):
+        """
+
+        """
         wid = self.core.make_slider(text, minimum, minimum, maximum, step)
         return GUI.WidgetValue(self, wid)
 
     def label(self, text):
+        """
+
+        """
         wid = self.core.make_label(text, 0)
         return GUI.WidgetValue(self, wid)
 
     def button(self, text, event_name=None):
+        """
+
+        """
         event_name = event_name or f'WidgetButton_{text}'
         self.core.make_button(text, event_name)
         return event_name
@@ -117,6 +142,13 @@ class GUI:
     ## Drawing system
 
     def clear(self, color=None):
+        """Clear the canvas with the color provided.
+
+        Args:
+            color (int, optional): Specify the color to clear the canvas. Default
+                is the background color of GUI.
+
+        """
         if color is None:
             color = self.background_color
         self.canvas.clear(color)
@@ -149,11 +181,26 @@ class GUI:
         return np.ascontiguousarray(img)
 
     def get_image(self):
+        """Get the image data.
+
+        Returns:
+            The image data in numpy ascontiguousarray type.
+
+        """
         self.img = np.ascontiguousarray(self.img)
         self.core.get_img(self.img.ctypes.data)
         return self.img
 
     def set_image(self, img):
+        """Draw an image on canvas.
+
+        Args:
+            img (Union[List[int], List[int, int], List[int, int, int], List[int,
+                int, int, float]]): The color array representing the image
+                to be drawn. Support greyscale, RG, RGB, and RGBA color representations.
+                Its shape must match GUI resolution.
+
+        """
         import numpy as np
 
         import taichi as ti
@@ -208,6 +255,14 @@ class GUI:
         self.core.set_img(self.img.ctypes.data)
 
     def circle(self, pos, color=0xFFFFFF, radius=1):
+        """Draw a single circle on canvas.
+
+        Args:
+            pos (List[int]): The position of the circle.
+            color (int, Optional): The color of the circle. Default is 0xFFFFFF.
+            radius (Number, Optional): The radius of the circle. Default is 1.
+
+        """
         self.canvas.circle_single(pos[0], pos[1], color, radius)
 
     def circles(self,
@@ -216,6 +271,18 @@ class GUI:
                 color=0xFFFFFF,
                 palette=None,
                 palette_indices=None):
+        """Draw a list of circles on canvas.
+
+        Args:
+            pos (List[Number, Number]): The positions of the circles.
+            radius (Number, optional): The radius of the circles. Default is 1.
+            color (int, optional): The color of the circles. Default is 0xFFFFFF.
+            palette (List[int], optional): The List of colors from which to
+                choose to draw. Default is None.
+            palette_indices (List[int], optional): The List of indices that choose
+                color from palette for each circle. Shape must match pos. Default is None.
+
+        """
         n = pos.shape[0]
         if len(pos.shape) == 3:
             assert pos.shape[2] == 1

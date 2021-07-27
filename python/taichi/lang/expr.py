@@ -10,6 +10,10 @@ import taichi as ti
 
 # Scalar, basic data type
 class Expr(TaichiOperations):
+    """
+    A Python-side Expr wrapper, whose member variable `ptr` is an instance of C++ Expr class.
+    A C++ Expr object contains member variable `expr ` which holds an instance of C++ Expression class.
+    """
     def __init__(self, *args, tb=None):
         _taichi_skip_traceback = 1
         self.getter = None
@@ -43,6 +47,15 @@ class Expr(TaichiOperations):
 
     @python_scope
     def __setitem__(self, key, value):
+        """Set value with specified key when the class itself represents GlobalVariableExpression (field) internally.
+
+        This will not be directly called from python for vector/matrix fields.
+        Python Matrix class will decompose operations into scalar-level first.
+
+        Args:
+            key (Union[List[int], int, None]): indices to set
+            value (Union[int, float]): value to set
+        """
         impl.get_runtime().materialize()
         self.initialize_accessor()
         if key is None:
@@ -55,6 +68,17 @@ class Expr(TaichiOperations):
 
     @python_scope
     def __getitem__(self, key):
+        """Get value with specified key when the class itself represents GlobalVariableExpression (field) internally.
+
+        This will not be directly called from python for vector/matrix fields.
+        Python Matrix class will decompose operations into scalar-level first.
+
+        Args:
+            key (Union[List[int], int, None]): indices to get.
+
+        Returns:
+            Value retrieved with specified key.
+        """
         impl.get_runtime().materialize()
         self.initialize_accessor()
         if key is None:
@@ -68,6 +92,13 @@ class Expr(TaichiOperations):
         return self
 
     def get_field_members(self):
+        """Get a list of involving fields when the class itself represents GlobalVariableExpression (field) internally.
+
+        This is an unified interface to match :func:`taichi.lang.Matrix.get_field_members`.
+
+        Returns:
+             A list containing itself.
+        """
         return [self]
 
     @deprecated('x.get_tensor_members()', 'x.get_field_members()')

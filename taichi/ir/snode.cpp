@@ -224,7 +224,7 @@ void SNode::set_index_offsets(std::vector<int> index_offsets_) {
   TI_ASSERT(this->index_offsets.empty());
   TI_ASSERT(!index_offsets_.empty());
   TI_ASSERT(type == SNodeType::place);
-  //TI_ASSERT(index_offsets_.size() == this->num_active_indices);
+  TI_ASSERT(index_offsets_.size() == this->num_active_indices);
   this->index_offsets = index_offsets_;
 }
 

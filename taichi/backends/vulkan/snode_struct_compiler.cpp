@@ -48,7 +48,7 @@ class StructCompiler {
       // 1. When a new SNode is first defined
       // 2. StructCompiler::infer_snode_properties()
       // The second step is the finalized result.
-      sn_desc.total_num_cells_from_root *= e.num_elements;
+      sn_desc.total_num_cells_from_root *= e.num_elements_from_root;
     }
 
     TI_INFO("SNodeDescriptor");

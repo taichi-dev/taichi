@@ -704,6 +704,8 @@ void Program::maybe_initialize_cuda_llvm_context() {
 Arch Program::get_snode_accessor_arch() {
   if (config.arch == Arch::opengl) {
     return Arch::opengl;
+  } else if (config.arch == Arch::vulkan) {
+    return Arch::vulkan;
   } else if (is_cuda_no_unified_memory(config)) {
     return Arch::cuda;
   } else if (config.arch == Arch::metal) {

@@ -145,13 +145,6 @@ class Expr(TaichiOperations):
         self.ptr.set_grad(grad.ptr)
 
     @python_scope
-    def clear(self, deactivate=False):
-        assert not deactivate
-        node = self.ptr.snode().parent
-        assert node
-        node.clear_data()
-
-    @python_scope
     def fill(self, val):
         # TODO: avoid too many template instantiations
         from taichi.lang.meta import fill_tensor

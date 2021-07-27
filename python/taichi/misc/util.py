@@ -123,7 +123,7 @@ def deprecated(old, new, warning_type=DeprecationWarning):
         old (str): old method.
         new (str): new method.
         warning_type (builtin warning type): type of warning.
-    
+
     Example:
         Usage::
 
@@ -178,9 +178,9 @@ def set_gdb_trigger(on=True):
 
 def print_profile_info():
     """Print time elasped on the host tasks in a hierarchical format.
-    
+
     This profiler is automatically on.
-    
+
     Call function imports from C++ : _ti_core.print_profile_info()
 
     Example:
@@ -199,10 +199,9 @@ def print_profile_info():
     _ti_core.print_profile_info()
 
 
-
 def clear_profile_info():
     """Clear profiler's records about time elasped on the host tasks.
-    
+
     Call function imports from C++ : _ti_core.clear_profile_info()
     """
     _ti_core.clear_profile_info()

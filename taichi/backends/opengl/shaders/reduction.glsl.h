@@ -34,7 +34,7 @@ TYPE reduction_workgroup_##OP##_##TYPE##(in TYPE r) {
     const int radix = 1 << (i + 1);
     const int stride = 1 << i;
     const int cmp_index = int(gl_LocalInvocationIndex) + stride;
-    if (gl_LocalInvocationIndex % radix == 1 && cmp_index < group_size) {
+    if (gl_LocalInvocationIndex % radix == 0 && cmp_index < group_size) {
       _reduction_temp_##TYPE##[gl_LocalInvocationIndex] = ##OP##(
         _reduction_temp_##TYPE##[gl_LocalInvocationIndex],
         _reduction_temp_##TYPE##[cmp_index]

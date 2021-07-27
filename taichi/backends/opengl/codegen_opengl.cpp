@@ -671,6 +671,8 @@ class KernelGen : public IRVisitor {
            opengl_data_type_name(stmt->val->element_type()), val_name, op_name,
            opengl_data_type_name(stmt->val->element_type()),
            stmt->val->short_name());
+
+      emit("if (gl_LocalInvocationIndex == 0)");
     }
 
     if (dt->is_primitive(PrimitiveTypeID::i32) ||

@@ -243,6 +243,9 @@ class Expr(TaichiOperations):
 
         This is an unified interface to match :func:`taichi.lang.Matrix.to_torch`.
 
+        Args:
+            device (DeviceType): The device type as a parameter passed into torch.zeros().
+
         Returns:
             The torch array containing the same elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
         """
@@ -262,8 +265,8 @@ class Expr(TaichiOperations):
         This is an unified interface to match :func:`taichi.lang.Matrix.from_numpy`.
         The numpy array's shape need to be the same as the internal data structure.
 
-        Returns:
-            The numpy array containing the same elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+        Args:
+            arr (NumpyArray): The numpy array containing the elements to load.
         """
         assert len(self.shape) == len(arr.shape)
         s = self.shape
@@ -282,8 +285,8 @@ class Expr(TaichiOperations):
         This is an unified interface to match :func:`taichi.lang.Matrix.from_torch`.
         The torch array's shape need to be the same as the internal data structure.
 
-        Returns:
-            The torch array containing the same elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+        Args:
+            arr (TorchArray): The torch array containing the elements to load.
         """
         self.from_numpy(arr.contiguous())
 

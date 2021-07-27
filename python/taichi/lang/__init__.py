@@ -91,7 +91,6 @@ def is_extension_supported(arch, ext):
     return _ti_core.is_extension_supported(arch, ext)
 
 
-
 def reset():
     impl.reset()
     global runtime

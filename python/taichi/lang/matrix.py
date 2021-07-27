@@ -855,6 +855,22 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def to_numpy(self, keep_dims=False, as_vector=None, dtype=None):
+        """Convert the taichi matrix to a numpy.ndarray.
+
+        Args:
+            keep_dims (bool, optional): Whether keep the dimension after conversion.
+                When keep_dims=True, on an n-D matrix field, the numpy array always has n+2 dims, even for 1x1, 1xn, nx1 matrix fields.
+                When keep_dims=False, the resulting numpy array should skip the dimensionality with only 1 element, on the matrix shape dimensionalities.
+                For example, a 4x1 or 1x4 matrix field with 5x6x7 elements results in an array of shape 5x6x7x4.
+            as_vector (bool, deprecated): Make the returned numpy array as a vector i.e., has a shape (n,) rather than (n, 1)
+                Note that this argument has been deprecated.
+                More discussion about `as_vector`: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858.
+            dtype (DataType, optional): The desired data type of returned numpy array.
+
+        Returns:
+            numpy.ndarray: The numpy array that converted from the matrix field.
+
+        """
         # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
         if as_vector is not None:
             warning(
@@ -877,6 +893,17 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def to_torch(self, device=None, keep_dims=False):
+        """Convert the taichi matrix to a torch tensor.
+
+        Args:
+            device (torch.device, optional): The desired device of returned tensor.
+            keep_dims (bool, optional): Whether keep the dimension after conversion.
+                See :meth:`~taichi.lang.matrix.Matrix.to_numpy` for more detailed explanation.
+
+        Returns:
+            torch.tensor: The torch tensor that converted from the matrix field.
+
+        """
         import torch
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
@@ -890,6 +917,12 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def from_numpy(self, ndarray):
+        """Copy the values of a numpy ndarray to the taichi matrix.
+
+        Args:
+            ndarray (numpy.ndarray): The numpy array to copy.
+
+        """
         if len(ndarray.shape) == len(self.loop_range().shape) + 1:
             as_vector = True
             assert self.m == 1, "This matrix is not a vector"
@@ -904,6 +937,15 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def from_torch(self, torch_tensor):
+        """Copy the values of a torch tensor to the taichi matrix.
+
+        Args:
+            torch_tensor (torch.tensor): The torch tensor to copy.
+
+        Returns:
+            Call :meth:`~taichi.lang.matrix.Matrix.from_numpy` with the input torch tensor as the argument
+
+        """
         return self.from_numpy(torch_tensor.contiguous())
 
     @python_scope
@@ -957,16 +999,49 @@ class Matrix(TaichiOperations):
     @staticmethod
     @taichi_scope
     def zero(dt, n, m=1):
+        """Construct a matrix filled with zeros.
+
+        Args:
+            dt (DataType): The desired data type.
+            n (int): The first dimension (row) of the matrix.
+            m (int, optional): The second dimension (column) of the matrix.
+
+        Returns:
+            A ~:class:taichi.lang.matrix.Matrix instance filled with zeros.
+
+        """
         return Matrix([[ti.cast(0, dt) for _ in range(m)] for _ in range(n)])
 
     @staticmethod
     @taichi_scope
     def one(dt, n, m=1):
+        """Construct a matrix filled with ones.
+
+        Args:
+            dt (DataType): The desired data type.
+            n (int): The first dimension (row) of the matrix.
+            m (int, optional): The second dimension (column) of the matrix.
+
+        Returns:
+            A ~:class:taichi.lang.matrix.Matrix instance filled with ones.
+
+        """
         return Matrix([[ti.cast(1, dt) for _ in range(m)] for _ in range(n)])
 
     @staticmethod
     @taichi_scope
     def unit(n, i, dt=None):
+        """Construct an unit vector (1-D matrix) i.e., a vector with only one entry filled with one and all other entries zeros.
+
+        Args:
+            n (int): The length of the vector.
+            i (int): The index of the entry that will be filled with one.
+            dt (DataType, optional): The desired data type.
+
+        Returns:
+            An 1-D unit ~:class:taichi.lang.matrix.Matrix instance.
+
+        """
         if dt is None:
             dt = int
         assert 0 <= i < n

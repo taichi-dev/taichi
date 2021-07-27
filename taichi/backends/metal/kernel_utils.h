@@ -73,11 +73,16 @@ struct KernelAttributes {
   struct RuntimeListOpAttributes {
     const SNode *snode = nullptr;
   };
+  struct GcOpAttributes {
+    const SNode *snode = nullptr;
+  };
   std::vector<Buffers> buffers;
-  // Only valid when |task_type| is range_for.
+  // Only valid when |task_type| is `range_for`.
   std::optional<RangeForAttributes> range_for_attribs;
-  // Only valid when |task_type| is {clear_list, listgen}.
+  // Only valid when |task_type| is `listgen`.
   std::optional<RuntimeListOpAttributes> runtime_list_op_attribs;
+  // Only valid when |task_type| is `gc`.
+  std::optional<GcOpAttributes> gc_op_attribs;
 
   static std::string buffers_name(Buffers b);
   std::string debug_string() const;
@@ -201,6 +206,31 @@ struct CompiledKernelData {
   TaichiKernelAttributes kernel_attribs;
 
   TI_IO_DEF(kernel_name, ctx_attribs, kernel_attribs);
+};
+
+struct CompiledKernelTmplData {
+  std::string kernel_bundle_name;
+  std::unordered_map<std::string, CompiledKernelData> kernel_tmpl_map;
+
+  TI_IO_DEF(kernel_bundle_name, kernel_tmpl_map);
+};
+
+struct CompiledFieldData {
+  std::string field_name;
+  MetalDataType dtype;
+  std::string dtype_name;
+  std::vector<int> shape;
+  bool is_scalar{false};
+  int row_num{0};
+  int column_num{0};
+
+  TI_IO_DEF(field_name,
+            dtype,
+            dtype_name,
+            shape,
+            is_scalar,
+            row_num,
+            column_num);
 };
 
 struct BufferMetaData {

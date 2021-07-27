@@ -39,7 +39,7 @@ runtimes/*.png
 runtimes/taichi_core*
 runtimes/libtaichi_core*
 .pypirc
-python/dist
+dist/
 python/MANIFEST
 build/
 bin/
@@ -54,6 +54,8 @@ __pycache__
 *.ppm
 *.png
 *.jpg
+!docs/**/*.jpg
+!docs/**/*.png
 *.egg-info
 .tlang_cache
 /taichi/common/version.h
@@ -76,3 +78,4 @@ _build
 *.yml
 *.dot
 *.json
+!docs/**/*.json

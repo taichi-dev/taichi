@@ -56,7 +56,8 @@ metal = _ti_core.metal
 opengl = _ti_core.opengl
 cc = _ti_core.cc
 wasm = _ti_core.wasm
-gpu = [cuda, metal, opengl]
+vulkan = _ti_core.vulkan
+gpu = [cuda, metal, opengl, vulkan]
 cpu = _ti_core.host_arch()
 kernel_profiler_print = lambda: impl.get_runtime().prog.kernel_profiler_print()
 kernel_profiler_clear = lambda: impl.get_runtime().prog.kernel_profiler_clear()
@@ -231,6 +232,10 @@ def init(arch=None,
 
     # create a new program:
     impl.get_runtime().create_program()
+
+    ti.trace('Materializing runtime...')
+    impl.get_runtime().prog.materialize_runtime()
+
     impl._root_fb = FieldsBuilder()
 
 
@@ -400,7 +405,8 @@ def clear_all_gradients():
             from taichi.lang.meta import clear_gradients
             clear_gradients(places)
 
-    visit(ti.root)
+    for root_fb in FieldsBuilder.finalized_roots():
+        visit(root_fb)
 
 
 def benchmark(func, repeat=300, args=()):
@@ -608,8 +614,9 @@ def is_arch_supported(arch):
         metal: _ti_core.with_metal,
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
+        vulkan: lambda: _ti_core.with_vulkan,
         wasm: lambda: True,
-        cpu: lambda: True
+        cpu: lambda: True,
     }
     with_arch = arch_table.get(arch, lambda: False)
     try:

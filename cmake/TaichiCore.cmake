@@ -23,6 +23,10 @@ if (APPLE)
         set(TI_WITH_CC OFF)
         message(WARNING "C backend not supported on OS X. Setting TI_WITH_CC to OFF.")
     endif()
+    if (TI_WITH_VULKAN)
+        set(TI_WITH_VULKAN OFF)
+        message(WARNING "Vulkan backend not supported on OS X. Setting TI_WITH_VULKAN to OFF.")
+    endif()
 endif()
 
 if (WIN32)
@@ -49,7 +53,11 @@ file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/
 file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal/*.cpp" "taichi/backends/metal/shaders/*")
 file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/opengl/*.cpp" "taichi/backends/opengl/shaders/*")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
-file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp")
+file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "taichi/backends/vulkan/shaders/*")
+# These are required, regardless of whether Vulkan is enabled or not
+# TODO(#2298): Clean up the Vulkan code structure, all Vulkan API related things should be
+# guarded by TI_WITH_VULKAN macro at the source code level.
+file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE "taichi/backends/vulkan/runtime.h" "taichi/backends/vulkan/runtime.cpp")
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
@@ -87,6 +95,7 @@ if (TI_WITH_VULKAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_VULKAN_SOURCE})
 endif()
+list(APPEND TAICHI_CORE_SOURCE ${TAICHI_VULKAN_REQUIRED_SOURCE})
 
 # This compiles all the libraries with -fPIC, which is critical to link a static
 # library into a shared lib.
@@ -202,6 +211,26 @@ if (TI_WITH_VULKAN)
     message(STATUS "Vulkan_LIBRARY=${Vulkan_LIBRARY}")
     include_directories(${Vulkan_INCLUDE_DIR})
     target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
+
+    # shaderc libs
+    # TODO: Is there a better way to auto detect this?
+    if (NOT SHADERC_ROOT_DIR)
+        message(FATAL_ERROR
+            "Please specify `-DSHADERC_ROOT_DIR=/path/to/shaderc` for developing the Vulkan backend. "
+            "The path should be the root direcotry containing `includes`, `lib` and `bin`.\n"
+            "If you haven't installed `shaderc`, please visit\n"
+            "https://github.com/google/shaderc/blob/main/downloads.md\n"
+            "to download the matching libraries.")
+    endif()
+    find_library(SHADERC_LIB NAMES "shaderc_combined" PATHS "${SHADERC_ROOT_DIR}/lib" REQUIRED)
+    target_include_directories(${CORE_LIBRARY_NAME} PUBLIC "${SHADERC_ROOT_DIR}/include")
+    target_link_libraries(${CORE_LIBRARY_NAME} ${SHADERC_LIB})
+    if (LINUX)
+        # shaderc requires pthread
+        set(THREADS_PREFER_PTHREAD_FLAG ON)
+        find_package(Threads REQUIRED)
+        target_link_libraries(${CORE_LIBRARY_NAME} Threads::Threads)
+    endif()
 endif ()
 
 # Optional dependencies

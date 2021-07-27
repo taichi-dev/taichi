@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -35,33 +36,65 @@ struct VulkanQueueFamilyIndices {
 
 // Many classes here are inspired by TVM's runtime
 // https://github.com/apache/tvm/tree/main/src/runtime/vulkan
-
+//
 // VulkanDevice maps to a (VkDevice, VkQueue) tuple. Right now we only use
 // a single queue from a single device, so it does not make a difference to
 // separate the queue from the device. This is similar to using a single CUDA
 // stream.
+//
+// TODO: Think of a better class name.
 class VulkanDevice {
+ public:
+  struct Params {
+    VkDevice device{VK_NULL_HANDLE};
+    VkQueue compute_queue{VK_NULL_HANDLE};
+    VkCommandPool command_pool{VK_NULL_HANDLE};
+  };
+
+  explicit VulkanDevice(const Params &params);
+
+  VkDevice device() const {
+    return rep_.device;
+  }
+
+  VkQueue compute_queue() const {
+    return rep_.compute_queue;
+  }
+
+  VkCommandPool command_pool() const {
+    return rep_.command_pool;
+  }
+
+ private:
+  Params rep_;
+};
+
+/**
+ * Manages a VulkanDevice instance, including its resources.
+ */
+class ManagedVulkanDevice {
  public:
   struct Params {
     uint32_t api_version{VK_API_VERSION_1_0};
   };
-  explicit VulkanDevice(const Params &params);
-  ~VulkanDevice();
+
+  explicit ManagedVulkanDevice(const Params &params);
+  ~ManagedVulkanDevice();
+
+  VulkanDevice *device() {
+    return owned_device_.get();
+  }
+
+  const VulkanDevice *device() const {
+    return owned_device_.get();
+  }
 
   VkPhysicalDevice physical_device() const {
     return physical_device_;
   }
-  VkDevice device() const {
-    return device_;
-  }
+
   const VulkanQueueFamilyIndices &queue_family_indices() const {
     return queue_family_indices_;
-  }
-  VkQueue compute_queue() const {
-    return compute_queue_;
-  }
-  VkCommandPool command_pool() const {
-    return command_pool_;
   }
 
  private:
@@ -83,6 +116,8 @@ class VulkanDevice {
   // TODO: Shall we have dedicated command pools for COMPUTE and TRANSFER
   // commands, respectively?
   VkCommandPool command_pool_{VK_NULL_HANDLE};
+
+  std::unique_ptr<VulkanDevice> owned_device_{nullptr};
 };
 
 // VulkanPipeline maps to a VkPipeline, or a SPIR-V module (a GLSL compute
@@ -145,15 +180,20 @@ class VulkanCommandBuilder {
 
   ~VulkanCommandBuilder();
 
-  void append(const VulkanPipeline &pipeline, int group_count_x);
-
   VkCommandBuffer build();
 
- private:
+ protected:
   // VkCommandBuffers are destroyed when the underlying command pool is
   // destroyed.
   // https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Command_buffers#page_Command-buffer-allocation
   VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
+};
+
+class VulkanComputeCommandBuilder : public VulkanCommandBuilder {
+ public:
+  using VulkanCommandBuilder::VulkanCommandBuilder;
+
+  void append(const VulkanPipeline &pipeline, int group_count_x);
 };
 
 enum class VulkanCopyBufferDirection {
@@ -178,6 +218,10 @@ class VulkanStream {
 
   void launch(VkCommandBuffer command);
   void synchronize();
+
+  const VulkanDevice *device() const {
+    return device_;
+  }
 
  private:
   const VulkanDevice *const device_;

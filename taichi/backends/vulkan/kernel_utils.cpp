@@ -69,6 +69,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     ra.dt = kr.dt;
     const size_t dt_bytes = vk_data_type_size(ra.dt);
     if (dt_bytes != 4) {
+      // Metal doesn't support 64bit data buffers.
       TI_ERROR("Vulakn kernel only supports 32-bit data, got {}",
                data_type_name(ra.dt));
     }

@@ -35,9 +35,9 @@ class ScalarPointerLowererTest : public ::testing::Test {
  protected:
   void SetUp() override {
     root_snode_ = std::make_unique<SNode>(/*depth=*/0, /*t=*/SNodeType::root);
-    const std::vector<Index> indices = {Index{0}};
-    ptr_snode_ = &(root_snode_->pointer(indices, kPointerSize));
-    dense_snode_ = &(ptr_snode_->dense(indices, kDenseSize));
+    const std::vector<Axis> axes = {Axis{0}};
+    ptr_snode_ = &(root_snode_->pointer(axes, kPointerSize));
+    dense_snode_ = &(ptr_snode_->dense(axes, kDenseSize));
     // Must end with a `place` SNode.
     leaf_snode_ = &(dense_snode_->insert_children(SNodeType::place));
     leaf_snode_->dt = PrimitiveType::f32;
@@ -62,7 +62,9 @@ TEST_F(ScalarPointerLowererTest, Basic) {
       LowererImpl lowerer{leaf_snode_,
                           std::vector<Stmt *>{builder.get_int32(loop_index)},
                           SNodeOpType::undefined,
-                          /*is_bit_vectorized=*/false, &lowered};
+                          /*is_bit_vectorized=*/false,
+                          &lowered,
+                          /*packed=*/false};
       lowerer.run();
       // There are three linearized stmts:
       // 0: for root

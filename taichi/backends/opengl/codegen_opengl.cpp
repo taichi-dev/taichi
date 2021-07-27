@@ -9,6 +9,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/util/file_sequence_writer.h"
 #include "taichi/util/line_appender.h"
 #include "taichi/util/macros.h"
 
@@ -16,6 +17,19 @@ TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
 namespace {
+
+namespace shaders {
+#define TI_INSIDE_OPENGL_CODEGEN
+#include "taichi/backends/opengl/shaders/atomics_macro_f32.glsl.h"
+#include "taichi/backends/opengl/shaders/runtime.h"
+#include "taichi/backends/opengl/shaders/listman.h"
+#include "taichi/backends/opengl/shaders/random.glsl.h"
+#include "taichi/backends/opengl/shaders/fast_pow.glsl.h"
+#include "taichi/backends/opengl/shaders/print.glsl.h"
+#undef TI_INSIDE_OPENGL_CODEGEN
+}  // namespace shaders
+
+using irpass::ExternalPtrAccess;
 
 int find_children_id(const SNode *snode) {
   auto parent = snode->parent;
@@ -82,6 +96,7 @@ class KernelGen : public IRVisitor {
   std::string glsl_kernel_name_;
   std::unique_ptr<ParallelSize> ps;
   bool used_tls;  // TODO: move into UsedFeature?
+  std::unordered_map<int, irpass::ExternalPtrAccess> extptr_access;
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -89,6 +104,8 @@ class KernelGen : public IRVisitor {
   }
 
   void generate_header() {
+    emit("const float inf = 1.0f / 0.0f;");
+    emit("const float nan = 0.0f / 0.0f;");
   }
 
   // Note that the following two functions not only returns the corresponding
@@ -131,77 +148,77 @@ class KernelGen : public IRVisitor {
     emit("}}");
 
     // clang-format off
-    std::string kernel_header;
-#define __GLSL__
     if (used.print)  // the runtime buffer is only used for print now..
-      kernel_header += (
-#include "taichi/backends/opengl/shaders/runtime.h"
-        );
+      line_appender_header_.append_raw(shaders::kOpenGLRuntimeSourceCode);
     if (used.listman)
-      kernel_header += (
-#include "taichi/backends/opengl/shaders/listman.h"
-          );
-#undef __GLSL__
+      line_appender_header_.append_raw(shaders::kOpenGLListmanSourceCode);
 
-#define DEFINE_LAYOUT(name, id, dt, dtype) \
-      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
-                    + ") buffer " #name "_" #dt " { " #dtype " _" \
+    std::string kernel_header;
+#define DEFINE_LAYOUT(layout, restype, name, id, dt, dtype) \
+      kernel_header += "layout("#layout", binding = " + fmt::format("{}", id) \
+                    + ") " #restype " " #name "_" #dt " { " #dtype " _" \
                     #name "_" #dt "_[]; };\n"
-#define REGISTER_BUFFER(name, id) do { \
-    if (used.int32) DEFINE_LAYOUT(name, id, i32, int); \
-    if (used.int64) DEFINE_LAYOUT(name, id, i64, int64_t); \
-    if (used.uint32) DEFINE_LAYOUT(name, id, u32, uint); \
-    if (used.uint64) DEFINE_LAYOUT(name, id, u64, uint64_t); \
-    if (used.float32) DEFINE_LAYOUT(name, id, f32, float); \
-    if (used.float64) DEFINE_LAYOUT(name, id, f64, double); \
+#define REGISTER_BUFFER(layout, restype, name, id) do { \
+    if (used.int32) DEFINE_LAYOUT(layout, restype, name, id, i32, int); \
+    if (used.int64) DEFINE_LAYOUT(layout, restype, name, id, i64, int64_t); \
+    if (used.uint32) DEFINE_LAYOUT(layout, restype, name, id, u32, uint); \
+    if (used.uint64) DEFINE_LAYOUT(layout, restype, name, id, u64, uint64_t); \
+    if (used.float32) DEFINE_LAYOUT(layout, restype, name, id, f32, float); \
+    if (used.float64) DEFINE_LAYOUT(layout, restype, name, id, f64, double); \
   } while (0)
 
-    REGISTER_BUFFER(data, GLBufId::Root);
+    REGISTER_BUFFER(std430, buffer, data, GLBufId::Root);
     if (used.buf_gtmp)
-      REGISTER_BUFFER(gtmp, GLBufId::Gtmp);
+      REGISTER_BUFFER(std430, buffer, gtmp, GLBufId::Gtmp);
     if (used.buf_args)
-      REGISTER_BUFFER(args, GLBufId::Args);
-    if (used.buf_extr)
-      REGISTER_BUFFER(extr, GLBufId::Extr);
+      REGISTER_BUFFER(std430, readonly buffer, args, GLBufId::Args);
+    if (used.buf_retr)
+      REGISTER_BUFFER(std430, writeonly buffer, retr, GLBufId::Retr);
+    if (used.buf_extr) {
+      bool write = false;
+      bool read = false;
+
+      for (auto pair : this->extptr_access) {
+        write |= (pair.second & irpass::ExternalPtrAccess::WRITE) != irpass::ExternalPtrAccess::NONE;
+        read |= (pair.second & irpass::ExternalPtrAccess::WRITE) != irpass::ExternalPtrAccess::NONE;
+      }
+
+      if (write && !read) {
+        REGISTER_BUFFER(std430, writeonly buffer, extr, GLBufId::Extr);
+      } else if (!write && read) {
+        REGISTER_BUFFER(std430, readonly buffer, extr, GLBufId::Extr);
+      } else {
+        REGISTER_BUFFER(std430, buffer, extr, GLBufId::Extr);
+      }
+    }
 
 #undef REGISTER_BUFFER
 #undef DEFINE_LAYOUT
     // clang-format on
 
     if (used.simulated_atomic_float) {
-      kernel_header += (
-#include "taichi/backends/opengl/shaders/atomics_data_f32.glsl.h"
-      );
+      line_appender_header_.append_raw(shaders::kOpenGLAtomicF32SourceCode);
+      kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(data);\n");
       if (used.buf_gtmp) {
-        kernel_header += (
-#include "taichi/backends/opengl/shaders/atomics_gtmp_f32.glsl.h"
-        );
+        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(gtmp);\n");
       }
       if (used.buf_extr) {
-        kernel_header += (
-#include "taichi/backends/opengl/shaders/atomics_extr_f32.glsl.h"
-        );
+        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(extr);\n");
       }
-    }
-
-    if (used.random) {
-      kernel_header += (
-#include "taichi/backends/opengl/shaders/random.glsl.h"
-      );
-    }
-
-    if (used.fast_pow) {
-      kernel_header += (
-#include "taichi/backends/opengl/shaders/fast_pow.glsl.h"
-      );
-    }
-    if (used.print) {
-      kernel_header += (
-#include "taichi/backends/opengl/shaders/print.glsl.h"
-      );
     }
 
     line_appender_header_.append_raw(kernel_header);
+
+    if (used.random) {
+      line_appender_header_.append_raw(shaders::kOpenGLRandomSourceCode);
+    }
+
+    if (used.fast_pow) {
+      line_appender_header_.append_raw(shaders::kOpenGLFastPowSourceCode);
+    }
+    if (used.print) {
+      line_appender_header_.append_raw(shaders::kOpenGLPrintSourceCode);
+    }
 
     std::string extensions = "";
 #define PER_OPENGL_EXTENSION(x) \
@@ -213,7 +230,13 @@ class KernelGen : public IRVisitor {
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
     compiled_program_->add(std::move(glsl_kernel_name_), kernel_src_code,
-                           std::move(ps));
+                           std::move(ps), &this->extptr_access);
+    auto &config = kernel->program->config;
+    if (config.print_kernel_llvm_ir) {
+      static FileSequenceWriter writer("shader{:04d}.comp",
+                                       "OpenGL compute shader");
+      writer.write(kernel_src_code);
+    }
     line_appender_header_.clear_all();
     line_appender_.clear_all();
     ps = std::make_unique<ParallelSize>();
@@ -680,10 +703,9 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(ReturnStmt *stmt) override {
-    used.buf_args = true;
-    // TODO: consider use _rets_{}_ instead of _args_{}_
+    used.buf_retr = true;
     // TODO: use stmt->ret_id instead of 0 as index
-    emit("_args_{}_[0] = {};",
+    emit("_retr_{}_[0] = {};",
          opengl_data_type_short_name(stmt->element_type()),
          stmt->value->short_name());
   }
@@ -1029,6 +1051,10 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
+    auto map = irpass::detect_external_ptr_access_in_task(stmt);
+
+    this->extptr_access = std::move(map);
+
     generate_header();
     TI_ASSERT(is_top_level_);
     is_top_level_ = false;

@@ -142,6 +142,10 @@ class Expr(TaichiOperations):
         return self.ptr.get_raw_address()
 
     @property
+    def name(self):
+        return self.snode.name
+
+    @property
     def shape(self):
         if self.ptr.is_external_var():
             dim = impl.get_external_tensor_dim(self.ptr)

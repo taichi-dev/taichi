@@ -31,7 +31,8 @@ class ScalarPointerLowerer {
                                 const std::vector<Stmt *> &indices,
                                 const SNodeOpType snode_op,
                                 const bool is_bit_vectorized,
-                                VecStatement *lowered);
+                                VecStatement *lowered,
+                                const bool packed);
 
   virtual ~ScalarPointerLowerer() = default;
   /**
@@ -67,6 +68,7 @@ class ScalarPointerLowerer {
   const SNodeOpType snode_op_;
   const bool is_bit_vectorized_;
   VecStatement *const lowered_;
+  const bool packed_;
 
  private:
   std::vector<SNode *> snodes_;

@@ -1,16 +1,9 @@
 #include "taichi/backends/wasm/aot_module_builder_impl.h"
 
-#include "taichi/util/file_sequence_writer.h"
-
 #include <fstream>
 
-#if __has_include(<filesystem>)
-#include <filesystem>
-namespace fs = ::std::filesystem;
-#else
-#include <experimental/filesystem>
-namespace fs = ::std::experimental::filesystem;
-#endif
+#include "taichi/system/std_filesystem.h"
+#include "taichi/util/file_sequence_writer.h"
 
 namespace taichi {
 namespace lang {
@@ -33,8 +26,8 @@ void AotModuleBuilderImpl::eliminate_unused_functions() const {
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
-  const fs::path dir{output_dir};
-  const fs::path bin_path = dir / fmt::format("{}.ll", filename);
+  const stdfs::path dir{output_dir};
+  const stdfs::path bin_path = dir / fmt::format("{}.ll", filename);
 
   eliminate_unused_functions();
   FileSequenceWriter writer(bin_path.string(), "optimized LLVM IR (WASM)");
@@ -48,6 +41,19 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
 
   for (auto &name : module_info->name_list)
     name_list_.push_back(name);
+}
+
+void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
+                                                 bool is_scalar,
+                                                 DataType dt,
+                                                 std::vector<int> shape,
+                                                 int row_num,
+                                                 int column_num) {
+}
+
+void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
+                                                const std::string &key,
+                                                Kernel *kernel) {
 }
 
 }  // namespace wasm

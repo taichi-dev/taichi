@@ -1,6 +1,17 @@
 // vim: ft=glsl
 // clang-format off
 #include "taichi/util/macros.h"
+
+#ifdef TI_INSIDE_OPENGL_CODEGEN
+#define OPENGL_BEGIN_FAST_POW_DEF constexpr auto kOpenGLFastPowSourceCode =
+#define OPENGL_END_FAST_POW_DEF ;
+#else
+static_assert(false, "Do not include");
+#define OPENGL_BEGIN_FAST_POW_DEF
+#define OPENGL_END_FAST_POW_DEF
+#endif
+
+OPENGL_BEGIN_FAST_POW_DEF
 STR(
 int fast_pow_i32(int x, int y)
 {
@@ -36,3 +47,7 @@ float fast_pow_f32(float x, int y)
   return neg ? 1.0 / ret : ret;
 }
 )
+OPENGL_END_FAST_POW_DEF
+
+#undef OPENGL_BEGIN_FAST_POW_DEF
+#undef OPENGL_END_FAST_POW_DEF

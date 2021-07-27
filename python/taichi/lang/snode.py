@@ -12,54 +12,122 @@ from taichi.misc.util import deprecated
 
 
 class SNode:
+    """A Python-side SNode wrapper."""
     def __init__(self, ptr):
         self.ptr = ptr
 
-    def dense(self, indices, dimensions):
-        if isinstance(dimensions, int):
-            dimensions = [dimensions] * len(indices)
-        return SNode(self.ptr.dense(indices, dimensions))
+    def dense(self, axes, dimensions):
+        """Adds a dense SNode as a child component of `self`.
 
-    def pointer(self, indices, dimensions):
-        if isinstance(dimensions, int):
-            dimensions = [dimensions] * len(indices)
-        return SNode(self.ptr.pointer(indices, dimensions))
+        Args:
+            axes (List[Axis]): Axes to activate.
+            dimensions (Union[List[int], int]): Shape of each axis.
 
-    def hash(self, indices, dimensions):
+        Returns:
+            The added :class:`~taichi.lang.SNode` instance.
+        """
         if isinstance(dimensions, int):
-            dimensions = [dimensions] * len(indices)
-        return SNode(self.ptr.hash(indices, dimensions))
+            dimensions = [dimensions] * len(axes)
+        return SNode(self.ptr.dense(axes, dimensions))
 
-    def dynamic(self, index, dimension, chunk_size=None):
-        assert len(index) == 1
+    def pointer(self, axes, dimensions):
+        """Adds a pointer SNode as a child component of `self`.
+
+        Args:
+            axes (List[Axis]): Axes to activate.
+            dimensions (Union[List[int], int]): Shape of each axis.
+
+        Returns:
+            The added :class:`~taichi.lang.SNode` instance.
+        """
+        if isinstance(dimensions, int):
+            dimensions = [dimensions] * len(axes)
+        return SNode(self.ptr.pointer(axes, dimensions))
+
+    def hash(self, axes, dimensions):
+        """Not supported."""
+        raise RuntimeError('hash not yet supported')
+        if isinstance(dimensions, int):
+            dimensions = [dimensions] * len(axes)
+        return SNode(self.ptr.hash(axes, dimensions))
+
+    def dynamic(self, axis, dimension, chunk_size=None):
+        """Adds a dynamic SNode as a child component of `self`.
+
+        Args:
+            axis (List[Axis]): Axis to activate, must be 1.
+            dimension (int): Shape of the axis.
+            chunk_size (int): Chunk size.
+
+        Returns:
+            The added :class:`~taichi.lang.SNode` instance.
+        """
+        assert len(axis) == 1
         if chunk_size is None:
             chunk_size = dimension
-        return SNode(self.ptr.dynamic(index[0], dimension, chunk_size))
+        return SNode(self.ptr.dynamic(axis[0], dimension, chunk_size))
 
-    def bitmasked(self, indices, dimensions):
+    def bitmasked(self, axes, dimensions):
+        """Adds a bitmasked SNode as a child component of `self`.
+
+        Args:
+            axes (List[Axis]): Axes to activate.
+            dimensions (Union[List[int], int]): Shape of each axis.
+
+        Returns:
+            The added :class:`~taichi.lang.SNode` instance.
+        """
         if isinstance(dimensions, int):
-            dimensions = [dimensions] * len(indices)
-        return SNode(self.ptr.bitmasked(indices, dimensions))
+            dimensions = [dimensions] * len(axes)
+        return SNode(self.ptr.bitmasked(axes, dimensions))
 
     @deprecated('_bit_struct', 'bit_struct')
     def _bit_struct(self, num_bits):
         return self.bit_struct(num_bits)
 
-    def bit_struct(self, num_bits):
+    def bit_struct(self, num_bits: int):
+        """Adds a bit_struct SNode as a child component of `self`.
+
+        Args:
+            num_bits: Number of bits to use.
+
+        Returns:
+            The added :class:`~taichi.lang.SNode` instance.
+        """
         return SNode(self.ptr.bit_struct(num_bits))
 
     @deprecated('_bit_array', 'bit_array')
-    def _bit_array(self, indices, dimensions, num_bits):
-        return self.bit_array(indices, dimensions, num_bits)
+    def _bit_array(self, axes, dimensions, num_bits):
+        return self.bit_array(axes, dimensions, num_bits)
 
-    def bit_array(self, indices, dimensions, num_bits):
+    def bit_array(self, axes, dimensions, num_bits):
+        """Adds a bit_array SNode as a child component of `self`.
+
+        Args:
+            axes (List[Axis]): Axes to activate.
+            dimensions (Union[List[int], int]): Shape of each axis.
+            num_bits (int): Number of bits to use.
+
+        Returns:
+            The added :class:`~taichi.lang.SNode` instance.
+        """
         if isinstance(dimensions, int):
-            dimensions = [dimensions] * len(indices)
-        return SNode(self.ptr.bit_array(indices, dimensions, num_bits))
+            dimensions = [dimensions] * len(axes)
+        return SNode(self.ptr.bit_array(axes, dimensions, num_bits))
 
     def place(self, *args, offset=None, shared_exponent=False):
+        """Places a list of Taichi fields under the `self` container.
+
+        Args:
+            *args (List[ti.field]): A list of Taichi fields to place.
+            offsest (Union[Number, tuple[Number]]): Offset of the field domain.
+            shared_exponent (bool): Only useful for quant types.
+
+        Returns:
+            The `self` container.
+        """
         if offset is None:
-            offset = []
+            offset = ()
         if isinstance(offset, numbers.Number):
             offset = (offset, )
         if shared_exponent:
@@ -140,6 +208,10 @@ class SNode:
     def loop_range(self):
         return Expr(_ti_core.global_var_expr_from_snode(self.ptr))
 
+    @property
+    def name(self):
+        return self.ptr.name()
+
     @deprecated('x.snode()', 'x.snode')
     def __call__(self):  # TODO: remove this after v0.7.0
         return self
@@ -147,6 +219,10 @@ class SNode:
     @property
     def snode(self):
         return self
+
+    @property
+    def needs_grad(self):
+        return self.ptr.has_grad()
 
     def get_children(self):
         children = []

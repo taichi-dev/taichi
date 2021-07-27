@@ -586,6 +586,10 @@ class Matrix(TaichiOperations):
         return len(self.shape)
 
     @property
+    def name(self):
+        return self.loop_range().name
+
+    @property
     def dtype(self):
         return self.loop_range().dtype
 
@@ -807,6 +811,7 @@ class Matrix(TaichiOperations):
               m,
               dtype,
               shape=None,
+              name="",
               offset=None,
               needs_grad=False,
               layout=None):  # TODO(archibate): deprecate layout
@@ -825,17 +830,17 @@ class Matrix(TaichiOperations):
                     dtype
                 ) == n, f'Please set correct dtype list for Vector. The shape of dtype list should be ({n}, ) instead of {np.shape(dtype)}'
                 for i in range(n):
-                    self.entries.append(impl.field(dtype[i]))
+                    self.entries.append(impl.field(dtype[i], name=name))
             else:
                 assert len(np.shape(dtype)) == 2 and len(dtype) == n and len(
                     dtype[0]
                 ) == m, f'Please set correct dtype list for Matrix. The shape of dtype list should be ({n}, {m}) instead of {np.shape(dtype)}'
                 for i in range(n):
                     for j in range(m):
-                        self.entries.append(impl.field(dtype[i][j]))
+                        self.entries.append(impl.field(dtype[i][j], name=name))
         else:
             for _ in range(n * m):
-                self.entries.append(impl.field(dtype))
+                self.entries.append(impl.field(dtype, name=name))
         self.grad = self.make_grad()
 
         if layout is not None:
@@ -862,18 +867,23 @@ class Matrix(TaichiOperations):
                 for i, e in enumerate(self.entries):
                     ti.root.dense(impl.index_nd(dim),
                                   shape).place(e, offset=offset)
-                    if needs_grad:
+                if needs_grad:
+                    for i, e in enumerate(self.entries):
                         ti.root.dense(impl.index_nd(dim),
                                       shape).place(e.grad, offset=offset)
             else:
                 var_list = []
                 for i, e in enumerate(self.entries):
                     var_list.append(e)
-                if needs_grad:
-                    for i, e in enumerate(self.entries):
-                        var_list.append(e.grad)
                 ti.root.dense(impl.index_nd(dim),
                               shape).place(*tuple(var_list), offset=offset)
+                grad_var_list = []
+                if needs_grad:
+                    for i, e in enumerate(self.entries):
+                        grad_var_list.append(e.grad)
+                    ti.root.dense(impl.index_nd(dim),
+                                  shape).place(*tuple(grad_var_list),
+                                               offset=offset)
         return self
 
     @classmethod

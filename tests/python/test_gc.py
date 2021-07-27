@@ -1,7 +1,6 @@
 import taichi as ti
 
 
-@ti.test(require=ti.extension.sparse)
 def _test_block_gc():
     N = 100000
 

@@ -34,6 +34,10 @@
 #include "taichi/backends/cc/cc_layout.h"
 #include "taichi/backends/cc/codegen_cc.h"
 #endif
+#ifdef TI_WITH_VULKAN
+#include "taichi/backends/vulkan/snode_struct_compiler.h"
+#include "taichi/backends/vulkan/codegen_vulkan.h"
+#endif
 
 #if defined(TI_ARCH_x64)
 // For _MM_SET_FLUSH_ZERO_MODE
@@ -256,6 +260,12 @@ FunctionType Program::compile(Kernel &kernel) {
   } else if (kernel.arch == Arch::cc) {
     ret = cccp::compile_kernel(&kernel);
 #endif
+  } else if (kernel.arch == Arch::vulkan) {
+#ifdef TI_WITH_VULKAN
+    vulkan::lower(&kernel);
+    ret = vulkan::compile_to_executable(
+        &kernel, &vulkan_compiled_structs_.value(), vulkan_runtime_.get());
+#endif  // TI_WITH_VULKAN
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -402,7 +412,7 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
   runtime_jit->call<void *, std::size_t, int, int>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
-      (int)snodes.size());
+      (int)snodes.size(), tree->id());
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
@@ -428,14 +438,9 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
 }
 
 int Program::add_snode_tree(std::unique_ptr<SNode> root) {
-  if (!snode_trees_.empty()) {
-    // TODO: remove this
-    TI_ERROR("Multiple SNodeTree not supported yet");
-    return -1;
-  }
-
   const int id = snode_trees_.size();
-  auto tree = std::make_unique<SNodeTree>(id, std::move(root));
+  auto tree = std::make_unique<SNodeTree>(id, std::move(root), config.packed);
+  tree->root()->set_snode_tree_id(id);
   materialize_snode_tree(tree.get());
   snode_trees_.push_back(std::move(tree));
   return id;
@@ -445,11 +450,20 @@ SNode *Program::get_snode_root(int tree_id) {
   return snode_trees_[tree_id]->root();
 }
 
+std::unique_ptr<llvm::Module> Program::clone_struct_compiler_initial_context(
+    TaichiLLVMContext *tlctx) {
+  if (!snode_trees_.empty())
+    return tlctx->clone_struct_module();
+  return tlctx->clone_runtime_module();
+}
+
 void Program::materialize_snode_tree(SNodeTree *tree) {
   auto *const root = tree->root();
   // always use host_arch() for host accessors
-  std::unique_ptr<StructCompiler> scomp =
-      StructCompiler::make(this, host_arch());
+  auto host_module =
+      clone_struct_compiler_initial_context(llvm_context_host.get());
+  std::unique_ptr<StructCompiler> scomp = std::make_unique<StructCompilerLLVM>(
+      host_arch(), this, std::move(host_module));
   scomp->run(*root);
   materialize_snode_expr_attributes();
 
@@ -460,8 +474,12 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
   if (arch_is_cpu(config.arch)) {
     initialize_llvm_runtime_snodes(tree, scomp.get());
   } else if (config.arch == Arch::cuda) {
+    auto device_module =
+        clone_struct_compiler_initial_context(llvm_context_device.get());
+
     std::unique_ptr<StructCompiler> scomp_gpu =
-        StructCompiler::make(this, Arch::cuda);
+        std::make_unique<StructCompilerLLVM>(Arch::cuda, this,
+                                             std::move(device_module));
     scomp_gpu->run(*root);
     initialize_llvm_runtime_snodes(tree, scomp_gpu.get());
   } else if (config.arch == Arch::metal) {
@@ -497,6 +515,15 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
     TI_ASSERT(result_buffer == nullptr);
     result_buffer = allocate_result_buffer_default(this);
     cc_program->compile_layout(root);
+#endif
+  } else if (config.arch == Arch::vulkan) {
+#ifdef TI_WITH_VULKAN
+    result_buffer = allocate_result_buffer_default(this);
+    vulkan_compiled_structs_ = vulkan::compile_snode_structs(*root);
+    vulkan::VkRuntime::Params params;
+    params.snode_descriptors = &(vulkan_compiled_structs_->snode_descriptors);
+    params.host_result_buffer = result_buffer;
+    vulkan_runtime_ = std::make_unique<vulkan::VkRuntime>(std::move(params));
 #endif
   }
 }
@@ -567,6 +594,8 @@ void Program::device_synchronize() {
 #endif
   } else if (config.arch == Arch::metal) {
     metal_kernel_mgr_->synchronize();
+  } else if (config.arch == Arch::vulkan) {
+    vulkan_runtime_->synchronize();
   }
 }
 
@@ -576,6 +605,10 @@ void Program::async_flush() {
     return;
   }
   async_engine->flush();
+}
+
+int Program::get_snode_tree_size() {
+  return snode_trees_.size();
 }
 
 std::string capitalize_first(std::string s) {
@@ -648,7 +681,9 @@ void Program::visualize_layout(const std::string &fn) {
       emit("]");
     };
 
-    visit(get_snode_root(SNodeTree::kFirstID));
+    for (auto &a : snode_trees_) {
+      visit(a->root());
+    }
 
     auto tail = R"(
 \end{tikzpicture}
@@ -669,6 +704,8 @@ void Program::maybe_initialize_cuda_llvm_context() {
 Arch Program::get_snode_accessor_arch() {
   if (config.arch == Arch::opengl) {
     return Arch::opengl;
+  } else if (config.arch == Arch::vulkan) {
+    return Arch::vulkan;
   } else if (is_cuda_no_unified_memory(config)) {
     return Arch::cuda;
   } else if (config.arch == Arch::metal) {
@@ -884,7 +921,9 @@ void Program::print_memory_profiler_info() {
     }
   };
 
-  visit(get_snode_root(SNodeTree::kFirstID), /*depth=*/0);
+  for (auto &a : snode_trees_) {
+    visit(a->root(), /*depth=*/0);
+  }
 
   auto total_requested_memory = runtime_query<std::size_t>(
       "LLVMRuntime_get_total_requested_memory", llvm_runtime);
@@ -895,6 +934,9 @@ void Program::print_memory_profiler_info() {
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
+  if (config.arch == Arch::metal) {
+    return metal_kernel_mgr_->get_snode_num_dynamically_allocated(snode);
+  }
   auto node_allocator = runtime_query<void *>("LLVMRuntime_get_node_allocators",
                                               llvm_runtime, snode->id);
   auto data_list =

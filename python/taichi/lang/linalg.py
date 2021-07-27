@@ -15,7 +15,7 @@ def polar_decompose2d(A, dt):
         dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
 
     Returns:
-        Decomposed 2x2 matrices `U` and `P`
+        Decomposed 2x2 matrices `U` and `P`.
     """
     x, y = A(0, 0) + A(1, 1), A(1, 0) - A(0, 1)
     scale = (1.0 / ti.sqrt(x * x + y * y))
@@ -36,7 +36,7 @@ def polar_decompose3d(A, dt):
         dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
 
     Returns:
-        Decomposed 3x3 matrices `U` and `P`
+        Decomposed 3x3 matrices `U` and `P`.
     """
     U, sig, V = ti.svd(A, dt)
     return U @ V.transpose(), V @ sig @ V.transpose()
@@ -54,7 +54,7 @@ def svd2d(A, dt):
         dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
 
     Returns:
-        Decomposed 2x2 matrices `U`, 'S' and `V`
+        Decomposed 2x2 matrices `U`, 'S' and `V`.
     """
     R, S = polar_decompose2d(A, dt)
     c, s = ti.cast(0.0, dt), ti.cast(0.0, dt)
@@ -97,7 +97,7 @@ def svd3d(A, dt, iters=None):
         iters (int): iteration number to control algorithm precision.
 
     Returns:
-        Decomposed 3x3 matrices `U`, 'S' and `V`
+        Decomposed 3x3 matrices `U`, 'S' and `V`.
     """
     assert A.n == 3 and A.m == 3
     inputs = tuple([e.ptr for e in A.entries])
@@ -227,7 +227,7 @@ def svd(A, dt):
         dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
 
     Returns:
-        Decomposed nxn matrices `U`, 'S' and `V`
+        Decomposed nxn matrices `U`, 'S' and `V`.
     """
     if ti.static(A.n == 2):
         ret = svd2d(A, dt)
@@ -251,7 +251,7 @@ def polar_decompose(A, dt):
         dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
 
     Returns:
-        Decomposed nxn matrices `U` and `P`
+        Decomposed nxn matrices `U` and `P`.
     """
     if ti.static(A.n == 2):
         ret = polar_decompose2d(A, dt)

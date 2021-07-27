@@ -24,7 +24,8 @@ SNode &SNode::insert_children(SNodeType t) {
 
 SNode &SNode::create_node(std::vector<Axis> axes,
                           std::vector<int> sizes,
-                          SNodeType type) {
+                          SNodeType type,
+                          bool packed) {
   TI_ASSERT(axes.size() == sizes.size() || sizes.size() == 1);
   if (sizes.size() == 1) {
     sizes = std::vector<int>(axes.size(), sizes[0]);
@@ -46,14 +47,14 @@ SNode &SNode::create_node(std::vector<Axis> axes,
   return new_node;
 }
 
-SNode &SNode::dynamic(const Axis &expr, int n, int chunk_size) {
-  auto &snode = create_node({expr}, {n}, SNodeType::dynamic);
+SNode &SNode::dynamic(const Axis &expr, int n, int chunk_size, bool packed) {
+  auto &snode = create_node({expr}, {n}, SNodeType::dynamic, packed);
   snode.chunk_size = chunk_size;
   return snode;
 }
 
-SNode &SNode::bit_struct(int num_bits) {
-  auto &snode = create_node({}, {}, SNodeType::bit_struct);
+SNode &SNode::bit_struct(int num_bits, bool packed) {
+  auto &snode = create_node({}, {}, SNodeType::bit_struct, packed);
   snode.physical_type =
       TypeFactory::get_instance().get_primitive_int_type(num_bits, false);
   return snode;
@@ -61,8 +62,9 @@ SNode &SNode::bit_struct(int num_bits) {
 
 SNode &SNode::bit_array(const std::vector<Axis> &axes,
                         const std::vector<int> &sizes,
-                        int bits) {
-  auto &snode = create_node(axes, sizes, SNodeType::bit_array);
+                        int bits,
+                        bool packed) {
+  auto &snode = create_node(axes, sizes, SNodeType::bit_array, packed);
   snode.physical_type =
       TypeFactory::get_instance().get_primitive_int_type(bits, false);
   return snode;

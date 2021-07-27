@@ -168,7 +168,9 @@ class SNode {
                      bool packed);
 
   // SNodes maintains how flattened index bits are taken from indices
-  SNode &dense(const std::vector<Axis> &axes, const std::vector<int> &sizes, bool packed) {
+  SNode &dense(const std::vector<Axis> &axes,
+               const std::vector<int> &sizes,
+               bool packed) {
     return create_node(axes, sizes, SNodeType::dense, packed);
   }
 
@@ -180,12 +182,15 @@ class SNode {
     return SNode::dense(std::vector<Axis>{axis}, size, packed);
   }
 
-  SNode &pointer(const std::vector<Axis> &axes, const std::vector<int> &sizes, bool packed) {
+  SNode &pointer(const std::vector<Axis> &axes,
+                 const std::vector<int> &sizes,
+                 bool packed) {
     return create_node(axes, sizes, SNodeType::pointer, packed);
   }
 
   SNode &pointer(const std::vector<Axis> &axes, int sizes, bool packed) {
-    return create_node(axes, std::vector<int>{sizes}, SNodeType::pointer, packed);
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::pointer,
+                       packed);
   }
 
   SNode &pointer(const Axis &axis, int size, bool packed) {
@@ -199,14 +204,17 @@ class SNode {
   }
 
   SNode &bitmasked(const std::vector<Axis> &axes, int sizes, bool packed) {
-    return create_node(axes, std::vector<int>{sizes}, SNodeType::bitmasked, packed);
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::bitmasked,
+                       packed);
   }
 
   SNode &bitmasked(const Axis &axis, int size, bool packed) {
     return SNode::bitmasked(std::vector<Axis>{axis}, size, packed);
   }
 
-  SNode &hash(const std::vector<Axis> &axes, const std::vector<int> &sizes, bool packed) {
+  SNode &hash(const std::vector<Axis> &axes,
+              const std::vector<int> &sizes,
+              bool packed) {
     return create_node(axes, sizes, SNodeType::hash, packed);
   }
 
@@ -226,7 +234,8 @@ class SNode {
 
   SNode &bit_array(const std::vector<Axis> &axes,
                    const std::vector<int> &sizes,
-                   int bits, bool packed);
+                   int bits,
+                   bool packed);
 
   void print();
 

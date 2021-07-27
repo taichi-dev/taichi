@@ -15,7 +15,8 @@ SNode &SNode::insert_children(SNodeType t) {
   new_ch->parent = this;
   new_ch->is_path_all_dense = (is_path_all_dense && !new_ch->need_activation());
   for (int i = 0; i < taichi_max_num_indices; i++) {
-    new_ch->extractors[i].num_elements_from_root *= extractors[i].num_elements_from_root;
+    new_ch->extractors[i].num_elements_from_root *=
+        extractors[i].num_elements_from_root;
   }
   std::memcpy(new_ch->physical_index_position, physical_index_position,
               sizeof(physical_index_position));
@@ -52,8 +53,9 @@ SNode &SNode::create_node(std::vector<Axis> axes,
     new_node.extractors[ind.value].num_elements_from_root *= sizes[i];
     if (packed) {
       new_node.extractors[ind.value].shape = sizes[i];
-    } else { // if not in packed mode, pad shape to POT
-      new_node.extractors[ind.value].shape = 1 << new_node.extractors[ind.value].num_bits;
+    } else {  // if not in packed mode, pad shape to POT
+      new_node.extractors[ind.value].shape =
+          1 << new_node.extractors[ind.value].num_bits;
     }
   }
   // infer mappings

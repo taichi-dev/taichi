@@ -61,29 +61,26 @@ void KernelProfilerBase::print() {
       "=\n");
 }
 
-
-
-void KernelProfilerBase::query(const std::string &kernel_name, 
-                               int &counter, 
-                               double &min, 
-                               double &max, 
+void KernelProfilerBase::query(const std::string &kernel_name,
+                               int &counter,
+                               double &min,
+                               double &max,
                                double &avg) {
   std::regex name_regex(kernel_name + "(.*)");
   for (auto &rec : records) {
-    if(std::regex_match(rec.name, name_regex)){
-      if(counter == 0){
+    if (std::regex_match(rec.name, name_regex)) {
+      if (counter == 0) {
         counter = rec.counter;
         min = rec.min;
         max = rec.max;
         avg = rec.total / rec.counter;
-      }
-      else if(counter == rec.counter){
+      } else if (counter == rec.counter) {
         min += rec.min;
         max += rec.max;
         avg += rec.total / rec.counter;
-      }
-      else{
-        TI_WARN("{}.counter({}) != {}.counter({}).", kernel_name, counter, rec.name, rec.counter);
+      } else {
+        TI_WARN("{}.counter({}) != {}.counter({}).", kernel_name, counter,
+                rec.name, rec.counter);
       }
     }
   }

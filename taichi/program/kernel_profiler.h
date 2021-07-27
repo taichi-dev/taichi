@@ -63,10 +63,10 @@ class KernelProfilerBase {
 
   void print();
 
-  void query(const std::string &kernel_name, 
-             int &counter, 
-             double &min, 
-             double &max, 
+  void query(const std::string &kernel_name,
+             int &counter,
+             double &min,
+             double &max,
              double &avg);
 
   double get_total_time() const;

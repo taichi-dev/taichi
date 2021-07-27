@@ -353,68 +353,188 @@ def raw_mod(a, b):
 
 @binary
 def cmp_lt(a, b):
+    """Compare two values (less than)
+
+    Args:
+        a: Value A
+        b: Value B
+
+    Returns:
+        bool: True if A is strictly smaller than B, False otherwise
+
+    """
     return _binary_operation(_ti_core.expr_cmp_lt, lambda a, b: -int(a < b), a,
                              b)
 
 
 @binary
 def cmp_le(a, b):
+    """Compare two values (less than or equal to)
+
+    Args:
+        a: Value A
+        b: Value B
+
+    Returns:
+        bool: True if A is smaller than or equal to B, False otherwise
+
+    """
     return _binary_operation(_ti_core.expr_cmp_le, lambda a, b: -int(a <= b),
                              a, b)
 
 
 @binary
 def cmp_gt(a, b):
+    """Compare two values (greater than)
+
+    Args:
+        a: Value A
+        b: Value B
+
+    Returns:
+        bool: True if A is strictly larger than B, False otherwise
+
+    """
     return _binary_operation(_ti_core.expr_cmp_gt, lambda a, b: -int(a > b), a,
                              b)
 
 
 @binary
 def cmp_ge(a, b):
+    """Compare two values (greater than or equal to)
+
+    Args:
+        a: Value A
+        b: Value B
+
+    Returns:
+        bool: True if A is greater than or equal to B, False otherwise
+
+    """
     return _binary_operation(_ti_core.expr_cmp_ge, lambda a, b: -int(a >= b),
                              a, b)
 
 
 @binary
 def cmp_eq(a, b):
+    """Compare two values (equal to)
+
+    Args:
+        a: Value A
+        b: Value B
+
+    Returns:
+        bool: True if A is equal to B, False otherwise.
+
+    """
     return _binary_operation(_ti_core.expr_cmp_eq, lambda a, b: -int(a == b),
                              a, b)
 
 
 @binary
 def cmp_ne(a, b):
+    """Compare two values (not equal to)
+
+    Args:
+        a: Value A
+        b: Value B
+
+    Returns:
+        bool: True if A is not equal to B, False otherwise
+
+    """
     return _binary_operation(_ti_core.expr_cmp_ne, lambda a, b: -int(a != b),
                              a, b)
 
 
 @binary
 def bit_or(a, b):
+    """Computes bitwise-or
+
+    Args:
+        a: Value A
+        b: Value B
+
+    Returns:
+        bool: A bitwise-or with B
+
+    """
     return _binary_operation(_ti_core.expr_bit_or, _bt_ops_mod.or_, a, b)
 
 
 @binary
 def bit_and(a, b):
+    """Compute bitwise-and
+
+    Args:
+        a: Value A
+        b: Value B
+
+    Returns:
+        bool: A bitwise-and with B
+
+    """
     return _binary_operation(_ti_core.expr_bit_and, _bt_ops_mod.and_, a, b)
 
 
 @binary
 def bit_xor(a, b):
+    """Compute bitwise-xor
+
+    Args:
+        a: Value A
+        b: Value B
+
+    Returns:
+        bool: A bitwise-xor with B
+
+    """
     return _binary_operation(_ti_core.expr_bit_xor, _bt_ops_mod.xor, a, b)
 
 
 @binary
 def bit_shl(a, b):
+    """Compute bitwise shift left
+
+    Args:
+        a: Value A
+        b: Value B
+
+    Returns:
+        int: A << B
+
+    """
     return _binary_operation(_ti_core.expr_bit_shl, _bt_ops_mod.lshift, a, b)
 
 
 @binary
 def bit_sar(a, b):
+    """Compute bitwise shift right
+
+    Args:
+        a: Value A
+        b: Value B
+
+    Returns:
+        int: A >> B
+
+    """
     return _binary_operation(_ti_core.expr_bit_sar, _bt_ops_mod.rshift, a, b)
 
 
 @taichi_scope
 @binary
 def bit_shr(a, b):
+    """Compute bitwise shift right (in taichi scope)
+
+    Args:
+        a: Value A
+        b: Value B
+
+    Returns:
+        int: A >> B
+
+    """
     return _binary_operation(_ti_core.expr_bit_shr, _bt_ops_mod.rshift, a, b)
 
 

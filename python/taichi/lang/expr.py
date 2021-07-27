@@ -10,10 +10,7 @@ import taichi as ti
 
 # Scalar, basic data type
 class Expr(TaichiOperations):
-    """
-    A Python-side Expr wrapper, whose member variable `ptr` is an instance of C++ Expr class.
-    A C++ Expr object contains member variable `expr ` which holds an instance of C++ Expression class.
-    """
+    """A Python-side Expr wrapper, whose member variable `ptr` is an instance of C++ Expr class. A C++ Expr object contains member variable `expr ` which holds an instance of C++ Expression class."""
     def __init__(self, *args, tb=None):
         _taichi_skip_traceback = 1
         self.getter = None
@@ -47,7 +44,7 @@ class Expr(TaichiOperations):
 
     @python_scope
     def __setitem__(self, key, value):
-        """Set value with specified key when the class itself represents GlobalVariableExpression (field) internally.
+        """Set value with specified key when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
 
         This will not be directly called from python for vector/matrix fields.
         Python Matrix class will decompose operations into scalar-level first.
@@ -68,7 +65,7 @@ class Expr(TaichiOperations):
 
     @python_scope
     def __getitem__(self, key):
-        """Get value with specified key when the class itself represents GlobalVariableExpression (field) internally.
+        """Get value with specified key when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
 
         This will not be directly called from python for vector/matrix fields.
         Python Matrix class will decompose operations into scalar-level first.
@@ -92,7 +89,7 @@ class Expr(TaichiOperations):
         return self
 
     def get_field_members(self):
-        """Get a list of involving fields when the class itself represents GlobalVariableExpression (field) internally.
+        """Get a list of involving fields when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
 
         This is an unified interface to match :func:`taichi.lang.Matrix.get_field_members`.
 
@@ -146,15 +143,37 @@ class Expr(TaichiOperations):
 
     @python_scope
     def fill(self, val):
+        """Fill the whole field with value `val` when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+
+        This is an unified interface to match :func:`taichi.lang.Matrix.fill`.
+
+        Args:
+            val (Union[int, float]): value to fill
+        """
         # TODO: avoid too many template instantiations
         from taichi.lang.meta import fill_tensor
         fill_tensor(self, val)
 
     def parent(self, n=1):
+        '''Create another Expr instance which represents one of the ancestors in SNode tree.
+
+        The class it self must represent GlobalVariableExpression (field) internally.
+
+        Args:
+            n (int): levels of the target ancestor higher than the current field's snode
+
+        Returns:
+            An Expr instance which represents the target SNode ancestor internally.
+        '''
         p = self.snode.parent(n)
         return Expr(_ti_core.global_var_expr_from_snode(p.ptr))
 
     def is_global(self):
+        """Check whether the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+
+        Returns:
+            True or False depending on whether the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+        """
         return self.ptr.is_global_var() or self.ptr.is_external_var()
 
     @property
@@ -171,6 +190,11 @@ class Expr(TaichiOperations):
 
     @property
     def shape(self):
+        """A list containing sizes for each dimension when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+
+        Returns:
+            The list containing sizes for each dimension when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+        """
         if self.ptr.is_external_var():
             dim = impl.get_external_tensor_dim(self.ptr)
             ret = [
@@ -186,6 +210,11 @@ class Expr(TaichiOperations):
 
     @property
     def dtype(self):
+        """The type of inside elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+
+        Returns:
+            The type of inside elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+        """
         return self.snode.dtype
 
     @deprecated('x.data_type()', 'x.dtype')
@@ -194,6 +223,13 @@ class Expr(TaichiOperations):
 
     @python_scope
     def to_numpy(self):
+        """Create a numpy array containing the same elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+
+        This is an unified interface to match :func:`taichi.lang.Matrix.to_numpy`.
+
+        Returns:
+            The numpy array containing the same elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+        """
         import numpy as np
         from taichi.lang.meta import tensor_to_ext_arr
         arr = np.zeros(shape=self.shape, dtype=to_numpy_type(self.dtype))
@@ -203,6 +239,13 @@ class Expr(TaichiOperations):
 
     @python_scope
     def to_torch(self, device=None):
+        """Create a torch array containing the same elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+
+        This is an unified interface to match :func:`taichi.lang.Matrix.to_torch`.
+
+        Returns:
+            The torch array containing the same elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+        """
         import torch
         from taichi.lang.meta import tensor_to_ext_arr
         arr = torch.zeros(size=self.shape,
@@ -214,6 +257,14 @@ class Expr(TaichiOperations):
 
     @python_scope
     def from_numpy(self, arr):
+        """Load all elements from a numpy array when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+
+        This is an unified interface to match :func:`taichi.lang.Matrix.from_numpy`.
+        The numpy array's shape need to be the same as the internal data structure.
+
+        Returns:
+            The numpy array containing the same elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+        """
         assert len(self.shape) == len(arr.shape)
         s = self.shape
         for i in range(len(self.shape)):
@@ -226,6 +277,14 @@ class Expr(TaichiOperations):
 
     @python_scope
     def from_torch(self, arr):
+        """Load all elements from a torch array when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+
+        This is an unified interface to match :func:`taichi.lang.Matrix.from_torch`.
+        The torch array's shape need to be the same as the internal data structure.
+
+        Returns:
+            The torch array containing the same elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
+        """
         self.from_numpy(arr.contiguous())
 
     @python_scope

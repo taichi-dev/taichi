@@ -88,6 +88,11 @@ class JITSessionCUDA : public JITSession {
 
   virtual JITModule *add_module(std::unique_ptr<llvm::Module> M,
                                 int max_reg) override {
+    std::string Str;
+    llvm::raw_string_ostream OS(Str);
+    OS << *M;
+    OS.flush();
+    std::cout<<Str<<'\n';
     auto ptx = compile_module_to_ptx(M);
     if (get_current_program().config.print_kernel_nvptx) {
       static FileSequenceWriter writer("taichi_kernel_nvptx_{:04d}.ptx",

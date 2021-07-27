@@ -906,6 +906,10 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
                                Ptr ptr) {
   // For Metal runtime, we have to make sure that both the beginning address
   // and the size of the root buffer memory are aligned to page size.
+  /*runtime->root_mem_sizes[snode_tree_id] =
+      taichi::iroundup((size_t)root_size, taichi_page_size);
+  runtime->roots[snode_tree_id] = runtime->allocate_aligned(
+      runtime->root_mem_sizes[snode_tree_id], taichi_page_size);*/
   runtime->root_mem_sizes[snode_tree_id] = rounded_size;
   runtime->roots[snode_tree_id] = ptr;
   // runtime->request_allocate_aligned ready to use

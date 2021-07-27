@@ -120,7 +120,7 @@ class SNode:
 
         Args:
             *args (List[ti.field]): A list of Taichi fields to place.
-            offsest (Union[Number, tuple[Number]]): Offset of the field domain.
+            offset (Union[Number, tuple[Number]]): Offset of the field domain.
             shared_exponent (bool): Only useful for quant types.
 
         Returns:
@@ -160,6 +160,14 @@ class SNode:
         self.ptr.lazy_grad()
 
     def parent(self, n=1):
+        """Gets an ancestor of `self` in the SNode tree.
+
+        Args:
+            n (int): the number of levels going up from `self`.
+
+        Returns:
+            Union[None, _Root, SNode]: The n-th parent of `self`.
+        """
         p = self.ptr
         while p and n > 0:
             p = p.parent
@@ -172,6 +180,11 @@ class SNode:
 
     @property
     def dtype(self):
+        """Gets the data type of `self`.
+
+        Returns:
+            DataType: The data type of `self`.
+        """
         return self.ptr.data_type()
 
     @deprecated('x.data_type()', 'x.dtype')
@@ -184,10 +197,20 @@ class SNode:
 
     @property
     def id(self):
+        """Gets the id of `self`.
+
+        Returns:
+            int: The id of `self`.
+        """
         return self.ptr.id
 
     @property
     def shape(self):
+        """Gets the number of elements from root in each axis of `self`.
+
+        Returns:
+            Tuple[int]: The number of elements from root in each axis of `self`.
+        """
         dim = self.ptr.num_active_indices()
         ret = [self.ptr.get_shape_along_axis(i) for i in range(dim)]
 
@@ -204,10 +227,20 @@ class SNode:
         return self.shape[i]
 
     def loop_range(self):
+        """Wraps `self` into an :class:`~taichi.lang.Expr` to serve as loop range.
+
+        Returns:
+            Expr: The wrapped result.
+        """
         return Expr(_ti_core.global_var_expr_from_snode(self.ptr))
 
     @property
     def name(self):
+        """Gets the name of `self`.
+
+        Returns:
+            str: The name of `self`.
+        """
         return self.ptr.name()
 
     @deprecated('x.snode()', 'x.snode')
@@ -216,13 +249,28 @@ class SNode:
 
     @property
     def snode(self):
+        """Gets `self`.
+
+        Returns:
+            SNode: `self`.
+        """
         return self
 
     @property
     def needs_grad(self):
+        """Checks whether `self` has a corresponding gradient :class:`~taichi.lang.SNode`.
+
+        Returns:
+            bool: Whether `self` has a corresponding gradient :class:`~taichi.lang.SNode`.
+        """
         return self.ptr.has_grad()
 
     def get_children(self):
+        """Gets all children components of `self`.
+
+        Returns:
+            List[SNode]: All children components of `self`.
+        """
         children = []
         for i in range(self.ptr.get_num_ch()):
             children.append(SNode(self.ptr.get_ch(i)))
@@ -241,6 +289,7 @@ class SNode:
         return self.ptr.cell_size_bytes
 
     def deactivate_all(self):
+        """Recursively deactivate all children components of `self`."""
         ch = self.get_children()
         for c in ch:
             c.deactivate_all()
@@ -270,6 +319,11 @@ class SNode:
         return self.ptr == other.ptr
 
     def physical_index_position(self):
+        """Gets mappings from virtual axes to physical axes.
+
+        Returns:
+            Dict[int, int]: Mappings from virtual axes to physical axes.
+        """
         ret = {}
         for virtual, physical in enumerate(
                 self.ptr.get_physical_index_position()):

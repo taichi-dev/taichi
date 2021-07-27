@@ -168,7 +168,7 @@ class CompiledTaichiKernel {
  public:
   struct Params {
     const TaichiKernelAttributes *ti_kernel_attribs{nullptr};
-    std::vector<GlslToSpirvCompiler::SpirvBinary> spirv_bins;
+    std::vector<VkRuntime::SpirvBinary> spirv_bins;
     const SNodeDescriptorsMap *snode_descriptors{nullptr};
 
     const VulkanDevice *device{nullptr};
@@ -265,13 +265,7 @@ class VkRuntime ::Impl {
  public:
   explicit Impl(const Params &params)
       : snode_descriptors_(params.snode_descriptors),
-        host_result_buffer_(params.host_result_buffer),
-        spv_compiler_([](const std::string &glsl_src,
-                         const std::string &shader_name,
-                         const std::string &err_msg) {
-          TI_ERROR("Failed to compile shader={} err={}\n{}", shader_name,
-                   err_msg, glsl_src);
-        }) {
+        host_result_buffer_(params.host_result_buffer) {
     TI_ASSERT(snode_descriptors_ != nullptr);
     TI_ASSERT(host_result_buffer_ != nullptr);
     ManagedVulkanDevice::Params mvd_params;
@@ -302,16 +296,14 @@ class VkRuntime ::Impl {
     params.global_tmps_buffer = global_tmps_buffer_.get();
     params.host_visible_mem_pool = host_visible_memory_pool_.get();
 
-    for (int i = 0; i < reg_params.task_glsl_source_codes.size(); ++i) {
+    for (int i = 0; i < reg_params.task_spirv_source_codes.size(); ++i) {
       const auto &attribs = reg_params.kernel_attribs.tasks_attribs[i];
-      const auto &glsl_src = reg_params.task_glsl_source_codes[i];
+      const auto &spirv_src = reg_params.task_spirv_source_codes[i];
       const auto &task_name = attribs.name;
-      auto spv_bin = spv_compiler_.compile(glsl_src, task_name).value();
+
       // If we can reach here, we have succeeded. Otherwise
       // std::optional::value() would have killed us.
-      TI_TRACE("Successfully compiled GLSL -> SPIR-V for task={}\n{}",
-               task_name, glsl_src);
-      params.spirv_bins.push_back(std::move(spv_bin));
+      params.spirv_bins.push_back(std::move(spirv_src));
     }
     KernelHandle res;
     res.id_ = ti_kernels_.size();
@@ -399,7 +391,6 @@ class VkRuntime ::Impl {
 
   std::unique_ptr<ManagedVulkanDevice> managed_device_{nullptr};
   std::unique_ptr<VulkanStream> stream_{nullptr};
-  GlslToSpirvCompiler spv_compiler_;
 
   std::unique_ptr<LinearVkMemoryPool> dev_local_memory_pool_;
   std::unique_ptr<VkBufferWithMemory> root_buffer_;

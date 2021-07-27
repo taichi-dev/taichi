@@ -55,7 +55,7 @@ build_script:
   - set CI_SETUP_CMAKE_ARGS=-G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm
   # This is to fix the bug caused by execnet 1.2, the library xdist uses to schedule tests.
   # Reverting to v1.1 solves this bug(Python Fatal Error: IOError).
-  - "%PYTHON% -m pip install -U execnet=1.1"
+  - "%PYTHON% -m pip install -U execnet==1.1"
   - "%PYTHON% misc/ci_setup.py ci"
   - '%PYTHON% -c "import taichi"'
   - "%PYTHON% examples/algorithm/laplace.py"

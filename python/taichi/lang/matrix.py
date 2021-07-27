@@ -21,9 +21,9 @@ class Matrix(TaichiOperations):
     Args:
         n (int): the first dimension of a matrix.
         m (int): the second dimension of a matrix.
-        dt (data-type): the elmement data type.
-        shape (int or tuple of int, optional): the shape of a matrix field.
-        offset (int or tuple of int, optional): The coordinate offset of all elements in a field.
+        dt (DataType): the elmement data type.
+        shape ( Union[int, tuple of int], optional): the shape of a matrix field.
+        offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
         empty (Bool, deprecated): True if the matrix is empty, False otherwise.
         layout (TypeVar, optional): The filed layout(AOS or SOA).
         needs_grad (Bool, optional): True if used in auto diff, False otherwise.
@@ -208,7 +208,7 @@ class Matrix(TaichiOperations):
         """Matrix-matrix or matrix-vector multiply.
 
         Args:
-            other (Matrix or Vector): a matrix or a vector.
+            other (Union[Matrix, Vector]): a matrix or a vector.
 
         Returns:
             The matrix-matrix product or matrix-vector product.
@@ -495,7 +495,7 @@ class Matrix(TaichiOperations):
         """Cast the matrix element data type.
 
         Args:
-            dtype (data-type): the data type of the casted matrix element.
+            dtype (DataType): the data type of the casted matrix element.
 
         Returns:
             A new matrix with each element's type is dtype.
@@ -589,7 +589,7 @@ class Matrix(TaichiOperations):
         """Normalize a vector.
 
         Args:
-            eps (Scalar): a safe-guard value for sqrt, usually 0.
+            eps (Number): a safe-guard value for sqrt, usually 0.
 
         Examples::
 
@@ -740,7 +740,7 @@ class Matrix(TaichiOperations):
         """Return the square root of the sum of the absolute squares of its elements.
 
         Args:
-            eps (Scalar): a safe-guard value for sqrt, usually 0.
+            eps (Number): a safe-guard value for sqrt, usually 0.
 
         Examples::
 
@@ -759,7 +759,7 @@ class Matrix(TaichiOperations):
         """Return the inverse of the matrix/vector `norm`. For `norm`: please see :func:`~taichi.lang.matrix.Matrix.norm`.
 
         Args:
-            eps (Scalar): a safe-guard value for sqrt, usually 0.
+            eps (Number): a safe-guard value for sqrt, usually 0.
 
         Returns:
             The inverse of the matrix/vector `norm`.
@@ -810,7 +810,7 @@ class Matrix(TaichiOperations):
         """Fill the element with values.
 
         Args:
-            val (Number, List, Tuple, Matrix): the dimension of val should be consistent with the dimension of element.
+            val (Union[Number, List, Tuple, Matrix]): the dimension of val should be consistent with the dimension of element.
 
         Examples:
 

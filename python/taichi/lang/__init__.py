@@ -76,16 +76,20 @@ def memory_profiler_print():
 
 
 extension = _ti_core.Extension
-is_extension_supported = _ti_core.is_extension_supported
-"""Checks whether an extension is supported on an arch.
 
-Args:
-    arg0: Specified arch.
-    arg1: Specified extension.
 
-Returns:
-    Whether `arg1` is supported on `arg0`.
-"""
+def is_extension_supported(arch, ext):
+    """Checks whether an extension is supported on an arch.
+
+    Args:
+        arch (taichi_core.Arch): Specified arch.
+        ext (taichi_core.Extension): Specified extension.
+
+    Returns:
+        bool: Whether `ext` is supported on `arch`.
+    """
+    return _ti_core.is_extension_supported(arch, ext)
+
 
 def reset():
     impl.reset()

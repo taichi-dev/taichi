@@ -8,7 +8,7 @@ import taichi as ti
 def polar_decompose2d(A, dt):
     """Perform polar decomposition (A=UP) for 2x2 matrix.
 
-    Mathematical concept refer to https://en.wikipedia.org/wiki/Polar_decomposition.
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
 
     Args:
         A (ti.Matrix(2, 2)): input 2x2 matrix `A`.
@@ -29,7 +29,7 @@ def polar_decompose2d(A, dt):
 def polar_decompose3d(A, dt):
     """Perform polar decomposition (A=UP) for 3x3 matrix.
 
-    Mathematical concept refer to https://en.wikipedia.org/wiki/Polar_decomposition.
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
 
     Args:
         A (ti.Matrix(3, 3)): input 3x3 matrix `A`.
@@ -47,7 +47,7 @@ def polar_decompose3d(A, dt):
 def svd2d(A, dt):
     """Perform singular value decomposition (A=USV^T) for 2x2 matrix.
 
-    Mathematical concept refer to https://en.wikipedia.org/wiki/Singular_value_decomposition.
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
 
     Args:
         A (ti.Matrix(2, 2)): input 2x2 matrix `A`.
@@ -89,7 +89,7 @@ def svd2d(A, dt):
 def svd3d(A, dt, iters=None):
     """Perform singular value decomposition (A=USV^T) for 3x3 matrix.
 
-    Mathematical concept refer to https://en.wikipedia.org/wiki/Singular_value_decomposition.
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
 
     Args:
         A (ti.Matrix(3, 3)): input 3x3 matrix `A`.
@@ -130,7 +130,7 @@ def svd3d(A, dt, iters=None):
 def eig2x2(A, dt):
     """Compute the eigenvalues and right eigenvectors (Av=\lambda v) of a 2x2 real matrix.
 
-    Mathematical concept refer to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
 
     Args:
         A (ti.Matrix(2, 2)): input 2x2 matrix `A`.
@@ -182,7 +182,7 @@ def eig2x2(A, dt):
 def sym_eig2x2(A, dt):
     """Compute the eigenvalues and right eigenvectors (Av=\lambda v) of a 2x2 real symmetric matrix.
 
-    Mathematical concept refer to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
 
     Args:
         A (ti.Matrix(2, 2)): input 2x2 symmetric matrix `A`.
@@ -218,9 +218,9 @@ def sym_eig2x2(A, dt):
 def svd(A, dt):
     """Perform singular value decomposition (A=USV^T) for arbitrary size matrix.
 
-    Mathematical concept refer to https://en.wikipedia.org/wiki/Singular_value_decomposition.
-    2D implementation refer to :func:`taichi.lang.svd2d`
-    3D implementation refer to :func:`taichi.lang.svd3d`
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
+    2D implementation refers to :func:`taichi.lang.linalg.svd2d`.
+    3D implementation refers to :func:`taichi.lang.linalg.svd3d`.
 
     Args:
         A (ti.Matrix(n, n)): input nxn matrix `A`.
@@ -242,9 +242,9 @@ def svd(A, dt):
 def polar_decompose(A, dt):
     """Perform polar decomposition (A=UP) for arbitrary size matrix.
 
-    Mathematical concept refer to https://en.wikipedia.org/wiki/Polar_decomposition.
-    2D implementation refer to :func:`taichi.lang.polar_decompose2d`
-    3D implementation refer to :func:`taichi.lang.polar_decompose3d`
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
+    2D implementation refers to :func:`taichi.lang.linalg.polar_decompose2d`.
+    3D implementation refers to :func:`taichi.lang.linalg.polar_decompose3d`.
 
     Args:
         A (ti.Matrix(n, n)): input nxn matrix `A`.

@@ -291,8 +291,8 @@ transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)
 def polar_decompose(A, dt=None):
     """Perform polar decomposition (A=UP) for arbitrary size matrix.
 
-    Mathematical concept refer to https://en.wikipedia.org/wiki/Polar_decomposition.
-    This is only a wrapper for :func:`taichi.lang.polar_decompose`.
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
+    This is only a wrapper for :func:`taichi.lang.linalg.polar_decompose`.
 
     Args:
         A (ti.Matrix(n, n)): input nxn matrix `A`.
@@ -310,8 +310,8 @@ def polar_decompose(A, dt=None):
 def svd(A, dt=None):
     """Perform singular value decomposition (A=USV^T) for arbitrary size matrix.
 
-    Mathematical concept refer to https://en.wikipedia.org/wiki/Singular_value_decomposition.
-    This is only a wrapper for :func:`taichi.lang.svd`.
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
+    This is only a wrappers for :func:`taichi.lang.linalg.svd`.
 
     Args:
         A (ti.Matrix(n, n)): input nxn matrix `A`.
@@ -329,8 +329,8 @@ def svd(A, dt=None):
 def eig(A, dt=None):
     """Compute the eigenvalues and right eigenvectors of a real matrix.
 
-    Mathematical concept refer to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
-    2D implementation refer to :func:`taichi.lang.eig2x2`
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
+    2D implementation refers to :func:`taichi.lang.linalg.eig2x2`.
 
     Args:
         A (ti.Matrix(n, n)): 2D Matrix for which the eigenvalues and right eigenvectors will be computed.
@@ -351,8 +351,8 @@ def eig(A, dt=None):
 def sym_eig(A, dt=None):
     """Compute the eigenvalues and right eigenvectors of a real symmetric matrix.
 
-    Mathematical concept refer to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
-    2D implementation refer to :func:`taichi.lang.sym_eig2x2`
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
+    2D implementation refers to :func:`taichi.lang.linalg.sym_eig2x2`.
 
     Args:
         A (ti.Matrix(n, n)): Symmetric Matrix for which the eigenvalues and right eigenvectors will be computed.
@@ -374,7 +374,7 @@ def sym_eig(A, dt=None):
 def randn(dt=None):
     """Generates a random number from standard normal distribution.
 
-    Implementation refer to :func:`taichi.lang.randn`
+    Implementation refers to :func:`taichi.lang.random.randn`.
 
     Args:
         dt (DataType): The datatype for the generated random number.

@@ -356,11 +356,11 @@ def cmp_lt(a, b):
     """Compare two values (less than)
 
     Args:
-        a: Value A
-        b: Value B
+        a (Union[ti.Expr, ti.Matrix]): value LHS
+        b (ti.Expr): value RHS
 
     Returns:
-        bool: True if A is strictly smaller than B, False otherwise
+        bool: True if LHS is strictly smaller than RHS, False otherwise
 
     """
     return _binary_operation(_ti_core.expr_cmp_lt, lambda a, b: -int(a < b), a,
@@ -372,11 +372,11 @@ def cmp_le(a, b):
     """Compare two values (less than or equal to)
 
     Args:
-        a: Value A
-        b: Value B
+        a (Union[ti.Expr, ti.Matrix]): value LHS
+        b (ti.Expr): value RHS
 
     Returns:
-        bool: True if A is smaller than or equal to B, False otherwise
+        bool: True if LHS is smaller than or equal to RHS, False otherwise
 
     """
     return _binary_operation(_ti_core.expr_cmp_le, lambda a, b: -int(a <= b),
@@ -388,11 +388,11 @@ def cmp_gt(a, b):
     """Compare two values (greater than)
 
     Args:
-        a: Value A
-        b: Value B
+        a (Union[ti.Expr, ti.Matrix]): value LHS
+        b (ti.Expr): value RHS
 
     Returns:
-        bool: True if A is strictly larger than B, False otherwise
+        bool: True if LHS is strictly larger than RHS, False otherwise
 
     """
     return _binary_operation(_ti_core.expr_cmp_gt, lambda a, b: -int(a > b), a,
@@ -404,11 +404,11 @@ def cmp_ge(a, b):
     """Compare two values (greater than or equal to)
 
     Args:
-        a: Value A
-        b: Value B
+        a (Union[ti.Expr, ti.Matrix]): value LHS
+        b (ti.Expr): value RHS
 
     Returns:
-        bool: True if A is greater than or equal to B, False otherwise
+        bool: True if LHS is greater than or equal to RHS, False otherwise
 
     """
     return _binary_operation(_ti_core.expr_cmp_ge, lambda a, b: -int(a >= b),
@@ -420,11 +420,11 @@ def cmp_eq(a, b):
     """Compare two values (equal to)
 
     Args:
-        a: Value A
-        b: Value B
+        a (Union[ti.Expr, ti.Matrix]): value LHS
+        b (ti.Expr): value RHS
 
     Returns:
-        bool: True if A is equal to B, False otherwise.
+        bool: True if LHS is equal to RHS, False otherwise.
 
     """
     return _binary_operation(_ti_core.expr_cmp_eq, lambda a, b: -int(a == b),
@@ -436,11 +436,11 @@ def cmp_ne(a, b):
     """Compare two values (not equal to)
 
     Args:
-        a: Value A
-        b: Value B
+        a (Union[ti.Expr, ti.Matrix]): value LHS
+        b (ti.Expr): value RHS
 
     Returns:
-        bool: True if A is not equal to B, False otherwise
+        bool: True if LHS is not equal to RHS, False otherwise
 
     """
     return _binary_operation(_ti_core.expr_cmp_ne, lambda a, b: -int(a != b),
@@ -452,11 +452,11 @@ def bit_or(a, b):
     """Computes bitwise-or
 
     Args:
-        a: Value A
-        b: Value B
+        a (Union[ti.Expr, ti.Matrix]): value LHS
+        b (ti.Expr): value RHS
 
     Returns:
-        bool: A bitwise-or with B
+        bool: LHS bitwise-or with RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_or, _bt_ops_mod.or_, a, b)
@@ -467,11 +467,11 @@ def bit_and(a, b):
     """Compute bitwise-and
 
     Args:
-        a: Value A
-        b: Value B
+        a (Union[ti.Expr, ti.Matrix]): value LHS
+        b (ti.Expr): value RHS
 
     Returns:
-        bool: A bitwise-and with B
+        bool: LHS bitwise-and with RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_and, _bt_ops_mod.and_, a, b)
@@ -482,11 +482,11 @@ def bit_xor(a, b):
     """Compute bitwise-xor
 
     Args:
-        a: Value A
-        b: Value B
+        a (Union[ti.Expr, ti.Matrix]): value LHS
+        b (ti.Expr): value RHS
 
     Returns:
-        bool: A bitwise-xor with B
+        bool: LHS bitwise-xor with RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_xor, _bt_ops_mod.xor, a, b)
@@ -497,11 +497,11 @@ def bit_shl(a, b):
     """Compute bitwise shift left
 
     Args:
-        a: Value A
-        b: Value B
+        a (Union[ti.Expr, ti.Matrix]): value LHS
+        b (ti.Expr): value RHS
 
     Returns:
-        int: A << B
+        int: LHS << RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_shl, _bt_ops_mod.lshift, a, b)
@@ -512,11 +512,11 @@ def bit_sar(a, b):
     """Compute bitwise shift right
 
     Args:
-        a: Value A
-        b: Value B
+        a (Union[ti.Expr, ti.Matrix]): value LHS
+        b (ti.Expr): value RHS
 
     Returns:
-        int: A >> B
+        int: LHS >> RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_sar, _bt_ops_mod.rshift, a, b)
@@ -528,11 +528,11 @@ def bit_shr(a, b):
     """Compute bitwise shift right (in taichi scope)
 
     Args:
-        a: Value A
-        b: Value B
+        a (Union[ti.Expr, ti.Matrix]): value LHS
+        b (ti.Expr): value RHS
 
     Returns:
-        int: A >> B
+        int: LHS >> RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_shr, _bt_ops_mod.rshift, a, b)

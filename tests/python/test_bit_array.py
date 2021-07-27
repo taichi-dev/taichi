@@ -13,8 +13,6 @@ def test_1D_bit_array():
 
     ti.root.bit_array(ti.i, N, num_bits=32).place(x)
 
-    ti.get_runtime().materialize()
-
     @ti.kernel
     def set_val():
         for i in range(N):
@@ -38,8 +36,6 @@ def test_2D_bit_array():
     M, N = 4, 8
 
     ti.root.bit_array(ti.ij, (M, N), num_bits=32).place(x)
-
-    ti.get_runtime().materialize()
 
     @ti.kernel
     def set_val():

@@ -39,6 +39,8 @@ class SNodeTree {
  private:
   int id_{0};
   std::unique_ptr<SNode> root_{nullptr};
+
+  void check_tree_validity(SNode &node);
 };
 
 }  // namespace lang

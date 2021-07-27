@@ -8,8 +8,6 @@ def test_indices():
     b = ti.field(ti.f32)
     ti.root.dense(ti.j, 32).dense(ti.i, 16).place(b)
 
-    ti.get_runtime().materialize()
-
     mapping_a = a.snode.physical_index_position()
 
     assert mapping_a == {0: 0, 1: 1, 2: 2}

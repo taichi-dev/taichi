@@ -26,6 +26,7 @@ namespace shaders {
 #include "taichi/backends/opengl/shaders/random.glsl.h"
 #include "taichi/backends/opengl/shaders/fast_pow.glsl.h"
 #include "taichi/backends/opengl/shaders/print.glsl.h"
+#include "taichi/backends/opengl/shaders/reduction.glsl.h"
 #undef TI_INSIDE_OPENGL_CODEGEN
 }  // namespace shaders
 
@@ -205,6 +206,20 @@ class KernelGen : public IRVisitor {
       if (used.buf_extr) {
         kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(extr);\n");
       }
+    }
+
+    if (used.reduction) {
+      line_appender_header_.append_raw(shaders::kOpenGLReductionCommon);
+      line_appender_header_.append_raw(shaders::kOpenGLReductionSourceCode);
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, float);\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, float);\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, float);\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, int);\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, int);\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, int);\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, uint);\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, uint);\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, uint);\n");
     }
 
     line_appender_header_.append_raw(kernel_header);
@@ -627,6 +642,37 @@ class KernelGen : public IRVisitor {
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->dest->element_type().ptr_removed();
+
+    auto val_name = stmt->val->short_name();
+
+    if (stmt->is_reduction &&
+        (dt->is_primitive(PrimitiveTypeID::f32) ||
+         dt->is_primitive(PrimitiveTypeID::i32) ||
+         dt->is_primitive(PrimitiveTypeID::u32)) &&
+        (stmt->op_type == AtomicOpType::add ||
+         stmt->op_type == AtomicOpType::sub ||
+         stmt->op_type == AtomicOpType::min ||
+         stmt->op_type == AtomicOpType::max)) {
+      used.reduction = true;
+      val_name += "_reduction";
+
+      auto op_name = "";
+
+      if (stmt->op_type == AtomicOpType::sub ||
+          stmt->op_type == AtomicOpType::add) {
+        op_name = "add";
+      } else if (stmt->op_type == AtomicOpType::max) {
+        op_name = "max";
+      } else if (stmt->op_type == AtomicOpType::min) {
+        op_name = "min";
+      }
+
+      emit("{} {} = reduction_workgroup_{}_{}({});",
+           opengl_data_type_name(stmt->val->element_type()), val_name, op_name,
+           opengl_data_type_name(stmt->val->element_type()),
+           stmt->val->short_name());
+    }
+
     if (dt->is_primitive(PrimitiveTypeID::i32) ||
         (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_int64) &&
          dt->is_primitive(PrimitiveTypeID::i64)) ||
@@ -640,8 +686,7 @@ class KernelGen : public IRVisitor {
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
            ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
-           stmt->dest->short_name(), opengl_data_address_shifter(dt),
-           stmt->val->short_name());
+           stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
     } else {
       if (dt != PrimitiveType::f32) {
         TI_ERROR(
@@ -656,8 +701,7 @@ class KernelGen : public IRVisitor {
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
            ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
-           stmt->dest->short_name(), opengl_data_address_shifter(dt),
-           stmt->val->short_name());
+           stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
     }
   }
 

@@ -161,7 +161,7 @@ void Expr::operator/=(const Expr &o) {
 }
 
 Expr load_if_ptr(const Expr &ptr) {
-  if (ptr.is<GlobalPtrExpression>() or ptr.is<GlobalTensorElementExpression>()) {
+  if (ptr.is<GlobalPtrExpression>() || ptr.is<GlobalTensorElementExpression>()) {
     return load(ptr);
   } else if (ptr.is<GlobalVariableExpression>()) {
     TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==

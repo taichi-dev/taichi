@@ -230,13 +230,6 @@ void compile_runtime_bitcode(Arch arch) {
   }
 }
 
-void compile_runtimes() {
-  compile_runtime_bitcode(host_arch());
-#if defined(TI_WITH_CUDA)
-  compile_runtime_bitcode(Arch::cuda);
-#endif
-}
-
 std::string libdevice_path() {
   std::string folder;
   if (is_release()) {
@@ -444,9 +437,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       patch_intrinsic("cuda_shfl_down_sync_i32",
                       Intrinsic::nvvm_shfl_sync_down_i32);
-
-      patch_intrinsic("cuda_shfl_down_sync_i32",
-                      Intrinsic::nvvm_shfl_sync_down_i32);
+      patch_intrinsic("cuda_shfl_down_sync_f32",
+                      Intrinsic::nvvm_shfl_sync_down_f32);
 
       patch_intrinsic("cuda_match_any_sync_i32",
                       Intrinsic::nvvm_match_any_sync_i32);

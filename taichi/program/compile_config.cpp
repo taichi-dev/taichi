@@ -8,6 +8,7 @@ CompileConfig::CompileConfig() {
   arch = host_arch();
   simd_width = default_simd_width(arch);
   external_optimization_level = 3;
+  packed = false;
   print_ir = false;
   print_accessor_ir = false;
   print_evaluator_ir = false;
@@ -44,8 +45,6 @@ CompileConfig::CompileConfig() {
   max_block_dim = 0;
   cpu_max_num_threads = std::thread::hardware_concurrency();
   random_seed = 0;
-
-  ad_stack_size = 16;
 
   // LLVM backend options:
   print_struct_llvm_ir = false;

@@ -274,10 +274,14 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
                get_runtime_function(snode->refine_coordinates_func_name()));
 }
 
-CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
+CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
+                         IRNode *ir,
+                         std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
-    : LLVMModuleBuilder(kernel->program->get_llvm_context(kernel->arch)
-                            ->clone_struct_module(),
+    : LLVMModuleBuilder(module == nullptr
+                            ? kernel->program->get_llvm_context(kernel->arch)
+                                  ->clone_struct_module()
+                            : std::move(module),
                         kernel->program->get_llvm_context(kernel->arch)),
       kernel(kernel),
       ir(ir),
@@ -1253,11 +1257,19 @@ llvm::Value *CodeGenLLVM::call(SNode *snode,
 }
 
 void CodeGenLLVM::visit(GetRootStmt *stmt) {
-  llvm_val[stmt] = builder->CreateBitCast(
-      get_root(),
-      llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
-                                 module.get(), prog->snode_root.get()),
-                             0));
+  if (stmt->root() == nullptr)
+    llvm_val[stmt] = builder->CreateBitCast(
+        get_root(SNodeTree::kFirstID),
+        llvm::PointerType::get(
+            StructCompilerLLVM::get_llvm_node_type(
+                module.get(), prog->get_snode_root(SNodeTree::kFirstID)),
+            0));
+  else
+    llvm_val[stmt] = builder->CreateBitCast(
+        get_root(stmt->root()->get_snode_tree_id()),
+        llvm::PointerType::get(
+            StructCompilerLLVM::get_llvm_node_type(module.get(), stmt->root()),
+            0));
 }
 
 void CodeGenLLVM::visit(BitExtractStmt *stmt) {
@@ -1667,15 +1679,18 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
     auto coord_object = RuntimeObject(kLLVMPhysicalCoordinatesName, this,
                                       builder.get(), new_coordinates);
-    for (int i = 0; i < snode->num_active_indices; i++) {
-      auto j = snode->physical_index_position[i];
-      if (!bit::is_power_of_two(snode->extractors[j].num_elements)) {
-        auto coord = coord_object.get("val", tlctx->get_constant(j));
-        exec_cond = builder->CreateAnd(
-            exec_cond,
-            builder->CreateICmp(
-                llvm::CmpInst::ICMP_SLT, coord,
-                tlctx->get_constant(snode->extractors[j].num_elements)));
+    if (!prog->config.packed) {
+      for (int i = 0; i < snode->num_active_indices; i++) {
+        auto j = snode->physical_index_position[i];
+        if (!bit::is_power_of_two(
+                snode->extractors[j].num_elements_from_root)) {
+          auto coord = coord_object.get("val", tlctx->get_constant(j));
+          exec_cond = builder->CreateAnd(
+              exec_cond, builder->CreateICmp(
+                             llvm::CmpInst::ICMP_SLT, coord,
+                             tlctx->get_constant(
+                                 snode->extractors[j].num_elements_from_root)));
+        }
       }
     }
 
@@ -1879,6 +1894,8 @@ void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
 
 void CodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
+  TI_ASSERT_INFO(stmt->max_size > 0,
+                 "Adaptive autodiff stack's size should have been determined.");
   auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
                                    stmt->size_in_bytes());
   auto alloca = create_entry_block_alloca(type, sizeof(int64));
@@ -2018,8 +2035,9 @@ llvm::Type *CodeGenLLVM::get_xlogue_function_type() {
                                  get_xlogue_argument_types(), false);
 }
 
-llvm::Value *CodeGenLLVM::get_root() {
-  return create_call("LLVMRuntime_get_root", {get_runtime()});
+llvm::Value *CodeGenLLVM::get_root(int snode_tree_id) {
+  return create_call("LLVMRuntime_get_roots",
+                     {get_runtime(), tlctx->get_constant(snode_tree_id)});
 }
 
 llvm::Value *CodeGenLLVM::get_runtime() {

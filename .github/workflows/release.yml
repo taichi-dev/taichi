@@ -51,7 +51,7 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export PYTHONPATH=$TAICHI_REPO_DIR/python
-          python examples/laplace.py
+          python examples/algorithm/laplace.py
           ti diagnose
           ti test -vr2 -t2
 

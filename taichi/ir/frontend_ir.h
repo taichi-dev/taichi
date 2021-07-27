@@ -375,6 +375,7 @@ class GlobalVariableExpression : public Expression {
  public:
   Identifier ident;
   DataType dt;
+  std::string name;
   SNode *snode;
   bool has_ambient;
   TypedConstant ambient_value;

@@ -145,6 +145,7 @@ void offload_to_executable(IRNode *ir,
                            const CompileConfig &config,
                            Kernel *kernel,
                            bool verbose,
+                           bool determine_ad_stack_size,
                            bool lower_global_access,
                            bool make_thread_local,
                            bool make_block_local) {
@@ -172,7 +173,7 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (config.demote_dense_struct_fors) {
-    irpass::demote_dense_struct_fors(ir);
+    irpass::demote_dense_struct_fors(ir, config.packed);
     irpass::type_check(ir, config);
     print("Dense struct-for demoted");
     irpass::analysis::verify(ir);
@@ -224,6 +225,11 @@ void offload_to_executable(IRNode *ir,
   irpass::full_simplify(ir, config, {lower_global_access, kernel->program});
   print("Simplified IV");
 
+  if (determine_ad_stack_size) {
+    irpass::determine_ad_stack_size(ir, config);
+    print("Autodiff stack size determined");
+  }
+
   if (is_extension_supported(config.arch, Extension::quant)) {
     irpass::optimize_bit_struct_stores(ir, config, amgr.get());
     print("Bit struct stores optimized");
@@ -250,8 +256,10 @@ void compile_to_executable(IRNode *ir,
   compile_to_offloads(ir, config, kernel, verbose, vectorize, grad,
                       ad_use_stack, start_from_ast);
 
-  offload_to_executable(ir, config, kernel, verbose, lower_global_access,
-                        make_thread_local, make_block_local);
+  offload_to_executable(ir, config, kernel, verbose,
+                        /*determine_ad_stack_size=*/grad && ad_use_stack,
+                        lower_global_access, make_thread_local,
+                        make_block_local);
 }
 
 void compile_inline_function(IRNode *ir,

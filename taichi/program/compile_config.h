@@ -14,6 +14,7 @@ struct CompileConfig {
   bool lazy_compilation;
   int external_optimization_level;
   int max_vector_width;
+  bool packed;
   bool print_ir;
   bool print_accessor_ir;
   bool print_evaluator_ir;
@@ -42,7 +43,10 @@ struct CompileConfig {
   int default_cpu_block_dim;
   int default_gpu_block_dim;
   int gpu_max_reg;
-  int ad_stack_size;
+  int ad_stack_size{0};  // 0 = adaptive
+  // The default size when the Taichi compiler is unable to automatically
+  // determine the autodiff stack size.
+  int default_ad_stack_size{32};
 
   int saturating_grid_dim;
   int max_block_dim;

@@ -1,7 +1,9 @@
+import pytest
+
 import taichi as ti
 
 
-@ti.archs_support_sparse
+@ti.test(require=ti.extension.sparse)
 def test_pointer():
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
@@ -24,7 +26,7 @@ def test_pointer():
     assert s[None] == 256
 
 
-@ti.archs_support_sparse
+@ti.test(require=ti.extension.sparse)
 def test_pointer_is_active():
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
@@ -47,8 +49,7 @@ def test_pointer_is_active():
     assert s[None] == 256
 
 
-@ti.archs_support_sparse
-def test_pointer2():
+def _test_pointer2():
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
 
@@ -75,3 +76,29 @@ def test_pointer2():
     assert s[None] == 5 * n
     print(x[257 + n * n * 7])
     assert s[None] == 5 * n
+
+
+@ti.test(require=ti.extension.sparse)
+def test_pointer2():
+    _test_pointer2()
+
+
+@ti.test(require=[ti.extension.sparse, ti.extension.packed], packed=True)
+def test_pointer2_packed():
+    _test_pointer2()
+
+
+@pytest.mark.skip(reason='https://github.com/taichi-dev/taichi/issues/2520')
+@ti.test(require=ti.extension.sparse, use_unified_memory=False)
+def test_pointer_direct_place():
+    x, y = ti.field(ti.i32), ti.field(ti.i32)
+
+    N = 1
+    ti.root.pointer(ti.i, N).place(x)
+    ti.root.pointer(ti.i, N).place(y)
+
+    @ti.kernel
+    def foo():
+        pass
+
+    foo()

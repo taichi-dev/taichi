@@ -11,6 +11,7 @@ from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
 from taichi.misc.util import deprecated, get_traceback, warning
+from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
 
@@ -127,6 +128,14 @@ def subscript(value, *indices):
                 raise TypeError(
                     'Subscription (e.g., "a[i, j]") only works on fields or external arrays.'
                 )
+            if not value.ptr.is_external_var() and value.ptr.snode() is None:
+                if not value.ptr.is_primal():
+                    raise RuntimeError(
+                        f"Gradient {value.ptr.get_expr_name()} has not been placed, check whether `needs_grad=True`"
+                    )
+                else:
+                    raise RuntimeError(
+                        f"{value.ptr.get_expr_name()} has not been placed.")
             field_dim = int(value.ptr.get_attribute("dim"))
         else:
             # When reading bit structure we only support the 0-D case for now.
@@ -173,32 +182,32 @@ def chain_compare(comparators, ops):
 
 
 @taichi_scope
-def maybe_transform_ti_func_call_to_stmt(func, *args, **kwargs):
+def maybe_transform_ti_func_call_to_stmt(ti_func, *args, **kwargs):
     _taichi_skip_traceback = 1
-    if '_sitebuiltins' == getattr(func, '__module__', '') and getattr(
-            getattr(func, '__class__', ''), '__name__', '') == 'Quitter':
+    if '_sitebuiltins' == getattr(ti_func, '__module__', '') and getattr(
+            getattr(ti_func, '__class__', ''), '__name__', '') == 'Quitter':
         raise TaichiSyntaxError(f'exit or quit not supported in Taichi-scope')
-    if getattr(func, '__module__',
-               '') == '__main__' and not getattr(func, '__wrapped__', ''):
+    if getattr(ti_func, '__module__',
+               '') == '__main__' and not getattr(ti_func, '__wrapped__', ''):
         warnings.warn(
-            f'Calling into non-Taichi function {func.__name__}.'
+            f'Calling into non-Taichi function {ti_func.__name__}.'
             ' This means that scope inside that function will not be processed'
             ' by the Taichi transformer. Proceed with caution! '
             ' Maybe you want to decorate it with @ti.func?',
             UserWarning,
             stacklevel=2)
 
-    is_taichi_function = getattr(func, '_is_taichi_function', False)
+    is_taichi_function = getattr(ti_func, '_is_taichi_function', False)
     # If is_taichi_function is true: call a decorated Taichi function
     # in a Taichi kernel/function.
 
     if is_taichi_function and get_runtime().experimental_real_function:
         # Compiles the function here.
         # Invokes Func.__call__.
-        func_call_result = func(*args, **kwargs)
+        func_call_result = ti_func(*args, **kwargs)
         return _ti_core.insert_expr_stmt(func_call_result.ptr)
     else:
-        return func(*args, **kwargs)
+        return ti_func(*args, **kwargs)
 
 
 class PyTaichi:
@@ -237,15 +246,21 @@ class PyTaichi:
         if self.prog is None:
             self.prog = _ti_core.Program()
 
+    def materialize_root_fb(self, first):
+        if not root.finalized and not root.empty:
+            root.finalize()
+        elif first:
+            root.finalize(raise_warning=False)
+
+        if root.finalized:
+            global _root_fb
+            _root_fb = FieldsBuilder()
+
     def materialize(self):
+        self.materialize_root_fb(not self.materialized)
+
         if self.materialized:
             return
-
-        print('[Taichi] materializing...')
-        self.create_program()
-
-        ti.trace('Materializing runtime...')
-        self.prog.materialize_runtime()
 
         self.materialized = True
         not_placed = []
@@ -369,20 +384,52 @@ def index_nd(dim):
     return indices(*range(dim))
 
 
-class Root:
-    def __init__(self):
-        pass
+class _UninitializedRootFieldsBuilder:
+    def __getattr__(self, item):
+        raise InvalidOperationError('Please call init() first')
 
-    def __getattribute__(self, item):
-        get_runtime().create_program()
-        root = SNode(get_runtime().prog.get_root())
-        return getattr(root, item)
+
+# `root` initialization must be delayed until after the program is
+# created. Unfortunately, `root` exists in both taichi.lang.impl module and
+# the top-level taichi module at this point; so if `root` itself is written, we
+# would have to make sure that `root` in all the modules get updated to the same
+# instance. This is an error-prone process.
+#
+# To avoid this situation, we create `root` once during the import time, and
+# never write to it. The core part, `_root_fb`, is the one whose initialization
+# gets delayed. `_root_fb` will only exist in the taichi.lang.impl module, so
+# writing to it is would result in less for maintenance cost.
+#
+# `_root_fb` will be overriden inside :func:`taichi.lang.init`.
+_root_fb = _UninitializedRootFieldsBuilder()
+
+
+class _Root:
+    """Wrapper around the default root FieldsBuilder instance."""
+    def parent(self, n=1):
+        """Same as :func:`taichi.SNode.parent`"""
+        return _root_fb.root.parent(n)
+
+    def loop_range(self, n=1):
+        """Same as :func:`taichi.SNode.loop_range`"""
+        return _root_fb.root.loop_range()
+
+    def get_children(self):
+        """Same as :func:`taichi.SNode.get_children`"""
+        return _root_fb.root.get_children()
+
+    @property
+    def id(self):
+        return _root_fb.root.id
+
+    def __getattr__(self, item):
+        return getattr(_root_fb, item)
 
     def __repr__(self):
         return 'ti.root'
 
 
-root = Root()
+root = _Root()
 
 
 @deprecated('ti.var', 'ti.field')
@@ -392,7 +439,7 @@ def var(dt, shape=None, offset=None, needs_grad=False):
 
 
 @python_scope
-def field(dtype, shape=None, offset=None, needs_grad=False):
+def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     _taichi_skip_traceback = 1
 
     dtype = cook_dtype(dtype)
@@ -411,20 +458,13 @@ def field(dtype, shape=None, offset=None, needs_grad=False):
     assert (offset is not None and shape is None
             ) == False, f'The shape cannot be None when offset is being set'
 
-    if get_runtime().materialized:
-        raise RuntimeError(
-            "No new variables can be declared after materialization, i.e. kernel invocations "
-            "or Python-scope field accesses. I.e., data layouts must be specified before "
-            "any computation. Try appending ti.init() or ti.reset() "
-            "right after 'import taichi as ti' if you are using Jupyter notebook or Blender."
-        )
-
     del _taichi_skip_traceback
 
     # primal
     x = Expr(_ti_core.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=2)
     x.ptr = _ti_core.global_new(x.ptr, dtype)
+    x.ptr.set_name(name)
     x.ptr.set_is_primal(True)
     pytaichi.global_vars.append(x)
 
@@ -432,6 +472,7 @@ def field(dtype, shape=None, offset=None, needs_grad=False):
         # adjoint
         x_grad = Expr(_ti_core.make_id_expr(""))
         x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
+        x_grad.ptr.set_name(name + ".grad")
         x_grad.ptr.set_is_primal(False)
         x.set_grad(x_grad)
 
@@ -478,7 +519,13 @@ def ti_print(*vars, sep=' ', end='\n'):
             if hasattr(var, '__ti_repr__'):
                 res = var.__ti_repr__()
             elif isinstance(var, (list, tuple)):
-                res = list_ti_repr(var)
+                res = var
+                # If the first element is '__ti_format__', this list is the result of ti_format.
+                if len(var) > 0 and isinstance(
+                        var[0], str) and var[0] == '__ti_format__':
+                    res = var[1:]
+                else:
+                    res = list_ti_repr(var)
             else:
                 yield var
                 continue
@@ -511,6 +558,35 @@ def ti_print(*vars, sep=' ', end='\n'):
     entries = fused_string(entries)
     contentries = [entry2content(entry) for entry in entries]
     _ti_core.create_print(contentries)
+
+
+@taichi_scope
+def ti_format(*args):
+    content = args[0]
+    mixed = args[1:]
+    new_mixed = []
+    args = []
+    for x in mixed:
+        if isinstance(x, ti.Expr):
+            new_mixed.append('{}')
+            args.append(x)
+        else:
+            new_mixed.append(x)
+
+    try:
+        content = content.format(*new_mixed)
+    except ValueError:
+        print('Number formatting is not supported with Taichi fields')
+        exit(1)
+    res = content.split('{}')
+    assert len(res) == len(
+        args
+    ) + 1, 'Number of args is different from number of positions provided in string'
+
+    for i in range(len(args)):
+        res.insert(i * 2 + 1, args[i])
+    res.insert(0, '__ti_format__')
+    return res
 
 
 @taichi_scope
@@ -561,10 +637,12 @@ def get_external_tensor_shape_along_axis(var, i):
 
 
 def indices(*x):
-    return [_ti_core.Index(i) for i in x]
+    return [_ti_core.Axis(i) for i in x]
 
 
 index = indices
+
+Axis = _ti_core.Axis
 
 
 def static(x, *xs):

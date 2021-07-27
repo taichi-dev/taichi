@@ -126,10 +126,14 @@ class JITSessionCPU : public JITSession {
     return DL;
   }
 
+  void global_optimize_module(llvm::Module *module) override {
+    global_optimize_module_cpu(module);
+  }
+
   JITModule *add_module(std::unique_ptr<llvm::Module> M, int max_reg) override {
     TI_ASSERT(max_reg == 0);  // No need to specify max_reg on CPUs
     TI_ASSERT(M);
-    global_optimize_module_cpu(M);
+    global_optimize_module_cpu(M.get());
     std::lock_guard<std::mutex> _(mut);
     auto &dylib = ES.createJITDylib(fmt::format("{}", module_counter));
     dylib.addGenerator(
@@ -173,15 +177,14 @@ class JITSessionCPU : public JITSession {
   }
 
  private:
-  static void global_optimize_module_cpu(std::unique_ptr<llvm::Module> &module);
+  static void global_optimize_module_cpu(llvm::Module *module);
 };
 
 void *JITModuleCPU::lookup_function(const std::string &name) {
   return session->lookup_in_module(dylib, name);
 }
 
-void JITSessionCPU::global_optimize_module_cpu(
-    std::unique_ptr<llvm::Module> &module) {
+void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
   TI_AUTO_PROF
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
@@ -214,7 +217,7 @@ void JITSessionCPU::global_optimize_module_cpu(
   options.GuaranteedTailCallOpt = false;
   options.StackAlignmentOverride = 0;
 
-  legacy::FunctionPassManager function_pass_manager(module.get());
+  legacy::FunctionPassManager function_pass_manager(module);
   legacy::PassManager module_pass_manager;
 
   llvm::StringRef mcpu = llvm::sys::getHostCPUName();
@@ -259,12 +262,12 @@ void JITSessionCPU::global_optimize_module_cpu(
   if (get_current_program().config.print_kernel_llvm_ir_optimized) {
     if (false) {
       TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
-      TaichiLLVMContext::print_huge_functions(module.get());
+      TaichiLLVMContext::print_huge_functions(module);
     }
     static FileSequenceWriter writer(
         "taichi_kernel_cpu_llvm_ir_optimized_{:04d}.ll",
         "optimized LLVM IR (CPU)");
-    writer.write(module.get());
+    writer.write(module);
   }
 }
 

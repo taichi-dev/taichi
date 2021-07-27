@@ -229,10 +229,19 @@ class AtomicOpStmt : public Stmt {
  public:
   AtomicOpType op_type;
   Stmt *dest, *val;
+  bool is_reduction;
 
   AtomicOpStmt(AtomicOpType op_type, Stmt *dest, Stmt *val)
-      : op_type(op_type), dest(dest), val(val) {
+      : op_type(op_type), dest(dest), val(val), is_reduction(false) {
     TI_STMT_REG_FIELDS;
+  }
+
+  static std::unique_ptr<AtomicOpStmt> make_for_reduction(AtomicOpType op_type,
+                                                          Stmt *dest,
+                                                          Stmt *val) {
+    auto stmt = std::make_unique<AtomicOpStmt>(op_type, dest, val);
+    stmt->is_reduction = true;
+    return stmt;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, dest, val);
@@ -903,7 +912,12 @@ class BitExtractStmt : public Stmt {
  */
 class GetRootStmt : public Stmt {
  public:
-  GetRootStmt() {
+  GetRootStmt(SNode *root = nullptr) : root_(root) {
+    if (this->root_ != nullptr) {
+      while (this->root_->parent) {
+        this->root_ = this->root_->parent;
+      }
+    }
     TI_STMT_REG_FIELDS;
   }
 
@@ -911,8 +925,15 @@ class GetRootStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type);
+  TI_STMT_DEF_FIELDS(ret_type, root_);
   TI_DEFINE_ACCEPT_AND_CLONE
+
+  SNode *root() {
+    return root_;
+  }
+
+ private:
+  SNode *root_;
 };
 
 /**
@@ -1237,7 +1258,7 @@ class InternalFuncStmt : public Stmt {
 class AdStackAllocaStmt : public Stmt {
  public:
   DataType dt;
-  std::size_t max_size;  // TODO: 0 = adaptive
+  std::size_t max_size{0};  // 0 = adaptive
 
   AdStackAllocaStmt(const DataType &dt, std::size_t max_size)
       : dt(dt), max_size(max_size) {

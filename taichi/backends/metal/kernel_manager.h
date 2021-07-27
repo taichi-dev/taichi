@@ -12,7 +12,8 @@
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/system/memory_pool.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 struct Context;
 
@@ -63,12 +64,16 @@ class KernelManager {
 
   PrintStringTable *print_strtable();
 
+  // For debugging purpose
+  std::size_t get_snode_num_dynamically_allocated(SNode *snode);
+
  private:
   // Use Pimpl so that we can expose this interface without conditionally
   // compiling on TI_PLATFORM_OSX
   class Impl;
-  std::unique_ptr<Impl> impl_;
+  std::unique_ptr<Impl> impl_{nullptr};
 };
 
 }  // namespace metal
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

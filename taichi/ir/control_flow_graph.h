@@ -5,7 +5,8 @@
 
 #include "taichi/ir/ir.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 /**
  * A basic block in control-flow graph.
@@ -17,7 +18,7 @@ TLANG_NAMESPACE_BEGIN
  */
 class CFGNode {
  private:
-  // For accelerating get_store_forwarding_data
+  // For accelerating get_store_forwarding_data()
   std::unordered_set<Block *> parent_blocks;
 
  public:
@@ -158,6 +159,14 @@ class ControlFlowGraph {
    * task.
    */
   std::unordered_set<SNode *> gather_loaded_snodes();
+
+  /**
+   * Determine all adaptive AD-stacks' necessary size.
+   * @param default_ad_stack_size The default AD-stack's size when we are
+   * unable to determine some AD-stack's size.
+   */
+  void determine_ad_stack_size(int default_ad_stack_size);
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

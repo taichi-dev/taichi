@@ -4,6 +4,7 @@ import copy
 from taichi.lang import impl
 from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.util import to_taichi_type
 
 import taichi as ti
@@ -625,6 +626,11 @@ if 1:
         if not ASTResolver.resolve_to(node.func, ti.static, globals()):
             # Do not apply the generic visitor if the function called is ti.static
             self.generic_visit(node)
+        if isinstance(node.func, ast.Attribute):
+            attr_name = node.func.attr
+            if attr_name == 'format':
+                node.args.insert(0, node.func.value)
+                node.func = self.parse_expr('ti.ti_format')
         if isinstance(node.func, ast.Name):
             func_name = node.func.id
             if func_name == 'print':
@@ -679,9 +685,9 @@ if 1:
             for i, arg in enumerate(args.args):
                 # Directly pass in template arguments,
                 # such as class instances ("self"), fields, SNodes, etc.
-                if isinstance(self.func.argument_annotations[i], ti.template):
+                if isinstance(self.func.argument_annotations[i], template):
                     continue
-                if isinstance(self.func.argument_annotations[i], ti.ext_arr):
+                if isinstance(self.func.argument_annotations[i], ext_arr):
                     arg_init = self.parse_stmt(
                         'x = ti.lang.kernel_arguments.decl_ext_arr_arg(0, 0)')
                     arg_init.targets[0].id = arg.arg
@@ -725,8 +731,7 @@ if 1:
                 for i, arg in enumerate(args.args):
                     # Directly pass in template arguments,
                     # such as class instances ("self"), fields, SNodes, etc.
-                    if isinstance(self.func.argument_annotations[i],
-                                  ti.template):
+                    if isinstance(self.func.argument_annotations[i], template):
                         continue
                     # Create a copy for non-template arguments,
                     # so that they are passed by value.

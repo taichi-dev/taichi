@@ -3,6 +3,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/ir_builder.h"
 #include "taichi/ir/transforms.h"
+#include "tests/cpp/program/test_program.h"
 
 namespace taichi {
 namespace lang {
@@ -10,11 +11,10 @@ namespace lang {
 class BinaryOpSimplifyTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    prog_ = std::make_unique<Program>();
-    prog_->materialize_runtime();
+    tp_.setup();
   }
 
-  std::unique_ptr<Program> prog_;
+  TestProgram tp_;
 };
 
 TEST_F(BinaryOpSimplifyTest, MultiplyPOT) {
@@ -34,7 +34,7 @@ TEST_F(BinaryOpSimplifyTest, MultiplyPOT) {
   // -> (x << 5) << 3
   irpass::binary_op_simplify(ir_block, CompileConfig());
   // -> x << (5 + 3)
-  irpass::constant_fold(ir_block, CompileConfig(), {prog_.get()});
+  irpass::constant_fold(ir_block, CompileConfig(), {tp_.prog()});
   // -> x << 8
   irpass::die(ir_block);
 
@@ -84,7 +84,7 @@ TEST_F(BinaryOpSimplifyTest, ModPOT) {
   EXPECT_EQ(ir_block->size(), 5);
 
   // -> x & 7
-  irpass::constant_fold(ir_block, CompileConfig(), {prog_.get()});
+  irpass::constant_fold(ir_block, CompileConfig(), {tp_.prog()});
   irpass::die(ir_block);
   EXPECT_EQ(ir_block->size(), 4);
   EXPECT_EQ(ir_block->statements[0].get(), x);

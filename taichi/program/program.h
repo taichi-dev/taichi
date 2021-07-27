@@ -15,6 +15,7 @@
 #include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
+#include "taichi/backends/vulkan/runtime.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/aot_module_builder.h"
 #include "taichi/program/function.h"
@@ -25,6 +26,8 @@
 #include "taichi/program/context.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/backends/metal/struct_metal.h"
+#include "taichi/struct/snode_tree.h"
+#include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
@@ -56,7 +59,8 @@ struct JITEvaluatorId {
   }
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi
 
 namespace std {
 template <>
@@ -70,7 +74,8 @@ struct hash<taichi::lang::JITEvaluatorId> {
 };
 }  // namespace std
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 extern Program *current_program;
 
@@ -86,7 +91,6 @@ class Program {
  public:
   using Kernel = taichi::lang::Kernel;
   Callable *current_callable{nullptr};
-  std::unique_ptr<SNode> snode_root{nullptr};  // pointer to the data structure.
   void *llvm_runtime{nullptr};
   CompileConfig config;
   std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
@@ -123,6 +127,8 @@ class Program {
   }
 
   explicit Program(Arch arch);
+
+  ~Program();
 
   void kernel_profiler_print() {
     profiler->print();
@@ -164,6 +170,8 @@ class Program {
    * Materializes the runtime.
    */
   void materialize_runtime();
+
+  int get_snode_tree_size();
 
   void visualize_layout(const std::string &fn);
 
@@ -263,10 +271,6 @@ class Program {
     return id++;
   }
 
-  void print_snode_tree() {
-    snode_root->print();
-  }
-
   static int default_block_dim(const CompileConfig &config);
 
   void print_list_manager_info(void *list_manager);
@@ -293,8 +297,6 @@ class Program {
   // Returns zero if the SNode is statically allocated
   std::size_t get_snode_num_dynamically_allocated(SNode *snode);
 
-  ~Program();
-
   inline SNodeGlobalVarExprMap *get_snode_to_glb_var_exprs() {
     return &snode_to_glb_var_exprs_;
   }
@@ -303,13 +305,31 @@ class Program {
     return snode_rw_accessors_bank_;
   }
 
+  /**
+   * Adds a new SNode tree.
+   *
+   * @param root The root of the new SNode tree.
+   * @return SNode tree ID.
+   */
+  int add_snode_tree(std::unique_ptr<SNode> root);
+
+  /**
+   * Gets the root of a SNode tree.
+   *
+   * @param tree_id Index of the SNode tree
+   * @return Root of the tree
+   */
+  SNode *get_snode_root(int tree_id);
+
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 
  private:
   /**
-   * Materializes the root SNode.
+   * Materializes a new SNodeTree.
+   *
+   * JIT compiles the @param tree to backend-specific data types.
    */
-  void materialize_root();
+  void materialize_snode_tree(SNodeTree *tree);
 
   /**
    * Sets the attributes of the Exprs that are backed by SNodes.
@@ -324,7 +344,11 @@ class Program {
   /**
    * Initializes the SNodes for LLVM based backends.
    */
-  void initialize_llvm_runtime_snodes(StructCompiler *scomp);
+  void initialize_llvm_runtime_snodes(const SNodeTree *tree,
+                                      StructCompiler *scomp);
+
+  std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
+      TaichiLLVMContext *tlctx);
 
   // Metal related data structures
   std::optional<metal::CompiledStructs> metal_compiled_structs_;
@@ -335,6 +359,11 @@ class Program {
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;
+  // Vulkan related data structures
+  std::optional<vulkan::CompiledSNodeStructs> vulkan_compiled_structs_;
+  std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
+
+  std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
 
  public:
 #ifdef TI_WITH_CC

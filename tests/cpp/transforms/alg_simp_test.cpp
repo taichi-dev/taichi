@@ -3,6 +3,7 @@
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
+#include "tests/cpp/program/test_program.h"
 
 namespace taichi {
 namespace lang {
@@ -10,18 +11,21 @@ namespace lang {
 class AlgebraicSimplicationTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    prog_ = std::make_unique<Program>();
-    prog_->materialize_runtime();
+    tp_.setup();
   }
 
-  std::unique_ptr<Program> prog_;
+  Program &prog() {
+    return *tp_.prog();
+  }
+
+  TestProgram tp_;
 };
 
 TEST_F(AlgebraicSimplicationTest, SimplifyAddZero) {
   auto block = std::make_unique<Block>();
 
   auto func = []() {};
-  auto kernel = std::make_unique<Kernel>(*prog_, func, "fake_kernel");
+  auto kernel = std::make_unique<Kernel>(prog(), func, "fake_kernel");
   block->kernel = kernel.get();
 
   auto global_load_addr = block->push_back<GlobalTemporaryStmt>(
@@ -48,7 +52,7 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyOne) {
   auto block = std::make_unique<Block>();
 
   auto func = []() {};
-  auto kernel = std::make_unique<Kernel>(*prog_, func, "fake_kernel");
+  auto kernel = std::make_unique<Kernel>(prog(), func, "fake_kernel");
   block->kernel = kernel.get();
 
   auto global_load_addr = block->push_back<GlobalTemporaryStmt>(
@@ -80,7 +84,7 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyOne) {
 TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
   auto block = std::make_unique<Block>();
   auto func = []() {};
-  auto kernel = std::make_unique<Kernel>(*prog_, func, "fake_kernel");
+  auto kernel = std::make_unique<Kernel>(prog(), func, "fake_kernel");
   block->kernel = kernel.get();
 
   auto global_load_addr = block->push_back<GlobalTemporaryStmt>(
@@ -157,7 +161,7 @@ TEST_F(AlgebraicSimplicationTest, SimplifyAndMinusOne) {
   block->push_back<GlobalStoreStmt>(global_store_addr, and_result);
 
   auto func = []() {};
-  auto kernel = std::make_unique<Kernel>(*prog_, func, "fake_kernel");
+  auto kernel = std::make_unique<Kernel>(prog(), func, "fake_kernel");
   block->kernel = kernel.get();
   irpass::type_check(block.get(), CompileConfig());
   EXPECT_EQ(block->size(), 6);

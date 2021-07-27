@@ -418,4 +418,31 @@ ExternalPtrStmt *IRBuilder::create_external_ptr(
   return insert(Stmt::make_typed<ExternalPtrStmt>(ptr, indices));
 }
 
+AdStackAllocaStmt *IRBuilder::create_ad_stack(const DataType &dt,
+                                              std::size_t max_size) {
+  return insert(Stmt::make_typed<AdStackAllocaStmt>(dt, max_size));
+}
+
+void IRBuilder::ad_stack_push(AdStackAllocaStmt *stack, Stmt *val) {
+  insert(Stmt::make_typed<AdStackPushStmt>(stack, val));
+}
+
+void IRBuilder::ad_stack_pop(AdStackAllocaStmt *stack) {
+  insert(Stmt::make_typed<AdStackPopStmt>(stack));
+}
+
+AdStackLoadTopStmt *IRBuilder::ad_stack_load_top(AdStackAllocaStmt *stack) {
+  return insert(Stmt::make_typed<AdStackLoadTopStmt>(stack));
+}
+
+AdStackLoadTopAdjStmt *IRBuilder::ad_stack_load_top_adjoint(
+    AdStackAllocaStmt *stack) {
+  return insert(Stmt::make_typed<AdStackLoadTopAdjStmt>(stack));
+}
+
+void IRBuilder::ad_stack_accumulate_adjoint(AdStackAllocaStmt *stack,
+                                            Stmt *val) {
+  insert(Stmt::make_typed<AdStackAccAdjointStmt>(stack, val));
+}
+
 TLANG_NAMESPACE_END

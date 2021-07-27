@@ -5,6 +5,10 @@ import taichi as ti
 
 
 class Quant:
+    """Generator of quantized types.
+
+    For more details, read https://yuanming.taichi.graphics/publication/2021-quantaichi/quantaichi.pdf.
+    """
     @staticmethod
     def int(bits, signed=False, compute=None):
         if compute is None:

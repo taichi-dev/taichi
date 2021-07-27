@@ -3,6 +3,10 @@ from taichi.lang import impl
 
 
 class TypeFactory:
+    """Custom type factory for quantization.
+
+    For more details, read https://yuanming.taichi.graphics/publication/2021-quantaichi/quantaichi.pdf.
+    """
     def __init__(self):
         self.core = _ti_core.get_type_factory_instance()
 

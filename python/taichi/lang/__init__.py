@@ -77,7 +77,15 @@ def memory_profiler_print():
 
 extension = _ti_core.Extension
 is_extension_supported = _ti_core.is_extension_supported
+"""Checks whether an extension is supported on an arch.
 
+Args:
+    arg0: Specified arch.
+    arg1: Specified extension.
+
+Returns:
+    Whether `arg1` is supported on `arg0`.
+"""
 
 def reset():
     impl.reset()
@@ -609,6 +617,14 @@ def stat_write(key, value):
 
 
 def is_arch_supported(arch):
+    """Checks whether an arch is supported on the machine.
+
+    Args:
+        arch (taichi_core.Arch): Specified arch.
+
+    Returns:
+        bool: Whether `arch` is supported on the machine.
+    """
     arch_table = {
         cuda: _ti_core.with_cuda,
         metal: _ti_core.with_metal,
@@ -631,6 +647,11 @@ def is_arch_supported(arch):
 
 
 def supported_archs():
+    """Gets all supported archs on the machine.
+
+    Returns:
+        List[taichi_core.Arch]: All supported archs on the machine.
+    """
     archs = [cpu, cuda, metal, opengl, cc]
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')

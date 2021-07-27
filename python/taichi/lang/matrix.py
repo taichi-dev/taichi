@@ -269,8 +269,12 @@ class Matrix(TaichiOperations):
             i = indices[0]
             j = 0 if len(indices) == 1 else indices[1]
             # ptr.is_global_ptr() will check whether it's an element in the field (which is different from ptr.is_global_var()).
-            if isinstance(self.entries[0], ti.Expr) and self.entries[0].ptr.is_global_ptr() and (ti.cfg.arch == ti.cpu or ti.cfg.arch == ti.gpu):
-                return ti.subscript_with_offset(self.entries[0], (i, j), self.m, True)
+            if isinstance(
+                    self.entries[0],
+                    ti.Expr) and self.entries[0].ptr.is_global_ptr() and (
+                        ti.cfg.arch == ti.cpu or ti.cfg.arch == ti.gpu):
+                return ti.subscript_with_offset(self.entries[0], (i, j),
+                                                self.m, True)
             else:
                 return self(i, j)
 

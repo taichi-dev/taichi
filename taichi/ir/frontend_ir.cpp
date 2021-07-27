@@ -237,8 +237,8 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
     indices[0].set(load_if_ptr(indices[0]));
     indices[0]->flatten(ctx);
     Stmt *i_stmt = ctx->back_stmt();
-    Stmt *cols_stmt = ctx->push_back(
-        Stmt::make<ConstStmt>(TypedConstant(cols)));
+    Stmt *cols_stmt =
+        ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(cols)));
     Stmt *i_mul_cols_stmt = ctx->push_back(
         Stmt::make<BinaryOpStmt>(BinaryOpType::mul, i_stmt, cols_stmt));
     indices[1].set(load_if_ptr(indices[1]));
@@ -255,16 +255,16 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
     for (auto *s = snode; s != nullptr; s = s->parent)
       size *= (int)s->max_num_elements();
     Stmt *offset_stmt = ctx->back_stmt();
-    Stmt *field_size_stmt = ctx->push_back(
-        Stmt::make<ConstStmt>(TypedConstant(size)));
+    Stmt *field_size_stmt =
+        ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(size)));
     ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
                                             field_size_stmt));
   }
   // Type A[i, j][x, y]
   // ^^^^
   Stmt *offset_stmt = ctx->back_stmt();
-  Stmt *dt_size_stmt = ctx->push_back(Stmt::make<ConstStmt>(
-      TypedConstant(data_type_size(snode->dt))));
+  Stmt *dt_size_stmt = ctx->push_back(
+      Stmt::make<ConstStmt>(TypedConstant(data_type_size(snode->dt))));
   ctx->push_back(
       Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
 

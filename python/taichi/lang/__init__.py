@@ -299,7 +299,7 @@ def polar_decompose(A, dt=None):
         dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
 
     Returns:
-        Decomposed nxn matrices `U` and `P`
+        Decomposed nxn matrices `U` and `P`.
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
@@ -318,7 +318,7 @@ def svd(A, dt=None):
         dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
 
     Returns:
-        Decomposed nxn matrices `U`, 'S' and `V`
+        Decomposed nxn matrices `U`, 'S' and `V`.
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
@@ -380,7 +380,7 @@ def randn(dt=None):
         dt (DataType): The datatype for the generated random number.
 
     Returns:
-        The generated random number
+        The generated random number.
     """
     if dt is None:
         dt = impl.get_runtime().default_fp

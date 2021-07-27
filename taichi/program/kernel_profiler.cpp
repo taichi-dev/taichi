@@ -68,8 +68,9 @@ void KernelProfilerBase::query(const std::string &kernel_name,
                                double &min, 
                                double &max, 
                                double &avg) {
+  std::regex name_regex(kernel_name + "(.*)");
   for (auto &rec : records) {
-    if(kernel_name.compare(0, kernel_name.length(), rec.name, 0, kernel_name.length())==0){
+    if(std::regex_match(rec.name, name_regex)){
       if(counter == 0){
         counter = rec.counter;
         min = rec.min;

@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <regex>
 
 TLANG_NAMESPACE_BEGIN
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <glslang/SPIRV/spirv.hpp>
 
+#include "taichi/backends/vulkan/spirv_header.h"
 #include "taichi/backends/vulkan/spirv_ir_builder.h"
 
 namespace taichi {

@@ -76,16 +76,14 @@ void KernelProfilerBase::query(const std::string &kernel_name,
         min = rec.min;
         max = rec.max;
         avg = rec.total / rec.counter;
-        //fmt::print("[first]:{} min={:4.4f}\n",rec.name,rec.min);//TODO trace
       }
       else if(counter == rec.counter){
         min += rec.min;
         max += rec.max;
         avg += rec.total / rec.counter;
-        //fmt::print("[subsequent]:{} min={:4.4f}\n",rec.name,rec.min);//TODO trace
       }
       else{
-        //WARN
+        TI_WARN("{}.counter({}) != {}.counter({}).", kernel_name, counter, rec.name, rec.counter);
       }
     }
   }

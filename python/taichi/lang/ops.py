@@ -188,8 +188,8 @@ def neg(a):
     """The negate function.
 
     Args:
-        a: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         The negative value of `a`.
     """
@@ -201,8 +201,8 @@ def sin(a):
     """The sine function.
 
     Args:
-        a: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         Sine of `a`.
     """
@@ -214,8 +214,8 @@ def cos(a):
     """The cosine function.
 
     Args:
-        a: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         Cosine of `a`.
     """
@@ -227,8 +227,8 @@ def asin(a):
     """The inverses function of sine.
 
     Args:
-        a: A number in [-1,1].
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements in [-1,1].
+
     Returns:
         The inverses function of sine of `a`.
     """
@@ -240,8 +240,8 @@ def acos(a):
     """The inverses function of cosine.
 
     Args:
-        a: A number in [-1,1].
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements in [-1,1].
+
     Returns:
         The inverses function of cosine of `a`.
     """
@@ -253,8 +253,8 @@ def sqrt(a):
     """The square root function.
 
     Args:
-        a: A number not less than zero.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not less than zero.
+
     Returns:
         `x` such that `x>=0` and `x^2=a`.
     """
@@ -266,8 +266,8 @@ def rsqrt(a):
     """The reciprocal of the square root function.
 
     Args:
-        a: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         The reciprocal of `sqrt(a)`.
     """
@@ -282,8 +282,8 @@ def floor(a):
     """The floor function.
 
     Args:
-        a: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         The greatest integer less than or equal to `a`.
     """
@@ -295,8 +295,8 @@ def ceil(a):
     """The ceil function.
 
     Args:
-        a: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         The least integer greater than or equal to `a`.
     """
@@ -308,8 +308,8 @@ def tan(a):
     """The tangent function.
 
     Args:
-        a: A numnber.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         Tangent of `a`.
     """
@@ -321,8 +321,8 @@ def tanh(a):
     """The hyperbolic tangent function.
 
     Args:
-        a: A numnber.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         `(e**x - e**(-x)) / (e**x + e**(-x))`.
     """
@@ -334,8 +334,8 @@ def exp(a):
     """The exp function.
 
     Args:
-        a: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         `e` to the `a`.
     """
@@ -347,8 +347,8 @@ def log(a):
     """The natural logarithm function.
 
     Args:
-        a: A number greater than zero.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements greater than zero.
+
     Returns:
         The natural logarithm of `a`.
     """
@@ -360,8 +360,8 @@ def abs(a):
     """The absolute value function.
 
     Args:
-        a: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         The absolute value of `a`.
     """
@@ -373,8 +373,8 @@ def bit_not(a):
     """The bit not function.
 
     Args:
-        a: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         Bitwise not of `a`.
     """
@@ -386,8 +386,8 @@ def logical_not(a):
     """The logical not function.
 
     Args:
-        a: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         `1` iff `a=0`, otherwise `0`.
     """
@@ -398,8 +398,8 @@ def random(dtype=float):
     """The random function.
 
     Args:
-        dtype: Type of the random variable.
-    
+        dtype (DataType): Type of the random variable.
+
     Returns:
         A random variable whose type is `dtype`.
     """
@@ -416,9 +416,9 @@ def add(a, b):
     """The add function.
 
     Args:
-        a: A number.
-        b: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         sum of `a` and `b`.
     """
@@ -430,9 +430,9 @@ def sub(a, b):
     """The sub function.
 
     Args:
-        a: A number.
-        b: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         `a` subtract `b`.
     """
@@ -444,9 +444,9 @@ def mul(a, b):
     """The multiply function.
 
     Args:
-        a: A number.
-        b: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         `a` multiplied by `b`.
     """
@@ -458,9 +458,9 @@ def mod(a, b):
     """The remainder function.
 
     Args:
-        a: A number.
-        b: A number not equal to zero.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+
     Returns:
         The remainder of `a` divided by `b`.
     """
@@ -478,9 +478,9 @@ def pow(a, b):
     """The power function.
 
     Args:
-        a: A number.
-        b: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         `a` to the `b`.
     """
@@ -492,9 +492,9 @@ def floordiv(a, b):
     """The floor division function.
 
     Args:
-        a: A number.
-        b: A number not equal to zero.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+
     Returns:
         The floor function of `a` divided by `b`.
     """
@@ -507,9 +507,9 @@ def truediv(a, b):
     """True division function.
 
     Args:
-        a: A number.
-        b: A number not equal to zero.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+
     Returns:
         The true value of `a` divided by `b`.
     """
@@ -521,9 +521,9 @@ def max(a, b):
     """The maxnimum function.
 
     Args:
-        a: A number.
-        b: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         The maxnimum of `a` and `b`.
     """
@@ -535,9 +535,9 @@ def min(a, b):
     """The minimum function.
 
     Args:
-        a: A number.
-        b: A number.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
     Returns:
         The minimum of `a` and `b`.
     """
@@ -549,9 +549,9 @@ def atan2(a, b):
     """The inverses of the tangent function.
 
     Args:
-        a: A number.
-        b: A number not equal to zero.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+
     Returns:
         The inverses function of tangent of `b/a`.
     """
@@ -563,9 +563,9 @@ def raw_div(a, b):
     """Raw_div function.
 
     Args:
-        a: A number.
-        b: A number not equal to zero.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+
     Returns:
         If `a` is a `int` and `b` is a `int`, then return `a//b`. Else return `a/b`.
     """
@@ -583,9 +583,9 @@ def raw_mod(a, b):
     """Raw_mod function. Both `a` and `b` can be `float`.
 
     Args:
-        a: A number.
-        b: A number not equal to zero.
-    
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+
     Returns:
         The remainder of `a` divided by `b`.
     """
@@ -601,7 +601,7 @@ def cmp_lt(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         bool: True if LHS is strictly smaller than RHS, False otherwise
@@ -617,7 +617,7 @@ def cmp_le(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         bool: True if LHS is smaller than or equal to RHS, False otherwise
@@ -633,7 +633,7 @@ def cmp_gt(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         bool: True if LHS is strictly larger than RHS, False otherwise
@@ -649,7 +649,7 @@ def cmp_ge(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         bool: True if LHS is greater than or equal to RHS, False otherwise
@@ -665,7 +665,7 @@ def cmp_eq(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         bool: True if LHS is equal to RHS, False otherwise.
@@ -681,7 +681,7 @@ def cmp_ne(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         bool: True if LHS is not equal to RHS, False otherwise
@@ -697,7 +697,7 @@ def bit_or(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         bool: LHS bitwise-or with RHS
@@ -712,7 +712,7 @@ def bit_and(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         bool: LHS bitwise-and with RHS
@@ -727,7 +727,7 @@ def bit_xor(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         bool: LHS bitwise-xor with RHS
@@ -742,7 +742,7 @@ def bit_shl(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         int: LHS << RHS
@@ -757,7 +757,7 @@ def bit_sar(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         int: LHS >> RHS
@@ -773,7 +773,7 @@ def bit_shr(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         int: LHS >> RHS

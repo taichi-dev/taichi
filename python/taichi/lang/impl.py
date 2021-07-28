@@ -618,11 +618,29 @@ def ti_float(var):
 @taichi_scope
 def zero(x):
     # TODO: get dtype from Expr and Matrix:
+    """Fill the input field with zero.
+
+    Args:
+        x (DataType): The input field to fill.
+
+    Returns:
+        DataType: The output field, which keeps the shape but filled with zero.
+
+    """
     return x * 0
 
 
 @taichi_scope
 def one(x):
+    """Fill the input field with one.
+
+    Args:
+        x (DataType): The input field to fill.
+
+    Returns:
+        DataType: The output field, which keeps the shape but filled with one.
+
+    """
     return zero(x) + 1
 
 

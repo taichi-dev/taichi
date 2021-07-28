@@ -645,6 +645,9 @@ class KernelGen : public IRVisitor {
 
     auto val_name = stmt->val->short_name();
 
+    emit("{} {};", opengl_data_type_name(stmt->val->element_type()),
+         stmt->short_name());
+
     if (stmt->is_reduction &&
         (dt->is_primitive(PrimitiveTypeID::f32) ||
          dt->is_primitive(PrimitiveTypeID::i32) ||
@@ -654,7 +657,7 @@ class KernelGen : public IRVisitor {
          stmt->op_type == AtomicOpType::min ||
          stmt->op_type == AtomicOpType::max)) {
       used.reduction = true;
-      val_name += "_reduction";
+      val_name = stmt->short_name() + "_reduction";
 
       auto op_name = "";
 
@@ -675,6 +678,8 @@ class KernelGen : public IRVisitor {
       emit("if (gl_LocalInvocationIndex == 0)");
     }
 
+    emit("{{ // Begin Atomic Op");
+
     if (dt->is_primitive(PrimitiveTypeID::i32) ||
         (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_int64) &&
          dt->is_primitive(PrimitiveTypeID::i64)) ||
@@ -684,8 +689,7 @@ class KernelGen : public IRVisitor {
            dt->is_primitive(PrimitiveTypeID::f32)) ||
           (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float64) &&
            dt->is_primitive(PrimitiveTypeID::f64))))) {
-      emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
-           opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
+      emit("{} = {}(_{}_{}_[{} >> {}], {});", stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
            ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
            stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
@@ -699,12 +703,13 @@ class KernelGen : public IRVisitor {
       }
       used.simulated_atomic_float = true;
       used.int32 = true;  // since simulated atomics are based on _data_i32_
-      emit("{} {} = {}_{}_{}({} >> {}, {});",
-           opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
+      emit("{} = {}_{}_{}({} >> {}, {});", stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
            ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
            stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
     }
+
+    emit("}} // End Atomic Op");
   }
 
   void visit(TernaryOpStmt *tri) override {

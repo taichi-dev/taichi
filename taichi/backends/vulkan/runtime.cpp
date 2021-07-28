@@ -15,6 +15,9 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+#include <spirv-tools/libspirv.hpp>
+#include <spirv-tools/optimizer.hpp>
+
 #include "taichi/backends/vulkan/vulkan_api.h"
 #include "taichi/backends/vulkan/vulkan_common.h"
 #include "taichi/backends/vulkan/vulkan_simple_memory_pool.h"
@@ -262,6 +265,31 @@ class ClearBufferCommandBuilder : private VulkanCommandBuilder {
 }  // namespace
 
 class VkRuntime ::Impl {
+ private:
+  std::unique_ptr<spvtools::SpirvTools> _spirv_tools;
+  std::unique_ptr<spvtools::Optimizer> _spirv_opt;
+
+  spvtools::OptimizerOptions _spirv_opt_options;
+
+  static void spriv_message_consumer(spv_message_level_t level,
+                                     const char *source,
+                                     const spv_position_t &position,
+                                     const char *message) {
+    if (level <= SPV_MSG_FATAL) {
+      TI_ERROR("{}\n[{}:{}:{}] {}", source, position.index, position.line,
+               position.column, message);
+    } else if (level <= SPV_MSG_WARNING) {
+      TI_WARN("{}\n[{}:{}:{}] {}", source, position.index, position.line,
+              position.column, message);
+    } else if (level <= SPV_MSG_INFO) {
+      TI_INFO("{}\n[{}:{}:{}] {}", source, position.index, position.line,
+              position.column, message);
+    } else if (level <= SPV_MSG_INFO) {
+      TI_TRACE("{}\n[{}:{}:{}] {}", source, position.index, position.line,
+               position.column, message);
+    }
+  };
+
  public:
   explicit Impl(const Params &params)
       : snode_descriptors_(params.snode_descriptors),
@@ -275,6 +303,21 @@ class VkRuntime ::Impl {
 
     init_memory_pool(params);
     init_vk_buffers();
+
+    _spirv_tools = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
+    _spirv_opt = std::make_unique<spvtools::Optimizer>(SPV_ENV_VULKAN_1_2);
+
+    _spirv_tools->SetMessageConsumer(spriv_message_consumer);
+    _spirv_opt->SetMessageConsumer(spriv_message_consumer);
+
+    _spirv_opt->RegisterPass(spvtools::CreateUpgradeMemoryModelPass());
+    _spirv_opt->RegisterPerformancePasses();
+
+    for (auto &p : _spirv_opt->GetPassNames()) {
+      TI_TRACE("SPIRV Optimization Pass {}", p);
+    }
+
+    _spirv_opt_options.set_run_validator(false);
   }
 
   ~Impl() {
@@ -301,9 +344,20 @@ class VkRuntime ::Impl {
       const auto &spirv_src = reg_params.task_spirv_source_codes[i];
       const auto &task_name = attribs.name;
 
+      TI_WARN_IF(!_spirv_tools->Validate(spirv_src), "SPIRV validation failed");
+
+      std::vector<uint32_t> optimized_spv;
+
+      TI_WARN_IF(!_spirv_opt->Run(spirv_src.data(), spirv_src.size(),
+                                  &optimized_spv, _spirv_opt_options),
+                 "SPIRV optimization failed");
+
+      TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
+               spirv_src.size(), optimized_spv.size());
+
       // If we can reach here, we have succeeded. Otherwise
       // std::optional::value() would have killed us.
-      params.spirv_bins.push_back(std::move(spirv_src));
+      params.spirv_bins.push_back(std::move(optimized_spv));
     }
     KernelHandle res;
     res.id_ = ti_kernels_.size();

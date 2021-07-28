@@ -270,8 +270,8 @@ void ManagedVulkanDevice::create_logical_device() {
   create_info.pQueueCreateInfos = &queue_create_info;
   create_info.queueCreateInfoCount = 1;
 
-  VkPhysicalDeviceFeatures device_deatures{};
-  create_info.pEnabledFeatures = &device_deatures;
+  VkPhysicalDeviceFeatures device_features{};
+  create_info.pEnabledFeatures = &device_features;
   create_info.enabledExtensionCount = 0;
 
   if constexpr (kEnableValidationLayers) {

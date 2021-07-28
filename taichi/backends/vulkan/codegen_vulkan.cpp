@@ -94,6 +94,7 @@ class TaskCodegen : public IRVisitor {
     Result res;
     res.spirv_code = ir_->finalize();
     res.task_attribs = std::move(task_attribs_);
+
     return res;
   }
 

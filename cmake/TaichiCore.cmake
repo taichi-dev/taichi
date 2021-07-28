@@ -211,6 +211,18 @@ if (TI_WITH_VULKAN)
     message(STATUS "Vulkan_LIBRARY=${Vulkan_LIBRARY}")
     include_directories(${Vulkan_INCLUDE_DIR})
     target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
+    
+    if (MSVC)
+      find_library(SPIRV_TOOLS NAMES "SPIRV-Tools" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
+      find_library(SPIRV_OPT NAMES "SPIRV-Tools-opt" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
+      find_library(SPIRV_LINK NAMES "SPIRV-Tools-link" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
+    else ()
+      set(SPIRV_TOOLS SPIRV-Tools)
+      set(SPIRV_OPT SPIRV-Tools-opt)
+      set(SPIRV_LINK SPIRV-Tools-link)
+    endif ()
+
+    target_link_libraries(${CORE_LIBRARY_NAME} ${SPIRV_TOOLS} ${SPIRV_OPT} ${SPIRV_LINK})
 
     # shaderc libs
     # TODO: Is there a better way to auto detect this?

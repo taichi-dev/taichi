@@ -16,6 +16,21 @@ import taichi as ti
 
 
 class Matrix(TaichiOperations):
+    """The matrix class.
+
+    Args:
+        n (int): the first dimension of a matrix.
+        m (int): the second dimension of a matrix.
+        dt (DataType): the elmement data type.
+        shape ( Union[int, tuple of int], optional): the shape of a matrix field.
+        offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
+        empty (Bool, deprecated): True if the matrix is empty, False otherwise.
+        layout (TypeVar, optional): The filed layout(AOS or SOA).
+        needs_grad (Bool, optional): True if used in auto diff, False otherwise.
+        keep_raw (Bool, optional): Keep the contents in `n` as is.
+        rows (List, deprecated): construct matrix rows.
+        cols (List, deprecated): construct matrix columns.
+    """
     is_taichi_class = True
 
     # TODO(archibate): move the last two line to **kwargs,
@@ -190,6 +205,15 @@ class Matrix(TaichiOperations):
         return ret
 
     def __matmul__(self, other):
+        """Matrix-matrix or matrix-vector multiply.
+
+        Args:
+            other (Union[Matrix, Vector]): a matrix or a vector.
+
+        Returns:
+            The matrix-matrix product or matrix-vector product.
+
+        """
         _taichi_skip_traceback = 1
         assert isinstance(other, Matrix), "rhs of `@` is not a matrix / vector"
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
@@ -235,6 +259,11 @@ class Matrix(TaichiOperations):
         return self.entries[self.linearize_entry_id(*args)]
 
     def get_field_members(self):
+        """Get matrix elements list.
+
+        Returns:
+            A list of matrix elements.
+        """
         return self.entries
 
     @deprecated('x.get_tensor_members()', 'x.get_field_members()')
@@ -280,6 +309,7 @@ class Matrix(TaichiOperations):
 
     @property
     def x(self):
+        """Get the first element of a matrix."""
         _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(0)
@@ -288,6 +318,7 @@ class Matrix(TaichiOperations):
 
     @property
     def y(self):
+        """Get the second element of a matrix."""
         _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(1)
@@ -296,6 +327,7 @@ class Matrix(TaichiOperations):
 
     @property
     def z(self):
+        """Get the third element of a matrix."""
         _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(2)
@@ -304,6 +336,7 @@ class Matrix(TaichiOperations):
 
     @property
     def w(self):
+        """Get the fourth element of a matrix."""
         _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(3)
@@ -397,6 +430,15 @@ class Matrix(TaichiOperations):
     # host access & python scope operation
     @python_scope
     def __getitem__(self, indices):
+        """Access to the element at the given indices in a matrix.
+
+        Args:
+            indices (Sequence[Expr]): the indices of the element.
+
+        Returns:
+            The value of the element at a specific position of a matrix.
+
+        """
         if self.is_global():
             return Matrix.Proxy(self, indices)
 
@@ -409,6 +451,12 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def __setitem__(self, indices, item):
+        """Set the element value at the given indices in a matrix.
+
+        Args:
+            indices (Sequence[Expr]): the indices of a element.
+
+        """
         if self.is_global():
             if not isinstance(item, (list, tuple)):
                 item = list(item)
@@ -427,6 +475,7 @@ class Matrix(TaichiOperations):
         self.set_entry(i, j, item)
 
     def __len__(self):
+        """Get the length of each row of a matrix"""
         return self.n
 
     def __iter__(self):
@@ -451,6 +500,15 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def cast(self, dtype):
+        """Cast the matrix element data type.
+
+        Args:
+            dtype (DataType): the data type of the casted matrix element.
+
+        Returns:
+            A new matrix with each element's type is dtype.
+
+        """
         _taichi_skip_traceback = 1
         ret = self.copy()
         for i in range(len(self.entries)):
@@ -458,6 +516,12 @@ class Matrix(TaichiOperations):
         return ret
 
     def trace(self):
+        """The sum of a matrix diagonal elements.
+
+        Returns:
+            The sum of a matrix diagonal elements.
+
+        """
         assert self.n == self.m
         sum = self(0, 0)
         for i in range(1, self.n):
@@ -466,6 +530,18 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def inverse(self):
+        """The inverse of a matrix.
+
+        Note:
+            The matrix dimension should be less than or equal to 4.
+
+        Returns:
+            The inverse of a matrix.
+
+        Raises:
+            Exception: Inversions of matrices with sizes >= 5 are not supported.
+
+        """
         assert self.n == self.m, 'Only square matrices are invertible'
         if self.n == 1:
             return Matrix([1 / self(0, 0)])
@@ -518,6 +594,21 @@ class Matrix(TaichiOperations):
 
     @kern_mod.pyfunc
     def normalized(self, eps=0):
+        """Normalize a vector.
+
+        Args:
+            eps (Number): a safe-guard value for sqrt, usually 0.
+
+        Examples::
+
+            a = ti.Vector([3, 4])
+            a.normalized() # [3 / 5, 4 / 5]
+            # `a.normalized()` is equivalent to `a / a.norm()`.
+
+        Note:
+            Only vector normalization is supported.
+
+        """
         impl.static(
             impl.static_assert(self.m == 1,
                                "normalized() only works on vector"))
@@ -535,12 +626,30 @@ class Matrix(TaichiOperations):
 
     @kern_mod.pyfunc
     def transpose(self):
+        """Get the transpose of a matrix.
+
+        Returns:
+            Get the transpose of a matrix.
+
+        """
         ret = Matrix([[self[i, j] for i in range(self.n)]
                       for j in range(self.m)])
         return ret
 
     @taichi_scope
     def determinant(a):
+        """Get the determinant of a matrix.
+
+        Note:
+            The matrix dimension should be less than or equal to 4.
+
+        Returns:
+            The determinant of a matrix.
+
+        Raises:
+            Exception: Determinants of matrices with sizes >= 5 are not supported.
+
+        """
         if a.n == 2 and a.m == 2:
             return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
         elif a.n == 3 and a.m == 3:
@@ -570,6 +679,16 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     def diag(dim, val):
+        """Construct a diagonal square matrix.
+
+        Args:
+            dim (int): the dimension of a square matrix.
+            val (TypeVar): the diagonal elment value.
+
+        Returns:
+            The constructed diagonal square matrix.
+
+        """
         ret = Matrix(dim, dim)
         for i in range(dim):
             for j in range(dim):
@@ -585,6 +704,7 @@ class Matrix(TaichiOperations):
 
     @property
     def shape(self):
+        """Return the shape of a matrix."""
         # Took `self.entries[0]` as a representation of this tensor-of-matrices.
         # https://github.com/taichi-dev/taichi/issues/1069#issuecomment-635712140
         return self.loop_range().shape
@@ -599,6 +719,7 @@ class Matrix(TaichiOperations):
 
     @property
     def dtype(self):
+        """Return the date type of matrix elements."""
         return self.loop_range().dtype
 
     @deprecated('x.data_type()', 'x.dtype')
@@ -616,6 +737,7 @@ class Matrix(TaichiOperations):
         return ret
 
     def sum(self):
+        """Return the sum of all elements."""
         ret = self.entries[0]
         for i in range(1, len(self.entries)):
             ret = ret + self.entries[i]
@@ -623,37 +745,94 @@ class Matrix(TaichiOperations):
 
     @kern_mod.pyfunc
     def norm(self, eps=0):
+        """Return the square root of the sum of the absolute squares of its elements.
+
+        Args:
+            eps (Number): a safe-guard value for sqrt, usually 0.
+
+        Examples::
+
+            a = ti.Vector([3, 4])
+            a.norm() # sqrt(3*3 + 4*4 + 0) = 5
+            # `a.norm(eps)` is equivalent to `ti.sqrt(a.dot(a) + eps).`
+
+        Return:
+            The square root of the sum of the absolute squares of its elements.
+
+        """
         return ops_mod.sqrt(self.norm_sqr() + eps)
 
     @kern_mod.pyfunc
     def norm_inv(self, eps=0):
+        """Return the inverse of the matrix/vector `norm`. For `norm`: please see :func:`~taichi.lang.matrix.Matrix.norm`.
+
+        Args:
+            eps (Number): a safe-guard value for sqrt, usually 0.
+
+        Returns:
+            The inverse of the matrix/vector `norm`.
+
+        """
         return ops_mod.rsqrt(self.norm_sqr() + eps)
 
     @kern_mod.pyfunc
     def norm_sqr(self):
+        """Return the sum of the absolute squares of its elements."""
         return (self**2).sum()
 
     @kern_mod.pyfunc
     def max(self):
+        """Return the maximum element value."""
         return ops_mod.ti_max(*self.entries)
 
     @kern_mod.pyfunc
     def min(self):
+        """Return the minumum element value."""
         return ops_mod.ti_min(*self.entries)
 
     def any(self):
+        """Test whether any element not equal zero.
+
+        Returns:
+            bool: True if any element is not equal zero, False otherwise.
+
+        """
         ret = ti.cmp_ne(self.entries[0], 0)
         for i in range(1, len(self.entries)):
             ret = ret + ti.cmp_ne(self.entries[i], 0)
         return -ti.cmp_lt(ret, 0)
 
     def all(self):
+        """Test whether all element not equal zero.
+
+        Returns:
+            bool: True if all elements are not equal zero, False otherwise.
+
+        """
         ret = ti.cmp_ne(self.entries[0], 0)
         for i in range(1, len(self.entries)):
             ret = ret + ti.cmp_ne(self.entries[i], 0)
         return -ti.cmp_eq(ret, -len(self.entries))
 
     def fill(self, val):
+        """Fill the element with values.
+
+        Args:
+            val (Union[Number, List, Tuple, Matrix]): the dimension of val should be consistent with the dimension of element.
+
+        Examples:
+
+            Fill a scalar field:
+
+            >>> v = ti.field(float,10)
+            >>> v.fill(10.0)
+
+            Fill a vector field:
+
+            >>> v = ti.Vector.field(2, float,4)
+            >>> v.fill([10.0,11.0])
+
+        """
         if impl.inside_kernel():
 
             def assign_renamed(x, y):

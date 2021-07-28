@@ -50,16 +50,13 @@ build_script:
   - 7z x clang-10.0.0-win.zip -otaichi_clang
   - set PATH=C:\taichi_llvm\bin;%PATH%;
   - set PATH=C:\taichi_clang\bin;%PATH%
-  - set PYTHONPATH=%TAICHI_REPO_DIR%/python
-  - set PATH=%TAICHI_REPO_DIR%\bin;%PATH%
   - clang --version
   - cd C:\taichi
+  - set CI_SETUP_CMAKE_ARGS=-G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm
+  # This is to fix the bug caused by execnet 1.2, the library xdist uses to schedule tests.
+  # Reverting to v1.1 solves this bug(Python Fatal Error: IOError).
+  - "%PYTHON% -m pip install -U execnet==1.1"
   - "%PYTHON% misc/ci_setup.py ci"
-  - mkdir build
-  - cd build
-  - cmake .. -G"Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE="%PYTHON%" -DLLVM_DIR="C:\taichi_llvm\lib\cmake\llvm"
-  - msbuild /p:Configuration=RelWithDebInfo /p:Platform=x64 /m taichi.sln
-  - cd ..
   - '%PYTHON% -c "import taichi"'
   - "%PYTHON% examples/algorithm/laplace.py"
   - "%PYTHON% bin/taichi diagnose"

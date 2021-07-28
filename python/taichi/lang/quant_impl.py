@@ -5,14 +5,39 @@ import taichi as ti
 
 
 class Quant:
+    """Generator of quantized types.
+
+    For more details, read https://yuanming.taichi.graphics/publication/2021-quantaichi/quantaichi.pdf.
+    """
     @staticmethod
     def int(bits, signed=False, compute=None):
+        """Generates a quantized type for integers.
+
+        Args:
+            bits (int): Number of bits.
+            signed (bool): Signed or unsigned.
+            compute (DataType): Type for computation.
+
+        Returns:
+            DataType: The specified type.
+        """
         if compute is None:
             compute = impl.get_runtime().default_ip
         return tf_impl.type_factory.custom_int(bits, signed, compute)
 
     @staticmethod
     def fixed(frac, signed=True, range=1.0, compute=None):
+        """Generates a quantized type for fixed-point real numbers.
+
+        Args:
+            frac (int): Number of bits.
+            signed (bool): Signed or unsigned.
+            range (float): Range of the number.
+            compute (DataType): Type for computation.
+
+        Returns:
+            DataType: The specified type.
+        """
         # TODO: handle cases with frac > 32
         frac_type = Quant.int(bits=frac, signed=signed, compute=ti.i32)
         if signed:
@@ -26,6 +51,17 @@ class Quant:
 
     @staticmethod
     def float(exp, frac, signed=True, compute=None):
+        """Generates a quantized type for floating-point real numbers.
+
+        Args:
+            exp (int): Number of exponent bits.
+            frac (int): Number of fraction bits.
+            signed (bool): Signed or unsigned.
+            compute (DataType): Type for computation.
+
+        Returns:
+            DataType: The specified type.
+        """
         # Exponent is always unsigned
         exp_type = Quant.int(bits=exp, signed=False, compute=ti.i32)
         # TODO: handle cases with frac > 32

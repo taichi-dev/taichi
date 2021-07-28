@@ -33,9 +33,11 @@ class VkRuntime {
     int id_ = -1;
   };
 
+  using SpirvBinary = std::vector<uint32_t>;
+
   struct RegisterParams {
     TaichiKernelAttributes kernel_attribs;
-    std::vector<std::string> task_glsl_source_codes;
+    std::vector<SpirvBinary> task_spirv_source_codes;
   };
 
   KernelHandle register_taichi_kernel(RegisterParams params);

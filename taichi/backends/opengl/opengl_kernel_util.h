@@ -36,6 +36,7 @@ struct UsedFeature {
   bool listman{false};
   bool random{false};
   bool print{false};
+  bool reduction{false};
 
   // extensions:
 #define PER_OPENGL_EXTENSION(x) bool extension_##x{false};

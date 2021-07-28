@@ -255,23 +255,21 @@ class Installer:
             print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
 
             execute_command('echo $PYTHONPATH')
-        elif get_os_name() != 'win':
+        else:
             # compile ..
             arg = environ.get('CI_SETUP_CMAKE_ARGS', '')
+            os.environ['TAICHI_CMAKE_ARGS'] = arg
             os.makedirs('build', exist_ok=True)
-            execute_command(
-                f'TAICHI_CMAKE_ARGS="{arg}" {sys.executable} setup.py install --user'
-            )
+            execute_command(f'{sys.executable} setup.py install --user')
         return
         if test_installation():
             print('  Successfully Installed Taichi at {}.'.format(
                 self.repo_dir))
-            if get_os_name() != 'win':
-                if execute_command('ti') != 0:
-                    print('  Warning: shortcut "ti" does not work.')
-                print('  Please execute')
-                print('    source ', get_shell_rc_name())
-                print('  or restart your terminal.')
+            if execute_command('ti') != 0:
+                print('  Warning: shortcut "ti" does not work.')
+            print('  Please execute')
+            print('    source ', get_shell_rc_name())
+            print('  or restart your terminal.')
         else:
             print('  Error: installation failed.')
             exit(-1)

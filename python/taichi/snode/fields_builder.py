@@ -133,10 +133,13 @@ class FieldsBuilder:
         self._empty = False
         self._root.lazy_grad()
 
-    def finalize(self):
-        """Constructs the SNodeTree and finalizes this builder."""
+    def finalize(self, raise_warning=True):
+        """Constructs the SNodeTree and finalizes this builder.
+
+        Args:
+            raise_warning (bool): Raise warning or not."""
         self._check_not_finalized()
-        if self._empty:
+        if self._empty and raise_warning:
             warning("Finalizing an empty FieldsBuilder!")
         _ti_core.finalize_snode_tree(_snode_registry, self._ptr,
                                      impl.get_runtime().prog)

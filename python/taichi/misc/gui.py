@@ -210,7 +210,7 @@ class GUI:
         """Get the image data.
 
         Returns:
-            The image data in numpy ascontiguousarray type.
+            The image data in numpy contiguous array type.
 
         """
         self.img = np.ascontiguousarray(self.img)

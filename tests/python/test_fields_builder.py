@@ -148,7 +148,8 @@ def test_fields_builder_destroy():
         fb.dense(ti.i, n).place(a)
         fb.finalize()
 
-    A(5)
+    for i in range(5):
+        A(5)
     B(2)
     B(2)
     B(2)

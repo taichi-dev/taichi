@@ -834,10 +834,10 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
 }
 
 void runtime_snode_tree_allocate_aligned(LLVMRuntime *runtime,
-                                         Ptr *ptr,
                                          std::size_t size,
                                          std::size_t alignment) {
-  *ptr = runtime->allocate_aligned(size, alignment);
+  runtime->set_result(taichi_result_buffer_runtime_query_id,
+                      runtime->allocate_aligned(size, alignment));
 }
 
 void runtime_get_mem_req_queue(LLVMRuntime *runtime) {

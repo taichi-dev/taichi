@@ -185,91 +185,91 @@ def _ternary_operation(taichi_op, python_op, a, b, c):
 
 @unary
 def neg(a):
-    """Negate function.
+    """The negate function.
 
     Args:
-        a: a.
+        a: A number.
     
     Returns:
-        -a.
+        The negative value of `a`.
     """
     return _unary_operation(_ti_core.expr_neg, _bt_ops_mod.neg, a)
 
 
 @unary
 def sin(a):
-    """Sine function.
+    """The sine function.
 
     Args:
-        a: a.
+        a: A number.
     
     Returns:
-        sin(a).
+        Sine of `a`.
     """
     return _unary_operation(_ti_core.expr_sin, math.sin, a)
 
 
 @unary
 def cos(a):
-    """Cosine function.
+    """The cosine function.
 
     Args:
-        a: a.
+        a: A number.
     
     Returns:
-        cos(a).
+        Cosine of `a`.
     """
     return _unary_operation(_ti_core.expr_cos, math.cos, a)
 
 
 @unary
 def asin(a):
-    """Arcsine function.
+    """The inverses function of sine.
 
     Args:
-        a: a.
+        a: A number in [-1,1].
     
     Returns:
-        asin(a).
+        The inverses function of sine of `a`.
     """
     return _unary_operation(_ti_core.expr_asin, math.asin, a)
 
 
 @unary
 def acos(a):
-    """Arccosine function.
+    """The inverses function of cosine.
 
     Args:
-        a: a.
+        a: A number in [-1,1].
     
     Returns:
-        acos(a).
+        The inverses function of cosine of `a`.
     """
     return _unary_operation(_ti_core.expr_acos, math.acos, a)
 
 
 @unary
 def sqrt(a):
-    """Square root function.
+    """The square root function.
 
     Args:
-        a: a.
+        a: A number not less than zero.
     
     Returns:
-        sqrt(a).
+        `x` such that `x>=0` and `x^2=a`.
     """
     return _unary_operation(_ti_core.expr_sqrt, math.sqrt, a)
 
 
 @unary
 def rsqrt(a):
-    """1/sqrt(a).
+    """The reciprocal of the square root function.
 
     Args:
-        a: a.
+        a: A number.
     
     Returns:
-        1/sqrt(a).
+        The reciprocal of `sqrt(a)`.
     """
     def _rsqrt(a):
         return 1 / math.sqrt(a)
@@ -279,129 +279,129 @@ def rsqrt(a):
 
 @unary
 def floor(a):
-    """Floor function.
+    """The floor function.
 
     Args:
-        a: a.
+        a: A number.
     
     Returns:
-        the greatest integer less than or equal to a.
+        The greatest integer less than or equal to `a`.
     """
     return _unary_operation(_ti_core.expr_floor, math.floor, a)
 
 
 @unary
 def ceil(a):
-    """Ceil function.
+    """The ceil function.
 
     Args:
-        a: a.
+        a: A number.
     
     Returns:
-        the least integer greater than or equal to a.
+        The least integer greater than or equal to `a`.
     """
     return _unary_operation(_ti_core.expr_ceil, math.ceil, a)
 
 
 @unary
 def tan(a):
-    """Tangent function.
+    """The tangent function.
 
     Args:
-        a: a.
+        a: A numnber.
     
     Returns:
-        tan(a).
+        Tangent of `a`.
     """
     return _unary_operation(_ti_core.expr_tan, math.tan, a)
 
 
 @unary
 def tanh(a):
-    """Hyperbolic tangent function.
+    """The hyperbolic tangent function.
 
     Args:
-        a: a.
+        a: A numnber.
     
     Returns:
-        tanh(a).
+        `(e**x - e**(-x)) / (e**x + e**(-x))`.
     """
     return _unary_operation(_ti_core.expr_tanh, math.tanh, a)
 
 
 @unary
 def exp(a):
-    """Exp function.
+    """The exp function.
 
     Args:
-        a: a.
+        a: A number.
     
     Returns:
-        e ** a.
+        `e` to the `a`.
     """
     return _unary_operation(_ti_core.expr_exp, math.exp, a)
 
 
 @unary
 def log(a):
-    """Natural logarithm function.
+    """The natural logarithm function.
 
     Args:
-        a: a.
+        a: A number greater than zero.
     
     Returns:
-        log_e(a).
+        The natural logarithm of `a`.
     """
     return _unary_operation(_ti_core.expr_log, math.log, a)
 
 
 @unary
 def abs(a):
-    """Absolute value function.
+    """The absolute value function.
 
     Args:
-        a: a.
+        a: A number.
     
     Returns:
-        abs(a).
+        The absolute value of `a`.
     """
     return _unary_operation(_ti_core.expr_abs, builtins.abs, a)
 
 
 @unary
 def bit_not(a):
-    """Bit not function.
+    """The bit not function.
 
     Args:
-        a: a.
+        a: A number.
     
     Returns:
-        ~a.
+        Bitwise not of `a`.
     """
     return _unary_operation(_ti_core.expr_bit_not, _bt_ops_mod.invert, a)
 
 
 @unary
 def logical_not(a):
-    """Logical not function.
+    """The logical not function.
 
     Args:
-        a: a.
+        a: A number.
     
     Returns:
-        not a.
+        `1` iff `a=0`, otherwise `0`.
     """
     return _unary_operation(_ti_core.expr_logic_not, lambda x: int(not x), a)
 
 
 def random(dtype=float):
-    """Random function.
+    """The random function.
 
     Args:
         dtype: Type of the random variable.
     
     Returns:
-        A random variable whose type is dtype.
+        A random variable whose type is `dtype`.
     """
     dtype = cook_dtype(dtype)
     x = Expr(_ti_core.make_rand_expr(dtype))
@@ -413,56 +413,56 @@ def random(dtype=float):
 
 @binary
 def add(a, b):
-    """Add function.
+    """The add function.
 
     Args:
-        a: a.
-        b: b.
+        a: A number.
+        b: A number.
     
     Returns:
-        a+b.
+        sum of `a` and `b`.
     """
     return _binary_operation(_ti_core.expr_add, _bt_ops_mod.add, a, b)
 
 
 @binary
 def sub(a, b):
-    """Sub function.
+    """The sub function.
 
     Args:
-        a: a.
-        b: b.
+        a: A number.
+        b: A number.
     
     Returns:
-        a-b.
+        `a` subtract `b`.
     """
     return _binary_operation(_ti_core.expr_sub, _bt_ops_mod.sub, a, b)
 
 
 @binary
 def mul(a, b):
-    """Multiply function.
+    """The multiply function.
 
     Args:
-        a: a.
-        b: b.
+        a: A number.
+        b: A number.
     
     Returns:
-        a*b.
+        `a` multiplied by `b`.
     """
     return _binary_operation(_ti_core.expr_mul, _bt_ops_mod.mul, a, b)
 
 
 @binary
 def mod(a, b):
-    """Remainder function.
+    """The remainder function.
 
     Args:
-        a: a.
-        b: b.
+        a: A number.
+        b: A number not equal to zero.
     
     Returns:
-        a%b.
+        The remainder of `a` divided by `b`.
     """
     def expr_python_mod(a, b):
         # a % b = a - (a // b) * b
@@ -475,28 +475,28 @@ def mod(a, b):
 
 @binary
 def pow(a, b):
-    """Power function.
+    """The power function.
 
     Args:
-        a: a.
-        b: b.
+        a: A number.
+        b: A number.
     
     Returns:
-        a**b.
+        `a` to the `b`.
     """
     return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, a, b)
 
 
 @binary
 def floordiv(a, b):
-    """Floor division function.
+    """The floor division function.
 
     Args:
-        a: a.
-        b: b.
+        a: A number.
+        b: A number not equal to zero.
     
     Returns:
-        a//b.
+        The floor function of `a` divided by `b`.
     """
     return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, a,
                              b)
@@ -507,53 +507,53 @@ def truediv(a, b):
     """True division function.
 
     Args:
-        a: a.
-        b: b.
+        a: A number.
+        b: A number not equal to zero.
     
     Returns:
-        a/b.
+        The true value of `a` divided by `b`.
     """
     return _binary_operation(_ti_core.expr_truediv, _bt_ops_mod.truediv, a, b)
 
 
 @binary
 def max(a, b):
-    """Max function.
+    """The maxnimum function.
 
     Args:
-        a: a.
-        b: b.
+        a: A number.
+        b: A number.
     
     Returns:
-        max(a,b).
+        The maxnimum of `a` and `b`.
     """
     return _binary_operation(_ti_core.expr_max, builtins.max, a, b)
 
 
 @binary
 def min(a, b):
-    """Min function.
+    """The minimum function.
 
     Args:
-        a: a.
-        b: b.
+        a: A number.
+        b: A number.
     
     Returns:
-        min(a,b).
+        The minimum of `a` and `b`.
     """
     return _binary_operation(_ti_core.expr_min, builtins.min, a, b)
 
 
 @binary
 def atan2(a, b):
-    """Arctangent function.
+    """The inverses of the tangent function.
 
     Args:
-        a: a.
-        b: b.
+        a: A number.
+        b: A number not equal to zero.
     
     Returns:
-        Arc tangent (measured in radians) of b/a.
+        The inverses function of tangent of `b/a`.
     """
     return _binary_operation(_ti_core.expr_atan2, math.atan2, a, b)
 
@@ -563,11 +563,11 @@ def raw_div(a, b):
     """Raw_div function.
 
     Args:
-        a: a.
-        b: b.
+        a: A number.
+        b: A number not equal to zero.
     
     Returns:
-        If a is `int` and b is `int`, then return a//b. Else return a/b.
+        If `a` is a `int` and `b` is a `int`, then return `a//b`. Else return `a/b`.
     """
     def c_div(a, b):
         if isinstance(a, int) and isinstance(b, int):
@@ -580,14 +580,14 @@ def raw_div(a, b):
 
 @binary
 def raw_mod(a, b):
-    """Raw_mod function. Both a and b can be `float`.
+    """Raw_mod function. Both `a` and `b` can be `float`.
 
     Args:
-        a: a.
-        b: b.
+        a: A number.
+        b: A number not equal to zero.
     
     Returns:
-        a%b.
+        The remainder of `a` divided by `b`.
     """
     def c_mod(a, b):
         return a - b * int(float(a) / b)

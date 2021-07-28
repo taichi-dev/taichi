@@ -41,18 +41,18 @@ void run_snode() {
 
   using namespace taichi;
   using namespace lang;
-  auto program = Program(arch_from_name("x64"));
+  auto program = Program(Arch::x64);
   /*CompileConfig config_print_ir;
   config_print_ir.print_ir = true;
   prog_.config = config_print_ir;*/  // print_ir = True
 
   int n = 10;
-  auto *pointer =
-      &program.get_snode_root(SNodeTree::kFirstID)->pointer(Index(0), n);
+  program.materialize_runtime();
+  auto *root = new SNode(0, SNodeType::root);
+  auto *pointer = &root->pointer(Index(0), n);
   auto *place = &pointer->insert_children(SNodeType::place);
   place->dt = PrimitiveType::i32;
-
-  program.materialize_runtime();
+  program.add_snode_tree(std::unique_ptr<SNode>(root));
 
   std::unique_ptr<Kernel> kernel_init, kernel_ret, kernel_ext;
 
@@ -124,14 +124,14 @@ void run_snode() {
     }
 
     kernel_ext = std::make_unique<Kernel>(program, builder.extract_ir(), "ext");
-    kernel_ext->insert_arg(PrimitiveType::gen, true);
+    kernel_ext->insert_arg(get_data_type<int>(), true);
   }
 
   auto ctx_init = kernel_init->make_launch_context();
   auto ctx_ret = kernel_ret->make_launch_context();
   auto ctx_ext = kernel_ext->make_launch_context();
-  int ext_arr[n];
-  ctx_ext.set_arg_external_array(0, taichi::uint64(ext_arr), 0);
+  std::vector<int> ext_arr(n);
+  ctx_ext.set_arg_external_array(0, taichi::uint64(ext_arr.data()), n);
 
   (*kernel_init)(ctx_init);
   (*kernel_ret)(ctx_ret);
@@ -181,9 +181,11 @@ void autograd() {
   using namespace taichi;
   using namespace lang;
 
-  auto program = Program(arch_from_name("x64"));
+  auto program = Program(Arch::x64);
 
   int n = 10;
+  program.materialize_runtime();
+  auto *root = new SNode(0, SNodeType::root);
   auto get_snode_grad = [&]() -> SNode * {
     class GradInfoPrimal final : public SNode::GradInfoProvider {
      public:
@@ -209,7 +211,6 @@ void autograd() {
       }
     };
 
-    auto *root = program.get_snode_root(SNodeTree::kFirstID);
     auto *snode = &root->dense(0, n).insert_children(SNodeType::place);
     snode->dt = PrimitiveType::f32;
     snode->grad_info = std::make_unique<GradInfoPrimal>(
@@ -219,8 +220,7 @@ void autograd() {
     return snode;
   };
   auto *a = get_snode_grad(), *b = get_snode_grad(), *c = get_snode_grad();
-
-  program.materialize_runtime();
+  program.add_snode_tree(std::unique_ptr<SNode>(root));
 
   std::unique_ptr<Kernel> kernel_init, kernel_forward, kernel_backward,
       kernel_ext;
@@ -296,19 +296,19 @@ void autograd() {
     }
 
     kernel_ext = std::make_unique<Kernel>(program, builder.extract_ir(), "ext");
-    kernel_ext->insert_arg(PrimitiveType::gen, true);
-    kernel_ext->insert_arg(PrimitiveType::gen, true);
-    kernel_ext->insert_arg(PrimitiveType::gen, true);
+    kernel_ext->insert_arg(get_data_type<int>(), true);
+    kernel_ext->insert_arg(get_data_type<int>(), true);
+    kernel_ext->insert_arg(get_data_type<int>(), true);
   }
 
   auto ctx_init = kernel_init->make_launch_context();
   auto ctx_forward = kernel_forward->make_launch_context();
   auto ctx_backward = kernel_backward->make_launch_context();
   auto ctx_ext = kernel_ext->make_launch_context();
-  float ext_a[n], ext_b[n], ext_c[n];
-  ctx_ext.set_arg_external_array(0, taichi::uint64(ext_a), 0);
-  ctx_ext.set_arg_external_array(1, taichi::uint64(ext_b), 0);
-  ctx_ext.set_arg_external_array(2, taichi::uint64(ext_c), 0);
+  std::vector<float> ext_a(n), ext_b(n), ext_c(n);
+  ctx_ext.set_arg_external_array(0, taichi::uint64(ext_a.data()), n);
+  ctx_ext.set_arg_external_array(1, taichi::uint64(ext_b.data()), n);
+  ctx_ext.set_arg_external_array(2, taichi::uint64(ext_c.data()), n);
 
   (*kernel_init)(ctx_init);
   (*kernel_forward)(ctx_forward);

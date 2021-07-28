@@ -166,7 +166,7 @@ This design is terrible.
   `yapf v0.29.0` locally before you use `ti format`.
 
 - If you don't have these formatting tools locally, feel free to
-  leverage GitHub actions: simply comment `\format` in a PR
+  leverage GitHub actions: simply comment `/format` in a PR
   (e.g., [#2481](https://github.com/taichi-dev/taichi/pull/2481#issuecomment-872226701))
   and then [Taichi Gardener](https://github.com/taichi-gardener)
   will automatically format the code for you.

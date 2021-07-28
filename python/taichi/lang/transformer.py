@@ -626,6 +626,11 @@ if 1:
         if not ASTResolver.resolve_to(node.func, ti.static, globals()):
             # Do not apply the generic visitor if the function called is ti.static
             self.generic_visit(node)
+        if isinstance(node.func, ast.Attribute):
+            attr_name = node.func.attr
+            if attr_name == 'format':
+                node.args.insert(0, node.func.value)
+                node.func = self.parse_expr('ti.ti_format')
         if isinstance(node.func, ast.Name):
             func_name = node.func.id
             if func_name == 'print':

@@ -9,12 +9,13 @@
 namespace taichi {
 namespace lang {
 
-void infer_snode_properties(SNode &snode) {
+void infer_snode_properties(SNode &snode, bool packed) {
   for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
     auto &ch = snode.ch[ch_id];
     ch->parent = &snode;
     for (int i = 0; i < taichi_max_num_indices; i++) {
-      ch->extractors[i].num_elements *= snode.extractors[i].num_elements;
+      ch->extractors[i].num_elements_from_root *=
+          snode.extractors[i].num_elements_from_root;
       bool found = false;
       for (int k = 0; k < taichi_max_num_indices; k++) {
         if (snode.physical_index_position[k] == i) {
@@ -40,15 +41,27 @@ void infer_snode_properties(SNode &snode) {
       ch->is_bit_level = snode.is_bit_level;
     }
 
-    infer_snode_properties(*ch);
+    infer_snode_properties(*ch, packed);
   }
 
   // infer extractors
+  int acc_shape = 1;
+  for (int i = taichi_max_num_indices - 1; i >= 0; i--) {
+    // if not in packed mode, pad shape to POT
+    if (!packed) {
+      snode.extractors[i].shape = 1 << snode.extractors[i].num_bits;
+    }
+    snode.extractors[i].acc_shape = acc_shape;
+    acc_shape *= snode.extractors[i].shape;
+  }
+  snode.n = acc_shape;
+  // infer extractors (only for POT)
   int acc_offsets = 0;
   for (int i = taichi_max_num_indices - 1; i >= 0; i--) {
     snode.extractors[i].acc_offset = acc_offsets;
     acc_offsets += snode.extractors[i].num_bits;
   }
+  snode.total_num_bits = acc_offsets;
   if (snode.type == SNodeType::dynamic) {
     int active_extractor_counder = 0;
     for (int i = 0; i < taichi_max_num_indices; i++) {
@@ -67,10 +80,6 @@ void infer_snode_properties(SNode &snode) {
                    "Dynamic SNode can have only one index extractor.");
   }
 
-  snode.total_num_bits = 0;
-  for (int i = 0; i < taichi_max_num_indices; i++) {
-    snode.total_num_bits += snode.extractors[i].num_bits;
-  }
   // The highest bit is for the sign.
   constexpr int kMaxTotalNumBits = 64;
   TI_ERROR_IF(

@@ -43,6 +43,19 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
     name_list_.push_back(name);
 }
 
+void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
+                                                 bool is_scalar,
+                                                 DataType dt,
+                                                 std::vector<int> shape,
+                                                 int row_num,
+                                                 int column_num) {
+}
+
+void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
+                                                const std::string &key,
+                                                Kernel *kernel) {
+}
+
 }  // namespace wasm
 }  // namespace lang
 }  // namespace taichi

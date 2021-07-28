@@ -85,7 +85,7 @@ def test_fields_builder_dense():
         assert x[i] == i * 3
 
 
-@ti.test(arch=[ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda], use_unified_memory=True)
 def test_fields_builder_pointer():
     n = 5
 

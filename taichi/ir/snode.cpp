@@ -2,6 +2,7 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
+#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -21,12 +22,12 @@ SNode &SNode::insert_children(SNodeType t) {
   return *ch.back();
 }
 
-SNode &SNode::create_node(std::vector<Index> indices,
+SNode &SNode::create_node(std::vector<Axis> axes,
                           std::vector<int> sizes,
                           SNodeType type) {
-  TI_ASSERT(indices.size() == sizes.size() || sizes.size() == 1);
+  TI_ASSERT(axes.size() == sizes.size() || sizes.size() == 1);
   if (sizes.size() == 1) {
-    sizes = std::vector<int>(indices.size(), sizes[0]);
+    sizes = std::vector<int>(axes.size(), sizes[0]);
   }
 
   if (type == SNodeType::hash)
@@ -34,28 +35,18 @@ SNode &SNode::create_node(std::vector<Index> indices,
                    "hashed node must be child of root due to initialization "
                    "memset limitation.");
   auto &new_node = insert_children(type);
-  new_node.n = 1;
-  for (int i = 0; i < sizes.size(); i++) {
-    auto s = sizes[i];
+  for (int i = 0; i < (int)axes.size(); i++) {
     TI_ASSERT(sizes[i] > 0);
-    if (!bit::is_power_of_two(s)) {
-      auto promoted_s = bit::least_pot_bound(s);
-      TI_DEBUG("Non-power-of-two node size {} promoted to {}.", s, promoted_s);
-      s = promoted_s;
-    }
-    TI_ASSERT(bit::is_power_of_two(s));
-    new_node.n *= s;
-  }
-  for (int i = 0; i < (int)indices.size(); i++) {
-    auto &ind = indices[i];
+    auto &ind = axes[i];
     new_node.extractors[ind.value].activate(
         bit::log2int(bit::least_pot_bound(sizes[i])));
-    new_node.extractors[ind.value].num_elements = sizes[i];
+    new_node.extractors[ind.value].shape = sizes[i];
+    new_node.extractors[ind.value].num_elements_from_root = sizes[i];
   }
   return new_node;
 }
 
-SNode &SNode::dynamic(const Index &expr, int n, int chunk_size) {
+SNode &SNode::dynamic(const Axis &expr, int n, int chunk_size) {
   auto &snode = create_node({expr}, {n}, SNodeType::dynamic);
   snode.chunk_size = chunk_size;
   return snode;
@@ -68,10 +59,10 @@ SNode &SNode::bit_struct(int num_bits) {
   return snode;
 }
 
-SNode &SNode::bit_array(const std::vector<Index> &indices,
+SNode &SNode::bit_array(const std::vector<Axis> &axes,
                         const std::vector<int> &sizes,
                         int bits) {
-  auto &snode = create_node(indices, sizes, SNodeType::bit_array);
+  auto &snode = create_node(axes, sizes, SNodeType::bit_array);
   snode.physical_type =
       TypeFactory::get_instance().get_primitive_int_type(bits, false);
   return snode;
@@ -99,7 +90,7 @@ SNode *SNode::get_least_sparse_ancestor() const {
 
 int SNode::shape_along_axis(int i) const {
   const auto &extractor = extractors[physical_index_position[i]];
-  return extractor.num_elements;
+  return extractor.num_elements_from_root;
 }
 
 SNode::SNode() : SNode(0, SNodeType::undefined) {

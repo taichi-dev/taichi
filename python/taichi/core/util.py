@@ -1,13 +1,10 @@
 import ctypes
 import os
-import re
 import shutil
 import sys
-from pathlib import Path
 
 from colorama import Back, Fore, Style
-
-from .settings import *
+from taichi.core import settings
 
 if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
     raise RuntimeError(
@@ -26,7 +23,7 @@ def in_docker():
 
 def import_ti_core(tmp_dir=None):
     global ti_core
-    if get_os_name() != 'win':
+    if settings.get_os_name() != 'win':
         old_flags = sys.getdlopenflags()
         sys.setdlopenflags(2 | 8)  # RTLD_NOW | RTLD_DEEPBIND
     else:
@@ -41,13 +38,13 @@ def import_ti_core(tmp_dir=None):
                 "check this page for possible solutions:\n"
                 "https://taichi.readthedocs.io/en/stable/install.html#troubleshooting"
                 + Fore.RESET)
-            if get_os_name() == 'win':
+            if settings.get_os_name() == 'win':
                 e.msg += '\nConsider installing Microsoft Visual C++ Redistributable: https://aka.ms/vs/16/release/vc_redist.x64.exe'
-            elif get_os_name() == 'linux':
+            elif settings.get_os_name() == 'linux':
                 e.msg += '\nConsider installing libtinfo5: sudo apt-get install libtinfo5'
         raise e from None
     ti_core = core
-    if get_os_name() != 'win':
+    if settings.get_os_name() != 'win':
         sys.setdlopenflags(old_flags)
     lib_dir = os.path.join(package_root(), 'lib')
     core.set_lib_dir(locale_encode(lib_dir))
@@ -86,13 +83,13 @@ def get_core_shared_object():
     if is_release():
         directory = os.path.join(package_root(), 'lib')
     else:
-        directory = get_bin_directory()
+        directory = settings.get_bin_directory()
     return os.path.join(directory, 'libtaichi_core.so')
 
 
 def get_repo():
     from git import Repo
-    repo = Repo(get_repo_directory())
+    repo = Repo(settings.get_repo_directory())
     return repo
 
 
@@ -107,7 +104,7 @@ create_sand_box_on_windows = True
 
 def build():
     tmp_cwd = os.getcwd()
-    bin_dir = get_build_directory()
+    bin_dir = settings.get_build_directory()
 
     try:
         os.mkdir(bin_dir)
@@ -118,7 +115,7 @@ def build():
     import multiprocessing
     print('Building taichi...')
     num_make_threads = min(20, multiprocessing.cpu_count())
-    if get_os_name() == 'win':
+    if settings.get_os_name() == 'win':
         make_ret = os.system(
             "msbuild /p:Configuration=Release /p:Platform=x64 /m taichi.sln")
     else:
@@ -162,14 +159,14 @@ def get_unique_task_id():
 if is_release():
     print("[Taichi] mode=release")
     sys.path.append(os.path.join(package_root(), 'lib'))
-    if get_os_name() != 'win':
+    if settings.get_os_name() != 'win':
         link_src = os.path.join(package_root(), 'lib', 'taichi_core.so')
         link_dst = os.path.join(package_root(), 'lib', 'libtaichi_core.so')
         # For llvm jit to find the runtime symbols
         if not os.path.exists(link_dst):
             os.symlink(link_src, link_dst)
     import_ti_core()
-    if get_os_name() != 'win':
+    if settings.get_os_name() != 'win':
         dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_LOCAL)
         # The C backend needs a temporary directory for the generated .c and compiled .so files:
         ti_core.set_tmp_dir(locale_encode(prepare_sandbox(
@@ -179,9 +176,10 @@ if is_release():
     os.makedirs(ti_core.get_repo_dir(), exist_ok=True)
 else:
     print("[Taichi] mode=development")
-    if get_os_name() == 'osx':
-        bin_dir = get_bin_directory()
-        os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = get_runtime_directory()
+    if settings.get_os_name() == 'osx':
+        bin_dir = settings.get_bin_directory()
+        os.environ[
+            'DYLD_FALLBACK_LIBRARY_PATH'] = settings.get_runtime_directory()
         lib_path = os.path.join(bin_dir, 'libtaichi_core.dylib')
         tmp_cwd = os.getcwd()
         tmp_dir = prepare_sandbox()
@@ -193,8 +191,8 @@ else:
         os.chdir(tmp_cwd)
 
     # TODO: unify importing infrastructure:
-    elif get_os_name() == 'linux':
-        bin_dir = get_bin_directory()
+    elif settings.get_os_name() == 'linux':
+        bin_dir = settings.get_bin_directory()
         if 'LD_LIBRARY_PATH' in os.environ:
             os.environ['LD_LIBRARY_PATH'] += ':/usr/lib64/'
         else:
@@ -219,8 +217,8 @@ else:
             raise e from None
         os.chdir(tmp_cwd)
 
-    elif get_os_name() == 'win':
-        bin_dir = get_bin_directory()
+    elif settings.get_os_name() == 'win':
+        bin_dir = settings.get_bin_directory()
         dll_path_invalid = os.path.join(bin_dir, 'libtaichi_core.dll')
         assert not os.path.exists(dll_path_invalid)
 
@@ -233,7 +231,7 @@ else:
 
         if len(detected_dlls) == 0:
             raise FileNotFoundError(
-                f'Cannot find Taichi core dll under {get_bin_directory()}/{possible_folders}'
+                f'Cannot find Taichi core dll under {settings.get_bin_directory()}/{possible_folders}'
             )
         elif len(detected_dlls) != 1:
             print('Warning: multiple Taichi core dlls found:')
@@ -249,10 +247,11 @@ else:
 
         if create_sand_box_on_windows:
             # Create a sandbox for separated core lib development and loading
-            folder = os.path.join(get_output_directory(), 'tmp',
+            folder = os.path.join(settings.get_output_directory(), 'tmp',
                                   get_unique_task_id())
 
-            lib_dir = os.path.join(get_repo_directory(), 'external', 'lib')
+            lib_dir = os.path.join(settings.get_repo_directory(), 'external',
+                                   'lib')
             os.environ['PATH'] += ';' + lib_dir
 
             os.makedirs(folder)
@@ -281,28 +280,28 @@ if log_level:
 
 
 def get_dll_name(name):
-    if get_os_name() == 'linux':
+    if settings.get_os_name() == 'linux':
         return 'libtaichi_%s.so' % name
-    elif get_os_name() == 'osx':
+    elif settings.get_os_name() == 'osx':
         return 'libtaichi_%s.dylib' % name
-    elif get_os_name() == 'win':
+    elif settings.get_os_name() == 'win':
         return 'taichi_%s.dll' % name
     else:
-        raise Exception(f"Unknown OS: {get_os_name()}")
+        raise Exception(f"Unknown OS: {settings.get_os_name()}")
 
 
 def load_module(name, verbose=True):
     if verbose:
         print('Loading module', name)
     try:
-        if get_os_name() == 'osx':
+        if settings.get_os_name() == 'osx':
             mode = ctypes.RTLD_LOCAL
         else:
             mode = ctypes.RTLD_GLOBAL
         if '.so' in name:
             ctypes.PyDLL(name, mode=mode)
         else:
-            ctypes.PyDLL(os.path.join(get_repo_directory(), 'build',
+            ctypes.PyDLL(os.path.join(settings.get_repo_directory(), 'build',
                                       get_dll_name(name)),
                          mode=mode)
     except Exception as e:
@@ -313,7 +312,7 @@ def load_module(name, verbose=True):
 
 def at_startup():
     if not is_release():
-        output_dir = get_output_directory()
+        output_dir = settings.get_output_directory()
         if not os.path.exists(output_dir):
             print('Making output directory')
             os.mkdir(output_dir)
@@ -384,7 +383,7 @@ def _print_taichi_header():
     commit_hash = commit_hash[:8]
     header += f'commit {commit_hash}, '
 
-    header += f'{get_os_name()}, '
+    header += f'{settings.get_os_name()}, '
 
     py_ver = '.'.join(str(x) for x in sys.version_info[:3])
     header += f'python {py_ver}'

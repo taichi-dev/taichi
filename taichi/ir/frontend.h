@@ -86,12 +86,12 @@ T Eval(const T &t) {
 
 Expr copy(const Expr &expr);
 
-template <typename... indices>
-std::vector<Index> Indices(indices... ind) {
-  auto ind_vec = std::vector<int>({ind...});
-  std::vector<Index> ret;
-  for (auto in : ind_vec) {
-    ret.push_back(Index(in));
+template <typename... AX>
+std::vector<Axis> Axes(AX... axes) {
+  auto ax_vec = std::vector<int>({axes...});
+  std::vector<Axis> ret;
+  for (auto ax : ax_vec) {
+    ret.push_back(Axis(ax));
   }
   return ret;
 }

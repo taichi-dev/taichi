@@ -415,7 +415,7 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   runtime_jit->call<void *, std::size_t, int, int>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
       (int)snodes.size(), tree->id());
-  /*std::size_t rounded_size =
+  std::size_t rounded_size =
       taichi::iroundup(scomp->root_size, taichi_page_size);
   Ptr ptr = nullptr;
   runtime_jit->call<void *, Ptr *, std::size_t, std::size_t>(
@@ -424,12 +424,12 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   TI_TRACE("{}", std::size_t(ptr));
   runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
-      (int)snodes.size(), tree->id(), rounded_size, ptr);*/
-  runtime_jit->call<void *, std::size_t, int, int, int>(
+      (int)snodes.size(), tree->id(), rounded_size, ptr);
+  /*runtime_jit->call<void *, std::size_t, int, int, int>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
-      (int)snodes.size(), tree->id());
-  print_memory_profiler_info();
-  /*auto ptr =
+      (int)snodes.size(), tree->id());*/
+  /*print_memory_profiler_info();
+  auto ptr =
       runtime_query<void *>("LLVMRuntime_get_roots", llvm_runtime, tree->id());
   TI_TRACE("{}", std::size_t(ptr));*/
   for (int i = 0; i < (int)snodes.size(); i++) {

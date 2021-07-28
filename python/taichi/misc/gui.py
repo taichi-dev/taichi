@@ -24,7 +24,7 @@ class GUI:
             Taichi. Default is False.
 
     Returns:
-        The created taichi GUI object.
+        :class:`~taichi.misc.gui.GUI` :The created taichi GUI object.
 
     """
     class Event:
@@ -210,7 +210,7 @@ class GUI:
         """Get the image data.
 
         Returns:
-            The image data in numpy contiguous array type.
+            :class:`numpy.array` :The image data in numpy contiguous array type.
 
         """
         self.img = np.ascontiguousarray(self.img)
@@ -699,7 +699,7 @@ class GUI:
             *filter (List[ti.GUI.EVENT]): The type of events to be filtered.
 
         Returns:
-            A list of events that are triggered.
+            :class:`~taichi.misc.gui.GUI.EVENT` :A list of events that are triggered.
 
         """
         filter = filter and GUI.EventFilter(*filter) or None
@@ -715,7 +715,7 @@ class GUI:
         """Get keyboard triggered event.
 
         Returns:
-            The keyboard triggered event.
+            :class:`~taichi.misc.gui.GUI.EVENT` :The keyboard triggered event.
 
         """
         self.core.wait_key_event()

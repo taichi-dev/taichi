@@ -76,7 +76,19 @@ def memory_profiler_print():
 
 
 extension = _ti_core.Extension
-is_extension_supported = _ti_core.is_extension_supported
+
+
+def is_extension_supported(arch, ext):
+    """Checks whether an extension is supported on an arch.
+
+    Args:
+        arch (taichi_core.Arch): Specified arch.
+        ext (taichi_core.Extension): Specified extension.
+
+    Returns:
+        bool: Whether `ext` is supported on `arch`.
+    """
+    return _ti_core.is_extension_supported(arch, ext)
 
 
 def reset():
@@ -289,6 +301,18 @@ transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)
 
 
 def polar_decompose(A, dt=None):
+    """Perform polar decomposition (A=UP) for arbitrary size matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
+    This is only a wrapper for :func:`taichi.lang.linalg.polar_decompose`.
+
+    Args:
+        A (ti.Matrix(n, n)): input nxn matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+
+    Returns:
+        Decomposed nxn matrices `U` and `P`.
+    """
     if dt is None:
         dt = impl.get_runtime().default_fp
     from .linalg import polar_decompose
@@ -296,6 +320,18 @@ def polar_decompose(A, dt=None):
 
 
 def svd(A, dt=None):
+    """Perform singular value decomposition (A=USV^T) for arbitrary size matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
+    This is only a wrappers for :func:`taichi.lang.linalg.svd`.
+
+    Args:
+        A (ti.Matrix(n, n)): input nxn matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+
+    Returns:
+        Decomposed nxn matrices `U`, 'S' and `V`.
+    """
     if dt is None:
         dt = impl.get_runtime().default_fp
     from .linalg import svd
@@ -305,23 +341,16 @@ def svd(A, dt=None):
 def eig(A, dt=None):
     """Compute the eigenvalues and right eigenvectors of a real matrix.
 
-    Parameters
-    ----------
-    A: ti.Matrix(n, n)
-        2D Matrix for which the eigenvalues and right eigenvectors will be computed.
-    dt: Optional[DataType]
-        The datatype for the eigenvalues and right eigenvectors
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
+    2D implementation refers to :func:`taichi.lang.linalg.eig2x2`.
 
-    Returns
-    -------
-    eigenvalues: ti.Matrix(n, 2)
-        The eigenvalues in complex form. Each row stores one eigenvalue. The first number
-        of the eigenvalue represents the real part and the second number represents the
-        imaginary part.
-    eigenvectors: ti.Matrix(n*2, n)
-        The eigenvectors in complex form. Each column stores one eigenvector. Each eigenvector
-        consists of n entries, each of which is represented by two numbers for its real part
-        and imaginary part.
+    Args:
+        A (ti.Matrix(n, n)): 2D Matrix for which the eigenvalues and right eigenvectors will be computed.
+        dt (DataType): The datatype for the eigenvalues and right eigenvectors.
+
+    Returns:
+        eigenvalues (ti.Matrix(n, 2)): The eigenvalues in complex form. Each row stores one eigenvalue. The first number of the eigenvalue represents the real part and the second number represents the imaginary part.
+        eigenvectors (ti.Matrix(n*2, n)): The eigenvectors in complex form. Each column stores one eigenvector. Each eigenvector consists of n entries, each of which is represented by two numbers for its real part and imaginary part.
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
@@ -334,19 +363,16 @@ def eig(A, dt=None):
 def sym_eig(A, dt=None):
     """Compute the eigenvalues and right eigenvectors of a real symmetric matrix.
 
-    Parameters
-    ----------
-    A: ti.Matrix(n, n)
-        Symmetric Matrix for which the eigenvalues and right eigenvectors will be computed.
-    dt: Optional[DataType]
-        The datatype for the eigenvalues and right eigenvectors
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
+    2D implementation refers to :func:`taichi.lang.linalg.sym_eig2x2`.
 
-    Returns
-    -------
-    eigenvalues: ti.Vector(n)
-        The eigenvalues. Each entry store one eigen value.
-    eigenvectors: ti.Matrix(n, n)
-        The eigenvectors. Each column stores one eigenvector.
+    Args:
+        A (ti.Matrix(n, n)): Symmetric Matrix for which the eigenvalues and right eigenvectors will be computed.
+        dt (DataType): The datatype for the eigenvalues and right eigenvectors.
+
+    Returns:
+        eigenvalues (ti.Vector(n)): The eigenvalues. Each entry store one eigen value.
+        eigenvectors (ti.Matrix(n, n)): The eigenvectors. Each column stores one eigenvector.
     """
     assert all(A == A.transpose()), "A needs to be symmetric"
     if dt is None:
@@ -358,6 +384,16 @@ def sym_eig(A, dt=None):
 
 
 def randn(dt=None):
+    """Generates a random number from standard normal distribution.
+
+    Implementation refers to :func:`taichi.lang.random.randn`.
+
+    Args:
+        dt (DataType): The datatype for the generated random number.
+
+    Returns:
+        The generated random number.
+    """
     if dt is None:
         dt = impl.get_runtime().default_fp
     from .random import randn
@@ -609,6 +645,14 @@ def stat_write(key, value):
 
 
 def is_arch_supported(arch):
+    """Checks whether an arch is supported on the machine.
+
+    Args:
+        arch (taichi_core.Arch): Specified arch.
+
+    Returns:
+        bool: Whether `arch` is supported on the machine.
+    """
     arch_table = {
         cuda: _ti_core.with_cuda,
         metal: _ti_core.with_metal,
@@ -631,6 +675,11 @@ def is_arch_supported(arch):
 
 
 def supported_archs():
+    """Gets all supported archs on the machine.
+
+    Returns:
+        List[taichi_core.Arch]: All supported archs on the machine.
+    """
     archs = [cpu, cuda, metal, opengl, cc]
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')

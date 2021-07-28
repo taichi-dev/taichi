@@ -640,6 +640,10 @@ def indices(*x):
     return [_ti_core.Axis(i) for i in x]
 
 
+def axes(*x):
+    return [_ti_core.Axis(i) for i in x]
+
+
 index = indices
 
 Axis = _ti_core.Axis

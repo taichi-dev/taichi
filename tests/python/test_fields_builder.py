@@ -133,7 +133,7 @@ def test_fields_builder_pointer():
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_fields_builder_destroy():
     def A(i):
-        n = i * 10**8
+        n = i * 10**2
         fb = ti.FieldsBuilder()
         a = ti.field(ti.f64)
         fb.dense(ti.i, n).place(a)
@@ -142,7 +142,7 @@ def test_fields_builder_destroy():
         print("destroyed!")
 
     def B(i):
-        n = i * 10**8
+        n = i * 10**2
         fb = ti.FieldsBuilder()
         a = ti.field(ti.f64)
         fb.dense(ti.i, n).place(a)

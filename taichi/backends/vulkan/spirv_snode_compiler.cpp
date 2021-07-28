@@ -60,7 +60,7 @@ class SpirvSNodeCompiler {
         } else {
           ch_type_array = ch_type;
         }
-        ir_->declare_global(spv::OpMemberDecorate, sn_type, cn_cnt++,
+        ir_->decorate(spv::OpMemberDecorate, sn_type, cn_cnt++,
                             spv::DecorationOffset,
                             ch_desc.mem_offset_in_parent_cell);  // Offset
         sn_type.snode_child_type_id.push_back(ch_type_array.id);

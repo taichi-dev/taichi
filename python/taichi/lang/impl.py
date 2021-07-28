@@ -621,7 +621,7 @@ def zero(x):
     """Fill the input field with zero.
 
     Args:
-        x (DataType): THe input field to fill.
+        x (DataType): The input field to fill.
 
     Returns:
         DataType: The output field, which keeps the shape but filled with zero.
@@ -635,7 +635,7 @@ def one(x):
     """Fill the input field with one.
 
     Args:
-        x (DataType): THe input field to fill.
+        x (DataType): The input field to fill.
 
     Returns:
         DataType: The output field, which keeps the shape but filled with one.

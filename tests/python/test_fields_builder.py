@@ -130,7 +130,7 @@ def test_fields_builder_pointer():
         assert x[i] == i * 3
 
 
-@ti.test()
+@ti.test(arch=[ti.cpu, ti.cuda])
 def test_fields_builder_destroy():
     def A(i):
         n = i * 10**8

@@ -124,12 +124,11 @@ def deprecated(old, new, warning_type=DeprecationWarning):
         new (str): new method.
         warning_type (builtin warning type): type of warning.
 
-    Example:
-        Usage::
+    Example::
 
-            @deprecated('ti.sqr(x)', 'x**2')
-            def sqr(x):
-                return x**2
+        >>> @deprecated('ti.sqr(x)', 'x**2')
+        >>> def sqr(x):
+        >>>     return x**2
 
     Returns:
         Decorated fuction with warning message
@@ -184,17 +183,16 @@ def print_profile_info():
     Call function imports from C++ : _ti_core.print_profile_info()
 
     Example:
-        Usage::
 
-            import taichi as ti
-            ti.init(arch=ti.cpu)
-            var = ti.field(ti.f32, shape=1)
-            @ti.kernel
-            def compute():
-                var[0] = 1.0
-                print("Setting var[0] =", var[0])
-            compute()
-            ti.print_profile_info()
+            >>> import taichi as ti
+            >>> ti.init(arch=ti.cpu)
+            >>> var = ti.field(ti.f32, shape=1)
+            >>> @ti.kernel
+            >>> def compute():
+            >>>     var[0] = 1.0
+            >>>     print("Setting var[0] =", var[0])
+            >>> compute()
+            >>> ti.print_profile_info()
     """
     _ti_core.print_profile_info()
 

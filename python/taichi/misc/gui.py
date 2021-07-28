@@ -130,7 +130,7 @@ class GUI:
             step (Number, optional): The changing step of slider. Default is 1.
 
         Return:
-            The created slider object.
+            :class:`~taichi.misc.gui.GUI.WidgetValue` :The created slider object.
 
         """
         wid = self.core.make_slider(text, minimum, minimum, maximum, step)
@@ -143,7 +143,7 @@ class GUI:
             text (str): The title of label.
 
         Return:
-            The created label object.
+            :class:`~taichi.misc.gui.GUI.WidgetValue` :The created label object.
 
         """
         wid = self.core.make_label(text, 0)

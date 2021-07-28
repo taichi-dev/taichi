@@ -324,17 +324,6 @@ Value IRBuilder::struct_array_access(const SType &res_type,
   return ret;
 }
 
-Value IRBuilder::get_work_group_size(uint32_t dim_index) {
-  if (gl_work_group_size.id == 0) {
-    gl_work_group_size.id = id_counter_++;
-  }
-  SType pint_type = this->get_pointer_type(t_uint32_, spv::StorageClassInput);
-  Value ptr = this->make_value(
-      spv::OpAccessChain, pint_type, gl_work_group_size,
-      uint_immediate_number(t_uint32_, static_cast<uint64_t>(dim_index)));
-
-  return this->make_value(spv::OpLoad, t_uint32_, ptr);
-}
 void IRBuilder::set_work_group_size(const std::array<int, 3> group_size) {
   Value size_x =
       uint_immediate_number(t_uint32_, static_cast<uint64_t>(group_size[0]));
@@ -560,7 +549,7 @@ Value IRBuilder::alloca_variable(const SType &type) {
   SType ptr_type = get_pointer_type(type, spv::StorageClassFunction);
   Value ret = new_value(ptr_type, ValueKind::kVariablePtr);
   ib_.begin(spv::OpVariable)
-      .add_seq(type, ret, spv::StorageClassFunction)
+      .add_seq(ptr_type, ret, spv::StorageClassFunction)
       .commit(&func_header_);
   return ret;
 }
@@ -632,7 +621,7 @@ Value IRBuilder::float_atomic_add() {
       SType ptr_type = get_pointer_type(type, spv::StorageClassFunction);
       Value ret = new_value(ptr_type, ValueKind::kVariablePtr);
       ib_.begin(spv::OpVariable)
-          .add_seq(type, ret, spv::StorageClassFunction)
+          .add_seq(ptr_type, ret, spv::StorageClassFunction)
           .commit(&func_);
 
       return ret;
@@ -866,16 +855,16 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   _rand_z_ = new_value(local_type, ValueKind::kVariablePtr);
   _rand_w_ = new_value(local_type, ValueKind::kVariablePtr);
   ib_.begin(spv::OpVariable)
-      .add_seq(t_uint32_, _rand_x_, spv::StorageClassPrivate)
+      .add_seq(local_type, _rand_x_, spv::StorageClassPrivate)
       .commit(&global_);
   ib_.begin(spv::OpVariable)
-      .add_seq(t_uint32_, _rand_y_, spv::StorageClassPrivate)
+      .add_seq(local_type, _rand_y_, spv::StorageClassPrivate)
       .commit(&global_);
   ib_.begin(spv::OpVariable)
-      .add_seq(t_uint32_, _rand_z_, spv::StorageClassPrivate)
+      .add_seq(local_type, _rand_z_, spv::StorageClassPrivate)
       .commit(&global_);
   ib_.begin(spv::OpVariable)
-      .add_seq(t_uint32_, _rand_w_, spv::StorageClassPrivate)
+      .add_seq(local_type, _rand_w_, spv::StorageClassPrivate)
       .commit(&global_);
   debug(spv::OpName, _rand_x_, "_rand_x");
   debug(spv::OpName, _rand_y_, "_rand_y");

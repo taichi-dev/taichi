@@ -417,14 +417,16 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
       (int)snodes.size(), tree->id());
   std::size_t rounded_size =
       taichi::iroundup(scomp->root_size, taichi_page_size);
-  Ptr ptr = nullptr;
+  /*Ptr ptr = nullptr;Ptr ptr = nullptr;
   runtime_jit->call<void *, Ptr *, std::size_t, std::size_t>(
       "runtime_snode_tree_allocate_aligned", llvm_runtime, &ptr, rounded_size,
-      taichi_page_size);
-  TI_TRACE("{}", std::size_t(ptr));
+      taichi_page_size);*/
   runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
-      (int)snodes.size(), tree->id(), rounded_size, ptr);
+      (int)snodes.size(), tree->id(), rounded_size,
+      snode_tree_buffer_manager->allocate(runtime_jit, llvm_runtime,
+                                          rounded_size, taichi_page_size,
+                                          tree->id()));
   /*runtime_jit->call<void *, std::size_t, int, int, int>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
       (int)snodes.size(), tree->id());*/

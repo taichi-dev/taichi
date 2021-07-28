@@ -128,3 +128,27 @@ def test_fields_builder_pointer():
     func1()
     for i in range(n):
         assert x[i] == i * 3
+
+
+@ti.test()
+def test_fields_builder_destroy():
+    def A(i):
+        n = i * 10**8
+        fb = ti.FieldsBuilder()
+        a = ti.field(ti.f64)
+        fb.dense(ti.i, n).place(a)
+        c = fb.finalize()
+        c.destroy()
+        print("destroyed!")
+
+    def B(i):
+        n = i * 10**8
+        fb = ti.FieldsBuilder()
+        a = ti.field(ti.f64)
+        fb.dense(ti.i, n).place(a)
+        fb.finalize()
+
+    A(5)
+    B(2)
+    B(2)
+    B(2)

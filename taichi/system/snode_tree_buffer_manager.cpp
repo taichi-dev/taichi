@@ -37,7 +37,7 @@ Ptr SNodeTreeBufferManager::allocate(JITModule *runtime_jit,
                                      const int snode_tree_id) {
   TI_TRACE("allocating memory for SNode Tree {}", snode_tree_id);
   if (size_set.lower_bound(std::make_pair(size, nullptr)) == size_set.end()) {
-    Ptr ptr;
+    Ptr ptr = nullptr;
     runtime_jit->call<void *, void *, std::size_t, std::size_t>(
         "runtime_snode_tree_allocate_aligned", runtime, &ptr, size, alignment);
     roots[snode_tree_id] = ptr;

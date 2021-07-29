@@ -64,6 +64,7 @@ template = Template
 """Alias for :class:`~taichi.lang.kernel_arguments.Template`.
 """
 
+
 def decl_scalar_arg(dtype):
     dtype = cook_dtype(dtype)
     arg_id = _ti_core.decl_arg(dtype, False)

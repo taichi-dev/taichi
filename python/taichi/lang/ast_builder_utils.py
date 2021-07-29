@@ -12,7 +12,7 @@ class Builder(object):
                 error_msg = f'Unsupported node {node}:\n{astpretty.pformat(node)}'
             except:
                 error_msg = f'Unsupported node {node}'
-            raise Exception(error_msg)
+            raise TaichiSyntaxError(error_msg)
         return method(ctx, node)
 
 

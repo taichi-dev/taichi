@@ -318,6 +318,9 @@ class GlobalTensorElementStmt : public Stmt {
   }
 
   bool has_global_side_effect() const override {
+    // After access lowered, activate info will be recorded in SNodeLookupStmt's
+    // activate for AOS sparse data structure. We don't support SOA sparse data
+    // structure for now.
     return false;
   }
 

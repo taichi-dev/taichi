@@ -412,9 +412,6 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   const int root_id = tree->root()->id;
 
   TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
-  /*runtime_jit->call<void *, std::size_t, int, int, int>(
-      "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
-      (int)snodes.size(), tree->id());*/
   std::size_t rounded_size =
       taichi::iroundup(scomp->root_size, taichi_page_size);
   runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(

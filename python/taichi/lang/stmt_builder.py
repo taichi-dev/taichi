@@ -660,6 +660,10 @@ if 1:
         return node
 
     @staticmethod
+    def build_ImportFrom(ctx, node):
+        return node
+
+    @staticmethod
     def build_Pass(ctx, node):
         return node
 

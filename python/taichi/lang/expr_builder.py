@@ -218,6 +218,11 @@ class ExprBuilder(Builder):
         return node
 
     @staticmethod
+    def build_NamedExpr(ctx, node):
+        node.value = build_expr(ctx, node.value)
+        return node
+
+    @staticmethod
     def build_Constant(ctx, node):
         return node
 

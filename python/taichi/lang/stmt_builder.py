@@ -637,6 +637,11 @@ if 1:
             "Keyword 'global' not supported in Taichi kernels")
 
     @staticmethod
+    def build_Nonlocal(ctx, node):
+        raise TaichiSyntaxError(
+            "Keyword 'nonlocal' not supported in Taichi kernels")
+
+    @staticmethod
     def build_Raise(ctx, node):
         node.exc = build_expr(ctx, node.exc)
         return node

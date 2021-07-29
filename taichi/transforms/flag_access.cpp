@@ -55,8 +55,7 @@ class FlagAccess : public IRVisitor {
       stmt->dest->as<GlobalPtrStmt>()->activate = true;
     }
     if (stmt->dest->is<ShiftGlobalPtrStmt>()) {
-      if (stmt->dest->as<ShiftGlobalPtrStmt>()
-              ->origin->is<GlobalPtrStmt>()) {
+      if (stmt->dest->as<ShiftGlobalPtrStmt>()->origin->is<GlobalPtrStmt>()) {
         stmt->dest->as<ShiftGlobalPtrStmt>()
             ->origin->as<GlobalPtrStmt>()
             ->activate = true;

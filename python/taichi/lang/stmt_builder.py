@@ -35,27 +35,6 @@ class StmtBuilder(Builder):
         return node
 
     @staticmethod
-    def get_targets(node):
-        if isinstance(node.target, ast.Name):
-            return [node.target.id]
-        else:
-            assert isinstance(node.target, ast.Tuple)
-            return [name.id for name in node.target.elts]
-
-    @staticmethod
-    def get_decorator(node):
-        if not isinstance(node, ast.Call):
-            return ''
-        for wanted, name in [
-            (ti.static, 'static'),
-            (ti.grouped, 'grouped'),
-            (ti.ndrange, 'ndrange'),
-        ]:
-            if ASTResolver.resolve_to(node.func, wanted, globals()):
-                return name
-        return ''
-
-    @staticmethod
     def build_AugAssign(ctx, node):
         node.target = build_expr(ctx, node.target)
         node.value = build_expr(ctx, node.value)
@@ -120,7 +99,7 @@ class StmtBuilder(Builder):
     def build_Assign(ctx, node):
         assert (len(node.targets) == 1)
         node.value = build_expr(ctx, node.value)
-        node.targets = [build_expr(ctx, t) for t in list(node.targets)]
+        node.targets = build_exprs(ctx, node.targets)
 
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
@@ -276,6 +255,31 @@ if 1:
         return ast.copy_location(t, node)
 
     @staticmethod
+    def get_for_loop_targets(node):
+        """
+        Returns the list of indices of the for loop |node|.
+        See also: https://docs.python.org/3/library/ast.html#ast.For
+        """
+        if isinstance(node.target, ast.Name):
+            return [node.target.id]
+        else:
+            assert isinstance(node.target, ast.Tuple)
+            return [name.id for name in node.target.elts]
+
+    @staticmethod
+    def get_decorator(node):
+        if not isinstance(node, ast.Call):
+            return ''
+        for wanted, name in [
+            (ti.static, 'static'),
+            (ti.grouped, 'grouped'),
+            (ti.ndrange, 'ndrange'),
+        ]:
+            if ASTResolver.resolve_to(node.func, wanted, globals()):
+                return name
+        return ''
+
+    @staticmethod
     def build_static_for(ctx, node, is_grouped):
         # for i in ti.static(range(n))
         # for i, j in ti.static(ti.ndrange(n))
@@ -355,7 +359,7 @@ if ti.static(1):
         t_loop = t.body[1]
         t_loop.iter.args[0] = parse_expr(
             f'__ndrange{id(node)}.acc_dimensions[0]')
-        targets = StmtBuilder.get_targets(node)
+        targets = StmtBuilder.get_for_loop_targets(node)
         targets_tmp = ['__' + name for name in targets]
         loop_body = t_loop.body
         for i in range(len(targets)):
@@ -415,7 +419,7 @@ if ti.static(1):
         # for i, j in x
         # for I in ti.grouped(x)
         node.body = build_stmts(ctx, node.body)
-        targets = StmtBuilder.get_targets(node)
+        targets = StmtBuilder.get_for_loop_targets(node)
 
         for loop_var in targets:
             ctx.check_loop_var(loop_var)

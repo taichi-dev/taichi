@@ -9,25 +9,25 @@ SNodeTreeBufferManager::SNodeTreeBufferManager(Program *prog) : prog_(prog) {
 
 void SNodeTreeBufferManager::merge_and_insert(Ptr ptr, std::size_t size) {
   // merge with right block
-  if (Ptr_map_[ptr + size]) {
-    std::size_t tmp = Ptr_map_[ptr + size];
+  if (ptr_map_[ptr + size]) {
+    std::size_t tmp = ptr_map_[ptr + size];
     size_set_.erase(std::make_pair(tmp, ptr + size));
-    Ptr_map_.erase(ptr + size);
+    ptr_map_.erase(ptr + size);
     size += tmp;
   }
   // merge with left block
-  auto map_it = Ptr_map_.lower_bound(ptr);
-  if (map_it != Ptr_map_.begin()) {
+  auto map_it = ptr_map_.lower_bound(ptr);
+  if (map_it != ptr_map_.begin()) {
     auto x = *--map_it;
     if (x.first + x.second == ptr) {
       size_set_.erase(std::make_pair(x.second, x.first));
-      Ptr_map_.erase(x.first);
+      ptr_map_.erase(x.first);
       ptr = x.first;
       size += x.second;
     }
   }
   size_set_.insert(std::make_pair(size, ptr));
-  Ptr_map_[ptr] = size;
+  ptr_map_[ptr] = size;
 }
 
 Ptr SNodeTreeBufferManager::allocate(JITModule *runtime_jit,
@@ -47,10 +47,10 @@ Ptr SNodeTreeBufferManager::allocate(JITModule *runtime_jit,
   } else {
     auto x = *set_it;
     size_set_.erase(x);
-    Ptr_map_.erase(x.second);
+    ptr_map_.erase(x.second);
     if (x.first - size > 0) {
       size_set_.insert(std::make_pair(x.first - size, x.second + size));
-      Ptr_map_[x.second + size] = x.first - size;
+      ptr_map_[x.second + size] = x.first - size;
     }
     TI_ASSERT(x.second);
     roots_[snode_tree_id] = x.second;

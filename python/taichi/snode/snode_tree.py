@@ -16,7 +16,7 @@ class SNodeTree:
     def destroy(self):
         if self.destroyed:
             raise InvalidOperationError('SNode tree has been destroyed')
-        _ti_core.destroy_snode_tree(self.ptr.id(), impl.get_runtime().prog)
+        self.ptr.destroy_snode_tree(impl.get_runtime().prog)
         self.destroyed = True
 
     @property

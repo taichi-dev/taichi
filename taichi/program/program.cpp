@@ -447,8 +447,8 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 }
 
-void Program::destroy_snode_tree(int id) {
-  snode_tree_buffer_manager->destroy(id);
+void Program::destroy_snode_tree(SNodeTree *snode_tree) {
+  snode_tree_buffer_manager->destroy(snode_tree);
 }
 
 SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {

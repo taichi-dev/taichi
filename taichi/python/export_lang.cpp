@@ -194,10 +194,7 @@ void export_lang(py::module &m) {
       .def_readwrite("quant_opt_store_fusion",
                      &CompileConfig::quant_opt_store_fusion)
       .def_readwrite("quant_opt_atomic_demotion",
-                     &CompileConfig::quant_opt_atomic_demotion)
-      /*.def_readwrite("memory_allocate_critical_size",
-                     &CompileConfig::memory_allocate_critical_size)*/
-      ;
+                     &CompileConfig::quant_opt_atomic_demotion);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -336,7 +333,11 @@ void export_lang(py::module &m) {
       .def("begin_shared_exp_placement", &SNode::begin_shared_exp_placement)
       .def("end_shared_exp_placement", &SNode::end_shared_exp_placement);
 
-  py::class_<SNodeTree>(m, "SNodeTree").def("id", &SNodeTree::id);
+  py::class_<SNodeTree>(m, "SNodeTree")
+      .def("id", &SNodeTree::id)
+      .def("destroy_snode_tree", [](SNodeTree *snode_tree, Program *program) {
+        program->destroy_snode_tree(snode_tree);
+      });
 
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
@@ -878,9 +879,6 @@ void export_lang(py::module &m) {
         return program->add_snode_tree(registry->finalize(root));
       },
       py::return_value_policy::reference);
-  m.def("destroy_snode_tree", [](const int id, Program *program) {
-    program->destroy_snode_tree(id);
-  });
 }
 
 TI_NAMESPACE_END

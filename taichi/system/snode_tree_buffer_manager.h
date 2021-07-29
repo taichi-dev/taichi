@@ -1,6 +1,7 @@
 #pragma once
 #include "taichi/llvm/llvm_context.h"
 #include "taichi/inc/constants.h"
+#include "taichi/struct/snode_tree.h"
 #define TI_RUNTIME_HOST
 
 #include <set>
@@ -23,14 +24,14 @@ class SNodeTreeBufferManager {
                std::size_t alignment,
                const int snode_tree_id);
 
-  void destroy(const int snode_tree_id);
+  void destroy(SNodeTree *snode_tree);
 
  private:
-  std::set<std::pair<std::size_t, Ptr>> size_set;
-  std::map<Ptr, std::size_t> Ptr_map;
-  Program *prog;
-  Ptr roots[taichi_max_num_snode_trees];
-  std::size_t sizes[taichi_max_num_snode_trees];
+  std::set<std::pair<std::size_t, Ptr>> size_set_;
+  std::map<Ptr, std::size_t> Ptr_map_;
+  Program *prog_;
+  Ptr roots_[taichi_max_num_snode_trees];
+  std::size_t sizes_[taichi_max_num_snode_trees];
 };
 
 TLANG_NAMESPACE_END

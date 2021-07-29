@@ -159,7 +159,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalTensorElementStmt *stmt) override {
-    // TODO: do actual type_check
+    TI_ASSERT(stmt->offset->ret_type->is_primitive(PrimitiveTypeID::i32));
     stmt->ret_type.set_is_pointer(true);
   }
 

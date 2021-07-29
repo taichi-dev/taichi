@@ -174,6 +174,7 @@ def test_matrix_non_constant_index():
         assert m[1][0, 1] == 1
         assert m[2][1, 0] == 1
         assert m[3][1, 1] == 2
+
     func1()
     assert m[4][0, 1] == 1
 
@@ -185,8 +186,10 @@ def test_matrix_non_constant_index():
         assert v[1][0] == 0
         assert v[1][1] == 1
         assert v[1][4] == 4
+
     func2()
     assert v[1][9] == 9
+
 
 @ti.test(arch=ti.cpu)
 def test_matrix_constant_index():

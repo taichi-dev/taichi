@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include "taichi/backends/vulkan/spirv_header.h"
 #include "taichi/backends/vulkan/spirv_ir_builder.h"
 

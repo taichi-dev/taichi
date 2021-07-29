@@ -360,7 +360,7 @@ def cmp_lt(a, b):
         b (ti.Expr): value RHS
 
     Returns:
-        bool: True if LHS is strictly smaller than RHS, False otherwise
+        Union[ti.Expr, bool]: True if LHS is strictly smaller than RHS, False otherwise
 
     """
     return _binary_operation(_ti_core.expr_cmp_lt, lambda a, b: -int(a < b), a,
@@ -376,7 +376,7 @@ def cmp_le(a, b):
         b (ti.Expr): value RHS
 
     Returns:
-        bool: True if LHS is smaller than or equal to RHS, False otherwise
+        Union[ti.Expr, bool]: True if LHS is smaller than or equal to RHS, False otherwise
 
     """
     return _binary_operation(_ti_core.expr_cmp_le, lambda a, b: -int(a <= b),
@@ -392,7 +392,7 @@ def cmp_gt(a, b):
         b (ti.Expr): value RHS
 
     Returns:
-        bool: True if LHS is strictly larger than RHS, False otherwise
+        Union[ti.Expr, bool]: True if LHS is strictly larger than RHS, False otherwise
 
     """
     return _binary_operation(_ti_core.expr_cmp_gt, lambda a, b: -int(a > b), a,
@@ -424,7 +424,7 @@ def cmp_eq(a, b):
         b (ti.Expr): value RHS
 
     Returns:
-        bool: True if LHS is equal to RHS, False otherwise.
+        Union[ti.Expr, bool]: True if LHS is equal to RHS, False otherwise.
 
     """
     return _binary_operation(_ti_core.expr_cmp_eq, lambda a, b: -int(a == b),
@@ -440,7 +440,7 @@ def cmp_ne(a, b):
         b (ti.Expr): value RHS
 
     Returns:
-        bool: True if LHS is not equal to RHS, False otherwise
+        Union[ti.Expr, bool]: True if LHS is not equal to RHS, False otherwise
 
     """
     return _binary_operation(_ti_core.expr_cmp_ne, lambda a, b: -int(a != b),
@@ -456,7 +456,7 @@ def bit_or(a, b):
         b (ti.Expr): value RHS
 
     Returns:
-        bool: LHS bitwise-or with RHS
+        Union[ti.Expr, bool]: LHS bitwise-or with RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_or, _bt_ops_mod.or_, a, b)
@@ -471,7 +471,7 @@ def bit_and(a, b):
         b (ti.Expr): value RHS
 
     Returns:
-        bool: LHS bitwise-and with RHS
+        Union[ti.Expr, bool]: LHS bitwise-and with RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_and, _bt_ops_mod.and_, a, b)
@@ -486,7 +486,7 @@ def bit_xor(a, b):
         b (ti.Expr): value RHS
 
     Returns:
-        bool: LHS bitwise-xor with RHS
+        Union[ti.Expr, bool]: LHS bitwise-xor with RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_xor, _bt_ops_mod.xor, a, b)
@@ -501,7 +501,7 @@ def bit_shl(a, b):
         b (ti.Expr): value RHS
 
     Returns:
-        int: LHS << RHS
+        Union[ti.Expr, int]: LHS << RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_shl, _bt_ops_mod.lshift, a, b)
@@ -516,7 +516,7 @@ def bit_sar(a, b):
         b (ti.Expr): value RHS
 
     Returns:
-        int: LHS >> RHS
+        Union[ti.Expr, int]: LHS >> RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_sar, _bt_ops_mod.rshift, a, b)
@@ -532,7 +532,7 @@ def bit_shr(a, b):
         b (ti.Expr): value RHS
 
     Returns:
-        int: LHS >> RHS
+        Union[ti.Expr, int]: LHS >> RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_shr, _bt_ops_mod.rshift, a, b)

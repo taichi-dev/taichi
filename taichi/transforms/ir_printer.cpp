@@ -383,7 +383,7 @@ class IRPrinter : public IRVisitor {
     print_raw(s);
   }
 
-  void visit(GlobalTensorElementStmt *stmt) override {
+  void visit(ShiftGlobalPtrStmt *stmt) override {
     std::string s =
         fmt::format("{}{} = shift ptr [{} + {}]", stmt->type_hint(),
                     stmt->name(), stmt->origin->name(), stmt->offset->name());

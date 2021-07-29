@@ -54,10 +54,10 @@ class FlagAccess : public IRVisitor {
     if (stmt->dest->is<GlobalPtrStmt>()) {
       stmt->dest->as<GlobalPtrStmt>()->activate = true;
     }
-    if (stmt->dest->is<GlobalTensorElementStmt>()) {
-      if (stmt->dest->as<GlobalTensorElementStmt>()
+    if (stmt->dest->is<ShiftGlobalPtrStmt>()) {
+      if (stmt->dest->as<ShiftGlobalPtrStmt>()
               ->origin->is<GlobalPtrStmt>()) {
-        stmt->dest->as<GlobalTensorElementStmt>()
+        stmt->dest->as<ShiftGlobalPtrStmt>()
             ->origin->as<GlobalPtrStmt>()
             ->activate = true;
       }

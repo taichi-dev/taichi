@@ -166,7 +166,7 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
         }
       }
       if (auto global_tensor_element =
-              global_store->dest->cast<GlobalTensorElementStmt>()) {
+              global_store->dest->cast<ShiftGlobalPtrStmt>()) {
         if (auto dest = global_tensor_element->origin->cast<GlobalPtrStmt>()) {
           for (auto &snode : dest->snodes.data) {
             meta.output_states.insert(

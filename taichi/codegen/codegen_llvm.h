@@ -212,7 +212,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GlobalPtrStmt *stmt) override;
 
-  void visit(GlobalTensorElementStmt *stmt) override;
+  void visit(ShiftGlobalPtrStmt *stmt) override;
 
   void store_custom_int(llvm::Value *bit_ptr,
                         CustomIntType *cit,

@@ -157,7 +157,7 @@ class LowerAccess : public IRVisitor {
   }
 
   // TODO: this seems to be redundant
-  void visit(GlobalTensorElementStmt *stmt) override {
+  void visit(ShiftGlobalPtrStmt *stmt) override {
     if (!stmt->origin->is<GlobalPtrStmt>())
       return;
     auto ptr = stmt->origin->as<GlobalPtrStmt>();

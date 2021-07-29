@@ -1378,7 +1378,7 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
   }
 }
 
-void CodeGenLLVM::visit(GlobalTensorElementStmt *stmt) {
+void CodeGenLLVM::visit(ShiftGlobalPtrStmt *stmt) {
   auto origin_address = builder->CreatePtrToInt(
       llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
   auto offset_address = builder->CreateSExt(

@@ -236,6 +236,15 @@ def test_not_in():
     func()
 
 
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_expr_set():
+    @ti.kernel
+    def func():
+        x = {2, 4, 6}
+
+    func()
+
+
 @ti.test(arch=ti.cpu)
 def test_func_multiple_return():
     @ti.func

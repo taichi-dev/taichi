@@ -182,7 +182,7 @@ def print_profile_info():
 
     Call function imports from C++ : _ti_core.print_profile_info()
 
-    Example:
+    Example::
 
             >>> import taichi as ti
             >>> ti.init(arch=ti.cpu)

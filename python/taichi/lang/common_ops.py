@@ -133,10 +133,10 @@ class TaichiOperations:
 
     def logical_and(self, other):
         """Return the new expression of computing logical and between self and a given operand.
-        
+
         Args:
             other (Any): Given operand.
-            
+
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of logical and."""
         _taichi_skip_traceback = 1
@@ -144,10 +144,10 @@ class TaichiOperations:
 
     def logical_or(self, other):
         """Return the new expression of computing logical or between self and a given operand.
-        
+
         Args:
             other (Any): Given operand.
-            
+
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of logical or."""
         _taichi_skip_traceback = 1
@@ -163,10 +163,10 @@ class TaichiOperations:
 
     def atomic_add(self, other):
         """Return the new expression of computing atomic add between self and a given operand.
-        
+
         Args:
             other (Any): Given operand.
-            
+
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic add."""
         _taichi_skip_traceback = 1
@@ -174,10 +174,10 @@ class TaichiOperations:
 
     def atomic_sub(self, other):
         """Return the new expression of computing atomic sub between self and a given operand.
-        
+
         Args:
             other (Any): Given operand.
-            
+
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic sub."""
         _taichi_skip_traceback = 1
@@ -185,10 +185,10 @@ class TaichiOperations:
 
     def atomic_and(self, other):
         """Return the new expression of computing atomic and between self and a given operand.
-        
+
         Args:
             other (Any): Given operand.
-            
+
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic and."""
         _taichi_skip_traceback = 1
@@ -196,10 +196,10 @@ class TaichiOperations:
 
     def atomic_xor(self, other):
         """Return the new expression of computing atomic xor between self and a given operand.
-        
+
         Args:
             other (Any): Given operand.
-            
+
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic xor."""
         _taichi_skip_traceback = 1
@@ -207,10 +207,10 @@ class TaichiOperations:
 
     def atomic_or(self, other):
         """Return the new expression of computing atomic or between self and a given operand.
-        
+
         Args:
             other (Any): Given operand.
-            
+
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic or."""
         _taichi_skip_traceback = 1
@@ -274,10 +274,10 @@ class TaichiOperations:
 
     def assign(self, other):
         """Assign the expression of the given operand to self.
-        
+
         Args:
             other (Any): Given operand.
-            
+
         Returns:
             :class:`~taichi.lang.expr.Expr`: The expression after assigning."""
         _taichi_skip_traceback = 1
@@ -285,7 +285,7 @@ class TaichiOperations:
 
     def augassign(self, x, op):
         """Generate the computing expression between self and the given operand of given operator and assigned to self.
-        
+
         Args:
             x (Any): Given operand.
             op (str): The name of operator."""

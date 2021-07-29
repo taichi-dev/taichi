@@ -188,7 +188,7 @@ def neg(a):
     """The negate function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         The negative value of `a`.

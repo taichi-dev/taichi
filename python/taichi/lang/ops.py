@@ -185,36 +185,92 @@ def _ternary_operation(taichi_op, python_op, a, b, c):
 
 @unary
 def neg(a):
+    """The negate function.
+
+    Args:
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+
+    Returns:
+        The negative value of `a`.
+    """
     return _unary_operation(_ti_core.expr_neg, _bt_ops_mod.neg, a)
 
 
 @unary
 def sin(a):
+    """The sine function.
+
+    Args:
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+
+    Returns:
+        Sine of `a`.
+    """
     return _unary_operation(_ti_core.expr_sin, math.sin, a)
 
 
 @unary
 def cos(a):
+    """The cosine function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        Cosine of `a`.
+    """
     return _unary_operation(_ti_core.expr_cos, math.cos, a)
 
 
 @unary
 def asin(a):
+    """The inverses function of sine.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements in [-1,1].
+
+    Returns:
+        The inverses function of sine of `a`.
+    """
     return _unary_operation(_ti_core.expr_asin, math.asin, a)
 
 
 @unary
 def acos(a):
+    """The inverses function of cosine.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements in [-1,1].
+
+    Returns:
+        The inverses function of cosine of `a`.
+    """
     return _unary_operation(_ti_core.expr_acos, math.acos, a)
 
 
 @unary
 def sqrt(a):
+    """The square root function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not less than zero.
+
+    Returns:
+        `x` such that `x>=0` and `x^2=a`.
+    """
     return _unary_operation(_ti_core.expr_sqrt, math.sqrt, a)
 
 
 @unary
 def rsqrt(a):
+    """The reciprocal of the square root function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        The reciprocal of `sqrt(a)`.
+    """
     def _rsqrt(a):
         return 1 / math.sqrt(a)
 
@@ -223,50 +279,130 @@ def rsqrt(a):
 
 @unary
 def floor(a):
+    """The floor function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        The greatest integer less than or equal to `a`.
+    """
     return _unary_operation(_ti_core.expr_floor, math.floor, a)
 
 
 @unary
 def ceil(a):
+    """The ceil function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        The least integer greater than or equal to `a`.
+    """
     return _unary_operation(_ti_core.expr_ceil, math.ceil, a)
 
 
 @unary
 def tan(a):
+    """The tangent function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        Tangent of `a`.
+    """
     return _unary_operation(_ti_core.expr_tan, math.tan, a)
 
 
 @unary
 def tanh(a):
+    """The hyperbolic tangent function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        `(e**x - e**(-x)) / (e**x + e**(-x))`.
+    """
     return _unary_operation(_ti_core.expr_tanh, math.tanh, a)
 
 
 @unary
 def exp(a):
+    """The exp function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        `e` to the `a`.
+    """
     return _unary_operation(_ti_core.expr_exp, math.exp, a)
 
 
 @unary
 def log(a):
+    """The natural logarithm function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements greater than zero.
+
+    Returns:
+        The natural logarithm of `a`.
+    """
     return _unary_operation(_ti_core.expr_log, math.log, a)
 
 
 @unary
 def abs(a):
+    """The absolute value function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        The absolute value of `a`.
+    """
     return _unary_operation(_ti_core.expr_abs, builtins.abs, a)
 
 
 @unary
 def bit_not(a):
+    """The bit not function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        Bitwise not of `a`.
+    """
     return _unary_operation(_ti_core.expr_bit_not, _bt_ops_mod.invert, a)
 
 
 @unary
 def logical_not(a):
+    """The logical not function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        `1` iff `a=0`, otherwise `0`.
+    """
     return _unary_operation(_ti_core.expr_logic_not, lambda x: int(not x), a)
 
 
 def random(dtype=float):
+    """The random function.
+
+    Args:
+        dtype (DataType): Type of the random variable.
+
+    Returns:
+        A random variable whose type is `dtype`.
+    """
     dtype = cook_dtype(dtype)
     x = Expr(_ti_core.make_rand_expr(dtype))
     return impl.expr_init(x)
@@ -277,23 +413,59 @@ def random(dtype=float):
 
 @binary
 def add(a, b):
+    """The add function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        sum of `a` and `b`.
+    """
     return _binary_operation(_ti_core.expr_add, _bt_ops_mod.add, a, b)
 
 
 @binary
 def sub(a, b):
+    """The sub function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        `a` subtract `b`.
+    """
     return _binary_operation(_ti_core.expr_sub, _bt_ops_mod.sub, a, b)
 
 
 @binary
 def mul(a, b):
+    """The multiply function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        `a` multiplied by `b`.
+    """
     return _binary_operation(_ti_core.expr_mul, _bt_ops_mod.mul, a, b)
 
 
 @binary
 def mod(a, b):
+    """The remainder function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+
+    Returns:
+        The remainder of `a` divided by `b`.
+    """
     def expr_python_mod(a, b):
-        # a % b = (a // b) * b - a
+        # a % b = a - (a // b) * b
         quotient = Expr(_ti_core.expr_floordiv(a, b))
         multiply = Expr(_ti_core.expr_mul(b, quotient.ptr))
         return _ti_core.expr_sub(a, multiply.ptr)
@@ -303,37 +475,100 @@ def mod(a, b):
 
 @binary
 def pow(a, b):
+    """The power function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        `a` to the `b`.
+    """
     return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, a, b)
 
 
 @binary
 def floordiv(a, b):
+    """The floor division function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+
+    Returns:
+        The floor function of `a` divided by `b`.
+    """
     return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, a,
                              b)
 
 
 @binary
 def truediv(a, b):
+    """True division function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+
+    Returns:
+        The true value of `a` divided by `b`.
+    """
     return _binary_operation(_ti_core.expr_truediv, _bt_ops_mod.truediv, a, b)
 
 
 @binary
 def max(a, b):
+    """The maxnimum function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        The maxnimum of `a` and `b`.
+    """
     return _binary_operation(_ti_core.expr_max, builtins.max, a, b)
 
 
 @binary
 def min(a, b):
+    """The minimum function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+
+    Returns:
+        The minimum of `a` and `b`.
+    """
     return _binary_operation(_ti_core.expr_min, builtins.min, a, b)
 
 
 @binary
 def atan2(a, b):
+    """The inverses of the tangent function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+
+    Returns:
+        The inverses function of tangent of `b/a`.
+    """
     return _binary_operation(_ti_core.expr_atan2, math.atan2, a, b)
 
 
 @binary
 def raw_div(a, b):
+    """Raw_div function.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+
+    Returns:
+        If `a` is a `int` and `b` is a `int`, then return `a//b`. Else return `a/b`.
+    """
     def c_div(a, b):
         if isinstance(a, int) and isinstance(b, int):
             return a // b
@@ -345,6 +580,15 @@ def raw_div(a, b):
 
 @binary
 def raw_mod(a, b):
+    """Raw_mod function. Both `a` and `b` can be `float`.
+
+    Args:
+        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+
+    Returns:
+        The remainder of `a` divided by `b`.
+    """
     def c_mod(a, b):
         return a - b * int(float(a) / b)
 
@@ -357,7 +601,7 @@ def cmp_lt(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         Union[ti.Expr, bool]: True if LHS is strictly smaller than RHS, False otherwise
@@ -373,7 +617,7 @@ def cmp_le(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         Union[ti.Expr, bool]: True if LHS is smaller than or equal to RHS, False otherwise
@@ -389,7 +633,7 @@ def cmp_gt(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         Union[ti.Expr, bool]: True if LHS is strictly larger than RHS, False otherwise
@@ -405,7 +649,7 @@ def cmp_ge(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         bool: True if LHS is greater than or equal to RHS, False otherwise
@@ -421,7 +665,7 @@ def cmp_eq(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         Union[ti.Expr, bool]: True if LHS is equal to RHS, False otherwise.
@@ -437,7 +681,7 @@ def cmp_ne(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         Union[ti.Expr, bool]: True if LHS is not equal to RHS, False otherwise
@@ -453,7 +697,7 @@ def bit_or(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         Union[ti.Expr, bool]: LHS bitwise-or with RHS
@@ -468,7 +712,7 @@ def bit_and(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         Union[ti.Expr, bool]: LHS bitwise-and with RHS
@@ -483,7 +727,7 @@ def bit_xor(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         Union[ti.Expr, bool]: LHS bitwise-xor with RHS
@@ -498,7 +742,7 @@ def bit_shl(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         Union[ti.Expr, int]: LHS << RHS
@@ -513,7 +757,7 @@ def bit_sar(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         Union[ti.Expr, int]: LHS >> RHS
@@ -529,7 +773,7 @@ def bit_shr(a, b):
 
     Args:
         a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (ti.Expr): value RHS
+        b (Union[ti.Expr, ti.Matrix]): value RHS
 
     Returns:
         Union[ti.Expr, int]: LHS >> RHS

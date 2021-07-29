@@ -28,7 +28,7 @@ class SNodeTreeBufferManager {
 
  private:
   std::set<std::pair<std::size_t, Ptr>> size_set_;
-  std::map<Ptr, std::size_t> Ptr_map_;
+  std::map<Ptr, std::size_t> ptr_map_;
   Program *prog_;
   Ptr roots_[taichi_max_num_snode_trees];
   std::size_t sizes_[taichi_max_num_snode_trees];

@@ -212,13 +212,6 @@ if (TI_WITH_VULKAN)
     include_directories(${Vulkan_INCLUDE_DIR})
     target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
 
-    # shaderc libs
-    # TODO: Is there a better way to auto detect this?
-    # if (NOT GLSLANG_ROOT_DIR)
-    #     message(FATAL_ERROR
-    #         "Please specify `-DGLSLANG_ROOT_DIR=/path/to/glslang` for developing the Vulkan backend.")
-    # endif()
-    # target_include_directories(${CORE_LIBRARY_NAME} PUBLIC "${GLSLANG_ROOT_DIR}/install/include")
     if (LINUX)
         # shaderc requires pthread
         set(THREADS_PREFER_PTHREAD_FLAG ON)

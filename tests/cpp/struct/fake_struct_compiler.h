@@ -12,7 +12,6 @@ class FakeStructCompiler : public StructCompiler {
   }
 
   void run(SNode &root) override {
-    infer_snode_properties(root, false);
   }
 };
 

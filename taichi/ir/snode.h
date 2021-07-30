@@ -164,73 +164,84 @@ class SNode {
 
   SNode &create_node(std::vector<Axis> axes,
                      std::vector<int> sizes,
-                     SNodeType type);
+                     SNodeType type,
+                     bool packed);
 
   // SNodes maintains how flattened index bits are taken from indices
-  SNode &dense(const std::vector<Axis> &axes, const std::vector<int> &sizes) {
-    return create_node(axes, sizes, SNodeType::dense);
+  SNode &dense(const std::vector<Axis> &axes,
+               const std::vector<int> &sizes,
+               bool packed) {
+    return create_node(axes, sizes, SNodeType::dense, packed);
   }
 
-  SNode &dense(const std::vector<Axis> &axes, int sizes) {
-    return create_node(axes, std::vector<int>{sizes}, SNodeType::dense);
+  SNode &dense(const std::vector<Axis> &axes, int sizes, bool packed) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::dense, packed);
   }
 
-  SNode &dense(const Axis &axis, int size) {
-    return SNode::dense(std::vector<Axis>{axis}, size);
+  SNode &dense(const Axis &axis, int size, bool packed) {
+    return SNode::dense(std::vector<Axis>{axis}, size, packed);
   }
 
-  SNode &pointer(const std::vector<Axis> &axes, const std::vector<int> &sizes) {
-    return create_node(axes, sizes, SNodeType::pointer);
+  SNode &pointer(const std::vector<Axis> &axes,
+                 const std::vector<int> &sizes,
+                 bool packed) {
+    return create_node(axes, sizes, SNodeType::pointer, packed);
   }
 
-  SNode &pointer(const std::vector<Axis> &axes, int sizes) {
-    return create_node(axes, std::vector<int>{sizes}, SNodeType::pointer);
+  SNode &pointer(const std::vector<Axis> &axes, int sizes, bool packed) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::pointer,
+                       packed);
   }
 
-  SNode &pointer(const Axis &axis, int size) {
-    return SNode::pointer(std::vector<Axis>{axis}, size);
+  SNode &pointer(const Axis &axis, int size, bool packed) {
+    return SNode::pointer(std::vector<Axis>{axis}, size, packed);
   }
 
   SNode &bitmasked(const std::vector<Axis> &axes,
-                   const std::vector<int> &sizes) {
-    return create_node(axes, sizes, SNodeType::bitmasked);
+                   const std::vector<int> &sizes,
+                   bool packed) {
+    return create_node(axes, sizes, SNodeType::bitmasked, packed);
   }
 
-  SNode &bitmasked(const std::vector<Axis> &axes, int sizes) {
-    return create_node(axes, std::vector<int>{sizes}, SNodeType::bitmasked);
+  SNode &bitmasked(const std::vector<Axis> &axes, int sizes, bool packed) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::bitmasked,
+                       packed);
   }
 
-  SNode &bitmasked(const Axis &axis, int size) {
-    return SNode::bitmasked(std::vector<Axis>{axis}, size);
+  SNode &bitmasked(const Axis &axis, int size, bool packed) {
+    return SNode::bitmasked(std::vector<Axis>{axis}, size, packed);
   }
 
-  SNode &hash(const std::vector<Axis> &axes, const std::vector<int> &sizes) {
-    return create_node(axes, sizes, SNodeType::hash);
+  SNode &hash(const std::vector<Axis> &axes,
+              const std::vector<int> &sizes,
+              bool packed) {
+    return create_node(axes, sizes, SNodeType::hash, packed);
   }
 
-  SNode &hash(const std::vector<Axis> &axes, int sizes) {
-    return create_node(axes, std::vector<int>{sizes}, SNodeType::hash);
+  SNode &hash(const std::vector<Axis> &axes, int sizes, bool packed) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::hash, packed);
   }
 
-  SNode &hash(const Axis &axis, int size) {
-    return hash(std::vector<Axis>{axis}, size);
+  SNode &hash(const Axis &axis, int size, bool packed) {
+    return hash(std::vector<Axis>{axis}, size, packed);
   }
 
   std::string type_name() {
     return snode_type_name(type);
   }
 
-  SNode &bit_struct(int bits);
+  SNode &bit_struct(int bits, bool packed);
 
   SNode &bit_array(const std::vector<Axis> &axes,
                    const std::vector<int> &sizes,
-                   int bits);
+                   int bits,
+                   bool packed);
 
   void print();
 
   void set_index_offsets(std::vector<int> index_offsets);
 
-  SNode &dynamic(const Axis &expr, int n, int chunk_size);
+  SNode &dynamic(const Axis &expr, int n, int chunk_size, bool packed);
 
   SNode &morton(bool val = true) {
     _morton = val;

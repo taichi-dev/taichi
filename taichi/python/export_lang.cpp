@@ -257,20 +257,22 @@ void export_lang(py::module &m) {
       .def_readonly("id", &SNode::id)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &))(&SNode::dense),
+                               const std::vector<int> &, bool))(&SNode::dense),
            py::return_value_policy::reference)
-      .def("pointer",
-           (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &))(&SNode::pointer),
-           py::return_value_policy::reference)
+      .def(
+          "pointer",
+          (SNode & (SNode::*)(const std::vector<Axis> &,
+                              const std::vector<int> &, bool))(&SNode::pointer),
+          py::return_value_policy::reference)
       .def("hash",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &))(&SNode::hash),
+                               const std::vector<int> &, bool))(&SNode::hash),
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic, py::return_value_policy::reference)
       .def("bitmasked",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &))(&SNode::bitmasked),
+                               const std::vector<int> &,
+                               bool))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("bit_array", &SNode::bit_array, py::return_value_policy::reference)

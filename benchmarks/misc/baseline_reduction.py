@@ -49,5 +49,5 @@ def reduction(arch, dtype, dsize, repeat=10):
     ti.sync()
     kernelname = reduction.__name__
     suffix = "_c"
-    quering_result = ti.kernel_profiler_query(kernelname + suffix)
+    quering_result = ti.query_kernel_profiler(kernelname + suffix)
     return quering_result.min

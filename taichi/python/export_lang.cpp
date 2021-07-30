@@ -214,9 +214,9 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def_readonly("config", &Program::config)
       .def("kernel_profiler_print", &Program::kernel_profiler_print)
-      .def("kernel_profiler_query",
+      .def("query_kernel_profiler",
            [](Program *program, const std::string &name) {
-             return program->kernel_profiler_query(name);
+             return program->query_kernel_profiler(name);
            })
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })

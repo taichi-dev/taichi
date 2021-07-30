@@ -69,6 +69,17 @@ class VulkanDevice {
   Params rep_;
 };
 
+struct VulkanCapabilities {
+  uint32_t api_version;
+  uint32_t spirv_version;
+
+  bool has_nvidia_interop;
+  bool has_atomic_i64;
+  bool has_atomic_float;
+  bool has_presentation;
+  bool has_spv_variable_ptr;
+};
+
 /**
  * Manages a VulkanDevice instance, including its resources.
  */
@@ -97,6 +108,10 @@ class ManagedVulkanDevice {
     return queue_family_indices_;
   }
 
+  const VulkanCapabilities &get_capabilities() const {
+    return capability_;
+  }
+
  private:
   void create_instance(const Params &params);
   void setup_debug_messenger();
@@ -116,6 +131,8 @@ class ManagedVulkanDevice {
   // TODO: Shall we have dedicated command pools for COMPUTE and TRANSFER
   // commands, respectively?
   VkCommandPool command_pool_{VK_NULL_HANDLE};
+
+  VulkanCapabilities capability_;
 
   std::unique_ptr<VulkanDevice> owned_device_{nullptr};
 };

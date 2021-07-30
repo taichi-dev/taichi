@@ -112,10 +112,11 @@ VulkanQueueFamilyIndices find_queue_families(VkPhysicalDevice device) {
       (~(VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT));
 
   // first try and find a queue that has just the compute bit set
+  // FIXME: Actually create two queues (async compute & graphics if supported)
   for (int i = 0; i < (int)queue_family_count; ++i) {
     const VkQueueFlags masked_flags = kFlagMask & queue_families[i].queueFlags;
     if ((masked_flags & VK_QUEUE_COMPUTE_BIT) &&
-        !(masked_flags & VK_QUEUE_GRAPHICS_BIT)) {
+        (masked_flags & VK_QUEUE_GRAPHICS_BIT)) {
       indices.compute_family = i;
     }
     if (indices.is_complete()) {
@@ -191,7 +192,8 @@ void ManagedVulkanDevice::create_instance(const Params &params) {
   app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   app_info.pEngineName = "No Engine";
   app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  app_info.apiVersion = params.api_version;  // important
+  app_info.apiVersion =
+      VK_API_VERSION_1_2;  // The highest version designed to use
 
   VkInstanceCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -218,9 +220,21 @@ void ManagedVulkanDevice::create_instance(const Params &params) {
   create_info.enabledExtensionCount = (uint32_t)extensions.size();
   create_info.ppEnabledExtensionNames = extensions.data();
 
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance_),
-      "failed to create instance");
+  VkResult res =
+      vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance_);
+
+  if (res == VK_ERROR_INCOMPATIBLE_DRIVER) {
+    // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkApplicationInfo.html
+    // Vulkan 1.0 implementation will return this when api version is not 1.0
+    // Vulkan 1.1+ implementation will work with maximum version set
+    app_info.apiVersion = VK_API_VERSION_1_0;
+
+    res = vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance_);
+  }
+
+  if (res != VK_SUCCESS) {
+    throw std::runtime_error("failed to create instance");
+  }
 }
 
 void ManagedVulkanDevice::setup_debug_messenger() {
@@ -270,6 +284,18 @@ void ManagedVulkanDevice::create_logical_device() {
   create_info.pQueueCreateInfos = &queue_create_info;
   create_info.queueCreateInfoCount = 1;
 
+  // Get device properties
+  VkPhysicalDeviceProperties physical_device_properties;
+  vkGetPhysicalDeviceProperties(physical_device_, &physical_device_properties);
+  capability_.api_version = physical_device_properties.apiVersion;
+  capability_.spirv_version = 0x10000;
+
+  if (capability_.api_version >= VK_API_VERSION_1_2) {
+    capability_.spirv_version = 0x10500;
+  } else if (capability_.api_version >= VK_API_VERSION_1_1) {
+    capability_.spirv_version = 0x10300;
+  }
+
   // Detect extensions
   std::vector<const char *> enabled_extensions;
 
@@ -280,7 +306,7 @@ void ManagedVulkanDevice::create_logical_device() {
   vkEnumerateDeviceExtensionProperties(
       physical_device_, nullptr, &extension_count, extension_properties.data());
 
-  bool has_spv_variable_pointer = false;
+  bool has_surface = false, has_swapchain = false;
 
   for (auto &ext : extension_properties) {
     TI_TRACE("Vulkan device extension {} ({})", ext.extensionName,
@@ -293,21 +319,40 @@ void ManagedVulkanDevice::create_logical_device() {
           "Potential non-conformant Vulkan implementation, enabling "
           "VK_KHR_portability_subset");
       enabled_extensions.push_back(ext.extensionName);
-    } else if ((name == VK_KHR_SURFACE_EXTENSION_NAME) ||
-               (name == VK_KHR_SWAPCHAIN_EXTENSION_NAME) ||
-               (name == VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME) ||
-               (name == VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME) ||
-               (name == VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME) ||
-               (name == VK_NV_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME)) {
+    } else if (name == VK_KHR_SURFACE_EXTENSION_NAME) {
+      has_surface = true;
+    } else if (name == VK_KHR_SWAPCHAIN_EXTENSION_NAME) {
+      has_swapchain = true;
+    } else if (name == VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME) {
+      capability_.has_atomic_float = true;
+      enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME) {
+      capability_.has_atomic_i64 = true;
+      enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME) {
+      enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_SPIRV_1_4_EXTENSION_NAME) {
+      if (capability_.spirv_version < 0x10400) {
+        capability_.spirv_version = 0x10400;
+        enabled_extensions.push_back(ext.extensionName);
+      }
+    } else if (name == VK_NV_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME) {
+      capability_.has_nvidia_interop = true;
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME) {
-      has_spv_variable_pointer = true;
+      capability_.has_spv_variable_ptr = true;
       enabled_extensions.push_back(ext.extensionName);
     }
   }
 
+  if (has_surface && has_swapchain) {
+    enabled_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+    enabled_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    capability_.has_presentation = true;
+  }
+
   TI_WARN_IF(
-      !has_spv_variable_pointer,
+      !capability_.has_spv_variable_ptr,
       "Taichi may generate kernels that requires VK_KHR_VARIABLE_POINTERS, but "
       "this extension is not supported on the device");
 
@@ -315,6 +360,19 @@ void ManagedVulkanDevice::create_logical_device() {
   create_info.pEnabledFeatures = &device_features;
   create_info.enabledExtensionCount = enabled_extensions.size();
   create_info.ppEnabledExtensionNames = enabled_extensions.data();
+
+  // TODO: Figure out whether to use this pNext chain or the Vulkan11 features
+  // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#VUID-VkDeviceCreateInfo-pNext-02829
+  VkPhysicalDeviceVariablePointersFeatures variable_ptr_feature;
+  variable_ptr_feature.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES;
+  variable_ptr_feature.pNext = nullptr;
+
+  if (capability_.has_spv_variable_ptr) {
+    variable_ptr_feature.variablePointers = true;
+    variable_ptr_feature.variablePointersStorageBuffer = true;
+    create_info.pNext = &variable_ptr_feature;
+  }
 
   if constexpr (kEnableValidationLayers) {
     create_info.enabledLayerCount = (uint32_t)kValidationLayers.size();

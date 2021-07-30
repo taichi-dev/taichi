@@ -3,6 +3,7 @@
 #include <array>
 
 #include "taichi/backends/vulkan/spirv_header.h"
+#include "taichi/backends/vulkan/vulkan_api.h"
 #include "taichi/lang_util.h"
 #include "taichi/ir/type.h"
 #include "taichi/util/testing.h"
@@ -202,6 +203,9 @@ class InstrBuilder {
 // Builder to build up a single SPIR-V module
 class IRBuilder {
  public:
+  IRBuilder(const VulkanCapabilities &vulkan_cap) : vulkan_cap_(vulkan_cap) {
+  }
+
   template <typename... Args>
   void debug(spv::Op op, Args &&... args) {
     ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&debug_);
@@ -443,6 +447,8 @@ class IRBuilder {
   SType declare_primitive_type(DataType dt);
 
   void init_random_function(Value global_tmp_);
+
+  const VulkanCapabilities &vulkan_cap_;
 
   // internal instruction builder
   InstrBuilder ib_;

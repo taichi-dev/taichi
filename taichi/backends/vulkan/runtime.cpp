@@ -400,6 +400,10 @@ class VkRuntime ::Impl {
     num_pending_kernels_ = 0;
   }
 
+  const VulkanCapabilities &get_capabilities() const {
+    return managed_device_->get_capabilities();
+  }
+
  private:
   void init_memory_pool(const Params &params) {
     LinearVkMemoryPool::Params mp_params;
@@ -466,6 +470,9 @@ class VkRuntime ::Impl {
 #else
 
 class VkRuntime::Impl {
+ private:
+  VulkanCapabilities cap_{0};
+
  public:
   Impl(const Params &) {
     TI_ERROR("Vulkan disabled");
@@ -482,6 +489,10 @@ class VkRuntime::Impl {
 
   void synchronize() {
     TI_ERROR("Vulkan disabled");
+  }
+
+  const VulkanCapabilities &get_capabilities() const {
+    return cap_;
   }
 };
 
@@ -505,6 +516,10 @@ void VkRuntime::launch_kernel(KernelHandle handle, Context *host_ctx) {
 
 void VkRuntime::synchronize() {
   impl_->synchronize();
+}
+
+const VulkanCapabilities &VkRuntime::get_capabilities() const {
+  return impl_->get_capabilities();
 }
 
 bool is_vulkan_api_available() {

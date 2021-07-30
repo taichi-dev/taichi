@@ -56,9 +56,8 @@ class FlagAccess : public IRVisitor {
     }
     if (stmt->dest->is<PtrOffsetStmt>()) {
       if (stmt->dest->as<PtrOffsetStmt>()->origin->is<GlobalPtrStmt>()) {
-        stmt->dest->as<PtrOffsetStmt>()
-            ->origin->as<GlobalPtrStmt>()
-            ->activate = true;
+        stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>()->activate =
+            true;
       }
     }
   }

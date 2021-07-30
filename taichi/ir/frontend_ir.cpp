@@ -268,8 +268,7 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(
       Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
 
-  ctx->push_back(
-      std::make_unique<PtrOffsetStmt>(var_stmt, ctx->back_stmt()));
+  ctx->push_back(std::make_unique<PtrOffsetStmt>(var_stmt, ctx->back_stmt()));
   stmt = ctx->back_stmt();
 }
 

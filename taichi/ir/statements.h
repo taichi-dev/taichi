@@ -311,8 +311,7 @@ class PtrOffsetStmt : public Stmt {
   Stmt *origin{nullptr};
   Stmt *offset{nullptr};
 
-  PtrOffsetStmt(Stmt *origin, Stmt *offset)
-      : origin(origin), offset(offset) {
+  PtrOffsetStmt(Stmt *origin, Stmt *offset) : origin(origin), offset(offset) {
     element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
     TI_STMT_REG_FIELDS;
   }

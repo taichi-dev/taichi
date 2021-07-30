@@ -306,12 +306,12 @@ class GlobalPtrStmt : public Stmt {
 /**
  * An accessing tensor element operation.
  */
-class ShiftGlobalPtrStmt : public Stmt {
+class PtrOffsetStmt : public Stmt {
  public:
   Stmt *origin{nullptr};
   Stmt *offset{nullptr};
 
-  ShiftGlobalPtrStmt(Stmt *origin, Stmt *offset)
+  PtrOffsetStmt(Stmt *origin, Stmt *offset)
       : origin(origin), offset(offset) {
     element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
     TI_STMT_REG_FIELDS;

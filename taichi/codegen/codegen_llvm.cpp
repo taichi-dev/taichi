@@ -1378,7 +1378,7 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
   }
 }
 
-void CodeGenLLVM::visit(ShiftGlobalPtrStmt *stmt) {
+void CodeGenLLVM::visit(PtrOffsetStmt *stmt) {
   auto origin_address = builder->CreatePtrToInt(
       llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
   auto address_offset = builder->CreateSExt(

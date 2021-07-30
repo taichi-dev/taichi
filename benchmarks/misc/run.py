@@ -1,8 +1,11 @@
 import os
-import taichi as ti
+
 from baseline import Baseline
 
+import taichi as ti
+
 test_suites = [Baseline]
+
 
 class PerformanceMonitoring:
     def run(self):
@@ -19,8 +22,9 @@ class PerformanceMonitoring:
             lines = imp.mdlines()
             f = open(filename, 'a')
             for line in lines:
-                f.write(line+'\n')
+                f.write(line + '\n')
             f.close()
+
 
 p = PerformanceMonitoring()
 p.run()

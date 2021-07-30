@@ -1,12 +1,13 @@
+from utils import dtype_size, scale_repeat
+
 import taichi as ti
-from utils import dtype_size
-from utils import scale_repeat
+
 
 def reduction(arch, dtype, dsize, repeat=10):
 
-    repeat = scale_repeat(arch,dsize,repeat)
+    repeat = scale_repeat(arch, dsize, repeat)
     n = dsize // dtype_size[dtype]
-    
+
     ## fill x
     x = ti.field(dtype, shape=n)
 
@@ -25,7 +26,7 @@ def reduction(arch, dtype, dsize, repeat=10):
 
     # compile the kernel first
     fill_const(n)
-  
+
     ## reduce
     y = ti.field(dtype, shape=())
     if dtype in [ti.f32, ti.f64]:

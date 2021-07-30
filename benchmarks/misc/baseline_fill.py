@@ -1,10 +1,11 @@
+from utils import dtype_size, scale_repeat
+
 import taichi as ti
-from utils import dtype_size
-from utils import scale_repeat
+
 
 def fill(arch, dtype, dsize, repeat=10):
 
-    repeat = scale_repeat(arch,dsize,repeat)
+    repeat = scale_repeat(arch, dsize, repeat)
     n = dsize // dtype_size[dtype]
 
     ## fill x

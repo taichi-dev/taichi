@@ -855,6 +855,22 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def to_numpy(self, keep_dims=False, as_vector=None, dtype=None):
+        """Convert the taichi matrix to a numpy.ndarray.
+
+        Args:
+            keep_dims (bool, optional): Whether keep the dimension after conversion.
+                When keep_dims=True, on an n-D matrix field, the numpy array always has n+2 dims, even for 1x1, 1xn, nx1 matrix fields.
+                When keep_dims=False, the resulting numpy array should skip the dimensionality with only 1 element, on the matrix shape dimensionalities.
+                For example, a 4x1 or 1x4 matrix field with 5x6x7 elements results in an array of shape 5x6x7x4.
+            as_vector (bool, deprecated): Make the returned numpy array as a vector i.e., has a shape (n,) rather than (n, 1)
+                Note that this argument has been deprecated.
+                More discussion about `as_vector`: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858.
+            dtype (DataType, optional): The desired data type of returned numpy array.
+
+        Returns:
+            numpy.ndarray: The numpy array that converted from the matrix field.
+
+        """
         # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
         if as_vector is not None:
             warning(
@@ -877,6 +893,17 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def to_torch(self, device=None, keep_dims=False):
+        """Convert the taichi matrix to a torch tensor.
+
+        Args:
+            device (torch.device, optional): The desired device of returned tensor.
+            keep_dims (bool, optional): Whether keep the dimension after conversion.
+                See :meth:`~taichi.lang.matrix.Matrix.to_numpy` for more detailed explanation.
+
+        Returns:
+            torch.tensor: The torch tensor that converted from the matrix field.
+
+        """
         import torch
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
@@ -890,6 +917,12 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def from_numpy(self, ndarray):
+        """Copy the values of a numpy ndarray to the Matrix.
+
+        Args:
+            ndarray (numpy.ndarray): The numpy array to copy.
+
+        """
         if len(ndarray.shape) == len(self.loop_range().shape) + 1:
             as_vector = True
             assert self.m == 1, "This matrix is not a vector"
@@ -904,6 +937,15 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def from_torch(self, torch_tensor):
+        """Copy the values of a torch tensor to the Matrix.
+
+        Args:
+            torch_tensor (torch.tensor): The torch tensor to copy.
+
+        Returns:
+            Call :meth:`~taichi.lang.matrix.Matrix.from_numpy` with the input torch tensor as the argument
+
+        """
         return self.from_numpy(torch_tensor.contiguous())
 
     @python_scope
@@ -957,16 +999,49 @@ class Matrix(TaichiOperations):
     @staticmethod
     @taichi_scope
     def zero(dt, n, m=1):
+        """Construct a Matrix filled with zeros.
+
+        Args:
+            dt (DataType): The desired data type.
+            n (int): The first dimension (row) of the matrix.
+            m (int, optional): The second dimension (column) of the matrix.
+
+        Returns:
+            :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with zeros.
+
+        """
         return Matrix([[ti.cast(0, dt) for _ in range(m)] for _ in range(n)])
 
     @staticmethod
     @taichi_scope
     def one(dt, n, m=1):
+        """Construct a Matrix filled with ones.
+
+        Args:
+            dt (DataType): The desired data type.
+            n (int): The first dimension (row) of the matrix.
+            m (int, optional): The second dimension (column) of the matrix.
+
+        Returns:
+            :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with ones.
+
+        """
         return Matrix([[ti.cast(1, dt) for _ in range(m)] for _ in range(n)])
 
     @staticmethod
     @taichi_scope
     def unit(n, i, dt=None):
+        """Construct an unit Vector (1-D matrix) i.e., a vector with only one entry filled with one and all other entries zeros.
+
+        Args:
+            n (int): The length of the vector.
+            i (int): The index of the entry that will be filled with one.
+            dt (DataType, optional): The desired data type.
+
+        Returns:
+            :class:`~taichi.lang.matrix.Matrix`: An 1-D unit :class:`~taichi.lang.matrix.Matrix` instance.
+
+        """
         if dt is None:
             dt = int
         assert 0 <= i < n
@@ -975,6 +1050,16 @@ class Matrix(TaichiOperations):
     @staticmethod
     @taichi_scope
     def identity(dt, n):
+        """Construct an identity Matrix with shape (n, n).
+
+        Args:
+            dt (DataType): The desired data type.
+            n (int): The number of rows/columns.
+
+        Returns:
+            :class:`~taichi.lang.matrix.Matrix`: A n x n identity :class:`~taichi.lang.matrix.Matrix` instance.
+
+        """
         return Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
                        for i in range(n)])
 
@@ -994,7 +1079,22 @@ class Matrix(TaichiOperations):
               offset=None,
               needs_grad=False,
               layout=None):  # TODO(archibate): deprecate layout
-        '''ti.Matrix.field'''
+        """Construct a data container to hold all elements of the Matrix.
+
+        Args:
+            n (int): The desired number of rows of the Matrix.
+            m (int): The desired number of columns of the Matrix.
+            dtype (DataType, optional): The desired data type of the Matrix.
+            shape (Union[int, tuple of int], optional): The desired shape of the Matrix.
+            name (string, optional): The custom name of the field.
+            offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
+            needs_grad (bool, optional): Whether the Matrix need gradients.
+            layout (:class:`~taichi.lang.impl.Layout`, optional): The field layout, i.e., Array Of Structure(AOS) or Structure Of Array(SOA).
+
+        Returns:
+            :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance serves as the data container.
+
+        """
         self = cls.empty(n, m)
         self.entries = []
         self.n = n
@@ -1069,25 +1169,34 @@ class Matrix(TaichiOperations):
     @python_scope
     @deprecated('ti.Matrix.var', 'ti.Matrix.field')
     def var(cls, n, m, dt, *args, **kwargs):
-        '''ti.Matrix.var'''
+        """ti.Matrix.var"""
         _taichi_skip_traceback = 1
         return cls.field(n, m, dt, *args, **kwargs)
 
     @classmethod
     def _Vector_field(cls, n, dtype, *args, **kwargs):
-        '''ti.Vector.field'''
+        """ti.Vector.field"""
         _taichi_skip_traceback = 1
         return cls.field(n, 1, dtype, *args, **kwargs)
 
     @classmethod
     @deprecated('ti.Vector.var', 'ti.Vector.field')
     def _Vector_var(cls, n, dt, *args, **kwargs):
-        '''ti.Vector.var'''
+        """ti.Vector.var"""
         _taichi_skip_traceback = 1
         return cls._Vector_field(n, dt, *args, **kwargs)
 
     @staticmethod
     def rows(rows):
+        """Construct a Matrix instance by concactinating Vectors/lists row by row.
+
+        Args:
+            rows (List): A list of Vector (1-D Matrix) or a list of list.
+
+        Returns:
+            :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with the Vectors/lists row by row.
+
+        """
         mat = Matrix()
         mat.n = len(rows)
         if isinstance(rows[0], Matrix):
@@ -1112,10 +1221,29 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     def cols(cols):
+        """Construct a Matrix instance by concactinating Vectors/lists column by column.
+
+        Args:
+            cols (List): A list of Vector (1-D Matrix) or a list of list.
+
+        Returns:
+            :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with the Vectors/lists column by column.
+
+        """
         return Matrix.rows(cols).transpose()
 
     @classmethod
     def empty(cls, n, m):
+        """Clear the matrix and fill None.
+
+        Args:
+            n (int): The number of the row of the matrix.
+            m (int): The number of the column of the matrix.
+
+        Returns:
+            :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with None.
+
+        """
         return cls([[None] * m for _ in range(n)])
 
     @classmethod
@@ -1133,6 +1261,15 @@ class Matrix(TaichiOperations):
 
     @kern_mod.pyfunc
     def dot(self, other):
+        """Perform the dot product with the input Vector (1-D Matrix).
+
+        Args:
+            other (:class:`~taichi.lang.matrix.Matrix`): The input Vector (1-D Matrix) to perform the dot product.
+
+        Returns:
+            DataType: The dot product result (scalar) of the two Vectors.
+
+        """
         impl.static(
             impl.static_assert(self.m == 1, "lhs for dot is not a vector"))
         impl.static(
@@ -1154,6 +1291,15 @@ class Matrix(TaichiOperations):
         return ret
 
     def cross(self, other):
+        """Perform the cross product with the input Vector (1-D Matrix).
+
+        Args:
+            other (:class:`~taichi.lang.matrix.Matrix`): The input Vector (1-D Matrix) to perform the cross product.
+
+        Returns:
+            :class:`~taichi.lang.matrix.Matrix`: The cross product result (1-D Matrix) of the two Vectors.
+
+        """
         if self.n == 3 and self.m == 1 and other.n == 3 and other.m == 1:
             return self._cross3d(other)
 
@@ -1167,6 +1313,15 @@ class Matrix(TaichiOperations):
 
     @kern_mod.pyfunc
     def outer_product(self, other):
+        """Perform the outer product with the input Vector (1-D Matrix).
+
+        Args:
+            other (:class:`~taichi.lang.matrix.Matrix`): The input Vector (1-D Matrix) to perform the outer product.
+
+        Returns:
+            :class:`~taichi.lang.matrix.Matrix`: The outer product result (Matrix) of the two Vectors.
+
+        """
         impl.static(
             impl.static_assert(self.m == 1,
                                "lhs for outer_product is not a vector"))
@@ -1180,6 +1335,18 @@ class Matrix(TaichiOperations):
 
 # TODO: deprecate ad-hoc use ti.Matrix() as global (#1500:2.2/2)
 def Vector(n, dt=None, shape=None, offset=None, **kwargs):
+    """Construct a `Vector` instance i.e. 1-D Matrix.
+
+    Args:
+        n (int): The desired number of entries of the Vector.
+        dt (DataType, optional): The desired data type of the Vector.
+        shape ( Union[int, tuple of int], optional): The shape of the Vector.
+        offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
+
+    Returns:
+        :class:`~taichi.lang.matrix.Matrix`: A Vector instance (1-D :class:`~taichi.lang.matrix.Matrix`).
+
+    """
     return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
 
 

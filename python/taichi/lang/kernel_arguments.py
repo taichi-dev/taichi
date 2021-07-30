@@ -5,6 +5,14 @@ from taichi.lang.util import cook_dtype, to_taichi_type
 
 
 class ArgExtArray:
+    """Type annotation for external arrays.
+
+    External array is formally defined as the data from other Python frameworks.
+    For now, Taichi supports numpy and pytorch.
+
+    Args:
+        dim (int, optional): must be 1.
+    """
     def __init__(self, dim=1):
         assert dim == 1
 
@@ -13,9 +21,29 @@ class ArgExtArray:
 
 
 ext_arr = ArgExtArray
+"""Alias for :class:`~taichi.lang.kernel_arguments.ArgExtArray`.
+
+Example::
+
+    >>> @ti.kernel
+    >>> def to_numpy(arr: ti.ext_arr()):
+    >>>     for i in x:
+    >>>         arr[i] = x[i]
+    >>>
+    >>> arr = numpy.zeros(...)
+    >>> to_numpy(arr)  # `arr` will be filled with `x`'s data.
+"""
 
 
 class Template:
+    """Type annotation for template kernel parameter.
+
+    See also https://docs.taichi.graphics/docs/lang/articles/advanced/meta.
+
+    Args:
+        tensor (Any): unused
+        dim (Any): unused
+    """
     def __init__(self, tensor=None, dim=None):
         self.tensor = tensor
         self.dim = dim
@@ -33,6 +61,8 @@ class Template:
 
 
 template = Template
+"""Alias for :class:`~taichi.lang.kernel_arguments.Template`.
+"""
 
 
 def decl_scalar_arg(dtype):

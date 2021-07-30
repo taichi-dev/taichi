@@ -12,7 +12,17 @@ from taichi.misc.util import deprecated
 
 
 class SNode:
-    """A Python-side SNode wrapper."""
+    """A Python-side SNode wrapper.
+
+    For more information on Taichi's SNode system, please check out
+    these references:
+
+    * https://docs.taichi.graphics/docs/lang/articles/advanced/sparse
+    * https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf
+
+    Arg:
+        ptr (pointer): The C++ side SNode pointer.
+    """
     def __init__(self, ptr):
         self.ptr = ptr
 

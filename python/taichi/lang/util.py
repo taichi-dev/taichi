@@ -19,6 +19,12 @@ if not _env_torch or int(_env_torch):
 
 
 def has_pytorch():
+    """Whether has pytorch in the current Python environment.
+
+    Returns:
+        bool: True if has pytorch else False.
+
+    """
     return _has_pytorch
 
 
@@ -33,6 +39,15 @@ def is_taichi_class(rhs):
 
 
 def to_numpy_type(dt):
+    """Convert taichi data type to its counterpart in numpy.
+
+    Args:
+        dt (DataType): The desired data type to convert.
+
+    Returns:
+        DataType: The counterpart data type in numpy.
+
+    """
     if dt == ti.f32:
         return np.float32
     elif dt == ti.f64:
@@ -58,6 +73,15 @@ def to_numpy_type(dt):
 
 
 def to_pytorch_type(dt):
+    """Convert taichi data type to its counterpart in torch.
+
+    Args:
+        dt (DataType): The desired data type to convert.
+
+    Returns:
+        DataType: The counterpart data type in torch.
+
+    """
     if dt == ti.f32:
         return torch.float32
     elif dt == ti.f64:
@@ -83,6 +107,15 @@ def to_pytorch_type(dt):
 
 
 def to_taichi_type(dt):
+    """Convert numpy or torch data type to its counterpart in taichi.
+
+    Args:
+        dt (DataType): The desired data type to convert.
+
+    Returns:
+        DataType: The counterpart data type in taichi.
+
+    """
     if type(dt) == _ti_core.DataType:
         return dt
 

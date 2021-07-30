@@ -176,10 +176,7 @@ class Expr(TaichiOperations):
         """
         return self.ptr.is_global_var() or self.ptr.is_external_var()
 
-    @property
-    def snode(self):
-        from taichi.lang.snode import SNode
-        return SNode(self.ptr.snode())
+
 
     def __hash__(self):
         return self.ptr.get_raw_address()

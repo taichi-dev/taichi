@@ -6,6 +6,7 @@ import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
+from taichi.lang.field import SNodeField
 from taichi.lang.snode import SNode
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
@@ -439,7 +440,7 @@ def var(dt, shape=None, offset=None, needs_grad=False):
 
 
 @python_scope
-def field(dtype, shape=None, name="", offset=None, needs_grad=False):
+def field(dtype, shape=None, name="", offset=None, needs_grad=False, use_snode=True):
     _taichi_skip_traceback = 1
 
     dtype = cook_dtype(dtype)
@@ -460,6 +461,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
 
     del _taichi_skip_traceback
 
+    assert use_snode, "Only SNode Field is supported now"
     # primal
     x = Expr(_ti_core.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=2)
@@ -481,7 +483,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
         root.dense(index_nd(dim), shape).place(x, offset=offset)
         if needs_grad:
             root.dense(index_nd(dim), shape).place(x.grad)
-    return x
+    return SNodeField([x], ())
 
 
 class Layout:

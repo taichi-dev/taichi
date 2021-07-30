@@ -902,14 +902,7 @@ class TaskCodegen : public IRVisitor {
     std::array<int, 3> group_size = {
         task_attribs_.advisory_num_threads_per_group, 1, 1};
     ir_->set_work_group_size(group_size);
-    std::vector<spirv::Value> buffers;
-    for (const auto &bb : task_attribs_.buffer_binds) {
-      const auto it = buffer_value_map_.find(bb.type);
-      if (it != buffer_value_map_.end()) {
-        buffers.push_back(it->second);
-      }
-    }
-    ir_->commit_kernel_function(kernel_function_, "main", buffers,
+    ir_->commit_kernel_function(kernel_function_, "main", {},
                                 group_size);  // kernel entry
   }
 

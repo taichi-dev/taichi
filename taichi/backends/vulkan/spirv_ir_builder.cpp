@@ -13,6 +13,8 @@ void IRBuilder::init_header(bool support_int8,
   header_.push_back(spv::MagicNumber);
 
   // Use the spirv version as indicated in the SDK.
+  // FIXME: Auto detect Vulkan version & use the corresponding max SPV version
+  /*
 #if SPV_VERSION >= 0x10500
   header_.push_back(0x10500);
 #elif SPV_VERSION >= 0x10300
@@ -20,6 +22,8 @@ void IRBuilder::init_header(bool support_int8,
 #else
   header_.push_back(0x10000);
 #endif
+  */
+  header_.push_back(0x10000);
 
   // generator: set to 0, unknown
   header_.push_back(0U);
@@ -51,6 +55,9 @@ void IRBuilder::init_header(bool support_int8,
   ib_.begin(spv::OpMemoryModel)
       .add_seq(spv::AddressingModelLogical, spv::MemoryModelGLSL450)
       .commit(&entry_);
+
+  ib_.begin(spv::OpExtension).add("SPV_KHR_storage_buffer_storage_class").commit(&header_);
+  ib_.begin(spv::OpExtension).add("SPV_KHR_variable_pointers").commit(&header_);
 
   this->init_pre_defs();
 }

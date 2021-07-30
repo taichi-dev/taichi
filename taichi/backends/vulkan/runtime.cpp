@@ -310,7 +310,8 @@ class VkRuntime ::Impl {
     _spirv_tools->SetMessageConsumer(spriv_message_consumer);
     _spirv_opt->SetMessageConsumer(spriv_message_consumer);
 
-    _spirv_opt->RegisterPass(spvtools::CreateUpgradeMemoryModelPass());
+    // FIXME: Utilize this if KHR_memory_model is supported
+    // _spirv_opt->RegisterPass(spvtools::CreateUpgradeMemoryModelPass());
     _spirv_opt->RegisterPerformancePasses();
 
     for (auto &p : _spirv_opt->GetPassNames()) {

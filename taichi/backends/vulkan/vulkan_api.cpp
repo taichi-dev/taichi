@@ -45,7 +45,7 @@ vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                   const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
                   void *p_user_data) {
   if (message_severity > VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-    std::cerr << "validation layer: " << p_callback_data->pMessage << std::endl;
+    TI_WARN("validation layer: {}", p_callback_data->pMessage);
   }
   return VK_FALSE;
 }
@@ -270,9 +270,51 @@ void ManagedVulkanDevice::create_logical_device() {
   create_info.pQueueCreateInfos = &queue_create_info;
   create_info.queueCreateInfoCount = 1;
 
+  // Detect extensions
+  std::vector<const char *> enabled_extensions;
+
+  uint32_t extension_count = 0;
+  vkEnumerateDeviceExtensionProperties(physical_device_, nullptr,
+                                       &extension_count, nullptr);
+  std::vector<VkExtensionProperties> extension_properties(extension_count);
+  vkEnumerateDeviceExtensionProperties(
+      physical_device_, nullptr, &extension_count, extension_properties.data());
+
+  bool has_spv_variable_pointer = false;
+
+  for (auto &ext : extension_properties) {
+    TI_TRACE("Vulkan device extension {} ({})", ext.extensionName,
+             ext.specVersion);
+
+    std::string name = std::string(ext.extensionName);
+
+    if (name == "VK_KHR_portability_subset") {
+      TI_WARN(
+          "Potential non-conformant Vulkan implementation, enabling "
+          "VK_KHR_portability_subset");
+      enabled_extensions.push_back(ext.extensionName);
+    } else if ((name == VK_KHR_SURFACE_EXTENSION_NAME) ||
+               (name == VK_KHR_SWAPCHAIN_EXTENSION_NAME) ||
+               (name == VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME) ||
+               (name == VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME) ||
+               (name == VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME) ||
+               (name == VK_NV_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME)) {
+      enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME) {
+      has_spv_variable_pointer = true;
+      enabled_extensions.push_back(ext.extensionName);
+    }
+  }
+
+  TI_WARN_IF(
+      !has_spv_variable_pointer,
+      "Taichi may generate kernels that requires VK_KHR_VARIABLE_POINTERS, but "
+      "this extension is not supported on the device");
+
   VkPhysicalDeviceFeatures device_features{};
   create_info.pEnabledFeatures = &device_features;
-  create_info.enabledExtensionCount = 0;
+  create_info.enabledExtensionCount = enabled_extensions.size();
+  create_info.ppEnabledExtensionNames = enabled_extensions.data();
 
   if constexpr (kEnableValidationLayers) {
     create_info.enabledLayerCount = (uint32_t)kValidationLayers.size();

@@ -29,6 +29,7 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/util/statistics.h"
 #include "taichi/util/str.h"
+#include "taichi/math/arithmetic.h"
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"
@@ -139,6 +140,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   }
 
   memory_pool = std::make_unique<MemoryPool>(this);
+  snode_tree_buffer_manager = std::make_unique<SNodeTreeBufferManager>(this);
   TI_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
   total_compilation_time = 0;
   num_instances += 1;
@@ -410,9 +412,14 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   const int root_id = tree->root()->id;
 
   TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
-  runtime_jit->call<void *, std::size_t, int, int>(
+  std::size_t rounded_size =
+      taichi::iroundup(scomp->root_size, taichi_page_size);
+  runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
-      (int)snodes.size(), tree->id());
+      (int)snodes.size(), tree->id(), rounded_size,
+      snode_tree_buffer_manager->allocate(runtime_jit, llvm_runtime,
+                                          rounded_size, taichi_page_size,
+                                          tree->id()));
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
@@ -437,13 +444,17 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 }
 
-int Program::add_snode_tree(std::unique_ptr<SNode> root) {
+void Program::destroy_snode_tree(SNodeTree *snode_tree) {
+  snode_tree_buffer_manager->destroy(snode_tree);
+}
+
+SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {
   const int id = snode_trees_.size();
   auto tree = std::make_unique<SNodeTree>(id, std::move(root), config.packed);
   tree->root()->set_snode_tree_id(id);
   materialize_snode_tree(tree.get());
   snode_trees_.push_back(std::move(tree));
-  return id;
+  return snode_trees_[id].get();
 }
 
 SNode *Program::get_snode_root(int tree_id) {

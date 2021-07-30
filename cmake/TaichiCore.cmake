@@ -212,19 +212,18 @@ if (TI_WITH_VULKAN)
     include_directories(${Vulkan_INCLUDE_DIR})
     target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
 
-    # shaderc libs
-    # TODO: Is there a better way to auto detect this?
-    if (NOT SHADERC_ROOT_DIR)
-        message(FATAL_ERROR
-            "Please specify `-DSHADERC_ROOT_DIR=/path/to/shaderc` for developing the Vulkan backend. "
-            "The path should be the root direcotry containing `includes`, `lib` and `bin`.\n"
-            "If you haven't installed `shaderc`, please visit\n"
-            "https://github.com/google/shaderc/blob/main/downloads.md\n"
-            "to download the matching libraries.")
-    endif()
-    find_library(SHADERC_LIB NAMES "shaderc_combined" PATHS "${SHADERC_ROOT_DIR}/lib" REQUIRED)
-    target_include_directories(${CORE_LIBRARY_NAME} PUBLIC "${SHADERC_ROOT_DIR}/include")
-    target_link_libraries(${CORE_LIBRARY_NAME} ${SHADERC_LIB})
+    if (MSVC)
+      find_library(SPIRV_TOOLS NAMES "SPIRV-Tools" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
+      find_library(SPIRV_OPT NAMES "SPIRV-Tools-opt" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
+      find_library(SPIRV_LINK NAMES "SPIRV-Tools-link" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
+    else ()
+      set(SPIRV_TOOLS SPIRV-Tools)
+      set(SPIRV_OPT SPIRV-Tools-opt)
+      set(SPIRV_LINK SPIRV-Tools-link)
+    endif ()
+
+    target_link_libraries(${CORE_LIBRARY_NAME} ${SPIRV_TOOLS} ${SPIRV_OPT} ${SPIRV_LINK})
+
     if (LINUX)
         # shaderc requires pthread
         set(THREADS_PREFER_PTHREAD_FLAG ON)

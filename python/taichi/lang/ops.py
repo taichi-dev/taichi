@@ -214,7 +214,7 @@ def cos(a):
     """The cosine function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         Cosine of `a`.
@@ -227,7 +227,7 @@ def asin(a):
     """The inverses function of sine.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements in [-1,1].
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements in [-1,1].
 
     Returns:
         The inverses function of sine of `a`.
@@ -240,7 +240,7 @@ def acos(a):
     """The inverses function of cosine.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements in [-1,1].
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements in [-1,1].
 
     Returns:
         The inverses function of cosine of `a`.
@@ -253,7 +253,7 @@ def sqrt(a):
     """The square root function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not less than zero.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements not less than zero.
 
     Returns:
         `x` such that `x>=0` and `x^2=a`.
@@ -266,7 +266,7 @@ def rsqrt(a):
     """The reciprocal of the square root function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         The reciprocal of `sqrt(a)`.
@@ -282,7 +282,7 @@ def floor(a):
     """The floor function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         The greatest integer less than or equal to `a`.
@@ -295,7 +295,7 @@ def ceil(a):
     """The ceil function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         The least integer greater than or equal to `a`.
@@ -308,7 +308,7 @@ def tan(a):
     """The tangent function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         Tangent of `a`.
@@ -321,7 +321,7 @@ def tanh(a):
     """The hyperbolic tangent function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         `(e**x - e**(-x)) / (e**x + e**(-x))`.
@@ -334,7 +334,7 @@ def exp(a):
     """The exp function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         `e` to the `a`.
@@ -347,7 +347,7 @@ def log(a):
     """The natural logarithm function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements greater than zero.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements greater than zero.
 
     Returns:
         The natural logarithm of `a`.
@@ -360,7 +360,7 @@ def abs(a):
     """The absolute value function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         The absolute value of `a`.
@@ -373,7 +373,7 @@ def bit_not(a):
     """The bit not function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         Bitwise not of `a`.
@@ -386,7 +386,7 @@ def logical_not(a):
     """The logical not function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         `1` iff `a=0`, otherwise `0`.
@@ -416,8 +416,8 @@ def add(a, b):
     """The add function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
-        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         sum of `a` and `b`.
@@ -430,8 +430,8 @@ def sub(a, b):
     """The sub function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
-        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         `a` subtract `b`.
@@ -444,8 +444,8 @@ def mul(a, b):
     """The multiply function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
-        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         `a` multiplied by `b`.
@@ -458,8 +458,8 @@ def mod(a, b):
     """The remainder function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
-        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements not equal to zero.
 
     Returns:
         The remainder of `a` divided by `b`.
@@ -478,8 +478,8 @@ def pow(a, b):
     """The power function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
-        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         `a` to the `b`.
@@ -492,8 +492,8 @@ def floordiv(a, b):
     """The floor division function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
-        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements not equal to zero.
 
     Returns:
         The floor function of `a` divided by `b`.
@@ -507,8 +507,8 @@ def truediv(a, b):
     """True division function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
-        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements not equal to zero.
 
     Returns:
         The true value of `a` divided by `b`.
@@ -521,8 +521,8 @@ def max(a, b):
     """The maxnimum function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
-        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         The maxnimum of `a` and `b`.
@@ -535,8 +535,8 @@ def min(a, b):
     """The minimum function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
-        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
         The minimum of `a` and `b`.
@@ -549,8 +549,8 @@ def atan2(a, b):
     """The inverses of the tangent function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
-        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements not equal to zero.
 
     Returns:
         The inverses function of tangent of `b/a`.
@@ -563,8 +563,8 @@ def raw_div(a, b):
     """Raw_div function.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
-        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements not equal to zero.
 
     Returns:
         If `a` is a `int` and `b` is a `int`, then return `a//b`. Else return `a/b`.
@@ -583,8 +583,8 @@ def raw_mod(a, b):
     """Raw_mod function. Both `a` and `b` can be `float`.
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): A number or a maxtrix.
-        b (Union[ti.Expr, ti.Matrix]): A number or a maxtrix with elements not equal to zero.
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix with elements not equal to zero.
 
     Returns:
         The remainder of `a` divided by `b`.
@@ -600,11 +600,11 @@ def cmp_lt(a, b):
     """Compare two values (less than)
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (Union[ti.Expr, ti.Matrix]): value RHS
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
 
     Returns:
-        Union[ti.Expr, bool]: True if LHS is strictly smaller than RHS, False otherwise
+        Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is strictly smaller than RHS, False otherwise
 
     """
     return _binary_operation(_ti_core.expr_cmp_lt, lambda a, b: -int(a < b), a,
@@ -616,11 +616,11 @@ def cmp_le(a, b):
     """Compare two values (less than or equal to)
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (Union[ti.Expr, ti.Matrix]): value RHS
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
 
     Returns:
-        Union[ti.Expr, bool]: True if LHS is smaller than or equal to RHS, False otherwise
+        Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is smaller than or equal to RHS, False otherwise
 
     """
     return _binary_operation(_ti_core.expr_cmp_le, lambda a, b: -int(a <= b),
@@ -632,11 +632,11 @@ def cmp_gt(a, b):
     """Compare two values (greater than)
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (Union[ti.Expr, ti.Matrix]): value RHS
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
 
     Returns:
-        Union[ti.Expr, bool]: True if LHS is strictly larger than RHS, False otherwise
+        Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is strictly larger than RHS, False otherwise
 
     """
     return _binary_operation(_ti_core.expr_cmp_gt, lambda a, b: -int(a > b), a,
@@ -648,8 +648,8 @@ def cmp_ge(a, b):
     """Compare two values (greater than or equal to)
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (Union[ti.Expr, ti.Matrix]): value RHS
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
 
     Returns:
         bool: True if LHS is greater than or equal to RHS, False otherwise
@@ -664,11 +664,11 @@ def cmp_eq(a, b):
     """Compare two values (equal to)
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (Union[ti.Expr, ti.Matrix]): value RHS
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
 
     Returns:
-        Union[ti.Expr, bool]: True if LHS is equal to RHS, False otherwise.
+        Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is equal to RHS, False otherwise.
 
     """
     return _binary_operation(_ti_core.expr_cmp_eq, lambda a, b: -int(a == b),
@@ -680,11 +680,11 @@ def cmp_ne(a, b):
     """Compare two values (not equal to)
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (Union[ti.Expr, ti.Matrix]): value RHS
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
 
     Returns:
-        Union[ti.Expr, bool]: True if LHS is not equal to RHS, False otherwise
+        Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is not equal to RHS, False otherwise
 
     """
     return _binary_operation(_ti_core.expr_cmp_ne, lambda a, b: -int(a != b),
@@ -696,11 +696,11 @@ def bit_or(a, b):
     """Computes bitwise-or
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (Union[ti.Expr, ti.Matrix]): value RHS
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
 
     Returns:
-        Union[ti.Expr, bool]: LHS bitwise-or with RHS
+        Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS bitwise-or with RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_or, _bt_ops_mod.or_, a, b)
@@ -711,11 +711,11 @@ def bit_and(a, b):
     """Compute bitwise-and
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (Union[ti.Expr, ti.Matrix]): value RHS
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
 
     Returns:
-        Union[ti.Expr, bool]: LHS bitwise-and with RHS
+        Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS bitwise-and with RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_and, _bt_ops_mod.and_, a, b)
@@ -726,11 +726,11 @@ def bit_xor(a, b):
     """Compute bitwise-xor
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (Union[ti.Expr, ti.Matrix]): value RHS
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
 
     Returns:
-        Union[ti.Expr, bool]: LHS bitwise-xor with RHS
+        Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS bitwise-xor with RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_xor, _bt_ops_mod.xor, a, b)
@@ -741,11 +741,11 @@ def bit_shl(a, b):
     """Compute bitwise shift left
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (Union[ti.Expr, ti.Matrix]): value RHS
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
 
     Returns:
-        Union[ti.Expr, int]: LHS << RHS
+        Union[:class:`~taichi.lang.expr.Expr`, int]: LHS << RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_shl, _bt_ops_mod.lshift, a, b)
@@ -756,11 +756,11 @@ def bit_sar(a, b):
     """Compute bitwise shift right
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (Union[ti.Expr, ti.Matrix]): value RHS
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
 
     Returns:
-        Union[ti.Expr, int]: LHS >> RHS
+        Union[:class:`~taichi.lang.expr.Expr`, int]: LHS >> RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_sar, _bt_ops_mod.rshift, a, b)
@@ -772,11 +772,11 @@ def bit_shr(a, b):
     """Compute bitwise shift right (in taichi scope)
 
     Args:
-        a (Union[ti.Expr, ti.Matrix]): value LHS
-        b (Union[ti.Expr, ti.Matrix]): value RHS
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value LHS
+        b (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): value RHS
 
     Returns:
-        Union[ti.Expr, int]: LHS >> RHS
+        Union[:class:`~taichi.lang.expr.Expr`, int]: LHS >> RHS
 
     """
     return _binary_operation(_ti_core.expr_bit_shr, _bt_ops_mod.rshift, a, b)

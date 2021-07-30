@@ -266,8 +266,8 @@ class ClearBufferCommandBuilder : private VulkanCommandBuilder {
 
 class VkRuntime ::Impl {
  private:
-  std::unique_ptr<spvtools::SpirvTools> _spirv_tools;
-  std::unique_ptr<spvtools::Optimizer> _spirv_opt;
+  std::unique_ptr<spvtools::SpirvTools> spirv_tools_;
+  std::unique_ptr<spvtools::Optimizer> spirv_opt_;
 
   spvtools::OptimizerOptions _spirv_opt_options;
 
@@ -275,6 +275,7 @@ class VkRuntime ::Impl {
                                      const char *source,
                                      const spv_position_t &position,
                                      const char *message) {
+    // TODO: Maybe we can add a macro, e.g. TI_LOG_AT_LEVEL(lv, ...)
     if (level <= SPV_MSG_FATAL) {
       TI_ERROR("{}\n[{}:{}:{}] {}", source, position.index, position.line,
                position.column, message);
@@ -304,17 +305,17 @@ class VkRuntime ::Impl {
     init_memory_pool(params);
     init_vk_buffers();
 
-    _spirv_tools = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
-    _spirv_opt = std::make_unique<spvtools::Optimizer>(SPV_ENV_VULKAN_1_2);
+    spirv_tools_ = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
+    spirv_opt_ = std::make_unique<spvtools::Optimizer>(SPV_ENV_VULKAN_1_2);
 
-    _spirv_tools->SetMessageConsumer(spriv_message_consumer);
-    _spirv_opt->SetMessageConsumer(spriv_message_consumer);
+    spirv_tools_->SetMessageConsumer(spriv_message_consumer);
+    spirv_opt_->SetMessageConsumer(spriv_message_consumer);
 
     // FIXME: Utilize this if KHR_memory_model is supported
-    // _spirv_opt->RegisterPass(spvtools::CreateUpgradeMemoryModelPass());
-    _spirv_opt->RegisterPerformancePasses();
+    // spirv_opt_->RegisterPass(spvtools::CreateUpgradeMemoryModelPass());
+    spirv_opt_->RegisterPerformancePasses();
 
-    for (auto &p : _spirv_opt->GetPassNames()) {
+    for (auto &p : spirv_opt_->GetPassNames()) {
       TI_TRACE("SPIRV Optimization Pass {}", p);
     }
 
@@ -345,16 +346,22 @@ class VkRuntime ::Impl {
       const auto &spirv_src = reg_params.task_spirv_source_codes[i];
       const auto &task_name = attribs.name;
 
-      TI_WARN_IF(!_spirv_tools->Validate(spirv_src), "SPIRV validation failed");
+      TI_WARN_IF(!spirv_tools_->Validate(spirv_src), "SPIRV validation failed");
 
       std::vector<uint32_t> optimized_spv;
 
-      TI_WARN_IF(!_spirv_opt->Run(spirv_src.data(), spirv_src.size(),
+      TI_WARN_IF(!spirv_opt_->Run(spirv_src.data(), spirv_src.size(),
                                   &optimized_spv, _spirv_opt_options),
                  "SPIRV optimization failed");
 
       TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
                spirv_src.size(), optimized_spv.size());
+
+#if 0
+      std::string spirv_asm;
+      spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
+      TI_TRACE("SPIR-V Assembly dump:\n{}\n\n", spirv_asm);
+#endif
 
       // If we can reach here, we have succeeded. Otherwise
       // std::optional::value() would have killed us.

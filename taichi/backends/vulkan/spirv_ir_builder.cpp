@@ -56,7 +56,9 @@ void IRBuilder::init_header(bool support_int8,
       .add_seq(spv::AddressingModelLogical, spv::MemoryModelGLSL450)
       .commit(&entry_);
 
-  ib_.begin(spv::OpExtension).add("SPV_KHR_storage_buffer_storage_class").commit(&header_);
+  ib_.begin(spv::OpExtension)
+      .add("SPV_KHR_storage_buffer_storage_class")
+      .commit(&header_);
   ib_.begin(spv::OpExtension).add("SPV_KHR_variable_pointers").commit(&header_);
 
   this->init_pre_defs();

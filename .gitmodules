@@ -22,3 +22,6 @@
 	path = external/googletest
 	url = https://github.com/google/googletest
 	shallow = true
+[submodule "external/SPIRV-Headers"]
+	path = external/SPIRV-Headers
+	url = https://github.com/KhronosGroup/SPIRV-Headers

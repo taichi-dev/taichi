@@ -49,6 +49,7 @@ class TaskCodegen : public IRVisitor {
  public:
   struct Params {
     OffloadedStmt *task_ir;
+    VkRuntime *runtime;
     const CompiledSNodeStructs *compiled_structs;
     const KernelContextAttributes *ctx_attribs;
     std::string ti_kernel_name;
@@ -61,11 +62,13 @@ class TaskCodegen : public IRVisitor {
         ctx_attribs_(params.ctx_attribs),
         task_name_(fmt::format("{}_t{:02d}",
                                params.ti_kernel_name,
-                               params.task_id_in_kernel)) {
+                               params.task_id_in_kernel)),
+        runtime_(params.runtime) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
 
-    ir_ = std::make_shared<spirv::IRBuilder>();
+    ir_ =
+        std::make_shared<spirv::IRBuilder>(params.runtime->get_capabilities());
   }
 
   struct Result {
@@ -902,7 +905,16 @@ class TaskCodegen : public IRVisitor {
     std::array<int, 3> group_size = {
         task_attribs_.advisory_num_threads_per_group, 1, 1};
     ir_->set_work_group_size(group_size);
-    ir_->commit_kernel_function(kernel_function_, "main", {},
+    std::vector<spirv::Value> buffers;
+    if (runtime_->get_capabilities().spirv_version > 0x10300) {
+      for (const auto &bb : task_attribs_.buffer_binds) {
+        const auto it = buffer_value_map_.find(bb.type);
+        if (it != buffer_value_map_.end()) {
+          buffers.push_back(it->second);
+        }
+      }
+    }
+    ir_->commit_kernel_function(kernel_function_, "main", buffers,
                                 group_size);  // kernel entry
   }
 
@@ -1136,6 +1148,8 @@ class TaskCodegen : public IRVisitor {
     return continue_label_stack_.front();
   }
 
+  VkRuntime *runtime_;
+
   std::shared_ptr<spirv::IRBuilder> ir_;  // spirv binary code builder
   std::unordered_map<TaskAttributes::Buffers, spirv::Value> buffer_value_map_;
   std::unordered_map<TaskAttributes::Buffers, uint32_t> buffer_binding_map_;
@@ -1162,6 +1176,7 @@ class KernelCodegen {
     std::string ti_kernel_name;
     Kernel *kernel;
     const CompiledSNodeStructs *compiled_structs;
+    VkRuntime *runtime;
   };
 
   explicit KernelCodegen(const Params &params)
@@ -1182,6 +1197,7 @@ class KernelCodegen {
       tp.compiled_structs = params_.compiled_structs;
       tp.ctx_attribs = &ctx_attribs_;
       tp.ti_kernel_name = params_.ti_kernel_name;
+      tp.runtime = params_.runtime;
 
       TaskCodegen cgen(tp);
       auto task_res = cgen.run();
@@ -1221,6 +1237,7 @@ FunctionType compile_to_executable(Kernel *kernel,
   params.ti_kernel_name = taichi_kernel_name;
   params.kernel = kernel;
   params.compiled_structs = compiled_structs;
+  params.runtime = runtime;
   KernelCodegen codegen(params);
   auto res = codegen.run();
   auto handle = runtime->register_taichi_kernel(std::move(res));

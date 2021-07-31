@@ -11,6 +11,8 @@ namespace taichi {
 namespace lang {
 namespace vulkan {
 
+struct VulkanCapabilities;
+
 class VkRuntime {
  private:
   class Impl;
@@ -45,6 +47,10 @@ class VkRuntime {
   void launch_kernel(KernelHandle handle, Context *host_ctx);
 
   void synchronize();
+
+#ifdef TI_WITH_VULKAN
+  const VulkanCapabilities &get_capabilities() const;
+#endif
 
  private:
   std::unique_ptr<Impl> impl_;

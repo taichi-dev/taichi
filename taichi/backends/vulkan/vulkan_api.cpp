@@ -192,8 +192,14 @@ void ManagedVulkanDevice::create_instance(const Params &params) {
   app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   app_info.pEngineName = "No Engine";
   app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  app_info.apiVersion =
-      VK_API_VERSION_1_2;  // The highest version designed to use
+
+  if (params.api_version.has_value()) {
+    // The version client specified to use
+    app_info.apiVersion = params.api_version.value();
+  } else {
+    // The highest version designed to use
+    app_info.apiVersion = VK_API_VERSION_1_2;
+  }
 
   VkInstanceCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;

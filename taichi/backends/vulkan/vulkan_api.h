@@ -86,7 +86,7 @@ struct VulkanCapabilities {
 class ManagedVulkanDevice {
  public:
   struct Params {
-    uint32_t api_version{VK_API_VERSION_1_0};
+    std::optional<uint32_t> api_version;
   };
 
   explicit ManagedVulkanDevice(const Params &params);

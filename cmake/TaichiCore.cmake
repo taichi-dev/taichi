@@ -212,17 +212,21 @@ if (TI_WITH_VULKAN)
     include_directories(${Vulkan_INCLUDE_DIR})
     target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
 
+    # Is this the best way to include the SPIRV-Headers?
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
+
     if (MSVC)
       find_library(SPIRV_TOOLS NAMES "SPIRV-Tools" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
       find_library(SPIRV_OPT NAMES "SPIRV-Tools-opt" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
       find_library(SPIRV_LINK NAMES "SPIRV-Tools-link" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
     else ()
-      set(SPIRV_TOOLS SPIRV-Tools)
       set(SPIRV_OPT SPIRV-Tools-opt)
+      set(SPIRV_TOOLS SPIRV-Tools)
       set(SPIRV_LINK SPIRV-Tools-link)
     endif ()
-
-    target_link_libraries(${CORE_LIBRARY_NAME} ${SPIRV_TOOLS} ${SPIRV_OPT} ${SPIRV_LINK})
+    # NOTE: SPIRV-Tools-opt must come before SPIRV-Tools
+    # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
+    target_link_libraries(${CORE_LIBRARY_NAME} ${SPIRV_OPT} ${SPIRV_TOOLS} ${SPIRV_LINK})
 
     if (LINUX)
         # shaderc requires pthread

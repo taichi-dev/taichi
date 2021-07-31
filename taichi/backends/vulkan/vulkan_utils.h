@@ -14,7 +14,7 @@ namespace vulkan {
 class VulkanEnvSettings {
  public:
   static constexpr uint32_t kApiVersion() {
-    return VK_API_VERSION_1_0;
+    return VK_API_VERSION_1_2;
   }
 };
 

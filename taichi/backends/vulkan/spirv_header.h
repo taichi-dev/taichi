@@ -2,6 +2,6 @@
 
 #ifdef TI_WITH_VULKAN
 
-#include <SPIRV-Headers/spirv.hpp>
+#include <spirv/unified1/spirv.hpp>
 
 #endif  // TI_WITH_VULKAN

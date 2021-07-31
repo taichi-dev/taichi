@@ -48,7 +48,9 @@ class VkRuntime {
 
   void synchronize();
 
+#ifdef TI_WITH_VULKAN
   const VulkanCapabilities &get_capabilities() const;
+#endif
 
  private:
   std::unique_ptr<Impl> impl_;

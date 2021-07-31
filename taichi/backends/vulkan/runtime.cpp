@@ -357,7 +357,7 @@ class VkRuntime ::Impl {
       TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
                spirv_src.size(), optimized_spv.size());
 
-#if 0
+#if 1
       std::string spirv_asm;
       spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
       TI_TRACE("SPIR-V Assembly dump:\n{}\n\n", spirv_asm);
@@ -470,9 +470,6 @@ class VkRuntime ::Impl {
 #else
 
 class VkRuntime::Impl {
- private:
-  VulkanCapabilities cap_{0};
-
  public:
   Impl(const Params &) {
     TI_ERROR("Vulkan disabled");
@@ -489,10 +486,6 @@ class VkRuntime::Impl {
 
   void synchronize() {
     TI_ERROR("Vulkan disabled");
-  }
-
-  const VulkanCapabilities &get_capabilities() const {
-    return cap_;
   }
 };
 
@@ -518,9 +511,11 @@ void VkRuntime::synchronize() {
   impl_->synchronize();
 }
 
+#ifdef TI_WITH_VULKAN
 const VulkanCapabilities &VkRuntime::get_capabilities() const {
   return impl_->get_capabilities();
 }
+#endif
 
 bool is_vulkan_api_available() {
 #ifdef TI_WITH_VULKAN

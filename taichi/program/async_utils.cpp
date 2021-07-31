@@ -165,6 +165,15 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
               ir_bank->get_async_state(snode, AsyncState::Type::value));
         }
       }
+      if (auto global_tensor_element =
+              global_store->dest->cast<PtrOffsetStmt>()) {
+        if (auto dest = global_tensor_element->origin->cast<GlobalPtrStmt>()) {
+          for (auto &snode : dest->snodes.data) {
+            meta.output_states.insert(
+                ir_bank->get_async_state(snode, AsyncState::Type::value));
+          }
+        }
+      }
     }
     if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
       if (auto dest = global_atomic->dest->cast<GlobalPtrStmt>()) {

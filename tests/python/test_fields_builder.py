@@ -128,3 +128,35 @@ def test_fields_builder_pointer():
     func1()
     for i in range(n):
         assert x[i] == i * 3
+
+
+@ti.test(arch=[ti.cpu, ti.cuda])
+def test_fields_builder_destroy():
+    def A(i):
+        n = i * 10**3
+        fb = ti.FieldsBuilder()
+        a = ti.field(ti.f64)
+        fb.dense(ti.i, n).place(a)
+        c = fb.finalize()
+        c.destroy()
+
+    def B(i):
+        n = i * 10**3
+        fb = ti.FieldsBuilder()
+        a = ti.field(ti.f64)
+        fb.dense(ti.i, n).place(a)
+        c = fb.finalize()
+
+        ni = i * 10**3
+        fbi = ti.FieldsBuilder()
+        ai = ti.field(ti.f64)
+        fbi.dense(ti.i, n).place(ai)
+        ci = fbi.finalize()
+
+        c.destroy()
+        ci.destroy()
+
+    for i in range(5):
+        A(5)
+    B(2)
+    A(4)

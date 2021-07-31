@@ -257,20 +257,22 @@ void export_lang(py::module &m) {
       .def_readonly("id", &SNode::id)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &))(&SNode::dense),
+                               const std::vector<int> &, bool))(&SNode::dense),
            py::return_value_policy::reference)
-      .def("pointer",
-           (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &))(&SNode::pointer),
-           py::return_value_policy::reference)
+      .def(
+          "pointer",
+          (SNode & (SNode::*)(const std::vector<Axis> &,
+                              const std::vector<int> &, bool))(&SNode::pointer),
+          py::return_value_policy::reference)
       .def("hash",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &))(&SNode::hash),
+                               const std::vector<int> &, bool))(&SNode::hash),
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic, py::return_value_policy::reference)
       .def("bitmasked",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &))(&SNode::bitmasked),
+                               const std::vector<int> &,
+                               bool))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("bit_array", &SNode::bit_array, py::return_value_policy::reference)
@@ -333,6 +335,12 @@ void export_lang(py::module &m) {
       .def("begin_shared_exp_placement", &SNode::begin_shared_exp_placement)
       .def("end_shared_exp_placement", &SNode::end_shared_exp_placement);
 
+  py::class_<SNodeTree>(m, "SNodeTree")
+      .def("id", &SNodeTree::id)
+      .def("destroy_snode_tree", [](SNodeTree *snode_tree, Program *program) {
+        program->destroy_snode_tree(snode_tree);
+      });
+
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_float", &Kernel::get_ret_float)
@@ -363,6 +371,8 @@ void export_lang(py::module &m) {
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
       .def("is_external_var",
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
+      .def("is_global_ptr",
+           [](Expr *expr) { return expr->is<GlobalPtrExpression>(); })
       .def("is_primal",
            [](Expr *expr) {
              return expr->cast<GlobalVariableExpression>()->is_primal;
@@ -690,6 +700,12 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
+  m.def("subscript_with_offset",
+        [](const Expr &var, const ExprGroup &indices, int cols, bool is_aos) {
+          return Expr::make<GlobalTensorElementExpression>(var, indices, cols,
+                                                           is_aos);
+        });
+
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
     return Expr::make<GlobalPtrExpression>(snode, indices.loaded());
   });
@@ -866,10 +882,13 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def("create_root", &SNodeRegistry::create_root,
            py::return_value_policy::reference);
-  m.def("finalize_snode_tree",
-        [](SNodeRegistry *registry, const SNode *root, Program *program) {
-          program->add_snode_tree(registry->finalize(root));
-        });
+  m.def(
+      "finalize_snode_tree",
+      [](SNodeRegistry *registry, const SNode *root,
+         Program *program) -> SNodeTree * {
+        return program->add_snode_tree(registry->finalize(root));
+      },
+      py::return_value_policy::reference);
 }
 
 TI_NAMESPACE_END

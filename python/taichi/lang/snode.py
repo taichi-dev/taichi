@@ -12,7 +12,17 @@ from taichi.misc.util import deprecated
 
 
 class SNode:
-    """A Python-side SNode wrapper."""
+    """A Python-side SNode wrapper.
+
+    For more information on Taichi's SNode system, please check out
+    these references:
+
+    * https://docs.taichi.graphics/docs/lang/articles/advanced/sparse
+    * https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf
+
+    Arg:
+        ptr (pointer): The C++ side SNode pointer.
+    """
     def __init__(self, ptr):
         self.ptr = ptr
 
@@ -28,7 +38,9 @@ class SNode:
         """
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.dense(axes, dimensions))
+        return SNode(
+            self.ptr.dense(axes, dimensions,
+                           impl.current_cfg().packed))
 
     def pointer(self, axes, dimensions):
         """Adds a pointer SNode as a child component of `self`.
@@ -42,14 +54,17 @@ class SNode:
         """
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.pointer(axes, dimensions))
+        return SNode(
+            self.ptr.pointer(axes, dimensions,
+                             impl.current_cfg().packed))
 
     def hash(self, axes, dimensions):
         """Not supported."""
         raise RuntimeError('hash not yet supported')
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.hash(axes, dimensions))
+        return SNode(self.ptr.hash(axes, dimensions,
+                                   impl.current_cfg().packed))
 
     def dynamic(self, axis, dimension, chunk_size=None):
         """Adds a dynamic SNode as a child component of `self`.
@@ -65,7 +80,9 @@ class SNode:
         assert len(axis) == 1
         if chunk_size is None:
             chunk_size = dimension
-        return SNode(self.ptr.dynamic(axis[0], dimension, chunk_size))
+        return SNode(
+            self.ptr.dynamic(axis[0], dimension, chunk_size,
+                             impl.current_cfg().packed))
 
     def bitmasked(self, axes, dimensions):
         """Adds a bitmasked SNode as a child component of `self`.
@@ -79,7 +96,9 @@ class SNode:
         """
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.bitmasked(axes, dimensions))
+        return SNode(
+            self.ptr.bitmasked(axes, dimensions,
+                               impl.current_cfg().packed))
 
     @deprecated('_bit_struct', 'bit_struct')
     def _bit_struct(self, num_bits):
@@ -94,7 +113,7 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        return SNode(self.ptr.bit_struct(num_bits))
+        return SNode(self.ptr.bit_struct(num_bits, impl.current_cfg().packed))
 
     @deprecated('_bit_array', 'bit_array')
     def _bit_array(self, axes, dimensions, num_bits):
@@ -113,14 +132,16 @@ class SNode:
         """
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.bit_array(axes, dimensions, num_bits))
+        return SNode(
+            self.ptr.bit_array(axes, dimensions, num_bits,
+                               impl.current_cfg().packed))
 
     def place(self, *args, offset=None, shared_exponent=False):
         """Places a list of Taichi fields under the `self` container.
 
         Args:
             *args (List[ti.field]): A list of Taichi fields to place.
-            offsest (Union[Number, tuple[Number]]): Offset of the field domain.
+            offset (Union[Number, tuple[Number]]): Offset of the field domain.
             shared_exponent (bool): Only useful for quant types.
 
         Returns:
@@ -160,7 +181,14 @@ class SNode:
         self.ptr.lazy_grad()
 
     def parent(self, n=1):
-        impl.get_runtime().materialize()
+        """Gets an ancestor of `self` in the SNode tree.
+
+        Args:
+            n (int): the number of levels going up from `self`.
+
+        Returns:
+            Union[None, _Root, SNode]: The n-th parent of `self`.
+        """
         p = self.ptr
         while p and n > 0:
             p = p.parent
@@ -173,6 +201,11 @@ class SNode:
 
     @property
     def dtype(self):
+        """Gets the data type of `self`.
+
+        Returns:
+            DataType: The data type of `self`.
+        """
         return self.ptr.data_type()
 
     @deprecated('x.data_type()', 'x.dtype')
@@ -185,11 +218,20 @@ class SNode:
 
     @property
     def id(self):
+        """Gets the id of `self`.
+
+        Returns:
+            int: The id of `self`.
+        """
         return self.ptr.id
 
     @property
     def shape(self):
-        impl.get_runtime().materialize()
+        """Gets the number of elements from root in each axis of `self`.
+
+        Returns:
+            Tuple[int]: The number of elements from root in each axis of `self`.
+        """
         dim = self.ptr.num_active_indices()
         ret = [self.ptr.get_shape_along_axis(i) for i in range(dim)]
 
@@ -206,10 +248,20 @@ class SNode:
         return self.shape[i]
 
     def loop_range(self):
+        """Wraps `self` into an :class:`~taichi.lang.Expr` to serve as loop range.
+
+        Returns:
+            Expr: The wrapped result.
+        """
         return Expr(_ti_core.global_var_expr_from_snode(self.ptr))
 
     @property
     def name(self):
+        """Gets the name of `self`.
+
+        Returns:
+            str: The name of `self`.
+        """
         return self.ptr.name()
 
     @deprecated('x.snode()', 'x.snode')
@@ -218,13 +270,28 @@ class SNode:
 
     @property
     def snode(self):
+        """Gets `self`.
+
+        Returns:
+            SNode: `self`.
+        """
         return self
 
     @property
     def needs_grad(self):
+        """Checks whether `self` has a corresponding gradient :class:`~taichi.lang.SNode`.
+
+        Returns:
+            bool: Whether `self` has a corresponding gradient :class:`~taichi.lang.SNode`.
+        """
         return self.ptr.has_grad()
 
     def get_children(self):
+        """Gets all children components of `self`.
+
+        Returns:
+            List[SNode]: All children components of `self`.
+        """
         children = []
         for i in range(self.ptr.get_num_ch()):
             children.append(SNode(self.ptr.get_ch(i)))
@@ -243,6 +310,7 @@ class SNode:
         return self.ptr.cell_size_bytes
 
     def deactivate_all(self):
+        """Recursively deactivate all children components of `self`."""
         ch = self.get_children()
         for c in ch:
             c.deactivate_all()
@@ -272,6 +340,11 @@ class SNode:
         return self.ptr == other.ptr
 
     def physical_index_position(self):
+        """Gets mappings from virtual axes to physical axes.
+
+        Returns:
+            Dict[int, int]: Mappings from virtual axes to physical axes.
+        """
         ret = {}
         for virtual, physical in enumerate(
                 self.ptr.get_physical_index_position()):

@@ -6,6 +6,7 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, snode
 from taichi.lang.exception import InvalidOperationError
 from taichi.misc.util import warning
+from taichi.snode.snode_tree import SNodeTree
 
 _snode_registry = _ti_core.SNodeRegistry()
 
@@ -141,9 +142,10 @@ class FieldsBuilder:
         self._check_not_finalized()
         if self._empty and raise_warning:
             warning("Finalizing an empty FieldsBuilder!")
-        _ti_core.finalize_snode_tree(_snode_registry, self._ptr,
-                                     impl.get_runtime().prog)
         self._finalized = True
+        return SNodeTree(
+            _ti_core.finalize_snode_tree(_snode_registry, self._ptr,
+                                         impl.get_runtime().prog))
 
     def _check_not_finalized(self):
         if self._finalized:

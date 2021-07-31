@@ -94,6 +94,7 @@ class TaskCodegen : public IRVisitor {
     Result res;
     res.spirv_code = ir_->finalize();
     res.task_attribs = std::move(task_attribs_);
+
     return res;
   }
 
@@ -901,14 +902,7 @@ class TaskCodegen : public IRVisitor {
     std::array<int, 3> group_size = {
         task_attribs_.advisory_num_threads_per_group, 1, 1};
     ir_->set_work_group_size(group_size);
-    std::vector<spirv::Value> buffers;
-    for (const auto &bb : task_attribs_.buffer_binds) {
-      const auto it = buffer_value_map_.find(bb.type);
-      if (it != buffer_value_map_.end()) {
-        buffers.push_back(it->second);
-      }
-    }
-    ir_->commit_kernel_function(kernel_function_, "main", buffers,
+    ir_->commit_kernel_function(kernel_function_, "main", {},
                                 group_size);  // kernel entry
   }
 
@@ -1002,6 +996,7 @@ class TaskCodegen : public IRVisitor {
       total_elems = ir_->sub(end_expr_value, begin_expr_value);
       task_attribs_.advisory_total_num_threads = kMaxNumThreadsGridStrideLoop;
     }
+    task_attribs_.advisory_num_threads_per_group = stmt->block_dim;
     ir_->debug(spv::OpName, begin_expr_value, "begin_expr_value");
     ir_->debug(spv::OpName, total_elems, total_elems_name);
 
@@ -1017,7 +1012,10 @@ class TaskCodegen : public IRVisitor {
     // https://www.khronos.org/opengl/wiki/Compute_Shader#Inputs
     spirv::Value total_invocs = ir_->cast(
         ir_->i32_type(),
-        ir_->mul(ir_->get_num_work_groups(0), ir_->get_work_group_size(0)));
+        ir_->mul(ir_->get_num_work_groups(0),
+                 ir_->uint_immediate_number(
+                     ir_->u32_type(),
+                     task_attribs_.advisory_num_threads_per_group, false)));
     ir_->debug(spv::OpName, total_invocs, total_invocs_name);
 
     // Must get init label after making value(to make sure they are correct)
@@ -1059,7 +1057,6 @@ class TaskCodegen : public IRVisitor {
 
     ir_->make_inst(spv::OpReturn);
     ir_->make_inst(spv::OpFunctionEnd);
-    task_attribs_.advisory_num_threads_per_group = stmt->block_dim;
   }
 
   spirv::Value at_buffer(const Stmt *ptr, DataType dt) {

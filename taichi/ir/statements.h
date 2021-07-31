@@ -304,6 +304,30 @@ class GlobalPtrStmt : public Stmt {
 };
 
 /**
+ * An accessing tensor element operation.
+ */
+class PtrOffsetStmt : public Stmt {
+ public:
+  Stmt *origin{nullptr};
+  Stmt *offset{nullptr};
+
+  PtrOffsetStmt(Stmt *origin, Stmt *offset) : origin(origin), offset(offset) {
+    element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    // After access lowered, activate info will be recorded in SNodeLookupStmt's
+    // activate for AOS sparse data structure. We don't support SOA sparse data
+    // structure for now.
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, origin, offset);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
  * An operation to a SNode (not necessarily a leaf SNode).
  */
 class SNodeOpStmt : public Stmt {

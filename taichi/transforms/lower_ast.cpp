@@ -361,6 +361,10 @@ class LowerAST : public IRVisitor {
       fctx.push_back<LocalStoreStmt>(
           assign->parent->lookup_var(assign->lhs.cast<IdExpression>()->id),
           expr->stmt);
+    } else if (assign->lhs.is<GlobalTensorElementExpression>()) {
+      auto global_ptr = assign->lhs.cast<GlobalTensorElementExpression>();
+      global_ptr->flatten(&fctx);
+      fctx.push_back<GlobalStoreStmt>(fctx.back_stmt(), expr->stmt);
     } else {  // global variable
       TI_ASSERT(assign->lhs.is<GlobalPtrExpression>());
       auto global_ptr = assign->lhs.cast<GlobalPtrExpression>();

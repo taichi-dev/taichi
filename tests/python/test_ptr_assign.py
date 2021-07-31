@@ -104,23 +104,3 @@ def test_ptr_class_func():
     obj = MyClass()
     obj.func()
     assert obj.a[None] == 5.0
-
-
-@ti.test(ti.cpu)
-def test_expr_list():
-    @ti.kernel
-    def func(u: int, v: float) -> float:
-        x = [2 + u, 3 + v]
-        return x[0] * 100 + x[1]
-
-    assert func(1, 1.1) == ti.approx(304.1)
-
-
-@ti.test(ti.cpu)
-def test_expr_dict():
-    @ti.kernel
-    def func(u: int, v: float) -> float:
-        x = {'foo': 2 + u, 'bar': 3 + v}
-        return x['foo'] * 100 + x['bar']
-
-    assert func(2, 0.1) == ti.approx(403.1)

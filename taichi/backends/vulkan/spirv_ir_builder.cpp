@@ -29,6 +29,16 @@ void IRBuilder::init_header(bool support_int8,
   ib_.begin(spv::OpCapability)
       .add(spv::CapabilityVariablePointers)
       .commit(&header_);
+
+  if (vulkan_cap_.has_atomic_float) {
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityAtomicFloat64AddEXT)
+        .commit(&header_);
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityAtomicFloat32AddEXT)
+        .commit(&header_);
+  }
+
   this->support_int8_ = support_int8;
   if (support_int8) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt8).commit(&header_);
@@ -50,6 +60,12 @@ void IRBuilder::init_header(bool support_int8,
       .add("SPV_KHR_storage_buffer_storage_class")
       .commit(&header_);
   ib_.begin(spv::OpExtension).add("SPV_KHR_variable_pointers").commit(&header_);
+
+  if (vulkan_cap_.has_atomic_float) {
+    ib_.begin(spv::OpExtension)
+        .add("SPV_EXT_shader_atomic_float_add")
+        .commit(&header_);
+  }
 
   // memory model
   ib_.begin(spv::OpMemoryModel)
@@ -208,6 +224,20 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
   } else {
     TI_ERROR("Type {} not supported.", dt->to_string());
   }
+}
+
+SType IRBuilder::get_primitive_buffer_type(const DataType &dt) const {
+  if (vulkan_cap_.has_atomic_float) {
+    if (dt->is_primitive(PrimitiveTypeID::f32)) {
+      return t_fp32_;
+    } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+      return t_fp64_;
+    }
+  } else if (vulkan_cap_.has_atomic_i64 &&
+             dt->is_primitive(PrimitiveTypeID::i64)) {
+    return t_int64_;
+  }
+  return t_int32_;
 }
 
 SType IRBuilder::get_pointer_type(const SType &value_type,

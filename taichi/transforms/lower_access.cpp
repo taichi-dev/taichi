@@ -148,23 +148,35 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (stmt->src->is<GlobalPtrStmt>()) {
-      // No need to activate for all read accesses
-      auto lowered = lower_vector_ptr(stmt->src->as<GlobalPtrStmt>(), false);
-      stmt->src = lowered.back().get();
-      modifier.insert_before(stmt, std::move(lowered));
-    }
+    if (!stmt->src->is<GlobalPtrStmt>())
+      return;
+    // No need to activate for all read accesses
+    auto lowered = lower_vector_ptr(stmt->src->as<GlobalPtrStmt>(), false);
+    stmt->src = lowered.back().get();
+    modifier.insert_before(stmt, std::move(lowered));
+  }
+
+  // TODO: this seems to be redundant
+  void visit(PtrOffsetStmt *stmt) override {
+    if (!stmt->origin->is<GlobalPtrStmt>())
+      return;
+    auto ptr = stmt->origin->as<GlobalPtrStmt>();
+    // If ptr already has activate = false, no need to activate all the
+    // generated micro-access ops. Otherwise, activate the nodes.
+    auto lowered = lower_vector_ptr(ptr, ptr->activate);
+    stmt->origin = lowered.back().get();
+    modifier.insert_before(stmt, std::move(lowered));
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    if (stmt->dest->is<GlobalPtrStmt>()) {
-      auto ptr = stmt->dest->as<GlobalPtrStmt>();
-      // If ptr already has activate = false, no need to activate all the
-      // generated micro-access ops. Otherwise, activate the nodes.
-      auto lowered = lower_vector_ptr(ptr, ptr->activate);
-      stmt->dest = lowered.back().get();
-      modifier.insert_before(stmt, std::move(lowered));
-    }
+    if (!stmt->dest->is<GlobalPtrStmt>())
+      return;
+    auto ptr = stmt->dest->as<GlobalPtrStmt>();
+    // If ptr already has activate = false, no need to activate all the
+    // generated micro-access ops. Otherwise, activate the nodes.
+    auto lowered = lower_vector_ptr(ptr, ptr->activate);
+    stmt->dest = lowered.back().get();
+    modifier.insert_before(stmt, std::move(lowered));
   }
 
   void visit(SNodeOpStmt *stmt) override {

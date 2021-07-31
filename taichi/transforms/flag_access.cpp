@@ -54,6 +54,12 @@ class FlagAccess : public IRVisitor {
     if (stmt->dest->is<GlobalPtrStmt>()) {
       stmt->dest->as<GlobalPtrStmt>()->activate = true;
     }
+    if (stmt->dest->is<PtrOffsetStmt>()) {
+      if (stmt->dest->as<PtrOffsetStmt>()->origin->is<GlobalPtrStmt>()) {
+        stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>()->activate =
+            true;
+      }
+    }
   }
 
   void visit(AtomicOpStmt *stmt) {

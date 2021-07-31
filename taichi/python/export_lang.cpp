@@ -371,6 +371,8 @@ void export_lang(py::module &m) {
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
       .def("is_external_var",
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
+      .def("is_global_ptr",
+           [](Expr *expr) { return expr->is<GlobalPtrExpression>(); })
       .def("is_primal",
            [](Expr *expr) {
              return expr->cast<GlobalVariableExpression>()->is_primal;
@@ -697,6 +699,12 @@ void export_lang(py::module &m) {
   m.def("subscript", [](const Expr &expr, const ExprGroup &expr_group) {
     return expr[expr_group];
   });
+
+  m.def("subscript_with_offset",
+        [](const Expr &var, const ExprGroup &indices, int cols, bool is_aos) {
+          return Expr::make<GlobalTensorElementExpression>(var, indices, cols,
+                                                           is_aos);
+        });
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
     return Expr::make<GlobalPtrExpression>(snode, indices.loaded());

@@ -383,6 +383,13 @@ class IRPrinter : public IRVisitor {
     print_raw(s);
   }
 
+  void visit(PtrOffsetStmt *stmt) override {
+    std::string s =
+        fmt::format("{}{} = shift ptr [{} + {}]", stmt->type_hint(),
+                    stmt->name(), stmt->origin->name(), stmt->offset->name());
+    print_raw(s);
+  }
+
   void visit(ArgLoadStmt *stmt) override {
     print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
   }

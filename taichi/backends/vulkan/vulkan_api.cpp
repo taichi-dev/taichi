@@ -682,15 +682,16 @@ void VulkanStream::synchronize() {
   // is no clear boundary (i.e. frame) for us to use a VkFence. TVM accumulates
   // all the commands into a single buffer, then submits it all at once upon
   // synchronization. Not sure how efficient that model is.
-  
-  //vkQueueWaitIdle(device_->compute_queue());
 
-  vkWaitForFences(device_->device(), in_flight_fences_.size(), in_flight_fences_.data(), true, 0xFFFFFFFF);
-  
+  // vkQueueWaitIdle(device_->compute_queue());
+
+  vkWaitForFences(device_->device(), in_flight_fences_.size(),
+                  in_flight_fences_.data(), true, 0xFFFFFFFF);
+
   for (auto &fence : in_flight_fences_) {
     vkDestroyFence(device_->device(), fence, kNoVkAllocCallbacks);
   }
-  
+
   in_flight_fences_.clear();
 }
 

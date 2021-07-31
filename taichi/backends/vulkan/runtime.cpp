@@ -436,8 +436,8 @@ class VkRuntime ::Impl {
     LinearVkMemoryPool::Params mp_params;
     mp_params.physical_device = managed_device_->physical_device();
     mp_params.device = managed_device_->device()->device();
-#pragma message("Vulkan memory pool size hardcoded to 64MB")
-    mp_params.pool_size = 64 * 1024 * 1024;
+#pragma message("Vulkan memory pool size hardcoded to 256MB")
+    mp_params.pool_size = 256 * 1024 * 1024;
     mp_params.required_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     mp_params.compute_queue_family_index =
         managed_device_->queue_family_indices().compute_family.value();
@@ -459,6 +459,7 @@ class VkRuntime ::Impl {
 
     // On-device host visible memory (Utilie ReBAR / Smart Access Memory)
     // Otherwise GPU needs to go through PCI-E to visit this memory
+    mp_params.pool_size = 64 * 1024 * 1024;
     mp_params.required_properties = (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     buf_creation_template.usage =
@@ -477,7 +478,7 @@ class VkRuntime ::Impl {
 
   void init_vk_buffers() {
 #pragma message("Vulkan buffers size hardcoded")
-    root_buffer_ = dev_local_memory_pool_->alloc_and_bind(16 * 1024 * 1024);
+    root_buffer_ = dev_local_memory_pool_->alloc_and_bind(64 * 1024 * 1024);
     global_tmps_buffer_ = dev_local_memory_pool_->alloc_and_bind(1024 * 1024);
 
     // Need to zero fill the buffers, otherwise there could be NaN.

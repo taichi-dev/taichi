@@ -353,8 +353,7 @@ class TaskCodegen : public IRVisitor {
     }
 
     auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
-    if (primitive_buffer_type.element_type_id ==
-        ir_->get_primitive_type(dt).element_type_id) {
+    if (buffer_ptr.stype.element_type_id == val.stype.id) {
       // No bit cast
       ir_->store_variable(buffer_ptr, val);
     } else {
@@ -378,14 +377,10 @@ class TaskCodegen : public IRVisitor {
     }
 
     auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
-    if (primitive_buffer_type.element_type_id ==
-        ir_->get_primitive_type(dt).element_type_id) {
+    if (buffer_ptr.stype.element_type_id == val.stype.id) {
       // No bit cast
       val = ir_->load_variable(buffer_ptr, primitive_buffer_type);
     } else {
-      ir_->store_variable(
-          buffer_ptr,
-          ir_->make_value(spv::OpBitcast, primitive_buffer_type, val));
       val = ir_->make_value(
           spv::OpBitcast, ir_->get_primitive_type(dt),
           ir_->load_variable(buffer_ptr, primitive_buffer_type));

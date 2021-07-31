@@ -129,7 +129,8 @@ class CMakeBuild(build_ext):
 
         # Assuming Makefiles
         if get_os_name() != 'win':
-            build_args += ['--', f'-j{multiprocessing.cpu_count()}']
+            num_threads = os.getenv('BUILD_NUM_THREADS', multiprocessing.cpu_count())
+            build_args += ['--', f'-j{num_threads}']
 
         self.build_args = build_args
 

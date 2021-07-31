@@ -242,6 +242,8 @@ class VulkanStream {
 
  private:
   const VulkanDevice *const device_;
+
+  std::vector<VkFence> in_flight_fences_;
 };
 
 }  // namespace vulkan

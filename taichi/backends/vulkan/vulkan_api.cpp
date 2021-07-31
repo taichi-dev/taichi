@@ -665,9 +665,14 @@ void VulkanStream::launch(VkCommandBuffer command) {
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &command;
 
+  VkFence fence;
+  VkFenceCreateInfo fence_info{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, 0};
+  vkCreateFence(device_->device(), &fence_info, kNoVkAllocCallbacks, &fence);
+  in_flight_fences_.push_back(fence);
+
   BAIL_ON_VK_BAD_RESULT(
       vkQueueSubmit(device_->compute_queue(), /*submitCount=*/1, &submit_info,
-                    /*fence=*/VK_NULL_HANDLE),
+                    /*fence=*/fence),
       "failed to submit command buffer");
 }
 
@@ -677,7 +682,16 @@ void VulkanStream::synchronize() {
   // is no clear boundary (i.e. frame) for us to use a VkFence. TVM accumulates
   // all the commands into a single buffer, then submits it all at once upon
   // synchronization. Not sure how efficient that model is.
-  vkQueueWaitIdle(device_->compute_queue());
+  
+  //vkQueueWaitIdle(device_->compute_queue());
+
+  vkWaitForFences(device_->device(), in_flight_fences_.size(), in_flight_fences_.data(), true, 0xFFFFFFFF);
+  
+  for (auto &fence : in_flight_fences_) {
+    vkDestroyFence(device_->device(), fence, kNoVkAllocCallbacks);
+  }
+  
+  in_flight_fences_.clear();
 }
 
 }  // namespace vulkan

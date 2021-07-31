@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include <string>
 
 namespace taichi {
 namespace lang {
@@ -154,6 +155,7 @@ class VulkanPipeline {
     const VulkanDevice *device{nullptr};
     std::vector<BufferBinding> buffer_bindings;
     SpirvCodeView code;
+    std::string name{"Pipeline"};
   };
 
   explicit VulkanPipeline(const Params &params);
@@ -168,6 +170,9 @@ class VulkanPipeline {
   const VkDescriptorSet &descriptor_set() const {
     return descriptor_set_;
   }
+  const std::string &name() const {
+    return name_;
+  }
 
  private:
   void create_descriptor_set_layout(const Params &params);
@@ -176,6 +181,8 @@ class VulkanPipeline {
   void create_descriptor_sets(const Params &params);
 
   VkDevice device_{VK_NULL_HANDLE};  // not owned
+
+  std::string name_;
 
   // TODO: Commands using the same Taichi buffers should be able to share the
   // same descriptor set layout?
@@ -190,6 +197,12 @@ class VulkanPipeline {
   VkDescriptorSet descriptor_set_{VK_NULL_HANDLE};
 };
 
+enum class VulkanCopyBufferDirection {
+  H2D,
+  D2H,
+  // D2D does not have a use case yet
+};
+
 // VulkanCommandBuilder builds a VkCommandBuffer by recording a given series of
 // VulkanPipelines. The workgroup count needs to be known at recording time.
 // TODO: Do we ever need to adjust the workgroup count at runtime?
@@ -200,25 +213,20 @@ class VulkanCommandBuilder {
   ~VulkanCommandBuilder();
 
   VkCommandBuffer build();
+  
+  void dispatch(const VulkanPipeline &pipeline, int group_count_x);
+  
+  void copy(VkBuffer src_buffer,
+            VkBuffer dst_buffer,
+            VkDeviceSize size,
+            VulkanCopyBufferDirection direction);
 
  protected:
   // VkCommandBuffers are destroyed when the underlying command pool is
   // destroyed.
   // https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Command_buffers#page_Command-buffer-allocation
   VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
-};
-
-class VulkanComputeCommandBuilder : public VulkanCommandBuilder {
- public:
-  using VulkanCommandBuilder::VulkanCommandBuilder;
-
-  void append(const VulkanPipeline &pipeline, int group_count_x);
-};
-
-enum class VulkanCopyBufferDirection {
-  H2D,
-  D2H,
-  // D2D does not have a use case yet
+  VkDevice device; // do not own
 };
 
 VkCommandBuffer record_copy_buffer_command(const VulkanDevice *device,

@@ -66,11 +66,13 @@ class HostDeviceContextBlitter {
   HostDeviceContextBlitter(const KernelContextAttributes *ctx_attribs,
                            Context *host_ctx,
                            uint64_t *host_result_buffer,
-                           VkBufferWithMemory *device_buffer)
+                           VkBufferWithMemory *device_buffer,
+                           VkBufferWithMemory *host_shadow_buffer)
       : ctx_attribs_(ctx_attribs),
         host_ctx_(host_ctx),
         host_result_buffer_(host_result_buffer),
-        device_buffer_(device_buffer) {
+        device_buffer_(device_buffer),
+        host_shadow_buffer_(host_shadow_buffer) {
   }
 
   void host_to_device() {
@@ -85,6 +87,7 @@ class HostDeviceContextBlitter {
     auto d = host_ctx_->get_arg<type>(i);                   \
     std::memcpy(device_ptr, &d, sizeof(d));                 \
   }
+
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       const auto dt = arg.dt;
@@ -110,14 +113,9 @@ class HostDeviceContextBlitter {
     if (ctx_attribs_->empty()) {
       return;
     }
-    auto mapped = device_buffer_->map_mem();
+    auto mapped = host_shadow_buffer_->map_mem();
     char *const device_base = reinterpret_cast<char *>(mapped.data());
-#define TO_HOST(short_type, type)                           \
-  else if (dt->is_primitive(PrimitiveTypeID::short_type)) { \
-    const type d = *reinterpret_cast<type *>(device_ptr);   \
-    host_result_buffer_[i] =                                \
-        taichi_union_cast_with_different_sizes<uint64>(d);  \
-  }
+
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       char *device_ptr = device_base + arg.offset_in_mem;
@@ -126,6 +124,14 @@ class HostDeviceContextBlitter {
         std::memcpy(host_ptr, device_ptr, arg.stride);
       }
     }
+
+#define TO_HOST(short_type, type)                           \
+  else if (dt->is_primitive(PrimitiveTypeID::short_type)) { \
+    const type d = *reinterpret_cast<type *>(device_ptr);   \
+    host_result_buffer_[i] =                                \
+        taichi_union_cast_with_different_sizes<uint64>(d);  \
+  }
+
     for (int i = 0; i < ctx_attribs_->rets().size(); ++i) {
       // Note that we are copying the i-th return value on Metal to the i-th
       // *arg* on the host context.
@@ -152,12 +158,14 @@ class HostDeviceContextBlitter {
       const KernelContextAttributes *ctx_attribs,
       Context *host_ctx,
       uint64_t *host_result_buffer,
-      VkBufferWithMemory *device_buffer) {
+      VkBufferWithMemory *device_buffer,
+      VkBufferWithMemory *host_shadow_buffer) {
     if (ctx_attribs->empty()) {
       return nullptr;
     }
     return std::make_unique<HostDeviceContextBlitter>(
-        ctx_attribs, host_ctx, host_result_buffer, device_buffer);
+        ctx_attribs, host_ctx, host_result_buffer, device_buffer,
+        host_shadow_buffer);
   }
 
  private:
@@ -165,6 +173,7 @@ class HostDeviceContextBlitter {
   Context *const host_ctx_;
   uint64_t *const host_result_buffer_;
   VkBufferWithMemory *const device_buffer_;
+  VkBufferWithMemory *const host_shadow_buffer_;
 };
 
 // Info for launching a compiled Taichi kernel, which consists of a series of
@@ -180,6 +189,7 @@ class CompiledTaichiKernel {
     VkBufferWithMemory *root_buffer{nullptr};
     VkBufferWithMemory *global_tmps_buffer{nullptr};
     LinearVkMemoryPool *host_visible_mem_pool{nullptr};
+    LinearVkMemoryPool *host_mem_pool{nullptr};
   };
 
   CompiledTaichiKernel(const Params &ti_params)
@@ -188,9 +198,10 @@ class CompiledTaichiKernel {
         {BufferEnum::Root, ti_params.root_buffer},
         {BufferEnum::GlobalTmps, ti_params.global_tmps_buffer},
     };
+    const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
     if (!ti_kernel_attribs_.ctx_attribs.empty()) {
-      const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
       ctx_buffer_ = ti_params.host_visible_mem_pool->alloc_and_bind(ctx_sz);
+      ctx_buffer_host_ = ti_params.host_mem_pool->alloc_and_bind(ctx_sz);
       input_buffers[BufferEnum::Context] = ctx_buffer_.get();
     }
 
@@ -198,11 +209,12 @@ class CompiledTaichiKernel {
     const auto &spirv_bins = ti_params.spirv_bins;
     TI_ASSERT(task_attribs.size() == spirv_bins.size());
 
-    VulkanComputeCommandBuilder cmd_builder(ti_params.device);
+    VulkanCommandBuilder cmd_builder(ti_params.device);
     for (int i = 0; i < task_attribs.size(); ++i) {
       const auto &attribs = task_attribs[i];
       VulkanPipeline::Params vp_params;
       vp_params.device = ti_params.device;
+      vp_params.name = ti_kernel_attribs_.name;
       for (const auto &bb : task_attribs[i].buffer_binds) {
         vp_params.buffer_bindings.push_back(VulkanPipeline::BufferBinding{
             input_buffers.at(bb.type)->buffer(), (uint32_t)bb.binding});
@@ -211,9 +223,15 @@ class CompiledTaichiKernel {
       auto vp = std::make_unique<VulkanPipeline>(vp_params);
       const int group_x = attribs.advisory_total_num_threads /
                           attribs.advisory_num_threads_per_group;
-      cmd_builder.append(*vp, group_x);
+      cmd_builder.dispatch(*vp, group_x);
       vk_pipelines_.push_back(std::move(vp));
     }
+
+    if (!ti_kernel_attribs_.ctx_attribs.empty()) {
+      cmd_builder.copy(ctx_buffer_->buffer(), ctx_buffer_host_->buffer(),
+                       ctx_sz, VulkanCopyBufferDirection::D2H);
+    }
+
     command_buffer_ = cmd_builder.build();
   }
 
@@ -229,6 +247,10 @@ class CompiledTaichiKernel {
     return ctx_buffer_.get();
   }
 
+  VkBufferWithMemory *ctx_buffer_host() const {
+    return ctx_buffer_host_.get();
+  }
+
   VkCommandBuffer command_buffer() const {
     return command_buffer_;
   }
@@ -242,6 +264,7 @@ class CompiledTaichiKernel {
   // TODO: Provide an option to use staging buffer. This could be useful if the
   // kernel does lots of IO on the context buffer, e.g., copy a large np array.
   std::unique_ptr<VkBufferWithMemory> ctx_buffer_{nullptr};
+  std::unique_ptr<VkBufferWithMemory> ctx_buffer_host_{nullptr};
   std::vector<std::unique_ptr<VulkanPipeline>> vk_pipelines_;
 
   // VkCommandBuffers are destroyed when the underlying command pool is
@@ -342,6 +365,7 @@ class VkRuntime ::Impl {
     params.root_buffer = root_buffer_.get();
     params.global_tmps_buffer = global_tmps_buffer_.get();
     params.host_visible_mem_pool = host_visible_memory_pool_.get();
+    params.host_mem_pool = host_memory_pool_.get();
 
     for (int i = 0; i < reg_params.task_spirv_source_codes.size(); ++i) {
       const auto &attribs = reg_params.kernel_attribs.tasks_attribs[i];
@@ -379,7 +403,8 @@ class VkRuntime ::Impl {
     auto *ti_kernel = ti_kernels_[handle.id_].get();
     auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
         &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx,
-        host_result_buffer_, ti_kernel->ctx_buffer());
+        host_result_buffer_, ti_kernel->ctx_buffer(),
+        ti_kernel->ctx_buffer_host());
     if (ctx_blitter) {
       TI_ASSERT(ti_kernel->ctx_buffer() != nullptr);
       ctx_blitter->host_to_device();
@@ -432,13 +457,22 @@ class VkRuntime ::Impl {
     dev_local_memory_pool_ = LinearVkMemoryPool::try_make(mp_params);
     TI_ASSERT(dev_local_memory_pool_ != nullptr);
 
-    mp_params.required_properties = (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-                                     VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+    // On-device host visible memory (Utilie ReBAR / Smart Access Memory)
+    // Otherwise GPU needs to go through PCI-E to visit this memory
+    mp_params.required_properties = (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     buf_creation_template.usage =
-        (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+        (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+         VK_BUFFER_USAGE_TRANSFER_DST_BIT);
     host_visible_memory_pool_ = LinearVkMemoryPool::try_make(mp_params);
-    TI_ASSERT(host_visible_memory_pool_ != nullptr);
+
+    // Host side memory
+    mp_params.required_properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+                                    VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    buf_creation_template.usage =
+        (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    host_memory_pool_ = LinearVkMemoryPool::try_make(mp_params);
   }
 
   void init_vk_buffers() {
@@ -464,6 +498,7 @@ class VkRuntime ::Impl {
   std::unique_ptr<VkBufferWithMemory> root_buffer_;
   std::unique_ptr<VkBufferWithMemory> global_tmps_buffer_;
   std::unique_ptr<LinearVkMemoryPool> host_visible_memory_pool_;
+  std::unique_ptr<LinearVkMemoryPool> host_memory_pool_;
 
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;
   int num_pending_kernels_{0};

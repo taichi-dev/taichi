@@ -372,9 +372,11 @@ void ManagedVulkanDevice::create_logical_device() {
   create_info.enabledExtensionCount = enabled_extensions.size();
   create_info.ppEnabledExtensionNames = enabled_extensions.data();
 
+  void **pNextEnd = (void **)&create_info.pNext;
+
   // TODO: Figure out whether to use this pNext chain or the Vulkan11 features
   // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#VUID-VkDeviceCreateInfo-pNext-02829
-  VkPhysicalDeviceVariablePointersFeatures variable_ptr_feature;
+  VkPhysicalDeviceVariablePointersFeatures variable_ptr_feature{};
   variable_ptr_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES;
   variable_ptr_feature.pNext = nullptr;
@@ -382,7 +384,30 @@ void ManagedVulkanDevice::create_logical_device() {
   if (capability_.has_spv_variable_ptr) {
     variable_ptr_feature.variablePointers = true;
     variable_ptr_feature.variablePointersStorageBuffer = true;
-    create_info.pNext = &variable_ptr_feature;
+    *pNextEnd = &variable_ptr_feature;
+    pNextEnd = &variable_ptr_feature.pNext;
+  }
+
+  VkPhysicalDeviceShaderAtomicFloatFeaturesEXT shader_atomic_float_feature{};
+  shader_atomic_float_feature.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
+  shader_atomic_float_feature.pNext = nullptr;
+
+  if (capability_.has_atomic_float) {
+    shader_atomic_float_feature.shaderBufferFloat32Atomics = true;
+    shader_atomic_float_feature.shaderBufferFloat32AtomicAdd = true;
+    shader_atomic_float_feature.shaderBufferFloat64Atomics = true;
+    shader_atomic_float_feature.shaderBufferFloat64AtomicAdd = true;
+    shader_atomic_float_feature.shaderSharedFloat32Atomics = true;
+    shader_atomic_float_feature.shaderSharedFloat32AtomicAdd = true;
+    shader_atomic_float_feature.shaderSharedFloat64Atomics = true;
+    shader_atomic_float_feature.shaderSharedFloat64AtomicAdd = true;
+    shader_atomic_float_feature.shaderImageFloat32Atomics = true;
+    shader_atomic_float_feature.shaderImageFloat32AtomicAdd = true;
+    shader_atomic_float_feature.sparseImageFloat32Atomics = true;
+    shader_atomic_float_feature.sparseImageFloat32AtomicAdd = true;
+    *pNextEnd = &shader_atomic_float_feature;
+    pNextEnd = &shader_atomic_float_feature.pNext;
   }
 
   if constexpr (kEnableValidationLayers) {
@@ -411,7 +436,7 @@ void ManagedVulkanDevice::create_command_pool() {
 }
 
 VulkanPipeline::VulkanPipeline(const Params &params)
-    : device_(params.device->device()) {
+    : device_(params.device->device()), name_(params.name) {
   create_descriptor_set_layout(params);
   create_compute_pipeline(params);
   create_descriptor_pool(params);
@@ -564,6 +589,8 @@ VulkanCommandBuilder::VulkanCommandBuilder(const VulkanDevice *device) {
       vkAllocateCommandBuffers(device->device(), &alloc_info, &command_buffer_),
       "failed to allocate command buffer");
 
+  this->device = device->device();
+
   VkCommandBufferBeginInfo begin_info{};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   // This flag allows us to submit the same command buffer to the queue
@@ -588,8 +615,26 @@ VkCommandBuffer VulkanCommandBuilder::build() {
   return res;
 }
 
-void VulkanComputeCommandBuilder::append(const VulkanPipeline &pipeline,
-                                         int group_count_x) {
+void VulkanCommandBuilder::dispatch(const VulkanPipeline &pipeline,
+                                    int group_count_x) {
+  // Must call extension functions through a function pointer:
+  PFN_vkCmdBeginDebugUtilsLabelEXT pfnCmdBeginDebugUtilsLabelEXT =
+      (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetDeviceProcAddr(
+          device, "vkCmdBeginDebugUtilsLabelEXT");
+  PFN_vkCmdEndDebugUtilsLabelEXT pfnCmdEndDebugUtilsLabelEXT =
+      (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetDeviceProcAddr(
+          device, "vkCmdEndDebugUtilsLabelEXT");
+
+  VkDebugUtilsLabelEXT marker;
+  marker.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+  marker.pNext = nullptr;
+  marker.color[0] = 1.0f;
+  marker.color[1] = 0.7f;
+  marker.color[2] = 0.3f;
+  marker.color[3] = 1.0f;
+  marker.pLabelName = pipeline.name().data();
+  pfnCmdBeginDebugUtilsLabelEXT(command_buffer_, &marker);
+
   vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
                     pipeline.pipeline());
   vkCmdBindDescriptorSets(
@@ -619,43 +664,35 @@ void VulkanComputeCommandBuilder::append(const VulkanPipeline &pipeline,
                        /*pBufferMemoryBarriers=*/nullptr,
                        /*imageMemoryBarrierCount=*/0,
                        /*pImageMemoryBarriers=*/nullptr);
+
+  pfnCmdEndDebugUtilsLabelEXT(command_buffer_);
 }
 
-namespace {
+void VulkanCommandBuilder::copy(VkBuffer src_buffer,
+                                VkBuffer dst_buffer,
+                                VkDeviceSize size,
+                                VulkanCopyBufferDirection direction) {
+  VkBufferCopy copy_region{};
+  copy_region.srcOffset = 0;
+  copy_region.dstOffset = 0;
+  copy_region.size = size;
+  vkCmdCopyBuffer(command_buffer_, src_buffer, dst_buffer, /*regionCount=*/1,
+                  &copy_region);
+  if (direction == VulkanCopyBufferDirection::H2D) {
+    VkMemoryBarrier barrier_info;
+    barrier_info.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+    barrier_info.pNext = nullptr;
 
-class CopyBufferCommandBuilder : public VulkanCommandBuilder {
- public:
-  using VulkanCommandBuilder::VulkanCommandBuilder;
-
-  void copy(VkBuffer src_buffer,
-            VkBuffer dst_buffer,
-            VkDeviceSize size,
-            VulkanCopyBufferDirection direction) {
-    VkBufferCopy copy_region{};
-    copy_region.srcOffset = 0;
-    copy_region.dstOffset = 0;
-    copy_region.size = size;
-    vkCmdCopyBuffer(command_buffer_, src_buffer, dst_buffer, /*regionCount=*/1,
-                    &copy_region);
-    if (direction == VulkanCopyBufferDirection::H2D) {
-      VkMemoryBarrier barrier_info;
-      barrier_info.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-      barrier_info.pNext = nullptr;
-
-      barrier_info.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-      barrier_info.dstAccessMask =
-          VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
-      vkCmdPipelineBarrier(
-          command_buffer_,
-          /*srcStageMask=*/VK_PIPELINE_STAGE_TRANSFER_BIT,
-          /*dstStageMask=*/VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-              VK_PIPELINE_STAGE_TRANSFER_BIT,
-          0, 1, &barrier_info, 0, nullptr, 0, nullptr);
-    }
+    barrier_info.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier_info.dstAccessMask =
+        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
+    vkCmdPipelineBarrier(command_buffer_,
+                         /*srcStageMask=*/VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         /*dstStageMask=*/VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
+                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         0, 1, &barrier_info, 0, nullptr, 0, nullptr);
   }
-};
-
-}  // namespace
+}
 
 VkCommandBuffer record_copy_buffer_command(
     const VulkanDevice *device,
@@ -663,7 +700,7 @@ VkCommandBuffer record_copy_buffer_command(
     VkBuffer dst_buffer,
     VkDeviceSize size,
     VulkanCopyBufferDirection direction) {
-  CopyBufferCommandBuilder cb{device};
+  VulkanCommandBuilder cb{device};
   cb.copy(src_buffer, dst_buffer, size, direction);
   return cb.build();
 }
@@ -697,14 +734,14 @@ void VulkanStream::synchronize() {
 
   // vkQueueWaitIdle(device_->compute_queue());
 
-  vkWaitForFences(device_->device(), in_flight_fences_.size(),
-                  in_flight_fences_.data(), true, 0xFFFFFFFF);
-
-  for (auto &fence : in_flight_fences_) {
-    vkDestroyFence(device_->device(), fence, kNoVkAllocCallbacks);
+  if (in_flight_fences_.size()) {
+    vkWaitForFences(device_->device(), in_flight_fences_.size(),
+                    in_flight_fences_.data(), true, 0xFFFFFFFF);
+    for (auto &fence : in_flight_fences_) {
+      vkDestroyFence(device_->device(), fence, kNoVkAllocCallbacks);
+    }
+    in_flight_fences_.clear();
   }
-
-  in_flight_fences_.clear();
 }
 
 }  // namespace vulkan

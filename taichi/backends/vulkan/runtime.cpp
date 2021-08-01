@@ -12,6 +12,8 @@
 #include "taichi/util/environ_config.h"
 
 #ifdef TI_WITH_VULKAN
+#include <volk.h>
+#define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 

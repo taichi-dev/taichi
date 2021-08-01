@@ -25,3 +25,6 @@
 [submodule "external/SPIRV-Headers"]
 	path = external/SPIRV-Headers
 	url = https://github.com/KhronosGroup/SPIRV-Headers
+[submodule "external/volk"]
+	path = external/volk
+	url = https://github.com/zeux/volk.git

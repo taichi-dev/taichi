@@ -464,7 +464,7 @@ class IRBuilder {
   bool support_int16_{false};
   bool support_int64_{false};
   bool support_fp64_{false};
-  
+
   SType t_bool_;
   SType t_int8_;
   SType t_int16_;

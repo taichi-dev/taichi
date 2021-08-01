@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "taichi/backends/vulkan/vulkan_common.h"
+#include "taichi/backends/vulkan/loader.h"
 #include "taichi/common/logging.h"
 
 namespace taichi {
@@ -162,6 +163,9 @@ VulkanDevice::VulkanDevice(const Params &params) : rep_(params) {
 }
 
 ManagedVulkanDevice::ManagedVulkanDevice(const Params &params) {
+  if (!VulkanLoader::instance().init()) {
+    throw std::runtime_error("Error loading vulkan");
+  }
   create_instance(params);
   setup_debug_messenger();
   pick_physical_device();
@@ -241,6 +245,7 @@ void ManagedVulkanDevice::create_instance(const Params &params) {
   if (res != VK_SUCCESS) {
     throw std::runtime_error("failed to create instance");
   }
+  VulkanLoader::instance().load_instance(instance_);
 }
 
 void ManagedVulkanDevice::setup_debug_messenger() {
@@ -389,6 +394,7 @@ void ManagedVulkanDevice::create_logical_device() {
   BAIL_ON_VK_BAD_RESULT(vkCreateDevice(physical_device_, &create_info,
                                        kNoVkAllocCallbacks, &device_),
                         "failed to create logical device");
+  VulkanLoader::instance().load_device(device_);
   vkGetDeviceQueue(device_, queue_family_indices_.compute_family.value(),
                    /*queueIndex=*/0, &compute_queue_);
 }

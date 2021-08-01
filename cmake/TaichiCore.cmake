@@ -213,7 +213,6 @@ if (TI_WITH_VULKAN)
 
     # No longer link against vulkan, using volk instead
     #target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
-
     include_directories(external/volk)
 
     # Is this the best way to include the SPIRV-Headers?

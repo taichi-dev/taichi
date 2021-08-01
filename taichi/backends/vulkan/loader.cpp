@@ -10,24 +10,25 @@ namespace lang {
 namespace vulkan {
 
 VulkanLoader::VulkanLoader() {
-  initialized = false;
 }
 
 bool VulkanLoader::init() {
-  if (initialized) {
-    return true;
-  }
-  VkResult result = volkInitialize();
-  initialized = result == VK_SUCCESS;
+  std::call_once(init_flag_, [&](){ 
+    if (initialized) {
+      return;
+    }
+    VkResult result = volkInitialize();
+    initialized = result == VK_SUCCESS;
+  });
   return initialized;
 }
 
 void VulkanLoader::load_instance(VkInstance instance) {
-  vulkan_instance = instance;
+  vulkan_instance_ = instance;
   volkLoadInstance(instance);
 }
 void VulkanLoader::load_device(VkDevice device) {
-  vulkan_device = device;
+  vulkan_device_ = device;
   volkLoadDevice(device);
 }
 

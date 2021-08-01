@@ -1,4 +1,8 @@
 #pragma once
+
+#include <thread>
+#include <mutex>
+
 #include <volk.h>
 
 namespace taichi {
@@ -21,12 +25,13 @@ class VulkanLoader {
   bool init();
 
  private:
-  bool initialized;
+  std::once_flag init_flag_;
+  bool initialized{false};
 
   VulkanLoader();
 
-  VkInstance vulkan_instance;
-  VkDevice vulkan_device;
+  VkInstance vulkan_instance_{VK_NULL_HANDLE};
+  VkDevice vulkan_device_{VK_NULL_HANDLE};
 };
 
 }  // namespace vulkan

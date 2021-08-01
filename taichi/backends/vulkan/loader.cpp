@@ -5,6 +5,10 @@
 
 #include "taichi/backends/vulkan/loader.h"
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> use volk
 namespace taichi {
 namespace lang {
 namespace vulkan {
@@ -34,3 +38,7 @@ void VulkanLoader::load_device(VkDevice device) {
 }  // namespace vulkan
 }  // namespace lang
 }  // namespace taichi
+<<<<<<< HEAD
+=======
+
+>>>>>>> use volk

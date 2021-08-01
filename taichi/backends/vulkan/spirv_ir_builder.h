@@ -203,7 +203,7 @@ class InstrBuilder {
 // Builder to build up a single SPIR-V module
 class IRBuilder {
  public:
-  IRBuilder(const VulkanCapabilities &vulkan_cap) : vulkan_cap_(vulkan_cap), init_rand_(false) {
+  IRBuilder(const VulkanCapabilities &vulkan_cap) : vulkan_cap_(vulkan_cap) {
   }
 
   template <typename... Args>

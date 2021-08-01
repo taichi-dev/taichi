@@ -10,6 +10,12 @@
 #include <vector>
 #include <string>
 
+#define TI_VULKAN_DEBUG
+
+#ifdef TI_VULKAN_DEBUG
+#include <GLFW/glfw3.h>
+#endif
+
 namespace taichi {
 namespace lang {
 namespace vulkan {
@@ -35,6 +41,13 @@ struct VulkanQueueFamilyIndices {
   bool is_complete() const {
     return compute_family.has_value();
   }
+};
+
+struct VulkanDeviceDebugStruct {
+  GLFWwindow *window{nullptr};
+  VkSurfaceKHR surface;
+  VkSwapchainKHR swapchain;
+  VkSemaphore image_available;
 };
 
 // Many classes here are inspired by TVM's runtime
@@ -68,7 +81,14 @@ class VulkanDevice {
     return rep_.command_pool;
   }
 
- private:
+  void set_debug_struct(VulkanDeviceDebugStruct *s) {
+    this->debug_struct_ = s;
+  }
+
+  void debug_frame_marker() const;
+
+private:
+  VulkanDeviceDebugStruct *debug_struct_{nullptr};
   Params rep_;
 };
 
@@ -121,6 +141,9 @@ class ManagedVulkanDevice {
   void pick_physical_device();
   void create_logical_device();
   void create_command_pool();
+  void create_debug_swapchain();
+
+  VulkanDeviceDebugStruct debug_struct_;
 
   VkInstance instance_{VK_NULL_HANDLE};
   VkDebugUtilsMessengerEXT debug_messenger_{VK_NULL_HANDLE};

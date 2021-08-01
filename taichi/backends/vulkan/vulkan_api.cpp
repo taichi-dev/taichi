@@ -163,8 +163,8 @@ VulkanDevice::VulkanDevice(const Params &params) : rep_(params) {
 }
 
 ManagedVulkanDevice::ManagedVulkanDevice(const Params &params) {
-  if(!VulkanLoader::instance().init()){
-      throw std::runtime_error("Error loading vulkan");
+  if (!VulkanLoader::instance().init()) {
+    throw std::runtime_error("Error loading vulkan");
   }
   create_instance(params);
   setup_debug_messenger();

@@ -13,7 +13,7 @@ VulkanLoader::VulkanLoader() {
 }
 
 bool VulkanLoader::init() {
-  std::call_once(init_flag_, [&](){ 
+  std::call_once(init_flag_, [&]() {
     if (initialized) {
       return;
     }

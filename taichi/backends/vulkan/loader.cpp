@@ -34,4 +34,3 @@ void VulkanLoader::load_device(VkDevice device) {
 }  // namespace vulkan
 }  // namespace lang
 }  // namespace taichi
-

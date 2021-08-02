@@ -20,7 +20,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
   };
   if (var1 == var2)
     return AliasResult::same;
-  // TODO: further optimize with offset inside PtrOffsetStmt 
+  // TODO: further optimize with offset inside PtrOffsetStmt
   if (retrieve_alloca(var1) == retrieve_alloca(var2))
     return AliasResult::uncertain;
   if (!var1 || !var2)

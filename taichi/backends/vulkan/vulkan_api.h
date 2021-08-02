@@ -43,12 +43,14 @@ struct VulkanQueueFamilyIndices {
   }
 };
 
+#ifdef TI_VULKAN_DEBUG
 struct VulkanDeviceDebugStruct {
   GLFWwindow *window{nullptr};
   VkSurfaceKHR surface;
   VkSwapchainKHR swapchain;
   VkSemaphore image_available;
 };
+#endif
 
 // Many classes here are inspired by TVM's runtime
 // https://github.com/apache/tvm/tree/main/src/runtime/vulkan
@@ -81,14 +83,18 @@ class VulkanDevice {
     return rep_.command_pool;
   }
 
+#ifdef TI_VULKAN_DEBUG
   void set_debug_struct(VulkanDeviceDebugStruct *s) {
     this->debug_struct_ = s;
   }
+#endif
 
   void debug_frame_marker() const;
 
  private:
+#ifdef TI_VULKAN_DEBUG
   VulkanDeviceDebugStruct *debug_struct_{nullptr};
+#endif
   Params rep_;
 };
 
@@ -96,11 +102,16 @@ struct VulkanCapabilities {
   uint32_t api_version;
   uint32_t spirv_version;
 
-  bool has_nvidia_interop;
-  bool has_atomic_i64;
-  bool has_atomic_float;
-  bool has_presentation;
-  bool has_spv_variable_ptr;
+  bool has_int8{false};
+  bool has_int16{false};
+  bool has_int64{false};
+  bool has_float64{false};
+
+  bool has_nvidia_interop{false};
+  bool has_atomic_i64{false};
+  bool has_atomic_float{false};
+  bool has_presentation{false};
+  bool has_spv_variable_ptr{false};
 };
 
 /**
@@ -143,7 +154,9 @@ class ManagedVulkanDevice {
   void create_command_pool();
   void create_debug_swapchain();
 
+#ifdef TI_VULKAN_DEBUG
   VulkanDeviceDebugStruct debug_struct_;
+#endif
 
   VkInstance instance_{VK_NULL_HANDLE};
   VkDebugUtilsMessengerEXT debug_messenger_{VK_NULL_HANDLE};

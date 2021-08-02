@@ -178,7 +178,9 @@ ManagedVulkanDevice::ManagedVulkanDevice(const Params &params) {
   dparams.compute_queue = compute_queue_;
   dparams.command_pool = command_pool_;
   owned_device_ = std::make_unique<VulkanDevice>(dparams);
+#ifdef TI_VULKAN_DEBUG
   owned_device_->set_debug_struct(&debug_struct_);
+#endif
 }
 
 ManagedVulkanDevice::~ManagedVulkanDevice() {
@@ -391,8 +393,13 @@ void ManagedVulkanDevice::create_logical_device() {
       "this extension is not supported on the device");
 
   VkPhysicalDeviceFeatures device_features{};
+  device_features.shaderInt16 = false;
   device_features.shaderInt64 = true;
   device_features.shaderFloat64 = true;
+  capability_.has_int8 = false;
+  capability_.has_int16 = false;
+  capability_.has_int64 = true;
+  capability_.has_float64 = true;
 
   create_info.pEnabledFeatures = &device_features;
   create_info.enabledExtensionCount = enabled_extensions.size();

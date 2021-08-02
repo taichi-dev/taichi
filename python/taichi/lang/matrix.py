@@ -258,7 +258,10 @@ class Matrix(TaichiOperations):
     def __call__(self, *args, **kwargs):
         _taichi_skip_traceback = 1
         assert kwargs == {}
-        return self.entries[self.linearize_entry_id(*args)]
+        if self.local_tensor_proxy is not None:
+            return ti.local_subscript_with_offset(self.local_tensor_proxy, args)
+        else:
+            return self.entries[self.linearize_entry_id(*args)]
 
     def get_field_members(self):
         """Get matrix elements list.

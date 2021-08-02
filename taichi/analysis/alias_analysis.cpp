@@ -9,6 +9,17 @@ namespace irpass::analysis {
 AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
   // If both stmts are allocas, they have the same address iff var1 == var2.
   // If only one of them is an alloca, they can never share the same address.
+  auto retrieve_alloca = [&](Stmt *var) {
+    if (var->is<AllocaStmt>()) {
+      return var;
+    } else if (var->is<PtrOffsetStmt>() && var->cast<PtrOffsetStmt>()->is_local_ptr()) {
+      return var->cast<PtrOffsetStmt>()->origin;
+    } else {
+      return (Stmt *)nullptr;
+    }
+  };
+  if (retrieve_alloca(var1) == retrieve_alloca(var2))
+    return AliasResult::same;
   if (var1 == var2)
     return AliasResult::same;
   if (!var1 || !var2)

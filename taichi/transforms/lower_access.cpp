@@ -158,7 +158,7 @@ class LowerAccess : public IRVisitor {
 
   // TODO: this seems to be redundant
   void visit(PtrOffsetStmt *stmt) override {
-    if (!stmt->origin->is<GlobalPtrStmt>())
+    if (!stmt->is_unlowered_global_ptr())
       return;
     auto ptr = stmt->origin->as<GlobalPtrStmt>();
     // If ptr already has activate = false, no need to activate all the

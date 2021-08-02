@@ -82,9 +82,20 @@ std::string VectorType::to_string() const {
   return fmt::format("[{} x {}]", num_elements_, element_->to_string());
 }
 
+std::string TensorType::to_string() const {
+  std::string s = "[Tensor (";
+  for (int i = 0; i < (int)shape_.size(); ++i) {
+    s += fmt::format(i == 0 ? "{}" : ", {}", shape_[i]);
+  }
+  s += fmt::format(") {}]", element_->to_string());
+  return s;
+}
+
 int Type::vector_width() const {
   if (auto vec = cast<VectorType>()) {
     return vec->get_num_elements();
+  } else if (auto tensor = cast<TensorType>()) {
+      return tensor->get_num_elements();
   } else {
     return 1;
   }

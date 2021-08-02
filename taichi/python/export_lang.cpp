@@ -649,6 +649,24 @@ void export_lang(py::module &m) {
         PrimitiveType::unknown));
     return var;
   });
+  m.def("expr_alloca_local_tensor", [](const std::vector<int> &shape, const DataType& element_type, const ExprGroup &elements) {
+    auto var = Expr(std::make_shared<IdExpression>());
+    current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
+        std::static_pointer_cast<IdExpression>(var.expr)->id,
+        shape, element_type));
+    for (int i = 0; i < (int)elements.exprs.size(); ++i) {
+      ExprGroup reversed_indices, indices;
+      int linearized_index = i;
+      for (int d = (int)shape.size() - 1; d >= 0; --d)
+        reversed_indices.push_back(Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
+      for (int d = 0; d < (int)shape.size(); ++d)
+        indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
+      current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
+          Expr::make<LocalTensorElementExpression>(var, indices),
+          load_if_ptr(elements.exprs[i])));
+    }
+    return var;
+  });
   m.def("expr_assign", expr_assign);
 
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
@@ -712,8 +730,15 @@ void export_lang(py::module &m) {
 
   m.def("subscript_with_offset",
         [](const Expr &var, const ExprGroup &indices, int cols, bool is_aos) {
+          // TODO: Add test for dimension check
           return Expr::make<GlobalTensorElementExpression>(var, indices, cols,
                                                            is_aos);
+        });
+
+  m.def("subscript_with_offset",
+        [](const Expr &var, const ExprGroup &indices) {
+          // TODO: Add test for dimension check
+          return Expr::make<LocalTensorElementExpression>(var, indices);
         });
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {

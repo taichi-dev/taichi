@@ -30,6 +30,20 @@ Type *TypeFactory::get_vector_type(int num_elements, Type *element) {
   return vector_types_[key].get();
 }
 
+Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
+  auto encode = [](const std::vector<int>& shape) -> std::string {
+    std::string s;
+    for (int i = 0; i < (int)shape.size(); ++i)
+      s += fmt::format(i == 0 ? "{}" : "_{}", std::to_string(shape[i]));
+    return s;
+  };
+  auto key = std::make_pair(encode(shape), element);
+  if (tensor_types_.find(key) == tensor_types_.end()) {
+    tensor_types_[key] = std::make_unique<TensorType>(shape, element);
+  }
+  return tensor_types_[key].get();
+}
+
 Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
   auto key = std::make_pair(element, is_bit_pointer);
   if (pointer_types_.find(key) == pointer_types_.end()) {
@@ -108,6 +122,11 @@ DataType TypeFactory::create_vector_or_scalar_type(int width,
   }
 }
 
+DataType TypeFactory::create_tensor_type(std::vector<int> shape,
+                                         DataType element) {
+  return TypeFactory::get_instance().get_tensor_type(shape, element);
+}
+
 namespace {
 class TypePromotionMapping {
  public:
@@ -158,6 +177,11 @@ class TypePromotionMapping {
     if (d->is<VectorType>()) {
       d = d->as<VectorType>()->get_element_type();
       TI_WARN("promoted_type got a vector input.");
+    }
+
+    if (d->is<TensorType>()) {
+      d = d->as<TensorType>()->get_element_type();
+      TI_WARN("promoted_type got a tensor input.");
     }
 
     auto primitive = d->cast<PrimitiveType>();

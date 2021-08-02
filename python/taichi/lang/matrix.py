@@ -47,6 +47,7 @@ class Matrix(TaichiOperations):
                  keep_raw=False,
                  rows=None,
                  cols=None):
+        self.local_tensor_proxy = None
         self.grad = None
 
         # construct from rows or cols (deprecated)
@@ -85,6 +86,7 @@ class Matrix(TaichiOperations):
                     if keep_raw:
                         mat = [list([x]) for x in n]
                     else:
+                        self.local_tensor_proxy = impl.expr_init_local_tensor([len(n)], ti.f32, expr.make_expr_group([expr.Expr(x) for x in n]))
                         mat = [list([expr.Expr(x)]) for x in n]
                 else:
                     mat = [[x] for x in n]

@@ -176,6 +176,34 @@ class VectorType : public Type {
   Type *element_{nullptr};
 };
 
+class TensorType: public Type {
+ public:
+  TensorType(std::vector<int> shape, Type *element)
+      : shape_(std::move(shape)), element_(element) {
+  }
+
+  Type *get_element_type() const {
+    return element_;
+  }
+
+  int get_num_elements() const {
+    int num_elements = 1;
+    for (int i = 0; i < (int)shape_.size(); ++i)
+      num_elements *= shape_[i];
+    return num_elements;
+  }
+
+  std::vector<int> get_shape() const {
+    return shape_;
+  }
+
+  std::string to_string() const override;
+
+ private:
+  std::vector<int> shape_;
+  Type* element_{nullptr};
+};
+
 class CustomIntType : public Type {
  public:
   CustomIntType(int num_bits,

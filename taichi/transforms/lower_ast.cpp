@@ -71,9 +71,16 @@ class LowerAST : public IRVisitor {
     auto ident = stmt->ident;
     TI_ASSERT(block->local_var_to_stmt.find(ident) ==
               block->local_var_to_stmt.end());
-    auto lowered = std::make_unique<AllocaStmt>(stmt->ret_type);
-    block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
-    stmt->parent->replace_with(stmt, std::move(lowered));
+    if (stmt->ret_type->is<TensorType>()) {
+      auto tensor_type = stmt->ret_type->cast<TensorType>();
+      auto lowered = std::make_unique<AllocaStmt>(tensor_type->get_shape(), tensor_type->get_element_type());
+      block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
+      stmt->parent->replace_with(stmt, std::move(lowered));
+    }  else {
+      auto lowered = std::make_unique<AllocaStmt>(stmt->ret_type);
+      block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
+      stmt->parent->replace_with(stmt, std::move(lowered));
+    }
     throw IRModified();
   }
 
@@ -361,6 +368,10 @@ class LowerAST : public IRVisitor {
       fctx.push_back<LocalStoreStmt>(
           assign->parent->lookup_var(assign->lhs.cast<IdExpression>()->id),
           expr->stmt);
+    } else if (assign->lhs.is<LocalTensorElementExpression>()) {
+      auto local_ptr = assign->lhs.cast<LocalTensorElementExpression>();
+      local_ptr->flatten(&fctx);
+      fctx.push_back<LocalStoreStmt>(fctx.back_stmt(), expr->stmt);
     } else if (assign->lhs.is<GlobalTensorElementExpression>()) {
       auto global_ptr = assign->lhs.cast<GlobalTensorElementExpression>();
       global_ptr->flatten(&fctx);

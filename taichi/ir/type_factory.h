@@ -19,6 +19,8 @@ class TypeFactory {
 
   Type *get_vector_type(int num_elements, Type *element);
 
+  Type *get_tensor_type(std::vector<int> shape, Type *element);
+
   Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 
   Type *get_custom_int_type(int num_bits, bool is_signed, Type *compute_type);
@@ -40,6 +42,9 @@ class TypeFactory {
                                                DataType element,
                                                bool element_is_pointer = false);
 
+  static DataType create_tensor_type(std::vector<int> shape,
+                                     DataType element);
+
  private:
   TypeFactory();
 
@@ -47,6 +52,9 @@ class TypeFactory {
 
   // TODO: use unordered map
   std::map<std::pair<int, Type *>, std::unique_ptr<Type>> vector_types_;
+
+  // TODO: use unordered map
+  std::map<std::pair<std::string, Type *>, std::unique_ptr<Type>> tensor_types_;
 
   // TODO: is_bit_ptr?
   std::map<std::pair<Type *, bool>, std::unique_ptr<Type>> pointer_types_;

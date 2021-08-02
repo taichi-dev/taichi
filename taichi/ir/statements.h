@@ -25,6 +25,11 @@ class AllocaStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
+  AllocaStmt(std::vector<int> shape, DataType type) {
+    ret_type = TypeFactory::create_tensor_type(shape, type);
+    TI_STMT_REG_FIELDS;
+  }
+
   bool has_global_side_effect() const override {
     return false;
   }
@@ -311,9 +316,34 @@ class PtrOffsetStmt : public Stmt {
   Stmt *origin{nullptr};
   Stmt *offset{nullptr};
 
-  PtrOffsetStmt(Stmt *origin, Stmt *offset) : origin(origin), offset(offset) {
-    element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
+  PtrOffsetStmt(Stmt *origin, Stmt *offset): origin(origin), offset(offset) {
+    if (origin->is<AllocaStmt>()) {
+      TI_ASSERT(origin->cast<AllocaStmt>()->ret_type->is<TensorType>())
+      auto tensor_type = origin->cast<AllocaStmt>()->ret_type->cast<TensorType>();
+      element_type() = tensor_type->get_element_type();
+      element_type().set_is_pointer(true);
+    } else if (origin->is<GlobalPtrStmt>()) {
+      element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
+    } else {
+      TI_ERROR("PtrOffsetStmt must be used for AllocaStmt (locally) or GlobalPtrStmt (globally).")
+    }
     TI_STMT_REG_FIELDS;
+  }
+
+  bool is_local_ptr() const {
+    if (origin->is<AllocaStmt>()) {
+      TI_ASSERT_INFO(origin->cast<AllocaStmt>()->ret_type->is<TensorType>(), "PtrOffsetStmt can only be used for Alloca (TensorType).")
+    }
+    return origin->is<AllocaStmt>();
+  }
+
+  bool is_unlowered_global_ptr() const {
+    return origin->is<GlobalPtrStmt>();
+  }
+
+  bool is_lowered_global_ptr() const {
+    // TODO: Check this is the only case.
+    return origin->is<GetChStmt>();
   }
 
   bool has_global_side_effect() const override {
@@ -546,7 +576,7 @@ class LocalStoreStmt : public Stmt {
   Stmt *val;
 
   LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
-    TI_ASSERT(dest->is<AllocaStmt>());
+    TI_ASSERT(dest->is<AllocaStmt>() || (dest->is<PtrOffsetStmt>() && dest->cast<PtrOffsetStmt>()->is_local_ptr()));
     TI_STMT_REG_FIELDS;
   }
 

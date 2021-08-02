@@ -17,6 +17,11 @@ import taichi as ti
 
 
 @taichi_scope
+def expr_init_local_tensor(shape, element_type, elements):
+    return _ti_core.expr_alloca_local_tensor(shape, element_type, elements)
+
+
+@taichi_scope
 def expr_init(rhs):
     if rhs is None:
         return Expr(_ti_core.expr_alloca())

@@ -81,6 +81,28 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
+    if (stmt->dest->is<PtrOffsetStmt>() && stmt->dest->cast<PtrOffsetStmt>()->is_local_ptr()) {
+      auto dst_value_type = stmt->dest->ret_type.ptr_removed();
+      if (dst_value_type->is<CustomIntType>() ||
+          dst_value_type->is<CustomFloatType>()) {
+        // We force the value type to be the compute_type of the bit pointer.
+        // Casting from compute_type to physical_type is handled in codegen.
+        dst_value_type = dst_value_type->get_compute_type();
+      }
+      auto promoted = promoted_type(dst_value_type, stmt->val->ret_type);
+      auto input_type = stmt->val->ret_data_type_name();
+      if (dst_value_type != stmt->val->ret_type) {
+        stmt->val = insert_type_cast_before(stmt, stmt->val, dst_value_type);
+      }
+      if (dst_value_type != promoted && dst_value_type != stmt->val->ret_type) {
+        TI_WARN("[{}] Local store may lose precision: {} <- {}, at",
+                stmt->name(), dst_value_type->to_string(), input_type);
+        TI_WARN("\n{}", stmt->tb);
+      }
+      stmt->ret_type = dst_value_type;
+      return;
+    }
+
     if (stmt->dest->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
       // Infer data type for alloca
       stmt->dest->ret_type = stmt->val->ret_type;

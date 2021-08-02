@@ -231,6 +231,7 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
   //              ^^^^
   TI_ASSERT(1 <= indices.size() && indices.size() <= 2)
   if (indices.size() == 1) {
+    // TODO: Add test for this
     indices[0].set(load_if_ptr(indices[0]));
     indices[0]->flatten(ctx);
   } else {
@@ -272,6 +273,41 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void LocalTensorElementExpression::flatten(FlattenContext *ctx) {
+  TI_ASSERT(var.is<IdExpression>())
+  var->flatten(ctx);
+  Stmt *var_stmt = var->stmt;
+  TI_ASSERT(var_stmt->ret_type->is<TensorType>())
+  auto tensor_type = var_stmt->ret_type->cast<TensorType>();
+  auto shape = tensor_type->get_shape();
+  auto element_type = tensor_type->get_element_type();
+  // Compute exact offset
+  // Type A[x, y, ...]
+  //        ^^^^^^^^^
+  indices[0].set(load_if_ptr(indices[0]));
+  indices[0]->flatten(ctx);
+  for (int i = 1; i < (int)shape.size(); ++i) {
+    Stmt *accumulated_stmt = ctx->back_stmt();
+    Stmt *current_length_stmt = ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(shape[i])));
+    Stmt *mul_stmt = ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, accumulated_stmt, current_length_stmt));
+    indices[i].set(load_if_ptr(indices[i]));
+    indices[i]->flatten(ctx);
+    Stmt *current_index_stmt = ctx->back_stmt();
+    ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::add, mul_stmt, current_index_stmt));
+  }
+  // Type A[x, y, ...]
+  // ^^^^
+  Stmt *offset_stmt = ctx->back_stmt();
+  Stmt *dt_size_stmt = ctx->push_back(
+      Stmt::make<ConstStmt>(TypedConstant(data_type_size(element_type))));
+  ctx->push_back(
+      Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
+
+  ctx->push_back(
+      std::make_unique<PtrOffsetStmt>(var_stmt, ctx->back_stmt()));
+  stmt = ctx->back_stmt();
+}
+
 void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   input->flatten(ctx);
   base->flatten(ctx);
@@ -304,8 +340,14 @@ void LoopUniqueExpression::flatten(FlattenContext *ctx) {
 void IdExpression::flatten(FlattenContext *ctx) {
   auto var_stmt = ctx->current_block->lookup_var(id);
   if (var_stmt->is<AllocaStmt>()) {
-    ctx->push_back(std::make_unique<LocalLoadStmt>(LocalAddress(var_stmt, 0)));
-    stmt = ctx->back_stmt();
+    if (var_stmt->ret_type->is<TensorType>()) {
+      // For TensorType alloca, directly return the first element's address
+      stmt = var_stmt;
+    } else {
+      // For other alloca, load the value and then return
+      ctx->push_back(std::make_unique<LocalLoadStmt>(LocalAddress(var_stmt, 0)));
+      stmt = ctx->back_stmt();
+    }
   } else {
     // The loop index may have a coordinate offset.
     TI_ASSERT(var_stmt->is<LoopIndexStmt>() || var_stmt->is<BinaryOpStmt>());
@@ -350,6 +392,10 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     // emit local store stmt
     auto alloca = ctx->current_block->lookup_var(dest.cast<IdExpression>()->id);
     ctx->push_back<AtomicOpStmt>(op_type, alloca, expr->stmt);
+  } else if (dest.is<LocalTensorElementExpression>()) {
+    auto local_ptr = dest.cast<LocalTensorElementExpression>();
+    local_ptr->flatten(ctx);
+    ctx->push_back<AtomicOpStmt>(op_type, ctx->back_stmt(), expr->stmt);
   } else if (dest.is<GlobalTensorElementExpression>()) {
     auto global_ptr = dest.cast<GlobalTensorElementExpression>();
     global_ptr->flatten(ctx);

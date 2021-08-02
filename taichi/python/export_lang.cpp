@@ -728,14 +728,14 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
-  m.def("subscript_with_offset",
+  m.def("global_subscript_with_offset",
         [](const Expr &var, const ExprGroup &indices, int cols, bool is_aos) {
           // TODO: Add test for dimension check
           return Expr::make<GlobalTensorElementExpression>(var, indices, cols,
                                                            is_aos);
         });
 
-  m.def("subscript_with_offset",
+  m.def("local_subscript_with_offset",
         [](const Expr &var, const ExprGroup &indices) {
           // TODO: Add test for dimension check
           return Expr::make<LocalTensorElementExpression>(var, indices);

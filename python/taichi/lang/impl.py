@@ -26,7 +26,10 @@ def expr_init(rhs):
     if rhs is None:
         return Expr(_ti_core.expr_alloca())
     if is_taichi_class(rhs):
-        return rhs.variable()
+        if rhs.local_tensor_proxy != None:
+            return rhs
+        else:
+            return rhs.variable()
     else:
         if isinstance(rhs, list):
             return [expr_init(e) for e in rhs]
@@ -160,9 +163,15 @@ def subscript(value, *indices):
 
 
 @taichi_scope
-def subscript_with_offset(var, indices, cols, is_aos):
+def local_subscript_with_offset(var, indices):
     return Expr(
-        _ti_core.subscript_with_offset(var.ptr, make_expr_group(*indices),
+        _ti_core.local_subscript_with_offset(var, make_expr_group(*indices)))
+
+
+@taichi_scope
+def global_subscript_with_offset(var, indices, cols, is_aos):
+    return Expr(
+        _ti_core.global_subscript_with_offset(var.ptr, make_expr_group(*indices),
                                        cols, is_aos))
 
 

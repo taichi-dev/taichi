@@ -87,7 +87,7 @@ class Matrix(TaichiOperations):
                         mat = [list([x]) for x in n]
                     else:
                         self.local_tensor_proxy = impl.expr_init_local_tensor([len(n)], ti.f32, expr.make_expr_group([expr.Expr(x) for x in n]))
-                        mat = [list([expr.Expr(x)]) for x in n]
+                        mat = [list([None]) for x in n]
                 else:
                     mat = [[x] for x in n]
             else:
@@ -299,12 +299,14 @@ class Matrix(TaichiOperations):
             assert len(indices) in [1, 2]
             i = indices[0]
             j = 0 if len(indices) == 1 else indices[1]
+            if self.local_tensor_proxy != None:
+                return ti.local_subscript_with_offset(self.local_tensor_proxy, (i, j))
             # ptr.is_global_ptr() will check whether it's an element in the field (which is different from ptr.is_global_var()).
-            if isinstance(self.entries[0],
+            elif isinstance(self.entries[0],
                           ti.Expr) and self.entries[0].ptr.is_global_ptr(
                           ) and ti.is_extension_supported(
                               ti.cfg.arch, ti.extension.dynamic_index):
-                return ti.subscript_with_offset(self.entries[0], (i, j),
+                return ti.global_subscript_with_offset(self.entries[0], (i, j),
                                                 self.m, True)
             else:
                 return self(i, j)

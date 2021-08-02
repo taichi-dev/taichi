@@ -76,8 +76,13 @@ class TypeCheck : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    auto lookup = stmt->src[0].var->ret_type;
-    stmt->ret_type = lookup;
+    if (stmt->src[0].var->is<PtrOffsetStmt>()) {
+      auto lookup = DataType(stmt->src[0].var->cast<PtrOffsetStmt>()->origin->cast<AllocaStmt>()->ret_type->cast<TensorType>()->get_element_type()).ptr_removed();
+      stmt->ret_type = lookup;
+    } else {
+      auto lookup = stmt->src[0].var->ret_type;
+      stmt->ret_type = lookup;
+    }
   }
 
   void visit(LocalStoreStmt *stmt) override {

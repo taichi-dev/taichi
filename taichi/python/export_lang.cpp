@@ -769,6 +769,7 @@ void export_lang(py::module &m) {
       .def(py::init<const std::string &, int, int>())
       .def_readonly("instance_id", &FunctionKey::instance_id);
 
+  // This function will call `Expr &Expr::operator=(const Expr &o)` implicitly.
   m.def("create_print",
         [&](std::vector<std::variant<Expr, std::string>> contents) {
           current_ast_builder().insert(

@@ -450,6 +450,15 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void LocalLoadExpression::flatten(FlattenContext *ctx) {
+  ptr->flatten(ctx);
+  auto ptr_offset_stmt = ctx->back_stmt();
+  TI_ASSERT(ptr_offset_stmt->is<PtrOffsetStmt>())
+  auto local_addr = LaneAttribute<LocalAddress>(LocalAddress(ptr_offset_stmt, 0));
+  auto local_load_stmt = ctx->push_back<LocalLoadStmt>(LaneAttribute<LocalAddress>(local_addr));
+  stmt = local_load_stmt;
+}
+
 void GlobalLoadExpression::flatten(FlattenContext *ctx) {
   ptr->flatten(ctx);
   ctx->push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));

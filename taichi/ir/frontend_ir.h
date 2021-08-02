@@ -607,6 +607,19 @@ class SNodeOpExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
+class LocalLoadExpression : public Expression {
+ public:
+  Expr ptr;
+  LocalLoadExpression(const Expr &ptr) : ptr(ptr) {
+  }
+
+  std::string serialize() override {
+    return "lcl load " + ptr.serialize();
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
 class GlobalLoadExpression : public Expression {
  public:
   Expr ptr;

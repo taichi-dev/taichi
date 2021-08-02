@@ -419,7 +419,7 @@ def Tape(loss, clear_gradients=True):
 
     Args:
         loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().
-        clear_gradients(Bool): Clear all gradients or not.
+        clear_gradients(Bool): Before `with` body start, clear all gradients or not.
 
     Returns:
         :class:`~taichi.lang.tape.TapeImpl`: The context manager.
@@ -942,7 +942,7 @@ def complex_kernel(func):
         fn (Callable): The Python function which needs to be decorated.
 
     Returns:
-        Callable: The decorated function
+        Callable: The decorated function.
 
     Example::
 

@@ -102,15 +102,15 @@ struct VulkanCapabilities {
   uint32_t api_version;
   uint32_t spirv_version;
 
-  bool has_int16;
-  bool has_int64;
-  bool has_float64;
+  bool has_int16{false};
+  bool has_int64{false};
+  bool has_float64{false};
 
-  bool has_nvidia_interop;
-  bool has_atomic_i64;
-  bool has_atomic_float;
-  bool has_presentation;
-  bool has_spv_variable_ptr;
+  bool has_nvidia_interop{false};
+  bool has_atomic_i64{false};
+  bool has_atomic_float{false};
+  bool has_presentation{false};
+  bool has_spv_variable_ptr{false};
 };
 
 /**

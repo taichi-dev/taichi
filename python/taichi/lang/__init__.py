@@ -422,7 +422,17 @@ def Tape(loss, clear_gradients=True):
         clear_gradients(Bool): Clear all gradients or not.
 
     Returns:
-        :class:`~taichi.lang.tape.TapeImpl`: The context manager."""
+        :class:`~taichi.lang.tape.TapeImpl`: The context manager.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def sum(a: ti.float32):
+        >>>     for I in ti.grouped(x):
+        >>>         y[None] += x[I] ** a
+        >>>
+        >>> with ti.Tape(loss = y):
+        >>>     sum(2)"""
     impl.get_runtime().materialize()
     if len(loss.shape) != 0:
         raise RuntimeError(
@@ -441,6 +451,7 @@ def Tape(loss, clear_gradients=True):
 
 
 def clear_all_gradients():
+    """Set all fields' gradients to 0."""
     impl.get_runtime().materialize()
 
     def visit(node):

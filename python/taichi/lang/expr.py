@@ -3,7 +3,6 @@ from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.util import (is_taichi_class, python_scope, to_numpy_type,
                               to_pytorch_type)
-from taichi.misc.util import deprecated
 
 import taichi as ti
 
@@ -13,8 +12,6 @@ class Expr(TaichiOperations):
     """A Python-side Expr wrapper, whose member variable `ptr` is an instance of C++ Expr class. A C++ Expr object contains member variable `expr` which holds an instance of C++ Expression class."""
     def __init__(self, *args, tb=None):
         _taichi_skip_traceback = 1
-        self.getter = None
-        self.setter = None
         self.tb = tb
         if len(args) == 1:
             if isinstance(args[0], _ti_core.Expr):
@@ -42,99 +39,6 @@ class Expr(TaichiOperations):
         self.grad = None
         self.val = self
 
-    @python_scope
-    def __setitem__(self, key, value):
-        """Set value with specified key when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
-
-        This will not be directly called from python for vector/matrix fields.
-        Python Matrix class will decompose operations into scalar-level first.
-
-        Args:
-            key (Union[List[int], int, None]): indices to set
-            value (Union[int, float]): value to set
-        """
-        impl.get_runtime().materialize()
-        self.initialize_accessor()
-        if key is None:
-            key = ()
-        if not isinstance(key, (tuple, list)):
-            key = (key, )
-        assert len(key) == len(self.shape)
-        key = key + ((0, ) * (_ti_core.get_max_num_indices() - len(key)))
-        self.setter(value, *key)
-
-    @python_scope
-    def __getitem__(self, key):
-        """Get value with specified key when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
-
-        This will not be directly called from python for vector/matrix fields.
-        Python Matrix class will decompose operations into scalar-level first.
-
-        Args:
-            key (Union[List[int], int, None]): indices to get.
-
-        Returns:
-            Value retrieved with specified key.
-        """
-        impl.get_runtime().materialize()
-        self.initialize_accessor()
-        if key is None:
-            key = ()
-        if not isinstance(key, (tuple, list)):
-            key = (key, )
-        key = key + ((0, ) * (_ti_core.get_max_num_indices() - len(key)))
-        return self.getter(*key)
-
-    def loop_range(self):
-        return self
-
-    def get_field_members(self):
-        """Get a list of involving fields when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
-
-        This is an unified interface to match :func:`taichi.lang.Matrix.get_field_members`.
-
-        Returns:
-             A list containing itself.
-        """
-        return [self]
-
-    @deprecated('x.get_tensor_members()', 'x.get_field_members()')
-    def get_tensor_members(self):
-        return self.get_field_members()
-
-    @python_scope
-    def initialize_accessor(self):
-        if self.getter:
-            return
-        snode = self.ptr.snode()
-
-        if _ti_core.is_real(self.dtype):
-
-            def getter(*key):
-                assert len(key) == _ti_core.get_max_num_indices()
-                return snode.read_float(key)
-
-            def setter(value, *key):
-                assert len(key) == _ti_core.get_max_num_indices()
-                snode.write_float(key, value)
-        else:
-            if _ti_core.is_signed(self.dtype):
-
-                def getter(*key):
-                    assert len(key) == _ti_core.get_max_num_indices()
-                    return snode.read_int(key)
-            else:
-
-                def getter(*key):
-                    assert len(key) == _ti_core.get_max_num_indices()
-                    return snode.read_uint(key)
-
-            def setter(value, *key):
-                assert len(key) == _ti_core.get_max_num_indices()
-                snode.write_int(key, value)
-
-        self.getter = getter
-        self.setter = setter
 
     @python_scope
     def set_grad(self, grad):
@@ -154,19 +58,7 @@ class Expr(TaichiOperations):
         from taichi.lang.meta import fill_tensor
         fill_tensor(self, val)
 
-    def parent(self, n=1):
-        '''Create another Expr instance which represents one of the ancestors in SNode tree.
 
-        The class it self must represent GlobalVariableExpression (field) internally.
-
-        Args:
-            n (int): levels of the target ancestor higher than the current field's snode
-
-        Returns:
-            An Expr instance which represents the target SNode ancestor internally.
-        '''
-        p = self.snode.parent(n)
-        return Expr(_ti_core.global_var_expr_from_snode(p.ptr))
 
     def is_global(self):
         """Check whether the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
@@ -175,8 +67,6 @@ class Expr(TaichiOperations):
             True or False depending on whether the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
         """
         return self.ptr.is_global_var() or self.ptr.is_external_var()
-
-
 
     def __hash__(self):
         return self.ptr.get_raw_address()
@@ -200,23 +90,6 @@ class Expr(TaichiOperations):
             ]
             return ret
         return self.snode.shape
-
-    @deprecated('x.dim()', 'len(x.shape)')
-    def dim(self):
-        return len(self.shape)
-
-    @property
-    def dtype(self):
-        """The type of inside elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
-
-        Returns:
-            The type of inside elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
-        """
-        return self.snode.dtype
-
-    @deprecated('x.data_type()', 'x.dtype')
-    def data_type(self):
-        return self.snode.dtype
 
     @python_scope
     def to_numpy(self):

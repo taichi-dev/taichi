@@ -238,14 +238,6 @@ class SNode:
     def get_shape(self, i):
         return self.shape[i]
 
-    def loop_range(self):
-        """Wraps `self` into an :class:`~taichi.lang.Expr` to serve as loop range.
-
-        Returns:
-            Expr: The wrapped result.
-        """
-        return Expr(_ti_core.global_var_expr_from_snode(self.ptr))
-
     @property
     def name(self):
         """Gets the name of `self`.
@@ -255,18 +247,14 @@ class SNode:
         """
         return self.ptr.name()
 
-    @deprecated('x.snode()', 'x.snode')
-    def __call__(self):  # TODO: remove this after v0.7.0
-        return self
-
-    @property
-    def snode(self):
-        """Gets `self`.
-
-        Returns:
-            SNode: `self`.
-        """
-        return self
+#    @property
+#    def snode(self):
+#        """Gets `self`.
+#
+#        Returns:
+#            SNode: `self`.
+#        """
+#        return self
 
     @property
     def needs_grad(self):

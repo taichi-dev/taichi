@@ -432,9 +432,9 @@ if ti.static(1):
             template = '''
 if 1:
     ___loop_var = 0
-    {} = ti.lang.expr.make_var_vector(size=len(___loop_var.loop_range().shape))
+    {} = ti.lang.expr.make_var_vector(size=len(___loop_var.shape))
     ___expr_group = ti.lang.expr.make_expr_group({})
-    ti.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range())
+    ti.begin_frontend_struct_for(___expr_group, ___loop_var)
     ti.core.end_frontend_range_for()
             '''.format(vars, vars)
             t = ast.parse(template).body[0]
@@ -447,7 +447,7 @@ if 1:
 {}
     ___loop_var = 0
     ___expr_group = ti.lang.expr.make_expr_group({})
-    ti.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range())
+    ti.begin_frontend_struct_for(___expr_group, ___loop_var)
     ti.core.end_frontend_range_for()
             '''.format(var_decl, vars)
             t = ast.parse(template).body[0]

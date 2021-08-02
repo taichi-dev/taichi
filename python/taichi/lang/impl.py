@@ -72,16 +72,21 @@ def expr_init_func(
     return expr_init(rhs)
 
 
-def begin_frontend_struct_for(group, loop_range):
-    if not isinstance(loop_range, Expr) or not loop_range.is_global():
-        raise TypeError('Can only iterate through global variables/fields')
-    if group.size() != len(loop_range.shape):
+def begin_frontend_struct_for(group, loop_var):
+#    if not isinstance(loop_range, Expr) or not loop_range.is_global():
+#        raise TypeError('Can only iterate through global variables/fields')
+    if group.size() != len(loop_var.shape):
         raise IndexError(
             'Number of struct-for indices does not match loop variable dimensionality '
-            f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
+            f'({group.size()} != {len(loop_var.shape)}). Maybe you wanted to '
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
-    _ti_core.begin_frontend_struct_for(group, loop_range.ptr)
+    if isinstance(loop_var, SNodeField):
+        _ti_core.begin_frontend_struct_for(group, loop_var.get_field_members()[0].ptr)
+    elif isinstance(loop_var, SNode):
+        _ti_core.begin_frontend_struct_for(group, _ti_core.global_var_expr_from_snode(loop_var.ptr))
+    else:
+        raise Exception('Non-supported struct for')
 
 
 def begin_frontend_if(cond):
@@ -121,7 +126,12 @@ def subscript(value, *indices):
         flattened_indices += ind
     indices = tuple(flattened_indices)
 
-    if is_taichi_class(value):
+    if isinstance(value, SNodeField): # XY: Not complete, see below
+        if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
+            indices = ()
+        indices_expr_group = make_expr_group(*indices)
+        return Expr(_ti_core.subscript(value.get_field_members()[0].ptr, indices_expr_group))
+    elif is_taichi_class(value):
         return value.subscript(*indices)
     elif isinstance(value, (Expr, SNode)):
         if isinstance(value, Expr):
@@ -414,10 +424,6 @@ class _Root:
         """Same as :func:`taichi.SNode.parent`"""
         return _root_fb.root.parent(n)
 
-    def loop_range(self, n=1):
-        """Same as :func:`taichi.SNode.loop_range`"""
-        return _root_fb.root.loop_range()
-
     def get_children(self):
         """Same as :func:`taichi.SNode.get_children`"""
         return _root_fb.root.get_children()
@@ -509,20 +515,23 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False, use_snode=T
     x.ptr.set_is_primal(True)
     pytaichi.global_vars.append(x)
 
+    x_grad = None
     if _ti_core.needs_grad(dtype):
         # adjoint
         x_grad = Expr(_ti_core.make_id_expr(""))
         x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
         x_grad.ptr.set_name(name + ".grad")
         x_grad.ptr.set_is_primal(False)
-        x.set_grad(x_grad)
+#        x.set_grad(x_grad)
+        x.ptr.set_grad(x_grad.ptr)
 
+    x = SNodeField([x], ())
     if shape is not None:
         dim = len(shape)
         root.dense(index_nd(dim), shape).place(x, offset=offset)
-        if needs_grad:
-            root.dense(index_nd(dim), shape).place(x.grad)
-    return SNodeField([x], ())
+        if needs_grad and x_grad is not None:
+            root.dense(index_nd(dim), shape).place(SNodeField([x_grad], ()))
+    return x
 
 
 class Layout:

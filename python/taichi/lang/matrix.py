@@ -87,7 +87,9 @@ class Matrix(TaichiOperations):
                         mat = [list([x]) for x in n]
                     else:
                         self.local_tensor_proxy = impl.expr_init_local_tensor([len(n)], ti.f32, expr.make_expr_group([expr.Expr(x) for x in n]))
-                        mat = [list([None]) for x in n]
+                        mat = []
+                        for i, x in enumerate(n):
+                            mat.append(list([ti.local_subscript_with_offset(self.local_tensor_proxy, (i,))]))
                 else:
                     mat = [[x] for x in n]
             else:

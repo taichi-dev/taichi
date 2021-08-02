@@ -406,6 +406,23 @@ tr = deprecated('ti.tr(a)', 'a.trace()')(Matrix.trace)
 
 
 def Tape(loss, clear_gradients=True):
+    """Return a context manager of :class:`~taichi.lang.tape.TapeImpl`. The
+    context manager would catching all of the callings of functions that
+    decorated by :func:`~taichi.lang.kernel_impl.kernel` or
+    :func:`~taichi.lang.complex_kernel` under `with` statement, and calculate
+    all the partial gradients of a given loss variable by calling all of the
+    gradient function of the callings caught in reverse order while `with`
+    statement ended.
+
+    See also :func:`~taichi.lang.kernel_impl.kernel` and
+    :func:`~taichi.lang.complex_kernel` for gradient functions.
+
+    Args:
+        loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().
+        clear_gradients(Bool): Clear all gradients or not.
+
+    Returns:
+        :class:`~taichi.lang.tape.TapeImpl`: The context manager."""
     impl.get_runtime().materialize()
     if len(loss.shape) != 0:
         raise RuntimeError(

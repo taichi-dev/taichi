@@ -678,6 +678,8 @@ def kernel(fn):
     The top-level ``for`` loops are automatically parallelized, and distributed
     to either a CPU thread pool or massively parallel GPUs.
 
+    Kernel's gradient kernel would be generated automatically by the AutoDiff system.
+
     See also https://docs.taichi.graphics/docs/lang/articles/basic/syntax#kernels.
 
     Args:

@@ -313,6 +313,8 @@ class IRBuilder {
   SType get_null_type();
   // Get the spirv type for a given Taichi data type
   SType get_primitive_type(const DataType &dt) const;
+  // Get the spirv type for the buffer for a given Taichi data type
+  SType get_primitive_buffer_type(const DataType &dt) const;
   // Get the pointer type that points to value_type
   SType get_pointer_type(const SType &value_type,
                          spv::StorageClass storage_class);
@@ -433,6 +435,10 @@ class IRBuilder {
   Value rand_u32(Value global_tmp_);
   Value rand_f32(Value global_tmp_);
   Value rand_i32(Value global_tmp_);
+
+  const VulkanCapabilities &get_vulkan_cap() const {
+    return vulkan_cap_;
+  }
 
  private:
   Value new_value(const SType &type, ValueKind flag) {

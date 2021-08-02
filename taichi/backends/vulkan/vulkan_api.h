@@ -8,6 +8,13 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include <string>
+
+// #define TI_VULKAN_DEBUG
+
+#ifdef TI_VULKAN_DEBUG
+#include <GLFW/glfw3.h>
+#endif
 
 namespace taichi {
 namespace lang {
@@ -34,6 +41,13 @@ struct VulkanQueueFamilyIndices {
   bool is_complete() const {
     return compute_family.has_value();
   }
+};
+
+struct VulkanDeviceDebugStruct {
+  GLFWwindow *window{nullptr};
+  VkSurfaceKHR surface;
+  VkSwapchainKHR swapchain;
+  VkSemaphore image_available;
 };
 
 // Many classes here are inspired by TVM's runtime
@@ -67,7 +81,14 @@ class VulkanDevice {
     return rep_.command_pool;
   }
 
+  void set_debug_struct(VulkanDeviceDebugStruct *s) {
+    this->debug_struct_ = s;
+  }
+
+  void debug_frame_marker() const;
+
  private:
+  VulkanDeviceDebugStruct *debug_struct_{nullptr};
   Params rep_;
 };
 
@@ -120,6 +141,9 @@ class ManagedVulkanDevice {
   void pick_physical_device();
   void create_logical_device();
   void create_command_pool();
+  void create_debug_swapchain();
+
+  VulkanDeviceDebugStruct debug_struct_;
 
   VkInstance instance_{VK_NULL_HANDLE};
   VkDebugUtilsMessengerEXT debug_messenger_{VK_NULL_HANDLE};
@@ -154,6 +178,7 @@ class VulkanPipeline {
     const VulkanDevice *device{nullptr};
     std::vector<BufferBinding> buffer_bindings;
     SpirvCodeView code;
+    std::string name{"Pipeline"};
   };
 
   explicit VulkanPipeline(const Params &params);
@@ -168,6 +193,9 @@ class VulkanPipeline {
   const VkDescriptorSet &descriptor_set() const {
     return descriptor_set_;
   }
+  const std::string &name() const {
+    return name_;
+  }
 
  private:
   void create_descriptor_set_layout(const Params &params);
@@ -176,6 +204,8 @@ class VulkanPipeline {
   void create_descriptor_sets(const Params &params);
 
   VkDevice device_{VK_NULL_HANDLE};  // not owned
+
+  std::string name_;
 
   // TODO: Commands using the same Taichi buffers should be able to share the
   // same descriptor set layout?
@@ -190,6 +220,12 @@ class VulkanPipeline {
   VkDescriptorSet descriptor_set_{VK_NULL_HANDLE};
 };
 
+enum class VulkanCopyBufferDirection {
+  H2D,
+  D2H,
+  // D2D does not have a use case yet
+};
+
 // VulkanCommandBuilder builds a VkCommandBuffer by recording a given series of
 // VulkanPipelines. The workgroup count needs to be known at recording time.
 // TODO: Do we ever need to adjust the workgroup count at runtime?
@@ -201,24 +237,19 @@ class VulkanCommandBuilder {
 
   VkCommandBuffer build();
 
+  void dispatch(const VulkanPipeline &pipeline, int group_count_x);
+
+  void copy(VkBuffer src_buffer,
+            VkBuffer dst_buffer,
+            VkDeviceSize size,
+            VulkanCopyBufferDirection direction);
+
  protected:
   // VkCommandBuffers are destroyed when the underlying command pool is
   // destroyed.
   // https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Command_buffers#page_Command-buffer-allocation
   VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
-};
-
-class VulkanComputeCommandBuilder : public VulkanCommandBuilder {
- public:
-  using VulkanCommandBuilder::VulkanCommandBuilder;
-
-  void append(const VulkanPipeline &pipeline, int group_count_x);
-};
-
-enum class VulkanCopyBufferDirection {
-  H2D,
-  D2H,
-  // D2D does not have a use case yet
+  VkDevice device_;  // do not own
 };
 
 VkCommandBuffer record_copy_buffer_command(const VulkanDevice *device,

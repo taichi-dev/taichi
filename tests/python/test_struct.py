@@ -86,7 +86,7 @@ def test_custom_struct():
     # May also want to suuport vector struct using compound types such as
     # st = ti.types.struct(a=ti.types.vector(3, ti.f32), b=ti.f32)
     # f = ti.field(dtype=st, shape=(n, ))
-    
+
     x = ti.Struct.field({"a": ti.f32, "b": ti.f32}, shape=(n, ))
     y = ti.Struct.field({"a": ti.f32, "b": ti.f32})
 
@@ -97,17 +97,20 @@ def test_custom_struct():
         for i in x:
             x[i].a = i
             y[i].a = i
+
     @ti.kernel
     def run_taichi_scope():
         for i in x:
             x[i].b = x[i].a
+
     def run_python_scope():
         for i in range(n):
             y[i].b = y[i].a * 2 + 1
+
     init()
     run_taichi_scope()
     for i in range(n):
         assert x[i].b == i
     run_python_scope()
     for i in range(n):
-        assert y[i].b == i * 2 + 1    
+        assert y[i].b == i * 2 + 1

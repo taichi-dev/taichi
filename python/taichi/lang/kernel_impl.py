@@ -44,7 +44,7 @@ def func(fn):
     will JIT compile it into native instructions.
 
     Args:
-        fn (Callable): the Python function to be decorated
+        fn (Callable): The Python function to be decorated
 
     Returns:
         Callable: The decorated function
@@ -83,7 +83,7 @@ def pyfunc(fn):
     See also :func:`~taichi.lang.kernel_impl.func`.
 
     Args:
-        fn (Callable): the Python function to be decorated
+        fn (Callable): The Python function to be decorated
 
     Returns:
         Callable: The decorated function

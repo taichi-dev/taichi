@@ -758,7 +758,7 @@ class TaskCodegen : public IRVisitor {
       } else {
         spirv::Value func = ir_->float_atomic_add();
         val = ir_->make_value(spv::OpFunctionCall, ir_->f32_type(), func,
-                              addr_ptr, data);      
+                              addr_ptr, data);
       }
     } else if (is_integral(dt)) {
       val = ir_->make_value(

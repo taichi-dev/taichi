@@ -87,7 +87,7 @@ class VulkanDevice {
 
   void debug_frame_marker() const;
 
-private:
+ private:
   VulkanDeviceDebugStruct *debug_struct_{nullptr};
   Params rep_;
 };
@@ -236,9 +236,9 @@ class VulkanCommandBuilder {
   ~VulkanCommandBuilder();
 
   VkCommandBuffer build();
-  
+
   void dispatch(const VulkanPipeline &pipeline, int group_count_x);
-  
+
   void copy(VkBuffer src_buffer,
             VkBuffer dst_buffer,
             VkDeviceSize size,
@@ -249,7 +249,7 @@ class VulkanCommandBuilder {
   // destroyed.
   // https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Command_buffers#page_Command-buffer-allocation
   VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
-  VkDevice device_; // do not own
+  VkDevice device_;  // do not own
 };
 
 VkCommandBuffer record_copy_buffer_command(const VulkanDevice *device,

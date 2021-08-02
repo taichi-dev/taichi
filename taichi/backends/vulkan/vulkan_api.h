@@ -102,6 +102,7 @@ struct VulkanCapabilities {
   uint32_t api_version;
   uint32_t spirv_version;
 
+  bool has_int8{false};
   bool has_int16{false};
   bool has_int64{false};
   bool has_float64{false};

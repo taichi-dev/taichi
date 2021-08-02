@@ -396,6 +396,7 @@ void ManagedVulkanDevice::create_logical_device() {
   device_features.shaderInt16 = false;
   device_features.shaderInt64 = true;
   device_features.shaderFloat64 = true;
+  capability_.has_int8 = false;
   capability_.has_int16 = false;
   capability_.has_int64 = true;
   capability_.has_float64 = true;

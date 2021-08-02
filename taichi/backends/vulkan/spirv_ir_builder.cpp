@@ -36,6 +36,9 @@ void IRBuilder::init_header() {
         .commit(&header_);
   }
 
+  if (vulkan_cap_.has_int8) {
+    ib_.begin(spv::OpCapability).add(spv::CapabilityInt8).commit(&header_);
+  }
   if (vulkan_cap_.has_int16) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt16).commit(&header_);
   }
@@ -88,6 +91,10 @@ std::vector<uint32_t> IRBuilder::finalize() {
 void IRBuilder::init_pre_defs() {
   ext_glsl450_ = ext_inst_import("GLSL.std.450");
   t_bool_ = declare_primitive_type(get_data_type<bool>());
+  if (vulkan_cap_.has_int8) {
+    t_int8_ = declare_primitive_type(get_data_type<int8>());
+    t_uint8_ = declare_primitive_type(get_data_type<uint8>());
+  }
   if (vulkan_cap_.has_int16) {
     t_int16_ = declare_primitive_type(get_data_type<int16>());
     t_uint16_ = declare_primitive_type(get_data_type<uint16>());
@@ -180,7 +187,8 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_fp64_;
   } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    TI_ERROR("Type {} not supported.", dt->to_string());
+    if (!vulkan_cap_.has_int8)
+      TI_ERROR("Type {} not supported.", dt->to_string());
     return t_int8_;
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     if (!vulkan_cap_.has_int16)
@@ -193,7 +201,8 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_int64_;
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    TI_ERROR("Type {} not supported.", dt->to_string());
+    if (!vulkan_cap_.has_int8)
+      TI_ERROR("Type {} not supported.", dt->to_string());
     return t_uint8_;
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     if (!vulkan_cap_.has_int16)

@@ -101,6 +101,13 @@ class Tee():
 # The builtin `warnings` module is unreliable since it may be suppressed
 # by other packages such as IPython.
 def warning(msg, type=UserWarning, stacklevel=1):
+    """Print warning message
+
+    Args:
+        msg (str): massage to print.
+        type (builtin warning type):  type of warning.
+        stacklevel (int): warning stack level from the caller.
+    """
     s = traceback.extract_stack()[:-stacklevel]
     raw = ''.join(traceback.format_list(s))
     print(Fore.YELLOW + Style.BRIGHT, end='')
@@ -110,12 +117,21 @@ def warning(msg, type=UserWarning, stacklevel=1):
 
 
 def deprecated(old, new, warning_type=DeprecationWarning):
-    """
-    Mark an API as deprecated. Usage:
+    """Mark an API as deprecated.
 
-    @deprecated('ti.sqr(x)', 'x**2')
-    def sqr(x):
-        return x**2
+    Args:
+        old (str): old method.
+        new (str): new method.
+        warning_type (builtin warning type): type of warning.
+
+    Example::
+
+        >>> @deprecated('ti.sqr(x)', 'x**2')
+        >>> def sqr(x):
+        >>>     return x**2
+
+    Returns:
+        Decorated fuction with warning message
     """
     import functools
 
@@ -160,10 +176,32 @@ def set_gdb_trigger(on=True):
 
 
 def print_profile_info():
+    """Print time elasped on the host tasks in a hierarchical format.
+
+    This profiler is automatically on.
+
+    Call function imports from C++ : _ti_core.print_profile_info()
+
+    Example::
+
+            >>> import taichi as ti
+            >>> ti.init(arch=ti.cpu)
+            >>> var = ti.field(ti.f32, shape=1)
+            >>> @ti.kernel
+            >>> def compute():
+            >>>     var[0] = 1.0
+            >>>     print("Setting var[0] =", var[0])
+            >>> compute()
+            >>> ti.print_profile_info()
+    """
     _ti_core.print_profile_info()
 
 
 def clear_profile_info():
+    """Clear profiler's records about time elasped on the host tasks.
+
+    Call function imports from C++ : _ti_core.clear_profile_info()
+    """
     _ti_core.clear_profile_info()
 
 

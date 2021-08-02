@@ -136,6 +136,20 @@ class Program {
     profiler->print();
   }
 
+  struct KernelProfilerQueryResult {
+    int counter{0};
+    double min{0.0};
+    double max{0.0};
+    double avg{0.0};
+  };
+
+  KernelProfilerQueryResult query_kernel_profiler(const std::string &name) {
+    KernelProfilerQueryResult query_result;
+    profiler->query(name, query_result.counter, query_result.min,
+                    query_result.max, query_result.avg);
+    return query_result;
+  }
+
   void kernel_profiler_clear() {
     profiler->clear();
   }

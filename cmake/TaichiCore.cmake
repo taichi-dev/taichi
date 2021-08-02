@@ -210,21 +210,27 @@ if (TI_WITH_VULKAN)
     message(STATUS "Vulkan_INCLUDE_DIR=${Vulkan_INCLUDE_DIR}")
     message(STATUS "Vulkan_LIBRARY=${Vulkan_LIBRARY}")
     include_directories(${Vulkan_INCLUDE_DIR})
-    target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
 
-    # shaderc libs
-    # TODO: Is there a better way to auto detect this?
-    if (NOT SHADERC_ROOT_DIR)
-        message(FATAL_ERROR
-            "Please specify `-DSHADERC_ROOT_DIR=/path/to/shaderc` for developing the Vulkan backend. "
-            "The path should be the root direcotry containing `includes`, `lib` and `bin`.\n"
-            "If you haven't installed `shaderc`, please visit\n"
-            "https://github.com/google/shaderc/blob/main/downloads.md\n"
-            "to download the matching libraries.")
-    endif()
-    find_library(SHADERC_LIB NAMES "shaderc_combined" PATHS "${SHADERC_ROOT_DIR}/lib" REQUIRED)
-    target_include_directories(${CORE_LIBRARY_NAME} PUBLIC "${SHADERC_ROOT_DIR}/include")
-    target_link_libraries(${CORE_LIBRARY_NAME} ${SHADERC_LIB})
+    # No longer link against vulkan, using volk instead
+    #target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
+    include_directories(external/volk)
+
+    # Is this the best way to include the SPIRV-Headers?
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
+
+    if (MSVC)
+      find_library(SPIRV_TOOLS NAMES "SPIRV-Tools" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
+      find_library(SPIRV_OPT NAMES "SPIRV-Tools-opt" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
+      find_library(SPIRV_LINK NAMES "SPIRV-Tools-link" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
+    else ()
+      set(SPIRV_OPT SPIRV-Tools-opt)
+      set(SPIRV_TOOLS SPIRV-Tools)
+      set(SPIRV_LINK SPIRV-Tools-link)
+    endif ()
+    # NOTE: SPIRV-Tools-opt must come before SPIRV-Tools
+    # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
+    target_link_libraries(${CORE_LIBRARY_NAME} ${SPIRV_OPT} ${SPIRV_TOOLS} ${SPIRV_LINK})
+
     if (LINUX)
         # shaderc requires pthread
         set(THREADS_PREFER_PTHREAD_FLAG ON)

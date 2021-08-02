@@ -166,6 +166,13 @@ def subscript(value, *indices):
 
 
 @taichi_scope
+def subscript_with_offset(var, indices, cols, is_aos):
+    return Expr(
+        _ti_core.subscript_with_offset(var.ptr, make_expr_group(*indices),
+                                       cols, is_aos))
+
+
+@taichi_scope
 def chain_compare(comparators, ops):
     _taichi_skip_traceback = 1
     assert len(comparators) == len(ops) + 1, \

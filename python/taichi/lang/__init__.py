@@ -60,6 +60,8 @@ vulkan = _ti_core.vulkan
 gpu = [cuda, metal, opengl, vulkan]
 cpu = _ti_core.host_arch()
 kernel_profiler_print = lambda: impl.get_runtime().prog.kernel_profiler_print()
+query_kernel_profiler = lambda name: impl.get_runtime(
+).prog.query_kernel_profiler(name)
 kernel_profiler_clear = lambda: impl.get_runtime().prog.kernel_profiler_clear()
 kernel_profiler_total_time = lambda: impl.get_runtime(
 ).prog.kernel_profiler_total_time()

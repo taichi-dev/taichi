@@ -49,6 +49,7 @@ class TaskCodegen : public IRVisitor {
  public:
   struct Params {
     OffloadedStmt *task_ir;
+    VkRuntime *runtime;
     const CompiledSNodeStructs *compiled_structs;
     const KernelContextAttributes *ctx_attribs;
     std::string ti_kernel_name;
@@ -61,11 +62,13 @@ class TaskCodegen : public IRVisitor {
         ctx_attribs_(params.ctx_attribs),
         task_name_(fmt::format("{}_t{:02d}",
                                params.ti_kernel_name,
-                               params.task_id_in_kernel)) {
+                               params.task_id_in_kernel)),
+        runtime_(params.runtime) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
 
-    ir_ = std::make_shared<spirv::IRBuilder>();
+    ir_ =
+        std::make_shared<spirv::IRBuilder>(params.runtime->get_capabilities());
   }
 
   struct Result {
@@ -94,6 +97,7 @@ class TaskCodegen : public IRVisitor {
     Result res;
     res.spirv_code = ir_->finalize();
     res.task_attribs = std::move(task_attribs_);
+
     return res;
   }
 
@@ -215,10 +219,9 @@ class TaskCodegen : public IRVisitor {
       TI_ASSERT(ptr_to_buffers_.count(stmt) == 0);
       ptr_to_buffers_[stmt] = BuffersEnum::Root;
 
-      spirv::SType dt_ptr = ir_->get_pointer_type(
-          ir_->i32_type(),
-          spv::StorageClassStorageBuffer);  // TODO(changyu): use type-based
-                                            // pointer
+      spirv::SType dt_ptr =
+          ir_->get_pointer_type(ir_->get_primitive_buffer_type(out_snode->dt),
+                                spv::StorageClassStorageBuffer);
       val = ir_->make_value(spv::OpAccessChain, dt_ptr, input_ptr_val, offset);
     } else {
       spirv::SType snode_array =
@@ -348,8 +351,16 @@ class TaskCodegen : public IRVisitor {
     } else {
       buffer_ptr = at_buffer(stmt->dest, dt);
     }
-    ir_->store_variable(buffer_ptr,
-                        ir_->make_value(spv::OpBitcast, ir_->i32_type(), val));
+
+    auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
+    if (buffer_ptr.stype.element_type_id == val.stype.id) {
+      // No bit cast
+      ir_->store_variable(buffer_ptr, val);
+    } else {
+      ir_->store_variable(
+          buffer_ptr,
+          ir_->make_value(spv::OpBitcast, primitive_buffer_type, val));
+    }
   }
 
   void visit(GlobalLoadStmt *stmt) override {
@@ -364,8 +375,17 @@ class TaskCodegen : public IRVisitor {
     } else {
       buffer_ptr = at_buffer(stmt->src, dt);
     }
-    val = ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(dt),
-                          ir_->load_variable(buffer_ptr, ir_->i32_type()));
+
+    auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
+    if (buffer_ptr.stype.element_type_id == val.stype.id) {
+      // No bit cast
+      val = ir_->load_variable(buffer_ptr, primitive_buffer_type);
+    } else {
+      val = ir_->make_value(
+          spv::OpBitcast, ir_->get_primitive_type(dt),
+          ir_->load_variable(buffer_ptr, primitive_buffer_type));
+    }
+
     ir_->register_value(stmt->raw_name(), val);
   }
 
@@ -730,9 +750,16 @@ class TaskCodegen : public IRVisitor {
     spirv::Value data = ir_->query_value(stmt->val->raw_name());
     spirv::Value val;
     if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      spirv::Value func = ir_->float_atomic_add();
-      val = ir_->make_value(spv::OpFunctionCall, ir_->f32_type(), func,
-                            addr_ptr, data);
+      if (ir_->get_vulkan_cap().has_atomic_float) {
+        val = ir_->make_value(
+            spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt), addr_ptr,
+            ir_->uint_immediate_number(ir_->u32_type(), 1),
+            ir_->uint_immediate_number(ir_->u32_type(), 0), data);
+      } else {
+        spirv::Value func = ir_->float_atomic_add();
+        val = ir_->make_value(spv::OpFunctionCall, ir_->f32_type(), func,
+                              addr_ptr, data);
+      }
     } else if (is_integral(dt)) {
       val = ir_->make_value(
           spv::OpAtomicIAdd, ir_->get_primitive_type(dt), addr_ptr,
@@ -902,10 +929,12 @@ class TaskCodegen : public IRVisitor {
         task_attribs_.advisory_num_threads_per_group, 1, 1};
     ir_->set_work_group_size(group_size);
     std::vector<spirv::Value> buffers;
-    for (const auto &bb : task_attribs_.buffer_binds) {
-      const auto it = buffer_value_map_.find(bb.type);
-      if (it != buffer_value_map_.end()) {
-        buffers.push_back(it->second);
+    if (runtime_->get_capabilities().spirv_version > 0x10300) {
+      for (const auto &bb : task_attribs_.buffer_binds) {
+        const auto it = buffer_value_map_.find(bb.type);
+        if (it != buffer_value_map_.end()) {
+          buffers.push_back(it->second);
+        }
       }
     }
     ir_->commit_kernel_function(kernel_function_, "main", buffers,
@@ -1073,8 +1102,8 @@ class TaskCodegen : public IRVisitor {
     spirv::Value idx_val =
         ir_->make_value(spv::OpShiftRightArithmetic, ir_->i32_type(), ptr_val,
                         ir_->int_immediate_number(ir_->i32_type(), 2));
-    spirv::Value ret =
-        ir_->struct_array_access(ir_->i32_type(), buffer, idx_val);
+    spirv::Value ret = ir_->struct_array_access(
+        ir_->get_primitive_buffer_type(dt), buffer, idx_val);
     return ret;
   }
 
@@ -1142,6 +1171,8 @@ class TaskCodegen : public IRVisitor {
     return continue_label_stack_.front();
   }
 
+  VkRuntime *runtime_;
+
   std::shared_ptr<spirv::IRBuilder> ir_;  // spirv binary code builder
   std::unordered_map<TaskAttributes::Buffers, spirv::Value> buffer_value_map_;
   std::unordered_map<TaskAttributes::Buffers, uint32_t> buffer_binding_map_;
@@ -1168,6 +1199,7 @@ class KernelCodegen {
     std::string ti_kernel_name;
     Kernel *kernel;
     const CompiledSNodeStructs *compiled_structs;
+    VkRuntime *runtime;
   };
 
   explicit KernelCodegen(const Params &params)
@@ -1188,6 +1220,7 @@ class KernelCodegen {
       tp.compiled_structs = params_.compiled_structs;
       tp.ctx_attribs = &ctx_attribs_;
       tp.ti_kernel_name = params_.ti_kernel_name;
+      tp.runtime = params_.runtime;
 
       TaskCodegen cgen(tp);
       auto task_res = cgen.run();
@@ -1227,6 +1260,7 @@ FunctionType compile_to_executable(Kernel *kernel,
   params.ti_kernel_name = taichi_kernel_name;
   params.kernel = kernel;
   params.compiled_structs = compiled_structs;
+  params.runtime = runtime;
   KernelCodegen codegen(params);
   auto res = codegen.run();
   auto handle = runtime->register_taichi_kernel(std::move(res));

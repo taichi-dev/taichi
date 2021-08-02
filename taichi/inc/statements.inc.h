@@ -29,6 +29,7 @@ PER_STATEMENT(ReturnStmt)
 
 PER_STATEMENT(ArgLoadStmt)
 PER_STATEMENT(ExternalPtrStmt)
+PER_STATEMENT(PtrOffsetStmt)
 PER_STATEMENT(ConstStmt)
 PER_STATEMENT(AllocaStmt)
 PER_STATEMENT(UnaryOpStmt)

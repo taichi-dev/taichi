@@ -1,8 +1,9 @@
 #pragma once
 
-#include <glslang/SPIRV/spirv.hpp>
 #include <array>
 
+#include "taichi/backends/vulkan/spirv_header.h"
+#include "taichi/backends/vulkan/vulkan_api.h"
 #include "taichi/lang_util.h"
 #include "taichi/ir/type.h"
 #include "taichi/util/testing.h"
@@ -202,6 +203,9 @@ class InstrBuilder {
 // Builder to build up a single SPIR-V module
 class IRBuilder {
  public:
+  IRBuilder(const VulkanCapabilities &vulkan_cap) : vulkan_cap_(vulkan_cap) {
+  }
+
   template <typename... Args>
   void debug(spv::Op op, Args &&... args) {
     ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&debug_);
@@ -309,6 +313,8 @@ class IRBuilder {
   SType get_null_type();
   // Get the spirv type for a given Taichi data type
   SType get_primitive_type(const DataType &dt) const;
+  // Get the spirv type for the buffer for a given Taichi data type
+  SType get_primitive_buffer_type(const DataType &dt) const;
   // Get the pointer type that points to value_type
   SType get_pointer_type(const SType &value_type,
                          spv::StorageClass storage_class);
@@ -430,6 +436,10 @@ class IRBuilder {
   Value rand_f32(Value global_tmp_);
   Value rand_i32(Value global_tmp_);
 
+  const VulkanCapabilities &get_vulkan_cap() const {
+    return vulkan_cap_;
+  }
+
  private:
   Value new_value(const SType &type, ValueKind flag) {
     Value val;
@@ -444,6 +454,8 @@ class IRBuilder {
 
   void init_random_function(Value global_tmp_);
 
+  const VulkanCapabilities &vulkan_cap_;
+
   // internal instruction builder
   InstrBuilder ib_;
   // Current label
@@ -454,9 +466,24 @@ class IRBuilder {
   // glsl 450 extension
   Value ext_glsl450_;
   // Special cached types
-  bool support_int8_, support_int16_, support_int64_, support_fp64_;
-  SType t_bool_, t_int8_, t_int16_, t_int32_, t_int64_, t_uint8_, t_uint16_,
-      t_uint32_, t_uint64_, t_fp32_, t_fp64_, t_void_, t_void_func_;
+  bool support_int8_{false};
+  bool support_int16_{false};
+  bool support_int64_{false};
+  bool support_fp64_{false};
+
+  SType t_bool_;
+  SType t_int8_;
+  SType t_int16_;
+  SType t_int32_;
+  SType t_int64_;
+  SType t_uint8_;
+  SType t_uint16_;
+  SType t_uint32_;
+  SType t_uint64_;
+  SType t_fp32_;
+  SType t_fp64_;
+  SType t_void_;
+  SType t_void_func_;
   // gl compute shader related type(s) and variables
   SType t_v3_uint_;
   Value gl_global_invocation_id;
@@ -466,8 +493,11 @@ class IRBuilder {
   // Float type atomic add function
   Value float_atomic_add_;
   // Random function and variables
-  bool init_rand_;
-  Value _rand_x_, _rand_y_, _rand_z_, _rand_w_;  // per-thread local variable
+  bool init_rand_{false};
+  Value _rand_x_;
+  Value _rand_y_;
+  Value _rand_z_;
+  Value _rand_w_;  // per-thread local variable
 
   // map from value to its pointer type
   std::map<std::pair<uint32_t, spv::StorageClass>, SType> pointer_type_tbl_;

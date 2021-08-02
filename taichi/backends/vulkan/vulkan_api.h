@@ -10,7 +10,7 @@
 #include <vector>
 #include <string>
 
-#define TI_VULKAN_DEBUG
+// #define TI_VULKAN_DEBUG
 
 #ifdef TI_VULKAN_DEBUG
 #include <GLFW/glfw3.h>
@@ -249,7 +249,7 @@ class VulkanCommandBuilder {
   // destroyed.
   // https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Command_buffers#page_Command-buffer-allocation
   VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
-  VkDevice device; // do not own
+  VkDevice device_; // do not own
 };
 
 VkCommandBuffer record_copy_buffer_command(const VulkanDevice *device,

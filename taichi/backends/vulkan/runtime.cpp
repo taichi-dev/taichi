@@ -383,7 +383,8 @@ class VkRuntime ::Impl {
       TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
                spirv_src.size(), optimized_spv.size());
 
-#if 1
+      // Enable to dump SPIR-V assembly of kernels
+#if 0
       std::string spirv_asm;
       spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
       TI_TRACE("SPIR-V Assembly dump:\n{}\n\n", spirv_asm);

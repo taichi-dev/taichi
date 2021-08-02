@@ -729,7 +729,7 @@ VulkanCommandBuilder::VulkanCommandBuilder(const VulkanDevice *device) {
       vkAllocateCommandBuffers(device->device(), &alloc_info, &command_buffer_),
       "failed to allocate command buffer");
 
-  this->device = device->device();
+  this->device_ = device->device();
 
   VkCommandBufferBeginInfo begin_info{};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -760,10 +760,10 @@ void VulkanCommandBuilder::dispatch(const VulkanPipeline &pipeline,
   // Must call extension functions through a function pointer:
   PFN_vkCmdBeginDebugUtilsLabelEXT pfnCmdBeginDebugUtilsLabelEXT =
       (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetDeviceProcAddr(
-          device, "vkCmdBeginDebugUtilsLabelEXT");
+          device_, "vkCmdBeginDebugUtilsLabelEXT");
   PFN_vkCmdEndDebugUtilsLabelEXT pfnCmdEndDebugUtilsLabelEXT =
       (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetDeviceProcAddr(
-          device, "vkCmdEndDebugUtilsLabelEXT");
+          device_, "vkCmdEndDebugUtilsLabelEXT");
 
   VkDebugUtilsLabelEXT marker;
   marker.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;

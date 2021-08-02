@@ -317,7 +317,7 @@ def make_var_vector(size):
     exprs = []
     for _ in range(size):
         exprs.append(_ti_core.make_id_expr(''))
-    return ti.Vector(exprs)
+    return ti.Vector(exprs, disable_local_tensor=True)
 
 
 def make_expr_group(*exprs):

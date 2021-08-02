@@ -83,18 +83,31 @@ def test_2d_nested():
 def test_custom_struct():
     n = 32
 
-    st = ti.type_factory.make_struct(a=ti.i32, b=ti.f32)
-    f = ti.field(dtype=st, shape=(n, ))
+    # May also want to suuport vector struct using compound types such as
+    # st = ti.types.struct(a=ti.types.vector(3, ti.f32), b=ti.f32)
+    # f = ti.field(dtype=st, shape=(n, ))
+    
+    x = ti.Struct.field({"a": ti.f32, "b": ti.f32}, shape=(n, ))
+    y = ti.Struct.field({"a": ti.f32, "b": ti.f32})
+
+    ti.root.dense(ti.i, n // 4).dense(ti.i, 4).place(y)
 
     @ti.kernel
     def init():
-        for i in f:
-            f[i].a = i
+        for i in x:
+            x[i].a = i
+            y[i].a = i
     @ti.kernel
-    def run():
-        for i in f:
-            f[i].b = f[i].a
+    def run_taichi_scope():
+        for i in x:
+            x[i].b = x[i].a
+    def run_python_scope():
+        for i in range(n):
+            y[i].b = y[i].a * 2 + 1
     init()
-    run()
+    run_taichi_scope()
     for i in range(n):
-        assert f[i].b == i
+        assert x[i].b == i
+    run_python_scope()
+    for i in range(n):
+        assert y[i].b == i * 2 + 1    

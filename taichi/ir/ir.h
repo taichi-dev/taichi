@@ -9,16 +9,14 @@
 #include <tuple>
 
 #include "taichi/common/core.h"
-#include "taichi/util/bit.h"
-#include "taichi/lang_util.h"
+#include "taichi/ir/ir_modified.h"
 #include "taichi/ir/snode.h"
-#include "taichi/program/compile_config.h"
-#include "taichi/llvm/llvm_fwd.h"
+#include "taichi/ir/type_factory.h"
 #include "taichi/util/short_name.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
-class IRBuilder;
 class IRNode;
 class Block;
 class Stmt;
@@ -26,9 +24,11 @@ using pStmt = std::unique_ptr<Stmt>;
 
 class SNode;
 
+class Kernel;
+struct CompileConfig;
+
 enum class SNodeAccessFlag : int { block_local, read_only };
 std::string snode_access_flag_name(SNodeAccessFlag type);
-class ScratchPads;
 
 class MemoryAccessOptions {
  public:
@@ -70,13 +70,11 @@ class MemoryAccessOptions {
 #include "taichi/inc/statements.inc.h"
 #undef PER_STATEMENT
 
-IRBuilder &current_ast_builder();
-
 class DecoratorRecorder {
  public:
   int vectorize;
   int bit_vectorize;
-  int parallelize;
+  int num_cpu_threads;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
   int block_dim;
@@ -87,56 +85,6 @@ class DecoratorRecorder {
   }
 
   void reset();
-};
-
-class FrontendContext {
- private:
-  std::unique_ptr<IRBuilder> current_builder;
-  std::unique_ptr<Block> root_node;
-
- public:
-  FrontendContext();
-
-  IRBuilder &builder() {
-    return *current_builder;
-  }
-
-  IRNode *root();
-
-  std::unique_ptr<Block> get_root() {
-    return std::move(root_node);
-  }
-};
-
-extern std::unique_ptr<FrontendContext> context;
-
-class IRBuilder {
- private:
-  std::vector<Block *> stack;
-
- public:
-  IRBuilder(Block *initial) {
-    stack.push_back(initial);
-  }
-
-  void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
-
-  struct ScopeGuard {
-    IRBuilder *builder;
-    Block *list;
-    ScopeGuard(IRBuilder *builder, Block *list) : builder(builder), list(list) {
-      builder->stack.push_back(list);
-    }
-
-    ~ScopeGuard() {
-      builder->stack.pop_back();
-    }
-  };
-
-  std::unique_ptr<ScopeGuard> create_scope(std::unique_ptr<Block> &list);
-  Block *current_block();
-  Stmt *get_last_stmt();
-  void stop_gradient(SNode *);
 };
 
 class Identifier {
@@ -246,6 +194,7 @@ class IRVisitor {
 };
 
 struct CompileConfig;
+class Kernel;
 
 class IRNode {
  public:
@@ -637,8 +586,6 @@ class Stmt : public IRNode {
     return make_typed<T>(std::forward<Args>(args)...);
   }
 
-  void infer_type();
-
   void set_tb(const std::string &tb) {
     this->tb = tb;
   }
@@ -649,7 +596,7 @@ class Stmt : public IRNode {
     TI_NOT_IMPLEMENTED
   }
 
-  virtual ~Stmt() override = default;
+  virtual ~Stmt() = default;
 };
 
 class Block : public IRNode {
@@ -754,9 +701,6 @@ struct LocalAddress {
   LocalAddress(Stmt *var, int offset);
 };
 
-template <typename T>
-std::string to_string(const T &);
-
 extern DecoratorRecorder dec;
 
 inline void Vectorize(int v) {
@@ -768,7 +712,7 @@ inline void BitVectorize(int v) {
 }
 
 inline void Parallelize(int v) {
-  dec.parallelize = v;
+  dec.num_cpu_threads = v;
 }
 
 inline void StrictlySerialize() {
@@ -833,4 +777,5 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

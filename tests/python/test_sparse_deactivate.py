@@ -25,7 +25,7 @@ def test_pointer():
 
     @ti.kernel
     def deactivate():
-        ti.deactivate(ptr, 4)
+        ti.deactivate(ptr, 0)
 
     deactivate()
     s[None] = 0
@@ -60,7 +60,7 @@ def test_pointer1():
 
     @ti.kernel
     def deactivate():
-        ti.deactivate(ptr, 4)
+        ti.deactivate(ptr, 0)
 
     deactivate()
     s[None] = 0
@@ -156,16 +156,17 @@ def test_pointer3():
     fill2()
     clear_temp()
 
-    for iter in range(100):
+    for itr in range(100):
         copy_to_temp()
         clear()
         copy_from_temp()
         clear_temp()
 
+        xn = x.to_numpy()
         for j in range(n * n):
             for i in range(n * n):
                 if i + j < 100:
-                    assert x[i, j] == i + j
+                    assert xn[i, j] == i + j
 
 
 @ti.test(require=ti.extension.sparse)

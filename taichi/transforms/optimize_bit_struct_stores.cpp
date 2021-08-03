@@ -1,7 +1,10 @@
+#include "taichi/ir/analysis.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/pass.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/compile_config.h"
 
 namespace {
 
@@ -22,26 +25,17 @@ class CreateBitStructStores : public BasicStmtVisitor {
     root->accept(&pass);
   }
 
-  void visit(GlobalStoreStmt *stmt) {
-    auto get_ch = stmt->ptr->cast<GetChStmt>();
+  void visit(GlobalStoreStmt *stmt) override {
+    auto get_ch = stmt->dest->cast<GetChStmt>();
     if (!get_ch || get_ch->input_snode->type != SNodeType::bit_struct)
       return;
 
-    // We only handle bit_struct pointers here. The currently supported data
-    // types are
-    // - CustomIntType
-    // - CustomFloatType without exponents
-    // - CustomFloatType with shared exponents
+    // We only handle bit_struct pointers here.
 
-    auto dtype = get_ch->output_snode->dt;
-    if (dtype->is<CustomIntType>() ||
-        dtype->as<CustomFloatType>()->get_exponent_type() == nullptr ||
-        get_ch->output_snode->owns_shared_exponent) {
-      auto s = Stmt::make<BitStructStoreStmt>(get_ch->input_ptr,
-                                              std::vector<int>{get_ch->chid},
-                                              std::vector<Stmt *>{stmt->data});
-      stmt->replace_with(VecStatement(std::move(s)));
-    }
+    auto s = Stmt::make<BitStructStoreStmt>(get_ch->input_ptr,
+                                            std::vector<int>{get_ch->chid},
+                                            std::vector<Stmt *>{stmt->val});
+    stmt->replace_with(VecStatement(std::move(s)));
   }
 };
 
@@ -69,7 +63,7 @@ class MergeBitStructStores : public BasicStmtVisitor {
         ptr_to_bit_struct_stores;
     std::vector<Stmt *> statements_to_delete;
     for (int i = 0; i <= (int)statements.size(); i++) {
-      // TODO: in some cases BitSturctStoreStmts across container statements can
+      // TODO: in some cases BitStructStoreStmts across container statements can
       // still be merged, similar to basic block v.s. CFG optimizations.
       if (i == statements.size() || statements[i]->is_container_statement()) {
         for (const auto &item : ptr_to_bit_struct_stores) {
@@ -119,16 +113,102 @@ class MergeBitStructStores : public BasicStmtVisitor {
   bool modified_{false};
 };
 
+class DemoteAtomicBitStructStores : public BasicStmtVisitor {
+ private:
+  const std::unordered_map<OffloadedStmt *,
+                           std::unordered_map<const SNode *, GlobalPtrStmt *>>
+      &uniquely_accessed_bit_structs_;
+  std::unordered_map<OffloadedStmt *,
+                     std::unordered_map<const SNode *, GlobalPtrStmt *>>::
+      const_iterator current_iterator_;
+  bool modified_{false};
+
+ public:
+  using BasicStmtVisitor::visit;
+  OffloadedStmt *current_offloaded;
+
+  explicit DemoteAtomicBitStructStores(
+      const std::unordered_map<
+          OffloadedStmt *,
+          std::unordered_map<const SNode *, GlobalPtrStmt *>>
+          &uniquely_accessed_bit_structs)
+      : uniquely_accessed_bit_structs_(uniquely_accessed_bit_structs),
+        current_offloaded(nullptr) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = false;
+  }
+
+  void visit(BitStructStoreStmt *stmt) override {
+    bool demote = false;
+    TI_ASSERT(current_offloaded);
+    if (current_offloaded->task_type == OffloadedTaskType::serial) {
+      demote = true;
+    } else if (current_offloaded->task_type == OffloadedTaskType::range_for ||
+               current_offloaded->task_type == OffloadedTaskType::struct_for) {
+      auto *snode = stmt->get_bit_struct_snode();
+      // Find the nearest non-bit-level ancestor
+      while (snode->is_bit_level) {
+        snode = snode->parent;
+      }
+      auto accessed_ptr_iterator = current_iterator_->second.find(snode);
+      if (accessed_ptr_iterator != current_iterator_->second.end() &&
+          accessed_ptr_iterator->second != nullptr) {
+        demote = true;
+      }
+    }
+    if (demote) {
+      stmt->is_atomic = false;
+      modified_ = true;
+    }
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    current_offloaded = stmt;
+    if (stmt->task_type == OffloadedTaskType::range_for ||
+        stmt->task_type == OffloadedTaskType::struct_for) {
+      current_iterator_ =
+          uniquely_accessed_bit_structs_.find(current_offloaded);
+    }
+    // We don't need to visit TLS/BLS prologues/epilogues.
+    if (stmt->body) {
+      stmt->body->accept(this);
+    }
+    current_offloaded = nullptr;
+  }
+
+  static bool run(IRNode *node,
+                  const std::unordered_map<
+                      OffloadedStmt *,
+                      std::unordered_map<const SNode *, GlobalPtrStmt *>>
+                      &uniquely_accessed_bit_structs) {
+    DemoteAtomicBitStructStores demoter(uniquely_accessed_bit_structs);
+    node->accept(&demoter);
+    return demoter.modified_;
+  }
+};
+
 }  // namespace
 
 TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
-void optimize_bit_struct_stores(IRNode *root) {
+void optimize_bit_struct_stores(IRNode *root,
+                                const CompileConfig &config,
+                                AnalysisManager *amgr) {
   TI_AUTO_PROF;
   CreateBitStructStores::run(root);
   die(root);  // remove unused GetCh
-  MergeBitStructStores::run(root);
+  if (config.quant_opt_store_fusion) {
+    MergeBitStructStores::run(root);
+  }
+  if (config.quant_opt_atomic_demotion) {
+    auto *res = amgr->get_pass_result<GatherUniquelyAccessedBitStructsPass>();
+    TI_ASSERT_INFO(res,
+                   "The optimize_bit_struct_stores pass must be after the "
+                   "gather_uniquely_accessed_bit_structs pass when "
+                   "config.quant_opt_atomic_demotion is true.");
+    DemoteAtomicBitStructStores::run(root, res->uniquely_accessed_bit_structs);
+  }
 }
 
 }  // namespace irpass

@@ -16,6 +16,7 @@ TLANG_NAMESPACE_BEGIN
 struct TaskMeta;
 
 class IRNode;
+class Kernel;
 class OffloadedStmt;
 class GlobalPtrStmt;
 
@@ -166,8 +167,8 @@ TLANG_NAMESPACE_END
 namespace std {
 template <>
 struct hash<taichi::lang::IRHandle> {
-  std::size_t operator()(const taichi::lang::IRHandle &ir_handle) const
-      noexcept {
+  std::size_t operator()(
+      const taichi::lang::IRHandle &ir_handle) const noexcept {
     return ir_handle.hash();
   }
 };
@@ -209,8 +210,12 @@ struct TaskMeta {
   SNode *snode{nullptr};  // struct-for and listgen only
   std::unordered_set<AsyncState> input_states;
   std::unordered_set<AsyncState> output_states;
-  std::unordered_map<SNode *, GlobalPtrStmt *> loop_unique;
+
+  // loop_unique[s] != nullptr => injective access on s
+  std::unordered_map<const SNode *, GlobalPtrStmt *> loop_unique;
   std::unordered_map<const SNode *, bool> element_wise;
+
+  // element_wise[s] OR loop_unique[s] covers s => surjective access on s
 
   void print() const;
 };

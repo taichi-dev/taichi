@@ -1,6 +1,7 @@
 #include "llvm_codegen_utils.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 std::string type_name(llvm::Type *type) {
   std::string type_name_str;
@@ -41,4 +42,5 @@ void check_func_call_signature(llvm::Value *func,
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

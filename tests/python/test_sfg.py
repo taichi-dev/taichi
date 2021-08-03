@@ -1,6 +1,7 @@
-import taichi as ti
 import numpy as np
 import pytest
+
+import taichi as ti
 
 
 @ti.test(require=[ti.extension.async_mode, ti.extension.sparse],

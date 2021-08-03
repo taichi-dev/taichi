@@ -1,7 +1,8 @@
 import functools
-import traceback
-from colorama import Fore, Style
 import sys
+import traceback
+
+from colorama import Fore, Style
 
 
 def enable_excepthook():

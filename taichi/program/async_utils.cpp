@@ -159,16 +159,25 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     // For a global load, GlobalPtrStmt has already been handled in
     // get_meta_input_value_states().
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
-      if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
-        for (auto &snode : ptr->snodes.data) {
+      if (auto dest = global_store->dest->cast<GlobalPtrStmt>()) {
+        for (auto &snode : dest->snodes.data) {
           meta.output_states.insert(
               ir_bank->get_async_state(snode, AsyncState::Type::value));
         }
       }
+      if (auto global_tensor_element =
+              global_store->dest->cast<PtrOffsetStmt>()) {
+        if (auto dest = global_tensor_element->origin->cast<GlobalPtrStmt>()) {
+          for (auto &snode : dest->snodes.data) {
+            meta.output_states.insert(
+                ir_bank->get_async_state(snode, AsyncState::Type::value));
+          }
+        }
+      }
     }
     if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
-      if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
-        for (auto &snode : ptr->snodes.data) {
+      if (auto dest = global_atomic->dest->cast<GlobalPtrStmt>()) {
+        for (auto &snode : dest->snodes.data) {
           // input_state is already handled in
           // get_meta_input_value_states().
           meta.output_states.insert(
@@ -197,6 +206,8 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
                  snode_op->op_type == SNodeOpType::length) {
         meta.input_states.insert(
             ir_bank->get_async_state(sn, AsyncState::Type::mask));
+      } else if (snode_op->op_type == SNodeOpType::get_addr) {
+        // do nothing
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -331,14 +342,33 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     insert_value_states_top_down(root_stmt->snode);
   }
 
-  // We are being conservative here: if there are any non-element-wise
-  // accesses (e.g., a = x[i + 1]), we don't treat it as completely
-  // overwriting the value state (e.g., for i in x: x[i] = 0).
   for (auto &state : meta.output_states) {
+    // We need to insert input value states in case of partial writes.
+    // Assume we write sn on every indices we access in this task,
+    // because we would have inserted the input value state in
+    // get_meta_input_value_states otherwise.
     if (state.type == AsyncState::Type::value && state.holds_snode()) {
       const auto *sn = state.snode();
-      if (meta.element_wise.find(sn) == meta.element_wise.end() ||
-          !meta.element_wise[sn]) {
+      bool completely_overwriting = false;
+      if (meta.element_wise[sn]) {
+        // If every access on sn is element-wise, then it must be
+        // completely overwriting.
+        completely_overwriting = true;
+        // TODO: this is also completely overwriting although element_wise[sn]
+        //  is false:
+        // for i in x:
+        //     x[i] = 0
+        //     x[i + 1] = 0
+        // A solution to this is to gather all definite writes in the task,
+        // and check if any one of them ->covers_snode(sn).
+        // TODO: is element-wise useless since it must be loop-unique?
+      }
+      if (meta.loop_unique.count(sn) > 0 && meta.loop_unique[sn] != nullptr) {
+        if (meta.loop_unique[sn]->covers_snode(sn)) {
+          completely_overwriting = true;
+        }
+      }
+      if (!completely_overwriting) {
         meta.input_states.insert(state);
       }
     }

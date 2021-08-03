@@ -1,5 +1,6 @@
-import taichi as ti
 import math
+
+import taichi as ti
 
 gui = ti.GUI("Test GUI", (512, 512), background_color=0xFFFFFF)
 t = 0

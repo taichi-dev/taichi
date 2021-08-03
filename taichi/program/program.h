@@ -15,16 +15,26 @@
 #include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
+#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/program/callable.h"
+#include "taichi/program/aot_module_builder.h"
+#include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"
+#include "taichi/program/snode_expr_utils.h"
+#include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/program/context.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/backends/metal/struct_metal.h"
+#include "taichi/struct/snode_tree.h"
+#include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/system/memory_pool.h"
+#include "taichi/system/snode_tree_buffer_manager.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 struct JITEvaluatorId {
   std::thread::id thread_id;
@@ -50,13 +60,14 @@ struct JITEvaluatorId {
   }
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi
 
 namespace std {
 template <>
 struct hash<taichi::lang::JITEvaluatorId> {
-  std::size_t operator()(taichi::lang::JITEvaluatorId const &id) const
-      noexcept {
+  std::size_t operator()(
+      taichi::lang::JITEvaluatorId const &id) const noexcept {
     return ((std::size_t)id.op | (id.ret.hash() << 8) | (id.lhs.hash() << 16) |
             (id.rhs.hash() << 24) | ((std::size_t)id.is_binary << 31)) ^
            (std::hash<std::thread::id>{}(id.thread_id) << 32);
@@ -64,7 +75,8 @@ struct hash<taichi::lang::JITEvaluatorId> {
 };
 }  // namespace std
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 extern Program *current_program;
 
@@ -79,27 +91,31 @@ class AsyncEngine;
 class Program {
  public:
   using Kernel = taichi::lang::Kernel;
-  Kernel *current_kernel;
-  std::unique_ptr<SNode> snode_root;  // pointer to the data structure.
-  void *llvm_runtime;
+  Callable *current_callable{nullptr};
+  void *llvm_runtime{nullptr};
   CompileConfig config;
-  std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
-  bool sync;  // device/host synchronized?
-  bool finalized;
-  float64 total_compilation_time;
+  std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
+  std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
+  bool sync{false};  // device/host synchronized?
+  bool finalized{false};
+  float64 total_compilation_time{0.0};
   static std::atomic<int> num_instances;
-  std::unique_ptr<ThreadPool> thread_pool;
-  std::unique_ptr<MemoryPool> memory_pool;
-  uint64 *result_buffer;             // TODO: move this
-  void *preallocated_device_buffer;  // TODO: move this to memory allocator
+  std::unique_ptr<ThreadPool> thread_pool{nullptr};
+  std::unique_ptr<MemoryPool> memory_pool{nullptr};
+  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
+  uint64 *result_buffer{nullptr};  // TODO: move this
+  void *preallocated_device_buffer{
+      nullptr};  // TODO: move this to memory allocator
   std::unordered_map<int, SNode *> snodes;
 
-  std::unique_ptr<Runtime> runtime;
-  std::unique_ptr<AsyncEngine> async_engine;
+  std::unique_ptr<Runtime> runtime_mem_info{nullptr};
+  std::unique_ptr<AsyncEngine> async_engine{nullptr};
 
   std::vector<std::unique_ptr<Kernel>> kernels;
+  std::vector<std::unique_ptr<Function>> functions;
+  std::unordered_map<FunctionKey, Function *> function_map;
 
-  std::unique_ptr<KernelProfilerBase> profiler;
+  std::unique_ptr<KernelProfilerBase> profiler{nullptr};
 
   std::unordered_map<JITEvaluatorId, std::unique_ptr<Kernel>>
       jit_evaluator_cache;
@@ -112,10 +128,26 @@ class Program {
   Program() : Program(default_compile_config.arch) {
   }
 
-  Program(Arch arch);
+  explicit Program(Arch arch);
+
+  ~Program();
 
   void kernel_profiler_print() {
     profiler->print();
+  }
+
+  struct KernelProfilerQueryResult {
+    int counter{0};
+    double min{0.0};
+    double max{0.0};
+    double avg{0.0};
+  };
+
+  KernelProfilerQueryResult query_kernel_profiler(const std::string &name) {
+    KernelProfilerQueryResult query_result;
+    profiler->query(name, query_result.counter, query_result.min,
+                    query_result.max, query_result.avg);
+    return query_result;
   }
 
   void kernel_profiler_clear() {
@@ -134,7 +166,12 @@ class Program {
     return profiler.get();
   }
 
-  void initialize_device_llvm_context();
+  /**
+   * Initializes Program#llvm_context_device, if this has not been done.
+   *
+   * Not thread safe.
+   */
+  void maybe_initialize_cuda_llvm_context();
 
   void synchronize();
 
@@ -145,10 +182,12 @@ class Program {
   // Only useful when async mode is enabled.
   void async_flush();
 
-  void layout(std::function<void()> func) {
-    func();
-    materialize_layout();
-  }
+  /**
+   * Materializes the runtime.
+   */
+  void materialize_runtime();
+
+  int get_snode_tree_size();
 
   void visualize_layout(const std::string &fn);
 
@@ -157,8 +196,8 @@ class Program {
     Program *prog;
     bool grad;
 
-    Kernel &def(const std::function<void()> &func) {
-      return prog->kernel(func, name, grad);
+    Kernel *def(const std::function<void()> &func) {
+      return &(prog->kernel(func, name, grad));
     }
   };
 
@@ -180,12 +219,14 @@ class Program {
     return *kernels.back();
   }
 
-  void start_function_definition(Kernel *func) {
-    current_kernel = func;
+  void start_kernel_definition(Kernel *kernel) {
+    current_callable = kernel;
   }
 
-  void end_function_definition() {
+  void end_kernel_definition() {
   }
+
+  Function *create_function(const FunctionKey &func_key);
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?
@@ -195,15 +236,18 @@ class Program {
   FunctionType compile_to_backend_executable(Kernel &kernel,
                                              OffloadedStmt *stmt);
 
-  void initialize_runtime_system(StructCompiler *scomp);
-
-  void materialize_layout();
-
   void check_runtime_error();
 
-  inline Kernel &get_current_kernel() {
-    TI_ASSERT(current_kernel);
-    return *current_kernel;
+  // TODO(#2193): Remove get_current_kernel() and get_current_function()?
+  inline Kernel &get_current_kernel() const {
+    auto *kernel = dynamic_cast<Kernel *>(current_callable);
+    TI_ASSERT(kernel);
+    return *kernel;
+  }
+
+  inline Function *get_current_function() const {
+    auto *func = dynamic_cast<Function *>(current_callable);
+    return func;
   }
 
   TaichiLLVMContext *get_llvm_context(Arch arch) {
@@ -243,11 +287,7 @@ class Program {
     return id++;
   }
 
-  void print_snode_tree() {
-    snode_root->print();
-  }
-
-  int default_block_dim() const;
+  static int default_block_dim(const CompileConfig &config);
 
   void print_list_manager_info(void *list_manager);
 
@@ -273,15 +313,80 @@ class Program {
   // Returns zero if the SNode is statically allocated
   std::size_t get_snode_num_dynamically_allocated(SNode *snode);
 
-  ~Program();
+  inline SNodeGlobalVarExprMap *get_snode_to_glb_var_exprs() {
+    return &snode_to_glb_var_exprs_;
+  }
+
+  inline SNodeRwAccessorsBank &get_snode_rw_accessors_bank() {
+    return snode_rw_accessors_bank_;
+  }
+
+  /**
+   * Destroys a new SNode tree.
+   *
+   * @param snode_tree The pointer to SNode tree.
+   */
+  void destroy_snode_tree(SNodeTree *snode_tree);
+
+  /**
+   * Adds a new SNode tree.
+   *
+   * @param root The root of the new SNode tree.
+   * @return The pointer to SNode tree.
+   */
+  SNodeTree *add_snode_tree(std::unique_ptr<SNode> root);
+
+  /**
+   * Gets the root of a SNode tree.
+   *
+   * @param tree_id Index of the SNode tree
+   * @return Root of the tree
+   */
+  SNode *get_snode_root(int tree_id);
+
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 
  private:
+  /**
+   * Materializes a new SNodeTree.
+   *
+   * JIT compiles the @param tree to backend-specific data types.
+   */
+  void materialize_snode_tree(SNodeTree *tree);
+
+  /**
+   * Sets the attributes of the Exprs that are backed by SNodes.
+   */
+  void materialize_snode_expr_attributes();
+
+  /**
+   * Initializes the runtime system for LLVM based backends.
+   */
+  void initialize_llvm_runtime_system();
+
+  /**
+   * Initializes the SNodes for LLVM based backends.
+   */
+  void initialize_llvm_runtime_snodes(const SNodeTree *tree,
+                                      StructCompiler *scomp);
+
+  std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
+      TaichiLLVMContext *tlctx);
+
   // Metal related data structures
   std::optional<metal::CompiledStructs> metal_compiled_structs_;
   std::unique_ptr<metal::KernelManager> metal_kernel_mgr_;
   // OpenGL related data structures
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
   std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
+  // SNode information that requires using Program.
+  SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
+  SNodeRwAccessorsBank snode_rw_accessors_bank_;
+  // Vulkan related data structures
+  std::optional<vulkan::CompiledSNodeStructs> vulkan_compiled_structs_;
+  std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
+
+  std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
 
  public:
 #ifdef TI_WITH_CC
@@ -290,4 +395,5 @@ class Program {
 #endif
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

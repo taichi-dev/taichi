@@ -3,6 +3,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/system/profiler.h"
+
 #include <typeindex>
 
 TLANG_NAMESPACE_BEGIN
@@ -73,6 +75,18 @@ class WholeKernelCSE : public BasicStmtVisitor {
       auto prev_ptr = prev_stmt->as<GlobalPtrStmt>();
       return irpass::analysis::definitely_same_address(this_ptr, prev_ptr) &&
              (this_ptr->activate == prev_ptr->activate || prev_ptr->activate);
+    }
+    if (this_stmt->is<LoopUniqueStmt>()) {
+      auto this_loop_unique = this_stmt->as<LoopUniqueStmt>();
+      auto prev_loop_unique = prev_stmt->as<LoopUniqueStmt>();
+      if (irpass::analysis::same_value(this_loop_unique->input,
+                                       prev_loop_unique->input)) {
+        // Merge the "covers" information into prev_loop_unique.
+        // Notice that this_loop_unique->covers is corrupted here.
+        prev_loop_unique->covers.merge(this_loop_unique->covers);
+        return true;
+      }
+      return false;
     }
     return irpass::analysis::same_statements(this_stmt, prev_stmt);
   }

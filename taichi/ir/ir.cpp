@@ -1,21 +1,15 @@
-
-// Intermediate representations
-
 #include "taichi/ir/ir.h"
-#include "taichi/ir/transforms.h"
-#include "taichi/ir/analysis.h"
 
 #include <numeric>
 #include <thread>
 #include <unordered_map>
 
-#include "taichi/ir/frontend.h"
+// #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
+#include "taichi/ir/transforms.h"
 
-TLANG_NAMESPACE_BEGIN
-
-#define TI_EXPRESSION_IMPLEMENTATION
-#include "expression_ops.h"
+namespace taichi {
+namespace lang {
 
 std::string snode_access_flag_name(SNodeAccessFlag type) {
   if (type == SNodeAccessFlag::block_local) {
@@ -27,50 +21,14 @@ std::string snode_access_flag_name(SNodeAccessFlag type) {
   }
 }
 
-IRBuilder &current_ast_builder() {
-  return context->builder();
-}
-
 void DecoratorRecorder::reset() {
   vectorize = -1;
   bit_vectorize = -1;
-  parallelize = 0;
+  num_cpu_threads = 0;
   uniform = false;
   mem_access_opt.clear();
   block_dim = 0;
   strictly_serialized = false;
-}
-
-Block *IRBuilder::current_block() {
-  if (stack.empty())
-    return nullptr;
-  else
-    return stack.back();
-}
-
-Stmt *IRBuilder::get_last_stmt() {
-  TI_ASSERT(!stack.empty());
-  return stack.back()->back();
-}
-
-void IRBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->insert(std::move(stmt), location);
-}
-
-void IRBuilder::stop_gradient(SNode *snode) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->stop_gradients.push_back(snode);
-}
-
-std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(
-    std::unique_ptr<Block> &list) {
-  TI_ASSERT(list == nullptr);
-  list = std::make_unique<Block>();
-  if (!stack.empty()) {
-    list->parent_stmt = get_last_stmt();
-  }
-  return std::make_unique<ScopeGuard>(this, list.get());
 }
 
 int Identifier::id_counter = 0;
@@ -93,14 +51,6 @@ IRNode *IRNode::get_ir_root() {
     node = node->get_parent();
   }
   return node;
-}
-
-Kernel *IRNode::get_kernel() const {
-  return const_cast<IRNode *>(this)->get_ir_root()->kernel;
-}
-
-CompileConfig &IRNode::get_config() const {
-  return get_kernel()->program.config;
 }
 
 std::unique_ptr<IRNode> IRNode::clone() {
@@ -292,44 +242,6 @@ int Stmt::locate_operand(Stmt **stmt) {
     }
   }
   return -1;
-}
-
-std::string Expression::get_attribute(const std::string &key) const {
-  if (auto it = attributes.find(key); it == attributes.end()) {
-    TI_ERROR("Attribute {} not found.", key);
-  } else {
-    return it->second;
-  }
-}
-
-ExprGroup ExprGroup::loaded() const {
-  auto indices_loaded = *this;
-  for (int i = 0; i < (int)this->size(); i++)
-    indices_loaded[i].set(load_if_ptr(indices_loaded[i]));
-  return indices_loaded;
-}
-
-std::string ExprGroup::serialize() const {
-  std::string ret;
-  for (int i = 0; i < (int)exprs.size(); i++) {
-    ret += exprs[i].serialize();
-    if (i + 1 < (int)exprs.size()) {
-      ret += ", ";
-    }
-  }
-  return ret;
-}
-
-template <>
-std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
-  std::string ret = " [";
-  for (int i = 0; i < (int)ptr.size(); i++) {
-    ret += fmt::format("{}[{}]", ptr[i].var->name(), ptr[i].offset);
-    if (i + 1 < (int)ptr.size())
-      ret += ", ";
-  }
-  ret += "]";
-  return ret;
 }
 
 void Block::erase(int location) {
@@ -603,8 +515,5 @@ LocalAddress::LocalAddress(Stmt *var, int offset) : var(var), offset(offset) {
   TI_ASSERT(var->is<AllocaStmt>());
 }
 
-void Stmt::infer_type() {
-  irpass::type_check(this);
-}
-
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

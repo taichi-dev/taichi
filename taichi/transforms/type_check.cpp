@@ -5,7 +5,6 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
-#include "taichi/program/kernel.h"
 #include "taichi/ir/frontend.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -17,11 +16,7 @@ class TypeCheck : public IRVisitor {
   CompileConfig config;
 
  public:
-  TypeCheck(IRNode *root) {
-    auto *kernel = root->get_kernel();
-    if (kernel != nullptr) {
-      config = kernel->program.config;
-    }
+  explicit TypeCheck(const CompileConfig &config) : config(config) {
     allow_undefined_visitor = true;
   }
 
@@ -31,14 +26,14 @@ class TypeCheck : public IRVisitor {
     }
   }
 
-  void visit(AllocaStmt *stmt) {
+  void visit(AllocaStmt *stmt) override {
     // Do nothing. Alloca type is determined by the first LocalStore in IR
     // visiting order, at compile time.
 
     // ret_type stands for its element type.
   }
 
-  void visit(IfStmt *if_stmt) {
+  void visit(IfStmt *if_stmt) override {
     // TODO: use PrimitiveType::u1 when it's supported
     TI_ASSERT_INFO(
         if_stmt->cond->ret_type->is_primitive(PrimitiveTypeID::i32),
@@ -51,7 +46,7 @@ class TypeCheck : public IRVisitor {
     }
   }
 
-  void visit(Block *stmt_list) {
+  void visit(Block *stmt_list) override {
     std::vector<Stmt *> stmts;
     // Make a copy since type casts may be inserted for type promotion.
     for (auto &stmt : stmt_list->statements) {
@@ -61,7 +56,7 @@ class TypeCheck : public IRVisitor {
       stmt->accept(this);
   }
 
-  void visit(AtomicOpStmt *stmt) {
+  void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     // TODO(type): test_ad_for fails if we assume dest is a pointer type.
     auto dst_type = stmt->dest->ret_type.ptr_removed();
@@ -79,51 +74,60 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = dst_type;
   }
 
-  void visit(LocalLoadStmt *stmt) {
+  void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    auto lookup = stmt->ptr[0].var->ret_type;
+    auto lookup = stmt->src[0].var->ret_type;
     stmt->ret_type = lookup;
   }
 
-  void visit(LocalStoreStmt *stmt) {
-    if (stmt->ptr->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
+  void visit(LocalStoreStmt *stmt) override {
+    if (stmt->dest->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
       // Infer data type for alloca
-      stmt->ptr->ret_type = stmt->data->ret_type;
+      stmt->dest->ret_type = stmt->val->ret_type;
     }
     auto common_container_type =
-        promoted_type(stmt->ptr->ret_type, stmt->data->ret_type);
+        promoted_type(stmt->dest->ret_type, stmt->val->ret_type);
 
-    auto old_data = stmt->data;
-    if (stmt->ptr->ret_type != stmt->data->ret_type) {
-      stmt->data =
-          insert_type_cast_before(stmt, stmt->data, stmt->ptr->ret_type);
+    auto old_data = stmt->val;
+    if (stmt->dest->ret_type != stmt->val->ret_type) {
+      stmt->val =
+          insert_type_cast_before(stmt, stmt->val, stmt->dest->ret_type);
     }
-    if (stmt->ptr->ret_type != common_container_type) {
+    if (stmt->dest->ret_type != common_container_type) {
       TI_WARN(
           "[{}] Local store may lose precision (target = {}, value = {}) at",
-          stmt->name(), stmt->ptr->ret_data_type_name(),
+          stmt->name(), stmt->dest->ret_data_type_name(),
           old_data->ret_data_type_name(), stmt->id);
       TI_WARN("\n{}", stmt->tb);
     }
-    stmt->ret_type = stmt->ptr->ret_type;
+    stmt->ret_type = stmt->dest->ret_type;
   }
 
-  void visit(GlobalLoadStmt *stmt) {
-    auto pointee_type = stmt->ptr->ret_type.ptr_removed();
-    stmt->ret_type = pointee_type->get_compute_type();
+  void visit(GlobalLoadStmt *stmt) override {
+    auto pointee_type = stmt->src->ret_type.ptr_removed();
+    if (auto bit_struct = pointee_type->cast<BitStructType>()) {
+      stmt->ret_type = bit_struct->get_physical_type();
+    } else {
+      stmt->ret_type = pointee_type->get_compute_type();
+    }
   }
 
-  void visit(SNodeOpStmt *stmt) {
+  void visit(SNodeOpStmt *stmt) override {
+    if (stmt->op_type == SNodeOpType::get_addr) {
+      stmt->ret_type =
+          TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::u64);
+    } else {
+      stmt->ret_type =
+          TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    }
+  }
+
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
     stmt->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
-  void visit(ExternalTensorShapeAlongAxisStmt *stmt) {
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
-  }
-
-  void visit(GlobalPtrStmt *stmt) {
+  void visit(GlobalPtrStmt *stmt) override {
     if (stmt->is_bit_vectorized) {
       return;
     }
@@ -154,29 +158,34 @@ class TypeCheck : public IRVisitor {
     }
   }
 
-  void visit(GlobalStoreStmt *stmt) {
-    auto dst_value_type = stmt->ptr->ret_type.ptr_removed();
+  void visit(PtrOffsetStmt *stmt) override {
+    TI_ASSERT(stmt->offset->ret_type->is_primitive(PrimitiveTypeID::i32));
+    stmt->ret_type.set_is_pointer(true);
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    auto dst_value_type = stmt->dest->ret_type.ptr_removed();
     if (dst_value_type->is<CustomIntType>() ||
         dst_value_type->is<CustomFloatType>()) {
       // We force the value type to be the compute_type of the bit pointer.
       // Casting from compute_type to physical_type is handled in codegen.
       dst_value_type = dst_value_type->get_compute_type();
     }
-    auto promoted = promoted_type(dst_value_type, stmt->data->ret_type);
-    auto input_type = stmt->data->ret_data_type_name();
-    if (dst_value_type != stmt->data->ret_type) {
-      stmt->data = insert_type_cast_before(stmt, stmt->data, dst_value_type);
+    auto promoted = promoted_type(dst_value_type, stmt->val->ret_type);
+    auto input_type = stmt->val->ret_data_type_name();
+    if (dst_value_type != stmt->val->ret_type) {
+      stmt->val = insert_type_cast_before(stmt, stmt->val, dst_value_type);
     }
     // TODO: do not use "promoted" here since u8 + u8 = i32 in C++ and storing
     // u8 to u8 leads to extra warnings.
-    if (dst_value_type != promoted && dst_value_type != stmt->data->ret_type) {
+    if (dst_value_type != promoted && dst_value_type != stmt->val->ret_type) {
       TI_WARN("[{}] Global store may lose precision: {} <- {}, at",
               stmt->name(), dst_value_type->to_string(), input_type);
       TI_WARN("\n{}", stmt->tb);
     }
   }
 
-  void visit(RangeForStmt *stmt) {
+  void visit(RangeForStmt *stmt) override {
     mark_as_if_const(stmt->begin, TypeFactory::create_vector_or_scalar_type(
                                       1, PrimitiveType::i32));
     mark_as_if_const(stmt->end, TypeFactory::create_vector_or_scalar_type(
@@ -184,15 +193,15 @@ class TypeCheck : public IRVisitor {
     stmt->body->accept(this);
   }
 
-  void visit(StructForStmt *stmt) {
+  void visit(StructForStmt *stmt) override {
     stmt->body->accept(this);
   }
 
-  void visit(WhileStmt *stmt) {
+  void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }
 
-  void visit(UnaryOpStmt *stmt) {
+  void visit(UnaryOpStmt *stmt) override {
     stmt->ret_type = stmt->operand->ret_type;
     if (stmt->is_cast()) {
       stmt->ret_type = stmt->cast_type;
@@ -242,7 +251,7 @@ class TypeCheck : public IRVisitor {
     val = cast_stmt;
   }
 
-  void visit(BinaryOpStmt *stmt) {
+  void visit(BinaryOpStmt *stmt) override {
     auto error = [&](std::string comment = "") {
       if (comment == "") {
         TI_WARN(
@@ -316,7 +325,7 @@ class TypeCheck : public IRVisitor {
     }
   }
 
-  void visit(TernaryOpStmt *stmt) {
+  void visit(TernaryOpStmt *stmt) override {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
       TI_ASSERT(stmt->op1->ret_type->is_primitive(PrimitiveTypeID::i32))
@@ -339,21 +348,30 @@ class TypeCheck : public IRVisitor {
     }
   }
 
-  void visit(ElementShuffleStmt *stmt) {
+  void visit(ElementShuffleStmt *stmt) override {
     TI_ASSERT(stmt->elements.size() != 0);
     stmt->element_type() = stmt->elements[0].stmt->element_type();
   }
 
-  void visit(RangeAssumptionStmt *stmt) {
+  void visit(RangeAssumptionStmt *stmt) override {
     TI_ASSERT(stmt->input->ret_type == stmt->base->ret_type);
     stmt->ret_type = stmt->input->ret_type;
   }
 
-  void visit(LoopUniqueStmt *stmt) {
+  void visit(LoopUniqueStmt *stmt) override {
     stmt->ret_type = stmt->input->ret_type;
   }
 
-  void visit(ArgLoadStmt *stmt) {
+  void visit(FuncCallStmt *stmt) override {
+    auto *func = stmt->func;
+    TI_ASSERT(func);
+    TI_ASSERT(func->rets.size() <= 1);
+    if (func->rets.size() == 1) {
+      stmt->ret_type = func->rets[0].dt;
+    }
+  }
+
+  void visit(ArgLoadStmt *stmt) override {
     const auto &rt = stmt->ret_type;
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets
     // defined by the kernel. After that, type_check() pass will purely do
@@ -363,44 +381,44 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type.set_is_pointer(stmt->is_ptr);
   }
 
-  void visit(KernelReturnStmt *stmt) {
+  void visit(ReturnStmt *stmt) override {
     // TODO: Support stmt->ret_id?
     stmt->ret_type = stmt->value->ret_type;
     TI_ASSERT(stmt->ret_type->vector_width() == 1);
   }
 
-  void visit(ExternalPtrStmt *stmt) {
+  void visit(ExternalPtrStmt *stmt) override {
     stmt->ret_type.set_is_pointer(true);
     stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
         stmt->base_ptrs.size(), stmt->base_ptrs[0]->ret_type);
   }
 
-  void visit(LoopIndexStmt *stmt) {
+  void visit(LoopIndexStmt *stmt) override {
     stmt->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
-  void visit(LoopLinearIndexStmt *stmt) {
+  void visit(LoopLinearIndexStmt *stmt) override {
     stmt->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
-  void visit(BlockCornerIndexStmt *stmt) {
+  void visit(BlockCornerIndexStmt *stmt) override {
     stmt->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
-  void visit(BlockDimStmt *stmt) {
+  void visit(BlockDimStmt *stmt) override {
     stmt->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
-  void visit(GetRootStmt *stmt) {
+  void visit(GetRootStmt *stmt) override {
     stmt->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::gen, true);
   }
 
-  void visit(SNodeLookupStmt *stmt) {
+  void visit(SNodeLookupStmt *stmt) override {
     if (stmt->snode->type == SNodeType::bit_array) {
       auto bit_array_type = stmt->snode->dt;
       auto element_type =
@@ -414,7 +432,7 @@ class TypeCheck : public IRVisitor {
     }
   }
 
-  void visit(GetChStmt *stmt) {
+  void visit(GetChStmt *stmt) override {
     if (stmt->is_bit_vectorized) {
       auto physical_type = stmt->output_snode->physical_type;
       auto ptr_ret_type =
@@ -431,70 +449,70 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = pointer_type;
   }
 
-  void visit(OffloadedStmt *stmt) {
+  void visit(OffloadedStmt *stmt) override {
     stmt->all_blocks_accept(this);
   }
 
-  void visit(BitExtractStmt *stmt) {
+  void visit(BitExtractStmt *stmt) override {
     stmt->ret_type = stmt->input->ret_type;
   }
 
-  void visit(LinearizeStmt *stmt) {
+  void visit(LinearizeStmt *stmt) override {
     stmt->ret_type = PrimitiveType::i32;
   }
 
-  void visit(IntegerOffsetStmt *stmt) {
+  void visit(IntegerOffsetStmt *stmt) override {
     stmt->ret_type = PrimitiveType::i32;
   }
 
-  void visit(StackAllocaStmt *stmt) {
+  void visit(AdStackAllocaStmt *stmt) override {
     stmt->ret_type = stmt->dt;
     // ret_type stands for its element type.
     stmt->ret_type.set_is_pointer(false);
   }
 
-  void visit(StackLoadTopStmt *stmt) {
+  void visit(AdStackLoadTopStmt *stmt) override {
     stmt->ret_type = stmt->stack->ret_type;
     stmt->ret_type.set_is_pointer(false);
   }
 
-  void visit(StackLoadTopAdjStmt *stmt) {
+  void visit(AdStackLoadTopAdjStmt *stmt) override {
     stmt->ret_type = stmt->stack->ret_type;
     stmt->ret_type.set_is_pointer(false);
   }
 
-  void visit(StackPushStmt *stmt) {
-    stmt->ret_type = stmt->stack->ret_type;
-    stmt->ret_type.set_is_pointer(false);
-    TI_ASSERT(stmt->ret_type == stmt->v->ret_type);
-  }
-
-  void visit(StackPopStmt *stmt) {
-    stmt->ret_type = stmt->stack->ret_type;
-    stmt->ret_type.set_is_pointer(false);
-  }
-
-  void visit(StackAccAdjointStmt *stmt) {
+  void visit(AdStackPushStmt *stmt) override {
     stmt->ret_type = stmt->stack->ret_type;
     stmt->ret_type.set_is_pointer(false);
     TI_ASSERT(stmt->ret_type == stmt->v->ret_type);
   }
 
-  void visit(GlobalTemporaryStmt *stmt) {
+  void visit(AdStackPopStmt *stmt) override {
+    stmt->ret_type = stmt->stack->ret_type;
+    stmt->ret_type.set_is_pointer(false);
+  }
+
+  void visit(AdStackAccAdjointStmt *stmt) override {
+    stmt->ret_type = stmt->stack->ret_type;
+    stmt->ret_type.set_is_pointer(false);
+    TI_ASSERT(stmt->ret_type == stmt->v->ret_type);
+  }
+
+  void visit(GlobalTemporaryStmt *stmt) override {
     stmt->ret_type.set_is_pointer(true);
   }
 
-  void visit(BitStructStoreStmt *stmt) {
+  void visit(BitStructStoreStmt *stmt) override {
     // do nothing
   }
 };
 
 namespace irpass {
 
-void type_check(IRNode *root) {
+void type_check(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   analysis::check_fields_registered(root);
-  TypeCheck inst(root);
+  TypeCheck inst(config);
   root->accept(&inst);
 }
 

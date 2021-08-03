@@ -10,9 +10,9 @@ just an one-off script on a fairly-sized project so it's unnecessary.
 import argparse
 import os
 import re
-import time
 import subprocess
 import sys
+import time
 from datetime import datetime
 from enum import Enum
 from typing import List

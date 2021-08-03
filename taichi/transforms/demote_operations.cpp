@@ -120,7 +120,7 @@ class DemoteOperations : public BasicStmtVisitor {
     }
   }
 
-  static bool run(IRNode *node) {
+  static bool run(IRNode *node, const CompileConfig &config) {
     DemoteOperations demoter;
     bool modified = false;
     while (true) {
@@ -129,10 +129,10 @@ class DemoteOperations : public BasicStmtVisitor {
         modified = true;
       else
         break;
-      irpass::type_check(node);
+      irpass::type_check(node, config);
     }
     if (modified) {
-      irpass::type_check(node);
+      irpass::type_check(node, config);
     }
     return modified;
   }
@@ -140,10 +140,9 @@ class DemoteOperations : public BasicStmtVisitor {
 
 namespace irpass {
 
-bool demote_operations(IRNode *root) {
+bool demote_operations(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
-  bool modified = DemoteOperations::run(root);
-  irpass::type_check(root);
+  bool modified = DemoteOperations::run(root, config);
   return modified;
 }
 

@@ -1,4 +1,5 @@
 // Frontend statements
+PER_STATEMENT(FrontendExprStmt)
 PER_STATEMENT(FrontendIfStmt)
 PER_STATEMENT(FrontendForStmt)
 PER_STATEMENT(FrontendPrintStmt)
@@ -11,7 +12,7 @@ PER_STATEMENT(FrontendEvalStmt)
 PER_STATEMENT(FrontendSNodeOpStmt)  // activate, deactivate, append, clear
 PER_STATEMENT(FrontendAssertStmt)
 PER_STATEMENT(FrontendFuncDefStmt)
-PER_STATEMENT(FrontendKernelReturnStmt)
+PER_STATEMENT(FrontendReturnStmt)
 
 // Middle-end statement
 
@@ -24,10 +25,11 @@ PER_STATEMENT(WhileControlStmt)
 PER_STATEMENT(ContinueStmt)
 PER_STATEMENT(FuncBodyStmt)
 PER_STATEMENT(FuncCallStmt)
-PER_STATEMENT(KernelReturnStmt)
+PER_STATEMENT(ReturnStmt)
 
 PER_STATEMENT(ArgLoadStmt)
 PER_STATEMENT(ExternalPtrStmt)
+PER_STATEMENT(PtrOffsetStmt)
 PER_STATEMENT(ConstStmt)
 PER_STATEMENT(AllocaStmt)
 PER_STATEMENT(UnaryOpStmt)
@@ -47,12 +49,12 @@ PER_STATEMENT(ExternalFuncCallStmt)
 PER_STATEMENT(ExternalTensorShapeAlongAxisStmt)
 
 // Locals with reverse-mode autodiff
-PER_STATEMENT(StackAllocaStmt)
-PER_STATEMENT(StackLoadTopStmt)
-PER_STATEMENT(StackLoadTopAdjStmt)
-PER_STATEMENT(StackPopStmt)
-PER_STATEMENT(StackPushStmt)
-PER_STATEMENT(StackAccAdjointStmt)
+PER_STATEMENT(AdStackAllocaStmt)
+PER_STATEMENT(AdStackLoadTopStmt)
+PER_STATEMENT(AdStackLoadTopAdjStmt)
+PER_STATEMENT(AdStackPopStmt)
+PER_STATEMENT(AdStackPushStmt)
+PER_STATEMENT(AdStackAccAdjointStmt)
 
 // SNode Micro Ops
 PER_STATEMENT(GetRootStmt)

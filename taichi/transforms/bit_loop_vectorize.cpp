@@ -38,12 +38,12 @@ class BitLoopVectorize : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
+    auto ptr_type = stmt->src->ret_type->as<PointerType>();
     if (in_struct_for_loop && bit_vectorize != 1) {
       if (auto cit = ptr_type->get_pointee_type()->cast<CustomIntType>()) {
         // rewrite the previous GlobalPtrStmt's return type from *cit to
         // *phy_type
-        auto ptr = stmt->ptr->cast<GlobalPtrStmt>();
+        auto ptr = stmt->src->cast<GlobalPtrStmt>();
         auto ptr_physical_type = TypeFactory::get_instance().get_pointer_type(
             bit_array_physical_type, false);
         DataType new_ret_type(ptr_physical_type);
@@ -125,12 +125,12 @@ class BitLoopVectorize : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
+    auto ptr_type = stmt->dest->ret_type->as<PointerType>();
     if (in_struct_for_loop && bit_vectorize != 1) {
       if (auto cit = ptr_type->get_pointee_type()->cast<CustomIntType>()) {
         // rewrite the previous GlobalPtrStmt's return type from *cit to
         // *phy_type
-        auto ptr = stmt->ptr->cast<GlobalPtrStmt>();
+        auto ptr = stmt->dest->cast<GlobalPtrStmt>();
         auto ptr_physical_type = TypeFactory::get_instance().get_pointer_type(
             bit_array_physical_type, false);
         DataType new_ret_type(ptr_physical_type);
@@ -174,7 +174,7 @@ class BitLoopVectorize : public IRVisitor {
       } else if (stmt->op_type == BinaryOpType::cmp_eq) {
         if (auto lhs = stmt->lhs->cast<GlobalLoadStmt>()) {
           // case 0: lhs is a vectorized global load from the bit array
-          if (auto ptr = lhs->ptr->cast<GlobalPtrStmt>();
+          if (auto ptr = lhs->src->cast<GlobalPtrStmt>();
               ptr && ptr->is_bit_vectorized) {
             int32 rhs_val = get_constant_value(stmt->rhs);
             // TODO: we limit 1 for now, 0 should be easy to implement by a
@@ -196,7 +196,7 @@ class BitLoopVectorize : public IRVisitor {
           }
         } else if (auto lhs = stmt->lhs->cast<LocalLoadStmt>()) {
           // case 1: lhs is a local load from a local adder structure
-          auto it = transformed_atomics.find(lhs->ptr[0].var);
+          auto it = transformed_atomics.find(lhs->src[0].var);
           if (it != transformed_atomics.end()) {
             int32 rhs_val = get_constant_value(stmt->rhs);
             // TODO: we limit 2 and 3 for now, the other case should be

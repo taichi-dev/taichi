@@ -1,7 +1,8 @@
 import argparse
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import requests
 import subprocess
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+import requests
 
 # TODO: remove these globals?
 server_addr, server_port = None, None

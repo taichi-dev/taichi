@@ -152,7 +152,7 @@ class IRNodeComparator : public IRVisitor {
       } else {
         bool same_value = false;
         if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
-          if (auto global_ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
+          if (auto global_ptr = global_load->src->cast<GlobalPtrStmt>()) {
             TI_ASSERT(global_ptr->width() == 1);
             if (possibly_modified_states_.count(ir_bank_->get_async_state(
                     global_ptr->snodes[0], AsyncState::Type::value)) == 0) {
@@ -168,20 +168,33 @@ class IRNodeComparator : public IRVisitor {
       }
     }
 
-    if (check_same_value_ && stmt->is<GlobalPtrStmt>()) {
-      // Special case: we do not care the "activate" field when checking
-      // whether two global pointers share the same value.
-      // And we cannot use irpass::analysis::definitely_same_address()
-      // directly because that function does not support id_map.
+    bool field_checked = false;
+    if (check_same_value_) {
+      if (stmt->is<GlobalPtrStmt>()) {
+        // Special case: we do not care about the "activate" field when checking
+        // whether two global pointers share the same value.
+        // And we cannot use irpass::analysis::definitely_same_address()
+        // directly because that function does not support id_map.
 
-      // TODO: Update this part if GlobalPtrStmt comes to have more fields
-      TI_ASSERT(stmt->width() == 1);
-      if (stmt->as<GlobalPtrStmt>()->snodes[0]->id !=
-          other->as<GlobalPtrStmt>()->snodes[0]->id) {
-        same = false;
-        return;
+        // TODO: Update this part if GlobalPtrStmt comes to have more fields
+        TI_ASSERT(stmt->width() == 1);
+        if (stmt->as<GlobalPtrStmt>()->snodes[0]->id !=
+            other->as<GlobalPtrStmt>()->snodes[0]->id) {
+          same = false;
+          return;
+        }
+        field_checked = true;
+      } else if (stmt->is<LoopUniqueStmt>()) {
+        // Special case: we do not care the "covers" field when checking
+        // whether two LoopUniqueStmts share the same value.
+        field_checked = true;
+      } else if (stmt->is<RangeAssumptionStmt>()) {
+        // Special case: we do not care the "low, high" fields when checking
+        // whether two RangeAssumptionStmts share the same value.
+        field_checked = true;
       }
-    } else {
+    }
+    if (!field_checked) {
       // field check
       if (!stmt->field_manager.equal(other->field_manager)) {
         same = false;
@@ -189,19 +202,31 @@ class IRNodeComparator : public IRVisitor {
       }
     }
 
-    // operand check
-    if (stmt->num_operands() != other->num_operands()) {
-      same = false;
-      return;
+    bool operand_checked = false;
+    if (check_same_value_) {
+      if (stmt->is<RangeAssumptionStmt>()) {
+        // Special case: we do not care about the "base" operand when checking
+        // whether two RangeAssumptionStmts share the same value.
+        check_mapping(stmt->as<RangeAssumptionStmt>()->input,
+                      other->as<RangeAssumptionStmt>()->input);
+        operand_checked = true;
+      }
     }
-    for (int i = 0; i < stmt->num_operands(); i++) {
-      if ((stmt->operand(i) == nullptr) != (other->operand(i) == nullptr)) {
+    if (!operand_checked) {
+      // operand check
+      if (stmt->num_operands() != other->num_operands()) {
         same = false;
         return;
       }
-      if (stmt->operand(i) == nullptr)
-        continue;
-      check_mapping(stmt->operand(i), other->operand(i));
+      for (int i = 0; i < stmt->num_operands(); i++) {
+        if ((stmt->operand(i) == nullptr) != (other->operand(i) == nullptr)) {
+          same = false;
+          return;
+        }
+        if (stmt->operand(i) == nullptr)
+          continue;
+        check_mapping(stmt->operand(i), other->operand(i));
+      }
     }
 
     map_id(stmt->id, other->id);

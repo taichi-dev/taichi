@@ -1,5 +1,6 @@
 #pragma once
-#include "taichi/lang_util.h"
+
+#include "taichi/ir/type_utils.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -46,6 +47,10 @@ class Expr {
 
   void set(const Expr &o) {
     expr = o.expr;
+  }
+
+  operator bool() const {
+    return expr.get() != nullptr;
   }
 
   Expression *operator->() {

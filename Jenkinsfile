@@ -1,70 +1,82 @@
 pipeline {
     agent any
     environment {
-        PYPI_PWD = credentials('PYPI_PWD')
-        PATH = "/usr/local/clang-7.0.1/bin:/usr/local/cuda/bin/:$PATH"
-        LD_LIBRARY_PATH = "/usr/local/clang-7.0.1/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
-        CC = "clang-7"
-        CXX = "clang++"
+        PYPI_PWD = credentials("${PYPI_PWD}")
+        COMMIT_SHA = "${COMMIT_SHA}"
+        PATH = "/opt/taichi-llvm-10.0.0/bin:/usr/local/cuda/bin/:$PATH"
+        CC = "clang-10"
+        CXX = "clang++-10"
+        // Local machine uses version 11.2. However, we need to define
+        // TI_CUDAVERSION, which eventually translates to the version number
+        // of the slimmed CUDA libdevice bytecode. Currently this slimmed
+        // version only covers 10. See:
+        // https://github.com/taichi-dev/taichi/tree/master/external/cuda_libdevice
+        // so we pass hack version to avoid build errors.
+        HACK_CUDA_VERSION = "10.0"
     }
     stages{
-        stage('Build') {
+        stage('Build and Test') {
             parallel {
-                stage('cuda10.0-python3.6') {
+                stage('python3.6') {
                     agent {
                         node {
-                            label "cuda10_0 && python3_6"
-                            customWorkspace "taichi_cu100_py36"
+                            label "python36"
+                            customWorkspace "taichi_py36"
                         }
                     }
                     environment {
-                        PYTHON_EXECUTABLE = "python3.6"
-                        CUDA_VERSION = "10.0"
+                        UBUNTU = "10.0-devel-ubuntu18.04"
+                        PYTHON = "python3.6"
                     }
                     steps{
                         build_taichi()
                     }
                 }
-                stage('cuda10.0-python3.7') {
+                stage('python3.7') {
                     agent {
                         node {
-                            label "cuda10_0 && python3_7"
-                            customWorkspace "taichi_cu100_py37"
+                            label "python37"
+                            customWorkspace "taichi_py37"
                         }
                     }
                     environment {
-                        PYTHON_EXECUTABLE = "python3.7"
-                        CUDA_VERSION = "10.0"
+                        UBUNTU = "10.0-devel-ubuntu18.04"
+                        PYTHON = "python3.7"
                     }
                     steps{
                         build_taichi()
                     }
                 }
-                stage('cuda10.0-python3.8') {
+                stage('python3.8') {
                     agent {
                         node {
-                            label "cuda10_0 && python3_8"
-                            customWorkspace "taichi_cu100_py38"
+                            label "python38"
+                            customWorkspace "taichi_py38"
                         }
                     }
                     environment {
-                        PYTHON_EXECUTABLE = "python3.8"
-                        CUDA_VERSION = "10.0"
+                        UBUNTU = "10.0-devel-ubuntu18.04"
+                        PYTHON = "python3.8"
                     }
                     steps{
                         build_taichi()
                     }
                 }
-            }
-        }
-        stage('Test') {
-            steps {
-                sh "echo Testing"
-            }
-        }
-        stage('Release') {
-            steps {
-                sh "echo releasing"
+                stage('python3.9') {
+                    agent {
+                        node {
+                            label "python39"
+                            customWorkspace "taichi_py39"
+                        }
+                    }
+                    environment {
+                        UBUNTU = "11.0-devel-ubuntu20.04"
+                        PYTHON = "python3.9"
+                    }
+                    steps{
+                        build_taichi()
+                    }
+                }
             }
         }
     }
@@ -75,31 +87,7 @@ void build_taichi() {
     sh "echo $PATH"
     git 'https://github.com/taichi-dev/taichi.git'
     sh label: '', script: '''
-    echo $PATH
-    echo $CC
-    echo $CXX
-    $CC --version
-    $CXX --version
-    echo $WORKSPACE
-    $PYTHON_EXECUTABLE -m pip install --user setuptools astor pybind11 pylint sourceinspect
-    $PYTHON_EXECUTABLE -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
-    $PYTHON_EXECUTABLE -m pip install --user numpy GitPython coverage colorama autograd
-    export TAICHI_REPO_DIR=$WORKSPACE/
-    echo $TAICHI_REPO_DIR
-    export PYTHONPATH=$TAICHI_REPO_DIR/python
-    export PATH=$WORKSPACE/bin/:$PATH
-    nvidia-smi
-    cd $TAICHI_REPO_DIR
-    git submodule update --init --recursive
-    [ -e build ] && rm -rf build
-    mkdir build && cd build
-    export CUDA_BIN_PATH=/usr/local/cuda-${CUDA_VERSION}
-    cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE -DCUDA_VERSION=$CUDA_VERSION
-    make -j 8
-    ldd libtaichi_core.so
-    objdump -T libtaichi_core.so| grep GLIBC
-    cd ../python
-    ti test -t 1 -na opengl
-    $PYTHON_EXECUTABLE build.py upload
+    cd ci
+    docker build . --build-arg UBUNTU=${UBUNTU} --build-arg PYTHON=${PYTHON} --build-arg TEST_OPTION="${TEST_OPTION}" --build-arg PYPI_PWD=${PYPI_PWD} --build-arg COMMIT_SHA=${COMMIT_SHA}
     '''
 }

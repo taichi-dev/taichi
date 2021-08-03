@@ -1,5 +1,6 @@
-import yaml
 import math
+
+import yaml
 
 with open('benchmark.yml') as f:
     data = yaml.load(f)

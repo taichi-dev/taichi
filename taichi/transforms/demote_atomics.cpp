@@ -3,6 +3,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/system/profiler.h"
+
 #include <deque>
 #include <set>
 
@@ -10,7 +12,7 @@ TLANG_NAMESPACE_BEGIN
 
 class DemoteAtomics : public BasicStmtVisitor {
  private:
-  std::unordered_map<SNode *, GlobalPtrStmt *> loop_unique_ptr_;
+  std::unordered_map<const SNode *, GlobalPtrStmt *> loop_unique_ptr_;
 
  public:
   using BasicStmtVisitor::visit;
@@ -150,10 +152,10 @@ class DemoteAtomics : public BasicStmtVisitor {
 
 namespace irpass {
 
-bool demote_atomics(IRNode *root) {
+bool demote_atomics(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   bool modified = DemoteAtomics::run(root);
-  type_check(root);
+  type_check(root, config);
   return modified;
 }
 

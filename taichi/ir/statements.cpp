@@ -1,6 +1,5 @@
 // TODO: gradually cppize statements.h
 #include "taichi/ir/statements.h"
-#include "taichi/program/program.h"
 #include "taichi/util/bit.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -66,7 +65,7 @@ GlobalPtrStmt::GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
   TI_STMT_REG_FIELDS;
 }
 
-bool GlobalPtrStmt::is_element_wise(SNode *snode) const {
+bool GlobalPtrStmt::is_element_wise(const SNode *snode) const {
   if (snode == nullptr) {
     // check every SNode when "snode" is nullptr
     for (const auto &snode_i : snodes.data) {
@@ -86,6 +85,18 @@ bool GlobalPtrStmt::is_element_wise(SNode *snode) const {
     }
   }
   return true;
+}
+
+bool GlobalPtrStmt::covers_snode(const SNode *snode) const {
+  // Check if the addresses of this statement all over the loop cover
+  // all active indices of the snode.
+  for (auto &index : indices) {
+    if (auto loop_unique = index->cast<LoopUniqueStmt>()) {
+      if (loop_unique->covers_snode(snode))
+        return true;
+    }
+  }
+  return is_element_wise(snode);
 }
 
 SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
@@ -112,6 +123,30 @@ ExternalTensorShapeAlongAxisStmt::ExternalTensorShapeAlongAxisStmt(int axis,
   TI_STMT_REG_FIELDS;
 }
 
+LoopUniqueStmt::LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers)
+    : input(input) {
+  for (const auto &sn : covers) {
+    if (sn->is_place()) {
+      TI_INFO(
+          "A place SNode {} appears in the 'covers' parameter "
+          "of 'ti.loop_unique'. It is recommended to use its parent "
+          "(x.parent()) instead.",
+          sn->get_node_type_name_hinted());
+      this->covers.insert(sn->parent->id);
+    } else
+      this->covers.insert(sn->id);
+  }
+  TI_STMT_REG_FIELDS;
+}
+
+bool LoopUniqueStmt::covers_snode(const SNode *snode) const {
+  if (snode->is_place()) {
+    return covers.count(snode->parent->id) > 0;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
 Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
   int position = parent->locate(this);
   // TI_ASSERT(width() == 1);
@@ -120,14 +155,14 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
     if (parent->statements[i]->is<LocalStoreStmt>()) {
       auto store = parent->statements[i]->as<LocalStoreStmt>();
       // TI_ASSERT(store->width() == 1);
-      if (store->ptr == this->ptr[0].var) {
+      if (store->dest == this->src[0].var) {
         // found
         return store;
       }
     } else if (parent->statements[i]->is<AllocaStmt>()) {
       auto alloca = parent->statements[i]->as<AllocaStmt>();
       // TI_ASSERT(alloca->width() == 1);
-      if (alloca == this->ptr[0].var) {
+      if (alloca == this->src[0].var) {
         return alloca;
       }
     }
@@ -136,8 +171,8 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
 }
 
 bool LocalLoadStmt::same_source() const {
-  for (int i = 1; i < (int)ptr.size(); i++) {
-    if (ptr[i].var != ptr[0].var)
+  for (int i = 1; i < (int)src.size(); i++) {
+    if (src[i].var != src[0].var)
       return false;
   }
   return true;
@@ -145,7 +180,7 @@ bool LocalLoadStmt::same_source() const {
 
 bool LocalLoadStmt::has_source(Stmt *alloca) const {
   for (int i = 0; i < width(); i++) {
-    if (ptr[i].var == alloca)
+    if (src[i].var == alloca)
       return true;
   }
   return false;
@@ -189,7 +224,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
                            std::unique_ptr<Block> &&body,
                            int vectorize,
                            int bit_vectorize,
-                           int parallelize,
+                           int num_cpu_threads,
                            int block_dim,
                            bool strictly_serialized)
     : begin(begin),
@@ -197,7 +232,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
       body(std::move(body)),
       vectorize(vectorize),
       bit_vectorize(bit_vectorize),
-      parallelize(parallelize),
+      num_cpu_threads(num_cpu_threads),
       block_dim(block_dim),
       strictly_serialized(strictly_serialized) {
   reversed = false;
@@ -207,7 +242,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
 
 std::unique_ptr<Stmt> RangeForStmt::clone() const {
   auto new_stmt = std::make_unique<RangeForStmt>(
-      begin, end, body->clone(), vectorize, bit_vectorize, parallelize,
+      begin, end, body->clone(), vectorize, bit_vectorize, num_cpu_threads,
       block_dim, strictly_serialized);
   new_stmt->reversed = reversed;
   return new_stmt;
@@ -217,21 +252,22 @@ StructForStmt::StructForStmt(SNode *snode,
                              std::unique_ptr<Block> &&body,
                              int vectorize,
                              int bit_vectorize,
-                             int parallelize,
+                             int num_cpu_threads,
                              int block_dim)
     : snode(snode),
       body(std::move(body)),
       vectorize(vectorize),
       bit_vectorize(bit_vectorize),
-      parallelize(parallelize),
+      num_cpu_threads(num_cpu_threads),
       block_dim(block_dim) {
   this->body->parent_stmt = this;
   TI_STMT_REG_FIELDS;
 }
 
 std::unique_ptr<Stmt> StructForStmt::clone() const {
-  auto new_stmt = std::make_unique<StructForStmt>(
-      snode, body->clone(), vectorize, bit_vectorize, parallelize, block_dim);
+  auto new_stmt = std::make_unique<StructForStmt>(snode, body->clone(),
+                                                  vectorize, bit_vectorize,
+                                                  num_cpu_threads, block_dim);
   new_stmt->mem_access_opt = mem_access_opt;
   return new_stmt;
 }
@@ -246,6 +282,11 @@ FuncBodyStmt::FuncBodyStmt(const std::string &funcid,
 
 std::unique_ptr<Stmt> FuncBodyStmt::clone() const {
   return std::make_unique<FuncBodyStmt>(funcid, body->clone());
+}
+
+FuncCallStmt::FuncCallStmt(Function *func, const std::vector<Stmt *> &args)
+    : func(func), args(args) {
+  TI_STMT_REG_FIELDS;
 }
 
 WhileStmt::WhileStmt(std::unique_ptr<Block> &&body)
@@ -268,20 +309,8 @@ GetChStmt::GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized)
   TI_STMT_REG_FIELDS;
 }
 
-OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type)
-    : OffloadedStmt(task_type, nullptr) {
-}
-
-OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
-    : task_type(task_type), snode(snode) {
-  num_cpu_threads = 1;
-  const_begin = false;
-  const_end = false;
-  begin_value = 0;
-  end_value = 0;
-  step = 0;
-  reversed = false;
-  device = get_current_program().config.arch;
+OffloadedStmt::OffloadedStmt(TaskType task_type, Arch arch)
+    : task_type(task_type), device(arch) {
   if (has_body()) {
     body = std::make_unique<Block>();
     body->parent_stmt = this;
@@ -313,19 +342,18 @@ std::string OffloadedStmt::task_type_name(TaskType tt) {
 }
 
 std::unique_ptr<Stmt> OffloadedStmt::clone() const {
-  auto new_stmt = std::make_unique<OffloadedStmt>(task_type, snode);
+  auto new_stmt = std::make_unique<OffloadedStmt>(task_type, device);
+  new_stmt->snode = snode;
   new_stmt->begin_offset = begin_offset;
   new_stmt->end_offset = end_offset;
   new_stmt->const_begin = const_begin;
   new_stmt->const_end = const_end;
   new_stmt->begin_value = begin_value;
   new_stmt->end_value = end_value;
-  new_stmt->step = step;
   new_stmt->grid_dim = grid_dim;
   new_stmt->block_dim = block_dim;
   new_stmt->reversed = reversed;
   new_stmt->num_cpu_threads = num_cpu_threads;
-  new_stmt->device = device;
   new_stmt->index_offsets = index_offsets;
   if (tls_prologue) {
     new_stmt->tls_prologue = tls_prologue->clone();

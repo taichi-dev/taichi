@@ -1,4 +1,6 @@
 import numpy as np
+from taichi.core import ti_core as _ti_core
+
 import taichi as ti
 
 
@@ -33,16 +35,19 @@ def cook_image_to_bytes(img):
 def imdisplay(img):
     """
     Try to display image in interactive shell.
+
+    Args:
+        img (Union[ti.field, np.ndarray]): A field of of array with shape `(width, height)` or `(height, width, 3)` or `(height, width, 4)`.
     """
     try:
         get_ipython()
     except:
         ti.imshow(img)
     else:
-        import PIL.Image
         from io import BytesIO
+
         import IPython.display
-        import numpy as np
+        import PIL.Image
         img = cook_image_to_bytes(img)
         with BytesIO() as f:
             PIL.Image.fromarray(img).save(f, 'png')
@@ -50,8 +55,15 @@ def imdisplay(img):
 
 
 def imresize(img, w, h=None):
-    """
-    Resize an image to a specific size.
+    """Resize an image to a specific size.
+
+    Args:
+        img (Union[ti.field, np.ndarray]): A field of of array with shape `(width, height, ...)`
+        w (int): The output width after resize.
+        h (int, optional): The output height after resize, will be the same as width if not set. Default to `None`.
+
+    Returns:
+        np.ndarray: An output image after resize input.
     """
     if not isinstance(img, np.ndarray):
         img = img.to_numpy()
@@ -67,32 +79,46 @@ def imresize(img, w, h=None):
 
 
 def imwrite(img, filename):
-    """
-    Save image to a specific file.
+    """Save a field to a a specific file.
+
+    Args:
+        img (Union[ti.field, np.ndarray]): A field of shape `(height, width)` or `(height, width, 3)` or `(height, width, 4)`, \
+            if dtype is float-type (`ti.f16`, `ti.f32`, `np.float32` etc), **the value of each pixel should be float between \[0.0, 1.0\]**. Otherwise `ti.imwrite` will first clip them into \[0.0, 1.0\]\
+                if dtype is int-type (`ti.u8`, `ti.u16`, `np.uint8` etc), , **the value of each pixel can be any valid integer in its own bounds**. These integers in this field will be scaled to \[0, 255\] by being divided over the upper bound of its basic type accordingly.
+        filename (str): The filename to save to.
     """
     img = cook_image_to_bytes(img)
     img = np.ascontiguousarray(img)
     ptr = img.ctypes.data
     resy, resx, comp = img.shape
-    ti.core.imwrite(filename, ptr, resx, resy, comp)
+    _ti_core.imwrite(filename, ptr, resx, resy, comp)
 
 
 def imread(filename, channels=0):
+    """Load image from a specific file.
+
+    Args:
+        filename (str): An image filename to load from.
+        channels (int, optinal): The channels hint of input image, Default to 0.
+
+    Returns:
+        np.ndarray : An output image loaded from given filename.
     """
-    Load image from a specific file.
-    """
-    ptr, resx, resy, comp = ti.core.imread(filename, channels)
+    ptr, resx, resy, comp = _ti_core.imread(filename, channels)
     img = np.ndarray(shape=(resy, resx, comp), dtype=np.uint8)
     img = np.ascontiguousarray(img)
     # TODO(archibate): Figure out how np.ndarray constructor works and replace:
-    ti.core.C_memcpy(img.ctypes.data, ptr, resx * resy * comp)
+    _ti_core.C_memcpy(img.ctypes.data, ptr, resx * resy * comp)
     # Discussion: https://github.com/taichi-dev/taichi/issues/802
     return img.swapaxes(0, 1)[:, ::-1, :]
 
 
 def imshow(img, window_name='imshow'):
-    """
-    Show image in a Taichi GUI.
+    """Show image in a Taichi GUI.
+
+    Args:
+        img (Union[ti.field, np.ndarray]): A field of of array with shape `(width, height)` or `(height, width, 3)` or `(height, width, 4)`.
+        window_name (str, optional): The title of GUI window. Default to `imshow`.
     """
     if not isinstance(img, np.ndarray):
         img = img.to_numpy()

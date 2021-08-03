@@ -2,6 +2,7 @@
 #include "taichi/ir/control_flow_graph.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/system/profiler.h"
 
 TLANG_NAMESPACE_BEGIN
 

@@ -1,11 +1,10 @@
+import multiprocessing
 import os
 import platform
-import multiprocessing
-
-default_num_threads = multiprocessing.cpu_count()
 
 
 def get_num_cores():
+    default_num_threads = multiprocessing.cpu_count()
     return os.environ.get('TAICHI_NUM_THREADS', default_num_threads)
 
 
@@ -86,13 +85,3 @@ def get_asset_directory():
 
 def get_asset_path(path, *args):
     return os.path.join(get_asset_directory(), path, *args)
-
-
-__all__ = [
-    'get_output_directory',
-    'get_build_directory',
-    'get_bin_directory',
-    'get_repo_directory',
-    'get_runtime_directory',
-    'get_os_name',
-]

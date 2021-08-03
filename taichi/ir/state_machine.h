@@ -1,7 +1,8 @@
 #pragma once
 
-#include "taichi/ir/ir.h"
 #include <unordered_set>
+
+#include "taichi/ir/ir.h"
 
 TLANG_NAMESPACE_BEGIN
 

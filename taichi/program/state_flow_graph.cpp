@@ -11,6 +11,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/statistics.h"
+#include "taichi/system/timeline.h"
 
 // Keep this include in the end!
 #include "taichi/program/async_profiler_switch.h"
@@ -20,13 +21,6 @@ TLANG_NAMESPACE_BEGIN
 namespace {
 
 using LatestStateReaders = StateFlowGraph::LatestStateReaders;
-
-// TODO(k-ye): remove these over-engineering...
-LatestStateReaders::iterator find(LatestStateReaders &m, const AsyncState &s) {
-  return std::find_if(
-      m.begin(), m.end(),
-      [&s](const LatestStateReaders::value_type &v) { return v.first == s; });
-}
 
 std::pair<LatestStateReaders::value_type::second_type *, bool> insert(
     LatestStateReaders &m,
@@ -420,6 +414,7 @@ void StateFlowGraph::insert_edge(Node *from, Node *to, AsyncState state) {
 
 bool StateFlowGraph::optimize_listgen() {
   TI_AUTO_PROF;
+  TI_AUTO_TIMELINE;
   bool modified = false;
 
   std::vector<std::pair<int, int>> common_pairs;
@@ -626,6 +621,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
     auto *node_b = nodes[b];
     TI_TRACE("Fuse: nodes[{}]({}) <- nodes[{}]({})", a, node_a->string(), b,
              node_b->string());
+    stat.add("num_fused_tasks");
     auto &rec_a = node_a->rec;
     auto &rec_b = node_b->rec;
     rec_a.ir_handle =
@@ -726,6 +722,11 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
   for (int i = 0; i < n; i++) {
     fused[i] = nodes[i]->rec.empty();
   }
+  const auto initial_remaining_fuses_per_task =
+      (program_->config.async_max_fuse_per_task > 0)
+          ? program_->config.async_max_fuse_per_task
+          : n;
+
   // The case without an edge: O(sum(size * min(size, n / 64))) = O(n^2 / 64)
   const int kLargeFusionSetThreshold = std::max(n / 16, 16);
   for (auto &fusion_map : task_fusion_map) {
@@ -740,16 +741,22 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
       }
       for (int a : indices) {
         if (!fused[a]) {
-          // Fuse no more than one task into task a,
+          // Fuse no more than remaining_fuses tasks into task a,
           // otherwise do_fuse may be very slow
           Bitset current_mask = (mask & ~(has_path[a] | has_path_reverse[a]));
-          int b = current_mask.lower_bound(a + 1);
-          if (b == -1) {
-            mask[a] = false;  // a can't be fused in this iteration
-          } else {
-            do_fuse(a, b);
-            mask[a] = false;
-            mask[b] = false;
+          int b = a + 1;
+          int remaining_fuses = initial_remaining_fuses_per_task;
+          while ((b != -1) && (remaining_fuses > 0)) {
+            b = current_mask.lower_bound(b);
+            if (b == -1) {
+              mask[a] = false;  // a can't be fused in this iteration
+            } else {
+              do_fuse(a, b);
+              mask[a] = false;
+              mask[b] = false;
+              b++;  // for computing the next lower bound
+              remaining_fuses--;
+            }
           }
         }
       }
@@ -764,16 +771,18 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
         for (int i = 0; i < (int)indices.size(); i++) {
           const int a = indices[i];
           if (!fused[a]) {
-            // Fuse no more than one task into task a in this iteration
-            for (int &j = start_index[i]; j < (int)indices.size(); j++) {
+            int remaining_fuses = initial_remaining_fuses_per_task;
+            // Fuse no more than remaining_fuses tasks into task a
+            // in this iteration
+            for (int &j = start_index[i];
+                 (j < (int)indices.size()) && (remaining_fuses > 0); j++) {
               const int b = indices[j];
               if (!fused[b] && !has_path[a][b] && !has_path[b][a]) {
                 do_fuse(a, b);
-                j++;
-                break;
+                remaining_fuses--;
               }
             }
-            if (start_index[i] != indices.size()) {
+            if (start_index[i] < (int)indices.size()) {
               done = false;
             }
           }
@@ -788,20 +797,14 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
   for (int i = 0; i < n; i++) {
     if (!fused[i]) {
       // Fuse no more than one task into task i
-      bool i_updated = false;
       for (auto &edge : nodes[i]->output_edges.get_all_edges()) {
         if (edge.second->pending()) {
           const int j = edge.second->pending_node_id - begin;
           if (j >= 0 && j < nodes.size() && edge_fusible(i, j)) {
             do_fuse(i, j);
             // Iterators of nodes[i]->output_edges may be invalidated
-            i_updated = true;
             break;
           }
-        }
-
-        if (i_updated) {
-          break;
         }
       }
     }
@@ -812,6 +815,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
 
 bool StateFlowGraph::fuse() {
   TI_AUTO_PROF;
+  TI_AUTO_TIMELINE;
   using bit::Bitset;
   // Only guarantee to fuse tasks with indices in nodes_ differ by less than
   // kMaxFusionDistance if there are too many tasks.
@@ -851,6 +855,7 @@ bool StateFlowGraph::fuse() {
 
 void StateFlowGraph::rebuild_graph(bool sort) {
   TI_AUTO_PROF;
+  TI_AUTO_TIMELINE;
   if (sort)
     topo_sort_nodes();
   std::vector<TaskLaunchRecord> tasks;
@@ -1235,6 +1240,7 @@ void StateFlowGraph::delete_nodes(
 
 bool StateFlowGraph::optimize_dead_store() {
   TI_AUTO_PROF
+  TI_AUTO_TIMELINE;
   bool modified = false;
 
   auto nodes = get_pending_tasks();
@@ -1257,18 +1263,20 @@ bool StateFlowGraph::optimize_dead_store() {
         continue;
       }
       auto *snode = s.snode();
-      if (!snode->is_scalar()) {
-        // TODO: handle non-scalar SNodes, i.e. num_active_indices > 0.
-        continue;
-      }
       bool used = false;
       for (auto &other : task->output_edges[s]) {
         if (task->has_state_flow(s, other.second)) {
-          // Check if this is a RAW dependency. For scalar SNodes, a WAW flow
-          // edge decades to a dependency edge.
+          // Check if this is a RAW dependency. For scalar SNodes, a
+          // A WAW flow edge decades to a dependency edge.
           used = true;
         } else {
           // Note that a dependency edge does not count as an data usage
+          if (!snode->is_scalar() &&
+              other.second->meta->element_wise.count(snode) == 0) {
+            // If the SNode is not element-wise written, the value stored
+            // in this task can be used later.
+            used = true;
+          }
         }
       }
       // This state is used by some other node, so it cannot be erased
@@ -1282,7 +1290,7 @@ bool StateFlowGraph::optimize_dead_store() {
     // *****************************
     // Erase the state s output.
     if (!store_eliminable_snodes.empty()) {
-      const bool verbose = task->rec.kernel->program.config.verbose;
+      const bool verbose = task->rec.kernel->program->config.verbose;
 
       const auto dse_result = ir_bank_->optimize_dse(
           task->rec.ir_handle, store_eliminable_snodes, verbose);
@@ -1325,8 +1333,8 @@ bool StateFlowGraph::optimize_dead_store() {
     }
   }
 
-  if (!to_delete.empty()) {
-    modified = true;
+  // Task metas can change even if the number of tasks doesn't change.
+  if (modified) {
     delete_nodes(to_delete);
     rebuild_graph(/*sort=*/false);
   }
@@ -1439,6 +1447,7 @@ void StateFlowGraph::verify(bool also_verify_ir) const {
 
 bool StateFlowGraph::demote_activation() {
   TI_AUTO_PROF
+  TI_AUTO_TIMELINE;
   bool modified = false;
 
   topo_sort_nodes();

@@ -1,8 +1,10 @@
-import taichi as ti
-import numpy as np
 import operator as ops
-from taichi import allclose
+
+import numpy as np
 import pytest
+
+import taichi as ti
+from taichi import allclose
 
 binary_func_table = [
     (ops.add, ) * 2,

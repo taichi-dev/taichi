@@ -15,8 +15,9 @@ class LoopVectorize : public IRVisitor {
  public:
   int vectorize;
   Stmt *loop_var;  // an alloca...
+  const CompileConfig &config;
 
-  LoopVectorize() {
+  explicit LoopVectorize(const CompileConfig &config) : config(config) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     loop_var = nullptr;
@@ -89,17 +90,17 @@ class LoopVectorize : public IRVisitor {
       return;
     int original_width = stmt->width();
     widen_type(stmt->ret_type, vectorize);
-    stmt->ptr.repeat(vectorize);
+    stmt->src.repeat(vectorize);
     // TODO: this can be buggy
-    int stride = stmt->ptr[original_width - 1].offset + 1;
-    if (stmt->ptr[0].var->width() != 1) {
+    int stride = stmt->src[original_width - 1].offset + 1;
+    if (stmt->src[0].var->width() != 1) {
       for (int i = 0; i < vectorize; i++) {
         for (int j = 0; j < original_width; j++) {
-          stmt->ptr[i * original_width + j].offset += i * stride;
+          stmt->src[i * original_width + j].offset += i * stride;
         }
       }
     }
-    if (loop_var && stmt->same_source() && stmt->ptr[0].var == loop_var) {
+    if (loop_var && stmt->same_source() && stmt->src[0].var == loop_var) {
       // insert_before_me
       LaneAttribute<TypedConstant> const_offsets;
       const_offsets.resize(vectorize * original_width);
@@ -109,7 +110,7 @@ class LoopVectorize : public IRVisitor {
       auto offsets = std::make_unique<ConstStmt>(const_offsets);
       auto add_op = std::make_unique<BinaryOpStmt>(BinaryOpType::add, stmt,
                                                    offsets.get());
-      irpass::type_check(add_op.get());
+      irpass::type_check(add_op.get(), config);
       auto offsets_p = offsets.get();
       stmt->replace_with(add_op.get());
       stmt->insert_after_me(std::move(offsets));
@@ -154,17 +155,17 @@ class LoopVectorize : public IRVisitor {
     stmt->body->accept(this);
   }
 
-  static void run(IRNode *node) {
-    LoopVectorize inst;
+  static void run(IRNode *node, const CompileConfig &config) {
+    LoopVectorize inst(config);
     node->accept(&inst);
   }
 };
 
 namespace irpass {
 
-void loop_vectorize(IRNode *root) {
+void loop_vectorize(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
-  return LoopVectorize::run(root);
+  return LoopVectorize::run(root, config);
 }
 
 }  // namespace irpass

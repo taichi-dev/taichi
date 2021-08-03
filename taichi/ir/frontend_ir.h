@@ -3,13 +3,25 @@
 #include <string>
 #include <vector>
 
-#include "taichi/lang_util.h"
+#include "taichi/ir/snode_types.h"
+#include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
+#include "taichi/program/function.h"
 
 TLANG_NAMESPACE_BEGIN
 
 // Frontend Statements
+
+class FrontendExprStmt : public Stmt {
+ public:
+  Expr val;
+
+  FrontendExprStmt(const Expr &val) : val(val) {
+  }
+
+  TI_DEFINE_ACCEPT
+};
 
 class FrontendAllocaStmt : public Stmt {
  public:
@@ -122,7 +134,7 @@ class FrontendForStmt : public Stmt {
   std::vector<Identifier> loop_var_id;
   int vectorize;
   int bit_vectorize;
-  int parallelize;
+  int num_cpu_threads;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
   int block_dim;
@@ -199,11 +211,11 @@ class FrontendWhileStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-class FrontendKernelReturnStmt : public Stmt {
+class FrontendReturnStmt : public Stmt {
  public:
   Expr value;
 
-  FrontendKernelReturnStmt(const Expr &value) : value(value) {
+  FrontendReturnStmt(const Expr &value) : value(value) {
   }
 
   bool is_container_statement() const override {
@@ -363,6 +375,7 @@ class GlobalVariableExpression : public Expression {
  public:
   Identifier ident;
   DataType dt;
+  std::string name;
   SNode *snode;
   bool has_ambient;
   TypedConstant ambient_value;
@@ -396,6 +409,7 @@ class GlobalVariableExpression : public Expression {
 
 class GlobalPtrExpression : public Expression {
  public:
+  SNode *snode{nullptr};
   Expr var;
   ExprGroup indices;
 
@@ -403,7 +417,44 @@ class GlobalPtrExpression : public Expression {
       : var(var), indices(indices) {
   }
 
+  GlobalPtrExpression(SNode *snode, const ExprGroup &indices)
+      : snode(snode), indices(indices) {
+  }
+
   std::string serialize() override;
+
+  void flatten(FlattenContext *ctx) override;
+
+  bool is_lvalue() const override {
+    return true;
+  }
+};
+
+class GlobalTensorElementExpression : public Expression {
+ public:
+  Expr var;
+  ExprGroup indices;
+  int cols{0};
+  bool is_aos{false};
+
+  GlobalTensorElementExpression(const Expr &var,
+                                const ExprGroup &indices,
+                                int cols,
+                                bool is_aos)
+      : var(var), indices(indices), cols(cols), is_aos(is_aos) {
+  }
+
+  std::string serialize() override {
+    std::string s = fmt::format("{}[", var.serialize());
+    for (int i = 0; i < (int)indices.size(); i++) {
+      s += indices.exprs[i]->serialize();
+      if (i + 1 < (int)indices.size())
+        s += ", ";
+    }
+    s += "]";
+    s += " (col=" + std::to_string(cols) + (is_aos ? ", AOS)" : ", SOA)");
+    return s;
+  }
 
   void flatten(FlattenContext *ctx) override;
 
@@ -453,13 +504,13 @@ class RangeAssumptionExpression : public Expression {
 class LoopUniqueExpression : public Expression {
  public:
   Expr input;
+  std::vector<SNode *> covers;
 
-  LoopUniqueExpression(const Expr &input) : input(input) {
+  LoopUniqueExpression(const Expr &input, const std::vector<SNode *> &covers)
+      : input(input), covers(covers) {
   }
 
-  std::string serialize() override {
-    return fmt::format("loop_unique({})", input.serialize());
-  }
+  std::string serialize() override;
 
   void flatten(FlattenContext *ctx) override;
 };
@@ -569,5 +620,75 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
 
   void flatten(FlattenContext *ctx) override;
 };
+
+class FuncCallExpression : public Expression {
+ public:
+  Function *func;
+  ExprGroup args;
+
+  std::string serialize() override {
+    return fmt::format("func_call(\"{}\", {})", func->func_key.get_full_name(),
+                       args.serialize());
+  }
+
+  FuncCallExpression(Function *func, const ExprGroup &args)
+      : func(func), args(args) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class ASTBuilder {
+ private:
+  std::vector<Block *> stack;
+
+ public:
+  ASTBuilder(Block *initial) {
+    stack.push_back(initial);
+  }
+
+  void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
+
+  struct ScopeGuard {
+    ASTBuilder *builder;
+    Block *list;
+    ScopeGuard(ASTBuilder *builder, Block *list)
+        : builder(builder), list(list) {
+      builder->stack.push_back(list);
+    }
+
+    ~ScopeGuard() {
+      builder->stack.pop_back();
+    }
+  };
+
+  std::unique_ptr<ScopeGuard> create_scope(std::unique_ptr<Block> &list);
+  Block *current_block();
+  Stmt *get_last_stmt();
+  void stop_gradient(SNode *);
+};
+
+ASTBuilder &current_ast_builder();
+
+class FrontendContext {
+ private:
+  std::unique_ptr<ASTBuilder> current_builder;
+  std::unique_ptr<Block> root_node;
+
+ public:
+  FrontendContext();
+
+  ASTBuilder &builder() {
+    return *current_builder;
+  }
+
+  IRNode *root();
+
+  std::unique_ptr<Block> get_root() {
+    return std::move(root_node);
+  }
+};
+
+extern std::unique_ptr<FrontendContext> context;
 
 TLANG_NAMESPACE_END

@@ -2,6 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/system/profiler.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -50,8 +51,14 @@ class FlagAccess : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    if (stmt->ptr->is<GlobalPtrStmt>()) {
-      stmt->ptr->as<GlobalPtrStmt>()->activate = true;
+    if (stmt->dest->is<GlobalPtrStmt>()) {
+      stmt->dest->as<GlobalPtrStmt>()->activate = true;
+    }
+    if (stmt->dest->is<PtrOffsetStmt>()) {
+      if (stmt->dest->as<PtrOffsetStmt>()->origin->is<GlobalPtrStmt>()) {
+        stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>()->activate =
+            true;
+      }
     }
   }
 

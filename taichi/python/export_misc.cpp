@@ -5,15 +5,18 @@
 
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/backends/vulkan/runtime.h"
 #include "taichi/common/core.h"
+#include "taichi/common/interface.h"
 #include "taichi/common/task.h"
 #include "taichi/math/math.h"
+#include "taichi/platform/cuda/detect_cuda.h"
+#include "taichi/program/py_print_buffer.h"
 #include "taichi/python/exception.h"
 #include "taichi/python/export.h"
-#include "taichi/python/print_buffer.h"
+#include "taichi/python/memory_usage_monitor.h"
 #include "taichi/system/benchmark.h"
 #include "taichi/system/dynamic_loader.h"
-#include "taichi/system/memory_usage_monitor.h"
 #include "taichi/system/profiler.h"
 #include "taichi/util/statistics.h"
 #if defined(TI_WITH_CUDA)
@@ -27,8 +30,6 @@ extern bool is_c_backend_available();
 #endif
 
 TI_NAMESPACE_BEGIN
-
-PythonPrintBuffer py_cout;
 
 Config config_from_py_dict(py::dict &c) {
   Config config;
@@ -85,14 +86,6 @@ void stop_duplicating_stdout_to_file(const std::string &fn) {
   TI_NOT_IMPLEMENTED;
 }
 
-bool is_cuda_api_available() {
-#if defined(TI_WITH_CUDA)
-  return lang::CUDADriver::get_instance_without_context().detected();
-#else
-  return false;
-#endif
-}
-
 void export_misc(py::module &m) {
   py::class_<Config>(m, "Config");
   py::register_exception_translator([](std::exception_ptr p) {
@@ -115,10 +108,12 @@ void export_misc(py::module &m) {
       .def("test", &Benchmark::test)
       .def("initialize", &Benchmark::initialize);
 
-#define TI_EXPORT_LOGGING(X) \
-  m.def(#X, [](const std::string &msg) { taichi::logger.X(msg); });
+#define TI_EXPORT_LOGGING(X)               \
+  m.def(#X, [](const std::string &msg) {   \
+    taichi::Logger::get_instance().X(msg); \
+  });
 
-  m.def("flush_log", []() { taichi::logger.flush(); });
+  m.def("flush_log", []() { taichi::Logger::get_instance().flush(); });
 
   TI_EXPORT_LOGGING(trace);
   TI_EXPORT_LOGGING(debug);
@@ -131,12 +126,14 @@ void export_misc(py::module &m) {
 
   m.def("print_all_units", print_all_units);
   m.def("set_core_state_python_imported", CoreState::set_python_imported);
-  m.def("set_logging_level",
-        [](const std::string &level) { logger.set_level(level); });
-  m.def("logging_effective", [](const std::string &level) {
-    return logger.is_level_effective(level);
+  m.def("set_logging_level", [](const std::string &level) {
+    Logger::get_instance().set_level(level);
   });
-  m.def("set_logging_level_default", []() { logger.set_level_default(); });
+  m.def("logging_effective", [](const std::string &level) {
+    return Logger::get_instance().is_level_effective(level);
+  });
+  m.def("set_logging_level_default",
+        []() { Logger::get_instance().set_level_default(); });
   m.def("set_core_trigger_gdb_when_crash",
         CoreState::set_trigger_gdb_when_crash);
   m.def("test_raise_error", test_raise_error);
@@ -170,6 +167,7 @@ void export_misc(py::module &m) {
   m.def("with_cuda", is_cuda_api_available);
   m.def("with_metal", taichi::lang::metal::is_metal_api_available);
   m.def("with_opengl", taichi::lang::opengl::is_opengl_api_available);
+  m.def("with_vulkan", taichi::lang::vulkan::is_vulkan_api_available);
 
 #ifdef TI_WITH_CC
   m.def("with_cc", taichi::lang::cccp::is_c_backend_available);
@@ -181,8 +179,9 @@ void export_misc(py::module &m) {
       .def(py::init<>())
       .def("clear", &Statistics::clear)
       .def("get_counters", &Statistics::get_counters);
-  m.def("get_kernel_stats", []() -> Statistics & { return stat; },
-        py::return_value_policy::reference);
+  m.def(
+      "get_kernel_stats", []() -> Statistics & { return stat; },
+      py::return_value_policy::reference);
 }
 
 TI_NAMESPACE_END

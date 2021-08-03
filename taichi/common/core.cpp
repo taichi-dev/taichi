@@ -5,8 +5,6 @@
 
 #include "taichi/common/core.h"
 
-#include "llvm/Config/llvm-config.h"
-
 #include "taichi/common/version.h"
 #include "taichi/common/commit_hash.h"
 
@@ -89,10 +87,6 @@ std::string get_commit_hash() {
 
 std::string get_cuda_version_string() {
   return TI_CUDAVERSION;
-}
-
-std::string get_llvm_version_string() {
-  return LLVM_VERSION_STRING;
 }
 
 TI_NAMESPACE_END

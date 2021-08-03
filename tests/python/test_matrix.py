@@ -1,8 +1,10 @@
-import taichi as ti
-import numpy as np
-from taichi import approx
 import operator
+
+import numpy as np
 import pytest
+
+import taichi as ti
+from taichi import approx
 
 operation_types = [operator.add, operator.sub, operator.matmul]
 test_matrix_arrays = [
@@ -159,18 +161,34 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     assert np.allclose(r2[None].value.to_numpy(), ops(a, c))
 
 
-@ti.test(arch=ti.cpu)
+@ti.test(require=ti.extension.dynamic_index)
 def test_matrix_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
+    v = ti.Vector.field(10, ti.i32, 5)
 
     @ti.kernel
-    def func():
+    def func1():
         for i in range(5):
             for j, k in ti.ndrange(2, 2):
-                m[i][j, k] = 12
+                m[i][j, k] = j * j + k * k
+        assert m[1][0, 1] == 1
+        assert m[2][1, 0] == 1
+        assert m[3][1, 1] == 2
 
-    with pytest.raises(ti.TaichiSyntaxError):
-        func()
+    func1()
+    assert m[4][0, 1] == 1
+
+    @ti.kernel
+    def func2():
+        for i in range(5):
+            for j in range(4):
+                v[i][j * j] = j * j
+        assert v[1][0] == 0
+        assert v[1][1] == 1
+        assert v[1][4] == 4
+
+    func2()
+    assert v[1][9] == 9
 
 
 @ti.test(arch=ti.cpu)

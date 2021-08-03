@@ -5,12 +5,20 @@
 
 #include "taichi/ir/ir.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
-// A basic block in control-flow graph
+/**
+ * A basic block in control-flow graph.
+ * A CFGNode contains a reference to a part of the CHI IR, or more precisely,
+ * an interval of statements in a Block.
+ * The edges in the graph are stored in |prev| and |next|. The control flow is
+ * possible to go from any node in |prev| to this node, and is possible to go
+ * from this node to any node in |next|.
+ */
 class CFGNode {
  private:
-  // For accelerating get_store_forwarding_data
+  // For accelerating get_store_forwarding_data()
   std::unordered_set<Block *> parent_blocks;
 
  public:
@@ -46,24 +54,30 @@ class CFGNode {
   CFGNode();
 
   static void add_edge(CFGNode *from, CFGNode *to);
+
+  // Property methods.
   bool empty() const;
   std::size_t size() const;
+
+  // Methods for modifying the underlying CHI IR.
   void erase(int location);
   void insert(std::unique_ptr<Stmt> &&new_stmt, int location);
   void replace_with(int location,
                     std::unique_ptr<Stmt> &&new_stmt,
-                    bool replace_usages = true);
+                    bool replace_usages = true) const;
 
+  // Utility methods.
   static bool contain_variable(const std::unordered_set<Stmt *> &var_set,
                                Stmt *var);
   static bool may_contain_variable(const std::unordered_set<Stmt *> &var_set,
                                    Stmt *var);
-  void reaching_definition_analysis(bool after_lower_access);
   bool reach_kill_variable(Stmt *var) const;
   Stmt *get_store_forwarding_data(Stmt *var, int position) const;
+
+  // Analyses and optimizations inside a CFGNode.
+  void reaching_definition_analysis(bool after_lower_access);
   bool store_to_load_forwarding(bool after_lower_access);
   void gather_loaded_snodes(std::unordered_set<SNode *> &snodes) const;
-
   void live_variable_analysis(bool after_lower_access);
   bool dead_store_elimination(bool after_lower_access);
 };
@@ -90,30 +104,69 @@ class ControlFlowGraph {
     return nodes.back().get();
   }
 
-  std::size_t size() const;
-  CFGNode *back();
+  [[nodiscard]] std::size_t size() const;
+  [[nodiscard]] CFGNode *back() const;
 
   void print_graph_structure() const;
+
+  /**
+   * Perform reaching definition analysis using the worklist algorithm,
+   * and store the results in CFGNodes.
+   * https://en.wikipedia.org/wiki/Reaching_definition
+   *
+   * @param after_lower_access
+   *   When after_lower_access is true, only consider local variables (allocas).
+   */
   void reaching_definition_analysis(bool after_lower_access);
+
+  /**
+   * Perform live variable analysis using the worklist algorithm,
+   * and store the results in CFGNodes.
+   * https://en.wikipedia.org/wiki/Live_variable_analysis
+   *
+   * @param after_lower_access
+   *   When after_lower_access is true, only consider local variables (allocas).
+   * @param config_opt
+   *   The set of SNodes which is never loaded after this task.
+   */
   void live_variable_analysis(
       bool after_lower_access,
       const std::optional<LiveVarAnalysisConfig> &config_opt);
 
+  /**
+   * Simplify the graph structure to accelerate other analyses and
+   * optimizations. The IR is not modified.
+   */
   void simplify_graph();
 
   // This pass cannot eliminate container statements properly for now.
   bool unreachable_code_elimination();
 
-  // Also performs identical store elimination.
+  /**
+   * Perform store-to-load forwarding and identical store elimination.
+   */
   bool store_to_load_forwarding(bool after_lower_access);
 
-  // Also performs identical load elimination.
+  /**
+   * Perform dead store elimination and identical load elimination.
+   */
   bool dead_store_elimination(
       bool after_lower_access,
       const std::optional<LiveVarAnalysisConfig> &lva_config_opt);
 
-  // Gather the SNodes this offload reads.
+  /**
+   * Gather the SNodes which is read or partially written in this offloaded
+   * task.
+   */
   std::unordered_set<SNode *> gather_loaded_snodes();
+
+  /**
+   * Determine all adaptive AD-stacks' necessary size.
+   * @param default_ad_stack_size The default AD-stack's size when we are
+   * unable to determine some AD-stack's size.
+   */
+  void determine_ad_stack_size(int default_ad_stack_size);
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

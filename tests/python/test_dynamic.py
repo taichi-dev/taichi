@@ -1,3 +1,5 @@
+import pytest
+
 import taichi as ti
 
 
@@ -141,6 +143,13 @@ def test_append_ret_value():
 
 @ti_support_non_top_dynamic
 def test_dense_dynamic():
+    # The spin lock implementation has triggered a bug in CUDA, the end result
+    # being that appending to Taichi's dynamic node messes up its length. See
+    # https://stackoverflow.com/questions/65995357/cuda-spinlock-implementation-with-independent-thread-scheduling-supported
+    # CUDA 11.2 didn't fix this bug, unfortunately.
+    if ti.cfg.arch == ti.cuda:
+        pytest.skip('CUDA spinlock bug')
+
     n = 128
     x = ti.field(ti.i32)
     l = ti.field(ti.i32, shape=n)

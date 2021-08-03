@@ -1,9 +1,15 @@
-import sys, os, atexit, functools
+import atexit
+import functools
+import os
+import sys
+
+from taichi.core.util import ti_core as _ti_core
+
+import taichi as ti
 
 try:
     import sourceinspect as oinspect
 except ImportError:
-    import taichi as ti
     ti.warn('`sourceinspect` not installed!')
     ti.warn(
         'Without this package Taichi may not function well in Python IDLE interactive shell, '
@@ -18,8 +24,7 @@ if not _env_enable_pybuf or int(_env_enable_pybuf):
     # While sys.__stdout__ should always be the raw console stdout.
     pybuf_enabled = sys.stdout is not sys.__stdout__
 
-from .core import taichi_lang_core
-taichi_lang_core.toggle_python_print_buffer(pybuf_enabled)
+_ti_core.toggle_python_print_buffer(pybuf_enabled)
 
 
 def _shell_pop_print(old_call):
@@ -27,7 +32,6 @@ def _shell_pop_print(old_call):
         # zero-overhead!
         return old_call
 
-    import taichi as ti
     ti.info('Graphical python shell detected, using wrapped sys.stdout')
 
     @functools.wraps(old_call)
@@ -36,7 +40,7 @@ def _shell_pop_print(old_call):
         ret = old_call(*args, **kwargs)
         # print's in kernel won't take effect until ti.sync(), discussion:
         # https://github.com/taichi-dev/taichi/pull/1303#discussion_r444897102
-        print(taichi_lang_core.pop_python_print_buffer(), end='')
+        print(_ti_core.pop_python_print_buffer(), end='')
         return ret
 
     return new_call

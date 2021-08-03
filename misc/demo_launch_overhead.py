@@ -1,5 +1,6 @@
-import taichi as ti
 import time
+
+import taichi as ti
 
 ti.init()
 

@@ -1,6 +1,7 @@
-import taichi as ti
-from pytest import approx
 import pytest
+from pytest import approx
+
+import taichi as ti
 
 
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
@@ -168,5 +169,6 @@ def test_negative(exponent_bits):
     assert b[None] == -123
 
 
+# TODO: test precision
 # TODO: make sure unsigned has one more effective significand bit
 # TODO: test shared exponent floats with custom int in a single bit struct

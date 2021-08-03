@@ -1,5 +1,6 @@
-import taichi as ti
 import time
+
+import taichi as ti
 
 t = time.time()
 ti.init(arch=ti.cuda, print_kernel_llvm_ir_optimized=True)

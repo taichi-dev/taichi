@@ -31,34 +31,12 @@
 // https://blog.kowalczyk.info/article/j/guide-to-predefined-macros-in-c-compilers-gcc-clang-msvc-etc..html
 
 // Platforms
-
-// Windows
-#if defined(_WIN64)
-#define TI_PLATFORM_WINDOWS
-#endif
-
-#if defined(_WIN32) && !defined(_WIN64)
-static_assert(false, "32-bit Windows systems are not supported")
-#endif
-
-// Linux
-#if defined(__linux__)
-#define TI_PLATFORM_LINUX
-#endif
-
-// OSX
-#if defined(__APPLE__)
-#define TI_PLATFORM_OSX
-#endif
-
-#if (defined(TI_PLATFORM_LINUX) || defined(TI_PLATFORM_OSX))
-#define TI_PLATFORM_UNIX
-#endif
+#include "taichi/common/platform_macros.h"
 
 // Avoid dependency on glibc 2.27
 #if defined(TI_PLATFORM_LINUX) && defined(TI_ARCH_x64)
-    // objdump -T libtaichi_core.so| grep  GLIBC_2.27
-    __asm__(".symver logf,logf@GLIBC_2.2.5");
+// objdump -T libtaichi_core.so| grep  GLIBC_2.27
+__asm__(".symver logf,logf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");
 __asm__(".symver expf,expf@GLIBC_2.2.5");
 #endif
@@ -107,8 +85,6 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #endif
 
 #ifdef _WIN64
-#define __FILENAME__ \
-  (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
 #pragma warning(push)
 #pragma warning(disable : 4005)
 #include "taichi/platform/windows/windows.h"
@@ -116,12 +92,8 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #include <intrin.h>
 #define TI_EXPORT __declspec(dllexport)
 #else
-#define __FILENAME__ \
-  (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #define TI_EXPORT
 #endif
-#define TI_P(x) \
-  { TI_INFO("{}", taichi::TextSerializer::serialize(#x, (x))); }
 
 #ifndef _WIN64
 #define sscanf_s sscanf
@@ -141,15 +113,6 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #endif
 
 #define TI_STATIC_ASSERT(x) static_assert((x), #x);
-#define TI_ASSERT(x) TI_ASSERT_INFO((x), "Assertion failure: " #x)
-#define TI_ASSERT_INFO(x, ...)             \
-  {                                        \
-    bool ___ret___ = static_cast<bool>(x); \
-    if (!___ret___) {                      \
-      TI_ERROR(__VA_ARGS__);               \
-    }                                      \
-  }
-#define TI_NOT_IMPLEMENTED TI_ERROR("Not supported.");
 
 #define TI_NAMESPACE_BEGIN namespace taichi {
 #define TI_NAMESPACE_END }
@@ -266,125 +229,9 @@ TI_NAMESPACE_END
 
 #include "taichi/util/meta.h"
 
-//******************************************************************************
-//                               Logging
-//******************************************************************************
-
-// Must include "spdlog/common.h" to define SPDLOG_HEADER_ONLY
-// before including "spdlog/fmt/fmt.h"
-#include "spdlog/common.h"
-#include "spdlog/fmt/fmt.h"
-namespace spdlog {
-class logger;
-}
+#include "taichi/common/logging.h"
 
 TI_NAMESPACE_BEGIN
-
-#define SPD_AUGMENTED_LOG(X, ...)                                        \
-  taichi::logger.X(                                                      \
-      fmt::format("[{}:{}@{}] ", __FILENAME__, __FUNCTION__, __LINE__) + \
-      fmt::format(__VA_ARGS__))
-
-#if defined(TI_PLATFORM_WINDOWS)
-#define TI_UNREACHABLE __assume(0);
-#else
-#define TI_UNREACHABLE __builtin_unreachable();
-#endif
-
-#define TI_TRACE(...) SPD_AUGMENTED_LOG(trace, __VA_ARGS__)
-#define TI_DEBUG(...) SPD_AUGMENTED_LOG(debug, __VA_ARGS__)
-#define TI_INFO(...) SPD_AUGMENTED_LOG(info, __VA_ARGS__)
-#define TI_WARN(...) SPD_AUGMENTED_LOG(warn, __VA_ARGS__)
-#define TI_ERROR(...)                      \
-  {                                        \
-    SPD_AUGMENTED_LOG(error, __VA_ARGS__); \
-    TI_UNREACHABLE;                        \
-  }
-#define TI_CRITICAL(...)                      \
-  {                                           \
-    SPD_AUGMENTED_LOG(critical, __VA_ARGS__); \
-    TI_UNREACHABLE;                           \
-  }
-
-#define TI_TRACE_IF(condition, ...) \
-  if (condition) {                  \
-    TI_TRACE(__VA_ARGS__);          \
-  }
-#define TI_TRACE_UNLESS(condition, ...) \
-  if (!(condition)) {                   \
-    TI_TRACE(__VA_ARGS__);              \
-  }
-#define TI_DEBUG_IF(condition, ...) \
-  if (condition) {                  \
-    TI_DEBUG(__VA_ARGS__);          \
-  }
-#define TI_DEBUG_UNLESS(condition, ...) \
-  if (!(condition)) {                   \
-    TI_DEBUG(__VA_ARGS__);              \
-  }
-#define TI_INFO_IF(condition, ...) \
-  if (condition) {                 \
-    TI_INFO(__VA_ARGS__);          \
-  }
-#define TI_INFO_UNLESS(condition, ...) \
-  if (!(condition)) {                  \
-    TI_INFO(__VA_ARGS__);              \
-  }
-#define TI_WARN_IF(condition, ...) \
-  if (condition) {                 \
-    TI_WARN(__VA_ARGS__);          \
-  }
-#define TI_WARN_UNLESS(condition, ...) \
-  if (!(condition)) {                  \
-    TI_WARN(__VA_ARGS__);              \
-  }
-#define TI_ERROR_IF(condition, ...) \
-  if (condition) {                  \
-    TI_ERROR(__VA_ARGS__);          \
-  }
-#define TI_ERROR_UNLESS(condition, ...) \
-  if (!(condition)) {                   \
-    TI_ERROR(__VA_ARGS__);              \
-  }
-#define TI_CRITICAL_IF(condition, ...) \
-  if (condition) {                     \
-    TI_CRITICAL(__VA_ARGS__);          \
-  }
-#define TI_CRITICAL_UNLESS(condition, ...) \
-  if (!(condition)) {                      \
-    TI_CRITICAL(__VA_ARGS__);              \
-  }
-
-#define TI_STOP TI_ERROR("Stopping here")
-#define TI_TAG TI_INFO("Tagging here")
-
-#define TI_LOG_SET_PATTERN(x) spdlog::set_pattern(x);
-
-#define TI_FLUSH_LOGGER \
-  { taichi::logger.flush(); };
-
-class Logger {
- private:
-  std::shared_ptr<spdlog::logger> console;
-  int level;
-
- public:
-  Logger();
-  void trace(const std::string &s);
-  void debug(const std::string &s);
-  void info(const std::string &s);
-  void warn(const std::string &s);
-  void error(const std::string &s, bool raise_exception = true);
-  void critical(const std::string &s);
-  void flush();
-  void set_level(const std::string &level);
-  bool is_level_effective(const std::string &level_name);
-  int get_level();
-  static int level_enum_from_string(const std::string &level);
-  void set_level_default();
-};
-
-extern Logger logger;
 
 namespace zip {
 
@@ -446,7 +293,7 @@ TI_NAMESPACE_END
 //                               Serialization
 //******************************************************************************
 
-#include "serialization.h"
+#include "taichi/common/serialization.h"
 
 //******************************************************************************
 //                                   Misc.
@@ -520,5 +367,4 @@ std::string get_commit_hash();
 
 std::string get_cuda_version_string();
 
-std::string get_llvm_version_string();
 TI_NAMESPACE_END

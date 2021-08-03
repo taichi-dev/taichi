@@ -1,5 +1,6 @@
-import taichi as ti
 import numpy as np
+
+import taichi as ti
 
 
 @ti.test(require=ti.extension.quant, debug=True)
@@ -11,8 +12,6 @@ def test_1D_bit_array():
     N = 32
 
     ti.root.bit_array(ti.i, N, num_bits=32).place(x)
-
-    ti.get_runtime().materialize()
 
     @ti.kernel
     def set_val():
@@ -37,8 +36,6 @@ def test_2D_bit_array():
     M, N = 4, 8
 
     ti.root.bit_array(ti.ij, (M, N), num_bits=32).place(x)
-
-    ti.get_runtime().materialize()
 
     @ti.kernel
     def set_val():

@@ -1,7 +1,8 @@
-import taichi as ti
 import numpy as np
-from taichi import allclose
 import pytest
+
+import taichi as ti
+from taichi import allclose
 
 
 def _c_mod(a, b):
@@ -23,9 +24,9 @@ def test_binary_f(lhs_is_mat, rhs_is_mat):
         z = ti.field(ti.f32, ())
 
     if lhs_is_mat:
-        y.from_numpy(np.array([[0, 2], [9, 3], [7, 4]], np.float32))
+        y.from_numpy(np.array([[0, 2], [9, 3.1], [7, 4]], np.float32))
     else:
-        y[None] = 6
+        y[None] = 6.1
     if rhs_is_mat:
         z.from_numpy(np.array([[4, 5], [6, 3], [9, 2]], np.float32))
     else:
@@ -156,7 +157,7 @@ def test_writeback_binary_f(rhs_is_mat):
     else:
         z = ti.field(ti.f32, ())
 
-    y.from_numpy(np.array([[0, 2], [9, 3], [7, 4]], np.float32))
+    y.from_numpy(np.array([[0, 2], [9, 3.1], [7, 4]], np.float32))
     if rhs_is_mat:
         z.from_numpy(np.array([[4, 5], [6, 3], [9, 2]], np.float32))
     else:

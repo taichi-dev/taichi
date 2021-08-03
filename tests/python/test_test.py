@@ -4,8 +4,9 @@ This file tests if Taichi's testing utilities are functional.
 TODO: Skips these tests after all tests are using @ti.test
 '''
 
-import taichi as ti
 import pytest
+
+import taichi as ti
 
 ### `ti.test`
 
@@ -53,7 +54,7 @@ def test_init_args():
 
 @ti.test(require=ti.extension.sparse)
 def test_require_extensions_1():
-    assert ti.cfg.arch in [ti.cpu, ti.cuda]
+    assert ti.cfg.arch in [ti.cpu, ti.cuda, ti.metal]
 
 
 @ti.test(arch=[ti.cpu, ti.opengl], require=ti.extension.sparse)

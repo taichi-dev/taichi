@@ -2,13 +2,8 @@
 
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/statements.h"
-#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
-
-void layout(const std::function<void()> &body) {
-  get_current_program().layout(body);
-}
 
 Expr global_new(Expr id_expr, DataType dt) {
   TI_ASSERT(id_expr.is<IdExpression>());
@@ -20,6 +15,15 @@ Expr global_new(Expr id_expr, DataType dt) {
 Expr global_new(DataType dt, std::string name) {
   auto id_expr = std::make_shared<IdExpression>(name);
   return Expr::make<GlobalVariableExpression>(dt, id_expr->id);
+}
+
+Expr copy(const Expr &expr) {
+  auto e = expr.eval();
+  auto stmt = Stmt::make<ElementShuffleStmt>(
+      VectorElement(e.cast<EvalExpression>()->stmt_ptr, 0));
+  auto eval_expr = std::make_shared<EvalExpression>(stmt.get());
+  current_ast_builder().insert(std::move(stmt));
+  return Expr(eval_expr);
 }
 
 void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field) {

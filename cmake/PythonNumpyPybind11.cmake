@@ -14,7 +14,13 @@ endif ()
 
 if (WIN32)
     execute_process(COMMAND where ${PYTHON_EXECUTABLE}
-        OUTPUT_VARIABLE PYTHON_EXECUTABLE_PATH)
+        OUTPUT_VARIABLE PYTHON_EXECUTABLE_PATHS)
+    if (${PYTHON_EXECUTABLE_PATHS})
+        string(FIND ${PYTHON_EXECUTABLE_PATHS} "\n" _LINE_BREAK_LOC)
+        string(SUBSTRING ${PYTHON_EXECUTABLE_PATHS} 0 ${_LINE_BREAK_LOC} PYTHON_EXECUTABLE_PATH)
+    else ()
+        set(PYTHON_EXECUTABLE_PATH ${PYTHON_EXECUTABLE})
+    endif ()
 else ()
     execute_process(COMMAND which ${PYTHON_EXECUTABLE}
             OUTPUT_VARIABLE PYTHON_EXECUTABLE_PATH)
@@ -66,6 +72,17 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 message("    version: ${PYTHON_VERSION}")
 message("    include: ${PYTHON_INCLUDE_DIRS}")
 message("    library: ${PYTHON_LIBRARIES}")
+
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+        "import git; from git import Repo; import sys;\
+        sys.stdout.write(git.__version__)"
+	OUTPUT_VARIABLE GITPYTHON_VERSION
+	RESULT_VARIABLE GITPYTHON_IMPORT_RET)
+if (NOT GITPYTHON_IMPORT_RET)
+    message("    gitpython version: ${GITPYTHON_VERSION}")
+else ()
+    message(FATAL_ERROR "Cannot import git. Please install. ([sudo] pip3 install --user gitpython)")
+endif ()
 
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         "import numpy.distutils, sys;\

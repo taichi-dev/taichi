@@ -123,7 +123,7 @@ void MemoryPool::terminate() {
   th->join();
   TI_ASSERT(killed);
 #if 0 && defined(TI_WITH_CUDA)
-  if (prog->config.arch == Arch::cuda)
+  if (program->config.arch == Arch::cuda)
     CUDADriver::get_instance().cudaStreamDestroy(cuda_stream);
 #endif
 }

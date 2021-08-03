@@ -19,7 +19,8 @@ class JITSession {
   JITSession() {
   }
 
-  virtual JITModule *add_module(std::unique_ptr<llvm::Module> M) = 0;
+  virtual JITModule *add_module(std::unique_ptr<llvm::Module> M,
+                                int max_reg = 0) = 0;
 
   // virtual void remove_module(JITModule *module) = 0;
 
@@ -32,6 +33,9 @@ class JITSession {
   std::size_t get_type_size(llvm::Type *type);
 
   static std::unique_ptr<JITSession> create(Arch arch);
+
+  virtual void global_optimize_module(llvm::Module *module) {
+  }
 
   virtual ~JITSession() = default;
 };

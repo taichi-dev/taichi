@@ -29,12 +29,14 @@ struct UsedFeature {
   bool buf_earg{false};
   bool buf_extr{false};
   bool buf_gtmp{false};
+  bool buf_retr{false};
 
   // utilties:
   bool fast_pow{false};
   bool listman{false};
   bool random{false};
   bool print{false};
+  bool reduction{false};
 
   // extensions:
 #define PER_OPENGL_EXTENSION(x) bool extension_##x{false};
@@ -48,6 +50,7 @@ enum class GLBufId {
   Listman = 7,
   Gtmp = 1,
   Args = 2,
+  Retr = 3,
   Extr = 4,
 };
 

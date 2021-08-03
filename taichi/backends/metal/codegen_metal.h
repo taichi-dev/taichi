@@ -9,12 +9,18 @@
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/backends/metal/data_types.h"
-#include "taichi/backends/metal/kernel_util.h"
 #include "taichi/backends/metal/kernel_manager.h"
+#include "taichi/backends/metal/kernel_utils.h"
 #include "taichi/backends/metal/struct_metal.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 namespace metal {
+
+CompiledKernelData run_codegen(const CompiledStructs *compiled_structs,
+                               Kernel *kernel,
+                               PrintStringTable *print_strtab,
+                               OffloadedStmt *offloaded);
 
 // If |offloaded| is nullptr, this compiles the AST in |kernel|. Otherwise it
 // compiles just |offloaded|. These ASTs must have already been lowered at the
@@ -26,5 +32,5 @@ FunctionType compile_to_metal_executable(
     OffloadedStmt *offloaded = nullptr);
 
 }  // namespace metal
-
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

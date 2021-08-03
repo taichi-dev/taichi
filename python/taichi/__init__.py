@@ -1,10 +1,13 @@
-from .core import *
-from .misc import *
-from .lang import *  # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
-from .tools import *
-from .main import main
-from .torch_io import from_torch, to_torch
-from .testing import *
+from taichi.core import *
+from taichi.lang import *  # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
+from taichi.main import main
+from taichi.misc import *
+from taichi.testing import *
+from taichi.tools import *
+from taichi.torch_io import from_torch, to_torch
+
+# Issue#2223: Do not reorder, or we're busted with partially initialized module
+from taichi import aot  # isort:skip
 
 __all__ = ['core', 'misc', 'lang', 'tools', 'main', 'torch_io']
 

@@ -11,10 +11,11 @@ from functools import wraps
 from pathlib import Path
 
 from colorama import Back, Fore, Style
+from taichi.core import settings
+from taichi.core import ti_core as _ti_core
+from taichi.tools import video
 
 import taichi as ti
-from taichi.tools.video import (accelerate_video, crop_video, make_video,
-                                mp4_to_gif, scale_video)
 
 
 def timer(func):
@@ -122,7 +123,7 @@ class TaichiMain:
         import taichi as ti
 
         root_dir = ti.package_root() if ti.is_release(
-        ) else ti.get_repo_directory()
+        ) else settings.get_repo_directory()
         examples_dir = Path(root_dir) / 'examples'
         return examples_dir
 
@@ -131,7 +132,10 @@ class TaichiMain:
         """Get a set of all available example names."""
         examples_dir = TaichiMain._get_examples_dir()
         all_examples = examples_dir.rglob('*.py')
-        all_example_names = {Path(f).stem for f in all_examples}
+        all_example_names = {
+            Path(f).stem: Path(f).parent
+            for f in all_examples
+        }
         return all_example_names
 
     @staticmethod
@@ -155,8 +159,8 @@ class TaichiMain:
         parser.add_argument(
             "name",
             help=f"Name of an example (supports .py extension too)\n",
-            type=TaichiMain._example_choices_type(choices),
-            choices=sorted(choices))
+            type=TaichiMain._example_choices_type(choices.keys()),
+            choices=sorted(choices.keys()))
         parser.add_argument(
             '-p',
             '--print',
@@ -181,9 +185,10 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         examples_dir = TaichiMain._get_examples_dir()
-        target = str((examples_dir / f"{args.name}.py").resolve())
+        target = str(
+            (examples_dir / choices[args.name] / f"{args.name}.py").resolve())
         # path for examples needs to be modified for implicit relative imports
-        sys.path.append(str(examples_dir.resolve()))
+        sys.path.append(str((examples_dir / choices[args.name]).resolve()))
 
         # Short circuit for testing
         if self.test_mode: return args
@@ -195,8 +200,8 @@ class TaichiMain:
 
         if args.pretty_print:
             try:
-                import rich.syntax
                 import rich.console
+                import rich.syntax
             except ImportError as e:
                 print('To make -P work, please: python3 -m pip install rich')
                 return 1
@@ -242,9 +247,9 @@ class TaichiMain:
             args = parser.parse_args(arguments)
 
             from . import make_changelog
-            res = make_changelog.main(args.version, ti.core.get_repo_dir())
+            res = make_changelog.main(args.version, _ti_core.get_repo_dir())
             if args.save:
-                changelog_md = os.path.join(ti.core.get_repo_dir(),
+                changelog_md = os.path.join(_ti_core.get_repo_dir(),
                                             'CHANGELOG.md')
                 with open(changelog_md, 'w') as f:
                     f.write(res)
@@ -261,14 +266,15 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
 
-        from git import Git
-        import zipfile
         import hashlib
-        g = Git(ti.get_repo_directory())
+        import zipfile
+
+        from git import Git
+        g = Git(settings.get_repo_directory())
         g.init()
         with zipfile.ZipFile('release.zip', 'w') as zip:
             files = g.ls_files().split('\n')
-            os.chdir(ti.get_repo_directory())
+            os.chdir(settings.get_repo_directory())
             for f in files:
                 if not os.path.isdir(f):
                     zip.write(f)
@@ -278,7 +284,7 @@ class TaichiMain:
             for chunk in iter(lambda: f.read(4096), b""):
                 md5.update(chunk)
         md5 = md5.hexdigest()
-        commit = ti.core.get_commit_hash()[:8]
+        commit = _ti_core.get_commit_hash()[:8]
         fn = f'taichi-src-v{ver[0]}-{ver[1]}-{ver[2]}-{commit}-{md5}.zip'
         import shutil
         shutil.move('release.zip', fn)
@@ -314,7 +320,7 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        mp4_to_gif(args.input_file, args.output_file, args.framerate)
+        video.mp4_to_gif(args.input_file, args.output_file, args.framerate)
 
     @register
     def video_speed(self, arguments: list = sys.argv[2:]):
@@ -344,7 +350,7 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        accelerate_video(args.input_file, args.output_file, args.speed)
+        video.accelerate_video(args.input_file, args.output_file, args.speed)
 
     @register
     def video_crop(self, arguments: list = sys.argv[2:]):
@@ -386,8 +392,8 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        crop_video(args.input_file, args.output_file, args.x_begin, args.x_end,
-                   args.y_begin, args.y_end)
+        video.crop_video(args.input_file, args.output_file, args.x_begin,
+                         args.x_end, args.y_begin, args.y_end)
 
     @register
     def video_scale(self, arguments: list = sys.argv[2:]):
@@ -427,8 +433,8 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        scale_video(args.input_file, args.output_file, args.ratio_width,
-                    args.ratio_height)
+        video.scale_video(args.input_file, args.output_file, args.ratio_width,
+                          args.ratio_height)
 
     @register
     def video(self, arguments: list = sys.argv[2:]):
@@ -471,10 +477,10 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        make_video(args.inputs,
-                   output_path=str(args.output_file),
-                   crf=args.crf,
-                   frame_rate=args.framerate)
+        video.make_video(args.inputs,
+                         output_path=str(args.output_file),
+                         crf=args.crf,
+                         frame_rate=args.framerate)
         ti.info(f'Done! Output video file = {args.output_file}')
 
     @register
@@ -487,7 +493,7 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
         os.system(
-            f'cd {ti.get_repo_directory()}/docs && sphinx-build -b html . build'
+            f'cd {settings.get_repo_directory()}/docs && sphinx-build -b html . build'
         )
 
     @register
@@ -500,8 +506,8 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        ti.core.update(True)
-        ti.core.build()
+        _ti_core.update(True)
+        _ti_core.build()
 
     @register
     def format(self, arguments: list = sys.argv[2:]):
@@ -543,7 +549,7 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        ti.core.build()
+        _ti_core.build()
 
     @staticmethod
     def _display_benchmark_regression(xd, yd, args):
@@ -583,6 +589,7 @@ class TaichiMain:
 
         def plot_in_gui(scatter):
             import numpy as np
+
             import taichi as ti
             gui = ti.GUI('Regression Test', (640, 480), 0x001122)
             print('[Hint] press SPACE to go for next display')
@@ -646,12 +653,12 @@ class TaichiMain:
     @staticmethod
     def _get_benchmark_baseline_dir():
         import taichi as ti
-        return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'baseline')
+        return os.path.join(_ti_core.get_repo_dir(), 'benchmarks', 'baseline')
 
     @staticmethod
     def _get_benchmark_output_dir():
         import taichi as ti
-        return os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output')
+        return os.path.join(_ti_core.get_repo_dir(), 'benchmarks', 'output')
 
     @register
     def regression(self, arguments: list = sys.argv[2:]):
@@ -696,13 +703,14 @@ class TaichiMain:
     @staticmethod
     def _test_python(args):
         print("\nRunning Python tests...\n")
-        import taichi as ti
         import pytest
+
+        import taichi as ti
         if ti.is_release():
             root_dir = ti.package_root()
             test_dir = os.path.join(root_dir, 'tests')
         else:
-            root_dir = ti.get_repo_directory()
+            root_dir = settings.get_repo_directory()
             test_dir = os.path.join(root_dir, 'tests', 'python')
         pytest_args = []
 
@@ -758,6 +766,7 @@ class TaichiMain:
     @staticmethod
     def _test_cpp(args):
         import taichi as ti
+
         # Cpp tests use the legacy non LLVM backend
         ti.reset()
         print("Running C++ tests...")
@@ -801,7 +810,7 @@ class TaichiMain:
         if self.test_mode: return args
 
         import shutil
-        commit_hash = ti.core.get_commit_hash()
+        commit_hash = _ti_core.get_commit_hash()
         with os.popen('git rev-parse HEAD') as f:
             current_commit_hash = f.read().strip()
         assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} differs from current commit {current_commit_hash:.6}, refuse to benchmark"
@@ -971,7 +980,7 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
 
-        ti.core.set_core_trigger_gdb_when_crash(True)
+        _ti_core.set_core_trigger_gdb_when_crash(True)
         os.environ['TI_DEBUG'] = '1'
 
         runpy.run_path(args.filename, run_name='__main__')
@@ -1006,7 +1015,7 @@ class TaichiMain:
                             help='Which mode shall we run?')
         args = parser.parse_args(arguments)
 
-        os.chdir(os.path.join(ti.core.get_repo_dir(), 'python'))
+        os.chdir(os.path.join(_ti_core.get_repo_dir(), 'python'))
         sys.argv.pop(0)
         sys.argv.append(args.mode)
         runpy.run_path('build.py')
@@ -1056,10 +1065,12 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         def local_scope():
-            import taichi as ti
-            import numpy as np
             import math
             import time
+
+            import numpy as np
+
+            import taichi as ti
             try:
                 import IPython
                 IPython.embed()

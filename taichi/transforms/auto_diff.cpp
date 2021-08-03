@@ -48,11 +48,11 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     // TODO: remove this abuse since it *gathers nothing*
     irpass::analysis::gather_statements(block, [&](Stmt *stmt) -> bool {
       if (auto local_load = stmt->cast<LocalLoadStmt>(); local_load) {
-        for (auto &lane : local_load->ptr.data) {
+        for (auto &lane : local_load->src.data) {
           touched_allocas.insert(lane.var->as<AllocaStmt>());
         }
       } else if (auto local_store = stmt->cast<LocalStoreStmt>(); local_store) {
-        touched_allocas.insert(local_store->ptr->as<AllocaStmt>());
+        touched_allocas.insert(local_store->dest->as<AllocaStmt>());
       }
       return false;
     });
@@ -185,46 +185,48 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
 class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
+  int ad_stack_size;
+  explicit ReplaceLocalVarWithStacks(int ad_stack_size)
+      : ad_stack_size(ad_stack_size) {
+  }
 
   void visit(AllocaStmt *alloc) override {
     TI_ASSERT(alloc->width() == 1);
-    bool load_only = irpass::analysis::gather_statements(
-                         alloc->parent,
-                         [&](Stmt *s) {
-                           if (auto store = s->cast<LocalStoreStmt>())
-                             return store->ptr == alloc;
-                           else if (auto atomic = s->cast<AtomicOpStmt>()) {
-                             return atomic->dest == alloc;
-                           } else {
-                             return false;
-                           }
-                         })
-                         .empty();
+    bool load_only =
+        irpass::analysis::gather_statements(alloc->parent, [&](Stmt *s) {
+          if (auto store = s->cast<LocalStoreStmt>())
+            return store->dest == alloc;
+          else if (auto atomic = s->cast<AtomicOpStmt>()) {
+            return atomic->dest == alloc;
+          } else {
+            return false;
+          }
+        }).empty();
     if (!load_only) {
       auto dtype = alloc->ret_type;
-      auto stack_alloca = Stmt::make<StackAllocaStmt>(
-          dtype, alloc->get_kernel()->program.config.ad_stack_size);
+      auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, ad_stack_size);
       auto stack_alloca_ptr = stack_alloca.get();
 
       alloc->replace_with(std::move(stack_alloca));
 
-      // Note that unlike AllocaStmt, StackAllocaStmt does NOT have an 0 as
+      // Note that unlike AllocaStmt, AdStackAllocaStmt does NOT have an 0 as
       // initial value. Therefore here we push an initial 0 value.
       auto zero = stack_alloca_ptr->insert_after_me(
           Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
-      zero->insert_after_me(Stmt::make<StackPushStmt>(stack_alloca_ptr, zero));
+      zero->insert_after_me(
+          Stmt::make<AdStackPushStmt>(stack_alloca_ptr, zero));
     }
   }
 
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->ptr[0].var->is<StackAllocaStmt>())
-      stmt->replace_with(Stmt::make<StackLoadTopStmt>(stmt->ptr[0].var));
+    if (stmt->src[0].var->is<AdStackAllocaStmt>())
+      stmt->replace_with(Stmt::make<AdStackLoadTopStmt>(stmt->src[0].var));
   }
 
   void visit(LocalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    stmt->replace_with(Stmt::make<StackPushStmt>(stmt->ptr, stmt->data));
+    stmt->replace_with(Stmt::make<AdStackPushStmt>(stmt->dest, stmt->val));
   }
 };
 
@@ -379,10 +381,10 @@ class MakeAdjoint : public IRVisitor {
     auto alloca_ = adjoint(primal);
     if (!alloca_ || alloca_->is<ConstStmt>())
       return;  // primal may be int variable
-    if (alloca_->is<StackAllocaStmt>()) {
-      auto alloca = alloca_->cast<StackAllocaStmt>();
+    if (alloca_->is<AdStackAllocaStmt>()) {
+      auto alloca = alloca_->cast<AdStackAllocaStmt>();
       if (needs_grad(alloca->ret_type)) {
-        insert<StackAccAdjointStmt>(alloca, load(value));
+        insert<AdStackAccAdjointStmt>(alloca, load(value));
       }
     } else {
       TI_ASSERT(alloca_->is<AllocaStmt>());
@@ -415,7 +417,7 @@ class MakeAdjoint : public IRVisitor {
     // do nothing.
   }
 
-  void visit(StackAllocaStmt *alloca) override {
+  void visit(AdStackAllocaStmt *alloca) override {
     // do nothing.
   }
 
@@ -614,14 +616,14 @@ class MakeAdjoint : public IRVisitor {
     // TI_ASSERT(!needs_grad(stmt->ret_type));
   }
 
-  void visit(StackLoadTopStmt *stmt) override {
+  void visit(AdStackLoadTopStmt *stmt) override {
     if (needs_grad(stmt->ret_type))
-      insert<StackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
+      insert<AdStackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
   }
 
-  void visit(StackPushStmt *stmt) override {
-    accumulate(stmt->v, insert<StackLoadTopAdjStmt>(stmt->stack));
-    insert<StackPopStmt>(stmt->stack);
+  void visit(AdStackPushStmt *stmt) override {
+    accumulate(stmt->v, insert<AdStackLoadTopAdjStmt>(stmt->stack));
+    insert<AdStackPopStmt>(stmt->stack);
   }
 
   Stmt *load(Stmt *alloc) {
@@ -647,9 +649,9 @@ class MakeAdjoint : public IRVisitor {
 
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
-    GlobalPtrStmt *ptr = stmt->ptr->as<GlobalPtrStmt>();
-    TI_ASSERT(ptr->width() == 1);
-    auto snodes = ptr->snodes;
+    GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
+    TI_ASSERT(src->width() == 1);
+    auto snodes = src->snodes;
     if (!snodes[0]->has_grad()) {
       // No adjoint SNode. Do nothing
       return;
@@ -660,36 +662,36 @@ class MakeAdjoint : public IRVisitor {
     }
     TI_ASSERT(snodes[0]->get_grad() != nullptr);
     snodes[0] = snodes[0]->get_grad();
-    auto adj_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
+    auto adj_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
     insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     // erase and replace with global load adjoint
-    GlobalPtrStmt *ptr = stmt->ptr->as<GlobalPtrStmt>();
-    TI_ASSERT(ptr->width() == 1);
-    auto snodes = ptr->snodes;
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    TI_ASSERT(dest->width() == 1);
+    auto snodes = dest->snodes;
     if (!snodes[0]->has_grad()) {
       // no gradient (likely integer types)
       return;
     }
     TI_ASSERT(snodes[0]->get_grad() != nullptr);
     snodes[0] = snodes[0]->get_grad();
-    auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
+    auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
     auto load = insert<GlobalLoadStmt>(adjoint_ptr);
-    accumulate(stmt->data, load);
+    accumulate(stmt->val, load);
     stmt->parent->erase(stmt);
   }
 
   void visit(AtomicOpStmt *stmt) override {
     // erase and replace with global load adjoint
-    GlobalPtrStmt *ptr = stmt->dest->as<GlobalPtrStmt>();
-    TI_ASSERT(ptr->width() == 1);
-    auto snodes = ptr->snodes;
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    TI_ASSERT(dest->width() == 1);
+    auto snodes = dest->snodes;
     if (snodes[0]->has_grad()) {
       TI_ASSERT(snodes[0]->get_grad() != nullptr);
       snodes[0] = snodes[0]->get_grad();
-      auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
+      auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
       accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     } else {
       // no gradient (likely integer types)
@@ -762,8 +764,8 @@ class BackupSSA : public BasicStmtVisitor {
       if (std::find(leaf_to_root.begin(), leaf_to_root.end(), op->parent) ==
               leaf_to_root.end() &&
           !op->is<AllocaStmt>()) {
-        if (op->is<StackLoadTopStmt>()) {
-          // Just create another StackLoadTopStmt
+        if (op->is<AdStackLoadTopStmt>()) {
+          // Just create another AdStackLoadTopStmt
           stmt->set_operand(i, stmt->insert_before_me(op->clone()));
         } else {
           auto alloca = load(op);
@@ -818,7 +820,7 @@ class BackupSSA : public BasicStmtVisitor {
 
 namespace irpass {
 
-void auto_diff(IRNode *root, bool use_stack) {
+void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack) {
   TI_AUTO_PROF;
   if (use_stack) {
     auto IB = IdentifyIndependentBlocks::run(root);
@@ -826,23 +828,23 @@ void auto_diff(IRNode *root, bool use_stack) {
 
     for (auto ib : IB) {
       PromoteSSA2LocalVar::run(ib);
-      ReplaceLocalVarWithStacks replace;
+      ReplaceLocalVarWithStacks replace(config.ad_stack_size);
       ib->accept(&replace);
-      type_check(root);
+      type_check(root, config);
       MakeAdjoint::run(ib);
-      type_check(root);
+      type_check(root, config);
       BackupSSA::run(ib);
       irpass::analysis::verify(root);
     }
   } else {
     auto IB = IdentifyIndependentBlocks::run(root);
     ReverseOuterLoops::run(root, IB);
-    type_check(root);
+    type_check(root, config);
     for (auto ib : IB) {
       MakeAdjoint::run(ib);
     }
   }
-  type_check(root);
+  type_check(root, config);
   irpass::analysis::verify(root);
 }
 

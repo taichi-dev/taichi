@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "taichi/common/interface.h"
+#include "taichi/common/core.h"
 
 #include <exception>
 

@@ -8,6 +8,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/system/profiler.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -53,11 +54,11 @@ std::vector<T *> find_global_reduction_destinations(
     auto related_global_mem_ops =
         irpass::analysis::gather_statements(offload, [&](Stmt *stmt) {
           if (auto load = stmt->cast<GlobalLoadStmt>()) {
-            if (irpass::analysis::maybe_same_address(load->ptr, dest)) {
+            if (irpass::analysis::maybe_same_address(load->src, dest)) {
               return true;
             }
           } else if (auto store = stmt->cast<GlobalStoreStmt>()) {
-            if (irpass::analysis::maybe_same_address(store->ptr, dest)) {
+            if (irpass::analysis::maybe_same_address(store->dest, dest)) {
               return true;
             }
           } else if (auto atomic = stmt->cast<AtomicOpStmt>()) {
@@ -166,8 +167,10 @@ void make_thread_local_offload(OffloadedStmt *offload) {
           std::unique_ptr<Stmt>(
               (Stmt *)irpass::analysis::clone(dest).release()),
           -1);
-      offload->tls_epilogue->push_back<AtomicOpStmt>(AtomicOpType::add,
-                                                     global_ptr, tls_load);
+      offload->tls_epilogue->insert(
+          AtomicOpStmt::make_for_reduction(AtomicOpType::add, global_ptr,
+                                           tls_load),
+          -1);
     }
 
     // allocate storage for the TLS variable
@@ -182,7 +185,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
 namespace irpass {
 
 // This pass should happen after offloading but before lower_access
-void make_thread_local(IRNode *root) {
+void make_thread_local(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   if (auto root_block = root->cast<Block>()) {
     for (auto &offload : root_block->statements) {
@@ -191,7 +194,7 @@ void make_thread_local(IRNode *root) {
   } else {
     make_thread_local_offload(root->as<OffloadedStmt>());
   }
-  type_check(root);
+  type_check(root, config);
 }
 
 }  // namespace irpass

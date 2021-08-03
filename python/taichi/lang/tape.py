@@ -1,4 +1,4 @@
-class Tape:
+class TapeImpl:
     def __init__(self, runtime, loss=None):
         self.calls = []
         self.entered = False

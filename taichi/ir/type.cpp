@@ -1,5 +1,7 @@
 #include "taichi/ir/type.h"
-#include "taichi/program/program.h"
+
+#include "taichi/ir/type_factory.h"
+#include "taichi/ir/type_utils.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -200,6 +202,180 @@ std::string BitStructType::to_string() const {
 
 std::string BitArrayType::to_string() const {
   return fmt::format("ba({}x{})", element_type_->to_string(), num_elements_);
+}
+
+std::string TypedConstant::stringify() const {
+  // TODO: remove the line below after type system upgrade.
+  auto dt = this->dt.ptr_removed();
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
+    return fmt::format("{}", val_f32);
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
+    return fmt::format("{}", val_i32);
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
+    return fmt::format("{}", val_i64);
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+    return fmt::format("{}", val_f64);
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
+    return fmt::format("{}", val_i8);
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
+    return fmt::format("{}", val_i16);
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+    return fmt::format("{}", val_u8);
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+    return fmt::format("{}", val_u16);
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
+    return fmt::format("{}", val_u32);
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
+    return fmt::format("{}", val_u64);
+  } else {
+    TI_P(data_type_name(dt));
+    TI_NOT_IMPLEMENTED
+    return "";
+  }
+}
+
+bool TypedConstant::equal_type_and_value(const TypedConstant &o) const {
+  if (dt != o.dt)
+    return false;
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
+    return val_f32 == o.val_f32;
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
+    return val_i32 == o.val_i32;
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
+    return val_i64 == o.val_i64;
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+    return val_f64 == o.val_f64;
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
+    return val_i8 == o.val_i8;
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
+    return val_i16 == o.val_i16;
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+    return val_u8 == o.val_u8;
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+    return val_u16 == o.val_u16;
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
+    return val_u32 == o.val_u32;
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
+    return val_u64 == o.val_u64;
+  } else {
+    TI_NOT_IMPLEMENTED
+    return false;
+  }
+}
+
+int32 &TypedConstant::val_int32() {
+  TI_ASSERT(get_data_type<int32>() == dt);
+  return val_i32;
+}
+
+float32 &TypedConstant::val_float32() {
+  TI_ASSERT(get_data_type<float32>() == dt);
+  return val_f32;
+}
+
+int64 &TypedConstant::val_int64() {
+  TI_ASSERT(get_data_type<int64>() == dt);
+  return val_i64;
+}
+
+float64 &TypedConstant::val_float64() {
+  TI_ASSERT(get_data_type<float64>() == dt);
+  return val_f64;
+}
+
+int8 &TypedConstant::val_int8() {
+  TI_ASSERT(get_data_type<int8>() == dt);
+  return val_i8;
+}
+
+int16 &TypedConstant::val_int16() {
+  TI_ASSERT(get_data_type<int16>() == dt);
+  return val_i16;
+}
+
+uint8 &TypedConstant::val_uint8() {
+  TI_ASSERT(get_data_type<uint8>() == dt);
+  return val_u8;
+}
+
+uint16 &TypedConstant::val_uint16() {
+  TI_ASSERT(get_data_type<uint16>() == dt);
+  return val_u16;
+}
+
+uint32 &TypedConstant::val_uint32() {
+  TI_ASSERT(get_data_type<uint32>() == dt);
+  return val_u32;
+}
+
+uint64 &TypedConstant::val_uint64() {
+  TI_ASSERT(get_data_type<uint64>() == dt);
+  return val_u64;
+}
+
+int64 TypedConstant::val_int() const {
+  TI_ASSERT(is_signed(dt));
+  if (dt->is_primitive(PrimitiveTypeID::i32)) {
+    return val_i32;
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
+    return val_i64;
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
+    return val_i8;
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
+    return val_i16;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+uint64 TypedConstant::val_uint() const {
+  TI_ASSERT(is_unsigned(dt));
+  if (dt->is_primitive(PrimitiveTypeID::u32)) {
+    return val_u32;
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
+    return val_u64;
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+    return val_u8;
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+    return val_u16;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+float64 TypedConstant::val_float() const {
+  TI_ASSERT(is_real(dt));
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
+    return val_f32;
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+    return val_f64;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+int64 TypedConstant::val_as_int64() const {
+  if (is_real(dt)) {
+    TI_ERROR("Cannot cast floating point type {} to int64.", dt->to_string());
+  } else if (is_signed(dt)) {
+    return val_int();
+  } else if (is_unsigned(dt)) {
+    return val_uint();
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+float64 TypedConstant::val_cast_to_float64() const {
+  if (is_real(dt))
+    return val_float();
+  else if (is_signed(dt))
+    return val_int();
+  else if (is_unsigned(dt))
+    return val_uint();
+  else {
+    TI_NOT_IMPLEMENTED
+  }
 }
 
 TLANG_NAMESPACE_END

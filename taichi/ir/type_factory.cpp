@@ -1,5 +1,7 @@
 #include "taichi/ir/type_factory.h"
 
+#include "taichi/ir/type_utils.h"
+
 TLANG_NAMESPACE_BEGIN
 
 TypeFactory &TypeFactory::get_instance() {
@@ -104,6 +106,72 @@ DataType TypeFactory::create_vector_or_scalar_type(int width,
   } else {
     return element;
   }
+}
+
+namespace {
+class TypePromotionMapping {
+ public:
+  TypePromotionMapping() {
+#define TRY_SECOND(x, y)                                   \
+  mapping[std::make_pair(get_primitive_data_type<x>(),     \
+                         get_primitive_data_type<y>())] =  \
+      get_primitive_data_type<decltype(std::declval<x>() + \
+                                       std::declval<y>())>();
+#define TRY_FIRST(x)      \
+  TRY_SECOND(x, float32); \
+  TRY_SECOND(x, float64); \
+  TRY_SECOND(x, int8);    \
+  TRY_SECOND(x, int16);   \
+  TRY_SECOND(x, int32);   \
+  TRY_SECOND(x, int64);   \
+  TRY_SECOND(x, uint8);   \
+  TRY_SECOND(x, uint16);  \
+  TRY_SECOND(x, uint32);  \
+  TRY_SECOND(x, uint64);
+
+    TRY_FIRST(float32);
+    TRY_FIRST(float64);
+    TRY_FIRST(int8);
+    TRY_FIRST(int16);
+    TRY_FIRST(int32);
+    TRY_FIRST(int64);
+    TRY_FIRST(uint8);
+    TRY_FIRST(uint16);
+    TRY_FIRST(uint32);
+    TRY_FIRST(uint64);
+  }
+  DataType query(DataType x, DataType y) {
+    auto primitive =
+        mapping[std::make_pair(to_primitive_type(x), to_primitive_type(y))];
+    return TypeFactory::get_instance().get_primitive_type(primitive);
+  }
+
+ private:
+  std::map<std::pair<PrimitiveTypeID, PrimitiveTypeID>, PrimitiveTypeID>
+      mapping;
+  static PrimitiveTypeID to_primitive_type(DataType d) {
+    if (d->is<PointerType>()) {
+      d = d->as<PointerType>()->get_pointee_type();
+      TI_WARN("promoted_type got a pointer input.");
+    }
+
+    if (d->is<VectorType>()) {
+      d = d->as<VectorType>()->get_element_type();
+      TI_WARN("promoted_type got a vector input.");
+    }
+
+    auto primitive = d->cast<PrimitiveType>();
+    TI_ASSERT_INFO(primitive, "Failed to get primitive type from {}",
+                   d->to_string());
+    return primitive->type;
+  };
+};
+// TODO(#2196): Stop using global variables.
+TypePromotionMapping type_promotion_mapping;
+}  // namespace
+
+DataType promoted_type(DataType a, DataType b) {
+  return type_promotion_mapping.query(a, b);
 }
 
 TLANG_NAMESPACE_END

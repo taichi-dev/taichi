@@ -1,5 +1,7 @@
-import taichi as ti
 import sys
+
+import taichi as ti
+
 sys.path.append('../tests/python/')
 
 from bls_test_template import bls_test_template

@@ -1,5 +1,6 @@
-import taichi as ti
 import numpy as np
+
+import taichi as ti
 
 
 @ti.all_archs
@@ -160,3 +161,33 @@ def test_nested_ndrange():
                 for l in range(n):
                     r = i * n**3 + j * n**2 + k * n + l
                     assert A[i, j, k, l] == r
+
+
+@ti.test(ti.cpu)
+def test_ndrange_ast_transform():
+    n, u, v = 4, 3, 2
+
+    a = ti.field(ti.i32, ())
+    b = ti.field(ti.i32, ())
+    A = ti.field(ti.i32, (n, n))
+
+    @ti.kernel
+    def func():
+        # `__getitem__ cannot be called from Python-scope` will be raised if
+        # `a[None]` is not transformed to `ti.subscript(a, None)` in ti.ndrange:
+        for i, j in ti.ndrange(a[None], b[None]):
+            r = i * n + j + 1
+            A[i, j] = r
+
+    a[None] = u
+    b[None] = v
+
+    func()
+
+    for i in range(n):
+        for j in range(n):
+            if i < u and j < v:
+                r = i * n + j + 1
+            else:
+                r = 0
+            assert A[i, j] == r

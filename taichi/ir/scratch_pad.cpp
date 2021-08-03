@@ -14,7 +14,7 @@ std::string ScratchPad::global_to_linearized_local(
     TI_ASSERT(step_size % pad_size[i] == 0);
     step_size /= pad_size[i];
     ret += fmt::format(" + ({} - {}_base - {}) * {}", indices[i]->raw_name(),
-                       loop_vars[i]->raw_name(), bounds[0][i], step_size);
+                       loop_vars[i]->raw_name(), bounds[i].low, step_size);
   }
   return ret;
 }

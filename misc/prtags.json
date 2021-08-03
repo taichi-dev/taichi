@@ -1,4 +1,5 @@
 {
+  "ci"              : "CI/CD workflow",
   "cpu"             : "CPU backends",
   "cuda"            : "CUDA backend",
   "doc"             : "Documentation",
@@ -6,8 +7,11 @@
   "cli"             : "Command line interface",
   "ir"              : "Intermediate representation",
   "lang"            : "Language and syntax",
+  "aot"             : "Aot module",
   "metal"           : "Metal backend",
   "opengl"          : "OpenGL backend",
+  "vulkan"          : "Vulkan backend",
+  "wasm"            : "WebAssembly backend",
   "misc"            : "Miscellaneous",
   "std"             : "Standard library",
   "opt"             : "IR optimization passes",

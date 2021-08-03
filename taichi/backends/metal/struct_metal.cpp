@@ -9,7 +9,7 @@
 #include "taichi/backends/metal/constants.h"
 #include "taichi/backends/metal/data_types.h"
 #include "taichi/backends/metal/features.h"
-#include "taichi/backends/metal/kernel_util.h"
+#include "taichi/backends/metal/kernel_utils.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
 
@@ -85,6 +85,7 @@ class StructCompiler {
 #undef CHECK_UNSUPPORTED_TYPE
 
     CompiledStructs result;
+    result.root_snode_type_name = root.node_type_name;
     result.root_size = compute_snode_size(&root);
     emit_runtime_structs();
     line_appender_.dump(&result.runtime_utils_source_code);
@@ -93,7 +94,6 @@ class StructCompiler {
       generate_types(*n);
     }
     line_appender_.dump(&result.snode_structs_source_code);
-    result.need_snode_lists_data = has_sparse_snode_;
     result.max_snodes = max_snodes_;
     result.snode_descriptors = std::move(snode_descriptors_);
     TI_DEBUG("Metal: root_size={} runtime_size={}", result.root_size,
@@ -337,7 +337,7 @@ class StructCompiler {
     }
     sn_desc.total_num_elems_from_root = 1;
     for (const auto &e : sn->extractors) {
-      sn_desc.total_num_elems_from_root *= e.num_elements;
+      sn_desc.total_num_elems_from_root *= e.num_elements_from_root;
     }
 
     TI_ASSERT(snode_descriptors_.find(sn->id) == snode_descriptors_.end());

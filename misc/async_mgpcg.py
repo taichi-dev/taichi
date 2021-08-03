@@ -1,6 +1,8 @@
-import numpy as np
-import taichi as ti
 import time
+
+import numpy as np
+
+import taichi as ti
 
 real = ti.f32
 ti.init(default_fp=real,

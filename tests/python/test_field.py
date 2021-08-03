@@ -2,8 +2,9 @@
 To test our new `ti.field` API is functional (#1500)
 '''
 
-import taichi as ti
 import pytest
+
+import taichi as ti
 
 data_types = [ti.i32, ti.f32, ti.i64, ti.f64]
 field_shapes = [(), 8, (6, 12)]
@@ -91,3 +92,18 @@ def test_default_ip(dtype):
     x = ti.Vector.field(2, int, ())
 
     assert x.dtype == ti.get_runtime().default_ip
+
+
+@ti.test()
+def test_field_name():
+    a = ti.field(dtype=ti.f32, shape=(2, 3), name='a')
+    b = ti.Vector.field(3, dtype=ti.f32, shape=(2, 3), name='b')
+    c = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(5, 4), name='c')
+    assert a.name == 'a'
+    assert b.name == 'b'
+    assert c.name == 'c'
+    assert b.snode.name == 'b'
+    d = []
+    for i in range(10):
+        d.append(ti.field(dtype=ti.f32, shape=(2, 3), name=f'd{i}'))
+        assert d[i].name == f'd{i}'

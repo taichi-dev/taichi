@@ -4,6 +4,8 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/state_machine.h"
+#include "taichi/program/compile_config.h"
+
 #include <unordered_map>
 
 TLANG_NAMESPACE_BEGIN
@@ -132,18 +134,18 @@ class AllocaOptimize : public VariableOptimize {
 
   void visit(LocalStoreStmt *stmt) override {
     if (maybe_run)
-      get_state_machine(stmt->ptr).maybe_store(stmt);
+      get_state_machine(stmt->dest).maybe_store(stmt);
     else
-      get_state_machine(stmt->ptr).store(stmt);
+      get_state_machine(stmt->dest).store(stmt);
   }
 
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    TI_ASSERT(stmt->ptr[0].offset == 0);
+    TI_ASSERT(stmt->src[0].offset == 0);
     if (maybe_run)
-      get_state_machine(stmt->ptr[0].var).maybe_load();
+      get_state_machine(stmt->src[0].var).maybe_load();
     else
-      get_state_machine(stmt->ptr[0].var).load(stmt);
+      get_state_machine(stmt->src[0].var).load(stmt);
   }
 
   void visit(IfStmt *if_stmt) override {
@@ -246,21 +248,21 @@ class GlobalTempOptimize : public VariableOptimize {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    if (!stmt->ptr->is<GlobalTemporaryStmt>())
+    if (!stmt->dest->is<GlobalTemporaryStmt>())
       return;
     if (maybe_run)
-      get_state_machine(stmt->ptr).maybe_store(stmt);
+      get_state_machine(stmt->dest).maybe_store(stmt);
     else
-      get_state_machine(stmt->ptr).store(stmt);
+      get_state_machine(stmt->dest).store(stmt);
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (!stmt->ptr->is<GlobalTemporaryStmt>())
+    if (!stmt->src->is<GlobalTemporaryStmt>())
       return;
     if (maybe_run)
-      get_state_machine(stmt->ptr).maybe_load();
+      get_state_machine(stmt->src).maybe_load();
     else
-      get_state_machine(stmt->ptr).load(stmt);
+      get_state_machine(stmt->src).load(stmt);
   }
 
   void visit(IfStmt *if_stmt) override {
@@ -391,13 +393,13 @@ class GlobalPtrOptimize : public VariableOptimize {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    if (!stmt->ptr->is<GlobalPtrStmt>())
+    if (!stmt->dest->is<GlobalPtrStmt>())
       return;
     if (maybe_run)
-      get_state_machine(stmt->ptr).maybe_store(stmt);
+      get_state_machine(stmt->dest).maybe_store(stmt);
     else
-      get_state_machine(stmt->ptr).store(stmt);
-    auto dest = stmt->ptr->as<GlobalPtrStmt>();
+      get_state_machine(stmt->dest).store(stmt);
+    auto dest = stmt->dest->as<GlobalPtrStmt>();
     for (auto &var : state_machines[dest->snodes[0]->id]) {
       if (var.first != dest &&
           irpass::analysis::maybe_same_address(dest, var.first)) {
@@ -407,13 +409,13 @@ class GlobalPtrOptimize : public VariableOptimize {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (!stmt->ptr->is<GlobalPtrStmt>())
+    if (!stmt->src->is<GlobalPtrStmt>())
       return;
     if (maybe_run)
-      get_state_machine(stmt->ptr).maybe_load();
+      get_state_machine(stmt->src).maybe_load();
     else
-      get_state_machine(stmt->ptr).load(stmt);
-    auto dest = stmt->ptr->as<GlobalPtrStmt>();
+      get_state_machine(stmt->src).load(stmt);
+    auto dest = stmt->src->as<GlobalPtrStmt>();
     for (auto &var : state_machines[dest->snodes[0]->id]) {
       if (var.first != dest &&
           irpass::analysis::maybe_same_address(dest, var.first)) {
@@ -538,30 +540,30 @@ class OtherVariableOptimize : public VariableOptimize {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    if (stmt->ptr->is<GlobalTemporaryStmt>())
+    if (stmt->dest->is<GlobalTemporaryStmt>())
       return;
     if (maybe_run)
-      get_state_machine(stmt->ptr).maybe_store(stmt);
+      get_state_machine(stmt->dest).maybe_store(stmt);
     else
-      get_state_machine(stmt->ptr).store(stmt);
+      get_state_machine(stmt->dest).store(stmt);
     for (auto &var : state_machines) {
-      if (var.first != stmt->ptr &&
-          irpass::analysis::maybe_same_address(stmt->ptr, var.first)) {
+      if (var.first != stmt->dest &&
+          irpass::analysis::maybe_same_address(stmt->dest, var.first)) {
         var.second.maybe_store(stmt);
       }
     }
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (stmt->ptr->is<GlobalTemporaryStmt>())
+    if (stmt->src->is<GlobalTemporaryStmt>())
       return;
     if (maybe_run)
-      get_state_machine(stmt->ptr).maybe_load();
+      get_state_machine(stmt->src).maybe_load();
     else
-      get_state_machine(stmt->ptr).load(stmt);
+      get_state_machine(stmt->src).load(stmt);
     for (auto &var : state_machines) {
-      if (var.first != stmt->ptr &&
-          irpass::analysis::maybe_same_address(stmt->ptr, var.first)) {
+      if (var.first != stmt->src &&
+          irpass::analysis::maybe_same_address(stmt->src, var.first)) {
         var.second.maybe_load();
       }
     }

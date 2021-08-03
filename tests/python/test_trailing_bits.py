@@ -1,8 +1,9 @@
-import taichi as ti
 import pytest
 
+import taichi as ti
 
-def test_trailing_bits():
+
+def _test_trailing_bits():
     ti.init(arch=ti.cpu, debug=True, print_ir=True)
 
     x = ti.field(ti.f32)
@@ -35,7 +36,7 @@ def test_trailing_bits():
     assert y[240, 3] == 123
 
 
-def test_inconsistent_trailing_bits():
+def _test_inconsistent_trailing_bits():
     ti.init(arch=ti.cpu, debug=True, print_ir=True)
 
     x = ti.field(ti.f32)

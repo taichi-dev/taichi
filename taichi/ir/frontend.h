@@ -3,7 +3,6 @@
 
 #include "taichi/common/core.h"
 #include "taichi/common/dict.h"
-#include "taichi/util/io.h"
 #include "taichi/ir/frontend_ir.h"
 
 namespace taichi {
@@ -25,8 +24,6 @@ inline int maximum(int a) {
 #include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
-
-void layout(const std::function<void()> &body);
 
 inline Kernel &kernel(const std::function<void()> &body) {
   return get_current_program().kernel(body);
@@ -61,23 +58,6 @@ inline void declare_var(Expr &a) {
       PrimitiveType::unknown));
 }
 
-#define Declare(x) auto x = Expr(std::make_shared<IdExpression>(#x));
-#define DeclareNamed(x, name) \
-  auto x = Expr(std::make_shared<IdExpression>(name));
-
-#define NamedScalar(x, name, dt)   \
-  DeclareNamed(x##_global, #name); \
-  auto x = global_new(x##_global, PrimitiveType::dt);
-
-#define Global(x, dt)  \
-  Declare(x##_global); \
-  auto x = global_new(x##_global, PrimitiveType::dt);
-
-#define AmbientGlobal(x, dt, ambient)                 \
-  Declare(x##_global);                                \
-  auto x = global_new(x##_global, PrimitiveType::dt); \
-  set_ambient(x, ambient);
-
 inline void set_ambient(Expr expr_, float32 val) {
   auto expr = expr_.cast<GlobalVariableExpression>();
   expr->ambient_value = TypedConstant(val);
@@ -95,30 +75,23 @@ Expr global_new(Expr id_expr, DataType dt);
 Expr global_new(DataType dt, std::string name = "");
 
 template <typename T>
-inline Expr Rand() {
+Expr Rand() {
   return Expr::make<RandExpression>(get_data_type<T>());
 }
 
 template <typename T>
-inline T Eval(const T &t) {
+T Eval(const T &t) {
   return t.eval();
 }
 
-inline Expr copy(const Expr &expr) {
-  auto e = expr.eval();
-  auto stmt = Stmt::make<ElementShuffleStmt>(
-      VectorElement(e.cast<EvalExpression>()->stmt_ptr, 0));
-  auto eval_expr = std::make_shared<EvalExpression>(stmt.get());
-  current_ast_builder().insert(std::move(stmt));
-  return Expr(eval_expr);
-}
+Expr copy(const Expr &expr);
 
-template <typename... indices>
-std::vector<Index> Indices(indices... ind) {
-  auto ind_vec = std::vector<int>({ind...});
-  std::vector<Index> ret;
-  for (auto in : ind_vec) {
-    ret.push_back(Index(in));
+template <typename... AX>
+std::vector<Axis> Axes(AX... axes) {
+  auto ax_vec = std::vector<int>({axes...});
+  std::vector<Axis> ret;
+  for (auto ax : ax_vec) {
+    ret.push_back(Axis(ax));
   }
   return ret;
 }
@@ -188,8 +161,8 @@ inline Expr AssumeInRange(const Expr &expr,
   return Expr::make<RangeAssumptionExpression>(expr, base, low, high);
 }
 
-inline Expr LoopUnique(const Expr &input) {
-  return Expr::make<LoopUniqueExpression>(load_if_ptr(input));
+inline Expr LoopUnique(const Expr &input, const std::vector<SNode *> &covers) {
+  return Expr::make<LoopUniqueExpression>(load_if_ptr(input), covers);
 }
 
 void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field);

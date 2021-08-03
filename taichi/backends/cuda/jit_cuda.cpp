@@ -86,7 +86,8 @@ class JITSessionCUDA : public JITSession {
       : data_layout(data_layout) {
   }
 
-  virtual JITModule *add_module(std::unique_ptr<llvm::Module> M) override {
+  virtual JITModule *add_module(std::unique_ptr<llvm::Module> M,
+                                int max_reg) override {
     auto ptx = compile_module_to_ptx(M);
     if (get_current_program().config.print_kernel_nvptx) {
       static FileSequenceWriter writer("taichi_kernel_nvptx_{:04d}.ptx",
@@ -103,8 +104,23 @@ class JITSessionCUDA : public JITSession {
     TI_TRACE("Loading module...");
     [[maybe_unused]] auto &&_ =
         std::move(CUDAContext::get_instance().get_lock_guard());
-    CUDADriver::get_instance().module_load_data_ex(&cuda_module, ptx.c_str(), 0,
-                                                   nullptr, nullptr);
+
+    constexpr int max_num_options = 8;
+    int num_options = 0;
+    uint32 options[max_num_options];
+    void *option_values[max_num_options];
+
+    // Insert options
+    if (max_reg != 0) {
+      options[num_options] = CU_JIT_MAX_REGISTERS;
+      option_values[num_options] = &max_reg;
+      num_options++;
+    }
+
+    TI_ASSERT(num_options <= max_num_options);
+
+    CUDADriver::get_instance().module_load_data_ex(
+        &cuda_module, ptx.c_str(), num_options, options, option_values);
     TI_TRACE("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
     // cudaModules.push_back(cudaModule);
     modules.push_back(std::make_unique<JITModuleCUDA>(cuda_module));

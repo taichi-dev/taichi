@@ -1,5 +1,6 @@
 import ast
-from .shell import oinspect
+
+from taichi.lang.shell import oinspect
 
 
 class KernelSimplicityASTChecker(ast.NodeVisitor):
@@ -32,7 +33,6 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
 
     def __init__(self, func):
         super().__init__()
-        import inspect
         self._func_file = oinspect.getsourcefile(func)
         self._func_lineno = oinspect.getsourcelines(func)[1]
         self._func_name = func.__name__

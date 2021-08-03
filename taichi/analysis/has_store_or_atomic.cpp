@@ -25,7 +25,7 @@ class LocalStoreSearcher : public BasicStmtVisitor {
 
   void visit(LocalStoreStmt *stmt) override {
     for (auto var : vars) {
-      if (stmt->ptr == var) {
+      if (stmt->dest == var) {
         result = true;
         break;
       }

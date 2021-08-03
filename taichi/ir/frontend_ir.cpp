@@ -27,25 +27,23 @@ IRNode *FrontendContext::root() {
   return static_cast<IRNode *>(root_node.get());
 }
 
-std::unique_ptr<FrontendContext> context;
-
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const Expr &global_var)
     : global_var(global_var) {
   vectorize = dec.vectorize;
   bit_vectorize = dec.bit_vectorize;
-  parallelize = dec.parallelize;
+  num_cpu_threads = dec.num_cpu_threads;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
-    parallelize = 1;
+    num_cpu_threads = 1;
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
   } else {
     // cpu
-    if (parallelize == 0)
-      parallelize = std::thread::hardware_concurrency();
+    if (num_cpu_threads == 0)
+      num_cpu_threads = std::thread::hardware_concurrency();
   }
   mem_access_opt = dec.mem_access_opt;
   dec.reset();
@@ -62,7 +60,7 @@ DecoratorRecorder dec;
 
 FrontendContext::FrontendContext() {
   root_node = std::make_unique<Block>();
-  current_builder = std::make_unique<IRBuilder>(root_node.get());
+  current_builder = std::make_unique<ASTBuilder>(root_node.get());
 }
 
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
@@ -71,16 +69,16 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
   bit_vectorize = dec.bit_vectorize;
-  parallelize = dec.parallelize;
+  num_cpu_threads = dec.num_cpu_threads;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
-    parallelize = 1;
+    num_cpu_threads = 1;
   } else {
-    if (parallelize == 0)
-      parallelize = std::thread::hardware_concurrency();
+    if (num_cpu_threads == 0)
+      num_cpu_threads = std::thread::hardware_concurrency();
   }
   mem_access_opt = dec.mem_access_opt;
   dec.reset();
@@ -177,7 +175,8 @@ void GlobalVariableExpression::flatten(FlattenContext *ctx) {
 }
 
 std::string GlobalPtrExpression::serialize() {
-  std::string s = fmt::format("{}[", var.serialize());
+  std::string s = fmt::format(
+      "{}[", snode ? snode->get_node_type_name_hinted() : var.serialize());
   for (int i = 0; i < (int)indices.size(); i++) {
     s += indices.exprs[i]->serialize();
     if (i + 1 < (int)indices.size())
@@ -191,7 +190,10 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> index_stmts;
   std::vector<int> offsets;
   SNode *snode = nullptr;
-  if (var.is<GlobalVariableExpression>()) {
+  if (this->snode != nullptr) {
+    snode = this->snode;
+  }
+  if (bool(var) && var.is<GlobalVariableExpression>()) {
     snode = var.cast<GlobalVariableExpression>()->snode;
     offsets = snode->index_offsets;
   }
@@ -206,7 +208,7 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
     }
     index_stmts.push_back(ind);
   }
-  if (var.is<GlobalVariableExpression>()) {
+  if (snode) {
     ctx->push_back(std::make_unique<GlobalPtrStmt>(snode, index_stmts));
   } else {
     TI_ASSERT(var.is<ExternalTensorExpression>());
@@ -214,6 +216,59 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
     ctx->push_back(std::make_unique<ExternalPtrStmt>(
         var.cast<ExternalTensorExpression>()->stmt, index_stmts));
   }
+  stmt = ctx->back_stmt();
+}
+
+void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
+  TI_ASSERT(var.is<GlobalPtrExpression>())
+  var->flatten(ctx);
+  Stmt *var_stmt = ctx->back_stmt();
+  SNode *snode = var.cast<GlobalPtrExpression>()
+                     ->var.cast<GlobalVariableExpression>()
+                     ->snode;
+  // Compute exact offset
+  // Type A[i, j][x, y]
+  //              ^^^^
+  TI_ASSERT(1 <= indices.size() && indices.size() <= 2)
+  if (indices.size() == 1) {
+    indices[0].set(load_if_ptr(indices[0]));
+    indices[0]->flatten(ctx);
+  } else {
+    indices[0].set(load_if_ptr(indices[0]));
+    indices[0]->flatten(ctx);
+    Stmt *i_stmt = ctx->back_stmt();
+    Stmt *cols_stmt =
+        ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(cols)));
+    Stmt *i_mul_cols_stmt = ctx->push_back(
+        Stmt::make<BinaryOpStmt>(BinaryOpType::mul, i_stmt, cols_stmt));
+    indices[1].set(load_if_ptr(indices[1]));
+    indices[1]->flatten(ctx);
+    Stmt *j_stmt = ctx->back_stmt();
+    ctx->push_back(
+        Stmt::make<BinaryOpStmt>(BinaryOpType::add, i_mul_cols_stmt, j_stmt));
+  }
+  // Type A[i, j][x, y]
+  //             ^    ^
+  if (!is_aos) {
+    TI_ASSERT(snode->is_path_all_dense)
+    int size = 1;
+    for (auto *s = snode; s != nullptr; s = s->parent)
+      size *= (int)s->max_num_elements();
+    Stmt *offset_stmt = ctx->back_stmt();
+    Stmt *field_size_stmt =
+        ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(size)));
+    ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
+                                            field_size_stmt));
+  }
+  // Type A[i, j][x, y]
+  // ^^^^
+  Stmt *offset_stmt = ctx->back_stmt();
+  Stmt *dt_size_stmt = ctx->push_back(
+      Stmt::make<ConstStmt>(TypedConstant(data_type_size(snode->dt))));
+  ctx->push_back(
+      Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
+
+  ctx->push_back(std::make_unique<PtrOffsetStmt>(var_stmt, ctx->back_stmt()));
   stmt = ctx->back_stmt();
 }
 
@@ -225,9 +280,24 @@ void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+std::string LoopUniqueExpression::serialize() {
+  std::string result = "loop_unique(" + input->serialize();
+  for (int i = 0; i < covers.size(); i++) {
+    if (i == 0)
+      result += ", covers=[";
+    result += covers[i]->get_node_type_name_hinted();
+    if (i == (int)covers.size() - 1)
+      result += "]";
+    else
+      result += ", ";
+  }
+  result += ")";
+  return result;
+}
+
 void LoopUniqueExpression::flatten(FlattenContext *ctx) {
   input->flatten(ctx);
-  ctx->push_back(Stmt::make<LoopUniqueStmt>(input->stmt));
+  ctx->push_back(Stmt::make<LoopUniqueStmt>(input->stmt, covers));
   stmt = ctx->back_stmt();
 }
 
@@ -280,6 +350,10 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     // emit local store stmt
     auto alloca = ctx->current_block->lookup_var(dest.cast<IdExpression>()->id);
     ctx->push_back<AtomicOpStmt>(op_type, alloca, expr->stmt);
+  } else if (dest.is<GlobalTensorElementExpression>()) {
+    auto global_ptr = dest.cast<GlobalTensorElementExpression>();
+    global_ptr->flatten(ctx);
+    ctx->push_back<AtomicOpStmt>(op_type, ctx->back_stmt(), expr->stmt);
   } else {  // global variable
     TI_ASSERT(dest.is<GlobalPtrExpression>());
     auto global_ptr = dest.cast<GlobalPtrExpression>();
@@ -315,6 +389,8 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::length) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
+  } else if (op_type == SNodeOpType::get_addr) {
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::append) {
     value->flatten(ctx);
     ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr, value->stmt);
@@ -345,5 +421,53 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id);
   stmt = ctx->back_stmt();
 }
+
+void FuncCallExpression::flatten(FlattenContext *ctx) {
+  std::vector<Stmt *> stmt_args;
+  for (auto &arg : args.exprs) {
+    arg->flatten(ctx);
+    stmt_args.push_back(arg->stmt);
+  }
+  ctx->push_back<FuncCallStmt>(func, stmt_args);
+  stmt = ctx->back_stmt();
+}
+
+Block *ASTBuilder::current_block() {
+  if (stack.empty())
+    return nullptr;
+  else
+    return stack.back();
+}
+
+Stmt *ASTBuilder::get_last_stmt() {
+  TI_ASSERT(!stack.empty());
+  return stack.back()->back();
+}
+
+void ASTBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
+  TI_ASSERT(!stack.empty());
+  stack.back()->insert(std::move(stmt), location);
+}
+
+void ASTBuilder::stop_gradient(SNode *snode) {
+  TI_ASSERT(!stack.empty());
+  stack.back()->stop_gradients.push_back(snode);
+}
+
+std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
+    std::unique_ptr<Block> &list) {
+  TI_ASSERT(list == nullptr);
+  list = std::make_unique<Block>();
+  if (!stack.empty()) {
+    list->parent_stmt = get_last_stmt();
+  }
+  return std::make_unique<ScopeGuard>(this, list.get());
+}
+
+ASTBuilder &current_ast_builder() {
+  return context->builder();
+}
+
+std::unique_ptr<FrontendContext> context;
 
 TLANG_NAMESPACE_END

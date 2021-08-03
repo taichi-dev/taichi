@@ -1,7 +1,7 @@
-import taichi as ti
-
-from async_cases import *
 from async_advection import *
+from async_cases import *
+
+import taichi as ti
 
 rerun = True
 
@@ -21,6 +21,16 @@ case_names = [c.__name__ for c in cases]
 
 ti.benchmark_plot(fn='benchmark.yml',
                   cases=case_names,
-                  archs=['x64', 'cuda'],
+                  columns=[
+                      'wall_clk_t', 'exec_t', 'launched_tasks',
+                      'compiled_inst', 'compiled_tasks'
+                  ],
+                  column_titles=[
+                      'Wall-clock time', 'Backend time', 'Tasks launched',
+                      'Instructions emitted', 'Tasks compiled'
+                  ],
+                  archs=['cuda', 'x64'],
+                  title='Whole-Program Optimization Microbenchmarks',
                   bars='sync_vs_async',
-                  left_margin=0.2)
+                  left_margin=0.2,
+                  size=(11.5, 9))

@@ -17,17 +17,17 @@ gather_snode_read_writes(IRNode *root) {
     bool read = false, write = false;
     if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       read = true;
-      ptr = global_load->ptr;
+      ptr = global_load->src;
     } else if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       write = true;
-      ptr = global_store->ptr;
+      ptr = global_store->dest;
     } else if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
       read = true;
       write = true;
       ptr = global_atomic->dest;
     }
     if (ptr) {
-      if (GlobalPtrStmt *global_ptr = ptr->cast<GlobalPtrStmt>()) {
+      if (auto *global_ptr = ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : global_ptr->snodes.data) {
           if (read)
             accessed.first.emplace(snode);

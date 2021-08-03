@@ -5,7 +5,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/visitors.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 DiffRange operator+(const DiffRange &a, const DiffRange &b) {
   return DiffRange(a.related_() && b.related_(), a.coeff + b.coeff,
@@ -16,6 +17,27 @@ DiffRange operator-(const DiffRange &a, const DiffRange &b) {
   return DiffRange(a.related_() && b.related_(), a.coeff - b.coeff,
                    a.low - b.high + 1, a.high - b.low);
 }
+
+DiffRange operator*(const DiffRange &a, const DiffRange &b) {
+  return DiffRange(
+      a.related_() && b.related_() && a.coeff * b.coeff == 0,
+      fmax(a.low * b.coeff, a.coeff * b.low),
+      fmin(a.low * b.low,
+           fmin(a.low * (b.high - 1),
+                fmin(b.low * (a.high - 1), (a.high - 1) * (b.high - 1)))),
+      fmax(a.low * b.low,
+           fmax(a.low * (b.high - 1),
+                fmax(b.low * (a.high - 1), (a.high - 1) * (b.high - 1)))) +
+          1);
+}
+
+DiffRange operator<<(const DiffRange &a, const DiffRange &b) {
+  return DiffRange(
+      a.related_() && b.related_() && b.coeff == 0 && b.high - b.low == 1,
+      a.coeff << b.low, a.low << b.low, ((a.high - 1) << b.low) + 1);
+}
+
+namespace {
 
 class ValueDiffLoopIndex : public IRVisitor {
  public:
@@ -41,8 +63,21 @@ class ValueDiffLoopIndex : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    results[stmt->instance_id] =
-        DiffRange(stmt->loop == loop && stmt->index == loop_index, 1, 0);
+    results[stmt->instance_id] = DiffRange();
+    if (stmt->loop == loop && stmt->index == loop_index) {
+      results[stmt->instance_id] =
+          DiffRange(/*related=*/true, /*coeff=*/1, /*low=*/0);
+    } else if (auto range_for = stmt->loop->cast<RangeForStmt>()) {
+      if (range_for->begin->is<ConstStmt>() &&
+          range_for->end->is<ConstStmt>()) {
+        auto begin_val = range_for->begin->as<ConstStmt>()->val[0].val_int();
+        auto end_val = range_for->end->as<ConstStmt>()->val[0].val_int();
+        // We have begin_val <= end_val even when range_for->reversed is true:
+        // in that case, the loop is iterated from end_val - 1 to begin_val.
+        results[stmt->instance_id] = DiffRange(
+            /*related=*/true, /*coeff=*/0, /*low=*/begin_val, /*high=*/end_val);
+      }
+    }
   }
 
   void visit(ElementShuffleStmt *stmt) override {
@@ -71,7 +106,9 @@ class ValueDiffLoopIndex : public IRVisitor {
 
   void visit(BinaryOpStmt *stmt) override {
     if (stmt->op_type == BinaryOpType::add ||
-        stmt->op_type == BinaryOpType::sub) {
+        stmt->op_type == BinaryOpType::sub ||
+        stmt->op_type == BinaryOpType::mul ||
+        stmt->op_type == BinaryOpType::bit_shl) {
       stmt->lhs->accept(this);
       stmt->rhs->accept(this);
       auto ret1 = results[stmt->lhs->instance_id];
@@ -79,8 +116,12 @@ class ValueDiffLoopIndex : public IRVisitor {
       if (ret1.related_() && ret2.related_()) {
         if (stmt->op_type == BinaryOpType::add) {
           results[stmt->instance_id] = ret1 + ret2;
-        } else {
+        } else if (stmt->op_type == BinaryOpType::sub) {
           results[stmt->instance_id] = ret1 - ret2;
+        } else if (stmt->op_type == BinaryOpType::mul) {
+          results[stmt->instance_id] = ret1 * ret2;
+        } else {
+          results[stmt->instance_id] = ret1 << ret2;
         }
         return;
       }
@@ -138,7 +179,10 @@ class FindDirectValueBaseAndOffset : public IRVisitor {
   }
 };
 
-namespace irpass::analysis {
+}  // namespace
+
+namespace irpass {
+namespace analysis {
 
 DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id) {
   TI_ASSERT(loop->is<StructForStmt>() || loop->is<OffloadedStmt>());
@@ -156,22 +200,20 @@ DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id) {
   return diff.run();
 }
 
-std::pair<bool, int> value_diff_ptr_index(Stmt *val1, Stmt *val2) {
-  // <first>: whether the difference of the value of two statements is certain.
-  // <second>: the difference of the value of two statements (i.e. val1 - val2)
-  // if <first> is true.
-  if (val1 == val2)
-    return std::make_pair(true, 0);
+DiffPtrResult value_diff_ptr_index(Stmt *val1, Stmt *val2) {
+  if (val1 == val2) {
+    return DiffPtrResult::make_certain(0);
+  }
   auto v1 = FindDirectValueBaseAndOffset::run(val1);
   auto v2 = FindDirectValueBaseAndOffset::run(val2);
   if (!std::get<0>(v1) || !std::get<0>(v2) ||
       std::get<1>(v1) != std::get<1>(v2)) {
-    // uncertain
-    return std::make_pair(false, 0);
+    return DiffPtrResult::make_uncertain();
   }
-  return std::make_pair(true, std::get<2>(v1) - std::get<2>(v2));
+  return DiffPtrResult::make_certain(std::get<2>(v1) - std::get<2>(v2));
 }
 
-}  // namespace irpass::analysis
-
-TLANG_NAMESPACE_END
+}  // namespace analysis
+}  // namespace irpass
+}  // namespace lang
+}  // namespace taichi

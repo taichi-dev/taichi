@@ -1,14 +1,15 @@
-import taichi as ti
 import math
 
 from utils import benchmark_async
+
+import taichi as ti
 
 # TODO: staggerred grid
 
 
 @benchmark_async
 def simple_advection(scale):
-    n = 128 * 2**int((math.log(scale, 2)) // 2)
+    n = 256 * 2**int((math.log(scale, 2)) // 2)
     x = ti.Vector.field(3, dtype=ti.f32, shape=(n, n))
     new_x = ti.Vector.field(3, dtype=ti.f32, shape=(n, n))
     v = ti.Vector.field(2, dtype=ti.f32, shape=(n, n))

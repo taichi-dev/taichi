@@ -1,0 +1,19 @@
+name: Slash Command Dispatch
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  check_comments:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slash Command Dispatch
+        uses: peter-evans/slash-command-dispatch@v2
+        with:
+          token: ${{ secrets.GARDENER_PAT }}
+          reaction-token: ${{ secrets.GARDENER_PAT }}
+          repository: taichi-dev/ci_workflows
+          issue-type: pull-request
+          permission: triage
+          commands: |
+            format

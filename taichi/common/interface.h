@@ -308,28 +308,7 @@ class InterfaceHolder {
           new TI_IMPLEMENTATION_HOLDER_NAME(class_name)(base_alias);          \
     }                                                                         \
     return TI_IMPLEMENTATION_HOLDER_PTR(class_name);                          \
-  }                                                                           \
-  class InterfaceInjector_##class_name {                                      \
-   public:                                                                    \
-    InterfaceInjector_##class_name(const std::string &name) {                 \
-      InterfaceHolder::get_instance()->register_registration_method(          \
-          base_alias, [&](void *m) {                                          \
-            ((pybind11::module *)m)                                           \
-                ->def("create_" base_alias,                                   \
-                      static_cast<std::shared_ptr<class_name> (*)(            \
-                          const std::string &name)>(                          \
-                          &create_instance<class_name>));                     \
-            ((pybind11::module *)m)                                           \
-                ->def("create_initialized_" base_alias,                       \
-                      static_cast<std::shared_ptr<class_name> (*)(            \
-                          const std::string &name, const Config &config)>(    \
-                          &create_instance<class_name>));                     \
-          });                                                                 \
-      InterfaceHolder::get_instance()->register_interface(                    \
-          base_alias, (ImplementationHolderBase *)                            \
-                          get_implementation_holder_instance_##class_name()); \
-    }                                                                         \
-  } ImplementationInjector_##base_class_name##class_name##instance(base_alias);
+  }
 
 #define TI_IMPLEMENTATION(base_class_name, class_name, alias)        \
   class ImplementationInjector_##base_class_name##class_name {       \

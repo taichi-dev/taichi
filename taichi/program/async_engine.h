@@ -24,7 +24,7 @@ class ParallelExecutor {
  public:
   using TaskType = std::function<void()>;
 
-  explicit ParallelExecutor(int num_threads);
+  explicit ParallelExecutor(const std::string &name, int num_threads);
   ~ParallelExecutor();
 
   void enqueue(const TaskType &func);
@@ -47,7 +47,9 @@ class ParallelExecutor {
   // Must be called while holding |mut|.
   bool flush_cv_cond();
 
+  std::string name_;
   int num_threads;
+  std::atomic<int> thread_counter{0};
   std::mutex mut;
 
   // All guarded by |mut|

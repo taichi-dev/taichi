@@ -74,8 +74,8 @@ class CaseImpl:
                 i = i + 1
 
     def save2markdown(self, arch):
-        header = '|kernel elapsed time(ms)' + ''.join('|'
-                                for i in range(len(self.data_size)))
+        header = '|kernel elapsed time(ms)' + ''.join(
+            '|' for i in range(len(self.data_size)))
         lines = [header]
         for result in self.test_result:
             if (result.test_arch == arch):

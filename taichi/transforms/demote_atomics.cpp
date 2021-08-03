@@ -60,7 +60,7 @@ class DemoteAtomics : public BasicStmtVisitor {
         }
       }
     }
-    if (stmt->dest->is<AllocaStmt>()) {
+    if (stmt->dest->is<AllocaStmt>() || (stmt->dest->is<PtrOffsetStmt>() && stmt->dest->cast<PtrOffsetStmt>()->origin->is<AllocaStmt>())) {
       demote = true;
       is_local = true;
     }

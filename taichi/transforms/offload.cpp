@@ -481,19 +481,33 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     // TensorType Alloca
     if (stmt->src[0].var->is<PtrOffsetStmt>() && stmt->src[0].var->as<PtrOffsetStmt>()->origin->is<AllocaStmt>()) {
       auto alloca = stmt->src[0].var->as<PtrOffsetStmt>()->origin->as<AllocaStmt>();
-      if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
-        return;
+      if (local_to_global_offset.find(alloca) != local_to_global_offset.end()) {
+        // Converted to GlobalTemporaryStmt
+        VecStatement replacement;
+        auto ptr = replacement.push_back<GlobalTemporaryStmt>(local_to_global_offset[alloca], alloca->ret_type);
+        // TODO: offset may not be ConstStmt
+        auto copy_stmt = stmt->src[0].var->as<PtrOffsetStmt>()->offset->as<ConstStmt>()->copy();
+        auto copy = replacement.push_back(std::move(copy_stmt));
+        auto ptr_offset = replacement.push_back<PtrOffsetStmt>(ptr, copy);
+        replacement.push_back<GlobalLoadStmt>(ptr_offset);
 
-      VecStatement replacement;
-      auto ptr = replacement.push_back<GlobalTemporaryStmt>(local_to_global_offset[alloca], alloca->ret_type);
-      // TODO: offset may not be ConstStmt
-      auto copy_stmt = stmt->src[0].var->as<PtrOffsetStmt>()->offset->as<ConstStmt>()->copy();
-      auto copy = replacement.push_back(std::move(copy_stmt));
-      auto ptr_offset = replacement.push_back<PtrOffsetStmt>(ptr, copy);
-      replacement.push_back<GlobalLoadStmt>(ptr_offset);
+        stmt->parent->replace_with(stmt, std::move(replacement));
+        throw IRModified();
+      } else {
+        // Keep Alloca
+        if (stmt_to_offloaded[stmt->src[0].var->as<PtrOffsetStmt>()->offset] == stmt_to_offloaded[stmt])
+          return;
 
-      stmt->parent->replace_with(stmt, std::move(replacement));
-      throw IRModified();
+        VecStatement replacement;
+        // TODO: offset may not be ConstStmt
+        auto copy_stmt = stmt->src[0].var->as<PtrOffsetStmt>()->offset->as<ConstStmt>()->copy();
+        auto copy = replacement.push_back(std::move(copy_stmt));
+        stmt_to_offloaded[copy] = stmt_to_offloaded[stmt];
+        auto ptr_offset = replacement.push_back<PtrOffsetStmt>(alloca, copy);
+        stmt->parent->replace_with(stmt->src[0].var, std::move(replacement));
+        TI_ASSERT(stmt->src[0].var == ptr_offset)
+        throw IRModified();
+      }
     }
     // Scalar Alloca
     auto alloca = stmt->src[0].var;
@@ -515,6 +529,38 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     if (visit_operand(stmt, stmt->locate_operand(&stmt->val)))
       throw IRModified();
     TI_ASSERT(stmt->width() == 1);
+    // TensorType Alloca
+    if (stmt->dest->is<PtrOffsetStmt>() && stmt->dest->as<PtrOffsetStmt>()->origin->is<AllocaStmt>()) {
+      auto alloca = stmt->dest->as<PtrOffsetStmt>()->origin->as<AllocaStmt>();
+      if (local_to_global_offset.find(alloca) != local_to_global_offset.end()) {
+        // Converted to GlobalTemporaryStmt
+        VecStatement replacement;
+        auto ptr = replacement.push_back<GlobalTemporaryStmt>(local_to_global_offset[alloca], alloca->ret_type);
+        // TODO: offset may not be ConstStmt
+        auto copy_stmt = stmt->dest->as<PtrOffsetStmt>()->offset->as<ConstStmt>()->copy();
+        auto copy = replacement.push_back(std::move(copy_stmt));
+        auto ptr_offset = replacement.push_back<PtrOffsetStmt>(ptr, copy);
+        replacement.push_back<GlobalStoreStmt>(ptr_offset, stmt->val);
+
+        stmt->parent->replace_with(stmt, std::move(replacement));
+        throw IRModified();
+      } else {
+        // Keep Alloca
+        if (stmt_to_offloaded[stmt->dest->as<PtrOffsetStmt>()->offset] == stmt_to_offloaded[stmt])
+          return;
+
+        VecStatement replacement;
+        // TODO: offset may not be ConstStmt
+        auto copy_stmt = stmt->dest->as<PtrOffsetStmt>()->offset->as<ConstStmt>()->copy();
+        auto copy = replacement.push_back(std::move(copy_stmt));
+        stmt_to_offloaded[copy] = stmt_to_offloaded[stmt];
+        auto ptr_offset = replacement.push_back<PtrOffsetStmt>(alloca, copy);
+        stmt->parent->replace_with(stmt->dest, std::move(replacement));
+        TI_ASSERT(stmt->dest == ptr_offset)
+        throw IRModified();
+      }
+    }
+    // Scalar Alloca
     auto alloca = stmt->dest;
     if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
       return;

@@ -490,7 +490,7 @@ void VulkanDevice::debug_frame_marker() const {
 #endif
 }
 
-void ManagedVulkanDevice::create_debug_swapchain() {
+void EmbeddedVulkanDevice::create_debug_swapchain() {
 #ifdef TI_VULKAN_DEBUG
   TI_TRACE("Creating debug swapchian");
   if (capability_.has_presentation) {

@@ -93,12 +93,21 @@ class Matrix(TaichiOperations):
                             dt = ti.default_cfg().default_ip if isinstance(n[0], int) else ti.default_cfg().default_fp
                             self.local_tensor_proxy = impl.expr_init_local_tensor([len(n)], dt, expr.make_expr_group([expr.Expr(x) for x in n]))
                             mat = []
-                            for i, x in enumerate(n):
+                            for i in range(len(n)):
                                 mat.append(list([ti.local_subscript_with_offset(self.local_tensor_proxy, (i,))]))
                 else:
                     mat = [[x] for x in n]
             else:
-                mat = [list(r) for r in n]
+                if disable_local_tensor:
+                    mat = [list(r) for r in n]
+                else:
+                    dt = ti.default_cfg().default_ip if isinstance(n[0][0], int) else ti.default_cfg().default_fp
+                    self.local_tensor_proxy = impl.expr_init_local_tensor([len(n), len(n[0])], dt, expr.make_expr_group([expr.Expr(x) for row in n for x in row]))
+                    mat = []
+                    for i in range(len(n)):
+                        mat.append([])
+                        for j in range(len(n[0])):
+                            mat[i].append(ti.local_subscript_with_offset(self.local_tensor_proxy, (i, j)))
             self.n = len(mat)
             if len(mat) > 0:
                 self.m = len(mat[0])
@@ -1266,7 +1275,7 @@ class Matrix(TaichiOperations):
             :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with None.
 
         """
-        return cls([[None] * m for _ in range(n)])
+        return cls([[None] * m for _ in range(n)], disable_local_tensor=True)
 
     @classmethod
     def new(cls, n, m):

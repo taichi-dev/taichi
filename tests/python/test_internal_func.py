@@ -1,6 +1,5 @@
-import time
-
 import taichi as ti
+import time
 
 
 # TODO: these are not really tests...

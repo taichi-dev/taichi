@@ -537,9 +537,8 @@ template <typename T, int dim, InstSetExt ISE = default_instruction_set>
 using TVector = VectorND<dim, T, ISE>;
 
 template <int dim, typename T, InstSetExt ISE>
-TI_FORCE_INLINE VectorND<dim, T, ISE> operator*(
-    T a,
-    const VectorND<dim, T, ISE> &v) {
+TI_FORCE_INLINE VectorND<dim, T, ISE> operator
+    *(T a, const VectorND<dim, T, ISE> &v) {
   return VectorND<dim, T, ISE>(a) * v;
 }
 
@@ -892,9 +891,8 @@ struct MatrixND {
 };
 
 template <int dim, typename T, InstSetExt ISE>
-TI_FORCE_INLINE MatrixND<dim, T, ISE> operator*(
-    const T a,
-    const MatrixND<dim, T, ISE> &M) {
+TI_FORCE_INLINE MatrixND<dim, T, ISE> operator
+    *(const T a, const MatrixND<dim, T, ISE> &M) {
   MatrixND<dim, T, ISE> ret;
   for (int i = 0; i < dim; i++) {
     ret[i] = a * M[i];

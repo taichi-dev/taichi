@@ -72,7 +72,6 @@ class EggInfo(egg_info):
     def run(self):
         taichi_dir = os.path.join(package_dir, 'taichi')
         remove_tmp(taichi_dir)
-        shutil.rmtree('build', ignore_errors=True)
 
         shutil.copytree('tests/python', os.path.join(taichi_dir, 'tests'))
         shutil.copytree('examples', os.path.join(taichi_dir, 'examples'))

@@ -74,13 +74,12 @@ class CaseImpl:
                 i = i + 1
 
     def save2markdown(self, arch):
-        lines = []
+        header = '|kernel elapsed time(ms)' + ''.join('|'
+                                for i in range(len(self.data_size)))
+        lines = [header]
         for result in self.test_result:
             if (result.test_arch == arch):
                 lines.append(result.time2mdtableline())
-        gap = '||(time:us)' + ''.join('|'
-                                      for i in range(len(self.data_size) - 1))
-        lines.append(gap)
         return lines
 
 
@@ -102,8 +101,7 @@ class Baseline:
         repeat = '|**repeat**|' + ''.join(
             str(scale_repeat(arch, size, test_repeat)) + '|'
             for size in test_dsize)
-        gap = '|' + ''.join('|' for size in test_dsize)
-        lines = [header, layout, size, repeat, gap]
+        lines = [header, layout, size, repeat]
         return lines
 
     def run(self):

@@ -286,13 +286,12 @@ class PyTaichi:
 
         for callback in self.materialize_callbacks:
             callback()
-        self.materialize_callbacks.clear()
+        self.materialize_callbacks = []
 
     def clear(self):
         if self.prog:
             self.prog.finalize()
             self.prog = None
-        self.materialize_callbacks.clear()
         self.materialized = False
 
     def get_tape(self, loss=None):
@@ -311,11 +310,7 @@ def get_runtime():
 
 
 def materialize_callback(foo):
-    if get_runtime().materialized:
-        foo()  # directly invoke if already materialized
-    else:
-        get_runtime().materialize_callbacks.append(foo)
-    return foo
+    get_runtime().materialize_callbacks.append(foo)
 
 
 def _clamp_unsigned_to_range(npty, val):

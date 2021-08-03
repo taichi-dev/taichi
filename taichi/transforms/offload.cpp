@@ -459,6 +459,19 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
 
   void visit(PtrOffsetStmt *stmt) override {
     auto alloca = stmt->origin;
+    auto offset = stmt->offset;
+
+    if (stmt_to_offloaded[offset] != stmt_to_offloaded[stmt]) {
+      VecStatement replacement;
+      // TODO: offset may not be ConstStmt
+      auto copy_stmt = offset->as<ConstStmt>()->copy();
+      auto copy = replacement.push_back(std::move(copy_stmt));
+      stmt_to_offloaded[copy] = stmt_to_offloaded[stmt];
+      auto ptr_offset = replacement.push_back<PtrOffsetStmt>(alloca, copy);
+      stmt->parent->replace_with(stmt, std::move(replacement));
+      throw IRModified();
+    }
+
     if (!(alloca->is<AllocaStmt>() && alloca->cast<AllocaStmt>()->ret_type->is<TensorType>()))
       return;
     if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
@@ -492,20 +505,6 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
         replacement.push_back<GlobalLoadStmt>(ptr_offset);
 
         stmt->parent->replace_with(stmt, std::move(replacement));
-        throw IRModified();
-      } else {
-        // Keep Alloca
-        if (stmt_to_offloaded[stmt->src[0].var->as<PtrOffsetStmt>()->offset] == stmt_to_offloaded[stmt])
-          return;
-
-        VecStatement replacement;
-        // TODO: offset may not be ConstStmt
-        auto copy_stmt = stmt->src[0].var->as<PtrOffsetStmt>()->offset->as<ConstStmt>()->copy();
-        auto copy = replacement.push_back(std::move(copy_stmt));
-        stmt_to_offloaded[copy] = stmt_to_offloaded[stmt];
-        auto ptr_offset = replacement.push_back<PtrOffsetStmt>(alloca, copy);
-        stmt->parent->replace_with(stmt->src[0].var, std::move(replacement));
-        TI_ASSERT(stmt->src[0].var == ptr_offset)
         throw IRModified();
       }
     }
@@ -543,20 +542,6 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
         replacement.push_back<GlobalStoreStmt>(ptr_offset, stmt->val);
 
         stmt->parent->replace_with(stmt, std::move(replacement));
-        throw IRModified();
-      } else {
-        // Keep Alloca
-        if (stmt_to_offloaded[stmt->dest->as<PtrOffsetStmt>()->offset] == stmt_to_offloaded[stmt])
-          return;
-
-        VecStatement replacement;
-        // TODO: offset may not be ConstStmt
-        auto copy_stmt = stmt->dest->as<PtrOffsetStmt>()->offset->as<ConstStmt>()->copy();
-        auto copy = replacement.push_back(std::move(copy_stmt));
-        stmt_to_offloaded[copy] = stmt_to_offloaded[stmt];
-        auto ptr_offset = replacement.push_back<PtrOffsetStmt>(alloca, copy);
-        stmt->parent->replace_with(stmt->dest, std::move(replacement));
-        TI_ASSERT(stmt->dest == ptr_offset)
         throw IRModified();
       }
     }

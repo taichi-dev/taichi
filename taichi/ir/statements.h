@@ -316,25 +316,13 @@ class PtrOffsetStmt : public Stmt {
   Stmt *origin{nullptr};
   Stmt *offset{nullptr};
 
-  PtrOffsetStmt(Stmt *origin, Stmt *offset): origin(origin), offset(offset) {
-    if (origin->is<AllocaStmt>()) {
-      TI_ASSERT(origin->cast<AllocaStmt>()->ret_type->is<TensorType>())
-      auto tensor_type = origin->cast<AllocaStmt>()->ret_type->cast<TensorType>();
-      element_type() = tensor_type->get_element_type();
-      element_type().set_is_pointer(true);
-    } else if (origin->is<GlobalPtrStmt>()) {
-      element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
-    } else {
-      TI_ERROR("PtrOffsetStmt must be used for AllocaStmt (locally) or GlobalPtrStmt (globally).")
-    }
-    TI_STMT_REG_FIELDS;
-  }
+  PtrOffsetStmt(Stmt *, Stmt *);
 
   bool is_local_ptr() const {
-    if (origin->is<AllocaStmt>()) {
-      TI_ASSERT_INFO(origin->cast<AllocaStmt>()->ret_type->is<TensorType>(), "PtrOffsetStmt can only be used for Alloca (TensorType).")
+    if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>()) {
+      TI_ASSERT_INFO(origin->ret_type->is<TensorType>(), "PtrOffsetStmt can only be used for Alloca (TensorType).")
     }
-    return origin->is<AllocaStmt>();
+    return origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>();
   }
 
   bool is_unlowered_global_ptr() const {

@@ -76,9 +76,18 @@ class TypeCheck : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->src[0].var->is<PtrOffsetStmt>()) {
-      auto lookup = DataType(stmt->src[0].var->cast<PtrOffsetStmt>()->origin->cast<AllocaStmt>()->ret_type->cast<TensorType>()->get_element_type()).ptr_removed();
-      stmt->ret_type = lookup;
+    TI_ASSERT_INFO(stmt->src.size() == 1, "Vectorization has been disabled.")
+    TI_ASSERT(stmt->src[0].var->is<AllocaStmt>() || stmt->src[0].var->is<PtrOffsetStmt>())
+    if (auto ptr_offset_stmt = stmt->src[0].var->cast<PtrOffsetStmt>()) {
+      TI_ASSERT(ptr_offset_stmt->origin->is<AllocaStmt>() || ptr_offset_stmt->origin->is<GlobalTemporaryStmt>())
+      if (auto alloca_stmt = ptr_offset_stmt->origin->cast<AllocaStmt>()) {
+        auto lookup = DataType(alloca_stmt->ret_type->as<TensorType>()->get_element_type()).ptr_removed();
+        stmt->ret_type = lookup;
+      }
+      if (auto global_temporary_stmt = ptr_offset_stmt->origin->cast<GlobalTemporaryStmt>()) {
+        auto lookup = DataType(global_temporary_stmt->ret_type->as<TensorType>()->get_element_type()).ptr_removed();
+        stmt->ret_type = lookup;
+      }
     } else {
       auto lookup = stmt->src[0].var->ret_type;
       stmt->ret_type = lookup;
@@ -526,7 +535,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
-    stmt->ret_type.set_is_pointer(true);
+    if (!stmt->ret_type->is<TensorType>())
+      stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(BitStructStoreStmt *stmt) override {

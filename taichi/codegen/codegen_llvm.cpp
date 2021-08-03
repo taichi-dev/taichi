@@ -1859,10 +1859,16 @@ void CodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
   auto buffer = call("get_temporary_pointer", runtime,
                      tlctx->get_constant((int64)stmt->offset));
 
-  TI_ASSERT(stmt->width() == 1);
-  auto ptr_type = llvm::PointerType::get(
-      tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
-  llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
+  TI_ASSERT(stmt->width() == 1 || stmt->ret_type->is<TensorType>());
+  if (stmt->ret_type->is<TensorType>()) {
+    auto ptr_type = llvm::PointerType::get(
+        tlctx->get_data_type(stmt->ret_type->cast<TensorType>()->get_element_type()), 0);
+    llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
+  } else {
+    auto ptr_type = llvm::PointerType::get(
+        tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
+    llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
+  }
 }
 
 void CodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {

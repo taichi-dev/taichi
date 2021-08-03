@@ -256,14 +256,14 @@ class SNode:
         """
         return self.ptr.name()
 
-#    @property
-#    def snode(self):
-#        """Gets `self`.
-#
-#        Returns:
-#            SNode: `self`.
-#        """
-#        return self
+    @property
+    def snode(self):
+        """Gets `self`.
+
+        Returns:
+            SNode: `self`.
+        """
+        return self
 
     @property
     def needs_grad(self):

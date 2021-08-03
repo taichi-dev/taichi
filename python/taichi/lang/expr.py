@@ -1,8 +1,7 @@
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
-from taichi.lang.util import (is_taichi_class, python_scope, to_numpy_type,
-                              to_pytorch_type)
+from taichi.lang.util import (is_taichi_class, python_scope)
 
 import taichi as ti
 
@@ -36,29 +35,6 @@ class Expr(TaichiOperations):
             assert False
         if self.tb:
             self.ptr.set_tb(self.tb)
-        self.grad = None
-        self.val = self
-
-
-    @python_scope
-    def set_grad(self, grad):
-        self.grad = grad
-        self.ptr.set_grad(grad.ptr)
-
-    @python_scope
-    def fill(self, val):
-        """Fill the whole field with value `val` when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
-
-        This is an unified interface to match :func:`taichi.lang.Matrix.fill`.
-
-        Args:
-            val (Union[int, float]): value to fill
-        """
-        # TODO: avoid too many template instantiations
-        from taichi.lang.meta import fill_tensor
-        fill_tensor(self, val)
-
-
 
     def is_global(self):
         """Check whether the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
@@ -90,82 +66,6 @@ class Expr(TaichiOperations):
             ]
             return ret
         return self.snode.shape
-
-    @python_scope
-    def to_numpy(self):
-        """Create a numpy array containing the same elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
-
-        This is an unified interface to match :func:`taichi.lang.Matrix.to_numpy`.
-
-        Returns:
-            The numpy array containing the same elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
-        """
-        import numpy as np
-        from taichi.lang.meta import tensor_to_ext_arr
-        arr = np.zeros(shape=self.shape, dtype=to_numpy_type(self.dtype))
-        tensor_to_ext_arr(self, arr)
-        ti.sync()
-        return arr
-
-    @python_scope
-    def to_torch(self, device=None):
-        """Create a torch array containing the same elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
-
-        This is an unified interface to match :func:`taichi.lang.Matrix.to_torch`.
-
-        Args:
-            device (DeviceType): The device type as a parameter passed into torch.zeros().
-
-        Returns:
-            The torch array containing the same elements when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
-        """
-        import torch
-        from taichi.lang.meta import tensor_to_ext_arr
-        arr = torch.zeros(size=self.shape,
-                          dtype=to_pytorch_type(self.dtype),
-                          device=device)
-        tensor_to_ext_arr(self, arr)
-        ti.sync()
-        return arr
-
-    @python_scope
-    def from_numpy(self, arr):
-        """Load all elements from a numpy array when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
-
-        This is an unified interface to match :func:`taichi.lang.Matrix.from_numpy`.
-        The numpy array's shape need to be the same as the internal data structure.
-
-        Args:
-            arr (NumpyArray): The numpy array containing the elements to load.
-        """
-        assert len(self.shape) == len(arr.shape)
-        s = self.shape
-        for i in range(len(self.shape)):
-            assert s[i] == arr.shape[i]
-        from taichi.lang.meta import ext_arr_to_tensor
-        if hasattr(arr, 'contiguous'):
-            arr = arr.contiguous()
-        ext_arr_to_tensor(arr, self)
-        ti.sync()
-
-    @python_scope
-    def from_torch(self, arr):
-        """Load all elements from a torch array when the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
-
-        This is an unified interface to match :func:`taichi.lang.Matrix.from_torch`.
-        The torch array's shape need to be the same as the internal data structure.
-
-        Args:
-            arr (TorchArray): The torch array containing the elements to load.
-        """
-        self.from_numpy(arr.contiguous())
-
-    @python_scope
-    def copy_from(self, other):
-        assert isinstance(other, Expr)
-        from taichi.lang.meta import tensor_to_tensor
-        assert len(self.shape) == len(other.shape)
-        tensor_to_tensor(self, other)
 
     def __str__(self):
         """Python scope field print support."""

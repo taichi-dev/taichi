@@ -130,7 +130,10 @@ def subscript(value, *indices):
         if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
             indices = ()
         indices_expr_group = make_expr_group(*indices)
-        return Expr(_ti_core.subscript(value.get_field_members()[0].ptr, indices_expr_group))
+        if value.is_tensor:
+            return ti.Matrix.with_entries(*value.tensor_shape, [Expr(_ti_core.subscript(e.ptr, indices_expr_group)) for e in value.get_field_members()])
+        else:
+            return Expr(_ti_core.subscript(value.get_field_members()[0].ptr, indices_expr_group))
     elif is_taichi_class(value):
         return value.subscript(*indices)
     elif isinstance(value, (Expr, SNode)):
@@ -457,6 +460,28 @@ Example::
     >>> ti.root.pointer(ti.ij, 4).dense(ti.ij, 8).place(x)
 """
 
+@python_scope
+def create_field_member(dtype, name):
+    dtype = cook_dtype(dtype)
+
+    # primal
+    x = Expr(_ti_core.make_id_expr(""))
+    x.declaration_tb = get_traceback(stacklevel=2)
+    x.ptr = _ti_core.global_new(x.ptr, dtype)
+    x.ptr.set_name(name)
+    x.ptr.set_is_primal(True)
+    pytaichi.global_vars.append(x)
+
+    x_grad = None
+    if _ti_core.needs_grad(dtype):
+        # adjoint
+        x_grad = Expr(_ti_core.make_id_expr(""))
+        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
+        x_grad.ptr.set_name(name + ".grad")
+        x_grad.ptr.set_is_primal(False)
+        x.ptr.set_grad(x_grad.ptr)
+
+    return x, x_grad
 
 @deprecated('ti.var', 'ti.field')
 def var(dt, shape=None, offset=None, needs_grad=False):
@@ -495,8 +520,6 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False, use_snode=T
     """
     _taichi_skip_traceback = 1
 
-    dtype = cook_dtype(dtype)
-
     if isinstance(shape, numbers.Number):
         shape = (shape, )
 
@@ -514,30 +537,15 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False, use_snode=T
     del _taichi_skip_traceback
 
     assert use_snode, "Only SNode Field is supported now"
-    # primal
-    x = Expr(_ti_core.make_id_expr(""))
-    x.declaration_tb = get_traceback(stacklevel=2)
-    x.ptr = _ti_core.global_new(x.ptr, dtype)
-    x.ptr.set_name(name)
-    x.ptr.set_is_primal(True)
-    pytaichi.global_vars.append(x)
+    x, x_grad = create_field_member(dtype, name)
+    x, x_grad = SNodeField([x], ()), SNodeField([x_grad], ())
+    x.set_grad(x_grad)
 
-    x_grad = None
-    if _ti_core.needs_grad(dtype):
-        # adjoint
-        x_grad = Expr(_ti_core.make_id_expr(""))
-        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
-        x_grad.ptr.set_name(name + ".grad")
-        x_grad.ptr.set_is_primal(False)
-#        x.set_grad(x_grad)
-        x.ptr.set_grad(x_grad.ptr)
-
-    x = SNodeField([x], ())
     if shape is not None:
         dim = len(shape)
         root.dense(index_nd(dim), shape).place(x, offset=offset)
-        if needs_grad and x_grad is not None:
-            root.dense(index_nd(dim), shape).place(SNodeField([x_grad], ()))
+        if needs_grad:
+            root.dense(index_nd(dim), shape).place(x_grad)
     return x
 
 

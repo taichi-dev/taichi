@@ -657,8 +657,10 @@ void export_lang(py::module &m) {
     for (int i = 0; i < (int)elements.exprs.size(); ++i) {
       ExprGroup reversed_indices, indices;
       int linearized_index = i;
-      for (int d = (int)shape.size() - 1; d >= 0; --d)
+      for (int d = (int)shape.size() - 1; d >= 0; --d) {
         reversed_indices.push_back(Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
+        linearized_index /= shape[d];
+      }
       for (int d = 0; d < (int)shape.size(); ++d)
         indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
       current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(

@@ -9,7 +9,7 @@ import taichi as ti
 ti.init(kernel_profiler=True)
 
 test_cases = [fill, reduction]
-test_archs = [ti.cuda]  #[ti.cpu, ti.cuda]#
+test_archs = [ti.cpu, ti.cuda]
 test_dtype = [ti.i32, ti.i64, ti.f32, ti.f64]
 test_dsize = [
     4096, 16384, 65536, 262144, 1048576, 4194304, 16777216, 67108864,
@@ -47,9 +47,8 @@ class CaseImpl:
 
     def run(self):
         for arch in self.archs:
-            ti.reset()
-            ti.init(kernel_profiler=True, arch=arch)
             for dtype in self.data_type:
+                ti.init(kernel_profiler=True, arch=arch)
                 print("TestCase[%s.%s.%s]" %
                       (self.func.__name__, ti.core.arch_name(arch),
                        dtype2str[dtype]))
@@ -75,13 +74,12 @@ class CaseImpl:
                 i = i + 1
 
     def save2markdown(self, arch):
-        lines = []
+        header = '|kernel elapsed time(ms)' + ''.join(
+            '|' for i in range(len(self.data_size)))
+        lines = [header]
         for result in self.test_result:
             if (result.test_arch == arch):
                 lines.append(result.time2mdtableline())
-        gap = '||(time:us)' + ''.join('|'
-                                      for i in range(len(self.data_size) - 1))
-        lines.append(gap)
         return lines
 
 
@@ -103,8 +101,7 @@ class Baseline:
         repeat = '|**repeat**|' + ''.join(
             str(scale_repeat(arch, size, test_repeat)) + '|'
             for size in test_dsize)
-        gap = '|' + ''.join('|' for size in test_dsize)
-        lines = [header, layout, size, repeat, gap]
+        lines = [header, layout, size, repeat]
         return lines
 
     def run(self):

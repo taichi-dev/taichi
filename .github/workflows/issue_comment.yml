@@ -17,3 +17,4 @@ jobs:
           permission: triage
           commands: |
             format
+            benchmark

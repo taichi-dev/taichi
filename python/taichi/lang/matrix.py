@@ -90,7 +90,8 @@ class Matrix(TaichiOperations):
                         if disable_local_tensor:
                             mat = [list([expr.Expr(x)]) for x in n]
                         else:
-                            self.local_tensor_proxy = impl.expr_init_local_tensor([len(n)], ti.f32, expr.make_expr_group([expr.Expr(x) for x in n]))
+                            dt = ti.default_cfg().default_ip if isinstance(n[0], int) else ti.default_cfg().default_fp
+                            self.local_tensor_proxy = impl.expr_init_local_tensor([len(n)], dt, expr.make_expr_group([expr.Expr(x) for x in n]))
                             mat = []
                             for i, x in enumerate(n):
                                 mat.append(list([ti.local_subscript_with_offset(self.local_tensor_proxy, (i,))]))

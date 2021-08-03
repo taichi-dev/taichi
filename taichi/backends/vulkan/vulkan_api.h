@@ -60,6 +60,10 @@ struct VulkanDeviceDebugStruct {
 // separate the queue from the device. This is similar to using a single CUDA
 // stream.
 //
+// Note that this class does NOT own the underlying Vk* resources. The idea is
+// that users of this lib can provide such resources already created in their
+// Vulkan pipeline.
+//
 // TODO: Think of a better class name.
 class VulkanDevice {
  public:
@@ -115,16 +119,17 @@ struct VulkanCapabilities {
 };
 
 /**
- * Manages a VulkanDevice instance, including its resources.
+ * This class creates a VulkanDevice instance. The underlying Vk* resources are
+ * embedded directly inside the class.
  */
-class ManagedVulkanDevice {
+class EmbeddedVulkanDevice {
  public:
   struct Params {
     std::optional<uint32_t> api_version;
   };
 
-  explicit ManagedVulkanDevice(const Params &params);
-  ~ManagedVulkanDevice();
+  explicit EmbeddedVulkanDevice(const Params &params);
+  ~EmbeddedVulkanDevice();
 
   VulkanDevice *device() {
     return owned_device_.get();

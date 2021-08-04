@@ -112,10 +112,12 @@ class ExprBuilder(Builder):
         _taichi_skip_traceback = 1
         ti_func = node.func
         if '_sitebuiltins' == getattr(ti_func, '__module__', '') and getattr(
-                getattr(ti_func, '__class__', ''), '__name__', '') == 'Quitter':
-            raise TaichiSyntaxError(f'exit or quit not supported in Taichi-scope')
-        if getattr(ti_func, '__module__',
-                   '') == '__main__' and not getattr(ti_func, '__wrapped__', ''):
+                getattr(ti_func, '__class__', ''), '__name__',
+                '') == 'Quitter':
+            raise TaichiSyntaxError(
+                f'exit or quit not supported in Taichi-scope')
+        if getattr(ti_func, '__module__', '') == '__main__' and not getattr(
+                ti_func, '__wrapped__', ''):
             warnings.warn(
                 f'Calling into non-Taichi function {ti_func.__name__}.'
                 ' This means that scope inside that function will not be processed'

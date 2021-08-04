@@ -9,12 +9,11 @@ import taichi as ti
 
 # Total transform
 class ASTTransformerTotal(object):
-    def __init__(
-            self,
-            func=None,
-            excluded_parameters=(),
-            is_kernel=True,
-            arg_features=None):
+    def __init__(self,
+                 func=None,
+                 excluded_parameters=(),
+                 is_kernel=True,
+                 arg_features=None):
         self.func = func
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel

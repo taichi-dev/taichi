@@ -87,7 +87,8 @@ class Matrix(TaichiOperations):
                     if keep_raw:
                         mat = [list([x]) for x in n]
                     else:
-                        if in_python_scope() or disable_local_tensor:
+                        if not ti.is_extension_supported(
+                                ti.cfg.arch, ti.extension.dynamic_index) or in_python_scope() or disable_local_tensor:
                             mat = [list([expr.Expr(x)]) for x in n]
                         else:
                             dt = ti.default_cfg().default_ip if isinstance(n[0], int) else ti.default_cfg().default_fp
@@ -98,7 +99,8 @@ class Matrix(TaichiOperations):
                 else:
                     mat = [[x] for x in n]
             else:
-                if in_python_scope() or disable_local_tensor:
+                if not ti.is_extension_supported(
+                        ti.cfg.arch, ti.extension.dynamic_index) or in_python_scope() or disable_local_tensor:
                     mat = [list(r) for r in n]
                 else:
                     dt = ti.default_cfg().default_ip if isinstance(n[0][0], int) else ti.default_cfg().default_fp

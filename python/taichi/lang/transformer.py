@@ -8,9 +8,7 @@ import taichi as ti
 
 
 # Total transform
-# TODO: ASTTransformerBase -> ASTTransformer
-# TODO: ASTTransformer -> ASTTransformerTotal
-class ASTTransformer(object):
+class ASTTransformerTotal(object):
     def __init__(
             self,
             func=None,

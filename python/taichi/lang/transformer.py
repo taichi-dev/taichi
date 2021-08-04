@@ -16,15 +16,12 @@ class ASTTransformer(object):
             func=None,
             excluded_parameters=(),
             is_kernel=True,
-            is_classfunc=False,  # unused
             arg_features=None):
         self.func = func
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
         self.arg_features = arg_features
         self.pass_Checks = ASTTransformerChecks(func=func)
-        self.pass_transform_function_call = TransformFunctionCallAsStmt(
-            func=func)
 
     @staticmethod
     def print_ast(tree, title=None):

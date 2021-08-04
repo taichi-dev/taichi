@@ -49,8 +49,8 @@ class ASTTransformer(object):
         self.print_ast(tree, 'Preprocessed')
         self.pass_Checks.visit(tree)
         self.print_ast(tree, 'Checked')
-        self.pass_transform_function_call.visit(tree)
-        ast.fix_missing_locations(tree)
+        # self.pass_transform_function_call.visit(tree)
+        # ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Final AST')
 
 

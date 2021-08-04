@@ -652,17 +652,28 @@ if 1:
 
     @staticmethod
     def build_Expr(ctx, node):
-        if isinstance(node.value, ast.Call):
-            # A function call.
-            node.value = build_expr(ctx, node.value)
-            # note that we can only return an ast.Expr instead of an ast.Call.
+        if not isinstance(node.value, ast.Call):
+            # A statement with a single expression.
             return node
-        # A statement with a single expression.
-        # TODO(#2495): Deprecate maybe_transform_ti_func_call_to_stmt
+
+        # A function call.
+        node.value = build_expr(ctx, node.value)
+        # note that we can only return an ast.Expr instead of an ast.Call.
+
+        ti_func = node.value.func
+        is_taichi_function = getattr(ti_func, '_is_taichi_function', False)
+        # If is_taichi_function is true: call a decorated Taichi function
+        # in a Taichi kernel/function.
+        if is_taichi_function and impl.get_runtime().experimental_real_function:
+            # The function call itself compiles the function,
+            # invoking Func.__call__.
+            # We need a statement to hold the return value of the function.
+            func_return_value = node
+            node = ast.Expr(
+                value=ast.Call(func=parse_expr('ti.core.insert_expr_stmt'),
+                               args=func_return_value, keywords=[]))
+            node = ast.copy_location(node, func_return_value)
         return node
-        # result = parse_stmt('ti.core.insert_expr_stmt(expr)')
-        # result.value.args[0] = build_expr(ctx, node.value)
-        # return ast.copy_location(result, node)
 
     @staticmethod
     def build_Import(ctx, node):

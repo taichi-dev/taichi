@@ -1031,7 +1031,7 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     @taichi_scope
-    def zero(dt, n, m=1):
+    def zero(dt, n, m=None):
         """Construct a Matrix filled with zeros.
 
         Args:
@@ -1043,7 +1043,10 @@ class Matrix(TaichiOperations):
             :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with zeros.
 
         """
-        return Matrix([[ti.cast(0, dt) for _ in range(m)] for _ in range(n)])
+        if m is None:
+            return Vector([ti.cast(0, dt) for _ in range(n)])
+        else:
+            return Matrix([[ti.cast(0, dt) for _ in range(m)] for _ in range(n)])
 
     @staticmethod
     @taichi_scope

@@ -231,7 +231,7 @@ class GUI:
         import taichi as ti
 
         if self.fast_gui:
-            assert isinstance(img, ti.Matrix), \
+            assert isinstance(img, ti.SNodeField) and img.is_tensor, \
                     "Only ti.Vector.field is supported in GUI.set_image when fast_gui=True"
             assert img.shape == self.res, \
                     "Image resolution does not match GUI resolution"
@@ -244,7 +244,7 @@ class GUI:
             vector_to_fast_image(img, self.img)
             return
 
-        if isinstance(img, ti.Expr):
+        if isinstance(img, ti.SNodeField) and not img.is_tensor:
             if _ti_core.is_integral(img.dtype) or len(img.shape) != 2:
                 # Images of uint is not optimized by xxx_to_image
                 self.img = self.cook_image(img.to_numpy())
@@ -256,7 +256,7 @@ class GUI:
                 tensor_to_image(img, self.img)
                 ti.sync()
 
-        elif isinstance(img, ti.Matrix):
+        elif isinstance(img, ti.SNodeField) and img.is_tensor:
             if _ti_core.is_integral(img.dtype):
                 self.img = self.cook_image(img.to_numpy())
             else:
@@ -336,9 +336,9 @@ class GUI:
         if palette is not None:
             assert palette_indices is not None, 'palette must be used together with palette_indices'
 
-            from taichi.lang.expr import Expr
+            from taichi.lang.field import SNodeField
 
-            if isinstance(palette_indices, Expr):
+            if isinstance(palette_indices, SNodeField):
                 ind_int = palette_indices.to_numpy().astype(np.uint32)
             elif isinstance(palette_indices, list) or isinstance(
                     palette_indices, np.ndarray):

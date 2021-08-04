@@ -135,16 +135,6 @@ class Matrix(TaichiOperations):
                 UserWarning,
                 stacklevel=2)
 
-    def is_global(self):
-        results = [False for _ in self.entries]
-        for i, e in enumerate(self.entries):
-            if isinstance(e, expr.Expr):
-                if e.is_global():
-                    results[i] = True
-            assert results[i] == results[0], \
-                "Matrices with mixed global/local entries are not allowed"
-        return results[0]
-
     def element_wise_binary(self, foo, other):
         _taichi_skip_traceback = 1
         ret = self.empty_copy()
@@ -618,43 +608,6 @@ class Matrix(TaichiOperations):
                     # TODO: need a more systematic way to create a "0" with the right type
         return ret
 
-    def loop_range(self):
-        return self.entries[0]
-
-    @property
-    def shape(self):
-        """Return the shape of a matrix."""
-        # Took `self.entries[0]` as a representation of this tensor-of-matrices.
-        # https://github.com/taichi-dev/taichi/issues/1069#issuecomment-635712140
-        return self.loop_range().shape
-
-    @deprecated('x.dim()', 'len(x.shape)')
-    def dim(self):
-        return len(self.shape)
-
-    @property
-    def name(self):
-        return self.loop_range().name
-
-    @property
-    def dtype(self):
-        """Return the date type of matrix elements."""
-        return self.loop_range().dtype
-
-    @deprecated('x.data_type()', 'x.dtype')
-    def data_type(self):
-        return self.dtype
-
-    @property
-    def snode(self):
-        return self.loop_range().snode
-
-#    def make_grad(self):
-#        ret = self.empty_copy()
-#        for i in range(len(ret.entries)):
-#            ret.entries[i] = self.entries[i].grad
-#        return ret
-
     def sum(self):
         """Return the sum of all elements."""
         ret = self.entries[0]
@@ -733,52 +686,16 @@ class Matrix(TaichiOperations):
             ret = ret + ti.cmp_ne(self.entries[i], 0)
         return -ti.cmp_eq(ret, -len(self.entries))
 
+    @taichi_scope
     def fill(self, val):
-        """Fill the element with values.
+        """Fills the matrix with a specific value in Taichi scope.
 
         Args:
-            val (Union[Number, List, Tuple, Matrix]): the dimension of val should be consistent with the dimension of element.
-
-        Examples:
-
-            Fill a scalar field:
-
-            >>> v = ti.field(float,10)
-            >>> v.fill(10.0)
-
-            Fill a vector field:
-
-            >>> v = ti.Vector.field(2, float,4)
-            >>> v.fill([10.0,11.0])
-
+            val (Union[int, float]): Value to fill.
         """
-        if impl.inside_kernel():
-
-            def assign_renamed(x, y):
-                return ti.assign(x, y)
-
-            return self.element_wise_writeback_binary(assign_renamed, val)
-
-        if isinstance(val, numbers.Number):
-            val = tuple(
-                [tuple([val for _ in range(self.m)]) for _ in range(self.n)])
-        elif isinstance(val,
-                        (list, tuple)) and isinstance(val[0], numbers.Number):
-            assert self.m == 1
-            val = tuple([(v, ) for v in val])
-        if isinstance(val, Matrix):
-            val_tuple = []
-            for i in range(val.n):
-                row = []
-                for j in range(val.m):
-                    row.append(val(i, j))
-                row = tuple(row)
-                val_tuple.append(row)
-            val = tuple(val_tuple)
-        assert len(val) == self.n
-        assert len(val[0]) == self.m
-        from taichi.lang.meta import fill_matrix
-        fill_matrix(self, val)
+        def assign_renamed(x, y):
+            return ti.assign(x, y)
+        return self.element_wise_writeback_binary(assign_renamed, val)
 
     @python_scope
     def to_numpy(self, keep_dims=False):
@@ -830,11 +747,7 @@ class Matrix(TaichiOperations):
             return str(self.to_numpy())
 
     def __repr__(self):
-        if self.is_global():
-            # make interactive shell happy, prevent materialization
-            return f'<{self.n}x{self.m} ti.Matrix.field>'
-        else:
-            return str(self.to_numpy())
+        return str(self.to_numpy())
 
     @staticmethod
     @taichi_scope

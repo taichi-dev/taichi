@@ -247,6 +247,14 @@ class SNode:
     def get_shape(self, i):
         return self.shape[i]
 
+    def loop_range(self):
+        """Wraps `self` into an :class:`~taichi.lang.Expr` to serve as loop range.
+
+        Returns:
+            Expr: The wrapped result.
+        """
+        return Expr(_ti_core.global_var_expr_from_snode(self.ptr))
+
     @property
     def name(self):
         """Gets the name of `self`.

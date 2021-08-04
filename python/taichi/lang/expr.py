@@ -36,6 +36,9 @@ class Expr(TaichiOperations):
         if self.tb:
             self.ptr.set_tb(self.tb)
 
+    def loop_range(self):
+        return self
+
     def is_global(self):
         """Check whether the class itself represents GlobalVariableExpression (field) or ExternalTensorExpression internally.
 
@@ -46,10 +49,6 @@ class Expr(TaichiOperations):
 
     def __hash__(self):
         return self.ptr.get_raw_address()
-
-    @property
-    def name(self):
-        return self.snode.name
 
     @property
     def shape(self):
@@ -65,22 +64,14 @@ class Expr(TaichiOperations):
                 for i in range(dim)
             ]
             return ret
-        return self.snode.shape
+        from taichi.lang.snode import SNode
+        return SNode(self.ptr.snode()).shape
 
     def __str__(self):
-        """Python scope field print support."""
-        if impl.inside_kernel():
-            return '<ti.Expr>'  # make pybind11 happy, see Matrix.__str__
-        else:
-            return str(self.to_numpy())
+        return '<ti.Expr>'
 
     def __repr__(self):
-        # make interactive shell happy, prevent materialization
-        if self.is_global():
-            # make interactive shell happy, prevent materialization
-            return '<ti.field>'
-        else:
-            return '<ti.Expr>'
+        return '<ti.Expr>'
 
 
 def make_var_vector(size):

@@ -4,6 +4,7 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.util import python_scope, to_numpy_type, to_pytorch_type
 from taichi.misc.util import warning
+import numbers
 import taichi as ti
 
 
@@ -114,9 +115,23 @@ class SNodeField(Field):
         """
         return self.vars
 
+    def loop_range(self):
+        return self.vars[0]
+
     @python_scope
     def set_grad(self, grad):
         self.grad = grad
+
+    @python_scope
+    def get_scalar_field(self, *indices):
+        """Creates a scalar field using a field member
+        Only used for quant.
+        """
+        assert self.is_tensor, "get_scalar_field can only be called on a Matrix field"
+        assert len(indices) in [1, 2]
+        i = indices[0]
+        j = 0 if len(indices) == 1 else indices[1]
+        return SNodeField([self.vars[i * self.m + j]], ())
 
     @property
     def n(self):
@@ -136,8 +151,46 @@ class SNodeField(Field):
             val (Union[int, float]): Value to fill.
         """
         # TODO: avoid too many template instantiations
-        from taichi.lang.meta import fill_tensor
-        fill_tensor(self, val)
+        """Fill the element with values.
+
+        Args:
+            val (Union[Number, List, Tuple, Matrix]): the dimension of val should be consistent with the dimension of element.
+
+        Examples:
+
+            Fill a scalar field:
+
+            >>> v = ti.field(float,10)
+            >>> v.fill(10.0)
+
+            Fill a vector field:
+
+            >>> v = ti.Vector.field(2, float,4)
+            >>> v.fill([10.0,11.0])
+
+        """
+        if self.is_tensor:
+            if isinstance(val, numbers.Number):
+                val = tuple([tuple([val for _ in range(self.m)]) for _ in range(self.n)])
+            elif isinstance(val, (list, tuple)) and isinstance(val[0], numbers.Number):
+                assert self.m == 1
+                val = tuple([(v, ) for v in val])
+            elif isinstance(val, ti.Matrix):
+                val_tuple = []
+                for i in range(val.n):
+                    row = []
+                    for j in range(val.m):
+                        row.append(val(i, j))
+                    row = tuple(row)
+                    val_tuple.append(row)
+                val = tuple(val_tuple)
+            assert len(val) == self.n
+            assert len(val[0]) == self.m
+            from taichi.lang.meta import fill_matrix
+            fill_matrix(self, val)
+        else:
+            from taichi.lang.meta import fill_tensor
+            fill_tensor(self, val)
 
     @python_scope
     def to_numpy(self, keep_dims=False, as_vector=None, dtype=None):
@@ -256,6 +309,19 @@ class SNodeField(Field):
         assert len(self.shape) == len(other.shape)
         tensor_to_tensor(self, other)
 
+    def __str__(self):
+        if impl.inside_kernel():
+            return self.__repr__()  # make pybind11 happy, see Matrix.__str__
+        else:
+            return str(self.to_numpy())
+
+    def __repr__(self):
+        # make interactive shell happy, prevent materialization
+        if self.is_tensor:
+            return f'<{self.n}x{self.m} ti.Matrix.field>'
+        else:
+            return '<ti.field>'
+
     @python_scope
     def __setitem__(self, key, value):
         """XY: To be fixed:
@@ -301,12 +367,13 @@ class SNodeField(Field):
         else:
             return self.host_accessors[0].getter(*key)
 
-    @classmethod
-    def pad_key(cls, key):
+    @python_scope
+    def pad_key(self, key):
         if key is None:
             key = ()
         if not isinstance(key, (tuple, list)):
             key = (key, )
+        assert len(key) == len(self.shape)
         return key + ((0, ) * (_ti_core.get_max_num_indices() - len(key)))
 
     @python_scope

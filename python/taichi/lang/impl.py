@@ -65,28 +65,21 @@ def expr_init_list(xs, expected):
 @taichi_scope
 def expr_init_func(
         rhs):  # temporary solution to allow passing in fields as arguments
-    if isinstance(rhs, Expr) and rhs.ptr.is_global_var():
-        return rhs
-    if isinstance(rhs, ti.Matrix) and rhs.is_global():
+    if isinstance(rhs, SNodeField):
         return rhs
     return expr_init(rhs)
 
 
-def begin_frontend_struct_for(group, loop_var):
-#    if not isinstance(loop_range, Expr) or not loop_range.is_global():
-#        raise TypeError('Can only iterate through global variables/fields')
-    if group.size() != len(loop_var.shape):
+def begin_frontend_struct_for(group, loop_range):
+    if not isinstance(loop_range, Expr) or not loop_range.is_global():
+        raise TypeError('Can only iterate through global variables/fields')
+    if group.size() != len(loop_range.shape):
         raise IndexError(
             'Number of struct-for indices does not match loop variable dimensionality '
-            f'({group.size()} != {len(loop_var.shape)}). Maybe you wanted to '
+            f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
-    if isinstance(loop_var, SNodeField):
-        _ti_core.begin_frontend_struct_for(group, loop_var.get_field_members()[0].ptr)
-    elif isinstance(loop_var, SNode):
-        _ti_core.begin_frontend_struct_for(group, _ti_core.global_var_expr_from_snode(loop_var.ptr))
-    else:
-        raise Exception('Non-supported struct for')
+    _ti_core.begin_frontend_struct_for(group, loop_range.ptr)
 
 
 def begin_frontend_if(cond):
@@ -125,47 +118,44 @@ def subscript(value, *indices):
             ind = [indices[i]]
         flattened_indices += ind
     indices = tuple(flattened_indices)
+    if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
+        indices = ()
+    indices_expr_group = make_expr_group(*indices)
+    index_dim = indices_expr_group.size()
 
-    if isinstance(value, SNodeField): # XY: Not complete, see below
-        if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
-            indices = ()
-        indices_expr_group = make_expr_group(*indices)
+    if isinstance(value, SNodeField):
+        var = value.get_field_members()[0].ptr
+        if var.snode() is None:
+            if var.is_primal():
+                raise RuntimeError(f"{var.get_expr_name()} has not been placed.")
+            else:
+                raise RuntimeError(f"Gradient {var.get_expr_name()} has not been placed, check whether `needs_grad=True`")
+        field_dim = int(var.get_attribute("dim"))
+        if field_dim != index_dim:
+            raise IndexError(f'Field with dim {field_dim} accessed with indices of dim {index_dim}')
         if value.is_tensor:
             return ti.Matrix.with_entries(*value.tensor_shape, [Expr(_ti_core.subscript(e.ptr, indices_expr_group)) for e in value.get_field_members()])
         else:
-            return Expr(_ti_core.subscript(value.get_field_members()[0].ptr, indices_expr_group))
+            return Expr(_ti_core.subscript(var, indices_expr_group))
     elif is_taichi_class(value):
         return value.subscript(*indices)
     elif isinstance(value, (Expr, SNode)):
         if isinstance(value, Expr):
-            if not value.is_global():
+            if not value.ptr.is_external_var():
                 raise TypeError(
                     'Subscription (e.g., "a[i, j]") only works on fields or external arrays.'
                 )
-            if not value.ptr.is_external_var() and value.ptr.snode() is None:
-                if not value.ptr.is_primal():
-                    raise RuntimeError(
-                        f"Gradient {value.ptr.get_expr_name()} has not been placed, check whether `needs_grad=True`"
-                    )
-                else:
-                    raise RuntimeError(
-                        f"{value.ptr.get_expr_name()} has not been placed.")
             field_dim = int(value.ptr.get_attribute("dim"))
         else:
             # When reading bit structure we only support the 0-D case for now.
             field_dim = 0
-        if isinstance(indices,
-                      tuple) and len(indices) == 1 and indices[0] is None:
-            indices = []
-        indices_expr_group = make_expr_group(*indices)
-        index_dim = indices_expr_group.size()
         if field_dim != index_dim:
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
     else:
-        return value[indices]
+        raise TypeError('Subscription (e.g., "a[i, j]") only works on fields or external arrays.')
 
 
 @taichi_scope
@@ -433,6 +423,10 @@ class _Root:
     def parent(self, n=1):
         """Same as :func:`taichi.SNode.parent`"""
         return _root_fb.root.parent(n)
+
+    def loop_range(self, n=1):
+        """Same as :func:`taichi.SNode.loop_range`"""
+        return _root_fb.root.loop_range()
 
     def get_children(self):
         """Same as :func:`taichi.SNode.get_children`"""
@@ -780,7 +774,9 @@ def static(x, *xs):
                   (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
                    ti.GroupedNDRange, zip, filter, map)) or x is None:
         return x
-    elif isinstance(x, (Expr, ti.Matrix)) and x.is_global():
+    elif isinstance(x, Expr) and x.is_global():
+        return x
+    elif isinstance(x, SNodeField):
         return x
     elif isinstance(x, (types.FunctionType, types.MethodType)):
         return x

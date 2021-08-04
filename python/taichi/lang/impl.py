@@ -188,6 +188,32 @@ def chain_compare(comparators, ops):
     return ret
 
 
+@taichi_scope
+def insert_expr_stmt_if_ti_func(func, *args, **kwargs):
+    """
+    This method is used only for real functions. It inserts a FrontendExprStmt
+    to the C++ AST to hold the function call if |func| is a Taichi function.
+    :param func: The function to be called.
+    :param args: The arguments of the function call.
+    :param kwargs: The keyword arguments of the function call.
+    :return: The return value of the function call if it's a non-Taichi
+    function. Returns None if it's a Taichi function.
+    """
+    is_taichi_function = getattr(func, '_is_taichi_function', False)
+    # If is_taichi_function is true: call a decorated Taichi function
+    # in a Taichi kernel/function.
+
+    if is_taichi_function:
+        # Compiles the function here.
+        # Invokes Func.__call__.
+        func_call_result = func(*args, **kwargs)
+        # Insert FrontendExprStmt here.
+        return _ti_core.insert_expr_stmt(func_call_result.ptr)
+    else:
+        # Call the non-Taichi function directly.
+        return func(*args, **kwargs)
+
+
 class PyTaichi:
     def __init__(self, kernels=None):
         self.materialized = False

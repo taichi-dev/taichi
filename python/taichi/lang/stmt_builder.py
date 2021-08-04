@@ -658,23 +658,15 @@ if 1:
 
         # A function call.
         node.value = build_expr(ctx, node.value)
-        # note that we can only return an ast.Expr instead of an ast.Call.
+        # Note that we can only return an ast.Expr instead of an ast.Call.
 
-        ti_func = node.value.func
-        is_taichi_function = getattr(ti_func, '_is_taichi_function', False)
-        # If is_taichi_function is true: call a decorated Taichi function
-        # in a Taichi kernel/function.
-        if is_taichi_function and impl.get_runtime(
-        ).experimental_real_function:
-            # The function call itself compiles the function,
-            # invoking Func.__call__.
-            # We need a statement to hold the return value of the function.
-            func_return_value = node
-            node = ast.Expr(
-                value=ast.Call(func=parse_expr('ti.core.insert_expr_stmt'),
-                               args=func_return_value,
-                               keywords=[]))
-            node = ast.copy_location(node, func_return_value)
+        if impl.get_runtime().experimental_real_function:
+            # Generates code that inserts a FrontendExprStmt if the function
+            # called is a Taichi function.
+            # We cannot insert the FrontendExprStmt here because we do not
+            # know if the function is a Taichi function now.
+            node.value.args = [node.value.func] + node.value.args
+            node.value.func = parse_expr('ti.insert_expr_stmt_if_ti_func')
         return node
 
     @staticmethod

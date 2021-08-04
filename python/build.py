@@ -50,7 +50,7 @@ def build(project_name):
         os.remove('taichi/CHANGELOG.md')
     except FileNotFoundError:
         pass
-    shutil.rmtree('../build')
+    shutil.rmtree('../build', ignore_errors=True)
 
 
 def parse_args():

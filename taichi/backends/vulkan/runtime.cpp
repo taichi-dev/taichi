@@ -322,10 +322,10 @@ class VkRuntime ::Impl {
         host_result_buffer_(params.host_result_buffer) {
     TI_ASSERT(snode_descriptors_ != nullptr);
     TI_ASSERT(host_result_buffer_ != nullptr);
-    ManagedVulkanDevice::Params mvd_params;
-    mvd_params.api_version = VulkanEnvSettings::kApiVersion();
-    managed_device_ = std::make_unique<ManagedVulkanDevice>(mvd_params);
-    stream_ = std::make_unique<VulkanStream>(managed_device_->device());
+    EmbeddedVulkanDevice::Params evd_params;
+    evd_params.api_version = VulkanEnvSettings::kApiVersion();
+    embedded_device_ = std::make_unique<EmbeddedVulkanDevice>(evd_params);
+    stream_ = std::make_unique<VulkanStream>(embedded_device_->device());
 
     init_memory_pool(params);
     init_vk_buffers();
@@ -361,7 +361,7 @@ class VkRuntime ::Impl {
     CompiledTaichiKernel::Params params;
     params.ti_kernel_attribs = &(reg_params.kernel_attribs);
     params.snode_descriptors = snode_descriptors_;
-    params.device = managed_device_->device();
+    params.device = embedded_device_->device();
     params.root_buffer = root_buffer_.get();
     params.global_tmps_buffer = global_tmps_buffer_.get();
     params.host_visible_mem_pool = host_visible_memory_pool_.get();
@@ -429,19 +429,19 @@ class VkRuntime ::Impl {
   }
 
   const VulkanCapabilities &get_capabilities() const {
-    return managed_device_->get_capabilities();
+    return embedded_device_->get_capabilities();
   }
 
  private:
   void init_memory_pool(const Params &params) {
     LinearVkMemoryPool::Params mp_params;
-    mp_params.physical_device = managed_device_->physical_device();
-    mp_params.device = managed_device_->device()->device();
+    mp_params.physical_device = embedded_device_->physical_device();
+    mp_params.device = embedded_device_->device()->device();
 #pragma message("Vulkan memory pool size hardcoded to 256MB")
     mp_params.pool_size = 256 * 1024 * 1024;
     mp_params.required_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     mp_params.compute_queue_family_index =
-        managed_device_->queue_family_indices().compute_family.value();
+        embedded_device_->queue_family_indices().compute_family.value();
 
     auto &buf_creation_template = mp_params.buffer_creation_template;
     buf_creation_template.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -493,7 +493,7 @@ class VkRuntime ::Impl {
   const SNodeDescriptorsMap *const snode_descriptors_;
   uint64_t *const host_result_buffer_;
 
-  std::unique_ptr<ManagedVulkanDevice> managed_device_{nullptr};
+  std::unique_ptr<EmbeddedVulkanDevice> embedded_device_{nullptr};
   std::unique_ptr<VulkanStream> stream_{nullptr};
 
   std::unique_ptr<LinearVkMemoryPool> dev_local_memory_pool_;

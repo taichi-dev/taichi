@@ -88,7 +88,7 @@ Taichi- and Python-scopes.
 def print_field_info(x: ti.template()):
     print('Field dimensionality is', len(x.shape))
     for i in ti.static(range(len(x.shape))):
-        print('Size alone dimension', i, 'is', x.shape[i])
+        print('Size along dimension', i, 'is', x.shape[i])
     ti.static_print('Field data type is', x.dtype)
 ```
 

@@ -236,10 +236,7 @@ class IRBuilder {
   }
 
   // Initialize header
-  void init_header(bool support_int8 = false,
-                   bool support_int16 = false,
-                   bool support_int64 = false,
-                   bool support_fp64 = false);
+  void init_header();
   // Initialize the predefined contents
   void init_pre_defs();
   // Get the final binary built from the builder, return The finalized binary
@@ -465,11 +462,6 @@ class IRBuilder {
 
   // glsl 450 extension
   Value ext_glsl450_;
-  // Special cached types
-  bool support_int8_{false};
-  bool support_int16_{false};
-  bool support_int64_{false};
-  bool support_fp64_{false};
 
   SType t_bool_;
   SType t_int8_;

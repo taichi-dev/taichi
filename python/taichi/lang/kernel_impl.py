@@ -44,7 +44,7 @@ def func(fn):
     will JIT compile it into native instructions.
 
     Args:
-        fn (Callable): the Python function to be decorated
+        fn (Callable): The Python function to be decorated
 
     Returns:
         Callable: The decorated function
@@ -83,7 +83,7 @@ def pyfunc(fn):
     See also :func:`~taichi.lang.kernel_impl.func`.
 
     Args:
-        fn (Callable): the Python function to be decorated
+        fn (Callable): The Python function to be decorated
 
     Returns:
         Callable: The decorated function
@@ -677,6 +677,8 @@ def kernel(fn):
     Taichi into native CPU/GPU instructions (e.g. a series of CUDA kernels).
     The top-level ``for`` loops are automatically parallelized, and distributed
     to either a CPU thread pool or massively parallel GPUs.
+
+    Kernel's gradient kernel would be generated automatically by the AutoDiff system.
 
     See also https://docs.taichi.graphics/docs/lang/articles/basic/syntax#kernels.
 

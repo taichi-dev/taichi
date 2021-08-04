@@ -1,7 +1,6 @@
 import ast
 
 from taichi.lang import impl
-from taichi.lang.ast_builder_utils import parse_expr
 from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 
@@ -47,11 +46,7 @@ class ASTTransformer(object):
         tree = build_stmt(ctx, tree)
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Preprocessed')
-        self.pass_Checks.visit(tree)
-        self.print_ast(tree, 'Checked')
-        # self.pass_transform_function_call.visit(tree)
-        # ast.fix_missing_locations(tree)
-        self.print_ast(tree, 'Final AST')
+        self.pass_Checks.visit(tree)  # should not modify AST
 
 
 class ASTTransformerBase(ast.NodeTransformer):
@@ -105,15 +100,4 @@ class ASTTransformerChecks(ASTTransformerBase):
                 'Taichi functions/kernels cannot have multiple returns!'
                 ' Consider using a local variable to walk around.')
 
-        return node
-
-
-# Transform a standalone Taichi function call expression into a statement.
-class TransformFunctionCallAsStmt(ASTTransformerBase):
-    def __init__(self, func):
-        super().__init__(func)
-
-    def visit_Call(self, node):
-        node.args = [node.func] + node.args
-        node.func = parse_expr('ti.maybe_transform_ti_func_call_to_stmt')
         return node

@@ -389,7 +389,7 @@ if ti.static(1):
         template = '''
 if ti.static(1):
     __ndrange = 0
-    {} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions)))
+    {} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions), disable_local_tensor=True))
     ___begin = ti.Expr(0)
     ___end = __ndrange.acc_dimensions[0]
     ___begin = ti.cast(___begin, ti.i32)

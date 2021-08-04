@@ -37,10 +37,11 @@ class ASTTransformerTotal(object):
                              excluded_parameters=self.excluded_parameters,
                              is_kernel=self.is_kernel,
                              arg_features=self.arg_features)
+        # Convert Python AST to Python code that generates Taichi C++ AST.
         tree = build_stmt(ctx, tree)
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Preprocessed')
-        self.pass_Checks.visit(tree)  # should not modify AST
+        self.pass_Checks.visit(tree)  # does not modify the AST
 
 
 class ASTTransformerBase(ast.NodeTransformer):
@@ -62,7 +63,7 @@ class ASTTransformerBase(ast.NodeTransformer):
         return ''
 
 
-# Second-pass transform
+# Performs checks at the Python AST level. Does not modify the AST.
 class ASTTransformerChecks(ASTTransformerBase):
     def __init__(self, func):
         super().__init__(func)

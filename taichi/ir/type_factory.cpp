@@ -31,7 +31,7 @@ Type *TypeFactory::get_vector_type(int num_elements, Type *element) {
 }
 
 Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
-  auto encode = [](const std::vector<int>& shape) -> std::string {
+  auto encode = [](const std::vector<int> &shape) -> std::string {
     std::string s;
     for (int i = 0; i < (int)shape.size(); ++i)
       s += fmt::format(i == 0 ? "{}" : "_{}", std::to_string(shape[i]));

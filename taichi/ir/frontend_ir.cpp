@@ -288,12 +288,15 @@ void LocalTensorElementExpression::flatten(FlattenContext *ctx) {
   indices[0]->flatten(ctx);
   for (int i = 1; i < (int)shape.size(); ++i) {
     Stmt *accumulated_stmt = ctx->back_stmt();
-    Stmt *current_length_stmt = ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(shape[i])));
-    Stmt *mul_stmt = ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, accumulated_stmt, current_length_stmt));
+    Stmt *current_length_stmt =
+        ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(shape[i])));
+    Stmt *mul_stmt = ctx->push_back(Stmt::make<BinaryOpStmt>(
+        BinaryOpType::mul, accumulated_stmt, current_length_stmt));
     indices[i].set(load_if_ptr(indices[i]));
     indices[i]->flatten(ctx);
     Stmt *current_index_stmt = ctx->back_stmt();
-    ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::add, mul_stmt, current_index_stmt));
+    ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::add, mul_stmt,
+                                            current_index_stmt));
   }
   // Type A[x, y, ...]
   // ^^^^
@@ -303,8 +306,7 @@ void LocalTensorElementExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(
       Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
 
-  ctx->push_back(
-      std::make_unique<PtrOffsetStmt>(var_stmt, ctx->back_stmt()));
+  ctx->push_back(std::make_unique<PtrOffsetStmt>(var_stmt, ctx->back_stmt()));
   stmt = ctx->back_stmt();
 }
 
@@ -345,7 +347,8 @@ void IdExpression::flatten(FlattenContext *ctx) {
       stmt = var_stmt;
     } else {
       // For other alloca, load the value and then return
-      ctx->push_back(std::make_unique<LocalLoadStmt>(LocalAddress(var_stmt, 0)));
+      ctx->push_back(
+          std::make_unique<LocalLoadStmt>(LocalAddress(var_stmt, 0)));
       stmt = ctx->back_stmt();
     }
   } else {
@@ -454,8 +457,10 @@ void LocalLoadExpression::flatten(FlattenContext *ctx) {
   ptr->flatten(ctx);
   auto ptr_offset_stmt = ctx->back_stmt();
   TI_ASSERT(ptr_offset_stmt->is<PtrOffsetStmt>())
-  auto local_addr = LaneAttribute<LocalAddress>(LocalAddress(ptr_offset_stmt, 0));
-  auto local_load_stmt = ctx->push_back<LocalLoadStmt>(LaneAttribute<LocalAddress>(local_addr));
+  auto local_addr =
+      LaneAttribute<LocalAddress>(LocalAddress(ptr_offset_stmt, 0));
+  auto local_load_stmt =
+      ctx->push_back<LocalLoadStmt>(LaneAttribute<LocalAddress>(local_addr));
   stmt = local_load_stmt;
 }
 

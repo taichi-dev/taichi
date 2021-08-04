@@ -649,16 +649,19 @@ void export_lang(py::module &m) {
         PrimitiveType::unknown));
     return var;
   });
-  m.def("expr_alloca_local_tensor", [](const std::vector<int> &shape, const DataType& element_type, const ExprGroup &elements) {
+  m.def("expr_alloca_local_tensor", [](const std::vector<int> &shape,
+                                       const DataType &element_type,
+                                       const ExprGroup &elements) {
     auto var = Expr(std::make_shared<IdExpression>());
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-        std::static_pointer_cast<IdExpression>(var.expr)->id,
-        shape, element_type));
+        std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
+        element_type));
     for (int i = 0; i < (int)elements.exprs.size(); ++i) {
       ExprGroup reversed_indices, indices;
       int linearized_index = i;
       for (int d = (int)shape.size() - 1; d >= 0; --d) {
-        reversed_indices.push_back(Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
+        reversed_indices.push_back(
+            Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
         linearized_index /= shape[d];
       }
       for (int d = 0; d < (int)shape.size(); ++d)

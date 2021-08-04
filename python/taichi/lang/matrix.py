@@ -88,28 +88,44 @@ class Matrix(TaichiOperations):
                         mat = [list([x]) for x in n]
                     else:
                         if not ti.is_extension_supported(
-                                ti.cfg.arch, ti.extension.dynamic_index) or in_python_scope() or disable_local_tensor:
+                                ti.cfg.arch, ti.extension.dynamic_index
+                        ) or in_python_scope() or disable_local_tensor:
                             mat = [list([expr.Expr(x)]) for x in n]
                         else:
-                            dt = ti.default_cfg().default_ip if isinstance(n[0], int) else ti.default_cfg().default_fp
-                            self.local_tensor_proxy = impl.expr_init_local_tensor([len(n)], dt, expr.make_expr_group([expr.Expr(x) for x in n]))
+                            dt = ti.default_cfg().default_ip if isinstance(
+                                n[0], int) else ti.default_cfg().default_fp
+                            self.local_tensor_proxy = impl.expr_init_local_tensor(
+                                [len(n)], dt,
+                                expr.make_expr_group([expr.Expr(x)
+                                                      for x in n]))
                             mat = []
                             for i in range(len(n)):
-                                mat.append(list([ti.local_subscript_with_offset(self.local_tensor_proxy, (i,))]))
+                                mat.append(
+                                    list([
+                                        ti.local_subscript_with_offset(
+                                            self.local_tensor_proxy, (i, ))
+                                    ]))
                 else:
                     mat = [[x] for x in n]
             else:
                 if not ti.is_extension_supported(
-                        ti.cfg.arch, ti.extension.dynamic_index) or in_python_scope() or disable_local_tensor:
+                        ti.cfg.arch, ti.extension.dynamic_index
+                ) or in_python_scope() or disable_local_tensor:
                     mat = [list(r) for r in n]
                 else:
-                    dt = ti.default_cfg().default_ip if isinstance(n[0][0], int) else ti.default_cfg().default_fp
-                    self.local_tensor_proxy = impl.expr_init_local_tensor([len(n), len(n[0])], dt, expr.make_expr_group([expr.Expr(x) for row in n for x in row]))
+                    dt = ti.default_cfg().default_ip if isinstance(
+                        n[0][0], int) else ti.default_cfg().default_fp
+                    self.local_tensor_proxy = impl.expr_init_local_tensor(
+                        [len(n), len(n[0])], dt,
+                        expr.make_expr_group(
+                            [expr.Expr(x) for row in n for x in row]))
                     mat = []
                     for i in range(len(n)):
                         mat.append([])
                         for j in range(len(n[0])):
-                            mat[i].append(ti.local_subscript_with_offset(self.local_tensor_proxy, (i, j)))
+                            mat[i].append(
+                                ti.local_subscript_with_offset(
+                                    self.local_tensor_proxy, (i, j)))
             self.n = len(mat)
             if len(mat) > 0:
                 self.m = len(mat[0])
@@ -277,7 +293,8 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         assert kwargs == {}
         if self.local_tensor_proxy is not None:
-            return ti.local_subscript_with_offset(self.local_tensor_proxy, args)
+            return ti.local_subscript_with_offset(self.local_tensor_proxy,
+                                                  args)
         else:
             return self.entries[self.linearize_entry_id(*args)]
 
@@ -321,14 +338,15 @@ class Matrix(TaichiOperations):
             i = indices[0]
             j = 0 if len(indices) == 1 else indices[1]
             if self.local_tensor_proxy != None:
-                return ti.local_subscript_with_offset(self.local_tensor_proxy, (i, j))
+                return ti.local_subscript_with_offset(self.local_tensor_proxy,
+                                                      (i, j))
             # ptr.is_global_ptr() will check whether it's an element in the field (which is different from ptr.is_global_var()).
             elif isinstance(self.entries[0],
-                          ti.Expr) and self.entries[0].ptr.is_global_ptr(
-                          ) and ti.is_extension_supported(
-                              ti.cfg.arch, ti.extension.dynamic_index):
+                            ti.Expr) and self.entries[0].ptr.is_global_ptr(
+                            ) and ti.is_extension_supported(
+                                ti.cfg.arch, ti.extension.dynamic_index):
                 return ti.global_subscript_with_offset(self.entries[0], (i, j),
-                                                self.m, True)
+                                                       self.m, True)
             else:
                 return self(i, j)
 
@@ -1046,7 +1064,8 @@ class Matrix(TaichiOperations):
         if m is None:
             return Vector([ti.cast(0, dt) for _ in range(n)])
         else:
-            return Matrix([[ti.cast(0, dt) for _ in range(m)] for _ in range(n)])
+            return Matrix([[ti.cast(0, dt) for _ in range(m)]
+                           for _ in range(n)])
 
     @staticmethod
     @taichi_scope

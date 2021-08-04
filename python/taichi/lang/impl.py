@@ -172,8 +172,9 @@ def local_subscript_with_offset(var, indices):
 @taichi_scope
 def global_subscript_with_offset(var, indices, cols, is_aos):
     return Expr(
-        _ti_core.global_subscript_with_offset(var.ptr, make_expr_group(*indices),
-                                       cols, is_aos))
+        _ti_core.global_subscript_with_offset(var.ptr,
+                                              make_expr_group(*indices), cols,
+                                              is_aos))
 
 
 @taichi_scope

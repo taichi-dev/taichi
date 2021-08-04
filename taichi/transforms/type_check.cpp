@@ -77,15 +77,23 @@ class TypeCheck : public IRVisitor {
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     TI_ASSERT_INFO(stmt->src.size() == 1, "Vectorization has been disabled.")
-    TI_ASSERT(stmt->src[0].var->is<AllocaStmt>() || stmt->src[0].var->is<PtrOffsetStmt>())
+    TI_ASSERT(stmt->src[0].var->is<AllocaStmt>() ||
+              stmt->src[0].var->is<PtrOffsetStmt>())
     if (auto ptr_offset_stmt = stmt->src[0].var->cast<PtrOffsetStmt>()) {
-      TI_ASSERT(ptr_offset_stmt->origin->is<AllocaStmt>() || ptr_offset_stmt->origin->is<GlobalTemporaryStmt>())
+      TI_ASSERT(ptr_offset_stmt->origin->is<AllocaStmt>() ||
+                ptr_offset_stmt->origin->is<GlobalTemporaryStmt>())
       if (auto alloca_stmt = ptr_offset_stmt->origin->cast<AllocaStmt>()) {
-        auto lookup = DataType(alloca_stmt->ret_type->as<TensorType>()->get_element_type()).ptr_removed();
+        auto lookup =
+            DataType(
+                alloca_stmt->ret_type->as<TensorType>()->get_element_type())
+                .ptr_removed();
         stmt->ret_type = lookup;
       }
-      if (auto global_temporary_stmt = ptr_offset_stmt->origin->cast<GlobalTemporaryStmt>()) {
-        auto lookup = DataType(global_temporary_stmt->ret_type->as<TensorType>()->get_element_type()).ptr_removed();
+      if (auto global_temporary_stmt =
+              ptr_offset_stmt->origin->cast<GlobalTemporaryStmt>()) {
+        auto lookup = DataType(global_temporary_stmt->ret_type->as<TensorType>()
+                                   ->get_element_type())
+                          .ptr_removed();
         stmt->ret_type = lookup;
       }
     } else {
@@ -95,7 +103,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    if (stmt->dest->is<PtrOffsetStmt>() && stmt->dest->cast<PtrOffsetStmt>()->is_local_ptr()) {
+    if (stmt->dest->is<PtrOffsetStmt>() &&
+        stmt->dest->cast<PtrOffsetStmt>()->is_local_ptr()) {
       auto dst_value_type = stmt->dest->ret_type.ptr_removed();
       if (dst_value_type->is<CustomIntType>() ||
           dst_value_type->is<CustomFloatType>()) {

@@ -73,10 +73,11 @@ class LowerAST : public IRVisitor {
               block->local_var_to_stmt.end());
     if (stmt->ret_type->is<TensorType>()) {
       auto tensor_type = stmt->ret_type->cast<TensorType>();
-      auto lowered = std::make_unique<AllocaStmt>(tensor_type->get_shape(), tensor_type->get_element_type());
+      auto lowered = std::make_unique<AllocaStmt>(
+          tensor_type->get_shape(), tensor_type->get_element_type());
       block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
       stmt->parent->replace_with(stmt, std::move(lowered));
-    }  else {
+    } else {
       auto lowered = std::make_unique<AllocaStmt>(stmt->ret_type);
       block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
       stmt->parent->replace_with(stmt, std::move(lowered));

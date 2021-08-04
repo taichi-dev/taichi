@@ -168,7 +168,8 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
       if (auto global_tensor_element =
               global_store->dest->cast<PtrOffsetStmt>()) {
         if (global_tensor_element->is_unlowered_global_ptr()) {
-          if (auto dest = global_tensor_element->origin->cast<GlobalPtrStmt>()) {
+          if (auto dest =
+                  global_tensor_element->origin->cast<GlobalPtrStmt>()) {
             for (auto &snode : dest->snodes.data) {
               meta.output_states.insert(
                   ir_bank->get_async_state(snode, AsyncState::Type::value));

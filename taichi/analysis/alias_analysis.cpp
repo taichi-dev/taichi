@@ -19,21 +19,24 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
   auto retrieve_local = [&](Stmt *var) {
     if (var->is<AllocaStmt>()) {
       return var;
-    } else if (var->is<PtrOffsetStmt>() && var->cast<PtrOffsetStmt>()->is_local_ptr()) {
+    } else if (var->is<PtrOffsetStmt>() &&
+               var->cast<PtrOffsetStmt>()->is_local_ptr()) {
       return var->cast<PtrOffsetStmt>()->origin;
     } else {
       return (Stmt *)nullptr;
     }
   };
-  Stmt* origin1 = retrieve_local(var1);
-  Stmt* origin2 = retrieve_local(var2);
+  Stmt *origin1 = retrieve_local(var1);
+  Stmt *origin2 = retrieve_local(var2);
   if (origin1 != nullptr && origin2 != nullptr) {
     if (origin1 == origin2)
       return AliasResult::uncertain;
     if (origin1->is<AllocaStmt>() || origin2->is<AllocaStmt>())
       return AliasResult::different;
-    TI_ASSERT(origin1->is<GlobalTemporaryStmt>() && origin2->is<GlobalTemporaryStmt>())
-    if (origin1->cast<GlobalTemporaryStmt>()->offset == origin2->cast<GlobalTemporaryStmt>()->offset) {
+    TI_ASSERT(origin1->is<GlobalTemporaryStmt>() &&
+              origin2->is<GlobalTemporaryStmt>())
+    if (origin1->cast<GlobalTemporaryStmt>()->offset ==
+        origin2->cast<GlobalTemporaryStmt>()->offset) {
       return AliasResult::uncertain;
     } else {
       return AliasResult::different;

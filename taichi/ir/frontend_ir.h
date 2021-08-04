@@ -31,7 +31,10 @@ class FrontendAllocaStmt : public Stmt {
     ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
   }
 
-  FrontendAllocaStmt(const Identifier &lhs, std::vector<int> shape, DataType element) : ident(lhs) {
+  FrontendAllocaStmt(const Identifier &lhs,
+                     std::vector<int> shape,
+                     DataType element)
+      : ident(lhs) {
     ret_type = DataType(TypeFactory::create_tensor_type(shape, element));
   }
 
@@ -473,7 +476,7 @@ class LocalTensorElementExpression : public Expression {
   ExprGroup indices;
 
   LocalTensorElementExpression(const Expr &var, const ExprGroup &indices)
-    : var(var), indices(indices) {
+      : var(var), indices(indices) {
   }
 
   std::string serialize() override {

@@ -140,9 +140,12 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
       auto origin_address = builder->CreatePtrToInt(
           llvm_val[stmt], llvm::Type::getInt64Ty(*llvm_context));
       int address_offset = i * data_type_size(tensor_type->get_element_type());
-      auto target_address = builder->CreateAdd(origin_address, tlctx->get_constant((int64)address_offset));
-      auto target_ptr = builder->CreateIntToPtr(target_address, llvm::PointerType::get(type, 0));
-      builder->CreateStore(tlctx->get_constant(tensor_type->get_element_type(), 0), target_ptr);
+      auto target_address = builder->CreateAdd(
+          origin_address, tlctx->get_constant((int64)address_offset));
+      auto target_ptr = builder->CreateIntToPtr(
+          target_address, llvm::PointerType::get(type, 0));
+      builder->CreateStore(
+          tlctx->get_constant(tensor_type->get_element_type(), 0), target_ptr);
     }
   } else {
     TI_ASSERT(stmt->width() == 1);
@@ -1871,7 +1874,9 @@ void CodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
   TI_ASSERT(stmt->width() == 1 || stmt->ret_type->is<TensorType>());
   if (stmt->ret_type->is<TensorType>()) {
     auto ptr_type = llvm::PointerType::get(
-        tlctx->get_data_type(stmt->ret_type->cast<TensorType>()->get_element_type()), 0);
+        tlctx->get_data_type(
+            stmt->ret_type->cast<TensorType>()->get_element_type()),
+        0);
     llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
   } else {
     auto ptr_type = llvm::PointerType::get(

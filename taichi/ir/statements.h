@@ -320,7 +320,8 @@ class PtrOffsetStmt : public Stmt {
 
   bool is_local_ptr() const {
     if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>()) {
-      TI_ASSERT_INFO(origin->ret_type->is<TensorType>(), "PtrOffsetStmt can only be used for Alloca (TensorType).")
+      TI_ASSERT_INFO(origin->ret_type->is<TensorType>(),
+                     "PtrOffsetStmt can only be used for Alloca (TensorType).")
     }
     return origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>();
   }
@@ -564,7 +565,9 @@ class LocalStoreStmt : public Stmt {
   Stmt *val;
 
   LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
-    TI_ASSERT(dest->is<AllocaStmt>() || (dest->is<PtrOffsetStmt>() && dest->cast<PtrOffsetStmt>()->is_local_ptr()));
+    TI_ASSERT(dest->is<AllocaStmt>() ||
+              (dest->is<PtrOffsetStmt>() &&
+               dest->cast<PtrOffsetStmt>()->is_local_ptr()));
     TI_STMT_REG_FIELDS;
   }
 

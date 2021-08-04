@@ -176,7 +176,7 @@ class VectorType : public Type {
   Type *element_{nullptr};
 };
 
-class TensorType: public Type {
+class TensorType : public Type {
  public:
   TensorType(std::vector<int> shape, Type *element)
       : shape_(std::move(shape)), element_(element) {
@@ -201,7 +201,7 @@ class TensorType: public Type {
 
  private:
   std::vector<int> shape_;
-  Type* element_{nullptr};
+  Type *element_{nullptr};
 };
 
 class CustomIntType : public Type {

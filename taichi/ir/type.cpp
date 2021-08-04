@@ -94,8 +94,6 @@ std::string TensorType::to_string() const {
 int Type::vector_width() const {
   if (auto vec = cast<VectorType>()) {
     return vec->get_num_elements();
-  } else if (auto tensor = cast<TensorType>()) {
-      return tensor->get_num_elements();
   } else {
     return 1;
   }

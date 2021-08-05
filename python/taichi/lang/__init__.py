@@ -18,8 +18,8 @@ from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
-from taichi.snode.fields_builder import FieldsBuilder
 from taichi.misc.util import deprecated
+from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
 
@@ -66,12 +66,14 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
 # Legacy API
 type_factory_ = _ti_core.get_type_factory_instance()
 
+
 @deprecated('kernel_profiler_print()', 'print_kernel_profiler()')
 def kernel_profiler_print():
     return print_kernel_profiler()
 
+
 def print_kernel_profiler():
-    """Print the elapsed time(min,max,avg) of Taichi kernels on devices. 
+    """Print the elapsed time(min,max,avg) of Taichi kernels on devices.
     To enable this profiler, set `kernel_profiler=True` in `ti.init`.
 
     Example::
@@ -87,7 +89,7 @@ def print_kernel_profiler():
 
         >>> compute()
         >>> ti.print_kernel_profiler() #[1]
-    
+
     Note:
         [1] Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
@@ -108,7 +110,7 @@ def query_kernel_profiler(name):
     Example::
 
         >>> import taichi as ti
- 
+
         >>> ti.init(ti.cpu, kernel_profiler=True)
         >>> n = 1024*1024
         >>> var = ti.field(ti.f32, shape=n)
@@ -127,25 +129,28 @@ def query_kernel_profiler(name):
         >>> print("kernel elapsed time(min_in_ms) =",query_result.min)
         >>> print("kernel elapsed time(max_in_ms) =",query_result.max)
         >>> print("kernel elapsed time(avg_in_ms) =",query_result.avg)
-    
+
     Note:
-        [1] To get the correct result, query_kernel_profiler() must be used in conjunction with 
+        [1] To get the correct result, query_kernel_profiler() must be used in conjunction with
         clear_kernel_profiler().
-        
+
         [2] Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
     """
     return impl.get_runtime().prog.query_kernel_profiler(name)
 
+
 @deprecated('kernel_profiler_clear()', 'clear_kernel_profiler()')
 def kernel_profiler_clear():
     return clear_kernel_profiler()
+
 
 def clear_kernel_profiler():
     """
     Clear all KernelProfiler records.
     """
     impl.get_runtime().prog.clear_kernel_profiler()
+
 
 def kernel_profiler_total_time():
     """
@@ -160,6 +165,7 @@ def kernel_profiler_total_time():
 @deprecated('memory_profiler_print()', 'print_memory_profiler()')
 def memory_profiler_print():
     return print_memory_profiler()
+
 
 def print_memory_profiler():
     """Memory profiling tool for LLVM backends with full sparse support.

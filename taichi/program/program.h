@@ -132,7 +132,7 @@ class Program {
 
   ~Program();
 
-  void kernel_profiler_print() {
+  void print_kernel_profiler() {
     profiler->print();
   }
 
@@ -150,7 +150,7 @@ class Program {
     return query_result;
   }
 
-  void kernel_profiler_clear() {
+  void clear_kernel_profiler() {
     profiler->clear();
   }
 

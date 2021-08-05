@@ -176,7 +176,7 @@ def set_gdb_trigger(on=True):
 
 
 def print_profile_info():
-    """Print time elasped on the host tasks in a hierarchical format.
+    """Print time elapsed on the host tasks in a hierarchical format.
 
     This profiler is automatically on.
 
@@ -198,7 +198,7 @@ def print_profile_info():
 
 
 def clear_profile_info():
-    """Clear profiler's records about time elasped on the host tasks.
+    """Clear profiler's records about time elapsed on the host tasks.
 
     Call function imports from C++ : _ti_core.clear_profile_info()
     """
@@ -241,7 +241,7 @@ def get_kernel_stats():
 def print_async_stats(include_kernel_profiler=False):
     import taichi as ti
     if include_kernel_profiler:
-        ti.kernel_profiler_print()
+        ti.print_kernel_profiler()
         print()
     stat = ti.get_kernel_stats()
     counters = stat.get_counters()

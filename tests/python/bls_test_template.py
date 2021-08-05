@@ -98,7 +98,7 @@ def bls_test_template(dim,
 
     check()
 
-    ti.kernel_profiler_print()
+    ti.print_kernel_profiler()
 
     assert mismatch[None] == 0
 

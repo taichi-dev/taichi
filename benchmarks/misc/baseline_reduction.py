@@ -41,12 +41,9 @@ def reduction(arch, dtype, dsize, repeat=10):
 
     # compile the kernel first
     reduction(n)
-    ti.sync()
-    ti.kernel_profiler_clear()
-    ti.sync()
+    ti.clear_kernel_profiler()
     for i in range(repeat):
         reduction(n)
-    ti.sync()
     kernelname = reduction.__name__
     suffix = "_c"
     quering_result = ti.query_kernel_profiler(kernelname + suffix)

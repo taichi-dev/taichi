@@ -19,6 +19,7 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
 from taichi.snode.fields_builder import FieldsBuilder
+from taichi.misc.util import deprecated
 
 import taichi as ti
 
@@ -59,20 +60,111 @@ wasm = _ti_core.wasm
 vulkan = _ti_core.vulkan
 gpu = [cuda, metal, opengl, vulkan]
 cpu = _ti_core.host_arch()
-kernel_profiler_print = lambda: impl.get_runtime().prog.kernel_profiler_print()
-query_kernel_profiler = lambda name: impl.get_runtime(
-).prog.query_kernel_profiler(name)
-kernel_profiler_clear = lambda: impl.get_runtime().prog.kernel_profiler_clear()
-kernel_profiler_total_time = lambda: impl.get_runtime(
-).prog.kernel_profiler_total_time()
 timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()
 timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
 
 # Legacy API
 type_factory_ = _ti_core.get_type_factory_instance()
 
+@deprecated('kernel_profiler_print()', 'print_kernel_profiler()')
+def kernel_profiler_print():
+    return print_kernel_profiler()
 
+def print_kernel_profiler():
+    """Print the elapsed time(min,max,avg) of Taichi kernels on devices. 
+    To enable this profiler, set `kernel_profiler=True` in `ti.init`.
+
+    Example::
+
+        >>> import taichi as ti
+
+        >>> ti.init(ti.cpu, kernel_profiler=True)
+        >>> var = ti.field(ti.f32, shape=1)
+
+        >>> @ti.kernel
+        >>> def compute():
+        >>>     var[0] = 1.0
+
+        >>> compute()
+        >>> ti.print_kernel_profiler() #[1]
+    
+    Note:
+        [1] Currently the result of `KernelProfiler` could be incorrect on OpenGL
+        backend due to its lack of support for `ti.sync()`.
+    """
+    impl.get_runtime().prog.print_kernel_profiler()
+
+
+def query_kernel_profiler(name):
+    """Query kernel elapsed time(min,avg,max) on devices using the kernel name.
+    To enable this profiler, set `kernel_profiler=True` in `ti.init`.
+
+    Args:
+        name (str): kernel name.
+
+    Returns:
+        struct KernelProfilerQueryResult with member varaibles(counter, min, max, avg)
+
+    Example::
+
+        >>> import taichi as ti
+ 
+        >>> ti.init(ti.cpu, kernel_profiler=True)
+        >>> n = 1024*1024
+        >>> var = ti.field(ti.f32, shape=n)
+
+        >>> @ti.kernel
+        >>> def fill():
+        >>>     for i in range(n):
+        >>>         var[i] = 0.1
+
+        >>> fill()
+        >>> ti.clear_kernel_profiler() #[1]
+        >>> for i in range(100):
+        >>>     fill()
+        >>> query_result = ti.query_kernel_profiler(fill.__name__) #[2]
+        >>> print("kernel excuted times =",query_result.counter)
+        >>> print("kernel elapsed time(min_in_ms) =",query_result.min)
+        >>> print("kernel elapsed time(max_in_ms) =",query_result.max)
+        >>> print("kernel elapsed time(avg_in_ms) =",query_result.avg)
+    
+    Note:
+        [1] To get the correct result, query_kernel_profiler() must be used in conjunction with 
+        clear_kernel_profiler().
+        
+        [2] Currently the result of `KernelProfiler` could be incorrect on OpenGL
+        backend due to its lack of support for `ti.sync()`.
+    """
+    return impl.get_runtime().prog.query_kernel_profiler(name)
+
+@deprecated('kernel_profiler_clear()', 'clear_kernel_profiler()')
+def kernel_profiler_clear():
+    return clear_kernel_profiler()
+
+def clear_kernel_profiler():
+    """
+    Clear all KernelProfiler records.
+    """
+    impl.get_runtime().prog.clear_kernel_profiler()
+
+def kernel_profiler_total_time():
+    """
+    Get elapsed time of all kernels recorded in KernelProfiler.
+
+    Returns:
+        time (double): total time in second
+    """
+    return impl.get_runtime().prog.kernel_profiler_total_time()
+
+
+@deprecated('memory_profiler_print()', 'print_memory_profiler()')
 def memory_profiler_print():
+    return print_memory_profiler()
+
+def print_memory_profiler():
+    """Memory profiling tool for LLVM backends with full sparse support.
+    This profiler is automatically on.
+    """
     impl.get_runtime().materialize()
     impl.get_runtime().prog.print_memory_profiler_info()
 
@@ -505,7 +597,7 @@ def benchmark(func, repeat=300, args=()):
         for i in range(3):
             func(*args)
             ti.sync()
-        ti.kernel_profiler_clear()
+        ti.clear_kernel_profiler()
         t = time.time()
         for n in range(repeat):
             func(*args)

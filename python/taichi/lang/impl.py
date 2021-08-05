@@ -501,7 +501,6 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
         offset (Union[int, tuple[int]], optional): offset of the field domain
         needs_grad (bool, optional): whether this field participates in autodiff
             and thus needs an adjoint field to store the gradients.
-        use_snode (bool, optional): whether to use SNode as underlying implementation
 
     Example:
         The code below shows how a Taichi field can be declared and defined::

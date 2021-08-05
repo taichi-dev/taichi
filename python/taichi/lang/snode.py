@@ -7,8 +7,7 @@ import numbers
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.expr import Expr
-from taichi.lang.field import SNodeField
-from taichi.lang.util import is_taichi_class
+from taichi.lang.field import Field
 from taichi.misc.util import deprecated
 
 
@@ -156,7 +155,7 @@ class SNode:
             self.ptr.begin_shared_exp_placement()
 
         for arg in args:
-            if isinstance(arg, SNodeField):
+            if isinstance(arg, Field):
                 for var in arg.get_field_members():
                     self.ptr.place(var.ptr, offset)
             elif isinstance(arg, list):

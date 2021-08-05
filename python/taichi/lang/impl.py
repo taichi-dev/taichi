@@ -6,7 +6,7 @@ import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.field import SNodeField
+from taichi.lang.field import Field, ScalarField, MatrixField
 from taichi.lang.snode import SNode
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
@@ -65,7 +65,7 @@ def expr_init_list(xs, expected):
 @taichi_scope
 def expr_init_func(
         rhs):  # temporary solution to allow passing in fields as arguments
-    if isinstance(rhs, SNodeField):
+    if isinstance(rhs, Field):
         return rhs
     return expr_init(rhs)
 
@@ -123,7 +123,7 @@ def subscript(value, *indices):
     indices_expr_group = make_expr_group(*indices)
     index_dim = indices_expr_group.size()
 
-    if isinstance(value, SNodeField):
+    if isinstance(value, Field):
         var = value.get_field_members()[0].ptr
         if var.snode() is None:
             if var.is_primal():
@@ -133,8 +133,8 @@ def subscript(value, *indices):
         field_dim = int(var.get_attribute("dim"))
         if field_dim != index_dim:
             raise IndexError(f'Field with dim {field_dim} accessed with indices of dim {index_dim}')
-        if value.is_tensor:
-            return ti.Matrix.with_entries(*value.tensor_shape, [Expr(_ti_core.subscript(e.ptr, indices_expr_group)) for e in value.get_field_members()])
+        if isinstance(value, MatrixField):
+            return ti.Matrix.with_entries(value.n, value.m, [Expr(_ti_core.subscript(e.ptr, indices_expr_group)) for e in value.get_field_members()])
         else:
             return Expr(_ti_core.subscript(var, indices_expr_group))
     elif is_taichi_class(value):
@@ -484,7 +484,7 @@ def var(dt, shape=None, offset=None, needs_grad=False):
 
 
 @python_scope
-def field(dtype, shape=None, name="", offset=None, needs_grad=False, use_snode=True):
+def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     """Defines a Taichi field
 
     A Taichi field can be viewed as an abstract N-dimensional array, hiding away
@@ -530,9 +530,8 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False, use_snode=T
 
     del _taichi_skip_traceback
 
-    assert use_snode, "Only SNode Field is supported now"
     x, x_grad = create_field_member(dtype, name)
-    x, x_grad = SNodeField([x], ()), SNodeField([x_grad], ())
+    x, x_grad = ScalarField(x), ScalarField(x_grad)
     x.set_grad(x_grad)
 
     if shape is not None:
@@ -776,7 +775,7 @@ def static(x, *xs):
         return x
     elif isinstance(x, Expr) and x.is_global():
         return x
-    elif isinstance(x, SNodeField):
+    elif isinstance(x, Field):
         return x
     elif isinstance(x, (types.FunctionType, types.MethodType)):
         return x

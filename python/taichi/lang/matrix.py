@@ -8,7 +8,7 @@ from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.field import SNodeField, SNodeFieldHostAccess
+from taichi.lang.field import ScalarField, MatrixField, SNodeHostAccess
 from taichi.lang.util import (in_python_scope, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
 from taichi.misc.util import deprecated, warning
@@ -248,7 +248,7 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         assert kwargs == {}
         ret = self.entries[self.linearize_entry_id(*args)]
-        if isinstance(ret, SNodeFieldHostAccess):
+        if isinstance(ret, SNodeHostAccess):
             ret = ret.accessor.getter(*ret.key)
         return ret
 
@@ -257,7 +257,7 @@ class Matrix(TaichiOperations):
         if impl.inside_kernel():
             self.entries[idx].assign(e)
         else:
-            if isinstance(self.entries[idx], SNodeFieldHostAccess):
+            if isinstance(self.entries[idx], SNodeHostAccess):
                 self.entries[idx].accessor.setter(e, *self.entries[idx].key)
             else:
                 self.entries[idx] = e
@@ -342,7 +342,7 @@ class Matrix(TaichiOperations):
     @property
     @python_scope
     def value(self):
-        assert isinstance(self.entries[0], SNodeFieldHostAccess)
+        assert isinstance(self.entries[0], SNodeHostAccess)
         ret = self.empty_copy()
         for i in range(self.n):
             for j in range(self.m):
@@ -869,7 +869,7 @@ class Matrix(TaichiOperations):
             for _ in range(n * m):
                 entries.append(impl.create_field_member(dtype, name=name))
         entries, entries_grad = zip(*entries)
-        entries, entries_grad = SNodeField(entries, (n, m)), SNodeField(entries_grad, (n, m))
+        entries, entries_grad = MatrixField(entries, n, m), MatrixField(entries_grad, n, m)
         entries.set_grad(entries_grad)
 
         if layout is not None:
@@ -894,10 +894,10 @@ class Matrix(TaichiOperations):
             dim = len(shape)
             if layout.soa:
                 for e in entries.get_field_members():
-                    ti.root.dense(impl.index_nd(dim), shape).place(SNodeField(e, ()), offset=offset)
+                    ti.root.dense(impl.index_nd(dim), shape).place(ScalarField(e), offset=offset)
                 if needs_grad:
                     for e in entries_grad.get_field_members():
-                        ti.root.dense(impl.index_nd(dim), shape).place(SNodeField(e, ()), offset=offset)
+                        ti.root.dense(impl.index_nd(dim), shape).place(ScalarField(e), offset=offset)
             else:
                 ti.root.dense(impl.index_nd(dim), shape).place(entries, offset=offset)
                 if needs_grad:

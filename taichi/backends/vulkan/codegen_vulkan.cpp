@@ -352,7 +352,7 @@ class TaskCodegen : public IRVisitor {
       buffer_ptr = at_buffer(stmt->dest, dt);
     }
 
-    auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
+    const auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
     if (buffer_ptr.stype.element_type_id == val.stype.id) {
       // No bit cast
       ir_->store_variable(buffer_ptr, val);
@@ -376,7 +376,7 @@ class TaskCodegen : public IRVisitor {
       buffer_ptr = at_buffer(stmt->src, dt);
     }
 
-    auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
+    const auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
     if (buffer_ptr.stype.element_type_id == val.stype.id) {
       // No bit cast
       val = ir_->load_variable(buffer_ptr, primitive_buffer_type);

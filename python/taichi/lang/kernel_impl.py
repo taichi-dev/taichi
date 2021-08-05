@@ -12,7 +12,7 @@ from taichi.lang.ast_checker import KernelSimplicityASTChecker
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.transformer import ASTTransformer
+from taichi.lang.transformer import ASTTransformerTotal
 from taichi.misc.util import obsolete
 
 import taichi as ti
@@ -44,7 +44,7 @@ def func(fn):
     will JIT compile it into native instructions.
 
     Args:
-        fn (Callable): the Python function to be decorated
+        fn (Callable): The Python function to be decorated
 
     Returns:
         Callable: The decorated function
@@ -83,7 +83,7 @@ def pyfunc(fn):
     See also :func:`~taichi.lang.kernel_impl.func`.
 
     Args:
-        fn (Callable): the Python function to be decorated
+        fn (Callable): The Python function to be decorated
 
     Returns:
         Callable: The decorated function
@@ -169,7 +169,7 @@ class Func:
         func_body = tree.body[0]
         func_body.decorator_list = []
 
-        visitor = ASTTransformer(is_kernel=False, func=self)
+        visitor = ASTTransformerTotal(is_kernel=False, func=self)
         visitor.visit(tree)
 
         ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
@@ -410,7 +410,7 @@ class Kernel:
         if self.is_grad:
             KernelSimplicityASTChecker(self.func).visit(tree)
 
-        visitor = ASTTransformer(
+        visitor = ASTTransformerTotal(
             excluded_parameters=self.template_slot_locations,
             func=self,
             arg_features=arg_features)
@@ -677,6 +677,8 @@ def kernel(fn):
     Taichi into native CPU/GPU instructions (e.g. a series of CUDA kernels).
     The top-level ``for`` loops are automatically parallelized, and distributed
     to either a CPU thread pool or massively parallel GPUs.
+
+    Kernel's gradient kernel would be generated automatically by the AutoDiff system.
 
     See also https://docs.taichi.graphics/docs/lang/articles/basic/syntax#kernels.
 

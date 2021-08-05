@@ -162,7 +162,7 @@ VkShaderModule create_shader_module(VkDevice device,
 VulkanDevice::VulkanDevice(const Params &params) : rep_(params) {
 }
 
-ManagedVulkanDevice::ManagedVulkanDevice(const Params &params) {
+EmbeddedVulkanDevice::EmbeddedVulkanDevice(const Params &params) {
   if (!VulkanLoader::instance().init()) {
     throw std::runtime_error("Error loading vulkan");
   }
@@ -178,10 +178,12 @@ ManagedVulkanDevice::ManagedVulkanDevice(const Params &params) {
   dparams.compute_queue = compute_queue_;
   dparams.command_pool = command_pool_;
   owned_device_ = std::make_unique<VulkanDevice>(dparams);
+#ifdef TI_VULKAN_DEBUG
   owned_device_->set_debug_struct(&debug_struct_);
+#endif
 }
 
-ManagedVulkanDevice::~ManagedVulkanDevice() {
+EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
 #ifdef TI_VULKAN_DEBUG
   if (capability_.has_presentation) {
     vkDestroySemaphore(device_, debug_struct_.image_available,
@@ -203,7 +205,7 @@ ManagedVulkanDevice::~ManagedVulkanDevice() {
   vkDestroyInstance(instance_, kNoVkAllocCallbacks);
 }
 
-void ManagedVulkanDevice::create_instance(const Params &params) {
+void EmbeddedVulkanDevice::create_instance(const Params &params) {
   VkApplicationInfo app_info{};
   app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   app_info.pApplicationName = "Taichi Vulkan Backend";
@@ -273,7 +275,7 @@ void ManagedVulkanDevice::create_instance(const Params &params) {
   VulkanLoader::instance().load_instance(instance_);
 }
 
-void ManagedVulkanDevice::setup_debug_messenger() {
+void EmbeddedVulkanDevice::setup_debug_messenger() {
   if constexpr (!kEnableValidationLayers) {
     return;
   }
@@ -286,7 +288,7 @@ void ManagedVulkanDevice::setup_debug_messenger() {
       "failed to set up debug messenger");
 }
 
-void ManagedVulkanDevice::pick_physical_device() {
+void EmbeddedVulkanDevice::pick_physical_device() {
   uint32_t device_count = 0;
   vkEnumeratePhysicalDevices(instance_, &device_count, nullptr);
   TI_ASSERT_INFO(device_count > 0, "failed to find GPUs with Vulkan support");
@@ -306,7 +308,7 @@ void ManagedVulkanDevice::pick_physical_device() {
   queue_family_indices_ = find_queue_families(physical_device_);
 }
 
-void ManagedVulkanDevice::create_logical_device() {
+void EmbeddedVulkanDevice::create_logical_device() {
   VkDeviceQueueCreateInfo queue_create_info{};
   queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queue_create_info.queueFamilyIndex =
@@ -391,8 +393,13 @@ void ManagedVulkanDevice::create_logical_device() {
       "this extension is not supported on the device");
 
   VkPhysicalDeviceFeatures device_features{};
+  device_features.shaderInt16 = false;
   device_features.shaderInt64 = true;
   device_features.shaderFloat64 = true;
+  capability_.has_int8 = false;
+  capability_.has_int16 = false;
+  capability_.has_int64 = true;
+  capability_.has_float64 = true;
 
   create_info.pEnabledFeatures = &device_features;
   create_info.enabledExtensionCount = enabled_extensions.size();
@@ -450,7 +457,7 @@ void ManagedVulkanDevice::create_logical_device() {
                    /*queueIndex=*/0, &compute_queue_);
 }
 
-void ManagedVulkanDevice::create_command_pool() {
+void EmbeddedVulkanDevice::create_command_pool() {
   VkCommandPoolCreateInfo pool_info{};
   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   pool_info.flags = 0;
@@ -483,7 +490,7 @@ void VulkanDevice::debug_frame_marker() const {
 #endif
 }
 
-void ManagedVulkanDevice::create_debug_swapchain() {
+void EmbeddedVulkanDevice::create_debug_swapchain() {
 #ifdef TI_VULKAN_DEBUG
   TI_TRACE("Creating debug swapchian");
   if (capability_.has_presentation) {

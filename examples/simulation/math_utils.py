@@ -4,7 +4,7 @@ import taichi as ti
 
 
 @ti.func
-def rand_vector(n):
+def rand_vector(n: ti.template()):
     '''
     Samples a n-dimensional random uniform vector.
     '''

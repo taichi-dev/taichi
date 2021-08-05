@@ -932,7 +932,8 @@ def rescale_index(a, b, I):
     """
     assert isinstance(a, Field), f"first argument must be a field"
     assert isinstance(b, Field), f"second argument must be a field"
-    assert isinstance(I, matrix.Matrix), f"third argument must be a grouped index"
+    assert isinstance(I,
+                      matrix.Matrix), f"third argument must be a grouped index"
     Ib = I.copy()
     for n in range(min(I.n, min(len(a.shape), len(b.shape)))):
         if a.shape[n] > b.shape[n]:

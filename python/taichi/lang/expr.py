@@ -1,7 +1,7 @@
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
-from taichi.lang.util import (is_taichi_class, python_scope)
+from taichi.lang.util import is_taichi_class, python_scope
 
 import taichi as ti
 

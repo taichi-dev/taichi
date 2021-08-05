@@ -8,7 +8,7 @@ from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.field import ScalarField, MatrixField, SNodeHostAccess
+from taichi.lang.field import MatrixField, ScalarField, SNodeHostAccess
 from taichi.lang.util import (in_python_scope, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
 from taichi.misc.util import deprecated, warning
@@ -273,8 +273,8 @@ class Matrix(TaichiOperations):
                       ti.Expr) and self.entries[0].ptr.is_global_ptr(
                       ) and ti.is_extension_supported(
                           ti.cfg.arch, ti.extension.dynamic_index):
-            return ti.subscript_with_offset(self.entries[0], (i, j),
-                                            self.m, True)
+            return ti.subscript_with_offset(self.entries[0], (i, j), self.m,
+                                            True)
         else:
             return self(i, j)
 
@@ -695,6 +695,7 @@ class Matrix(TaichiOperations):
         """
         def assign_renamed(x, y):
             return ti.assign(x, y)
+
         return self.element_wise_writeback_binary(assign_renamed, val)
 
     @python_scope
@@ -857,19 +858,22 @@ class Matrix(TaichiOperations):
                     dtype
                 ) == n, f'Please set correct dtype list for Vector. The shape of dtype list should be ({n}, ) instead of {np.shape(dtype)}'
                 for i in range(n):
-                    entries.append(impl.create_field_member(dtype[i], name=name))
+                    entries.append(
+                        impl.create_field_member(dtype[i], name=name))
             else:
                 assert len(np.shape(dtype)) == 2 and len(dtype) == n and len(
                     dtype[0]
                 ) == m, f'Please set correct dtype list for Matrix. The shape of dtype list should be ({n}, {m}) instead of {np.shape(dtype)}'
                 for i in range(n):
                     for j in range(m):
-                        entries.append(impl.create_field_member(dtype[i][j], name=name))
+                        entries.append(
+                            impl.create_field_member(dtype[i][j], name=name))
         else:
             for _ in range(n * m):
                 entries.append(impl.create_field_member(dtype, name=name))
         entries, entries_grad = zip(*entries)
-        entries, entries_grad = MatrixField(entries, n, m), MatrixField(entries_grad, n, m)
+        entries, entries_grad = MatrixField(entries, n, m), MatrixField(
+            entries_grad, n, m)
         entries.set_grad(entries_grad)
 
         if layout is not None:
@@ -894,14 +898,19 @@ class Matrix(TaichiOperations):
             dim = len(shape)
             if layout.soa:
                 for e in entries.get_field_members():
-                    ti.root.dense(impl.index_nd(dim), shape).place(ScalarField(e), offset=offset)
+                    ti.root.dense(impl.index_nd(dim),
+                                  shape).place(ScalarField(e), offset=offset)
                 if needs_grad:
                     for e in entries_grad.get_field_members():
-                        ti.root.dense(impl.index_nd(dim), shape).place(ScalarField(e), offset=offset)
+                        ti.root.dense(impl.index_nd(dim),
+                                      shape).place(ScalarField(e),
+                                                   offset=offset)
             else:
-                ti.root.dense(impl.index_nd(dim), shape).place(entries, offset=offset)
+                ti.root.dense(impl.index_nd(dim), shape).place(entries,
+                                                               offset=offset)
                 if needs_grad:
-                    ti.root.dense(impl.index_nd(dim), shape).place(entries_grad, offset=offset)
+                    ti.root.dense(impl.index_nd(dim),
+                                  shape).place(entries_grad, offset=offset)
         return entries
 
     @classmethod

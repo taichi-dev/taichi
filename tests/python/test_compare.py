@@ -132,7 +132,8 @@ def test_chain_compare():
         b[None] = 2
         c[None] = 3
         d[None] = 3
-        a[0] = c[None] == d[None] != b[None] < d[None] > b[None] >= b[None] <= c[None]
+        a[0] = c[None] == d[None] != b[None] < d[None] > b[None] >= b[
+            None] <= c[None]
         a[1] = b[None] <= c[None] != d[None] > b[None] == b[None]
 
     func()

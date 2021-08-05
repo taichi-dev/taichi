@@ -1,8 +1,10 @@
+import numbers
+
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.util import python_scope, to_numpy_type, to_pytorch_type
 from taichi.misc.util import warning
-import numbers
+
 import taichi as ti
 
 
@@ -203,7 +205,9 @@ class Field:
         if self.host_accessors:
             return
         impl.get_runtime().materialize()
-        self.host_accessors = [SNodeHostAccessor(e.ptr.snode()) for e in self.vars]
+        self.host_accessors = [
+            SNodeHostAccessor(e.ptr.snode()) for e in self.vars
+        ]
 
 
 class ScalarField(Field):
@@ -304,8 +308,10 @@ class MatrixField(Field):
             val (Union[Number, List, Tuple, Matrix]): Values to fill, which should have dimension consistent with `self`.
         """
         if isinstance(val, numbers.Number):
-            val = tuple([tuple([val for _ in range(self.m)]) for _ in range(self.n)])
-        elif isinstance(val, (list, tuple)) and isinstance(val[0], numbers.Number):
+            val = tuple(
+                [tuple([val for _ in range(self.m)]) for _ in range(self.n)])
+        elif isinstance(val,
+                        (list, tuple)) and isinstance(val[0], numbers.Number):
             assert self.m == 1
             val = tuple([(v, ) for v in val])
         elif isinstance(val, ti.Matrix):
@@ -407,7 +413,9 @@ class MatrixField(Field):
     def __getitem__(self, key):
         self.initialize_host_accessors()
         key = self.pad_key(key)
-        return ti.Matrix.with_entries(self.n, self.m, [SNodeHostAccess(e, key) for e in self.host_accessors])
+        return ti.Matrix.with_entries(
+            self.n, self.m,
+            [SNodeHostAccess(e, key) for e in self.host_accessors])
 
     def __repr__(self):
         # make interactive shell happy, prevent materialization
@@ -417,6 +425,7 @@ class MatrixField(Field):
 class SNodeHostAccessor:
     def __init__(self, snode):
         if _ti_core.is_real(snode.data_type()):
+
             def getter(*key):
                 assert len(key) == _ti_core.get_max_num_indices()
                 return snode.read_float(key)
@@ -426,10 +435,12 @@ class SNodeHostAccessor:
                 snode.write_float(key, value)
         else:
             if _ti_core.is_signed(snode.data_type()):
+
                 def getter(*key):
                     assert len(key) == _ti_core.get_max_num_indices()
                     return snode.read_int(key)
             else:
+
                 def getter(*key):
                     assert len(key) == _ti_core.get_max_num_indices()
                     return snode.read_uint(key)
@@ -437,6 +448,7 @@ class SNodeHostAccessor:
             def setter(value, *key):
                 assert len(key) == _ti_core.get_max_num_indices()
                 snode.write_int(key, value)
+
         self.getter = getter
         self.setter = setter
 

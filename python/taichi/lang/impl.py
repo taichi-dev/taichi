@@ -6,7 +6,7 @@ import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.field import Field, ScalarField, MatrixField
+from taichi.lang.field import Field, MatrixField, ScalarField
 from taichi.lang.snode import SNode
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
@@ -127,14 +127,22 @@ def subscript(value, *indices):
         var = value.get_field_members()[0].ptr
         if var.snode() is None:
             if var.is_primal():
-                raise RuntimeError(f"{var.get_expr_name()} has not been placed.")
+                raise RuntimeError(
+                    f"{var.get_expr_name()} has not been placed.")
             else:
-                raise RuntimeError(f"Gradient {var.get_expr_name()} has not been placed, check whether `needs_grad=True`")
+                raise RuntimeError(
+                    f"Gradient {var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
+                )
         field_dim = int(var.get_attribute("dim"))
         if field_dim != index_dim:
-            raise IndexError(f'Field with dim {field_dim} accessed with indices of dim {index_dim}')
+            raise IndexError(
+                f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
+            )
         if isinstance(value, MatrixField):
-            return ti.Matrix.with_entries(value.n, value.m, [Expr(_ti_core.subscript(e.ptr, indices_expr_group)) for e in value.get_field_members()])
+            return ti.Matrix.with_entries(value.n, value.m, [
+                Expr(_ti_core.subscript(e.ptr, indices_expr_group))
+                for e in value.get_field_members()
+            ])
         else:
             return Expr(_ti_core.subscript(var, indices_expr_group))
     elif is_taichi_class(value):
@@ -155,7 +163,9 @@ def subscript(value, *indices):
             )
         return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
     else:
-        raise TypeError('Subscription (e.g., "a[i, j]") only works on fields or external arrays.')
+        raise TypeError(
+            'Subscription (e.g., "a[i, j]") only works on fields or external arrays.'
+        )
 
 
 @taichi_scope
@@ -454,6 +464,7 @@ Example::
     >>> ti.root.pointer(ti.ij, 4).dense(ti.ij, 8).place(x)
 """
 
+
 @python_scope
 def create_field_member(dtype, name):
     dtype = cook_dtype(dtype)
@@ -476,6 +487,7 @@ def create_field_member(dtype, name):
         x.ptr.set_grad(x_grad.ptr)
 
     return x, x_grad
+
 
 @deprecated('ti.var', 'ti.field')
 def var(dt, shape=None, offset=None, needs_grad=False):

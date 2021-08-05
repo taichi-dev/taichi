@@ -227,9 +227,9 @@ class GUI:
 
         """
         import numpy as np
+        from taichi.lang.field import MatrixField, ScalarField
 
         import taichi as ti
-        from taichi.lang.field import ScalarField, MatrixField
 
         if self.fast_gui:
             assert isinstance(img, MatrixField), \

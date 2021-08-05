@@ -1,7 +1,8 @@
 from contextlib import contextmanager
 
 from taichi.lang import impl, kernel_arguments, kernel_impl
-from taichi.lang.field import ScalarField, MatrixField
+from taichi.lang.field import MatrixField, ScalarField
+
 
 class KernelTemplate:
     def __init__(self, kernel_fn, aot_module):

@@ -32,8 +32,10 @@ def test_custom_matrix_rotation():
 
     x = ti.Matrix.field(2, 2, dtype=cft)
 
-    ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(0, 0), x.get_scalar_field(0, 1))
-    ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(1, 0), x.get_scalar_field(1, 1))
+    ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(0, 0),
+                                          x.get_scalar_field(0, 1))
+    ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(1, 0),
+                                          x.get_scalar_field(1, 1))
 
     x[None] = [[1.0, 0.0], [0.0, 1.0]]
 

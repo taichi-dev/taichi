@@ -445,15 +445,16 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       LaneAttribute<TypedConstant> zero(std::vector<TypedConstant>(
           1, TypedConstant(tensor_type->get_element_type())));
       auto const_zero_stmt = replacement.push_back<ConstStmt>(zero);
+      stmt_to_offloaded[const_zero_stmt] = stmt_to_offloaded[stmt];
       for (int i = 0; i < tensor_type->get_num_elements(); ++i) {
         LaneAttribute<TypedConstant> offset(std::vector<TypedConstant>(
             1, TypedConstant(i *
                              data_type_size(tensor_type->get_element_type()))));
         auto const_offset_stmt = replacement.push_back<ConstStmt>(offset);
-        auto ptr_offset_stmt =
-            replacement.push_back<PtrOffsetStmt>(ptr, const_offset_stmt);
-        replacement.push_back<GlobalStoreStmt>(ptr_offset_stmt,
-                                               const_zero_stmt);
+        auto ptr_offset_stmt = replacement.push_back<PtrOffsetStmt>(ptr, const_offset_stmt);
+        replacement.push_back<GlobalStoreStmt>(ptr_offset_stmt, const_zero_stmt);
+        stmt_to_offloaded[const_offset_stmt] = stmt_to_offloaded[stmt];
+        stmt_to_offloaded[ptr_offset_stmt] = stmt_to_offloaded[stmt];
       }
     } else {
       LaneAttribute<TypedConstant> zeros(std::vector<TypedConstant>(
@@ -470,13 +471,18 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     auto alloca = stmt->origin;
     auto offset = stmt->offset;
 
+    // Deal with offset being cross offload ConstStmt.
+    // stmt_to_offloaded[stmt] is essential and might be changed during the current pass.
+    // stmt_to_offloaded[origin] is meaningless here, so we don't maintain the value.
     if (stmt_to_offloaded[offset] != stmt_to_offloaded[stmt]) {
+      // All other cases should have been
+      TI_ASSERT(offset->is<ConstStmt>())
       VecStatement replacement;
-      // TODO: offset may not be ConstStmt
       auto copy_stmt = offset->as<ConstStmt>()->copy();
       auto copy = replacement.push_back(std::move(copy_stmt));
       stmt_to_offloaded[copy] = stmt_to_offloaded[stmt];
       auto ptr_offset = replacement.push_back<PtrOffsetStmt>(alloca, copy);
+      stmt_to_offloaded[ptr_offset] = stmt_to_offloaded[stmt];
       stmt->parent->replace_with(stmt, std::move(replacement));
       throw IRModified();
     }
@@ -490,9 +496,11 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     VecStatement replacement;
     auto ret_type = alloca->cast<AllocaStmt>()->ret_type;
 
-    auto ptr = replacement.push_back<GlobalTemporaryStmt>(
+    auto global_temporary = replacement.push_back<GlobalTemporaryStmt>(
         local_to_global_offset[alloca], ret_type);
-    replacement.push_back<PtrOffsetStmt>(ptr, stmt->offset);
+    auto ptr_offset = replacement.push_back<PtrOffsetStmt>(global_temporary, stmt->offset);
+    stmt_to_offloaded[global_temporary] = stmt_to_offloaded[stmt];
+    stmt_to_offloaded[ptr_offset] = stmt_to_offloaded[stmt];
 
     stmt->parent->replace_with(stmt, std::move(replacement));
     throw IRModified();
@@ -509,15 +517,11 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       if (local_to_global_offset.find(alloca) != local_to_global_offset.end()) {
         // Converted to GlobalTemporaryStmt
         VecStatement replacement;
-        auto ptr = replacement.push_back<GlobalTemporaryStmt>(
+        auto global_temporary = replacement.push_back<GlobalTemporaryStmt>(
             local_to_global_offset[alloca], alloca->ret_type);
-        // TODO: offset may not be ConstStmt
-        auto copy_stmt = stmt->src[0]
-                             .var->as<PtrOffsetStmt>()
-                             ->offset->as<ConstStmt>()
-                             ->copy();
-        auto copy = replacement.push_back(std::move(copy_stmt));
-        auto ptr_offset = replacement.push_back<PtrOffsetStmt>(ptr, copy);
+        auto ptr_offset = replacement.push_back<PtrOffsetStmt>(global_temporary,
+             stmt->src[0].var->as<PtrOffsetStmt>()->offset);
+        stmt_to_offloaded[ptr_offset] = stmt_to_offloaded[stmt];
         replacement.push_back<GlobalLoadStmt>(ptr_offset);
 
         stmt->parent->replace_with(stmt, std::move(replacement));
@@ -551,13 +555,10 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       if (local_to_global_offset.find(alloca) != local_to_global_offset.end()) {
         // Converted to GlobalTemporaryStmt
         VecStatement replacement;
-        auto ptr = replacement.push_back<GlobalTemporaryStmt>(
+        auto global_temporary = replacement.push_back<GlobalTemporaryStmt>(
             local_to_global_offset[alloca], alloca->ret_type);
-        // TODO: offset may not be ConstStmt
-        auto copy_stmt =
-            stmt->dest->as<PtrOffsetStmt>()->offset->as<ConstStmt>()->copy();
-        auto copy = replacement.push_back(std::move(copy_stmt));
-        auto ptr_offset = replacement.push_back<PtrOffsetStmt>(ptr, copy);
+        auto ptr_offset = replacement.push_back<PtrOffsetStmt>(global_temporary, stmt->dest->as<PtrOffsetStmt>()->offset);
+        stmt_to_offloaded[ptr_offset] = stmt_to_offloaded[stmt];
         replacement.push_back<GlobalStoreStmt>(ptr_offset, stmt->val);
 
         stmt->parent->replace_with(stmt, std::move(replacement));
@@ -635,18 +636,14 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
         return false;
 
-      auto global_temporary_stmt = Stmt::make<GlobalTemporaryStmt>(
+      auto global_temporary = Stmt::make<GlobalTemporaryStmt>(
           local_to_global_offset[alloca], alloca->ret_type);
-      // TODO: offset may not be ConstStmt
-      auto copy_stmt = op->as<PtrOffsetStmt>()->offset->as<ConstStmt>()->copy();
-      auto ptr_offset_stmt = Stmt::make<PtrOffsetStmt>(
-          global_temporary_stmt.get(), copy_stmt.get());
-      stmt_to_offloaded[copy_stmt.get()] = stmt_to_offloaded[stmt];
-      stmt_to_offloaded[ptr_offset_stmt.get()] = stmt_to_offloaded[stmt];
-      stmt->set_operand(index, ptr_offset_stmt.get());
-      stmt->insert_before_me(std::move(copy_stmt));
-      stmt->insert_before_me(std::move(global_temporary_stmt));
-      stmt->insert_before_me(std::move(ptr_offset_stmt));
+      auto ptr_offset = Stmt::make<PtrOffsetStmt>(
+          global_temporary.get(), op->as<PtrOffsetStmt>()->offset);
+      stmt_to_offloaded[ptr_offset.get()] = stmt_to_offloaded[stmt];
+      stmt->set_operand(index, ptr_offset.get());
+      stmt->insert_before_me(std::move(global_temporary));
+      stmt->insert_before_me(std::move(ptr_offset));
       return true;
     }
 
@@ -814,12 +811,12 @@ void offload(IRNode *root, const CompileConfig &config) {
     FixCrossOffloadReferences::run(root, config, local_to_global_offset,
                                    stmt_to_offloaded, &offloaded_ranges);
   }
-  insert_gc(root, config);
-  // TODO(k-ye): Move this into its own pass. However, we need to wait for all
-  // backends to integrate with https://github.com/taichi-dev/taichi/pull/700
-  AssociateContinueScope::run(root);
-  type_check(root, config);
-  re_id(root);
+//  insert_gc(root, config);
+//  // TODO(k-ye): Move this into its own pass. However, we need to wait for all
+//  // backends to integrate with https://github.com/taichi-dev/taichi/pull/700
+//  AssociateContinueScope::run(root);
+//  type_check(root, config);
+//  re_id(root);
 }
 
 }  // namespace irpass

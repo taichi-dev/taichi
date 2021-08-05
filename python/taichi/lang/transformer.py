@@ -1,7 +1,6 @@
 import ast
 
 from taichi.lang import impl
-from taichi.lang.ast_builder_utils import parse_expr
 from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 
@@ -9,23 +8,17 @@ import taichi as ti
 
 
 # Total transform
-# TODO: ASTTransformerBase -> ASTTransformer
-# TODO: ASTTransformer -> ASTTransformerTotal
-class ASTTransformer(object):
-    def __init__(
-            self,
-            func=None,
-            excluded_parameters=(),
-            is_kernel=True,
-            is_classfunc=False,  # unused
-            arg_features=None):
+class ASTTransformerTotal(object):
+    def __init__(self,
+                 func=None,
+                 excluded_parameters=(),
+                 is_kernel=True,
+                 arg_features=None):
         self.func = func
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
         self.arg_features = arg_features
         self.pass_Checks = ASTTransformerChecks(func=func)
-        self.pass_transform_function_call = TransformFunctionCallAsStmt(
-            func=func)
 
     @staticmethod
     def print_ast(tree, title=None):
@@ -44,14 +37,11 @@ class ASTTransformer(object):
                              excluded_parameters=self.excluded_parameters,
                              is_kernel=self.is_kernel,
                              arg_features=self.arg_features)
+        # Convert Python AST to Python code that generates Taichi C++ AST.
         tree = build_stmt(ctx, tree)
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Preprocessed')
-        self.pass_Checks.visit(tree)
-        self.print_ast(tree, 'Checked')
-        self.pass_transform_function_call.visit(tree)
-        ast.fix_missing_locations(tree)
-        self.print_ast(tree, 'Final AST')
+        self.pass_Checks.visit(tree)  # does not modify the AST
 
 
 class ASTTransformerBase(ast.NodeTransformer):
@@ -73,7 +63,7 @@ class ASTTransformerBase(ast.NodeTransformer):
         return ''
 
 
-# Second-pass transform
+# Performs checks at the Python AST level. Does not modify the AST.
 class ASTTransformerChecks(ASTTransformerBase):
     def __init__(self, func):
         super().__init__(func)
@@ -105,15 +95,4 @@ class ASTTransformerChecks(ASTTransformerBase):
                 'Taichi functions/kernels cannot have multiple returns!'
                 ' Consider using a local variable to walk around.')
 
-        return node
-
-
-# Transform a standalone Taichi function call expression into a statement.
-class TransformFunctionCallAsStmt(ASTTransformerBase):
-    def __init__(self, func):
-        super().__init__(func)
-
-    def visit_Call(self, node):
-        node.args = [node.func] + node.args
-        node.func = parse_expr('ti.maybe_transform_ti_func_call_to_stmt')
         return node

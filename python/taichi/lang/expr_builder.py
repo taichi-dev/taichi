@@ -1,4 +1,5 @@
 import ast
+import warnings
 
 from taichi.lang.ast_builder_utils import *
 from taichi.lang.ast_resolver import ASTResolver
@@ -107,6 +108,24 @@ class ExprBuilder(Builder):
                 node.func = parse_expr('ti.ti_all')
             else:
                 pass
+
+        _taichi_skip_traceback = 1
+        ti_func = node.func
+        if '_sitebuiltins' == getattr(ti_func, '__module__', '') and getattr(
+                getattr(ti_func, '__class__', ''), '__name__',
+                '') == 'Quitter':
+            raise TaichiSyntaxError(
+                f'exit or quit not supported in Taichi-scope')
+        if getattr(ti_func, '__module__', '') == '__main__' and not getattr(
+                ti_func, '__wrapped__', ''):
+            warnings.warn(
+                f'Calling into non-Taichi function {ti_func.__name__}.'
+                ' This means that scope inside that function will not be processed'
+                ' by the Taichi transformer. Proceed with caution! '
+                ' Maybe you want to decorate it with @ti.func?',
+                UserWarning,
+                stacklevel=2)
+
         return node
 
     @staticmethod

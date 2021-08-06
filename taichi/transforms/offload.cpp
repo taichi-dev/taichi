@@ -316,8 +316,10 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     if (stmt->is<PtrOffsetStmt>()) {
       if (local_to_global.find(stmt->cast<PtrOffsetStmt>()->origin) ==
           local_to_global.end()) {
-        auto alloca_stmt = stmt->cast<PtrOffsetStmt>()->origin;
-        local_to_global[alloca_stmt] = allocate_global(alloca_stmt->ret_type);
+        if (stmt->cast<PtrOffsetStmt>()->origin->is<AllocaStmt>()) {
+          auto alloca_stmt = stmt->cast<PtrOffsetStmt>()->origin;
+          local_to_global[alloca_stmt] = allocate_global(alloca_stmt->ret_type);
+        }
       }
     } else {
       // stmt might be AllocaStmt, ExternalTensorShapeAlongAxisStmt
@@ -535,6 +537,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     }
 
     if (local_to_global_offset.find(op) == local_to_global_offset.end()) {
+      // For cases like ConstStmt
       auto copy = op->clone();
       stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];
       stmt->set_operand(index, copy.get());

@@ -227,7 +227,8 @@ class GUI:
 
         """
         import numpy as np
-        from taichi.lang.field import MatrixField, ScalarField
+        from taichi.lang.field import ScalarField
+        from taichi.lang.matrix import MatrixField
 
         import taichi as ti
 

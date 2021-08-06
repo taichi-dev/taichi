@@ -8,7 +8,7 @@ from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.field import MatrixField, ScalarField, SNodeHostAccess
+from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.util import (in_python_scope, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
 from taichi.misc.util import deprecated, warning
@@ -1124,3 +1124,157 @@ Vector.cross = Matrix.cross
 Vector.outer_product = Matrix.outer_product
 Vector.unit = Matrix.unit
 Vector.normalized = Matrix.normalized
+
+
+class MatrixField(Field):
+    """Taichi matrix field with SNode implementation.
+
+    Args:
+        vars (Expr): Field members.
+        n (Int): Number of rows.
+        m (Int): Number of columns.
+    """
+    def __init__(self, vars, n, m):
+        assert len(vars) == n * m
+        super().__init__(vars)
+        self.n = n
+        self.m = m
+
+    @deprecated('x(i, j)', 'x.get_scalar_field(i, j)')
+    def __call__(self, *indices):
+        return self.get_scalar_field(*indices)
+
+    def get_scalar_field(self, *indices):
+        """Creates a ScalarField using a specific field member. Only used for quant.
+
+        Args:
+            indices (Tuple[Int]): Specified indices of the field member.
+
+        Returns:
+            ScalarField: The result ScalarField.
+        """
+        assert len(indices) in [1, 2]
+        i = indices[0]
+        j = 0 if len(indices) == 1 else indices[1]
+        return ScalarField(self.vars[i * self.m + j])
+
+    @python_scope
+    def fill(self, val):
+        """Fills `self` with specific values.
+
+        Args:
+            val (Union[Number, List, Tuple, Matrix]): Values to fill, which should have dimension consistent with `self`.
+        """
+        if isinstance(val, numbers.Number):
+            val = tuple(
+                [tuple([val for _ in range(self.m)]) for _ in range(self.n)])
+        elif isinstance(val,
+                        (list, tuple)) and isinstance(val[0], numbers.Number):
+            assert self.m == 1
+            val = tuple([(v, ) for v in val])
+        elif isinstance(val, ti.Matrix):
+            val_tuple = []
+            for i in range(val.n):
+                row = []
+                for j in range(val.m):
+                    row.append(val(i, j))
+                row = tuple(row)
+                val_tuple.append(row)
+            val = tuple(val_tuple)
+        assert len(val) == self.n
+        assert len(val[0]) == self.m
+        from taichi.lang.meta import fill_matrix
+        fill_matrix(self, val)
+
+    @python_scope
+    def to_numpy(self, keep_dims=False, as_vector=None, dtype=None):
+        """Converts `self` to a numpy array.
+
+        Args:
+            keep_dims (bool, optional): Whether to keep the dimension after conversion.
+                When keep_dims=True, on an n-D matrix field, the numpy array always has n+2 dims, even for 1x1, 1xn, nx1 matrix fields.
+                When keep_dims=False, the resulting numpy array should skip the matrix dims with size 1.
+                For example, a 4x1 or 1x4 matrix field with 5x6x7 elements results in an array of shape 5x6x7x4.
+            as_vector (bool, deprecated): Whether to make the returned numpy array as a vector, i.e., with shape (n,) rather than (n, 1).
+                Note that this argument has been deprecated.
+                More discussion about `as_vector`: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858.
+            dtype (DataType, optional): The desired data type of returned numpy array.
+
+        Returns:
+            numpy.ndarray: The result numpy array.
+        """
+        if as_vector is not None:
+            warning(
+                'v.to_numpy(as_vector=True) is deprecated, '
+                'please use v.to_numpy() directly instead',
+                DeprecationWarning,
+                stacklevel=3)
+        if dtype is None:
+            dtype = to_numpy_type(self.dtype)
+        as_vector = self.m == 1 and not keep_dims
+        shape_ext = (self.n, ) if as_vector else (self.n, self.m)
+        import numpy as np
+        arr = np.zeros(self.shape + shape_ext, dtype=dtype)
+        from taichi.lang.meta import matrix_to_ext_arr
+        matrix_to_ext_arr(self, arr, as_vector)
+        ti.sync()
+        return arr
+
+    def to_torch(self, device=None, keep_dims=False):
+        """Converts `self` to a torch tensor.
+
+        Args:
+            device (torch.device, optional): The desired device of returned tensor.
+            keep_dims (bool, optional): Whether to keep the dimension after conversion.
+                See :meth:`~taichi.lang.field.MatrixField.to_numpy` for more detailed explanation.
+
+        Returns:
+            torch.tensor: The result torch tensor.
+        """
+        import torch
+        as_vector = self.m == 1 and not keep_dims
+        shape_ext = (self.n, ) if as_vector else (self.n, self.m)
+        arr = torch.empty(self.shape + shape_ext,
+                          dtype=to_pytorch_type(self.dtype),
+                          device=device)
+        from taichi.lang.meta import matrix_to_ext_arr
+        matrix_to_ext_arr(self, arr, as_vector)
+        ti.sync()
+        return arr
+
+    @python_scope
+    def from_numpy(self, arr):
+        if len(arr.shape) == len(self.shape) + 1:
+            as_vector = True
+            assert self.m == 1, "This is not a vector field"
+        else:
+            as_vector = False
+            assert len(arr.shape) == len(self.shape) + 2
+        dim_ext = 1 if as_vector else 2
+        assert len(arr.shape) == len(self.shape) + dim_ext
+        from taichi.lang.meta import ext_arr_to_matrix
+        ext_arr_to_matrix(arr, self, as_vector)
+        ti.sync()
+
+    @python_scope
+    def __setitem__(self, key, value):
+        self.initialize_host_accessors()
+        if not isinstance(value, (list, tuple)):
+            value = list(value)
+        if not isinstance(value[0], (list, tuple)):
+            value = [[i] for i in value]
+        for i in range(self.n):
+            for j in range(self.m):
+                self[key][i, j] = value[i][j]
+
+    @python_scope
+    def __getitem__(self, key):
+        self.initialize_host_accessors()
+        key = self.pad_key(key)
+        return Matrix.with_entries(
+            self.n, self.m,
+            [SNodeHostAccess(e, key) for e in self.host_accessors])
+
+    def __repr__(self):
+        # make interactive shell happy, prevent materialization
+        return f'<{self.n}x{self.m} ti.Matrix.field>'

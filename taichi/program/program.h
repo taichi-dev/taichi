@@ -132,7 +132,7 @@ class Program {
 
   ~Program();
 
-  void print_kernel_profiler() {
+  void print_kernel_profile_info() {
     profiler->print();
   }
 
@@ -143,14 +143,14 @@ class Program {
     double avg{0.0};
   };
 
-  KernelProfilerQueryResult query_kernel_profiler(const std::string &name) {
+  KernelProfilerQueryResult query_kernel_profile(const std::string &name) {
     KernelProfilerQueryResult query_result;
     profiler->query(name, query_result.counter, query_result.min,
                     query_result.max, query_result.avg);
     return query_result;
   }
 
-  void clear_kernel_profiler() {
+  void clear_kernel_profile() {
     profiler->clear();
   }
 

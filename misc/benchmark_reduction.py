@@ -32,4 +32,4 @@ for i in range(10):
 
 ground_truth = 10 * N * (N - 1) / 2 % 2**32
 assert tot[None] % 2**32 == ground_truth
-ti.print_kernel_profiler()
+ti.print_kernel_profile_info()

@@ -213,14 +213,14 @@ void export_lang(py::module &m) {
   py::class_<Program>(m, "Program")
       .def(py::init<>())
       .def_readonly("config", &Program::config)
-      .def("print_kernel_profiler", &Program::print_kernel_profiler)
-      .def("query_kernel_profiler",
+      .def("print_kernel_profile_info", &Program::print_kernel_profile_info)
+      .def("query_kernel_profile",
            [](Program *program, const std::string &name) {
-             return program->query_kernel_profiler(name);
+             return program->query_kernel_profile(name);
            })
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })
-      .def("clear_kernel_profiler", &Program::clear_kernel_profiler)
+      .def("clear_kernel_profile", &Program::clear_kernel_profile)
       .def("timeline_clear",
            [](Program *) { Timelines::get_instance().clear(); })
       .def("timeline_save",

@@ -15,4 +15,4 @@ bls_particle_grid(N=512,
                   pointer_level=2,
                   use_offset=True)
 
-ti.print_kernel_profiler()
+ti.print_kernel_profile_info()

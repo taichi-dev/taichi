@@ -30,4 +30,4 @@ def foo():
 for i in range(10):
     foo()
 
-ti.kernel_profiler_print()
+ti.print_kernel_profile_info()

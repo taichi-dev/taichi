@@ -25,7 +25,7 @@ class AllocaStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  AllocaStmt(std::vector<int> shape, DataType type) {
+  AllocaStmt(const std::vector<int> &shape, DataType type) {
     ret_type = TypeFactory::create_tensor_type(shape, type);
     TI_STMT_REG_FIELDS;
   }

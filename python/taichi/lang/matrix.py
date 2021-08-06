@@ -1069,7 +1069,7 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     @taichi_scope
-    def one(dt, n, m=1):
+    def one(dt, n, m=None):
         """Construct a Matrix filled with ones.
 
         Args:
@@ -1081,7 +1081,11 @@ class Matrix(TaichiOperations):
             :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with ones.
 
         """
-        return Matrix([[ti.cast(1, dt) for _ in range(m)] for _ in range(n)])
+        if m is None:
+            return Vector([ti.cast(1, dt) for _ in range(n)])
+        else:
+            return Matrix([[ti.cast(1, dt) for _ in range(m)]
+                           for _ in range(n)])
 
     @staticmethod
     @taichi_scope

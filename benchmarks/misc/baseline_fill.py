@@ -26,10 +26,10 @@ def fill(arch, dtype, dsize, repeat=10):
 
     # compile the kernel first
     fill_const(n)
-    ti.clear_kernel_profile()
+    ti.clear_kernel_profile_info()
     for i in range(repeat):
         fill_const(n)
     kernelname = fill_const.__name__
     suffix = "_c"
-    quering_result = ti.query_kernel_profile(kernelname + suffix)
+    quering_result = ti.query_kernel_profile_info(kernelname + suffix)
     return quering_result.min

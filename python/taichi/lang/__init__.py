@@ -97,7 +97,7 @@ def print_kernel_profile_info():
     impl.get_runtime().prog.print_kernel_profile_info()
 
 
-def query_kernel_profile(name):
+def query_kernel_profile_info(name):
     """Query kernel elapsed time(min,avg,max) on devices using the kernel name.
     To enable this profiler, set `kernel_profiler=True` in `ti.init`.
 
@@ -121,35 +121,35 @@ def query_kernel_profile(name):
         >>>         var[i] = 0.1
 
         >>> fill()
-        >>> ti.clear_kernel_profile() #[1]
+        >>> ti.clear_kernel_profile_info() #[1]
         >>> for i in range(100):
         >>>     fill()
-        >>> query_result = ti.query_kernel_profile(fill.__name__) #[2]
+        >>> query_result = ti.query_kernel_profile_info(fill.__name__) #[2]
         >>> print("kernel excuted times =",query_result.counter)
         >>> print("kernel elapsed time(min_in_ms) =",query_result.min)
         >>> print("kernel elapsed time(max_in_ms) =",query_result.max)
         >>> print("kernel elapsed time(avg_in_ms) =",query_result.avg)
 
     Note:
-        [1] To get the correct result, query_kernel_profile() must be used in conjunction with
-        clear_kernel_profile().
+        [1] To get the correct result, query_kernel_profile_info() must be used in conjunction with
+        clear_kernel_profile_info().
 
         [2] Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
     """
-    return impl.get_runtime().prog.query_kernel_profile(name)
+    return impl.get_runtime().prog.query_kernel_profile_info(name)
 
 
-@deprecated('kernel_profiler_clear()', 'clear_kernel_profile()')
+@deprecated('kernel_profiler_clear()', 'clear_kernel_profile_info()')
 def kernel_profiler_clear():
-    return clear_kernel_profile()
+    return clear_kernel_profile_info()
 
 
-def clear_kernel_profile():
+def clear_kernel_profile_info():
     """
     Clear all KernelProfiler records.
     """
-    impl.get_runtime().prog.clear_kernel_profile()
+    impl.get_runtime().prog.clear_kernel_profile_info()
 
 
 def kernel_profiler_total_time():
@@ -603,7 +603,7 @@ def benchmark(func, repeat=300, args=()):
         for i in range(3):
             func(*args)
             ti.sync()
-        ti.clear_kernel_profile()
+        ti.clear_kernel_profile_info()
         t = time.time()
         for n in range(repeat):
             func(*args)

@@ -84,7 +84,7 @@ def test_oop():
 
     @ti.kernel
     def double():
-        double_total[None] = 2 * arr.total
+        double_total[None] = 2 * arr.total[None]
 
     with ti.Tape(loss=double_total):
         arr.reduce()
@@ -171,7 +171,8 @@ def test_oop_inherit_ok():
     with ti.Tape(loss=arr.total):
         arr.reduce()
     for i in range(arr.n):
-        assert arr.val.grad[i] == 42
+        for j in range(arr.n):
+            assert arr.val.grad[i, j] == 42
 
 
 @ti.must_throw(ti.KernelDefError)

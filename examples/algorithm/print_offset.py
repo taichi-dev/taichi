@@ -12,8 +12,8 @@ ti.root.dense(ti.ij, (1, 2)).dense(ti.ij, 2).dense(ti.ij, 2).place(a)
 @ti.kernel
 def fill():
     for i, j in a:
-        base = ti.get_addr(a.snode(), [0, 0])
-        a[i, j] = int(ti.get_addr(a.snode(), [i, j]) - base) // 4
+        base = ti.get_addr(a.snode, [0, 0])
+        a[i, j] = int(ti.get_addr(a.snode, [i, j]) - base) // 4
 
 
 fill()

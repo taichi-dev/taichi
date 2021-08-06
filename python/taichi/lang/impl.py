@@ -6,6 +6,8 @@ import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
+from taichi.lang.field import Field, ScalarField
+from taichi.lang.matrix import MatrixField
 from taichi.lang.snode import SNode
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
@@ -64,9 +66,7 @@ def expr_init_list(xs, expected):
 @taichi_scope
 def expr_init_func(
         rhs):  # temporary solution to allow passing in fields as arguments
-    if isinstance(rhs, Expr) and rhs.ptr.is_global_var():
-        return rhs
-    if isinstance(rhs, ti.Matrix) and rhs.is_global():
+    if isinstance(rhs, Field):
         return rhs
     return expr_init(rhs)
 
@@ -119,39 +119,54 @@ def subscript(value, *indices):
             ind = [indices[i]]
         flattened_indices += ind
     indices = tuple(flattened_indices)
+    if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
+        indices = ()
+    indices_expr_group = make_expr_group(*indices)
+    index_dim = indices_expr_group.size()
 
-    if is_taichi_class(value):
+    if isinstance(value, Field):
+        var = value.get_field_members()[0].ptr
+        if var.snode() is None:
+            if var.is_primal():
+                raise RuntimeError(
+                    f"{var.get_expr_name()} has not been placed.")
+            else:
+                raise RuntimeError(
+                    f"Gradient {var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
+                )
+        field_dim = int(var.get_attribute("dim"))
+        if field_dim != index_dim:
+            raise IndexError(
+                f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
+            )
+        if isinstance(value, MatrixField):
+            return ti.Matrix.with_entries(value.n, value.m, [
+                Expr(_ti_core.subscript(e.ptr, indices_expr_group))
+                for e in value.get_field_members()
+            ])
+        else:
+            return Expr(_ti_core.subscript(var, indices_expr_group))
+    elif is_taichi_class(value):
         return value.subscript(*indices)
     elif isinstance(value, (Expr, SNode)):
         if isinstance(value, Expr):
-            if not value.is_global():
+            if not value.ptr.is_external_var():
                 raise TypeError(
                     'Subscription (e.g., "a[i, j]") only works on fields or external arrays.'
                 )
-            if not value.ptr.is_external_var() and value.ptr.snode() is None:
-                if not value.ptr.is_primal():
-                    raise RuntimeError(
-                        f"Gradient {value.ptr.get_expr_name()} has not been placed, check whether `needs_grad=True`"
-                    )
-                else:
-                    raise RuntimeError(
-                        f"{value.ptr.get_expr_name()} has not been placed.")
             field_dim = int(value.ptr.get_attribute("dim"))
         else:
             # When reading bit structure we only support the 0-D case for now.
             field_dim = 0
-        if isinstance(indices,
-                      tuple) and len(indices) == 1 and indices[0] is None:
-            indices = []
-        indices_expr_group = make_expr_group(*indices)
-        index_dim = indices_expr_group.size()
         if field_dim != index_dim:
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
     else:
-        return value[indices]
+        raise TypeError(
+            'Subscription (e.g., "a[i, j]") only works on fields or external arrays.'
+        )
 
 
 @taichi_scope
@@ -451,6 +466,30 @@ Example::
 """
 
 
+@python_scope
+def create_field_member(dtype, name):
+    dtype = cook_dtype(dtype)
+
+    # primal
+    x = Expr(_ti_core.make_id_expr(""))
+    x.declaration_tb = get_traceback(stacklevel=2)
+    x.ptr = _ti_core.global_new(x.ptr, dtype)
+    x.ptr.set_name(name)
+    x.ptr.set_is_primal(True)
+    pytaichi.global_vars.append(x)
+
+    x_grad = None
+    if _ti_core.needs_grad(dtype):
+        # adjoint
+        x_grad = Expr(_ti_core.make_id_expr(""))
+        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
+        x_grad.ptr.set_name(name + ".grad")
+        x_grad.ptr.set_is_primal(False)
+        x.ptr.set_grad(x_grad.ptr)
+
+    return x, x_grad
+
+
 @deprecated('ti.var', 'ti.field')
 def var(dt, shape=None, offset=None, needs_grad=False):
     _taichi_skip_traceback = 1
@@ -487,8 +526,6 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     """
     _taichi_skip_traceback = 1
 
-    dtype = cook_dtype(dtype)
-
     if isinstance(shape, numbers.Number):
         shape = (shape, )
 
@@ -505,27 +542,15 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
 
     del _taichi_skip_traceback
 
-    # primal
-    x = Expr(_ti_core.make_id_expr(""))
-    x.declaration_tb = get_traceback(stacklevel=2)
-    x.ptr = _ti_core.global_new(x.ptr, dtype)
-    x.ptr.set_name(name)
-    x.ptr.set_is_primal(True)
-    pytaichi.global_vars.append(x)
-
-    if _ti_core.needs_grad(dtype):
-        # adjoint
-        x_grad = Expr(_ti_core.make_id_expr(""))
-        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
-        x_grad.ptr.set_name(name + ".grad")
-        x_grad.ptr.set_is_primal(False)
-        x.set_grad(x_grad)
+    x, x_grad = create_field_member(dtype, name)
+    x, x_grad = ScalarField(x), ScalarField(x_grad)
+    x.set_grad(x_grad)
 
     if shape is not None:
         dim = len(shape)
         root.dense(index_nd(dim), shape).place(x, offset=offset)
         if needs_grad:
-            root.dense(index_nd(dim), shape).place(x.grad)
+            root.dense(index_nd(dim), shape).place(x_grad)
     return x
 
 
@@ -760,7 +785,9 @@ def static(x, *xs):
                   (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
                    ti.GroupedNDRange, zip, filter, map)) or x is None:
         return x
-    elif isinstance(x, (Expr, ti.Matrix)) and x.is_global():
+    elif isinstance(x, Expr) and x.is_global():
+        return x
+    elif isinstance(x, Field):
         return x
     elif isinstance(x, (types.FunctionType, types.MethodType)):
         return x

@@ -51,7 +51,7 @@ def test_kernel_template_gradient():
     @ti.kernel
     def compute_loss():
         for i in range(16):
-            ti.atomic_add(loss, z[i])
+            ti.atomic_add(loss[None], z[i])
 
     for i in range(16):
         x[i] = i

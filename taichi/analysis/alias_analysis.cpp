@@ -34,7 +34,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
     if (origin1->is<AllocaStmt>() || origin2->is<AllocaStmt>())
       return AliasResult::different;
     TI_ASSERT(origin1->is<GlobalTemporaryStmt>() &&
-              origin2->is<GlobalTemporaryStmt>())
+              origin2->is<GlobalTemporaryStmt>());
     if (origin1->cast<GlobalTemporaryStmt>()->offset ==
         origin2->cast<GlobalTemporaryStmt>()->offset) {
       return AliasResult::uncertain;

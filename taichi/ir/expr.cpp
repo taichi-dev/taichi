@@ -177,7 +177,7 @@ Expr load_if_ptr(const Expr &ptr) {
 // TODO: remove this
 Expr load(const Expr &ptr) {
   TI_ASSERT(ptr.is<GlobalPtrExpression>() ||
-            ptr.is<GlobalTensorElementExpression>())
+            ptr.is<GlobalTensorElementExpression>());
   return Expr::make<GlobalLoadExpression>(ptr);
 }
 

@@ -675,7 +675,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   }
 
   void visit(Stmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1 || (stmt->ret_type->is<TensorType>()))
+    TI_ASSERT(stmt->width() == 1 || (stmt->ret_type->is<TensorType>()));
     generic_visit(stmt);
   }
 

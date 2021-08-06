@@ -229,7 +229,7 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
   // Compute exact offset
   // Type A[i, j][x, y]
   //              ^^^^
-  TI_ASSERT(1 <= indices.size() && indices.size() <= 2)
+  TI_ASSERT(1 <= indices.size() && indices.size() <= 2);
   if (indices.size() == 1) {
     // TODO: Add test for this
     indices[0].set(load_if_ptr(indices[0]));
@@ -274,10 +274,10 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
 }
 
 void LocalTensorElementExpression::flatten(FlattenContext *ctx) {
-  TI_ASSERT(var.is<IdExpression>())
+  TI_ASSERT(var.is<IdExpression>());
   var->flatten(ctx);
   Stmt *var_stmt = var->stmt;
-  TI_ASSERT(var_stmt->ret_type->is<TensorType>())
+  TI_ASSERT(var_stmt->ret_type->is<TensorType>());
   auto tensor_type = var_stmt->ret_type->cast<TensorType>();
   auto shape = tensor_type->get_shape();
   auto element_type = tensor_type->get_element_type();
@@ -456,7 +456,7 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
 void LocalLoadExpression::flatten(FlattenContext *ctx) {
   ptr->flatten(ctx);
   auto ptr_offset_stmt = ctx->back_stmt();
-  TI_ASSERT(ptr_offset_stmt->is<PtrOffsetStmt>())
+  TI_ASSERT(ptr_offset_stmt->is<PtrOffsetStmt>());
   auto local_addr =
       LaneAttribute<LocalAddress>(LocalAddress(ptr_offset_stmt, 0));
   auto local_load_stmt =

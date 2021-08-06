@@ -103,12 +103,12 @@ PtrOffsetStmt::PtrOffsetStmt(Stmt *origin_input, Stmt *offset_input) {
   origin = origin_input;
   offset = offset_input;
   if (origin->is<AllocaStmt>()) {
-    TI_ASSERT(origin->cast<AllocaStmt>()->ret_type->is<TensorType>())
+    TI_ASSERT(origin->cast<AllocaStmt>()->ret_type->is<TensorType>());
     auto tensor_type = origin->cast<AllocaStmt>()->ret_type->cast<TensorType>();
     element_type() = tensor_type->get_element_type();
     element_type().set_is_pointer(true);
   } else if (origin->is<GlobalTemporaryStmt>()) {
-    TI_ASSERT(origin->cast<GlobalTemporaryStmt>()->ret_type->is<TensorType>())
+    TI_ASSERT(origin->cast<GlobalTemporaryStmt>()->ret_type->is<TensorType>());
     auto tensor_type =
         origin->cast<GlobalTemporaryStmt>()->ret_type->cast<TensorType>();
     element_type() = tensor_type->get_element_type();

@@ -43,9 +43,7 @@ def build(project_name):
         )
     else:
         os.environ['PROJECT_NAME'] = f'{project_name}'
-        os.system(
-            f'cd .. && {get_python_executable()} setup.py bdist_wheel'
-        )
+        os.system(f'cd .. && {get_python_executable()} setup.py bdist_wheel')
 
     try:
         os.remove('taichi/CHANGELOG.md')

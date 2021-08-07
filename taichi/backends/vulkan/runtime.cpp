@@ -441,6 +441,8 @@ class VkRuntime ::Impl {
  private:
   void init_memory_pool(const Params &params) {
     VolkDeviceTable table;
+    VmaVulkanFunctions vk_vma_functions;
+
     volkLoadDeviceTable(&table, embedded_device_->device()->device());
     vk_vma_functions.vkGetPhysicalDeviceProperties =
         PFN_vkGetPhysicalDeviceProperties(vkGetInstanceProcAddr(
@@ -474,8 +476,9 @@ class VkRuntime ::Impl {
     vk_vma_functions.vkBindBufferMemory2KHR = table.vkBindBufferMemory2KHR;
     vk_vma_functions.vkBindImageMemory2KHR = table.vkBindImageMemory2KHR;
     vk_vma_functions.vkGetPhysicalDeviceMemoryProperties2KHR =
-        PFN_vkGetPhysicalDeviceMemoryProperties2KHR(vkGetInstanceProcAddr(
-            volkGetLoadedInstance(), "vkGetPhysicalDeviceMemoryProperties2KHR"));
+        PFN_vkGetPhysicalDeviceMemoryProperties2KHR(
+            vkGetInstanceProcAddr(volkGetLoadedInstance(),
+                                  "vkGetPhysicalDeviceMemoryProperties2KHR"));
 
     VmaAllocatorCreateInfo allocatorInfo = {};
     allocatorInfo.vulkanApiVersion = get_capabilities().api_version;
@@ -511,7 +514,6 @@ class VkRuntime ::Impl {
   std::unique_ptr<VkBufferWithMemory> root_buffer_;
   std::unique_ptr<VkBufferWithMemory> global_tmps_buffer_;
 
-  VmaVulkanFunctions vk_vma_functions;
   VmaAllocator vk_allocator_;
 
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;

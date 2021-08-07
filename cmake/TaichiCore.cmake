@@ -223,10 +223,16 @@ if (TI_WITH_VULKAN)
       find_library(SPIRV_OPT NAMES "SPIRV-Tools-opt" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
       find_library(SPIRV_LINK NAMES "SPIRV-Tools-link" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
     else ()
-      set(SPIRV_OPT SPIRV-Tools-opt)
-      set(SPIRV_TOOLS SPIRV-Tools)
-      set(SPIRV_LINK SPIRV-Tools-link)
+      get_filename_component(VULKAN_LIBRARY_PATH ${Vulkan_LIBRARY} DIRECTORY)
+      find_library(SPIRV_TOOLS NAMES "SPIRV-Tools"  PATHS ${VULKAN_LIBRARY_PATH} REQUIRED)
+      find_library(SPIRV_OPT NAMES "SPIRV-Tools-opt" PATHS ${VULKAN_LIBRARY_PATH} REQUIRED)
+      find_library(SPIRV_LINK NAMES "SPIRV-Tools-link"  PATHS ${VULKAN_LIBRARY_PATH} REQUIRED)
     endif ()
+
+    message(STATUS "SPIRV_TOOLS=" ${SPIRV_TOOLS})
+    message(STATUS "SPIRV_OPT=" ${SPIRV_OPT})
+    message(STATUS "SPIRV_LINK=" ${SPIRV_LINK})
+
     # NOTE: SPIRV-Tools-opt must come before SPIRV-Tools
     # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
     target_link_libraries(${CORE_LIBRARY_NAME} ${SPIRV_OPT} ${SPIRV_TOOLS} ${SPIRV_LINK})

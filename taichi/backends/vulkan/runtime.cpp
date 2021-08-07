@@ -22,8 +22,10 @@
 
 #include "taichi/backends/vulkan/vulkan_api.h"
 #include "taichi/backends/vulkan/vulkan_common.h"
-#include "taichi/backends/vulkan/vulkan_simple_memory_pool.h"
+#include "taichi/backends/vulkan/vulkan_memory.h"
 #include "taichi/backends/vulkan/vulkan_utils.h"
+
+#include "vk_mem_alloc.h"
 #endif  // TI_WITH_VULKAN
 
 #include "taichi/math/arithmetic.h"
@@ -188,8 +190,7 @@ class CompiledTaichiKernel {
     const VulkanDevice *device{nullptr};
     VkBufferWithMemory *root_buffer{nullptr};
     VkBufferWithMemory *global_tmps_buffer{nullptr};
-    LinearVkMemoryPool *host_visible_mem_pool{nullptr};
-    LinearVkMemoryPool *host_mem_pool{nullptr};
+    VmaAllocator *allocator{nullptr};
   };
 
   CompiledTaichiKernel(const Params &ti_params)
@@ -200,8 +201,14 @@ class CompiledTaichiKernel {
     };
     const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
     if (!ti_kernel_attribs_.ctx_attribs.empty()) {
-      ctx_buffer_ = ti_params.host_visible_mem_pool->alloc_and_bind(ctx_sz);
-      ctx_buffer_host_ = ti_params.host_mem_pool->alloc_and_bind(ctx_sz);
+      ctx_buffer_ = std::make_unique<VkBufferWithMemory>(
+          *ti_params.allocator, ctx_sz,
+          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+          /*host_write*/ true, /*host_read*/ false);
+      ctx_buffer_host_ = std::make_unique<VkBufferWithMemory>(
+          *ti_params.allocator, ctx_sz,
+          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+          /*host_write*/ false, /*host_read*/ true);
       input_buffers[BufferEnum::Context] = ctx_buffer_.get();
     }
 
@@ -354,7 +361,7 @@ class VkRuntime ::Impl {
     }
     global_tmps_buffer_.reset();
     root_buffer_.reset();
-    dev_local_memory_pool_.reset();
+    vmaDestroyAllocator(vk_allocator_);
   }
 
   KernelHandle register_taichi_kernel(RegisterParams reg_params) {
@@ -364,8 +371,7 @@ class VkRuntime ::Impl {
     params.device = embedded_device_->device();
     params.root_buffer = root_buffer_.get();
     params.global_tmps_buffer = global_tmps_buffer_.get();
-    params.host_visible_mem_pool = host_visible_memory_pool_.get();
-    params.host_mem_pool = host_memory_pool_.get();
+    params.allocator = &vk_allocator_;
 
     for (int i = 0; i < reg_params.task_spirv_source_codes.size(); ++i) {
       const auto &attribs = reg_params.kernel_attribs.tasks_attribs[i];
@@ -434,53 +440,59 @@ class VkRuntime ::Impl {
 
  private:
   void init_memory_pool(const Params &params) {
-    LinearVkMemoryPool::Params mp_params;
-    mp_params.physical_device = embedded_device_->physical_device();
-    mp_params.device = embedded_device_->device()->device();
-#pragma message("Vulkan memory pool size hardcoded to 256MB")
-    mp_params.pool_size = 256 * 1024 * 1024;
-    mp_params.required_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    mp_params.compute_queue_family_index =
-        embedded_device_->queue_family_indices().compute_family.value();
+    VolkDeviceTable table;
+    volkLoadDeviceTable(&table, embedded_device_->device()->device());
+    vk_vma_functions.vkGetPhysicalDeviceProperties =
+        PFN_vkGetPhysicalDeviceProperties(vkGetInstanceProcAddr(
+            volkGetLoadedInstance(), "vkGetPhysicalDeviceProperties"));
+    vk_vma_functions.vkGetPhysicalDeviceMemoryProperties =
+        PFN_vkGetPhysicalDeviceMemoryProperties(vkGetInstanceProcAddr(
+            volkGetLoadedInstance(), "vkGetPhysicalDeviceMemoryProperties"));
+    vk_vma_functions.vkAllocateMemory = table.vkAllocateMemory;
+    vk_vma_functions.vkFreeMemory = table.vkFreeMemory;
+    vk_vma_functions.vkMapMemory = table.vkMapMemory;
+    vk_vma_functions.vkUnmapMemory = table.vkUnmapMemory;
+    vk_vma_functions.vkFlushMappedMemoryRanges =
+        table.vkFlushMappedMemoryRanges;
+    vk_vma_functions.vkInvalidateMappedMemoryRanges =
+        table.vkInvalidateMappedMemoryRanges;
+    vk_vma_functions.vkBindBufferMemory = table.vkBindBufferMemory;
+    vk_vma_functions.vkBindImageMemory = table.vkBindImageMemory;
+    vk_vma_functions.vkGetBufferMemoryRequirements =
+        table.vkGetBufferMemoryRequirements;
+    vk_vma_functions.vkGetImageMemoryRequirements =
+        table.vkGetImageMemoryRequirements;
+    vk_vma_functions.vkCreateBuffer = table.vkCreateBuffer;
+    vk_vma_functions.vkDestroyBuffer = table.vkDestroyBuffer;
+    vk_vma_functions.vkCreateImage = table.vkCreateImage;
+    vk_vma_functions.vkDestroyImage = table.vkDestroyImage;
+    vk_vma_functions.vkCmdCopyBuffer = table.vkCmdCopyBuffer;
+    vk_vma_functions.vkGetBufferMemoryRequirements2KHR =
+        table.vkGetBufferMemoryRequirements2KHR;
+    vk_vma_functions.vkGetImageMemoryRequirements2KHR =
+        table.vkGetImageMemoryRequirements2KHR;
+    vk_vma_functions.vkBindBufferMemory2KHR = table.vkBindBufferMemory2KHR;
+    vk_vma_functions.vkBindImageMemory2KHR = table.vkBindImageMemory2KHR;
+    vk_vma_functions.vkGetPhysicalDeviceMemoryProperties2KHR =
+        PFN_vkGetPhysicalDeviceMemoryProperties2KHR(vkGetInstanceProcAddr(
+            volkGetLoadedInstance(), "vkGetPhysicalDeviceMemoryProperties2KHR"));
 
-    auto &buf_creation_template = mp_params.buffer_creation_template;
-    buf_creation_template.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buf_creation_template.pNext = nullptr;
-    buf_creation_template.flags = 0;
-    buf_creation_template.size = 0;
-    buf_creation_template.usage =
-        (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-         VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    buf_creation_template.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    buf_creation_template.queueFamilyIndexCount = 1;
-    buf_creation_template.pQueueFamilyIndices = nullptr;
+    VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.vulkanApiVersion = get_capabilities().api_version;
+    allocatorInfo.physicalDevice = embedded_device_->physical_device();
+    allocatorInfo.device = embedded_device_->device()->device();
+    allocatorInfo.instance = embedded_device_->instance();
+    allocatorInfo.pVulkanFunctions = &vk_vma_functions;
 
-    dev_local_memory_pool_ = LinearVkMemoryPool::try_make(mp_params);
-    TI_ASSERT(dev_local_memory_pool_ != nullptr);
-
-    // On-device host visible memory (Utilie ReBAR / Smart Access Memory)
-    // Otherwise GPU needs to go through PCI-E to visit this memory
-    mp_params.pool_size = 64 * 1024 * 1024;
-    mp_params.required_properties = (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-    buf_creation_template.usage =
-        (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-         VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    host_visible_memory_pool_ = LinearVkMemoryPool::try_make(mp_params);
-
-    // Host side memory
-    mp_params.required_properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-                                    VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
-    buf_creation_template.usage =
-        (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    host_memory_pool_ = LinearVkMemoryPool::try_make(mp_params);
+    vmaCreateAllocator(&allocatorInfo, &vk_allocator_);
   }
 
   void init_vk_buffers() {
 #pragma message("Vulkan buffers size hardcoded")
-    root_buffer_ = dev_local_memory_pool_->alloc_and_bind(64 * 1024 * 1024);
-    global_tmps_buffer_ = dev_local_memory_pool_->alloc_and_bind(1024 * 1024);
+    root_buffer_ = std::make_unique<VkBufferWithMemory>(
+        vk_allocator_, 64 * 1024 * 1024, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    global_tmps_buffer_ = std::make_unique<VkBufferWithMemory>(
+        vk_allocator_, 1024 * 1024, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
     // Need to zero fill the buffers, otherwise there could be NaN.
     ClearBufferCommandBuilder cmd_builder{stream_->device()};
@@ -496,11 +508,11 @@ class VkRuntime ::Impl {
   std::unique_ptr<EmbeddedVulkanDevice> embedded_device_{nullptr};
   std::unique_ptr<VulkanStream> stream_{nullptr};
 
-  std::unique_ptr<LinearVkMemoryPool> dev_local_memory_pool_;
   std::unique_ptr<VkBufferWithMemory> root_buffer_;
   std::unique_ptr<VkBufferWithMemory> global_tmps_buffer_;
-  std::unique_ptr<LinearVkMemoryPool> host_visible_memory_pool_;
-  std::unique_ptr<LinearVkMemoryPool> host_memory_pool_;
+
+  VmaVulkanFunctions vk_vma_functions;
+  VmaAllocator vk_allocator_;
 
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;
   int num_pending_kernels_{0};

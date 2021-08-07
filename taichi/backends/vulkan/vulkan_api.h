@@ -131,6 +131,10 @@ class EmbeddedVulkanDevice {
   explicit EmbeddedVulkanDevice(const Params &params);
   ~EmbeddedVulkanDevice();
 
+  VkInstance instance() {
+    return instance_;
+  }
+
   VulkanDevice *device() {
     return owned_device_.get();
   }

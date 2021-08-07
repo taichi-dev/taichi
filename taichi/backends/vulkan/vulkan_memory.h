@@ -70,7 +70,7 @@ class VkBufferWithMemory {
  private:
   friend class Mapped;
 
-  VmaAllocator& allocator_;
+  VmaAllocator &allocator_;
   VmaAllocation allocation_;
   VmaAllocationInfo alloc_info_;
   VkBuffer buffer_;

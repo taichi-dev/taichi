@@ -218,6 +218,8 @@ if (TI_WITH_VULKAN)
     # Is this the best way to include the SPIRV-Headers?
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
 
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/VulkanMemoryAllocator/include)
+
     if (MSVC)
       find_library(SPIRV_TOOLS NAMES "SPIRV-Tools" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
       find_library(SPIRV_OPT NAMES "SPIRV-Tools-opt" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)

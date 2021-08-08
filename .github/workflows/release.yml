@@ -5,8 +5,8 @@ on:
     types: [published]
 
 jobs:
-  build_and_test_cpu:
-    name: Build and Test (macOS only)
+  build_and_upload_mac:
+    name: Build and Upload (macOS only)
     strategy:
       matrix:
         include:
@@ -19,9 +19,15 @@ jobs:
           - os: macos-latest
             python: 3.8
             with_cc: OFF
+          - os: macos-latest
+            python: 3.9
+            with_cc: OFF
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
@@ -35,49 +41,97 @@ jobs:
         env:
           CI_PLATFORM: ${{ matrix.os }}
 
-      - name: Build
+      - name: Create Python Wheel
         run: |
-          export TAICHI_REPO_DIR=`pwd`
+          TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
-          python misc/ci_setup.py ci
+          # TODO: making changelog shouldn't depend on taichi.
+          # We currently install taichi to make changelog when building the wheel.
+          python -m pip install --user numpy pybind11 gitpython pytest
+          python setup.py develop
 
       - name: Test
         run: |
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/bin:$PATH
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export PYTHONPATH=$TAICHI_REPO_DIR/python
-          python examples/laplace.py
+          python examples/algorithm/laplace.py
           ti diagnose
-          ti test -vr2 -t2
-
-      - name: Create Python Wheel
-        run: |
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/bin:$PATH
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export PYTHONPATH=$TAICHI_REPO_DIR/python
-          cd python
-          python build.py build
-
-      - name: Archive Wheel Artifacts
-        # https://docs.github.com/en/actions/guides/storing-workflow-data-as-artifacts#uploading-build-and-test-artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          # While ${{ github.ref }} does provide the release tag, it is of
-          # format `refs/tags/<tag_name>`, which isn't a valid file path.
-          name: taichi-py${{ matrix.python }}-${{ matrix.os }}.whl
-          path: python/dist/*.whl
+          ti test -cvr2 -t2
 
       - name: Upload PyPI
         env:
           # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
           PYPI_PWD: ${{ secrets.PYPI_PWD }}
         run: |
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/bin:$PATH
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export PYTHONPATH=$TAICHI_REPO_DIR/python
           cd python
-          python build.py try_upload --skip_build && bash <(curl -s https://codecov.io/bash)
+          python build.py upload
+
+  build_and_upload_windows:
+    name: Build and Upload (Windows only)
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            python: 3.6
+            with_cc: OFF
+          - os: windows-latest
+            python: 3.7
+            with_cc: OFF
+          - os: windows-latest
+            python: 3.8
+            with_cc: OFF
+          - os: windows-latest
+            python: 3.9
+            with_cc: OFF
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install 7Zip PowerShell
+        shell: powershell
+        run: Install-Module 7Zip4PowerShell -Force -Verbose
+
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+          
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.2
+
+      - name: Build Python Wheel
+        shell: powershell
+        run: |
+          cd C:\
+          Remove-item alias:curl
+          curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO
+          7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi_llvm
+          curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip -LO
+          7z x clang-10.0.0-win.zip -otaichi_clang
+          $env:PATH += ";C:\taichi_llvm\bin"
+          $env:PATH += ";C:\taichi_clang\bin"
+          clang --version
+          cd D:\a\taichi\taichi
+          python -m pip install --user numpy pybind11 gitpython pytest
+          python setup.py develop
+        env:
+          CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm
+
+      - name: Test
+        shell: powershell
+        run: |
+          $env:PATH += ";C:\taichi_llvm\bin"
+          $env:PATH += ";C:\taichi_clang\bin"
+          python -c "import taichi"
+          python examples/algorithm/laplace.py
+          python bin/taichi diagnose
+          python bin/taichi test -cvr2 -t2
+
+      - name: Upload PyPI
+        shell: powershell
+        env:
+          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
+          PYPI_PWD: ${{ secrets.PYPI_PWD }}
+        run: |
+          cd python
+          python build.py upload

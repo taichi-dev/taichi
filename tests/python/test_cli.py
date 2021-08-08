@@ -1,12 +1,14 @@
-import taichi as ti
-from taichi.main import TaichiMain
-from contextlib import contextmanager
-import sys
-import copy
-import pytest
-from unittest.mock import patch
 import argparse
+import copy
+import sys
+from contextlib import contextmanager
 from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+from taichi.main import TaichiMain
+
+import taichi as ti
 
 
 @contextmanager

@@ -1,8 +1,10 @@
-import taichi as ti
-import numpy as np
-from taichi import approx
-import pytest
 import math
+
+import numpy as np
+import pytest
+
+import taichi as ti
+from taichi import approx
 
 
 @ti.all_archs
@@ -111,11 +113,11 @@ def test_dot():
     def init():
         a[None] = ti.Vector([1.0, 2.0, 3.0])
         b[None] = ti.Vector([4.0, 5.0, 6.0])
-        c[None] = a.dot(b)
+        c[None] = a[None].dot(b[None])
 
         a2[None] = ti.Vector([1.0, 2.0])
         b2[None] = ti.Vector([4.0, 5.0])
-        c2[None] = a2.dot(b2)
+        c2[None] = a2[None].dot(b2[None])
 
     init()
     assert c[None] == 32.0
@@ -136,13 +138,13 @@ def test_transpose():
 
     for i in range(dim):
         for j in range(dim):
-            m(i, j)[None] = i * 2 + j * 7
+            m[None][i, j] = i * 2 + j * 7
 
     transpose()
 
     for i in range(dim):
         for j in range(dim):
-            assert m(j, i)[None] == approx(i * 2 + j * 7)
+            assert m[None][j, i] == approx(i * 2 + j * 7)
 
 
 def _test_polar_decomp(dim, dt):
@@ -168,7 +170,7 @@ def _test_polar_decomp(dim, dt):
 
     for i in range(dim):
         for j in range(dim):
-            m(i, j)[None] = V(i, j)
+            m[None][i, j] = V(i, j)
 
     polar()
 
@@ -176,9 +178,9 @@ def _test_polar_decomp(dim, dt):
 
     for i in range(dim):
         for j in range(dim):
-            assert m(i, j)[None] == approx(V(i, j), abs=tol)
-            assert I(i, j)[None] == approx(int(i == j), abs=tol)
-            assert D(i, j)[None] == approx(0, abs=tol)
+            assert m[None][i, j] == approx(V(i, j), abs=tol)
+            assert I[None][i, j] == approx(int(i == j), abs=tol)
+            assert D[None][i, j] == approx(0, abs=tol)
 
 
 def test_polar_decomp():
@@ -200,7 +202,7 @@ def test_matrix():
 
     @ti.kernel
     def inc():
-        for i in x(0, 0):
+        for i in x:
             delta = ti.Matrix([[3, 0], [0, 0]])
             x[i][1, 1] = x[i][0, 0] + 1
             x[i] = x[i] + delta

@@ -63,25 +63,6 @@ TEST(AliasAnalysis, GlobalPtr_DiffIndices) {
   EXPECT_EQ(aa, AliasResult::different);
 }
 
-TEST(AliasAnalysis, GlobalPtr_DiffIndicesWithinTrailingBits) {
-  auto snode = std::make_unique<SNode>(/*depth=*/1, /*t=*/SNodeType::place);
-  for (int i = 0; i < 2; ++i) {
-    snode->physical_index_position[i] = i;
-  }
-  snode->extractors[snode->physical_index_position[2]].trailing_bits = 2;
-
-  IRBuilder builder;
-  // The difference along the 2-dimension is (6 - 3) = 3, which is smaller than
-  // (1 << trailing_bits) = 4.
-  const auto indices1 = make_const_indices({1, 2, 3}, &builder);
-  const auto indices2 = make_const_indices({1, 2, 6}, &builder);
-  auto *gptr1 = builder.create_global_ptr(snode.get(), indices1);
-  auto *gptr2 = builder.create_global_ptr(snode.get(), indices2);
-
-  const auto aa = alias_analysis(gptr1, gptr2);
-  EXPECT_EQ(aa, AliasResult::uncertain);
-}
-
 TEST(AliasAnalysis, GlobalPtr_Uncertain) {
   auto snode = std::make_unique<SNode>(/*depth=*/1, /*t=*/SNodeType::place);
 

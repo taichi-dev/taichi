@@ -1290,7 +1290,7 @@ bool StateFlowGraph::optimize_dead_store() {
     // *****************************
     // Erase the state s output.
     if (!store_eliminable_snodes.empty()) {
-      const bool verbose = task->rec.kernel->program.config.verbose;
+      const bool verbose = task->rec.kernel->program->config.verbose;
 
       const auto dse_result = ir_bank_->optimize_dse(
           task->rec.ir_handle, store_eliminable_snodes, verbose);

@@ -47,7 +47,7 @@ class ConstantFold : public BasicStmtVisitor {
           oper->cast<UnaryOpStmt>()->cast_type = id.rhs;
         }
       }
-      auto ret = Stmt::make<KernelReturnStmt>(oper.get());
+      auto ret = Stmt::make<ReturnStmt>(oper.get());
       current_ast_builder().insert(std::move(lhstmt));
       if (id.is_binary)
         current_ast_builder().insert(std::move(rhstmt));
@@ -72,8 +72,10 @@ class ConstantFold : public BasicStmtVisitor {
     // Discussion:
     // https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727
     if (dt->is_primitive(PrimitiveTypeID::i32) ||
-        dt->is_primitive(PrimitiveTypeID::f32) ||
         dt->is_primitive(PrimitiveTypeID::i64) ||
+        dt->is_primitive(PrimitiveTypeID::u32) ||
+        dt->is_primitive(PrimitiveTypeID::u64) ||
+        dt->is_primitive(PrimitiveTypeID::f32) ||
         dt->is_primitive(PrimitiveTypeID::f64))
       return true;
     else

@@ -10,28 +10,25 @@
 #include "taichi/ir/pass.h"
 #include "taichi/transforms/check_out_of_bound.h"
 #include "taichi/transforms/constant_fold.h"
+#include "taichi/transforms/inlining.h"
 #include "taichi/transforms/lower_access.h"
 #include "taichi/transforms/make_block_local.h"
 #include "taichi/transforms/simplify.h"
+#include "taichi/common/trait.h"
 
 TLANG_NAMESPACE_BEGIN
 
 class ScratchPads;
 
+class Function;
+
 // IR passes
 namespace irpass {
-
-// TODO(#1243): Pass kernel to the relevant passes instead of doing this hack
-namespace hack {
-bool use_fast_math(IRNode *root);
-}  // namespace hack
 
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 bool die(IRNode *root);
-bool simplify(IRNode *root,
-              const CompileConfig &config,
-              const SimplifyPass::Args &args);
+bool simplify(IRNode *root, const CompileConfig &config);
 bool cfg_optimization(
     IRNode *root,
     bool after_lower_access,
@@ -44,12 +41,16 @@ bool whole_kernel_cse(IRNode *root);
 void variable_optimization(IRNode *root, bool after_lower_access);
 bool extract_constant(IRNode *root, const CompileConfig &config);
 bool unreachable_code_elimination(IRNode *root);
+bool loop_invariant_code_motion(IRNode *root, const CompileConfig &config);
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    const FullSimplifyPass::Args &args);
 void print(IRNode *root, std::string *output = nullptr);
 void lower_ast(IRNode *root);
 void type_check(IRNode *root, const CompileConfig &config);
+bool inlining(IRNode *root,
+              const CompileConfig &config,
+              const InliningPass::Args &args);
 void loop_vectorize(IRNode *root, const CompileConfig &config);
 void bit_loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
@@ -71,20 +72,62 @@ bool lower_access(IRNode *root,
 void auto_diff(IRNode *root,
                const CompileConfig &config,
                bool use_stack = false);
+/**
+ * Determine all adaptive AD-stacks' size. This pass is idempotent, i.e.,
+ * there are no side effects if called more than once or called when not needed.
+ * @return Whether the IR is modified, i.e., whether there exists adaptive
+ * AD-stacks before this pass.
+ */
+bool determine_ad_stack_size(IRNode *root, const CompileConfig &config);
 bool constant_fold(IRNode *root,
                    const CompileConfig &config,
                    const ConstantFoldPass::Args &args);
 void offload(IRNode *root, const CompileConfig &config);
-void replace_statements_with(IRNode *root,
-                             std::function<bool(Stmt *)> filter,
-                             std::function<std::unique_ptr<Stmt>()> generator);
-void demote_dense_struct_fors(IRNode *root);
+bool transform_statements(
+    IRNode *root,
+    std::function<bool(Stmt *)> filter,
+    std::function<void(Stmt *, DelayedIRModifier *)> transformer);
+/**
+ * @param root The IR root to be traversed.
+ * @param filter A function which tells if a statement need to be replaced.
+ * @param generator If a statement |s| need to be replaced, generate a new
+ * statement |s1| with the argument |s|, insert |s1| to where |s| is defined,
+ * remove |s|'s definition, and replace all usages of |s| with |s1|.
+ * @return Whether the IR is modified.
+ */
+bool replace_and_insert_statements(
+    IRNode *root,
+    std::function<bool(Stmt *)> filter,
+    std::function<std::unique_ptr<Stmt>(Stmt *)> generator);
+/**
+ * @param finder If a statement |s| need to be replaced, find the existing
+ * statement |s1| with the argument |s|, remove |s|'s definition, and replace
+ * all usages of |s| with |s1|.
+ */
+bool replace_statements(IRNode *root,
+                        std::function<bool(Stmt *)> filter,
+                        std::function<Stmt *(Stmt *)> finder);
+void demote_dense_struct_fors(IRNode *root, bool packed);
 bool demote_atomics(IRNode *root, const CompileConfig &config);
 void reverse_segments(IRNode *root);  // for autograd
 void detect_read_only(IRNode *root);
 void optimize_bit_struct_stores(IRNode *root,
                                 const CompileConfig &config,
                                 AnalysisManager *amgr);
+
+ENUM_FLAGS(ExternalPtrAccess){NONE = 0, READ = 1, WRITE = 2};
+
+/**
+ * Checks the access to external pointers in an offload.
+ *
+ * @param val1
+ *   The offloaded statement to check
+ *
+ * @return
+ *   The analyzed result.
+ */
+std::unordered_map<int, ExternalPtrAccess> detect_external_ptr_access_in_task(
+    OffloadedStmt *offload);
 
 // compile_to_offloads does the basic compilation to create all the offloaded
 // tasks of a Taichi kernel. It's worth pointing out that this doesn't demote
@@ -103,10 +146,11 @@ void offload_to_executable(IRNode *ir,
                            const CompileConfig &config,
                            Kernel *kernel,
                            bool verbose,
+                           bool determine_ad_stack_size,
                            bool lower_global_access,
                            bool make_thread_local,
                            bool make_block_local);
-// compile_to_executable fully covers compile_to_offloads, but also does
+// compile_to_executable fully covers compile_to_offloads, and also does
 // additional optimizations so that |ir| can be directly fed into codegen.
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
@@ -119,7 +163,14 @@ void compile_to_executable(IRNode *ir,
                            bool make_thread_local = false,
                            bool make_block_local = false,
                            bool start_from_ast = true);
-
+// Compile a function with some basic optimizations, so that the number of
+// statements is reduced before inlining.
+void compile_inline_function(IRNode *ir,
+                             const CompileConfig &config,
+                             Function *func,
+                             bool grad,
+                             bool verbose,
+                             bool start_from_ast);
 }  // namespace irpass
 
 TLANG_NAMESPACE_END

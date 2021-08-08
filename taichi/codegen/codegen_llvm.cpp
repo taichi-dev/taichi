@@ -268,20 +268,24 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
                get_runtime_function(snode->refine_coordinates_func_name()));
 }
 
-CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
+CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
+                         IRNode *ir,
+                         std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
-    : LLVMModuleBuilder(
-          kernel->program.get_llvm_context(kernel->arch)->clone_struct_module(),
-          kernel->program.get_llvm_context(kernel->arch)),
+    : LLVMModuleBuilder(module == nullptr
+                            ? kernel->program->get_llvm_context(kernel->arch)
+                                  ->clone_struct_module()
+                            : std::move(module),
+                        kernel->program->get_llvm_context(kernel->arch)),
       kernel(kernel),
       ir(ir),
-      prog(&kernel->program) {
+      prog(kernel->program) {
   if (ir == nullptr)
     this->ir = kernel->ir.get();
   initialize_context();
 
   context_ty = get_runtime_type("Context");
-  physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
+  physical_coordinate_ty = get_runtime_type(kLLVMPhysicalCoordinatesName);
 
   kernel_name = kernel->name + "_kernel";
 }
@@ -322,8 +326,9 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
     llvm::CastInst::CastOps cast_op;
     auto from = stmt->operand->ret_type;
     auto to = stmt->cast_type;
-    TI_ASSERT(from != to);
-    if (is_real(from) != is_real(to)) {
+    if (from == to) {
+      llvm_val[stmt] = llvm_val[stmt->operand];
+    } else if (is_real(from) != is_real(to)) {
       if (is_real(from) && is_integral(to)) {
         cast_op = llvm::Instruction::CastOps::FPToSI;
       } else if (is_integral(from) && is_real(to)) {
@@ -352,8 +357,14 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
     TI_ASSERT(data_type_size(stmt->ret_type) ==
               data_type_size(stmt->cast_type));
-    llvm_val[stmt] = builder->CreateBitCast(
-        llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+    if (stmt->operand->ret_type.is_pointer()) {
+      TI_ASSERT(is_integral(stmt->cast_type));
+      llvm_val[stmt] = builder->CreatePtrToInt(
+          llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+    } else {
+      llvm_val[stmt] = builder->CreateBitCast(
+          llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+    }
   } else if (op == UnaryOpType::rsqrt) {
     llvm::Function *sqrt_fn = llvm::Intrinsic::getDeclaration(
         module.get(), llvm::Intrinsic::sqrt, input->getType());
@@ -933,7 +944,7 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
   }
 }
 
-void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
+void CodeGenLLVM::visit(ReturnStmt *stmt) {
   if (stmt->ret_type.is_pointer()) {
     TI_NOT_IMPLEMENTED
   } else {
@@ -1240,11 +1251,19 @@ llvm::Value *CodeGenLLVM::call(SNode *snode,
 }
 
 void CodeGenLLVM::visit(GetRootStmt *stmt) {
-  llvm_val[stmt] = builder->CreateBitCast(
-      get_root(),
-      llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
-                                 module.get(), prog->snode_root.get()),
-                             0));
+  if (stmt->root() == nullptr)
+    llvm_val[stmt] = builder->CreateBitCast(
+        get_root(SNodeTree::kFirstID),
+        llvm::PointerType::get(
+            StructCompilerLLVM::get_llvm_node_type(
+                module.get(), prog->get_snode_root(SNodeTree::kFirstID)),
+            0));
+  else
+    llvm_val[stmt] = builder->CreateBitCast(
+        get_root(stmt->root()->get_snode_tree_id()),
+        llvm::PointerType::get(
+            StructCompilerLLVM::get_llvm_node_type(module.get(), stmt->root()),
+            0));
 }
 
 void CodeGenLLVM::visit(BitExtractStmt *stmt) {
@@ -1275,7 +1294,6 @@ llvm::Value *CodeGenLLVM::create_bit_ptr_struct(llvm::Value *byte_ptr_base,
   // };
   auto struct_type = llvm::StructType::get(
       *llvm_context, {llvm::Type::getInt8PtrTy(*llvm_context),
-                      llvm::Type::getInt32Ty(*llvm_context),
                       llvm::Type::getInt32Ty(*llvm_context)});
   // 2. allocate the bit pointer struct
   auto bit_ptr_struct = create_entry_block_alloca(struct_type);
@@ -1358,6 +1376,17 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
                                        module.get(), stmt->output_snode),
                                    0));
   }
+}
+
+void CodeGenLLVM::visit(PtrOffsetStmt *stmt) {
+  auto origin_address = builder->CreatePtrToInt(
+      llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
+  auto address_offset = builder->CreateSExt(
+      llvm_val[stmt->offset], llvm::Type::getInt64Ty(*llvm_context));
+  auto target_address = builder->CreateAdd(origin_address, address_offset);
+  auto dt = stmt->ret_type.ptr_removed();
+  llvm_val[stmt] = builder->CreateIntToPtr(
+      target_address, llvm::PointerType::get(tlctx->get_data_type(dt), 0));
 }
 
 void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
@@ -1552,6 +1581,16 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto upper_bound = get_arg(4);
 
     parent_coordinates = element.get_ptr("pcoord");
+    block_corner_coordinates =
+        create_entry_block_alloca(physical_coordinate_ty);
+
+    auto refine =
+        get_runtime_function(leaf_block->refine_coordinates_func_name());
+    // A block corner is the global coordinate/index of the lower-left corner
+    // cell within that block, and is the same for all the cells within that
+    // block.
+    create_call(refine, {parent_coordinates, block_corner_coordinates,
+                         tlctx->get_constant(0)});
 
     if (stmt->tls_prologue) {
       stmt->tls_prologue->accept(this);
@@ -1605,12 +1644,26 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     builder->SetInsertPoint(loop_body_bb);
 
     // initialize the coordinates
-    auto refine =
-        get_runtime_function(leaf_block->refine_coordinates_func_name());
     auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
 
     create_call(refine, {parent_coordinates, new_coordinates,
                          builder->CreateLoad(loop_index)});
+
+    // One more refine step is needed for bit_arrays to make final coordinates
+    // non-consecutive, since each thread will process multiple
+    // coordinates via vectorization
+    if (stmt->snode->type == SNodeType::bit_array && stmt->snode->parent) {
+      if (stmt->snode->parent->type == SNodeType::dense) {
+        refine =
+            get_runtime_function(stmt->snode->refine_coordinates_func_name());
+
+        create_call(refine,
+                    {new_coordinates, new_coordinates, tlctx->get_constant(0)});
+      } else {
+        TI_ERROR(
+            "Struct-for looping through bit array but its parent is not dense");
+      }
+    }
 
     current_coordinates = new_coordinates;
 
@@ -1629,17 +1682,20 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       }
     }
 
-    auto coord_object = RuntimeObject("PhysicalCoordinates", this,
+    auto coord_object = RuntimeObject(kLLVMPhysicalCoordinatesName, this,
                                       builder.get(), new_coordinates);
-    for (int i = 0; i < snode->num_active_indices; i++) {
-      auto j = snode->physical_index_position[i];
-      if (!bit::is_power_of_two(snode->extractors[j].num_elements)) {
-        auto coord = coord_object.get("val", tlctx->get_constant(j));
-        exec_cond = builder->CreateAnd(
-            exec_cond,
-            builder->CreateICmp(
-                llvm::CmpInst::ICMP_SLT, coord,
-                tlctx->get_constant(snode->extractors[j].num_elements)));
+    if (!prog->config.packed) {
+      for (int i = 0; i < snode->num_active_indices; i++) {
+        auto j = snode->physical_index_position[i];
+        if (!bit::is_power_of_two(
+                snode->extractors[j].num_elements_from_root)) {
+          auto coord = coord_object.get("val", tlctx->get_constant(j));
+          exec_cond = builder->CreateAnd(
+              exec_cond, builder->CreateICmp(
+                             llvm::CmpInst::ICMP_SLT, coord,
+                             tlctx->get_constant(
+                                 snode->extractors[j].num_elements_from_root)));
+        }
       }
     }
 
@@ -1741,6 +1797,10 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
        body, tlctx->get_constant(stmt->tls_size),
        tlctx->get_constant(stmt->num_cpu_threads)});
   // TODO: why do we need num_cpu_threads on GPUs?
+
+  current_coordinates = nullptr;
+  parent_coordinates = nullptr;
+  block_corner_coordinates = nullptr;
 }
 
 void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
@@ -1770,10 +1830,11 @@ void CodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
       stmt->loop->as<OffloadedStmt>()->task_type ==
           OffloadedStmt::TaskType::struct_for) {
-    TI_ASSERT(parent_coordinates);
-    llvm_val[stmt] = builder->CreateLoad(builder->CreateGEP(
-        parent_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
-                             tlctx->get_constant(stmt->index)}));
+    TI_ASSERT(block_corner_coordinates);
+    llvm_val[stmt] = builder->CreateLoad(
+        builder->CreateGEP(block_corner_coordinates,
+                           {tlctx->get_constant(0), tlctx->get_constant(0),
+                            tlctx->get_constant(stmt->index)}));
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -1828,8 +1889,10 @@ void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
   create_call(stmt->func_name, {get_context()});
 }
 
-void CodeGenLLVM::visit(StackAllocaStmt *stmt) {
+void CodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
+  TI_ASSERT_INFO(stmt->max_size > 0,
+                 "Adaptive autodiff stack's size should have been determined.");
   auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
                                    stmt->size_in_bytes());
   auto alloca = create_entry_block_alloca(type, sizeof(int64));
@@ -1838,12 +1901,12 @@ void CodeGenLLVM::visit(StackAllocaStmt *stmt) {
   call("stack_init", llvm_val[stmt]);
 }
 
-void CodeGenLLVM::visit(StackPopStmt *stmt) {
+void CodeGenLLVM::visit(AdStackPopStmt *stmt) {
   call("stack_pop", llvm_val[stmt->stack]);
 }
 
-void CodeGenLLVM::visit(StackPushStmt *stmt) {
-  auto stack = stmt->stack->as<StackAllocaStmt>();
+void CodeGenLLVM::visit(AdStackPushStmt *stmt) {
+  auto stack = stmt->stack->as<AdStackAllocaStmt>();
   call("stack_push", llvm_val[stack], tlctx->get_constant(stack->max_size),
        tlctx->get_constant(stack->element_size_in_bytes()));
   auto primal_ptr = call("stack_top_primal", llvm_val[stack],
@@ -1854,8 +1917,8 @@ void CodeGenLLVM::visit(StackPushStmt *stmt) {
   builder->CreateStore(llvm_val[stmt->v], primal_ptr);
 }
 
-void CodeGenLLVM::visit(StackLoadTopStmt *stmt) {
-  auto stack = stmt->stack->as<StackAllocaStmt>();
+void CodeGenLLVM::visit(AdStackLoadTopStmt *stmt) {
+  auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto primal_ptr = call("stack_top_primal", llvm_val[stack],
                          tlctx->get_constant(stack->element_size_in_bytes()));
   primal_ptr = builder->CreateBitCast(
@@ -1864,8 +1927,8 @@ void CodeGenLLVM::visit(StackLoadTopStmt *stmt) {
   llvm_val[stmt] = builder->CreateLoad(primal_ptr);
 }
 
-void CodeGenLLVM::visit(StackLoadTopAdjStmt *stmt) {
-  auto stack = stmt->stack->as<StackAllocaStmt>();
+void CodeGenLLVM::visit(AdStackLoadTopAdjStmt *stmt) {
+  auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto adjoint = call("stack_top_adjoint", llvm_val[stack],
                       tlctx->get_constant(stack->element_size_in_bytes()));
   adjoint = builder->CreateBitCast(
@@ -1873,8 +1936,8 @@ void CodeGenLLVM::visit(StackLoadTopAdjStmt *stmt) {
   llvm_val[stmt] = builder->CreateLoad(adjoint);
 }
 
-void CodeGenLLVM::visit(StackAccAdjointStmt *stmt) {
-  auto stack = stmt->stack->as<StackAllocaStmt>();
+void CodeGenLLVM::visit(AdStackAccAdjointStmt *stmt) {
+  auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto adjoint_ptr = call("stack_top_adjoint", llvm_val[stack],
                           tlctx->get_constant(stack->element_size_in_bytes()));
   adjoint_ptr = builder->CreateBitCast(
@@ -1969,8 +2032,9 @@ llvm::Type *CodeGenLLVM::get_xlogue_function_type() {
                                  get_xlogue_argument_types(), false);
 }
 
-llvm::Value *CodeGenLLVM::get_root() {
-  return create_call("LLVMRuntime_get_root", {get_runtime()});
+llvm::Value *CodeGenLLVM::get_root(int snode_tree_id) {
+  return create_call("LLVMRuntime_get_roots",
+                     {get_runtime(), tlctx->get_constant(snode_tree_id)});
 }
 
 llvm::Value *CodeGenLLVM::get_runtime() {

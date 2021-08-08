@@ -11,9 +11,9 @@ from functools import wraps
 from pathlib import Path
 
 from colorama import Back, Fore, Style
+from taichi.core import settings
 from taichi.core import ti_core as _ti_core
-from taichi.tools.video import (accelerate_video, crop_video, make_video,
-                                mp4_to_gif, scale_video)
+from taichi.tools import video
 
 import taichi as ti
 
@@ -123,7 +123,7 @@ class TaichiMain:
         import taichi as ti
 
         root_dir = ti.package_root() if ti.is_release(
-        ) else ti.get_repo_directory()
+        ) else settings.get_repo_directory()
         examples_dir = Path(root_dir) / 'examples'
         return examples_dir
 
@@ -132,7 +132,10 @@ class TaichiMain:
         """Get a set of all available example names."""
         examples_dir = TaichiMain._get_examples_dir()
         all_examples = examples_dir.rglob('*.py')
-        all_example_names = {Path(f).stem for f in all_examples}
+        all_example_names = {
+            Path(f).stem: Path(f).parent
+            for f in all_examples
+        }
         return all_example_names
 
     @staticmethod
@@ -156,8 +159,8 @@ class TaichiMain:
         parser.add_argument(
             "name",
             help=f"Name of an example (supports .py extension too)\n",
-            type=TaichiMain._example_choices_type(choices),
-            choices=sorted(choices))
+            type=TaichiMain._example_choices_type(choices.keys()),
+            choices=sorted(choices.keys()))
         parser.add_argument(
             '-p',
             '--print',
@@ -182,9 +185,10 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         examples_dir = TaichiMain._get_examples_dir()
-        target = str((examples_dir / f"{args.name}.py").resolve())
+        target = str(
+            (examples_dir / choices[args.name] / f"{args.name}.py").resolve())
         # path for examples needs to be modified for implicit relative imports
-        sys.path.append(str(examples_dir.resolve()))
+        sys.path.append(str((examples_dir / choices[args.name]).resolve()))
 
         # Short circuit for testing
         if self.test_mode: return args
@@ -266,11 +270,11 @@ class TaichiMain:
         import zipfile
 
         from git import Git
-        g = Git(ti.get_repo_directory())
+        g = Git(settings.get_repo_directory())
         g.init()
         with zipfile.ZipFile('release.zip', 'w') as zip:
             files = g.ls_files().split('\n')
-            os.chdir(ti.get_repo_directory())
+            os.chdir(settings.get_repo_directory())
             for f in files:
                 if not os.path.isdir(f):
                     zip.write(f)
@@ -316,7 +320,7 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        mp4_to_gif(args.input_file, args.output_file, args.framerate)
+        video.mp4_to_gif(args.input_file, args.output_file, args.framerate)
 
     @register
     def video_speed(self, arguments: list = sys.argv[2:]):
@@ -346,7 +350,7 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        accelerate_video(args.input_file, args.output_file, args.speed)
+        video.accelerate_video(args.input_file, args.output_file, args.speed)
 
     @register
     def video_crop(self, arguments: list = sys.argv[2:]):
@@ -388,8 +392,8 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        crop_video(args.input_file, args.output_file, args.x_begin, args.x_end,
-                   args.y_begin, args.y_end)
+        video.crop_video(args.input_file, args.output_file, args.x_begin,
+                         args.x_end, args.y_begin, args.y_end)
 
     @register
     def video_scale(self, arguments: list = sys.argv[2:]):
@@ -429,8 +433,8 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        scale_video(args.input_file, args.output_file, args.ratio_width,
-                    args.ratio_height)
+        video.scale_video(args.input_file, args.output_file, args.ratio_width,
+                          args.ratio_height)
 
     @register
     def video(self, arguments: list = sys.argv[2:]):
@@ -473,10 +477,10 @@ class TaichiMain:
 
         # Short circuit for testing
         if self.test_mode: return args
-        make_video(args.inputs,
-                   output_path=str(args.output_file),
-                   crf=args.crf,
-                   frame_rate=args.framerate)
+        video.make_video(args.inputs,
+                         output_path=str(args.output_file),
+                         crf=args.crf,
+                         frame_rate=args.framerate)
         ti.info(f'Done! Output video file = {args.output_file}')
 
     @register
@@ -489,7 +493,7 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
         os.system(
-            f'cd {ti.get_repo_directory()}/docs && sphinx-build -b html . build'
+            f'cd {settings.get_repo_directory()}/docs && sphinx-build -b html . build'
         )
 
     @register
@@ -706,7 +710,7 @@ class TaichiMain:
             root_dir = ti.package_root()
             test_dir = os.path.join(root_dir, 'tests')
         else:
-            root_dir = ti.get_repo_directory()
+            root_dir = settings.get_repo_directory()
             test_dir = os.path.join(root_dir, 'tests', 'python')
         pytest_args = []
 

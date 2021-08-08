@@ -23,7 +23,7 @@ void IRBuilder::reset() {
   insert_point_.position = 0;
 }
 
-std::unique_ptr<IRNode> IRBuilder::extract_ir() {
+std::unique_ptr<Block> IRBuilder::extract_ir() {
   auto result = std::move(root_);
   reset();
   return result;
@@ -121,6 +121,11 @@ ContinueStmt *IRBuilder::create_continue() {
   return insert(Stmt::make_typed<ContinueStmt>());
 }
 
+FuncCallStmt *IRBuilder::create_func_call(Function *func,
+                                          const std::vector<Stmt *> &args) {
+  return insert(Stmt::make_typed<FuncCallStmt>(func, args));
+}
+
 LoopIndexStmt *IRBuilder::get_loop_index(Stmt *loop, int index) {
   return insert(Stmt::make_typed<LoopIndexStmt>(loop, index));
 }
@@ -139,6 +144,20 @@ ConstStmt *IRBuilder::get_int64(int64 value) {
           value))));
 }
 
+ConstStmt *IRBuilder::get_uint32(uint32 value) {
+  return insert(
+      Stmt::make_typed<ConstStmt>(LaneAttribute<TypedConstant>(TypedConstant(
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u32),
+          value))));
+}
+
+ConstStmt *IRBuilder::get_uint64(uint64 value) {
+  return insert(
+      Stmt::make_typed<ConstStmt>(LaneAttribute<TypedConstant>(TypedConstant(
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u64),
+          value))));
+}
+
 ConstStmt *IRBuilder::get_float32(float32 value) {
   return insert(
       Stmt::make_typed<ConstStmt>(LaneAttribute<TypedConstant>(TypedConstant(
@@ -153,12 +172,16 @@ ConstStmt *IRBuilder::get_float64(float64 value) {
           value))));
 }
 
+RandStmt *IRBuilder::create_rand(DataType value_type) {
+  return insert(Stmt::make_typed<RandStmt>(value_type));
+}
+
 ArgLoadStmt *IRBuilder::create_arg_load(int arg_id, DataType dt, bool is_ptr) {
   return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr));
 }
 
-KernelReturnStmt *IRBuilder::create_return(Stmt *value) {
-  return insert(Stmt::make_typed<KernelReturnStmt>(value));
+ReturnStmt *IRBuilder::create_return(Stmt *value) {
+  return insert(Stmt::make_typed<ReturnStmt>(value));
 }
 
 UnaryOpStmt *IRBuilder::create_cast(Stmt *value, DataType output_type) {
@@ -333,6 +356,37 @@ BinaryOpStmt *IRBuilder::create_cmp_ne(Stmt *l, Stmt *r) {
   return insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::cmp_ne, l, r));
 }
 
+AtomicOpStmt *IRBuilder::create_atomic_add(Stmt *dest, Stmt *val) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::add, dest, val));
+}
+
+AtomicOpStmt *IRBuilder::create_atomic_sub(Stmt *dest, Stmt *val) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::sub, dest, val));
+}
+
+AtomicOpStmt *IRBuilder::create_atomic_max(Stmt *dest, Stmt *val) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::max, dest, val));
+}
+
+AtomicOpStmt *IRBuilder::create_atomic_min(Stmt *dest, Stmt *val) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::min, dest, val));
+}
+
+AtomicOpStmt *IRBuilder::create_atomic_and(Stmt *dest, Stmt *val) {
+  return insert(
+      Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_and, dest, val));
+}
+
+AtomicOpStmt *IRBuilder::create_atomic_or(Stmt *dest, Stmt *val) {
+  return insert(
+      Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_or, dest, val));
+}
+
+AtomicOpStmt *IRBuilder::create_atomic_xor(Stmt *dest, Stmt *val) {
+  return insert(
+      Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_xor, dest, val));
+}
+
 TernaryOpStmt *IRBuilder::create_select(Stmt *cond,
                                         Stmt *true_result,
                                         Stmt *false_result) {
@@ -362,6 +416,33 @@ ExternalPtrStmt *IRBuilder::create_external_ptr(
     ArgLoadStmt *ptr,
     const std::vector<Stmt *> &indices) {
   return insert(Stmt::make_typed<ExternalPtrStmt>(ptr, indices));
+}
+
+AdStackAllocaStmt *IRBuilder::create_ad_stack(const DataType &dt,
+                                              std::size_t max_size) {
+  return insert(Stmt::make_typed<AdStackAllocaStmt>(dt, max_size));
+}
+
+void IRBuilder::ad_stack_push(AdStackAllocaStmt *stack, Stmt *val) {
+  insert(Stmt::make_typed<AdStackPushStmt>(stack, val));
+}
+
+void IRBuilder::ad_stack_pop(AdStackAllocaStmt *stack) {
+  insert(Stmt::make_typed<AdStackPopStmt>(stack));
+}
+
+AdStackLoadTopStmt *IRBuilder::ad_stack_load_top(AdStackAllocaStmt *stack) {
+  return insert(Stmt::make_typed<AdStackLoadTopStmt>(stack));
+}
+
+AdStackLoadTopAdjStmt *IRBuilder::ad_stack_load_top_adjoint(
+    AdStackAllocaStmt *stack) {
+  return insert(Stmt::make_typed<AdStackLoadTopAdjStmt>(stack));
+}
+
+void IRBuilder::ad_stack_accumulate_adjoint(AdStackAllocaStmt *stack,
+                                            Stmt *val) {
+  insert(Stmt::make_typed<AdStackAccAdjointStmt>(stack, val));
 }
 
 TLANG_NAMESPACE_END

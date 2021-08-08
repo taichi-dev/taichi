@@ -155,6 +155,20 @@ void GUI::process_event() {
 void GUI::create_window() {
   auto CLASS_NAME = L"Taichi Win32 Window";
 
+  DWORD dwVersion = 0;
+  DWORD dwMajorVersion = 0;
+  DWORD dwMinorVersion = 0;
+
+  dwVersion = GetVersion();
+
+  dwMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
+  dwMinorVersion = (DWORD)(HIBYTE(LOWORD(dwVersion)));
+
+  if (dwMajorVersion > 6 || (dwMajorVersion == 6 && dwMinorVersion >= 3))
+    SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+  else if (dwMajorVersion >= 6)
+    SetProcessDPIAware();
+
   WNDCLASS wc = {};
 
   wc.lpfnWndProc = WindowProc;

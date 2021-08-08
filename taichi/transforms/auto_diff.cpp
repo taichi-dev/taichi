@@ -204,28 +204,29 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
         }).empty();
     if (!load_only) {
       auto dtype = alloc->ret_type;
-      auto stack_alloca = Stmt::make<StackAllocaStmt>(dtype, ad_stack_size);
+      auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, ad_stack_size);
       auto stack_alloca_ptr = stack_alloca.get();
 
       alloc->replace_with(std::move(stack_alloca));
 
-      // Note that unlike AllocaStmt, StackAllocaStmt does NOT have an 0 as
+      // Note that unlike AllocaStmt, AdStackAllocaStmt does NOT have an 0 as
       // initial value. Therefore here we push an initial 0 value.
       auto zero = stack_alloca_ptr->insert_after_me(
           Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
-      zero->insert_after_me(Stmt::make<StackPushStmt>(stack_alloca_ptr, zero));
+      zero->insert_after_me(
+          Stmt::make<AdStackPushStmt>(stack_alloca_ptr, zero));
     }
   }
 
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->src[0].var->is<StackAllocaStmt>())
-      stmt->replace_with(Stmt::make<StackLoadTopStmt>(stmt->src[0].var));
+    if (stmt->src[0].var->is<AdStackAllocaStmt>())
+      stmt->replace_with(Stmt::make<AdStackLoadTopStmt>(stmt->src[0].var));
   }
 
   void visit(LocalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    stmt->replace_with(Stmt::make<StackPushStmt>(stmt->dest, stmt->val));
+    stmt->replace_with(Stmt::make<AdStackPushStmt>(stmt->dest, stmt->val));
   }
 };
 
@@ -380,10 +381,10 @@ class MakeAdjoint : public IRVisitor {
     auto alloca_ = adjoint(primal);
     if (!alloca_ || alloca_->is<ConstStmt>())
       return;  // primal may be int variable
-    if (alloca_->is<StackAllocaStmt>()) {
-      auto alloca = alloca_->cast<StackAllocaStmt>();
+    if (alloca_->is<AdStackAllocaStmt>()) {
+      auto alloca = alloca_->cast<AdStackAllocaStmt>();
       if (needs_grad(alloca->ret_type)) {
-        insert<StackAccAdjointStmt>(alloca, load(value));
+        insert<AdStackAccAdjointStmt>(alloca, load(value));
       }
     } else {
       TI_ASSERT(alloca_->is<AllocaStmt>());
@@ -416,7 +417,7 @@ class MakeAdjoint : public IRVisitor {
     // do nothing.
   }
 
-  void visit(StackAllocaStmt *alloca) override {
+  void visit(AdStackAllocaStmt *alloca) override {
     // do nothing.
   }
 
@@ -615,14 +616,14 @@ class MakeAdjoint : public IRVisitor {
     // TI_ASSERT(!needs_grad(stmt->ret_type));
   }
 
-  void visit(StackLoadTopStmt *stmt) override {
+  void visit(AdStackLoadTopStmt *stmt) override {
     if (needs_grad(stmt->ret_type))
-      insert<StackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
+      insert<AdStackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
   }
 
-  void visit(StackPushStmt *stmt) override {
-    accumulate(stmt->v, insert<StackLoadTopAdjStmt>(stmt->stack));
-    insert<StackPopStmt>(stmt->stack);
+  void visit(AdStackPushStmt *stmt) override {
+    accumulate(stmt->v, insert<AdStackLoadTopAdjStmt>(stmt->stack));
+    insert<AdStackPopStmt>(stmt->stack);
   }
 
   Stmt *load(Stmt *alloc) {
@@ -763,8 +764,8 @@ class BackupSSA : public BasicStmtVisitor {
       if (std::find(leaf_to_root.begin(), leaf_to_root.end(), op->parent) ==
               leaf_to_root.end() &&
           !op->is<AllocaStmt>()) {
-        if (op->is<StackLoadTopStmt>()) {
-          // Just create another StackLoadTopStmt
+        if (op->is<AdStackLoadTopStmt>()) {
+          // Just create another AdStackLoadTopStmt
           stmt->set_operand(i, stmt->insert_before_me(op->clone()));
         } else {
           auto alloca = load(op);

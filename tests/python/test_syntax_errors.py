@@ -1,5 +1,6 @@
-import taichi as ti
 import pytest
+
+import taichi as ti
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
@@ -231,6 +232,15 @@ def test_not_in():
     @ti.kernel
     def func():
         a = b not in c
+
+    func()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_expr_set():
+    @ti.kernel
+    def func():
+        x = {2, 4, 6}
 
     func()
 

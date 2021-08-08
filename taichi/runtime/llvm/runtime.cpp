@@ -2,6 +2,16 @@
 // The generated bitcode will likely get inlined for performance.
 
 #if !defined(TI_INCLUDED) || !defined(_WIN32)
+// The latest MSVC(Visual Studio 2019 version 16.10.1, MSVC 14.29.30037)
+// uses llvm-11 as requirements. Check this link for details:
+// https://github.com/microsoft/STL/blob/1866b848f0175c3361a916680a4318e7f0cc5482/stl/inc/yvals_core.h#L550-L561.
+// However, we use llvm-10 for now and building will fail due to clang version
+// mismatch. Therefore, we workaround this problem by define such flag to skip
+// the version check.
+// NOTE(#2428)
+#if defined(_WIN32) || defined(_WIN64)
+#define _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
+#endif
 
 #include <atomic>
 #include <cstdint>
@@ -514,9 +524,11 @@ struct LLVMRuntime {
   assert_failed_type assert_failed;
   host_printf_type host_printf;
   host_vsnprintf_type host_vsnprintf;
-  Ptr prog;
-  Ptr root;
-  size_t root_mem_size;
+  Ptr program;
+
+  Ptr roots[taichi_max_num_snode_trees];
+  size_t root_mem_sizes[taichi_max_num_snode_trees];
+
   Ptr thread_pool;
   parallel_for_type parallel_for;
   ListManager *element_lists[taichi_max_num_snodes];
@@ -563,8 +575,8 @@ struct LLVMRuntime {
 // TODO: are these necessary?
 STRUCT_FIELD_ARRAY(LLVMRuntime, element_lists);
 STRUCT_FIELD_ARRAY(LLVMRuntime, node_allocators);
-STRUCT_FIELD(LLVMRuntime, root);
-STRUCT_FIELD(LLVMRuntime, root_mem_size);
+STRUCT_FIELD_ARRAY(LLVMRuntime, roots);
+STRUCT_FIELD_ARRAY(LLVMRuntime, root_mem_sizes);
 STRUCT_FIELD(LLVMRuntime, temporaries);
 STRUCT_FIELD(LLVMRuntime, assert_failed);
 STRUCT_FIELD(LLVMRuntime, host_printf);
@@ -759,10 +771,10 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
 }
 
 Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
-  if (preallocated)
+  if (preallocated) {
     return allocate_from_buffer(size, alignment);
-  else
-    return (Ptr)vm_allocator(prog, size, alignment);
+  }
+  return (Ptr)vm_allocator(program, size, alignment);
 }
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
@@ -786,8 +798,12 @@ Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
     // Here unfortunately we have to rely on a native CUDA assert failure to
     // halt the whole grid. Using a taichi_assert_runtime will not finish the
     // whole kernel execution immediately.
-    __assertfail("Out of CUDA pre-allocated memory", "Taichi JIT", 0,
-                 "allocate_from_buffer", 1);
+    __assertfail(
+        "Out of CUDA pre-allocated memory.\n"
+        "Consider using ti.init(device_memory_fraction=0.9) or "
+        "ti.init(device_memory_GB=4) to allocate more"
+        " GPU memory",
+        "Taichi JIT", 0, "allocate_from_buffer", 1);
 #endif
   }
   taichi_assert_runtime(this, success, "Out of pre-allocated memory");
@@ -821,6 +837,13 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
   }
 }
 
+void runtime_snode_tree_allocate_aligned(LLVMRuntime *runtime,
+                                         std::size_t size,
+                                         std::size_t alignment) {
+  runtime->set_result(taichi_result_buffer_runtime_query_id,
+                      runtime->allocate_aligned(size, alignment));
+}
+
 void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
   runtime->set_result(taichi_result_buffer_ret_value_id,
                       runtime->mem_req_queue);
@@ -828,11 +851,11 @@ void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
 
 void runtime_initialize(
     Ptr result_buffer,
-    Ptr prog,
-    std::size_t root_size,
+    Ptr program,
     std::size_t
         preallocated_size,  // Non-zero means use the preallocated buffer
     Ptr preallocated_buffer,
+    i32 starting_rand_state,
     i32 num_rand_states,
     void *_vm_allocator,
     void *_host_printf,
@@ -848,11 +871,8 @@ void runtime_initialize(
     preallocated_buffer +=
         taichi::iroundup(sizeof(LLVMRuntime), taichi_page_size);
   } else {
-    runtime = (LLVMRuntime *)vm_allocator(prog, sizeof(LLVMRuntime), 128);
+    runtime = (LLVMRuntime *)vm_allocator(program, sizeof(LLVMRuntime), 128);
   }
-
-  runtime->root_mem_size =
-      taichi::iroundup((size_t)root_size, taichi_page_size);
 
   runtime->preallocated = preallocated_size > 0;
   runtime->preallocated_head = preallocated_buffer;
@@ -863,20 +883,13 @@ void runtime_initialize(
   runtime->vm_allocator = vm_allocator;
   runtime->host_printf = host_printf;
   runtime->host_vsnprintf = host_vsnprintf;
-  runtime->prog = prog;
+  runtime->program = program;
 
   runtime->total_requested_memory = 0;
 
   // runtime->allocate ready to use
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
       sizeof(MemRequestQueue), taichi_page_size);
-
-  // For Metal runtime, we have to make sure that both the beginning address
-  // and the size of the root buffer memory are aligned to page size.
-  runtime->root_mem_size =
-      taichi::iroundup((size_t)root_size, taichi_page_size);
-  runtime->root =
-      runtime->allocate_aligned(runtime->root_mem_size, taichi_page_size);
 
   runtime->temporaries = (Ptr)runtime->allocate_aligned(
       taichi_global_tmp_buffer_size, taichi_page_size);
@@ -885,14 +898,23 @@ void runtime_initialize(
   runtime->rand_states = (RandState *)runtime->allocate_aligned(
       sizeof(RandState) * runtime->num_rand_states, taichi_page_size);
   for (int i = 0; i < runtime->num_rand_states; i++)
-    initialize_rand_state(&runtime->rand_states[i], i);
+    initialize_rand_state(&runtime->rand_states[i], starting_rand_state + i);
 }
 
-void runtime_initialize2(LLVMRuntime *runtime, int root_id, int num_snodes) {
+void runtime_initialize_snodes(LLVMRuntime *runtime,
+                               std::size_t root_size,
+                               const int root_id,
+                               const int num_snodes,
+                               const int snode_tree_id,
+                               std::size_t rounded_size,
+                               Ptr ptr) {
+  // For Metal runtime, we have to make sure that both the beginning address
+  // and the size of the root buffer memory are aligned to page size.
+  runtime->root_mem_sizes[snode_tree_id] = rounded_size;
+  runtime->roots[snode_tree_id] = ptr;
   // runtime->request_allocate_aligned ready to use
-
   // initialize the root node element list
-  for (int i = 0; i < num_snodes; i++) {
+  for (int i = root_id; i < root_id + num_snodes; i++) {
     // TODO: some SNodes do not actually need an element list.
     runtime->element_lists[i] =
         runtime->create<ListManager>(runtime, sizeof(Element), 1024 * 64);
@@ -900,7 +922,7 @@ void runtime_initialize2(LLVMRuntime *runtime, int root_id, int num_snodes) {
   Element elem;
   elem.loop_bounds[0] = 0;
   elem.loop_bounds[1] = 1;
-  elem.element = runtime->root;
+  elem.element = runtime->roots[snode_tree_id];
   for (int i = 0; i < taichi_max_num_indices; i++) {
     elem.pcoord.val[i] = 0;
   }
@@ -976,11 +998,19 @@ int32 cuda_ballot(bool bit) {
   return 0;
 }
 
-i32 cuda_shfl_down_sync_i32(u32 mask, i32 delta, i32 val, int width) {
+i32 cuda_shfl_down_sync_i32(u32 mask, i32 val, i32 delta, int width) {
   return 0;
 }
 
 i32 cuda_shfl_down_i32(i32 delta, i32 val, int width) {
+  return 0;
+}
+
+f32 cuda_shfl_down_sync_f32(u32 mask, f32 val, i32 delta, int width) {
+  return 0;
+}
+
+f32 cuda_shfl_down_f32(i32 delta, f32 val, int width) {
   return 0;
 }
 
@@ -1032,6 +1062,66 @@ void block_memfence() {
 void grid_memfence() {
 }
 
+// these trivial functions are needed by the DEFINE_REDUCTION macro
+i32 op_add_i32(i32 a, i32 b) {
+  return a + b;
+}
+f32 op_add_f32(f32 a, f32 b) {
+  return a + b;
+}
+
+i32 op_min_i32(i32 a, i32 b) {
+  return fmin(a, b);
+}
+f32 op_min_f32(f32 a, f32 b) {
+  return fmin(a, b);
+}
+
+i32 op_max_i32(i32 a, i32 b) {
+  return fmax(a, b);
+}
+f32 op_max_f32(f32 a, f32 b) {
+  return fmax(a, b);
+}
+
+i32 op_and_i32(i32 a, i32 b) {
+  return a & b;
+}
+i32 op_or_i32(i32 a, i32 b) {
+  return a | b;
+}
+i32 op_xor_i32(i32 a, i32 b) {
+  return a ^ b;
+}
+
+#define DEFINE_REDUCTION(op, dtype)                                       \
+  dtype warp_reduce_##op##_##dtype(dtype val) {                           \
+    for (int offset = 16; offset > 0; offset /= 2)                        \
+      val = op_##op##_##dtype(                                            \
+          val, cuda_shfl_down_sync_##dtype(0xFFFFFFFF, val, offset, 31)); \
+    return val;                                                           \
+  }                                                                       \
+  dtype reduce_##op##_##dtype(dtype *result, dtype val) {                 \
+    dtype warp_result = warp_reduce_##op##_##dtype(val);                  \
+    if ((thread_idx() & (warp_size() - 1)) == 0) {                        \
+      atomic_##op##_##dtype(result, warp_result);                         \
+    }                                                                     \
+    return val;                                                           \
+  }
+
+DEFINE_REDUCTION(add, i32);
+DEFINE_REDUCTION(add, f32);
+
+DEFINE_REDUCTION(min, i32);
+DEFINE_REDUCTION(min, f32);
+
+DEFINE_REDUCTION(max, i32);
+DEFINE_REDUCTION(max, f32);
+
+DEFINE_REDUCTION(and, i32);
+DEFINE_REDUCTION(or, i32);
+DEFINE_REDUCTION(xor, i32);
+
 // "Element", "component" are different concepts
 
 void clear_list(LLVMRuntime *runtime, StructMeta *parent, StructMeta *child) {
@@ -1054,7 +1144,6 @@ void element_listgen_root(LLVMRuntime *runtime,
   auto parent_list = runtime->element_lists[parent->snode_id];
   auto child_list = runtime->element_lists[child->snode_id];
   // Cache the func pointers here for better compiler optimization
-  auto parent_refine_coordinates = parent->refine_coordinates;
   auto parent_lookup_element = parent->lookup_element;
   auto child_get_num_elements = child->get_num_elements;
   auto child_from_parent_element = child->from_parent_element;
@@ -1077,9 +1166,6 @@ void element_listgen_root(LLVMRuntime *runtime,
 
   auto element = parent_list->get<Element>(0);
 
-  PhysicalCoordinates refined_coord;
-  parent_refine_coordinates(&element.pcoord, &refined_coord, 0);
-
   auto ch_element = parent_lookup_element((Ptr)parent, element.element, 0);
   ch_element = child_from_parent_element((Ptr)ch_element);
   auto ch_num_elements = child_get_num_elements((Ptr)child, ch_element);
@@ -1092,7 +1178,9 @@ void element_listgen_root(LLVMRuntime *runtime,
     elem.element = ch_element;
     elem.loop_bounds[0] = c * ch_element_size;
     elem.loop_bounds[1] = std::min((c + 1) * ch_element_size, ch_num_elements);
-    elem.pcoord = refined_coord;
+    // There is no need to refine coordinates for root listgen, since its
+    // num_bits is always zero
+    elem.pcoord = element.pcoord;
     child_list->append(&elem);
   }
 }
@@ -1650,6 +1738,37 @@ f64 rounding_prepare_f64(f64 f) {
                    taichi_union_cast<i64>(0.5);
   f64 delta = taichi_union_cast<f64>(delta_bits);
   return f + delta;
+}
+}
+
+extern "C" {
+// The input means starting address of Context, which should be set to
+// '__heap_base' to avoid conflicts with C++ stack data which is stored in
+// memory. The function returns starting address of root buffer. Here is
+// an illustration for proper memory layout in WASM:
+// ━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━
+//   ...  ┃▄ Context ┃  ▄ Runtime ▄  ┃ RandState[0] ┃ Root Buffer ...
+// ━━━━━━━┻│━━━━━━━━━▲━━│━━━━━━━━━│━━▲━━━━━━━━━━━━━━▲━━━━━━━━━━━━━━━━━━━
+//         └─────────┘  │         └──┘              │
+//                      └───────────────────────────┘
+i32 wasm_materialize(Context *context) {
+  context->runtime = (LLVMRuntime *)((size_t)context + sizeof(Context));
+  context->runtime->rand_states =
+      (RandState *)((size_t)context->runtime + sizeof(LLVMRuntime));
+  // set random seed to (1, 0, 0, 0)
+  context->runtime->rand_states[0].x = 1;
+  // TODO: remove hard coding on root id 0(SNodeTree::kFirstID)
+  context->runtime->roots[0] =
+      (Ptr)((size_t)context->runtime->rand_states + sizeof(RandState));
+  return (i32)(size_t)context->runtime->roots[0];
+}
+
+void wasm_set_kernel_parameter_i32(Context *context, int index, i32 value) {
+  *(i32 *)(&context->args[index]) = value;
+}
+
+void wasm_set_kernel_parameter_f32(Context *context, int index, f32 value) {
+  *(f32 *)(&context->args[index]) = value;
 }
 }
 

@@ -8,6 +8,8 @@
 namespace taichi {
 namespace lang {
 
+class Function;
+
 /**
  * Allocate a local variable with initial value 0.
  */
@@ -90,6 +92,9 @@ class ContinueStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
+/**
+ * A unary operation. The field |cast_type| is used only when is_cast() is true.
+ */
 class UnaryOpStmt : public Stmt {
  public:
   UnaryOpType op_type;
@@ -109,12 +114,18 @@ class UnaryOpStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Load a kernel argument. The data type should be known when constructing this
+ * statement. |is_ptr| should be true iff the result can be used as a base
+ * pointer of an ExternalPtrStmt.
+ */
 class ArgLoadStmt : public Stmt {
  public:
   int arg_id;
   bool is_ptr;
 
-  ArgLoadStmt(int arg_id, DataType dt, bool is_ptr = false) : arg_id(arg_id) {
+  ArgLoadStmt(int arg_id, const DataType &dt, bool is_ptr = false)
+      : arg_id(arg_id) {
     this->ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
     this->is_ptr = is_ptr;
     TI_STMT_REG_FIELDS;
@@ -128,9 +139,18 @@ class ArgLoadStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A random value. For i32, u32, i64, and u64, the result is randomly sampled
+ * from all possible values with equal probability. For f32 and f64 data types,
+ * the result is uniformly sampled in the interval [0, 1).
+ * When Taichi runtime initializes, each CUDA thread / CPU thread gets a
+ * different (but deterministic as long as the thread id doesn't change)
+ * random seed. Each invocation of a RandStmt compiles to a call of a
+ * deterministic PRNG to generate a random value in the backend.
+ */
 class RandStmt : public Stmt {
  public:
-  RandStmt(DataType dt) {
+  RandStmt(const DataType &dt) {
     ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
@@ -147,11 +167,14 @@ class RandStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A binary operation.
+ */
 class BinaryOpStmt : public Stmt {
  public:
   BinaryOpType op_type;
   Stmt *lhs, *rhs;
-  bool is_bit_vectorized;
+  bool is_bit_vectorized;  // TODO: remove this field
 
   BinaryOpStmt(BinaryOpType op_type,
                Stmt *lhs,
@@ -174,6 +197,10 @@ class BinaryOpStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A ternary operation. Currently "select" (the ternary conditional operator,
+ * "?:" in C++) is the only supported ternary operation.
+ */
 class TernaryOpStmt : public Stmt {
  public:
   TernaryOpType op_type;
@@ -195,20 +222,36 @@ class TernaryOpStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * An atomic operation.
+ */
 class AtomicOpStmt : public Stmt {
  public:
   AtomicOpType op_type;
   Stmt *dest, *val;
+  bool is_reduction;
 
   AtomicOpStmt(AtomicOpType op_type, Stmt *dest, Stmt *val)
-      : op_type(op_type), dest(dest), val(val) {
+      : op_type(op_type), dest(dest), val(val), is_reduction(false) {
     TI_STMT_REG_FIELDS;
+  }
+
+  static std::unique_ptr<AtomicOpStmt> make_for_reduction(AtomicOpType op_type,
+                                                          Stmt *dest,
+                                                          Stmt *val) {
+    auto stmt = std::make_unique<AtomicOpStmt>(op_type, dest, val);
+    stmt->is_reduction = true;
+    return stmt;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, dest, val);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * An external pointer. |base_ptrs| should be ArgLoadStmts with
+ * |is_ptr| == true.
+ */
 class ExternalPtrStmt : public Stmt {
  public:
   LaneAttribute<Stmt *> base_ptrs;
@@ -225,6 +268,14 @@ class ExternalPtrStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A global pointer, currently only able to represent an address in a SNode.
+ * When |activate| is true, this statement activates the address it points to,
+ * so it has "global side effect" in this case.
+ * After the "lower_access" pass, all GlobalPtrStmts should be lowered into
+ * SNodeLookupStmts and GetChStmts, and should not appear in the final lowered
+ * IR.
+ */
 class GlobalPtrStmt : public Stmt {
  public:
   LaneAttribute<SNode *> snodes;
@@ -252,6 +303,33 @@ class GlobalPtrStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * An accessing tensor element operation.
+ */
+class PtrOffsetStmt : public Stmt {
+ public:
+  Stmt *origin{nullptr};
+  Stmt *offset{nullptr};
+
+  PtrOffsetStmt(Stmt *origin, Stmt *offset) : origin(origin), offset(offset) {
+    element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    // After access lowered, activate info will be recorded in SNodeLookupStmt's
+    // activate for AOS sparse data structure. We don't support SOA sparse data
+    // structure for now.
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, origin, offset);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
+ * An operation to a SNode (not necessarily a leaf SNode).
+ */
 class SNodeOpStmt : public Stmt {
  public:
   SNodeOpType op_type;
@@ -272,6 +350,7 @@ class SNodeOpStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+// TODO: remove this
 class ExternalTensorShapeAlongAxisStmt : public Stmt {
  public:
   int axis;
@@ -283,6 +362,11 @@ class ExternalTensorShapeAlongAxisStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * An assertion.
+ * If |cond| is false, print the formatted |text| with |args|, and terminate
+ * the program.
+ */
 class AssertStmt : public Stmt {
  public:
   Stmt *cond;
@@ -301,6 +385,9 @@ class AssertStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Call an external (C++) function.
+ */
 class ExternalFuncCallStmt : public Stmt {
  public:
   void *func;
@@ -309,7 +396,7 @@ class ExternalFuncCallStmt : public Stmt {
   std::vector<Stmt *> output_stmts;
 
   ExternalFuncCallStmt(void *func,
-                       std::string const &source,
+                       const std::string &source,
                        const std::vector<Stmt *> &arg_stmts,
                        const std::vector<Stmt *> &output_stmts)
       : func(func),
@@ -323,6 +410,12 @@ class ExternalFuncCallStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A hint to the Taichi compiler about the relation of the values of two
+ * statements.
+ * This statement simply returns the input statement at the backend, and hints
+ * the Taichi compiler that |base| + |low| <= |input| < |base| + |high|.
+ */
 class RangeAssumptionStmt : public Stmt {
  public:
   Stmt *input;
@@ -342,7 +435,16 @@ class RangeAssumptionStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-// A statement that has unique values among the top-level loop.
+/**
+ * A hint to the Taichi compiler that a statement has unique values among
+ * the top-level loop. This statement simply returns the input statement at
+ * the backend, and hints the Taichi compiler that this statement never
+ * evaluate to the same value across different iterations of the top-level
+ * loop. This statement's value set among all iterations of the top-level loop
+ * also covers all active indices of each SNodes with id in the |covers| field
+ * of this statement. Since this statement can only evaluate to one value,
+ * the SNodes with id in the |covers| field should have only one dimension.
+ */
 class LoopUniqueStmt : public Stmt {
  public:
   Stmt *input;
@@ -362,11 +464,15 @@ class LoopUniqueStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A load from a global address, including SNodes, external arrays, TLS, BLS,
+ * and global temporary variables.
+ */
 class GlobalLoadStmt : public Stmt {
  public:
   Stmt *src;
 
-  GlobalLoadStmt(Stmt *src) : src(src) {
+  explicit GlobalLoadStmt(Stmt *src) : src(src) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -382,6 +488,10 @@ class GlobalLoadStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
+/**
+ * A store to a global address, including SNodes, external arrays, TLS, BLS,
+ * and global temporary variables.
+ */
 class GlobalStoreStmt : public Stmt {
  public:
   Stmt *dest;
@@ -399,11 +509,14 @@ class GlobalStoreStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
+/**
+ * A load from a local variable, i.e., an "alloca".
+ */
 class LocalLoadStmt : public Stmt {
  public:
   LaneAttribute<LocalAddress> src;
 
-  LocalLoadStmt(const LaneAttribute<LocalAddress> &src) : src(src) {
+  explicit LocalLoadStmt(const LaneAttribute<LocalAddress> &src) : src(src) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -424,6 +537,9 @@ class LocalLoadStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
+/**
+ * A store to a local variable, i.e., an "alloca".
+ */
 class LocalStoreStmt : public Stmt {
  public:
   Stmt *dest;
@@ -450,13 +566,17 @@ class LocalStoreStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
+/**
+ * Same as "if (cond) true_statements; else false_statements;" in C++.
+ * |true_mask| and |false_mask| are used to support vectorization.
+ */
 class IfStmt : public Stmt {
  public:
   Stmt *cond;
   Stmt *true_mask, *false_mask;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  IfStmt(Stmt *cond);
+  explicit IfStmt(Stmt *cond);
 
   // Use these setters to set Block::parent_stmt at the same time.
   void set_true_statements(std::unique_ptr<Block> &&new_true_statements);
@@ -472,6 +592,11 @@ class IfStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
+/**
+ * Print the contents in this statement. Each entry in the contents can be
+ * either a statement or a string, and they are printed one by one, separated
+ * by a comma and a space.
+ */
 class PrintStmt : public Stmt {
  public:
   using EntryType = std::variant<Stmt *, std::string>;
@@ -516,11 +641,14 @@ class PrintStmt : public Stmt {
   }
 };
 
+/**
+ * A constant value.
+ */
 class ConstStmt : public Stmt {
  public:
   LaneAttribute<TypedConstant> val;
 
-  ConstStmt(const LaneAttribute<TypedConstant> &val) : val(val) {
+  explicit ConstStmt(const LaneAttribute<TypedConstant> &val) : val(val) {
     TI_ASSERT(val.size() == 1);  // TODO: support vectorized case
     ret_type = val[0].dt;
     for (int i = 0; i < val.size(); i++) {
@@ -544,7 +672,14 @@ class ConstStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-// General range for
+/**
+ * A general range for, similar to "for (i = begin; i < end; i++) body;" in C++.
+ * When |reversed| is true, the for loop is reversed, i.e.,
+ * "for (i = end - 1; i >= begin; i--) body;".
+ * When the statement is in the top level before offloading, it will be
+ * offloaded to a parallel for loop. Otherwise, it will be offloaded to a
+ * serial for loop.
+ */
 class RangeForStmt : public Stmt {
  public:
   Stmt *begin, *end;
@@ -586,7 +721,10 @@ class RangeForStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-// for stmt over a structural node
+/**
+ * A parallel for loop over a SNode, similar to "for i in snode: body"
+ * in Python. This statement must be at the top level before offloading.
+ */
 class StructForStmt : public Stmt {
  public:
   SNode *snode;
@@ -623,6 +761,10 @@ class StructForStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
+/**
+ * An inline Taichi function.
+ * TODO: This statement seems unused.
+ */
 class FuncBodyStmt : public Stmt {
  public:
   std::string funcid;
@@ -640,23 +782,28 @@ class FuncBodyStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
+/**
+ * Call an inline Taichi function.
+ */
 class FuncCallStmt : public Stmt {
  public:
-  std::string funcid;
+  Function *func;
+  std::vector<Stmt *> args;
 
-  FuncCallStmt(const std::string &funcid) : funcid(funcid) {
-    TI_STMT_REG_FIELDS;
-  }
+  FuncCallStmt(Function *func, const std::vector<Stmt *> &args);
 
-  TI_STMT_DEF_FIELDS(ret_type, funcid);
+  TI_STMT_DEF_FIELDS(ret_type, func, args);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-class KernelReturnStmt : public Stmt {
+/**
+ * Exit the kernel or function with a return value.
+ */
+class ReturnStmt : public Stmt {
  public:
   Stmt *value;
 
-  KernelReturnStmt(Stmt *value) : value(value) {
+  explicit ReturnStmt(Stmt *value) : value(value) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -664,12 +811,15 @@ class KernelReturnStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A serial while-true loop. |mask| is to support vectorization.
+ */
 class WhileStmt : public Stmt {
  public:
   Stmt *mask;
   std::unique_ptr<Block> body;
 
-  WhileStmt(std::unique_ptr<Block> &&body);
+  explicit WhileStmt(std::unique_ptr<Block> &&body);
 
   bool is_container_statement() const override {
     return true;
@@ -681,6 +831,7 @@ class WhileStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
+// TODO: remove this
 class PragmaSLPStmt : public Stmt {
  public:
   int slp_width;
@@ -693,13 +844,14 @@ class PragmaSLPStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+// TODO: document for this
 class ElementShuffleStmt : public Stmt {
  public:
   LaneAttribute<VectorElement> elements;
   bool pointer;
 
-  ElementShuffleStmt(const LaneAttribute<VectorElement> &elements,
-                     bool pointer = false)
+  explicit ElementShuffleStmt(const LaneAttribute<VectorElement> &elements,
+                              bool pointer = false)
       : elements(elements), pointer(pointer) {
     TI_ASSERT(elements.size() == 1);  // TODO: support vectorized cases
     ret_type = elements[0].stmt->element_type();
@@ -714,6 +866,7 @@ class ElementShuffleStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+// TODO: remove this (replace with input + ConstStmt(offset))
 class IntegerOffsetStmt : public Stmt {
  public:
   Stmt *input;
@@ -731,6 +884,9 @@ class IntegerOffsetStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * All indices of an address fused together.
+ */
 class LinearizeStmt : public Stmt {
  public:
   std::vector<Stmt *> inputs;
@@ -751,6 +907,11 @@ class LinearizeStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Extract an interval of bits from an integral value.
+ * Equivalent to (|input| >> |bit_begin|) &
+ *   ((1 << (|bit_end| - |bit_begin|)) - 1).
+ */
 class BitExtractStmt : public Stmt {
  public:
   Stmt *input;
@@ -770,9 +931,17 @@ class BitExtractStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * The SNode root.
+ */
 class GetRootStmt : public Stmt {
  public:
-  GetRootStmt() {
+  GetRootStmt(SNode *root = nullptr) : root_(root) {
+    if (this->root_ != nullptr) {
+      while (this->root_->parent) {
+        this->root_ = this->root_->parent;
+      }
+    }
     TI_STMT_REG_FIELDS;
   }
 
@@ -780,10 +949,20 @@ class GetRootStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type);
+  TI_STMT_DEF_FIELDS(ret_type, root_);
   TI_DEFINE_ACCEPT_AND_CLONE
+
+  SNode *root() {
+    return root_;
+  }
+
+ private:
+  SNode *root_;
 };
 
+/**
+ * Lookup a component of a SNode.
+ */
 class SNodeLookupStmt : public Stmt {
  public:
   SNode *snode;
@@ -814,6 +993,9 @@ class SNodeLookupStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Get a child of a SNode on the hierarchical SNode tree.
+ */
 class GetChStmt : public Stmt {
  public:
   Stmt *input_ptr;
@@ -836,6 +1018,9 @@ class GetChStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * The statement corresponding to an offloaded task.
+ */
 class OffloadedStmt : public Stmt {
  public:
   using TaskType = OffloadedTaskType;
@@ -849,7 +1034,6 @@ class OffloadedStmt : public Stmt {
   bool const_end{false};
   int32 begin_value{0};
   int32 end_value{0};
-  int step{0};
   int grid_dim{1};
   int block_dim{1};
   bool reversed{false};
@@ -894,7 +1078,6 @@ class OffloadedStmt : public Stmt {
                      const_end,
                      begin_value,
                      end_value,
-                     step /*unused?*/,
                      grid_dim,
                      block_dim,
                      reversed,
@@ -904,6 +1087,9 @@ class OffloadedStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
+/**
+ * The |index|-th index of the |loop|.
+ */
 class LoopIndexStmt : public Stmt {
  public:
   Stmt *loop;
@@ -924,13 +1110,15 @@ class LoopIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-// All loop indices fused together
+/**
+ * thread index within a CUDA block
+ * TODO: Remove this. Have a better way for retrieving thread index.
+ */
 class LoopLinearIndexStmt : public Stmt {
  public:
   Stmt *loop;
-  int index;
 
-  LoopLinearIndexStmt(Stmt *loop) : loop(loop) {
+  explicit LoopLinearIndexStmt(Stmt *loop) : loop(loop) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -938,14 +1126,14 @@ class LoopLinearIndexStmt : public Stmt {
     return false;
   }
 
-  // Return the number of bits of the loop, or -1 if unknown.
-  // TODO: implement
-  // int max_num_bits() const;
-
   TI_STMT_DEF_FIELDS(ret_type, loop);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * The lowest |index|-th index of the |loop| among the iterations iterated by
+ * the block.
+ */
 class BlockCornerIndexStmt : public Stmt {
  public:
   Stmt *loop;
@@ -963,6 +1151,7 @@ class BlockCornerIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+// TODO: remove this
 class BlockDimStmt : public Stmt {
  public:
   BlockDimStmt() {
@@ -977,11 +1166,16 @@ class BlockDimStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A global temporary variable, located at |offset| in the global temporary
+ * buffer.
+ */
 class GlobalTemporaryStmt : public Stmt {
  public:
   std::size_t offset;
 
-  GlobalTemporaryStmt(std::size_t offset, DataType ret_type) : offset(offset) {
+  GlobalTemporaryStmt(std::size_t offset, const DataType &ret_type)
+      : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -994,11 +1188,15 @@ class GlobalTemporaryStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A thread-local pointer, located at |offset| in the thread-local storage.
+ */
 class ThreadLocalPtrStmt : public Stmt {
  public:
   std::size_t offset;
 
-  ThreadLocalPtrStmt(std::size_t offset, DataType ret_type) : offset(offset) {
+  ThreadLocalPtrStmt(std::size_t offset, const DataType &ret_type)
+      : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -1011,11 +1209,14 @@ class ThreadLocalPtrStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A block-local pointer, located at |offset| in the block-local storage.
+ */
 class BlockLocalPtrStmt : public Stmt {
  public:
   Stmt *offset;
 
-  BlockLocalPtrStmt(Stmt *offset, DataType ret_type) : offset(offset) {
+  BlockLocalPtrStmt(Stmt *offset, const DataType &ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -1028,6 +1229,9 @@ class BlockLocalPtrStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * The statement corresponding to a clear-list task.
+ */
 class ClearListStmt : public Stmt {
  public:
   explicit ClearListStmt(SNode *snode);
@@ -1041,11 +1245,13 @@ class ClearListStmt : public Stmt {
 // Checks if the task represented by |stmt| contains a single ClearListStmt.
 bool is_clear_list_task(const OffloadedStmt *stmt);
 
+// TODO: remove this
 class InternalFuncStmt : public Stmt {
  public:
   std::string func_name;
 
-  InternalFuncStmt(const std::string &func_name) : func_name(func_name) {
+  explicit InternalFuncStmt(const std::string &func_name)
+      : func_name(func_name) {
     this->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
     TI_STMT_REG_FIELDS;
@@ -1055,12 +1261,15 @@ class InternalFuncStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-class StackAllocaStmt : public Stmt {
+/**
+ * A local AD-stack.
+ */
+class AdStackAllocaStmt : public Stmt {
  public:
   DataType dt;
-  std::size_t max_size;  // TODO: 0 = adaptive
+  std::size_t max_size{0};  // 0 = adaptive
 
-  StackAllocaStmt(DataType dt, std::size_t max_size)
+  AdStackAllocaStmt(const DataType &dt, std::size_t max_size)
       : dt(dt), max_size(max_size) {
     TI_STMT_REG_FIELDS;
   }
@@ -1089,12 +1298,15 @@ class StackAllocaStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-class StackLoadTopStmt : public Stmt {
+/**
+ * Load the top primal value of an AD-stack.
+ */
+class AdStackLoadTopStmt : public Stmt {
  public:
   Stmt *stack;
 
-  StackLoadTopStmt(Stmt *stack) {
-    TI_ASSERT(stack->is<StackAllocaStmt>());
+  explicit AdStackLoadTopStmt(Stmt *stack) {
+    TI_ASSERT(stack->is<AdStackAllocaStmt>());
     this->stack = stack;
     TI_STMT_REG_FIELDS;
   }
@@ -1111,12 +1323,15 @@ class StackLoadTopStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-class StackLoadTopAdjStmt : public Stmt {
+/**
+ * Load the top adjoint value of an AD-stack.
+ */
+class AdStackLoadTopAdjStmt : public Stmt {
  public:
   Stmt *stack;
 
-  StackLoadTopAdjStmt(Stmt *stack) {
-    TI_ASSERT(stack->is<StackAllocaStmt>());
+  explicit AdStackLoadTopAdjStmt(Stmt *stack) {
+    TI_ASSERT(stack->is<AdStackAllocaStmt>());
     this->stack = stack;
     TI_STMT_REG_FIELDS;
   }
@@ -1133,12 +1348,15 @@ class StackLoadTopAdjStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-class StackPopStmt : public Stmt {
+/**
+ * Pop the top primal and adjoint values in the AD-stack.
+ */
+class AdStackPopStmt : public Stmt {
  public:
   Stmt *stack;
 
-  StackPopStmt(Stmt *stack) {
-    TI_ASSERT(stack->is<StackAllocaStmt>());
+  explicit AdStackPopStmt(Stmt *stack) {
+    TI_ASSERT(stack->is<AdStackAllocaStmt>());
     this->stack = stack;
     TI_STMT_REG_FIELDS;
   }
@@ -1150,13 +1368,17 @@ class StackPopStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-class StackPushStmt : public Stmt {
+/**
+ * Push a primal value to the AD-stack, and set the corresponding adjoint
+ * value to 0.
+ */
+class AdStackPushStmt : public Stmt {
  public:
   Stmt *stack;
   Stmt *v;
 
-  StackPushStmt(Stmt *stack, Stmt *v) {
-    TI_ASSERT(stack->is<StackAllocaStmt>());
+  AdStackPushStmt(Stmt *stack, Stmt *v) {
+    TI_ASSERT(stack->is<AdStackAllocaStmt>());
     this->stack = stack;
     this->v = v;
     TI_STMT_REG_FIELDS;
@@ -1169,13 +1391,16 @@ class StackPushStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-class StackAccAdjointStmt : public Stmt {
+/**
+ * Accumulate |v| to the top adjoint value of the AD-stack.
+ */
+class AdStackAccAdjointStmt : public Stmt {
  public:
   Stmt *stack;
   Stmt *v;
 
-  StackAccAdjointStmt(Stmt *stack, Stmt *v) {
-    TI_ASSERT(stack->is<StackAllocaStmt>());
+  AdStackAccAdjointStmt(Stmt *stack, Stmt *v) {
+    TI_ASSERT(stack->is<AdStackAllocaStmt>());
     this->stack = stack;
     this->v = v;
     TI_STMT_REG_FIELDS;
@@ -1188,6 +1413,9 @@ class StackAccAdjointStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A global store to one or more children of a bit struct.
+ */
 class BitStructStoreStmt : public Stmt {
  public:
   Stmt *ptr;

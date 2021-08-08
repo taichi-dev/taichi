@@ -1,6 +1,7 @@
-import taichi as ti
 import numpy as np
 from pytest import approx
+
+import taichi as ti
 
 
 @ti.test(require=ti.extension.quant_basic, debug=True)
@@ -14,8 +15,6 @@ def test_simple_array():
     N = 12
 
     ti.root.dense(ti.i, N).bit_struct(num_bits=32).place(x, y)
-
-    ti.get_runtime().materialize()
 
     @ti.kernel
     def set_val():

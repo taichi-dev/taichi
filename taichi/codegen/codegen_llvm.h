@@ -60,6 +60,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Type *physical_coordinate_ty;
   llvm::Value *current_coordinates;
   llvm::Value *parent_coordinates{nullptr};
+  llvm::Value *block_corner_coordinates{nullptr};
   llvm::GlobalVariable *bls_buffer{nullptr};
   // Mainly for supporting continue stmt
   llvm::BasicBlock *current_loop_reentry;
@@ -78,7 +79,9 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
-  CodeGenLLVM(Kernel *kernel, IRNode *ir = nullptr);
+  CodeGenLLVM(Kernel *kernel,
+              IRNode *ir = nullptr,
+              std::unique_ptr<llvm::Module> &&module = nullptr);
 
   Arch current_arch() {
     return kernel->arch;
@@ -98,7 +101,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Type *get_xlogue_function_type();
 
-  llvm::Value *get_root();
+  llvm::Value *get_root(int snode_tree_id);
 
   llvm::Value *get_runtime();
 
@@ -186,7 +189,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(ArgLoadStmt *stmt) override;
 
-  void visit(KernelReturnStmt *stmt) override;
+  void visit(ReturnStmt *stmt) override;
 
   void visit(LocalLoadStmt *stmt) override;
 
@@ -208,6 +211,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(AtomicOpStmt *stmt) override;
 
   void visit(GlobalPtrStmt *stmt) override;
+
+  void visit(PtrOffsetStmt *stmt) override;
 
   void store_custom_int(llvm::Value *bit_ptr,
                         CustomIntType *cit,
@@ -324,17 +329,17 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   // Stack statements
 
-  void visit(StackAllocaStmt *stmt) override;
+  void visit(AdStackAllocaStmt *stmt) override;
 
-  void visit(StackPopStmt *stmt) override;
+  void visit(AdStackPopStmt *stmt) override;
 
-  void visit(StackPushStmt *stmt) override;
+  void visit(AdStackPushStmt *stmt) override;
 
-  void visit(StackLoadTopStmt *stmt) override;
+  void visit(AdStackLoadTopStmt *stmt) override;
 
-  void visit(StackLoadTopAdjStmt *stmt) override;
+  void visit(AdStackLoadTopAdjStmt *stmt) override;
 
-  void visit(StackAccAdjointStmt *stmt) override;
+  void visit(AdStackAccAdjointStmt *stmt) override;
 
   void visit(RangeAssumptionStmt *stmt) override;
 

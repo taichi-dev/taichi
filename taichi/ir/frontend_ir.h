@@ -7,10 +7,21 @@
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
+#include "taichi/program/function.h"
 
 TLANG_NAMESPACE_BEGIN
 
 // Frontend Statements
+
+class FrontendExprStmt : public Stmt {
+ public:
+  Expr val;
+
+  FrontendExprStmt(const Expr &val) : val(val) {
+  }
+
+  TI_DEFINE_ACCEPT
+};
 
 class FrontendAllocaStmt : public Stmt {
  public:
@@ -200,11 +211,11 @@ class FrontendWhileStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-class FrontendKernelReturnStmt : public Stmt {
+class FrontendReturnStmt : public Stmt {
  public:
   Expr value;
 
-  FrontendKernelReturnStmt(const Expr &value) : value(value) {
+  FrontendReturnStmt(const Expr &value) : value(value) {
   }
 
   bool is_container_statement() const override {
@@ -364,6 +375,7 @@ class GlobalVariableExpression : public Expression {
  public:
   Identifier ident;
   DataType dt;
+  std::string name;
   SNode *snode;
   bool has_ambient;
   TypedConstant ambient_value;
@@ -410,6 +422,39 @@ class GlobalPtrExpression : public Expression {
   }
 
   std::string serialize() override;
+
+  void flatten(FlattenContext *ctx) override;
+
+  bool is_lvalue() const override {
+    return true;
+  }
+};
+
+class GlobalTensorElementExpression : public Expression {
+ public:
+  Expr var;
+  ExprGroup indices;
+  int cols{0};
+  bool is_aos{false};
+
+  GlobalTensorElementExpression(const Expr &var,
+                                const ExprGroup &indices,
+                                int cols,
+                                bool is_aos)
+      : var(var), indices(indices), cols(cols), is_aos(is_aos) {
+  }
+
+  std::string serialize() override {
+    std::string s = fmt::format("{}[", var.serialize());
+    for (int i = 0; i < (int)indices.size(); i++) {
+      s += indices.exprs[i]->serialize();
+      if (i + 1 < (int)indices.size())
+        s += ", ";
+    }
+    s += "]";
+    s += " (col=" + std::to_string(cols) + (is_aos ? ", AOS)" : ", SOA)");
+    return s;
+  }
 
   void flatten(FlattenContext *ctx) override;
 
@@ -571,6 +616,23 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
 
   ExternalTensorShapeAlongAxisExpression(const Expr &ptr, int axis)
       : ptr(ptr), axis(axis) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class FuncCallExpression : public Expression {
+ public:
+  Function *func;
+  ExprGroup args;
+
+  std::string serialize() override {
+    return fmt::format("func_call(\"{}\", {})", func->func_key.get_full_name(),
+                       args.serialize());
+  }
+
+  FuncCallExpression(Function *func, const ExprGroup &args)
+      : func(func), args(args) {
   }
 
   void flatten(FlattenContext *ctx) override;

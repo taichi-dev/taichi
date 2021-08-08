@@ -14,6 +14,7 @@ struct CompileConfig {
   bool lazy_compilation;
   int external_optimization_level;
   int max_vector_width;
+  bool packed;
   bool print_ir;
   bool print_accessor_ir;
   bool print_evaluator_ir;
@@ -22,6 +23,7 @@ struct CompileConfig {
   bool simplify_before_lower_access;
   bool lower_access;
   bool simplify_after_lower_access;
+  bool move_loop_invariant_outside_if;
   bool demote_dense_struct_fors;
   bool advanced_optimization;
   bool use_llvm;
@@ -41,11 +43,15 @@ struct CompileConfig {
   int default_cpu_block_dim;
   int default_gpu_block_dim;
   int gpu_max_reg;
-  int ad_stack_size;
+  int ad_stack_size{0};  // 0 = adaptive
+  // The default size when the Taichi compiler is unable to automatically
+  // determine the autodiff stack size.
+  int default_ad_stack_size{32};
 
   int saturating_grid_dim;
   int max_block_dim;
   int cpu_max_num_threads;
+  int random_seed;
 
   // LLVM backend options:
   bool print_struct_llvm_ir;

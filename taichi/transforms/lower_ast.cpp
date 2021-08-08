@@ -330,11 +330,11 @@ class LowerAST : public IRVisitor {
     capturing_loop = old_capturing_loop;
   }
 
-  void visit(FrontendKernelReturnStmt *stmt) override {
+  void visit(FrontendReturnStmt *stmt) override {
     auto expr = stmt->value;
     auto fctx = make_flatten_ctx();
     expr->flatten(&fctx);
-    fctx.push_back<KernelReturnStmt>(fctx.back_stmt());
+    fctx.push_back<ReturnStmt>(fctx.back_stmt());
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }
@@ -361,6 +361,10 @@ class LowerAST : public IRVisitor {
       fctx.push_back<LocalStoreStmt>(
           assign->parent->lookup_var(assign->lhs.cast<IdExpression>()->id),
           expr->stmt);
+    } else if (assign->lhs.is<GlobalTensorElementExpression>()) {
+      auto global_ptr = assign->lhs.cast<GlobalTensorElementExpression>();
+      global_ptr->flatten(&fctx);
+      fctx.push_back<GlobalStoreStmt>(fctx.back_stmt(), expr->stmt);
     } else {  // global variable
       TI_ASSERT(assign->lhs.is<GlobalPtrExpression>());
       auto global_ptr = assign->lhs.cast<GlobalPtrExpression>();
@@ -426,6 +430,13 @@ class LowerAST : public IRVisitor {
       args_stmts[i] = fargs[i]->stmt;
     }
     fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts);
+    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    throw IRModified();
+  }
+
+  void visit(FrontendExprStmt *stmt) override {
+    auto fctx = make_flatten_ctx();
+    stmt->val->flatten(&fctx);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }

@@ -55,7 +55,9 @@ Expr Expr::operator[](const ExprGroup &indices) const {
 }
 
 Expr &Expr::operator=(const Expr &o) {
-  if (get_current_program().current_kernel) {
+  if (get_current_program().current_callable) {
+    // Inside a kernel or a function
+    // Create an assignment in the IR
     if (expr == nullptr) {
       set(o.eval());
     } else if (expr->is_lvalue()) {
@@ -66,7 +68,7 @@ Expr &Expr::operator=(const Expr &o) {
       TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
     }
   } else {
-    set(o);
+    set(o);  // Literally set this Expr to o
   }
   return *this;
 }
@@ -159,7 +161,8 @@ void Expr::operator/=(const Expr &o) {
 }
 
 Expr load_if_ptr(const Expr &ptr) {
-  if (ptr.is<GlobalPtrExpression>()) {
+  if (ptr.is<GlobalPtrExpression>() ||
+      ptr.is<GlobalTensorElementExpression>()) {
     return load(ptr);
   } else if (ptr.is<GlobalVariableExpression>()) {
     TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
@@ -170,7 +173,8 @@ Expr load_if_ptr(const Expr &ptr) {
 }
 
 Expr load(const Expr &ptr) {
-  TI_ASSERT(ptr.is<GlobalPtrExpression>());
+  TI_ASSERT(ptr.is<GlobalPtrExpression>() ||
+            ptr.is<GlobalTensorElementExpression>());
   return Expr::make<GlobalLoadExpression>(ptr);
 }
 

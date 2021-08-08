@@ -7,48 +7,82 @@
 #include "taichi/ir/snode_types.h"
 #include "taichi/ir/type.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
-struct IndexExtractor {
-  int start;
-  int num_bits;
-  int acc_offset;
-  int num_elements;
-  int trailing_bits;
-
-  // TODO: rename start to src_offset
-
-  bool active;
-
-  IndexExtractor() {
-    start = 0;
-    num_bits = 0;
-    active = false;
-    acc_offset = 0;
-    num_elements = 1;
-    trailing_bits = 0;
-  }
-
-  void activate(int num_bits) {
-    active = true;
-    this->num_bits = num_bits;
-  }
-};
-
-class Index {
+/**
+ * Dimension (or axis) of a tensor.
+ *
+ * For example, in the frontend we have ti.ij, which is translated to
+ * {Axis{0}, Axis{1}}.
+ */
+class Axis {
  public:
   int value;
-  Index() {
+  Axis() {
     value = 0;
   }
-  Index(int value) : value(value) {
+  Axis(int value) : value(value) {
     TI_ERROR_UNLESS(0 <= value && value < taichi_max_num_indices,
                     "Too many dimensions. The maximum dimensionality is {}",
                     taichi_max_num_indices);
   }
 };
 
-// Structural nodes
+/**
+ * SNode shape metadata at a specific Axis.
+ */
+struct AxisExtractor {
+  /**
+   * Number of elements from root at this index.
+   *
+   * This is the raw number, *not* padded to power-of-two (POT).
+   */
+  int num_elements_from_root{1};
+  /**
+   * Shape at this index (POT or packed) according to the config.
+   */
+  int shape{1};
+  /**
+   * Accumulated shape from the last activated index to the first one.
+   */
+  int acc_shape{1};
+  /**
+   * Number of bits needed to store the coordinate at this index.
+   *
+   * ceil(log2(shape))
+   */
+  int num_bits{0};
+  /**
+   * Accumulated offset from the last activated index to the first one.
+   *
+   * This is the starting bit of this index in a linearized 1D coordinate. For
+   * example, assuming an SNode of (ti.ijk, shape=(4, 8, 16)). ti.i takes 2
+   * bits, ti.j 3 bits and ti.k 4 bits. Then for a linearized coordinate:
+   * ti.k uses bits [0, 4), acc_offset=0
+   * ti.j uses bits [4, 7), acc_offset=4
+   * ti.i uses bits [7, 9), acc_offset=7
+   */
+  int acc_offset{0};
+  /**
+   * Whether this index (axis) is activated.
+   */
+  bool active{false};
+
+  /**
+   * Activates the current index.
+   *
+   * @param num_bits Number of bits needed to store the POT shape.
+   */
+  void activate(int num_bits) {
+    active = true;
+    this->num_bits = num_bits;
+  }
+};
+
+/**
+ * Structural nodes
+ */
 class SNode {
  public:
   // This class decouples SNode from the frontend expression.
@@ -65,9 +99,9 @@ class SNode {
   };
   std::vector<std::unique_ptr<SNode>> ch;
 
-  IndexExtractor extractors[taichi_max_num_indices];
+  AxisExtractor extractors[taichi_max_num_indices];
   std::vector<int> index_offsets;
-  int num_active_indices{};
+  int num_active_indices{0};
   int physical_index_position[taichi_max_num_indices]{};
   // physical indices are (ti.i, ti.j, ti.k, ti.l, ...)
   // physical_index_position[i] =
@@ -76,21 +110,21 @@ class SNode {
   // indices.
 
   static std::atomic<int> counter;
-  int id;
-  int depth{};
+  int id{0};
+  int depth{0};
 
   std::string name;
-  int64 n{0};
+  int64 n{1};  // Product of shape at all activated indices
   int total_num_bits{0};
   int total_bit_start{0};
   int chunk_size{0};
   std::size_t cell_size_bytes{0};
-  PrimitiveType *physical_type;  // for bit_struct and bit_array only
+  PrimitiveType *physical_type{nullptr};  // for bit_struct and bit_array only
   DataType dt;
-  bool has_ambient{};
+  bool has_ambient{false};
   TypedConstant ambient_val;
   // Note: parent will not be set until structural nodes are compiled!
-  SNode *parent{};
+  SNode *parent{nullptr};
   std::unique_ptr<GradInfoProvider> grad_info{nullptr};
   SNode *exp_snode{nullptr};  // for CustomFloatType with exponent bits
   int bit_offset{0};          // for children of bit_struct only
@@ -106,7 +140,7 @@ class SNode {
   bool is_bit_level{false};
 
   // Whether the path from root to |this| contains only `dense` SNodes.
-  bool is_path_all_dense{false};
+  bool is_path_all_dense{true};
 
   SNode();
 
@@ -128,78 +162,86 @@ class SNode {
 
   SNode &insert_children(SNodeType t);
 
-  SNode &create_node(std::vector<Index> indices,
+  SNode &create_node(std::vector<Axis> axes,
                      std::vector<int> sizes,
-                     SNodeType type);
+                     SNodeType type,
+                     bool packed);
 
   // SNodes maintains how flattened index bits are taken from indices
-  SNode &dense(const std::vector<Index> &indices,
-               const std::vector<int> &sizes) {
-    return create_node(indices, sizes, SNodeType::dense);
+  SNode &dense(const std::vector<Axis> &axes,
+               const std::vector<int> &sizes,
+               bool packed) {
+    return create_node(axes, sizes, SNodeType::dense, packed);
   }
 
-  SNode &dense(const std::vector<Index> &indices, int sizes) {
-    return create_node(indices, std::vector<int>{sizes}, SNodeType::dense);
+  SNode &dense(const std::vector<Axis> &axes, int sizes, bool packed) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::dense, packed);
   }
 
-  SNode &dense(const Index &index, int size) {
-    return SNode::dense(std::vector<Index>{index}, size);
+  SNode &dense(const Axis &axis, int size, bool packed) {
+    return SNode::dense(std::vector<Axis>{axis}, size, packed);
   }
 
-  SNode &pointer(const std::vector<Index> &indices,
-                 const std::vector<int> &sizes) {
-    return create_node(indices, sizes, SNodeType::pointer);
+  SNode &pointer(const std::vector<Axis> &axes,
+                 const std::vector<int> &sizes,
+                 bool packed) {
+    return create_node(axes, sizes, SNodeType::pointer, packed);
   }
 
-  SNode &pointer(const std::vector<Index> &indices, int sizes) {
-    return create_node(indices, std::vector<int>{sizes}, SNodeType::pointer);
+  SNode &pointer(const std::vector<Axis> &axes, int sizes, bool packed) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::pointer,
+                       packed);
   }
 
-  SNode &pointer(const Index &index, int size) {
-    return SNode::pointer(std::vector<Index>{index}, size);
+  SNode &pointer(const Axis &axis, int size, bool packed) {
+    return SNode::pointer(std::vector<Axis>{axis}, size, packed);
   }
 
-  SNode &bitmasked(const std::vector<Index> &indices,
-                   const std::vector<int> &sizes) {
-    return create_node(indices, sizes, SNodeType::bitmasked);
+  SNode &bitmasked(const std::vector<Axis> &axes,
+                   const std::vector<int> &sizes,
+                   bool packed) {
+    return create_node(axes, sizes, SNodeType::bitmasked, packed);
   }
 
-  SNode &bitmasked(const std::vector<Index> &indices, int sizes) {
-    return create_node(indices, std::vector<int>{sizes}, SNodeType::bitmasked);
+  SNode &bitmasked(const std::vector<Axis> &axes, int sizes, bool packed) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::bitmasked,
+                       packed);
   }
 
-  SNode &bitmasked(const Index &index, int size) {
-    return SNode::bitmasked(std::vector<Index>{index}, size);
+  SNode &bitmasked(const Axis &axis, int size, bool packed) {
+    return SNode::bitmasked(std::vector<Axis>{axis}, size, packed);
   }
 
-  SNode &hash(const std::vector<Index> &indices,
-              const std::vector<int> &sizes) {
-    return create_node(indices, sizes, SNodeType::hash);
+  SNode &hash(const std::vector<Axis> &axes,
+              const std::vector<int> &sizes,
+              bool packed) {
+    return create_node(axes, sizes, SNodeType::hash, packed);
   }
 
-  SNode &hash(const std::vector<Index> &indices, int sizes) {
-    return create_node(indices, std::vector<int>{sizes}, SNodeType::hash);
+  SNode &hash(const std::vector<Axis> &axes, int sizes, bool packed) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::hash, packed);
   }
 
-  SNode &hash(const Index &index, int size) {
-    return hash(std::vector<Index>{index}, size);
+  SNode &hash(const Axis &axis, int size, bool packed) {
+    return hash(std::vector<Axis>{axis}, size, packed);
   }
 
   std::string type_name() {
     return snode_type_name(type);
   }
 
-  SNode &bit_struct(int bits);
+  SNode &bit_struct(int bits, bool packed);
 
-  SNode &bit_array(const std::vector<Index> &indices,
+  SNode &bit_array(const std::vector<Axis> &axes,
                    const std::vector<int> &sizes,
-                   int bits);
+                   int bits,
+                   bool packed);
 
   void print();
 
   void set_index_offsets(std::vector<int> index_offsets);
 
-  SNode &dynamic(const Index &expr, int n, int chunk_size);
+  SNode &dynamic(const Axis &expr, int n, int chunk_size, bool packed);
 
   SNode &morton(bool val = true) {
     _morton = val;
@@ -257,7 +299,7 @@ class SNode {
   }
 
   int64 max_num_elements() const {
-    return int64(1) << total_num_bits;
+    return n;
   }
 
   int shape_along_axis(int i) const;
@@ -267,6 +309,16 @@ class SNode {
   void begin_shared_exp_placement();
 
   void end_shared_exp_placement();
+
+  // SNodeTree part
+
+  void set_snode_tree_id(int id);
+
+  int get_snode_tree_id();
+
+ private:
+  int snode_tree_id_{0};
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

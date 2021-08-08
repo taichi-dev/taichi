@@ -293,7 +293,7 @@ TI_NAMESPACE_END
 //                               Serialization
 //******************************************************************************
 
-#include "serialization.h"
+#include "taichi/common/serialization.h"
 
 //******************************************************************************
 //                                   Misc.

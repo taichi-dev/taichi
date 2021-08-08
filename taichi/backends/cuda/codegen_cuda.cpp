@@ -40,9 +40,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
     }
 
-    auto jit = kernel->program.llvm_context_device->jit.get();
+    auto jit = kernel->program->llvm_context_device->jit.get();
     auto cuda_module =
-        jit->add_module(std::move(module), kernel->program.config.gpu_max_reg);
+        jit->add_module(std::move(module), kernel->program->config.gpu_max_reg);
 
     return [offloaded_local, cuda_module,
             kernel = this->kernel](Context &context) {
@@ -59,7 +59,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       // want to modify.
       Kernel::LaunchContextBuilder ctx_builder(kernel, &context);
       for (int i = 0; i < (int)args.size(); i++) {
-        if (args[i].is_nparray) {
+        if (args[i].is_external_array) {
           has_buffer = true;
           // replace host buffer with device buffer
           host_buffers[i] = context.get_arg<void *>(i);
@@ -71,8 +71,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             CUDADriver::get_instance().memcpy_host_to_device(
                 (void *)device_buffers[i], host_buffers[i], args[i].size);
           }
-          ctx_builder.set_arg_nparray(i, (uint64)device_buffers[i],
-                                      args[i].size);
+          ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
+                                             args[i].size);
         }
       }
       if (has_buffer) {
@@ -90,7 +90,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         CUDADriver::get_instance().stream_synchronize(nullptr);
       }
       for (int i = 0; i < (int)args.size(); i++) {
-        if (args[i].is_nparray && args[i].size > 0) {
+        if (args[i].is_external_array && args[i].size > 0) {
           CUDADriver::get_instance().memcpy_device_to_host(
               host_buffers[i], (void *)device_buffers[i], args[i].size);
           CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
@@ -240,6 +240,112 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 #undef UNARY_STD
   }
 
+  // Not all reduction statements can be optimized.
+  // If the operation cannot be optimized, this function returns nullptr.
+  llvm::Value *optimized_reduction(AtomicOpStmt *stmt) {
+    if (!stmt->is_reduction) {
+      return nullptr;
+    }
+    TI_ASSERT(stmt->val->ret_type->is<PrimitiveType>());
+    PrimitiveTypeID prim_type =
+        stmt->val->ret_type->cast<PrimitiveType>()->type;
+
+    std::unordered_map<PrimitiveTypeID,
+                       std::unordered_map<AtomicOpType, std::string>>
+        fast_reductions;
+
+    fast_reductions[PrimitiveTypeID::i32][AtomicOpType::add] = "reduce_add_i32";
+    fast_reductions[PrimitiveTypeID::f32][AtomicOpType::add] = "reduce_add_f32";
+    fast_reductions[PrimitiveTypeID::i32][AtomicOpType::min] = "reduce_min_i32";
+    fast_reductions[PrimitiveTypeID::f32][AtomicOpType::min] = "reduce_min_f32";
+    fast_reductions[PrimitiveTypeID::i32][AtomicOpType::max] = "reduce_max_i32";
+    fast_reductions[PrimitiveTypeID::f32][AtomicOpType::max] = "reduce_max_f32";
+
+    fast_reductions[PrimitiveTypeID::i32][AtomicOpType::bit_and] =
+        "reduce_and_i32";
+    fast_reductions[PrimitiveTypeID::i32][AtomicOpType::bit_or] =
+        "reduce_or_i32";
+    fast_reductions[PrimitiveTypeID::i32][AtomicOpType::bit_xor] =
+        "reduce_xor_i32";
+
+    AtomicOpType op = stmt->op_type;
+    if (fast_reductions.find(prim_type) == fast_reductions.end()) {
+      return nullptr;
+    }
+    TI_ASSERT(fast_reductions.at(prim_type).find(op) !=
+              fast_reductions.at(prim_type).end());
+    return create_call(fast_reductions.at(prim_type).at(op),
+                       {llvm_val[stmt->dest], llvm_val[stmt->val]});
+  }
+
+  llvm::Value *custom_type_atomic(AtomicOpStmt *stmt) {
+    if (stmt->op_type != AtomicOpType::add) {
+      return nullptr;
+    }
+
+    auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
+    if (auto cit = dst_type->cast<CustomIntType>()) {
+      return atomic_add_custom_int(stmt, cit);
+    } else if (auto cft = dst_type->cast<CustomFloatType>()) {
+      return atomic_add_custom_float(stmt, cft);
+    } else {
+      return nullptr;
+    }
+  }
+
+  llvm::Value *integral_type_atomic(AtomicOpStmt *stmt) {
+    if (!is_integral(stmt->val->ret_type)) {
+      return nullptr;
+    }
+    std::unordered_map<AtomicOpType, llvm::AtomicRMWInst::BinOp> bin_op;
+    bin_op[AtomicOpType::add] = llvm::AtomicRMWInst::BinOp::Add;
+    bin_op[AtomicOpType::min] = llvm::AtomicRMWInst::BinOp::Min;
+    bin_op[AtomicOpType::max] = llvm::AtomicRMWInst::BinOp::Max;
+
+    bin_op[AtomicOpType::bit_and] = llvm::AtomicRMWInst::BinOp::And;
+    bin_op[AtomicOpType::bit_or] = llvm::AtomicRMWInst::BinOp::Or;
+    bin_op[AtomicOpType::bit_xor] = llvm::AtomicRMWInst::BinOp::Xor;
+    TI_ASSERT(bin_op.find(stmt->op_type) != bin_op.end());
+    return builder->CreateAtomicRMW(
+        bin_op.at(stmt->op_type), llvm_val[stmt->dest], llvm_val[stmt->val],
+        llvm::AtomicOrdering::SequentiallyConsistent);
+  }
+
+  llvm::Value *real_type_atomic(AtomicOpStmt *stmt) {
+    if (!stmt->val->ret_type->is<PrimitiveType>()) {
+      return nullptr;
+    }
+    AtomicOpType op = stmt->op_type;
+    if (is_real(stmt->val->ret_type) && op == AtomicOpType::add) {
+      return builder->CreateAtomicRMW(llvm::AtomicRMWInst::FAdd,
+                                      llvm_val[stmt->dest], llvm_val[stmt->val],
+                                      AtomicOrdering::SequentiallyConsistent);
+    }
+
+    PrimitiveTypeID prim_type =
+        stmt->val->ret_type->cast<PrimitiveType>()->type;
+
+    std::unordered_map<PrimitiveTypeID,
+                       std::unordered_map<AtomicOpType, std::string>>
+        atomics;
+
+    atomics[PrimitiveTypeID::f32][AtomicOpType::min] = "atomic_min_f32";
+    atomics[PrimitiveTypeID::f64][AtomicOpType::min] = "atomic_min_f64";
+    atomics[PrimitiveTypeID::f32][AtomicOpType::max] = "atomic_max_f32";
+    atomics[PrimitiveTypeID::f64][AtomicOpType::max] = "atomic_max_f64";
+
+    if (atomics.find(prim_type) == atomics.end()) {
+      return nullptr;
+    }
+    TI_ASSERT(atomics.at(prim_type).find(op) != atomics.at(prim_type).end());
+
+    return builder->CreateCall(
+        get_runtime_function(atomics.at(prim_type).at(op)),
+        {llvm_val[stmt->dest], llvm_val[stmt->val]});
+
+    return nullptr;
+  }
+
   void visit(AtomicOpStmt *stmt) override {
     // https://llvm.org/docs/NVPTXUsage.html#address-spaces
     bool is_local = stmt->dest->is<AllocaStmt>();
@@ -249,87 +355,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     TI_ASSERT(stmt->width() == 1);
     for (int l = 0; l < stmt->width(); l++) {
       llvm::Value *old_value;
-      auto dst_type =
-          stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
-      if (stmt->op_type == AtomicOpType::add) {
-        if (dst_type->is<PrimitiveType>() && is_integral(stmt->val->ret_type)) {
-          old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
-              llvm_val[stmt->val],
-              llvm::AtomicOrdering::SequentiallyConsistent);
-        } else if (!dst_type->is<CustomFloatType>() &&
-                   is_real(stmt->val->ret_type)) {
-          old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest],
-              llvm_val[stmt->val], AtomicOrdering::SequentiallyConsistent);
-        } else if (auto cit = dst_type->cast<CustomIntType>()) {
-          old_value = atomic_add_custom_int(stmt, cit);
-        } else if (auto cft = dst_type->cast<CustomFloatType>()) {
-          old_value = atomic_add_custom_float(stmt, cft);
-        } else {
-          TI_NOT_IMPLEMENTED
-        }
-      } else if (stmt->op_type == AtomicOpType::min) {
-        if (is_integral(stmt->val->ret_type)) {
-          old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
-              llvm_val[stmt->val],
-              llvm::AtomicOrdering::SequentiallyConsistent);
-        } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-          old_value =
-              builder->CreateCall(get_runtime_function("atomic_min_f32"),
-                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
-        } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-          old_value =
-              builder->CreateCall(get_runtime_function("atomic_min_f64"),
-                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
-        } else {
-          TI_NOT_IMPLEMENTED
-        }
-      } else if (stmt->op_type == AtomicOpType::max) {
-        if (is_integral(stmt->val->ret_type)) {
-          old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
-              llvm_val[stmt->val],
-              llvm::AtomicOrdering::SequentiallyConsistent);
-        } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-          old_value =
-              builder->CreateCall(get_runtime_function("atomic_max_f32"),
-                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
-        } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-          old_value =
-              builder->CreateCall(get_runtime_function("atomic_max_f64"),
-                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
-        } else {
-          TI_NOT_IMPLEMENTED
-        }
-      } else if (stmt->op_type == AtomicOpType::bit_and) {
-        if (is_integral(stmt->val->ret_type)) {
-          old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::BinOp::And, llvm_val[stmt->dest],
-              llvm_val[stmt->val],
-              llvm::AtomicOrdering::SequentiallyConsistent);
-        } else {
-          TI_NOT_IMPLEMENTED
-        }
-      } else if (stmt->op_type == AtomicOpType::bit_or) {
-        if (is_integral(stmt->val->ret_type)) {
-          old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::BinOp::Or, llvm_val[stmt->dest],
-              llvm_val[stmt->val],
-              llvm::AtomicOrdering::SequentiallyConsistent);
-        } else {
-          TI_NOT_IMPLEMENTED
-        }
-      } else if (stmt->op_type == AtomicOpType::bit_xor) {
-        if (is_integral(stmt->val->ret_type)) {
-          old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::BinOp::Xor, llvm_val[stmt->dest],
-              llvm_val[stmt->val],
-              llvm::AtomicOrdering::SequentiallyConsistent);
-        } else {
-          TI_NOT_IMPLEMENTED
-        }
+
+      if (llvm::Value *result = optimized_reduction(stmt)) {
+        old_value = result;
+      } else if (llvm::Value *result = custom_type_atomic(stmt)) {
+        old_value = result;
+      } else if (llvm::Value *result = integral_type_atomic(stmt)) {
+        old_value = result;
+      } else if (llvm::Value *result = real_type_atomic(stmt)) {
+        old_value = result;
       } else {
         TI_NOT_IMPLEMENTED
       }

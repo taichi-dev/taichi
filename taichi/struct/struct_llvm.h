@@ -1,23 +1,27 @@
 // Codegen for the hierarchical data structure (LLVM)
 
-#include "taichi/struct/struct.h"
 #include "taichi/llvm/llvm_codegen_utils.h"
+#include "taichi/struct/struct.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
  public:
-  StructCompilerLLVM(Program *prog, Arch arch);
+  StructCompilerLLVM(Arch arch,
+                     const CompileConfig *config,
+                     TaichiLLVMContext *tlctx,
+                     std::unique_ptr<llvm::Module> &&module);
 
-  Arch arch;
-  TaichiLLVMContext *tlctx;
-  llvm::LLVMContext *llvm_ctx;
+  StructCompilerLLVM(Arch arch,
+                     Program *prog,
+                     std::unique_ptr<llvm::Module> &&module);
 
   void generate_types(SNode &snode) override;
 
   void generate_child_accessors(SNode &snode) override;
 
-  void run(SNode &node, bool host) override;
+  void run(SNode &node) override;
 
   void generate_refine_coordinates(SNode *snode);
 
@@ -32,6 +36,13 @@ class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
   static llvm::Type *get_llvm_aux_type(llvm::Module *module, SNode *snode);
 
   static llvm::Type *get_llvm_element_type(llvm::Module *module, SNode *snode);
+
+ private:
+  Arch arch_;
+  const CompileConfig *const config_;
+  TaichiLLVMContext *const tlctx_;
+  llvm::LLVMContext *const llvm_ctx_;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

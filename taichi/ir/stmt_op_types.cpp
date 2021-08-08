@@ -130,6 +130,7 @@ std::string snode_op_type_name(SNodeOpType type) {
 
     REGISTER_TYPE(is_active);
     REGISTER_TYPE(length);
+    REGISTER_TYPE(get_addr);
     REGISTER_TYPE(activate);
     REGISTER_TYPE(deactivate);
     REGISTER_TYPE(append);

@@ -219,6 +219,59 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
+  TI_ASSERT(var.is<GlobalPtrExpression>())
+  var->flatten(ctx);
+  Stmt *var_stmt = ctx->back_stmt();
+  SNode *snode = var.cast<GlobalPtrExpression>()
+                     ->var.cast<GlobalVariableExpression>()
+                     ->snode;
+  // Compute exact offset
+  // Type A[i, j][x, y]
+  //              ^^^^
+  TI_ASSERT(1 <= indices.size() && indices.size() <= 2)
+  if (indices.size() == 1) {
+    indices[0].set(load_if_ptr(indices[0]));
+    indices[0]->flatten(ctx);
+  } else {
+    indices[0].set(load_if_ptr(indices[0]));
+    indices[0]->flatten(ctx);
+    Stmt *i_stmt = ctx->back_stmt();
+    Stmt *cols_stmt =
+        ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(cols)));
+    Stmt *i_mul_cols_stmt = ctx->push_back(
+        Stmt::make<BinaryOpStmt>(BinaryOpType::mul, i_stmt, cols_stmt));
+    indices[1].set(load_if_ptr(indices[1]));
+    indices[1]->flatten(ctx);
+    Stmt *j_stmt = ctx->back_stmt();
+    ctx->push_back(
+        Stmt::make<BinaryOpStmt>(BinaryOpType::add, i_mul_cols_stmt, j_stmt));
+  }
+  // Type A[i, j][x, y]
+  //             ^    ^
+  if (!is_aos) {
+    TI_ASSERT(snode->is_path_all_dense)
+    int size = 1;
+    for (auto *s = snode; s != nullptr; s = s->parent)
+      size *= (int)s->max_num_elements();
+    Stmt *offset_stmt = ctx->back_stmt();
+    Stmt *field_size_stmt =
+        ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(size)));
+    ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
+                                            field_size_stmt));
+  }
+  // Type A[i, j][x, y]
+  // ^^^^
+  Stmt *offset_stmt = ctx->back_stmt();
+  Stmt *dt_size_stmt = ctx->push_back(
+      Stmt::make<ConstStmt>(TypedConstant(data_type_size(snode->dt))));
+  ctx->push_back(
+      Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
+
+  ctx->push_back(std::make_unique<PtrOffsetStmt>(var_stmt, ctx->back_stmt()));
+  stmt = ctx->back_stmt();
+}
+
 void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   input->flatten(ctx);
   base->flatten(ctx);
@@ -297,6 +350,10 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     // emit local store stmt
     auto alloca = ctx->current_block->lookup_var(dest.cast<IdExpression>()->id);
     ctx->push_back<AtomicOpStmt>(op_type, alloca, expr->stmt);
+  } else if (dest.is<GlobalTensorElementExpression>()) {
+    auto global_ptr = dest.cast<GlobalTensorElementExpression>();
+    global_ptr->flatten(ctx);
+    ctx->push_back<AtomicOpStmt>(op_type, ctx->back_stmt(), expr->stmt);
   } else {  // global variable
     TI_ASSERT(dest.is<GlobalPtrExpression>());
     auto global_ptr = dest.cast<GlobalPtrExpression>();
@@ -332,6 +389,8 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::length) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
+  } else if (op_type == SNodeOpType::get_addr) {
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::append) {
     value->flatten(ctx);
     ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr, value->stmt);
@@ -360,6 +419,16 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   auto temp = ptr.cast<ExternalTensorExpression>();
   TI_ASSERT(0 <= axis && axis < temp->dim);
   ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id);
+  stmt = ctx->back_stmt();
+}
+
+void FuncCallExpression::flatten(FlattenContext *ctx) {
+  std::vector<Stmt *> stmt_args;
+  for (auto &arg : args.exprs) {
+    arg->flatten(ctx);
+    stmt_args.push_back(arg->stmt);
+  }
+  ctx->push_back<FuncCallStmt>(func, stmt_args);
   stmt = ctx->back_stmt();
 }
 

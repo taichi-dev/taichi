@@ -3,7 +3,8 @@
 #include <string>
 #include "taichi/common/core.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 enum class Arch : int {
 #define PER_ARCH(x) x,
@@ -28,4 +29,5 @@ bool arch_use_host_memory(Arch arch);
 
 int default_simd_width(Arch arch);
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

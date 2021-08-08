@@ -25,8 +25,6 @@ inline int maximum(int a) {
 
 TLANG_NAMESPACE_BEGIN
 
-void layout(const std::function<void()> &body);
-
 inline Kernel &kernel(const std::function<void()> &body) {
   return get_current_program().kernel(body);
 }
@@ -60,23 +58,6 @@ inline void declare_var(Expr &a) {
       PrimitiveType::unknown));
 }
 
-#define Declare(x) auto x = Expr(std::make_shared<IdExpression>(#x));
-#define DeclareNamed(x, name) \
-  auto x = Expr(std::make_shared<IdExpression>(name));
-
-#define NamedScalar(x, name, dt)   \
-  DeclareNamed(x##_global, #name); \
-  auto x = global_new(x##_global, PrimitiveType::dt);
-
-#define Global(x, dt)  \
-  Declare(x##_global); \
-  auto x = global_new(x##_global, PrimitiveType::dt);
-
-#define AmbientGlobal(x, dt, ambient)                 \
-  Declare(x##_global);                                \
-  auto x = global_new(x##_global, PrimitiveType::dt); \
-  set_ambient(x, ambient);
-
 inline void set_ambient(Expr expr_, float32 val) {
   auto expr = expr_.cast<GlobalVariableExpression>();
   expr->ambient_value = TypedConstant(val);
@@ -105,12 +86,12 @@ T Eval(const T &t) {
 
 Expr copy(const Expr &expr);
 
-template <typename... indices>
-std::vector<Index> Indices(indices... ind) {
-  auto ind_vec = std::vector<int>({ind...});
-  std::vector<Index> ret;
-  for (auto in : ind_vec) {
-    ret.push_back(Index(in));
+template <typename... AX>
+std::vector<Axis> Axes(AX... axes) {
+  auto ax_vec = std::vector<int>({axes...});
+  std::vector<Axis> ret;
+  for (auto ax : ax_vec) {
+    ret.push_back(Axis(ax));
   }
   return ret;
 }

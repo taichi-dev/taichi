@@ -13,7 +13,8 @@
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 namespace metal {
 namespace {
 
@@ -77,7 +78,7 @@ bool is_ret_type_bit_pointer(Stmt *s) {
   return false;
 }
 
-class KernelCodegen : public IRVisitor {
+class KernelCodegenImpl : public IRVisitor {
  private:
   enum class Section {
     Headers,
@@ -98,51 +99,46 @@ class KernelCodegen : public IRVisitor {
     bool allow_simdgroup = true;
   };
   // TODO(k-ye): Create a Params to hold these ctor params.
-  KernelCodegen(const std::string &taichi_kernel_name,
-                const std::string &root_snode_type_name,
-                Kernel *kernel,
-                const CompiledStructs *compiled_structs,
-                PrintStringTable *print_strtab,
-                const Config &config,
-                OffloadedStmt *offloaded)
+  KernelCodegenImpl(const std::string &taichi_kernel_name,
+                    Kernel *kernel,
+                    const CompiledStructs *compiled_structs,
+                    PrintStringTable *print_strtab,
+                    const Config &config,
+                    OffloadedStmt *offloaded)
       : mtl_kernel_prefix_(taichi_kernel_name),
-        root_snode_type_name_(root_snode_type_name),
         kernel_(kernel),
         compiled_structs_(compiled_structs),
         needs_root_buffer_(compiled_structs_->root_size > 0),
-        ctx_attribs_(*kernel_),
         print_strtab_(print_strtab),
         cgen_config_(config),
-        offloaded_(offloaded) {
-    ti_kernel_attribus_.name = taichi_kernel_name;
-    ti_kernel_attribus_.is_jit_evaluator = kernel->is_evaluator;
+        offloaded_(offloaded),
+        ctx_attribs_(*kernel_) {
+    ti_kernel_attribs_.name = taichi_kernel_name;
+    ti_kernel_attribs_.is_jit_evaluator = kernel->is_evaluator;
     // allow_undefined_visitor = true;
     for (const auto s : kAllSections) {
       section_appenders_[s] = LineAppender();
     }
   }
 
-  const KernelContextAttributes &kernel_ctx_attribs() const {
-    return ctx_attribs_;
-  }
-
-  const TaichiKernelAttributes &ti_kernels_attribs() const {
-    return ti_kernel_attribus_;
-  }
-
-  std::string run() {
+  CompiledKernelData run() {
     emit_headers();
     generate_structs();
     generate_kernels();
 
-    std::string source_code;
+    CompiledKernelData res;
+    res.kernel_name = mtl_kernel_prefix_;
+    res.kernel_attribs = std::move(ti_kernel_attribs_);
+    res.ctx_attribs = std::move(ctx_attribs_);
+
+    auto &source_code = res.source_code;
     source_code += section_appenders_.at(Section::Headers).lines();
     source_code += "namespace {\n";
     source_code += section_appenders_.at(Section::Structs).lines();
     source_code += section_appenders_.at(Section::KernelFuncs).lines();
     source_code += "}  // namespace\n";
     source_code += section_appenders_.at(Section::Kernels).lines();
-    return source_code;
+    return res;
   }
 
   void visit(Block *stmt) override {
@@ -195,8 +191,8 @@ class KernelCodegen : public IRVisitor {
     // Should we assert |root_stmt_| is assigned only once?
     TI_ASSERT(needs_root_buffer_);
     root_stmt_ = stmt;
-    emit(R"({} {}({});)", root_snode_type_name_, stmt->raw_name(),
-         kRootBufferName);
+    emit(R"({} {}({});)", compiled_structs_->root_snode_type_name,
+         stmt->raw_name(), kRootBufferName);
   }
 
   void visit(LinearizeStmt *stmt) override {
@@ -294,19 +290,6 @@ class KernelCodegen : public IRVisitor {
       ScopedIndent s(current_appender());
       const auto &parent = stmt->ptr->raw_name();
       const bool is_dynamic = (stmt->snode->type == SNodeType::dynamic);
-      std::string ch_id;
-      if (is_dynamic &&
-          (opty == SNodeOpType::deactivate || opty == SNodeOpType::append ||
-           opty == SNodeOpType::length)) {
-        // For these ops, `dynamic` is a special case because |stmt| doesn't
-        // contain an index to its cells. Setting it to zero to store the
-        // address of the first child into |ch_addr|.
-        ch_id = "0";
-      } else {
-        ch_id = stmt->val->raw_name();
-      }
-      const std::string ch_addr =
-          fmt::format("{}.children({}).addr()", stmt->ptr->raw_name(), ch_id);
       if (opty == SNodeOpType::is_active) {
         emit("{} = {}.is_active({});", result_var, parent,
              stmt->val->raw_name());
@@ -364,7 +347,7 @@ class KernelCodegen : public IRVisitor {
     }
   }
 
-  void visit(KernelReturnStmt *stmt) override {
+  void visit(ReturnStmt *stmt) override {
     // TODO: use stmt->ret_id instead of 0 as index
     emit("*{}.ret0() = {};", kContextVarName, stmt->value->raw_name());
   }
@@ -623,7 +606,7 @@ class KernelCodegen : public IRVisitor {
     } else if (stmt->task_type == Type::listgen) {
       add_runtime_list_op_kernel(stmt);
     } else if (stmt->task_type == Type::gc) {
-      // Ignored
+      add_gc_op_kernels(stmt);
     } else {
       TI_ERROR("Unsupported offload type={} on Metal arch", stmt->task_name());
     }
@@ -739,20 +722,23 @@ class KernelCodegen : public IRVisitor {
     emit("}}");
   }
 
-  void visit(StackAllocaStmt *stmt) override {
+  void visit(AdStackAllocaStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
+    TI_ASSERT_INFO(
+        stmt->max_size > 0,
+        "Adaptive autodiff stack's size should have been determined.");
 
     const auto &var_name = stmt->raw_name();
     emit("byte {}[{}];", var_name, stmt->size_in_bytes());
     emit("mtl_ad_stack_init({});", var_name);
   }
 
-  void visit(StackPopStmt *stmt) override {
+  void visit(AdStackPopStmt *stmt) override {
     emit("mtl_ad_stack_pop({});", stmt->stack->raw_name());
   }
 
-  void visit(StackPushStmt *stmt) override {
-    auto *stack = stmt->stack->as<StackAllocaStmt>();
+  void visit(AdStackPushStmt *stmt) override {
+    auto *stack = stmt->stack->as<AdStackAllocaStmt>();
     const auto &stack_name = stack->raw_name();
     const auto elem_size = stack->element_size_in_bytes();
     emit("mtl_ad_stack_push({}, {});", stack_name, elem_size);
@@ -765,8 +751,8 @@ class KernelCodegen : public IRVisitor {
     emit("*{} = {};", primal_name, stmt->v->raw_name());
   }
 
-  void visit(StackLoadTopStmt *stmt) override {
-    auto *stack = stmt->stack->as<StackAllocaStmt>();
+  void visit(AdStackLoadTopStmt *stmt) override {
+    auto *stack = stmt->stack->as<AdStackAllocaStmt>();
     const auto primal_name = stmt->raw_name() + "_primal_";
     emit(
         "thread auto* {} = reinterpret_cast<thread "
@@ -776,8 +762,8 @@ class KernelCodegen : public IRVisitor {
     emit("const auto {} = *{};", stmt->raw_name(), primal_name);
   }
 
-  void visit(StackLoadTopAdjStmt *stmt) override {
-    auto *stack = stmt->stack->as<StackAllocaStmt>();
+  void visit(AdStackLoadTopAdjStmt *stmt) override {
+    auto *stack = stmt->stack->as<AdStackAllocaStmt>();
     const auto adjoint_name = stmt->raw_name() + "_adjoint_";
     emit(
         "thread auto* {} = reinterpret_cast<thread "
@@ -787,8 +773,8 @@ class KernelCodegen : public IRVisitor {
     emit("const auto {} = *{};", stmt->raw_name(), adjoint_name);
   }
 
-  void visit(StackAccAdjointStmt *stmt) override {
-    auto *stack = stmt->stack->as<StackAllocaStmt>();
+  void visit(AdStackAccAdjointStmt *stmt) override {
+    auto *stack = stmt->stack->as<AdStackAllocaStmt>();
     const auto adjoint_name = stmt->raw_name() + "_adjoint_";
     emit(
         "thread auto* {} = reinterpret_cast<thread "
@@ -1288,6 +1274,41 @@ class KernelCodegen : public IRVisitor {
     used_features()->sparse = true;
   }
 
+  void add_gc_op_kernels(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->task_type == OffloadedTaskType::gc);
+
+    auto *const sn = stmt->snode;
+    const auto &sn_descs = compiled_structs_->snode_descriptors;
+    // common attributes shared among the 3-stage GC kernels
+    KernelAttributes ka;
+    ka.task_type = OffloadedTaskType::gc;
+    ka.gc_op_attribs = KernelAttributes::GcOpAttributes();
+    ka.gc_op_attribs->snode = sn;
+    ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Context};
+    current_kernel_attribs_ = nullptr;
+    // stage 1 specific
+    ka.name = "gc_compact_free_list";
+    ka.advisory_total_num_threads =
+        std::min(total_num_self_from_root(sn_descs, sn->id),
+                 kMaxNumThreadsGridStrideLoop);
+    ka.advisory_num_threads_per_group = stmt->block_dim;
+    mtl_kernels_attribs()->push_back(ka);
+    // stage 2 specific
+    ka.name = "gc_reset_free_list";
+    ka.advisory_total_num_threads = 1;
+    ka.advisory_num_threads_per_group = 1;
+    mtl_kernels_attribs()->push_back(ka);
+    // stage 3 specific
+    ka.name = "gc_move_recycled_to_free";
+    ka.advisory_total_num_threads =
+        std::min(total_num_self_from_root(sn_descs, sn->id),
+                 kMaxNumThreadsGridStrideLoop);
+    ka.advisory_num_threads_per_group = stmt->block_dim;
+    mtl_kernels_attribs()->push_back(ka);
+
+    used_features()->sparse = true;
+  }
+
   std::string inject_load_global_tmp(int offset,
                                      DataType dt = PrimitiveType::i32) {
     const auto vt = TypeFactory::create_vector_or_scalar_type(1, dt);
@@ -1436,7 +1457,7 @@ class KernelCodegen : public IRVisitor {
 
   class SectionGuard {
    public:
-    SectionGuard(KernelCodegen *kg, Section new_sec)
+    SectionGuard(KernelCodegenImpl *kg, Section new_sec)
         : kg_(kg), saved_(kg->code_section_) {
       kg->code_section_ = new_sec;
     }
@@ -1446,7 +1467,7 @@ class KernelCodegen : public IRVisitor {
     }
 
    private:
-    KernelCodegen *const kg_;
+    KernelCodegenImpl *const kg_;
     const Section saved_;
   };
 
@@ -1465,26 +1486,26 @@ class KernelCodegen : public IRVisitor {
   }
 
   std::vector<KernelAttributes> *mtl_kernels_attribs() {
-    return &(ti_kernel_attribus_.mtl_kernels_attribs);
+    return &(ti_kernel_attribs_.mtl_kernels_attribs);
   }
 
   TaichiKernelAttributes::UsedFeatures *used_features() {
-    return &(ti_kernel_attribus_.used_features);
+    return &(ti_kernel_attribs_.used_features);
   }
 
   const std::string mtl_kernel_prefix_;
-  const std::string root_snode_type_name_;
   Kernel *const kernel_;
   const CompiledStructs *const compiled_structs_;
   const bool needs_root_buffer_;
-  const KernelContextAttributes ctx_attribs_;
   PrintStringTable *const print_strtab_;
   const Config &cgen_config_;
   OffloadedStmt *const offloaded_;
 
+  TaichiKernelAttributes ti_kernel_attribs_;
+  KernelContextAttributes ctx_attribs_;
+
   bool is_top_level_{true};
   int mtl_kernel_count_{0};
-  TaichiKernelAttributes ti_kernel_attribus_;
   GetRootStmt *root_stmt_{nullptr};
   KernelAttributes *current_kernel_attribs_{nullptr};
   bool inside_tls_epilogue_{false};
@@ -1494,30 +1515,38 @@ class KernelCodegen : public IRVisitor {
 
 }  // namespace
 
+CompiledKernelData run_codegen(const CompiledStructs *compiled_structs,
+                               Kernel *kernel,
+                               PrintStringTable *strtab,
+                               OffloadedStmt *offloaded) {
+  const auto id = Program::get_kernel_id();
+  const auto taichi_kernel_name(
+      fmt::format("mtl_k{:04d}_{}", id, kernel->name));
+
+  KernelCodegenImpl::Config cgen_config;
+  cgen_config.allow_simdgroup = EnvConfig::instance().is_simdgroup_enabled();
+
+  KernelCodegenImpl codegen(taichi_kernel_name, kernel, compiled_structs,
+                            strtab, cgen_config, offloaded);
+
+  return codegen.run();
+}
+
 FunctionType compile_to_metal_executable(
     Kernel *kernel,
     KernelManager *kernel_mgr,
     const CompiledStructs *compiled_structs,
     OffloadedStmt *offloaded) {
-  const auto id = Program::get_kernel_id();
-  const auto taichi_kernel_name(
-      fmt::format("mtl_k{:04d}_{}", id, kernel->name));
-
-  KernelCodegen::Config cgen_config;
-  cgen_config.allow_simdgroup = EnvConfig::instance().is_simdgroup_enabled();
-
-  KernelCodegen codegen(
-      taichi_kernel_name, kernel->program.snode_root->node_type_name, kernel,
-      compiled_structs, kernel_mgr->print_strtable(), cgen_config, offloaded);
-
-  const auto source_code = codegen.run();
-  kernel_mgr->register_taichi_kernel(taichi_kernel_name, source_code,
-                                     codegen.ti_kernels_attribs(),
-                                     codegen.kernel_ctx_attribs());
-  return [kernel_mgr, kernel_name = taichi_kernel_name](Context &ctx) {
+  const auto compiled_res = run_codegen(
+      compiled_structs, kernel, kernel_mgr->print_strtable(), offloaded);
+  kernel_mgr->register_taichi_kernel(
+      compiled_res.kernel_name, compiled_res.source_code,
+      compiled_res.kernel_attribs, compiled_res.ctx_attribs);
+  return [kernel_mgr, kernel_name = compiled_res.kernel_name](Context &ctx) {
     kernel_mgr->launch_taichi_kernel(kernel_name, &ctx);
   };
 }
 
 }  // namespace metal
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

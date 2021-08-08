@@ -1,7 +1,9 @@
-import taichi as ti
 import math
+
 import pytest
 from pytest import approx
+
+import taichi as ti
 
 
 @pytest.mark.parametrize('use_cft,use_exponent,use_shared_exp',
@@ -20,8 +22,8 @@ def test_custom_float_time_integration(use_cft, use_exponent, use_shared_exp):
             if use_shared_exp:
                 ti.root.bit_struct(num_bits=32).place(x, shared_exponent=True)
             else:
-                ti.root.bit_struct(num_bits=32).place(x(0))
-                ti.root.bit_struct(num_bits=32).place(x(1))
+                ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(0))
+                ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(1))
         else:
             cit = ti.quant.int(16, True)
             cft = ti.type_factory.custom_float(significand_type=cit,

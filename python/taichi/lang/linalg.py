@@ -5,17 +5,39 @@ import taichi as ti
 
 
 @ti.func
-def polar_decompose2d(a, dt):
-    x, y = a(0, 0) + a(1, 1), a(1, 0) - a(0, 1)
+def polar_decompose2d(A, dt):
+    """Perform polar decomposition (A=UP) for 2x2 matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
+
+    Args:
+        A (ti.Matrix(2, 2)): input 2x2 matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+
+    Returns:
+        Decomposed 2x2 matrices `U` and `P`.
+    """
+    x, y = A(0, 0) + A(1, 1), A(1, 0) - A(0, 1)
     scale = (1.0 / ti.sqrt(x * x + y * y))
     c = x * scale
     s = y * scale
     r = ti.Matrix([[c, -s], [s, c]])
-    return r, r.transpose() @ a
+    return r, r.transpose() @ A
 
 
 @ti.func
 def polar_decompose3d(A, dt):
+    """Perform polar decomposition (A=UP) for 3x3 matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
+
+    Args:
+        A (ti.Matrix(3, 3)): input 3x3 matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+
+    Returns:
+        Decomposed 3x3 matrices `U` and `P`.
+    """
     U, sig, V = ti.svd(A, dt)
     return U @ V.transpose(), V @ sig @ V.transpose()
 
@@ -23,6 +45,17 @@ def polar_decompose3d(A, dt):
 # https://www.seas.upenn.edu/~cffjiang/research/svd/svd.pdf
 @ti.func
 def svd2d(A, dt):
+    """Perform singular value decomposition (A=USV^T) for 2x2 matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
+
+    Args:
+        A (ti.Matrix(2, 2)): input 2x2 matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+
+    Returns:
+        Decomposed 2x2 matrices `U`, 'S' and `V`.
+    """
     R, S = polar_decompose2d(A, dt)
     c, s = ti.cast(0.0, dt), ti.cast(0.0, dt)
     s1, s2 = ti.cast(0.0, dt), ti.cast(0.0, dt)
@@ -54,6 +87,18 @@ def svd2d(A, dt):
 
 
 def svd3d(A, dt, iters=None):
+    """Perform singular value decomposition (A=USV^T) for 3x3 matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
+
+    Args:
+        A (ti.Matrix(3, 3)): input 3x3 matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+        iters (int): iteration number to control algorithm precision.
+
+    Returns:
+        Decomposed 3x3 matrices `U`, 'S' and `V`.
+    """
     assert A.n == 3 and A.m == 3
     inputs = tuple([e.ptr for e in A.entries])
     assert dt in [ti.f32, ti.f64]
@@ -82,7 +127,108 @@ def svd3d(A, dt, iters=None):
 
 
 @ti.func
+def eig2x2(A, dt):
+    """Compute the eigenvalues and right eigenvectors (Av=\lambda v) of a 2x2 real matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
+
+    Args:
+        A (ti.Matrix(2, 2)): input 2x2 matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+
+    Returns:
+        eigenvalues (ti.Matrix(2, 2)): The eigenvalues in complex form. Each row stores one eigenvalue. The first number of the eigenvalue represents the real part and the second number represents the imaginary part.
+        eigenvectors: (ti.Matrix(4, 2)): The eigenvectors in complex form. Each column stores one eigenvector. Each eigenvector consists of 2 entries, each of which is represented by two numbers for its real part and imaginary part.
+    """
+    tr = A.trace()
+    det = A.determinant()
+    gap = tr**2 - 4 * det
+    lambda1 = ti.Vector.zero(dt, 2)
+    lambda2 = ti.Vector.zero(dt, 2)
+    v1 = ti.Vector.zero(dt, 4)
+    v2 = ti.Vector.zero(dt, 4)
+    if gap > 0:
+        lambda1 = ti.Vector([tr + ti.sqrt(gap), ti.cast(0.0, dt)]) * 0.5
+        lambda2 = ti.Vector([tr - ti.sqrt(gap), ti.cast(0.0, dt)]) * 0.5
+        A1 = A - lambda1[0] * ti.Matrix.identity(dt, 2)
+        A2 = A - lambda2[0] * ti.Matrix.identity(dt, 2)
+        if all(A1 == ti.Matrix.zero(dt, 2, 2)) and all(
+                A1 == ti.Matrix.zero(dt, 2, 2)):
+            v1 = ti.Vector([0.0, 0.0, 1.0, 0.0]).cast(dt)
+            v2 = ti.Vector([1.0, 0.0, 0.0, 0.0]).cast(dt)
+        else:
+            v1 = ti.Vector([A2[0, 0], 0.0, A2[1, 0],
+                            0.0]).cast(dt).normalized()
+            v2 = ti.Vector([A1[0, 0], 0.0, A1[1, 0],
+                            0.0]).cast(dt).normalized()
+    else:
+        lambda1 = ti.Vector([tr, ti.sqrt(-gap)]) * 0.5
+        lambda2 = ti.Vector([tr, -ti.sqrt(-gap)]) * 0.5
+        A1r = A - lambda1[0] * ti.Matrix.identity(dt, 2)
+        A1i = -lambda1[1] * ti.Matrix.identity(dt, 2)
+        A2r = A - lambda2[0] * ti.Matrix.identity(dt, 2)
+        A2i = -lambda2[1] * ti.Matrix.identity(dt, 2)
+        v1 = ti.Vector([A2r[0, 0], A2i[0, 0], A2r[1, 0],
+                        A2i[1, 0]]).cast(dt).normalized()
+        v2 = ti.Vector([A1r[0, 0], A1i[0, 0], A1r[1, 0],
+                        A1i[1, 0]]).cast(dt).normalized()
+    eigenvalues = ti.Matrix.rows([lambda1, lambda2])
+    eigenvectors = ti.Matrix.cols([v1, v2])
+
+    return eigenvalues, eigenvectors
+
+
+@ti.func
+def sym_eig2x2(A, dt):
+    """Compute the eigenvalues and right eigenvectors (Av=\lambda v) of a 2x2 real symmetric matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
+
+    Args:
+        A (ti.Matrix(2, 2)): input 2x2 symmetric matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+
+    Returns:
+        eigenvalues (ti.Vector(2)): The eigenvalues. Each entry store one eigen value.
+        eigenvectors (ti.Matrix(2, 2)): The eigenvectors. Each column stores one eigenvector.
+    """
+    tr = A.trace()
+    det = A.determinant()
+    gap = tr**2 - 4 * det
+    lambda1 = (tr + ti.sqrt(gap)) * 0.5
+    lambda2 = (tr - ti.sqrt(gap)) * 0.5
+    eigenvalues = ti.Vector([lambda1, lambda2]).cast(dt)
+
+    A1 = A - lambda1 * ti.Matrix.identity(dt, 2)
+    A2 = A - lambda2 * ti.Matrix.identity(dt, 2)
+    v1 = ti.Vector.zero(dt, 2)
+    v2 = ti.Vector.zero(dt, 2)
+    if all(A1 == ti.Matrix.zero(dt, 2, 2)) and all(
+            A1 == ti.Matrix.zero(dt, 2, 2)):
+        v1 = ti.Vector([0.0, 1.0]).cast(dt)
+        v2 = ti.Vector([1.0, 0.0]).cast(dt)
+    else:
+        v1 = ti.Vector([A2[0, 0], A2[1, 0]]).cast(dt).normalized()
+        v2 = ti.Vector([A1[0, 0], A1[1, 0]]).cast(dt).normalized()
+    eigenvectors = ti.Matrix.cols([v1, v2])
+    return eigenvalues, eigenvectors
+
+
+@ti.func
 def svd(A, dt):
+    """Perform singular value decomposition (A=USV^T) for arbitrary size matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
+    2D implementation refers to :func:`taichi.lang.linalg.svd2d`.
+    3D implementation refers to :func:`taichi.lang.linalg.svd3d`.
+
+    Args:
+        A (ti.Matrix(n, n)): input nxn matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+
+    Returns:
+        Decomposed nxn matrices `U`, 'S' and `V`.
+    """
     if ti.static(A.n == 2):
         ret = svd2d(A, dt)
         return ret
@@ -94,6 +240,19 @@ def svd(A, dt):
 
 @ti.func
 def polar_decompose(A, dt):
+    """Perform polar decomposition (A=UP) for arbitrary size matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
+    2D implementation refers to :func:`taichi.lang.linalg.polar_decompose2d`.
+    3D implementation refers to :func:`taichi.lang.linalg.polar_decompose3d`.
+
+    Args:
+        A (ti.Matrix(n, n)): input nxn matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+
+    Returns:
+        Decomposed nxn matrices `U` and `P`.
+    """
     if ti.static(A.n == 2):
         ret = polar_decompose2d(A, dt)
         return ret

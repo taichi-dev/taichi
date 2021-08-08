@@ -22,6 +22,7 @@
 #include "taichi/util/statistics.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/system/timeline.h"
+#include "taichi/python/snode_registry.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
@@ -54,7 +55,6 @@ void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
 
 std::vector<std::unique_ptr<ASTBuilder::ScopeGuard>> scope_stack;
 
-void compile_runtimes();
 std::string libdevice_path();
 std::string get_runtime_dir();
 
@@ -119,6 +119,7 @@ void export_lang(py::module &m) {
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
+      .def_readwrite("packed", &CompileConfig::packed)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
@@ -140,6 +141,8 @@ void export_lang(py::module &m) {
       .def_readwrite("simplify_after_lower_access",
                      &CompileConfig::simplify_after_lower_access)
       .def_readwrite("lower_access", &CompileConfig::lower_access)
+      .def_readwrite("move_loop_invariant_outside_if",
+                     &CompileConfig::move_loop_invariant_outside_if)
       .def_readwrite("default_cpu_block_dim",
                      &CompileConfig::default_cpu_block_dim)
       .def_readwrite("default_gpu_block_dim",
@@ -148,6 +151,7 @@ void export_lang(py::module &m) {
       .def_readwrite("saturating_grid_dim", &CompileConfig::saturating_grid_dim)
       .def_readwrite("max_block_dim", &CompileConfig::max_block_dim)
       .def_readwrite("cpu_max_num_threads", &CompileConfig::cpu_max_num_threads)
+      .def_readwrite("random_seed", &CompileConfig::random_seed)
       .def_readwrite("verbose_kernel_launches",
                      &CompileConfig::verbose_kernel_launches)
       .def_readwrite("verbose", &CompileConfig::verbose)
@@ -200,13 +204,23 @@ void export_lang(py::module &m) {
       [&]() -> CompileConfig & { return default_compile_config; },
       py::return_value_policy::reference);
 
+  py::class_<Program::KernelProfilerQueryResult>(m, "KernelProfilerQueryResult")
+      .def_readwrite("counter", &Program::KernelProfilerQueryResult::counter)
+      .def_readwrite("min", &Program::KernelProfilerQueryResult::min)
+      .def_readwrite("max", &Program::KernelProfilerQueryResult::max)
+      .def_readwrite("avg", &Program::KernelProfilerQueryResult::avg);
+
   py::class_<Program>(m, "Program")
       .def(py::init<>())
       .def_readonly("config", &Program::config)
-      .def("kernel_profiler_print", &Program::kernel_profiler_print)
+      .def("print_kernel_profile_info", &Program::print_kernel_profile_info)
+      .def("query_kernel_profile_info",
+           [](Program *program, const std::string &name) {
+             return program->query_kernel_profile_info(name);
+           })
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })
-      .def("kernel_profiler_clear", &Program::kernel_profiler_clear)
+      .def("clear_kernel_profile_info", &Program::clear_kernel_profile_info)
       .def("timeline_clear",
            [](Program *) { Timelines::get_instance().clear(); })
       .def("timeline_save",
@@ -215,14 +229,8 @@ void export_lang(py::module &m) {
            })
       .def("print_memory_profiler_info", &Program::print_memory_profiler_info)
       .def("finalize", &Program::finalize)
-      .def(
-          "get_root",
-          [&](Program *program) -> SNode * {
-            return program->snode_root.get();
-          },
-          py::return_value_policy::reference)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
-      .def("print_snode_tree", &Program::print_snode_tree)
+      .def("visualize_layout", &Program::visualize_layout)
       .def("get_snode_num_dynamically_allocated",
            &Program::get_snode_num_dynamically_allocated)
       .def("benchmark_rebuild_graph",
@@ -230,7 +238,18 @@ void export_lang(py::module &m) {
              program->async_engine->sfg->benchmark_rebuild_graph();
            })
       .def("synchronize", &Program::synchronize)
-      .def("async_flush", &Program::async_flush);
+      .def("async_flush", &Program::async_flush)
+      .def("materialize_runtime", &Program::materialize_runtime)
+      .def("make_aot_module_builder", &Program::make_aot_module_builder)
+      .def("get_snode_tree_size", &Program::get_snode_tree_size)
+      .def("get_snode_root", &Program::get_snode_root,
+           py::return_value_policy::reference);
+
+  py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
+      .def("add_field", &AotModuleBuilder::add_field)
+      .def("add", &AotModuleBuilder::add)
+      .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
+      .def("dump", &AotModuleBuilder::dump);
 
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
@@ -240,28 +259,30 @@ void export_lang(py::module &m) {
       [&]() -> CompileConfig & { return get_current_program().config; },
       py::return_value_policy::reference);
 
-  py::class_<Index>(m, "Index").def(py::init<int>());
+  py::class_<Axis>(m, "Axis").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
       .def(py::init<>())
       .def_readwrite("parent", &SNode::parent)
       .def_readonly("type", &SNode::type)
       .def_readonly("id", &SNode::id)
       .def("dense",
-           (SNode & (SNode::*)(const std::vector<Index> &,
-                               const std::vector<int> &))(&SNode::dense),
+           (SNode & (SNode::*)(const std::vector<Axis> &,
+                               const std::vector<int> &, bool))(&SNode::dense),
            py::return_value_policy::reference)
-      .def("pointer",
-           (SNode & (SNode::*)(const std::vector<Index> &,
-                               const std::vector<int> &))(&SNode::pointer),
-           py::return_value_policy::reference)
+      .def(
+          "pointer",
+          (SNode & (SNode::*)(const std::vector<Axis> &,
+                              const std::vector<int> &, bool))(&SNode::pointer),
+          py::return_value_policy::reference)
       .def("hash",
-           (SNode & (SNode::*)(const std::vector<Index> &,
-                               const std::vector<int> &))(&SNode::hash),
+           (SNode & (SNode::*)(const std::vector<Axis> &,
+                               const std::vector<int> &, bool))(&SNode::hash),
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic, py::return_value_policy::reference)
       .def("bitmasked",
-           (SNode & (SNode::*)(const std::vector<Index> &,
-                               const std::vector<int> &))(&SNode::bitmasked),
+           (SNode & (SNode::*)(const std::vector<Axis> &,
+                               const std::vector<int> &,
+                               bool))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("bit_array", &SNode::bit_array, py::return_value_policy::reference)
@@ -271,6 +292,7 @@ void export_lang(py::module &m) {
                          get_current_program().get_snode_to_glb_var_exprs());
            })
       .def("data_type", [](SNode *snode) { return snode->dt; })
+      .def("name", [](SNode *snode) { return snode->name; })
       .def("get_num_ch",
            [](SNode *snode) -> int { return (int)snode->ch.size(); })
       .def(
@@ -323,6 +345,12 @@ void export_lang(py::module &m) {
       .def("begin_shared_exp_placement", &SNode::begin_shared_exp_placement)
       .def("end_shared_exp_placement", &SNode::end_shared_exp_placement);
 
+  py::class_<SNodeTree>(m, "SNodeTree")
+      .def("id", &SNodeTree::id)
+      .def("destroy_snode_tree", [](SNodeTree *snode_tree, Program *program) {
+        program->destroy_snode_tree(snode_tree);
+      });
+
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_float", &Kernel::get_ret_float)
@@ -336,9 +364,15 @@ void export_lang(py::module &m) {
   py::class_<Kernel::LaunchContextBuilder>(m, "KernelLaunchContext")
       .def("set_arg_int", &Kernel::LaunchContextBuilder::set_arg_int)
       .def("set_arg_float", &Kernel::LaunchContextBuilder::set_arg_float)
-      .def("set_arg_nparray", &Kernel::LaunchContextBuilder::set_arg_nparray)
+      .def("set_arg_nparray",
+           &Kernel::LaunchContextBuilder::set_arg_external_array)
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
+
+  py::class_<Function>(m, "Function")
+      .def("set_function_body",
+           py::overload_cast<const std::function<void()> &>(
+               &Function::set_function_body));
 
   py::class_<Expr> expr(m, "Expr");
   expr.def("serialize", &Expr::serialize)
@@ -347,13 +381,27 @@ void export_lang(py::module &m) {
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
       .def("is_external_var",
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
+      .def("is_global_ptr",
+           [](Expr *expr) { return expr->is<GlobalPtrExpression>(); })
+      .def("is_primal",
+           [](Expr *expr) {
+             return expr->cast<GlobalVariableExpression>()->is_primal;
+           })
       .def("set_tb", &Expr::set_tb)
+      .def("set_name",
+           [&](Expr *expr, std::string na) {
+             expr->cast<GlobalVariableExpression>()->name = na;
+           })
       .def("set_is_primal",
            [&](Expr *expr, bool v) {
              expr->cast<GlobalVariableExpression>()->is_primal = v;
            })
       .def("set_grad", &Expr::set_grad)
       .def("set_attribute", &Expr::set_attribute)
+      .def("get_expr_name",
+           [](Expr *expr) {
+             return expr->cast<GlobalVariableExpression>()->name;
+           })
       .def("get_attribute", &Expr::get_attribute)
       .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })
       .def("get_underlying_ptr_address", [](Expr *e) {
@@ -378,7 +426,7 @@ void export_lang(py::module &m) {
       .def(
           "define",
           [](Program::KernelProxy *ker,
-             const std::function<void()> &func) -> Kernel & {
+             const std::function<void()> &func) -> Kernel * {
             py::gil_scoped_release release;
             return ker->def(func);
           },
@@ -390,6 +438,10 @@ void export_lang(py::module &m) {
 
   m.def("insert_activate", [](SNode *snode, const ExprGroup &indices) {
     return Activate(snode, indices);
+  });
+
+  m.def("expr_get_addr", [](SNode *snode, const ExprGroup &indices) {
+    return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr, indices);
   });
 
   m.def("insert_append",
@@ -439,13 +491,13 @@ void export_lang(py::module &m) {
           scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
         });
 
-  m.def("begin_frontend_struct_for",
-        [&](const ExprGroup &indices, const Expr &global) {
-          auto stmt_unique = std::make_unique<FrontendForStmt>(indices, global);
-          auto stmt = stmt_unique.get();
-          current_ast_builder().insert(std::move(stmt_unique));
-          scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
-        });
+  m.def("begin_frontend_struct_for", [&](const ExprGroup &loop_vars,
+                                         const Expr &global) {
+    auto stmt_unique = std::make_unique<FrontendForStmt>(loop_vars, global);
+    auto stmt = stmt_unique.get();
+    current_ast_builder().insert(std::move(stmt_unique));
+    scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
+  });
 
   m.def("end_frontend_range_for", [&]() { scope_stack.pop_back(); });
   m.def("pop_scope", [&]() { scope_stack.pop_back(); });
@@ -472,11 +524,15 @@ void export_lang(py::module &m) {
   });
 
   m.def("create_kernel_return", [&](const Expr &value) {
-    current_ast_builder().insert(Stmt::make<FrontendKernelReturnStmt>(value));
+    current_ast_builder().insert(Stmt::make<FrontendReturnStmt>(value));
   });
 
   m.def("insert_continue_stmt", [&]() {
     current_ast_builder().insert(Stmt::make<FrontendContinueStmt>());
+  });
+
+  m.def("insert_expr_stmt", [&](const Expr &val) {
+    current_ast_builder().insert(Stmt::make<FrontendExprStmt>(val));
   });
 
   m.def("begin_func", [&](const std::string &funcid) {
@@ -488,13 +544,8 @@ void export_lang(py::module &m) {
 
   m.def("end_func", [&](const std::string &funcid) { scope_stack.pop_back(); });
 
-  m.def("func_call", [&](const std::string &funcid) {
-    auto func = Stmt::make<FuncCallStmt>(
-        funcid);  // TODO: use FuncCallExpr with return values & args
-    current_ast_builder().insert(std::move(func));
-  });
-
-  m.def("layout", layout);
+  m.def("make_func_call_expr",
+        Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
   m.def("bits_cast",
@@ -659,6 +710,12 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
+  m.def("subscript_with_offset",
+        [](const Expr &var, const ExprGroup &indices, int cols, bool is_aos) {
+          return Expr::make<GlobalTensorElementExpression>(var, indices, cols,
+                                                           is_aos);
+        });
+
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
     return Expr::make<GlobalPtrExpression>(snode, indices.loaded());
   });
@@ -676,19 +733,29 @@ void export_lang(py::module &m) {
           return get_current_program().kernel(name, grad);
         });
 
+  m.def(
+      "create_function",
+      [&](const FunctionKey &funcid) {
+        return get_current_program().create_function(funcid);
+      },
+      py::return_value_policy::reference);
+
+  py::class_<FunctionKey>(m, "FunctionKey")
+      .def(py::init<const std::string &, int, int>())
+      .def_readonly("instance_id", &FunctionKey::instance_id);
+
   m.def("create_print",
         [&](std::vector<std::variant<Expr, std::string>> contents) {
           current_ast_builder().insert(
               std::make_unique<FrontendPrintStmt>(contents));
         });
 
-  m.def("decl_arg", [&](DataType dt, bool is_nparray) {
-    return get_current_program().get_current_kernel().insert_arg(dt,
-                                                                 is_nparray);
+  m.def("decl_arg", [&](const DataType &dt, bool is_nparray) {
+    return get_current_program().current_callable->insert_arg(dt, is_nparray);
   });
 
-  m.def("decl_ret", [&](DataType dt) {
-    return get_current_program().get_current_kernel().insert_ret(dt);
+  m.def("decl_ret", [&](const DataType &dt) {
+    return get_current_program().current_callable->insert_ret(dt);
   });
 
   m.def("test_throw", [] {
@@ -711,6 +778,7 @@ void export_lang(py::module &m) {
 
   m.def("insert_snode_access_flag", insert_snode_access_flag);
   m.def("no_activate", [](SNode *snode) {
+    // TODO(#2193): Also apply to @ti.func?
     get_current_program().get_current_kernel().no_activate.push_back(snode);
   });
   m.def("stop_grad",
@@ -719,7 +787,6 @@ void export_lang(py::module &m) {
   m.def("test_throw", [] { throw IRModified(); });
   m.def("needs_grad", needs_grad);
 
-  m.def("compile_runtimes", compile_runtimes);
   m.def("libdevice_path", libdevice_path);
 
   m.def("host_arch", host_arch);
@@ -820,6 +887,18 @@ void export_lang(py::module &m) {
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);
+
+  py::class_<SNodeRegistry>(m, "SNodeRegistry")
+      .def(py::init<>())
+      .def("create_root", &SNodeRegistry::create_root,
+           py::return_value_policy::reference);
+  m.def(
+      "finalize_snode_tree",
+      [](SNodeRegistry *registry, const SNode *root,
+         Program *program) -> SNodeTree * {
+        return program->add_snode_tree(registry->finalize(root));
+      },
+      py::return_value_policy::reference);
 }
 
 TI_NAMESPACE_END

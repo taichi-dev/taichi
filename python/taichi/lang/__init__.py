@@ -18,6 +18,8 @@ from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
+from taichi.misc.util import deprecated
+from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
 
@@ -54,12 +56,10 @@ cuda = _ti_core.cuda
 metal = _ti_core.metal
 opengl = _ti_core.opengl
 cc = _ti_core.cc
-gpu = [cuda, metal, opengl]
+wasm = _ti_core.wasm
+vulkan = _ti_core.vulkan
+gpu = [cuda, metal, opengl, vulkan]
 cpu = _ti_core.host_arch()
-kernel_profiler_print = lambda: impl.get_runtime().prog.kernel_profiler_print()
-kernel_profiler_clear = lambda: impl.get_runtime().prog.kernel_profiler_clear()
-kernel_profiler_total_time = lambda: impl.get_runtime(
-).prog.kernel_profiler_total_time()
 timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()
 timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
 
@@ -67,13 +67,128 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
 type_factory_ = _ti_core.get_type_factory_instance()
 
 
+@deprecated('kernel_profiler_print()', 'print_kernel_profile_info()')
+def kernel_profiler_print():
+    return print_kernel_profile_info()
+
+
+def print_kernel_profile_info():
+    """Print the elapsed time(min,max,avg) of Taichi kernels on devices.
+    To enable this profiler, set `kernel_profiler=True` in `ti.init`.
+
+    Example::
+
+        >>> import taichi as ti
+
+        >>> ti.init(ti.cpu, kernel_profiler=True)
+        >>> var = ti.field(ti.f32, shape=1)
+
+        >>> @ti.kernel
+        >>> def compute():
+        >>>     var[0] = 1.0
+
+        >>> compute()
+        >>> ti.print_kernel_profile_info() #[1]
+
+    Note:
+        [1] Currently the result of `KernelProfiler` could be incorrect on OpenGL
+        backend due to its lack of support for `ti.sync()`.
+    """
+    impl.get_runtime().prog.print_kernel_profile_info()
+
+
+def query_kernel_profile_info(name):
+    """Query kernel elapsed time(min,avg,max) on devices using the kernel name.
+    To enable this profiler, set `kernel_profiler=True` in `ti.init`.
+
+    Args:
+        name (str): kernel name.
+
+    Returns:
+        struct KernelProfilerQueryResult with member varaibles(counter, min, max, avg)
+
+    Example::
+
+        >>> import taichi as ti
+
+        >>> ti.init(ti.cpu, kernel_profiler=True)
+        >>> n = 1024*1024
+        >>> var = ti.field(ti.f32, shape=n)
+
+        >>> @ti.kernel
+        >>> def fill():
+        >>>     for i in range(n):
+        >>>         var[i] = 0.1
+
+        >>> fill()
+        >>> ti.clear_kernel_profile_info() #[1]
+        >>> for i in range(100):
+        >>>     fill()
+        >>> query_result = ti.query_kernel_profile_info(fill.__name__) #[2]
+        >>> print("kernel excuted times =",query_result.counter)
+        >>> print("kernel elapsed time(min_in_ms) =",query_result.min)
+        >>> print("kernel elapsed time(max_in_ms) =",query_result.max)
+        >>> print("kernel elapsed time(avg_in_ms) =",query_result.avg)
+
+    Note:
+        [1] To get the correct result, query_kernel_profile_info() must be used in conjunction with
+        clear_kernel_profile_info().
+
+        [2] Currently the result of `KernelProfiler` could be incorrect on OpenGL
+        backend due to its lack of support for `ti.sync()`.
+    """
+    return impl.get_runtime().prog.query_kernel_profile_info(name)
+
+
+@deprecated('kernel_profiler_clear()', 'clear_kernel_profile_info()')
+def kernel_profiler_clear():
+    return clear_kernel_profile_info()
+
+
+def clear_kernel_profile_info():
+    """
+    Clear all KernelProfiler records.
+    """
+    impl.get_runtime().prog.clear_kernel_profile_info()
+
+
+def kernel_profiler_total_time():
+    """
+    Get elapsed time of all kernels recorded in KernelProfiler.
+
+    Returns:
+        time (double): total time in second
+    """
+    return impl.get_runtime().prog.kernel_profiler_total_time()
+
+
+@deprecated('memory_profiler_print()', 'print_memory_profile_info()')
 def memory_profiler_print():
+    return print_memory_profile_info()
+
+
+def print_memory_profile_info():
+    """Memory profiling tool for LLVM backends with full sparse support.
+    This profiler is automatically on.
+    """
     impl.get_runtime().materialize()
     impl.get_runtime().prog.print_memory_profiler_info()
 
 
 extension = _ti_core.Extension
-is_extension_supported = _ti_core.is_extension_supported
+
+
+def is_extension_supported(arch, ext):
+    """Checks whether an extension is supported on an arch.
+
+    Args:
+        arch (taichi_core.Arch): Specified arch.
+        ext (taichi_core.Extension): Specified extension.
+
+    Returns:
+        bool: Whether `ext` is supported on `arch`.
+    """
+    return _ti_core.is_extension_supported(arch, ext)
 
 
 def reset():
@@ -127,6 +242,7 @@ class _SpecialConfig:
         self.log_level = 'info'
         self.gdb_trigger = False
         self.excepthook = False
+        self.experimental_real_function = False
 
 
 def init(arch=None,
@@ -187,6 +303,7 @@ def init(arch=None,
     env_spec.add('log_level', str)
     env_spec.add('gdb_trigger')
     env_spec.add('excepthook')
+    env_spec.add('experimental_real_function')
 
     # compiler configurations (ti.cfg):
     for key in dir(ti.cfg):
@@ -207,6 +324,8 @@ def init(arch=None,
     if not _test_mode:
         ti.set_gdb_trigger(spec_cfg.gdb_trigger)
         impl.get_runtime().print_preprocessed = spec_cfg.print_preprocessed
+        impl.get_runtime().experimental_real_function = \
+            spec_cfg.experimental_real_function
         ti.set_logging_level(spec_cfg.log_level.lower())
         if spec_cfg.excepthook:
             # TODO(#1405): add a way to restore old excepthook
@@ -225,6 +344,11 @@ def init(arch=None,
 
     # create a new program:
     impl.get_runtime().create_program()
+
+    ti.trace('Materializing runtime...')
+    impl.get_runtime().prog.materialize_runtime()
+
+    impl._root_fb = FieldsBuilder()
 
 
 def no_activate(*args):
@@ -277,6 +401,18 @@ transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)
 
 
 def polar_decompose(A, dt=None):
+    """Perform polar decomposition (A=UP) for arbitrary size matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
+    This is only a wrapper for :func:`taichi.lang.linalg.polar_decompose`.
+
+    Args:
+        A (ti.Matrix(n, n)): input nxn matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+
+    Returns:
+        Decomposed nxn matrices `U` and `P`.
+    """
     if dt is None:
         dt = impl.get_runtime().default_fp
     from .linalg import polar_decompose
@@ -284,10 +420,84 @@ def polar_decompose(A, dt=None):
 
 
 def svd(A, dt=None):
+    """Perform singular value decomposition (A=USV^T) for arbitrary size matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
+    This is only a wrappers for :func:`taichi.lang.linalg.svd`.
+
+    Args:
+        A (ti.Matrix(n, n)): input nxn matrix `A`.
+        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
+
+    Returns:
+        Decomposed nxn matrices `U`, 'S' and `V`.
+    """
     if dt is None:
         dt = impl.get_runtime().default_fp
     from .linalg import svd
     return svd(A, dt)
+
+
+def eig(A, dt=None):
+    """Compute the eigenvalues and right eigenvectors of a real matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
+    2D implementation refers to :func:`taichi.lang.linalg.eig2x2`.
+
+    Args:
+        A (ti.Matrix(n, n)): 2D Matrix for which the eigenvalues and right eigenvectors will be computed.
+        dt (DataType): The datatype for the eigenvalues and right eigenvectors.
+
+    Returns:
+        eigenvalues (ti.Matrix(n, 2)): The eigenvalues in complex form. Each row stores one eigenvalue. The first number of the eigenvalue represents the real part and the second number represents the imaginary part.
+        eigenvectors (ti.Matrix(n*2, n)): The eigenvectors in complex form. Each column stores one eigenvector. Each eigenvector consists of n entries, each of which is represented by two numbers for its real part and imaginary part.
+    """
+    if dt is None:
+        dt = impl.get_runtime().default_fp
+    from taichi.lang import linalg
+    if A.n == 2:
+        return linalg.eig2x2(A, dt)
+    raise Exception("Eigen solver only supports 2D matrices.")
+
+
+def sym_eig(A, dt=None):
+    """Compute the eigenvalues and right eigenvectors of a real symmetric matrix.
+
+    Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
+    2D implementation refers to :func:`taichi.lang.linalg.sym_eig2x2`.
+
+    Args:
+        A (ti.Matrix(n, n)): Symmetric Matrix for which the eigenvalues and right eigenvectors will be computed.
+        dt (DataType): The datatype for the eigenvalues and right eigenvectors.
+
+    Returns:
+        eigenvalues (ti.Vector(n)): The eigenvalues. Each entry store one eigen value.
+        eigenvectors (ti.Matrix(n, n)): The eigenvectors. Each column stores one eigenvector.
+    """
+    assert all(A == A.transpose()), "A needs to be symmetric"
+    if dt is None:
+        dt = impl.get_runtime().default_fp
+    from taichi.lang import linalg
+    if A.n == 2:
+        return linalg.sym_eig2x2(A, dt)
+    raise Exception("Symmetric eigen solver only supports 2D matrices.")
+
+
+def randn(dt=None):
+    """Generates a random number from standard normal distribution.
+
+    Implementation refers to :func:`taichi.lang.random.randn`.
+
+    Args:
+        dt (DataType): The datatype for the generated random number.
+
+    Returns:
+        The generated random number.
+    """
+    if dt is None:
+        dt = impl.get_runtime().default_fp
+    from .random import randn
+    return randn(dt)
 
 
 determinant = deprecated('ti.determinant(a)',
@@ -296,6 +506,33 @@ tr = deprecated('ti.tr(a)', 'a.trace()')(Matrix.trace)
 
 
 def Tape(loss, clear_gradients=True):
+    """Return a context manager of :class:`~taichi.lang.tape.TapeImpl`. The
+    context manager would catching all of the callings of functions that
+    decorated by :func:`~taichi.lang.kernel_impl.kernel` or
+    :func:`~taichi.lang.complex_kernel` under `with` statement, and calculate
+    all the partial gradients of a given loss variable by calling all of the
+    gradient function of the callings caught in reverse order while `with`
+    statement ended.
+
+    See also :func:`~taichi.lang.kernel_impl.kernel` and
+    :func:`~taichi.lang.complex_kernel` for gradient functions.
+
+    Args:
+        loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().
+        clear_gradients(Bool): Before `with` body start, clear all gradients or not.
+
+    Returns:
+        :class:`~taichi.lang.tape.TapeImpl`: The context manager.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def sum(a: ti.float32):
+        >>>     for I in ti.grouped(x):
+        >>>         y[None] += x[I] ** a
+        >>>
+        >>> with ti.Tape(loss = y):
+        >>>     sum(2)"""
     impl.get_runtime().materialize()
     if len(loss.shape) != 0:
         raise RuntimeError(
@@ -314,6 +551,7 @@ def Tape(loss, clear_gradients=True):
 
 
 def clear_all_gradients():
+    """Set all fields' gradients to 0."""
     impl.get_runtime().materialize()
 
     def visit(node):
@@ -331,7 +569,8 @@ def clear_all_gradients():
             from taichi.lang.meta import clear_gradients
             clear_gradients(places)
 
-    visit(ti.root)
+    for root_fb in FieldsBuilder.finalized_roots():
+        visit(root_fb)
 
 
 def benchmark(func, repeat=300, args=()):
@@ -364,7 +603,7 @@ def benchmark(func, repeat=300, args=()):
         for i in range(3):
             func(*args)
             ti.sync()
-        ti.kernel_profiler_clear()
+        ti.clear_kernel_profile_info()
         t = time.time()
         for n in range(repeat):
             func(*args)
@@ -534,12 +773,22 @@ def stat_write(key, value):
 
 
 def is_arch_supported(arch):
+    """Checks whether an arch is supported on the machine.
+
+    Args:
+        arch (taichi_core.Arch): Specified arch.
+
+    Returns:
+        bool: Whether `arch` is supported on the machine.
+    """
     arch_table = {
         cuda: _ti_core.with_cuda,
         metal: _ti_core.with_metal,
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
-        cpu: lambda: True
+        vulkan: lambda: _ti_core.with_vulkan,
+        wasm: lambda: True,
+        cpu: lambda: True,
     }
     with_arch = arch_table.get(arch, lambda: False)
     try:
@@ -554,6 +803,11 @@ def is_arch_supported(arch):
 
 
 def supported_archs():
+    """Gets all supported archs on the machine.
+
+    Returns:
+        List[taichi_core.Arch]: All supported archs on the machine.
+    """
     archs = [cpu, cuda, metal, opengl, cc]
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
@@ -777,6 +1031,38 @@ def must_throw(ex):
 
 
 def complex_kernel(func):
+    """A decorator for python function that user can customize the gradient
+    function by the decorator generated by
+    :func:`~taichi.lang.complex_kernel_grad` for this function, and could be
+    caught automatically by ti.Tape(). This decorator would not automatically
+    converted the function to a taichi kernel. Users should call other taichi
+    kernels if in need to enable automatic parallel computing.
+
+    Args:
+        fn (Callable): The Python function which needs to be decorated.
+
+    Returns:
+        Callable: The decorated function.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def multiply(a: ti.float32):
+        >>>     for I in ti.grouped(x):
+        >>>         y[I] = x[I] * a
+        >>>
+        >>> @ti.kernel
+        >>> def multiply_grad(a: ti.float32):
+        >>>     for I in ti.grouped(x):
+        >>>         x.grad[I] = y.grad[I] / a
+        >>>
+        >>> @ti.complex_kernel
+        >>> def foo(a):
+        >>>     multiply(a)
+        >>>
+        >>> @ti.complex_kernel_grad(foo)
+        >>> def foo_grad(a):
+        >>>     multiply_grad(a)"""
     def decorated(*args, **kwargs):
         impl.get_runtime().inside_complex_kernel = True
         if impl.get_runtime().target_tape:
@@ -791,6 +1077,15 @@ def complex_kernel(func):
 
 
 def complex_kernel_grad(primal):
+    """Generate the gradient decorator for a given function decorated by
+    :func:`~taichi.lang.complex_kernel`. See :func:`~taichi.lang.complex_kernel`
+    to get further information and examples.
+
+    Args:
+        primal (Callable): The primal function for the decorator.
+
+    Returns:
+        Callable: The decorator."""
     def decorator(func):
         def decorated(*args, **kwargs):
             func(*args, **kwargs)

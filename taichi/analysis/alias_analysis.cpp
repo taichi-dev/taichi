@@ -15,7 +15,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
     return AliasResult::different;
   if (var1->is<AllocaStmt>() || var2->is<AllocaStmt>())
     return AliasResult::different;
-  if (var1->is<StackAllocaStmt>() || var2->is<StackAllocaStmt>())
+  if (var1->is<AdStackAllocaStmt>() || var2->is<AdStackAllocaStmt>())
     return AliasResult::different;
 
   // TODO(xumingkuan): Put GlobalTemporaryStmt, ThreadLocalPtrStmt and
@@ -83,15 +83,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
       if (!diff.is_diff_certain || (diff.diff_range != 0)) {
         uncertain = true;
       }
-      if (std::abs(diff.diff_range) >=
-          (1 << snode->extractors[snode->physical_index_position[i]]
-                    .trailing_bits)) {
-        // For `trailing_bits == 2`, if the difference of the two indices >= 4,
-        // we are sure that they point to the different address.
-        //
-        // However, if two indices are different by < 4, we are uncertain in
-        // this case. E.g., `idx1 = 0` and `idx2 = 2` point to the same
-        // cell, but `idx1 = 3` and `idx2 = 5` point to the different cells.
+      if (std::abs(diff.diff_range) >= 1) {
         return AliasResult::different;
       }
     }

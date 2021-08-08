@@ -45,7 +45,7 @@ class CCTransformer : public IRVisitor {
 
   void lower_ast() {
     auto ir = kernel->ir.get();
-    auto config = kernel->program.config;
+    auto config = kernel->program->config;
     config.demote_dense_struct_fors = true;
     irpass::compile_to_executable(ir, config, kernel,
                                   /*vectorize=*/false, kernel->grad,
@@ -88,7 +88,7 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(GetRootStmt *stmt) override {
-    auto root = kernel->program.snode_root.get();
+    auto *root = kernel->program->get_snode_root(SNodeTree::kFirstID);
     emit("{} = ti_ctx->root;",
          define_var(get_node_ptr_name(root), stmt->raw_name()));
     root_stmt = stmt;
@@ -183,7 +183,7 @@ class CCTransformer : public IRVisitor {
     }
   }
 
-  void visit(KernelReturnStmt *stmt) override {
+  void visit(ReturnStmt *stmt) override {
     emit("ti_ctx->args[0].val_{} = {};", data_type_name(stmt->element_type()),
          stmt->value->raw_name());
   }
@@ -531,20 +531,23 @@ class CCTransformer : public IRVisitor {
     emit("{} = Ti_rand_{}();", var, data_type_name(stmt->ret_type));
   }
 
-  void visit(StackAllocaStmt *stmt) override {
+  void visit(AdStackAllocaStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
+    TI_ASSERT_INFO(
+        stmt->max_size > 0,
+        "Adaptive autodiff stack's size should have been determined.");
 
     const auto &var_name = stmt->raw_name();
     emit("Ti_u8 {}[{}];", var_name, stmt->size_in_bytes() + sizeof(uint32_t));
     emit("Ti_ad_stack_init({});", var_name);
   }
 
-  void visit(StackPopStmt *stmt) override {
+  void visit(AdStackPopStmt *stmt) override {
     emit("Ti_ad_stack_pop({});", stmt->stack->raw_name());
   }
 
-  void visit(StackPushStmt *stmt) override {
-    auto *stack = stmt->stack->as<StackAllocaStmt>();
+  void visit(AdStackPushStmt *stmt) override {
+    auto *stack = stmt->stack->as<AdStackAllocaStmt>();
     const auto &stack_name = stack->raw_name();
     auto elem_size = stack->element_size_in_bytes();
     emit("Ti_ad_stack_push({}, {});", stack_name, elem_size);
@@ -556,8 +559,8 @@ class CCTransformer : public IRVisitor {
     emit("*{} = {};", primal_name, stmt->v->raw_name());
   }
 
-  void visit(StackLoadTopStmt *stmt) override {
-    auto *stack = stmt->stack->as<StackAllocaStmt>();
+  void visit(AdStackLoadTopStmt *stmt) override {
+    auto *stack = stmt->stack->as<AdStackAllocaStmt>();
     const auto primal_name = stmt->raw_name() + "_primal_";
     auto dt_name = cc_data_type_name(stmt->element_type());
     auto var = define_var(dt_name + " *", primal_name);
@@ -566,8 +569,8 @@ class CCTransformer : public IRVisitor {
     emit("{} = *{};", define_var(dt_name, stmt->raw_name()), primal_name);
   }
 
-  void visit(StackLoadTopAdjStmt *stmt) override {
-    auto *stack = stmt->stack->as<StackAllocaStmt>();
+  void visit(AdStackLoadTopAdjStmt *stmt) override {
+    auto *stack = stmt->stack->as<AdStackAllocaStmt>();
     const auto adjoint_name = stmt->raw_name() + "_adjoint_";
     auto dt_name = cc_data_type_name(stmt->element_type());
     auto var = define_var(dt_name + " *", adjoint_name);
@@ -576,8 +579,8 @@ class CCTransformer : public IRVisitor {
     emit("{} = *{};", define_var(dt_name, stmt->raw_name()), adjoint_name);
   }
 
-  void visit(StackAccAdjointStmt *stmt) override {
-    auto *stack = stmt->stack->as<StackAllocaStmt>();
+  void visit(AdStackAccAdjointStmt *stmt) override {
+    auto *stack = stmt->stack->as<AdStackAllocaStmt>();
     const auto adjoint_name = stmt->raw_name() + "_adjoint_";
     auto dt_name = cc_data_type_name(stmt->element_type());
     auto var = define_var(dt_name + " *", adjoint_name);
@@ -598,7 +601,7 @@ class CCTransformer : public IRVisitor {
 };  // namespace cccp
 
 std::unique_ptr<CCKernel> CCKernelGen::compile() {
-  auto program = kernel->program.cc_program.get();
+  auto program = kernel->program->cc_program.get();
   auto layout = program->get_layout();
   CCTransformer tran(kernel, layout);
 
@@ -613,7 +616,7 @@ FunctionType compile_kernel(Kernel *kernel) {
   CCKernelGen codegen(kernel);
   auto ker = codegen.compile();
   auto ker_ptr = ker.get();
-  auto program = kernel->program.cc_program.get();
+  auto program = kernel->program->cc_program.get();
   program->add_kernel(std::move(ker));
   return [ker_ptr](Context &ctx) { return ker_ptr->launch(&ctx); };
 }

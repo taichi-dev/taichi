@@ -284,6 +284,11 @@ std::unique_ptr<Stmt> FuncBodyStmt::clone() const {
   return std::make_unique<FuncBodyStmt>(funcid, body->clone());
 }
 
+FuncCallStmt::FuncCallStmt(Function *func, const std::vector<Stmt *> &args)
+    : func(func), args(args) {
+  TI_STMT_REG_FIELDS;
+}
+
 WhileStmt::WhileStmt(std::unique_ptr<Block> &&body)
     : mask(nullptr), body(std::move(body)) {
   this->body->parent_stmt = this;
@@ -345,7 +350,6 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->const_end = const_end;
   new_stmt->begin_value = begin_value;
   new_stmt->end_value = end_value;
-  new_stmt->step = step;
   new_stmt->grid_dim = grid_dim;
   new_stmt->block_dim = block_dim;
   new_stmt->reversed = reversed;

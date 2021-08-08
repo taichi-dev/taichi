@@ -8,6 +8,7 @@ CompileConfig::CompileConfig() {
   arch = host_arch();
   simd_width = default_simd_width(arch);
   external_optimization_level = 3;
+  packed = false;
   print_ir = false;
   print_accessor_ir = false;
   print_evaluator_ir = false;
@@ -24,6 +25,7 @@ CompileConfig::CompileConfig() {
   simplify_before_lower_access = true;
   lower_access = true;
   simplify_after_lower_access = true;
+  move_loop_invariant_outside_if = false;
   default_fp = PrimitiveType::f32;
   default_ip = PrimitiveType::i32;
   verbose_kernel_launches = false;
@@ -42,8 +44,7 @@ CompileConfig::CompileConfig() {
   saturating_grid_dim = 0;
   max_block_dim = 0;
   cpu_max_num_threads = std::thread::hardware_concurrency();
-
-  ad_stack_size = 16;
+  random_seed = 0;
 
   // LLVM backend options:
   print_struct_llvm_ir = false;

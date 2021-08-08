@@ -16,7 +16,9 @@
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
 #include "taichi/struct/struct_llvm.h"
+#include "taichi/backends/metal/aot_module_builder_impl.h"
 #include "taichi/backends/metal/struct_metal.h"
+#include "taichi/backends/wasm/aot_module_builder_impl.h"
 #include "taichi/backends/opengl/struct_opengl.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/unified_allocator.h"
@@ -27,10 +29,15 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/util/statistics.h"
 #include "taichi/util/str.h"
+#include "taichi/math/arithmetic.h"
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"
 #include "taichi/backends/cc/codegen_cc.h"
+#endif
+#ifdef TI_WITH_VULKAN
+#include "taichi/backends/vulkan/snode_struct_compiler.h"
+#include "taichi/backends/vulkan/codegen_vulkan.h"
 #endif
 
 #if defined(TI_ARCH_x64)
@@ -38,8 +45,8 @@
 #include <xmmintrin.h>
 #endif
 
-TLANG_NAMESPACE_BEGIN
-
+namespace taichi {
+namespace lang {
 namespace {
 
 void assert_failed_host(const char *msg) {
@@ -55,6 +62,10 @@ void *taichi_allocate_aligned(Program *prog,
 inline uint64 *allocate_result_buffer_default(Program *prog) {
   return (uint64 *)taichi_allocate_aligned(
       prog, sizeof(uint64) * taichi_result_buffer_entries, 8);
+}
+
+bool is_cuda_no_unified_memory(const CompileConfig &config) {
+  return (config.arch == Arch::cuda && !config.use_unified_memory);
 }
 
 }  // namespace
@@ -85,14 +96,14 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 
   auto arch = desired_arch;
   if (arch == Arch::cuda) {
-    runtime = Runtime::create(arch);
-    if (!runtime) {
+    runtime_mem_info = Runtime::create(arch);
+    if (!runtime_mem_info) {
       TI_WARN("Taichi is not compiled with CUDA.");
       arch = host_arch();
     } else if (!is_cuda_api_available()) {
       TI_WARN("No CUDA driver API detected.");
       arch = host_arch();
-    } else if (!runtime->detected()) {
+    } else if (!runtime_mem_info->detected()) {
       TI_WARN("No CUDA device detected.");
       arch = host_arch();
     } else {
@@ -129,11 +140,12 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   }
 
   memory_pool = std::make_unique<MemoryPool>(this);
+  snode_tree_buffer_manager = std::make_unique<SNodeTreeBufferManager>(this);
   TI_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
   total_compilation_time = 0;
   num_instances += 1;
   SNode::counter = 0;
-  // llvm_context_device is initialized before kernel compilation
+  // |llvm_context_device| is initialized before kernel compilation
   TI_ASSERT(current_program == nullptr);
   current_program = this;
   config = default_compile_config;
@@ -142,12 +154,14 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   thread_pool = std::make_unique<ThreadPool>(config.cpu_max_num_threads);
 
   llvm_context_host = std::make_unique<TaichiLLVMContext>(host_arch());
+  llvm_context_host->init_runtime_jit_module();
+  // TODO: Can we initialize |llvm_context_device| here?
   profiler = make_profiler(arch);
 
   preallocated_device_buffer = nullptr;
 
-  if (config.kernel_profiler && runtime) {
-    runtime->set_profiler(profiler.get());
+  if (config.kernel_profiler && runtime_mem_info) {
+    runtime_mem_info->set_profiler(profiler.get());
   }
 #if defined(TI_WITH_CUDA)
   if (config.arch == Arch::cuda) {
@@ -160,12 +174,10 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #endif
 
   result_buffer = nullptr;
-  current_kernel = nullptr;
+  current_callable = nullptr;
   sync = true;
   llvm_runtime = nullptr;
   finalized = false;
-  snode_root = std::make_unique<SNode>(0, SNodeType::root);
-  snode_root->is_path_all_dense = true;
 
   if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");
@@ -227,12 +239,19 @@ TypeFactory &Program::get_type_factory() {
   return TypeFactory::get_instance();
 }
 
+Function *Program::create_function(const FunctionKey &func_key) {
+  TI_TRACE("Creating function {}...", func_key.get_full_name());
+  functions.emplace_back(std::make_unique<Function>(this, func_key));
+  TI_ASSERT(function_map.count(func_key) == 0);
+  function_map[func_key] = functions.back().get();
+  return functions.back().get();
+}
+
 FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
-  if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda ||
-      kernel.arch == Arch::metal) {
+  if (Kernel::supports_lowering(kernel.arch)) {
     kernel.lower();
     ret = compile_to_backend_executable(kernel, /*offloaded=*/nullptr);
   } else if (kernel.arch == Arch::opengl) {
@@ -243,6 +262,12 @@ FunctionType Program::compile(Kernel &kernel) {
   } else if (kernel.arch == Arch::cc) {
     ret = cccp::compile_kernel(&kernel);
 #endif
+  } else if (kernel.arch == Arch::vulkan) {
+#ifdef TI_WITH_VULKAN
+    vulkan::lower(&kernel);
+    ret = vulkan::compile_to_executable(
+        &kernel, &vulkan_compiled_structs_.value(), vulkan_runtime_.get());
+#endif  // TI_WITH_VULKAN
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -265,18 +290,23 @@ FunctionType Program::compile_to_backend_executable(Kernel &kernel,
   return nullptr;
 }
 
+void Program::materialize_runtime() {
+  if (arch_uses_llvm(config.arch)) {
+    initialize_llvm_runtime_system();
+  }
+}
+
 // For CPU and CUDA archs only
-void Program::initialize_runtime_system(StructCompiler *scomp) {
-  // auto tlctx = llvm_context_host.get();
-  TaichiLLVMContext *tlctx;
+void Program::initialize_llvm_runtime_system() {
+  maybe_initialize_cuda_llvm_context();
 
   std::size_t prealloc_size = 0;
-
-  if (config.arch == Arch::cuda && !config.use_unified_memory) {
+  TaichiLLVMContext *tlctx = nullptr;
+  if (is_cuda_no_unified_memory(config)) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().malloc(
         (void **)&result_buffer, sizeof(uint64) * taichi_result_buffer_entries);
-    auto total_mem = runtime->get_total_memory();
+    const auto total_mem = runtime_mem_info->get_total_memory();
     if (config.device_memory_fraction == 0) {
       TI_ASSERT(config.device_memory_GB > 0);
       prealloc_size = std::size_t(config.device_memory_GB * (1UL << 30));
@@ -300,12 +330,12 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
     result_buffer = allocate_result_buffer_default(this);
     tlctx = llvm_context_host.get();
   }
-  auto runtime = tlctx->runtime_jit_module;
+  auto *const runtime_jit = tlctx->runtime_jit_module;
 
-  // By the time this creator is called, "this" is already destroyed.
-  // Therefore it is necessary to capture members by values.
-  auto snodes = scomp->snodes;
-  int root_id = snode_root->id;
+  // Starting random state for the program calculated using the random seed.
+  // The seed is multiplied by 2^20 so that two programs with different seeds
+  // will not have overlapping random states in any thread.
+  int starting_rand_state = config.random_seed * 1048576;
 
   // Number of random states. One per CPU/CUDA thread.
   int num_rand_states = 0;
@@ -322,30 +352,74 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
     num_rand_states = config.cpu_max_num_threads;
   }
 
-  TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
   TI_TRACE("Allocating {} random states (used by CUDA only)", num_rand_states);
 
-  runtime->call<void *, void *, std::size_t, std::size_t, void *, int, void *,
-                void *, void *>("runtime_initialize", result_buffer, this,
-                                (std::size_t)scomp->root_size, prealloc_size,
-                                preallocated_device_buffer, num_rand_states,
-                                (void *)&taichi_allocate_aligned,
-                                (void *)std::printf, (void *)std::vsnprintf);
+  runtime_jit->call<void *, void *, std::size_t, void *, int, int, void *,
+                    void *, void *>(
+      "runtime_initialize", result_buffer, this, prealloc_size,
+      preallocated_device_buffer, starting_rand_state, num_rand_states,
+      (void *)&taichi_allocate_aligned, (void *)std::printf,
+      (void *)std::vsnprintf);
 
-  TI_TRACE("LLVMRuntime initialized");
+  TI_TRACE("LLVMRuntime initialized (excluding `root`)");
   llvm_runtime = fetch_result<void *>(taichi_result_buffer_ret_value_id);
   TI_TRACE("LLVMRuntime pointer fetched");
 
   if (arch_use_host_memory(config.arch) || config.use_unified_memory) {
-    runtime->call<void *>("runtime_get_mem_req_queue", llvm_runtime);
+    runtime_jit->call<void *>("runtime_get_mem_req_queue", llvm_runtime);
     auto mem_req_queue =
         fetch_result<void *>(taichi_result_buffer_ret_value_id);
     memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
   }
 
-  runtime->call<void *, int, int>("runtime_initialize2", llvm_runtime, root_id,
-                                  (int)snodes.size());
+  if (arch_use_host_memory(config.arch)) {
+    runtime_jit->call<void *, void *, void *>(
+        "LLVMRuntime_initialize_thread_pool", llvm_runtime, thread_pool.get(),
+        (void *)ThreadPool::static_run);
 
+    runtime_jit->call<void *, void *>("LLVMRuntime_set_assert_failed",
+                                      llvm_runtime, (void *)assert_failed_host);
+  }
+  if (arch_is_cpu(config.arch)) {
+    // Profiler functions can only be called on CPU kernels
+    runtime_jit->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime,
+                                      profiler.get());
+    runtime_jit->call<void *, void *>(
+        "LLVMRuntime_set_profiler_start", llvm_runtime,
+        (void *)&KernelProfilerBase::profiler_start);
+    runtime_jit->call<void *, void *>(
+        "LLVMRuntime_set_profiler_stop", llvm_runtime,
+        (void *)&KernelProfilerBase::profiler_stop);
+  }
+}
+
+void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
+                                             StructCompiler *scomp) {
+  TaichiLLVMContext *tlctx = nullptr;
+  if (is_cuda_no_unified_memory(config)) {
+#if defined(TI_WITH_CUDA)
+    tlctx = llvm_context_device.get();
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    tlctx = llvm_context_host.get();
+  }
+  auto *const runtime_jit = tlctx->runtime_jit_module;
+  // By the time this creator is called, "this" is already destroyed.
+  // Therefore it is necessary to capture members by values.
+  const auto snodes = scomp->snodes;
+  const int root_id = tree->root()->id;
+
+  TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
+  std::size_t rounded_size =
+      taichi::iroundup(scomp->root_size, taichi_page_size);
+  runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
+      "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
+      (int)snodes.size(), tree->id(), rounded_size,
+      snode_tree_buffer_manager->allocate(runtime_jit, llvm_runtime,
+                                          rounded_size, taichi_page_size,
+                                          tree->id()));
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
@@ -360,39 +434,48 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
       TI_TRACE("Initializing allocator for snode {} (node size {})",
                snodes[i]->id, node_size);
       auto rt = llvm_runtime;
-      runtime->call<void *, int, std::size_t>(
+      runtime_jit->call<void *, int, std::size_t>(
           "runtime_NodeAllocator_initialize", rt, snodes[i]->id, node_size);
       TI_TRACE("Allocating ambient element for snode {} (node size {})",
                snodes[i]->id, node_size);
-      runtime->call<void *, int>("runtime_allocate_ambient", rt, i, node_size);
+      runtime_jit->call<void *, int>("runtime_allocate_ambient", rt, i,
+                                     node_size);
     }
-  }
-
-  if (arch_use_host_memory(config.arch)) {
-    runtime->call<void *, void *, void *>("LLVMRuntime_initialize_thread_pool",
-                                          llvm_runtime, thread_pool.get(),
-                                          (void *)ThreadPool::static_run);
-
-    runtime->call<void *, void *>("LLVMRuntime_set_assert_failed", llvm_runtime,
-                                  (void *)assert_failed_host);
-  }
-  if (arch_is_cpu(config.arch)) {
-    // Profiler functions can only be called on CPU kernels
-    runtime->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime,
-                                  profiler.get());
-    runtime->call<void *, void *>("LLVMRuntime_set_profiler_start",
-                                  llvm_runtime,
-                                  (void *)&KernelProfilerBase::profiler_start);
-    runtime->call<void *, void *>("LLVMRuntime_set_profiler_stop", llvm_runtime,
-                                  (void *)&KernelProfilerBase::profiler_stop);
   }
 }
 
-void Program::materialize_layout() {
-  // always use host_arch() this is for host accessors
-  std::unique_ptr<StructCompiler> scomp =
-      StructCompiler::make(this, host_arch());
-  scomp->run(*snode_root, true);
+void Program::destroy_snode_tree(SNodeTree *snode_tree) {
+  snode_tree_buffer_manager->destroy(snode_tree);
+}
+
+SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {
+  const int id = snode_trees_.size();
+  auto tree = std::make_unique<SNodeTree>(id, std::move(root), config.packed);
+  tree->root()->set_snode_tree_id(id);
+  materialize_snode_tree(tree.get());
+  snode_trees_.push_back(std::move(tree));
+  return snode_trees_[id].get();
+}
+
+SNode *Program::get_snode_root(int tree_id) {
+  return snode_trees_[tree_id]->root();
+}
+
+std::unique_ptr<llvm::Module> Program::clone_struct_compiler_initial_context(
+    TaichiLLVMContext *tlctx) {
+  if (!snode_trees_.empty())
+    return tlctx->clone_struct_module();
+  return tlctx->clone_runtime_module();
+}
+
+void Program::materialize_snode_tree(SNodeTree *tree) {
+  auto *const root = tree->root();
+  // always use host_arch() for host accessors
+  auto host_module =
+      clone_struct_compiler_initial_context(llvm_context_host.get());
+  std::unique_ptr<StructCompiler> scomp = std::make_unique<StructCompilerLLVM>(
+      host_arch(), this, std::move(host_module));
+  scomp->run(*root);
   materialize_snode_expr_attributes();
 
   for (auto snode : scomp->snodes) {
@@ -400,20 +483,20 @@ void Program::materialize_layout() {
   }
 
   if (arch_is_cpu(config.arch)) {
-    initialize_runtime_system(scomp.get());
-  }
+    initialize_llvm_runtime_snodes(tree, scomp.get());
+  } else if (config.arch == Arch::cuda) {
+    auto device_module =
+        clone_struct_compiler_initial_context(llvm_context_device.get());
 
-  TI_TRACE("materialize_layout called");
-  if (config.arch == Arch::cuda) {
-    initialize_device_llvm_context();
     std::unique_ptr<StructCompiler> scomp_gpu =
-        StructCompiler::make(this, Arch::cuda);
-    scomp_gpu->run(*snode_root, false);
-    initialize_runtime_system(scomp_gpu.get());
+        std::make_unique<StructCompilerLLVM>(Arch::cuda, this,
+                                             std::move(device_module));
+    scomp_gpu->run(*root);
+    initialize_llvm_runtime_snodes(tree, scomp_gpu.get());
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,
                    "Metal arch requires that LLVM being enabled");
-    metal_compiled_structs_ = metal::compile_structs(*snode_root);
+    metal_compiled_structs_ = metal::compile_structs(*root);
     if (metal_kernel_mgr_ == nullptr) {
       TI_ASSERT(result_buffer == nullptr);
       result_buffer = allocate_result_buffer_default(this);
@@ -424,7 +507,7 @@ void Program::materialize_layout() {
       params.mem_pool = memory_pool.get();
       params.host_result_buffer = result_buffer;
       params.profiler = profiler.get();
-      params.root_id = snode_root->id;
+      params.root_id = root->id;
       metal_kernel_mgr_ =
           std::make_unique<metal::KernelManager>(std::move(params));
     }
@@ -432,7 +515,7 @@ void Program::materialize_layout() {
     TI_ASSERT(result_buffer == nullptr);
     result_buffer = allocate_result_buffer_default(this);
     opengl::OpenglStructCompiler scomp;
-    opengl_struct_compiled_ = scomp.run(*snode_root);
+    opengl_struct_compiled_ = scomp.run(*root);
     TI_TRACE("OpenGL root buffer size: {} B",
              opengl_struct_compiled_->root_size);
     opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(
@@ -442,7 +525,16 @@ void Program::materialize_layout() {
   } else if (config.arch == Arch::cc) {
     TI_ASSERT(result_buffer == nullptr);
     result_buffer = allocate_result_buffer_default(this);
-    cc_program->compile_layout(snode_root.get());
+    cc_program->compile_layout(root);
+#endif
+  } else if (config.arch == Arch::vulkan) {
+#ifdef TI_WITH_VULKAN
+    result_buffer = allocate_result_buffer_default(this);
+    vulkan_compiled_structs_ = vulkan::compile_snode_structs(*root);
+    vulkan::VkRuntime::Params params;
+    params.snode_descriptors = &(vulkan_compiled_structs_->snode_descriptors);
+    params.host_result_buffer = result_buffer;
+    vulkan_runtime_ = std::make_unique<vulkan::VkRuntime>(std::move(params));
 #endif
   }
 }
@@ -513,6 +605,8 @@ void Program::device_synchronize() {
 #endif
   } else if (config.arch == Arch::metal) {
     metal_kernel_mgr_->synchronize();
+  } else if (config.arch == Arch::vulkan) {
+    vulkan_runtime_->synchronize();
   }
 }
 
@@ -522,6 +616,10 @@ void Program::async_flush() {
     return;
   }
   async_engine->flush();
+}
+
+int Program::get_snode_tree_size() {
+  return snode_trees_.size();
 }
 
 std::string capitalize_first(std::string s) {
@@ -575,10 +673,9 @@ void Program::visualize_layout(const std::string &fn) {
       for (int i = 0; i < taichi_max_num_indices; i++) {
         if (snode->extractors[i].active) {
           int nb = snode->extractors[i].num_bits;
-          int start = snode->extractors[i].start + nb;
           indices += fmt::format(
               R"($\mathbf{{{}}}^{{\mathbf{{{}b}}:{}}}_{{\mathbf{{{}b}}:{}}}$)",
-              std::string(1, 'I' + i), start, latex_short_digit(1 << start), nb,
+              std::string(1, 'I' + i), 0, latex_short_digit(1 << 0), nb,
               latex_short_digit(1 << nb));
         }
       }
@@ -595,7 +692,9 @@ void Program::visualize_layout(const std::string &fn) {
       emit("]");
     };
 
-    visit(snode_root.get());
+    for (auto &a : snode_trees_) {
+      visit(a->root());
+    }
 
     auto tail = R"(
 \end{tikzpicture}
@@ -606,17 +705,19 @@ void Program::visualize_layout(const std::string &fn) {
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
 
-void Program::initialize_device_llvm_context() {
-  if (config.arch == Arch::cuda) {
-    if (llvm_context_device == nullptr)
-      llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::cuda);
+void Program::maybe_initialize_cuda_llvm_context() {
+  if ((config.arch == Arch::cuda) && (llvm_context_device == nullptr)) {
+    llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::cuda);
+    llvm_context_device->init_runtime_jit_module();
   }
 }
 
 Arch Program::get_snode_accessor_arch() {
   if (config.arch == Arch::opengl) {
     return Arch::opengl;
-  } else if (config.arch == Arch::cuda && !config.use_unified_memory) {
+  } else if (config.arch == Arch::vulkan) {
+    return Arch::vulkan;
+  } else if (is_cuda_no_unified_memory(config)) {
     return Arch::cuda;
   } else if (config.arch == Arch::metal) {
     return Arch::metal;
@@ -635,7 +736,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    auto ret = Stmt::make<FrontendKernelReturnStmt>(
+    auto ret = Stmt::make<FrontendReturnStmt>(
         load_if_ptr(Expr(snode_to_glb_var_exprs_.at(snode))[indices]));
     current_ast_builder().insert(std::move(ret));
   });
@@ -732,8 +833,8 @@ void Program::finalize() {
       ofs << stat_string;
     }
   }
-  if (runtime)
-    runtime->set_profiler(nullptr);
+  if (runtime_mem_info)
+    runtime_mem_info->set_profiler(nullptr);
   synchronize();
   current_program = nullptr;
   memory_pool->terminate();
@@ -831,7 +932,9 @@ void Program::print_memory_profiler_info() {
     }
   };
 
-  visit(snode_root.get(), 0);
+  for (auto &a : snode_trees_) {
+    visit(a->root(), /*depth=*/0);
+  }
 
   auto total_requested_memory = runtime_query<std::size_t>(
       "LLVMRuntime_get_total_requested_memory", llvm_runtime);
@@ -842,6 +945,9 @@ void Program::print_memory_profiler_info() {
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
+  if (config.arch == Arch::metal) {
+    return metal_kernel_mgr_->get_snode_num_dynamically_allocated(snode);
+  }
   auto node_allocator = runtime_query<void *>("LLVMRuntime_get_node_allocators",
                                               llvm_runtime, snode->id);
   auto data_list =
@@ -862,4 +968,16 @@ void Program::materialize_snode_expr_attributes() {
   }
 }
 
-TLANG_NAMESPACE_END
+std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
+  if (arch == Arch::metal) {
+    return std::make_unique<metal::AotModuleBuilderImpl>(
+        &(metal_compiled_structs_.value()),
+        metal_kernel_mgr_->get_buffer_meta_data());
+  } else if (arch == Arch::wasm) {
+    return std::make_unique<wasm::AotModuleBuilderImpl>();
+  }
+  return nullptr;
+}
+
+}  // namespace lang
+}  // namespace taichi

@@ -52,7 +52,8 @@
 #include "taichi/backends/cuda/cuda_context.h"
 #endif
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 using namespace llvm;
 
@@ -92,6 +93,9 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
   }
   jit = JITSession::create(arch);
   TI_TRACE("Taichi llvm context created.");
+}
+
+TaichiLLVMContext::~TaichiLLVMContext() {
 }
 
 llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
@@ -196,14 +200,14 @@ void compile_runtime_bitcode(Arch arch) {
 
     std::string arch_macro = fmt::format(" -D ARCH_{}", arch_name(arch));
     auto cmd = fmt::format(
-        "{} -S {}runtime.cpp -o {}runtime.ll -fno-exceptions "
-        "-emit-llvm -std=c++17 {} -I {}",
+        "{} -S \"{}runtime.cpp\" -o \"{}runtime.ll\" -fno-exceptions "
+        "-emit-llvm -std=c++17 {} -I \"{}\"",
         clang, runtime_src_folder, runtime_folder, arch_macro, get_repo_dir());
     int ret = std::system(cmd.c_str());
     if (ret) {
       TI_ERROR("LLVMRuntime compilation failed.");
     }
-    cmd = fmt::format("llvm-as {}runtime.ll -o {}", runtime_folder,
+    cmd = fmt::format("llvm-as \"{}runtime.ll\" -o \"{}\"", runtime_folder,
                       dst_runtime_bc);
     std::system(cmd.c_str());
     TI_TRACE("Runtime module bitcode compiled.");
@@ -214,7 +218,8 @@ void compile_runtime_bitcode(Arch arch) {
       auto ret = fs::copy_file(dst_runtime_bc, src_runtime_bc,
                                fs::copy_options::overwrite_existing);
 #else
-      auto ret = (system(fmt::format("cp {} {}", dst_runtime_bc, src_runtime_bc)
+      auto ret = (system(fmt::format("cp \"{}\" \"{}\"", dst_runtime_bc,
+                                     src_runtime_bc)
                              .c_str()) &
                   255) == 0;
 #endif
@@ -223,13 +228,6 @@ void compile_runtime_bitcode(Arch arch) {
       }
     }
   }
-}
-
-void compile_runtimes() {
-  compile_runtime_bitcode(host_arch());
-#if defined(TI_WITH_CUDA)
-  compile_runtime_bitcode(Arch::cuda);
-#endif
 }
 
 std::string libdevice_path() {
@@ -347,6 +345,10 @@ static void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
   module->getFunction("__internal_lgamma_pos")->eraseFromParent();
 }
 
+void TaichiLLVMContext::init_runtime_jit_module() {
+  update_runtime_jit_module(clone_runtime_module());
+}
+
 // Note: runtime_module = init_module < struct_module
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
@@ -435,9 +437,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       patch_intrinsic("cuda_shfl_down_sync_i32",
                       Intrinsic::nvvm_shfl_sync_down_i32);
-
-      patch_intrinsic("cuda_shfl_down_sync_i32",
-                      Intrinsic::nvvm_shfl_sync_down_i32);
+      patch_intrinsic("cuda_shfl_down_sync_f32",
+                      Intrinsic::nvvm_shfl_sync_down_f32);
 
       patch_intrinsic("cuda_match_any_sync_i32",
                       Intrinsic::nvvm_match_any_sync_i32);
@@ -538,32 +539,9 @@ void TaichiLLVMContext::set_struct_module(
     module->print(llvm::errs(), nullptr);
     TI_ERROR("module broken");
   }
+  // TODO: Move this after ``if (!arch_is_cpu(arch))``.
   data->struct_module = llvm::CloneModule(*module);
-  if (!arch_is_cpu(arch)) {
-    for (auto &f : *data->struct_module) {
-      bool is_kernel = false;
-      if (arch == Arch::cuda) {
-        std::string func_name = f.getName();
-        if (starts_with(func_name, "runtime_")) {
-          mark_function_as_cuda_kernel(&f);
-          is_kernel = true;
-        }
-      }
-
-      if (!is_kernel && !f.isDeclaration())
-        // set declaration-only functions as internal linking to avoid
-        // duplicated symbols and to remove external symbol dependencies such as
-        // std::sin
-        f.setLinkage(llvm::Function::PrivateLinkage);
-    }
-  }
-
-  auto runtime_module = clone_struct_module();
-  eliminate_unused_functions(runtime_module.get(), [](std::string func_name) {
-    return starts_with(func_name, "runtime_") ||
-           starts_with(func_name, "LLVMRuntime_");
-  });
-  runtime_jit_module = add_module(std::move(runtime_module));
+  update_runtime_jit_module(clone_struct_module());
 }
 
 template <typename T>
@@ -667,9 +645,6 @@ void TaichiLLVMContext::print_huge_functions(llvm::Module *module) {
   }
   TI_P(total_inst);
   TI_P(total_big_inst);
-}
-
-TaichiLLVMContext::~TaichiLLVMContext() {
 }
 
 llvm::DataLayout TaichiLLVMContext::get_data_layout() {
@@ -814,6 +789,33 @@ auto make_slim_libdevice = [](const std::vector<std::string> &args) {
   TI_INFO("Slimmed libdevice written to {}", output_fn);
 };
 
+void TaichiLLVMContext::update_runtime_jit_module(
+    std::unique_ptr<llvm::Module> module) {
+  if (arch == Arch::cuda) {
+    for (auto &f : *module) {
+      bool is_kernel = false;
+      const std::string func_name = f.getName();
+      if (starts_with(func_name, "runtime_")) {
+        mark_function_as_cuda_kernel(&f);
+        is_kernel = true;
+      }
+
+      if (!is_kernel && !f.isDeclaration())
+        // set declaration-only functions as internal linking to avoid
+        // duplicated symbols and to remove external symbol dependencies such as
+        // std::sin
+        f.setLinkage(llvm::Function::PrivateLinkage);
+    }
+  }
+
+  eliminate_unused_functions(module.get(), [](std::string func_name) {
+    return starts_with(func_name, "runtime_") ||
+           starts_with(func_name, "LLVMRuntime_");
+  });
+  runtime_jit_module = add_module(std::move(module));
+}
+
 TI_REGISTER_TASK(make_slim_libdevice);
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

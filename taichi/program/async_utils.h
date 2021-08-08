@@ -167,8 +167,8 @@ TLANG_NAMESPACE_END
 namespace std {
 template <>
 struct hash<taichi::lang::IRHandle> {
-  std::size_t operator()(const taichi::lang::IRHandle &ir_handle) const
-      noexcept {
+  std::size_t operator()(
+      const taichi::lang::IRHandle &ir_handle) const noexcept {
     return ir_handle.hash();
   }
 };

@@ -1,5 +1,6 @@
-import taichi as ti
 import time
+
+import taichi as ti
 
 
 def template_fuse_dense_x2y2z(size=1024**3,

@@ -109,6 +109,19 @@ gather_uniquely_accessed_pointers(IRNode *root);
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);
 std::vector<Stmt *> get_load_pointers(Stmt *load_stmt);
+
+/**
+ * Get all input SNode value states of an offloaded task with control-flow
+ * graph analysis.
+ * The global temporary value state and SNodeOpStmts are not considered.
+ *
+ * @param root
+ *   The offloaded task.
+ * @param meta
+ *   The result is stored in meta->input_states.
+ * @param ir_bank
+ *   The IR bank (only IRBank::get_async_state() is used).
+ */
 void get_meta_input_value_states(IRNode *root, TaskMeta *meta, IRBank *ir_bank);
 Stmt *get_store_data(Stmt *store_stmt);
 std::vector<Stmt *> get_store_destination(Stmt *store_stmt);

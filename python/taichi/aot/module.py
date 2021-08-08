@@ -1,6 +1,8 @@
 from contextlib import contextmanager
 
-from taichi.lang import expr, impl, kernel_arguments, kernel_impl, matrix
+from taichi.lang import impl, kernel_arguments, kernel_impl
+from taichi.lang.field import ScalarField
+from taichi.lang.matrix import MatrixField
 
 
 class KernelTemplate:
@@ -100,12 +102,12 @@ class Module:
         self._fields[name] = field
         column_num = 1
         row_num = 1
-        if isinstance(field, matrix.Matrix):
+        if isinstance(field, MatrixField):
             is_scalar = False
             row_num = field.m
             column_num = field.n
         else:
-            assert isinstance(field, expr.Expr)
+            assert isinstance(field, ScalarField)
         self._aot_builder.add_field(name, is_scalar, field.dtype,
                                     field.snode.shape, row_num, column_num)
 

@@ -227,6 +227,6 @@ for _ in range(3):
         iterate()
     loud_sync()
 
-ti.kernel_profiler_print()
+ti.print_kernel_profile_info()
 ti.core.print_stat()
 ti.print_profile_info()

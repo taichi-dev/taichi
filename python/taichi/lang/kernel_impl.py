@@ -12,7 +12,7 @@ from taichi.lang.ast_checker import KernelSimplicityASTChecker
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.transformer import ASTTransformer
+from taichi.lang.transformer import ASTTransformerTotal
 from taichi.misc.util import obsolete
 
 import taichi as ti
@@ -37,14 +37,34 @@ def _remove_indent(lines):
     return '\n'.join(cleaned)
 
 
-# The ti.func decorator
-def func(foo):
+def func(fn):
+    """Marks a function as callable in Taichi-scope.
+
+    This decorator transforms a Python function into a Taichi one. Taichi
+    will JIT compile it into native instructions.
+
+    Args:
+        fn (Callable): The Python function to be decorated
+
+    Returns:
+        Callable: The decorated function
+
+    Example::
+
+        >>> @ti.func
+        >>> def foo(x):
+        >>>     return x + 2
+        >>>
+        >>> @ti.kernel
+        >>> def run():
+        >>>     print(foo(40))  # 42
+    """
     is_classfunc = _inside_class(level_of_class_stackframe=3)
 
     _taichi_skip_traceback = 1
-    fun = Func(foo, classfunc=is_classfunc)
+    fun = Func(fn, classfunc=is_classfunc)
 
-    @functools.wraps(foo)
+    @functools.wraps(fn)
     def decorated(*args):
         _taichi_skip_traceback = 1
         return fun.__call__(*args)
@@ -53,17 +73,25 @@ def func(foo):
     return decorated
 
 
-# The ti.pyfunc decorator
-def pyfunc(foo):
-    '''
-    Creates a function that are callable both in Taichi-scope and Python-scope.
-    The function should be simple, and not contains Taichi-scope specifc syntax
-    including struct-for.
-    '''
-    is_classfunc = _inside_class(level_of_class_stackframe=3)
-    fun = Func(foo, classfunc=is_classfunc, pyfunc=True)
+def pyfunc(fn):
+    """Marks a function as callable in both Taichi and Python scopes.
 
-    @functools.wraps(foo)
+    When called inside the Taichi scope, Taichi will JIT compile it into
+    native instructions. Otherwise it will be invoked directly as a
+    Python function.
+
+    See also :func:`~taichi.lang.kernel_impl.func`.
+
+    Args:
+        fn (Callable): The Python function to be decorated
+
+    Returns:
+        Callable: The decorated function
+    """
+    is_classfunc = _inside_class(level_of_class_stackframe=3)
+    fun = Func(fn, classfunc=is_classfunc, pyfunc=True)
+
+    @functools.wraps(fn)
     def decorated(*args):
         _taichi_skip_traceback = 1
         return fun.__call__(*args)
@@ -141,7 +169,7 @@ class Func:
         func_body = tree.body[0]
         func_body.decorator_list = []
 
-        visitor = ASTTransformer(is_kernel=False, func=self)
+        visitor = ASTTransformerTotal(is_kernel=False, func=self)
         visitor.visit(tree)
 
         ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
@@ -382,8 +410,8 @@ class Kernel:
         if self.is_grad:
             KernelSimplicityASTChecker(self.func).visit(tree)
 
-        visitor = ASTTransformer(
-            excluded_paremeters=self.template_slot_locations,
+        visitor = ASTTransformerTotal(
+            excluded_parameters=self.template_slot_locations,
             func=self,
             arg_features=arg_features)
 
@@ -642,9 +670,36 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
     return wrapped
 
 
-def kernel(func):
+def kernel(fn):
+    """Marks a function as a Taichi kernel.
+
+    A Taichi kernel is a function written in Python, and gets JIT compiled by
+    Taichi into native CPU/GPU instructions (e.g. a series of CUDA kernels).
+    The top-level ``for`` loops are automatically parallelized, and distributed
+    to either a CPU thread pool or massively parallel GPUs.
+
+    Kernel's gradient kernel would be generated automatically by the AutoDiff system.
+
+    See also https://docs.taichi.graphics/docs/lang/articles/basic/syntax#kernels.
+
+    Args:
+        fn (Callable): the Python function to be decorated
+
+    Returns:
+        Callable: The decorated function
+
+    Example::
+
+        >>> x = ti.field(ti.i32, shape=(4, 8))
+        >>>
+        >>> @ti.kernel
+        >>> def run():
+        >>>     # Assigns all the elements of `x` in parallel.
+        >>>     for i in x:
+        >>>         x[i] = i
+    """
     _taichi_skip_traceback = 1
-    return _kernel_impl(func, level_of_class_stackframe=3)
+    return _kernel_impl(fn, level_of_class_stackframe=3)
 
 
 classfunc = obsolete('@ti.classfunc', '@ti.func directly')
@@ -672,6 +727,34 @@ class _BoundedDifferentiableMethod:
 
 
 def data_oriented(cls):
+    """Marks a class as Taichi compatible.
+
+    To allow for modularized code, Taichi provides this decorator so that
+    Taichi kernels can be defined inside a class.
+
+    See also https://docs.taichi.graphics/docs/lang/articles/advanced/odop
+
+    Example::
+
+        >>> @ti.data_oriented
+        >>> class TiArray:
+        >>>     def __init__(self, n):
+        >>>         self.x = ti.field(ti.f32, shape=n)
+        >>>
+        >>>     @ti.kernel
+        >>>     def inc(self):
+        >>>         for i in x:
+        >>>             x[i] += 1
+        >>>
+        >>> a = TiArray(42)
+        >>> a.inc()
+
+    Args:
+        cls (Class): the class to be decorated
+
+    Returns:
+        The decorated class.
+    """
     def getattr(self, item):
         _taichi_skip_traceback = 1
         x = super(cls, self).__getattribute__(item)

@@ -17,7 +17,7 @@ performance of the compiler itself.
 
 1.  `KernelProfiler` records the costs of Taichi kernels on devices. To
     enable this profiler, set `kernel_profiler=True` in `ti.init`.
-2.  Call `ti.kernel_profiler_print()` to show the kernel profiling
+2.  Call `ti.print_kernel_profile_info()` to show the kernel profiling
     result. For example:
 
 ```python {3,13}
@@ -33,7 +33,7 @@ def compute():
 
 
 compute()
-ti.kernel_profiler_print()
+ti.print_kernel_profile_info()
 ```
 
 The outputs would be:

@@ -36,8 +36,8 @@ class ScalarPointerLowererTest : public ::testing::Test {
   void SetUp() override {
     root_snode_ = std::make_unique<SNode>(/*depth=*/0, /*t=*/SNodeType::root);
     const std::vector<Axis> axes = {Axis{0}};
-    ptr_snode_ = &(root_snode_->pointer(axes, kPointerSize));
-    dense_snode_ = &(ptr_snode_->dense(axes, kDenseSize));
+    ptr_snode_ = &(root_snode_->pointer(axes, kPointerSize, false));
+    dense_snode_ = &(ptr_snode_->dense(axes, kDenseSize, false));
     // Must end with a `place` SNode.
     leaf_snode_ = &(dense_snode_->insert_children(SNodeType::place));
     leaf_snode_->dt = PrimitiveType::f32;

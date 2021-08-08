@@ -7,12 +7,22 @@ import numbers
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.expr import Expr
-from taichi.lang.util import is_taichi_class
+from taichi.lang.field import Field
 from taichi.misc.util import deprecated
 
 
 class SNode:
-    """A Python-side SNode wrapper."""
+    """A Python-side SNode wrapper.
+
+    For more information on Taichi's SNode system, please check out
+    these references:
+
+    * https://docs.taichi.graphics/docs/lang/articles/advanced/sparse
+    * https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf
+
+    Arg:
+        ptr (pointer): The C++ side SNode pointer.
+    """
     def __init__(self, ptr):
         self.ptr = ptr
 
@@ -28,7 +38,9 @@ class SNode:
         """
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.dense(axes, dimensions))
+        return SNode(
+            self.ptr.dense(axes, dimensions,
+                           impl.current_cfg().packed))
 
     def pointer(self, axes, dimensions):
         """Adds a pointer SNode as a child component of `self`.
@@ -42,14 +54,17 @@ class SNode:
         """
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.pointer(axes, dimensions))
+        return SNode(
+            self.ptr.pointer(axes, dimensions,
+                             impl.current_cfg().packed))
 
     def hash(self, axes, dimensions):
         """Not supported."""
         raise RuntimeError('hash not yet supported')
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.hash(axes, dimensions))
+        return SNode(self.ptr.hash(axes, dimensions,
+                                   impl.current_cfg().packed))
 
     def dynamic(self, axis, dimension, chunk_size=None):
         """Adds a dynamic SNode as a child component of `self`.
@@ -65,7 +80,9 @@ class SNode:
         assert len(axis) == 1
         if chunk_size is None:
             chunk_size = dimension
-        return SNode(self.ptr.dynamic(axis[0], dimension, chunk_size))
+        return SNode(
+            self.ptr.dynamic(axis[0], dimension, chunk_size,
+                             impl.current_cfg().packed))
 
     def bitmasked(self, axes, dimensions):
         """Adds a bitmasked SNode as a child component of `self`.
@@ -79,7 +96,9 @@ class SNode:
         """
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.bitmasked(axes, dimensions))
+        return SNode(
+            self.ptr.bitmasked(axes, dimensions,
+                               impl.current_cfg().packed))
 
     @deprecated('_bit_struct', 'bit_struct')
     def _bit_struct(self, num_bits):
@@ -94,7 +113,7 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        return SNode(self.ptr.bit_struct(num_bits))
+        return SNode(self.ptr.bit_struct(num_bits, impl.current_cfg().packed))
 
     @deprecated('_bit_array', 'bit_array')
     def _bit_array(self, axes, dimensions, num_bits):
@@ -113,7 +132,9 @@ class SNode:
         """
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.bit_array(axes, dimensions, num_bits))
+        return SNode(
+            self.ptr.bit_array(axes, dimensions, num_bits,
+                               impl.current_cfg().packed))
 
     def place(self, *args, offset=None, shared_exponent=False):
         """Places a list of Taichi fields under the `self` container.
@@ -134,13 +155,12 @@ class SNode:
             self.ptr.begin_shared_exp_placement()
 
         for arg in args:
-            if isinstance(arg, Expr):
-                self.ptr.place(Expr(arg).ptr, offset)
+            if isinstance(arg, Field):
+                for var in arg.get_field_members():
+                    self.ptr.place(var.ptr, offset)
             elif isinstance(arg, list):
                 for x in arg:
                     self.place(x, offset=offset)
-            elif is_taichi_class(arg):
-                self.place(arg.get_field_members(), offset=offset)
             else:
                 raise ValueError(f'{arg} cannot be placed')
         if shared_exponent:
@@ -168,7 +188,6 @@ class SNode:
         Returns:
             Union[None, _Root, SNode]: The n-th parent of `self`.
         """
-        impl.get_runtime().materialize()
         p = self.ptr
         while p and n > 0:
             p = p.parent
@@ -212,7 +231,6 @@ class SNode:
         Returns:
             Tuple[int]: The number of elements from root in each axis of `self`.
         """
-        impl.get_runtime().materialize()
         dim = self.ptr.num_active_indices()
         ret = [self.ptr.get_shape_along_axis(i) for i in range(dim)]
 
@@ -244,10 +262,6 @@ class SNode:
             str: The name of `self`.
         """
         return self.ptr.name()
-
-    @deprecated('x.snode()', 'x.snode')
-    def __call__(self):  # TODO: remove this after v0.7.0
-        return self
 
     @property
     def snode(self):

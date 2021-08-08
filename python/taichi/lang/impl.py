@@ -6,6 +6,8 @@ import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
+from taichi.lang.field import Field, ScalarField
+from taichi.lang.matrix import MatrixField
 from taichi.lang.snode import SNode
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
@@ -64,9 +66,7 @@ def expr_init_list(xs, expected):
 @taichi_scope
 def expr_init_func(
         rhs):  # temporary solution to allow passing in fields as arguments
-    if isinstance(rhs, Expr) and rhs.ptr.is_global_var():
-        return rhs
-    if isinstance(rhs, ti.Matrix) and rhs.is_global():
+    if isinstance(rhs, Field):
         return rhs
     return expr_init(rhs)
 
@@ -119,39 +119,61 @@ def subscript(value, *indices):
             ind = [indices[i]]
         flattened_indices += ind
     indices = tuple(flattened_indices)
+    if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
+        indices = ()
+    indices_expr_group = make_expr_group(*indices)
+    index_dim = indices_expr_group.size()
 
-    if is_taichi_class(value):
+    if isinstance(value, Field):
+        var = value.get_field_members()[0].ptr
+        if var.snode() is None:
+            if var.is_primal():
+                raise RuntimeError(
+                    f"{var.get_expr_name()} has not been placed.")
+            else:
+                raise RuntimeError(
+                    f"Gradient {var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
+                )
+        field_dim = int(var.get_attribute("dim"))
+        if field_dim != index_dim:
+            raise IndexError(
+                f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
+            )
+        if isinstance(value, MatrixField):
+            return ti.Matrix.with_entries(value.n, value.m, [
+                Expr(_ti_core.subscript(e.ptr, indices_expr_group))
+                for e in value.get_field_members()
+            ])
+        else:
+            return Expr(_ti_core.subscript(var, indices_expr_group))
+    elif is_taichi_class(value):
         return value.subscript(*indices)
     elif isinstance(value, (Expr, SNode)):
         if isinstance(value, Expr):
-            if not value.is_global():
+            if not value.ptr.is_external_var():
                 raise TypeError(
                     'Subscription (e.g., "a[i, j]") only works on fields or external arrays.'
                 )
-            if not value.ptr.is_external_var() and value.ptr.snode() is None:
-                if not value.ptr.is_primal():
-                    raise RuntimeError(
-                        f"Gradient {value.ptr.get_expr_name()} has not been placed, check whether `needs_grad=True`"
-                    )
-                else:
-                    raise RuntimeError(
-                        f"{value.ptr.get_expr_name()} has not been placed.")
             field_dim = int(value.ptr.get_attribute("dim"))
         else:
             # When reading bit structure we only support the 0-D case for now.
             field_dim = 0
-        if isinstance(indices,
-                      tuple) and len(indices) == 1 and indices[0] is None:
-            indices = []
-        indices_expr_group = make_expr_group(*indices)
-        index_dim = indices_expr_group.size()
         if field_dim != index_dim:
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
     else:
-        return value[indices]
+        raise TypeError(
+            'Subscription (e.g., "a[i, j]") only works on fields or external arrays.'
+        )
+
+
+@taichi_scope
+def subscript_with_offset(var, indices, cols, is_aos):
+    return Expr(
+        _ti_core.subscript_with_offset(var.ptr, make_expr_group(*indices),
+                                       cols, is_aos))
 
 
 @taichi_scope
@@ -182,32 +204,32 @@ def chain_compare(comparators, ops):
 
 
 @taichi_scope
-def maybe_transform_ti_func_call_to_stmt(ti_func, *args, **kwargs):
-    _taichi_skip_traceback = 1
-    if '_sitebuiltins' == getattr(ti_func, '__module__', '') and getattr(
-            getattr(ti_func, '__class__', ''), '__name__', '') == 'Quitter':
-        raise TaichiSyntaxError(f'exit or quit not supported in Taichi-scope')
-    if getattr(ti_func, '__module__',
-               '') == '__main__' and not getattr(ti_func, '__wrapped__', ''):
-        warnings.warn(
-            f'Calling into non-Taichi function {ti_func.__name__}.'
-            ' This means that scope inside that function will not be processed'
-            ' by the Taichi transformer. Proceed with caution! '
-            ' Maybe you want to decorate it with @ti.func?',
-            UserWarning,
-            stacklevel=2)
+def insert_expr_stmt_if_ti_func(func, *args, **kwargs):
+    """This method is used only for real functions. It inserts a
+    FrontendExprStmt to the C++ AST to hold the function call if `func` is a
+    Taichi function.
 
-    is_taichi_function = getattr(ti_func, '_is_taichi_function', False)
+    Args:
+        func: The function to be called.
+        args: The arguments of the function call.
+        kwargs: The keyword arguments of the function call.
+
+    Returns:
+        The return value of the function call if it's a non-Taichi function.
+        Returns None if it's a Taichi function."""
+    is_taichi_function = getattr(func, '_is_taichi_function', False)
     # If is_taichi_function is true: call a decorated Taichi function
     # in a Taichi kernel/function.
 
-    if is_taichi_function and get_runtime().experimental_real_function:
+    if is_taichi_function:
         # Compiles the function here.
         # Invokes Func.__call__.
-        func_call_result = ti_func(*args, **kwargs)
+        func_call_result = func(*args, **kwargs)
+        # Insert FrontendExprStmt here.
         return _ti_core.insert_expr_stmt(func_call_result.ptr)
     else:
-        return ti_func(*args, **kwargs)
+        # Call the non-Taichi function directly.
+        return func(*args, **kwargs)
 
 
 class PyTaichi:
@@ -386,6 +408,9 @@ def index_nd(dim):
 
 class _UninitializedRootFieldsBuilder:
     def __getattr__(self, item):
+        if item == '__qualname__':
+            # For sphinx docstring extraction.
+            return '_UninitializedRootFieldsBuilder'
         raise InvalidOperationError('Please call init() first')
 
 
@@ -430,6 +455,39 @@ class _Root:
 
 
 root = _Root()
+"""Root of the declared Taichi :func:`~taichi.lang.impl.field`s.
+
+See also https://docs.taichi.graphics/docs/lang/articles/advanced/layout
+
+Example::
+
+    >>> x = ti.field(ti.f32)
+    >>> ti.root.pointer(ti.ij, 4).dense(ti.ij, 8).place(x)
+"""
+
+
+@python_scope
+def create_field_member(dtype, name):
+    dtype = cook_dtype(dtype)
+
+    # primal
+    x = Expr(_ti_core.make_id_expr(""))
+    x.declaration_tb = get_traceback(stacklevel=2)
+    x.ptr = _ti_core.global_new(x.ptr, dtype)
+    x.ptr.set_name(name)
+    x.ptr.set_is_primal(True)
+    pytaichi.global_vars.append(x)
+
+    x_grad = None
+    if _ti_core.needs_grad(dtype):
+        # adjoint
+        x_grad = Expr(_ti_core.make_id_expr(""))
+        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
+        x_grad.ptr.set_name(name + ".grad")
+        x_grad.ptr.set_is_primal(False)
+        x.ptr.set_grad(x_grad.ptr)
+
+    return x, x_grad
 
 
 @deprecated('ti.var', 'ti.field')
@@ -440,9 +498,33 @@ def var(dt, shape=None, offset=None, needs_grad=False):
 
 @python_scope
 def field(dtype, shape=None, name="", offset=None, needs_grad=False):
-    _taichi_skip_traceback = 1
+    """Defines a Taichi field
 
-    dtype = cook_dtype(dtype)
+    A Taichi field can be viewed as an abstract N-dimensional array, hiding away
+    the complexity of how its underlying :class:`~taichi.lang.snode.SNode` are
+    actually defined. The data in a Taichi field can be directly accessed by
+    a Taichi :func:`~taichi.lang.kernel_impl.kernel`.
+
+    See also https://docs.taichi.graphics/docs/lang/articles/basic/field
+
+    Args:
+        dtype (DataType): data type of the field.
+        shape (Union[int, tuple[int]], optional): shape of the field
+        name (str, optional): name of the field
+        offset (Union[int, tuple[int]], optional): offset of the field domain
+        needs_grad (bool, optional): whether this field participates in autodiff
+            and thus needs an adjoint field to store the gradients.
+
+    Example:
+        The code below shows how a Taichi field can be declared and defined::
+
+            >>> x1 = ti.field(ti.f32, shape=(16, 8))
+            >>>
+            >>> # Equivalently
+            >>> x2 = ti.field(ti.f32)
+            >>> ti.root.dense(ti.ij, shape=(16, 8)).place(x2)
+    """
+    _taichi_skip_traceback = 1
 
     if isinstance(shape, numbers.Number):
         shape = (shape, )
@@ -460,27 +542,15 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
 
     del _taichi_skip_traceback
 
-    # primal
-    x = Expr(_ti_core.make_id_expr(""))
-    x.declaration_tb = get_traceback(stacklevel=2)
-    x.ptr = _ti_core.global_new(x.ptr, dtype)
-    x.ptr.set_name(name)
-    x.ptr.set_is_primal(True)
-    pytaichi.global_vars.append(x)
-
-    if _ti_core.needs_grad(dtype):
-        # adjoint
-        x_grad = Expr(_ti_core.make_id_expr(""))
-        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
-        x_grad.ptr.set_name(name + ".grad")
-        x_grad.ptr.set_is_primal(False)
-        x.set_grad(x_grad)
+    x, x_grad = create_field_member(dtype, name)
+    x, x_grad = ScalarField(x), ScalarField(x_grad)
+    x.set_grad(x_grad)
 
     if shape is not None:
         dim = len(shape)
         root.dense(index_nd(dim), shape).place(x, offset=offset)
         if needs_grad:
-            root.dense(index_nd(dim), shape).place(x.grad)
+            root.dense(index_nd(dim), shape).place(x_grad)
     return x
 
 
@@ -618,11 +688,29 @@ def ti_float(var):
 @taichi_scope
 def zero(x):
     # TODO: get dtype from Expr and Matrix:
+    """Fill the input field with zero.
+
+    Args:
+        x (DataType): The input field to fill.
+
+    Returns:
+        DataType: The output field, which keeps the shape but filled with zero.
+
+    """
     return x * 0
 
 
 @taichi_scope
 def one(x):
+    """Fill the input field with one.
+
+    Args:
+        x (DataType): The input field to fill.
+
+    Returns:
+        DataType: The output field, which keeps the shape but filled with one.
+
+    """
     return zero(x) + 1
 
 
@@ -650,6 +738,45 @@ Axis = _ti_core.Axis
 
 
 def static(x, *xs):
+    """Evaluates a Taichi-scope expression at compile time.
+
+    `static()` is what enables the so-called metaprogramming in Taichi. It is
+    in many ways similar to ``constexpr`` in C++11.
+
+    See also https://docs.taichi.graphics/docs/lang/articles/advanced/meta.
+
+    Args:
+        x (Any): an expression to be evaluated
+        *xs (Any): for Python-ish swapping assignment
+
+    Example:
+        The most common usage of `static()` is for compile-time evaluation::
+
+            >>> @ti.kernel
+            >>> def run():
+            >>>     if ti.static(FOO):
+            >>>         do_a()
+            >>>     else:
+            >>>         do_b()
+
+        Depending on the value of ``FOO``, ``run()`` will be directly compiled
+        into either ``do_a()`` or ``do_b()``. Thus there won't be a runtime
+        condition check.
+
+        Another common usage is for compile-time loop unrolling::
+
+            >>> @ti.kernel
+            >>> def run():
+            >>>     for i in ti.static(range(3)):
+            >>>         print(i)
+            >>>
+            >>> # The above is equivalent to:
+            >>> @ti.kernel
+            >>> def run():
+            >>>     print(0)
+            >>>     print(1)
+            >>>     print(2)
+    """
     _taichi_skip_traceback = 1
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
@@ -658,7 +785,9 @@ def static(x, *xs):
                   (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
                    ti.GroupedNDRange, zip, filter, map)) or x is None:
         return x
-    elif isinstance(x, (Expr, ti.Matrix)) and x.is_global():
+    elif isinstance(x, Expr) and x.is_global():
+        return x
+    elif isinstance(x, Field):
         return x
     elif isinstance(x, (types.FunctionType, types.MethodType)):
         return x
@@ -670,6 +799,16 @@ def static(x, *xs):
 
 @taichi_scope
 def grouped(x):
+    """Groups a list of independent loop indices into a :func:`~taichi.lang.matrix.Vector`.
+
+    Args:
+        x (Any): does the grouping only if `x` is a :class:`~taichi.lang.ndrange`.
+
+    Example::
+
+        >>> for I in ti.grouped(ti.ndrange(8, 16)):
+        >>>     print(I[0] + I[1])
+    """
     if isinstance(x, ti.ndrange):
         return x.grouped()
     else:

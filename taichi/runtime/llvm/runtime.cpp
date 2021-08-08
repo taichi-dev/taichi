@@ -798,8 +798,12 @@ Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
     // Here unfortunately we have to rely on a native CUDA assert failure to
     // halt the whole grid. Using a taichi_assert_runtime will not finish the
     // whole kernel execution immediately.
-    __assertfail("Out of CUDA pre-allocated memory", "Taichi JIT", 0,
-                 "allocate_from_buffer", 1);
+    __assertfail(
+        "Out of CUDA pre-allocated memory.\n"
+        "Consider using ti.init(device_memory_fraction=0.9) or "
+        "ti.init(device_memory_GB=4) to allocate more"
+        " GPU memory",
+        "Taichi JIT", 0, "allocate_from_buffer", 1);
 #endif
   }
   taichi_assert_runtime(this, success, "Out of pre-allocated memory");
@@ -831,6 +835,13 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
     };
     return r->ptr;
   }
+}
+
+void runtime_snode_tree_allocate_aligned(LLVMRuntime *runtime,
+                                         std::size_t size,
+                                         std::size_t alignment) {
+  runtime->set_result(taichi_result_buffer_runtime_query_id,
+                      runtime->allocate_aligned(size, alignment));
 }
 
 void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
@@ -894,13 +905,13 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
                                std::size_t root_size,
                                const int root_id,
                                const int num_snodes,
-                               const int snode_tree_id) {
+                               const int snode_tree_id,
+                               std::size_t rounded_size,
+                               Ptr ptr) {
   // For Metal runtime, we have to make sure that both the beginning address
   // and the size of the root buffer memory are aligned to page size.
-  runtime->root_mem_sizes[snode_tree_id] =
-      taichi::iroundup((size_t)root_size, taichi_page_size);
-  runtime->roots[snode_tree_id] = runtime->allocate_aligned(
-      runtime->root_mem_sizes[snode_tree_id], taichi_page_size);
+  runtime->root_mem_sizes[snode_tree_id] = rounded_size;
+  runtime->roots[snode_tree_id] = ptr;
   // runtime->request_allocate_aligned ready to use
   // initialize the root node element list
   for (int i = root_id; i < root_id + num_snodes; i++) {

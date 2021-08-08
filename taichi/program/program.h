@@ -29,6 +29,7 @@
 #include "taichi/struct/snode_tree.h"
 #include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/system/memory_pool.h"
+#include "taichi/system/snode_tree_buffer_manager.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
 
@@ -101,6 +102,7 @@ class Program {
   static std::atomic<int> num_instances;
   std::unique_ptr<ThreadPool> thread_pool{nullptr};
   std::unique_ptr<MemoryPool> memory_pool{nullptr};
+  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
   uint64 *result_buffer{nullptr};  // TODO: move this
   void *preallocated_device_buffer{
       nullptr};  // TODO: move this to memory allocator
@@ -130,11 +132,25 @@ class Program {
 
   ~Program();
 
-  void kernel_profiler_print() {
+  void print_kernel_profile_info() {
     profiler->print();
   }
 
-  void kernel_profiler_clear() {
+  struct KernelProfilerQueryResult {
+    int counter{0};
+    double min{0.0};
+    double max{0.0};
+    double avg{0.0};
+  };
+
+  KernelProfilerQueryResult query_kernel_profile_info(const std::string &name) {
+    KernelProfilerQueryResult query_result;
+    profiler->query(name, query_result.counter, query_result.min,
+                    query_result.max, query_result.avg);
+    return query_result;
+  }
+
+  void clear_kernel_profile_info() {
     profiler->clear();
   }
 
@@ -306,12 +322,19 @@ class Program {
   }
 
   /**
+   * Destroys a new SNode tree.
+   *
+   * @param snode_tree The pointer to SNode tree.
+   */
+  void destroy_snode_tree(SNodeTree *snode_tree);
+
+  /**
    * Adds a new SNode tree.
    *
    * @param root The root of the new SNode tree.
-   * @return SNode tree ID.
+   * @return The pointer to SNode tree.
    */
-  int add_snode_tree(std::unique_ptr<SNode> root);
+  SNodeTree *add_snode_tree(std::unique_ptr<SNode> root);
 
   /**
    * Gets the root of a SNode tree.

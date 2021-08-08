@@ -5,21 +5,13 @@ namespace lang {
 namespace vulkan {
 
 namespace spirv {
-void IRBuilder::init_header(bool support_int8,
-                            bool support_int16,
-                            bool support_int64,
-                            bool support_fp64) {
+void IRBuilder::init_header() {
   TI_ASSERT(header_.size() == 0U);
   header_.push_back(spv::MagicNumber);
 
-  // Use the spirv version as indicated in the SDK.
-#if SPV_VERSION >= 0x10500
-  header_.push_back(0x10500);
-#elif SPV_VERSION >= 0x10300
-  header_.push_back(0x10300);
-#else
-  header_.push_back(0x10000);
-#endif
+  header_.push_back(vulkan_cap_.spirv_version);
+
+  TI_TRACE("SPIR-V Version {}", vulkan_cap_.spirv_version);
 
   // generator: set to 0, unknown
   header_.push_back(0U);
@@ -30,21 +22,42 @@ void IRBuilder::init_header(bool support_int8,
 
   // capability
   ib_.begin(spv::OpCapability).add(spv::CapabilityShader).commit(&header_);
-  this->support_int8_ = support_int8;
-  if (support_int8) {
+  // FIXME: What about devices don't support this?
+  ib_.begin(spv::OpCapability)
+      .add(spv::CapabilityVariablePointers)
+      .commit(&header_);
+
+  if (vulkan_cap_.has_atomic_float) {
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityAtomicFloat64AddEXT)
+        .commit(&header_);
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityAtomicFloat32AddEXT)
+        .commit(&header_);
+  }
+
+  if (vulkan_cap_.has_int8) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt8).commit(&header_);
   }
-  this->support_int16_ = support_int16;
-  if (support_int16) {
+  if (vulkan_cap_.has_int16) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt16).commit(&header_);
   }
-  this->support_int64_ = support_int64;
-  if (support_int64) {
+  if (vulkan_cap_.has_int64) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt64).commit(&header_);
   }
-  this->support_fp64_ = support_fp64;
-  if (support_fp64) {
+  if (vulkan_cap_.has_float64) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityFloat64).commit(&header_);
+  }
+
+  ib_.begin(spv::OpExtension)
+      .add("SPV_KHR_storage_buffer_storage_class")
+      .commit(&header_);
+  ib_.begin(spv::OpExtension).add("SPV_KHR_variable_pointers").commit(&header_);
+
+  if (vulkan_cap_.has_atomic_float) {
+    ib_.begin(spv::OpExtension)
+        .add("SPV_EXT_shader_atomic_float_add")
+        .commit(&header_);
   }
 
   // memory model
@@ -78,22 +91,22 @@ std::vector<uint32_t> IRBuilder::finalize() {
 void IRBuilder::init_pre_defs() {
   ext_glsl450_ = ext_inst_import("GLSL.std.450");
   t_bool_ = declare_primitive_type(get_data_type<bool>());
-  if (support_int8_) {
+  if (vulkan_cap_.has_int8) {
     t_int8_ = declare_primitive_type(get_data_type<int8>());
     t_uint8_ = declare_primitive_type(get_data_type<uint8>());
   }
-  if (support_int16_) {
+  if (vulkan_cap_.has_int16) {
     t_int16_ = declare_primitive_type(get_data_type<int16>());
     t_uint16_ = declare_primitive_type(get_data_type<uint16>());
   }
   t_int32_ = declare_primitive_type(get_data_type<int32>());
   t_uint32_ = declare_primitive_type(get_data_type<uint32>());
-  if (support_int64_) {
+  if (vulkan_cap_.has_int64) {
     t_int64_ = declare_primitive_type(get_data_type<int64>());
     t_uint64_ = declare_primitive_type(get_data_type<uint64>());
   }
   t_fp32_ = declare_primitive_type(get_data_type<float32>());
-  if (support_fp64_) {
+  if (vulkan_cap_.has_float64) {
     t_fp64_ = declare_primitive_type(get_data_type<float64>());
   }
   // declare void, and void functions
@@ -170,40 +183,54 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
   } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return t_fp32_;
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    if (!support_fp64_)
+    if (!vulkan_cap_.has_float64)
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_fp64_;
   } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    if (!support_int8_)
+    if (!vulkan_cap_.has_int8)
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_int8_;
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    if (!support_int16_)
+    if (!vulkan_cap_.has_int16)
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_int16_;
   } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return t_int32_;
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    if (!support_int64_)
+    if (!vulkan_cap_.has_int64)
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_int64_;
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    if (!support_int8_)
+    if (!vulkan_cap_.has_int8)
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_uint8_;
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    if (!support_int16_)
+    if (!vulkan_cap_.has_int16)
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_uint16_;
   } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return t_uint32_;
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    if (!support_int64_)
+    if (!vulkan_cap_.has_int64)
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_uint64_;
   } else {
     TI_ERROR("Type {} not supported.", dt->to_string());
   }
+}
+
+SType IRBuilder::get_primitive_buffer_type(const DataType &dt) const {
+  if (vulkan_cap_.has_atomic_float) {
+    if (dt->is_primitive(PrimitiveTypeID::f32)) {
+      return t_fp32_;
+    } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+      return t_fp64_;
+    }
+  } else if (vulkan_cap_.has_atomic_i64 &&
+             dt->is_primitive(PrimitiveTypeID::i64)) {
+    return t_int64_;
+  }
+  return t_int32_;
 }
 
 SType IRBuilder::get_pointer_type(const SType &value_type,
@@ -267,16 +294,16 @@ SType IRBuilder::get_struct_array_type(const SType &value_type,
       .add_seq(struct_type, 0, spv::DecorationOffset, 0)
       .commit(&decorate_);
 
-#if SPV_VERSION < 0x10300
-  // NOTE: BufferBlock was deprecated in SPIRV 1.3
-  // use StorageClassStorageBuffer instead.
-  // runtime array are always decorated as BufferBlock(shader storage buffer)
-  if (num_elems == 0) {
-    this->decorate(spv::OpDecorate, struct_type, spv::DecorationBufferBlock);
+  if (vulkan_cap_.spirv_version < 0x10300) {
+    // NOTE: BufferBlock was deprecated in SPIRV 1.3
+    // use StorageClassStorageBuffer instead.
+    // runtime array are always decorated as BufferBlock(shader storage buffer)
+    if (num_elems == 0) {
+      this->decorate(spv::OpDecorate, struct_type, spv::DecorationBufferBlock);
+    }
+  } else {
+    this->decorate(spv::OpDecorate, struct_type, spv::DecorationBlock);
   }
-#else
-  this->decorate(spv::OpDecorate, struct_type, spv::DecorationBlock);
-#endif
 
   return struct_type;
 }
@@ -286,11 +313,12 @@ Value IRBuilder::buffer_argument(const SType &value_type,
                                  uint32_t binding) {
   // NOTE: BufferBlock was deprecated in SPIRV 1.3
   // use StorageClassStorageBuffer instead.
-#if SPV_VERSION >= 0x10300
-  spv::StorageClass storage_class = spv::StorageClassStorageBuffer;
-#else
-  spv::StorageClass storage_class = spv::StorageClassUniform;
-#endif
+  spv::StorageClass storage_class;
+  if (vulkan_cap_.spirv_version < 0x10300) {
+    storage_class = spv::StorageClassUniform;
+  } else {
+    storage_class = spv::StorageClassStorageBuffer;
+  }
 
   SType sarr_type = get_struct_array_type(value_type, 0);
   SType ptr_type = get_pointer_type(sarr_type, storage_class);
@@ -310,11 +338,13 @@ Value IRBuilder::struct_array_access(const SType &res_type,
                                      Value index) {
   TI_ASSERT(buffer.flag == ValueKind::kStructArrayPtr);
   TI_ASSERT(res_type.flag == TypeKind::kPrimitive);
-#if SPV_VERSION >= 0x10300
-  spv::StorageClass storage_class = spv::StorageClassStorageBuffer;
-#else
-  spv::StorageClass storage_class = spv::StorageClassUniform;
-#endif
+
+  spv::StorageClass storage_class;
+  if (vulkan_cap_.spirv_version < 0x10300) {
+    storage_class = spv::StorageClassUniform;
+  } else {
+    storage_class = spv::StorageClassStorageBuffer;
+  }
 
   SType ptr_type = this->get_pointer_type(res_type, storage_class);
   Value ret = new_value(ptr_type, ValueKind::kVariablePtr);
@@ -324,17 +354,6 @@ Value IRBuilder::struct_array_access(const SType &res_type,
   return ret;
 }
 
-Value IRBuilder::get_work_group_size(uint32_t dim_index) {
-  if (gl_work_group_size.id == 0) {
-    gl_work_group_size.id = id_counter_++;
-  }
-  SType pint_type = this->get_pointer_type(t_uint32_, spv::StorageClassInput);
-  Value ptr = this->make_value(
-      spv::OpAccessChain, pint_type, gl_work_group_size,
-      uint_immediate_number(t_uint32_, static_cast<uint64_t>(dim_index)));
-
-  return this->make_value(spv::OpLoad, t_uint32_, ptr);
-}
 void IRBuilder::set_work_group_size(const std::array<int, 3> group_size) {
   Value size_x =
       uint_immediate_number(t_uint32_, static_cast<uint64_t>(group_size[0]));
@@ -560,7 +579,7 @@ Value IRBuilder::alloca_variable(const SType &type) {
   SType ptr_type = get_pointer_type(type, spv::StorageClassFunction);
   Value ret = new_value(ptr_type, ValueKind::kVariablePtr);
   ib_.begin(spv::OpVariable)
-      .add_seq(type, ret, spv::StorageClassFunction)
+      .add_seq(ptr_type, ret, spv::StorageClassFunction)
       .commit(&func_header_);
   return ret;
 }
@@ -632,7 +651,7 @@ Value IRBuilder::float_atomic_add() {
       SType ptr_type = get_pointer_type(type, spv::StorageClassFunction);
       Value ret = new_value(ptr_type, ValueKind::kVariablePtr);
       ib_.begin(spv::OpVariable)
-          .add_seq(type, ret, spv::StorageClassFunction)
+          .add_seq(ptr_type, ret, spv::StorageClassFunction)
           .commit(&func_);
 
       return ret;
@@ -866,16 +885,16 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   _rand_z_ = new_value(local_type, ValueKind::kVariablePtr);
   _rand_w_ = new_value(local_type, ValueKind::kVariablePtr);
   ib_.begin(spv::OpVariable)
-      .add_seq(t_uint32_, _rand_x_, spv::StorageClassPrivate)
+      .add_seq(local_type, _rand_x_, spv::StorageClassPrivate)
       .commit(&global_);
   ib_.begin(spv::OpVariable)
-      .add_seq(t_uint32_, _rand_y_, spv::StorageClassPrivate)
+      .add_seq(local_type, _rand_y_, spv::StorageClassPrivate)
       .commit(&global_);
   ib_.begin(spv::OpVariable)
-      .add_seq(t_uint32_, _rand_z_, spv::StorageClassPrivate)
+      .add_seq(local_type, _rand_z_, spv::StorageClassPrivate)
       .commit(&global_);
   ib_.begin(spv::OpVariable)
-      .add_seq(t_uint32_, _rand_w_, spv::StorageClassPrivate)
+      .add_seq(local_type, _rand_w_, spv::StorageClassPrivate)
       .commit(&global_);
   debug(spv::OpName, _rand_x_, "_rand_x");
   debug(spv::OpName, _rand_y_, "_rand_y");

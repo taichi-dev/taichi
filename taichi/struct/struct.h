@@ -7,13 +7,6 @@
 namespace taichi {
 namespace lang {
 
-/**
- * Computes the AxisExtractor from the SNode rooted in @param snode.
- *
- * @param snode The root SNode to compute.
- */
-void infer_snode_properties(SNode &snode, bool packed);
-
 class StructCompiler {
  public:
   std::vector<SNode *> stack;

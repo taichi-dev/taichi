@@ -26,9 +26,7 @@ class SpirvSNodeCompiler {
                             SNodeSTypeTbl *snode_id_array_stype_tbl_) {
     const auto &sn = sn_desc.snode;
     if (sn->is_place()) {
-      // return get_primitive_type(sn->dt); // TODO(changyu): use type-based
-      // pointer
-      return ir_->i32_type();
+      return ir_->get_primitive_buffer_type(sn->dt);
     } else {
       SType sn_type = ir_->get_null_type();
       sn_type.snode_desc = sn_desc;
@@ -60,9 +58,9 @@ class SpirvSNodeCompiler {
         } else {
           ch_type_array = ch_type;
         }
-        ir_->declare_global(spv::OpMemberDecorate, sn_type, cn_cnt++,
-                            spv::DecorationOffset,
-                            ch_desc.mem_offset_in_parent_cell);  // Offset
+        ir_->decorate(spv::OpMemberDecorate, sn_type, cn_cnt++,
+                      spv::DecorationOffset,
+                      ch_desc.mem_offset_in_parent_cell);  // Offset
         sn_type.snode_child_type_id.push_back(ch_type_array.id);
 
         TI_ASSERT(snode_id_struct_stype_tbl_->find(ch_sn->id) ==

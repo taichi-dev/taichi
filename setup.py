@@ -28,7 +28,7 @@ classifiers = [
 project_name = os.getenv('PROJECT_NAME', 'taichi')
 TI_VERSION_MAJOR = 0
 TI_VERSION_MINOR = 7
-TI_VERSION_PATCH = 27
+TI_VERSION_PATCH = 28
 version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 
 data_files = glob.glob('python/lib/*')
@@ -72,7 +72,6 @@ class EggInfo(egg_info):
     def run(self):
         taichi_dir = os.path.join(package_dir, 'taichi')
         remove_tmp(taichi_dir)
-        shutil.rmtree('build', ignore_errors=True)
 
         shutil.copytree('tests/python', os.path.join(taichi_dir, 'tests'))
         shutil.copytree('examples', os.path.join(taichi_dir, 'examples'))
@@ -129,7 +128,9 @@ class CMakeBuild(build_ext):
 
         # Assuming Makefiles
         if get_os_name() != 'win':
-            build_args += ['--', f'-j{multiprocessing.cpu_count()}']
+            num_threads = os.getenv('BUILD_NUM_THREADS',
+                                    multiprocessing.cpu_count())
+            build_args += ['--', f'-j{num_threads}']
 
         self.build_args = build_args
 

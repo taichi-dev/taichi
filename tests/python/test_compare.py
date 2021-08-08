@@ -13,18 +13,18 @@ def test_compare_basics():
     def func():
         b[None] = 3
         c[None] = 5
-        a[0] = b < c
-        a[1] = b <= c
-        a[2] = b > c
-        a[3] = b >= c
-        a[4] = b == c
-        a[5] = b != c
-        a[6] = c < b
-        a[7] = c <= b
-        a[8] = c > b
-        a[9] = c >= b
-        a[10] = c == b
-        a[11] = c != b
+        a[0] = b[None] < c[None]
+        a[1] = b[None] <= c[None]
+        a[2] = b[None] > c[None]
+        a[3] = b[None] >= c[None]
+        a[4] = b[None] == c[None]
+        a[5] = b[None] != c[None]
+        a[6] = c[None] < b[None]
+        a[7] = c[None] <= b[None]
+        a[8] = c[None] > b[None]
+        a[9] = c[None] >= b[None]
+        a[10] = c[None] == b[None]
+        a[11] = c[None] != b[None]
 
     func()
     assert a[0]
@@ -53,18 +53,18 @@ def test_compare_equality():
     def func():
         b[None] = 3
         c[None] = 3
-        a[0] = b < c
-        a[1] = b <= c
-        a[2] = b > c
-        a[3] = b >= c
-        a[4] = b == c
-        a[5] = b != c
-        a[6] = c < b
-        a[7] = c <= b
-        a[8] = c > b
-        a[9] = c >= b
-        a[10] = c == b
-        a[11] = c != b
+        a[0] = b[None] < c[None]
+        a[1] = b[None] <= c[None]
+        a[2] = b[None] > c[None]
+        a[3] = b[None] >= c[None]
+        a[4] = b[None] == c[None]
+        a[5] = b[None] != c[None]
+        a[6] = c[None] < b[None]
+        a[7] = c[None] <= b[None]
+        a[8] = c[None] > b[None]
+        a[9] = c[None] >= b[None]
+        a[10] = c[None] == b[None]
+        a[11] = c[None] != b[None]
 
     func()
     assert not a[0]
@@ -132,8 +132,9 @@ def test_chain_compare():
         b[None] = 2
         c[None] = 3
         d[None] = 3
-        a[0] = c == d != b < d > b >= b <= c
-        a[1] = b <= c != d > b == b
+        a[0] = c[None] == d[None] != b[None] < d[None] > b[None] >= b[
+            None] <= c[None]
+        a[1] = b[None] <= c[None] != d[None] > b[None] == b[None]
 
     func()
     assert a[0]

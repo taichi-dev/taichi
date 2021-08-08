@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <regex>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -37,6 +38,7 @@ class KernelProfilerBase {
   using TaskHandle = void *;
 
   void clear() {
+    sync();
     total_time_ms = 0;
     records.clear();
   }
@@ -61,6 +63,12 @@ class KernelProfilerBase {
   static void profiler_stop(KernelProfilerBase *profiler);
 
   void print();
+
+  void query(const std::string &kernel_name,
+             int &counter,
+             double &min,
+             double &max,
+             double &avg);
 
   double get_total_time() const;
 

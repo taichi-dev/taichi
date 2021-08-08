@@ -16,8 +16,6 @@ def test_simple_array():
 
     ti.root.dense(ti.i, N).bit_struct(num_bits=32).place(x, y)
 
-    ti.get_runtime().materialize()
-
     @ti.kernel
     def set_val():
         for i in range(N):

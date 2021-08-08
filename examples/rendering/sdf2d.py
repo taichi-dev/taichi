@@ -51,8 +51,10 @@ def subtract(a, b):
 @ti.func
 def sdf_moon(p):
     #       EMI, RFL, RFR
-    d1 = vres((p - light_pos + vec2(0.05, 0.0)).norm() - 0.1, 1.0, 0.0, 0.0)
-    d2 = vres((p - light_pos - vec2(0.05, 0.0)).norm() - 0.1, 1.0, 0.0, 0.0)
+    d1 = vres((p - light_pos[None] + vec2(0.05, 0.0)).norm() - 0.1, 1.0, 0.0,
+              0.0)
+    d2 = vres((p - light_pos[None] - vec2(0.05, 0.0)).norm() - 0.1, 1.0, 0.0,
+              0.0)
     d3 = vres(p[1] - 0.6, 0.0, 1.0, 0.0)
     d4 = vres((p - vec2(0.5, 0.6)).norm() - 0.3, 0.0, 1.0, 0.0)
     return union(subtract(d1, d2), subtract(d3, d4))
@@ -63,7 +65,7 @@ def sdf_lens(p):
     #       EMI, RFL, RFR
     d1 = vres((p - vec2(0.5, 0.28)).norm() - 0.2, 0.0, 0.3, 1.0)
     d2 = vres((p - vec2(0.5, 0.6)).norm() - 0.2, 0.0, 0.3, 1.0)
-    d3 = vres((p - light_pos).norm() - 0.05, 5.0, 0.0, 0.0)
+    d3 = vres((p - light_pos[None]).norm() - 0.05, 5.0, 0.0, 0.0)
     return union(intersect(d1, d2), d3)
 
 

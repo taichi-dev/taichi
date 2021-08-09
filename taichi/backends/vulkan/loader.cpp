@@ -32,6 +32,16 @@ void VulkanLoader::load_device(VkDevice device) {
   volkLoadDevice(device);
 }
 
+PFN_vkVoidFunction VulkanLoader::load_function(const char *name) {
+  auto result =
+      vkGetInstanceProcAddr(VulkanLoader::instance().vulkan_instance_, name);
+  // printf("loading %s \n",name);
+  if (result == nullptr) {
+    printf("%s is nullptr\n", name);
+  }
+  return result;
+}
+
 }  // namespace vulkan
 }  // namespace lang
 }  // namespace taichi

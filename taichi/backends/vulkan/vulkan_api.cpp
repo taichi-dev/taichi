@@ -99,7 +99,8 @@ std::vector<const char *> get_required_extensions() {
   return extensions;
 }
 
-VulkanQueueFamilyIndices find_queue_families(VkPhysicalDevice device) {
+VulkanQueueFamilyIndices find_queue_families(VkPhysicalDevice device,
+                                             VkSurfaceKHR surface) {
   VulkanQueueFamilyIndices indices;
 
   uint32_t queue_family_count = 0;
@@ -120,7 +121,21 @@ VulkanQueueFamilyIndices find_queue_families(VkPhysicalDevice device) {
         (masked_flags & VK_QUEUE_GRAPHICS_BIT)) {
       indices.compute_family = i;
     }
-    if (indices.is_complete()) {
+    if (masked_flags & VK_QUEUE_GRAPHICS_BIT) {
+      indices.graphics_family = i;
+    }
+
+    if (surface != VK_NULL_HANDLE) {
+      VkBool32 present_support = false;
+      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface,
+                                           &present_support);
+
+      if (present_support) {
+        indices.present_family = i;
+      }
+    }
+
+    if (indices.is_complete() && indices.is_complete_for_ui()) {
       return indices;
     }
   }
@@ -138,8 +153,13 @@ VulkanQueueFamilyIndices find_queue_families(VkPhysicalDevice device) {
   return indices;
 }
 
-bool is_device_suitable(VkPhysicalDevice device) {
-  return find_queue_families(device).is_complete();
+bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
+  auto indices = find_queue_families(device, surface);
+  if (surface != VK_NULL_HANDLE) {
+    return indices.is_complete_for_ui();
+  } else {
+    return indices.is_complete();
+  }
 }
 
 VkShaderModule create_shader_module(VkDevice device,
@@ -162,12 +182,16 @@ VkShaderModule create_shader_module(VkDevice device,
 VulkanDevice::VulkanDevice(const Params &params) : rep_(params) {
 }
 
-EmbeddedVulkanDevice::EmbeddedVulkanDevice(const Params &params) {
+EmbeddedVulkanDevice::EmbeddedVulkanDevice(const Params &params)
+    : params_(params) {
   if (!VulkanLoader::instance().init()) {
     throw std::runtime_error("Error loading vulkan");
   }
-  create_instance(params);
+  create_instance();
   setup_debug_messenger();
+  if (params_.is_for_ui) {
+    create_surface();
+  }
   pick_physical_device();
   create_logical_device();
   create_command_pool();
@@ -176,6 +200,8 @@ EmbeddedVulkanDevice::EmbeddedVulkanDevice(const Params &params) {
   VulkanDevice::Params dparams;
   dparams.device = device_;
   dparams.compute_queue = compute_queue_;
+  dparams.graphics_queue = graphics_queue_;
+  dparams.present_queue = present_queue_;
   dparams.command_pool = command_pool_;
   owned_device_ = std::make_unique<VulkanDevice>(dparams);
 #ifdef TI_VULKAN_DEBUG
@@ -205,7 +231,7 @@ EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
   vkDestroyInstance(instance_, kNoVkAllocCallbacks);
 }
 
-void EmbeddedVulkanDevice::create_instance(const Params &params) {
+void EmbeddedVulkanDevice::create_instance() {
   VkApplicationInfo app_info{};
   app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   app_info.pApplicationName = "Taichi Vulkan Backend";
@@ -213,9 +239,9 @@ void EmbeddedVulkanDevice::create_instance(const Params &params) {
   app_info.pEngineName = "No Engine";
   app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 
-  if (params.api_version.has_value()) {
+  if (params_.api_version.has_value()) {
     // The version client specified to use
-    app_info.apiVersion = params.api_version.value();
+    app_info.apiVersion = params_.api_version.value();
   } else {
     // The highest version designed to use
     app_info.apiVersion = VK_API_VERSION_1_2;
@@ -244,6 +270,9 @@ void EmbeddedVulkanDevice::create_instance(const Params &params) {
   }
 
   auto extensions = get_required_extensions();
+  for (auto ext : params_.additional_instance_extensions) {
+    extensions.push_back(ext);
+  }
 
 #ifdef TI_VULKAN_DEBUG
   glfwInit();
@@ -288,6 +317,10 @@ void EmbeddedVulkanDevice::setup_debug_messenger() {
       "failed to set up debug messenger");
 }
 
+void EmbeddedVulkanDevice::create_surface() {
+  surface_ = params_.surface_creator(instance_);
+}
+
 void EmbeddedVulkanDevice::pick_physical_device() {
   uint32_t device_count = 0;
   vkEnumeratePhysicalDevices(instance_, &device_count, nullptr);
@@ -297,7 +330,7 @@ void EmbeddedVulkanDevice::pick_physical_device() {
   vkEnumeratePhysicalDevices(instance_, &device_count, devices.data());
   physical_device_ = VK_NULL_HANDLE;
   for (const auto &device : devices) {
-    if (is_device_suitable(device)) {
+    if (is_device_suitable(device, surface_)) {
       physical_device_ = device;
       break;
     }
@@ -305,22 +338,34 @@ void EmbeddedVulkanDevice::pick_physical_device() {
   TI_ASSERT_INFO(physical_device_ != VK_NULL_HANDLE,
                  "failed to find a suitable GPU");
 
-  queue_family_indices_ = find_queue_families(physical_device_);
+  queue_family_indices_ = find_queue_families(physical_device_, surface_);
 }
 
 void EmbeddedVulkanDevice::create_logical_device() {
-  VkDeviceQueueCreateInfo queue_create_info{};
-  queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  queue_create_info.queueFamilyIndex =
-      queue_family_indices_.compute_family.value();
-  queue_create_info.queueCount = 1;
-  constexpr float kQueuePriority = 1.0f;
-  queue_create_info.pQueuePriorities = &kQueuePriority;
+  std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
+  std::unordered_set<uint32_t> unique_families;
+
+  if (params_.is_for_ui) {
+    unique_families = {queue_family_indices_.graphics_family.value(),
+                       queue_family_indices_.present_family.value()};
+  } else {
+    unique_families = {queue_family_indices_.compute_family.value()};
+  }
+
+  float queue_priority = 1.0f;
+  for (uint32_t queue_family : unique_families) {
+    VkDeviceQueueCreateInfo queueCreateInfo{};
+    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfo.queueFamilyIndex = queue_family;
+    queueCreateInfo.queueCount = 1;
+    queueCreateInfo.pQueuePriorities = &queue_priority;
+    queue_create_infos.push_back(queueCreateInfo);
+  }
 
   VkDeviceCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-  create_info.pQueueCreateInfos = &queue_create_info;
-  create_info.queueCreateInfoCount = 1;
+  create_info.pQueueCreateInfos = queue_create_infos.data();
+  create_info.queueCreateInfoCount = queue_create_infos.size();
 
   // Get device properties
   VkPhysicalDeviceProperties physical_device_properties;
@@ -334,6 +379,10 @@ void EmbeddedVulkanDevice::create_logical_device() {
 
   // Detect extensions
   std::vector<const char *> enabled_extensions;
+
+  for (auto ext : params_.additional_device_extensions) {
+    enabled_extensions.push_back(ext);
+  }
 
   uint32_t extension_count = 0;
   vkEnumerateDeviceExtensionProperties(physical_device_, nullptr,
@@ -400,6 +449,11 @@ void EmbeddedVulkanDevice::create_logical_device() {
   capability_.has_int16 = false;
   capability_.has_int64 = true;
   capability_.has_float64 = true;
+  if (params_.is_for_ui) {
+    device_features.samplerAnisotropy = VK_TRUE;
+    device_features.geometryShader = VK_TRUE;
+    device_features.wideLines = VK_TRUE;
+  }
 
   create_info.pEnabledFeatures = &device_features;
   create_info.enabledExtensionCount = enabled_extensions.size();
@@ -453,15 +507,27 @@ void EmbeddedVulkanDevice::create_logical_device() {
                                        kNoVkAllocCallbacks, &device_),
                         "failed to create logical device");
   VulkanLoader::instance().load_device(device_);
-  vkGetDeviceQueue(device_, queue_family_indices_.compute_family.value(),
-                   /*queueIndex=*/0, &compute_queue_);
+
+  if (params_.is_for_ui) {
+    vkGetDeviceQueue(device_, queue_family_indices_.graphics_family.value(), 0,
+                     &graphics_queue_);
+    vkGetDeviceQueue(device_, queue_family_indices_.graphics_family.value(), 0,
+                     &present_queue_);
+  } else {
+    vkGetDeviceQueue(device_, queue_family_indices_.compute_family.value(), 0,
+                     &compute_queue_);
+  }
 }
 
 void EmbeddedVulkanDevice::create_command_pool() {
   VkCommandPoolCreateInfo pool_info{};
   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   pool_info.flags = 0;
-  pool_info.queueFamilyIndex = queue_family_indices_.compute_family.value();
+  if (params_.is_for_ui) {
+    pool_info.queueFamilyIndex = queue_family_indices_.graphics_family.value();
+  } else {
+    pool_info.queueFamilyIndex = queue_family_indices_.compute_family.value();
+  }
   BAIL_ON_VK_BAD_RESULT(
       vkCreateCommandPool(device_, &pool_info, kNoVkAllocCallbacks,
                           &command_pool_),

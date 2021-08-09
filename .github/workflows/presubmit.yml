@@ -88,6 +88,7 @@ jobs:
           hash -r
           python examples/algorithm/laplace.py
           ti diagnose
+          ti changelog
           # TODO: make cpp tests work in both release & dev mode.
           # Currently cpp tests only works in dev mode since it depends on the path set there.
           TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
@@ -150,6 +151,7 @@ jobs:
           hash -r
           python examples/algorithm/laplace.py
           ti diagnose
+          ti changelog
           # TODO: make cpp tests work in both release & dev mode.
           # Currently cpp tests only works in dev mode since it depends on the path set there.
           [ "$RUN_CPP_TESTS" = "ON" ] && TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
@@ -185,6 +187,7 @@ jobs:
           glewinfo
           $PYTHON examples/algorithm/laplace.py
           ti diagnose
+          ti changelog
           ti test -vr2 -t2
 
   build_and_test_windows:
@@ -231,6 +234,7 @@ jobs:
           python -c "import taichi"
           python examples/algorithm/laplace.py
           python bin/taichi diagnose
+          python bin/taichi changelog
           python bin/taichi test -cvr2 -t2
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe

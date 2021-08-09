@@ -6,6 +6,7 @@ import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
+from taichi.lang.ext_array import ExtArray
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField
 from taichi.lang.snode import SNode
@@ -72,15 +73,15 @@ def expr_init_func(
 
 
 def begin_frontend_struct_for(group, loop_range):
-    if not isinstance(loop_range, Expr) or not loop_range.is_global():
-        raise TypeError('Can only iterate through global variables/fields')
+    if not isinstance(loop_range, (ExtArray, Field, SNode, _Root)):
+        raise TypeError('Can only iterate through Taichi fields or external arrays')
     if group.size() != len(loop_range.shape):
         raise IndexError(
             'Number of struct-for indices does not match loop variable dimensionality '
             f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
-    _ti_core.begin_frontend_struct_for(group, loop_range.ptr)
+    _ti_core.begin_frontend_struct_for(group, loop_range.loop_range())
 
 
 def begin_frontend_if(cond):
@@ -124,7 +125,9 @@ def subscript(value, *indices):
     indices_expr_group = make_expr_group(*indices)
     index_dim = indices_expr_group.size()
 
-    if isinstance(value, Field):
+    if is_taichi_class(value):
+        return value.subscript(*indices)
+    elif isinstance(value, Field):
         var = value.get_field_members()[0].ptr
         if var.snode() is None:
             if var.is_primal():
@@ -146,14 +149,8 @@ def subscript(value, *indices):
             ])
         else:
             return Expr(_ti_core.subscript(var, indices_expr_group))
-    elif is_taichi_class(value):
-        return value.subscript(*indices)
-    elif isinstance(value, (Expr, SNode)):
-        if isinstance(value, Expr):
-            if not value.ptr.is_external_var():
-                raise TypeError(
-                    'Subscription (e.g., "a[i, j]") only works on fields or external arrays.'
-                )
+    elif isinstance(value, (ExtArray, SNode)):
+        if isinstance(value, ExtArray):
             field_dim = int(value.ptr.get_attribute("dim"))
         else:
             # When reading bit structure we only support the 0-D case for now.
@@ -435,13 +432,18 @@ class _Root:
         """Same as :func:`taichi.SNode.parent`"""
         return _root_fb.root.parent(n)
 
-    def loop_range(self, n=1):
+    def loop_range(self):
         """Same as :func:`taichi.SNode.loop_range`"""
         return _root_fb.root.loop_range()
 
     def get_children(self):
         """Same as :func:`taichi.SNode.get_children`"""
         return _root_fb.root.get_children()
+
+    @property
+    def shape(self):
+        """Same as :func:`taichi.SNode.shape`"""
+        return _root_fb.root.shape
 
     @property
     def id(self):
@@ -714,16 +716,6 @@ def one(x):
     return zero(x) + 1
 
 
-@taichi_scope
-def get_external_tensor_dim(var):
-    return _ti_core.get_external_tensor_dim(var)
-
-
-@taichi_scope
-def get_external_tensor_shape_along_axis(var, i):
-    return _ti_core.get_external_tensor_shape_along_axis(var, i)
-
-
 def indices(*x):
     return [_ti_core.Axis(i) for i in x]
 
@@ -785,7 +777,7 @@ def static(x, *xs):
                   (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
                    ti.GroupedNDRange, zip, filter, map)) or x is None:
         return x
-    elif isinstance(x, Expr) and x.is_global():
+    elif isinstance(x, ExtArray):
         return x
     elif isinstance(x, Field):
         return x

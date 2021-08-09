@@ -1,5 +1,6 @@
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.expr import Expr
+from taichi.lang.ext_array import ExtArray
 from taichi.lang.snode import SNode
 from taichi.lang.util import cook_dtype, to_taichi_type
 
@@ -74,7 +75,7 @@ def decl_scalar_arg(dtype):
 def decl_ext_arr_arg(dtype, dim):
     dtype = cook_dtype(dtype)
     arg_id = _ti_core.decl_arg(dtype, True)
-    return Expr(_ti_core.make_external_tensor_expr(dtype, dim, arg_id))
+    return ExtArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id))
 
 
 def decl_scalar_ret(dtype):

@@ -1,7 +1,7 @@
-import os
-import sys
 import argparse
 import json
+import os
+import sys
 
 from git import Repo
 
@@ -9,7 +9,8 @@ from git import Repo
 def changelog(arguments: list = sys.argv[2:]):
     """Display changelog of current version"""
     parser = argparse.ArgumentParser(
-        prog='ti changelog', description="Display changelog of current version")
+        prog='ti changelog',
+        description="Display changelog of current version")
     parser.add_argument(
         'version',
         nargs='?',
@@ -20,8 +21,7 @@ def changelog(arguments: list = sys.argv[2:]):
         '-s',
         '--save',
         action='store_true',
-        help="Save changelog to CHANGELOG.md instead of print to stdout"
-    )
+        help="Save changelog to CHANGELOG.md instead of print to stdout")
     args = parser.parse_args(arguments)
 
     repo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,6 +33,7 @@ def changelog(arguments: list = sys.argv[2:]):
             f.write(res)
     else:
         print(res)
+
 
 def load_pr_tags():
     this_dir = os.path.dirname(os.path.abspath(__file__))

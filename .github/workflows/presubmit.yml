@@ -169,9 +169,6 @@ jobs:
           git --version
           export PATH=$LLVM_LIB_ROOT_DIR/bin:$PATH
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
-          echo "PATH=$PATH"
-          echo "LLVM_DIR=$LLVM_DIR"
-          echo "HOME=$HOME"
           export CXX=clang++-8
           export PYTHON=/usr/bin/python3
           $PYTHON misc/ci_setup.py ci
@@ -183,7 +180,6 @@ jobs:
       - name: Test
         run: |
           export PYTHON=/usr/bin/python3
-          # export PATH=/home/github/taichi-llvm/bin/:$PATH
           export PATH=$PATH:$HOME/.local/bin
           export DISPLAY=:1
           hash -r

@@ -2,9 +2,9 @@ import argparse
 import json
 import os
 import sys
+
 sys.path.insert(0, './taichi')
 import make_changelog
-
 from git import Repo
 
 
@@ -35,6 +35,7 @@ def changelog(arguments: list = sys.argv[2:]):
             f.write(res)
     else:
         print(res)
+
 
 if __name__ == '__main__':
     changelog(sys.argv[1:])

@@ -223,32 +223,9 @@ class TaichiMain:
     @register
     def changelog(self, arguments: list = sys.argv[2:]):
         """Display changelog of current version"""
-        parser = argparse.ArgumentParser(
-            prog='ti changelog',
-            description="Display changelog of current version")
-        parser.add_argument(
-            'version',
-            nargs='?',
-            type=str,
-            default='master',
-            help="A version (tag) that git can use to compare diff with")
-        parser.add_argument(
-            '-s',
-            '--save',
-            action='store_true',
-            help="Save changelog to CHANGELOG.md instead of print to stdout")
-        args = parser.parse_args(arguments)
-
-        from . import make_changelog
-        repo_dir = os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        res = make_changelog.main(args.version, repo_dir)
-        if args.save:
-            changelog_md = os.path.join(repo_dir, 'CHANGELOG.md')
-            with open(changelog_md, 'w') as f:
-                f.write(res)
-        else:
-            print(res)
+        changelog_md = os.path.join(ti.package_root(), 'CHANGELOG.md')
+        with open(changelog_md) as f:
+            print(f.read())
 
     @register
     def release(self, arguments: list = sys.argv[2:]):

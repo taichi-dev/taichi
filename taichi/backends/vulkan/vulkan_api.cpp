@@ -156,7 +156,10 @@ VulkanQueueFamilyIndices find_queue_families(VkPhysicalDevice device,
 bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
   auto indices = find_queue_families(device, surface);
   if (surface != VK_NULL_HANDLE) {
-    return indices.is_complete_for_ui();
+    // this means we need ui
+    VkPhysicalDeviceFeatures features{};
+    vkGetPhysicalDeviceFeatures(device, &features);
+    return indices.is_complete_for_ui() && features.wideLines == VK_TRUE;
   } else {
     return indices.is_complete();
   }

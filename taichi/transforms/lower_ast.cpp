@@ -268,6 +268,15 @@ class LowerAST : public IRVisitor {
         fctx.push_back(std::move(new_while));
       }
     } else if (stmt->global_var.is<GlobalVariableExpression>()) {
+    } else if (stmt->mesh_for) {
+      auto snode = stmt->global_var.cast<GlobalVariableExpression>()->snode;
+      auto &&new_for = std::make_unique<MeshForStmt>(
+          snode, std::move(stmt->body), stmt->block_dim);
+      new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0), 0);
+      new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] = new_for->body->statements[0].get();
+      new_for->fields_registered = true;
+      fctx.push_back(std::move(new_for));
+    } else {
       auto snode = stmt->global_var.cast<GlobalVariableExpression>()->snode;
       std::vector<int> offsets;
       if (snode->type == SNodeType::place) {
@@ -360,6 +369,13 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(StructForStmt *for_stmt) override {
+    auto old_capturing_loop = capturing_loop;
+    capturing_loop = for_stmt;
+    for_stmt->body->accept(this);
+    capturing_loop = old_capturing_loop;
+  }
+
+  void visit(MeshForStmt *for_stmt) override {
     auto old_capturing_loop = capturing_loop;
     capturing_loop = for_stmt;
     for_stmt->body->accept(this);

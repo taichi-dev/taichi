@@ -566,6 +566,15 @@ void export_lang(py::module &m) {
     scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
   });
 
+  m.def("begin_frontend_mesh_for", [&](const Expr &i,
+                                         const Expr &global) {
+    auto stmt_unique = std::make_unique<FrontendForStmt>(i, global);
+    auto stmt = stmt_unique.get();
+    stmt->mesh_for = true;
+    current_ast_builder().insert(std::move(stmt_unique));
+    scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
+  });
+
   m.def("end_frontend_range_for", [&]() { scope_stack.pop_back(); });
   m.def("pop_scope", [&]() { scope_stack.pop_back(); });
 

@@ -16,7 +16,7 @@ TEST(Meshfor, Basic) {
     int n = 10;
     //auto *root = program.get_snode_root(SNodeTree::kFirstID);
     auto *root = new SNode(0, SNodeType::root);
-    auto *dense = &(root->dense(0, n));
+    auto *dense = &(root->dense(0, n, false));
     auto *place = &dense->insert_children(SNodeType::place);
     place->dt = PrimitiveType::i32;
     program.add_snode_tree(std::unique_ptr<SNode>(root));

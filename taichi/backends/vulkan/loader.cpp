@@ -4,6 +4,7 @@
 #include <volk.h>
 
 #include "taichi/backends/vulkan/loader.h"
+#include "taichi/common/logging.h"
 
 namespace taichi {
 namespace lang {
@@ -35,10 +36,7 @@ void VulkanLoader::load_device(VkDevice device) {
 PFN_vkVoidFunction VulkanLoader::load_function(const char *name) {
   auto result =
       vkGetInstanceProcAddr(VulkanLoader::instance().vulkan_instance_, name);
-  // printf("loading %s \n",name);
-  if (result == nullptr) {
-    printf("%s is nullptr\n", name);
-  }
+  TI_WARN_IF(result == nullptr, "loaded vulkan function {} is nullptr", name);
   return result;
 }
 

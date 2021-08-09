@@ -450,8 +450,6 @@ void EmbeddedVulkanDevice::create_logical_device() {
   capability_.has_int64 = true;
   capability_.has_float64 = true;
   if (params_.is_for_ui) {
-    device_features.samplerAnisotropy = VK_TRUE;
-    device_features.geometryShader = VK_TRUE;
     device_features.wideLines = VK_TRUE;
   }
 

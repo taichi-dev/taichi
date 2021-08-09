@@ -168,6 +168,8 @@ jobs:
         run: |
           git --version
           export PATH=/home/github/taichi-llvm/bin/:$PATH
+          echo "PATH=$PATH"
+          echo "LLVM_DIR=$LLVM_DIR"
           export CXX=clang++-8
           export PYTHON=/usr/bin/python3
           $PYTHON misc/ci_setup.py ci

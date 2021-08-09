@@ -1,14 +1,12 @@
 import argparse
-import json
 import os
 import sys
 
 sys.path.insert(0, './taichi')
 import make_changelog
-from git import Repo
 
 
-def changelog(arguments: list = sys.argv[2:]):
+def changelog(arguments: list = sys.argv[1:]):
     """Display changelog of current version"""
     parser = argparse.ArgumentParser(
         prog='ti changelog',

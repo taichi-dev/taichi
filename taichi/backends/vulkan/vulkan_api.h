@@ -1,11 +1,20 @@
 #pragma once
 
+#include <volk.h>
+#define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
 #include <memory>
 #include <optional>
 #include <vector>
+#include <string>
+
+// #define TI_VULKAN_DEBUG
+
+#ifdef TI_VULKAN_DEBUG
+#include <GLFW/glfw3.h>
+#endif
 
 namespace taichi {
 namespace lang {
@@ -34,6 +43,15 @@ struct VulkanQueueFamilyIndices {
   }
 };
 
+#ifdef TI_VULKAN_DEBUG
+struct VulkanDeviceDebugStruct {
+  GLFWwindow *window{nullptr};
+  VkSurfaceKHR surface;
+  VkSwapchainKHR swapchain;
+  VkSemaphore image_available;
+};
+#endif
+
 // Many classes here are inspired by TVM's runtime
 // https://github.com/apache/tvm/tree/main/src/runtime/vulkan
 //
@@ -41,6 +59,10 @@ struct VulkanQueueFamilyIndices {
 // a single queue from a single device, so it does not make a difference to
 // separate the queue from the device. This is similar to using a single CUDA
 // stream.
+//
+// Note that this class does NOT own the underlying Vk* resources. The idea is
+// that users of this lib can provide such resources already created in their
+// Vulkan pipeline.
 //
 // TODO: Think of a better class name.
 class VulkanDevice {
@@ -65,7 +87,18 @@ class VulkanDevice {
     return rep_.command_pool;
   }
 
+#ifdef TI_VULKAN_DEBUG
+  void set_debug_struct(VulkanDeviceDebugStruct *s) {
+    this->debug_struct_ = s;
+  }
+#endif
+
+  void debug_frame_marker() const;
+
  private:
+#ifdef TI_VULKAN_DEBUG
+  VulkanDeviceDebugStruct *debug_struct_{nullptr};
+#endif
   Params rep_;
 };
 
@@ -73,24 +106,34 @@ struct VulkanCapabilities {
   uint32_t api_version;
   uint32_t spirv_version;
 
-  bool has_nvidia_interop;
-  bool has_atomic_i64;
-  bool has_atomic_float;
-  bool has_presentation;
-  bool has_spv_variable_ptr;
+  bool has_int8{false};
+  bool has_int16{false};
+  bool has_int64{false};
+  bool has_float64{false};
+
+  bool has_nvidia_interop{false};
+  bool has_atomic_i64{false};
+  bool has_atomic_float{false};
+  bool has_presentation{false};
+  bool has_spv_variable_ptr{false};
 };
 
 /**
- * Manages a VulkanDevice instance, including its resources.
+ * This class creates a VulkanDevice instance. The underlying Vk* resources are
+ * embedded directly inside the class.
  */
-class ManagedVulkanDevice {
+class EmbeddedVulkanDevice {
  public:
   struct Params {
     std::optional<uint32_t> api_version;
   };
 
-  explicit ManagedVulkanDevice(const Params &params);
-  ~ManagedVulkanDevice();
+  explicit EmbeddedVulkanDevice(const Params &params);
+  ~EmbeddedVulkanDevice();
+
+  VkInstance instance() {
+    return instance_;
+  }
 
   VulkanDevice *device() {
     return owned_device_.get();
@@ -118,6 +161,11 @@ class ManagedVulkanDevice {
   void pick_physical_device();
   void create_logical_device();
   void create_command_pool();
+  void create_debug_swapchain();
+
+#ifdef TI_VULKAN_DEBUG
+  VulkanDeviceDebugStruct debug_struct_;
+#endif
 
   VkInstance instance_{VK_NULL_HANDLE};
   VkDebugUtilsMessengerEXT debug_messenger_{VK_NULL_HANDLE};
@@ -152,6 +200,7 @@ class VulkanPipeline {
     const VulkanDevice *device{nullptr};
     std::vector<BufferBinding> buffer_bindings;
     SpirvCodeView code;
+    std::string name{"Pipeline"};
   };
 
   explicit VulkanPipeline(const Params &params);
@@ -166,6 +215,9 @@ class VulkanPipeline {
   const VkDescriptorSet &descriptor_set() const {
     return descriptor_set_;
   }
+  const std::string &name() const {
+    return name_;
+  }
 
  private:
   void create_descriptor_set_layout(const Params &params);
@@ -174,6 +226,8 @@ class VulkanPipeline {
   void create_descriptor_sets(const Params &params);
 
   VkDevice device_{VK_NULL_HANDLE};  // not owned
+
+  std::string name_;
 
   // TODO: Commands using the same Taichi buffers should be able to share the
   // same descriptor set layout?
@@ -188,6 +242,12 @@ class VulkanPipeline {
   VkDescriptorSet descriptor_set_{VK_NULL_HANDLE};
 };
 
+enum class VulkanCopyBufferDirection {
+  H2D,
+  D2H,
+  // D2D does not have a use case yet
+};
+
 // VulkanCommandBuilder builds a VkCommandBuffer by recording a given series of
 // VulkanPipelines. The workgroup count needs to be known at recording time.
 // TODO: Do we ever need to adjust the workgroup count at runtime?
@@ -199,24 +259,19 @@ class VulkanCommandBuilder {
 
   VkCommandBuffer build();
 
+  void dispatch(const VulkanPipeline &pipeline, int group_count_x);
+
+  void copy(VkBuffer src_buffer,
+            VkBuffer dst_buffer,
+            VkDeviceSize size,
+            VulkanCopyBufferDirection direction);
+
  protected:
   // VkCommandBuffers are destroyed when the underlying command pool is
   // destroyed.
   // https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Command_buffers#page_Command-buffer-allocation
   VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
-};
-
-class VulkanComputeCommandBuilder : public VulkanCommandBuilder {
- public:
-  using VulkanCommandBuilder::VulkanCommandBuilder;
-
-  void append(const VulkanPipeline &pipeline, int group_count_x);
-};
-
-enum class VulkanCopyBufferDirection {
-  H2D,
-  D2H,
-  // D2D does not have a use case yet
+  VkDevice device_;  // do not own
 };
 
 VkCommandBuffer record_copy_buffer_command(const VulkanDevice *device,

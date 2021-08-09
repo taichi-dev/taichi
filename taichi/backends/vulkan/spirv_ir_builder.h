@@ -236,10 +236,7 @@ class IRBuilder {
   }
 
   // Initialize header
-  void init_header(bool support_int8 = false,
-                   bool support_int16 = false,
-                   bool support_int64 = false,
-                   bool support_fp64 = false);
+  void init_header();
   // Initialize the predefined contents
   void init_pre_defs();
   // Get the final binary built from the builder, return The finalized binary
@@ -313,6 +310,8 @@ class IRBuilder {
   SType get_null_type();
   // Get the spirv type for a given Taichi data type
   SType get_primitive_type(const DataType &dt) const;
+  // Get the spirv type for the buffer for a given Taichi data type
+  SType get_primitive_buffer_type(const DataType &dt) const;
   // Get the pointer type that points to value_type
   SType get_pointer_type(const SType &value_type,
                          spv::StorageClass storage_class);
@@ -434,6 +433,10 @@ class IRBuilder {
   Value rand_f32(Value global_tmp_);
   Value rand_i32(Value global_tmp_);
 
+  const VulkanCapabilities &get_vulkan_cap() const {
+    return vulkan_cap_;
+  }
+
  private:
   Value new_value(const SType &type, ValueKind flag) {
     Value val;
@@ -459,10 +462,20 @@ class IRBuilder {
 
   // glsl 450 extension
   Value ext_glsl450_;
-  // Special cached types
-  bool support_int8_, support_int16_, support_int64_, support_fp64_;
-  SType t_bool_, t_int8_, t_int16_, t_int32_, t_int64_, t_uint8_, t_uint16_,
-      t_uint32_, t_uint64_, t_fp32_, t_fp64_, t_void_, t_void_func_;
+
+  SType t_bool_;
+  SType t_int8_;
+  SType t_int16_;
+  SType t_int32_;
+  SType t_int64_;
+  SType t_uint8_;
+  SType t_uint16_;
+  SType t_uint32_;
+  SType t_uint64_;
+  SType t_fp32_;
+  SType t_fp64_;
+  SType t_void_;
+  SType t_void_func_;
   // gl compute shader related type(s) and variables
   SType t_v3_uint_;
   Value gl_global_invocation_id;
@@ -472,8 +485,11 @@ class IRBuilder {
   // Float type atomic add function
   Value float_atomic_add_;
   // Random function and variables
-  bool init_rand_;
-  Value _rand_x_, _rand_y_, _rand_z_, _rand_w_;  // per-thread local variable
+  bool init_rand_{false};
+  Value _rand_x_;
+  Value _rand_y_;
+  Value _rand_z_;
+  Value _rand_w_;  // per-thread local variable
 
   // map from value to its pointer type
   std::map<std::pair<uint32_t, spv::StorageClass>, SType> pointer_type_tbl_;

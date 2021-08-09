@@ -2,8 +2,6 @@ import os
 
 from baseline import Baseline
 
-import taichi as ti
-
 test_suites = [Baseline]
 
 

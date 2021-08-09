@@ -67,4 +67,4 @@ def test_fill_matrix_matrix():
         for j in range(m):
             for p in range(2):
                 for q in range(3):
-                    assert val[i, j][p, q] == mat.get_entry(p, q)
+                    assert val[i, j][p, q] == mat(p, q)

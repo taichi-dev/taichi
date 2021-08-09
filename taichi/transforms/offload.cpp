@@ -127,7 +127,7 @@ class Offloader {
         offloaded->snode = st->snode;
         offloaded->bls_prologue = std::make_unique<Block>();
         offloaded->bls_prologue->parent_stmt = offloaded.get();
-        Stmt* mesh_idx = offloaded->bls_prologue->push_back<InternalFuncStmt>("mesh_idx");
+        Stmt* mesh_idx = offloaded->bls_prologue->push_back<InternalFuncStmt, const std::string, const std::vector<Stmt*>>("mesh_idx", {});
         Stmt* one = offloaded->bls_prologue->push_back<ConstStmt>(LaneAttribute<TypedConstant>(
           TypedConstant(TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32), 1)));
         Stmt* mesh_idx_1 = offloaded->bls_prologue->push_back<BinaryOpStmt>(BinaryOpType::add, mesh_idx, one);

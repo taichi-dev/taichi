@@ -144,6 +144,7 @@ class FrontendForStmt : public Stmt {
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
   int block_dim;
+  bool mesh_for = false;
 
   bool is_ranged() const {
     if (global_var.expr == nullptr) {

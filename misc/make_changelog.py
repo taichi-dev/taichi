@@ -9,7 +9,7 @@ from git import Repo
 
 def load_pr_tags():
     this_dir = os.path.dirname(os.path.abspath(__file__))
-    json_path = os.path.join(this_dir, '../../misc/prtags.json')
+    json_path = os.path.join(this_dir, 'prtags.json')
     details = {}
     with open(json_path) as f:
         details = json.load(f)
@@ -78,5 +78,10 @@ def main(ver='master', repo_dir='.'):
 
 if __name__ == '__main__':
     ver = sys.argv[1] if len(sys.argv) > 1 else 'master'
-    res = main(ver)
+    repo = sys.argv[2] if len(sys.argv) > 2 else '.'
+    save = sys.argv[3] if len(sys.argv) > 3 else False
+    res = main(ver, repo)
+    if save:
+        with open('../python/taichi/CHANGELOG.md', 'w') as f:
+            f.write(res)
     print(res)

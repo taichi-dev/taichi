@@ -35,7 +35,8 @@ def build(project_name):
         '{} -m pip install --user --upgrade twine setuptools wheel'.format(
             get_python_executable()))
 
-    os.system(f'{get_python_executable()} -m taichi changelog --save')
+    os.system(
+        f'{get_python_executable()} ../misc/make_changelog.py master ../ True')
 
     if get_os_name() == 'linux':
         os.system(

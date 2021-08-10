@@ -6,7 +6,7 @@ n = 128
 
 @ti.kernel
 def test():
-    ti.call_internal("insert_triplet", 456)
+    ti.call_internal("insert_triplet", 456, 789)
 
 test()
 

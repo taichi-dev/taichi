@@ -615,7 +615,16 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(InternalFuncStmt *stmt) override {
-    print("{} = call internal \"{}\"", stmt->name(), stmt->func_name);
+    std::string args = "(";
+    bool first = true;
+    for (auto &arg : stmt->args) {
+      if (!first) {
+        args += ", ";
+        first = false;
+      }
+      args += arg->name();
+    }
+    print("{} = call internal \"{}\"()", stmt->name(), stmt->func_name, args);
   }
 
   void visit(AdStackAllocaStmt *stmt) override {

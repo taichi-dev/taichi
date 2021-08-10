@@ -20,9 +20,9 @@ i32 refresh_counter(Context *context) {
   return 0;
 }
 
-i32 insert_triplet(Context *context, int val) {
+i32 insert_triplet(Context *context, int val1, int val2) {
   auto runtime = context->runtime;
-  taichi_printf(runtime, "Number = %d\n", val);
+  taichi_printf(runtime, "Numbers = %d, %d\n", val1, val2);
   return 0;
 }
 

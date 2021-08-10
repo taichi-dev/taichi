@@ -79,7 +79,7 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
           sudo apt-get install xorg-dev libglu1-mesa-dev
-          python -m pip install --user numpy pybind11 gitpython
+          python -m pip install --user numpy pybind11 gitpython pytest
           cd python
           git fetch origin master
           python build.py build
@@ -147,7 +147,7 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
           sudo apt-get install xorg-dev libglu1-mesa-dev
-          python -m pip install --user numpy pybind11 gitpython
+          python -m pip install --user numpy pybind11 gitpython pytest
           cd python
           git fetch origin master
           python build.py build
@@ -196,8 +196,7 @@ jobs:
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
           export CXX=clang++-8
           export PYTHON=/usr/bin/python3
-          apt-get install xorg-dev libglu1-mesa-dev
-          python -m pip install --user numpy pybind11 gitpython
+          python -m pip install --user numpy pybind11 gitpython pytest
           cd python
           git fetch origin master
           python build.py build
@@ -262,8 +261,9 @@ jobs:
           git fetch origin master
           python build.py build
           python -m pip uninstall taichi -y
-          cd ..
-          python -m pip install D:/a/taichi/taichi/dist/*.whl
+          cd ..\dist
+          dir
+          python -m pip install ./*.whl
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
           CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm

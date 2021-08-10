@@ -88,13 +88,10 @@ class Matrix(TaichiOperations):
                     if keep_raw:
                         mat = [list([x]) for x in n]
                     else:
-                        if not ti.is_extension_supported(
-                                ti.cfg.arch, ti.extension.dynamic_index
-                        ) or in_python_scope(
-                        ) or disable_local_tensor or not ti.current_cfg(
-                        ).dynamic_index:
+                        if in_python_scope() or disable_local_tensor or not ti.current_cfg().dynamic_index:
                             mat = [list([expr.Expr(x)]) for x in n]
                         else:
+                            assert ti.is_extension_supported(ti.cfg.arch, ti.extension.dynamic_index)
                             if dt is None:
                                 raise Exception(
                                     'dt required when using dynamic_index for local tensor'
@@ -113,13 +110,10 @@ class Matrix(TaichiOperations):
                 else:
                     mat = [[x] for x in n]
             else:
-                if not ti.is_extension_supported(
-                        ti.cfg.arch,
-                        ti.extension.dynamic_index) or in_python_scope(
-                        ) or disable_local_tensor or not ti.current_cfg(
-                        ).dynamic_index:
+                if in_python_scope() or disable_local_tensor or not ti.current_cfg().dynamic_index:
                     mat = [list(r) for r in n]
                 else:
+                    assert ti.is_extension_supported(ti.cfg.arch, ti.extension.dynamic_index)
                     if dt is None:
                         raise Exception(
                             'dt required when using dynamic_index for local tensor'
@@ -316,10 +310,8 @@ class Matrix(TaichiOperations):
             return ti.local_subscript_with_offset(self.local_tensor_proxy,
                                                   (i, j))
         # ptr.is_global_ptr() will check whether it's an element in the field (which is different from ptr.is_global_var()).
-        elif isinstance(self.entries[0],
-                        ti.Expr) and self.entries[0].ptr.is_global_ptr(
-                        ) and ti.is_extension_supported(
-                            ti.cfg.arch, ti.extension.dynamic_index):
+        elif isinstance(self.entries[0], ti.Expr) and self.entries[0].ptr.is_global_ptr() and ti.current_cfg().dynamic_index:
+            assert ti.is_extension_supported(ti.cfg.arch, ti.extension.dynamic_index)
             return ti.global_subscript_with_offset(self.entries[0], (i, j),
                                                    self.m, True)
         else:

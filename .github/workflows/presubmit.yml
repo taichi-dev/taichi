@@ -260,7 +260,7 @@ jobs:
           python build.py build
           python -m pip uninstall taichi -y
           cd ..
-          python -m pip install "D:\a\taichi\taichi\dist\*.whl"
+          python -m pip install D:/a/taichi/taichi/dist/*.whl
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
           CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm

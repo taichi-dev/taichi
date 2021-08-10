@@ -7,6 +7,7 @@ n = 8
 K = ti.SparseMatrix(n, n, max_num_triplets=1000)
 f = ti.SparseMatrix(n, 1, max_num_triplets=1000)
 
+
 @ti.kernel
 def fill(A: ti.SparseMatrix, b: ti.SparseMatrix, interval: ti.i32):
     for i in range(n):

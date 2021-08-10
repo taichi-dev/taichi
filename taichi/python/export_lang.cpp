@@ -246,7 +246,7 @@ void export_lang(py::module &m) {
       .def("get_snode_root", &Program::get_snode_root,
            py::return_value_policy::reference)
       .def("create_sparse_matrix", &Program::create_sparse_matrix,
-             py::return_value_policy::reference);
+           py::return_value_policy::reference);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
@@ -910,7 +910,7 @@ void export_lang(py::module &m) {
       .def("build", &SparseMatrix::build)
       .def("print", &SparseMatrix::print)
       .def("solve", &SparseMatrix::solve)
-      .def("get_addr", [](SparseMatrix *mat) {return uint64(mat);});
+      .def("get_addr", [](SparseMatrix *mat) { return uint64(mat); });
 }
 
 TI_NAMESPACE_END

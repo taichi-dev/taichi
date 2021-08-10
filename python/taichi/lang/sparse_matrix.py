@@ -21,6 +21,7 @@ class SparseMatrix:
     def build(self):
         self.ptr.build()
 
+
 class SparseMatrixEntry:
     def __init__(self, ptr, i, j):
         self.ptr = ptr
@@ -32,6 +33,7 @@ class SparseMatrixEntry:
         from taichi.lang.impl import call_internal
         call_internal("insert_triplet", self.ptr, self.i, self.j, value)
 
+
 class SparseMatrixProxy:
     is_taichi_class = True
 
@@ -40,4 +42,3 @@ class SparseMatrixProxy:
 
     def subscript(self, i, j):
         return SparseMatrixEntry(self.ptr, i, j)
-

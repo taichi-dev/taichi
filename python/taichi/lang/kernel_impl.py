@@ -12,8 +12,8 @@ from taichi.lang.ast_checker import KernelSimplicityASTChecker
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.transformer import ASTTransformerTotal
 from taichi.lang.sparse_matrix import SparseMatrix
+from taichi.lang.transformer import ASTTransformerTotal
 from taichi.misc.util import obsolete
 
 import taichi as ti

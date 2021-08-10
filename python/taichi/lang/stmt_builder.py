@@ -6,8 +6,8 @@ from taichi.lang.ast_builder_utils import *
 from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr_builder import build_expr, build_exprs
-from taichi.lang.util import to_taichi_type
 from taichi.lang.sparse_matrix import SparseMatrix
+from taichi.lang.util import to_taichi_type
 
 import taichi as ti
 

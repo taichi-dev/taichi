@@ -6,7 +6,8 @@
 namespace taichi {
 namespace lang {
 
-SparseMatrix::SparseMatrix(int n, int m, int max_num_triplets) : n(n), m(m), max_num_triplets(max_num_triplets), matrix(n, m) {
+SparseMatrix::SparseMatrix(int n, int m, int max_num_triplets)
+    : n(n), m(m), max_num_triplets(max_num_triplets), matrix(n, m) {
   data.reserve(max_num_triplets * 3);
   data_base_ptr = get_data_base_ptr();
 }
@@ -16,9 +17,11 @@ void *SparseMatrix::get_data_base_ptr() {
 }
 
 void SparseMatrix::print_triplets() {
-  printf("n=%d, m=%d, num_triplets=%lld (max=%lld)\n", n, m, num_triplets, max_num_triplets);
+  printf("n=%d, m=%d, num_triplets=%lld (max=%lld)\n", n, m, num_triplets,
+         max_num_triplets);
   for (int64 i = 0; i < num_triplets; i++) {
-    printf("(%d, %d) val=%f\n", data[i * 3], data[i * 3 + 1], taichi_union_cast<float32>(data[i * 3 + 2]));
+    printf("(%d, %d) val=%f\n", data[i * 3], data[i * 3 + 1],
+           taichi_union_cast<float32>(data[i * 3 + 2]));
   }
 }
 
@@ -51,8 +54,9 @@ void SparseMatrix::solve(SparseMatrix *b_) {
 
   b.setZero();
 
-  for (int k=0; k<b_->matrix.outerSize(); ++k)
-    for (Eigen::SparseMatrix<float32>::InnerIterator it(b_->matrix, k); it; ++it) {
+  for (int k = 0; k < b_->matrix.outerSize(); ++k)
+    for (Eigen::SparseMatrix<float32>::InnerIterator it(b_->matrix, k); it;
+         ++it) {
       b[it.row()] = it.value();
     }
 
@@ -70,5 +74,5 @@ void SparseMatrix::solve(SparseMatrix *b_) {
   std::cout << Eigen::MatrixXf(x).format(clean_fmt) << std::endl;
 }
 
-}
-}
+}  // namespace lang
+}  // namespace taichi

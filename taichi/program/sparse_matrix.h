@@ -23,7 +23,7 @@ class SparseMatrix {
 
  private:
   uint64 num_triplets{0};
-  void* data_base_ptr{nullptr};
+  void *data_base_ptr{nullptr};
   std::vector<uint32> data;
   int n, m;
   uint64 max_num_triplets;

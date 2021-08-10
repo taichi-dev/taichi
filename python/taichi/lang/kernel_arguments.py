@@ -81,7 +81,8 @@ def decl_ext_arr_arg(dtype, dim):
 # TODO: add data type
 def decl_sparse_matrix():
     ptr_type = cook_dtype(u64)
-    arg_id = _ti_core.decl_arg(ptr_type, True)
+    # Treat sparse matrix argument as a scalar since we only need to pass in the base pointer
+    arg_id = _ti_core.decl_arg(ptr_type, False)
     return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type))
 
 

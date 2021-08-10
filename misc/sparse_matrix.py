@@ -9,7 +9,7 @@ A = ti.SparseMatrix(n, n)
 @ti.kernel
 def test(mat: ti.SparseMatrix):
     for i in range(n):
-        mat.insert(i, i, 1)
+        mat.insert(i, i, 1.0)
 
 test(A)
 

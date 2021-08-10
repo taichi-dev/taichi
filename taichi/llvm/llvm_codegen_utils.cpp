@@ -18,7 +18,7 @@ void check_func_call_signature(llvm::Value *func,
     TI_ASSERT(num_params <= arglist.size());
   } else {
     TI_ERROR_IF(num_params != arglist.size(),
-                "Function requires {} arguments but {} provided", num_params,
+                "Function \"{}\" requires {} arguments but {} provided", std::string(func->getName()), num_params,
                 arglist.size());
   }
 
@@ -35,9 +35,8 @@ void check_func_call_signature(llvm::Value *func,
         TI_INFO("    provided from context {}",
                 (void *)&provided->getContext());
       }
-      TI_INFO("  parameter {} mismatch: required={}, provided={}", i,
+      TI_ERROR("  parameter {} mismatch: required={}, provided={}", i,
               type_name(required), type_name(provided));
-      TI_ERROR("Bad function signature.");
     }
   }
 }

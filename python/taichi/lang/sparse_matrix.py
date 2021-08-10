@@ -3,7 +3,7 @@ class SparseMatrix:
     def __init__(self, n, m=None):
         self.n = n
         self.m = m if m else n
-        self.ptr = None
+        self.ptr = 123431232141234123
         print(f"Creating a sparse matrix of size ({n}, {m})...")
 
 class SparseMatrixEntry:

@@ -483,8 +483,9 @@ class Kernel:
                     if not isinstance(v, int):
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
-                # elif id(needed) == id(SparseMatrix):
-                #     print('detected_sparse_matrix')
+                elif id(needed) == id(SparseMatrix):
+                    # Pass only the base pointer of the ti.SparseMatrix argument
+                    launch_ctx.set_arg_int(actual_argument_slot, v.ptr)
                 elif self.match_ext_arr(v, needed):
                     has_external_arrays = True
                     has_torch = util.has_pytorch()

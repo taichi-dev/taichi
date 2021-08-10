@@ -59,7 +59,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-          fetch-depth: '1'
+          fetch-depth: '0'
 
       - uses: actions/setup-python@v2
         with:
@@ -126,7 +126,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-          fetch-depth: '1'
+          fetch-depth: '0'
 
       - uses: actions/setup-python@v2
         with:
@@ -186,7 +186,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-          fetch-depth: '1'
+          fetch-depth: '0'
 
       - name: Build
         run: |
@@ -233,7 +233,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-          fetch-depth: '1'
+          fetch-depth: '0'
 
       - uses: actions/setup-python@v2
         with:

@@ -75,7 +75,7 @@ jobs:
           TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
-          python -m pip install --user yapf gitpython colorama isort
+          python -m pip install --user numpy pybind11 gitpython
           cd python
           python build.py build
           pip uninstall taichi -y
@@ -138,7 +138,7 @@ jobs:
           TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
-          python -m pip install --user yapf gitpython colorama isort
+          python -m pip install --user numpy pybind11 gitpython
           cd python
           python build.py build
           pip uninstall taichi -y
@@ -183,7 +183,7 @@ jobs:
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
           export CXX=clang++-8
           export PYTHON=/usr/bin/python3
-          python -m pip install --user yapf gitpython colorama isort
+          python -m pip install --user numpy pybind11 gitpython
           cd python
           python build.py build
           pip uninstall taichi -y

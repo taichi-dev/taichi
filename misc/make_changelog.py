@@ -84,6 +84,5 @@ if __name__ == '__main__':
     if save:
         with open('../python/taichi/CHANGELOG.md', 'w') as f:
             f.write(res)
-        with open('../CHANGELOG.md', 'w') as f:
-            f.write(res)
+        print('Finish writing changelog!')
     print(res)

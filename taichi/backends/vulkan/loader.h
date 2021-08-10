@@ -23,6 +23,7 @@ class VulkanLoader {
   void load_instance(VkInstance instance_);
   void load_device(VkDevice device_);
   bool init();
+  PFN_vkVoidFunction load_function(const char *name);
 
  private:
   std::once_flag init_flag_;

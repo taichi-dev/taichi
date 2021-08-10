@@ -652,17 +652,22 @@ if 1:
 
     @staticmethod
     def build_Expr(ctx, node):
-        if isinstance(node.value, ast.Call):
-            # A function call.
-            node.value = build_expr(ctx, node.value)
-            # note that we can only return an ast.Expr instead of an ast.Call.
+        if not isinstance(node.value, ast.Call):
+            # A statement with a single expression.
             return node
-        # A statement with a single expression.
-        # TODO(#2495): Deprecate maybe_transform_ti_func_call_to_stmt
+
+        # A function call.
+        node.value = build_expr(ctx, node.value)
+        # Note that we can only return an ast.Expr instead of an ast.Call.
+
+        if impl.get_runtime().experimental_real_function:
+            # Generates code that inserts a FrontendExprStmt if the function
+            # called is a Taichi function.
+            # We cannot insert the FrontendExprStmt here because we do not
+            # know if the function is a Taichi function now.
+            node.value.args = [node.value.func] + node.value.args
+            node.value.func = parse_expr('ti.insert_expr_stmt_if_ti_func')
         return node
-        # result = parse_stmt('ti.core.insert_expr_stmt(expr)')
-        # result.value.args[0] = build_expr(ctx, node.value)
-        # return ast.copy_location(result, node)
 
     @staticmethod
     def build_Import(ctx, node):

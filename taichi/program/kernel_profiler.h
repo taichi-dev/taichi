@@ -38,6 +38,7 @@ class KernelProfilerBase {
   using TaskHandle = void *;
 
   void clear() {
+    sync();
     total_time_ms = 0;
     records.clear();
   }

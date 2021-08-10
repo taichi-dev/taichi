@@ -7,7 +7,7 @@ import numbers
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.expr import Expr
-from taichi.lang.util import is_taichi_class
+from taichi.lang.field import Field
 from taichi.misc.util import deprecated
 
 
@@ -155,13 +155,12 @@ class SNode:
             self.ptr.begin_shared_exp_placement()
 
         for arg in args:
-            if isinstance(arg, Expr):
-                self.ptr.place(Expr(arg).ptr, offset)
+            if isinstance(arg, Field):
+                for var in arg.get_field_members():
+                    self.ptr.place(var.ptr, offset)
             elif isinstance(arg, list):
                 for x in arg:
                     self.place(x, offset=offset)
-            elif is_taichi_class(arg):
-                self.place(arg.get_field_members(), offset=offset)
             else:
                 raise ValueError(f'{arg} cannot be placed')
         if shared_exponent:
@@ -263,10 +262,6 @@ class SNode:
             str: The name of `self`.
         """
         return self.ptr.name()
-
-    @deprecated('x.snode()', 'x.snode')
-    def __call__(self):  # TODO: remove this after v0.7.0
-        return self
 
     @property
     def snode(self):

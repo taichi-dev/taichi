@@ -48,4 +48,13 @@ PER_CUDA_FUNCTION(event_record, cuEventRecord, void *, void *)
 PER_CUDA_FUNCTION(event_synchronize, cuEventSynchronize, void *);
 PER_CUDA_FUNCTION(event_elapsed_time, cuEventElapsedTime, float *, void *, void *);
 
+// Vulkan interop
+PER_CUDA_FUNCTION(import_external_memory, cuImportExternalMemory, CUexternalMemory*, CUDA_EXTERNAL_MEMORY_HANDLE_DESC*)
+PER_CUDA_FUNCTION(external_memory_get_mapped_buffer,cuExternalMemoryGetMappedBuffer,CUdeviceptr *, CUexternalMemory, const CUDA_EXTERNAL_MEMORY_BUFFER_DESC *)
+PER_CUDA_FUNCTION(external_memory_get_mapped_mipmapped_array,cuExternalMemoryGetMappedMipmappedArray,CUmipmappedArray *, CUexternalMemory, const CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC *)
+PER_CUDA_FUNCTION(mipmapped_array_get_level,cuMipmappedArrayGetLevel,CUarray *, CUmipmappedArray, unsigned int)
+PER_CUDA_FUNCTION(surf_object_create,cuSurfObjectCreate,CUsurfObject *, const CUDA_RESOURCE_DESC *)
+PER_CUDA_FUNCTION(signal_external_semaphore_async,cuSignalExternalSemaphoresAsync,const CUexternalSemaphore * , const CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS * , unsigned int  , CUstream)
+PER_CUDA_FUNCTION(wait_external_semaphore_async,cuWaitExternalSemaphoresAsync,const CUexternalSemaphore * , const CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS * , unsigned int  , CUstream)
+PER_CUDA_FUNCTION(import_external_semaphore, cuImportExternalSemaphore,CUexternalSemaphore * , const CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC *)
 // clang-format on

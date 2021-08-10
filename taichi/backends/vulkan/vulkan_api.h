@@ -9,6 +9,7 @@
 #include <optional>
 #include <vector>
 #include <string>
+#include <functional>
 
 // #define TI_VULKAN_DEBUG
 
@@ -33,6 +34,8 @@ struct SpirvCodeView {
 
 struct VulkanQueueFamilyIndices {
   std::optional<uint32_t> compute_family;
+  std::optional<uint32_t> graphics_family;
+  std::optional<uint32_t> present_family;
   // TODO: While it is the case that all COMPUTE/GRAPHICS queue also support
   // TRANSFER by default, maye there are some performance benefits to find a
   // TRANSFER-dedicated queue family.
@@ -40,6 +43,10 @@ struct VulkanQueueFamilyIndices {
 
   bool is_complete() const {
     return compute_family.has_value();
+  }
+
+  bool is_complete_for_ui() {
+    return graphics_family.has_value() && present_family.has_value();
   }
 };
 
@@ -70,6 +77,8 @@ class VulkanDevice {
   struct Params {
     VkDevice device{VK_NULL_HANDLE};
     VkQueue compute_queue{VK_NULL_HANDLE};
+    VkQueue graphics_queue{VK_NULL_HANDLE};
+    VkQueue present_queue{VK_NULL_HANDLE};
     VkCommandPool command_pool{VK_NULL_HANDLE};
   };
 
@@ -81,6 +90,14 @@ class VulkanDevice {
 
   VkQueue compute_queue() const {
     return rep_.compute_queue;
+  }
+
+  VkQueue graphics_queue() const {
+    return rep_.graphics_queue;
+  }
+
+  VkQueue present_queue() const {
+    return rep_.present_queue;
   }
 
   VkCommandPool command_pool() const {
@@ -126,10 +143,21 @@ class EmbeddedVulkanDevice {
  public:
   struct Params {
     std::optional<uint32_t> api_version;
+    bool is_for_ui{false};
+    std::vector<const char *> additional_instance_extensions;
+    std::vector<const char *> additional_device_extensions;
+    // the VkSurfaceKHR needs to be created after creating the VkInstance, but
+    // before creating the VkPhysicalDevice thus, we allow the user to pass in a
+    // custom surface creator
+    std::function<VkSurfaceKHR(VkInstance)> surface_creator;
   };
 
   explicit EmbeddedVulkanDevice(const Params &params);
   ~EmbeddedVulkanDevice();
+
+  VkInstance instance() {
+    return instance_;
+  }
 
   VulkanDevice *device() {
     return owned_device_.get();
@@ -143,6 +171,14 @@ class EmbeddedVulkanDevice {
     return physical_device_;
   }
 
+  VkSurfaceKHR surface() const {
+    return surface_;
+  }
+
+  VkInstance instance() const {
+    return instance_;
+  }
+
   const VulkanQueueFamilyIndices &queue_family_indices() const {
     return queue_family_indices_;
   }
@@ -152,8 +188,9 @@ class EmbeddedVulkanDevice {
   }
 
  private:
-  void create_instance(const Params &params);
+  void create_instance();
   void setup_debug_messenger();
+  void create_surface();
   void pick_physical_device();
   void create_logical_device();
   void create_command_pool();
@@ -172,6 +209,11 @@ class EmbeddedVulkanDevice {
   // in Taichi we only use a single queue on a single device (i.e. a single CUDA
   // stream), so it doesn't make a difference.
   VkQueue compute_queue_{VK_NULL_HANDLE};
+  VkQueue graphics_queue_{VK_NULL_HANDLE};
+  VkQueue present_queue_{VK_NULL_HANDLE};
+
+  VkSurfaceKHR surface_{VK_NULL_HANDLE};
+
   // TODO: Shall we have dedicated command pools for COMPUTE and TRANSFER
   // commands, respectively?
   VkCommandPool command_pool_{VK_NULL_HANDLE};
@@ -179,6 +221,8 @@ class EmbeddedVulkanDevice {
   VulkanCapabilities capability_;
 
   std::unique_ptr<VulkanDevice> owned_device_{nullptr};
+
+  Params params_;
 };
 
 // VulkanPipeline maps to a VkPipeline, or a SPIR-V module (a GLSL compute

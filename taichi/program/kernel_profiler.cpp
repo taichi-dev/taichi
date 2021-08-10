@@ -66,6 +66,7 @@ void KernelProfilerBase::query(const std::string &kernel_name,
                                double &min,
                                double &max,
                                double &avg) {
+  sync();
   std::regex name_regex(kernel_name + "(.*)");
   for (auto &rec : records) {
     if (std::regex_match(rec.name, name_regex)) {

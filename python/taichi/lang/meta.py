@@ -1,6 +1,7 @@
 from taichi.core import settings
 from taichi.lang import impl
 from taichi.lang.expr import Expr
+from taichi.lang.field import ScalarField
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import kernel
 
@@ -101,9 +102,9 @@ def ext_arr_to_matrix(arr: ext_arr(), mat: template(), as_vector: template()):
 
 @kernel
 def clear_gradients(vars: template()):
-    for I in ti.grouped(Expr(vars[0])):
+    for I in ti.grouped(ScalarField(Expr(vars[0]))):
         for s in ti.static(vars):
-            Expr(s)[I] = 0
+            ScalarField(Expr(s))[I] = 0
 
 
 @kernel

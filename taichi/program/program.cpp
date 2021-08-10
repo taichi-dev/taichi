@@ -463,6 +463,12 @@ SNode *Program::get_snode_root(int tree_id) {
   return snode_trees_[tree_id]->root();
 }
 
+SparseMatrix *Program::create_sparse_matrix(int n, int m, uint64 max_num_entries) {
+  TI_ASSERT(arch_is_cpu(config.arch));
+  sparse_matrices.emplace_back(n, m, max_num_entries);
+  return &sparse_matrices.back();
+}
+
 std::unique_ptr<llvm::Module> Program::clone_struct_compiler_initial_context(
     TaichiLLVMContext *tlctx) {
   if (!snode_trees_.empty())

@@ -347,10 +347,7 @@ class Program {
    */
   SNode *get_snode_root(int tree_id);
 
-  SparseMatrix *create_sparse_matrix(int n, int m, uint64 max_num_entries) {
-    sparse_matrices.emplace_back(n, m, max_num_entries);
-    return &sparse_matrices.back();
-  }
+  SparseMatrix *create_sparse_matrix(int n, int m, uint64 max_num_entries);
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 

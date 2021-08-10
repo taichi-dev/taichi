@@ -25,7 +25,7 @@ i32 insert_triplet(Context *context, int64 base_ptr_, int i, int j, float value)
   auto runtime = context->runtime;
 
   int64 *num_triplets = base_ptr;
-  auto data_base_ptr = (int32*)(base_ptr + 1);
+  auto data_base_ptr = *(int32**)(base_ptr + 1);
 
   auto triplet_id = atomic_add_i64(num_triplets, 1);
   data_base_ptr[triplet_id * 3] = i;

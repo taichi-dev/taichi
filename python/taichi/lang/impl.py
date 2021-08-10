@@ -316,8 +316,8 @@ class PyTaichi:
         self.materialize()
         self.prog.synchronize()
 
-    def create_sparse_matrix(self, n, m):
-        return self.prog.create_sparse_matrix(n, m)
+    def create_sparse_matrix(self, n, m, max_num_triplets):
+        return self.prog.create_sparse_matrix(n, m, max_num_triplets)
 
 
 pytaichi = PyTaichi()

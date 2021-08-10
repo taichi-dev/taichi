@@ -23,6 +23,7 @@
 #include "taichi/util/action_recorder.h"
 #include "taichi/system/timeline.h"
 #include "taichi/python/snode_registry.h"
+#include "taichi/program/sparse_matrix.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
@@ -903,6 +904,10 @@ void export_lang(py::module &m) {
         return program->add_snode_tree(registry->finalize(root));
       },
       py::return_value_policy::reference);
+
+  py::class_<SparseMatrix>(m, "SparseMatrix")
+      .def("print_triplets", &SparseMatrix::print_triplets)
+      .def("get_addr", [](SparseMatrix *mat) {return uint64(mat);});
 }
 
 TI_NAMESPACE_END

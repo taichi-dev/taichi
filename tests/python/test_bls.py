@@ -1,4 +1,28 @@
 import taichi as ti
+import pytest
+
+
+@ti.test(require=ti.extension.bls, dynamic_index=True)
+def test_bls_with_dynamic_index():
+    x, y = ti.field(ti.f32), ti.field(ti.f32)
+
+    N = 64
+    bs = 16
+
+    ti.root.pointer(ti.i, N // bs).dense(ti.i, bs).place(x, y)
+
+    @ti.kernel
+    def populate():
+        for i in range(N):
+            x[i] = i
+
+    @ti.kernel
+    def call_block_local():
+        ti.block_local(x)
+
+    populate()
+    with pytest.raises(ti.InvalidOperationError):
+        call_block_local()
 
 
 @ti.require(ti.extension.bls)

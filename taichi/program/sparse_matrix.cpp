@@ -1,9 +1,11 @@
 #include "taichi/program/sparse_matrix.h"
 
+#include "Eigen/Dense"
+
 namespace taichi {
 namespace lang {
 
-SparseMatrix::SparseMatrix(int n, int m, int max_num_triplets) : n(n), m(m), max_num_triplets(max_num_triplets) {
+SparseMatrix::SparseMatrix(int n, int m, int max_num_triplets) : n(n), m(m), max_num_triplets(max_num_triplets), matrix(n, m) {
   data.reserve(max_num_triplets * 3);
   data_base_ptr = get_data_base_ptr();
 }
@@ -29,6 +31,14 @@ void SparseMatrix::build() {
                         taichi_union_cast<float32>(data[i * 3 + 2])});
   }
   matrix.setFromTriplets(triplets.begin(), triplets.end());
+}
+
+void SparseMatrix::print() {
+  TI_ASSERT(built = true);
+  Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
+  // Note that the code below first converts the sparse matrix into a dense one.
+  // https://stackoverflow.com/questions/38553335/how-can-i-print-in-console-a-formatted-sparse-matrix-with-eigen
+  std::cout << Eigen::MatrixXf(matrix).format(clean_fmt) << std::endl;
 }
 
 }

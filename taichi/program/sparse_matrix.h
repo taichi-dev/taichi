@@ -17,6 +17,8 @@ class SparseMatrix {
 
   void build();
 
+  void print();
+
  private:
   uint64 num_triplets{0};
   void* data_base_ptr{nullptr};

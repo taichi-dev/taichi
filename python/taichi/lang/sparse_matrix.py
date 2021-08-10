@@ -12,6 +12,12 @@ class SparseMatrix:
     def print_triplets(self):
         self.ptr.print_triplets()
 
+    def print(self):
+        self.ptr.print()
+
+    def build(self):
+        self.ptr.build()
+
 class SparseMatrixEntry:
     def __init__(self, ptr, i, j):
         self.ptr = ptr

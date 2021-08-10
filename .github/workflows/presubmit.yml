@@ -57,6 +57,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
@@ -120,6 +123,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
@@ -175,6 +181,8 @@ jobs:
     runs-on: [self-hosted, cuda, vulkan, cn]
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
 
       - name: Build
         run: |
@@ -218,6 +226,9 @@ jobs:
         run: Install-Module 7Zip4PowerShell -Force -Verbose
 
       - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
       - uses: actions/setup-python@v2
         with:
           python-version: 3.7

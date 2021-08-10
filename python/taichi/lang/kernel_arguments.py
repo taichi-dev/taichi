@@ -2,6 +2,8 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang.expr import Expr
 from taichi.lang.snode import SNode
 from taichi.lang.util import cook_dtype, to_taichi_type
+from taichi.lang.sparse_matrix import SparseMatrixProxy
+from taichi.core.primitive_types import u64
 
 
 class ArgExtArray:
@@ -75,6 +77,12 @@ def decl_ext_arr_arg(dtype, dim):
     dtype = cook_dtype(dtype)
     arg_id = _ti_core.decl_arg(dtype, True)
     return Expr(_ti_core.make_external_tensor_expr(dtype, dim, arg_id))
+
+# TODO: add data type
+def decl_sparse_matrix():
+    ptr_type = cook_dtype(u64)
+    arg_id = _ti_core.decl_arg(ptr_type, True)
+    return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type))
 
 
 def decl_scalar_ret(dtype):

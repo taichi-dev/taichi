@@ -1,14 +1,17 @@
 import taichi as ti
 
-ti.init()
+ti.init(print_preprocessed=True)
 
 n = 128
 
-@ti.kernel
-def test():
-    ti.call_internal("insert_triplet", 456, 789)
+A = ti.SparseMatrix(n, n)
 
-test()
+@ti.kernel
+def test(mat: ti.SparseMatrix):
+    for i in range(n):
+        mat.insert(i, i, 1)
+
+test(A)
 
 '''
 @ti.kernel

@@ -7,6 +7,7 @@ from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr_builder import build_expr, build_exprs
 from taichi.lang.util import to_taichi_type
+from taichi.lang.sparse_matrix import SparseMatrix
 
 import taichi as ti
 
@@ -554,6 +555,12 @@ if 1:
                     dt = parse_expr(dt_expr)
                     arg_init.value.args[0] = dt
                     arg_init.value.args[1] = parse_expr("{}".format(array_dim))
+                    arg_decls.append(arg_init)
+                elif ctx.func.argument_annotations[i] is SparseMatrix:
+                    arg_init = parse_stmt(
+                        'x = ti.lang.kernel_arguments.decl_sparse_matrix()')
+                    arg_init.targets[0].id = arg.arg
+                    ctx.create_variable(arg.arg)
                     arg_decls.append(arg_init)
                 else:
                     arg_init = parse_stmt(

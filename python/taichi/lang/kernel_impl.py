@@ -13,6 +13,7 @@ from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.transformer import ASTTransformerTotal
+from taichi.lang.sparse_matrix import SparseMatrix
 from taichi.misc.util import obsolete
 
 import taichi as ti
@@ -367,6 +368,8 @@ class Kernel:
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass
+                elif id(annotation) == id(SparseMatrix):
+                    pass
                 else:
                     _taichi_skip_traceback = 1
                     raise KernelDefError(
@@ -480,6 +483,8 @@ class Kernel:
                     if not isinstance(v, int):
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
+                # elif id(needed) == id(SparseMatrix):
+                #     print('detected_sparse_matrix')
                 elif self.match_ext_arr(v, needed):
                     has_external_arrays = True
                     has_torch = util.has_pytorch()

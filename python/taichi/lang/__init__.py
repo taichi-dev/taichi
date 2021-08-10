@@ -20,6 +20,7 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               to_taichi_type)
 from taichi.misc.util import deprecated
 from taichi.snode.fields_builder import FieldsBuilder
+from taichi.lang.sparse_matrix import SparseMatrix
 
 import taichi as ti
 

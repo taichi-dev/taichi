@@ -25,7 +25,7 @@ class WindowBase {
 
   void set_is_running(bool value);
 
-  std::tuple<float, float> get_cursor_pos();
+  std::pair<float, float> get_cursor_pos();
 
   std::vector<Event> get_events(EventType tag);
 

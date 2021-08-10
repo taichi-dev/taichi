@@ -16,14 +16,12 @@ struct PointLight {
 struct MeshInfo {
   RenderableInfo renderable_info;
   glm::vec3 color;
-  float shininess;
 };
 
 struct ParticlesInfo {
   RenderableInfo renderable_info;
   glm::vec3 color;
   float radius;
-  float shininess;
 };
 
 class SceneBase {
@@ -41,7 +39,7 @@ class SceneBase {
     particles_infos_.push_back(info);
   }
   void point_light(glm::vec3 pos, glm::vec3 color) {
-    if (point_lights_.size() >= kMaxPointLights ) {
+    if (point_lights_.size() >= kMaxPointLights) {
       throw std::runtime_error("point light count exceeds kMaxPointLights");
     }
     point_lights_.push_back({pos, color});
@@ -53,7 +51,7 @@ class SceneBase {
 
  protected:
   Camera camera_;
-  glm::vec3 ambient_light_color_ = glm::vec3(0.0, 0.0, 0.0);
+  glm::vec3 ambient_light_color_ = glm::vec3(0.1, 0.1, 0.1);
   std::vector<PointLight> point_lights_;
   std::vector<MeshInfo> mesh_infos_;
   std::vector<ParticlesInfo> particles_infos_;

@@ -7,7 +7,9 @@ TI_UI_NAMESPACE_BEGIN
 
 enum class FieldSource : int {
   TaichiCuda = 0,
-  TaichiX64 = 1
+  TaichiX64 = 1,
+  TaichiVulkan = 2,
+  TaichiOpenGL = 3
   // support np array / torch tensor in the future?
 };
 

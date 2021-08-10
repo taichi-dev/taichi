@@ -15,21 +15,20 @@ void WindowBase::set_callbacks() {
   glfwSetCursorPosCallback(glfw_window_, mouse_pos_callback);
   glfwSetMouseButtonCallback(glfw_window_, mouse_button_callback);
 
-  input_handler_.user_key_callbacks.push_back([&](int key, int action) {
+  input_handler_.add_key_callback([&](int key, int action) {
     if (action == GLFW_PRESS) {
       events_.push_back({EventType::Press, button_id_to_name(key)});
     } else if (action == GLFW_RELEASE) {
       events_.push_back({EventType::Release, button_id_to_name(key)});
     }
   });
-  input_handler_.user_mouse_button_callbacks.push_back(
-      [&](int key, int action) {
-        if (action == GLFW_PRESS) {
-          events_.push_back({EventType::Press, button_id_to_name(key)});
-        } else if (action == GLFW_RELEASE) {
-          events_.push_back({EventType::Release, button_id_to_name(key)});
-        }
-      });
+  input_handler_.add_mouse_button_callback([&](int key, int action) {
+    if (action == GLFW_PRESS) {
+      events_.push_back({EventType::Press, button_id_to_name(key)});
+    } else if (action == GLFW_RELEASE) {
+      events_.push_back({EventType::Release, button_id_to_name(key)});
+    }
+  });
 }
 
 CanvasBase *WindowBase::get_canvas() {
@@ -57,7 +56,7 @@ void WindowBase::show() {
 
 bool WindowBase::is_pressed(std::string button) {
   int button_id = buttom_name_to_id(button);
-  return input_handler_.keys[button_id] > 0;
+  return input_handler_.is_pressed(button_id) > 0;
 }
 
 bool WindowBase::is_running() {
@@ -68,13 +67,13 @@ void WindowBase::set_is_running(bool value) {
   glfwSetWindowShouldClose(glfw_window_, !value);
 }
 
-std::tuple<float, float> WindowBase::get_cursor_pos() {
-  float x = input_handler_.last_x;
-  float y = input_handler_.last_y;
+std::pair<float, float> WindowBase::get_cursor_pos() {
+  float x = input_handler_.last_x();
+  float y = input_handler_.last_y();
 
   x = x / (float)config_.width;
   y = (config_.height - y) / (float)config_.height;
-  return std::make_tuple(x, y);
+  return std::make_pair(x, y);
 }
 
 std::vector<Event> WindowBase::get_events(EventType tag) {

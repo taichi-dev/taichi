@@ -26,9 +26,9 @@ struct Camera {
   }
   glm::mat4 get_projection_matrix(float aspect_ratio) {
     if (projection_mode == ProjectionMode::Perspective) {
-      return glm::perspective(fov, aspect_ratio, 0.1f, 1000.f);
+      return glm::perspective(fov, aspect_ratio, z_far, z_near);
     } else if (projection_mode == ProjectionMode::Orthogonal) {
-      return glm::ortho(left, right, top, bottom, z_near, z_far);
+      return glm::ortho(left, right, top, bottom, z_far, z_near);
     } else {
       throw std::runtime_error("invalid camera projection mode");
     }

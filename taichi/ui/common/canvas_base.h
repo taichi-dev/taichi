@@ -28,7 +28,7 @@ struct LinesInfo {
 };
 
 class CanvasBase {
-public:
+ public:
   virtual void set_background_color(const glm::vec3 &color) = 0;
   virtual void set_image(const SetImageInfo &info) = 0;
   virtual void triangles(const TrianglesInfo &info) = 0;

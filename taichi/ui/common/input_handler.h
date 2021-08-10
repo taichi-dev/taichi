@@ -8,40 +8,32 @@ TI_UI_NAMESPACE_BEGIN
 
 class InputHandler {
  public:
-  std::vector<bool> keys;
-  float last_x = 0;
-  float last_y = 0;
-
-  std::vector<std::function<void(int, int)>> user_key_callbacks;
-  std::vector<std::function<void(double, double)>> use_mouse_pos_callbacks;
-  std::vector<std::function<void(int, int)>> user_mouse_button_callbacks;
-
   void key_callback(GLFWwindow *window,
                     int key,
                     int scancode,
                     int action,
                     int mode) {
     if (action == GLFW_PRESS) {
-      keys[key] = true;
+      keys_[key] = true;
     } else if (action == GLFW_RELEASE) {
-      keys[key] = false;
+      keys_[key] = false;
     }
-    for (auto f : user_key_callbacks) {
+    for (auto f : user_key_callbacks_) {
       f(key, action);
     }
   }
 
   void mouse_pos_callback(GLFWwindow *window, double xpos, double ypos) {
     if (first_mouse_) {
-      last_x = xpos;
-      last_y = ypos;
+      last_x_ = xpos;
+      last_y_ = ypos;
       first_mouse_ = false;
     }
 
-    last_x = xpos;
-    last_y = ypos;
+    last_x_ = xpos;
+    last_y_ = ypos;
 
-    for (auto f : use_mouse_pos_callbacks) {
+    for (auto f : user_mouse_pos_callbacks_) {
       f(xpos, ypos);
     }
   }
@@ -61,22 +53,52 @@ class InputHandler {
       }
     }
     if (action == GLFW_PRESS) {
-      keys[button] = true;
+      keys_[button] = true;
     } else if (action == GLFW_RELEASE) {
-      keys[button] = false;
+      keys_[button] = false;
     }
-    for (auto f : user_mouse_button_callbacks) {
+    for (auto f : user_mouse_button_callbacks_) {
       f(button, action);
     }
   }
 
-  InputHandler() : keys(1024, false) {
+  bool is_pressed(int key) {
+    return keys_[key];
+  }
+
+  float last_x() {
+    return last_x_;
+  }
+
+  float last_y() {
+    return last_y_;
+  }
+
+  void add_key_callback(std::function<void(int, int)> f) {
+    user_key_callbacks_.push_back(f);
+  }
+  void add_mouse_pos_callback(std::function<void(double, double)> f) {
+    user_mouse_pos_callbacks_.push_back(f);
+  }
+  void add_mouse_button_callback(std::function<void(int, int)> f) {
+    user_mouse_button_callbacks_.push_back(f);
+  }
+
+  InputHandler() : keys_(1024, false) {
   }
 
  private:
   bool first_mouse_ = true;
 
   bool left_mouse_down_ = false;
+
+  std::vector<bool> keys_;
+  float last_x_ = 0;
+  float last_y_ = 0;
+
+  std::vector<std::function<void(int, int)>> user_key_callbacks_;
+  std::vector<std::function<void(double, double)>> user_mouse_pos_callbacks_;
+  std::vector<std::function<void(int, int)>> user_mouse_button_callbacks_;
 };
 
 TI_UI_NAMESPACE_END

@@ -827,5 +827,5 @@ def default_cfg():
     return _ti_core.default_compile_config()
 
 
-def call_internal(name):
-    _ti_core.create_internal_func_stmt(name)
+def call_internal(name, *args):
+    _ti_core.create_internal_func_stmt(name, args)

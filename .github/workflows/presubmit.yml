@@ -100,7 +100,6 @@ jobs:
           ti changelog
           # TODO: make cpp tests work in both release & dev mode.
           # Currently cpp tests only works in dev mode since it depends on the path set there.
-          TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
           ti test -vr2 -t2
 
   build_and_test_cpu:
@@ -252,7 +251,7 @@ jobs:
           $env:PATH += ";C:\taichi_clang\bin"
           clang --version
           cd D:\a\taichi\taichi
-          python -m pip install --user numpy pybind11 gitpython
+          python -m pip install --user numpy pybind11 gitpython pytest
           cd python
           python build.py build
           python -m pip uninstall taichi -y

@@ -167,7 +167,7 @@ jobs:
       - name: Build
         run: |
           git --version
-          export PATH=$LLVM_LIB_ROOT_DIR/bin:$PATH
+          export PATH=$LLVM_LIB_ROOT_DIR/bin:/usr/local/cuda/bin:$PATH
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
           export CXX=clang++-8
           export PYTHON=/usr/bin/python3

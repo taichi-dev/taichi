@@ -247,10 +247,10 @@ class SNode:
         return self.shape[i]
 
     def loop_range(self):
-        """Gets the C++ Expr wrapping the C++ GlobalVariableExpression corresponding to `self` to serve as loop range.
+        """Gets the taichi_core.Expr wrapping the taichi_core.GlobalVariableExpression corresponding to `self` to serve as loop range.
 
         Returns:
-            C++ Expr: See above.
+            taichi_core.Expr: See above.
         """
         return _ti_core.global_var_expr_from_snode(self.ptr)
 

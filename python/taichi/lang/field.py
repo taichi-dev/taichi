@@ -81,7 +81,7 @@ class Field:
         """Gets representative field member for loop range info.
 
         Returns:
-            C++ Expr: Representative (first) field member.
+            taichi_core.Expr: Representative (first) field member.
         """
         return self.vars[0].ptr
 

@@ -4,10 +4,10 @@ from taichi.lang.util import taichi_scope
 
 
 class ExtArray:
-    """Class for external arrays. Constructed by a C++ Expr wrapping a C++ ExternalTensorExpression.
+    """Class for external arrays. Constructed by a taichi_core.Expr wrapping a taichi_core.ExternalTensorExpression.
 
     Args:
-        ptr: The C++ Expr mentioned above.
+        ptr (taichi_core.Expr): See above.
     """
     def __init__(self, ptr):
         assert ptr.is_external_var()
@@ -30,9 +30,9 @@ class ExtArray:
 
     @taichi_scope
     def loop_range(self):
-        """Gets the corresponding C++ Expr to serve as loop range.
+        """Gets the corresponding taichi_core.Expr to serve as loop range.
 
         Returns:
-            C++ Expr: See above.
+            taichi_core.Expr: See above.
         """
         return self.ptr

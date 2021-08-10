@@ -92,8 +92,9 @@ class Matrix(TaichiOperations):
                         ) or in_python_scope() or disable_local_tensor or not ti.current_cfg().dynamic_index:
                             mat = [list([expr.Expr(x)]) for x in n]
                         else:
-                            dt = ti.default_cfg().default_ip if isinstance(
-                                n[0], int) else ti.default_cfg().default_fp
+                            if dt is None:
+                                raise Exception(
+                                    'dt required when using dynamic_index for local tensor')
                             self.local_tensor_proxy = impl.expr_init_local_tensor(
                                 [len(n)], dt,
                                 expr.make_expr_group([expr.Expr(x)
@@ -113,8 +114,9 @@ class Matrix(TaichiOperations):
                 ) or in_python_scope() or disable_local_tensor or not ti.current_cfg().dynamic_index:
                     mat = [list(r) for r in n]
                 else:
-                    dt = ti.default_cfg().default_ip if isinstance(
-                        n[0][0], int) else ti.default_cfg().default_fp
+                    if dt is None:
+                        raise Exception(
+                            'dt required when using dynamic_index for local tensor')
                     self.local_tensor_proxy = impl.expr_init_local_tensor(
                         [len(n), len(n[0])], dt,
                         expr.make_expr_group(

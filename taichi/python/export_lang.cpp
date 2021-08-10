@@ -909,6 +909,7 @@ void export_lang(py::module &m) {
       .def("print_triplets", &SparseMatrix::print_triplets)
       .def("build", &SparseMatrix::build)
       .def("print", &SparseMatrix::print)
+      .def("solve", &SparseMatrix::solve)
       .def("get_addr", [](SparseMatrix *mat) {return uint64(mat);});
 }
 

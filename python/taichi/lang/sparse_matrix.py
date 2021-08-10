@@ -15,6 +15,9 @@ class SparseMatrix:
     def print(self):
         self.ptr.print()
 
+    def solve(self, b):
+        self.ptr.solve(b.ptr)
+
     def build(self):
         self.ptr.build()
 

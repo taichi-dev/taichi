@@ -19,6 +19,8 @@ class SparseMatrix {
 
   void print();
 
+  void solve(SparseMatrix *);
+
  private:
   uint64 num_triplets{0};
   void* data_base_ptr{nullptr};

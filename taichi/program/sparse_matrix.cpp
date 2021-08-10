@@ -1,6 +1,7 @@
 #include "taichi/program/sparse_matrix.h"
 
 #include "Eigen/Dense"
+#include "Eigen/SparseLU"
 
 namespace taichi {
 namespace lang {
@@ -34,11 +35,39 @@ void SparseMatrix::build() {
 }
 
 void SparseMatrix::print() {
-  TI_ASSERT(built = true);
+  TI_ASSERT(built);
   Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
   // Note that the code below first converts the sparse matrix into a dense one.
   // https://stackoverflow.com/questions/38553335/how-can-i-print-in-console-a-formatted-sparse-matrix-with-eigen
   std::cout << Eigen::MatrixXf(matrix).format(clean_fmt) << std::endl;
+}
+
+void SparseMatrix::solve(SparseMatrix *b_) {
+  TI_ASSERT(built);
+
+  using namespace Eigen;
+
+  VectorXf x(n), b(m);
+
+  b.setZero();
+
+  for (int k=0; k<b_->matrix.outerSize(); ++k)
+    for (Eigen::SparseMatrix<float32>::InnerIterator it(b_->matrix, k); it; ++it) {
+      b[it.row()] = it.value();
+    }
+
+  /*
+  SparseLU<Eigen::SparseMatrix<float32>, COLAMDOrdering<int>> solver;
+  solver.analyzePattern(matrix);
+  solver.factorize(matrix);
+  x = solver.solve(b);
+   */
+  x = Eigen::MatrixXf(matrix).ldlt().solve(b);
+
+  Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
+  // Note that the code below first converts the sparse matrix into a dense one.
+  // https://stackoverflow.com/questions/38553335/how-can-i-print-in-console-a-formatted-sparse-matrix-with-eigen
+  std::cout << Eigen::MatrixXf(x).format(clean_fmt) << std::endl;
 }
 
 }

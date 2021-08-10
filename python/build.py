@@ -36,7 +36,8 @@ def build(project_name):
             get_python_executable()))
 
     os.system(
-        f'{get_python_executable()} ../misc/make_changelog.py origin/master ../ True')
+        f'{get_python_executable()} ../misc/make_changelog.py origin/master ../ True'
+    )
 
     if get_os_name() == 'linux':
         os.system(

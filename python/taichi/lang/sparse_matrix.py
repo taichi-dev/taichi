@@ -24,15 +24,17 @@ class SparseMatrixEntry:
         self.i = i
         self.j = j
 
-    def __iadd__(self, other):
+    def augassign(self, value, op):
+        assert op == 'Add'
         from taichi.lang.impl import call_internal
-        call_internal("insert_triplet", self.ptr, self.i, self.j, other)
+        call_internal("insert_triplet", self.ptr, self.i, self.j, value)
 
 class SparseMatrixProxy:
+    is_taichi_class = True
+
     def __init__(self, ptr):
         self.ptr = ptr
 
-    def insert(self, i, j, val):
-        from taichi.lang.impl import call_internal
-        call_internal("insert_triplet", self.ptr, i, j, val)
+    def subscript(self, i, j):
+        return SparseMatrixEntry(self.ptr, i, j)
 

@@ -122,7 +122,7 @@ class Program {
       jit_evaluator_cache;
   std::mutex jit_evaluator_cache_mut;
 
-  std::vector<SparseMatrix> sparse_matrices;
+  std::vector<std::unique_ptr<SparseMatrix>> sparse_matrices;
 
   // Note: for now we let all Programs share a single TypeFactory for smooth
   // migration. In the future each program should have its own copy.

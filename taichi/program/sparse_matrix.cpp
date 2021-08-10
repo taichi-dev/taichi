@@ -15,9 +15,9 @@ void *SparseMatrix::get_data_base_ptr() {
 }
 
 void SparseMatrix::print_triplets() {
-  printf("%d %d %lld %lld\n", n, m, max_num_triplets, num_triplets);
+  printf("n=%d, m=%d, num_triplets=%lld (max=%lld)\n", n, m, num_triplets, max_num_triplets);
   for (int64 i = 0; i < num_triplets; i++) {
-    printf("%d %d %f\n", data[i * 3], data[i * 3 + 1], taichi_union_cast<float32>(data[i * 3 + 2]));
+    printf("(%d, %d) val=%f\n", data[i * 3], data[i * 3 + 1], taichi_union_cast<float32>(data[i * 3 + 2]));
   }
 }
 

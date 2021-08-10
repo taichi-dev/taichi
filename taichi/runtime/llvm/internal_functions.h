@@ -20,10 +20,18 @@ i32 refresh_counter(Context *context) {
   return 0;
 }
 
-i32 insert_triplet(Context *context, int64 base_ptr_, int val1, int val2, float value) {
-  auto base_ptr = (void *)base_ptr_;
+i32 insert_triplet(Context *context, int64 base_ptr_, int i, int j, float value) {
+  auto base_ptr = (int64 *)base_ptr_;
   auto runtime = context->runtime;
-  taichi_printf(runtime, "Inserting value [%f] at [%d, %d] to sparse matrix %p\n", value, val1, val2, base_ptr);
+
+  int64 *num_triplets = base_ptr;
+  auto data_base_ptr = (int32*)(base_ptr + 1);
+
+  auto triplet_id = atomic_add_i64(num_triplets, 1);
+  data_base_ptr[triplet_id * 3] = i;
+  data_base_ptr[triplet_id * 3 + 1] = j;
+  data_base_ptr[triplet_id * 3 + 2] = taichi_union_cast<int32>(value);
+  taichi_printf(runtime, "Inserting value [%f] at [%d, %d] to sparse matrix %p (triplet id=%d)\n", value, i, j, base_ptr, triplet_id);
   return 0;
 }
 

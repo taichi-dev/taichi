@@ -243,7 +243,9 @@ void export_lang(py::module &m) {
       .def("make_aot_module_builder", &Program::make_aot_module_builder)
       .def("get_snode_tree_size", &Program::get_snode_tree_size)
       .def("get_snode_root", &Program::get_snode_root,
-           py::return_value_policy::reference);
+           py::return_value_policy::reference)
+      .def("create_sparse_matrix", &Program::create_sparse_matrix,
+             py::return_value_policy::reference);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)

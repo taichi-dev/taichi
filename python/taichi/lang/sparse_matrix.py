@@ -3,7 +3,8 @@ class SparseMatrix:
     def __init__(self, n, m=None):
         self.n = n
         self.m = m if m else n
-        self.ptr = 123431232141234123
+        from taichi.lang.impl import get_runtime
+        self.ptr = get_runtime().create_sparse_matrix(n, m)
         print(f"Creating a sparse matrix of size ({n}, {m})...")
 
 class SparseMatrixEntry:

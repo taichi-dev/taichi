@@ -13,7 +13,13 @@ struct Camera {
   ProjectionMode projection_mode = ProjectionMode::Perspective;
 
   float fov{45};
-  float left{-1}, right{1}, top{-1}, bottom{1}, z_near{0.1}, z_far{1000};
+
+  float left{-1};
+  float right{1};
+  float top{-1};
+  float bottom{1};
+  float z_near{0.1};
+  float z_far{1000};
 
   glm::mat4 get_view_matrix() {
     return glm::lookAt(position, lookat, up);

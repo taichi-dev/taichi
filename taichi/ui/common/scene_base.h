@@ -26,31 +26,30 @@ struct ParticlesInfo {
   float shininess;
 };
 
-#define MAX_POINTLIGHTS 16
-
 class SceneBase {
  public:
-  virtual void set_camera(Camera &camera) {
+  static constexpr int kMaxPointLights = 16;
+
+  void set_camera(const Camera &camera) {
     camera_ = camera;
   }
 
-  virtual void mesh(const MeshInfo &info) {
+  void mesh(const MeshInfo &info) {
     mesh_infos_.push_back(info);
   }
-  virtual void particles(const ParticlesInfo &info) {
+  void particles(const ParticlesInfo &info) {
     particles_infos_.push_back(info);
   }
-  virtual void point_light(glm::vec3 pos, glm::vec3 color) {
-    if (point_lights_.size() >= MAX_POINTLIGHTS) {
-      throw std::runtime_error("point light count exceeds MAX_POINTLIGHTS");
+  void point_light(glm::vec3 pos, glm::vec3 color) {
+    if (point_lights_.size() >= kMaxPointLights ) {
+      throw std::runtime_error("point light count exceeds kMaxPointLights");
     }
     point_lights_.push_back({pos, color});
   }
-  virtual void ambient_light(glm::vec3 color) {
+  void ambient_light(glm::vec3 color) {
     ambient_light_color_ = color;
   }
-  virtual ~SceneBase() {
-  }
+  virtual ~SceneBase() = default;
 
  protected:
   Camera camera_;

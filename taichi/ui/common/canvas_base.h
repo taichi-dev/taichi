@@ -27,19 +27,15 @@ struct LinesInfo {
   float width;
 };
 
-struct CanvasBase {
-  virtual void set_background_color(const glm::vec3 &color) {
-  }
-  virtual void set_image(const SetImageInfo &info) {
-  }
-  virtual void triangles(const TrianglesInfo &info) {
-  }
-  virtual void circles(const CirclesInfo &info) {
-  }
-  virtual void lines(const LinesInfo &info) {
-  }
-  virtual void scene(SceneBase *scene) {
-  }
+class CanvasBase {
+public:
+  virtual void set_background_color(const glm::vec3 &color) = 0;
+  virtual void set_image(const SetImageInfo &info) = 0;
+  virtual void triangles(const TrianglesInfo &info) = 0;
+  virtual void circles(const CirclesInfo &info) = 0;
+  virtual void lines(const LinesInfo &info) = 0;
+  virtual void scene(SceneBase *scene) = 0;
+  virtual ~CanvasBase() = default;
 };
 
 TI_UI_NAMESPACE_END

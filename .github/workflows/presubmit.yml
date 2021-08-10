@@ -75,15 +75,13 @@ jobs:
 
       - name: Build & Install
         run: |
-          git fetch origin master
-          git rev-list --max-count=200 origin/master --
-          git rev-list --max-count=200 master --
           TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
           sudo apt-get install xorg-dev libglu1-mesa-dev
           python -m pip install --user numpy pybind11 gitpython
           cd python
+          git fetch origin master
           python build.py build
           pip uninstall taichi -y
           cd ..
@@ -151,6 +149,7 @@ jobs:
           sudo apt-get install xorg-dev libglu1-mesa-dev
           python -m pip install --user numpy pybind11 gitpython
           cd python
+          git fetch origin master
           python build.py build
           pip uninstall taichi -y
           cd ..
@@ -200,6 +199,7 @@ jobs:
           apt-get install xorg-dev libglu1-mesa-dev
           python -m pip install --user numpy pybind11 gitpython
           cd python
+          git fetch origin master
           python build.py build
           pip uninstall taichi -y
           cd ..
@@ -259,6 +259,7 @@ jobs:
           cd D:\a\taichi\taichi
           python -m pip install --user numpy pybind11 gitpython pytest
           cd python
+          git fetch origin master
           python build.py build
           python -m pip uninstall taichi -y
           cd ..

@@ -812,7 +812,7 @@ def supported_archs():
     Returns:
         List[taichi_core.Arch]: All supported archs on the machine.
     """
-    archs = [cpu, cuda, metal, opengl, cc]
+    archs = [cpu, cuda, metal, opengl, vulkan, cc]
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')

@@ -33,6 +33,7 @@ struct CompileConfig {
   bool verbose;
   bool fast_math;
   bool async_mode;
+  bool dynamic_index;
   bool flatten_if;
   bool make_thread_local;
   bool make_block_local;

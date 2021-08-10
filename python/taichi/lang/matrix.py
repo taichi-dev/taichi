@@ -89,7 +89,7 @@ class Matrix(TaichiOperations):
                     else:
                         if not ti.is_extension_supported(
                                 ti.cfg.arch, ti.extension.dynamic_index
-                        ) or in_python_scope() or disable_local_tensor:
+                        ) or in_python_scope() or disable_local_tensor or not ti.current_cfg().dynamic_index:
                             mat = [list([expr.Expr(x)]) for x in n]
                         else:
                             dt = ti.default_cfg().default_ip if isinstance(
@@ -110,7 +110,7 @@ class Matrix(TaichiOperations):
             else:
                 if not ti.is_extension_supported(
                         ti.cfg.arch, ti.extension.dynamic_index
-                ) or in_python_scope() or disable_local_tensor:
+                ) or in_python_scope() or disable_local_tensor or not ti.current_cfg().dynamic_index:
                     mat = [list(r) for r in n]
                 else:
                     dt = ti.default_cfg().default_ip if isinstance(

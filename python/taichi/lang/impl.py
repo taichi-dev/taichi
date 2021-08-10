@@ -18,7 +18,6 @@ import taichi as ti
 
 @taichi_scope
 def expr_init_local_tensor(shape, element_type, elements):
-    ti.current_cfg().make_block_local = False
     return _ti_core.expr_alloca_local_tensor(shape, element_type, elements)
 
 

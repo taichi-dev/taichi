@@ -1,0 +1,115 @@
+namespace Eigen {
+
+/** \eigenManualPage InplaceDecomposition Inplace matrix decompositions
+
+Starting from %Eigen 3.3, the LU, Cholesky, and QR decompositions can operate \em inplace, that is, directly within the given input matrix.
+This feature is especially useful when dealing with huge matrices, and or when the available memory is very limited (embedded systems).
+
+To this end, the respective decomposition class must be instantiated with a Ref<> matrix type, and the decomposition object must be constructed with the input matrix as argument. As an example, let us consider an inplace LU decomposition with partial pivoting.
+
+Let's start with the basic inclusions, and declaration of a 2x2 matrix \c A:
+
+<table class="example">
+<tr><th>code</th><th>output</th></tr>
+<tr>
+  <td>\snippet TutorialInplaceLU.cpp init
+  </td>
+  <td>\snippet TutorialInplaceLU.out init
+  </td>
+</tr>
+</table>
+
+No surprise here! Then, let's declare our inplace LU object \c lu, and check the content of the matrix \c A:
+
+<table class="example">
+<tr>
+  <td>\snippet TutorialInplaceLU.cpp declaration
+  </td>
+  <td>\snippet TutorialInplaceLU.out declaration
+  </td>
+</tr>
+</table>
+
+Here, the \c lu object computes and stores the \c L and \c U factors within the memory held by the matrix \c A.
+The coefficients of \c A have thus been destroyed during the factorization, and replaced by the L and U factors as one can verify:
+
+<table class="example">
+<tr>
+  <td>\snippet TutorialInplaceLU.cpp matrixLU
+  </td>
+  <td>\snippet TutorialInplaceLU.out matrixLU
+  </td>
+</tr>
+</table>
+
+Then, one can use the \c lu object as usual, for instance to solve the Ax=b problem:
+<table class="example">
+<tr>
+  <td>\snippet TutorialInplaceLU.cpp solve
+  </td>
+  <td>\snippet TutorialInplaceLU.out solve
+  </td>
+</tr>
+</table>
+
+Here, since the content of the original matrix \c A has been lost, we had to declared a new matrix \c A0 to verify the result.
+
+Since the memory is shared between \c A and \c lu, modifying the matrix \c A will make \c lu invalid.
+This can easily be verified by modifying the content of \c A and trying to solve the initial problem again:
+
+<table class="example">
+<tr>
+  <td>\snippet TutorialInplaceLU.cpp modifyA
+  </td>
+  <td>\snippet TutorialInplaceLU.out modifyA
+  </td>
+</tr>
+</table>
+
+Note that there is no shared pointer under the hood, it is the \b responsibility \b of \b the \b user to keep the input matrix \c A in life as long as \c lu is living.
+
+If one wants to update the factorization with the modified A, one has to call the compute method as usual:
+<table class="example">
+<tr>
+  <td>\snippet TutorialInplaceLU.cpp recompute
+  </td>
+  <td>\snippet TutorialInplaceLU.out recompute
+  </td>
+</tr>
+</table>
+
+Note that calling compute does not change the memory which is referenced by the \c lu object. Therefore, if the compute method is called with another matrix \c A1 different than \c A, then the content of \c A1 won't be modified. This is still the content of \c A that will be used to store the L and U factors of the matrix \c A1.
+This can easily be verified as follows:
+<table class="example">
+<tr>
+  <td>\snippet TutorialInplaceLU.cpp recompute_bis0
+ </td>
+  <td>\snippet TutorialInplaceLU.out recompute_bis0
+ </td>
+</tr>
+</table>
+The matrix \c A1 is unchanged, and one can thus solve A1*x=b, and directly check the residual without any copy of \c A1:
+<table class="example">
+<tr>
+  <td>\snippet TutorialInplaceLU.cpp recompute_bis1
+  </td>
+  <td>\snippet TutorialInplaceLU.out recompute_bis1
+ </td>
+</tr>
+</table>
+
+
+Here is the list of matrix decompositions supporting this inplace mechanism:
+
+- class LLT
+- class LDLT
+- class PartialPivLU
+- class FullPivLU
+- class HouseholderQR
+- class ColPivHouseholderQR
+- class FullPivHouseholderQR
+- class CompleteOrthogonalDecomposition
+
+*/
+
+}

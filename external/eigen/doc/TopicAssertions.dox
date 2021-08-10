@@ -1,0 +1,108 @@
+namespace Eigen {
+
+/** \page TopicAssertions Assertions
+
+\eigenAutoToc
+
+\section PlainAssert Assertions
+
+The macro eigen_assert is defined to be \c eigen_plain_assert by default. We use eigen_plain_assert instead of \c assert to work around a known bug for GCC <= 4.3. Basically, eigen_plain_assert \a is \c assert.
+
+\subsection RedefineAssert Redefining assertions
+
+Both eigen_assert and eigen_plain_assert are defined in Macros.h. Defining eigen_assert indirectly gives you a chance to change its behavior. You can redefine this macro if you want to do something else such as throwing an exception, and fall back to its default behavior with eigen_plain_assert. The code below tells Eigen to throw an std::runtime_error:
+
+\code
+#include <stdexcept>
+#undef eigen_assert
+#define eigen_assert(x) \
+  if (!(x)) { throw (std::runtime_error("Put your message here")); }
+\endcode
+
+\subsection DisableAssert Disabling assertions
+
+Assertions cost run time and can be turned off. You can suppress eigen_assert by defining \c EIGEN_NO_DEBUG \b before including Eigen headers. \c EIGEN_NO_DEBUG is undefined by default unless \c NDEBUG is defined.
+
+\section StaticAssert Static assertions
+
+Static assertions are not standardized until C++11. However, in the Eigen library, there are many conditions can and should be detectedat compile time. For instance, we use static assertions to prevent the code below from compiling.
+
+\code
+Matrix3d()  + Matrix4d();   // adding matrices of different sizes
+Matrix4cd() * Vector3cd();  // invalid product known at compile time
+\endcode
+
+Static assertions are defined in StaticAssert.h. If there is native static_assert, we use it. Otherwise, we have implemented an assertion macro that can show a limited range of messages.
+
+One can easily come up with static assertions without messages, such as:
+
+\code
+#define STATIC_ASSERT(x) \
+  switch(0) { case 0: case x:; }
+\endcode
+
+However, the example above obviously cannot tell why the assertion failed. Therefore, we define a \c struct in namespace Eigen::internal to handle available messages.
+
+\code
+template<bool condition>
+struct static_assertion {};
+
+template<>
+struct static_assertion<true>
+{
+  enum {
+    YOU_TRIED_CALLING_A_VECTOR_METHOD_ON_A_MATRIX,
+    YOU_MIXED_VECTORS_OF_DIFFERENT_SIZES,
+    // see StaticAssert.h for all enums.
+  };
+};
+\endcode
+
+And then, we define EIGEN_STATIC_ASSERT(CONDITION,MSG) to access Eigen::internal::static_assertion<bool(CONDITION)>::MSG. If the condition evaluates into \c false, your compiler displays a lot of messages explaining there is no MSG in static_assert<false>. Nevertheless, this is \a not in what we are interested. As you can see, all members of static_assert<true> are ALL_CAPS_AND_THEY_ARE_SHOUTING.
+
+\warning
+When using this macro, MSG should be a member of static_assertion<true>, or the static assertion \b always fails.
+Currently, it can only be used in function scope.
+
+\subsection DerivedStaticAssert Derived static assertions
+
+There are other macros derived from EIGEN_STATIC_ASSERT to enhance readability. Their names are self-explanatory.
+
+- \b EIGEN_STATIC_ASSERT_FIXED_SIZE(TYPE) - passes if \a TYPE is fixed size.
+- \b EIGEN_STATIC_ASSERT_DYNAMIC_SIZE(TYPE) - passes if \a TYPE is dynamic size.
+- \b EIGEN_STATIC_ASSERT_LVALUE(Derived) - failes if \a Derived is read-only.
+- \b EIGEN_STATIC_ASSERT_ARRAYXPR(Derived) - passes if \a Derived is an array expression.
+- <b>EIGEN_STATIC_ASSERT_SAME_XPR_KIND(Derived1, Derived2)</b> - failes if the two expressions are an array one and a matrix one.
+
+Because Eigen handles both fixed-size and dynamic-size expressions, some conditions cannot be clearly determined at compile time. We classify them into strict assertions and permissive assertions.
+
+\subsubsection StrictAssertions Strict assertions
+
+These assertions fail if the condition <b>may not</b> be met. For example, MatrixXd may not be a vector, so it fails EIGEN_STATIC_ASSERT_VECTOR_ONLY.
+
+- \b EIGEN_STATIC_ASSERT_VECTOR_ONLY(TYPE) - passes if \a TYPE must be a vector type.
+- <b>EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(TYPE, SIZE)</b> - passes if \a TYPE must be a vector of the given size.
+- <b>EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(TYPE, ROWS, COLS)</b> - passes if \a TYPE must be a matrix with given rows and columns.
+
+\subsubsection PermissiveAssertions Permissive assertions
+
+These assertions fail if the condition \b cannot be met. For example, MatrixXd and Matrix4d may have the same size, so they pass EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE.
+
+- \b EIGEN_STATIC_ASSERT_SAME_VECTOR_SIZE(TYPE0,TYPE1) - fails if the two vector expression types must have different sizes.
+- \b EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(TYPE0,TYPE1) - fails if the two matrix expression types must have different sizes.
+- \b EIGEN_STATIC_ASSERT_SIZE_1x1(TYPE) - fails if \a TYPE cannot be an 1x1 expression.
+
+See StaticAssert.h for details such as what messages they throw.
+
+\subsection DisableStaticAssert Disabling static assertions
+
+If \c EIGEN_NO_STATIC_ASSERT is defined, static assertions turn into <tt>eigen_assert</tt>'s, working like:
+
+\code
+#define EIGEN_STATIC_ASSERT(CONDITION,MSG) eigen_assert((CONDITION) && #MSG);
+\endcode
+
+This saves compile time but consumes more run time. \c EIGEN_NO_STATIC_ASSERT is undefined by default.
+
+*/
+}

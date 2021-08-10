@@ -1,0 +1,217 @@
+namespace Eigen {
+
+/** \page TopicFunctionTakingEigenTypes Writing Functions Taking %Eigen Types as Parameters
+
+%Eigen's use of expression templates results in potentially every expression being of a different type. If you pass such an expression to a function taking a parameter of type Matrix, your expression will implicitly be evaluated into a temporary Matrix, which will then be passed to the function. This means that you lose the benefit of expression templates. Concretely, this has two drawbacks:
+ \li The evaluation into a temporary may be useless and inefficient;
+ \li This only allows the function to read from the expression, not to write to it.
+
+Fortunately, all this myriad of expression types have in common that they all inherit a few common, templated base classes. By letting your function take templated parameters of these base types, you can let them play nicely with %Eigen's expression templates.
+
+\eigenAutoToc
+
+\section TopicFirstExamples Some First Examples
+
+This section will provide simple examples for different types of objects %Eigen is offering. Before starting with the actual examples, we need to recapitulate which base objects we can work with (see also \ref TopicClassHierarchy).
+
+ \li MatrixBase: The common base class for all dense matrix expressions (as opposed to array expressions, as opposed to sparse and special matrix classes). Use it in functions that are meant to work only on dense matrices.
+ \li ArrayBase: The common base class for all dense array expressions (as opposed to matrix expressions, etc). Use it in functions that are meant to work only on arrays.
+ \li DenseBase: The common base class for all dense matrix expression, that is, the base class for both \c MatrixBase and \c ArrayBase. It can be used in functions that are meant to work on both matrices and arrays.
+ \li EigenBase: The base class unifying all types of objects that can be evaluated into dense matrices or arrays, for example special matrix classes such as diagonal matrices, permutation matrices, etc. It can be used in functions that are meant to work on any such general type.
+
+<b> %EigenBase Example </b><br/><br/>
+Prints the dimensions of the most generic object present in %Eigen. It could be any matrix expressions, any dense or sparse matrix and any array.
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include function_taking_eigenbase.cpp
+</td>
+<td>
+\verbinclude function_taking_eigenbase.out
+</td></tr></table>
+<b> %DenseBase Example </b><br/><br/>
+Prints a sub-block of the dense expression. Accepts any dense matrix or array expression, but no sparse objects and no special matrix classes such as DiagonalMatrix.
+\code
+template <typename Derived>
+void print_block(const DenseBase<Derived>& b, int x, int y, int r, int c)
+{
+  std::cout << "block: " << b.block(x,y,r,c) << std::endl;
+}
+\endcode
+<b> %ArrayBase Example </b><br/><br/>
+Prints the maximum coefficient of the array or array-expression.
+\code
+template <typename Derived>
+void print_max_coeff(const ArrayBase<Derived> &a)
+{
+  std::cout << "max: " << a.maxCoeff() << std::endl;
+}
+\endcode
+<b> %MatrixBase Example </b><br/><br/>
+Prints the inverse condition number of the given matrix or matrix-expression.
+\code
+template <typename Derived>
+void print_inv_cond(const MatrixBase<Derived>& a)
+{
+  const typename JacobiSVD<typename Derived::PlainObject>::SingularValuesType&
+    sing_vals = a.jacobiSvd().singularValues();
+  std::cout << "inv cond: " << sing_vals(sing_vals.size()-1) / sing_vals(0) << std::endl;
+}
+\endcode
+<b> Multiple templated arguments example </b><br/><br/>
+Calculate the Euclidean distance between two points.
+\code
+template <typename DerivedA,typename DerivedB>
+typename DerivedA::Scalar squaredist(const MatrixBase<DerivedA>& p1,const MatrixBase<DerivedB>& p2)
+{
+  return (p1-p2).squaredNorm();
+}
+\endcode
+Notice that we used two template parameters, one per argument. This permits the function to handle inputs of different types, e.g.,
+\code
+squaredist(v1,2*v2)
+\endcode
+where the first argument \c v1 is a vector and the second argument \c 2*v2 is an expression.
+<br/><br/>
+
+These examples are just intended to give the reader a first impression of how functions can be written which take a plain and constant Matrix or Array argument. They are also intended to give the reader an idea about the most common base classes being the optimal candidates for functions. In the next section we will look in more detail at an example and the different ways it can be implemented, while discussing each implementation's problems and advantages. For the discussion below, Matrix and Array as well as MatrixBase and ArrayBase can be exchanged and all arguments still hold.
+
+
+\section TopicUsingRefClass How to write generic, but non-templated function?
+
+In all the previous examples, the functions had to be template functions. This approach allows to write very generic code, but it is often desirable to write non templated function and still keep some level of genericity to avoid stupid copies of the arguments. The typical example is to write functions accepting both a MatrixXf or a block of a MatrixXf. This exactly the purpose of the Ref class. Here is a simple example:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include function_taking_ref.cpp
+</td>
+<td>
+\verbinclude function_taking_ref.out
+</td></tr></table>
+In the first two calls to inv_cond, no copy occur because the memory layout of the arguments matches the memory layout accepted by Ref<MatrixXf>. However, in the last call, we have a generic expression that will be automatically evaluated into a temporary MatrixXf by the Ref<> object.
+
+A Ref object can also be writable. Here is an example of a function computing the covariance matrix of two input matrices where each row is an observation:
+\code
+void cov(const Ref<const MatrixXf> x, const Ref<const MatrixXf> y, Ref<MatrixXf> C)
+{
+  const float num_observations = static_cast<float>(x.rows());
+  const RowVectorXf x_mean = x.colwise().sum() / num_observations;
+  const RowVectorXf y_mean = y.colwise().sum() / num_observations;
+  C = (x.rowwise() - x_mean).transpose() * (y.rowwise() - y_mean) / num_observations;
+}
+\endcode
+and here are two examples calling cov without any copy:
+\code
+MatrixXf m1, m2, m3
+cov(m1, m2, m3);
+cov(m1.leftCols<3>(), m2.leftCols<3>(), m3.topLeftCorner<3,3>());
+\endcode
+The Ref<> class has two other optional template arguments allowing to control the kind of memory layout that can be accepted without any copy. See the class Ref documentation for the details.
+
+\section TopicPlainFunctionsWorking In which cases do functions taking plain Matrix or Array arguments work?
+
+Without using template functions, and without the Ref class, a naive implementation of the previous cov function might look like this
+\code
+MatrixXf cov(const MatrixXf& x, const MatrixXf& y)
+{
+  const float num_observations = static_cast<float>(x.rows());
+  const RowVectorXf x_mean = x.colwise().sum() / num_observations;
+  const RowVectorXf y_mean = y.colwise().sum() / num_observations;
+  return (x.rowwise() - x_mean).transpose() * (y.rowwise() - y_mean) / num_observations;
+}
+\endcode
+and contrary to what one might think at first, this implementation is fine unless you require a generic implementation that works with double matrices too and unless you do not care about temporary objects. Why is that the case? Where are temporaries involved? How can code as given below compile?
+\code
+MatrixXf x,y,z;
+MatrixXf C = cov(x,y+z);
+\endcode
+In this special case, the example is fine and will be working because both parameters are declared as \e const references. The compiler creates a temporary and evaluates the expression x+z into this temporary. Once the function is processed, the temporary is released and the result is assigned to C.
+
+\b Note: Functions taking \e const references to Matrix (or Array) can process expressions at the cost of temporaries.
+
+
+\section TopicPlainFunctionsFailing In which cases do functions taking a plain Matrix or Array argument fail?
+
+Here, we consider a slightly modified version of the function given above. This time, we do not want to return the result but pass an additional non-const paramter which allows us to store the result. A first naive implementation might look as follows.
+\code
+// Note: This code is flawed!
+void cov(const MatrixXf& x, const MatrixXf& y, MatrixXf& C)
+{
+  const float num_observations = static_cast<float>(x.rows());
+  const RowVectorXf x_mean = x.colwise().sum() / num_observations;
+  const RowVectorXf y_mean = y.colwise().sum() / num_observations;
+  C = (x.rowwise() - x_mean).transpose() * (y.rowwise() - y_mean) / num_observations;
+}
+\endcode
+When trying to execute the following code
+\code
+MatrixXf C = MatrixXf::Zero(3,6);
+cov(x,y, C.block(0,0,3,3));
+\endcode
+the compiler will fail, because it is not possible to convert the expression returned by \c MatrixXf::block() into a non-const \c MatrixXf&. This is the case because the compiler wants to protect you from writing your result to a temporary object. In this special case this protection is not intended -- we want to write to a temporary object. So how can we overcome this problem? 
+
+The solution which is preferred at the moment is based on a little \em hack. One needs to pass a const reference to the matrix and internally the constness needs to be cast away. The correct implementation for C98 compliant compilers would be
+\code
+template <typename Derived, typename OtherDerived>
+void cov(const MatrixBase<Derived>& x, const MatrixBase<Derived>& y, MatrixBase<OtherDerived> const & C)
+{
+  typedef typename Derived::Scalar Scalar;
+  typedef typename internal::plain_row_type<Derived>::type RowVectorType;
+
+  const Scalar num_observations = static_cast<Scalar>(x.rows());
+
+  const RowVectorType x_mean = x.colwise().sum() / num_observations;
+  const RowVectorType y_mean = y.colwise().sum() / num_observations;
+
+  const_cast< MatrixBase<OtherDerived>& >(C) =
+    (x.rowwise() - x_mean).transpose() * (y.rowwise() - y_mean) / num_observations;
+}
+\endcode
+The implementation above does now not only work with temporary expressions but it also allows to use the function with matrices of arbitrary floating point scalar types.
+
+\b Note: The const cast hack will only work with templated functions. It will not work with the MatrixXf implementation because it is not possible to cast a Block expression to a Matrix reference!
+
+
+
+\section TopicResizingInGenericImplementations How to resize matrices in generic implementations?
+
+One might think we are done now, right? This is not completely true because in order for our covariance function to be generically applicable, we want the follwing code to work
+\code
+MatrixXf x = MatrixXf::Random(100,3);
+MatrixXf y = MatrixXf::Random(100,3);
+MatrixXf C;
+cov(x, y, C);
+\endcode
+This is not the case anymore, when we are using an implementation taking MatrixBase as a parameter. In general, %Eigen supports automatic resizing but it is not possible to do so on expressions. Why should resizing of a matrix Block be allowed? It is a reference to a sub-matrix and we definitely don't want to resize that. So how can we incorporate resizing if we cannot resize on MatrixBase? The solution is to resize the derived object as in this implementation.
+\code
+template <typename Derived, typename OtherDerived>
+void cov(const MatrixBase<Derived>& x, const MatrixBase<Derived>& y, MatrixBase<OtherDerived> const & C_)
+{
+  typedef typename Derived::Scalar Scalar;
+  typedef typename internal::plain_row_type<Derived>::type RowVectorType;
+
+  const Scalar num_observations = static_cast<Scalar>(x.rows());
+
+  const RowVectorType x_mean = x.colwise().sum() / num_observations;
+  const RowVectorType y_mean = y.colwise().sum() / num_observations;
+
+  MatrixBase<OtherDerived>& C = const_cast< MatrixBase<OtherDerived>& >(C_);
+  
+  C.derived().resize(x.cols(),x.cols()); // resize the derived object
+  C = (x.rowwise() - x_mean).transpose() * (y.rowwise() - y_mean) / num_observations;
+}
+\endcode
+This implementation is now working for parameters being expressions and for parameters being matrices and having the wrong size. Resizing the expressions does not do any harm in this case unless they actually require resizing. That means, passing an expression with the wrong dimensions will result in a run-time error (in debug mode only) while passing expressions of the correct size will just work fine.
+
+\b Note: In the above discussion the terms Matrix and Array and MatrixBase and ArrayBase can be exchanged and all arguments still hold.
+
+\section TopicSummary Summary
+
+  - To summarize, the implementation of functions taking non-writable (const referenced) objects is not a big issue and does not lead to problematic situations in terms of compiling and running your program. However, a naive implementation is likely to introduce unnecessary temporary objects in your code. In order to avoid evaluating parameters into temporaries, pass them as (const) references to MatrixBase or ArrayBase (so templatize your function).
+
+  - Functions taking writable (non-const) parameters must take const references and cast away constness within the function body.
+
+  - Functions that take as parameters MatrixBase (or ArrayBase) objects, and potentially need to resize them (in the case where they are resizable), must call resize() on the derived class, as returned by derived().
+*/
+}

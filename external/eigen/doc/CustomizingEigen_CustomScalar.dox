@@ -1,0 +1,120 @@
+namespace Eigen {
+
+/** \page TopicCustomizing_CustomScalar Using custom scalar types
+\anchor user_defined_scalars
+
+By default, Eigen currently supports standard floating-point types (\c float, \c double, \c std::complex<float>, \c std::complex<double>, \c long \c double), as well as all native integer types (e.g., \c int, \c unsigned \c int, \c short, etc.), and \c bool.
+On x86-64 systems, \c long \c double permits to locally enforces the use of x87 registers with extended accuracy (in comparison to SSE).
+
+In order to add support for a custom type \c T you need:
+-# make sure the common operator (+,-,*,/,etc.) are supported by the type \c T
+-# add a specialization of struct Eigen::NumTraits<T> (see \ref NumTraits)
+-# define the math functions that makes sense for your type. This includes standard ones like sqrt, pow, sin, tan, conj, real, imag, etc, as well as abs2 which is Eigen specific.
+     (see the file Eigen/src/Core/MathFunctions.h)
+
+The math function should be defined in the same namespace than \c T, or in the \c std namespace though that second approach is not recommended.
+
+Here is a concrete example adding support for the Adolc's \c adouble type. <a href="https://projects.coin-or.org/ADOL-C">Adolc</a> is an automatic differentiation library. The type \c adouble is basically a real value tracking the values of any number of partial derivatives.
+
+\code
+#ifndef ADOLCSUPPORT_H
+#define ADOLCSUPPORT_H
+
+#define ADOLC_TAPELESS
+#include <adolc/adouble.h>
+#include <Eigen/Core>
+
+namespace Eigen {
+
+template<> struct NumTraits<adtl::adouble>
+ : NumTraits<double> // permits to get the epsilon, dummy_precision, lowest, highest functions
+{
+  typedef adtl::adouble Real;
+  typedef adtl::adouble NonInteger;
+  typedef adtl::adouble Nested;
+
+  enum {
+    IsComplex = 0,
+    IsInteger = 0,
+    IsSigned = 1,
+    RequireInitialization = 1,
+    ReadCost = 1,
+    AddCost = 3,
+    MulCost = 3
+  };
+};
+
+}
+
+namespace adtl {
+
+inline const adouble& conj(const adouble& x)  { return x; }
+inline const adouble& real(const adouble& x)  { return x; }
+inline adouble imag(const adouble&)    { return 0.; }
+inline adouble abs(const adouble&  x)  { return fabs(x); }
+inline adouble abs2(const adouble& x)  { return x*x; }
+
+}
+
+#endif // ADOLCSUPPORT_H
+\endcode
+
+This other example adds support for the \c mpq_class type from <a href="https://gmplib.org/">GMP</a>. It shows in particular how to change the way Eigen picks the best pivot during LU factorization. It selects the coefficient with the highest score, where the score is by default the absolute value of a number, but we can define a different score, for instance to prefer pivots with a more compact representation (this is an example, not a recommendation). Note that the scores should always be non-negative and only zero is allowed to have a score of zero. Also, this can interact badly with thresholds for inexact scalar types.
+
+\code
+#include <gmpxx.h>
+#include <Eigen/Core>
+#include <boost/operators.hpp>
+
+namespace Eigen {
+  template<> struct NumTraits<mpq_class> : GenericNumTraits<mpq_class>
+  {
+    typedef mpq_class Real;
+    typedef mpq_class NonInteger;
+    typedef mpq_class Nested;
+
+    static inline Real epsilon() { return 0; }
+    static inline Real dummy_precision() { return 0; }
+    static inline int digits10() { return 0; }
+
+    enum {
+      IsInteger = 0,
+      IsSigned = 1,
+      IsComplex = 0,
+      RequireInitialization = 1,
+      ReadCost = 6,
+      AddCost = 150,
+      MulCost = 100
+    };
+  };
+
+  namespace internal {
+
+    template<> struct scalar_score_coeff_op<mpq_class> {
+      struct result_type : boost::totally_ordered1<result_type> {
+        std::size_t len;
+        result_type(int i = 0) : len(i) {} // Eigen uses Score(0) and Score()
+        result_type(mpq_class const& q) :
+          len(mpz_size(q.get_num_mpz_t())+
+              mpz_size(q.get_den_mpz_t())-1) {}
+        friend bool operator<(result_type x, result_type y) {
+          // 0 is the worst possible pivot
+          if (x.len == 0) return y.len > 0;
+          if (y.len == 0) return false;
+          // Prefer a pivot with a small representation
+          return x.len > y.len;
+        }
+        friend bool operator==(result_type x, result_type y) {
+          // Only used to test if the score is 0
+          return x.len == y.len;
+        }
+      };
+      result_type operator()(mpq_class const& x) const { return x; }
+    };
+  }
+}
+\endcode
+
+*/
+
+}

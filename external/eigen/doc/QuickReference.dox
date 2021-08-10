@@ -1,0 +1,785 @@
+namespace Eigen {
+
+/** \eigenManualPage QuickRefPage Quick reference guide
+
+\eigenAutoToc
+
+<hr>
+
+<a href="#" class="top">top</a>
+\section QuickRef_Headers Modules and Header files
+
+The Eigen library is divided in a Core module and several additional modules. Each module has a corresponding header file which has to be included in order to use the module. The \c %Dense and \c Eigen header files are provided to conveniently gain access to several modules at once.
+
+<table class="manual">
+<tr><th>Module</th><th>Header file</th><th>Contents</th></tr>
+<tr            ><td>\link Core_Module Core \endlink</td><td>\code#include <Eigen/Core>\endcode</td><td>Matrix and Array classes, basic linear algebra (including triangular and selfadjoint products), array manipulation</td></tr>
+<tr class="alt"><td>\link Geometry_Module Geometry \endlink</td><td>\code#include <Eigen/Geometry>\endcode</td><td>Transform, Translation, Scaling, Rotation2D and 3D rotations (Quaternion, AngleAxis)</td></tr>
+<tr            ><td>\link LU_Module LU \endlink</td><td>\code#include <Eigen/LU>\endcode</td><td>Inverse, determinant, LU decompositions with solver (FullPivLU, PartialPivLU)</td></tr>
+<tr class="alt"><td>\link Cholesky_Module Cholesky \endlink</td><td>\code#include <Eigen/Cholesky>\endcode</td><td>LLT and LDLT Cholesky factorization with solver</td></tr>
+<tr            ><td>\link Householder_Module Householder \endlink</td><td>\code#include <Eigen/Householder>\endcode</td><td>Householder transformations; this module is used by several linear algebra modules</td></tr>
+<tr class="alt"><td>\link SVD_Module SVD \endlink</td><td>\code#include <Eigen/SVD>\endcode</td><td>SVD decompositions with least-squares solver (JacobiSVD, BDCSVD)</td></tr>
+<tr            ><td>\link QR_Module QR \endlink</td><td>\code#include <Eigen/QR>\endcode</td><td>QR decomposition with solver (HouseholderQR, ColPivHouseholderQR, FullPivHouseholderQR)</td></tr>
+<tr class="alt"><td>\link Eigenvalues_Module Eigenvalues \endlink</td><td>\code#include <Eigen/Eigenvalues>\endcode</td><td>Eigenvalue, eigenvector decompositions (EigenSolver, SelfAdjointEigenSolver, ComplexEigenSolver)</td></tr>
+<tr            ><td>\link Sparse_Module Sparse \endlink</td><td>\code#include <Eigen/Sparse>\endcode</td><td>%Sparse matrix storage and related basic linear algebra (SparseMatrix, SparseVector) \n (see \ref SparseQuickRefPage for details on sparse modules)</td></tr>
+<tr class="alt"><td></td><td>\code#include <Eigen/Dense>\endcode</td><td>Includes Core, Geometry, LU, Cholesky, SVD, QR, and Eigenvalues header files</td></tr>
+<tr            ><td></td><td>\code#include <Eigen/Eigen>\endcode</td><td>Includes %Dense and %Sparse header files (the whole Eigen library)</td></tr>
+</table>
+
+<a href="#" class="top">top</a>
+\section QuickRef_Types Array, matrix and vector types
+
+
+\b Recall: Eigen provides two kinds of dense objects: mathematical matrices and vectors which are both represented by the template class Matrix, and general 1D and 2D arrays represented by the template class Array:
+\code
+typedef Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options> MyMatrixType;
+typedef Array<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options> MyArrayType;
+\endcode
+
+\li \c Scalar is the scalar type of the coefficients (e.g., \c float, \c double, \c bool, \c int, etc.).
+\li \c RowsAtCompileTime and \c ColsAtCompileTime are the number of rows and columns of the matrix as known at compile-time or \c Dynamic.
+\li \c Options can be \c ColMajor or \c RowMajor, default is \c ColMajor. (see class Matrix for more options)
+
+All combinations are allowed: you can have a matrix with a fixed number of rows and a dynamic number of columns, etc. The following are all valid:
+\code
+Matrix<double, 6, Dynamic>                  // Dynamic number of columns (heap allocation)
+Matrix<double, Dynamic, 2>                  // Dynamic number of rows (heap allocation)
+Matrix<double, Dynamic, Dynamic, RowMajor>  // Fully dynamic, row major (heap allocation)
+Matrix<double, 13, 3>                       // Fully fixed (usually allocated on stack)
+\endcode
+
+In most cases, you can simply use one of the convenience typedefs for \ref matrixtypedefs "matrices" and \ref arraytypedefs "arrays". Some examples:
+<table class="example">
+<tr><th>Matrices</th><th>Arrays</th></tr>
+<tr><td>\code
+Matrix<float,Dynamic,Dynamic>   <=>   MatrixXf
+Matrix<double,Dynamic,1>        <=>   VectorXd
+Matrix<int,1,Dynamic>           <=>   RowVectorXi
+Matrix<float,3,3>               <=>   Matrix3f
+Matrix<float,4,1>               <=>   Vector4f
+\endcode</td><td>\code
+Array<float,Dynamic,Dynamic>    <=>   ArrayXXf
+Array<double,Dynamic,1>         <=>   ArrayXd
+Array<int,1,Dynamic>            <=>   RowArrayXi
+Array<float,3,3>                <=>   Array33f
+Array<float,4,1>                <=>   Array4f
+\endcode</td></tr>
+</table>
+
+Conversion between the matrix and array worlds:
+\code
+Array44f a1, a1;
+Matrix4f m1, m2;
+m1 = a1 * a2;                     // coeffwise product, implicit conversion from array to matrix.
+a1 = m1 * m2;                     // matrix product, implicit conversion from matrix to array.
+a2 = a1 + m1.array();             // mixing array and matrix is forbidden
+m2 = a1.matrix() + m1;            // and explicit conversion is required.
+ArrayWrapper<Matrix4f> m1a(m1);   // m1a is an alias for m1.array(), they share the same coefficients
+MatrixWrapper<Array44f> a1m(a1);
+\endcode
+
+In the rest of this document we will use the following symbols to emphasize the features which are specifics to a given kind of object:
+\li <a name="matrixonly"></a>\matrixworld linear algebra matrix and vector only
+\li <a name="arrayonly"></a>\arrayworld array objects only
+
+\subsection QuickRef_Basics Basic matrix manipulation
+
+<table class="manual">
+<tr><th></th><th>1D objects</th><th>2D objects</th><th>Notes</th></tr>
+<tr><td>Constructors</td>
+<td>\code
+Vector4d  v4;
+Vector2f  v1(x, y);
+Array3i   v2(x, y, z);
+Vector4d  v3(x, y, z, w);
+
+VectorXf  v5; // empty object
+ArrayXf   v6(size);
+\endcode</td><td>\code
+Matrix4f  m1;
+
+
+
+
+MatrixXf  m5; // empty object
+MatrixXf  m6(nb_rows, nb_columns);
+\endcode</td><td class="note">
+By default, the coefficients \n are left uninitialized</td></tr>
+<tr class="alt"><td>Comma initializer</td>
+<td>\code
+Vector3f  v1;     v1 << x, y, z;
+ArrayXf   v2(4);  v2 << 1, 2, 3, 4;
+
+\endcode</td><td>\code
+Matrix3f  m1;   m1 << 1, 2, 3,
+                      4, 5, 6,
+                      7, 8, 9;
+\endcode</td><td></td></tr>
+
+<tr><td>Comma initializer (bis)</td>
+<td colspan="2">
+\include Tutorial_commainit_02.cpp
+</td>
+<td>
+output:
+\verbinclude Tutorial_commainit_02.out
+</td>
+</tr>
+
+<tr class="alt"><td>Runtime info</td>
+<td>\code
+vector.size();
+
+vector.innerStride();
+vector.data();
+\endcode</td><td>\code
+matrix.rows();          matrix.cols();
+matrix.innerSize();     matrix.outerSize();
+matrix.innerStride();   matrix.outerStride();
+matrix.data();
+\endcode</td><td class="note">Inner/Outer* are storage order dependent</td></tr>
+<tr><td>Compile-time info</td>
+<td colspan="2">\code
+ObjectType::Scalar              ObjectType::RowsAtCompileTime
+ObjectType::RealScalar          ObjectType::ColsAtCompileTime
+ObjectType::Index               ObjectType::SizeAtCompileTime
+\endcode</td><td></td></tr>
+<tr class="alt"><td>Resizing</td>
+<td>\code
+vector.resize(size);
+
+
+vector.resizeLike(other_vector);
+vector.conservativeResize(size);
+\endcode</td><td>\code
+matrix.resize(nb_rows, nb_cols);
+matrix.resize(Eigen::NoChange, nb_cols);
+matrix.resize(nb_rows, Eigen::NoChange);
+matrix.resizeLike(other_matrix);
+matrix.conservativeResize(nb_rows, nb_cols);
+\endcode</td><td class="note">no-op if the new sizes match,<br/>otherwise data are lost<br/><br/>resizing with data preservation</td></tr>
+
+<tr><td>Coeff access with \n range checking</td>
+<td>\code
+vector(i)     vector.x()
+vector[i]     vector.y()
+              vector.z()
+              vector.w()
+\endcode</td><td>\code
+matrix(i,j)
+\endcode</td><td class="note">Range checking is disabled if \n NDEBUG or EIGEN_NO_DEBUG is defined</td></tr>
+
+<tr class="alt"><td>Coeff access without \n range checking</td>
+<td>\code
+vector.coeff(i)
+vector.coeffRef(i)
+\endcode</td><td>\code
+matrix.coeff(i,j)
+matrix.coeffRef(i,j)
+\endcode</td><td></td></tr>
+
+<tr><td>Assignment/copy</td>
+<td colspan="2">\code
+object = expression;
+object_of_float = expression_of_double.cast<float>();
+\endcode</td><td class="note">the destination is automatically resized (if possible)</td></tr>
+
+</table>
+
+\subsection QuickRef_PredefMat Predefined Matrices
+
+<table class="manual">
+<tr>
+  <th>Fixed-size matrix or vector</th>
+  <th>Dynamic-size matrix</th>
+  <th>Dynamic-size vector</th>
+</tr>
+<tr style="border-bottom-style: none;">
+  <td>
+\code
+typedef {Matrix3f|Array33f} FixedXD;
+FixedXD x;
+
+x = FixedXD::Zero();
+x = FixedXD::Ones();
+x = FixedXD::Constant(value);
+x = FixedXD::Random();
+x = FixedXD::LinSpaced(size, low, high);
+
+x.setZero();
+x.setOnes();
+x.setConstant(value);
+x.setRandom();
+x.setLinSpaced(size, low, high);
+\endcode
+  </td>
+  <td>
+\code
+typedef {MatrixXf|ArrayXXf} Dynamic2D;
+Dynamic2D x;
+
+x = Dynamic2D::Zero(rows, cols);
+x = Dynamic2D::Ones(rows, cols);
+x = Dynamic2D::Constant(rows, cols, value);
+x = Dynamic2D::Random(rows, cols);
+N/A
+
+x.setZero(rows, cols);
+x.setOnes(rows, cols);
+x.setConstant(rows, cols, value);
+x.setRandom(rows, cols);
+N/A
+\endcode
+  </td>
+  <td>
+\code
+typedef {VectorXf|ArrayXf} Dynamic1D;
+Dynamic1D x;
+
+x = Dynamic1D::Zero(size);
+x = Dynamic1D::Ones(size);
+x = Dynamic1D::Constant(size, value);
+x = Dynamic1D::Random(size);
+x = Dynamic1D::LinSpaced(size, low, high);
+
+x.setZero(size);
+x.setOnes(size);
+x.setConstant(size, value);
+x.setRandom(size);
+x.setLinSpaced(size, low, high);
+\endcode
+  </td>
+</tr>
+
+<tr><td colspan="3">Identity and \link MatrixBase::Unit basis vectors \endlink \matrixworld</td></tr>
+<tr style="border-bottom-style: none;">
+  <td>
+\code
+x = FixedXD::Identity();
+x.setIdentity();
+
+Vector3f::UnitX() // 1 0 0
+Vector3f::UnitY() // 0 1 0
+Vector3f::UnitZ() // 0 0 1
+\endcode
+  </td>
+  <td>
+\code
+x = Dynamic2D::Identity(rows, cols);
+x.setIdentity(rows, cols);
+
+
+
+N/A
+\endcode
+  </td>
+  <td>\code
+N/A
+
+
+VectorXf::Unit(size,i)
+VectorXf::Unit(4,1) == Vector4f(0,1,0,0)
+                    == Vector4f::UnitY()
+\endcode
+  </td>
+</tr>
+</table>
+
+
+
+\subsection QuickRef_Map Mapping external arrays
+
+<table class="manual">
+<tr>
+<td>Contiguous \n memory</td>
+<td>\code
+float data[] = {1,2,3,4};
+Map<Vector3f> v1(data);       // uses v1 as a Vector3f object
+Map<ArrayXf>  v2(data,3);     // uses v2 as a ArrayXf object
+Map<Array22f> m1(data);       // uses m1 as a Array22f object
+Map<MatrixXf> m2(data,2,2);   // uses m2 as a MatrixXf object
+\endcode</td>
+</tr>
+<tr>
+<td>Typical usage \n of strides</td>
+<td>\code
+float data[] = {1,2,3,4,5,6,7,8,9};
+Map<VectorXf,0,InnerStride<2> >  v1(data,3);                      // = [1,3,5]
+Map<VectorXf,0,InnerStride<> >   v2(data,3,InnerStride<>(3));     // = [1,4,7]
+Map<MatrixXf,0,OuterStride<3> >  m2(data,2,3);                    // both lines     |1,4,7|
+Map<MatrixXf,0,OuterStride<> >   m1(data,2,3,OuterStride<>(3));   // are equal to:  |2,5,8|
+\endcode</td>
+</tr>
+</table>
+
+
+<a href="#" class="top">top</a>
+\section QuickRef_ArithmeticOperators Arithmetic Operators
+
+<table class="manual">
+<tr><td>
+add \n subtract</td><td>\code
+mat3 = mat1 + mat2;           mat3 += mat1;
+mat3 = mat1 - mat2;           mat3 -= mat1;\endcode
+</td></tr>
+<tr class="alt"><td>
+scalar product</td><td>\code
+mat3 = mat1 * s1;             mat3 *= s1;           mat3 = s1 * mat1;
+mat3 = mat1 / s1;             mat3 /= s1;\endcode
+</td></tr>
+<tr><td>
+matrix/vector \n products \matrixworld</td><td>\code
+col2 = mat1 * col1;
+row2 = row1 * mat1;           row1 *= mat1;
+mat3 = mat1 * mat2;           mat3 *= mat1; \endcode
+</td></tr>
+<tr class="alt"><td>
+transposition \n adjoint \matrixworld</td><td>\code
+mat1 = mat2.transpose();      mat1.transposeInPlace();
+mat1 = mat2.adjoint();        mat1.adjointInPlace();
+\endcode
+</td></tr>
+<tr><td>
+\link MatrixBase::dot dot \endlink product \n inner product \matrixworld</td><td>\code
+scalar = vec1.dot(vec2);
+scalar = col1.adjoint() * col2;
+scalar = (col1.adjoint() * col2).value();\endcode
+</td></tr>
+<tr class="alt"><td>
+outer product \matrixworld</td><td>\code
+mat = col1 * col2.transpose();\endcode
+</td></tr>
+
+<tr><td>
+\link MatrixBase::norm() norm \endlink \n \link MatrixBase::normalized() normalization \endlink \matrixworld</td><td>\code
+scalar = vec1.norm();         scalar = vec1.squaredNorm()
+vec2 = vec1.normalized();     vec1.normalize(); // inplace \endcode
+</td></tr>
+
+<tr class="alt"><td>
+\link MatrixBase::cross() cross product \endlink \matrixworld</td><td>\code
+#include <Eigen/Geometry>
+vec3 = vec1.cross(vec2);\endcode</td></tr>
+</table>
+
+<a href="#" class="top">top</a>
+\section QuickRef_Coeffwise Coefficient-wise \& Array operators
+
+In addition to the aforementioned operators, Eigen supports numerous coefficient-wise operator and functions.
+Most of them unambiguously makes sense in array-world\arrayworld. The following operators are readily available for arrays,
+or available through .array() for vectors and matrices:
+
+<table class="manual">
+<tr><td>Arithmetic operators</td><td>\code
+array1 * array2     array1 / array2     array1 *= array2    array1 /= array2
+array1 + scalar     array1 - scalar     array1 += scalar    array1 -= scalar
+\endcode</td></tr>
+<tr><td>Comparisons</td><td>\code
+array1 < array2     array1 > array2     array1 < scalar     array1 > scalar
+array1 <= array2    array1 >= array2    array1 <= scalar    array1 >= scalar
+array1 == array2    array1 != array2    array1 == scalar    array1 != scalar
+array1.min(array2)  array1.max(array2)  array1.min(scalar)  array1.max(scalar)
+\endcode</td></tr>
+<tr><td>Trigo, power, and \n misc functions \n and the STL-like variants</td><td>\code
+array1.abs2()
+array1.abs()                  abs(array1)
+array1.sqrt()                 sqrt(array1)
+array1.log()                  log(array1)
+array1.log10()                log10(array1)
+array1.exp()                  exp(array1)
+array1.pow(array2)            pow(array1,array2)
+array1.pow(scalar)            pow(array1,scalar)
+                              pow(scalar,array2)
+array1.square()
+array1.cube()
+array1.inverse()
+
+array1.sin()                  sin(array1)
+array1.cos()                  cos(array1)
+array1.tan()                  tan(array1)
+array1.asin()                 asin(array1)
+array1.acos()                 acos(array1)
+array1.atan()                 atan(array1)
+array1.sinh()                 sinh(array1)
+array1.cosh()                 cosh(array1)
+array1.tanh()                 tanh(array1)
+array1.arg()                  arg(array1)
+
+array1.floor()                floor(array1)
+array1.ceil()                 ceil(array1)
+array1.round()                round(aray1)
+
+array1.isFinite()             isfinite(array1)
+array1.isInf()                isinf(array1)
+array1.isNaN()                isnan(array1)
+\endcode
+</td></tr>
+</table>
+
+
+The following coefficient-wise operators are available for all kind of expressions (matrices, vectors, and arrays), and for both real or complex scalar types:
+
+<table class="manual">
+<tr><th>Eigen's API</th><th>STL-like APIs\arrayworld </th><th>Comments</th></tr>
+<tr><td>\code
+mat1.real()
+mat1.imag()
+mat1.conjugate()
+\endcode
+</td><td>\code
+real(array1)
+imag(array1)
+conj(array1)
+\endcode
+</td><td>
+\code
+ // read-write, no-op for real expressions
+ // read-only for real, read-write for complexes
+ // no-op for real expressions
+\endcode
+</td></tr>
+</table>
+
+Some coefficient-wise operators are readily available for for matrices and vectors through the following cwise* methods:
+<table class="manual">
+<tr><th>Matrix API \matrixworld</th><th>Via Array conversions</th></tr>
+<tr><td>\code
+mat1.cwiseMin(mat2)         mat1.cwiseMin(scalar)
+mat1.cwiseMax(mat2)         mat1.cwiseMax(scalar)
+mat1.cwiseAbs2()
+mat1.cwiseAbs()
+mat1.cwiseSqrt()
+mat1.cwiseInverse()
+mat1.cwiseProduct(mat2)
+mat1.cwiseQuotient(mat2)
+mat1.cwiseEqual(mat2)       mat1.cwiseEqual(scalar)
+mat1.cwiseNotEqual(mat2)
+\endcode
+</td><td>\code
+mat1.array().min(mat2.array())    mat1.array().min(scalar)
+mat1.array().max(mat2.array())    mat1.array().max(scalar)
+mat1.array().abs2()
+mat1.array().abs()
+mat1.array().sqrt()
+mat1.array().inverse()
+mat1.array() * mat2.array()
+mat1.array() / mat2.array()
+mat1.array() == mat2.array()      mat1.array() == scalar
+mat1.array() != mat2.array()
+\endcode</td></tr>
+</table>
+The main difference between the two API is that the one based on cwise* methods returns an expression in the matrix world,
+while the second one (based on .array()) returns an array expression.
+Recall that .array() has no cost, it only changes the available API and interpretation of the data.
+
+It is also very simple to apply any user defined function \c foo using DenseBase::unaryExpr together with <a href="http://en.cppreference.com/w/cpp/utility/functional/ptr_fun">std::ptr_fun</a> (c++03), <a href="http://en.cppreference.com/w/cpp/utility/functional/ref">std::ref</a> (c++11), or <a href="http://en.cppreference.com/w/cpp/language/lambda">lambdas</a> (c++11):
+\code
+mat1.unaryExpr(std::ptr_fun(foo));
+mat1.unaryExpr(std::ref(foo));
+mat1.unaryExpr([](double x) { return foo(x); });
+\endcode
+
+
+<a href="#" class="top">top</a>
+\section QuickRef_Reductions Reductions
+
+Eigen provides several reduction methods such as:
+\link DenseBase::minCoeff() minCoeff() \endlink, \link DenseBase::maxCoeff() maxCoeff() \endlink,
+\link DenseBase::sum() sum() \endlink, \link DenseBase::prod() prod() \endlink,
+\link MatrixBase::trace() trace() \endlink \matrixworld,
+\link MatrixBase::norm() norm() \endlink \matrixworld, \link MatrixBase::squaredNorm() squaredNorm() \endlink \matrixworld,
+\link DenseBase::all() all() \endlink, and \link DenseBase::any() any() \endlink.
+All reduction operations can be done matrix-wise,
+\link DenseBase::colwise() column-wise \endlink or
+\link DenseBase::rowwise() row-wise \endlink. Usage example:
+<table class="manual">
+<tr><td rowspan="3" style="border-right-style:dashed;vertical-align:middle">\code
+      5 3 1
+mat = 2 7 8
+      9 4 6 \endcode
+</td> <td>\code mat.minCoeff(); \endcode</td><td>\code 1 \endcode</td></tr>
+<tr class="alt"><td>\code mat.colwise().minCoeff(); \endcode</td><td>\code 2 3 1 \endcode</td></tr>
+<tr style="vertical-align:middle"><td>\code mat.rowwise().minCoeff(); \endcode</td><td>\code
+1
+2
+4
+\endcode</td></tr>
+</table>
+
+Special versions of \link DenseBase::minCoeff(IndexType*,IndexType*) const minCoeff \endlink and \link DenseBase::maxCoeff(IndexType*,IndexType*) const maxCoeff \endlink:
+\code
+int i, j;
+s = vector.minCoeff(&i);        // s == vector[i]
+s = matrix.maxCoeff(&i, &j);    // s == matrix(i,j)
+\endcode
+Typical use cases of all() and any():
+\code
+if((array1 > 0).all()) ...      // if all coefficients of array1 are greater than 0 ...
+if((array1 < array2).any()) ... // if there exist a pair i,j such that array1(i,j) < array2(i,j) ...
+\endcode
+
+
+<a href="#" class="top">top</a>\section QuickRef_Blocks Sub-matrices
+
+Read-write access to a \link DenseBase::col(Index) column \endlink
+or a \link DenseBase::row(Index) row \endlink of a matrix (or array):
+\code
+mat1.row(i) = mat2.col(j);
+mat1.col(j1).swap(mat1.col(j2));
+\endcode
+
+Read-write access to sub-vectors:
+<table class="manual">
+<tr>
+<th>Default versions</th>
+<th>Optimized versions when the size \n is known at compile time</th></tr>
+<th></th>
+
+<tr><td>\code vec1.head(n)\endcode</td><td>\code vec1.head<n>()\endcode</td><td>the first \c n coeffs </td></tr>
+<tr><td>\code vec1.tail(n)\endcode</td><td>\code vec1.tail<n>()\endcode</td><td>the last \c n coeffs </td></tr>
+<tr><td>\code vec1.segment(pos,n)\endcode</td><td>\code vec1.segment<n>(pos)\endcode</td>
+    <td>the \c n coeffs in the \n range [\c pos : \c pos + \c n - 1]</td></tr>
+<tr class="alt"><td colspan="3">
+
+Read-write access to sub-matrices:</td></tr>
+<tr>
+  <td>\code mat1.block(i,j,rows,cols)\endcode
+      \link DenseBase::block(Index,Index,Index,Index) (more) \endlink</td>
+  <td>\code mat1.block<rows,cols>(i,j)\endcode
+      \link DenseBase::block(Index,Index) (more) \endlink</td>
+  <td>the \c rows x \c cols sub-matrix \n starting from position (\c i,\c j)</td></tr>
+<tr><td>\code
+ mat1.topLeftCorner(rows,cols)
+ mat1.topRightCorner(rows,cols)
+ mat1.bottomLeftCorner(rows,cols)
+ mat1.bottomRightCorner(rows,cols)\endcode
+ <td>\code
+ mat1.topLeftCorner<rows,cols>()
+ mat1.topRightCorner<rows,cols>()
+ mat1.bottomLeftCorner<rows,cols>()
+ mat1.bottomRightCorner<rows,cols>()\endcode
+ <td>the \c rows x \c cols sub-matrix \n taken in one of the four corners</td></tr>
+ <tr><td>\code
+ mat1.topRows(rows)
+ mat1.bottomRows(rows)
+ mat1.leftCols(cols)
+ mat1.rightCols(cols)\endcode
+ <td>\code
+ mat1.topRows<rows>()
+ mat1.bottomRows<rows>()
+ mat1.leftCols<cols>()
+ mat1.rightCols<cols>()\endcode
+ <td>specialized versions of block() \n when the block fit two corners</td></tr>
+</table>
+
+
+
+<a href="#" class="top">top</a>\section QuickRef_Misc Miscellaneous operations
+
+\subsection QuickRef_Reverse Reverse
+Vectors, rows, and/or columns of a matrix can be reversed (see DenseBase::reverse(), DenseBase::reverseInPlace(), VectorwiseOp::reverse()).
+\code
+vec.reverse()           mat.colwise().reverse()   mat.rowwise().reverse()
+vec.reverseInPlace()
+\endcode
+
+\subsection QuickRef_Replicate Replicate
+Vectors, matrices, rows, and/or columns can be replicated in any direction (see DenseBase::replicate(), VectorwiseOp::replicate())
+\code
+vec.replicate(times)                                          vec.replicate<Times>
+mat.replicate(vertical_times, horizontal_times)               mat.replicate<VerticalTimes, HorizontalTimes>()
+mat.colwise().replicate(vertical_times, horizontal_times)     mat.colwise().replicate<VerticalTimes, HorizontalTimes>()
+mat.rowwise().replicate(vertical_times, horizontal_times)     mat.rowwise().replicate<VerticalTimes, HorizontalTimes>()
+\endcode
+
+
+<a href="#" class="top">top</a>\section QuickRef_DiagTriSymm Diagonal, Triangular, and Self-adjoint matrices
+(matrix world \matrixworld)
+
+\subsection QuickRef_Diagonal Diagonal matrices
+
+<table class="example">
+<tr><th>Operation</th><th>Code</th></tr>
+<tr><td>
+view a vector \link MatrixBase::asDiagonal() as a diagonal matrix \endlink \n </td><td>\code
+mat1 = vec1.asDiagonal();\endcode
+</td></tr>
+<tr><td>
+Declare a diagonal matrix</td><td>\code
+DiagonalMatrix<Scalar,SizeAtCompileTime> diag1(size);
+diag1.diagonal() = vector;\endcode
+</td></tr>
+<tr><td>Access the \link MatrixBase::diagonal() diagonal \endlink and \link MatrixBase::diagonal(Index) super/sub diagonals \endlink of a matrix as a vector (read/write)</td>
+ <td>\code
+vec1 = mat1.diagonal();        mat1.diagonal() = vec1;      // main diagonal
+vec1 = mat1.diagonal(+n);      mat1.diagonal(+n) = vec1;    // n-th super diagonal
+vec1 = mat1.diagonal(-n);      mat1.diagonal(-n) = vec1;    // n-th sub diagonal
+vec1 = mat1.diagonal<1>();     mat1.diagonal<1>() = vec1;   // first super diagonal
+vec1 = mat1.diagonal<-2>();    mat1.diagonal<-2>() = vec1;  // second sub diagonal
+\endcode</td>
+</tr>
+
+<tr><td>Optimized products and inverse</td>
+ <td>\code
+mat3  = scalar * diag1 * mat1;
+mat3 += scalar * mat1 * vec1.asDiagonal();
+mat3 = vec1.asDiagonal().inverse() * mat1
+mat3 = mat1 * diag1.inverse()
+\endcode</td>
+</tr>
+
+</table>
+
+\subsection QuickRef_TriangularView Triangular views
+
+TriangularView gives a view on a triangular part of a dense matrix and allows to perform optimized operations on it. The opposite triangular part is never referenced and can be used to store other information.
+
+\note The .triangularView() template member function requires the \c template keyword if it is used on an
+object of a type that depends on a template parameter; see \ref TopicTemplateKeyword for details.
+
+<table class="example">
+<tr><th>Operation</th><th>Code</th></tr>
+<tr><td>
+Reference to a triangular with optional \n
+unit or null diagonal (read/write):
+</td><td>\code
+m.triangularView<Xxx>()
+\endcode \n
+\c Xxx = ::Upper, ::Lower, ::StrictlyUpper, ::StrictlyLower, ::UnitUpper, ::UnitLower
+</td></tr>
+<tr><td>
+Writing to a specific triangular part:\n (only the referenced triangular part is evaluated)
+</td><td>\code
+m1.triangularView<Eigen::Lower>() = m2 + m3 \endcode
+</td></tr>
+<tr><td>
+Conversion to a dense matrix setting the opposite triangular part to zero:
+</td><td>\code
+m2 = m1.triangularView<Eigen::UnitUpper>()\endcode
+</td></tr>
+<tr><td>
+Products:
+</td><td>\code
+m3 += s1 * m1.adjoint().triangularView<Eigen::UnitUpper>() * m2
+m3 -= s1 * m2.conjugate() * m1.adjoint().triangularView<Eigen::Lower>() \endcode
+</td></tr>
+<tr><td>
+Solving linear equations:\n
+\f$ M_2 := L_1^{-1} M_2 \f$ \n
+\f$ M_3 := {L_1^*}^{-1} M_3 \f$ \n
+\f$ M_4 := M_4 U_1^{-1} \f$
+</td><td>\n \code
+L1.triangularView<Eigen::UnitLower>().solveInPlace(M2)
+L1.triangularView<Eigen::Lower>().adjoint().solveInPlace(M3)
+U1.triangularView<Eigen::Upper>().solveInPlace<OnTheRight>(M4)\endcode
+</td></tr>
+</table>
+
+\subsection QuickRef_SelfadjointMatrix Symmetric/selfadjoint views
+
+Just as for triangular matrix, you can reference any triangular part of a square matrix to see it as a selfadjoint
+matrix and perform special and optimized operations. Again the opposite triangular part is never referenced and can be
+used to store other information.
+
+\note The .selfadjointView() template member function requires the \c template keyword if it is used on an
+object of a type that depends on a template parameter; see \ref TopicTemplateKeyword for details.
+
+<table class="example">
+<tr><th>Operation</th><th>Code</th></tr>
+<tr><td>
+Conversion to a dense matrix:
+</td><td>\code
+m2 = m.selfadjointView<Eigen::Lower>();\endcode
+</td></tr>
+<tr><td>
+Product with another general matrix or vector:
+</td><td>\code
+m3  = s1 * m1.conjugate().selfadjointView<Eigen::Upper>() * m3;
+m3 -= s1 * m3.adjoint() * m1.selfadjointView<Eigen::Lower>();\endcode
+</td></tr>
+<tr><td>
+Rank 1 and rank K update: \n
+\f$ upper(M_1) \mathrel{{+}{=}} s_1 M_2 M_2^* \f$ \n
+\f$ lower(M_1) \mathbin{{-}{=}} M_2^* M_2 \f$
+</td><td>\n \code
+M1.selfadjointView<Eigen::Upper>().rankUpdate(M2,s1);
+M1.selfadjointView<Eigen::Lower>().rankUpdate(M2.adjoint(),-1); \endcode
+</td></tr>
+<tr><td>
+Rank 2 update: (\f$ M \mathrel{{+}{=}} s u v^* + s v u^* \f$)
+</td><td>\code
+M.selfadjointView<Eigen::Upper>().rankUpdate(u,v,s);
+\endcode
+</td></tr>
+<tr><td>
+Solving linear equations:\n(\f$ M_2 := M_1^{-1} M_2 \f$)
+</td><td>\code
+// via a standard Cholesky factorization
+m2 = m1.selfadjointView<Eigen::Upper>().llt().solve(m2);
+// via a Cholesky factorization with pivoting
+m2 = m1.selfadjointView<Eigen::Lower>().ldlt().solve(m2);
+\endcode
+</td></tr>
+</table>
+
+*/
+
+/*
+<table class="tutorial_code">
+<tr><td>
+\link MatrixBase::asDiagonal() make a diagonal matrix \endlink \n from a vector </td><td>\code
+mat1 = vec1.asDiagonal();\endcode
+</td></tr>
+<tr><td>
+Declare a diagonal matrix</td><td>\code
+DiagonalMatrix<Scalar,SizeAtCompileTime> diag1(size);
+diag1.diagonal() = vector;\endcode
+</td></tr>
+<tr><td>Access \link MatrixBase::diagonal() the diagonal and super/sub diagonals of a matrix \endlink as a vector (read/write)</td>
+ <td>\code
+vec1 = mat1.diagonal();            mat1.diagonal() = vec1;      // main diagonal
+vec1 = mat1.diagonal(+n);          mat1.diagonal(+n) = vec1;    // n-th super diagonal
+vec1 = mat1.diagonal(-n);          mat1.diagonal(-n) = vec1;    // n-th sub diagonal
+vec1 = mat1.diagonal<1>();         mat1.diagonal<1>() = vec1;   // first super diagonal
+vec1 = mat1.diagonal<-2>();        mat1.diagonal<-2>() = vec1;  // second sub diagonal
+\endcode</td>
+</tr>
+
+<tr><td>View on a triangular part of a matrix (read/write)</td>
+ <td>\code
+mat2 = mat1.triangularView<Xxx>();
+// Xxx = Upper, Lower, StrictlyUpper, StrictlyLower, UnitUpper, UnitLower
+mat1.triangularView<Upper>() = mat2 + mat3; // only the upper part is evaluated and referenced
+\endcode</td></tr>
+
+<tr><td>View a triangular part as a symmetric/self-adjoint matrix (read/write)</td>
+ <td>\code
+mat2 = mat1.selfadjointView<Xxx>();     // Xxx = Upper or Lower
+mat1.selfadjointView<Upper>() = mat2 + mat2.adjoint();  // evaluated and write to the upper triangular part only
+\endcode</td></tr>
+
+</table>
+
+Optimized products:
+\code
+mat3 += scalar * vec1.asDiagonal() * mat1
+mat3 += scalar * mat1 * vec1.asDiagonal()
+mat3.noalias() += scalar * mat1.triangularView<Xxx>() * mat2
+mat3.noalias() += scalar * mat2 * mat1.triangularView<Xxx>()
+mat3.noalias() += scalar * mat1.selfadjointView<Upper or Lower>() * mat2
+mat3.noalias() += scalar * mat2 * mat1.selfadjointView<Upper or Lower>()
+mat1.selfadjointView<Upper or Lower>().rankUpdate(mat2);
+mat1.selfadjointView<Upper or Lower>().rankUpdate(mat2.adjoint(), scalar);
+\endcode
+
+Inverse products: (all are optimized)
+\code
+mat3 = vec1.asDiagonal().inverse() * mat1
+mat3 = mat1 * diag1.inverse()
+mat1.triangularView<Xxx>().solveInPlace(mat2)
+mat1.triangularView<Xxx>().solveInPlace<OnTheRight>(mat2)
+mat2 = mat1.selfadjointView<Upper or Lower>().llt().solve(mat2)
+\endcode
+
+*/
+}

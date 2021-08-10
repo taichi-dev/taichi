@@ -1,0 +1,162 @@
+namespace Eigen {
+
+/** \eigenManualPage TutorialAdvancedInitialization Advanced initialization
+
+This page discusses several advanced methods for initializing matrices. It gives more details on the
+comma-initializer, which was introduced before. It also explains how to get special matrices such as the
+identity matrix and the zero matrix.
+
+\eigenAutoToc
+
+\section TutorialAdvancedInitializationCommaInitializer The comma initializer
+
+Eigen offers a comma initializer syntax which allows the user to easily set all the coefficients of a matrix,
+vector or array. Simply list the coefficients, starting at the top-left corner and moving from left to right
+and from the top to the bottom. The size of the object needs to be specified beforehand. If you list too few
+or too many coefficients, Eigen will complain.
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_commainit_01.cpp
+</td>
+<td>
+\verbinclude Tutorial_commainit_01.out
+</td></tr></table>
+
+Moreover, the elements of the initialization list may themselves be vectors or matrices. A common use is
+to join vectors or matrices together. For example, here is how to join two row vectors together. Remember
+that you have to set the size before you can use the comma initializer.
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_AdvancedInitialization_Join.cpp
+</td>
+<td>
+\verbinclude Tutorial_AdvancedInitialization_Join.out
+</td></tr></table>
+
+We can use the same technique to initialize matrices with a block structure.
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_AdvancedInitialization_Block.cpp
+</td>
+<td>
+\verbinclude Tutorial_AdvancedInitialization_Block.out
+</td></tr></table>
+
+The comma initializer can also be used to fill block expressions such as <tt>m.row(i)</tt>. Here is a more
+complicated way to get the same result as in the first example above:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_commainit_01b.cpp
+</td>
+<td>
+\verbinclude Tutorial_commainit_01b.out
+</td></tr></table>
+
+
+\section TutorialAdvancedInitializationSpecialMatrices Special matrices and arrays
+
+The Matrix and Array classes have static methods like \link DenseBase::Zero() Zero()\endlink, which can be
+used to initialize all coefficients to zero. There are three variants. The first variant takes no arguments
+and can only be used for fixed-size objects. If you want to initialize a dynamic-size object to zero, you need
+to specify the size. Thus, the second variant requires one argument and can be used for one-dimensional
+dynamic-size objects, while the third variant requires two arguments and can be used for two-dimensional
+objects. All three variants are illustrated in the following example:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_AdvancedInitialization_Zero.cpp
+</td>
+<td>
+\verbinclude Tutorial_AdvancedInitialization_Zero.out
+</td></tr></table>
+
+Similarly, the static method \link DenseBase::Constant() Constant\endlink(value) sets all coefficients to \c value.
+If the size of the object needs to be specified, the additional arguments go before the \c value
+argument, as in <tt>MatrixXd::Constant(rows, cols, value)</tt>. The method \link DenseBase::Random() Random()
+\endlink fills the matrix or array with random coefficients. The identity matrix can be obtained by calling
+\link MatrixBase::Identity() Identity()\endlink; this method is only available for Matrix, not for Array,
+because "identity matrix" is a linear algebra concept.  The method
+\link DenseBase::LinSpaced LinSpaced\endlink(size, low, high) is only available for vectors and
+one-dimensional arrays; it yields a vector of the specified size whose coefficients are equally spaced between
+\c low and \c high. The method \c LinSpaced() is illustrated in the following example, which prints a table
+with angles in degrees, the corresponding angle in radians, and their sine and cosine.
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_AdvancedInitialization_LinSpaced.cpp
+</td>
+<td>
+\verbinclude Tutorial_AdvancedInitialization_LinSpaced.out
+</td></tr></table>
+
+This example shows that objects like the ones returned by LinSpaced() can be assigned to variables (and
+expressions). Eigen defines utility functions like \link DenseBase::setZero() setZero()\endlink, 
+\link MatrixBase::setIdentity() \endlink and \link DenseBase::setLinSpaced() \endlink to do this
+conveniently. The following example contrasts three ways to construct the matrix
+\f$ J = \bigl[ \begin{smallmatrix} O & I \\ I & O \end{smallmatrix} \bigr] \f$: using static methods and
+assignment, using static methods and the comma-initializer, or using the setXxx() methods.
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_AdvancedInitialization_ThreeWays.cpp
+</td>
+<td>
+\verbinclude Tutorial_AdvancedInitialization_ThreeWays.out
+</td></tr></table>
+
+A summary of all pre-defined matrix, vector and array objects can be found in the \ref QuickRefPage.
+
+
+\section TutorialAdvancedInitializationTemporaryObjects Usage as temporary objects
+
+As shown above, static methods as Zero() and Constant() can be used to initialize variables at the time of
+declaration or at the right-hand side of an assignment operator. You can think of these methods as returning a
+matrix or array; in fact, they return so-called \ref TopicEigenExpressionTemplates "expression objects" which
+evaluate to a matrix or array when needed, so that this syntax does not incur any overhead.
+
+These expressions can also be used as a temporary object. The second example in
+the \ref GettingStarted guide, which we reproduce here, already illustrates this.
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include QuickStart_example2_dynamic.cpp
+</td>
+<td>
+\verbinclude QuickStart_example2_dynamic.out
+</td></tr></table>
+
+The expression <tt>m + MatrixXf::Constant(3,3,1.2)</tt> constructs the 3-by-3 matrix expression with all its coefficients
+equal to 1.2 plus the corresponding coefficient of \a m.
+
+The comma-initializer, too, can also be used to construct temporary objects. The following example constructs a random
+matrix of size 2-by-3, and then multiplies this matrix on the left with 
+\f$ \bigl[ \begin{smallmatrix} 0 & 1 \\ 1 & 0 \end{smallmatrix} \bigr] \f$.
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_AdvancedInitialization_CommaTemporary.cpp
+</td>
+<td>
+\verbinclude Tutorial_AdvancedInitialization_CommaTemporary.out
+</td></tr></table>
+
+The \link CommaInitializer::finished() finished() \endlink method is necessary here to get the actual matrix
+object once the comma initialization of our temporary submatrix is done.
+
+
+*/
+
+}

@@ -1,0 +1,229 @@
+namespace Eigen {
+/** \eigenManualPage TopicSparseSystems Solving Sparse Linear Systems
+In Eigen, there are several methods available to solve linear systems when the coefficient matrix is sparse. Because of the special representation of this class of matrices, special care should be taken in order to get a good performance. See \ref TutorialSparse for a detailed introduction about sparse matrices in Eigen. This page lists the sparse solvers available in Eigen. The main steps that are common to all these linear solvers are introduced as well. Depending on the properties of the matrix, the desired accuracy, the end-user is able to tune those steps in order to improve the performance of its code. Note that it is not required to know deeply what's hiding behind these steps: the last section presents a benchmark routine that can be easily used to get an insight on the performance of all the available solvers. 
+
+\eigenAutoToc
+
+\section TutorialSparseSolverList List of sparse solvers
+
+%Eigen currently provides a wide set of built-in solvers, as well as wrappers to external solver libraries.
+They are summarized in the following tables:
+
+\subsection TutorialSparseSolverList_Direct Built-in direct solvers
+
+<table class="manual">
+<tr><th>Class</th><th>Solver kind</th><th>Matrix kind</th><th>Features related to performance</th>
+    <th>License</th><th class="width20em"><p>Notes</p></th></tr>
+
+<tr><td>SimplicialLLT \n <tt>\#include<Eigen/\link SparseCholesky_Module SparseCholesky\endlink></tt></td><td>Direct LLt factorization</td><td>SPD</td><td>Fill-in reducing</td>
+    <td>LGPL</td>
+    <td>SimplicialLDLT is often preferable</td></tr>
+
+<tr><td>SimplicialLDLT \n <tt>\#include<Eigen/\link SparseCholesky_Module SparseCholesky\endlink></tt></td><td>Direct LDLt factorization</td><td>SPD</td><td>Fill-in reducing</td>
+    <td>LGPL</td>
+    <td>Recommended for very sparse and not too large problems (e.g., 2D Poisson eq.)</td></tr>
+
+<tr><td>SparseLU \n <tt>\#include<Eigen/\link SparseLU_Module SparseLU\endlink></tt></td> <td>LU factorization </td>
+    <td>Square </td><td>Fill-in reducing, Leverage fast dense algebra</td>
+    <td>MPL2</td>
+    <td>optimized for small and large problems with irregular patterns </td></tr>
+
+<tr><td>SparseQR \n <tt>\#include<Eigen/\link SparseQR_Module SparseQR\endlink></tt></td> <td> QR factorization</td>
+    <td>Any, rectangular</td><td> Fill-in reducing</td>
+    <td>MPL2</td>
+    <td>recommended for least-square problems, has a basic rank-revealing feature</td></tr>
+ </table>
+
+\subsection TutorialSparseSolverList_Iterative Built-in iterative solvers
+
+<table class="manual">
+<tr><th>Class</th><th>Solver kind</th><th>Matrix kind</th><th>Supported preconditioners, [default]</th>
+    <th>License</th><th class="width20em"><p>Notes</p></th></tr>
+
+<tr><td>ConjugateGradient \n <tt>\#include<Eigen/\link IterativeLinearSolvers_Module IterativeLinearSolvers\endlink></tt></td> <td>Classic iterative CG</td><td>SPD</td>
+    <td>IdentityPreconditioner, [DiagonalPreconditioner], IncompleteCholesky</td>
+    <td>MPL2</td>
+    <td>Recommended for large symmetric problems (e.g., 3D Poisson eq.)</td></tr>
+
+<tr><td>LeastSquaresConjugateGradient \n <tt>\#include<Eigen/\link IterativeLinearSolvers_Module IterativeLinearSolvers\endlink></tt></td><td>CG for rectangular least-square problem</td><td>Rectangular</td>
+    <td>IdentityPreconditioner, [LeastSquareDiagonalPreconditioner]</td>
+    <td>MPL2</td>
+    <td>Solve for min |A'Ax-b|^2 without forming A'A</td></tr>
+
+<tr><td>BiCGSTAB \n <tt>\#include<Eigen/\link IterativeLinearSolvers_Module IterativeLinearSolvers\endlink></tt></td><td>Iterative stabilized bi-conjugate gradient</td><td>Square</td>
+    <td>IdentityPreconditioner, [DiagonalPreconditioner], IncompleteLUT</td>
+    <td>MPL2</td>
+    <td>To speedup the convergence, try it with the \ref IncompleteLUT preconditioner.</td></tr>
+</table>
+
+\subsection TutorialSparseSolverList_Wrapper Wrappers to external solvers
+
+<table class="manual">
+<tr><th>Class</th><th>Module</th><th>Solver kind</th><th>Matrix kind</th><th>Features related to performance</th>
+    <th>Dependencies,License</th><th class="width20em"><p>Notes</p></th></tr>
+<tr><td>PastixLLT \n PastixLDLT \n PastixLU</td><td>\link PaStiXSupport_Module PaStiXSupport \endlink</td><td>Direct LLt, LDLt, LU factorizations</td><td>SPD \n SPD \n Square</td><td>Fill-in reducing, Leverage fast dense algebra, Multithreading</td>
+    <td>Requires the <a href="http://pastix.gforge.inria.fr">PaStiX</a> package, \b CeCILL-C </td>
+    <td>optimized for tough problems and symmetric patterns</td></tr>
+<tr><td>CholmodSupernodalLLT</td><td>\link CholmodSupport_Module CholmodSupport \endlink</td><td>Direct LLt factorization</td><td>SPD</td><td>Fill-in reducing, Leverage fast dense algebra</td>
+    <td>Requires the <a href="http://www.suitesparse.com">SuiteSparse</a> package, \b GPL </td>
+    <td></td></tr>
+<tr><td>UmfPackLU</td><td>\link UmfPackSupport_Module UmfPackSupport \endlink</td><td>Direct LU factorization</td><td>Square</td><td>Fill-in reducing, Leverage fast dense algebra</td>
+    <td>Requires the <a href="http://www.suitesparse.com">SuiteSparse</a> package, \b GPL </td>
+    <td></td></tr>
+<tr><td>SuperLU</td><td>\link SuperLUSupport_Module SuperLUSupport \endlink</td><td>Direct LU factorization</td><td>Square</td><td>Fill-in reducing, Leverage fast dense algebra</td>
+    <td>Requires the <a href="http://crd-legacy.lbl.gov/~xiaoye/SuperLU/">SuperLU</a> library, (BSD-like)</td>
+    <td></td></tr>
+<tr><td>SPQR</td><td>\link SPQRSupport_Module SPQRSupport \endlink  </td> <td> QR factorization </td> 
+    <td> Any, rectangular</td><td>fill-in reducing, multithreaded, fast dense algebra</td>
+    <td> requires the <a href="http://www.suitesparse.com">SuiteSparse</a> package, \b GPL </td><td>recommended for linear least-squares problems, has a rank-revealing feature</tr>
+<tr><td>PardisoLLT \n PardisoLDLT \n PardisoLU</td><td>\link PardisoSupport_Module PardisoSupport \endlink</td><td>Direct LLt, LDLt, LU factorizations</td><td>SPD \n SPD \n Square</td><td>Fill-in reducing, Leverage fast dense algebra, Multithreading</td>
+    <td>Requires the <a href="http://eigen.tuxfamily.org/Counter/redirect_to_mkl.php">Intel MKL</a> package, \b Proprietary </td>
+    <td>optimized for tough problems patterns, see also \link TopicUsingIntelMKL using MKL with Eigen \endlink</td></tr>
+</table>
+
+Here \c SPD means symmetric positive definite.
+
+\section TutorialSparseSolverConcept Sparse solver concept
+
+All these solvers follow the same general concept.
+Here is a typical and general example:
+\code
+#include <Eigen/RequiredModuleName>
+// ...
+SparseMatrix<double> A;
+// fill A
+VectorXd b, x;
+// fill b
+// solve Ax = b
+SolverClassName<SparseMatrix<double> > solver;
+solver.compute(A);
+if(solver.info()!=Success) {
+  // decomposition failed
+  return;
+}
+x = solver.solve(b);
+if(solver.info()!=Success) {
+  // solving failed
+  return;
+}
+// solve for another right hand side:
+x1 = solver.solve(b1);
+\endcode
+
+For \c SPD solvers, a second optional template argument allows to specify which triangular part have to be used, e.g.:
+
+\code
+#include <Eigen/IterativeLinearSolvers>
+
+ConjugateGradient<SparseMatrix<double>, Eigen::Upper> solver;
+x = solver.compute(A).solve(b);
+\endcode
+In the above example, only the upper triangular part of the input matrix A is considered for solving. The opposite triangle might either be empty or contain arbitrary values.
+
+In the case where multiple problems with the same sparsity pattern have to be solved, then the "compute" step can be decomposed as follow:
+\code
+SolverClassName<SparseMatrix<double> > solver;
+solver.analyzePattern(A);   // for this step the numerical values of A are not used
+solver.factorize(A);
+x1 = solver.solve(b1);
+x2 = solver.solve(b2);
+...
+A = ...;                    // modify the values of the nonzeros of A, the nonzeros pattern must stay unchanged
+solver.factorize(A);
+x1 = solver.solve(b1);
+x2 = solver.solve(b2);
+...
+\endcode
+The compute() method is equivalent to calling both analyzePattern() and factorize().
+
+Each solver provides some specific features, such as determinant, access to the factors, controls of the iterations, and so on.
+More details are available in the documentations of the respective classes.
+
+Finally, most of the iterative solvers, can also be used in a \b matrix-free context, see the following \link MatrixfreeSolverExample example \endlink.
+
+\section TheSparseCompute The Compute Step
+In the compute() function, the matrix is generally factorized: LLT for self-adjoint matrices, LDLT for general hermitian matrices, LU for non hermitian matrices and QR for rectangular matrices. These are the results of using direct solvers. For this class of solvers precisely, the compute step is further subdivided into analyzePattern() and factorize(). 
+
+The goal of analyzePattern() is to reorder the nonzero elements of the matrix, such that the factorization step creates less fill-in. This step exploits only the structure of the matrix. Hence, the results of this step can be used for other linear systems where the matrix has the same structure. Note however that sometimes, some external solvers (like SuperLU) require that the values of the matrix are set in this step, for instance to equilibrate the rows and columns of the matrix. In this situation, the results of this step should not be used with other matrices.
+
+Eigen provides a limited set of methods to reorder the matrix in this step, either built-in (COLAMD, AMD) or external (METIS). These methods are set in template parameter list of the solver :
+\code
+DirectSolverClassName<SparseMatrix<double>, OrderingMethod<IndexType> > solver;
+\endcode 
+
+See the \link OrderingMethods_Module OrderingMethods module \endlink for the list of available methods and the associated options. 
+
+In factorize(), the factors of the coefficient matrix are computed. This step should be called each time the values of the matrix change. However, the structural pattern of the matrix should not change between multiple calls. 
+
+For iterative solvers, the compute step is used to eventually setup a preconditioner. For instance, with the ILUT preconditioner, the incomplete factors L and U are computed in this step. Remember that, basically, the goal of the preconditioner is to speedup the convergence of an iterative method by solving a modified linear system where the coefficient matrix has more clustered eigenvalues. For real problems, an iterative solver should always be used with a preconditioner. In Eigen, a preconditioner is  selected by simply adding it as a template parameter to the iterative solver object. 
+\code
+IterativeSolverClassName<SparseMatrix<double>, PreconditionerName<SparseMatrix<double> > solver; 
+\endcode
+The member function preconditioner() returns a read-write reference to the preconditioner 
+ to directly interact with it. See the \link IterativeLinearSolvers_Module Iterative solvers module \endlink and the documentation of each class for the list of available methods.
+
+\section TheSparseSolve The Solve step
+The solve() function computes the solution of the linear systems with one or many right hand sides.
+\code
+X = solver.solve(B);
+\endcode 
+Here, B  can be a vector or a matrix where the columns form the different right hand sides. The solve() function can be called several times as well, for instance when all the right hand sides are not available at once. 
+\code
+x1 = solver.solve(b1);
+// Get the second right hand side b2
+x2 = solver.solve(b2); 
+//  ...
+\endcode
+For direct methods, the solution are computed at the machine precision. Sometimes, the solution need not be too accurate. In this case, the iterative methods are more suitable and the desired accuracy can be set before the solve step using \b setTolerance(). For all the available functions, please, refer to the documentation of the \link IterativeLinearSolvers_Module Iterative solvers module \endlink. 
+
+\section BenchmarkRoutine
+Most of the time, all you need is to know how much time it will take to solve your system, and hopefully, what is the most suitable solver. In Eigen, we provide a benchmark routine that can be used for this purpose. It is very easy to use. In the build directory, navigate to bench/spbench and compile the routine by typing \b make \e spbenchsolver. Run it with --help option to get the list of all available options. Basically, the matrices to test should be in <a href="http://math.nist.gov/MatrixMarket/formats.html">MatrixMarket Coordinate format</a>, and the routine returns the statistics from all available solvers in Eigen.
+
+To export your matrices and right-hand-side vectors in the matrix-market format, you can the the unsupported SparseExtra module:
+\code
+#include <unsupported/Eigen/SparseExtra>
+...
+Eigen::saveMarket(A, "filename.mtx");
+Eigen::saveMarket(A, "filename_SPD.mtx", Eigen::Symmetric); // if A is symmetric-positive-definite
+Eigen::saveMarketVector(B, "filename_b.mtx");
+\endcode
+
+The following table gives an example of XML statistics from several Eigen built-in and external solvers. 
+<TABLE border="1">
+ <TR><TH>Matrix <TH> N <TH> NNZ <TH>  <TH > UMFPACK <TH > SUPERLU <TH > PASTIX LU <TH >BiCGSTAB <TH > BiCGSTAB+ILUT <TH >GMRES+ILUT<TH > LDLT <TH> CHOLMOD LDLT <TH > PASTIX LDLT <TH > LLT <TH > CHOLMOD SP LLT <TH > CHOLMOD LLT <TH > PASTIX LLT <TH> CG</TR>
+<TR><TH rowspan="4">vector_graphics <TD rowspan="4"> 12855 <TD rowspan="4"> 72069 <TH>Compute Time <TD>0.0254549<TD>0.0215677<TD>0.0701827<TD>0.000153388<TD>0.0140107<TD>0.0153709<TD>0.0101601<TD style="background-color:red">0.00930502<TD>0.0649689
+<TR><TH>Solve Time <TD>0.00337835<TD>0.000951826<TD>0.00484373<TD>0.0374886<TD>0.0046445<TD>0.00847754<TD>0.000541813<TD style="background-color:red">0.000293696<TD>0.00485376
+<TR><TH>Total Time <TD>0.0288333<TD>0.0225195<TD>0.0750265<TD>0.037642<TD>0.0186552<TD>0.0238484<TD>0.0107019<TD style="background-color:red">0.00959871<TD>0.0698227
+<TR><TH>Error(Iter) <TD> 1.299e-16 <TD> 2.04207e-16 <TD> 4.83393e-15 <TD> 3.94856e-11 (80)  <TD> 1.03861e-12 (3)  <TD> 5.81088e-14 (6)  <TD> 1.97578e-16 <TD> 1.83927e-16 <TD> 4.24115e-15
+<TR><TH rowspan="4">poisson_SPD <TD rowspan="4"> 19788 <TD rowspan="4"> 308232 <TH>Compute Time <TD>0.425026<TD>1.82378<TD>0.617367<TD>0.000478921<TD>1.34001<TD>1.33471<TD>0.796419<TD>0.857573<TD>0.473007<TD>0.814826<TD style="background-color:red">0.184719<TD>0.861555<TD>0.470559<TD>0.000458188
+<TR><TH>Solve Time <TD>0.0280053<TD>0.0194402<TD>0.0268747<TD>0.249437<TD>0.0548444<TD>0.0926991<TD>0.00850204<TD>0.0053171<TD>0.0258932<TD>0.00874603<TD style="background-color:red">0.00578155<TD>0.00530361<TD>0.0248942<TD>0.239093
+<TR><TH>Total Time <TD>0.453031<TD>1.84322<TD>0.644241<TD>0.249916<TD>1.39486<TD>1.42741<TD>0.804921<TD>0.862891<TD>0.4989<TD>0.823572<TD style="background-color:red">0.190501<TD>0.866859<TD>0.495453<TD>0.239551
+<TR><TH>Error(Iter) <TD> 4.67146e-16 <TD> 1.068e-15 <TD> 1.3397e-15 <TD> 6.29233e-11 (201)  <TD> 3.68527e-11 (6)  <TD> 3.3168e-15 (16)  <TD> 1.86376e-15 <TD> 1.31518e-16 <TD> 1.42593e-15 <TD> 3.45361e-15 <TD> 3.14575e-16 <TD> 2.21723e-15 <TD> 7.21058e-16 <TD> 9.06435e-12 (261) 
+<TR><TH rowspan="4">sherman2 <TD rowspan="4"> 1080 <TD rowspan="4"> 23094 <TH>Compute Time <TD style="background-color:red">0.00631754<TD>0.015052<TD>0.0247514 <TD> -<TD>0.0214425<TD>0.0217988
+<TR><TH>Solve Time <TD style="background-color:red">0.000478424<TD>0.000337998<TD>0.0010291 <TD> -<TD>0.00243152<TD>0.00246152
+<TR><TH>Total Time <TD style="background-color:red">0.00679597<TD>0.01539<TD>0.0257805 <TD> -<TD>0.023874<TD>0.0242603
+<TR><TH>Error(Iter) <TD> 1.83099e-15 <TD> 8.19351e-15 <TD> 2.625e-14 <TD> 1.3678e+69 (1080)  <TD> 4.1911e-12 (7)  <TD> 5.0299e-13 (12) 
+<TR><TH rowspan="4">bcsstk01_SPD <TD rowspan="4"> 48 <TD rowspan="4"> 400 <TH>Compute Time <TD>0.000169079<TD>0.00010789<TD>0.000572538<TD>1.425e-06<TD>9.1612e-05<TD>8.3985e-05<TD style="background-color:red">5.6489e-05<TD>7.0913e-05<TD>0.000468251<TD>5.7389e-05<TD>8.0212e-05<TD>5.8394e-05<TD>0.000463017<TD>1.333e-06
+<TR><TH>Solve Time <TD>1.2288e-05<TD>1.1124e-05<TD>0.000286387<TD>8.5896e-05<TD>1.6381e-05<TD>1.6984e-05<TD style="background-color:red">3.095e-06<TD>4.115e-06<TD>0.000325438<TD>3.504e-06<TD>7.369e-06<TD>3.454e-06<TD>0.000294095<TD>6.0516e-05
+<TR><TH>Total Time <TD>0.000181367<TD>0.000119014<TD>0.000858925<TD>8.7321e-05<TD>0.000107993<TD>0.000100969<TD style="background-color:red">5.9584e-05<TD>7.5028e-05<TD>0.000793689<TD>6.0893e-05<TD>8.7581e-05<TD>6.1848e-05<TD>0.000757112<TD>6.1849e-05
+<TR><TH>Error(Iter) <TD> 1.03474e-16 <TD> 2.23046e-16 <TD> 2.01273e-16 <TD> 4.87455e-07 (48)  <TD> 1.03553e-16 (2)  <TD> 3.55965e-16 (2)  <TD> 2.48189e-16 <TD> 1.88808e-16 <TD> 1.97976e-16 <TD> 2.37248e-16 <TD> 1.82701e-16 <TD> 2.71474e-16 <TD> 2.11322e-16 <TD> 3.547e-09 (48) 
+<TR><TH rowspan="4">sherman1 <TD rowspan="4"> 1000 <TD rowspan="4"> 3750 <TH>Compute Time <TD>0.00228805<TD>0.00209231<TD>0.00528268<TD>9.846e-06<TD>0.00163522<TD>0.00162155<TD>0.000789259<TD style="background-color:red">0.000804495<TD>0.00438269
+<TR><TH>Solve Time <TD>0.000213788<TD>9.7983e-05<TD>0.000938831<TD>0.00629835<TD>0.000361764<TD>0.00078794<TD>4.3989e-05<TD style="background-color:red">2.5331e-05<TD>0.000917166
+<TR><TH>Total Time <TD>0.00250184<TD>0.00219029<TD>0.00622151<TD>0.0063082<TD>0.00199698<TD>0.00240949<TD>0.000833248<TD style="background-color:red">0.000829826<TD>0.00529986
+<TR><TH>Error(Iter) <TD> 1.16839e-16 <TD> 2.25968e-16 <TD> 2.59116e-16 <TD> 3.76779e-11 (248)  <TD> 4.13343e-11 (4)  <TD> 2.22347e-14 (10)  <TD> 2.05861e-16 <TD> 1.83555e-16 <TD> 1.02917e-15
+<TR><TH rowspan="4">young1c <TD rowspan="4"> 841 <TD rowspan="4"> 4089 <TH>Compute Time <TD>0.00235843<TD style="background-color:red">0.00217228<TD>0.00568075<TD>1.2735e-05<TD>0.00264866<TD>0.00258236
+<TR><TH>Solve Time <TD>0.000329599<TD style="background-color:red">0.000168634<TD>0.00080118<TD>0.0534738<TD>0.00187193<TD>0.00450211
+<TR><TH>Total Time <TD>0.00268803<TD style="background-color:red">0.00234091<TD>0.00648193<TD>0.0534865<TD>0.00452059<TD>0.00708447
+<TR><TH>Error(Iter) <TD> 1.27029e-16 <TD> 2.81321e-16 <TD> 5.0492e-15 <TD> 8.0507e-11 (706)  <TD> 3.00447e-12 (8)  <TD> 1.46532e-12 (16) 
+<TR><TH rowspan="4">mhd1280b <TD rowspan="4"> 1280 <TD rowspan="4"> 22778 <TH>Compute Time <TD>0.00234898<TD>0.00207079<TD>0.00570918<TD>2.5976e-05<TD>0.00302563<TD>0.00298036<TD>0.00144525<TD style="background-color:red">0.000919922<TD>0.00426444
+<TR><TH>Solve Time <TD>0.00103392<TD>0.000211911<TD>0.00105<TD>0.0110432<TD>0.000628287<TD>0.00392089<TD>0.000138303<TD style="background-color:red">6.2446e-05<TD>0.00097564
+<TR><TH>Total Time <TD>0.0033829<TD>0.0022827<TD>0.00675918<TD>0.0110692<TD>0.00365392<TD>0.00690124<TD>0.00158355<TD style="background-color:red">0.000982368<TD>0.00524008
+<TR><TH>Error(Iter) <TD> 1.32953e-16 <TD> 3.08646e-16 <TD> 6.734e-16 <TD> 8.83132e-11 (40)  <TD> 1.51153e-16 (1)  <TD> 6.08556e-16 (8)  <TD> 1.89264e-16 <TD> 1.97477e-16 <TD> 6.68126e-09
+<TR><TH rowspan="4">crashbasis <TD rowspan="4"> 160000 <TD rowspan="4"> 1750416 <TH>Compute Time <TD>3.2019<TD>5.7892<TD>15.7573<TD style="background-color:red">0.00383515<TD>3.1006<TD>3.09921
+<TR><TH>Solve Time <TD>0.261915<TD>0.106225<TD>0.402141<TD style="background-color:red">1.49089<TD>0.24888<TD>0.443673
+<TR><TH>Total Time <TD>3.46381<TD>5.89542<TD>16.1594<TD style="background-color:red">1.49473<TD>3.34948<TD>3.54288
+<TR><TH>Error(Iter) <TD> 1.76348e-16 <TD> 4.58395e-16 <TD> 1.67982e-14 <TD> 8.64144e-11 (61)  <TD> 8.5996e-12 (2)  <TD> 6.04042e-14 (5) 
+
+</TABLE>
+*/
+}

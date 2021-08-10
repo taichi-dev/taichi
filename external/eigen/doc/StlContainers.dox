@@ -1,0 +1,62 @@
+namespace Eigen {
+
+/** \eigenManualPage TopicStlContainers Using STL Containers with Eigen
+
+\eigenAutoToc
+
+\section StlContainers_summary Executive summary
+
+Using STL containers on \ref TopicFixedSizeVectorizable "fixed-size vectorizable Eigen types", or classes having members of such types, requires taking the following two steps:
+
+\li A 16-byte-aligned allocator must be used. Eigen does provide one ready for use: aligned_allocator.
+\li If you want to use the std::vector container, you need to \#include <Eigen/StdVector>.
+
+These issues arise only with \ref TopicFixedSizeVectorizable "fixed-size vectorizable Eigen types" and \ref TopicStructHavingEigenMembers "structures having such Eigen objects as member". For other Eigen types, such as Vector3f or MatrixXd, no special care is needed when using STL containers.
+
+\section allocator Using an aligned allocator
+
+STL containers take an optional template parameter, the allocator type. When using STL containers on \ref TopicFixedSizeVectorizable "fixed-size vectorizable Eigen types", you need tell the container to use an allocator that will always allocate memory at 16-byte-aligned locations. Fortunately, Eigen does provide such an allocator: Eigen::aligned_allocator.
+
+For example, instead of
+\code
+std::map<int, Eigen::Vector4f>
+\endcode
+you need to use
+\code
+std::map<int, Eigen::Vector4f, std::less<int>, 
+         Eigen::aligned_allocator<std::pair<const int, Eigen::Vector4f> > >
+\endcode
+Note that the third parameter "std::less<int>" is just the default value, but we have to include it because we want to specify the fourth parameter, which is the allocator type.
+
+\section StlContainers_vector The case of std::vector
+
+The situation with std::vector was even worse (explanation below) so we had to specialize it for the Eigen::aligned_allocator type. In practice you \b must use the Eigen::aligned_allocator (not another aligned allocator), \b and \#include <Eigen/StdVector>.
+
+Here is an example:
+\code
+#include<Eigen/StdVector>
+/* ... */
+std::vector<Eigen::Vector4f,Eigen::aligned_allocator<Eigen::Vector4f> >
+\endcode
+
+\subsection vector_spec An alternative - specializing std::vector for Eigen types
+
+As an alternative to the recommended approach described above, you have the option to specialize std::vector for Eigen types requiring alignment. 
+The advantage is that you won't need to declare std::vector all over with Eigen::allocator. One drawback on the other hand side is that
+the specialization needs to be defined before all code pieces in which e.g. std::vector<Vector2d> is used. Otherwise, without knowing the specialization
+the compiler will compile that particular instance with the default std::allocator and you program is most likely to crash.
+
+Here is an example:
+\code
+#include<Eigen/StdVector>
+/* ... */
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Matrix2d)
+std::vector<Eigen::Vector2d>
+\endcode
+
+<span class="note">\b Explanation: The resize() method of std::vector takes a value_type argument (defaulting to value_type()). So with std::vector<Eigen::Vector4f>, some Eigen::Vector4f objects will be passed by value, which discards any alignment modifiers, so a Eigen::Vector4f can be created at an unaligned location. In order to avoid that, the only solution we saw was to specialize std::vector to make it work on a slight modification of, here, Eigen::Vector4f, that is able to deal properly with this situation.
+</span>
+
+*/
+
+}

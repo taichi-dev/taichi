@@ -1,0 +1,292 @@
+namespace Eigen {
+
+/** \eigenManualPage TutorialLinearAlgebra Linear algebra and decompositions
+
+This page explains how to solve linear systems, compute various decompositions such as LU,
+QR, %SVD, eigendecompositions... After reading this page, don't miss our
+\link TopicLinearAlgebraDecompositions catalogue \endlink of dense matrix decompositions.
+
+\eigenAutoToc
+
+\section TutorialLinAlgBasicSolve Basic linear solving
+
+\b The \b problem: You have a system of equations, that you have written as a single matrix equation
+    \f[ Ax \: = \: b \f]
+Where \a A and \a b are matrices (\a b could be a vector, as a special case). You want to find a solution \a x.
+
+\b The \b solution: You can choose between various decompositions, depending on what your matrix \a A looks like,
+and depending on whether you favor speed or accuracy. However, let's start with an example that works in all cases,
+and is a good compromise:
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr>
+  <td>\include TutorialLinAlgExSolveColPivHouseholderQR.cpp </td>
+  <td>\verbinclude TutorialLinAlgExSolveColPivHouseholderQR.out </td>
+</tr>
+</table>
+
+In this example, the colPivHouseholderQr() method returns an object of class ColPivHouseholderQR. Since here the
+matrix is of type Matrix3f, this line could have been replaced by:
+\code
+ColPivHouseholderQR<Matrix3f> dec(A);
+Vector3f x = dec.solve(b);
+\endcode
+
+Here, ColPivHouseholderQR is a QR decomposition with column pivoting. It's a good compromise for this tutorial, as it
+works for all matrices while being quite fast. Here is a table of some other decompositions that you can choose from,
+depending on your matrix and the trade-off you want to make:
+
+<table class="manual">
+    <tr>
+        <th>Decomposition</th>
+        <th>Method</th>
+        <th>Requirements<br/>on the matrix</th>
+        <th>Speed<br/> (small-to-medium)</th>
+        <th>Speed<br/> (large)</th>
+        <th>Accuracy</th>
+    </tr>
+    <tr>
+        <td>PartialPivLU</td>
+        <td>partialPivLu()</td>
+        <td>Invertible</td>
+        <td>++</td>
+        <td>++</td>
+        <td>+</td>
+    </tr>
+    <tr class="alt">
+        <td>FullPivLU</td>
+        <td>fullPivLu()</td>
+        <td>None</td>
+        <td>-</td>
+        <td>- -</td>
+        <td>+++</td>
+    </tr>
+    <tr>
+        <td>HouseholderQR</td>
+        <td>householderQr()</td>
+        <td>None</td>
+        <td>++</td>
+        <td>++</td>
+        <td>+</td>
+    </tr>
+    <tr class="alt">
+        <td>ColPivHouseholderQR</td>
+        <td>colPivHouseholderQr()</td>
+        <td>None</td>
+        <td>+</td>
+        <td>-</td>
+        <td>+++</td>
+    </tr>
+    <tr>
+        <td>FullPivHouseholderQR</td>
+        <td>fullPivHouseholderQr()</td>
+        <td>None</td>
+        <td>-</td>
+        <td>- -</td>
+        <td>+++</td>
+    </tr>
+    <tr class="alt">
+        <td>CompleteOrthogonalDecomposition</td>
+        <td>completeOrthogonalDecomposition()</td>
+        <td>None</td>
+        <td>+</td>
+        <td>-</td>
+        <td>+++</td>
+    </tr>
+    <tr class="alt">
+        <td>LLT</td>
+        <td>llt()</td>
+        <td>Positive definite</td>
+        <td>+++</td>
+        <td>+++</td>
+        <td>+</td>
+    </tr>
+    <tr>
+        <td>LDLT</td>
+        <td>ldlt()</td>
+        <td>Positive or negative<br/> semidefinite</td>
+        <td>+++</td>
+        <td>+</td>
+        <td>++</td>
+    </tr>
+    <tr class="alt">
+        <td>BDCSVD</td>
+        <td>bdcSvd()</td>
+        <td>None</td>
+        <td>-</td>
+        <td>-</td>
+        <td>+++</td>
+    </tr>
+    <tr class="alt">
+        <td>JacobiSVD</td>
+        <td>jacobiSvd()</td>
+        <td>None</td>
+        <td>-</td>
+        <td>- - -</td>
+        <td>+++</td>
+    </tr>
+</table>
+To get an overview of the true relative speed of the different decompositions, check this \link DenseDecompositionBenchmark benchmark \endlink.
+
+All of these decompositions offer a solve() method that works as in the above example.
+
+For example, if your matrix is positive definite, the above table says that a very good
+choice is then the LLT or LDLT decomposition. Here's an example, also demonstrating that using a general
+matrix (not a vector) as right hand side is possible.
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr>
+  <td>\include TutorialLinAlgExSolveLDLT.cpp </td>
+  <td>\verbinclude TutorialLinAlgExSolveLDLT.out </td>
+</tr>
+</table>
+
+For a \ref TopicLinearAlgebraDecompositions "much more complete table" comparing all decompositions supported by Eigen (notice that Eigen
+supports many other decompositions), see our special page on
+\ref TopicLinearAlgebraDecompositions "this topic".
+
+\section TutorialLinAlgSolutionExists Checking if a solution really exists
+
+Only you know what error margin you want to allow for a solution to be considered valid.
+So Eigen lets you do this computation for yourself, if you want to, as in this example:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr>
+  <td>\include TutorialLinAlgExComputeSolveError.cpp </td>
+  <td>\verbinclude TutorialLinAlgExComputeSolveError.out </td>
+</tr>
+</table>
+
+\section TutorialLinAlgEigensolving Computing eigenvalues and eigenvectors
+
+You need an eigendecomposition here, see available such decompositions on \ref TopicLinearAlgebraDecompositions "this page".
+Make sure to check if your matrix is self-adjoint, as is often the case in these problems. Here's an example using
+SelfAdjointEigenSolver, it could easily be adapted to general matrices using EigenSolver or ComplexEigenSolver.
+
+The computation of eigenvalues and eigenvectors does not necessarily converge, but such failure to converge is
+very rare. The call to info() is to check for this possibility.
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr>
+  <td>\include TutorialLinAlgSelfAdjointEigenSolver.cpp </td>
+  <td>\verbinclude TutorialLinAlgSelfAdjointEigenSolver.out </td>
+</tr>
+</table>
+
+\section TutorialLinAlgInverse Computing inverse and determinant
+
+First of all, make sure that you really want this. While inverse and determinant are fundamental mathematical concepts,
+in \em numerical linear algebra they are not as popular as in pure mathematics. Inverse computations are often
+advantageously replaced by solve() operations, and the determinant is often \em not a good way of checking if a matrix
+is invertible.
+
+However, for \em very \em small matrices, the above is not true, and inverse and determinant can be very useful.
+
+While certain decompositions, such as PartialPivLU and FullPivLU, offer inverse() and determinant() methods, you can also
+call inverse() and determinant() directly on a matrix. If your matrix is of a very small fixed size (at most 4x4) this
+allows Eigen to avoid performing a LU decomposition, and instead use formulas that are more efficient on such small matrices.
+
+Here is an example:
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr>
+  <td>\include TutorialLinAlgInverseDeterminant.cpp </td>
+  <td>\verbinclude TutorialLinAlgInverseDeterminant.out </td>
+</tr>
+</table>
+
+\section TutorialLinAlgLeastsquares Least squares solving
+
+The most accurate method to do least squares solving is with a SVD decomposition.
+Eigen provides two implementations.
+The recommended one is the BDCSVD class, which scale well for large problems
+and automatically fall-back to the JacobiSVD class for smaller problems.
+For both classes, their solve() method is doing least-squares solving.
+
+Here is an example:
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr>
+  <td>\include TutorialLinAlgSVDSolve.cpp </td>
+  <td>\verbinclude TutorialLinAlgSVDSolve.out </td>
+</tr>
+</table>
+
+Another methods, potentially faster but less reliable, are to use a Cholesky decomposition of the
+normal matrix or a QR decomposition. Our page on \link LeastSquares least squares solving \endlink
+has more details.
+
+
+\section TutorialLinAlgSeparateComputation Separating the computation from the construction
+
+In the above examples, the decomposition was computed at the same time that the decomposition object was constructed.
+There are however situations where you might want to separate these two things, for example if you don't know,
+at the time of the construction, the matrix that you will want to decompose; or if you want to reuse an existing
+decomposition object.
+
+What makes this possible is that:
+\li all decompositions have a default constructor,
+\li all decompositions have a compute(matrix) method that does the computation, and that may be called again
+    on an already-computed decomposition, reinitializing it.
+
+For example:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr>
+  <td>\include TutorialLinAlgComputeTwice.cpp </td>
+  <td>\verbinclude TutorialLinAlgComputeTwice.out </td>
+</tr>
+</table>
+
+Finally, you can tell the decomposition constructor to preallocate storage for decomposing matrices of a given size,
+so that when you subsequently decompose such matrices, no dynamic memory allocation is performed (of course, if you
+are using fixed-size matrices, no dynamic memory allocation happens at all). This is done by just
+passing the size to the decomposition constructor, as in this example:
+\code
+HouseholderQR<MatrixXf> qr(50,50);
+MatrixXf A = MatrixXf::Random(50,50);
+qr.compute(A); // no dynamic memory allocation
+\endcode
+
+\section TutorialLinAlgRankRevealing Rank-revealing decompositions
+
+Certain decompositions are rank-revealing, i.e. are able to compute the rank of a matrix. These are typically
+also the decompositions that behave best in the face of a non-full-rank matrix (which in the square case means a
+singular matrix). On \ref TopicLinearAlgebraDecompositions "this table" you can see for all our decompositions
+whether they are rank-revealing or not.
+
+Rank-revealing decompositions offer at least a rank() method. They can also offer convenience methods such as isInvertible(),
+and some are also providing methods to compute the kernel (null-space) and image (column-space) of the matrix, as is the
+case with FullPivLU:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr>
+  <td>\include TutorialLinAlgRankRevealing.cpp </td>
+  <td>\verbinclude TutorialLinAlgRankRevealing.out </td>
+</tr>
+</table>
+
+Of course, any rank computation depends on the choice of an arbitrary threshold, since practically no
+floating-point matrix is \em exactly rank-deficient. Eigen picks a sensible default threshold, which depends
+on the decomposition but is typically the diagonal size times machine epsilon. While this is the best default we
+could pick, only you know what is the right threshold for your application. You can set this by calling setThreshold()
+on your decomposition object before calling rank() or any other method that needs to use such a threshold.
+The decomposition itself, i.e. the compute() method, is independent of the threshold. You don't need to recompute the
+decomposition after you've changed the threshold.
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr>
+  <td>\include TutorialLinAlgSetThreshold.cpp </td>
+  <td>\verbinclude TutorialLinAlgSetThreshold.out </td>
+</tr>
+</table>
+
+*/
+
+}

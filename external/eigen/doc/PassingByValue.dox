@@ -1,0 +1,40 @@
+namespace Eigen {
+
+/** \eigenManualPage TopicPassingByValue Passing Eigen objects by value to functions
+
+Passing objects by value is almost always a very bad idea in C++, as this means useless copies, and one should pass them by reference instead.
+
+With Eigen, this is even more important: passing \ref TopicFixedSizeVectorizable "fixed-size vectorizable Eigen objects" by value is not only inefficient, it can be illegal or make your program crash! And the reason is that these Eigen objects have alignment modifiers that aren't respected when they are passed by value.
+
+So for example, a function like this, where v is passed by value:
+
+\code
+void my_function(Eigen::Vector2d v);
+\endcode
+
+needs to be rewritten as follows, passing v by reference:
+
+\code
+void my_function(const Eigen::Vector2d& v);
+\endcode
+
+Likewise if you have a class having a Eigen object as member:
+
+\code
+struct Foo
+{
+  Eigen::Vector2d v;
+};
+void my_function(Foo v);
+\endcode
+
+This function also needs to be rewritten like this:
+\code
+void my_function(const Foo& v);
+\endcode
+
+Note that on the other hand, there is no problem with functions that return objects by value.
+
+*/
+
+}

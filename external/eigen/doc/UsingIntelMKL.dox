@@ -1,0 +1,109 @@
+/*
+ Copyright (c) 2011, Intel Corporation. All rights reserved.
+ Copyright (C) 2011 Gael Guennebaud <gael.guennebaud@inria.fr>
+
+ Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
+
+ * Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+ * Neither the name of Intel Corporation nor the names of its contributors may
+   be used to endorse or promote products derived from this software without
+   specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ ********************************************************************************
+ *   Content : Documentation on the use of Intel MKL through Eigen
+ ********************************************************************************
+*/
+
+namespace Eigen {
+
+/** \page TopicUsingIntelMKL Using Intel® MKL from %Eigen
+
+<!-- \section TopicUsingIntelMKL_Intro Eigen and Intel® Math Kernel Library (Intel® MKL) -->
+
+Since %Eigen version 3.1 and later, users can benefit from built-in Intel® Math Kernel Library (MKL) optimizations with an installed copy of Intel MKL 10.3 (or later).
+
+<a href="http://eigen.tuxfamily.org/Counter/redirect_to_mkl.php"> Intel MKL </a> provides highly optimized multi-threaded mathematical routines for x86-compatible architectures.
+Intel MKL is available on Linux, Mac and Windows for both Intel64 and IA32 architectures.
+
+\note
+Intel® MKL is a proprietary software and it is the responsibility of users to buy or register for community (free) Intel MKL licenses for their products. Moreover, the license of the user product has to allow linking to proprietary software that excludes any unmodified versions of the GPL.
+
+Using Intel MKL through %Eigen is easy:
+-# define the \c EIGEN_USE_MKL_ALL macro before including any %Eigen's header
+-# link your program to MKL libraries (see the <a href="http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/">MKL linking advisor</a>)
+-# on a 64bits system, you must use the LP64 interface (not the ILP64 one)
+
+When doing so, a number of %Eigen's algorithms are silently substituted with calls to Intel MKL routines.
+These substitutions apply only for \b Dynamic \b or \b large enough objects with one of the following four standard scalar types: \c float, \c double, \c complex<float>, and \c complex<double>.
+Operations on other scalar types or mixing reals and complexes will continue to use the built-in algorithms.
+
+In addition you can choose which parts will be substituted by defining one or multiple of the following macros:
+
+<table class="manual">
+<tr><td>\c EIGEN_USE_BLAS </td><td>Enables the use of external BLAS level 2 and 3 routines</td></tr>
+<tr class="alt"><td>\c EIGEN_USE_LAPACKE </td><td>Enables the use of external Lapack routines via the <a href="http://www.netlib.org/lapack/lapacke.html">Lapacke</a> C interface to Lapack</td></tr>
+<tr><td>\c EIGEN_USE_LAPACKE_STRICT </td><td>Same as \c EIGEN_USE_LAPACKE but algorithm of lower robustness are disabled. \n This currently concerns only JacobiSVD which otherwise would be replaced by \c gesvd that is less robust than Jacobi rotations.</td></tr>
+<tr class="alt"><td>\c EIGEN_USE_MKL_VML </td><td>Enables the use of Intel VML (vector operations)</td></tr>
+<tr><td>\c EIGEN_USE_MKL_ALL </td><td>Defines \c EIGEN_USE_BLAS, \c EIGEN_USE_LAPACKE, and \c EIGEN_USE_MKL_VML </td></tr>
+</table>
+
+The options can be combined with \b MKL_DIRECT_CALL to enable MKL direct call feature. This may help to increase performance of some MKL BLAS (?GEMM, ?GEMV, ?TRSM, ?AXPY and ?DOT) and LAPACK (LU, Cholesky and QR) routines for very small matrices. To make it work properly, the macro \c EIGEN_USE_MKL must also be defined in the case none of the other \c EIGEN_USE_MKL_* macros has been defined.
+
+Note that the BLAS and LAPACKE backends can be enabled for any F77 compatible BLAS and LAPACK libraries. See this \link TopicUsingBlasLapack page \endlink for the details.
+
+Finally, the PARDISO sparse solver shipped with Intel MKL can be used through the \ref PardisoLU, \ref PardisoLLT and \ref PardisoLDLT classes of the \ref PardisoSupport_Module.
+
+The following table summarizes the list of functions covered by \c EIGEN_USE_MKL_VML:
+<table class="manual">
+<tr><th>Code example</th><th>MKL routines</th></tr>
+<tr><td>\code
+v2=v1.array().sin();
+v2=v1.array().asin();
+v2=v1.array().cos();
+v2=v1.array().acos();
+v2=v1.array().tan();
+v2=v1.array().exp();
+v2=v1.array().log();
+v2=v1.array().sqrt();
+v2=v1.array().square();
+v2=v1.array().pow(1.5);
+\endcode</td><td>\code
+v?Sin
+v?Asin
+v?Cos
+v?Acos
+v?Tan
+v?Exp
+v?Ln
+v?Sqrt
+v?Sqr
+v?Powx
+\endcode</td></tr>
+</table>
+In the examples, v1 and v2 are dense vectors.
+
+
+\section TopicUsingIntelMKL_Links Links
+- Intel MKL can be purchased and downloaded <a href="http://eigen.tuxfamily.org/Counter/redirect_to_mkl.php">here</a>.
+- Intel MKL is also bundled with <a href="http://software.intel.com/en-us/articles/intel-composer-xe/">Intel Composer XE</a>.
+
+
+*/
+
+}

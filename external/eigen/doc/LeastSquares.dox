@@ -1,0 +1,70 @@
+namespace Eigen {
+
+/** \eigenManualPage LeastSquares Solving linear least squares systems
+
+This page describes how to solve linear least squares systems using %Eigen. An overdetermined system
+of equations, say \a Ax = \a b, has no solutions. In this case, it makes sense to search for the
+vector \a x which is closest to being a solution, in the sense that the difference \a Ax - \a b is
+as small as possible. This \a x is called the least square solution (if the Euclidean norm is used).
+
+The three methods discussed on this page are the SVD decomposition, the QR decomposition and normal
+equations. Of these, the SVD decomposition is generally the most accurate but the slowest, normal
+equations is the fastest but least accurate, and the QR decomposition is in between.
+
+\eigenAutoToc
+
+
+\section LeastSquaresSVD Using the SVD decomposition
+
+The \link BDCSVD::solve() solve() \endlink method in the BDCSVD class can be directly used to
+solve linear squares systems. It is not enough to compute only the singular values (the default for
+this class); you also need the singular vectors but the thin SVD decomposition suffices for
+computing least squares solutions:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr>
+  <td>\include TutorialLinAlgSVDSolve.cpp </td>
+  <td>\verbinclude TutorialLinAlgSVDSolve.out </td>
+</tr>
+</table>
+
+This is example from the page \link TutorialLinearAlgebra Linear algebra and decompositions \endlink.
+
+
+\section LeastSquaresQR Using the QR decomposition
+
+The solve() method in QR decomposition classes also computes the least squares solution. There are
+three QR decomposition classes: HouseholderQR (no pivoting, so fast but unstable),
+ColPivHouseholderQR (column pivoting, thus a bit slower but more accurate) and FullPivHouseholderQR
+(full pivoting, so slowest and most stable). Here is an example with column pivoting:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr>
+  <td>\include LeastSquaresQR.cpp </td>
+  <td>\verbinclude LeastSquaresQR.out </td>
+</tr>
+</table>
+
+
+\section LeastSquaresNormalEquations Using normal equations
+
+Finding the least squares solution of \a Ax = \a b is equivalent to solving the normal equation
+<i>A</i><sup>T</sup><i>Ax</i> = <i>A</i><sup>T</sup><i>b</i>. This leads to the following code
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr>
+  <td>\include LeastSquaresNormalEquations.cpp </td>
+  <td>\verbinclude LeastSquaresNormalEquations.out </td>
+</tr>
+</table>
+
+If the matrix \a A is ill-conditioned, then this is not a good method, because the condition number
+of <i>A</i><sup>T</sup><i>A</i> is the square of the condition number of \a A. This means that you
+lose twice as many digits using normal equation than if you use the other methods.
+
+*/
+
+}

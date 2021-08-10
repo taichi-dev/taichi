@@ -1,0 +1,11 @@
+namespace Eigen {
+
+/** \page TopicResizing Resizing
+
+
+TODO: write this dox page!
+
+Is linked from the tutorial on the Matrix class.
+
+*/
+}

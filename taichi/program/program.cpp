@@ -30,6 +30,8 @@
 #include "taichi/util/statistics.h"
 #include "taichi/util/str.h"
 #include "taichi/math/arithmetic.h"
+#include "Eigen/Dense"
+
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"

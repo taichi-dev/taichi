@@ -1,0 +1,118 @@
+namespace Eigen {
+
+/** \page TopicPitfalls Common pitfalls
+
+
+\section TopicPitfalls_template_keyword Compilation error with template methods
+
+See this \link TopicTemplateKeyword page \endlink.
+
+
+\section TopicPitfalls_aliasing Aliasing
+
+Don't miss this \link TopicAliasing page \endlink on aliasing,
+especially if you got wrong results in statements where the destination appears on the right hand side of the expression.
+
+
+\section TopicPitfalls_alignment_issue Alignment Issues (runtime assertion)
+
+%Eigen does explicit vectorization, and while that is appreciated by many users, that also leads to some issues in special situations where data alignment is compromised.
+Indeed, since C++17,  C++ does not have quite good enough support for explicit data alignment.
+In that case your program hits an assertion failure (that is, a "controlled crash") with a message that tells you to consult this page:
+\code
+http://eigen.tuxfamily.org/dox/group__TopicUnalignedArrayAssert.html
+\endcode
+Have a look at \link TopicUnalignedArrayAssert it \endlink and see for yourself if that's something that you can cope with.
+It contains detailed information about how to deal with each known cause for that issue.
+
+Now what if you don't care about vectorization and so don't want to be annoyed with these alignment issues? Then read \link getrid how to get rid of them \endlink.
+
+
+\section TopicPitfalls_auto_keyword C++11 and the auto keyword
+
+In short: do not use the auto keywords with %Eigen's expressions, unless you are 100% sure about what you are doing. In particular, do not use the auto keyword as a replacement for a \c Matrix<> type. Here is an example:
+
+\code
+MatrixXd A, B;
+auto C = A*B;
+for(...) { ... w = C * v;  ...}
+\endcode
+
+In this example, the type of C is not a \c MatrixXd but an abstract expression representing a matrix product and storing references to \c A and \c B.
+Therefore, the product of \c A*B will be carried out multiple times, once per iteration of the for loop.
+Moreover, if the coefficients of A or B change during the iteration, then C will evaluate to different values.
+
+Here is another example leading to a segfault:
+\code
+auto C = ((A+B).eval()).transpose();
+// do something with C
+\endcode
+The problem is that \c eval() returns a temporary object (in this case a \c MatrixXd) which is then referenced by the \c Transpose<> expression.
+However, this temporary is deleted right after the first line, and then the \c C expression references a dead object.
+One possible fix consists in applying \c eval() on the whole expression:
+\code
+auto C = (A+B).transpose().eval();
+\endcode
+
+The same issue might occur when sub expressions are automatically evaluated by %Eigen as in the following example:
+\code
+VectorXd u, v;
+auto C = u + (A*v).normalized();
+// do something with C
+\endcode
+Here the \c normalized() method has to evaluate the expensive product \c A*v to avoid evaluating it twice.
+Again, one possible fix is to call \c .eval() on the whole expression:
+\code
+auto C = (u + (A*v).normalized()).eval();
+\endcode
+In this case, \c C will be a regular \c VectorXd object.
+Note that DenseBase::eval() is smart enough to avoid copies when the underlying expression is already a plain \c Matrix<>.
+
+
+\section TopicPitfalls_header_issues Header Issues (failure to compile)
+
+With all libraries, one must check the documentation for which header to include.
+The same is true with %Eigen, but slightly worse: with %Eigen, a method in a class may require an additional <code>#include</code> over what the class itself requires!
+For example, if you want to use the \c cross() method on a vector (it computes a cross-product) then you need to:
+\code
+#include<Eigen/Geometry>
+\endcode
+We try to always document this, but do tell us if we forgot an occurrence.
+
+
+\section TopicPitfalls_ternary_operator Ternary operator
+
+In short: avoid the use of the ternary operator <code>(COND ? THEN : ELSE)</code> with %Eigen's expressions for the \c THEN and \c ELSE statements.
+To see why, let's consider the following example:
+\code
+Vector3f A;
+A << 1, 2, 3;
+Vector3f B = ((1 < 0) ? (A.reverse()) : A);
+\endcode
+This example will return <code>B = 3, 2, 1</code>. Do you see why?
+The reason is that in c++ the type of the \c ELSE statement is inferred from the type of the \c THEN expression such that both match.
+Since \c THEN is a <code>Reverse<Vector3f></code>, the \c ELSE statement A is converted to a <code>Reverse<Vector3f></code>, and the compiler thus generates:
+\code
+Vector3f B = ((1 < 0) ? (A.reverse()) : Reverse<Vector3f>(A));
+\endcode
+In this very particular case, a workaround would be to call A.reverse().eval() for the \c THEN statement, but the safest and fastest is really to avoid this ternary operator with %Eigen's expressions and use a if/else construct.
+
+
+\section TopicPitfalls_pass_by_value Pass-by-value
+
+If you don't know why passing-by-value is wrong with %Eigen, read this \link TopicPassingByValue page \endlink first.
+
+While you may be extremely careful and use care to make sure that all of your code that explicitly uses %Eigen types is pass-by-reference you have to watch out for templates which define the argument types at compile time.
+
+If a template has a function that takes arguments pass-by-value, and the relevant template parameter ends up being an %Eigen type, then you will of course have the same alignment problems that you would in an explicitly defined function passing %Eigen types by reference.
+
+Using %Eigen types with other third party libraries or even the STL can present the same problem.
+<code>boost::bind</code> for example uses pass-by-value to store arguments in the returned functor.
+This will of course be a problem.
+
+There are at least two ways around this:
+  - If the value you are passing is guaranteed to be around for the life of the functor, you can use boost::ref() to wrap the value as you pass it to boost::bind. Generally this is not a solution for values on the stack as if the functor ever gets passed to a lower or independent scope, the object may be gone by the time it's attempted to be used.
+  - The other option is to make your functions take a reference counted pointer like boost::shared_ptr as the argument. This avoids needing to worry about managing the lifetime of the object being passed.
+
+*/
+}

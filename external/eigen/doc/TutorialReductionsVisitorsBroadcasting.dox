@@ -1,0 +1,266 @@
+namespace Eigen {
+
+/** \eigenManualPage TutorialReductionsVisitorsBroadcasting Reductions, visitors and broadcasting
+
+This page explains Eigen's reductions, visitors and broadcasting and how they are used with
+\link MatrixBase matrices \endlink and \link ArrayBase arrays \endlink.
+
+\eigenAutoToc
+
+\section TutorialReductionsVisitorsBroadcastingReductions Reductions
+In Eigen, a reduction is a function taking a matrix or array, and returning a single
+scalar value. One of the most used reductions is \link DenseBase::sum() .sum() \endlink,
+returning the sum of all the coefficients inside a given matrix or array.
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include tut_arithmetic_redux_basic.cpp
+</td>
+<td>
+\verbinclude tut_arithmetic_redux_basic.out
+</td></tr></table>
+
+The \em trace of a matrix, as returned by the function \c trace(), is the sum of the diagonal coefficients and can equivalently be computed <tt>a.diagonal().sum()</tt>.
+
+
+\subsection TutorialReductionsVisitorsBroadcastingReductionsNorm Norm computations
+
+The (Euclidean a.k.a. \f$\ell^2\f$) squared norm of a vector can be obtained \link MatrixBase::squaredNorm() squaredNorm() \endlink. It is equal to the dot product of the vector by itself, and equivalently to the sum of squared absolute values of its coefficients.
+
+Eigen also provides the \link MatrixBase::norm() norm() \endlink method, which returns the square root of \link MatrixBase::squaredNorm() squaredNorm() \endlink.
+
+These operations can also operate on matrices; in that case, a n-by-p matrix is seen as a vector of size (n*p), so for example the \link MatrixBase::norm() norm() \endlink method returns the "Frobenius" or "Hilbert-Schmidt" norm. We refrain from speaking of the \f$\ell^2\f$ norm of a matrix because that can mean different things.
+
+If you want other coefficient-wise \f$\ell^p\f$ norms, use the \link MatrixBase::lpNorm lpNorm<p>() \endlink method. The template parameter \a p can take the special value \a Infinity if you want the \f$\ell^\infty\f$ norm, which is the maximum of the absolute values of the coefficients.
+
+The following example demonstrates these methods.
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_ReductionsVisitorsBroadcasting_reductions_norm.cpp
+</td>
+<td>
+\verbinclude Tutorial_ReductionsVisitorsBroadcasting_reductions_norm.out
+</td></tr></table>
+
+\b Operator \b norm: The 1-norm and \f$\infty\f$-norm <a href="https://en.wikipedia.org/wiki/Operator_norm">matrix operator norms</a> can easily be computed as follows:
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_ReductionsVisitorsBroadcasting_reductions_operatornorm.cpp
+</td>
+<td>
+\verbinclude Tutorial_ReductionsVisitorsBroadcasting_reductions_operatornorm.out
+</td></tr></table>
+See below for more explanations on the syntax of these expressions.
+
+\subsection TutorialReductionsVisitorsBroadcastingReductionsBool Boolean reductions
+
+The following reductions operate on boolean values:
+  - \link DenseBase::all() all() \endlink returns \b true if all of the coefficients in a given Matrix or Array evaluate to \b true .
+  - \link DenseBase::any() any() \endlink returns \b true if at least one of the coefficients in a given Matrix or Array evaluates to \b true .
+  - \link DenseBase::count() count() \endlink returns the number of coefficients in a given Matrix or Array that evaluate to  \b true.
+
+These are typically used in conjunction with the coefficient-wise comparison and equality operators provided by Array. For instance, <tt>array > 0</tt> is an %Array of the same size as \c array , with \b true at those positions where the corresponding coefficient of \c array is positive. Thus, <tt>(array > 0).all()</tt> tests whether all coefficients of \c array are positive. This can be seen in the following example:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_ReductionsVisitorsBroadcasting_reductions_bool.cpp
+</td>
+<td>
+\verbinclude Tutorial_ReductionsVisitorsBroadcasting_reductions_bool.out
+</td></tr></table>
+
+\subsection TutorialReductionsVisitorsBroadcastingReductionsUserdefined User defined reductions
+
+TODO
+
+In the meantime you can have a look at the DenseBase::redux() function.
+
+\section TutorialReductionsVisitorsBroadcastingVisitors Visitors
+Visitors are useful when one wants to obtain the location of a coefficient inside 
+a Matrix or Array. The simplest examples are 
+\link MatrixBase::maxCoeff() maxCoeff(&x,&y) \endlink and 
+\link MatrixBase::minCoeff() minCoeff(&x,&y)\endlink, which can be used to find
+the location of the greatest or smallest coefficient in a Matrix or 
+Array.
+
+The arguments passed to a visitor are pointers to the variables where the
+row and column position are to be stored. These variables should be of type
+\link Eigen::Index Index \endlink, as shown below:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_ReductionsVisitorsBroadcasting_visitors.cpp
+</td>
+<td>
+\verbinclude Tutorial_ReductionsVisitorsBroadcasting_visitors.out
+</td></tr></table>
+
+Both functions also return the value of the minimum or maximum coefficient.
+
+\section TutorialReductionsVisitorsBroadcastingPartialReductions Partial reductions
+Partial reductions are reductions that can operate column- or row-wise on a Matrix or 
+Array, applying the reduction operation on each column or row and 
+returning a column or row vector with the corresponding values. Partial reductions are applied 
+with \link DenseBase::colwise() colwise() \endlink or \link DenseBase::rowwise() rowwise() \endlink.
+
+A simple example is obtaining the maximum of the elements 
+in each column in a given matrix, storing the result in a row vector:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_ReductionsVisitorsBroadcasting_colwise.cpp
+</td>
+<td>
+\verbinclude Tutorial_ReductionsVisitorsBroadcasting_colwise.out
+</td></tr></table>
+
+The same operation can be performed row-wise:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_ReductionsVisitorsBroadcasting_rowwise.cpp
+</td>
+<td>
+\verbinclude Tutorial_ReductionsVisitorsBroadcasting_rowwise.out
+</td></tr></table>
+
+<b>Note that column-wise operations return a row vector, while row-wise operations return a column vector.</b>
+
+\subsection TutorialReductionsVisitorsBroadcastingPartialReductionsCombined Combining partial reductions with other operations
+It is also possible to use the result of a partial reduction to do further processing.
+Here is another example that finds the column whose sum of elements is the maximum
+ within a matrix. With column-wise partial reductions this can be coded as:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_ReductionsVisitorsBroadcasting_maxnorm.cpp
+</td>
+<td>
+\verbinclude Tutorial_ReductionsVisitorsBroadcasting_maxnorm.out
+</td></tr></table>
+
+The previous example applies the \link DenseBase::sum() sum() \endlink reduction on each column
+though the \link DenseBase::colwise() colwise() \endlink visitor, obtaining a new matrix whose
+size is 1x4.
+
+Therefore, if
+\f[
+\mbox{m} = \begin{bmatrix} 1 & 2 & 6 & 9 \\
+                    3 & 1 & 7 & 2 \end{bmatrix}
+\f]
+
+then
+
+\f[
+\mbox{m.colwise().sum()} = \begin{bmatrix} 4 & 3 & 13 & 11 \end{bmatrix}
+\f]
+
+The \link DenseBase::maxCoeff() maxCoeff() \endlink reduction is finally applied 
+to obtain the column index where the maximum sum is found, 
+which is the column index 2 (third column) in this case.
+
+
+\section TutorialReductionsVisitorsBroadcastingBroadcasting Broadcasting
+The concept behind broadcasting is similar to partial reductions, with the difference that broadcasting 
+constructs an expression where a vector (column or row) is interpreted as a matrix by replicating it in 
+one direction.
+
+A simple example is to add a certain column vector to each column in a matrix. 
+This can be accomplished with:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_ReductionsVisitorsBroadcasting_broadcast_simple.cpp
+</td>
+<td>
+\verbinclude Tutorial_ReductionsVisitorsBroadcasting_broadcast_simple.out
+</td></tr></table>
+
+We can interpret the instruction <tt>mat.colwise() += v</tt> in two equivalent ways. It adds the vector \c v
+to every column of the matrix. Alternatively, it can be interpreted as repeating the vector \c v four times to
+form a four-by-two matrix which is then added to \c mat:
+\f[
+\begin{bmatrix} 1 & 2 & 6 & 9 \\ 3 & 1 & 7 & 2 \end{bmatrix}
++ \begin{bmatrix} 0 & 0 & 0 & 0 \\ 1 & 1 & 1 & 1 \end{bmatrix}
+= \begin{bmatrix} 1 & 2 & 6 & 9 \\ 4 & 2 & 8 & 3 \end{bmatrix}.
+\f]
+The operators <tt>-=</tt>, <tt>+</tt> and <tt>-</tt> can also be used column-wise and row-wise. On arrays, we 
+can also use the operators <tt>*=</tt>, <tt>/=</tt>, <tt>*</tt> and <tt>/</tt> to perform coefficient-wise 
+multiplication and division column-wise or row-wise. These operators are not available on matrices because it
+is not clear what they would do. If you want multiply column 0 of a matrix \c mat with \c v(0), column 1 with 
+\c v(1), and so on, then use <tt>mat = mat * v.asDiagonal()</tt>.
+
+It is important to point out that the vector to be added column-wise or row-wise must be of type Vector,
+and cannot be a Matrix. If this is not met then you will get compile-time error. This also means that
+broadcasting operations can only be applied with an object of type Vector, when operating with Matrix.
+The same applies for the Array class, where the equivalent for VectorXf is ArrayXf. As always, you should
+not mix arrays and matrices in the same expression.
+
+To perform the same operation row-wise we can do:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_ReductionsVisitorsBroadcasting_broadcast_simple_rowwise.cpp
+</td>
+<td>
+\verbinclude Tutorial_ReductionsVisitorsBroadcasting_broadcast_simple_rowwise.out
+</td></tr></table>
+
+\subsection TutorialReductionsVisitorsBroadcastingBroadcastingCombined Combining broadcasting with other operations
+Broadcasting can also be combined with other operations, such as Matrix or Array operations, 
+reductions and partial reductions.
+
+Now that broadcasting, reductions and partial reductions have been introduced, we can dive into a more advanced example that finds
+the nearest neighbour of a vector <tt>v</tt> within the columns of matrix <tt>m</tt>. The Euclidean distance will be used in this example,
+computing the squared Euclidean distance with the partial reduction named \link MatrixBase::squaredNorm() squaredNorm() \endlink:
+
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_ReductionsVisitorsBroadcasting_broadcast_1nn.cpp
+</td>
+<td>
+\verbinclude Tutorial_ReductionsVisitorsBroadcasting_broadcast_1nn.out
+</td></tr></table>
+
+The line that does the job is 
+\code
+  (m.colwise() - v).colwise().squaredNorm().minCoeff(&index);
+\endcode
+
+We will go step by step to understand what is happening:
+
+  - <tt>m.colwise() - v</tt> is a broadcasting operation, subtracting <tt>v</tt> from each column in <tt>m</tt>. The result of this operation
+is a new matrix whose size is the same as matrix <tt>m</tt>: \f[
+  \mbox{m.colwise() - v} = 
+  \begin{bmatrix}
+    -1 & 21 & 4 & 7 \\
+     0 & 8  & 4 & -1
+  \end{bmatrix}
+\f]
+
+  - <tt>(m.colwise() - v).colwise().squaredNorm()</tt> is a partial reduction, computing the squared norm column-wise. The result of
+this operation is a row vector where each coefficient is the squared Euclidean distance between each column in <tt>m</tt> and <tt>v</tt>: \f[
+  \mbox{(m.colwise() - v).colwise().squaredNorm()} =
+  \begin{bmatrix}
+     1 & 505 & 32 & 50
+  \end{bmatrix}
+\f]
+
+  - Finally, <tt>minCoeff(&index)</tt> is used to obtain the index of the column in <tt>m</tt> that is closest to <tt>v</tt> in terms of Euclidean
+distance.
+
+*/
+
+}

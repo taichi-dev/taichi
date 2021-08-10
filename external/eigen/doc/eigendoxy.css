@@ -1,0 +1,223 @@
+
+/******** Eigen specific CSS code ************/
+
+/**** Styles removing elements ****/
+
+/* remove the "modules|classes" link for module pages (they are already in the TOC) */
+div.summary {
+  display:none;
+}
+
+/* remove */
+div.contents hr {
+  display:none;
+}
+
+/**** ****/
+
+p, dl.warning, dl.attention, dl.note
+{
+  max-width:60em;
+  text-align:justify;
+}
+
+li {
+  max-width:55em;
+  text-align:justify;  
+}
+
+img {
+  border: 0;
+}
+
+div.fragment {
+  display:table; /* this allows the element to be larger than its parent */
+  padding: 0pt;
+}
+pre.fragment {
+  border: 1px solid #cccccc;
+
+  margin: 2px 0px 2px 0px;
+  padding: 3px 5px 3px 5px;
+}
+
+
+
+/* Common style for all Eigen's tables */
+
+table.example, table.manual, table.manual-vl, table.manual-hl {
+    max-width:100%;
+    border-collapse: collapse;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #cccccc;
+    font-size: 1em;
+    
+    box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
+    -moz-box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
+    -webkit-box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
+}
+
+table.example th, table.manual th, table.manual-vl th, table.manual-hl th {
+  padding: 0.5em 0.5em 0.5em 0.5em;
+  text-align: left;
+  padding-right: 1em;
+  color: #555555;
+  background-color: #F4F4E5;
+  
+  background-image: -webkit-gradient(linear,center top,center bottom,from(#FFFFFF), color-stop(0.3,#FFFFFF), color-stop(0.30,#FFFFFF), color-stop(0.98,#F4F4E5), to(#ECECDE));
+  background-image: -moz-linear-gradient(center top, #FFFFFF 0%, #FFFFFF 30%, #F4F4E5 98%, #ECECDE);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFFFFF', endColorstr='#F4F4E5');
+}
+
+table.example td, table.manual td, table.manual-vl td, table.manual-hl td {
+  vertical-align:top;
+  border-width: 1px;
+  border-color: #cccccc;
+}
+
+/* header of headers */
+table th.meta {
+  text-align:center;
+  font-size: 1.2em;
+  background-color:#FFFFFF;
+}
+
+/* intermediate header */
+table th.inter {
+  text-align:left;
+  background-color:#FFFFFF;
+  background-image:none;
+  border-style:solid solid solid solid;
+  border-width: 1px;
+	border-color: #cccccc;
+}
+
+/** class for exemple / output tables **/
+
+table.example {
+}
+
+table.example th {
+}
+
+table.example td {
+  padding: 0.5em 0.5em 0.5em 0.5em;
+  vertical-align:top;
+}
+
+/* standard class for the manual */
+
+table.manual, table.manual-vl, table.manual-hl {
+    padding: 0.2em 0em 0.5em 0em;
+}
+
+table.manual th, table.manual-vl th, table.manual-hl th {
+  margin: 0em 0em 0.3em 0em;
+}
+
+table.manual td, table.manual-vl td, table.manual-hl td {
+  padding: 0.3em 0.5em 0.3em 0.5em;
+  vertical-align:top;
+  border-width: 1px;
+}
+
+table.manual td.alt, table.manual tr.alt, table.manual-vl td.alt, table.manual-vl tr.alt {
+  background-color: #F4F4E5;
+}
+
+table.manual-vl th, table.manual-vl td, table.manual-vl td.alt {
+  border-color: #cccccc;
+  border-width: 1px;
+  border-style: none solid none solid;
+}
+
+table.manual-vl th.inter {
+  border-style: solid solid solid solid;
+}
+
+table.manual-hl td {
+  border-color: #cccccc;
+  border-width: 1px;
+  border-style: solid none solid none;
+}
+
+table td.code {
+  font-family: monospace;
+}
+
+h2 {
+  margin-top:2em;
+  border-style: none none solid none;
+  border-width: 1px;
+  border-color: #cccccc;
+}
+
+/**** Table of content in the side-nav ****/
+
+
+div.toc {
+  margin:0;
+  padding: 0.3em 0 0 0;
+  width:100%;
+  float:none;
+  position:absolute;
+  bottom:0;
+  border-radius:0px;
+  border-style: solid none none none;
+  max-height:50%;
+  overflow-y: scroll;
+}
+
+div.toc h3 {
+  margin-left: 0.5em;
+  margin-bottom: 0.2em;
+}
+
+div.toc ul {
+  margin: 0.2em 0 0.4em 0.5em;
+}
+
+span.cpp11,span.cpp14,span.cpp17 {
+  color: #119911;
+  font-weight: bold;
+}
+
+/**** old Eigen's styles ****/
+
+
+table.tutorial_code td {
+  border-color: transparent; /* required for Firefox */
+  padding: 3pt 5pt 3pt 5pt;
+  vertical-align: top;
+}
+
+
+/* Whenever doxygen meets a '\n' or a '<BR/>', it will put 
+ * the text containing the character into a <p class="starttd">.
+ * This little hack together with table.tutorial_code td.note
+ * aims at fixing this issue. */
+table.tutorial_code td.note p.starttd {
+  margin: 0px;
+  border: none;
+  padding: 0px;
+}
+
+div.eimainmenu {
+  text-align:     center;
+}
+
+/* center version number on main page */
+h3.version { 
+  text-align:     center;
+}
+
+
+td.width20em p.endtd {
+  width:  20em;
+}
+
+/* needed for huge screens */
+.ui-resizable-e {
+  background-repeat: repeat-y;
+}

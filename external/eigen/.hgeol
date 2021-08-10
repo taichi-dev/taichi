@@ -1,0 +1,11 @@
+[patterns]
+*.sh = LF
+*.MINPACK = CRLF
+scripts/*.in = LF
+debug/msvc/*.dat = CRLF
+debug/msvc/*.natvis = CRLF
+unsupported/test/mpreal/*.* = CRLF
+** = native
+
+[repository]
+native = LF

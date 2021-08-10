@@ -189,6 +189,8 @@ jobs:
           submodules: 'recursive'
           fetch-depth: '0'
 
+      - uses: actions/setup-python@v2
+
       - name: Build
         run: |
           git --version

@@ -75,13 +75,15 @@ jobs:
 
       - name: Build & Install
         run: |
+          git fetch origin master
+          git rev-list --max-count=200 origin/master --
+          git rev-list --max-count=200 master --
           TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
           sudo apt-get install xorg-dev libglu1-mesa-dev
           python -m pip install --user numpy pybind11 gitpython
           cd python
-          git fetch origin master
           python build.py build
           pip uninstall taichi -y
           cd ..
@@ -195,7 +197,7 @@ jobs:
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
           export CXX=clang++-8
           export PYTHON=/usr/bin/python3
-          sudo apt-get install xorg-dev libglu1-mesa-dev
+          apt-get install xorg-dev libglu1-mesa-dev
           python -m pip install --user numpy pybind11 gitpython
           cd python
           python build.py build

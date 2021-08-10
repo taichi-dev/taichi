@@ -1,9 +1,0 @@
-namespace Eigen {
-
-/** \page TopicVectorization Vectorization
-
-
-TODO: write this dox page!
-
-*/
-}

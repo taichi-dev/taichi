@@ -1,9 +1,0 @@
-This is an example of how one can wrap some of Eigen into a C library.
-
-To try this with GCC, do:
-
-  g++ -c binary_library.cpp -O2 -msse2 -I ../..
-  gcc example.c binary_library.o -o example -lstdc++
-  ./example
-
-TODO: add CMakeLists, add more explanations here

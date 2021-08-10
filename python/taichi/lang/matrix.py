@@ -89,12 +89,15 @@ class Matrix(TaichiOperations):
                     else:
                         if not ti.is_extension_supported(
                                 ti.cfg.arch, ti.extension.dynamic_index
-                        ) or in_python_scope() or disable_local_tensor or not ti.current_cfg().dynamic_index:
+                        ) or in_python_scope(
+                        ) or disable_local_tensor or not ti.current_cfg(
+                        ).dynamic_index:
                             mat = [list([expr.Expr(x)]) for x in n]
                         else:
                             if dt is None:
                                 raise Exception(
-                                    'dt required when using dynamic_index for local tensor')
+                                    'dt required when using dynamic_index for local tensor'
+                                )
                             self.local_tensor_proxy = impl.expr_init_local_tensor(
                                 [len(n)], dt,
                                 expr.make_expr_group([expr.Expr(x)
@@ -110,13 +113,16 @@ class Matrix(TaichiOperations):
                     mat = [[x] for x in n]
             else:
                 if not ti.is_extension_supported(
-                        ti.cfg.arch, ti.extension.dynamic_index
-                ) or in_python_scope() or disable_local_tensor or not ti.current_cfg().dynamic_index:
+                        ti.cfg.arch,
+                        ti.extension.dynamic_index) or in_python_scope(
+                        ) or disable_local_tensor or not ti.current_cfg(
+                        ).dynamic_index:
                     mat = [list(r) for r in n]
                 else:
                     if dt is None:
                         raise Exception(
-                            'dt required when using dynamic_index for local tensor')
+                            'dt required when using dynamic_index for local tensor'
+                        )
                     self.local_tensor_proxy = impl.expr_init_local_tensor(
                         [len(n), len(n[0])], dt,
                         expr.make_expr_group(

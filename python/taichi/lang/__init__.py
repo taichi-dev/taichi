@@ -3,8 +3,8 @@ import os
 from copy import deepcopy as _deepcopy
 
 from taichi.core.util import ti_core as _ti_core
-from taichi.lang.exception import InvalidOperationError
 from taichi.lang import impl
+from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
@@ -261,7 +261,8 @@ def no_activate(*args):
 
 def block_local(*args):
     if ti.current_cfg().dynamic_index:
-        raise InvalidOperationError('dynamic_index is not allowed when block_local is turned on.')
+        raise InvalidOperationError(
+            'dynamic_index is not allowed when block_local is turned on.')
     for a in args:
         for v in a.get_field_members():
             _ti_core.insert_snode_access_flag(

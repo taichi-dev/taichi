@@ -101,7 +101,7 @@ jobs:
           ti changelog
           # TODO: make cpp tests work in both release & dev mode.
           # Currently cpp tests only works in dev mode since it depends on the path set there.
-          ti test -vr2 -t2
+          ti test -v -r 2 -t 2
 
   build_and_test_cpu:
     name: Build and Test (CPU)
@@ -126,7 +126,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-          fetch-depth: '0'
 
       - uses: actions/setup-python@v2
         with:
@@ -175,7 +174,7 @@ jobs:
           # TODO: make cpp tests work in both release & dev mode.
           # Currently cpp tests only works in dev mode since it depends on the path set there.
           [ "$RUN_CPP_TESTS" = "ON" ] && TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
-          ti test -vr2 -t2
+          ti test -v -r 2 -t 2
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
 
@@ -187,13 +186,13 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-          fetch-depth: '0'
 
       - uses: actions/setup-python@v2
 
       - name: Build
         run: |
           git --version
+          apt-get install python3-dev
           export PATH=$LLVM_LIB_ROOT_DIR/bin:$PATH
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
           export CXX=clang++-8
@@ -222,7 +221,7 @@ jobs:
           $PYTHON examples/algorithm/laplace.py
           ti diagnose
           ti changelog
-          ti test -vr2 -t2
+          ti test -v -r 2 -t 2
 
   build_and_test_windows:
     name: Build and Test (Windows)
@@ -236,7 +235,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-          fetch-depth: '0'
 
       - uses: actions/setup-python@v2
         with:
@@ -265,7 +263,7 @@ jobs:
           python -m pip uninstall taichi -y
           cd ..\dist
           dir
-          python -m pip install ./*.whl
+          python -m pip install *.whl
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
           CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm
@@ -279,6 +277,6 @@ jobs:
           python examples/algorithm/laplace.py
           python bin/taichi diagnose
           python bin/taichi changelog
-          python bin/taichi test -vr2 -t2
+          python bin/taichi test -v -r 2 -t 2
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe

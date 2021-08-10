@@ -84,7 +84,7 @@ jobs:
           python build.py build
           pip uninstall taichi -y
           cd ..
-          NUM_WHL = `ls dist/*.whl | wc -l`
+          export NUM_WHL=`ls dist/*.whl | wc -l`
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           pip install dist/*.whl
 
@@ -151,7 +151,7 @@ jobs:
           python build.py build
           pip uninstall taichi -y
           cd ..
-          NUM_WHL = `ls dist/*.whl | wc -l`
+          export NUM_WHL=`ls dist/*.whl | wc -l`
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           pip install dist/*.whl
 
@@ -199,7 +199,7 @@ jobs:
           python build.py build
           pip uninstall taichi -y
           cd ..
-          NUM_WHL = `ls dist/*.whl | wc -l`
+          export NUM_WHL=`ls dist/*.whl | wc -l`
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           pip install dist/*.whl
         env:
@@ -257,7 +257,7 @@ jobs:
           python build.py build
           python -m pip uninstall taichi -y
           cd ..
-          python -m pip install dist/*.whl
+          python -m pip install D:\a\taichi\taichi\dist\*.whl
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
           CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm

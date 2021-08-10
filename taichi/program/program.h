@@ -32,6 +32,7 @@
 #include "taichi/system/snode_tree_buffer_manager.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
+#include "taichi/program/sparse_matrix.h"
 
 namespace taichi {
 namespace lang {
@@ -120,6 +121,8 @@ class Program {
   std::unordered_map<JITEvaluatorId, std::unique_ptr<Kernel>>
       jit_evaluator_cache;
   std::mutex jit_evaluator_cache_mut;
+
+  std::vector<SparseMatrix> sparse_matrices;
 
   // Note: for now we let all Programs share a single TypeFactory for smooth
   // migration. In the future each program should have its own copy.

@@ -331,8 +331,7 @@ class PtrOffsetStmt : public Stmt {
   }
 
   bool is_lowered_global_ptr() const {
-    // TODO: Check this is the only case.
-    return origin->is<GetChStmt>();
+    return !is_local_ptr() && !is_unlowered_global_ptr();
   }
 
   bool has_global_side_effect() const override {

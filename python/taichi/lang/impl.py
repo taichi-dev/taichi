@@ -828,4 +828,4 @@ def default_cfg():
 
 
 def call_internal(name, *args):
-    _ti_core.create_internal_func_stmt(name, args)
+    _ti_core.create_internal_func_stmt(name, make_expr_group(args))

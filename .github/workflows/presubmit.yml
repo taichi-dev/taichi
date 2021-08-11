@@ -101,7 +101,7 @@ jobs:
           ti changelog
           # TODO: make cpp tests work in both release & dev mode.
           # Currently cpp tests only works in dev mode since it depends on the path set there.
-          ti test -v
+          ti test
 
   build_and_test_cpu:
     name: Build and Test (CPU)
@@ -174,7 +174,7 @@ jobs:
           # TODO: make cpp tests work in both release & dev mode.
           # Currently cpp tests only works in dev mode since it depends on the path set there.
           [ "$RUN_CPP_TESTS" = "ON" ] && TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
-          ti test -v
+          ti test
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
 
@@ -222,7 +222,7 @@ jobs:
           $PYTHON examples/algorithm/laplace.py
           ti diagnose
           ti changelog
-          ti test -v
+          ti test
 
   build_and_test_windows:
     name: Build and Test (Windows)
@@ -264,7 +264,6 @@ jobs:
           python -m pip uninstall taichi -y
           cd ..\dist
           $env:WHL = $(dir *.whl)
-          echo $env:WHL
           python -m pip install $env:WHL
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
@@ -279,6 +278,6 @@ jobs:
           python examples/algorithm/laplace.py
           python bin/taichi diagnose
           python bin/taichi changelog
-          python bin/taichi test -v
+          python bin/taichi test
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe

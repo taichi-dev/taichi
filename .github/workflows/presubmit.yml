@@ -89,6 +89,11 @@ jobs:
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           pip install dist/*.whl
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true # MUST HAVE: otherwise it leaks our secret tokens.
+
       - name: Test
         run: |
           TAICHI_REPO_DIR=`pwd`
@@ -195,9 +200,7 @@ jobs:
 
       - name: Build
         run: |
-          apt update && apt install sudo
           git --version
-          sudo apt-get install python3-dev
           export PATH=$LLVM_LIB_ROOT_DIR/bin:/usr/local/cuda/bin:$PATH
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
           export CXX=clang++-8

@@ -106,24 +106,24 @@ struct Keys {
 };
 
 inline std::unordered_map<std::string, int> get_keys_map() {
-  std::unordered_map<std::string, int> keys;
-  keys[Keys::Shift] = GLFW_KEY_LEFT_SHIFT;
-  keys[Keys::Alt] = GLFW_KEY_LEFT_ALT;
-  keys[Keys::Control] = GLFW_KEY_LEFT_CONTROL;
-  keys[Keys::Escape] = GLFW_KEY_ESCAPE;
-  keys[Keys::Return] = GLFW_KEY_ENTER;
-  keys[Keys::Tab] = GLFW_KEY_TAB;
-  keys[Keys::BackSpace] = GLFW_KEY_BACKSPACE;
-  keys[Keys::Space] = GLFW_KEY_SPACE;
-  keys[" "] = GLFW_KEY_SPACE;
-  keys[Keys::Up] = GLFW_KEY_UP;
-  keys[Keys::Down] = GLFW_KEY_DOWN;
-  keys[Keys::Left] = GLFW_KEY_LEFT;
-  keys[Keys::Right] = GLFW_KEY_RIGHT;
-  keys[Keys::CapsLock] = GLFW_KEY_CAPS_LOCK;
-  keys[Keys::LMB] = GLFW_MOUSE_BUTTON_LEFT;
-  keys[Keys::MMB] = GLFW_MOUSE_BUTTON_MIDDLE;
-  keys[Keys::RMB] = GLFW_MOUSE_BUTTON_RIGHT;
+  static std::unordered_map<std::string, int> keys = {
+      {Keys::Shift, GLFW_KEY_LEFT_SHIFT},
+      {Keys::Alt, GLFW_KEY_LEFT_ALT},
+      {Keys::Control, GLFW_KEY_LEFT_CONTROL},
+      {Keys::Escape, GLFW_KEY_ESCAPE},
+      {Keys::Return, GLFW_KEY_ENTER},
+      {Keys::Tab, GLFW_KEY_TAB},
+      {Keys::BackSpace, GLFW_KEY_BACKSPACE},
+      {Keys::Space, GLFW_KEY_SPACE},
+      {" ", GLFW_KEY_SPACE},
+      {Keys::Up, GLFW_KEY_UP},
+      {Keys::Down, GLFW_KEY_DOWN},
+      {Keys::Left, GLFW_KEY_LEFT},
+      {Keys::Right, GLFW_KEY_RIGHT},
+      {Keys::CapsLock, GLFW_KEY_CAPS_LOCK},
+      {Keys::LMB, GLFW_MOUSE_BUTTON_LEFT},
+      {Keys::MMB, GLFW_MOUSE_BUTTON_MIDDLE},
+      {Keys::RMB, GLFW_MOUSE_BUTTON_RIGHT}};
   return keys;
 }
 

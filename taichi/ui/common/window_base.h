@@ -45,11 +45,11 @@ class WindowBase {
 
  protected:
   AppConfig config_;
-  GLFWwindow *glfw_window_;
+  GLFWwindow *glfw_window_{nullptr};
   InputHandler input_handler_;
 
   // used for FPS counting
-  double last_record_time_;
+  double last_record_time_{0.0};
   int frames_since_last_record_{0};
 
   std::list<Event> events_;

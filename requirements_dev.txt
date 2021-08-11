@@ -1,0 +1,16 @@
+colorama
+numpy
+Pillow
+pybind11
+GitPython
+yapf
+distro
+autograd
+astor
+sourceinspect
+pytest
+pytest-xdist
+pytest-rerunfailures
+pytest-cov
+coverage
+torch

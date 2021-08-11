@@ -59,7 +59,7 @@ void IRBuilder::init_header() {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt64).commit(&header_);
   }
   if (vulkan_cap_.has_float16) {
-    ib_.begin(spv::OpCapability).add(spv::CapabilityFloat16).commit(&header_); 
+    ib_.begin(spv::OpCapability).add(spv::CapabilityFloat16).commit(&header_);
   }
   if (vulkan_cap_.has_float64) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityFloat64).commit(&header_);

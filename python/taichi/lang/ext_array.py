@@ -32,6 +32,8 @@ class ExtArray:
     def loop_range(self):
         """Gets the corresponding taichi_core.Expr to serve as loop range.
 
+        This is not in use now because struct fors on ExtArrays are not supported yet.
+
         Returns:
             taichi_core.Expr: See above.
         """

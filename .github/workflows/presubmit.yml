@@ -162,6 +162,11 @@ jobs:
       #  with:
       #    limit-access-to-actor: true
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true # MUST HAVE: otherwise it leaks our secret tokens.
+
       - name: Test
         run: |
           TAICHI_REPO_DIR=`pwd`

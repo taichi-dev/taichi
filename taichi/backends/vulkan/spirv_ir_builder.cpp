@@ -27,12 +27,25 @@ void IRBuilder::init_header() {
       .add(spv::CapabilityVariablePointers)
       .commit(&header_);
 
-  if (vulkan_cap_.has_atomic_float) {
-    ib_.begin(spv::OpCapability)
-        .add(spv::CapabilityAtomicFloat64AddEXT)
-        .commit(&header_);
+  if (vulkan_cap_.has_atomic_float_add) {
+    if (vulkan_cap_.has_float64) {
+      ib_.begin(spv::OpCapability)
+          .add(spv::CapabilityAtomicFloat64AddEXT)
+          .commit(&header_);
+    }
     ib_.begin(spv::OpCapability)
         .add(spv::CapabilityAtomicFloat32AddEXT)
+        .commit(&header_);
+  }
+
+  if (vulkan_cap_.has_atomic_float_minmax) {
+    if (vulkan_cap_.has_float64) {
+      ib_.begin(spv::OpCapability)
+          .add(spv::CapabilityAtomicFloat64MinMaxEXT)
+          .commit(&header_);
+    }
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityAtomicFloat32MinMaxEXT)
         .commit(&header_);
   }
 
@@ -45,6 +58,9 @@ void IRBuilder::init_header() {
   if (vulkan_cap_.has_int64) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt64).commit(&header_);
   }
+  if (vulkan_cap_.has_float16) {
+    ib_.begin(spv::OpCapability).add(spv::CapabilityFloat16).commit(&header_);
+  }
   if (vulkan_cap_.has_float64) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityFloat64).commit(&header_);
   }
@@ -54,9 +70,15 @@ void IRBuilder::init_header() {
       .commit(&header_);
   ib_.begin(spv::OpExtension).add("SPV_KHR_variable_pointers").commit(&header_);
 
-  if (vulkan_cap_.has_atomic_float) {
+  if (vulkan_cap_.has_atomic_float_add) {
     ib_.begin(spv::OpExtension)
         .add("SPV_EXT_shader_atomic_float_add")
+        .commit(&header_);
+  }
+
+  if (vulkan_cap_.has_atomic_float_minmax) {
+    ib_.begin(spv::OpExtension)
+        .add("SPV_EXT_shader_atomic_float_min_max")
         .commit(&header_);
   }
 
@@ -220,7 +242,7 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
 }
 
 SType IRBuilder::get_primitive_buffer_type(const DataType &dt) const {
-  if (vulkan_cap_.has_atomic_float) {
+  if (vulkan_cap_.has_atomic_float_add) {
     if (dt->is_primitive(PrimitiveTypeID::f32)) {
       return t_fp32_;
     } else if (dt->is_primitive(PrimitiveTypeID::f64)) {

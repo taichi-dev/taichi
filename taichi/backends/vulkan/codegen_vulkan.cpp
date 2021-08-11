@@ -750,7 +750,7 @@ class TaskCodegen : public IRVisitor {
     spirv::Value data = ir_->query_value(stmt->val->raw_name());
     spirv::Value val;
     if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      if (ir_->get_vulkan_cap().has_atomic_float) {
+      if (ir_->get_vulkan_cap().has_atomic_float_add) {
         val = ir_->make_value(
             spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt), addr_ptr,
             ir_->uint_immediate_number(ir_->u32_type(), 1),

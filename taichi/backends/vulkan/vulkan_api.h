@@ -126,11 +126,13 @@ struct VulkanCapabilities {
   bool has_int8{false};
   bool has_int16{false};
   bool has_int64{false};
+  bool has_float16{false};
   bool has_float64{false};
 
   bool has_nvidia_interop{false};
   bool has_atomic_i64{false};
-  bool has_atomic_float{false};
+  bool has_atomic_float_add{false};
+  bool has_atomic_float_minmax{false};
   bool has_presentation{false};
   bool has_spv_variable_ptr{false};
 };

@@ -493,9 +493,11 @@ class VkRuntime ::Impl {
   void init_vk_buffers() {
 #pragma message("Vulkan buffers size hardcoded")
     root_buffer_ = std::make_unique<VkBufferWithMemory>(
-        vk_allocator_, 64 * 1024 * 1024, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        vk_allocator_, 64 * 1024 * 1024,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
     global_tmps_buffer_ = std::make_unique<VkBufferWithMemory>(
-        vk_allocator_, 1024 * 1024, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        vk_allocator_, 1024 * 1024,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 
     // Need to zero fill the buffers, otherwise there could be NaN.
     ClearBufferCommandBuilder cmd_builder{stream_->device()};

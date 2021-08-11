@@ -46,10 +46,16 @@ jobs:
           TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
-          # TODO: making changelog shouldn't depend on taichi.
-          # We currently install taichi to make changelog when building the wheel.
-          python -m pip install --user numpy pybind11 gitpython pytest
-          python setup.py develop
+          python -m pip install -r requirements_dev.txt
+          cd python
+          git fetch origin master
+          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python build.py build
+          cd ..
+          NUM_WHL=`ls dist/*.whl | wc -l`
+          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
+          pip install dist/*.whl
+        env:
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
 
       - name: Test
         run: |
@@ -63,7 +69,7 @@ jobs:
           PYPI_PWD: ${{ secrets.PYPI_PWD }}
         run: |
           cd python
-          python build.py upload
+          python build.py upload --skip_build
 
   build_and_upload_windows:
     name: Build and Upload (Windows only)
@@ -112,8 +118,14 @@ jobs:
           $env:PATH += ";C:\taichi_clang\bin"
           clang --version
           cd D:\a\taichi\taichi
-          python -m pip install --user numpy pybind11 gitpython pytest
-          python setup.py develop
+          python -m pip install -r requirements_dev.txt
+          cd python
+          git fetch origin master
+          $env:TAICHI_CMAKE_ARGS = $env:CI_SETUP_CMAKE_ARGS
+          python build.py build
+          cd ..\dist
+          $env:WHL = $(dir *.whl)
+          python -m pip install $env:WHL
         env:
           CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm
 
@@ -134,4 +146,4 @@ jobs:
           PYPI_PWD: ${{ secrets.PYPI_PWD }}
         run: |
           cd python
-          python build.py upload
+          python build.py upload --skip_build

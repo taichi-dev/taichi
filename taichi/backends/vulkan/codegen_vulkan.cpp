@@ -432,6 +432,21 @@ class TaskCodegen : public IRVisitor {
     ptr_to_buffers_[stmt] = BuffersEnum::GlobalTmps;
   }
 
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    const auto name = stmt->raw_name();
+    const auto arg_id = stmt->arg_id;
+    const auto axis = stmt->axis;
+    const auto extra_args_mem_offset = ctx_attribs_->extra_args_mem_offset();
+      const auto extra_args_index_base =
+          (extra_args_mem_offset / sizeof(int32_t));
+    spirv::Value index = ir_->int_immediate_number(ir_->i32_type(), 
+        extra_args_index_base+ arg_id * taichi_max_num_indices + axis);
+    spirv::Value var_ptr = ir_->struct_array_access(
+            ir_->i32_type(), get_buffer_value(BuffersEnum::Context), index);
+    spirv::Value var = ir_->load_variable(var_ptr, ir_->i32_type());
+    ir_->register_value(name, var);
+  }
+
   void visit(ExternalPtrStmt *stmt) override {
     // Used mostly for transferring data between host (e.g. numpy array) and
     // Vulkan.

@@ -802,8 +802,6 @@ class TaichiMain:
     @register
     def test(self, arguments: list = sys.argv[2:]):
         """Run the tests"""
-        print("TESTING")
-        print(arguments)
         parser = argparse.ArgumentParser(prog='ti test',
                                          description=f"{self.test.__doc__}")
         parser.add_argument('files',

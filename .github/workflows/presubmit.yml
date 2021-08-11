@@ -199,11 +199,11 @@ jobs:
           cd python
           git fetch origin master
           TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python build.py build
-          pip uninstall taichi -y
+          $PYTHON -m pip uninstall taichi -y
           cd ..
           export NUM_WHL=`ls dist/*.whl | wc -l`
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          pip install dist/*.whl
+          $PYTHON -m pip install dist/*.whl
         env:
           LLVM_LIB_ROOT_DIR: /home/taichi/Libs/taichi-llvm-10.0.0
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_PENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON

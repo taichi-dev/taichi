@@ -87,7 +87,7 @@ jobs:
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           pip install dist/*.whl
         env:
-          CI_SETUP_CMAKE_ARGS: "-DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON"
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Test
         run: |
@@ -101,6 +101,7 @@ jobs:
           ti changelog
           # TODO: make cpp tests work in both release & dev mode.
           # Currently cpp tests only works in dev mode since it depends on the path set there.
+          TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
           ti test -vr2 -t2
 
   build_and_test_cpu:
@@ -150,7 +151,7 @@ jobs:
           git fetch origin master
           TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python build.py build
           cd ..
-          export NUM_WHL=`ls dist/*.whl | wc -l`
+          NUM_WHL=`ls dist/*.whl | wc -l`
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           pip install dist/*.whl
         env:
@@ -172,6 +173,7 @@ jobs:
           ti changelog
           # TODO: make cpp tests work in both release & dev mode.
           # Currently cpp tests only works in dev mode since it depends on the path set there.
+          [ "$RUN_CPP_TESTS" = "ON" ] && TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
           ti test -vr2 -t2
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
@@ -188,7 +190,7 @@ jobs:
       - name: Build
         run: |
           git --version
-          export PATH=$LLVM_LIB_ROOT_DIR/bin:/usr/local/cuda/bin:$PATH
+          export PATH=$LLVM_LIB_ROOT_DIR/bin:$PATH
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
           export CXX=clang++-8
           export PYTHON=/usr/bin/python3

@@ -22,10 +22,6 @@ void IRBuilder::init_header() {
 
   // capability
   ib_.begin(spv::OpCapability).add(spv::CapabilityShader).commit(&header_);
-  // FIXME: What about devices don't support this?
-  ib_.begin(spv::OpCapability)
-      .add(spv::CapabilityVariablePointers)
-      .commit(&header_);
 
   if (vulkan_cap_.has_atomic_float_add) {
     if (vulkan_cap_.has_float64) {

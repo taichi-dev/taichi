@@ -173,7 +173,6 @@ jobs:
           ti changelog
           # TODO: make cpp tests work in both release & dev mode.
           # Currently cpp tests only works in dev mode since it depends on the path set there.
-          [ "$RUN_CPP_TESTS" = "ON" ] && TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
           ti test
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}

@@ -649,8 +649,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
-    print("external_tensor_shape_along_axis {}, arg_id {}", stmt->axis,
-          stmt->arg_id);
+    print("{}{} = external_tensor_shape_along_axis {}, arg_id {}", stmt->type_hint(), 
+          stmt->name(), stmt->axis, stmt->arg_id);
   }
 
   void visit(BitStructStoreStmt *stmt) override {

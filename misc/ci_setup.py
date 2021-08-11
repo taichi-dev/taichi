@@ -191,6 +191,7 @@ class Installer:
             "pytest-rerunfailures",
             "pytest-cov",
             "coverage",
+            "torch",
         ])
         print("importing numpy test:")
         ret = subprocess.run(

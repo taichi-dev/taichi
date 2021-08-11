@@ -13,6 +13,7 @@ from taichi.lang.ndrange import GroupedNDRange, ndrange
 from taichi.lang.ops import *
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
+from taichi.lang.sparse_matrix import SparseMatrix
 from taichi.lang.transformer import TaichiSyntaxError
 from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,

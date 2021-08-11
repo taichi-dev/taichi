@@ -1245,19 +1245,25 @@ class ClearListStmt : public Stmt {
 // Checks if the task represented by |stmt| contains a single ClearListStmt.
 bool is_clear_list_task(const OffloadedStmt *stmt);
 
-// TODO: remove this
 class InternalFuncStmt : public Stmt {
  public:
   std::string func_name;
+  std::vector<Stmt *> args;
 
-  explicit InternalFuncStmt(const std::string &func_name)
-      : func_name(func_name) {
-    this->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+  explicit InternalFuncStmt(const std::string &func_name,
+                            const std::vector<Stmt *> &args,
+                            Type *ret_type = nullptr)
+      : func_name(func_name), args(args) {
+    if (ret_type == nullptr) {
+      this->ret_type =
+          TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    } else {
+      this->ret_type = ret_type;
+    }
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, func_name);
+  TI_STMT_DEF_FIELDS(ret_type, func_name, args);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

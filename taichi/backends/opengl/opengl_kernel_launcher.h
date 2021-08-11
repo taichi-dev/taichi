@@ -11,7 +11,7 @@ namespace opengl {
 struct CompiledProgram;
 struct GLSLLauncherImpl;
 struct GLSLLauncher;
-struct GLBuffer;
+class GLBuffer;
 
 struct GLSLLauncher {
   std::unique_ptr<GLSLLauncherImpl> impl;

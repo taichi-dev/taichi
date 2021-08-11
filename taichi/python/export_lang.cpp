@@ -23,6 +23,7 @@
 #include "taichi/util/action_recorder.h"
 #include "taichi/system/timeline.h"
 #include "taichi/python/snode_registry.h"
+#include "taichi/program/sparse_matrix.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
@@ -243,6 +244,8 @@ void export_lang(py::module &m) {
       .def("make_aot_module_builder", &Program::make_aot_module_builder)
       .def("get_snode_tree_size", &Program::get_snode_tree_size)
       .def("get_snode_root", &Program::get_snode_root,
+           py::return_value_policy::reference)
+      .def("create_sparse_matrix", &Program::create_sparse_matrix,
            py::return_value_policy::reference);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -472,9 +475,11 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(std::move(stmt_unique));
   });
 
-  m.def("create_internal_func_stmt", [&](const std::string &msg) {
-    current_ast_builder().insert(std::make_unique<InternalFuncStmt>(msg));
-  });
+  m.def("create_internal_func_stmt",
+        [&](const std::string &msg, const ExprGroup &args) {
+          current_ast_builder().insert(
+              std::make_unique<FrontendInternalFuncStmt>(msg, args.exprs));
+        });
 
   m.def("begin_frontend_while", [&](const Expr &cond) {
     auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
@@ -899,6 +904,13 @@ void export_lang(py::module &m) {
         return program->add_snode_tree(registry->finalize(root));
       },
       py::return_value_policy::reference);
+
+  py::class_<SparseMatrix>(m, "SparseMatrix")
+      .def("print_triplets", &SparseMatrix::print_triplets)
+      .def("build", &SparseMatrix::build)
+      .def("print", &SparseMatrix::print)
+      .def("solve", &SparseMatrix::solve)
+      .def("get_addr", [](SparseMatrix *mat) { return uint64(mat); });
 }
 
 TI_NAMESPACE_END

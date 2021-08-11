@@ -11,6 +11,7 @@ PER_STATEMENT(FrontendAssignStmt)
 PER_STATEMENT(FrontendEvalStmt)
 PER_STATEMENT(FrontendSNodeOpStmt)  // activate, deactivate, append, clear
 PER_STATEMENT(FrontendAssertStmt)
+PER_STATEMENT(FrontendInternalFuncStmt)
 PER_STATEMENT(FrontendFuncDefStmt)
 PER_STATEMENT(FrontendReturnStmt)
 

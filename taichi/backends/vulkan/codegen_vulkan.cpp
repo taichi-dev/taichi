@@ -657,7 +657,12 @@ class TaskCodegen : public IRVisitor {
     BINARY_OP_TO_SPIRV_BITWISE(bit_xor, OpBitwiseXor)
     BINARY_OP_TO_SPIRV_BITWISE(bit_shl, OpShiftLeftLogical)
     BINARY_OP_TO_SPIRV_BITWISE(bit_shr, OpShiftRightLogical)
-    BINARY_OP_TO_SPIRV_BITWISE(bit_sar, OpShiftRightArithmetic)
+    // NOTE: `OpShiftRightArithmetic` will treat the first bit as sign bit even it's the unsigned type
+    else if (op_type == BinaryOpType::bit_sar) {
+      bin_value = ir_->make_value(
+          is_unsigned(dst_type.dt) ? spv::OpShiftRightLogical : spv::OpShiftRightArithmetic, 
+          dst_type, lhs_value, rhs_value);
+    }
 #undef BINARY_OP_TO_SPIRV_BITWISE
 
 #define BINARY_OP_TO_SPIRV_LOGICAL(op, func)                          \

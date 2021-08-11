@@ -241,7 +241,7 @@ class TaskCodegen : public IRVisitor {
     spirv::SType snode_struct;
     if (stmt->input_snode) {
       parent = stmt->input_snode->raw_name();
-      if (stmt->snode->id == 0) {
+      if (stmt->snode->id == compiled_structs_->root->id) {
         snode_struct = spirv_snode_.root_stype;
         is_root = true;
       } else {

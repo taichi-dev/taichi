@@ -13,6 +13,7 @@ class StructCompiler {
     TI_ASSERT(root.type == SNodeType::root);
 
     CompiledSNodeStructs result;
+    result.root = &root;
     result.root_size = compute_snode_size(&root);
     result.snode_descriptors = std::move(snode_descriptors_);
     TI_INFO("Vulkan RootBuffer size={}", result.root_size);

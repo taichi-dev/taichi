@@ -195,7 +195,7 @@ jobs:
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
           export CXX=clang++-8
           export PYTHON=/usr/bin/python3
-          python -m pip install -r requirements_dev.txt
+          $PYTHON -m pip install -r requirements_dev.txt
           cd python
           git fetch origin master
           TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python build.py build

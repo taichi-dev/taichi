@@ -61,7 +61,7 @@ jobs:
         run: |
           python examples/algorithm/laplace.py
           ti diagnose
-          ti test -cvr2 -t2
+          ti test -vr2 -t2
 
       - name: Upload PyPI
         env:
@@ -137,7 +137,7 @@ jobs:
           python -c "import taichi"
           python examples/algorithm/laplace.py
           python bin/taichi diagnose
-          python bin/taichi test -cvr2 -t2
+          python bin/taichi test -vr2 -t2
 
       - name: Upload PyPI
         shell: powershell

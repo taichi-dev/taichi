@@ -23,7 +23,6 @@
 #include "taichi/util/action_recorder.h"
 #include "taichi/system/timeline.h"
 #include "taichi/python/snode_registry.h"
-#include "taichi/program/sparse_matrix.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
@@ -244,8 +243,6 @@ void export_lang(py::module &m) {
       .def("make_aot_module_builder", &Program::make_aot_module_builder)
       .def("get_snode_tree_size", &Program::get_snode_tree_size)
       .def("get_snode_root", &Program::get_snode_root,
-           py::return_value_policy::reference)
-      .def("create_sparse_matrix", &Program::create_sparse_matrix,
            py::return_value_policy::reference);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -904,13 +901,6 @@ void export_lang(py::module &m) {
         return program->add_snode_tree(registry->finalize(root));
       },
       py::return_value_policy::reference);
-
-  py::class_<SparseMatrix>(m, "SparseMatrix")
-      .def("print_triplets", &SparseMatrix::print_triplets)
-      .def("build", &SparseMatrix::build)
-      .def("print", &SparseMatrix::print)
-      .def("solve", &SparseMatrix::solve)
-      .def("get_addr", [](SparseMatrix *mat) { return uint64(mat); });
 }
 
 TI_NAMESPACE_END

@@ -21,7 +21,7 @@ def polar_decompose2d(A, dt):
     scale = (1.0 / ti.sqrt(x * x + y * y))
     c = x * scale
     s = y * scale
-    r = ti.Matrix([[c, -s], [s, c]])
+    r = ti.Matrix([[c, -s], [s, c]], dt=dt)
     return r, r.transpose() @ A
 
 
@@ -79,11 +79,11 @@ def svd2d(A, dt):
         tmp = s1
         s1 = s2
         s2 = tmp
-        V = [[-s, c], [-c, -s]]
+        V = ti.Matrix([[-s, c], [-c, -s]], dt=dt)
     else:
-        V = [[c, s], [-s, c]]
+        V = ti.Matrix([[c, s], [-s, c]], dt=dt)
     U = R @ V
-    return U, ti.Matrix([[s1, ti.cast(0, dt)], [ti.cast(0, dt), s2]]), V
+    return U, ti.Matrix([[s1, ti.cast(0, dt)], [ti.cast(0, dt), s2]], dt=dt), V
 
 
 def svd3d(A, dt, iters=None):
@@ -128,7 +128,7 @@ def svd3d(A, dt, iters=None):
 
 @ti.func
 def eig2x2(A, dt):
-    """Compute the eigenvalues and right eigenvectors (Av=\lambda v) of a 2x2 real matrix.
+    """Compute the eigenvalues and right eigenvectors (Av=lambda v) of a 2x2 real matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
 
@@ -148,8 +148,8 @@ def eig2x2(A, dt):
     v1 = ti.Vector.zero(dt, 4)
     v2 = ti.Vector.zero(dt, 4)
     if gap > 0:
-        lambda1 = ti.Vector([tr + ti.sqrt(gap), ti.cast(0.0, dt)]) * 0.5
-        lambda2 = ti.Vector([tr - ti.sqrt(gap), ti.cast(0.0, dt)]) * 0.5
+        lambda1 = ti.Vector([tr + ti.sqrt(gap), 0.0], dt=dt) * 0.5
+        lambda2 = ti.Vector([tr - ti.sqrt(gap), 0.0], dt=dt) * 0.5
         A1 = A - lambda1[0] * ti.Matrix.identity(dt, 2)
         A2 = A - lambda2[0] * ti.Matrix.identity(dt, 2)
         if all(A1 == ti.Matrix.zero(dt, 2, 2)) and all(
@@ -158,20 +158,20 @@ def eig2x2(A, dt):
             v2 = ti.Vector([1.0, 0.0, 0.0, 0.0]).cast(dt)
         else:
             v1 = ti.Vector([A2[0, 0], 0.0, A2[1, 0],
-                            0.0]).cast(dt).normalized()
+                            0.0], dt=dt).normalized()
             v2 = ti.Vector([A1[0, 0], 0.0, A1[1, 0],
-                            0.0]).cast(dt).normalized()
+                            0.0], dt=dt).normalized()
     else:
-        lambda1 = ti.Vector([tr, ti.sqrt(-gap)]) * 0.5
-        lambda2 = ti.Vector([tr, -ti.sqrt(-gap)]) * 0.5
+        lambda1 = ti.Vector([tr, ti.sqrt(-gap)], dt=dt) * 0.5
+        lambda2 = ti.Vector([tr, -ti.sqrt(-gap)], dt=dt) * 0.5
         A1r = A - lambda1[0] * ti.Matrix.identity(dt, 2)
         A1i = -lambda1[1] * ti.Matrix.identity(dt, 2)
         A2r = A - lambda2[0] * ti.Matrix.identity(dt, 2)
         A2i = -lambda2[1] * ti.Matrix.identity(dt, 2)
         v1 = ti.Vector([A2r[0, 0], A2i[0, 0], A2r[1, 0],
-                        A2i[1, 0]]).cast(dt).normalized()
+                        A2i[1, 0]], dt=dt).normalized()
         v2 = ti.Vector([A1r[0, 0], A1i[0, 0], A1r[1, 0],
-                        A1i[1, 0]]).cast(dt).normalized()
+                        A1i[1, 0]], dt=dt).normalized()
     eigenvalues = ti.Matrix.rows([lambda1, lambda2])
     eigenvectors = ti.Matrix.cols([v1, v2])
 
@@ -180,7 +180,7 @@ def eig2x2(A, dt):
 
 @ti.func
 def sym_eig2x2(A, dt):
-    """Compute the eigenvalues and right eigenvectors (Av=\lambda v) of a 2x2 real symmetric matrix.
+    """Compute the eigenvalues and right eigenvectors (Av=lambda v) of a 2x2 real symmetric matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
 
@@ -197,7 +197,7 @@ def sym_eig2x2(A, dt):
     gap = tr**2 - 4 * det
     lambda1 = (tr + ti.sqrt(gap)) * 0.5
     lambda2 = (tr - ti.sqrt(gap)) * 0.5
-    eigenvalues = ti.Vector([lambda1, lambda2]).cast(dt)
+    eigenvalues = ti.Vector([lambda1, lambda2], dt=dt)
 
     A1 = A - lambda1 * ti.Matrix.identity(dt, 2)
     A2 = A - lambda2 * ti.Matrix.identity(dt, 2)
@@ -208,8 +208,8 @@ def sym_eig2x2(A, dt):
         v1 = ti.Vector([0.0, 1.0]).cast(dt)
         v2 = ti.Vector([1.0, 0.0]).cast(dt)
     else:
-        v1 = ti.Vector([A2[0, 0], A2[1, 0]]).cast(dt).normalized()
-        v2 = ti.Vector([A1[0, 0], A1[1, 0]]).cast(dt).normalized()
+        v1 = ti.Vector([A2[0, 0], A2[1, 0]], dt=dt).normalized()
+        v2 = ti.Vector([A1[0, 0], A1[1, 0]], dt=dt).normalized()
     eigenvectors = ti.Matrix.cols([v1, v2])
     return eigenvalues, eigenvectors
 

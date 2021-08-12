@@ -88,10 +88,14 @@ class Matrix(TaichiOperations):
                     if keep_raw:
                         mat = [list([x]) for x in n]
                     else:
-                        if ti.current_cfg().dynamic_index and not ti.is_extension_supported(ti.cfg.arch,
-                                                                                            ti.extension.dynamic_index):
+                        if ti.current_cfg(
+                        ).dynamic_index and not ti.is_extension_supported(
+                                ti.cfg.arch, ti.extension.dynamic_index):
                             ti.current_cfg().dynamic_index = False
-                            warning('Backend ' + str(ti.cfg.arch) + ' doesn\'t support dynamic index, disable it automatically.')
+                            warning(
+                                'Backend ' + str(ti.cfg.arch) +
+                                ' doesn\'t support dynamic index, disable it automatically.'
+                            )
                         if in_python_scope(
                         ) or disable_local_tensor or not ti.current_cfg(
                         ).dynamic_index:
@@ -120,10 +124,14 @@ class Matrix(TaichiOperations):
                 else:
                     mat = [[x] for x in n]
             else:
-                if ti.current_cfg().dynamic_index and not ti.is_extension_supported(ti.cfg.arch,
-                                                                                    ti.extension.dynamic_index):
+                if ti.current_cfg(
+                ).dynamic_index and not ti.is_extension_supported(
+                        ti.cfg.arch, ti.extension.dynamic_index):
                     ti.current_cfg().dynamic_index = False
-                    warning('Backend ' + str(ti.cfg.arch) + ' doesn\'t support dynamic index, disable it automatically.')
+                    warning(
+                        'Backend ' + str(ti.cfg.arch) +
+                        ' doesn\'t support dynamic index, disable it automatically.'
+                    )
                 if in_python_scope(
                 ) or disable_local_tensor or not ti.current_cfg(
                 ).dynamic_index:
@@ -327,10 +335,12 @@ class Matrix(TaichiOperations):
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
 
-        if ti.current_cfg().dynamic_index and not ti.is_extension_supported(ti.cfg.arch,
-                                         ti.extension.dynamic_index):
+        if ti.current_cfg().dynamic_index and not ti.is_extension_supported(
+                ti.cfg.arch, ti.extension.dynamic_index):
             ti.current_cfg().dynamic_index = False
-            warning('Backend ' + str(ti.cfg.arch) + ' doesn\'t support dynamic index, disable it automatically.')
+            warning(
+                'Backend ' + str(ti.cfg.arch) +
+                ' doesn\'t support dynamic index, disable it automatically.')
         if self.local_tensor_proxy != None:
             return ti.local_subscript_with_offset(self.local_tensor_proxy,
                                                   (i, j))
@@ -523,7 +533,8 @@ class Matrix(TaichiOperations):
             inv_det = impl.expr_init(1.0 / self.determinant())
             # Discussion: https://github.com/taichi-dev/taichi/pull/943#issuecomment-626344323
             return inv_det * Matrix([[self(1, 1), -self(0, 1)],
-                                     [-self(1, 0), self(0, 0)]], disable_local_tensor=True).variable()
+                                     [-self(1, 0), self(0, 0)]],
+                                    disable_local_tensor=True).variable()
         elif self.n == 3:
             n = 3
             inv_determinant = impl.expr_init(1.0 / self.determinant())
@@ -607,7 +618,8 @@ class Matrix(TaichiOperations):
 
         """
         ret = Matrix([[self[i, j] for i in range(self.n)]
-                      for j in range(self.m)], disable_local_tensor=True)
+                      for j in range(self.m)],
+                     disable_local_tensor=True)
         return ret
 
     @taichi_scope
@@ -830,10 +842,12 @@ class Matrix(TaichiOperations):
 
         """
         if m is None:
-            return Vector([ti.cast(0, dt) for _ in range(n)], disable_local_tensor=True)
+            return Vector([ti.cast(0, dt) for _ in range(n)],
+                          disable_local_tensor=True)
         else:
             return Matrix([[ti.cast(0, dt) for _ in range(m)]
-                           for _ in range(n)], disable_local_tensor=True)
+                           for _ in range(n)],
+                          disable_local_tensor=True)
 
     @staticmethod
     @taichi_scope
@@ -850,10 +864,12 @@ class Matrix(TaichiOperations):
 
         """
         if m is None:
-            return Vector([ti.cast(1, dt) for _ in range(n)], disable_local_tensor=True)
+            return Vector([ti.cast(1, dt) for _ in range(n)],
+                          disable_local_tensor=True)
         else:
             return Matrix([[ti.cast(1, dt) for _ in range(m)]
-                           for _ in range(n)], disable_local_tensor=True)
+                           for _ in range(n)],
+                          disable_local_tensor=True)
 
     @staticmethod
     @taichi_scope
@@ -872,7 +888,8 @@ class Matrix(TaichiOperations):
         if dt is None:
             dt = int
         assert 0 <= i < n
-        return Matrix([ti.cast(int(j == i), dt) for j in range(n)], disable_local_tensor=True)
+        return Matrix([ti.cast(int(j == i), dt) for j in range(n)],
+                      disable_local_tensor=True)
 
     @staticmethod
     @taichi_scope
@@ -888,7 +905,8 @@ class Matrix(TaichiOperations):
 
         """
         return Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
-                       for i in range(n)], disable_local_tensor=True)
+                       for i in range(n)],
+                      disable_local_tensor=True)
 
     @staticmethod
     def rotation2d(alpha):
@@ -1120,7 +1138,8 @@ class Matrix(TaichiOperations):
             self[1] * other[2] - self[2] * other[1],
             self[2] * other[0] - self[0] * other[2],
             self[0] * other[1] - self[1] * other[0],
-        ], disable_local_tensor=True)
+        ],
+                     disable_local_tensor=True)
         return ret
 
     @kern_mod.pyfunc
@@ -1167,7 +1186,8 @@ class Matrix(TaichiOperations):
             impl.static_assert(other.m == 1,
                                "rhs for outer_product is not a vector"))
         ret = Matrix([[self[i] * other[j] for j in range(other.n)]
-                      for i in range(self.n)], disable_local_tensor=True)
+                      for i in range(self.n)],
+                     disable_local_tensor=True)
         return ret
 
 

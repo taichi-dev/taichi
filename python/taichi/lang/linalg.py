@@ -157,10 +157,8 @@ def eig2x2(A, dt):
             v1 = ti.Vector([0.0, 0.0, 1.0, 0.0]).cast(dt)
             v2 = ti.Vector([1.0, 0.0, 0.0, 0.0]).cast(dt)
         else:
-            v1 = ti.Vector([A2[0, 0], 0.0, A2[1, 0],
-                            0.0], dt=dt).normalized()
-            v2 = ti.Vector([A1[0, 0], 0.0, A1[1, 0],
-                            0.0], dt=dt).normalized()
+            v1 = ti.Vector([A2[0, 0], 0.0, A2[1, 0], 0.0], dt=dt).normalized()
+            v2 = ti.Vector([A1[0, 0], 0.0, A1[1, 0], 0.0], dt=dt).normalized()
     else:
         lambda1 = ti.Vector([tr, ti.sqrt(-gap)], dt=dt) * 0.5
         lambda2 = ti.Vector([tr, -ti.sqrt(-gap)], dt=dt) * 0.5
@@ -168,10 +166,10 @@ def eig2x2(A, dt):
         A1i = -lambda1[1] * ti.Matrix.identity(dt, 2)
         A2r = A - lambda2[0] * ti.Matrix.identity(dt, 2)
         A2i = -lambda2[1] * ti.Matrix.identity(dt, 2)
-        v1 = ti.Vector([A2r[0, 0], A2i[0, 0], A2r[1, 0],
-                        A2i[1, 0]], dt=dt).normalized()
-        v2 = ti.Vector([A1r[0, 0], A1i[0, 0], A1r[1, 0],
-                        A1i[1, 0]], dt=dt).normalized()
+        v1 = ti.Vector([A2r[0, 0], A2i[0, 0], A2r[1, 0], A2i[1, 0]],
+                       dt=dt).normalized()
+        v2 = ti.Vector([A1r[0, 0], A1i[0, 0], A1r[1, 0], A1i[1, 0]],
+                       dt=dt).normalized()
     eigenvalues = ti.Matrix.rows([lambda1, lambda2])
     eigenvectors = ti.Matrix.cols([v1, v2])
 

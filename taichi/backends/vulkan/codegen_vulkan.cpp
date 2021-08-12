@@ -701,7 +701,7 @@ class TaskCodegen : public IRVisitor {
          bin_value =                                                                  \
           ir_->call_glsl450(dst_type, instruction, lhs_value, rhs_value);             \
       }                                                                               \
-    }                                                                                 \ 
+    }                                                                                 \
     else {                                                                            \
       TI_NOT_IMPLEMENTED                                                              \
     }                                                                                 \

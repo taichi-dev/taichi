@@ -117,6 +117,13 @@ void transition_image_layout(VkImage image,
                              VkDevice device,
                              VkQueue graphics_queue);
 
+// TODO: make the creation more configurable?
+void create_render_pass(VkRenderPass &render_pass,
+                        VkFormat color_format,
+                        VkImageLayout final_color_layout,
+                        VkDevice device,
+                        VkPhysicalDevice physical_device);
+
 }  // namespace vulkan
 
 TI_UI_NAMESPACE_END

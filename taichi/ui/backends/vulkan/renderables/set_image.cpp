@@ -95,7 +95,8 @@ void SetImage::init_set_image(AppContext *app_context,
   RenderableConfig config = {
       6,
       6,
-      1,
+      0,
+      0,
       app_context->config.package_path + "/shaders/SetImage_vk_vert.spv",
       app_context->config.package_path + "/shaders/SetImage_vk_frag.spv",
       TopologyType::Triangles,
@@ -230,13 +231,6 @@ void SetImage::update_index_buffer_() {
 }
 
 void SetImage::create_descriptor_set_layout() {
-  VkDescriptorSetLayoutBinding ubo_layout_binding{};
-  ubo_layout_binding.binding = 0;
-  ubo_layout_binding.descriptorCount = 1;
-  ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  ubo_layout_binding.pImmutableSamplers = nullptr;
-  ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
   VkDescriptorSetLayoutBinding sampler_layout_binding{};
   sampler_layout_binding.binding = 1;
   sampler_layout_binding.descriptorCount = 1;
@@ -245,8 +239,8 @@ void SetImage::create_descriptor_set_layout() {
   sampler_layout_binding.pImmutableSamplers = nullptr;
   sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-  std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
-      ubo_layout_binding, sampler_layout_binding};
+  std::array<VkDescriptorSetLayoutBinding, 1> bindings = {
+      sampler_layout_binding};
   VkDescriptorSetLayoutCreateInfo layout_info{};
   layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
   layout_info.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -276,34 +270,21 @@ void SetImage::create_descriptor_sets() {
   }
 
   for (size_t i = 0; i < app_context_->get_swap_chain_size(); i++) {
-    VkDescriptorBufferInfo buffer_info{};
-    buffer_info.buffer = uniform_buffers_[i];
-    buffer_info.offset = 0;
-    buffer_info.range = config_.ubo_size;
-
     VkDescriptorImageInfo image_info{};
     image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     image_info.imageView = texture_image_view_;
     image_info.sampler = texture_sampler_;
 
-    std::array<VkWriteDescriptorSet, 2> descriptor_writes{};
+    std::array<VkWriteDescriptorSet, 1> descriptor_writes{};
 
     descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descriptor_writes[0].dstSet = descriptor_sets_[i];
-    descriptor_writes[0].dstBinding = 0;
+    descriptor_writes[0].dstBinding = 1;
     descriptor_writes[0].dstArrayElement = 0;
-    descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptor_writes[0].descriptorCount = 1;
-    descriptor_writes[0].pBufferInfo = &buffer_info;
-
-    descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptor_writes[1].dstSet = descriptor_sets_[i];
-    descriptor_writes[1].dstBinding = 1;
-    descriptor_writes[1].dstArrayElement = 0;
-    descriptor_writes[1].descriptorType =
+    descriptor_writes[0].descriptorType =
         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptor_writes[1].descriptorCount = 1;
-    descriptor_writes[1].pImageInfo = &image_info;
+    descriptor_writes[0].descriptorCount = 1;
+    descriptor_writes[0].pImageInfo = &image_info;
 
     vkUpdateDescriptorSets(app_context_->device(),
                            static_cast<uint32_t>(descriptor_writes.size()),

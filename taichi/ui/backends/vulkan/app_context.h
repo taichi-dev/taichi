@@ -39,8 +39,6 @@ class AppContext {
 
   VkRenderPass render_pass_;
 
-  void create_render_pass(VkRenderPass &render_pass,
-                          VkImageLayout final_color_layout);
   void create_render_passes();
 };
 

@@ -28,7 +28,8 @@ enum class TopologyType : int { Triangles = 0, Lines = 1, Points = 2 };
 struct RenderableConfig {
   int vertices_count;
   int indices_count;
-  int ubo_size;
+  size_t ubo_size;
+  size_t ssbo_size;
   std::string vertex_shader_path;
   std::string fragment_shader_path;
   TopologyType topology_type;
@@ -46,7 +47,7 @@ class Renderable {
 
   virtual void cleanup();
 
-  virtual ~Renderable();
+  virtual ~Renderable() = default;
 
  protected:
   RenderableConfig config_;
@@ -56,6 +57,7 @@ class Renderable {
   VkPipelineLayout pipeline_layout_;
   VkPipeline graphics_pipeline_;
 
+  // TODO: use the memory allocator from ti vulkan backend
   VkBuffer vertex_buffer_;
   VkDeviceMemory vertex_buffer_memory_;
   VkBuffer index_buffer_;
@@ -70,6 +72,9 @@ class Renderable {
 
   std::vector<VkBuffer> uniform_buffers_;
   std::vector<VkDeviceMemory> uniform_buffer_memories_;
+
+  std::vector<VkBuffer> storage_buffers_;
+  std::vector<VkDeviceMemory> storage_buffer_memories_;
 
   VkDescriptorSetLayout descriptor_set_layout_;
   std::vector<VkDescriptorSet> descriptor_sets_;
@@ -97,6 +102,14 @@ class Renderable {
   void create_index_buffer();
 
   void create_uniform_buffers();
+
+  void create_storage_buffers();
+
+  void destroy_uniform_buffers();
+
+  void destroy_storage_buffers();
+
+  void resize_storage_buffers(int new_ssbo_size);
 
   virtual void create_descriptor_sets() = 0;
 };

@@ -416,7 +416,8 @@ class VkRuntime ::Impl {
       const auto &spirv_src = reg_params.task_spirv_source_codes[i];
       const auto &task_name = attribs.name;
 
-      TI_WARN_IF(!spirv_tools_->Validate(spirv_src), "SPIRV validation failed");
+      // TI_WARN_IF(!spirv_tools_->Validate(spirv_src), "SPIRV validation
+      // failed");
 
       std::vector<uint32_t> optimized_spv;
 
@@ -472,8 +473,8 @@ class VkRuntime ::Impl {
     num_pending_kernels_ = 0;
   }
 
-  const VulkanCapabilities &get_capabilities() const {
-    return embedded_device_->get_capabilities();
+  Device *get_ti_device() const {
+    return embedded_device_->get_ti_device();
   }
 
  private:
@@ -519,7 +520,8 @@ class VkRuntime ::Impl {
                                   "vkGetPhysicalDeviceMemoryProperties2KHR"));
 
     VmaAllocatorCreateInfo allocatorInfo = {};
-    allocatorInfo.vulkanApiVersion = get_capabilities().api_version;
+    allocatorInfo.vulkanApiVersion = embedded_device_->get_ti_device()->get_cap(
+        DeviceCapability::vk_api_version);
     allocatorInfo.physicalDevice = embedded_device_->physical_device();
     allocatorInfo.device = embedded_device_->device()->device();
     allocatorInfo.instance = embedded_device_->instance();
@@ -604,11 +606,13 @@ void VkRuntime::synchronize() {
   impl_->synchronize();
 }
 
+Device *VkRuntime::get_ti_device() const {
 #ifdef TI_WITH_VULKAN
-const VulkanCapabilities &VkRuntime::get_capabilities() const {
-  return impl_->get_capabilities();
-}
+  return impl_->get_ti_device();
+#else
+  return nullptr;
 #endif
+}
 
 bool is_vulkan_api_available() {
 #ifdef TI_WITH_VULKAN

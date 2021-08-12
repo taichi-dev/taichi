@@ -5,6 +5,8 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+#include <taichi/backends/device.h>
+
 #include <memory>
 #include <optional>
 #include <vector>
@@ -119,24 +121,6 @@ class VulkanDevice {
   Params rep_;
 };
 
-struct VulkanCapabilities {
-  uint32_t api_version;
-  uint32_t spirv_version;
-
-  bool has_int8{false};
-  bool has_int16{false};
-  bool has_int64{false};
-  bool has_float16{false};
-  bool has_float64{false};
-
-  bool has_nvidia_interop{false};
-  bool has_atomic_i64{false};
-  bool has_atomic_float_add{false};
-  bool has_atomic_float_minmax{false};
-  bool has_presentation{false};
-  bool has_spv_variable_ptr{false};
-};
-
 /**
  * This class creates a VulkanDevice instance. The underlying Vk* resources are
  * embedded directly inside the class.
@@ -185,8 +169,8 @@ class EmbeddedVulkanDevice {
     return queue_family_indices_;
   }
 
-  const VulkanCapabilities &get_capabilities() const {
-    return capability_;
+  Device *get_ti_device() const {
+    return ti_device_.get();
   }
 
  private:
@@ -220,8 +204,7 @@ class EmbeddedVulkanDevice {
   // commands, respectively?
   VkCommandPool command_pool_{VK_NULL_HANDLE};
 
-  VulkanCapabilities capability_;
-
+  std::unique_ptr<Device> ti_device_{nullptr};
   std::unique_ptr<VulkanDevice> owned_device_{nullptr};
 
   Params params_;

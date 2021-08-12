@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "taichi/backends/device.h"
 #include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/backends/vulkan/kernel_utils.h"
 #include "taichi/program/compile_config.h"
@@ -48,9 +49,7 @@ class VkRuntime {
 
   void synchronize();
 
-#ifdef TI_WITH_VULKAN
-  const VulkanCapabilities &get_capabilities() const;
-#endif
+  Device *VkRuntime::get_ti_device() const;
 
  private:
   std::unique_ptr<Impl> impl_;

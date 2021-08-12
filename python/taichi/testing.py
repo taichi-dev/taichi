@@ -1,4 +1,5 @@
 import itertools
+
 from taichi.core import ti_core as _ti_core
 
 import taichi as ti
@@ -52,10 +53,12 @@ def make_temp_file(*args, **kwargs):
     os.close(fd)
     return name
 
+
 test_on_and_off_features = [
     # "packed",
     "dynamic_index"
 ]
+
 
 # Pytest options
 def _get_taichi_archs_fixture():
@@ -102,10 +105,12 @@ def _get_taichi_archs_fixture():
                     f'Arch={req_arch} some extension(s) not satisfied')
 
             for i, feature in enumerate(test_on_and_off_features):
-                if feature in options and options[feature] != request.param[i + 1]:
+                if feature in options and options[feature] != request.param[i +
+                                                                            1]:
                     name = feature
                     flag = request.param[i + 1]
-                    raise pytest.skip(f'{name}={flag} not included in this test')
+                    raise pytest.skip(
+                        f'{name}={flag} not included in this test')
                 options[feature] = request.param[i + 1]
 
             ti.init(arch=req_arch, **options)

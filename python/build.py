@@ -85,7 +85,8 @@ def main():
 
     env_pypi_pwd = os.environ.get('PYPI_PWD', '')
 
-    shutil.rmtree('../dist', ignore_errors=True)
+    if not args.skip_build:
+        shutil.rmtree('../dist', ignore_errors=True)
 
     if mode == 'try_upload':
         if env_pypi_pwd == '':

@@ -26,8 +26,7 @@ def test_bls_with_dynamic_index():
         call_block_local()
 
 
-@ti.require(ti.extension.bls)
-@ti.all_archs
+@ti.test(require=ti.extension.bls, dynamic_index=False)
 def test_simple_1d():
     x, y = ti.field(ti.f32), ti.field(ti.f32)
 
@@ -54,8 +53,7 @@ def test_simple_1d():
         assert y[i] == i
 
 
-@ti.require(ti.extension.bls)
-@ti.all_archs
+@ti.test(require=ti.extension.bls, dynamic_index=False)
 def test_simple_2d():
     x, y = ti.field(ti.f32), ti.field(ti.f32)
 
@@ -83,43 +81,48 @@ def test_simple_2d():
             assert y[i, j] == i - j
 
 
-@ti.require(ti.extension.bls)
-@ti.all_archs
 def _test_bls_stencil(*args, **kwargs):
     from .bls_test_template import bls_test_template
     bls_test_template(*args, **kwargs)
 
 
+@ti.test(require=ti.extension.bls, dynamic_index=False)
 def test_gather_1d_trivial():
     # y[i] = x[i]
     _test_bls_stencil(1, 128, bs=32, stencil=((0, ), ))
 
 
+@ti.test(require=ti.extension.bls, dynamic_index=False)
 def test_gather_1d():
     # y[i] = x[i - 1] + x[i]
     _test_bls_stencil(1, 128, bs=32, stencil=((-1, ), (0, )))
 
 
+@ti.test(require=ti.extension.bls, dynamic_index=False)
 def test_gather_2d():
     stencil = [(0, 0), (0, -1), (0, 1), (1, 0)]
     _test_bls_stencil(2, 128, bs=16, stencil=stencil)
 
 
+@ti.test(require=ti.extension.bls, dynamic_index=False)
 def test_gather_2d_nonsquare():
     stencil = [(0, 0), (0, -1), (0, 1), (1, 0)]
     _test_bls_stencil(2, 128, bs=(4, 16), stencil=stencil)
 
 
+@ti.test(require=ti.extension.bls, dynamic_index=False)
 def test_gather_3d():
     stencil = [(-1, -1, -1), (2, 0, 1)]
     _test_bls_stencil(3, 64, bs=(4, 8, 16), stencil=stencil)
 
 
+@ti.test(require=ti.extension.bls, dynamic_index=False)
 def test_scatter_1d_trivial():
     # y[i] = x[i]
     _test_bls_stencil(1, 128, bs=32, stencil=((0, ), ), scatter=True)
 
 
+@ti.test(require=ti.extension.bls, dynamic_index=False)
 def test_scatter_1d():
     _test_bls_stencil(1, 128, bs=32, stencil=(
         (1, ),
@@ -127,13 +130,13 @@ def test_scatter_1d():
     ), scatter=True)
 
 
+@ti.test(require=ti.extension.bls, dynamic_index=False)
 def test_scatter_2d():
     stencil = [(0, 0), (0, -1), (0, 1), (1, 0)]
     _test_bls_stencil(2, 128, bs=16, stencil=stencil, scatter=True)
 
 
-@ti.require(ti.extension.bls)
-@ti.all_archs
+@ti.test(require=ti.extension.bls, dynamic_index=False)
 def test_multiple_inputs():
     x, y, z, w, w2 = ti.field(ti.i32), ti.field(ti.i32), ti.field(
         ti.i32), ti.field(ti.i32), ti.field(ti.i32)
@@ -168,8 +171,7 @@ def test_multiple_inputs():
             assert w[i, j] == w2[i, j]
 
 
-@ti.require(ti.extension.bls)
-@ti.all_archs
+@ti.test(require=ti.extension.bls, dynamic_index=False)
 def test_bls_large_block():
     n = 2**10
     block_size = 32

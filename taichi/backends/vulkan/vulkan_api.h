@@ -146,8 +146,8 @@ class EmbeddedVulkanDevice {
   struct Params {
     std::optional<uint32_t> api_version;
     bool is_for_ui{false};
-    std::vector<const char *> additional_instance_extensions;
-    std::vector<const char *> additional_device_extensions;
+    std::vector<std::string> additional_instance_extensions;
+    std::vector<std::string> additional_device_extensions;
     // the VkSurfaceKHR needs to be created after creating the VkInstance, but
     // before creating the VkPhysicalDevice thus, we allow the user to pass in a
     // custom surface creator

@@ -273,9 +273,6 @@ void EmbeddedVulkanDevice::create_instance() {
   }
 
   auto extensions = get_required_extensions();
-  for (auto ext : params_.additional_instance_extensions) {
-    extensions.push_back(ext);
-  }
 
 #ifdef TI_VULKAN_DEBUG
   glfwInit();
@@ -301,6 +298,11 @@ void EmbeddedVulkanDevice::create_instance() {
                     VK_KHR_SURFACE_EXTENSION_NAME) == extensions.end()) {
         extensions.push_back(ext.extensionName);
       }
+    }
+    if (std::find(params_.additional_instance_extensions.begin(),
+                  params_.additional_instance_extensions.end(),
+                  name) != params_.additional_instance_extensions.end()) {
+      extensions.push_back(ext.extensionName);
     }
   }
 
@@ -401,10 +403,6 @@ void EmbeddedVulkanDevice::create_logical_device() {
   // Detect extensions
   std::vector<const char *> enabled_extensions;
 
-  for (auto ext : params_.additional_device_extensions) {
-    enabled_extensions.push_back(ext);
-  }
-
   uint32_t extension_count = 0;
   vkEnumerateDeviceExtensionProperties(physical_device_, nullptr,
                                        &extension_count, nullptr);
@@ -457,6 +455,10 @@ void EmbeddedVulkanDevice::create_logical_device() {
     } else if (name == VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME) {
       capability_.has_float16 = true;
       capability_.has_int8 = true;
+      enabled_extensions.push_back(ext.extensionName);
+    } else if (std::find(params_.additional_device_extensions.begin(),
+                         params_.additional_device_extensions.end(),
+                         name) != params_.additional_device_extensions.end()) {
       enabled_extensions.push_back(ext.extensionName);
     }
   }

@@ -241,7 +241,7 @@ class TaskCodegen : public IRVisitor {
     spirv::SType snode_struct;
     if (stmt->input_snode) {
       parent = stmt->input_snode->raw_name();
-      if (stmt->snode->id == 0) {
+      if (stmt->snode->id == compiled_structs_->root->id) {
         snode_struct = spirv_snode_.root_stype;
         is_root = true;
       } else {
@@ -430,6 +430,22 @@ class TaskCodegen : public IRVisitor {
                                                  false);  // Named Constant
     ir_->register_value(stmt->raw_name(), val);
     ptr_to_buffers_[stmt] = BuffersEnum::GlobalTmps;
+  }
+
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    const auto name = stmt->raw_name();
+    const auto arg_id = stmt->arg_id;
+    const auto axis = stmt->axis;
+    const auto extra_args_mem_offset = ctx_attribs_->extra_args_mem_offset();
+    const auto extra_args_index_base =
+        (extra_args_mem_offset / sizeof(int32_t));
+    spirv::Value index = ir_->int_immediate_number(
+        ir_->i32_type(),
+        extra_args_index_base + arg_id * taichi_max_num_indices + axis);
+    spirv::Value var_ptr = ir_->struct_array_access(
+        ir_->i32_type(), get_buffer_value(BuffersEnum::Context), index);
+    spirv::Value var = ir_->load_variable(var_ptr, ir_->i32_type());
+    ir_->register_value(name, var);
   }
 
   void visit(ExternalPtrStmt *stmt) override {
@@ -642,7 +658,14 @@ class TaskCodegen : public IRVisitor {
     BINARY_OP_TO_SPIRV_BITWISE(bit_xor, OpBitwiseXor)
     BINARY_OP_TO_SPIRV_BITWISE(bit_shl, OpShiftLeftLogical)
     BINARY_OP_TO_SPIRV_BITWISE(bit_shr, OpShiftRightLogical)
-    BINARY_OP_TO_SPIRV_BITWISE(bit_sar, OpShiftRightArithmetic)
+    // NOTE: `OpShiftRightArithmetic` will treat the first bit as sign bit even
+    // it's the unsigned type
+    else if (op_type == BinaryOpType::bit_sar) {
+      bin_value = ir_->make_value(is_unsigned(dst_type.dt)
+                                      ? spv::OpShiftRightLogical
+                                      : spv::OpShiftRightArithmetic,
+                                  dst_type, lhs_value, rhs_value);
+    }
 #undef BINARY_OP_TO_SPIRV_BITWISE
 
 #define BINARY_OP_TO_SPIRV_LOGICAL(op, func)                          \
@@ -660,8 +683,37 @@ class TaskCodegen : public IRVisitor {
     BINARY_OP_TO_SPIRV_LOGICAL(cmp_ne, ne)
 #undef BINARY_OP_TO_SPIRV_LOGICAL
 
-#define BINARY_OP_TO_SPIRV_FLOAT_FUNC(op, instruction, instruction_id,         \
-                                      max_bits)                                \
+#define INT_OR_FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(op, instruction,            \
+                                                   instruction_id, max_bits)   \
+  else if (op_type == BinaryOpType::op) {                                      \
+    const uint32_t instruction = instruction_id;                               \
+    if (is_real(bin->element_type()) || is_integral(bin->element_type())) {    \
+      if (data_type_bits(bin->element_type()) > max_bits) {                    \
+        TI_ERROR(                                                              \
+            "[glsl450] the operand type of instruction {}({}) must <= {}bits", \
+            #instruction, instruction_id, max_bits);                           \
+      }                                                                        \
+      if (is_integral(bin->element_type())) {                                  \
+        bin_value = ir_->cast(                                                 \
+            dst_type,                                                          \
+            ir_->add(ir_->call_glsl450(ir_->f32_type(), instruction,           \
+                                       ir_->cast(ir_->f32_type(), lhs_value),  \
+                                       ir_->cast(ir_->f32_type(), rhs_value)), \
+                     ir_->float_immediate_number(ir_->f32_type(), 0.5f)));     \
+      } else {                                                                 \
+        bin_value =                                                            \
+            ir_->call_glsl450(dst_type, instruction, lhs_value, rhs_value);    \
+      }                                                                        \
+    } else {                                                                   \
+      TI_NOT_IMPLEMENTED                                                       \
+    }                                                                          \
+  }
+
+    INT_OR_FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(pow, Pow, 26, 32)
+#undef INT_OR_FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC
+
+#define FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(op, instruction, instruction_id,   \
+                                            max_bits)                          \
   else if (op_type == BinaryOpType::op) {                                      \
     const uint32_t instruction = instruction_id;                               \
     if (is_real(bin->element_type())) {                                        \
@@ -677,9 +729,8 @@ class TaskCodegen : public IRVisitor {
     }                                                                          \
   }
 
-    BINARY_OP_TO_SPIRV_FLOAT_FUNC(atan2, Atan2, 25, 32)
-    BINARY_OP_TO_SPIRV_FLOAT_FUNC(pow, Pow, 26, 32)
-#undef BINARY_OP_TO_SPIRV_FLOAT_FUNC
+    FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(atan2, Atan2, 25, 32)
+#undef FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC
 
 #define BINARY_OP_TO_SPIRV_FUNC(op, S_inst, S_inst_id, U_inst, U_inst_id,      \
                                 F_inst, F_inst_id)                             \
@@ -1050,7 +1101,7 @@ class TaskCodegen : public IRVisitor {
         ir_->mul(ir_->get_num_work_groups(0),
                  ir_->uint_immediate_number(
                      ir_->u32_type(),
-                     task_attribs_.advisory_num_threads_per_group, false)));
+                     task_attribs_.advisory_num_threads_per_group, true)));
     ir_->debug(spv::OpName, total_invocs, total_invocs_name);
 
     // Must get init label after making value(to make sure they are correct)

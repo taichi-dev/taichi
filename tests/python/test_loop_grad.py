@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test(exclude=[ti.vulkan])
 def test_loop_grad():
     x = ti.field(ti.f32)
 
@@ -31,7 +31,7 @@ def test_loop_grad():
             assert x.grad[k, i] == 2**(m - 1 - i)
 
 
-@ti.all_archs
+@ti.test(exclude=[ti.vulkan])
 def test_loop_grad_complex():
     return  # This case is not supported yet
     x = ti.field(ti.f32)

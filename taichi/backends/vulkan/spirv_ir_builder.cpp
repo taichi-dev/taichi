@@ -22,10 +22,6 @@ void IRBuilder::init_header() {
 
   // capability
   ib_.begin(spv::OpCapability).add(spv::CapabilityShader).commit(&header_);
-  // FIXME: What about devices don't support this?
-  ib_.begin(spv::OpCapability)
-      .add(spv::CapabilityVariablePointers)
-      .commit(&header_);
 
   if (vulkan_cap_.has_atomic_float_add) {
     if (vulkan_cap_.has_float64) {
@@ -461,7 +457,13 @@ DEFINE_BUILDER_BINARY_SIGN_OP(div, Div);
 Value IRBuilder::mod(Value a, Value b) {
   TI_ASSERT(a.stype.id == b.stype.id);
   if (is_integral(a.stype.dt) && is_signed(a.stype.dt)) {
-    return make_value(spv::OpSRem, a.stype, a, b);
+    // a - b * int(float(a) / float(b))
+    Value tmp1 = cast(f32_type(), a);
+    Value tmp2 = cast(f32_type(), b);
+    Value tmp3 = make_value(spv::OpFDiv, f32_type(), tmp1, tmp2);
+    Value tmp4 = cast(a.stype, tmp3);
+    Value tmp5 = make_value(spv::OpIMul, a.stype, b, tmp4);
+    return make_value(spv::OpISub, a.stype, a, tmp5);
   } else if (is_integral(a.stype.dt)) {
     return make_value(spv::OpUMod, a.stype, a, b);
   } else {

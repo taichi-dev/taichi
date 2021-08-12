@@ -77,7 +77,7 @@ def _test_type_field(dt):
 
 
 @pytest.mark.parametrize('dt', _TI_TYPES)
-@ti.archs_excluding(ti.opengl)
+@ti.archs_excluding(ti.opengl, ti.vulkan)
 def test_type_field(dt):
     _test_type_field(dt)
 

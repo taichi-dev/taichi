@@ -55,7 +55,7 @@ def make_temp_file(*args, **kwargs):
 
 
 test_on_and_off_features = [
-    # "packed",
+    "packed",
     "dynamic_index"
 ]
 

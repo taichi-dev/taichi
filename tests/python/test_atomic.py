@@ -3,8 +3,11 @@ from taichi import approx
 
 n = 128
 
+
 def ti_support_atomic_more_than_add(test):
-    return ti.archs_excluding(ti.vulkan)(test) # TODO(changyu): support atomicSub/Mul/Min/Max on Vulkan backend
+    return ti.archs_excluding(ti.vulkan)(
+        test)  # TODO(changyu): support atomicSub/Mul/Min/Max on Vulkan backend
+
 
 def run_atomic_add_global_case(vartype, step, valproc=lambda x: x):
     x = ti.field(vartype)

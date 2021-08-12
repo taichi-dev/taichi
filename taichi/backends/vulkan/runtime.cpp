@@ -86,11 +86,11 @@ class HostDeviceContextBlitter {
     auto mapped = device_buffer_->map_mem();
     char *const device_base = reinterpret_cast<char *>(mapped.data());
 
-#define TO_DEVICE(short_type, type)                         \
-  if (dt->is_primitive(PrimitiveTypeID::short_type)) {      \
-    auto d = host_ctx_->get_arg<type>(i);                   \
-    std::memcpy(device_ptr, &d, sizeof(d));                 \
-    break;                                                  \
+#define TO_DEVICE(short_type, type)                    \
+  if (dt->is_primitive(PrimitiveTypeID::short_type)) { \
+    auto d = host_ctx_->get_arg<type>(i);              \
+    std::memcpy(device_ptr, &d, sizeof(d));            \
+    break;                                             \
   }
 
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
@@ -121,8 +121,7 @@ class HostDeviceContextBlitter {
         if (capabilities_->has_float64) {
           TO_DEVICE(f64, float64)
         }
-        TI_ERROR("Vulkan does not support arg type={}", 
-                  data_type_name(arg.dt));
+        TI_ERROR("Vulkan does not support arg type={}", data_type_name(arg.dt));
       } while (0);
     }
     char *device_ptr = device_base + ctx_attribs_->extra_args_mem_offset();
@@ -147,12 +146,12 @@ class HostDeviceContextBlitter {
       }
     }
 
-#define TO_HOST(short_type, type)                           \
-  if (dt->is_primitive(PrimitiveTypeID::short_type)) {      \
-    const type d = *reinterpret_cast<type *>(device_ptr);   \
-    host_result_buffer_[i] =                                \
-        taichi_union_cast_with_different_sizes<uint64>(d);  \
-    break;                                                  \
+#define TO_HOST(short_type, type)                          \
+  if (dt->is_primitive(PrimitiveTypeID::short_type)) {     \
+    const type d = *reinterpret_cast<type *>(device_ptr);  \
+    host_result_buffer_[i] =                               \
+        taichi_union_cast_with_different_sizes<uint64>(d); \
+    break;                                                 \
   }
 
     for (int i = 0; i < ctx_attribs_->rets().size(); ++i) {
@@ -210,7 +209,7 @@ class HostDeviceContextBlitter {
  private:
   const KernelContextAttributes *const ctx_attribs_;
   Context *const host_ctx_;
-  const VulkanCapabilities* capabilities_;
+  const VulkanCapabilities *capabilities_;
   uint64_t *const host_result_buffer_;
   VkBufferWithMemory *const device_buffer_;
   VkBufferWithMemory *const host_shadow_buffer_;
@@ -266,7 +265,8 @@ class CompiledTaichiKernel {
       }
       vp_params.code = SpirvCodeView(spirv_bins[i]);
       auto vp = std::make_unique<VulkanPipeline>(vp_params);
-      const int group_x = (attribs.advisory_total_num_threads + attribs.advisory_num_threads_per_group - 1) /
+      const int group_x = (attribs.advisory_total_num_threads +
+                           attribs.advisory_num_threads_per_group - 1) /
                           attribs.advisory_num_threads_per_group;
       cmd_builder.dispatch(*vp, group_x);
       vk_pipelines_.push_back(std::move(vp));
@@ -447,8 +447,8 @@ class VkRuntime ::Impl {
   void launch_kernel(KernelHandle handle, Context *host_ctx) {
     auto *ti_kernel = ti_kernels_[handle.id_].get();
     auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
-        &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx, &get_capabilities(),
-        host_result_buffer_, ti_kernel->ctx_buffer(),
+        &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx,
+        &get_capabilities(), host_result_buffer_, ti_kernel->ctx_buffer(),
         ti_kernel->ctx_buffer_host());
     if (ctx_blitter) {
       TI_ASSERT(ti_kernel->ctx_buffer() != nullptr);

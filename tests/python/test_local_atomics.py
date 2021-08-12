@@ -1,7 +1,10 @@
 import taichi as ti
 
+
 def ti_support_atomic_more_than_add(test):
-    return ti.archs_excluding(ti.vulkan)(test) # TODO(changyu): support atomicSub/Mul/Min/Max on Vulkan backend
+    return ti.archs_excluding(ti.vulkan)(
+        test)  # TODO(changyu): support atomicSub/Mul/Min/Max on Vulkan backend
+
 
 @ti.all_archs
 def test_explicit_local_atomic_add():

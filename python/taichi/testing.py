@@ -54,10 +54,7 @@ def make_temp_file(*args, **kwargs):
     return name
 
 
-test_on_and_off_features = [
-    "packed",
-    "dynamic_index"
-]
+test_on_and_off_features = ["packed", "dynamic_index"]
 
 
 # Pytest options

@@ -1,3 +1,5 @@
+import copy
+
 import itertools
 
 from taichi.core import ti_core as _ti_core
@@ -54,7 +56,10 @@ def make_temp_file(*args, **kwargs):
     return name
 
 
-test_on_and_off_features = ["packed", "dynamic_index"]
+_test_features = {
+    "packed": [True, False],
+    "dynamic_index": [True, False]
+}
 
 
 def test(arch=None, exclude=None, require=None, **options):
@@ -88,10 +93,10 @@ def test(arch=None, exclude=None, require=None, **options):
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
             params = [ti.supported_archs()]
-            params.extend([[True, False] for feature in test_on_and_off_features])
-            option_combinations = list(itertools.product(*params))
+            params.extend([_test_features[feature] for feature in _test_features])
+            param_combinations = list(itertools.product(*params))
 
-            for request_param in option_combinations:
+            for request_param in param_combinations:
                 req_arch = request_param[0]
 
                 if (req_arch not in arch) or (req_arch in exclude):
@@ -103,17 +108,17 @@ def test(arch=None, exclude=None, require=None, **options):
                     continue
 
                 skip = False
-                for i, feature in enumerate(test_on_and_off_features):
-                    if feature in options and options[feature] != request_param[i +
-                                                                                1]:
-                        name = feature
-                        flag = request_param[i + 1]
+                current_options = copy.deepcopy(options)
+                for i, feature in enumerate(_test_features):
+                    if current_options.get(feature, request_param[i + 1]) == request_param[i + 1]:
+                        # Fill in the missing feature
+                        current_options[feature] = request_param[i + 1]
+                    else:
                         skip = True
-                    options[feature] = request_param[i + 1]
                 if skip:
                     continue
 
-                ti.init(arch=req_arch, **options)
+                ti.init(arch=req_arch, **current_options)
                 foo(*args, **kwargs)
 
         return wrapped

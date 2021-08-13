@@ -88,15 +88,9 @@ class Matrix(TaichiOperations):
                     if keep_raw:
                         mat = [list([x]) for x in n]
                     else:
-                        if ti.current_cfg(
-                        ).dynamic_index and not ti.is_extension_supported(
-                                ti.cfg.arch, ti.extension.dynamic_index):
-                            ti.current_cfg().dynamic_index = False
-                            warning(
-                                'Backend ' + str(ti.cfg.arch) +
-                                ' doesn\'t support dynamic index, disable it automatically.'
-                            )
-                        if in_python_scope(
+                        if not ti.is_extension_supported(
+                                ti.cfg.arch, ti.extension.dynamic_index
+                        ) or in_python_scope(
                         ) or disable_local_tensor or not ti.current_cfg(
                         ).dynamic_index:
                             mat = [list([expr.Expr(x)]) for x in n]
@@ -124,17 +118,11 @@ class Matrix(TaichiOperations):
                 else:
                     mat = [[x] for x in n]
             else:
-                if ti.current_cfg(
-                ).dynamic_index and not ti.is_extension_supported(
-                        ti.cfg.arch, ti.extension.dynamic_index):
-                    ti.current_cfg().dynamic_index = False
-                    warning(
-                        'Backend ' + str(ti.cfg.arch) +
-                        ' doesn\'t support dynamic index, disable it automatically.'
-                    )
-                if in_python_scope(
-                ) or disable_local_tensor or not ti.current_cfg(
-                ).dynamic_index:
+                if not ti.is_extension_supported(
+                        ti.cfg.arch,
+                        ti.extension.dynamic_index) or in_python_scope(
+                        ) or disable_local_tensor or not ti.current_cfg(
+                        ).dynamic_index:
                     mat = [list(r) for r in n]
                 else:
                     if dt is None:

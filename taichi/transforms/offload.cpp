@@ -424,15 +424,23 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       stmt->body->accept(this);
     if (stmt->task_type == OffloadedStmt::TaskType::range_for) {
       if (!stmt->const_begin) {
-        TI_ASSERT(offloaded_ranges_->begin_stmts.find(stmt) != offloaded_ranges_->begin_stmts.end())
-        TI_ASSERT_INFO(local_to_global_offset.find(offloaded_ranges_->begin_stmts.find(stmt)->second) != local_to_global_offset.end(), "Begin fails.")
+        TI_ASSERT(offloaded_ranges_->begin_stmts.find(stmt) !=
+                  offloaded_ranges_->begin_stmts.end())
+        TI_ASSERT_INFO(local_to_global_offset.find(
+                           offloaded_ranges_->begin_stmts.find(stmt)->second) !=
+                           local_to_global_offset.end(),
+                       "Begin fails.")
         stmt->begin_offset =
             local_to_global_offset[offloaded_ranges_->begin_stmts.find(stmt)
                                        ->second];
       }
       if (!stmt->const_end) {
-        TI_ASSERT(offloaded_ranges_->end_stmts.find(stmt) != offloaded_ranges_->end_stmts.end())
-        TI_ASSERT_INFO(local_to_global_offset.find(offloaded_ranges_->end_stmts.find(stmt)->second) != local_to_global_offset.end(), "End fails.")
+        TI_ASSERT(offloaded_ranges_->end_stmts.find(stmt) !=
+                  offloaded_ranges_->end_stmts.end())
+        TI_ASSERT_INFO(local_to_global_offset.find(
+                           offloaded_ranges_->end_stmts.find(stmt)->second) !=
+                           local_to_global_offset.end(),
+                       "End fails.")
         stmt->end_offset =
             local_to_global_offset[offloaded_ranges_->end_stmts.find(stmt)
                                        ->second];
@@ -460,8 +468,10 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
             1, TypedConstant(i *
                              data_type_size(tensor_type->get_element_type()))));
         auto const_offset_stmt = replacement.push_back<ConstStmt>(offset);
-        auto ptr_offset_stmt = replacement.push_back<PtrOffsetStmt>(ptr, const_offset_stmt);
-        auto global_store_stmt = replacement.push_back<GlobalStoreStmt>(ptr_offset_stmt, const_zero_stmt);
+        auto ptr_offset_stmt =
+            replacement.push_back<PtrOffsetStmt>(ptr, const_offset_stmt);
+        auto global_store_stmt = replacement.push_back<GlobalStoreStmt>(
+            ptr_offset_stmt, const_zero_stmt);
         stmt_to_offloaded[const_offset_stmt] = stmt_to_offloaded[stmt];
         stmt_to_offloaded[ptr_offset_stmt] = stmt_to_offloaded[stmt];
         stmt_to_offloaded[global_store_stmt] = stmt_to_offloaded[stmt];
@@ -470,7 +480,8 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       LaneAttribute<TypedConstant> zeros(std::vector<TypedConstant>(
           stmt->width(), TypedConstant(stmt->ret_type)));
       auto const_zeros = replacement.push_back<ConstStmt>(zeros);
-      auto global_store_stmt = replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
+      auto global_store_stmt =
+          replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
       stmt_to_offloaded[global_store_stmt] = stmt_to_offloaded[stmt];
     }
 
@@ -505,7 +516,8 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       top_level_ptr = top_level_ptr->cast<PtrOffsetStmt>()->origin;
     if (top_level_ptr->is<GlobalTemporaryStmt>()) {
       VecStatement replacement;
-      auto global_store = replacement.push_back<GlobalStoreStmt>(ptr, stmt->val);
+      auto global_store =
+          replacement.push_back<GlobalStoreStmt>(ptr, stmt->val);
       stmt_to_offloaded[global_store] = stmt_to_offloaded[stmt];
       stmt->parent->replace_with(stmt, std::move(replacement));
       throw IRModified();
@@ -548,8 +560,8 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       stmt_to_offloaded[global_temporary.get()] = stmt_to_offloaded[stmt];
       stmt->set_operand(index, global_temporary.get());
       if (op->is<AllocaStmt>() || op->ret_type.is_pointer()) {
-        // For cases like Alloca both TensorType and Scalar which will be followed by LocalLoad.
-        // Avoid repeated loads here.
+        // For cases like Alloca both TensorType and Scalar which will be
+        // followed by LocalLoad. Avoid repeated loads here.
         stmt->insert_before_me(std::move(global_temporary));
       } else {
         // For other cases like ArgLoadStmt UnaryOpStmt which needs to load.

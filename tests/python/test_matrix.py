@@ -213,6 +213,7 @@ def test_matrix_non_constant_index():
     with pytest.raises(Exception):
         func3()
 
+
 @ti.test(arch=ti.cpu)
 def test_matrix_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)

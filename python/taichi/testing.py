@@ -72,10 +72,9 @@ _test_features = {
     #     TestValue(True, []),
     #     TestValue(False, [])
     # ],
-    "dynamic_index": [
-        TestValue(True, [ti.extension.dynamic_index]),
-        TestValue(False, [])
-    ]
+    "dynamic_index":
+    [TestValue(True, [ti.extension.dynamic_index]),
+     TestValue(False, [])]
 }
 
 
@@ -129,12 +128,17 @@ def test(arch=None, exclude=None, require=None, **options):
                 current_options = copy.deepcopy(options)
                 for i, feature in enumerate(_test_features):
                     feature_value = request_param[i + 1].get_value()
-                    feature_require = request_param[i + 1].get_required_extensions()
-                    if current_options.get(feature, feature_value) != feature_value or any(not _ti_core.is_extension_supported(req_arch, e) for e in feature_require):
+                    feature_require = request_param[
+                        i + 1].get_required_extensions()
+                    if current_options.get(
+                            feature, feature_value) != feature_value or any(
+                                not _ti_core.is_extension_supported(
+                                    req_arch, e) for e in feature_require):
                         skip = True
                     else:
                         # Fill in the missing feature
-                        current_options[feature] = request_param[i + 1].get_value()
+                        current_options[feature] = request_param[
+                            i + 1].get_value()
                 if skip:
                     continue
 

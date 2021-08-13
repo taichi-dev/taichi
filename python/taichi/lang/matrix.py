@@ -95,7 +95,9 @@ class Matrix(TaichiOperations):
                         else:
                             if not ti.is_extension_supported(
                                     ti.cfg.arch, ti.extension.dynamic_index):
-                                raise Exception('Backend ' + str(ti.cfg.arch) + ' doesn\'t support dynamic index')
+                                raise Exception(
+                                    'Backend ' + str(ti.cfg.arch) +
+                                    ' doesn\'t support dynamic index')
                             if dt is None:
                                 if isinstance(n[0], int):
                                     dt = impl.get_runtime().default_ip
@@ -126,7 +128,8 @@ class Matrix(TaichiOperations):
                 else:
                     if not ti.is_extension_supported(
                             ti.cfg.arch, ti.extension.dynamic_index):
-                        raise Exception('Backend ' + str(ti.cfg.arch) + ' doesn\'t support dynamic index')
+                        raise Exception('Backend ' + str(ti.cfg.arch) +
+                                        ' doesn\'t support dynamic index')
                     if dt is None:
                         if isinstance(n[0][0], int):
                             dt = impl.get_runtime().default_ip

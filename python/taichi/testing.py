@@ -110,7 +110,8 @@ def test(arch=None, exclude=None, require=None, **options):
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
             arch_params_sets = [ti.supported_archs(), *_test_features.values()]
-            arch_params_combinations = list(itertools.product(*arch_params_sets))
+            arch_params_combinations = list(
+                itertools.product(*arch_params_sets))
 
             for arch_params in arch_params_combinations:
                 req_arch, req_params = arch_params[0], arch_params[1:]
@@ -128,7 +129,9 @@ def test(arch=None, exclude=None, require=None, **options):
                 for feature, param in zip(_test_features, req_params):
                     value = param.value
                     required_extensions = param.required_extensions
-                    if current_options.get(feature, value) != value or any(not _ti_core.is_extension_supported(req_arch, e) for e in required_extensions):
+                    if current_options.get(feature, value) != value or any(
+                            not _ti_core.is_extension_supported(req_arch, e)
+                            for e in required_extensions):
                         skip = True
                     else:
                         # Fill in the missing feature

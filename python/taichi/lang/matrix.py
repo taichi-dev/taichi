@@ -88,19 +88,14 @@ class Matrix(TaichiOperations):
                     if keep_raw:
                         mat = [list([x]) for x in n]
                     else:
-                        if ti.current_cfg(
-                        ).dynamic_index and not ti.is_extension_supported(
-                                ti.cfg.arch, ti.extension.dynamic_index):
-                            ti.current_cfg().dynamic_index = False
-                            warning(
-                                'Backend ' + str(ti.cfg.arch) +
-                                ' doesn\'t support dynamic index, disable it automatically.'
-                            )
                         if in_python_scope(
                         ) or disable_local_tensor or not ti.current_cfg(
                         ).dynamic_index:
                             mat = [list([expr.Expr(x)]) for x in n]
                         else:
+                            if not ti.is_extension_supported(
+                                    ti.cfg.arch, ti.extension.dynamic_index):
+                                raise Exception('Backend ' + str(ti.cfg.arch) + ' doesn\'t support dynamic index')
                             if dt is None:
                                 if isinstance(n[0], int):
                                     dt = impl.get_runtime().default_ip
@@ -124,19 +119,14 @@ class Matrix(TaichiOperations):
                 else:
                     mat = [[x] for x in n]
             else:
-                if ti.current_cfg(
-                ).dynamic_index and not ti.is_extension_supported(
-                        ti.cfg.arch, ti.extension.dynamic_index):
-                    ti.current_cfg().dynamic_index = False
-                    warning(
-                        'Backend ' + str(ti.cfg.arch) +
-                        ' doesn\'t support dynamic index, disable it automatically.'
-                    )
                 if in_python_scope(
                 ) or disable_local_tensor or not ti.current_cfg(
                 ).dynamic_index:
                     mat = [list(r) for r in n]
                 else:
+                    if not ti.is_extension_supported(
+                            ti.cfg.arch, ti.extension.dynamic_index):
+                        raise Exception('Backend ' + str(ti.cfg.arch) + ' doesn\'t support dynamic index')
                     if dt is None:
                         if isinstance(n[0][0], int):
                             dt = impl.get_runtime().default_ip
@@ -335,12 +325,6 @@ class Matrix(TaichiOperations):
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
 
-        if ti.current_cfg().dynamic_index and not ti.is_extension_supported(
-                ti.cfg.arch, ti.extension.dynamic_index):
-            ti.current_cfg().dynamic_index = False
-            warning(
-                'Backend ' + str(ti.cfg.arch) +
-                ' doesn\'t support dynamic index, disable it automatically.')
         if self.local_tensor_proxy != None:
             return ti.local_subscript_with_offset(self.local_tensor_proxy,
                                                   (i, j))

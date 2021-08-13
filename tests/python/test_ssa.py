@@ -21,7 +21,7 @@ def test_matrix_self_assign():
     def func():
         a[None] = a[None].normalized()
         b[None] = b[None].transpose()
-        c[None] = ti.Vector([c[None][1], c[None][0]])
+        c[None] = ti.Vector([c[None][1], c[None][0]], dt=ti.f32)
 
     inv_sqrt2 = 1 / math.sqrt(2)
 
@@ -40,7 +40,7 @@ def test_random_vector_dup_eval():
 
     @ti.kernel
     def func():
-        a[None] = ti.Vector([ti.random(), 1]).normalized()
+        a[None] = ti.Vector([ti.random(), 1], dt=ti.f32).normalized()
 
     for i in range(4):
         func()
@@ -65,7 +65,7 @@ def test_func_argument_dup_eval():
 def test_func_random_argument_dup_eval():
     @ti.func
     def func(a):
-        return ti.Vector([ti.cos(a), ti.sin(a)])
+        return ti.Vector([ti.cos(a), ti.sin(a)], dt=ti.f32)
 
     @ti.kernel
     def kern() -> ti.f32:

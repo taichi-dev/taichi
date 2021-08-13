@@ -1,3 +1,6 @@
+import copy
+import itertools
+
 from taichi.core import ti_core as _ti_core
 
 import taichi as ti
@@ -52,49 +55,12 @@ def make_temp_file(*args, **kwargs):
     return name
 
 
-# Pytest options
-def _get_taichi_archs_fixture():
-    import pytest
-
-    @pytest.fixture(params=ti.supported_archs(), ids=_ti_core.arch_name)
-    def taichi_archs(request):
-        marker = request.node.get_closest_marker('taichi')
-        req_arch = request.param
-
-        def ti_init(arch=None, exclude=None, require=None, **options):
-            if arch is None:
-                arch = []
-            if exclude is None:
-                exclude = []
-            if require is None:
-                require = []
-            if not isinstance(arch, (list, tuple)):
-                arch = [arch]
-            if not isinstance(exclude, (list, tuple)):
-                exclude = [exclude]
-            if not isinstance(require, (list, tuple)):
-                require = [require]
-            if len(arch) == 0:
-                arch = ti.supported_archs()
-
-            if (req_arch not in arch) or (req_arch in exclude):
-                raise pytest.skip(f'Arch={req_arch} not included in this test')
-
-            if not all(
-                    _ti_core.is_extension_supported(req_arch, e)
-                    for e in require):
-                raise pytest.skip(
-                    f'Arch={req_arch} some extension(s) not satisfied')
-
-            ti.init(arch=req_arch, **options)
-
-        ti_init(*marker.args, **marker.kwargs)
-        yield
-
-    return taichi_archs
+# To test full features set:
+# _test_features = {"packed": [True, False], "dynamic_index": [True, False]}
+_test_features = {"dynamic_index": [True, False]}
 
 
-def test(*args, **kwargs):
+def test(arch=None, exclude=None, require=None, **options):
     '''
 .. function:: ti.test(arch=[], exclude=[], require=[], **options)
 
@@ -103,16 +69,58 @@ def test(*args, **kwargs):
     :parameter require: extensions required
     :parameter options: other options to be passed into ``ti.init``
     '''
+
+    if arch is None:
+        arch = []
+    if exclude is None:
+        exclude = []
+    if require is None:
+        require = []
+    if not isinstance(arch, (list, tuple)):
+        arch = [arch]
+    if not isinstance(exclude, (list, tuple)):
+        exclude = [exclude]
+    if not isinstance(require, (list, tuple)):
+        require = [require]
+    if len(arch) == 0:
+        arch = ti.supported_archs()
+
     def decorator(foo):
         import functools
 
-        import pytest
-
-        @pytest.mark.usefixtures('taichi_archs')
-        @pytest.mark.taichi(*args, **kwargs)
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
-            return foo(*args, **kwargs)
+            params = [ti.supported_archs()]
+            params.extend(
+                [_test_features[feature] for feature in _test_features])
+            param_combinations = list(itertools.product(*params))
+
+            for request_param in param_combinations:
+                req_arch = request_param[0]
+
+                if (req_arch not in arch) or (req_arch in exclude):
+                    continue
+
+                if not all(
+                        _ti_core.is_extension_supported(req_arch, e)
+                        for e in require):
+                    continue
+
+                skip = False
+                current_options = copy.deepcopy(options)
+                for i, feature in enumerate(_test_features):
+                    if current_options.get(
+                            feature,
+                            request_param[i + 1]) == request_param[i + 1]:
+                        # Fill in the missing feature
+                        current_options[feature] = request_param[i + 1]
+                    else:
+                        skip = True
+                if skip:
+                    continue
+
+                ti.init(arch=req_arch, **current_options)
+                foo(*args, **kwargs)
 
         return wrapped
 

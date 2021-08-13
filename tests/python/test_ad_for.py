@@ -366,8 +366,7 @@ def test_complex_body():
         assert a.grad[i] == g[i]
 
 
-@ti.require(ti.extension.adstack, ti.extension.bls)
-@ti.all_archs
+@ti.test(require=[ti.extension.adstack, ti.extension.bls], dynamic_index=False)
 def test_triple_for_loops_bls():
     N = 8
     M = 3

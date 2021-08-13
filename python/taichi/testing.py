@@ -55,9 +55,28 @@ def make_temp_file(*args, **kwargs):
     return name
 
 
-# To test full features set:
-# _test_features = {"packed": [True, False], "dynamic_index": [True, False]}
-_test_features = {"dynamic_index": [True, False]}
+class TestValue:
+    def __init__(self, value, required_extensions):
+        self.value = value
+        self.required_extensions = required_extensions
+
+    def get_value(self):
+        return self.value
+
+    def get_required_extensions(self):
+        return self.required_extensions
+
+
+_test_features = {
+    "packed": [
+        TestValue(True, []),
+        TestValue(False, [])
+    ],
+    "dynamic_index": [
+        TestValue(True, [ti.extension.dynamic_index]),
+        TestValue(False, [])
+    ]
+}
 
 
 def test(arch=None, exclude=None, require=None, **options):
@@ -109,13 +128,13 @@ def test(arch=None, exclude=None, require=None, **options):
                 skip = False
                 current_options = copy.deepcopy(options)
                 for i, feature in enumerate(_test_features):
-                    if current_options.get(
-                            feature,
-                            request_param[i + 1]) == request_param[i + 1]:
-                        # Fill in the missing feature
-                        current_options[feature] = request_param[i + 1]
-                    else:
+                    feature_value = request_param[i + 1].get_value()
+                    feature_require = request_param[i + 1].get_required_extensions()
+                    if current_options.get(feature, feature_value) != feature_value or any(not _ti_core.is_extension_supported(req_arch, e) for e in feature_require):
                         skip = True
+                    else:
+                        # Fill in the missing feature
+                        current_options[feature] = request_param[i + 1].get_value()
                 if skip:
                     continue
 

@@ -1,28 +1,37 @@
-import os
+from membound import Membound
 
-from baseline import Baseline
+import taichi as ti
 
-test_suites = [Baseline]
-
+test_suites = [Membound]
+test_archs = [ti.cuda]
 
 class PerformanceMonitoring:
+    impls = []
+    filename = f'performance_result.md'
+    def __init__(self):
+        for s in test_suites:
+            self.impls.append(s())
+
     def run(self):
-        filename = f'performance_result.md'
+        print("Running...")
+        for s in self.impls:
+            s.run()
+
+    def write_md(self):
         try:
-            with open(filename, 'r+') as f:
+            with open(self.filename, 'r+') as f:
                 f.truncate()  # clear the previous result
         except FileNotFoundError:
             pass
-        print("Running...")
-        for s in test_suites:
-            imp = s()
-            imp.run()
-            lines = imp.mdlines()
-            f = open(filename, 'a')
-            for line in lines:
-                f.write(line + '\n')
-            f.close()
+        f = open(self.filename, 'a')
+        for arch in test_archs:
+            for impl in self.impls:
+                lines = impl.mdlines(arch)
+                for line in lines:
+                    f.write(line + '\n')
+        f.close()
 
 
 p = PerformanceMonitoring()
 p.run()
+p.write_md()

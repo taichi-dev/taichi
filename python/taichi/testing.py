@@ -55,7 +55,9 @@ def make_temp_file(*args, **kwargs):
     return name
 
 
-_test_features = {"packed": [True, False], "dynamic_index": [True, False]}
+# To test full features set:
+# _test_features = {"packed": [True, False], "dynamic_index": [True, False]}
+_test_features = {"dynamic_index": [True, False]}
 
 
 def test(arch=None, exclude=None, require=None, **options):

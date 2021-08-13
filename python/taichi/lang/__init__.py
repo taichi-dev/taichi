@@ -971,7 +971,7 @@ def archs_support_sparse(test, **kwargs):
 def torch_test(func):
     if ti.has_pytorch():
         # OpenGL somehow crashes torch test without a reason, unforturnately
-        return ti.archs_excluding(ti.opengl)(func)
+        return ti.test(exclude=[opengl])(func)
     else:
         return lambda: None
 

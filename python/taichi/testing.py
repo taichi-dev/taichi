@@ -68,10 +68,10 @@ class TestValue:
 
 
 _test_features = {
-    "packed": [
-        TestValue(True, []),
-        TestValue(False, [])
-    ],
+    # "packed": [
+    #     TestValue(True, []),
+    #     TestValue(False, [])
+    # ],
     "dynamic_index": [
         TestValue(True, [ti.extension.dynamic_index]),
         TestValue(False, [])

@@ -12,8 +12,8 @@ from taichi.lang.matrix import MatrixField
 from taichi.lang.ndarray import Ndarray
 from taichi.lang.snode import SNode
 from taichi.lang.tape import TapeImpl
-from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class, python_scope,
-                              taichi_scope, to_pytorch_type)
+from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
+                              python_scope, taichi_scope, to_pytorch_type)
 from taichi.misc.util import deprecated, get_traceback, warning
 from taichi.snode.fields_builder import FieldsBuilder
 
@@ -574,7 +574,8 @@ def ndarray(dtype, shape):
     """
     if isinstance(shape, numbers.Number):
         shape = (shape, )
-    assert has_pytorch(), "PyTorch must be available if you want to create a default Taichi ndarray."
+    assert has_pytorch(
+    ), "PyTorch must be available if you want to create a default Taichi ndarray."
     import torch
     if current_cfg().arch == _ti_core.Arch.cuda:
         device = 'cuda:0'

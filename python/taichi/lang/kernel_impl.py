@@ -481,7 +481,8 @@ class Kernel:
                     if not isinstance(v, int):
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
-                elif isinstance(needed, ext_arr) and (isinstance(v, Ndarray) or self.match_ext_arr(v)):
+                elif isinstance(needed, ext_arr) and (isinstance(v, Ndarray) or
+                                                      self.match_ext_arr(v)):
                     if isinstance(v, Ndarray):
                         v = v.arr
                     has_external_arrays = True

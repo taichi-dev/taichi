@@ -141,6 +141,7 @@ def test(arch=None, exclude=None, require=None, **options):
 
                 ti.init(arch=req_arch, **current_options)
                 foo(*args, **kwargs)
+                ti.reset()
 
         return wrapped
 

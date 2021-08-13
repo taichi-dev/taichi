@@ -52,7 +52,8 @@ jobs:
           cd python
           git fetch origin master
           export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
-          [ -z "${{ github.event.action }}" ] && python build.py build --project_name taichi_nightly
+          export COMMIT_SHA=$(git rev-parse --short "$GITHUB_SHA")
+          [ -z "${{ github.event.action }}" ] && python build.py build --project_name taichi-nightly
           [ -z "${{ github.event.action }}" ] || python build.py build
           cd ..
           NUM_WHL=`ls dist/*.whl | wc -l`
@@ -75,7 +76,7 @@ jobs:
         run: |
           cd python
           [ -z "${{ github.event.action }}" ] && export PYPI_PWD="$NIGHT_PWD"
-          [ -z "${{ github.event.action }}" ] && python build.py upload --skip_build --testpypi --project_name taichi_nightly
+          [ -z "${{ github.event.action }}" ] && python build.py upload --skip_build --testpypi --project_name taichi-nightly
           [ -z "${{ github.event.action }}" ] || export PYPI_PWD="$PROD_PWD"
           [ -z "${{ github.event.action }}" ] || python build.py upload --skip_build
 
@@ -130,7 +131,8 @@ jobs:
           cd python
           git fetch origin master
           $env:TAICHI_CMAKE_ARGS = $env:CI_SETUP_CMAKE_ARGS
-          if ([string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py build --project_name taichi_nightly}
+          $env:COMMIT_SHA = $(git rev-parse --short $env:GITHUB_SHA)
+          if ([string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py build --project_name taichi-nightly}
           if ( -not [string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py build}
           cd ..\dist
           $env:WHL = $(dir *.whl)
@@ -157,6 +159,6 @@ jobs:
         run: |
           cd python
           if ([string]::IsNullOrEmpty("${{ github.event.action }}")) {$env:PYPI_PWD = "$env:NIGHT_PWD"}
-          if ([string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py upload --skip_build --testpypi --project_name taichi_nightly}
+          if ([string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py upload --skip_build --testpypi --project_name taichi-nightly}
           if ( -not [string]::IsNullOrEmpty("${{ github.event.action }}")) {$env:PYPI_PWD = "$env:PROD_PWD"}
           if ( -not [string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py upload --skip_build}

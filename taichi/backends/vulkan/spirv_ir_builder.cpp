@@ -63,7 +63,7 @@ void IRBuilder::init_header() {
   ib_.begin(spv::OpExtension)
       .add("SPV_KHR_storage_buffer_storage_class")
       .commit(&header_);
-  
+
   if (device_->get_cap(cap::vk_has_spv_variable_ptr)) {
     ib_.begin(spv::OpExtension)
         .add("SPV_KHR_variable_pointers")

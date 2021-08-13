@@ -85,13 +85,11 @@ void Logger::error(const std::string &s, bool raise_exception) {
   if (print_stacktrace_fn_) {
     print_stacktrace_fn_();
   }
-  // Disable this to decouple from taichi/system/threading
-  // Also I doubt if GDB still works...
-  //   if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
-  // #if defined(TI_PLATFORM_LINUX)
-  //     trash(system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str()));
-  // #endif
-  //   }
+  if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
+#if defined(TI_PLATFORM_LINUX)
+    trash(system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str()));
+#endif
+  }
   if (raise_exception)
     throw s;
 }

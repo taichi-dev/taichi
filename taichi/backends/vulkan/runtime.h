@@ -49,7 +49,7 @@ class VkRuntime {
 
   void synchronize();
 
-  Device *VkRuntime::get_ti_device() const;
+  Device *get_ti_device() const;
 
  private:
   std::unique_ptr<Impl> impl_;

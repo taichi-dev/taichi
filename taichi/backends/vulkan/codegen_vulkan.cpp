@@ -49,7 +49,7 @@ class TaskCodegen : public IRVisitor {
  public:
   struct Params {
     OffloadedStmt *task_ir;
-    VkRuntime *runtime;
+    Device *device;
     const CompiledSNodeStructs *compiled_structs;
     const KernelContextAttributes *ctx_attribs;
     std::string ti_kernel_name;
@@ -63,12 +63,11 @@ class TaskCodegen : public IRVisitor {
         task_name_(fmt::format("{}_t{:02d}",
                                params.ti_kernel_name,
                                params.task_id_in_kernel)),
-        runtime_(params.runtime) {
+        device_(params.device) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
 
-    ir_ =
-        std::make_shared<spirv::IRBuilder>(params.runtime->get_capabilities());
+    ir_ = std::make_shared<spirv::IRBuilder>(params.device);
   }
 
   struct Result {
@@ -801,7 +800,7 @@ class TaskCodegen : public IRVisitor {
     spirv::Value data = ir_->query_value(stmt->val->raw_name());
     spirv::Value val;
     if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      if (ir_->get_vulkan_cap().has_atomic_float_add) {
+      if (device_->get_cap(DeviceCapability::vk_has_atomic_float_add)) {
         val = ir_->make_value(
             spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt), addr_ptr,
             ir_->uint_immediate_number(ir_->u32_type(), 1),
@@ -980,7 +979,7 @@ class TaskCodegen : public IRVisitor {
         task_attribs_.advisory_num_threads_per_group, 1, 1};
     ir_->set_work_group_size(group_size);
     std::vector<spirv::Value> buffers;
-    if (runtime_->get_capabilities().spirv_version > 0x10300) {
+    if (device_->get_cap(DeviceCapability::vk_spirv_version) > 0x10300) {
       for (const auto &bb : task_attribs_.buffer_binds) {
         const auto it = buffer_value_map_.find(bb.type);
         if (it != buffer_value_map_.end()) {
@@ -1222,7 +1221,7 @@ class TaskCodegen : public IRVisitor {
     return continue_label_stack_.front();
   }
 
-  VkRuntime *runtime_;
+  Device *device_;
 
   std::shared_ptr<spirv::IRBuilder> ir_;  // spirv binary code builder
   std::unordered_map<TaskAttributes::Buffers, spirv::Value> buffer_value_map_;
@@ -1250,7 +1249,7 @@ class KernelCodegen {
     std::string ti_kernel_name;
     Kernel *kernel;
     const CompiledSNodeStructs *compiled_structs;
-    VkRuntime *runtime;
+    Device *device;
   };
 
   explicit KernelCodegen(const Params &params)
@@ -1271,7 +1270,7 @@ class KernelCodegen {
       tp.compiled_structs = params_.compiled_structs;
       tp.ctx_attribs = &ctx_attribs_;
       tp.ti_kernel_name = params_.ti_kernel_name;
-      tp.runtime = params_.runtime;
+      tp.device = params_.device;
 
       TaskCodegen cgen(tp);
       auto task_res = cgen.run();
@@ -1311,7 +1310,7 @@ FunctionType compile_to_executable(Kernel *kernel,
   params.ti_kernel_name = taichi_kernel_name;
   params.kernel = kernel;
   params.compiled_structs = compiled_structs;
-  params.runtime = runtime;
+  params.device = runtime->get_ti_device();
   KernelCodegen codegen(params);
   auto res = codegen.run();
   auto handle = runtime->register_taichi_kernel(std::move(res));

@@ -185,8 +185,13 @@ VkShaderModule create_shader_module(VkDevice device,
 VulkanDevice::VulkanDevice(const Params &params) : rep_(params) {
 }
 
-EmbeddedVulkanDevice::EmbeddedVulkanDevice(const Params &params)
+EmbeddedVulkanDevice::EmbeddedVulkanDevice(
+    const EmbeddedVulkanDevice::Params &params)
     : params_(params) {
+  // TODO: Change the ownership hierarchy, the taichi Device class should be at
+  // the top level
+  ti_device_ = std::make_unique<Device>();
+
   if (!VulkanLoader::instance().init()) {
     throw std::runtime_error("Error loading vulkan");
   }
@@ -272,14 +277,20 @@ void EmbeddedVulkanDevice::create_instance() {
     create_info.pNext = nullptr;
   }
 
-  auto extensions = get_required_extensions();
+  std::unordered_set<std::string> extensions;
+  for (auto ext : get_required_extensions()) {
+    extensions.insert(std::string(ext));
+  }
+  for (auto ext : params_.additional_instance_extensions) {
+    extensions.insert(std::string(ext));
+  }
 
 #ifdef TI_VULKAN_DEBUG
   glfwInit();
   uint32_t count;
   const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&count);
   for (uint32_t i = 0; i < count; i++) {
-    extensions.push_back(glfw_extensions[i]);
+    extensions.insert(glfw_extensions[i]);
   }
 #endif
 
@@ -294,20 +305,22 @@ void EmbeddedVulkanDevice::create_instance() {
   for (auto &ext : supported_extensions) {
     std::string name = ext.extensionName;
     if (name == VK_KHR_SURFACE_EXTENSION_NAME) {
-      if (std::find(extensions.begin(), extensions.end(),
-                    VK_KHR_SURFACE_EXTENSION_NAME) == extensions.end()) {
-        extensions.push_back(ext.extensionName);
-      }
-    }
-    if (std::find(params_.additional_instance_extensions.begin(),
-                  params_.additional_instance_extensions.end(),
-                  name) != params_.additional_instance_extensions.end()) {
-      extensions.push_back(ext.extensionName);
+      extensions.insert(name);
+      ti_device_->set_cap(DeviceCapability::vk_has_surface, true);
+    } else if (name == VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME) {
+      extensions.insert(name);
+      ti_device_->set_cap(DeviceCapability::vk_has_physical_features2, true);
     }
   }
 
-  create_info.enabledExtensionCount = (uint32_t)extensions.size();
-  create_info.ppEnabledExtensionNames = extensions.data();
+  std::vector<const char *> confirmed_extensions;
+  confirmed_extensions.reserve(extensions.size());
+  for (auto &ext : extensions) {
+    confirmed_extensions.push_back(ext.data());
+  }
+
+  create_info.enabledExtensionCount = (uint32_t)confirmed_extensions.size();
+  create_info.ppEnabledExtensionNames = confirmed_extensions.data();
 
   VkResult res =
       vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance_);
@@ -393,11 +406,12 @@ void EmbeddedVulkanDevice::create_logical_device() {
   // Get device properties
   VkPhysicalDeviceProperties physical_device_properties;
   vkGetPhysicalDeviceProperties(physical_device_, &physical_device_properties);
-  capability_.api_version = physical_device_properties.apiVersion;
-  capability_.spirv_version = 0x10000;
+  ti_device_->set_cap(DeviceCapability::vk_api_version,
+                      physical_device_properties.apiVersion);
+  ti_device_->set_cap(DeviceCapability::vk_spirv_version, 0x10000);
 
-  if (capability_.api_version >= VK_API_VERSION_1_1) {
-    capability_.spirv_version = 0x10300;
+  if (physical_device_properties.apiVersion >= VK_API_VERSION_1_1) {
+    ti_device_->set_cap(DeviceCapability::vk_spirv_version, 0x10300);
   }
 
   // Detect extensions
@@ -427,7 +441,7 @@ void EmbeddedVulkanDevice::create_logical_device() {
       has_swapchain = true;
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME) {
-      capability_.has_atomic_float_add = true;
+      ti_device_->set_cap(DeviceCapability::vk_has_atomic_float_add, true);
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == "VK_EXT_shader_atomic_float2") {
       // FIXME: This feature requires vulkan headers with
@@ -437,24 +451,19 @@ void EmbeddedVulkanDevice::create_logical_device() {
       enabled_extensions.push_back(ext.extensionName);
       */
     } else if (name == VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME) {
-      capability_.has_atomic_i64 = true;
+      ti_device_->set_cap(DeviceCapability::vk_has_atomic_i64, true);
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SPIRV_1_4_EXTENSION_NAME) {
-      if (capability_.spirv_version < 0x10400) {
-        capability_.spirv_version = 0x10400;
-        enabled_extensions.push_back(ext.extensionName);
-      }
-    } else if (name == VK_NV_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME) {
-      capability_.has_nvidia_interop = true;
+      ti_device_->set_cap(DeviceCapability::vk_spirv_version, 0x10400);
+      enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME) {
+      ti_device_->set_cap(DeviceCapability::vk_has_external_memory, true);
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME) {
-      capability_.has_spv_variable_ptr = true;
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME) {
-      capability_.has_float16 = true;
-      capability_.has_int8 = true;
       enabled_extensions.push_back(ext.extensionName);
     } else if (std::find(params_.additional_device_extensions.begin(),
                          params_.additional_device_extensions.end(),
@@ -464,29 +473,29 @@ void EmbeddedVulkanDevice::create_logical_device() {
   }
 
   if (has_swapchain) {
-    capability_.has_presentation = true;
+    ti_device_->set_cap(DeviceCapability::vk_has_presentation, true);
   }
 
-  TI_WARN_IF(
-      !capability_.has_spv_variable_ptr,
-      "Taichi may generate kernels that requires VK_KHR_VARIABLE_POINTERS, but "
-      "this extension is not supported on the device");
+  VkPhysicalDeviceFeatures device_features{};
 
-  // Enable all features supported
-  VkPhysicalDeviceFeatures device_features;
-  vkGetPhysicalDeviceFeatures(physical_device_, &device_features);
+  VkPhysicalDeviceFeatures device_supported_features;
+  vkGetPhysicalDeviceFeatures(physical_device_, &device_supported_features);
 
-  if (device_features.shaderInt16) {
-    capability_.has_int16 = true;
+  if (device_supported_features.shaderInt16) {
+    device_features.shaderInt16 = true;
+    ti_device_->set_cap(DeviceCapability::vk_has_int16, true);
   }
-  if (device_features.shaderInt64) {
-    capability_.has_int64 = true;
+  if (device_supported_features.shaderInt64) {
+    device_features.shaderInt64 = true;
+    ti_device_->set_cap(DeviceCapability::vk_has_int64, true);
   }
-  if (device_features.shaderFloat64) {
-    capability_.has_float64 = true;
+  if (device_supported_features.shaderFloat64) {
+    device_features.shaderFloat64 = true;
+    ti_device_->set_cap(DeviceCapability::vk_has_float64, true);
   }
-
-  if (params_.is_for_ui) {
+  if (device_supported_features.wideLines) {
+    device_features.wideLines = true;
+  } else if (params_.is_for_ui) {
     TI_WARN_IF(!device_features.wideLines,
                "Taichi GPU GUI requires wide lines support");
   }
@@ -497,56 +506,67 @@ void EmbeddedVulkanDevice::create_logical_device() {
 
   void **pNextEnd = (void **)&create_info.pNext;
 
-  // TODO: Figure out whether to use this pNext chain or the Vulkan11 features
-  // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#VUID-VkDeviceCreateInfo-pNext-02829
-  VkPhysicalDeviceVariablePointersFeatures variable_ptr_feature{};
+  // Use physicalDeviceFeatures2 to features enabled by extensions
+  VkPhysicalDeviceVariablePointersFeaturesKHR variable_ptr_feature{};
   variable_ptr_feature.sType =
-      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES;
-  variable_ptr_feature.pNext = nullptr;
-
-  if (capability_.has_spv_variable_ptr) {
-    variable_ptr_feature.variablePointers = true;
-    variable_ptr_feature.variablePointersStorageBuffer = true;
-    *pNextEnd = &variable_ptr_feature;
-    pNextEnd = &variable_ptr_feature.pNext;
-  }
-
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES_KHR;
   VkPhysicalDeviceShaderAtomicFloatFeaturesEXT shader_atomic_float_feature{};
   shader_atomic_float_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
-  shader_atomic_float_feature.pNext = nullptr;
-
-  if (capability_.has_atomic_float_add) {
-    if (capability_.has_float64) {
-      shader_atomic_float_feature.shaderBufferFloat64Atomics = true;
-      shader_atomic_float_feature.shaderBufferFloat64AtomicAdd = true;
-      shader_atomic_float_feature.shaderSharedFloat64Atomics = true;
-      shader_atomic_float_feature.shaderSharedFloat64AtomicAdd = true;
-    }
-    shader_atomic_float_feature.shaderBufferFloat32Atomics = true;
-    shader_atomic_float_feature.shaderBufferFloat32AtomicAdd = true;
-    shader_atomic_float_feature.shaderSharedFloat32Atomics = true;
-    shader_atomic_float_feature.shaderSharedFloat32AtomicAdd = true;
-    shader_atomic_float_feature.shaderImageFloat32Atomics = true;
-    shader_atomic_float_feature.shaderImageFloat32AtomicAdd = true;
-    shader_atomic_float_feature.sparseImageFloat32Atomics = true;
-    shader_atomic_float_feature.sparseImageFloat32AtomicAdd = true;
-    *pNextEnd = &shader_atomic_float_feature;
-    pNextEnd = &shader_atomic_float_feature.pNext;
-  }
-
-  // TODO: add atomic min/max feature
-
   VkPhysicalDeviceFloat16Int8FeaturesKHR shader_f16_i8_feature{};
   shader_f16_i8_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
-  shader_f16_i8_feature.pNext = nullptr;
 
-  if (capability_.has_float16) {
-    shader_f16_i8_feature.shaderFloat16 = true;
-    shader_f16_i8_feature.shaderInt8 = true;
-    *pNextEnd = &shader_f16_i8_feature;
-    pNextEnd = &shader_f16_i8_feature.pNext;
+  if (ti_device_->get_cap(DeviceCapability::vk_has_physical_features2)) {
+    VkPhysicalDeviceFeatures2KHR features2{};
+    features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+
+    // Variable ptr
+    {
+      features2.pNext = &variable_ptr_feature;
+      vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
+
+      if (variable_ptr_feature.variablePointers &&
+          variable_ptr_feature.variablePointersStorageBuffer) {
+        ti_device_->set_cap(DeviceCapability::vk_has_spv_variable_ptr, true);
+      }
+      *pNextEnd = &variable_ptr_feature;
+      pNextEnd = &variable_ptr_feature.pNext;
+    }
+
+    // Atomic float
+    {
+      features2.pNext = &shader_atomic_float_feature;
+      vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
+
+      if (shader_atomic_float_feature.shaderBufferFloat32AtomicAdd) {
+        ti_device_->set_cap(DeviceCapability::vk_has_atomic_float_add, true);
+      } else if (shader_atomic_float_feature.shaderBufferFloat64AtomicAdd) {
+        ti_device_->set_cap(DeviceCapability::vk_has_atomic_float64_add, true);
+      } else if (shader_atomic_float_feature.shaderBufferFloat32Atomics) {
+        ti_device_->set_cap(DeviceCapability::vk_has_atomic_float, true);
+      } else if (shader_atomic_float_feature.shaderBufferFloat64Atomics) {
+        ti_device_->set_cap(DeviceCapability::vk_has_atomic_float64, true);
+      }
+      *pNextEnd = &shader_atomic_float_feature;
+      pNextEnd = &shader_atomic_float_feature.pNext;
+    }
+
+    // F16 / I8
+    {
+      features2.pNext = &shader_f16_i8_feature;
+      vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
+
+      if (shader_f16_i8_feature.shaderFloat16) {
+        ti_device_->set_cap(DeviceCapability::vk_has_float16, true);
+      } else if (shader_f16_i8_feature.shaderInt8) {
+        ti_device_->set_cap(DeviceCapability::vk_has_int8, true);
+      }
+      *pNextEnd = &shader_f16_i8_feature;
+      pNextEnd = &shader_f16_i8_feature.pNext;
+    }
+
+    // TODO: add atomic min/max feature
   }
 
   if constexpr (kEnableValidationLayers) {
@@ -569,7 +589,7 @@ void EmbeddedVulkanDevice::create_logical_device() {
     vkGetDeviceQueue(device_, queue_family_indices_.compute_family.value(), 0,
                      &compute_queue_);
   }
-}
+}  // namespace vulkan
 
 void EmbeddedVulkanDevice::create_command_pool() {
   VkCommandPoolCreateInfo pool_info{};
@@ -981,7 +1001,9 @@ void VulkanStream::launch(VkCommandBuffer command) {
 
   VkFence fence;
   VkFenceCreateInfo fence_info{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, 0};
-  vkCreateFence(device_->device(), &fence_info, kNoVkAllocCallbacks, &fence);
+  BAIL_ON_VK_BAD_RESULT(vkCreateFence(device_->device(), &fence_info,
+                                      kNoVkAllocCallbacks, &fence),
+                        "failed to create fence");
   in_flight_fences_.push_back(fence);
 
   BAIL_ON_VK_BAD_RESULT(

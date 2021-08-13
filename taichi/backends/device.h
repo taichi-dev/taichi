@@ -20,10 +20,10 @@ enum class DeviceCapability : uint32_t {
   vk_has_float64,
   vk_has_external_memory,
   vk_has_atomic_i64,
-  vk_has_atomic_float, // load, store, exchange
+  vk_has_atomic_float,  // load, store, exchange
   vk_has_atomic_float_add,
   vk_has_atomic_float_minmax,
-  vk_has_atomic_float64, // load, store, exchange
+  vk_has_atomic_float64,  // load, store, exchange
   vk_has_atomic_float64_add,
   vk_has_atomic_float64_minmax,
   vk_has_surface,

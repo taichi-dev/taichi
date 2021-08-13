@@ -12,8 +12,6 @@ namespace taichi {
 namespace lang {
 namespace vulkan {
 
-struct VulkanCapabilities;
-
 class VkRuntime {
  private:
   class Impl;

@@ -449,8 +449,8 @@ class VkRuntime ::Impl {
     auto *ti_kernel = ti_kernels_[handle.id_].get();
     auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
         &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx,
-        embedded_device_->get_ti_device(), host_result_buffer_, ti_kernel->ctx_buffer(),
-        ti_kernel->ctx_buffer_host());
+        embedded_device_->get_ti_device(), host_result_buffer_,
+        ti_kernel->ctx_buffer(), ti_kernel->ctx_buffer_host());
     if (ctx_blitter) {
       TI_ASSERT(ti_kernel->ctx_buffer() != nullptr);
       ctx_blitter->host_to_device();

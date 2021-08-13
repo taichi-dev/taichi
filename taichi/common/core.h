@@ -367,4 +367,10 @@ std::string get_commit_hash();
 
 std::string get_cuda_version_string();
 
+class PID {
+ public:
+  static int get_pid();
+  static int get_parent_pid();
+};
+
 TI_NAMESPACE_END

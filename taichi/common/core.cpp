@@ -8,6 +8,13 @@
 #include "taichi/common/version.h"
 #include "taichi/common/commit_hash.h"
 
+#if defined(TI_PLATFORM_WINDOWS)
+#include "taichi/platform/windows/windows.h"
+#else
+// Mac and Linux
+#include <unistd.h>
+#endif
+
 TI_NAMESPACE_BEGIN
 
 extern "C" {
@@ -87,6 +94,23 @@ std::string get_commit_hash() {
 
 std::string get_cuda_version_string() {
   return TI_CUDAVERSION;
+}
+
+int PID::get_pid() {
+#if defined(TI_PLATFORM_WINDOWS)
+  return (int)GetCurrentProcessId();
+#else
+  return (int)getpid();
+#endif
+}
+
+int PID::get_parent_pid() {
+#if defined(TI_PLATFORM_WINDOWS)
+  TI_NOT_IMPLEMENTED
+  return -1;
+#else
+  return (int)getppid();
+#endif
 }
 
 TI_NAMESPACE_END

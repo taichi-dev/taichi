@@ -1,5 +1,4 @@
 import copy
-
 import itertools
 
 from taichi.core import ti_core as _ti_core
@@ -56,10 +55,7 @@ def make_temp_file(*args, **kwargs):
     return name
 
 
-_test_features = {
-    "packed": [True, False],
-    "dynamic_index": [True, False]
-}
+_test_features = {"packed": [True, False], "dynamic_index": [True, False]}
 
 
 def test(arch=None, exclude=None, require=None, **options):
@@ -93,7 +89,8 @@ def test(arch=None, exclude=None, require=None, **options):
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
             params = [ti.supported_archs()]
-            params.extend([_test_features[feature] for feature in _test_features])
+            params.extend(
+                [_test_features[feature] for feature in _test_features])
             param_combinations = list(itertools.product(*params))
 
             for request_param in param_combinations:
@@ -110,7 +107,9 @@ def test(arch=None, exclude=None, require=None, **options):
                 skip = False
                 current_options = copy.deepcopy(options)
                 for i, feature in enumerate(_test_features):
-                    if current_options.get(feature, request_param[i + 1]) == request_param[i + 1]:
+                    if current_options.get(
+                            feature,
+                            request_param[i + 1]) == request_param[i + 1]:
                         # Fill in the missing feature
                         current_options[feature] = request_param[i + 1]
                     else:

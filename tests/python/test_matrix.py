@@ -191,7 +191,7 @@ def test_matrix_non_constant_index():
     assert v[1][9] == 9
 
     @ti.kernel
-    def func4():
+    def func3():
         tmp = ti.Vector([1, 2, 3], dt=ti.i32)
         for i in range(3):
             tmp[i] = i * i
@@ -199,19 +199,14 @@ def test_matrix_non_constant_index():
         assert tmp[1] == 1
         assert tmp[2] == 4
 
-    func4()
+    func3()
 
     @ti.kernel
-    def func3():
-        tmp = ti.Vector([1, 2, 3])
-        for i in range(3):
-            tmp[i] = i * i
-        assert tmp[0] == 0
-        assert tmp[1] == 1
-        assert tmp[2] == 4
+    def func4(k: ti.i32):
+        tmp = ti.Vector([k, k * 2, k * 3])
 
     with pytest.raises(Exception):
-        func3()
+        func4(10)
 
 
 @ti.test(arch=ti.cpu)

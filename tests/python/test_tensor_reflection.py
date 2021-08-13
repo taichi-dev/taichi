@@ -3,7 +3,7 @@ import pytest
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_POT():
     val = ti.field(ti.i32)
 
@@ -17,7 +17,7 @@ def test_POT():
     assert val.dtype == ti.i32
 
 
-@ti.all_archs
+@ti.test()
 def test_non_POT():
     val = ti.field(ti.i32)
 
@@ -34,7 +34,7 @@ def test_non_POT():
     assert val.dtype == ti.i32
 
 
-@ti.all_archs
+@ti.test()
 def test_unordered():
     val = ti.field(ti.i32)
 
@@ -67,7 +67,7 @@ def test_unordered():
     assert str(val.snode) == expected_str
 
 
-@ti.all_archs
+@ti.test()
 def test_unordered_matrix():
     val = ti.Matrix.field(3, 2, ti.i32)
 
@@ -90,7 +90,7 @@ def test_unordered_matrix():
     assert val.snode.parent(4) == ti.root
 
 
-@ti.all_archs
+@ti.test()
 def test_parent_exceeded():
     val = ti.field(ti.f32)
 

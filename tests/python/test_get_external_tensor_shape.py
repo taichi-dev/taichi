@@ -7,8 +7,8 @@ if ti.has_pytorch():
     import torch
 
 
-@ti.all_archs
 @pytest.mark.parametrize('size', [[1], [1, 2, 3, 4]])
+@ti.test()
 def test_get_external_tensor_shape_access_numpy(size):
     @ti.kernel
     def func(x: ti.ext_arr(), index: ti.template()) -> ti.i32:
@@ -21,8 +21,8 @@ def test_get_external_tensor_shape_access_numpy(size):
             idx, y_ref, y_hat)
 
 
-@ti.all_archs
 @pytest.mark.parametrize('size', [[1, 1], [2, 2]])
+@ti.test()
 def test_get_external_tensor_shape_sum_numpy(size):
     @ti.kernel
     def func(x: ti.ext_arr()) -> ti.i32:
@@ -41,8 +41,8 @@ def test_get_external_tensor_shape_sum_numpy(size):
 
 
 @ti.torch_test
-@ti.all_archs
 @pytest.mark.parametrize('size', [[1, 2, 3, 4]])
+@ti.test()
 def test_get_external_tensor_shape_access_torch(size):
     @ti.kernel
     def func(x: ti.ext_arr(), index: ti.template()) -> ti.i32:

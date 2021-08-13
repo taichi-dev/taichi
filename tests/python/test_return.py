@@ -36,7 +36,7 @@ def test_const_func_ret():
     assert func2() == 3
 
 
-@ti.all_archs
+@ti.test()
 def _test_binary_func_ret(dt1, dt2, dt3, castor):
     @ti.kernel
     def func(a: dt1, b: dt2) -> dt3:

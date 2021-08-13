@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_normal_grad():
     x = ti.field(ti.f32)
     loss = ti.field(ti.f32)
@@ -27,7 +27,7 @@ def test_normal_grad():
         assert x.grad[i] == i * 2
 
 
-@ti.all_archs
+@ti.test()
 def test_stop_grad():
     x = ti.field(ti.f32)
     loss = ti.field(ti.f32)
@@ -54,7 +54,7 @@ def test_stop_grad():
         assert x.grad[i] == 0
 
 
-@ti.all_archs
+@ti.test()
 def test_stop_grad2():
     x = ti.field(ti.f32)
     loss = ti.field(ti.f32)

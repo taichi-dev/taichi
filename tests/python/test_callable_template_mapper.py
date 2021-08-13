@@ -3,7 +3,7 @@ from taichi.lang.kernel_impl import TaichiCallableTemplateMapper
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_callable_template_mapper():
     x = ti.field(ti.i32)
     y = ti.field(ti.f32)
@@ -33,7 +33,7 @@ def test_callable_template_mapper():
     assert mapper.lookup((0, x, 1))[0] == 0
 
 
-@ti.all_archs
+@ti.test()
 def test_callable_template_mapper_numpy():
     x = ti.field(ti.i32)
     y = ti.field(ti.f32)

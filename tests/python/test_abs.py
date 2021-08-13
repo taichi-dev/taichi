@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_abs():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)

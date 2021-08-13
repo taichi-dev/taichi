@@ -5,7 +5,7 @@ import numpy as np
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def benchmark_range():
     quality = 1  # Use a larger value for higher-res simulations
     n_particles, n_grid = 9000 * quality**2, 128 * quality

@@ -6,7 +6,7 @@ def ti_support_atomic_more_than_add(test):
         test)  # TODO(changyu): support atomicSub/Mul/Min/Max on Vulkan backend
 
 
-@ti.all_archs
+@ti.test()
 def test_explicit_local_atomic_add():
     A = ti.field(ti.f32, shape=())
 
@@ -21,7 +21,7 @@ def test_explicit_local_atomic_add():
     assert A[None] == 45
 
 
-@ti.all_archs
+@ti.test()
 def test_implicit_local_atomic_add():
     A = ti.field(ti.f32, shape=())
 

@@ -3,7 +3,7 @@ import numpy as np
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_abs():
     x = ti.field(ti.f32)
 
@@ -24,7 +24,7 @@ def test_abs():
         assert x[i] == i
 
 
-@ti.all_archs
+@ti.test()
 def test_int():
     x = ti.field(ti.f32)
 
@@ -47,7 +47,7 @@ def test_int():
         assert x[i] == i // 2
 
 
-@ti.all_archs
+@ti.test()
 def test_minmax():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)

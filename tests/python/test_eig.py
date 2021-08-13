@@ -111,7 +111,7 @@ def test_eig2x2():
     for func in [_test_eig2x2_real, _test_eig2x2_complex]:
         for fp in [ti.f32, ti.f64]:
 
-            @ti.all_archs_with(default_fp=fp, fast_math=False)
+            @ti.test(require=ti.extension.data64 if fp == ti.f64 else [], default_fp=fp, fast_math=False)
             def wrapped():
                 func(fp)
 
@@ -122,7 +122,7 @@ def test_sym_eig2x2():
     for func in [_test_sym_eig2x2]:
         for fp in [ti.f32, ti.f64]:
 
-            @ti.all_archs_with(default_fp=fp, fast_math=False)
+            @ti.test(require=ti.extension.data64 if fp == ti.f64 else [], default_fp=fp, fast_math=False)
             def wrapped():
                 func(fp)
 

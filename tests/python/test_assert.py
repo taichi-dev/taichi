@@ -3,8 +3,7 @@ import pytest
 import taichi as ti
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True, gdb_trigger=False)
+@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_minimal():
     ti.set_gdb_trigger(False)
 
@@ -22,8 +21,7 @@ def test_assert_minimal():
         func2()
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True, gdb_trigger=False)
+@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_basic():
     @ti.kernel
     def func():
@@ -34,8 +32,7 @@ def test_assert_basic():
         func()
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True, gdb_trigger=False)
+@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_message():
     @ti.kernel
     def func():
@@ -46,8 +43,7 @@ def test_assert_message():
         func()
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True, gdb_trigger=False)
+@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_message_formatted():
     x = ti.field(dtype=int, shape=16)
     x[10] = 42
@@ -74,8 +70,7 @@ def test_assert_message_formatted():
     assert_formatted()
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True, gdb_trigger=False)
+@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_ok():
     @ti.kernel
     def func():

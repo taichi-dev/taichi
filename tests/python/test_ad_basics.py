@@ -24,7 +24,7 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
     if npfunc is None:
         npfunc = tifunc
 
-    @ti.all_archs_with(default_fp=default_fp)
+    @ti.test(require=ti.extension.data64 if default_fp == ti.f64 else [], default_fp=default_fp)
     def impl():
         print(f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp}')
         x = ti.field(default_fp)
@@ -51,7 +51,7 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
 
 
 @if_has_autograd
-@ti.all_archs
+@ti.test()
 def test_size1():
     x = ti.field(ti.i32)
 
@@ -111,7 +111,7 @@ def test_minmax():
 
 
 @if_has_autograd
-@ti.all_archs
+@ti.test()
 def test_mod():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -162,7 +162,7 @@ def test_pow_f64():
     grad_test(lambda y: y**0.4, lambda y: np.power(y, 0.4), default_fp=ti.f64)
 
 
-@ti.all_archs
+@ti.test()
 def test_obey_kernel_simplicity():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)
@@ -187,7 +187,7 @@ def test_obey_kernel_simplicity():
     assert x.grad[0] == approx((42 - 5) * 3)
 
 
-@ti.all_archs
+@ti.test()
 def test_violate_kernel_simplicity1():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)
@@ -206,7 +206,7 @@ def test_violate_kernel_simplicity1():
     func.grad()
 
 
-@ti.all_archs
+@ti.test()
 def test_violate_kernel_simplicity2():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)
@@ -225,8 +225,7 @@ def test_violate_kernel_simplicity2():
     func.grad()
 
 
-@ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test(require=ti.extension.data64)
 def test_cast():
     @ti.kernel
     def func():
@@ -235,8 +234,7 @@ def test_cast():
     func()
 
 
-@ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test(require=ti.extension.data64)
 def test_ad_precision_1():
     loss = ti.field(ti.f32, shape=())
     x = ti.field(ti.f64, shape=())
@@ -253,8 +251,7 @@ def test_ad_precision_1():
     assert x.grad[None] == 1
 
 
-@ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test(require=ti.extension.data64)
 def test_ad_precision_2():
     loss = ti.field(ti.f64, shape=())
     x = ti.field(ti.f32, shape=())

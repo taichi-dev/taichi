@@ -22,7 +22,6 @@
 
 #include "taichi/backends/vulkan/vulkan_api.h"
 #include "taichi/backends/vulkan/vulkan_common.h"
-#include "taichi/backends/vulkan/vulkan_memory.h"
 #include "taichi/backends/vulkan/vulkan_utils.h"
 #include "taichi/backends/vulkan/loader.h"
 
@@ -62,7 +61,7 @@ class StopWatch {
 };
 
 using BufferEnum = TaskAttributes::Buffers;
-using InputBuffersMap = std::unordered_map<BufferEnum, VkBufferWithMemory *>;
+using InputBuffersMap = std::unordered_map<BufferEnum, DeviceAllocation *>;
 
 class HostDeviceContextBlitter {
  public:
@@ -70,8 +69,8 @@ class HostDeviceContextBlitter {
                            Context *host_ctx,
                            Device *device,
                            uint64_t *host_result_buffer,
-                           VkBufferWithMemory *device_buffer,
-                           VkBufferWithMemory *host_shadow_buffer)
+                           DeviceAllocation *device_buffer,
+                           DeviceAllocation *host_shadow_buffer)
       : ctx_attribs_(ctx_attribs),
         host_ctx_(host_ctx),
         device_(device),
@@ -84,8 +83,8 @@ class HostDeviceContextBlitter {
     if (ctx_attribs_->empty()) {
       return;
     }
-    auto mapped = device_buffer_->map_mem();
-    char *const device_base = reinterpret_cast<char *>(mapped.data());
+
+    char *const device_base = reinterpret_cast<char *>(device_->map(*device_buffer_));
 
 #define TO_DEVICE(short_type, type)                    \
   if (dt->is_primitive(PrimitiveTypeID::short_type)) { \
@@ -128,6 +127,8 @@ class HostDeviceContextBlitter {
     char *device_ptr = device_base + ctx_attribs_->extra_args_mem_offset();
     std::memcpy(device_ptr, host_ctx_->extra_args,
                 ctx_attribs_->extra_args_bytes());
+
+    device_->unmap(*device_buffer_);
 #undef TO_DEVICE
   }
 
@@ -135,8 +136,8 @@ class HostDeviceContextBlitter {
     if (ctx_attribs_->empty()) {
       return;
     }
-    auto mapped = host_shadow_buffer_->map_mem();
-    char *const device_base = reinterpret_cast<char *>(mapped.data());
+
+    char *const device_base = reinterpret_cast<char *>(device_->map(*host_shadow_buffer_));
 
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
@@ -190,6 +191,8 @@ class HostDeviceContextBlitter {
       } while (0);
     }
 #undef TO_HOST
+
+    device_->unmap(*host_shadow_buffer_);
   }
 
   static std::unique_ptr<HostDeviceContextBlitter> maybe_make(
@@ -197,8 +200,8 @@ class HostDeviceContextBlitter {
       Context *host_ctx,
       Device *device,
       uint64_t *host_result_buffer,
-      VkBufferWithMemory *device_buffer,
-      VkBufferWithMemory *host_shadow_buffer) {
+      DeviceAllocation *device_buffer,
+      DeviceAllocation *host_shadow_buffer) {
     if (ctx_attribs->empty()) {
       return nullptr;
     }
@@ -211,8 +214,8 @@ class HostDeviceContextBlitter {
   const KernelContextAttributes *const ctx_attribs_;
   Context *const host_ctx_;
   uint64_t *const host_result_buffer_;
-  VkBufferWithMemory *const device_buffer_;
-  VkBufferWithMemory *const host_shadow_buffer_;
+  DeviceAllocation *const device_buffer_;
+  DeviceAllocation *const host_shadow_buffer_;
   Device *const device_;
 };
 
@@ -225,10 +228,9 @@ class CompiledTaichiKernel {
     std::vector<VkRuntime::SpirvBinary> spirv_bins;
     const SNodeDescriptorsMap *snode_descriptors{nullptr};
 
-    const VulkanDevice *device{nullptr};
-    VkBufferWithMemory *root_buffer{nullptr};
-    VkBufferWithMemory *global_tmps_buffer{nullptr};
-    VmaAllocator *allocator{nullptr};
+    VulkanDevice *device{nullptr};
+    DeviceAllocation *root_buffer{nullptr};
+    DeviceAllocation *global_tmps_buffer{nullptr};
   };
 
   CompiledTaichiKernel(const Params &ti_params)
@@ -239,14 +241,11 @@ class CompiledTaichiKernel {
     };
     const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
     if (!ti_kernel_attribs_.ctx_attribs.empty()) {
-      ctx_buffer_ = std::make_unique<VkBufferWithMemory>(
-          *ti_params.allocator, ctx_sz,
-          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-          /*host_write*/ true, /*host_read*/ false);
-      ctx_buffer_host_ = std::make_unique<VkBufferWithMemory>(
-          *ti_params.allocator, ctx_sz,
-          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-          /*host_write*/ false, /*host_read*/ true);
+      Device::AllocParams params;
+      ctx_buffer_ = ti_params.device->allocate_memory_unique({size_t(ctx_sz),
+          /*host_write*/ true, /*host_read*/ false});
+      ctx_buffer_host_ = ti_params.device->allocate_memory_unique({size_t(ctx_sz),
+          /*host_write*/ false, /*host_read*/ true});
       input_buffers[BufferEnum::Context] = ctx_buffer_.get();
     }
 
@@ -262,7 +261,7 @@ class CompiledTaichiKernel {
       vp_params.name = ti_kernel_attribs_.name;
       for (const auto &bb : task_attribs[i].buffer_binds) {
         vp_params.buffer_bindings.push_back(VulkanPipeline::BufferBinding{
-            input_buffers.at(bb.type)->buffer(), (uint32_t)bb.binding});
+            ti_params.device->get_vkbuffer(*input_buffers.at(bb.type)), (uint32_t)bb.binding});
       }
       vp_params.code = SpirvCodeView(spirv_bins[i]);
       auto vp = std::make_unique<VulkanPipeline>(vp_params);
@@ -274,7 +273,7 @@ class CompiledTaichiKernel {
     }
 
     if (!ti_kernel_attribs_.ctx_attribs.empty()) {
-      cmd_builder.copy(ctx_buffer_->buffer(), ctx_buffer_host_->buffer(),
+      cmd_builder.copy(ti_params.device->get_vkbuffer(*ctx_buffer_), ti_params.device->get_vkbuffer(*ctx_buffer_host_),
                        ctx_sz, VulkanCopyBufferDirection::D2H);
     }
 
@@ -289,11 +288,11 @@ class CompiledTaichiKernel {
     return vk_pipelines_.size();
   }
 
-  VkBufferWithMemory *ctx_buffer() const {
+  DeviceAllocation *ctx_buffer() const {
     return ctx_buffer_.get();
   }
 
-  VkBufferWithMemory *ctx_buffer_host() const {
+  DeviceAllocation *ctx_buffer_host() const {
     return ctx_buffer_host_.get();
   }
 
@@ -309,8 +308,8 @@ class CompiledTaichiKernel {
   // not worth the effort doing another hop via a staging buffer.
   // TODO: Provide an option to use staging buffer. This could be useful if the
   // kernel does lots of IO on the context buffer, e.g., copy a large np array.
-  std::unique_ptr<VkBufferWithMemory> ctx_buffer_{nullptr};
-  std::unique_ptr<VkBufferWithMemory> ctx_buffer_host_{nullptr};
+  std::unique_ptr<DeviceAllocationUnique> ctx_buffer_{nullptr};
+  std::unique_ptr<DeviceAllocationUnique> ctx_buffer_host_{nullptr};
   std::vector<std::unique_ptr<VulkanPipeline>> vk_pipelines_;
 
   // VkCommandBuffers are destroyed when the underlying command pool is
@@ -400,7 +399,6 @@ class VkRuntime ::Impl {
     }
     global_tmps_buffer_.reset();
     root_buffer_.reset();
-    vmaDestroyAllocator(vk_allocator_);
   }
 
   KernelHandle register_taichi_kernel(RegisterParams reg_params) {
@@ -410,7 +408,6 @@ class VkRuntime ::Impl {
     params.device = embedded_device_->device();
     params.root_buffer = root_buffer_.get();
     params.global_tmps_buffer = global_tmps_buffer_.get();
-    params.allocator = &vk_allocator_;
 
     for (int i = 0; i < reg_params.task_spirv_source_codes.size(); ++i) {
       const auto &attribs = reg_params.kernel_attribs.tasks_attribs[i];
@@ -480,70 +477,18 @@ class VkRuntime ::Impl {
 
  private:
   void init_memory_pool(const Params &params) {
-    VolkDeviceTable table;
-    VmaVulkanFunctions vk_vma_functions;
-
-    volkLoadDeviceTable(&table, embedded_device_->device()->device());
-    vk_vma_functions.vkGetPhysicalDeviceProperties =
-        PFN_vkGetPhysicalDeviceProperties(vkGetInstanceProcAddr(
-            volkGetLoadedInstance(), "vkGetPhysicalDeviceProperties"));
-    vk_vma_functions.vkGetPhysicalDeviceMemoryProperties =
-        PFN_vkGetPhysicalDeviceMemoryProperties(vkGetInstanceProcAddr(
-            volkGetLoadedInstance(), "vkGetPhysicalDeviceMemoryProperties"));
-    vk_vma_functions.vkAllocateMemory = table.vkAllocateMemory;
-    vk_vma_functions.vkFreeMemory = table.vkFreeMemory;
-    vk_vma_functions.vkMapMemory = table.vkMapMemory;
-    vk_vma_functions.vkUnmapMemory = table.vkUnmapMemory;
-    vk_vma_functions.vkFlushMappedMemoryRanges =
-        table.vkFlushMappedMemoryRanges;
-    vk_vma_functions.vkInvalidateMappedMemoryRanges =
-        table.vkInvalidateMappedMemoryRanges;
-    vk_vma_functions.vkBindBufferMemory = table.vkBindBufferMemory;
-    vk_vma_functions.vkBindImageMemory = table.vkBindImageMemory;
-    vk_vma_functions.vkGetBufferMemoryRequirements =
-        table.vkGetBufferMemoryRequirements;
-    vk_vma_functions.vkGetImageMemoryRequirements =
-        table.vkGetImageMemoryRequirements;
-    vk_vma_functions.vkCreateBuffer = table.vkCreateBuffer;
-    vk_vma_functions.vkDestroyBuffer = table.vkDestroyBuffer;
-    vk_vma_functions.vkCreateImage = table.vkCreateImage;
-    vk_vma_functions.vkDestroyImage = table.vkDestroyImage;
-    vk_vma_functions.vkCmdCopyBuffer = table.vkCmdCopyBuffer;
-    vk_vma_functions.vkGetBufferMemoryRequirements2KHR =
-        table.vkGetBufferMemoryRequirements2KHR;
-    vk_vma_functions.vkGetImageMemoryRequirements2KHR =
-        table.vkGetImageMemoryRequirements2KHR;
-    vk_vma_functions.vkBindBufferMemory2KHR = table.vkBindBufferMemory2KHR;
-    vk_vma_functions.vkBindImageMemory2KHR = table.vkBindImageMemory2KHR;
-    vk_vma_functions.vkGetPhysicalDeviceMemoryProperties2KHR =
-        PFN_vkGetPhysicalDeviceMemoryProperties2KHR(
-            vkGetInstanceProcAddr(volkGetLoadedInstance(),
-                                  "vkGetPhysicalDeviceMemoryProperties2KHR"));
-
-    VmaAllocatorCreateInfo allocatorInfo = {};
-    allocatorInfo.vulkanApiVersion = embedded_device_->get_ti_device()->get_cap(
-        DeviceCapability::vk_api_version);
-    allocatorInfo.physicalDevice = embedded_device_->physical_device();
-    allocatorInfo.device = embedded_device_->device()->device();
-    allocatorInfo.instance = embedded_device_->instance();
-    allocatorInfo.pVulkanFunctions = &vk_vma_functions;
-
-    vmaCreateAllocator(&allocatorInfo, &vk_allocator_);
+    
   }
 
   void init_vk_buffers() {
 #pragma message("Vulkan buffers size hardcoded")
-    root_buffer_ = std::make_unique<VkBufferWithMemory>(
-        vk_allocator_, 64 * 1024 * 1024,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    global_tmps_buffer_ = std::make_unique<VkBufferWithMemory>(
-        vk_allocator_, 1024 * 1024,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    root_buffer_ = get_ti_device()->allocate_memory_unique({64 * 1024 * 1024});
+    global_tmps_buffer_ = get_ti_device()->allocate_memory_unique({1024 * 1024});
 
     // Need to zero fill the buffers, otherwise there could be NaN.
     ClearBufferCommandBuilder cmd_builder{stream_->device()};
     auto clear_cmd = cmd_builder.build(
-        /*buffers=*/{root_buffer_->buffer(), global_tmps_buffer_->buffer()});
+        /*buffers=*/{embedded_device_->device()->get_vkbuffer(*root_buffer_), embedded_device_->device()->get_vkbuffer(*global_tmps_buffer_)});
     stream_->launch(clear_cmd);
     stream_->synchronize();
   }
@@ -554,10 +499,8 @@ class VkRuntime ::Impl {
   std::unique_ptr<EmbeddedVulkanDevice> embedded_device_{nullptr};
   std::unique_ptr<VulkanStream> stream_{nullptr};
 
-  std::unique_ptr<VkBufferWithMemory> root_buffer_;
-  std::unique_ptr<VkBufferWithMemory> global_tmps_buffer_;
-
-  VmaAllocator vk_allocator_;
+  std::unique_ptr<DeviceAllocationUnique> root_buffer_;
+  std::unique_ptr<DeviceAllocationUnique> global_tmps_buffer_;
 
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;
   int num_pending_kernels_{0};

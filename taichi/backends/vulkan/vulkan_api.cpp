@@ -8,6 +8,7 @@
 
 #include "taichi/backends/vulkan/vulkan_common.h"
 #include "taichi/backends/vulkan/loader.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/common/logging.h"
 
 namespace taichi {
@@ -182,19 +183,15 @@ VkShaderModule create_shader_module(VkDevice device,
 
 }  // namespace
 
-VulkanDevice::VulkanDevice(const Params &params) : rep_(params) {
-}
-
 EmbeddedVulkanDevice::EmbeddedVulkanDevice(
     const EmbeddedVulkanDevice::Params &params)
     : params_(params) {
-  // TODO: Change the ownership hierarchy, the taichi Device class should be at
-  // the top level
-  ti_device_ = std::make_unique<Device>();
-
   if (!VulkanLoader::instance().init()) {
     throw std::runtime_error("Error loading vulkan");
   }
+
+  ti_device_ = std::make_unique<VulkanDevice>();
+
   create_instance();
   setup_debug_messenger();
   if (params_.is_for_ui) {
@@ -205,16 +202,19 @@ EmbeddedVulkanDevice::EmbeddedVulkanDevice(
   create_command_pool();
   create_debug_swapchain();
 
-  VulkanDevice::Params dparams;
-  dparams.device = device_;
-  dparams.compute_queue = compute_queue_;
-  dparams.graphics_queue = graphics_queue_;
-  dparams.present_queue = present_queue_;
-  dparams.command_pool = command_pool_;
-  owned_device_ = std::make_unique<VulkanDevice>(dparams);
-#ifdef TI_VULKAN_DEBUG
-  owned_device_->set_debug_struct(&debug_struct_);
-#endif
+  // TODO: Change the ownership hierarchy, the taichi Device class should be at
+  // the top level
+  {
+    VulkanDevice::Params params;
+    params.instance = instance_;
+    params.physical_device = physical_device_;
+    params.device = device_;
+    params.compute_queue = compute_queue_;
+    params.compute_pool = command_pool_;
+    params.graphics_queue = graphics_queue_;
+    params.graphics_pool = command_pool_; // FIXME: This is potentially wrong
+    ti_device_->init_vulkan_structs(params);
+  }
 }
 
 EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
@@ -606,28 +606,6 @@ void EmbeddedVulkanDevice::create_command_pool() {
       "failed to create command pool");
 }
 
-void VulkanDevice::debug_frame_marker() const {
-#ifdef TI_VULKAN_DEBUG
-  if (debug_struct_) {
-    uint32_t imageIndex;
-    vkAcquireNextImageKHR(rep_.device, debug_struct_->swapchain, UINT64_MAX,
-                          debug_struct_->image_available, VK_NULL_HANDLE,
-                          &imageIndex);
-
-    VkPresentInfoKHR presentInfo{};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = &debug_struct_->image_available;
-    presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = &debug_struct_->swapchain;
-    presentInfo.pImageIndices = &imageIndex;
-    presentInfo.pResults = nullptr;
-
-    vkQueuePresentKHR(rep_.compute_queue, &presentInfo);
-  }
-#endif
-}
-
 void EmbeddedVulkanDevice::create_debug_swapchain() {
 #ifdef TI_VULKAN_DEBUG
   TI_TRACE("Creating debug swapchian");
@@ -721,7 +699,7 @@ void EmbeddedVulkanDevice::create_debug_swapchain() {
 }
 
 VulkanPipeline::VulkanPipeline(const Params &params)
-    : device_(params.device->device()), name_(params.name) {
+    : device_(params.device->vk_device()), name_(params.name) {
   create_descriptor_set_layout(params);
   create_compute_pipeline(params);
   create_descriptor_pool(params);
@@ -867,14 +845,14 @@ void VulkanPipeline::create_descriptor_sets(const Params &params) {
 VulkanCommandBuilder::VulkanCommandBuilder(const VulkanDevice *device) {
   VkCommandBufferAllocateInfo alloc_info{};
   alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  alloc_info.commandPool = device->command_pool();
+  alloc_info.commandPool = device->compute_cmd_pool();
   alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   alloc_info.commandBufferCount = 1;
   BAIL_ON_VK_BAD_RESULT(
-      vkAllocateCommandBuffers(device->device(), &alloc_info, &command_buffer_),
+      vkAllocateCommandBuffers(device->vk_device(), &alloc_info, &command_buffer_),
       "failed to allocate command buffer");
 
-  this->device_ = device->device();
+  this->device_ = device->vk_device();
 
   VkCommandBufferBeginInfo begin_info{};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1001,7 +979,7 @@ void VulkanStream::launch(VkCommandBuffer command) {
 
   VkFence fence;
   VkFenceCreateInfo fence_info{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, 0};
-  BAIL_ON_VK_BAD_RESULT(vkCreateFence(device_->device(), &fence_info,
+  BAIL_ON_VK_BAD_RESULT(vkCreateFence(device_->vk_device(), &fence_info,
                                       kNoVkAllocCallbacks, &fence),
                         "failed to create fence");
   in_flight_fences_.push_back(fence);
@@ -1022,15 +1000,15 @@ void VulkanStream::synchronize() {
   // vkQueueWaitIdle(device_->compute_queue());
 
   if (in_flight_fences_.size()) {
-    vkWaitForFences(device_->device(), in_flight_fences_.size(),
+    vkWaitForFences(device_->vk_device(), in_flight_fences_.size(),
                     in_flight_fences_.data(), true, 0xFFFFFFFF);
     for (auto &fence : in_flight_fences_) {
-      vkDestroyFence(device_->device(), fence, kNoVkAllocCallbacks);
+      vkDestroyFence(device_->vk_device(), fence, kNoVkAllocCallbacks);
     }
     in_flight_fences_.clear();
   }
 
-  device_->debug_frame_marker();
+  // device_->debug_frame_marker();
 }
 
 }  // namespace vulkan

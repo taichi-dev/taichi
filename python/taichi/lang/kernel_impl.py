@@ -11,6 +11,7 @@ from taichi.lang import impl, util
 from taichi.lang.ast_checker import KernelSimplicityASTChecker
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.kernel_arguments import ext_arr, template
+from taichi.lang.ndarray import Ndarray
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.transformer import ASTTransformerTotal
 from taichi.misc.util import obsolete
@@ -480,7 +481,10 @@ class Kernel:
                     if not isinstance(v, int):
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
-                elif self.match_ext_arr(v, needed):
+                elif isinstance(needed, ext_arr) and (isinstance(v, Ndarray) or
+                                                      self.match_ext_arr(v)):
+                    if isinstance(v, Ndarray):
+                        v = v.arr
                     has_external_arrays = True
                     has_torch = util.has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
@@ -564,15 +568,12 @@ class Kernel:
 
         return func__
 
-    def match_ext_arr(self, v, needed):
-        needs_array = isinstance(
-            needed, np.ndarray) or needed == np.ndarray or isinstance(
-                needed, ext_arr)
+    def match_ext_arr(self, v):
         has_array = isinstance(v, np.ndarray)
         if not has_array and util.has_pytorch():
             import torch
             has_array = isinstance(v, torch.Tensor)
-        return has_array and needs_array
+        return has_array
 
     def ensure_compiled(self, *args):
         instance_id, arg_features = self.mapper.lookup(args)

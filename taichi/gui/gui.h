@@ -410,7 +410,7 @@ class Canvas {
     position = transform(position);
     std::string folder;
     if (is_release()) {
-      folder = fmt::format("{}/../assets", lang::compiled_lib_dir);
+      folder = fmt::format("{}/../assets", lang::runtime_lib_dir());
     } else {
       folder = fmt::format("{}/external/assets", get_repo_dir());
     }

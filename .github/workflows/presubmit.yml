@@ -99,9 +99,9 @@ jobs:
           python examples/algorithm/laplace.py
           ti diagnose
           ti changelog
-          # TODO: make cpp tests work in both release & dev mode.
-          # Currently cpp tests only works in dev mode since it depends on the path set there.
-          TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
+          # taichi_cpp_tests requires passing in TI_LIB_DIR manually.
+          TI_LIB_DIR=`python -c "import taichi;print(taichi.__path__[0])" | tail -1`
+          TI_LIB_DIR=$TI_LIB_DIR ./build/taichi_cpp_tests
           ti test -vr2 -t2
 
   build_and_test_cpu:
@@ -171,9 +171,9 @@ jobs:
           python examples/algorithm/laplace.py
           ti diagnose
           ti changelog
-          # TODO: make cpp tests work in both release & dev mode.
-          # Currently cpp tests only works in dev mode since it depends on the path set there.
-          [ "$RUN_CPP_TESTS" = "ON" ] && TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
+          # taichi_cpp_tests requires passing in TI_LIB_DIR manually.
+          TI_LIB_DIR=`python -c "import taichi;print(taichi.__path__[0])" | tail -1`
+          [ "$RUN_CPP_TESTS" = "ON" ] && TI_LIB_DIR=$TI_LIB_DIR ./build/taichi_cpp_tests
           ti test -vr2 -t2
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}

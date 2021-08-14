@@ -55,9 +55,28 @@ def make_temp_file(*args, **kwargs):
     return name
 
 
-# To test full features set:
-# _test_features = {"packed": [True, False], "dynamic_index": [True, False]}
-_test_features = {"dynamic_index": [True, False]}
+class TestParam:
+    def __init__(self, value, required_extensions):
+        self._value = value
+        self._required_extensions = required_extensions
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def required_extensions(self):
+        return self._required_extensions
+
+
+_test_features = {
+    #"packed":
+    # [TestValue(True, []),
+    #  TestValue(False, [])],
+    "dynamic_index":
+    [TestParam(True, [ti.extension.dynamic_index]),
+     TestParam(False, [])]
+}
 
 
 def test(arch=None, exclude=None, require=None, **options):
@@ -90,13 +109,12 @@ def test(arch=None, exclude=None, require=None, **options):
 
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
-            params = [ti.supported_archs()]
-            params.extend(
-                [_test_features[feature] for feature in _test_features])
-            param_combinations = list(itertools.product(*params))
+            arch_params_sets = [ti.supported_archs(), *_test_features.values()]
+            arch_params_combinations = list(
+                itertools.product(*arch_params_sets))
 
-            for request_param in param_combinations:
-                req_arch = request_param[0]
+            for arch_params in arch_params_combinations:
+                req_arch, req_params = arch_params[0], arch_params[1:]
 
                 if (req_arch not in arch) or (req_arch in exclude):
                     continue
@@ -108,14 +126,16 @@ def test(arch=None, exclude=None, require=None, **options):
 
                 skip = False
                 current_options = copy.deepcopy(options)
-                for i, feature in enumerate(_test_features):
-                    if current_options.get(
-                            feature,
-                            request_param[i + 1]) == request_param[i + 1]:
-                        # Fill in the missing feature
-                        current_options[feature] = request_param[i + 1]
-                    else:
+                for feature, param in zip(_test_features, req_params):
+                    value = param.value
+                    required_extensions = param.required_extensions
+                    if current_options.get(feature, value) != value or any(
+                            not _ti_core.is_extension_supported(req_arch, e)
+                            for e in required_extensions):
                         skip = True
+                    else:
+                        # Fill in the missing feature
+                        current_options[feature] = value
                 if skip:
                     continue
 

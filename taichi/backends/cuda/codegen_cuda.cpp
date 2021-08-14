@@ -46,36 +46,46 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
     return [offloaded_local, cuda_module,
             kernel = this->kernel](Context &context) {
-      // copy data to GRAM
       CUDAContext::get_instance().make_current();
       auto args = kernel->args;
-      std::vector<void *> host_buffers(args.size(), nullptr);
+      std::vector<void *> arg_buffers(args.size(), nullptr);
       std::vector<void *> device_buffers(args.size(), nullptr);
-      bool has_buffer = false;
 
       // We could also use kernel->make_launch_context() to create
       // |ctx_builder|, but that implies the usage of Program's context. For the
       // sake of decoupling, let's not do that and explicitly set the context we
       // want to modify.
       Kernel::LaunchContextBuilder ctx_builder(kernel, &context);
+      bool transferred = false;
       for (int i = 0; i < (int)args.size(); i++) {
-        if (args[i].is_external_array) {
-          has_buffer = true;
-          // replace host buffer with device buffer
-          host_buffers[i] = context.get_arg<void *>(i);
-          if (args[i].size > 0) {
-            // Note: both numpy and PyTorch support arrays/tensors with zeros
-            // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
-            // args[i].size = 0.
+        if (args[i].is_external_array && args[i].size > 0) {
+          // Note: both numpy and PyTorch support arrays/tensors with zeros
+          // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
+          // args[i].size = 0.
+          arg_buffers[i] = context.get_arg<void *>(i);
+          unsigned int attr_val = 0;
+          uint32_t ret_code = CUDADriver::get_instance().mem_get_attribute.call(
+              &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+              (void *)arg_buffers[i]);
+          if (ret_code != CUDA_SUCCESS || attr_val != CU_MEMORYTYPE_DEVICE) {
+            // Copy to device buffer if arg is on host
+            // - ret_code != CUDA_SUCCESS:
+            //   arg_buffers[i] is not on device
+            // - attr_val != CU_MEMORYTYPE_DEVICE:
+            //   Cuda driver is aware of arg_buffers[i] but it might be on host.
+            // See CUDA driver API `cuPointerGetAttribute` for more details.
+            transferred = true;
             CUDADriver::get_instance().malloc(&device_buffers[i], args[i].size);
             CUDADriver::get_instance().memcpy_host_to_device(
-                (void *)device_buffers[i], host_buffers[i], args[i].size);
+                (void *)device_buffers[i], arg_buffers[i], args[i].size);
+          } else {
+            device_buffers[i] = arg_buffers[i];
           }
           ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
                                              args[i].size);
         }
       }
-      if (has_buffer) {
+      if (transferred) {
         CUDADriver::get_instance().stream_synchronize(nullptr);
       }
 
@@ -86,14 +96,14 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
                             task.shmem_bytes, {&context});
       }
       // copy data back to host
-      if (has_buffer) {
+      if (transferred) {
         CUDADriver::get_instance().stream_synchronize(nullptr);
-      }
-      for (int i = 0; i < (int)args.size(); i++) {
-        if (args[i].is_external_array && args[i].size > 0) {
-          CUDADriver::get_instance().memcpy_device_to_host(
-              host_buffers[i], (void *)device_buffers[i], args[i].size);
-          CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
+        for (int i = 0; i < (int)args.size(); i++) {
+          if (device_buffers[i] != arg_buffers[i]) {
+            CUDADriver::get_instance().memcpy_device_to_host(
+                arg_buffers[i], (void *)device_buffers[i], args[i].size);
+            CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
+          }
         }
       }
     };

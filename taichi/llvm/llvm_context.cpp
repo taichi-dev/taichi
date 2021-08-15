@@ -233,7 +233,7 @@ void compile_runtime_bitcode(Arch arch) {
 std::string libdevice_path() {
   std::string folder;
   if (is_release()) {
-    folder = compiled_lib_dir;
+    folder = runtime_lib_dir();
   } else {
     folder = fmt::format("{}/external/cuda_libdevice", get_repo_dir());
   }
@@ -359,7 +359,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   if (!data->runtime_module) {
     if (is_release()) {
       data->runtime_module = module_from_bitcode_file(
-          fmt::format("{}/{}", compiled_lib_dir, get_runtime_fn(arch)), ctx);
+          fmt::format("{}/{}", runtime_lib_dir(), get_runtime_fn(arch)), ctx);
     } else {
       compile_runtime_bitcode(arch);
       data->runtime_module = module_from_bitcode_file(

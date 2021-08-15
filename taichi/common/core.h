@@ -323,8 +323,6 @@ class DeferedExecution {
 
 #define TI_DEFER(x) taichi::DeferedExecution _defered([&]() { x; });
 
-bool is_release();
-
 std::string get_repo_dir();
 
 std::string get_python_package_dir();

@@ -122,8 +122,7 @@ class TaichiMain:
         """Get the path to the examples directory."""
         import taichi as ti
 
-        root_dir = ti.package_root() if ti.is_release(
-        ) else settings.get_repo_directory()
+        root_dir = ti.package_root()
         examples_dir = Path(root_dir) / 'examples'
         return examples_dir
 
@@ -677,12 +676,8 @@ class TaichiMain:
         import pytest
 
         import taichi as ti
-        if ti.is_release():
-            root_dir = ti.package_root()
-            test_dir = os.path.join(root_dir, 'tests')
-        else:
-            root_dir = settings.get_repo_directory()
-            test_dir = os.path.join(root_dir, 'tests', 'python')
+        root_dir = ti.package_root()
+        test_dir = os.path.join(root_dir, 'tests')
         pytest_args = []
 
         # TODO: use pathlib to deal with suffix and stem name manipulation

@@ -409,11 +409,7 @@ class Canvas {
             Vector4 color) {
     position = transform(position);
     std::string folder;
-    if (is_release()) {
-      folder = fmt::format("{}/../assets", lang::runtime_lib_dir());
-    } else {
-      folder = fmt::format("{}/external/assets", get_repo_dir());
-    }
+    folder = fmt::format("{}/../assets", lang::runtime_lib_dir());
     auto ttf_path = fmt::format("{}/Go-Regular.ttf", folder);
     img.write_text(ttf_path, str, size, position.x, position.y, color);
   }

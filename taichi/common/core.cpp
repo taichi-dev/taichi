@@ -29,10 +29,6 @@ float __wrap_log2f(float x) {
 #endif
 }
 
-bool is_release() {
-  return true;
-}
-
 std::string python_package_dir;
 
 std::string get_python_package_dir() {

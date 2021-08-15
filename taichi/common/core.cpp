@@ -30,12 +30,7 @@ float __wrap_log2f(float x) {
 }
 
 bool is_release() {
-  auto dir = std::getenv("TAICHI_REPO_DIR");
-  if (dir == nullptr || std::string(dir) == "") {
-    return true;
-  } else {
-    return false;
-  }
+  return true;
 }
 
 std::string python_package_dir;
@@ -49,19 +44,14 @@ void set_python_package_dir(const std::string &dir) {
 }
 
 std::string get_repo_dir() {
-  auto dir = std::getenv("TAICHI_REPO_DIR");
-  if (is_release()) {
-    // release mode. Use ~/.taichi as root
+  // release mode. Use ~/.taichi as root
 #if defined(TI_PLATFORM_WINDOWS)
-    return "C:/taichi_cache/";
+  return "C:/taichi_cache/";
 #else
-    auto home = std::getenv("HOME");
-    TI_ASSERT(home != nullptr);
-    return std::string(home) + "/.taichi/";
+  auto home = std::getenv("HOME");
+  TI_ASSERT(home != nullptr);
+  return std::string(home) + "/.taichi/";
 #endif
-  } else {
-    return std::string(dir);
-  }
 }
 
 CoreState &CoreState::get_instance() {

@@ -76,7 +76,7 @@ def package_root():
 
 
 def is_release():
-    return os.environ.get('TAICHI_REPO_DIR', '') == ''
+    return True
 
 
 def get_core_shared_object():

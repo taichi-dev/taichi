@@ -72,4 +72,4 @@ def test_func_random_argument_dup_eval():
         return func(ti.random()).norm_sqr()
 
     for i in range(4):
-      assert kern() == approx(1.0, rel = 5e-5)
+        assert kern() == approx(1.0, rel=5e-5)

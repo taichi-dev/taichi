@@ -23,8 +23,9 @@ def _test_op(dt, taichi_op, np_op):
         if dt == ti.f64:
             assert abs(np_op(float(f(i))) - val[i]) < 1e-15
         else:
-            assert abs(np_op(float(f(i))) -
-                       val[i]) < 1e-6 if ti.cfg.arch != ti.opengl and ti.cfg.arch != ti.vulkan else 1e-5
+            assert abs(
+                np_op(float(f(i))) - val[i]
+            ) < 1e-6 if ti.cfg.arch != ti.opengl and ti.cfg.arch != ti.vulkan else 1e-5
 
 
 def test_f64_trig():

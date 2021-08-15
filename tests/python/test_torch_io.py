@@ -235,25 +235,3 @@ def test_torch_zero():
     test_torch(torch.zeros((0), dtype=torch.int32))
     test_torch(torch.zeros((0, 5), dtype=torch.int32))
     test_torch(torch.zeros((5, 0, 5), dtype=torch.int32))
-
-
-@ti.torch_test
-def test_torch_on_arch_cuda():
-    if not torch.cuda.is_available():
-        print('Skipping torch cuda test due to cuda not available')
-        return
-    ti.init(arch=ti.cuda)
-    n = 16
-
-    @ti.kernel
-    def update(x: ti.ext_arr(), y: ti.ext_arr()):
-        for i in range(n):
-            x[i] = y[i] + 1
-
-    x = torch.from_numpy(np.random.randn(n).astype(np.float32)).to('cpu')
-    y = torch.from_numpy(np.random.randn(n).astype(np.float32)).to('cpu')
-
-    update(x, y)
-
-    for i in range(n):
-        assert x[i] == y[i] + 1

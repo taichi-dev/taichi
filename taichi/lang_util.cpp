@@ -19,11 +19,14 @@ std::string runtime_tmp_dir;
 std::string runtime_lib_dir() {
   std::string folder;
   if (!compiled_lib_dir.empty()) {
-      folder = compiled_lib_dir;
+    folder = compiled_lib_dir;
   } else {
-      auto ti_lib_dir = getenv("TI_LIB_DIR");
-      TI_ERROR_IF(!ti_lib_dir, "If you are running the taichi_cpp_tests please set TI_LIB_DIR to $TAICHI_INSTALL_DIR/lib where TAICHI_INSTALL_DIR can be retrieved from taichi.__path__ in python");
-      folder = std::string(ti_lib_dir);
+    auto ti_lib_dir = getenv("TI_LIB_DIR");
+    TI_ERROR_IF(!ti_lib_dir,
+                "If you are running the taichi_cpp_tests please set TI_LIB_DIR "
+                "to $TAICHI_INSTALL_DIR/lib where TAICHI_INSTALL_DIR can be "
+                "retrieved from taichi.__path__ in python");
+    folder = std::string(ti_lib_dir);
   }
   return folder;
 }

@@ -166,21 +166,6 @@ bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
   }
 }
 
-VkShaderModule create_shader_module(VkDevice device,
-                                    const SpirvCodeView &code) {
-  VkShaderModuleCreateInfo create_info{};
-  create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-  create_info.codeSize = code.size;
-  create_info.pCode = code.data;
-
-  VkShaderModule shader_module;
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreateShaderModule(device, &create_info, kNoVkAllocCallbacks,
-                           &shader_module),
-      "failed to create shader module");
-  return shader_module;
-}
-
 }  // namespace
 
 EmbeddedVulkanDevice::EmbeddedVulkanDevice(
@@ -212,7 +197,7 @@ EmbeddedVulkanDevice::EmbeddedVulkanDevice(
     params.compute_queue = compute_queue_;
     params.compute_pool = command_pool_;
     params.graphics_queue = graphics_queue_;
-    params.graphics_pool = command_pool_; // FIXME: This is potentially wrong
+    params.graphics_pool = command_pool_;  // FIXME: This is potentially wrong
     ti_device_->init_vulkan_structs(params);
   }
 }
@@ -229,6 +214,8 @@ EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
     glfwTerminate();
   }
 #endif
+
+  ti_device_.reset();
 
   if constexpr (kEnableValidationLayers) {
     destroy_debug_utils_messenger_ext(instance_, debug_messenger_,
@@ -594,7 +581,7 @@ void EmbeddedVulkanDevice::create_logical_device() {
 void EmbeddedVulkanDevice::create_command_pool() {
   VkCommandPoolCreateInfo pool_info{};
   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  pool_info.flags = 0;
+  pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
   if (params_.is_for_ui) {
     pool_info.queueFamilyIndex = queue_family_indices_.graphics_family.value();
   } else {
@@ -696,319 +683,6 @@ void EmbeddedVulkanDevice::create_debug_swapchain() {
     TI_TRACE("Creating debug swapchian3");
   }
 #endif
-}
-
-VulkanPipeline::VulkanPipeline(const Params &params)
-    : device_(params.device->vk_device()), name_(params.name) {
-  create_descriptor_set_layout(params);
-  create_compute_pipeline(params);
-  create_descriptor_pool(params);
-  create_descriptor_sets(params);
-}
-
-VulkanPipeline::~VulkanPipeline() {
-  vkDestroyDescriptorPool(device_, descriptor_pool_, kNoVkAllocCallbacks);
-  vkDestroyPipeline(device_, pipeline_, kNoVkAllocCallbacks);
-  vkDestroyPipelineLayout(device_, pipeline_layout_, kNoVkAllocCallbacks);
-  vkDestroyDescriptorSetLayout(device_, descriptor_set_layout_,
-                               kNoVkAllocCallbacks);
-}
-
-void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
-  const auto &buffer_binds = params.buffer_bindings;
-  std::vector<VkDescriptorSetLayoutBinding> layout_bindings;
-  layout_bindings.reserve(buffer_binds.size());
-  for (const auto &bb : buffer_binds) {
-    VkDescriptorSetLayoutBinding layout_binding{};
-    layout_binding.binding = bb.binding;
-    layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    layout_binding.descriptorCount = 1;
-    layout_binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    layout_binding.pImmutableSamplers = nullptr;
-    layout_bindings.push_back(layout_binding);
-  }
-
-  VkDescriptorSetLayoutCreateInfo layout_create_info{};
-  layout_create_info.sType =
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  layout_create_info.bindingCount = layout_bindings.size();
-  layout_create_info.pBindings = layout_bindings.data();
-
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreateDescriptorSetLayout(device_, &layout_create_info,
-                                  kNoVkAllocCallbacks, &descriptor_set_layout_),
-      "failed to create descriptor set layout");
-}
-
-void VulkanPipeline::create_compute_pipeline(const Params &params) {
-  VkShaderModule shader_module = create_shader_module(device_, params.code);
-
-  VkPipelineShaderStageCreateInfo shader_stage_info{};
-  shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  shader_stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-  shader_stage_info.module = shader_module;
-#pragma message("Shader storage info: pName is hardcoded to \"main\"")
-  shader_stage_info.pName = "main";
-
-  VkPipelineLayoutCreateInfo pipeline_layout_info{};
-  pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipeline_layout_info.setLayoutCount = 1;
-  pipeline_layout_info.pSetLayouts = &descriptor_set_layout_;
-  pipeline_layout_info.pushConstantRangeCount = 0;
-  pipeline_layout_info.pPushConstantRanges = nullptr;
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreatePipelineLayout(device_, &pipeline_layout_info,
-                             kNoVkAllocCallbacks, &pipeline_layout_),
-      "failed to create pipeline layout");
-
-  VkComputePipelineCreateInfo pipeline_info{};
-  pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-  pipeline_info.stage = shader_stage_info;
-  pipeline_info.layout = pipeline_layout_;
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreateComputePipelines(device_, /*pipelineCache=*/VK_NULL_HANDLE,
-                               /*createInfoCount=*/1, &pipeline_info,
-                               kNoVkAllocCallbacks, &pipeline_),
-      "failed to create pipeline");
-
-  vkDestroyShaderModule(device_, shader_module, kNoVkAllocCallbacks);
-}
-
-void VulkanPipeline::create_descriptor_pool(const Params &params) {
-  VkDescriptorPoolSize pool_size{};
-  pool_size.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  // This is the total number of descriptors we will allocate from this pool,
-  // across all the descriptor sets.
-  // https://stackoverflow.com/a/51716660/12003165
-  pool_size.descriptorCount = params.buffer_bindings.size();
-
-  VkDescriptorPoolCreateInfo pool_info{};
-  pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  pool_info.maxSets = 1;
-  pool_info.poolSizeCount = 1;
-  pool_info.pPoolSizes = &pool_size;
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreateDescriptorPool(device_, &pool_info, kNoVkAllocCallbacks,
-                             &descriptor_pool_),
-      "failed to create descriptor pool");
-}
-
-void VulkanPipeline::create_descriptor_sets(const Params &params) {
-  VkDescriptorSetAllocateInfo alloc_info{};
-  alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  alloc_info.descriptorPool = descriptor_pool_;
-  alloc_info.descriptorSetCount = 1;
-  alloc_info.pSetLayouts = &descriptor_set_layout_;
-
-  BAIL_ON_VK_BAD_RESULT(
-      vkAllocateDescriptorSets(device_, &alloc_info, &descriptor_set_),
-      "failed to allocate descriptor set");
-
-  const auto &buffer_binds = params.buffer_bindings;
-  std::vector<VkDescriptorBufferInfo> descriptor_buffer_infos;
-  descriptor_buffer_infos.reserve(buffer_binds.size());
-  for (const auto &bb : buffer_binds) {
-    VkDescriptorBufferInfo buffer_info{};
-    buffer_info.buffer = bb.buffer;
-    // Note that this is the offset within the buffer itself, not the offset
-    // of this buffer within its backing memory!
-    buffer_info.offset = 0;
-    // https://github.com/apache/tvm/blob/d288bbc5df3660355adbf97f2f84ecd232e269ff/src/runtime/vulkan/vulkan.cc#L1073
-    buffer_info.range = VK_WHOLE_SIZE;
-    descriptor_buffer_infos.push_back(buffer_info);
-  }
-
-  std::vector<VkWriteDescriptorSet> descriptor_writes;
-  descriptor_writes.reserve(descriptor_buffer_infos.size());
-  for (int i = 0; i < buffer_binds.size(); ++i) {
-    const auto &bb = buffer_binds[i];
-
-    VkWriteDescriptorSet write{};
-    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write.dstSet = descriptor_set_;
-    write.dstBinding = bb.binding;
-    write.dstArrayElement = 0;
-    write.descriptorCount = 1;
-    write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    write.pBufferInfo = &descriptor_buffer_infos[i];
-    write.pImageInfo = nullptr;
-    write.pTexelBufferView = nullptr;
-    descriptor_writes.push_back(write);
-  }
-
-  vkUpdateDescriptorSets(device_,
-                         /*descriptorWriteCount=*/descriptor_writes.size(),
-                         descriptor_writes.data(), /*descriptorCopyCount=*/0,
-                         /*pDescriptorCopies=*/nullptr);
-}
-
-VulkanCommandBuilder::VulkanCommandBuilder(const VulkanDevice *device) {
-  VkCommandBufferAllocateInfo alloc_info{};
-  alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  alloc_info.commandPool = device->compute_cmd_pool();
-  alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  alloc_info.commandBufferCount = 1;
-  BAIL_ON_VK_BAD_RESULT(
-      vkAllocateCommandBuffers(device->vk_device(), &alloc_info, &command_buffer_),
-      "failed to allocate command buffer");
-
-  this->device_ = device->vk_device();
-
-  VkCommandBufferBeginInfo begin_info{};
-  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  // This flag allows us to submit the same command buffer to the queue
-  // multiple times, while they are still pending.
-  begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-  begin_info.pInheritanceInfo = nullptr;
-  BAIL_ON_VK_BAD_RESULT(vkBeginCommandBuffer(command_buffer_, &begin_info),
-                        "failed to begin recording command buffer");
-}
-
-VulkanCommandBuilder::~VulkanCommandBuilder() {
-  if (command_buffer_ != VK_NULL_HANDLE) {
-    build();
-  }
-}
-
-VkCommandBuffer VulkanCommandBuilder::build() {
-  BAIL_ON_VK_BAD_RESULT(vkEndCommandBuffer(command_buffer_),
-                        "failed to record command buffer");
-  VkCommandBuffer res = command_buffer_;
-  command_buffer_ = VK_NULL_HANDLE;
-  return res;
-}
-
-void VulkanCommandBuilder::dispatch(const VulkanPipeline &pipeline,
-                                    int group_count_x) {
-  // Must call extension functions through a function pointer:
-  PFN_vkCmdBeginDebugUtilsLabelEXT pfnCmdBeginDebugUtilsLabelEXT =
-      (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetDeviceProcAddr(
-          device_, "vkCmdBeginDebugUtilsLabelEXT");
-  PFN_vkCmdEndDebugUtilsLabelEXT pfnCmdEndDebugUtilsLabelEXT =
-      (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetDeviceProcAddr(
-          device_, "vkCmdEndDebugUtilsLabelEXT");
-
-  VkDebugUtilsLabelEXT marker;
-  marker.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
-  marker.pNext = nullptr;
-  marker.color[0] = 1.0f;
-  marker.color[1] = 0.7f;
-  marker.color[2] = 0.3f;
-  marker.color[3] = 1.0f;
-  marker.pLabelName = pipeline.name().data();
-  pfnCmdBeginDebugUtilsLabelEXT(command_buffer_, &marker);
-
-  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
-                    pipeline.pipeline());
-  vkCmdBindDescriptorSets(
-      command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
-      pipeline.pipeline_layout(),
-      /*firstSet=*/0, /*descriptorSetCount=*/1, &(pipeline.descriptor_set()),
-      /*dynamicOffsetCount=*/0, /*pDynamicOffsets=*/nullptr);
-  vkCmdDispatch(command_buffer_, group_count_x,
-                /*groupCountY=*/1,
-                /*groupCountZ=*/1);
-  // Copied from TVM
-  // https://github.com/apache/tvm/blob/b2a3c481ebbb7cfbd5335fb11cd516ae5f348406/src/runtime/vulkan/vulkan.cc#L1134-L1142
-  VkMemoryBarrier barrier_info{};
-  barrier_info.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-  barrier_info.pNext = nullptr;
-  barrier_info.srcAccessMask =
-      VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
-  barrier_info.dstAccessMask =
-      (VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT |
-       VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
-  vkCmdPipelineBarrier(command_buffer_,
-                       /*srcStageMask=*/VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                       /*dstStageMask=*/VK_PIPELINE_STAGE_TRANSFER_BIT |
-                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                       /*srcStageMask=*/0, /*memoryBarrierCount=*/1,
-                       &barrier_info, /*bufferMemoryBarrierCount=*/0,
-                       /*pBufferMemoryBarriers=*/nullptr,
-                       /*imageMemoryBarrierCount=*/0,
-                       /*pImageMemoryBarriers=*/nullptr);
-
-  pfnCmdEndDebugUtilsLabelEXT(command_buffer_);
-}
-
-void VulkanCommandBuilder::copy(VkBuffer src_buffer,
-                                VkBuffer dst_buffer,
-                                VkDeviceSize size,
-                                VulkanCopyBufferDirection direction) {
-  VkBufferCopy copy_region{};
-  copy_region.srcOffset = 0;
-  copy_region.dstOffset = 0;
-  copy_region.size = size;
-  vkCmdCopyBuffer(command_buffer_, src_buffer, dst_buffer, /*regionCount=*/1,
-                  &copy_region);
-  if (direction == VulkanCopyBufferDirection::H2D) {
-    VkMemoryBarrier barrier_info;
-    barrier_info.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-    barrier_info.pNext = nullptr;
-
-    barrier_info.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    barrier_info.dstAccessMask =
-        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
-    vkCmdPipelineBarrier(command_buffer_,
-                         /*srcStageMask=*/VK_PIPELINE_STAGE_TRANSFER_BIT,
-                         /*dstStageMask=*/VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                             VK_PIPELINE_STAGE_TRANSFER_BIT,
-                         0, 1, &barrier_info, 0, nullptr, 0, nullptr);
-  }
-}
-
-VkCommandBuffer record_copy_buffer_command(
-    const VulkanDevice *device,
-    VkBuffer src_buffer,
-    VkBuffer dst_buffer,
-    VkDeviceSize size,
-    VulkanCopyBufferDirection direction) {
-  VulkanCommandBuilder cb{device};
-  cb.copy(src_buffer, dst_buffer, size, direction);
-  return cb.build();
-}
-
-VulkanStream::VulkanStream(const VulkanDevice *device) : device_(device) {
-}
-
-void VulkanStream::launch(VkCommandBuffer command) {
-  VkSubmitInfo submit_info{};
-  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &command;
-
-  VkFence fence;
-  VkFenceCreateInfo fence_info{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, 0};
-  BAIL_ON_VK_BAD_RESULT(vkCreateFence(device_->vk_device(), &fence_info,
-                                      kNoVkAllocCallbacks, &fence),
-                        "failed to create fence");
-  in_flight_fences_.push_back(fence);
-
-  BAIL_ON_VK_BAD_RESULT(
-      vkQueueSubmit(device_->compute_queue(), /*submitCount=*/1, &submit_info,
-                    /*fence=*/fence),
-      "failed to submit command buffer");
-}
-
-void VulkanStream::synchronize() {
-  // While vkQueueWaitIdle is strongly discouraged, this is probably the most
-  // viable way for synchronization in Taichi. Unlike graphics pipeline, there
-  // is no clear boundary (i.e. frame) for us to use a VkFence. TVM accumulates
-  // all the commands into a single buffer, then submits it all at once upon
-  // synchronization. Not sure how efficient that model is.
-
-  // vkQueueWaitIdle(device_->compute_queue());
-
-  if (in_flight_fences_.size()) {
-    vkWaitForFences(device_->vk_device(), in_flight_fences_.size(),
-                    in_flight_fences_.data(), true, 0xFFFFFFFF);
-    for (auto &fence : in_flight_fences_) {
-      vkDestroyFence(device_->vk_device(), fence, kNoVkAllocCallbacks);
-    }
-    in_flight_fences_.clear();
-  }
-
-  // device_->debug_frame_marker();
 }
 
 }  // namespace vulkan

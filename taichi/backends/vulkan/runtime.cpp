@@ -12,20 +12,15 @@
 #include "taichi/util/environ_config.h"
 
 #ifdef TI_WITH_VULKAN
-#include <volk.h>
-#define VK_NO_PROTOTYPES
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
-
 #include <spirv-tools/libspirv.hpp>
 #include <spirv-tools/optimizer.hpp>
 
 #include "taichi/backends/vulkan/vulkan_api.h"
-#include "taichi/backends/vulkan/vulkan_common.h"
 #include "taichi/backends/vulkan/vulkan_utils.h"
 #include "taichi/backends/vulkan/loader.h"
 
 #include "vk_mem_alloc.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
 #endif  // TI_WITH_VULKAN
 
 #include "taichi/math/arithmetic.h"
@@ -253,7 +248,7 @@ class CompiledTaichiKernel {
     const auto &spirv_bins = ti_params.spirv_bins;
     TI_ASSERT(task_attribs.size() == spirv_bins.size());
 
-    VulkanCommandBuilder cmd_builder(ti_params.device);
+    cmdlist_ = ti_params.device->new_command_list();
     for (int i = 0; i < task_attribs.size(); ++i) {
       const auto &attribs = task_attribs[i];
       VulkanPipeline::Params vp_params;
@@ -268,16 +263,19 @@ class CompiledTaichiKernel {
       const int group_x = (attribs.advisory_total_num_threads +
                            attribs.advisory_num_threads_per_group - 1) /
                           attribs.advisory_num_threads_per_group;
-      cmd_builder.dispatch(*vp, group_x);
+      cmdlist_->bind_pipeline(vp.get());
+      // TODO: Properlly design & implement the binding API
+      // cmdlist_->bind_resources();
+      cmdlist_->dispatch(group_x);
+      cmdlist_->memory_barrier();
       vk_pipelines_.push_back(std::move(vp));
     }
 
     if (!ti_kernel_attribs_.ctx_attribs.empty()) {
-      cmd_builder.copy(ti_params.device->get_vkbuffer(*ctx_buffer_), ti_params.device->get_vkbuffer(*ctx_buffer_host_),
-                       ctx_sz, VulkanCopyBufferDirection::D2H);
+      cmdlist_->buffer_copy(ctx_buffer_host_->get_ptr(0),
+                            ctx_buffer_->get_ptr(0), ctx_sz);
+      cmdlist_->buffer_barrier(*ctx_buffer_host_);
     }
-
-    command_buffer_ = cmd_builder.build();
   }
 
   const TaichiKernelAttributes &ti_kernel_attribs() const {
@@ -296,8 +294,8 @@ class CompiledTaichiKernel {
     return ctx_buffer_host_.get();
   }
 
-  VkCommandBuffer command_buffer() const {
-    return command_buffer_;
+  CommandList *command_list() const {
+    return cmdlist_.get();
   }
 
  private:
@@ -312,24 +310,7 @@ class CompiledTaichiKernel {
   std::unique_ptr<DeviceAllocationUnique> ctx_buffer_host_{nullptr};
   std::vector<std::unique_ptr<VulkanPipeline>> vk_pipelines_;
 
-  // VkCommandBuffers are destroyed when the underlying command pool is
-  // destroyed.
-  // https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Command_buffers#page_Command-buffer-allocation
-  VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
-};
-
-class ClearBufferCommandBuilder : private VulkanCommandBuilder {
- public:
-  using VulkanCommandBuilder::VulkanCommandBuilder;
-
-  VkCommandBuffer build(const std::vector<VkBuffer> &buffers) {
-    for (auto b : buffers) {
-      vkCmdFillBuffer(command_buffer_, b, /*dstOffset=*/0,
-                      /*size=*/VK_WHOLE_SIZE,
-                      /*data=*/0);
-    }
-    return VulkanCommandBuilder::build();
-  }
+  std::unique_ptr<CommandList> cmdlist_;
 };
 
 }  // namespace
@@ -370,7 +351,6 @@ class VkRuntime ::Impl {
     EmbeddedVulkanDevice::Params evd_params;
     evd_params.api_version = VulkanEnvSettings::kApiVersion();
     embedded_device_ = std::make_unique<EmbeddedVulkanDevice>(evd_params);
-    stream_ = std::make_unique<VulkanStream>(embedded_device_->device());
 
     init_memory_pool(params);
     init_vk_buffers();
@@ -454,7 +434,7 @@ class VkRuntime ::Impl {
       ctx_blitter->host_to_device();
     }
 
-    stream_->launch(ti_kernel->command_buffer());
+    embedded_device_->get_ti_device()->submit(ti_kernel->command_list());
     num_pending_kernels_ += ti_kernel->num_vk_pipelines();
     if (ctx_blitter) {
       synchronize();
@@ -467,7 +447,7 @@ class VkRuntime ::Impl {
       return;
     }
 
-    stream_->synchronize();
+    embedded_device_->get_ti_device()->command_sync();
     num_pending_kernels_ = 0;
   }
 
@@ -482,22 +462,26 @@ class VkRuntime ::Impl {
 
   void init_vk_buffers() {
 #pragma message("Vulkan buffers size hardcoded")
-    root_buffer_ = get_ti_device()->allocate_memory_unique({64 * 1024 * 1024});
-    global_tmps_buffer_ = get_ti_device()->allocate_memory_unique({1024 * 1024});
+    size_t root_buffer_size = 64 * 1024 * 1024;
+    size_t gtmp_buffer_size = 1024 * 1024;
+
+    root_buffer_ = get_ti_device()->allocate_memory_unique({root_buffer_size});
+    global_tmps_buffer_ =
+        get_ti_device()->allocate_memory_unique({gtmp_buffer_size});
 
     // Need to zero fill the buffers, otherwise there could be NaN.
-    ClearBufferCommandBuilder cmd_builder{stream_->device()};
-    auto clear_cmd = cmd_builder.build(
-        /*buffers=*/{embedded_device_->device()->get_vkbuffer(*root_buffer_), embedded_device_->device()->get_vkbuffer(*global_tmps_buffer_)});
-    stream_->launch(clear_cmd);
-    stream_->synchronize();
+    auto cmdlist = embedded_device_->get_ti_device()->new_command_list();
+    cmdlist->buffer_fill(root_buffer_->get_ptr(0), root_buffer_size,
+                         /*data=*/0);
+    cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), gtmp_buffer_size,
+                         /*data=*/0);
+    embedded_device_->get_ti_device()->submit_synced(cmdlist.get());
   }
 
   const SNodeDescriptorsMap *const snode_descriptors_;
   uint64_t *const host_result_buffer_;
 
   std::unique_ptr<EmbeddedVulkanDevice> embedded_device_{nullptr};
-  std::unique_ptr<VulkanStream> stream_{nullptr};
 
   std::unique_ptr<DeviceAllocationUnique> root_buffer_;
   std::unique_ptr<DeviceAllocationUnique> global_tmps_buffer_;

@@ -35,6 +35,8 @@ class Device;
 struct DeviceAllocation;
 struct DevicePtr;
 
+// TODO: Figure out how to support images. Temporary solutions is to have all
+// opque types such as images work as an allocation
 struct DeviceAllocation {
   Device *device{nullptr};
   uint32_t alloc_id{0};
@@ -43,13 +45,87 @@ struct DeviceAllocation {
 };
 
 struct DeviceAllocationUnique : public DeviceAllocation {
-  DeviceAllocationUnique(DeviceAllocation alloc) : DeviceAllocation(alloc) {}
+  DeviceAllocationUnique(DeviceAllocation alloc) : DeviceAllocation(alloc) {
+  }
   ~DeviceAllocationUnique();
 };
 
-struct DevicePtr {
-  const DeviceAllocation *allocation{nullptr};
+struct DevicePtr : public DeviceAllocation {
   uint64_t offset{0};
+};
+
+// TODO: Implement this
+class ResourceBinder {
+ public:
+  virtual ~ResourceBinder() {
+  }
+
+  // In Vulkan this is called Storage Buffer (shader can store)
+  virtual void rw_buffer(uint32_t set,
+                         uint32_t binding,
+                         DevicePtr ptr,
+                         size_t size) = 0;
+
+  // In Vulkan this is called Uniform Buffer (shader can only load)
+  virtual void buffer(uint32_t set,
+                      uint32_t binding,
+                      DevicePtr ptr,
+                      size_t size) = 0;
+
+  // Set vertex buffer (not implemented in compute only device)
+  virtual void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) {
+    TI_NOT_IMPLEMENTED
+  }
+
+  // Set index buffer (not implemented in compute only device)
+  // index_width = 4 -> uint32 index
+  // index_width = 2 -> uint16 index
+  virtual void index_buffer(DevicePtr ptr, size_t index_width) {
+    TI_NOT_IMPLEMENTED
+  }
+
+  // Set frame buffer (not implemented in compute only device)
+  virtual void framebuffer_color(DeviceAllocation image, uint32_t binding) {
+    TI_NOT_IMPLEMENTED
+  }
+
+  // Set frame buffer (not implemented in compute only device)
+  virtual void framebuffer_depth_stencil(DeviceAllocation image) {
+    TI_NOT_IMPLEMENTED
+  }
+};
+
+// TODO: Implement this
+class Pipeline {
+ public:
+  virtual ~Pipeline() {
+  }
+};
+
+// TODO: Implement this
+class CommandList {
+ public:
+  virtual ~CommandList() {
+  }
+
+  virtual void bind_pipeline(Pipeline *p) = 0;
+  virtual void bind_resources(ResourceBinder &binder) = 0;
+  virtual void buffer_barrier(DevicePtr ptr, size_t size) = 0;
+  virtual void buffer_barrier(DeviceAllocation alloc) = 0;
+  virtual void memory_barrier() = 0;
+  virtual void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) = 0;
+  virtual void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) = 0;
+  virtual void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) = 0;
+
+  // These are not implemented in compute only device
+  virtual void draw(uint32_t num_verticies, uint32_t start_vertex = 0) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void draw_indexed(uint32_t num_indicies,
+                            uint32_t start_vertex = 0,
+                            uint32_t start_index = 0) {
+    TI_NOT_IMPLEMENTED
+  }
 };
 
 class Device {
@@ -68,36 +144,47 @@ class Device {
 
   struct AllocParams {
     uint64_t size{0};
-    bool host_read{false};
     bool host_write{false};
+    bool host_read{false};
   };
 
-  virtual DeviceAllocation allocate_memory(const AllocParams& params) = 0;
+  virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
   virtual void dealloc_memory(DeviceAllocation allocation) = 0;
 
-  std::unique_ptr<DeviceAllocationUnique> allocate_memory_unique(const AllocParams& params) {
-    return std::make_unique<DeviceAllocationUnique>(this->allocate_memory(params));
+  std::unique_ptr<DeviceAllocationUnique> allocate_memory_unique(
+      const AllocParams &params) {
+    return std::make_unique<DeviceAllocationUnique>(
+        this->allocate_memory(params));
   }
 
   // Mapping can fail and will return nullptr
-  virtual void* map_range(DevicePtr ptr, uint64_t size) = 0;
-  virtual void* map(DeviceAllocation alloc) = 0;
+  virtual void *map_range(DevicePtr ptr, uint64_t size) = 0;
+  virtual void *map(DeviceAllocation alloc) = 0;
 
   virtual void unmap(DevicePtr ptr) = 0;
   virtual void unmap(DeviceAllocation alloc) = 0;
 
   // Directly share memory in the form of alias
   static DeviceAllocation share_to(DeviceAllocation *alloc, Device *target);
-  
-  // Strictly intra device copy
+
+  // Strictly intra device copy (synced)
   virtual void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) = 0;
 
-  // Copy memory inter or intra devices
+  // Copy memory inter or intra devices (synced)
   static void memcpy(DevicePtr dst, DevicePtr src, uint64_t size);
+
+  virtual std::unique_ptr<CommandList> new_command_list() = 0;
+  virtual void dealloc_command_list(CommandList *cmdlist) = 0;
+  virtual void submit(CommandList *cmdlist) = 0;
+  virtual void submit_synced(CommandList *cmdlist) = 0;
+
+  virtual void command_sync() = 0;
 
  private:
   std::unordered_map<DeviceCapability, uint32_t> caps_;
 };
+
+class GraphicsDevice : public Device {};
 
 }  // namespace lang
 }  // namespace taichi

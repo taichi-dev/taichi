@@ -1175,8 +1175,8 @@ class TaskCodegen : public IRVisitor {
     }
     ir_->debug(spv::OpName, buffer_value, buffer_instance_name(buffer));
     buffer_value_map_[buffer] = buffer_value;
-    TI_INFO("buffer name = {}, value = {}", buffer_instance_name(buffer),
-            buffer_value.id);
+    TI_TRACE("buffer name = {}, value = {}", buffer_instance_name(buffer),
+             buffer_value.id);
 
     return buffer_value;
   }

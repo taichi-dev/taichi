@@ -616,7 +616,11 @@ Device *VkRuntime::get_ti_device() const {
 }
 
 bool is_vulkan_api_available() {
+#ifdef TI_WITH_VULKAN
   return VulkanLoader::instance().init();
+#else
+  return false;
+#endif
 }
 
 }  // namespace vulkan

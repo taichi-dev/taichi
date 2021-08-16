@@ -14,7 +14,7 @@ matrix_dims = [(1, 2), (2, 3)]
 
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', field_shapes)
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_scalar_field(dtype, shape):
     x = ti.field(dtype, shape)
 
@@ -29,7 +29,7 @@ def test_scalar_field(dtype, shape):
 @pytest.mark.parametrize('n', vector_dims)
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', field_shapes)
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_vector_field(n, dtype, shape):
     x = ti.Vector.field(n, dtype, shape)
 
@@ -46,7 +46,7 @@ def test_vector_field(n, dtype, shape):
 @pytest.mark.parametrize('n,m', matrix_dims)
 @pytest.mark.parametrize('dtype', data_types)
 @pytest.mark.parametrize('shape', field_shapes)
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_matrix_field(n, m, dtype, shape):
     x = ti.Matrix.field(n, m, dtype=dtype, shape=shape)
 
@@ -60,7 +60,7 @@ def test_matrix_field(n, m, dtype, shape):
     assert x.m == m
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_field_needs_grad():
     # Just make sure the usage doesn't crash, see #1545
     n = 8

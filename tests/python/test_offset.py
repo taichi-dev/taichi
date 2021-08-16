@@ -113,18 +113,21 @@ def test_offset_for_matrix():
             assert a[i, j][0, 0] == i + j
 
 
+@ti.test()
 @ti.must_throw(AssertionError)
 def test_offset_must_throw_var():
     a = ti.field(dtype=ti.float32, shape=3, offset=(3, 4))
     b = ti.field(dtype=ti.float32, shape=None, offset=(3, 4))
 
 
+@ti.test()
 @ti.must_throw(AssertionError)
 def test_offset_must_throw_vector():
     a = ti.Vector.field(3, dtype=ti.float32, shape=3, offset=(3, 4))
     b = ti.Vector.field(3, dtype=ti.float32, shape=None, offset=(3, ))
 
 
+@ti.test()
 @ti.must_throw(AssertionError)
 def test_offset_must_throw_matrix():
     c = ti.Matrix.field(3, 3, dtype=ti.i32, shape=(32, 16, 8), offset=(32, 16))

@@ -202,7 +202,7 @@ def test_local_atomic_with_if():
     assert ret[None] == 1
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_atomic_sub_expr_evaled():
     c = ti.field(ti.i32)
     step = 42
@@ -220,7 +220,7 @@ def test_atomic_sub_expr_evaled():
     assert c[None] == -n * step
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_atomic_max_expr_evaled():
     c = ti.field(ti.i32)
     step = 42
@@ -238,7 +238,7 @@ def test_atomic_max_expr_evaled():
     assert c[None] == (n - 1) * step
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_atomic_min_expr_evaled():
     c = ti.field(ti.i32)
     step = 42
@@ -257,7 +257,7 @@ def test_atomic_min_expr_evaled():
     assert c[None] == 0
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_atomic_and_expr_evaled():
     c = ti.field(ti.i32)
     step = 42
@@ -278,7 +278,7 @@ def test_atomic_and_expr_evaled():
     assert c[None] == 0
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_atomic_or_expr_evaled():
     c = ti.field(ti.i32)
     step = 42
@@ -297,7 +297,7 @@ def test_atomic_or_expr_evaled():
     assert c[None] == 1023
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_atomic_xor_expr_evaled():
     c = ti.field(ti.i32)
     step = 42

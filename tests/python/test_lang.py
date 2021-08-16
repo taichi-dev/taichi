@@ -112,8 +112,8 @@ def test_local_atomics():
         assert val[i] == i + 45
 
 
+@ti.test(arch=ti.get_host_arch_list())
 @ti.must_throw(UnboundLocalError)
-@ti.host_arch_only
 def test_loop_var_life():
     @ti.kernel
     def test():
@@ -124,8 +124,8 @@ def test_loop_var_life():
     test()
 
 
+@ti.test(arch=ti.get_host_arch_list())
 @ti.must_throw(UnboundLocalError)
-@ti.host_arch_only
 def test_loop_var_life_double_iters():
     @ti.kernel
     def test():
@@ -136,10 +136,10 @@ def test_loop_var_life_double_iters():
     test()
 
 
-@ti.test(arch=ti.cpu)
 @pytest.mark.parametrize('dtype', [ti.i32, ti.f32, ti.i64, ti.f64])
 @pytest.mark.parametrize('ti_zero,zero', [(ti.zero, 0), (ti.one, 1)])
 @pytest.mark.parametrize('is_mat', [False, True])
+@ti.test(arch=ti.cpu)
 def test_meta_zero_one(dtype, ti_zero, zero, is_mat):
     if is_mat:
         x = ti.Matrix.field(2, 3, dtype, ())

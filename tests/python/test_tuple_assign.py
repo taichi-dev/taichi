@@ -22,7 +22,7 @@ def test_fibonacci():
         assert ti_fibonacci(n) == py_fibonacci(n)
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_assign2():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -36,7 +36,7 @@ def test_assign2():
     assert b[None] == 3
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 @ti.must_throw(ValueError)
 def test_assign2_mismatch3():
     a = ti.field(ti.f32, ())
@@ -49,7 +49,7 @@ def test_assign2_mismatch3():
     func()
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 @ti.must_throw(TypeError)
 def test_assign2_mismatch1():
     a = ti.field(ti.f32, ())
@@ -62,7 +62,7 @@ def test_assign2_mismatch1():
     func()
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_swap2():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -78,7 +78,7 @@ def test_swap2():
     assert b[None] == 2
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_assign2_static():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -94,7 +94,7 @@ def test_assign2_static():
     assert b[None] == 2
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_swap3():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -113,7 +113,7 @@ def test_swap3():
     assert c[None] == 2
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_unpack_from_tuple():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -131,7 +131,7 @@ def test_unpack_from_tuple():
     assert c[None] == 4
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 @ti.must_throw(ValueError)
 def test_unpack_mismatch_tuple():
     a = ti.field(ti.f32, ())
@@ -146,7 +146,7 @@ def test_unpack_mismatch_tuple():
     func()
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_unpack_from_vector():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -163,7 +163,7 @@ def test_unpack_from_vector():
     assert c[None] == 4
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 @ti.must_throw(ValueError)
 def test_unpack_mismatch_vector():
     a = ti.field(ti.f32, ())
@@ -177,7 +177,7 @@ def test_unpack_mismatch_vector():
     func()
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 @ti.must_throw(TypeError)
 def test_unpack_mismatch_type():
     a = ti.field(ti.f32, ())
@@ -192,7 +192,7 @@ def test_unpack_mismatch_type():
     func()
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 @ti.must_throw(ValueError)
 def test_unpack_mismatch_matrix():
     a = ti.field(ti.f32, ())
@@ -208,7 +208,7 @@ def test_unpack_mismatch_matrix():
     func()
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_unpack_from_shape():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())

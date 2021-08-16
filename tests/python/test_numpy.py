@@ -133,6 +133,7 @@ def test_numpy_3d():
                 assert a[i, j, k] == i * j * (k + 1) + i + j + k * 2
 
 
+@ti.test()
 @ti.must_throw(IndexError)
 def test_numpy_3d_error():
     val = ti.field(ti.i32)
@@ -177,6 +178,7 @@ def test_numpy_multiple_external_arrays():
         assert b[i] == d[i]
 
 
+@ti.test()
 @ti.must_throw(AssertionError)
 def test_index_mismatch():
     val = ti.field(ti.i32, shape=(1, 2, 3))

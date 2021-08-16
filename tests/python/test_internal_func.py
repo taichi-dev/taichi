@@ -9,7 +9,7 @@ def all_archs_for_this(test):
     return ti.archs_excluding(ti.metal, ti.opengl, ti.cuda, ti.vulkan)(test)
 
 
-@all_archs_for_this
+@ti.test(exclude=[ti.metal, ti.opengl, ti.cuda, ti.vulkan])
 def test_basic():
     @ti.kernel
     def test():
@@ -19,7 +19,7 @@ def test_basic():
     test()
 
 
-@all_archs_for_this
+@ti.test(exclude=[ti.metal, ti.opengl, ti.cuda, ti.vulkan])
 def test_host_polling():
     return
 
@@ -33,7 +33,7 @@ def test_host_polling():
         time.sleep(0.1)
 
 
-@all_archs_for_this
+@ti.test(exclude=[ti.metal, ti.opengl, ti.cuda, ti.vulkan])
 def test_list_manager():
     @ti.kernel
     def test():
@@ -43,7 +43,7 @@ def test_list_manager():
     test()
 
 
-@all_archs_for_this
+@ti.test(exclude=[ti.metal, ti.opengl, ti.cuda, ti.vulkan])
 def test_node_manager():
     @ti.kernel
     def test():
@@ -53,7 +53,7 @@ def test_node_manager():
     test()
 
 
-@all_archs_for_this
+@ti.test(exclude=[ti.metal, ti.opengl, ti.cuda, ti.vulkan])
 def test_node_manager_gc():
     @ti.kernel
     def test_cpu():

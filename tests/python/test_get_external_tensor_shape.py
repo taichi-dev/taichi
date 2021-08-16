@@ -40,9 +40,8 @@ def test_get_external_tensor_shape_sum_numpy(size):
         y_ref, y_hat)
 
 
-@ti.torch_test
 @pytest.mark.parametrize('size', [[1, 2, 3, 4]])
-@ti.test()
+@ti.test(exclude=ti.opengl)
 def test_get_external_tensor_shape_access_torch(size):
     @ti.kernel
     def func(x: ti.ext_arr(), index: ti.template()) -> ti.i32:
@@ -55,8 +54,8 @@ def test_get_external_tensor_shape_access_torch(size):
             idx, y_ref, y_hat)
 
 
-@ti.torch_test
 @pytest.mark.parametrize('size', [[1, 2, 3, 4]])
+@ti.test(exclude=ti.opengl)
 def test_get_external_tensor_shape_access_ndarray(size):
     @ti.kernel
     def func(x: ti.ext_arr(), index: ti.template()) -> ti.i32:

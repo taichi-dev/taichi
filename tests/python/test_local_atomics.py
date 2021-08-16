@@ -36,7 +36,7 @@ def test_implicit_local_atomic_add():
     assert A[None] == 45
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_explicit_local_atomic_sub():
     A = ti.field(ti.f32, shape=())
 
@@ -51,7 +51,7 @@ def test_explicit_local_atomic_sub():
     assert A[None] == -45
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_implicit_local_atomic_sub():
     A = ti.field(ti.f32, shape=())
 
@@ -66,7 +66,7 @@ def test_implicit_local_atomic_sub():
     assert A[None] == -45
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_explicit_local_atomic_min():
     A = ti.field(ti.f32, shape=())
 
@@ -81,7 +81,7 @@ def test_explicit_local_atomic_min():
     assert A[None] == 0
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_explicit_local_atomic_max():
     A = ti.field(ti.f32, shape=())
 
@@ -96,7 +96,7 @@ def test_explicit_local_atomic_max():
     assert A[None] == 9
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_explicit_local_atomic_and():
     A = ti.field(ti.i32, shape=())
     max_int = 2147483647
@@ -112,7 +112,7 @@ def test_explicit_local_atomic_and():
     assert A[None] == 0
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_implicit_local_atomic_and():
     A = ti.field(ti.i32, shape=())
     max_int = 2147483647
@@ -128,7 +128,7 @@ def test_implicit_local_atomic_and():
     assert A[None] == 0
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_explicit_local_atomic_or():
     A = ti.field(ti.i32, shape=())
 
@@ -143,7 +143,7 @@ def test_explicit_local_atomic_or():
     assert A[None] == 1023
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_implicit_local_atomic_or():
     A = ti.field(ti.i32, shape=())
 
@@ -158,7 +158,7 @@ def test_implicit_local_atomic_or():
     assert A[None] == 1023
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_explicit_local_atomic_xor():
     A = ti.field(ti.i32, shape=())
 
@@ -173,7 +173,7 @@ def test_explicit_local_atomic_xor():
     assert A[None] == 0
 
 
-@ti_support_atomic_more_than_add
+@ti.test(exclude=ti.vulkan)
 def test_implicit_local_atomic_xor():
     A = ti.field(ti.i32, shape=())
 

@@ -3,6 +3,7 @@ from taichi import approx
 
 
 def grad_test(tifunc, npfunc=None):
+    ti.init()
     from autograd import grad
     if npfunc is None:
         npfunc = tifunc

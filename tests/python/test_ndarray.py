@@ -32,7 +32,7 @@ def test_ndarray_numpy_2d():
     _test_ndarray_2d(n, m, a)
 
 
-@ti.torch_test
+@ti.test(exclude=ti.opengl)
 def test_ndarray_torch_2d():
     n = 4
     m = 7
@@ -40,7 +40,7 @@ def test_ndarray_torch_2d():
     _test_ndarray_2d(n, m, a)
 
 
-@ti.torch_test
+@ti.test(exclude=ti.opengl)
 def test_ndarray_default_2d():
     n = 4
     m = 7

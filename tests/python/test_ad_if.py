@@ -230,7 +230,7 @@ def test_ad_if_parallel_complex_f64():
     assert x.grad[1] == -0.25
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_stack():
     @ti.kernel
     def func():

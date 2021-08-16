@@ -104,8 +104,7 @@ def test_reduction_single_i64(op):
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@ti.require(ti.extension.data64)
-@ti.archs_excluding(ti.opengl)  # OpenGL doesn't have u64 yet
+@ti.test(exclude=ti.opengl, require=ti.extension.data64)
 def test_reduction_single_u64(op):
     _test_reduction_single(ti.u64, lambda x, y: x % 2**64 == y % 2**64, op)
 

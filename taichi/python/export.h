@@ -33,4 +33,6 @@ void export_misc(py::module &m);
 
 void export_visual(py::module &m);
 
+void export_ggui(py::module &m);
+
 TI_NAMESPACE_END

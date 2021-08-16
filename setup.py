@@ -1,3 +1,10 @@
+# Optional environment variables supported by setup.py:
+#   DEBUG
+#     build the C++ taichi_core extension with debug symbols.
+#
+#   TAICHI_CMAKE_ARGS
+#     extra cmake args for C++ taichi_core extension.
+
 import glob
 import multiprocessing
 import os
@@ -121,6 +128,7 @@ class CMakeBuild(build_ext):
             f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
         ]
 
+        self.debug = os.getenv('DEBUG', '0') in ('1', 'ON')
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 

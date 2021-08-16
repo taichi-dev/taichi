@@ -462,10 +462,16 @@ Value IRBuilder::mod(Value a, Value b) {
   TI_ASSERT(a.stype.id == b.stype.id);
   if (is_integral(a.stype.dt) && is_signed(a.stype.dt)) {
     // a - b * int(float(a) / float(b))
-    Value tmp1 = cast(f32_type(), a);
-    Value tmp2 = cast(f32_type(), b);
-    Value tmp3 = make_value(spv::OpFDiv, f32_type(), tmp1, tmp2);
-    Value tmp4 = cast(a.stype, tmp3);
+    Value tmp1 = cast(t_fp32_, a);
+    Value tmp2 = cast(t_fp32_, b);
+    Value tmp3 = make_value(spv::OpFDiv, t_fp32_, tmp1, tmp2);
+    // Float division may lose precision
+    // FIXME: Could we have a better way to do this?
+    Value eps_p = float_immediate_number(t_fp32_, /*+eps=*/1e-5f, false);
+    Value eps_n = float_immediate_number(t_fp32_, /*-eps=*/-1e-5f, false);
+    Value eps = select(ge(tmp3, eps_p), eps_p, eps_n);
+    Value tmp3_float_fixed = make_value(spv::OpFAdd, t_fp32_, tmp3, eps);
+    Value tmp4 = cast(a.stype, tmp3_float_fixed);
     Value tmp5 = make_value(spv::OpIMul, a.stype, b, tmp4);
     return make_value(spv::OpISub, a.stype, a, tmp5);
   } else if (is_integral(a.stype.dt)) {

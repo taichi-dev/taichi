@@ -1,7 +1,9 @@
+import numbers
+
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
-from taichi.lang.util import has_pytorch, python_scope, to_pytorch_type, to_taichi_type
-import numbers
+from taichi.lang.util import (has_pytorch, python_scope, to_pytorch_type,
+                              to_taichi_type)
 
 
 class Ndarray:
@@ -21,7 +23,9 @@ class Ndarray:
             device = 'cuda:0'
         else:
             device = 'cpu'
-        self.arr = torch.empty(shape, dtype=to_pytorch_type(dtype), device=device)
+        self.arr = torch.empty(shape,
+                               dtype=to_pytorch_type(dtype),
+                               device=device)
 
     @property
     def shape(self):

@@ -11,7 +11,7 @@ from taichi.lang import impl, util
 from taichi.lang.ast_checker import KernelSimplicityASTChecker
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.kernel_arguments import ext_arr, template
-from taichi.lang.ndarray import Ndarray
+from taichi.lang.ndarray import ScalarNdarray
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.transformer import ASTTransformerTotal
 from taichi.misc.util import obsolete
@@ -481,9 +481,9 @@ class Kernel:
                     if not isinstance(v, int):
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
-                elif isinstance(needed, ext_arr) and (isinstance(v, Ndarray) or
+                elif isinstance(needed, ext_arr) and (isinstance(v, ScalarNdarray) or
                                                       self.match_ext_arr(v)):
-                    if isinstance(v, Ndarray):
+                    if isinstance(v, ScalarNdarray):
                         v = v.arr
                     has_external_arrays = True
                     has_torch = util.has_pytorch()

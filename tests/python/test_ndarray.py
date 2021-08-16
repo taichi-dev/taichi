@@ -1,9 +1,4 @@
-import numpy as np
-
 import taichi as ti
-
-if ti.has_pytorch():
-    import torch
 
 
 def _test_ndarray_2d(n, m, a):
@@ -24,24 +19,8 @@ def _test_ndarray_2d(n, m, a):
             assert a[i, j] == i * j + i + j
 
 
-@ti.test()
-def test_ndarray_numpy_2d():
-    n = 4
-    m = 7
-    a = ti.Ndarray(np.empty(shape=(n, m), dtype=np.int32))
-    _test_ndarray_2d(n, m, a)
-
-
 @ti.torch_test
-def test_ndarray_torch_2d():
-    n = 4
-    m = 7
-    a = ti.Ndarray(torch.empty((n, m), dtype=torch.int32))
-    _test_ndarray_2d(n, m, a)
-
-
-@ti.torch_test
-def test_ndarray_default_2d():
+def test_ndarray_2d():
     n = 4
     m = 7
     a = ti.ndarray(ti.i32, shape=(n, m))

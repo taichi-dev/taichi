@@ -3,6 +3,8 @@ on:
   release:
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#release
     types: [published]
+  schedule:
+    - cron: "0 0 * * *"
 
 jobs:
   build_and_upload_mac:
@@ -49,7 +51,10 @@ jobs:
           python -m pip install -r requirements_dev.txt
           cd python
           git fetch origin master
-          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python build.py build
+          export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
+          export COMMIT_SHA=$(git rev-parse --short "$GITHUB_SHA")
+          [ -z "${{ github.event.action }}" ] && python build.py build --project_name taichi-nightly
+          [ -z "${{ github.event.action }}" ] || python build.py build
           cd ..
           NUM_WHL=`ls dist/*.whl | wc -l`
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
@@ -66,10 +71,14 @@ jobs:
       - name: Upload PyPI
         env:
           # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PYPI_PWD: ${{ secrets.PYPI_PWD }}
+          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
+          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
         run: |
           cd python
-          python build.py upload --skip_build
+          [ -z "${{ github.event.action }}" ] && export PYPI_PWD="$NIGHT_PWD"
+          [ -z "${{ github.event.action }}" ] && python build.py upload --skip_build --testpypi --project_name taichi-nightly
+          [ -z "${{ github.event.action }}" ] || export PYPI_PWD="$PROD_PWD"
+          [ -z "${{ github.event.action }}" ] || python build.py upload --skip_build
 
   build_and_upload_windows:
     name: Build and Upload (Windows only)
@@ -122,7 +131,9 @@ jobs:
           cd python
           git fetch origin master
           $env:TAICHI_CMAKE_ARGS = $env:CI_SETUP_CMAKE_ARGS
-          python build.py build
+          $env:COMMIT_SHA = $(git rev-parse --short $env:GITHUB_SHA)
+          if ([string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py build --project_name taichi-nightly}
+          if ( -not [string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py build}
           cd ..\dist
           $env:WHL = $(dir *.whl)
           python -m pip install $env:WHL
@@ -143,7 +154,11 @@ jobs:
         shell: powershell
         env:
           # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PYPI_PWD: ${{ secrets.PYPI_PWD }}
+          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
+          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
         run: |
           cd python
-          python build.py upload --skip_build
+          if ([string]::IsNullOrEmpty("${{ github.event.action }}")) {$env:PYPI_PWD = "$env:NIGHT_PWD"}
+          if ([string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py upload --skip_build --testpypi --project_name taichi-nightly}
+          if ( -not [string]::IsNullOrEmpty("${{ github.event.action }}")) {$env:PYPI_PWD = "$env:PROD_PWD"}
+          if ( -not [string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py upload --skip_build}

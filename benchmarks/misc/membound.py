@@ -10,24 +10,24 @@ test_archs = [ti.cuda]
 test_dtype = [ti.i32, ti.i64, ti.f32, ti.f64]
 test_dsize = [(4**i)*kibibyte for i in range(1,11)] #[4KB,16KB...1GB]
 test_repeat = 10
-result_analyse = [geometric_mean]
+results_evaluation = [geometric_mean]
 
 
 class BenchmarkResult:
-    def __init__(self, name, arch, dtype, dsize, result_analyse):
+    def __init__(self, name, arch, dtype, dsize, results_evaluation):
         self.test_name = name
         self.test_arch = arch
         self.data_type = dtype
         self.data_size = dsize
         self.min_time_in_us = []
-        self.result_analyse = result_analyse
+        self.results_evaluation = results_evaluation
 
     def time2mdtableline(self):
         string = '|' + self.test_name + '.' + dtype2str[self.data_type] + '|'
         string += ''.join(
             str(round(time, 4)) + '|' for time in self.min_time_in_us)
         string += ''.join(
-            str(round(item(self.min_time_in_us),4)) + '|' for item in self.result_analyse)
+            str(round(item(self.min_time_in_us),4)) + '|' for item in self.results_evaluation)
         return string
 
 
@@ -49,7 +49,7 @@ class BenchmarkImpl:
                 print("TestCase[%s.%s.%s]" %
                       (self.func.__name__, ti.core.arch_name(arch),
                        dtype2str[dtype]))
-                result = BenchmarkResult(self.name, arch, dtype, self.data_size,result_analyse)
+                result = BenchmarkResult(self.name, arch, dtype, self.data_size,results_evaluation)
                 for size in self.data_size:
                     print("data_size = %s" % (size2str(size)))
                     result.min_time_in_us.append(
@@ -72,7 +72,7 @@ class BenchmarkImpl:
 
     def save2markdown(self, arch):
         header = '|kernel elapsed time(ms)' + ''.join(
-            '|' for i in range(len(self.data_size)+len(result_analyse)))
+            '|' for i in range(len(self.data_size)+len(results_evaluation)))
         lines = [header]
         for result in self.benchmark_results:
             if (result.test_arch == arch):
@@ -94,7 +94,7 @@ class Membound:
 
     def mdlines(self,arch):
         lines = []
-        lines += md_table_header(self.__class__.__name__, arch, test_dsize, test_repeat, result_analyse)
+        lines += md_table_header(self.__class__.__name__, arch, test_dsize, test_repeat, results_evaluation)
         for case in self.benchmark_imps:
             if arch in case.archs:
                 lines += case.save2markdown(arch)

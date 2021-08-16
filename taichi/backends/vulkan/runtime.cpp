@@ -76,7 +76,8 @@ class HostDeviceContextBlitter {
       return;
     }
 
-    char *const device_base = reinterpret_cast<char *>(device_->map(*device_buffer_));
+    char *const device_base =
+        reinterpret_cast<char *>(device_->map(*device_buffer_));
 
 #define TO_DEVICE(short_type, type)                    \
   if (dt->is_primitive(PrimitiveTypeID::short_type)) { \
@@ -129,7 +130,8 @@ class HostDeviceContextBlitter {
       return;
     }
 
-    char *const device_base = reinterpret_cast<char *>(device_->map(*host_shadow_buffer_));
+    char *const device_base =
+        reinterpret_cast<char *>(device_->map(*host_shadow_buffer_));
 
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
@@ -234,10 +236,12 @@ class CompiledTaichiKernel {
     const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
     if (!ti_kernel_attribs_.ctx_attribs.empty()) {
       Device::AllocParams params;
-      ctx_buffer_ = ti_params.device->allocate_memory_unique({size_t(ctx_sz),
-          /*host_write*/ true, /*host_read*/ false});
-      ctx_buffer_host_ = ti_params.device->allocate_memory_unique({size_t(ctx_sz),
-          /*host_write*/ false, /*host_read*/ true});
+      ctx_buffer_ = ti_params.device->allocate_memory_unique(
+          {size_t(ctx_sz),
+           /*host_write*/ true, /*host_read*/ false});
+      ctx_buffer_host_ = ti_params.device->allocate_memory_unique(
+          {size_t(ctx_sz),
+           /*host_write*/ false, /*host_read*/ true});
       input_buffers[BufferEnum::Context] = ctx_buffer_.get();
     }
 

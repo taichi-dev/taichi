@@ -60,7 +60,7 @@ class StructCompiler {
     TI_TRACE("* cells_per_container_pot={}", sn_desc.cells_per_container_pot());
     TI_TRACE("* container_stride={}", sn_desc.container_stride);
     TI_TRACE("* total_num_cells_from_root={}",
-            sn_desc.total_num_cells_from_root);
+             sn_desc.total_num_cells_from_root);
     TI_TRACE("");
 
     TI_ASSERT(snode_descriptors_.find(sn->id) == snode_descriptors_.end());

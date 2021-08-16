@@ -24,6 +24,7 @@
 #include "taichi/backends/vulkan/vulkan_common.h"
 #include "taichi/backends/vulkan/vulkan_memory.h"
 #include "taichi/backends/vulkan/vulkan_utils.h"
+#include "taichi/backends/vulkan/loader.h"
 
 #include "vk_mem_alloc.h"
 #endif  // TI_WITH_VULKAN
@@ -615,11 +616,7 @@ Device *VkRuntime::get_ti_device() const {
 }
 
 bool is_vulkan_api_available() {
-#ifdef TI_WITH_VULKAN
-  return true;
-#else
-  return false;
-#endif  // TI_WITH_VULKAN
+  return VulkanLoader::instance().init();
 }
 
 }  // namespace vulkan

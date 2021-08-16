@@ -9,11 +9,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.ext_array import ExtArray
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField
-<<<<<<< HEAD
 from taichi.lang.ndarray import ScalarNdarray
-=======
-from taichi.lang.ndarray import Ndarray
->>>>>>> 2fbb174ddeda50fc089a5267e44953c435a478da
 from taichi.lang.snode import SNode
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,

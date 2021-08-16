@@ -12,7 +12,7 @@ namespace vulkan {
 
 class AppContext {
  public:
-  void init();
+  void init(GLFWwindow *glfw_window);
 
   void cleanup_swap_chain();
   void cleanup();
@@ -28,18 +28,23 @@ class AppContext {
   VkQueue present_queue() const;
   VkCommandPool command_pool() const;
   VkRenderPass render_pass() const;
+  SwapChain &swap_chain();
+  const SwapChain &swap_chain() const;
+  GLFWwindow *glfw_window() const;
 
   AppConfig config;
-  SwapChain swap_chain;
-
-  GLFWwindow *glfw_window;
 
  private:
-  std::unique_ptr<taichi::lang::vulkan::EmbeddedVulkanDevice> vulkan_device_;
+  std::unique_ptr<taichi::lang::vulkan::EmbeddedVulkanDevice> vulkan_device_{
+      nullptr};
 
-  VkRenderPass render_pass_;
+  VkRenderPass render_pass_{VK_NULL_HANDLE};
 
   void create_render_passes();
+
+  SwapChain swap_chain_;
+
+  GLFWwindow *glfw_window_{nullptr};
 };
 
 }  // namespace vulkan

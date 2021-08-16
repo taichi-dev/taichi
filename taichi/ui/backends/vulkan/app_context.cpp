@@ -3,26 +3,15 @@
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
 
+#include <string_view>
+
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
 using namespace taichi::lang::vulkan;
 
-// EmbeddedVulkanDevice will check that these are supported
-const std::vector<std::string> device_extensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
-#ifdef _WIN64
-    VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
-#else
-    VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
-#endif
-};
-
+namespace {
 std::vector<std::string> get_required_instance_extensions() {
   uint32_t glfw_ext_count = 0;
   const char **glfw_extensions;
@@ -43,11 +32,30 @@ std::vector<std::string> get_required_instance_extensions() {
   return extensions;
 }
 
-void AppContext::init() {
+std::vector<std::string> get_required_device_extensions() {
+  static std::vector<std::string> extensions{
+      VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+      VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
+      VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
+#ifdef _WIN64
+      VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
+      VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
+#else
+      VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
+      VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
+#endif
+  };
+
+  return extensions;
+}
+}  // namespace
+
+void AppContext::init(GLFWwindow *glfw_window) {
+  glfw_window_ = glfw_window;
   EmbeddedVulkanDevice::Params evd_params;
   evd_params.additional_instance_extensions =
       get_required_instance_extensions();
-  evd_params.additional_device_extensions = device_extensions;
+  evd_params.additional_device_extensions = get_required_device_extensions();
   evd_params.is_for_ui = true;
   evd_params.surface_creator = [&](VkInstance instance) -> VkSurfaceKHR {
     VkSurfaceKHR surface = VK_NULL_HANDLE;
@@ -59,42 +67,36 @@ void AppContext::init() {
   };
   vulkan_device_ = std::make_unique<EmbeddedVulkanDevice>(evd_params);
 
-  swap_chain.app_context = this;
-  swap_chain.surface = vulkan_device_->surface();
-
-  swap_chain.create_swap_chain();
-  swap_chain.create_image_views();
-  swap_chain.create_depth_resources();
-  swap_chain.create_sync_objects();
+  swap_chain_.init(this, vulkan_device_->surface());
 
   create_render_passes();
 
-  swap_chain.create_framebuffers();
+  swap_chain_.create_framebuffers();
 }
 
 void AppContext::create_render_passes() {
-  create_render_pass(render_pass_, swap_chain.swap_chain_image_format,
+  create_render_pass(render_pass_, swap_chain_.swap_chain_image_format(),
                      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, device(),
                      physical_device());
 }
 
 void AppContext::cleanup_swap_chain() {
   vkDestroyRenderPass(device(), render_pass_, nullptr);
-  swap_chain.cleanup_swap_chain();
+  swap_chain_.cleanup_swap_chain();
 }
 
 void AppContext::cleanup() {
-  swap_chain.cleanup();
+  swap_chain_.cleanup();
   vulkan_device_.reset();
 }
 
 void AppContext::recreate_swap_chain() {
   create_render_passes();
-  swap_chain.recreate_swap_chain();
+  swap_chain_.recreate_swap_chain();
 }
 
 int AppContext::get_swap_chain_size() {
-  return swap_chain.swap_chain_images.size();
+  return swap_chain_.chain_size();
 }
 
 VkInstance AppContext::instance() const {
@@ -127,6 +129,16 @@ VkCommandPool AppContext::command_pool() const {
 
 VkRenderPass AppContext::render_pass() const {
   return render_pass_;
+}
+
+const SwapChain &AppContext::swap_chain() const {
+  return swap_chain_;
+}
+SwapChain &AppContext::swap_chain() {
+  return swap_chain_;
+}
+GLFWwindow *AppContext::glfw_window() const {
+  return glfw_window_;
 }
 
 }  // namespace vulkan

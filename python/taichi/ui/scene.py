@@ -83,7 +83,7 @@ class Scene(_ti_core.PyScene):
     def mesh(
             self,
             vertices,
-            indices,
+            indices=None,
             normals=None,
             color=(0.5, 0.5, 0.5),
             per_vertex_color=None,

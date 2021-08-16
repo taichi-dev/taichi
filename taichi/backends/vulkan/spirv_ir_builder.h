@@ -203,7 +203,7 @@ class InstrBuilder {
 // Builder to build up a single SPIR-V module
 class IRBuilder {
  public:
-  IRBuilder(const VulkanCapabilities &vulkan_cap) : vulkan_cap_(vulkan_cap) {
+  IRBuilder(const Device *device) : device_(device) {
   }
 
   template <typename... Args>
@@ -433,10 +433,6 @@ class IRBuilder {
   Value rand_f32(Value global_tmp_);
   Value rand_i32(Value global_tmp_);
 
-  const VulkanCapabilities &get_vulkan_cap() const {
-    return vulkan_cap_;
-  }
-
  private:
   Value new_value(const SType &type, ValueKind flag) {
     Value val;
@@ -451,7 +447,7 @@ class IRBuilder {
 
   void init_random_function(Value global_tmp_);
 
-  const VulkanCapabilities &vulkan_cap_;
+  const Device *device_;
 
   // internal instruction builder
   InstrBuilder ib_;

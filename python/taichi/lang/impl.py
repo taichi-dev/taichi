@@ -9,7 +9,11 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.ext_array import ExtArray
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField
+<<<<<<< HEAD
 from taichi.lang.ndarray import ScalarNdarray
+=======
+from taichi.lang.ndarray import Ndarray
+>>>>>>> 2fbb174ddeda50fc089a5267e44953c435a478da
 from taichi.lang.snode import SNode
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
@@ -21,11 +25,19 @@ import taichi as ti
 
 
 @taichi_scope
+def expr_init_local_tensor(shape, element_type, elements):
+    return _ti_core.expr_alloca_local_tensor(shape, element_type, elements)
+
+
+@taichi_scope
 def expr_init(rhs):
     if rhs is None:
         return Expr(_ti_core.expr_alloca())
     if is_taichi_class(rhs):
-        return rhs.variable()
+        if rhs.local_tensor_proxy != None:
+            return rhs
+        else:
+            return rhs.variable()
     else:
         if isinstance(rhs, list):
             return [expr_init(e) for e in rhs]
@@ -168,10 +180,17 @@ def subscript(value, *indices):
 
 
 @taichi_scope
-def subscript_with_offset(var, indices, cols, is_aos):
+def local_subscript_with_offset(var, indices):
     return Expr(
-        _ti_core.subscript_with_offset(var.ptr, make_expr_group(*indices),
-                                       cols, is_aos))
+        _ti_core.local_subscript_with_offset(var, make_expr_group(*indices)))
+
+
+@taichi_scope
+def global_subscript_with_offset(var, indices, cols, is_aos):
+    return Expr(
+        _ti_core.global_subscript_with_offset(var.ptr,
+                                              make_expr_group(*indices), cols,
+                                              is_aos))
 
 
 @taichi_scope

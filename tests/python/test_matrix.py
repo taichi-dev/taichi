@@ -161,7 +161,7 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     assert np.allclose(r2[None].value.to_numpy(), ops(a, c))
 
 
-@ti.test(require=ti.extension.dynamic_index)
+@ti.test(require=ti.extension.dynamic_index, dynamic_index=True)
 def test_matrix_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
     v = ti.Vector.field(10, ti.i32, 5)

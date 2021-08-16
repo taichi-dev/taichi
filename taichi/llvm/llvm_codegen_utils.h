@@ -67,10 +67,11 @@ class LLVMModuleBuilder {
   }
 
   llvm::Value *create_entry_block_alloca(llvm::Type *type,
-                                         std::size_t alignment = 0) {
+                                         std::size_t alignment = 0,
+                                         llvm::Value *array_size = nullptr) {
     llvm::IRBuilderBase::InsertPointGuard guard(*builder);
     builder->SetInsertPoint(entry_block);
-    auto alloca = builder->CreateAlloca(type, (unsigned)0);
+    auto alloca = builder->CreateAlloca(type, (unsigned)0, array_size);
     if (alignment != 0) {
       alloca->setAlignment(llvm::MaybeAlign(alignment));
     }

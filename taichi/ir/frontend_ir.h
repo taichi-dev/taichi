@@ -31,6 +31,13 @@ class FrontendAllocaStmt : public Stmt {
     ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
   }
 
+  FrontendAllocaStmt(const Identifier &lhs,
+                     std::vector<int> shape,
+                     DataType element)
+      : ident(lhs) {
+    ret_type = DataType(TypeFactory::create_tensor_type(shape, element));
+  }
+
   TI_DEFINE_ACCEPT
 };
 
@@ -463,6 +470,33 @@ class GlobalTensorElementExpression : public Expression {
   }
 };
 
+class LocalTensorElementExpression : public Expression {
+ public:
+  Expr var;
+  ExprGroup indices;
+
+  LocalTensorElementExpression(const Expr &var, const ExprGroup &indices)
+      : var(var), indices(indices) {
+  }
+
+  std::string serialize() override {
+    std::string s = fmt::format("{}[", var.serialize());
+    for (int i = 0; i < (int)indices.size(); i++) {
+      s += indices.exprs[i]->serialize();
+      if (i + 1 < (int)indices.size())
+        s += ", ";
+    }
+    s += "]";
+    return s;
+  }
+
+  void flatten(FlattenContext *ctx) override;
+
+  bool is_lvalue() const override {
+    return true;
+  }
+};
+
 class EvalExpression : public Expression {
  public:
   Stmt *stmt_ptr;
@@ -572,6 +606,19 @@ class SNodeOpExpression : public Expression {
   }
 
   std::string serialize() override;
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class LocalLoadExpression : public Expression {
+ public:
+  Expr ptr;
+  LocalLoadExpression(const Expr &ptr) : ptr(ptr) {
+  }
+
+  std::string serialize() override {
+    return "lcl load " + ptr.serialize();
+  }
 
   void flatten(FlattenContext *ctx) override;
 };

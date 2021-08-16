@@ -53,7 +53,7 @@ def test_python_scope_vector_binary(ti_func, np_func):
 
     result = ti_func(x, y).to_numpy()
     if ti_func in [ops.eq, ops.ne, ops.lt, ops.le, ops.gt, ops.ge]:
-        result = result.astype(np.bool)
+        result = result.astype(bool)
     expected = np_func(x.to_numpy(), y.to_numpy())
     assert allclose(result, expected)
 
@@ -65,7 +65,7 @@ def test_python_scope_vector_unary(ti_func, np_func):
 
     result = ti_func(x).to_numpy()
     if ti_func in [ti.logical_not]:
-        result = result.astype(np.bool)
+        result = result.astype(bool)
     expected = np_func(x.to_numpy())
     assert allclose(result, expected)
 

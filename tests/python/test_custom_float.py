@@ -1,6 +1,7 @@
 import math
 
 from pytest import approx
+from taichi.lang import expr, impl
 
 import taichi as ti
 
@@ -44,7 +45,8 @@ def test_custom_matrix_rotation():
         angle = math.pi / 10
         x[None] = x[None] @ ti.Matrix(
             [[ti.cos(angle), ti.sin(angle)], [-ti.sin(angle),
-                                              ti.cos(angle)]])
+                                              ti.cos(angle)]],
+            dt=impl.get_runtime().default_fp)
 
     for i in range(5):
         rotate_18_degrees()

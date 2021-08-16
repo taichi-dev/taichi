@@ -30,6 +30,7 @@ PER_CUDA_FUNCTION(memset, cuMemsetD8_v2, void *, uint8, std::size_t);
 PER_CUDA_FUNCTION(mem_free, cuMemFree_v2, void *);
 PER_CUDA_FUNCTION(mem_advise, cuMemAdvise, void *, std::size_t, uint32, uint32);
 PER_CUDA_FUNCTION(mem_get_info, cuMemGetInfo_v2, std::size_t *, std::size_t *);
+PER_CUDA_FUNCTION(mem_get_attribute, cuPointerGetAttribute, void *, uint32, void *);
 
 // Module and kernels
 PER_CUDA_FUNCTION(module_get_function, cuModuleGetFunction, void **, void *, const char *);

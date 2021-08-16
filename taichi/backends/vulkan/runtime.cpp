@@ -12,9 +12,6 @@
 #include "taichi/util/environ_config.h"
 
 #ifdef TI_WITH_VULKAN
-#include <spirv-tools/libspirv.hpp>
-#include <spirv-tools/optimizer.hpp>
-
 #include "taichi/backends/vulkan/vulkan_api.h"
 #include "taichi/backends/vulkan/vulkan_utils.h"
 #include "taichi/backends/vulkan/loader.h"
@@ -254,18 +251,17 @@ class CompiledTaichiKernel {
       VulkanPipeline::Params vp_params;
       vp_params.device = ti_params.device;
       vp_params.name = ti_kernel_attribs_.name;
-      for (const auto &bb : task_attribs[i].buffer_binds) {
-        vp_params.buffer_bindings.push_back(VulkanPipeline::BufferBinding{
-            ti_params.device->get_vkbuffer(*input_buffers.at(bb.type)), (uint32_t)bb.binding});
-      }
       vp_params.code = SpirvCodeView(spirv_bins[i]);
       auto vp = std::make_unique<VulkanPipeline>(vp_params);
       const int group_x = (attribs.advisory_total_num_threads +
                            attribs.advisory_num_threads_per_group - 1) /
                           attribs.advisory_num_threads_per_group;
+      ResourceBinder *binder = vp->resource_binder();
+      for (auto &pair : input_buffers) {
+        binder->rw_buffer(0, uint32_t(pair.first), *pair.second);   
+      }
       cmdlist_->bind_pipeline(vp.get());
-      // TODO: Properlly design & implement the binding API
-      // cmdlist_->bind_resources();
+      cmdlist_->bind_resources(binder);
       cmdlist_->dispatch(group_x);
       cmdlist_->memory_barrier();
       vk_pipelines_.push_back(std::move(vp));
@@ -316,32 +312,6 @@ class CompiledTaichiKernel {
 }  // namespace
 
 class VkRuntime ::Impl {
- private:
-  std::unique_ptr<spvtools::SpirvTools> spirv_tools_;
-  std::unique_ptr<spvtools::Optimizer> spirv_opt_;
-
-  spvtools::OptimizerOptions _spirv_opt_options;
-
-  static void spriv_message_consumer(spv_message_level_t level,
-                                     const char *source,
-                                     const spv_position_t &position,
-                                     const char *message) {
-    // TODO: Maybe we can add a macro, e.g. TI_LOG_AT_LEVEL(lv, ...)
-    if (level <= SPV_MSG_FATAL) {
-      TI_ERROR("{}\n[{}:{}:{}] {}", source, position.index, position.line,
-               position.column, message);
-    } else if (level <= SPV_MSG_WARNING) {
-      TI_WARN("{}\n[{}:{}:{}] {}", source, position.index, position.line,
-              position.column, message);
-    } else if (level <= SPV_MSG_INFO) {
-      TI_INFO("{}\n[{}:{}:{}] {}", source, position.index, position.line,
-              position.column, message);
-    } else if (level <= SPV_MSG_INFO) {
-      TI_TRACE("{}\n[{}:{}:{}] {}", source, position.index, position.line,
-               position.column, message);
-    }
-  };
-
  public:
   explicit Impl(const Params &params)
       : snode_descriptors_(params.snode_descriptors),
@@ -352,24 +322,7 @@ class VkRuntime ::Impl {
     evd_params.api_version = VulkanEnvSettings::kApiVersion();
     embedded_device_ = std::make_unique<EmbeddedVulkanDevice>(evd_params);
 
-    init_memory_pool(params);
     init_vk_buffers();
-
-    spirv_tools_ = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
-    spirv_opt_ = std::make_unique<spvtools::Optimizer>(SPV_ENV_VULKAN_1_2);
-
-    spirv_tools_->SetMessageConsumer(spriv_message_consumer);
-    spirv_opt_->SetMessageConsumer(spriv_message_consumer);
-
-    // FIXME: Utilize this if KHR_memory_model is supported
-    // spirv_opt_->RegisterPass(spvtools::CreateUpgradeMemoryModelPass());
-    spirv_opt_->RegisterPerformancePasses();
-
-    for (auto &p : spirv_opt_->GetPassNames()) {
-      TI_TRACE("SPIRV Optimization Pass {}", p);
-    }
-
-    _spirv_opt_options.set_run_validator(false);
   }
 
   ~Impl() {
@@ -394,28 +347,9 @@ class VkRuntime ::Impl {
       const auto &spirv_src = reg_params.task_spirv_source_codes[i];
       const auto &task_name = attribs.name;
 
-      // TI_WARN_IF(!spirv_tools_->Validate(spirv_src), "SPIRV validation
-      // failed");
-
-      std::vector<uint32_t> optimized_spv;
-
-      TI_WARN_IF(!spirv_opt_->Run(spirv_src.data(), spirv_src.size(),
-                                  &optimized_spv, _spirv_opt_options),
-                 "SPIRV optimization failed");
-
-      TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
-               spirv_src.size(), optimized_spv.size());
-
-      // Enable to dump SPIR-V assembly of kernels
-#if 0
-      std::string spirv_asm;
-      spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
-      TI_TRACE("SPIR-V Assembly dump:\n{}\n\n", spirv_asm);
-#endif
-
       // If we can reach here, we have succeeded. Otherwise
       // std::optional::value() would have killed us.
-      params.spirv_bins.push_back(std::move(optimized_spv));
+      params.spirv_bins.push_back(std::move(spirv_src));
     }
     KernelHandle res;
     res.id_ = ti_kernels_.size();
@@ -456,9 +390,6 @@ class VkRuntime ::Impl {
   }
 
  private:
-  void init_memory_pool(const Params &params) {
-    
-  }
 
   void init_vk_buffers() {
 #pragma message("Vulkan buffers size hardcoded")

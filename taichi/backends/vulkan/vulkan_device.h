@@ -4,19 +4,19 @@
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
+#include "vk_mem_alloc.h"
 
 #include <memory>
 #include <optional>
 
 #include <taichi/backends/device.h>
 
-#include "vk_mem_alloc.h"
-
 namespace taichi {
 namespace lang {
 namespace vulkan {
 
 class VulkanDevice;
+class VulkanResourceBinder;
 
 struct SpirvCodeView {
   const uint32_t *data = nullptr;
@@ -29,20 +29,76 @@ struct SpirvCodeView {
   }
 };
 
-// VulkanPipeline maps to a VkPipeline, or a SPIR-V module (a GLSL compute
-// shader). Because Taichi's buffers are all pre-allocated upon startup, we
-// only need to set up the descriptor set (i.e., bind the buffers via
-// VkWriteDescriptorSet) once during the pipeline initialization.
-class VulkanPipeline : public Pipeline {
+class VulkanResourceBinder : public ResourceBinder {
  public:
-  struct BufferBinding {
-    VkBuffer buffer{VK_NULL_HANDLE};
-    uint32_t binding{0};
+  struct Binding {
+    VkDescriptorType type;
+    DevicePtr ptr;
+    size_t size;
   };
 
+  struct Set {
+    std::unordered_map<uint32_t, Binding> bindings;
+
+    // The compare function is for the hashmap to locate a set layout
+    bool operator==(const Set &other) const {
+      if (other.bindings.size() != bindings.size()) {
+        return false;
+      }
+      for (auto &pair : bindings) {
+        const Binding &other_binding = other.bindings.at(pair.first);
+        if (other_binding.type != pair.second.type) {
+          return false;
+        }
+      }
+      return true;
+    }
+  };
+
+  struct SetLayoutHasher {
+    std::size_t operator()(const Set &set) const {
+      // TODO: Come up with a better hash
+      size_t hash = 0;
+      for (const auto &pair : set.bindings) {
+        hash = (hash ^ size_t(pair.second.type)) ^ size_t(pair.first);
+      }
+      return hash;
+    }
+  };
+
+  ~VulkanResourceBinder();
+  void rw_buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size);
+  void rw_buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
+  void buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size);
+  void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
+  void vertex_buffer(DevicePtr ptr, uint32_t binding = 0);
+  void index_buffer(DevicePtr ptr, size_t index_width);
+  void framebuffer_color(DeviceAllocation image, uint32_t binding);
+  void framebuffer_depth_stencil(DeviceAllocation image);
+
+  void write_to_set(uint32_t index, VulkanDevice &device, VkDescriptorSet set);
+  Set &get_set(uint32_t index) {
+    return sets_[index];
+  }
+  std::unordered_map<uint32_t, Set> &get_sets() {
+    return sets_;
+  }
+
+  void lock_layout();
+
+ private:
+  std::unordered_map<uint32_t, Set> sets_;
+  bool layout_locked_{false};
+
+  // TODO: Graphics pipeline stuff
+};
+
+// VulkanPipeline maps to a VkPipeline, or a SPIR-V module (a GLSL compute
+// shader).
+class VulkanPipeline : public Pipeline {
+ public:
   struct Params {
-    const VulkanDevice *device{nullptr};
-    std::vector<BufferBinding> buffer_bindings;
+    VulkanDevice *device{nullptr};
     SpirvCodeView code;
     std::string name{"Pipeline"};
   };
@@ -50,14 +106,15 @@ class VulkanPipeline : public Pipeline {
   explicit VulkanPipeline(const Params &params);
   ~VulkanPipeline();
 
+  ResourceBinder *resource_binder() override {
+    return &resource_binder_;
+  }
+
   VkPipelineLayout pipeline_layout() const {
     return pipeline_layout_;
   }
   VkPipeline pipeline() const {
     return pipeline_;
-  }
-  const VkDescriptorSet &descriptor_set() const {
-    return descriptor_set_;
   }
   const std::string &name() const {
     return name_;
@@ -66,8 +123,6 @@ class VulkanPipeline : public Pipeline {
  private:
   void create_descriptor_set_layout(const Params &params);
   void create_compute_pipeline(const Params &params);
-  void create_descriptor_pool(const Params &params);
-  void create_descriptor_sets(const Params &params);
 
   static VkShaderModule create_shader_module(VkDevice device,
                                              const SpirvCodeView &code);
@@ -76,17 +131,10 @@ class VulkanPipeline : public Pipeline {
 
   std::string name_;
 
-  // TODO: Commands using the same Taichi buffers should be able to share the
-  // same descriptor set layout?
-  VkDescriptorSetLayout descriptor_set_layout_{VK_NULL_HANDLE};
-  // TODO: Commands having the same |descriptor_set_layout_| should be able to
-  // share the same pipeline layout?
-  VkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};
-  // This maps 1:1 to a shader, so it needs to be created per compute
-  // shader.
+  VulkanResourceBinder resource_binder_;
+  std::vector<VkDescriptorSetLayout> set_layouts_;
   VkPipeline pipeline_{VK_NULL_HANDLE};
-  VkDescriptorPool descriptor_pool_{VK_NULL_HANDLE};
-  VkDescriptorSet descriptor_set_{VK_NULL_HANDLE};
+  VkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};
 };
 
 class VulkanCommandList : public CommandList {
@@ -97,7 +145,7 @@ class VulkanCommandList : public CommandList {
   ~VulkanCommandList();
 
   void bind_pipeline(Pipeline *p) override;
-  void bind_resources(ResourceBinder &binder) override;
+  void bind_resources(ResourceBinder *binder) override;
   void buffer_barrier(DevicePtr ptr, size_t size) override;
   void buffer_barrier(DeviceAllocation alloc) override;
   void memory_barrier() override;
@@ -117,6 +165,9 @@ class VulkanCommandList : public CommandList {
   VulkanDevice *ti_device_;
   VkDevice device_;
   VkCommandBuffer buffer_;
+  VulkanPipeline *current_pipeline_{nullptr};
+
+  std::vector<std::pair<VkDescriptorSetLayout, VkDescriptorSet>> desc_sets_;
 };
 
 class VulkanDevice : public Device {
@@ -180,6 +231,10 @@ class VulkanDevice : public Device {
 
   VkBuffer get_vkbuffer(const DeviceAllocation &alloc) const;
 
+  VkDescriptorSetLayout get_desc_set_layout(VulkanResourceBinder::Set &set);
+  VkDescriptorSet alloc_desc_set(VkDescriptorSetLayout layout);
+  void dealloc_desc_set(VkDescriptorSetLayout layout, VkDescriptorSet set);
+
  private:
   void create_vma_allocator();
 
@@ -214,6 +269,20 @@ class VulkanDevice : public Device {
   std::vector<VkCommandBuffer> free_cmdbuffers_;
 
   // Descriptors / Layouts / Pools
+  struct DescPool {
+    VkDescriptorPool pool;
+    std::vector<VkDescriptorSet> free_sets;
+  };
+
+  std::unordered_map<VulkanResourceBinder::Set,
+                     VkDescriptorSetLayout,
+                     VulkanResourceBinder::SetLayoutHasher>
+      desc_set_layouts_;
+
+  std::unordered_map<VkDescriptorSetLayout, DescPool> desc_set_pools_;
+
+  std::unordered_multimap<VkDescriptorSet, VkFence> in_flight_desc_sets_;
+  std::vector<std::pair<DescPool *, VkDescriptorSet>> dealloc_desc_sets_;
 };
 
 }  // namespace vulkan

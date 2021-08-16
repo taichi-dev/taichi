@@ -54,6 +54,8 @@ struct DevicePtr : public DeviceAllocation {
   uint64_t offset{0};
 };
 
+constexpr DevicePtr kDeviceNullPtr{};
+
 // TODO: Implement this
 class ResourceBinder {
  public:
@@ -65,12 +67,18 @@ class ResourceBinder {
                          uint32_t binding,
                          DevicePtr ptr,
                          size_t size) = 0;
+  virtual void rw_buffer(uint32_t set,
+                         uint32_t binding,
+                         DeviceAllocation alloc) = 0;
 
   // In Vulkan this is called Uniform Buffer (shader can only load)
   virtual void buffer(uint32_t set,
                       uint32_t binding,
                       DevicePtr ptr,
                       size_t size) = 0;
+  virtual void buffer(uint32_t set,
+                      uint32_t binding,
+                      DeviceAllocation alloc) = 0;
 
   // Set vertex buffer (not implemented in compute only device)
   virtual void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) {
@@ -100,6 +108,8 @@ class Pipeline {
  public:
   virtual ~Pipeline() {
   }
+
+  virtual ResourceBinder *resource_binder() = 0;
 };
 
 // TODO: Implement this
@@ -109,7 +119,7 @@ class CommandList {
   }
 
   virtual void bind_pipeline(Pipeline *p) = 0;
-  virtual void bind_resources(ResourceBinder &binder) = 0;
+  virtual void bind_resources(ResourceBinder *binder) = 0;
   virtual void buffer_barrier(DevicePtr ptr, size_t size) = 0;
   virtual void buffer_barrier(DeviceAllocation alloc) = 0;
   virtual void memory_barrier() = 0;

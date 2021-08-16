@@ -302,16 +302,12 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
       return;
     if (stmt_to_offloaded[stmt] == current_offloaded)
       return;
-    if (config.advanced_optimization) {
-      if (stmt->is<ConstStmt>()) {
-        // Directly insert copies of ConstStmts later
-        return;
-      }
-    }
-    if (stmt->is<GlobalPtrStmt>()) {
-      // We don't support storing a pointer for now.
+    // Directly insert copies of ConstStmts later
+    if (stmt->is<ConstStmt>())
       return;
-    }
+    // We don't support storing a pointer for now.
+    if (stmt->is<GlobalPtrStmt>())
+      return;
     // Not yet allocated
     if (stmt->is<PtrOffsetStmt>()) {
       if (local_to_global.find(stmt->cast<PtrOffsetStmt>()->origin) ==
@@ -532,13 +528,11 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       return false;
     if (stmt_to_offloaded[stmt] == stmt_to_offloaded[op])  // same OffloadedStmt
       return false;
-    if (config.advanced_optimization) {
-      if (op->is<ConstStmt>()) {
-        auto copy = op->as<ConstStmt>()->copy();
-        stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];
-        stmt->set_operand(index, copy.get());
-        stmt->insert_before_me(std::move(copy));
-      }
+    if (op->is<ConstStmt>()) {
+      auto copy = op->as<ConstStmt>()->copy();
+      stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];
+      stmt->set_operand(index, copy.get());
+      stmt->insert_before_me(std::move(copy));
     }
     if (op->is<GlobalPtrStmt>()) {
       auto copy = op->clone();

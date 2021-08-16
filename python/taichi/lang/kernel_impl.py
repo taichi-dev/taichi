@@ -443,9 +443,11 @@ class Kernel:
                 )
             self.runtime.inside_kernel = True
             self.runtime.current_kernel = self
-            compiled()
-            self.runtime.inside_kernel = False
-            self.runtime.current_kernel = None
+            try:
+                compiled()
+            finally:
+                self.runtime.inside_kernel = False
+                self.runtime.current_kernel = None
 
         taichi_kernel = taichi_kernel.define(taichi_ast_generator)
         self.kernel_cpp = taichi_kernel

@@ -45,8 +45,8 @@ Note that on Linux, `clang` is the **only** supported compiler for compiling the
 
   :::note
   On Windows, if you use the pre-built LLVM for Taichi, please add
-  `$LLVM_FOLDER/bin` to `PATH`. Later, when you build Taichi using
-  `CMake`, set `LLVM_DIR` to `$LLVM_FOLDER/lib/cmake/llvm`.
+  `$LLVM_FOLDER/bin` to `PATH`. Later, when you build Taichi please
+  use `cmake -DLLVM_DIR=$LLVM_FOLDER/lib/cmake/llvm`.
   :::
 
 - If the downloaded LLVM does not work, please build from source:
@@ -86,8 +86,8 @@ Note that on Linux, `clang` is the **only** supported compiler for compiling the
     - After the build is complete, find your LLVM binaries and
       headers in `build/installed`.
     - Please add `build/installed/bin` to `PATH`. Later, when you
-    build Taichi using `CMake`, set `LLVM_DIR` to
-    `build/installed/lib/cmake/llvm`.
+    build Taichi please use
+    `cmake -DLLVM_DIR=<path_to_build>/build/installed/lib/cmake/llvm`.
 
 
 ### Setting up CUDA (optional)
@@ -117,7 +117,7 @@ installer.
   git clone --recursive https://github.com/taichi-dev/taichi --depth=1 --branch=master
   cd taichi
   # export CXX=/path/to/clang  # Uncomment if clang is not system default compiler.
-  python3 setup.py develop  # Optionally add DEBUG=1 to keep debug information.
+  python3 setup.py --user develop  # Optionally add DEBUG=1 to keep debug information.
   ```
   - We use MSBUILD.exe to build the generated project on Windows. Please note that Windows
     could have multiple instances of MSBUILD.exe shipped with different
@@ -221,6 +221,11 @@ sudo systemctl restart docker
 
 
 ## Troubleshooting Developer Installation
+
+- If `python3 setup.py develop/install` gives `permission denied` error, it means you're
+  installing into system python without write permission. You can work around this by:
+  - `python3 setup.py --user develop/install`
+  - Install conda and use python from conda enviroments.
 
 - If `make` fails to compile and reports
   `fatal error: 'spdlog/XXX.h' file not found`, please try runing

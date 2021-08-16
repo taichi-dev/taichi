@@ -83,12 +83,12 @@ class ScalarNdarray(Ndarray):
         return tuple(self.arr.shape)
 
     @python_scope
-    def __getitem__(self, item):
-        return self.arr.__getitem__(item)
-
-    @python_scope
     def __setitem__(self, key, value):
         return self.arr.__setitem__(key, value)
+
+    @python_scope
+    def __getitem__(self, key):
+        return self.arr.__getitem__(key)
 
     def __repr__(self):
         return '<ti.ndarray>'

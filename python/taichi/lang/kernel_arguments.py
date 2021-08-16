@@ -36,6 +36,29 @@ Example::
 """
 
 
+class ArgAnyArray:
+    """Type annotation for arbitrary arrays, including external arrays and Taichi ndarrays."""
+    def extract(self, x):
+        return to_taichi_type(x.dtype), len(x.shape)
+
+
+any_arr = ArgAnyArray
+"""Alias for :class:`~taichi.lang.kernel_arguments.ArgAnyArray`.
+
+Example::
+
+    >>> @ti.kernel
+    >>> def to_numpy(x: ti.any_arr(), y: ti.any_arr()):
+    >>>     for i in range(n):
+    >>>         x[i] = y[i]
+    >>>
+    >>> y = ti.ndarray(ti.f64, shape=n)
+    >>> ... # calculate y
+    >>> x = numpy.zeros(n)
+    >>> to_numpy(x, y)  # `x` will be filled with `y`'s data.
+"""
+
+
 class Template:
     """Type annotation for template kernel parameter.
 

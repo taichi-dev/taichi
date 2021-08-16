@@ -59,7 +59,7 @@ def test_get_external_tensor_shape_access_torch(size):
 @pytest.mark.parametrize('size', [[1, 2, 3, 4]])
 def test_get_external_tensor_shape_access_ndarray(size):
     @ti.kernel
-    def func(x: ti.ext_arr(), index: ti.template()) -> ti.i32:
+    def func(x: ti.any_arr(), index: ti.template()) -> ti.i32:
         return x.shape[index]
 
     x_hat = ti.ndarray(ti.i32, shape=size)

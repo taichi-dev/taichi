@@ -520,18 +520,13 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       return false;
     if (stmt_to_offloaded[stmt] == stmt_to_offloaded[op])  // same OffloadedStmt
       return false;
-    if (op->is<ConstStmt>()) {
-      auto copy = op->as<ConstStmt>()->copy();
-      stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];
-      stmt->set_operand(index, copy.get());
-      stmt->insert_before_me(std::move(copy));
-    }
     if (op->is<GlobalPtrStmt>()) {
       auto copy = op->clone();
       copy->as<GlobalPtrStmt>()->activate = false;
       stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];
       stmt->set_operand(index, copy.get());
       stmt->insert_before_me(std::move(copy));
+      return true;
     }
 
     if (local_to_global_offset.find(op) == local_to_global_offset.end()) {

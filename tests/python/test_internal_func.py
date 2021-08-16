@@ -59,3 +59,12 @@ def test_node_manager_gc():
         ti.call_internal("test_node_allocator_gc_cpu")
 
     test_cpu()
+
+@all_archs_for_this
+def test_return():
+    @ti.kernel
+    def test_cpu():
+        ret = ti.call_internal("test_internal_func_args", 1.0, 2.0, 3.0)
+        print(ret)
+
+    test_cpu()

@@ -1282,8 +1282,28 @@ class KernelCodegen {
     spirv_opt_->SetMessageConsumer(spriv_message_consumer);
 
     // TODO: Utilize this if KHR_memory_model is supported
-    // spirv_opt_->RegisterPass(spvtools::CreateUpgradeMemoryModelPass());
-    spirv_opt_->RegisterPerformancePasses();
+    // TODO: Profile these passes, remove ones we don't need to speed up JIT
+    // ref:
+    // https://github.com/KhronosGroup/SPIRV-Tools/blob/f9893c4549406eb9643e0eb05a521ab70a320fff/source/opt/optimizer.cpp
+    spirv_opt_
+        ->RegisterPass(spvtools::CreateWrapOpKillPass())
+        .RegisterPass(spvtools::CreateMergeReturnPass())
+        .RegisterPass(spvtools::CreateEliminateDeadFunctionsPass())
+        .RegisterPass(spvtools::CreateInlineExhaustivePass())
+        .RegisterPass(spvtools::CreateLoopUnrollPass(true))
+        .RegisterPass(spvtools::CreatePrivateToLocalPass())
+        .RegisterPass(spvtools::CreateScalarReplacementPass())
+        .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
+        .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
+        .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
+        .RegisterPass(spvtools::CreateLocalMultiStoreElimPass())
+        .RegisterPass(spvtools::CreateAggressiveDCEPass())
+        .RegisterPass(spvtools::CreateVectorDCEPass())
+        .RegisterPass(spvtools::CreateIfConversionPass())
+        .RegisterPass(spvtools::CreateCopyPropagateArraysPass())
+        .RegisterPass(spvtools::CreateReduceLoadSizePass())
+        .RegisterPass(spvtools::CreateRedundancyEliminationPass())
+        .RegisterPass(spvtools::CreateSimplificationPass());
 
     _spirv_opt_options.set_run_validator(false);
   }
@@ -1306,12 +1326,12 @@ class KernelCodegen {
 
       TaskCodegen cgen(tp);
       auto task_res = cgen.run();
-      
+
       std::vector<uint32_t> optimized_spv;
 
       TI_WARN_IF(!spirv_opt_->Run(task_res.spirv_code.data(),
-                                  task_res.spirv_code.size(),
-                                  &optimized_spv, _spirv_opt_options),
+                                  task_res.spirv_code.size(), &optimized_spv,
+                                  _spirv_opt_options),
                  "SPIRV optimization failed");
 
       TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
@@ -1323,7 +1343,7 @@ class KernelCodegen {
       spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
       TI_TRACE("SPIR-V Assembly dump:\n{}\n\n", spirv_asm);
 #endif
-      
+
       kernel_attribs.tasks_attribs.push_back(std::move(task_res.task_attribs));
       res.task_spirv_source_codes.push_back(std::move(optimized_spv));
     }

@@ -325,6 +325,7 @@ class VkRuntime ::Impl {
     EmbeddedVulkanDevice::Params evd_params;
     evd_params.api_version = VulkanEnvSettings::kApiVersion();
     embedded_device_ = std::make_unique<EmbeddedVulkanDevice>(evd_params);
+    device_ = embedded_device_->get_ti_device();
 
     init_vk_buffers();
   }
@@ -364,15 +365,15 @@ class VkRuntime ::Impl {
   void launch_kernel(KernelHandle handle, Context *host_ctx) {
     auto *ti_kernel = ti_kernels_[handle.id_].get();
     auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
-        &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx,
-        embedded_device_->get_ti_device(), host_result_buffer_,
+        &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx, device_,
+        host_result_buffer_,
         ti_kernel->ctx_buffer(), ti_kernel->ctx_buffer_host());
     if (ctx_blitter) {
       TI_ASSERT(ti_kernel->ctx_buffer() != nullptr);
       ctx_blitter->host_to_device();
     }
 
-    embedded_device_->get_ti_device()->submit(ti_kernel->command_list());
+    device_->submit(ti_kernel->command_list());
     num_pending_kernels_ += ti_kernel->num_vk_pipelines();
     if (ctx_blitter) {
       synchronize();
@@ -385,12 +386,12 @@ class VkRuntime ::Impl {
       return;
     }
 
-    embedded_device_->get_ti_device()->command_sync();
+    device_->command_sync();
     num_pending_kernels_ = 0;
   }
 
   Device *get_ti_device() const {
-    return embedded_device_->get_ti_device();
+    return device_;
   }
 
  private:
@@ -400,17 +401,16 @@ class VkRuntime ::Impl {
     size_t root_buffer_size = 64 * 1024 * 1024;
     size_t gtmp_buffer_size = 1024 * 1024;
 
-    root_buffer_ = get_ti_device()->allocate_memory_unique({root_buffer_size});
-    global_tmps_buffer_ =
-        get_ti_device()->allocate_memory_unique({gtmp_buffer_size});
+    root_buffer_ = device_->allocate_memory_unique({root_buffer_size});
+    global_tmps_buffer_ = device_->allocate_memory_unique({gtmp_buffer_size});
 
     // Need to zero fill the buffers, otherwise there could be NaN.
-    auto cmdlist = embedded_device_->get_ti_device()->new_command_list();
+    auto cmdlist = device_->new_command_list();
     cmdlist->buffer_fill(root_buffer_->get_ptr(0), root_buffer_size,
                          /*data=*/0);
     cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), gtmp_buffer_size,
                          /*data=*/0);
-    embedded_device_->get_ti_device()->submit_synced(cmdlist.get());
+    device_->submit_synced(cmdlist.get());
   }
 
   const SNodeDescriptorsMap *const snode_descriptors_;
@@ -420,6 +420,8 @@ class VkRuntime ::Impl {
 
   std::unique_ptr<DeviceAllocationUnique> root_buffer_;
   std::unique_ptr<DeviceAllocationUnique> global_tmps_buffer_;
+
+  Device *device_;
 
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;
   int num_pending_kernels_{0};

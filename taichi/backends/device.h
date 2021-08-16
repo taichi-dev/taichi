@@ -47,6 +47,7 @@ struct DeviceAllocation {
 struct DeviceAllocationUnique : public DeviceAllocation {
   DeviceAllocationUnique(DeviceAllocation alloc) : DeviceAllocation(alloc) {
   }
+  DeviceAllocationUnique(const DeviceAllocationUnique &) = delete;
   ~DeviceAllocationUnique();
 };
 
@@ -54,6 +55,7 @@ struct DevicePtr : public DeviceAllocation {
   uint64_t offset{0};
 };
 
+constexpr DeviceAllocation kDeviceNullAllocation{};
 constexpr DevicePtr kDeviceNullPtr{};
 
 // TODO: Implement this

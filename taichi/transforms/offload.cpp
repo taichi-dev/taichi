@@ -309,19 +309,11 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     if (stmt->is<GlobalPtrStmt>())
       return;
     // Not yet allocated
-    if (stmt->is<PtrOffsetStmt>()) {
-      if (local_to_global.find(stmt->cast<PtrOffsetStmt>()->origin) ==
-          local_to_global.end()) {
-        if (stmt->cast<PtrOffsetStmt>()->origin->is<AllocaStmt>()) {
-          auto alloca_stmt = stmt->cast<PtrOffsetStmt>()->origin;
-          local_to_global[alloca_stmt] = allocate_global(alloca_stmt->ret_type);
-        }
-      }
-    } else {
-      // stmt might be AllocaStmt, ExternalTensorShapeAlongAxisStmt
-      if (local_to_global.find(stmt) == local_to_global.end()) {
-        local_to_global[stmt] = allocate_global(stmt->ret_type);
-      }
+    auto top_level_ptr = stmt;
+    while (top_level_ptr->is<PtrOffsetStmt>())
+      top_level_ptr = top_level_ptr->cast<PtrOffsetStmt>()->origin;
+    if (local_to_global.find(top_level_ptr) == local_to_global.end()) {
+      local_to_global[top_level_ptr] = allocate_global(top_level_ptr->ret_type);
     }
   }
 

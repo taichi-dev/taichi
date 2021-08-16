@@ -24,7 +24,7 @@ void Window::show() {
 }
 
 void Window::prepare_for_next_frame() {
-  app_context_.swap_chain.update_image_index();
+  app_context_.swap_chain().update_image_index();
   canvas_->prepare_for_next_frame();
   gui_.prepare_for_next_frame();
 }
@@ -50,8 +50,7 @@ void Window::framebuffer_resize_callback(GLFWwindow *glfw_window_,
 }
 
 void Window::init_vulkan() {
-  app_context_.glfw_window = glfw_window_;
-  app_context_.init();
+  app_context_.init(glfw_window_);
   canvas_ = std::make_unique<Canvas>(&app_context_);
 }
 
@@ -95,8 +94,8 @@ void Window::draw_frame() {
 }
 
 void Window::present_frame() {
-  app_context_.swap_chain.present_frame();
-  if (app_context_.swap_chain.requires_recreate) {
+  app_context_.swap_chain().present_frame();
+  if (app_context_.swap_chain().requires_recreate()) {
     recreate_swap_chain();
   }
 }

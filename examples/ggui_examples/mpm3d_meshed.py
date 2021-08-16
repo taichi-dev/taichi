@@ -1,7 +1,7 @@
 import numpy as np
+from mesher import Mesher
 
 import taichi as ti
-from mesher import Mesher
 
 ti.init(ti.cuda)
 
@@ -92,7 +92,8 @@ def init():
         x[i] = ti.Vector([ti.random() for i in range(dim)]) * 0.4 + 0.15
         J[i] = 1
         colors[i] = ti.Vector([ti.random(), ti.random(), ti.random()])
- 
+
+
 init()
 
 res = (1920, 1080)
@@ -112,7 +113,7 @@ use_random_colors = False
 particles_color = (0, 0, 1)
 particles_radius = 0.05
 
-mesher = Mesher((0.0,0.0,0.0),(1.0,1.0,1.0),dx,dx)
+mesher = Mesher((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), dx, dx)
 
 while window.running:
     #print("heyyy ",frame_id)
@@ -126,7 +127,7 @@ while window.running:
     camera.lookat(0, 0, 0)
     camera.up(0, 1, 0)
     scene.set_camera(camera)
-    scene.ambient_light((0,0,0))
+    scene.ambient_light((0, 0, 0))
     if show_particles:
         if use_random_colors:
             scene.particles(x,
@@ -135,8 +136,8 @@ while window.running:
         else:
             scene.particles(x, color=particles_color, radius=particles_radius)
     else:
-        verts = mesher.mesh(x,dx)
-        scene.mesh(vertices = verts,color = (0,0,1))
+        verts = mesher.mesh(x, dx)
+        scene.mesh(vertices=verts, color=(0, 0, 1))
     scene.point_light(pos=(camera_x, camera_y, camera_z), color=(1, 1, 1))
 
     canvas.scene(scene)

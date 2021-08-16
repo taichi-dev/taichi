@@ -33,11 +33,12 @@ void Lines::record_this_frame_commands(VkCommandBuffer command_buffer) {
 
   vkCmdBindDescriptorSets(
       command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout_, 0, 1,
-      &descriptor_sets_[app_context_->swap_chain.curr_image_index], 0, nullptr);
+      &descriptor_sets_[app_context_->swap_chain().curr_image_index()], 0,
+      nullptr);
 
   vkCmdSetLineWidth(
       command_buffer,
-      curr_width_ * app_context_->swap_chain.swap_chain_extent.height);
+      curr_width_ * app_context_->swap_chain().swap_chain_extent().height);
 
   if (indexed_) {
     vkCmdDrawIndexed(command_buffer, config_.indices_count, 1, 0, 0, 0);
@@ -72,7 +73,7 @@ void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
 
   MappedMemory mapped(
       app_context_->device(),
-      uniform_buffer_memories_[app_context_->swap_chain.curr_image_index],
+      uniform_buffer_memories_[app_context_->swap_chain().curr_image_index()],
       sizeof(ubo));
   memcpy(mapped.data, &ubo, sizeof(ubo));
 }

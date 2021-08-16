@@ -139,7 +139,7 @@ while window.running:
     camera.lookat(0, 0, 0)
     camera.up(0, 1, 0)
     scene.set_camera(camera)
-    scene.ambient_light((0,0,0))
+    scene.ambient_light((0, 0, 0))
     if show_particles:
         if use_random_colors:
             scene.particles(x,

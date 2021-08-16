@@ -18,7 +18,7 @@ void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
 
   MappedMemory mapped(
       app_context_->device(),
-      uniform_buffer_memories_[app_context_->swap_chain.curr_image_index],
+      uniform_buffer_memories_[app_context_->swap_chain().curr_image_index()],
       sizeof(ubo));
   memcpy(mapped.data, &ubo, sizeof(ubo));
 }
@@ -36,7 +36,7 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
   {
     MappedMemory mapped(
         app_context_->device(),
-        storage_buffer_memories_[app_context_->swap_chain.curr_image_index],
+        storage_buffer_memories_[app_context_->swap_chain().curr_image_index()],
         correct_ssbo_size);
     memcpy(mapped.data, scene.point_lights_.data(), correct_ssbo_size);
   }

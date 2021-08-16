@@ -43,7 +43,7 @@ void Triangles::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
 
   MappedMemory mapped(
       app_context_->device(),
-      uniform_buffer_memories_[app_context_->swap_chain.curr_image_index],
+      uniform_buffer_memories_[app_context_->swap_chain().curr_image_index()],
       sizeof(ubo));
   memcpy(mapped.data, &ubo, sizeof(ubo));
 }

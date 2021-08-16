@@ -43,8 +43,8 @@ void Gui::init(AppContext *app_context, GLFWwindow *window) {
   init_info.DescriptorPool = descriptor_pool_;
   init_info.Allocator = VK_NULL_HANDLE;
   ;
-  init_info.MinImageCount = app_context_->swap_chain.swap_chain_images.size();
-  init_info.ImageCount = app_context_->swap_chain.swap_chain_images.size();
+  init_info.MinImageCount = app_context_->swap_chain().chain_size();
+  init_info.ImageCount = app_context_->swap_chain().chain_size();
   ImGui_ImplVulkan_Init(&init_info, app_context_->render_pass());
 
   // Load Fonts
@@ -124,10 +124,10 @@ void Gui::prepare_for_next_frame() {
 }
 
 float Gui::abs_x(float x) {
-  return x * app_context_->swap_chain.swap_chain_extent.width;
+  return x * app_context_->swap_chain().swap_chain_extent().width;
 }
 float Gui::abs_y(float y) {
-  return y * app_context_->swap_chain.swap_chain_extent.height;
+  return y * app_context_->swap_chain().swap_chain_extent().height;
 }
 
 void Gui::begin(std::string name, float x, float y, float width, float height) {

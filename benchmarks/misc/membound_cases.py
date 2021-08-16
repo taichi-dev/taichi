@@ -4,18 +4,10 @@ import taichi as ti
 
 
 def init_const(x, dtype, num_elements):
-    if dtype in [ti.f32, ti.f64]:
-
-        @ti.kernel
-        def init_const(x: ti.template(), n: ti.i32):
-            for i in range(n):
-                x[i] = 0.1
-    else:
-
-        @ti.kernel
-        def init_const(x: ti.template(), n: ti.i32):
-            for i in range(n):
-                x[i] = 1
+      @ti.kernel
+      def init_const(x: ti.template(), n: ti.i32):
+          for i in range(n):
+              x[i] = ti.cast(0.7, dtype)
 
     init_const(x, num_elements)
 
@@ -66,8 +58,7 @@ def saxpy(arch, dtype, dsize, repeat=10):
     @ti.kernel
     def saxpy(n: ti.i32):
         for i in range(n):
-            a = 1
-            z[i] = a * x[i] + y[i]
+            z[i] = 17 * x[i] + y[i]
 
     init_const(x, dtype, num_elements)
     init_const(y, dtype, num_elements)
@@ -87,7 +78,7 @@ def reduction(arch, dtype, dsize, repeat=10):
     @ti.kernel
     def reduction(n: ti.i32):
         for i in range(n):
-            y[None] += ti.atomic_add(y[None], x[i])
+            y[None] += x[i]
 
     init_const(x, dtype, num_elements)
     return membound_benchmark(reduction, num_elements, repeat)

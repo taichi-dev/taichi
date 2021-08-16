@@ -33,7 +33,6 @@ def geometric_mean(data_array):
     for data in data_array:
         product *= data
     return pow(product, 1.0 / len(data_array))
-    # return a.numpy.array(data_array)**(1.0/len(data_array))
 
 
 def md_table_header(suite_name, arch, test_dsize, test_repeat, result_analyse):

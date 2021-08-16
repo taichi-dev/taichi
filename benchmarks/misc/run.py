@@ -21,17 +21,12 @@ class PerformanceMonitoring:
 
     def write_md(self):
         try:
-            with open(self.filename, 'r+') as f:
-                f.truncate()  # clear the previous result
-        except FileNotFoundError:
-            pass
-        f = open(self.filename, 'a')
-        for arch in test_archs:
-            for impl in self.impls:
-                lines = impl.mdlines(arch)
-                for line in lines:
-                    f.write(line + '\n')
-        f.close()
+        with open(self.filename, 'w') as f:
+            for arch in test_archs:
+                for impl in self.impls:
+                    lines = impl.mdlines(arch)
+                    for line in lines:
+                        print(line, file=f)
 
 
 p = PerformanceMonitoring()

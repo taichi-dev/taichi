@@ -1,14 +1,14 @@
 import time
 
-from membound_cases import fill,saxpy,reduction
+from membound_cases import fill, reduction, saxpy
 from utils import *
 
 import taichi as ti
 
-test_cases = [fill,saxpy,reduction]
+test_cases = [fill, saxpy, reduction]
 test_archs = [ti.cuda]
 test_dtype = [ti.i32, ti.i64, ti.f32, ti.f64]
-test_dsize = [(4**i)*kibibyte for i in range(1,11)] #[4KB,16KB...1GB]
+test_dsize = [(4**i) * kibibyte for i in range(1, 11)]  #[4KB,16KB...1GB]
 test_repeat = 10
 results_evaluation = [geometric_mean]
 
@@ -27,7 +27,8 @@ class BenchmarkResult:
         string += ''.join(
             str(round(time, 4)) + '|' for time in self.min_time_in_us)
         string += ''.join(
-            str(round(item(self.min_time_in_us),4)) + '|' for item in self.results_evaluation)
+            str(round(item(self.min_time_in_us), 4)) + '|'
+            for item in self.results_evaluation)
         return string
 
 
@@ -49,7 +50,8 @@ class BenchmarkImpl:
                 print("TestCase[%s.%s.%s]" %
                       (self.func.__name__, ti.core.arch_name(arch),
                        dtype2str[dtype]))
-                result = BenchmarkResult(self.name, arch, dtype, self.data_size,results_evaluation)
+                result = BenchmarkResult(self.name, arch, dtype,
+                                         self.data_size, results_evaluation)
                 for size in self.data_size:
                     print("data_size = %s" % (size2str(size)))
                     result.min_time_in_us.append(
@@ -72,7 +74,7 @@ class BenchmarkImpl:
 
     def save2markdown(self, arch):
         header = '|kernel elapsed time(ms)' + ''.join(
-            '|' for i in range(len(self.data_size)+len(results_evaluation)))
+            '|' for i in range(len(self.data_size) + len(results_evaluation)))
         lines = [header]
         for result in self.benchmark_results:
             if (result.test_arch == arch):
@@ -92,9 +94,10 @@ class Membound:
         for case in self.benchmark_imps:
             case.run()
 
-    def mdlines(self,arch):
+    def mdlines(self, arch):
         lines = []
-        lines += md_table_header(self.__class__.__name__, arch, test_dsize, test_repeat, results_evaluation)
+        lines += md_table_header(self.__class__.__name__, arch, test_dsize,
+                                 test_repeat, results_evaluation)
         for case in self.benchmark_imps:
             if arch in case.archs:
                 lines += case.save2markdown(arch)

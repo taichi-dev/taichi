@@ -12,10 +12,12 @@ dtype_size = {ti.i32: 4, ti.i64: 8, ti.f32: 4, ti.f64: 8}
 size_subsection = [(0.0, 'B'), (1024.0, 'KB'), (1048576.0, 'MB'),
                    (1073741824.0, 'GB'), (float('inf'), 'INF')]  #B KB MB GB
 
+
 def size2str(size_in_byte):
     for dsize, units in reversed(size_subsection):
         if size_in_byte >= dsize:
             return str(round(size_in_byte / dsize, 4)) + units
+
 
 def scale_repeat(arch, datasize, repeat=10):
     scaled = repeat
@@ -25,28 +27,32 @@ def scale_repeat(arch, datasize, repeat=10):
         scaled *= 10
     return scaled
 
+
 def geometric_mean(data_array):
     product = 1
     for data in data_array:
-        product*=data
-    return pow(product,1.0/len(data_array))
+        product *= data
+    return pow(product, 1.0 / len(data_array))
     # return a.numpy.array(data_array)**(1.0/len(data_array))
 
 
 def md_table_header(suite_name, arch, test_dsize, test_repeat, result_analyse):
     header = '|' + suite_name + '.' + ti.core.arch_name(arch) + '|'
     header += ''.join('|' for i in range(len(test_dsize)))
-    header += ''.join(item.__name__+'|' for item in result_analyse)
+    header += ''.join(item.__name__ + '|' for item in result_analyse)
 
-    layout = '|:--:|' 
-    layout += ''.join(':--:|' for i in range(len(test_dsize) + len(result_analyse)))
+    layout = '|:--:|'
+    layout += ''.join(':--:|'
+                      for i in range(len(test_dsize) + len(result_analyse)))
 
-    size = '|**data size**|' 
+    size = '|**data size**|'
     size += ''.join(size2str(size) + '|' for size in test_dsize)
     size += ''.join('|' for i in range(len(result_analyse)))
 
-    repeat = '|**repeat**|' 
-    repeat += ''.join(str(scale_repeat(arch, size, test_repeat)) + '|'for size in test_dsize)
+    repeat = '|**repeat**|'
+    repeat += ''.join(
+        str(scale_repeat(arch, size, test_repeat)) + '|'
+        for size in test_dsize)
     repeat += ''.join('|' for i in range(len(result_analyse)))
 
     lines = [header, layout, size, repeat]

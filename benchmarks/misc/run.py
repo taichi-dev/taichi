@@ -5,9 +5,11 @@ import taichi as ti
 test_suites = [Membound]
 test_archs = [ti.cuda]
 
+
 class PerformanceMonitoring:
     impls = []
     filename = f'performance_result.md'
+
     def __init__(self):
         for s in test_suites:
             self.impls.append(s())

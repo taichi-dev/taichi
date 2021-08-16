@@ -2,20 +2,25 @@ from utils import dtype_size, scale_repeat, size2str
 
 import taichi as ti
 
-def init_const(x,dtype,num_elements):
+
+def init_const(x, dtype, num_elements):
     if dtype in [ti.f32, ti.f64]:
+
         @ti.kernel
-        def init_const(x:ti.template(), n: ti.i32):
+        def init_const(x: ti.template(), n: ti.i32):
             for i in range(n):
                 x[i] = 0.1
     else:
+
         @ti.kernel
-        def init_const(x:ti.template(), n: ti.i32):
+        def init_const(x: ti.template(), n: ti.i32):
             for i in range(n):
                 x[i] = 1
-    init_const(x,num_elements)
 
-def membound_benchmark(func,num_elements,repeat):
+    init_const(x, num_elements)
+
+
+def membound_benchmark(func, num_elements, repeat):
     # compile the kernel first
     func(num_elements)
     ti.clear_kernel_profile_info()
@@ -46,14 +51,13 @@ def fill(arch, dtype, dsize, repeat=10):
             for i in range(n):
                 x[i] = 1
 
-    return membound_benchmark(fill_const,num_elements,repeat)
-
+    return membound_benchmark(fill_const, num_elements, repeat)
 
 
 def saxpy(arch, dtype, dsize, repeat=10):
 
     repeat = scale_repeat(arch, dsize, repeat)
-    num_elements = dsize // dtype_size[dtype] // 3 #z=x+y
+    num_elements = dsize // dtype_size[dtype] // 3  #z=x+y
 
     x = ti.field(dtype, shape=num_elements)
     y = ti.field(dtype, shape=num_elements)
@@ -65,10 +69,10 @@ def saxpy(arch, dtype, dsize, repeat=10):
             a = 1
             z[i] = a * x[i] + y[i]
 
-    init_const(x,dtype,num_elements)
-    init_const(y,dtype,num_elements)
+    init_const(x, dtype, num_elements)
+    init_const(y, dtype, num_elements)
 
-    return membound_benchmark(saxpy,num_elements,repeat)
+    return membound_benchmark(saxpy, num_elements, repeat)
 
 
 def reduction(arch, dtype, dsize, repeat=10):
@@ -79,11 +83,11 @@ def reduction(arch, dtype, dsize, repeat=10):
     x = ti.field(dtype, shape=num_elements)
     y = ti.field(dtype, shape=())
     y[None] = 0
-  
+
     @ti.kernel
     def reduction(n: ti.i32):
         for i in range(n):
             y[None] += ti.atomic_add(y[None], x[i])
 
-    init_const(x,dtype,num_elements)
-    return membound_benchmark(reduction,num_elements,repeat)
+    init_const(x, dtype, num_elements)
+    return membound_benchmark(reduction, num_elements, repeat)

@@ -35,24 +35,24 @@ def geometric_mean(data_array):
     return pow(product, 1.0 / len(data_array))
 
 
-def md_table_header(suite_name, arch, test_dsize, test_repeat, result_analyse):
+def md_table_header(suite_name, arch, test_dsize, test_repeat, results_evaluation):
     header = '|' + suite_name + '.' + ti.core.arch_name(arch) + '|'
     header += ''.join('|' for i in range(len(test_dsize)))
-    header += ''.join(item.__name__ + '|' for item in result_analyse)
+    header += ''.join(item.__name__ + '|' for item in results_evaluation)
 
     layout = '|:--:|'
     layout += ''.join(':--:|'
-                      for i in range(len(test_dsize) + len(result_analyse)))
+                      for i in range(len(test_dsize) + len(results_evaluation)))
 
     size = '|**data size**|'
     size += ''.join(size2str(size) + '|' for size in test_dsize)
-    size += ''.join('|' for i in range(len(result_analyse)))
+    size += ''.join('|' for i in range(len(results_evaluation)))
 
     repeat = '|**repeat**|'
     repeat += ''.join(
         str(scale_repeat(arch, size, test_repeat)) + '|'
         for size in test_dsize)
-    repeat += ''.join('|' for i in range(len(result_analyse)))
+    repeat += ''.join('|' for i in range(len(results_evaluation)))
 
     lines = [header, layout, size, repeat]
     return lines

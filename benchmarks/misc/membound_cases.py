@@ -4,11 +4,10 @@ import taichi as ti
 
 
 def init_const(x, dtype, num_elements):
-      @ti.kernel
-      def init_const(x: ti.template(), n: ti.i32):
-          for i in range(n):
-              x[i] = ti.cast(0.7, dtype)
-
+    @ti.kernel
+    def init_const(x: ti.template(), n: ti.i32):
+        for i in range(n):
+            x[i] = ti.cast(0.7, dtype)
     init_const(x, num_elements)
 
 
@@ -30,18 +29,10 @@ def fill(arch, dtype, dsize, repeat=10):
 
     x = ti.field(dtype, shape=num_elements)
 
-    if dtype in [ti.f32, ti.f64]:
-
-        @ti.kernel
-        def fill_const(n: ti.i32):
-            for i in range(n):
-                x[i] = 0.1
-    else:
-
-        @ti.kernel
-        def fill_const(n: ti.i32):
-            for i in range(n):
-                x[i] = 1
+    @ti.kernel
+    def fill_const(n: ti.i32):
+        for i in range(n):
+            x[i] = ti.cast(0.7, dtype)
 
     return membound_benchmark(fill_const, num_elements, repeat)
 

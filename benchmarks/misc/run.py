@@ -7,24 +7,23 @@ test_archs = [ti.cuda]
 
 
 class PerformanceMonitoring:
-    impls = []
-    filename = f'performance_result.md'
-
+    suites = []
+    
     def __init__(self):
         for s in test_suites:
-            self.impls.append(s())
+            self.suites.append(s())
 
     def run(self):
         print("Running...")
-        for s in self.impls:
+        for s in self.suites:
             s.run()
 
     def write_md(self):
-        try:
-        with open(self.filename, 'w') as f:
+        filename = f'performance_result.md'
+        with open(filename, 'w') as f:
             for arch in test_archs:
-                for impl in self.impls:
-                    lines = impl.mdlines(arch)
+                for s in self.suites:
+                    lines = s.mdlines(arch)
                     for line in lines:
                         print(line, file=f)
 

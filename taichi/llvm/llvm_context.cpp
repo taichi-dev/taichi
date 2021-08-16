@@ -153,90 +153,9 @@ std::string get_runtime_dir() {
     return runtime_tmp_dir + "/runtime/";
 }
 
-void compile_runtime_bitcode(Arch arch) {
-  if (is_release())
-    return;
-  TI_AUTO_PROF;
-  bool do_cache = get_environ_config("TI_CACHE_RUNTIME_BITCODE", 0);
-  static std::set<int> runtime_compiled;
-  if (runtime_compiled.find((int)arch) == runtime_compiled.end()) {
-    auto runtime_src_folder = get_runtime_src_dir();
-    auto runtime_folder = get_runtime_dir();
-    auto fn_bc = get_runtime_fn(arch);
-    auto src_runtime_bc = fmt::format("{}{}", runtime_src_folder, fn_bc);
-    auto dst_runtime_bc = fmt::format("{}{}", runtime_folder, fn_bc);
-#ifdef _WIN32
-    namespace fs = std::filesystem;
-    bool src_exists = fs::exists(src_runtime_bc);
-#else
-    bool src_exists = !access(src_runtime_bc.c_str(), F_OK);
-#endif
-    if (do_cache && src_exists) {
-      TI_TRACE("Restoring cached runtime module bitcode [{}]...",
-               src_runtime_bc);
-#ifdef _WIN32
-      auto ret = fs::copy_file(src_runtime_bc, dst_runtime_bc,
-                               fs::copy_options::overwrite_existing);
-#else
-      auto ret =
-          (std::system(fmt::format("cp {} {}", src_runtime_bc, dst_runtime_bc)
-                           .c_str()) &
-           255) == 0;
-#endif
-      if (!ret) {
-        TI_WARN("Failed to copy from saved runtime bitcode cache.");
-      } else {
-        TI_TRACE("Runtime module bitcode loaded.");
-        runtime_compiled.insert((int)arch);
-        return;
-      }
-    }
-    auto clang = find_existing_command(
-        {"clang-7", "clang-8", "clang-9", "clang-10", "clang"});
-    TI_ASSERT(command_exist("llvm-as"));
-    TI_TRACE("Compiling runtime module bitcode...");
-
-    std::string cuda_compute_capability = "0";
-
-    std::string arch_macro = fmt::format(" -D ARCH_{}", arch_name(arch));
-    auto cmd = fmt::format(
-        "{} -S \"{}runtime.cpp\" -o \"{}runtime.ll\" -fno-exceptions "
-        "-emit-llvm -std=c++17 {} -I \"{}\"",
-        clang, runtime_src_folder, runtime_folder, arch_macro, get_repo_dir());
-    int ret = std::system(cmd.c_str());
-    if (ret) {
-      TI_ERROR("LLVMRuntime compilation failed.");
-    }
-    cmd = fmt::format("llvm-as \"{}runtime.ll\" -o \"{}\"", runtime_folder,
-                      dst_runtime_bc);
-    std::system(cmd.c_str());
-    TI_TRACE("Runtime module bitcode compiled.");
-    runtime_compiled.insert((int)arch);
-    if (do_cache) {
-      TI_TRACE("Saving runtime module bitcode cache [{}]...", dst_runtime_bc);
-#ifdef _WIN32
-      auto ret = fs::copy_file(dst_runtime_bc, src_runtime_bc,
-                               fs::copy_options::overwrite_existing);
-#else
-      auto ret = (system(fmt::format("cp \"{}\" \"{}\"", dst_runtime_bc,
-                                     src_runtime_bc)
-                             .c_str()) &
-                  255) == 0;
-#endif
-      if (!ret) {
-        TI_WARN("Failed to save runtime bitcode cache.");
-      }
-    }
-  }
-}
-
 std::string libdevice_path() {
   std::string folder;
-  if (is_release()) {
-    folder = runtime_lib_dir();
-  } else {
-    folder = fmt::format("{}/external/cuda_libdevice", get_repo_dir());
-  }
+  folder = runtime_lib_dir();
   auto cuda_version_string = get_cuda_version_string();
   auto cuda_version_major = int(std::atof(cuda_version_string.c_str()));
   return fmt::format("{}/slim_libdevice.{}.bc", folder, cuda_version_major);
@@ -357,15 +276,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   auto data = get_this_thread_data();
   auto ctx = get_this_thread_context();
   if (!data->runtime_module) {
-    if (is_release()) {
-      data->runtime_module = module_from_bitcode_file(
-          fmt::format("{}/{}", runtime_lib_dir(), get_runtime_fn(arch)), ctx);
-    } else {
-      compile_runtime_bitcode(arch);
-      data->runtime_module = module_from_bitcode_file(
-          fmt::format("{}/{}", get_runtime_dir(), get_runtime_fn(arch)), ctx);
-    }
-
+    data->runtime_module = module_from_bitcode_file(
+        fmt::format("{}/{}", runtime_lib_dir(), get_runtime_fn(arch)), ctx);
     if (arch == Arch::cuda) {
       auto &runtime_module = data->runtime_module;
       runtime_module->setTargetTriple("nvptx64-nvidia-cuda");

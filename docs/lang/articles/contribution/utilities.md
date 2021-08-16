@@ -134,6 +134,18 @@ regression tests is:
   baseline.
 - Go forward to stage 2, 3, ..., and the same workflow is applied.
 
+## Debug taichi program using `gdb`
+
+1. Prepare a script that can reproduce the issue, e.g. `python repro.py`.
+2. Build taichi with debug information using `DEBUG=1 python setup.py develop` (or `install`).
+3. Run `gdb --args python repro.py`, now you can debug from there! For example, you can set a
+   breakpoint using `b foo.cpp:102` or `b Program::compile()`.
+
+However if your issue cannot be reproduced consistently this solution isn't a great fit.
+In that case it's recommended to follow the section below so that gdb is triggered automatically
+when the program crashes.
+
+
 ## (Linux only) Trigger `gdb` when programs crash
 
 ```python

@@ -8,6 +8,7 @@ def init_const(x, dtype, num_elements):
     def init_const(x: ti.template(), n: ti.i32):
         for i in range(n):
             x[i] = ti.cast(0.7, dtype)
+
     init_const(x, num_elements)
 
 

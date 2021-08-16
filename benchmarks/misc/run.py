@@ -8,7 +8,7 @@ test_archs = [ti.cuda]
 
 class PerformanceMonitoring:
     suites = []
-    
+
     def __init__(self):
         for s in test_suites:
             self.suites.append(s())

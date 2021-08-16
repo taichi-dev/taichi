@@ -122,7 +122,7 @@ def benchmark_range():
     ti.benchmark(substep, repeat=4000)
 
 
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=ti.opengl)
 def benchmark_struct():
     quality = 1  # Use a larger value for higher-res simulations
     n_particles, n_grid = 9000 * quality**2, 128 * quality

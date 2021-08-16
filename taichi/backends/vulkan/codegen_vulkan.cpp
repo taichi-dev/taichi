@@ -784,9 +784,6 @@ class TaskCodegen : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->op_type != AtomicOpType::add) {
-      TI_NOT_IMPLEMENTED;
-    }
     const auto dt = stmt->dest->element_type().ptr_removed();
 
     spirv::Value addr_ptr;
@@ -800,19 +797,39 @@ class TaskCodegen : public IRVisitor {
     spirv::Value data = ir_->query_value(stmt->val->raw_name());
     spirv::Value val;
     if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      if (device_->get_cap(DeviceCapability::vk_has_atomic_float_add)) {
+      if (device_->get_cap(DeviceCapability::vk_has_atomic_float_add) 
+          && stmt->op_type == AtomicOpType::add) {
         val = ir_->make_value(
             spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt), addr_ptr,
             ir_->uint_immediate_number(ir_->u32_type(), 1),
             ir_->uint_immediate_number(ir_->u32_type(), 0), data);
       } else {
-        spirv::Value func = ir_->float_atomic_add();
+        spirv::Value func = ir_->float_atomic(stmt->op_type);
         val = ir_->make_value(spv::OpFunctionCall, ir_->f32_type(), func,
                               addr_ptr, data);
       }
     } else if (is_integral(dt)) {
+      spv::Op op;
+      if (stmt->op_type == AtomicOpType::add) {
+        op = spv::OpAtomicIAdd;
+      } else if (stmt->op_type == AtomicOpType::sub) {
+        op = spv::OpAtomicISub;
+      } else if (stmt->op_type == AtomicOpType::min) {
+        op = is_signed(dt) ? spv::OpAtomicSMin : spv::OpAtomicUMin;
+      } else if (stmt->op_type == AtomicOpType::max) {
+        op = is_signed(dt) ? spv::OpAtomicSMax : spv::OpAtomicUMax;
+      } else if (stmt->op_type == AtomicOpType::bit_or) {
+        op = spv::OpAtomicOr;
+      } else if (stmt->op_type == AtomicOpType::bit_and) {
+        op = spv::OpAtomicAnd;
+      } else if (stmt->op_type == AtomicOpType::bit_xor) {
+        op = spv::OpAtomicXor;
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+
       val = ir_->make_value(
-          spv::OpAtomicIAdd, ir_->get_primitive_type(dt), addr_ptr,
+          op, ir_->get_primitive_type(dt), addr_ptr,
           ir_->uint_immediate_number(ir_->u32_type(), 1),
           ir_->uint_immediate_number(ir_->u32_type(), 0), data);
     } else {

@@ -78,21 +78,19 @@ def _test_reduction_single(dtype, criterion, op):
 
 
 @pytest.mark.parametrize('op', [OP_ADD, OP_MIN, OP_MAX, OP_AND, OP_OR, OP_XOR])
-@ti.test(exclude=ti.vulkan
-         )  # TODO(changyu): enable when ti.vulkan support OP_MIN, etc.
+@ti.all_archs
 def test_reduction_single_i32(op):
     _test_reduction_single(ti.i32, lambda x, y: x % 2**32 == y % 2**32, op)
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@ti.test(exclude=ti.opengl)
+@ti.all_archs
 def test_reduction_single_u32(op):
     _test_reduction_single(ti.u32, lambda x, y: x % 2**32 == y % 2**32, op)
 
 
 @pytest.mark.parametrize('op', [OP_ADD, OP_MIN, OP_MAX])
-@ti.test(exclude=ti.vulkan
-         )  # TODO(changyu): enable when ti.vulkan support OP_MIN, etc.
+@ti.all_archs
 def test_reduction_single_f32(op):
     _test_reduction_single(ti.f32, lambda x, y: x == approx(y, 3e-4), op)
 

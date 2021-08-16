@@ -82,7 +82,7 @@ class HostDeviceContextBlitter {
 #define TO_DEVICE(short_type, type)                    \
   if (dt->is_primitive(PrimitiveTypeID::short_type)) { \
     auto d = host_ctx_->get_arg<type>(i);              \
-    std::memcpy(device_ptr, &d, sizeof(d));            \
+    reinterpret_cast<type *>(device_ptr)[0] = d;       \
     break;                                             \
   }
 
@@ -219,7 +219,7 @@ class CompiledTaichiKernel {
  public:
   struct Params {
     const TaichiKernelAttributes *ti_kernel_attribs{nullptr};
-    std::vector<VkRuntime::SpirvBinary> spirv_bins;
+    std::vector<std::vector<uint32_t>> spirv_bins;
     const SNodeDescriptorsMap *snode_descriptors{nullptr};
 
     VulkanDevice *device{nullptr};
@@ -252,23 +252,21 @@ class CompiledTaichiKernel {
     cmdlist_ = ti_params.device->new_command_list();
     for (int i = 0; i < task_attribs.size(); ++i) {
       const auto &attribs = task_attribs[i];
-      VulkanPipeline::Params vp_params;
-      vp_params.device = ti_params.device;
-      vp_params.name = ti_kernel_attribs_.name;
-      vp_params.code = SpirvCodeView(spirv_bins[i]);
-      auto vp = std::make_unique<VulkanPipeline>(vp_params);
+      auto vp = ti_params.device->create_pipeline(
+          PipelineSourceType::spirv_binary, (void *)spirv_bins[i].data(),
+          spirv_bins[i].size() * sizeof(uint32_t), ti_kernel_attribs_.name);
       const int group_x = (attribs.advisory_total_num_threads +
                            attribs.advisory_num_threads_per_group - 1) /
                           attribs.advisory_num_threads_per_group;
       ResourceBinder *binder = vp->resource_binder();
       for (auto &pair : input_buffers) {
-        binder->rw_buffer(0, uint32_t(pair.first), *pair.second);   
+        binder->rw_buffer(0, uint32_t(pair.first), *pair.second);
       }
       cmdlist_->bind_pipeline(vp.get());
       cmdlist_->bind_resources(binder);
       cmdlist_->dispatch(group_x);
       cmdlist_->memory_barrier();
-      vk_pipelines_.push_back(std::move(vp));
+      pipelines_.push_back(std::move(vp));
     }
 
     if (!ti_kernel_attribs_.ctx_attribs.empty()) {
@@ -282,8 +280,8 @@ class CompiledTaichiKernel {
     return ti_kernel_attribs_;
   }
 
-  size_t num_vk_pipelines() const {
-    return vk_pipelines_.size();
+  size_t num_pipelines() const {
+    return pipelines_.size();
   }
 
   DeviceAllocation *ctx_buffer() const {
@@ -308,7 +306,7 @@ class CompiledTaichiKernel {
   // kernel does lots of IO on the context buffer, e.g., copy a large np array.
   std::unique_ptr<DeviceAllocationUnique> ctx_buffer_{nullptr};
   std::unique_ptr<DeviceAllocationUnique> ctx_buffer_host_{nullptr};
-  std::vector<std::unique_ptr<VulkanPipeline>> vk_pipelines_;
+  std::vector<std::unique_ptr<Pipeline>> pipelines_;
 
   std::unique_ptr<CommandList> cmdlist_;
 };
@@ -327,7 +325,7 @@ class VkRuntime ::Impl {
     embedded_device_ = std::make_unique<EmbeddedVulkanDevice>(evd_params);
     device_ = embedded_device_->get_ti_device();
 
-    init_vk_buffers();
+    init_buffers();
   }
 
   ~Impl() {
@@ -366,15 +364,14 @@ class VkRuntime ::Impl {
     auto *ti_kernel = ti_kernels_[handle.id_].get();
     auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
         &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx, device_,
-        host_result_buffer_,
-        ti_kernel->ctx_buffer(), ti_kernel->ctx_buffer_host());
+        host_result_buffer_, ti_kernel->ctx_buffer(),
+        ti_kernel->ctx_buffer_host());
     if (ctx_blitter) {
       TI_ASSERT(ti_kernel->ctx_buffer() != nullptr);
       ctx_blitter->host_to_device();
     }
 
     device_->submit(ti_kernel->command_list());
-    num_pending_kernels_ += ti_kernel->num_vk_pipelines();
     if (ctx_blitter) {
       synchronize();
       ctx_blitter->device_to_host();
@@ -382,12 +379,7 @@ class VkRuntime ::Impl {
   }
 
   void synchronize() {
-    if (num_pending_kernels_ == 0) {
-      return;
-    }
-
     device_->command_sync();
-    num_pending_kernels_ = 0;
   }
 
   Device *get_ti_device() const {
@@ -395,8 +387,7 @@ class VkRuntime ::Impl {
   }
 
  private:
-
-  void init_vk_buffers() {
+  void init_buffers() {
 #pragma message("Vulkan buffers size hardcoded")
     size_t root_buffer_size = 64 * 1024 * 1024;
     size_t gtmp_buffer_size = 1024 * 1024;
@@ -424,7 +415,6 @@ class VkRuntime ::Impl {
   Device *device_;
 
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;
-  int num_pending_kernels_{0};
 };
 
 #else

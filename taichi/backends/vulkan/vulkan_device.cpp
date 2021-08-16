@@ -403,6 +403,22 @@ VulkanDevice::~VulkanDevice() {
   vkDestroyFence(device_, cmd_sync_fence_, kNoVkAllocCallbacks);
 }
 
+std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(
+    PipelineSourceType src_type,
+    void *source,
+    size_t size,
+    std::string name) {
+  TI_ASSERT(src_type == PipelineSourceType::spirv_binary);
+
+  VulkanPipeline::Params params;
+  params.code.data = (uint32_t *)source;
+  params.code.size = size;
+  params.device = this;
+  params.name = name;
+
+  return std::make_unique<VulkanPipeline>(params);
+}
+
 DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   DeviceAllocation handle;
 

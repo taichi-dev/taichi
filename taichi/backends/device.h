@@ -105,6 +105,17 @@ class ResourceBinder {
   }
 };
 
+enum class PipelineSourceType {
+  spirv_binary,
+  spirv_src,
+  glsl_src,
+  hlsl_src,
+  dxil_binary,
+  llvm_ir_src,
+  llvm_ir_binary,
+  // TODO: other platforms?
+};
+
 // TODO: Implement this
 class Pipeline {
  public:
@@ -162,6 +173,12 @@ class Device {
 
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
   virtual void dealloc_memory(DeviceAllocation allocation) = 0;
+
+  virtual std::unique_ptr<Pipeline> create_pipeline(
+      PipelineSourceType src_type,
+      void *source,
+      size_t size,
+      std::string name = "Pipeline") = 0;
 
   std::unique_ptr<DeviceAllocationUnique> allocate_memory_unique(
       const AllocParams &params) {

@@ -74,7 +74,7 @@ class TaskCodegen : public IRVisitor {
   }
 
   struct Result {
-    VkRuntime::SpirvBinary spirv_code;
+    std::vector<uint32_t> spirv_code;
     TaskAttributes task_attribs;
   };
 

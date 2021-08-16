@@ -185,6 +185,12 @@ class VulkanDevice : public Device {
   void init_vulkan_structs(Params &params);
   ~VulkanDevice() override;
 
+  std::unique_ptr<Pipeline> create_pipeline(
+      PipelineSourceType src_type,
+      void *source,
+      size_t size,
+      std::string name = "Pipeline") override;
+
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation allocation) override;
 

@@ -63,7 +63,8 @@ struct DevicePtr : public DeviceAllocation {
   uint64_t offset{0};
 
   bool operator==(const DevicePtr &other) const {
-    return other.device == device && other.alloc_id == alloc_id && other.offset == offset;
+    return other.device == device && other.alloc_id == alloc_id &&
+           other.offset == offset;
   }
 
   bool operator!=(const DevicePtr &other) const {

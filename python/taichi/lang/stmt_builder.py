@@ -542,7 +542,8 @@ if 1:
                 # such as class instances ("self"), fields, SNodes, etc.
                 if isinstance(ctx.func.argument_annotations[i], ti.template):
                     continue
-                if isinstance(ctx.func.argument_annotations[i], ti.ext_arr):
+                if isinstance(ctx.func.argument_annotations[i],
+                              (ti.any_arr, ti.ext_arr)):
                     arg_init = parse_stmt(
                         'x = ti.lang.kernel_arguments.decl_ext_arr_arg(0, 0)')
                     arg_init.targets[0].id = arg.arg

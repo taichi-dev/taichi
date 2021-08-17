@@ -466,8 +466,10 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
   }
 
-  BAIL_ON_VK_BAD_RESULT(vmaCreateBuffer(allocator_, &buffer_info, &alloc_info, &alloc.buffer,
-                  &alloc.allocation, &alloc.alloc_info), "Failed to allocate vk buffer");
+  BAIL_ON_VK_BAD_RESULT(
+      vmaCreateBuffer(allocator_, &buffer_info, &alloc_info, &alloc.buffer,
+                      &alloc.allocation, &alloc.alloc_info),
+      "Failed to allocate vk buffer");
 
   return handle;
 }

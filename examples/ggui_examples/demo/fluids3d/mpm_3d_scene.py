@@ -93,9 +93,6 @@ def init():
         colors[i] = ti.Vector([ti.random(), ti.random(), ti.random()])
 
 
-
-
-
 init()
 
 res = (1920, 1080)

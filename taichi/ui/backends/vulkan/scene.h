@@ -7,7 +7,7 @@ namespace vulkan {
 
 class Scene final : public SceneBase {
  public:
-  friend class Canvas;
+  friend class Renderer;
   friend class Particles;
   friend class Mesh;
 

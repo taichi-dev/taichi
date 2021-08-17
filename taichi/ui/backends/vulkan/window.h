@@ -17,9 +17,10 @@
 
 #include "taichi/ui/backends/vulkan/swap_chain.h"
 #include "taichi/ui/backends/vulkan/app_context.h"
-#include "canvas.h"
+#include "taichi/ui/backends/vulkan/canvas.h"
+#include "taichi/ui/backends/vulkan/renderer.h"
 #include "taichi/ui/common/window_base.h"
-#include "gui.h"
+#include "taichi/ui/backends/vulkan/gui.h"
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -39,6 +40,7 @@ class Window final : public WindowBase {
   std::unique_ptr<Canvas> canvas_;
   AppContext app_context_;
   Gui gui_;
+  std::unique_ptr<Renderer> renderer_;
 
  private:
   void init();

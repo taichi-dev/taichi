@@ -1,6 +1,7 @@
 import numpy as np
 
 import taichi as ti
+import pytest
 
 if ti.has_pytorch():
     import torch
@@ -32,6 +33,7 @@ def test_ndarray_numpy_2d():
     _test_ndarray_2d(n, m, a)
 
 
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_ndarray_torch_2d():
     n = 4
@@ -40,6 +42,7 @@ def test_ndarray_torch_2d():
     _test_ndarray_2d(n, m, a)
 
 
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_ndarray_default_2d():
     n = 4

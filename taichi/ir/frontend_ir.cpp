@@ -147,6 +147,16 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
+  std::vector<Stmt *> args_stmts(args.size());
+  for (int i = 0; i < (int)args.size(); ++i) {
+    args[i]->flatten(ctx);
+    args_stmts[i] = args[i]->stmt;
+  }
+  ctx->push_back<InternalFuncStmt>(func_name, args_stmts);
+  stmt = ctx->back_stmt();
+}
+
 void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> arg_statements, output_statements;
   for (auto &s : args) {

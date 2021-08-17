@@ -120,17 +120,6 @@ class IRPrinter : public IRVisitor {
     print("{} : assert {}", assert->id, assert->cond->serialize());
   }
 
-  void visit(FrontendInternalFuncStmt *call) override {
-    std::string args;
-    for (int i = 0; i < call->args.size(); i++) {
-      if (i != 0) {
-        args += ", ";
-      }
-      args += call->args[i]->serialize();
-    }
-    print("{} : internal call {}({})", call->id, call->func_name, args);
-  }
-
   void visit(AssertStmt *assert) override {
     std::string extras;
     for (auto &arg : assert->args) {
@@ -635,7 +624,8 @@ class IRPrinter : public IRVisitor {
       args += arg->name();
       first = false;
     }
-    print("{} = internal call {}({})", stmt->name(), stmt->func_name, args);
+    print("{}{} = internal call {}({})", stmt->type_hint(), stmt->name(),
+          stmt->func_name, args);
   }
 
   void visit(AdStackAllocaStmt *stmt) override {

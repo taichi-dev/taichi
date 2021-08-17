@@ -434,19 +434,6 @@ class LowerAST : public IRVisitor {
     throw IRModified();
   }
 
-  void visit(FrontendInternalFuncStmt *stmt) override {
-    auto fctx = make_flatten_ctx();
-    auto &fargs = stmt->args;  // frontend stmt args
-    std::vector<Stmt *> args_stmts(fargs.size());
-    for (int i = 0; i < (int)fargs.size(); ++i) {
-      fargs[i]->flatten(&fctx);
-      args_stmts[i] = fargs[i]->stmt;
-    }
-    fctx.push_back<InternalFuncStmt>(stmt->func_name, args_stmts);
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-    throw IRModified();
-  }
-
   void visit(FrontendExprStmt *stmt) override {
     auto fctx = make_flatten_ctx();
     stmt->val->flatten(&fctx);

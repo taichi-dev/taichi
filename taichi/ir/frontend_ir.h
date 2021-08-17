@@ -71,22 +71,6 @@ class FrontendAssertStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-class FrontendInternalFuncStmt : public Stmt {
- public:
-  std::string func_name;
-  std::vector<Expr> args;
-
-  FrontendInternalFuncStmt(const std::string &func_name,
-                           std::vector<Expr> args_)
-      : func_name(func_name) {
-    for (auto &a : args_) {
-      args.push_back(load_if_ptr(a));
-    }
-  }
-
-  TI_DEFINE_ACCEPT
-};
-
 class FrontendAssignStmt : public Stmt {
  public:
   Expr lhs, rhs;
@@ -327,6 +311,33 @@ class TernaryOpExpression : public Expression {
   std::string serialize() override {
     return fmt::format("{}({} {} {})", ternary_type_name(type),
                        op1->serialize(), op2->serialize(), op3->serialize());
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class InternalFuncCallExpression : public Expression {
+ public:
+  std::string func_name;
+  std::vector<Expr> args;
+
+  InternalFuncCallExpression(const std::string &func_name,
+                             const std::vector<Expr> &args_)
+      : func_name(func_name) {
+    for (auto &a : args_) {
+      args.push_back(load_if_ptr(a));
+    }
+  }
+
+  std::string serialize() override {
+    std::string args_str;
+    for (int i = 0; i < args.size(); i++) {
+      if (i != 0) {
+        args_str += ", ";
+      }
+      args_str += args[i]->serialize();
+    }
+    return fmt::format("internal call {}({})", func_name, args_str);
   }
 
   void flatten(FlattenContext *ctx) override;

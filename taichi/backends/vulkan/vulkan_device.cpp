@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <set>
 
 #include "taichi/backends/vulkan/vulkan_common.h"
 #include "taichi/backends/vulkan/loader.h"
@@ -20,7 +21,26 @@ namespace vulkan {
 VulkanPipeline::VulkanPipeline(const Params &params)
     : device_(params.device->vk_device()), name_(params.name) {
   create_descriptor_set_layout(params);
+  create_shader_stages(params);
+  create_pipeline_layout();
   create_compute_pipeline(params);
+
+  for (VkShaderModule shader_module : shader_modules_) {
+    vkDestroyShaderModule(device_, shader_module, kNoVkAllocCallbacks);
+  }
+}
+
+VulkanPipeline::VulkanPipeline(const Params &params,
+                               const RasterParams &raster_params)
+    : device_(params.device->vk_device()), name_(params.name) {
+  create_descriptor_set_layout(params);
+  create_shader_stages(params);
+  create_pipeline_layout();
+  create_graphics_pipeline(raster_params);
+
+  for (VkShaderModule shader_module : shader_modules_) {
+    vkDestroyShaderModule(device_, shader_module, kNoVkAllocCallbacks);
+  }
 }
 
 VulkanPipeline::~VulkanPipeline() {
@@ -44,34 +64,62 @@ VkShaderModule VulkanPipeline::create_shader_module(VkDevice device,
 }
 
 void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
-  SpvReflectShaderModule module;
-  SpvReflectResult result =
-      spvReflectCreateShaderModule(params.code.size, params.code.data, &module);
-  TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+  std::unordered_set<uint32_t> sets_used;
 
-  uint32_t set_count = 0;
-  result = spvReflectEnumerateDescriptorSets(&module, &set_count, nullptr);
-  TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
-  std::vector<SpvReflectDescriptorSet *> desc_sets(set_count);
-  result =
-      spvReflectEnumerateDescriptorSets(&module, &set_count, desc_sets.data());
-  TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+  for (auto &code_view : params.code) {
+    SpvReflectShaderModule module;
+    SpvReflectResult result =
+        spvReflectCreateShaderModule(code_view.size, code_view.data, &module);
+    TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
 
-  for (SpvReflectDescriptorSet *desc_set : desc_sets) {
-    uint32_t set = desc_set->set;
-    for (int i = 0; i < desc_set->binding_count; i++) {
-      SpvReflectDescriptorBinding *desc_binding = desc_set->bindings[i];
+    uint32_t set_count = 0;
+    result = spvReflectEnumerateDescriptorSets(&module, &set_count, nullptr);
+    TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+    std::vector<SpvReflectDescriptorSet *> desc_sets(set_count);
+    result = spvReflectEnumerateDescriptorSets(&module, &set_count,
+                                               desc_sets.data());
+    TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
 
-      if (desc_binding->descriptor_type ==
-          SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-        resource_binder_.rw_buffer(set, desc_binding->binding, kDeviceNullPtr,
-                                   0);
-      } else if (desc_binding->descriptor_type ==
-                 SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        resource_binder_.buffer(set, desc_binding->binding, kDeviceNullPtr, 0);
+    for (SpvReflectDescriptorSet *desc_set : desc_sets) {
+      uint32_t set = desc_set->set;
+      for (int i = 0; i < desc_set->binding_count; i++) {
+        SpvReflectDescriptorBinding *desc_binding = desc_set->bindings[i];
+
+        if (desc_binding->descriptor_type ==
+            SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+          resource_binder_.rw_buffer(set, desc_binding->binding, kDeviceNullPtr,
+                                     0);
+        } else if (desc_binding->descriptor_type ==
+                   SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+          resource_binder_.buffer(set, desc_binding->binding, kDeviceNullPtr,
+                                  0);
+        } else if (desc_binding->descriptor_type ==
+                   SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE) {
+        }
       }
+      sets_used.insert(set);
     }
 
+    // Handle special vertex shaders stuff
+    if (code_view.stage == VK_SHADER_STAGE_VERTEX_BIT) {
+      uint32_t attrib_count;
+      result =
+          spvReflectEnumerateInputVariables(&module, &attrib_count, nullptr);
+      TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+      std::vector<SpvReflectInterfaceVariable *> attribs(attrib_count);
+      result = spvReflectEnumerateOutputVariables(&module, &attrib_count,
+                                                  attribs.data());
+      TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+
+      for (SpvReflectInterfaceVariable *attrib : attribs) {
+        uint32_t location = attrib->location;
+        SpvReflectTypeDescription *type = attrib->type_description;
+        TI_WARN("attrib {}:{}", location, type->type_name);
+      }
+    }
+  }
+
+  for (uint32_t set : sets_used) {
     VkDescriptorSetLayout layout =
         params.device->get_desc_set_layout(resource_binder_.get_set(set));
 
@@ -81,16 +129,26 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
   resource_binder_.lock_layout();
 }
 
-void VulkanPipeline::create_compute_pipeline(const Params &params) {
-  VkShaderModule shader_module = create_shader_module(device_, params.code);
+void VulkanPipeline::create_shader_stages(const Params &params) {
+  std::vector<VkPipelineShaderStageCreateInfo> shader_stages_;
 
-  VkPipelineShaderStageCreateInfo shader_stage_info{};
-  shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  shader_stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-  shader_stage_info.module = shader_module;
-#pragma message("Shader storage info: pName is hardcoded to \"main\"")
-  shader_stage_info.pName = "main";
+  for (auto &code_view : params.code) {
+    VkPipelineShaderStageCreateInfo &shader_stage_info =
+        shader_stages_.emplace_back();
 
+    VkShaderModule shader_module = create_shader_module(device_, code_view);
+
+    shader_stage_info.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    shader_stage_info.stage = code_view.stage;
+    shader_stage_info.module = shader_module;
+    shader_stage_info.pName = "main";
+
+    shader_modules_.push_back(shader_module);
+  }
+}
+
+void VulkanPipeline::create_pipeline_layout() {
   VkPipelineLayoutCreateInfo pipeline_layout_info{};
   pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipeline_layout_info.setLayoutCount = set_layouts_.size();
@@ -101,21 +159,117 @@ void VulkanPipeline::create_compute_pipeline(const Params &params) {
       vkCreatePipelineLayout(device_, &pipeline_layout_info,
                              kNoVkAllocCallbacks, &pipeline_layout_),
       "failed to create pipeline layout");
+}
 
+void VulkanPipeline::create_compute_pipeline(const Params &params) {
   VkComputePipelineCreateInfo pipeline_info{};
   pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-  pipeline_info.stage = shader_stage_info;
+  pipeline_info.stage = shader_stages_[0];
   pipeline_info.layout = pipeline_layout_;
   BAIL_ON_VK_BAD_RESULT(
       vkCreateComputePipelines(device_, /*pipelineCache=*/VK_NULL_HANDLE,
                                /*createInfoCount=*/1, &pipeline_info,
                                kNoVkAllocCallbacks, &pipeline_),
       "failed to create pipeline");
-
-  vkDestroyShaderModule(device_, shader_module, kNoVkAllocCallbacks);
 }
 
-VulkanResourceBinder ::~VulkanResourceBinder() {
+void VulkanPipeline::create_graphics_pipeline(
+    const RasterParams &raster_params) {
+  // Use dynamic viewport state
+  VkPipelineViewportStateCreateInfo viewport_state{};
+  viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+  viewport_state.viewportCount = 0;
+  viewport_state.pViewports = nullptr;
+  viewport_state.scissorCount = 0;
+  viewport_state.pScissors = nullptr;
+
+  VkPipelineInputAssemblyStateCreateInfo input_assembly{};
+  input_assembly.topology = raster_params.prim_topology;
+  input_assembly.primitiveRestartEnable = VK_FALSE;
+
+  VkPipelineRasterizationStateCreateInfo rasterizer{};
+  rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+  rasterizer.depthClampEnable = VK_FALSE;
+  rasterizer.rasterizerDiscardEnable = VK_FALSE;
+  rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+  rasterizer.lineWidth = 1.0f;
+  rasterizer.cullMode = raster_params.raster_cull_mode;
+  rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+  rasterizer.depthBiasEnable = VK_FALSE;
+
+  VkPipelineMultisampleStateCreateInfo multisampling{};
+  multisampling.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+  multisampling.sampleShadingEnable = VK_FALSE;
+  multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+  VkPipelineDepthStencilStateCreateInfo depth_stencil{};
+  depth_stencil.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+  depth_stencil.depthTestEnable = raster_params.depth_test;
+  depth_stencil.depthWriteEnable = raster_params.depth_write;
+  depth_stencil.depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
+  depth_stencil.depthBoundsTestEnable = VK_FALSE;
+  depth_stencil.stencilTestEnable = VK_FALSE;
+
+  // TODO: Add MRT & detect attachments from SPIR-V fragment shaders
+  VkPipelineColorBlendAttachmentState color_blend_attachment{};
+  color_blend_attachment.colorWriteMask =
+      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+      VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+  color_blend_attachment.blendEnable = VK_FALSE;
+
+  VkPipelineColorBlendStateCreateInfo color_blending{};
+  color_blending.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+  color_blending.logicOpEnable = VK_FALSE;
+  color_blending.logicOp = VK_LOGIC_OP_COPY;
+  color_blending.attachmentCount = 1;
+  color_blending.pAttachments = &color_blend_attachment;
+  color_blending.blendConstants[0] = 0.0f;
+  color_blending.blendConstants[1] = 0.0f;
+  color_blending.blendConstants[2] = 0.0f;
+  color_blending.blendConstants[3] = 0.0f;
+
+  std::vector<VkDynamicState> dynamic_state_enables = {
+      VK_DYNAMIC_STATE_LINE_WIDTH, VK_DYNAMIC_STATE_VIEWPORT,
+      VK_DYNAMIC_STATE_SCISSOR};
+
+  VkPipelineDynamicStateCreateInfo dynamic_state = {};
+  dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+  dynamic_state.pNext = NULL;
+  dynamic_state.pDynamicStates = dynamic_state_enables.data();
+  dynamic_state.dynamicStateCount = dynamic_state_enables.size();
+
+  VkGraphicsPipelineCreateInfo pipeline_info{};
+  pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+  pipeline_info.stageCount = shader_stages_.size();
+  pipeline_info.pStages = shader_stages_.data();
+  pipeline_info.pVertexInputState = nullptr;
+  //&vertex_input_info;
+  pipeline_info.pInputAssemblyState = &input_assembly;
+  pipeline_info.pViewportState = &viewport_state;
+  pipeline_info.pRasterizationState = &rasterizer;
+  pipeline_info.pMultisampleState = &multisampling;
+  pipeline_info.pDepthStencilState = &depth_stencil;
+  pipeline_info.pColorBlendState = &color_blending;
+  pipeline_info.pDynamicState = &dynamic_state;
+  pipeline_info.layout = pipeline_layout_;
+  pipeline_info.renderPass = renderpass_;
+  pipeline_info.subpass = 0;
+  pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+
+  BAIL_ON_VK_BAD_RESULT(
+      vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1, &pipeline_info,
+                                nullptr, &pipeline_),
+      "Graphics pipeline creation failed");
+}
+
+VulkanResourceBinder::VulkanResourceBinder(VkPipelineBindPoint bind_point)
+    : bind_point_(bind_point) {
+}
+
+VulkanResourceBinder::~VulkanResourceBinder() {
 }
 
 #define CHECK_SET_BINDINGS                                          \
@@ -425,8 +579,10 @@ std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(PipelineSourceDesc &src,
             src.stage == PipelineStageType::compute);
 
   VulkanPipeline::Params params;
-  params.code.data = (uint32_t *)src.data;
-  params.code.size = src.size;
+  params.code = {SpirvCodeView()};
+  params.code[0].data = (uint32_t *)src.data;
+  params.code[0].size = src.size;
+  params.code[0].stage = VK_SHADER_STAGE_COMPUTE_BIT;
   params.device = this;
   params.name = name;
 

@@ -23,6 +23,7 @@ class VulkanResourceBinder;
 struct SpirvCodeView {
   const uint32_t *data = nullptr;
   size_t size = 0;
+  VkShaderStageFlagBits stage = VK_SHADER_STAGE_COMPUTE_BIT;
 
   SpirvCodeView() = default;
 
@@ -68,6 +69,8 @@ class VulkanResourceBinder : public ResourceBinder {
     }
   };
 
+  VulkanResourceBinder(
+      VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_COMPUTE);
   ~VulkanResourceBinder();
   void rw_buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size);
   void rw_buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
@@ -91,6 +94,9 @@ class VulkanResourceBinder : public ResourceBinder {
  private:
   std::unordered_map<uint32_t, Set> sets_;
   bool layout_locked_{false};
+  VkPipelineBindPoint bind_point_;
+
+  // TODO: Graphics pipeline stuff
 };
 
 // VulkanPipeline maps to a VkPipeline, or a SPIR-V module (a GLSL compute
@@ -99,11 +105,19 @@ class VulkanPipeline : public Pipeline {
  public:
   struct Params {
     VulkanDevice *device{nullptr};
-    SpirvCodeView code;
+    std::vector<SpirvCodeView> code;
     std::string name{"Pipeline"};
   };
 
+  struct RasterParams {
+    VkPrimitiveTopology prim_topology{VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
+    VkCullModeFlagBits raster_cull_mode{VK_CULL_MODE_NONE};
+    bool depth_test{false};
+    bool depth_write{false};
+  };
+
   explicit VulkanPipeline(const Params &params);
+  explicit VulkanPipeline(const Params &params, const RasterParams &raster_params);
   ~VulkanPipeline();
 
   ResourceBinder *resource_binder() override {
@@ -122,7 +136,10 @@ class VulkanPipeline : public Pipeline {
 
  private:
   void create_descriptor_set_layout(const Params &params);
+  void create_shader_stages(const Params &params);
+  void create_pipeline_layout();
   void create_compute_pipeline(const Params &params);
+  void create_graphics_pipeline(const RasterParams &raster_params);
 
   static VkShaderModule create_shader_module(VkDevice device,
                                              const SpirvCodeView &code);
@@ -130,11 +147,15 @@ class VulkanPipeline : public Pipeline {
   VkDevice device_{VK_NULL_HANDLE};  // not owned
 
   std::string name_;
+  
+  std::vector<VkPipelineShaderStageCreateInfo> shader_stages_;
 
   VulkanResourceBinder resource_binder_;
   std::vector<VkDescriptorSetLayout> set_layouts_;
+  std::vector<VkShaderModule> shader_modules_;
   VkPipeline pipeline_{VK_NULL_HANDLE};
   VkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};
+  VkRenderPass renderpass_{VK_NULL_HANDLE};
 };
 
 class VulkanCommandList : public CommandList {

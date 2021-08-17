@@ -1,13 +1,15 @@
 #include "mesh.h"
 #include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
+#include "taichi/ui/backends/vulkan/renderer.h"
+
 #include "taichi/ui/utils/utils.h"
 
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
-Mesh::Mesh(AppContext *app_context) {
-  init_mesh(app_context, 3, 3);
+Mesh::Mesh(Renderer *renderer) {
+  init_mesh(renderer, 3, 3);
 }
 
 void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
@@ -18,7 +20,7 @@ void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
 
   MappedMemory mapped(
       app_context_->device(),
-      uniform_buffer_memories_[app_context_->swap_chain().curr_image_index()],
+      uniform_buffer_memories_[renderer_->swap_chain().curr_image_index()],
       sizeof(ubo));
   memcpy(mapped.data, &ubo, sizeof(ubo));
 }
@@ -36,7 +38,7 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
   {
     MappedMemory mapped(
         app_context_->device(),
-        storage_buffer_memories_[app_context_->swap_chain().curr_image_index()],
+        storage_buffer_memories_[renderer_->swap_chain().curr_image_index()],
         correct_ssbo_size);
     memcpy(mapped.data, scene.point_lights_.data(), correct_ssbo_size);
   }
@@ -46,7 +48,7 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
   update_ubo(info, scene);
 }
 
-void Mesh::init_mesh(AppContext *app_context,
+void Mesh::init_mesh(Renderer *renderer,
                      int vertices_count,
                      int indices_count) {
   RenderableConfig config = {
@@ -54,12 +56,12 @@ void Mesh::init_mesh(AppContext *app_context,
       indices_count,
       sizeof(UniformBufferObject),
       1,
-      app_context->config.package_path + "/shaders/Mesh_vk_vert.spv",
-      app_context->config.package_path + "/shaders/Mesh_vk_frag.spv",
+      renderer->app_context().config.package_path + "/shaders/Mesh_vk_vert.spv",
+      renderer->app_context().config.package_path + "/shaders/Mesh_vk_frag.spv",
       TopologyType::Triangles,
   };
 
-  Renderable::init(config, app_context);
+  Renderable::init(config, renderer);
   Renderable::init_render_resources();
 }
 
@@ -94,22 +96,22 @@ void Mesh::create_descriptor_set_layout() {
 
 void Mesh::create_descriptor_sets() {
   std::vector<VkDescriptorSetLayout> layouts(
-      app_context_->get_swap_chain_size(), descriptor_set_layout_);
+      renderer_->swap_chain().chain_size(), descriptor_set_layout_);
 
   VkDescriptorSetAllocateInfo alloc_info{};
   alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   alloc_info.descriptorPool = descriptor_pool_;
-  alloc_info.descriptorSetCount = app_context_->get_swap_chain_size();
+  alloc_info.descriptorSetCount = renderer_->swap_chain().chain_size();
   alloc_info.pSetLayouts = layouts.data();
 
-  descriptor_sets_.resize(app_context_->get_swap_chain_size());
+  descriptor_sets_.resize(renderer_->swap_chain().chain_size());
 
   if (vkAllocateDescriptorSets(app_context_->device(), &alloc_info,
                                descriptor_sets_.data()) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate descriptor sets!");
   }
 
-  for (size_t i = 0; i < app_context_->get_swap_chain_size(); i++) {
+  for (size_t i = 0; i < renderer_->swap_chain().chain_size(); i++) {
     VkDescriptorBufferInfo ubo_info{};
     ubo_info.buffer = uniform_buffers_[i];
     ubo_info.offset = 0;

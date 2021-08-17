@@ -50,8 +50,9 @@ std::vector<std::string> get_required_device_extensions() {
 }
 }  // namespace
 
-void AppContext::init(GLFWwindow *glfw_window) {
+void AppContext::init(GLFWwindow *glfw_window, const AppConfig &config) {
   glfw_window_ = glfw_window;
+  this->config = config;
   EmbeddedVulkanDevice::Params evd_params;
   evd_params.additional_instance_extensions =
       get_required_instance_extensions();
@@ -66,41 +67,18 @@ void AppContext::init(GLFWwindow *glfw_window) {
     return surface;
   };
   vulkan_device_ = std::make_unique<EmbeddedVulkanDevice>(evd_params);
-
-  swap_chain_.init(this, vulkan_device_->surface());
-
-  create_render_passes();
-
-  swap_chain_.create_framebuffers(render_pass_);
-}
-
-void AppContext::create_render_passes() {
-  create_render_pass(render_pass_, swap_chain_.swap_chain_image_format(),
-                     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, device(),
-                     physical_device());
-}
-
-void AppContext::cleanup_swap_chain() {
-  vkDestroyRenderPass(device(), render_pass_, nullptr);
-  swap_chain_.cleanup_swap_chain();
 }
 
 void AppContext::cleanup() {
-  swap_chain_.cleanup();
   vulkan_device_.reset();
-}
-
-void AppContext::recreate_swap_chain() {
-  create_render_passes();
-  swap_chain_.recreate_swap_chain();
-}
-
-int AppContext::get_swap_chain_size() {
-  return swap_chain_.chain_size();
 }
 
 VkInstance AppContext::instance() const {
   return vulkan_device_->instance();
+}
+
+VkSurfaceKHR AppContext::surface() const {
+  return vulkan_device_->surface();
 }
 
 VkDevice AppContext::device() const {
@@ -127,16 +105,6 @@ VkCommandPool AppContext::command_pool() const {
   return vulkan_device_->device()->command_pool();
 }
 
-VkRenderPass AppContext::render_pass() const {
-  return render_pass_;
-}
-
-const SwapChain &AppContext::swap_chain() const {
-  return swap_chain_;
-}
-SwapChain &AppContext::swap_chain() {
-  return swap_chain_;
-}
 GLFWwindow *AppContext::glfw_window() const {
   return glfw_window_;
 }

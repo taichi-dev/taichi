@@ -9,9 +9,9 @@ namespace vulkan {
 
 using namespace taichi::lang::vulkan;
 
-void SwapChain::init(class AppContext *app_context, VkSurfaceKHR surface) {
+void SwapChain::init(class AppContext *app_context) {
   app_context_ = app_context;
-  surface_ = surface;
+  surface_ = app_context_->surface();
   create_swap_chain();
   create_image_views();
   create_depth_resources();

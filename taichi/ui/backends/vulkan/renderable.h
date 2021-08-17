@@ -52,6 +52,7 @@ class Renderable {
  protected:
   RenderableConfig config_;
 
+  class Renderer *renderer_;
   AppContext *app_context_;
 
   VkPipelineLayout pipeline_layout_;
@@ -87,7 +88,7 @@ class Renderable {
   bool indexed_{false};
 
  protected:
-  void init(const RenderableConfig &config_, AppContext *app_context_);
+  void init(const RenderableConfig &config_, class Renderer *renderer_);
 
   void init_render_resources();
 

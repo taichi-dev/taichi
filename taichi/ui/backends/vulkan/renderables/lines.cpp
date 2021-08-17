@@ -1,5 +1,7 @@
 #include "lines.h"
 #include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
+#include "taichi/ui/backends/vulkan/renderer.h"
+
 #include "taichi/ui/utils/utils.h"
 
 #include "kernels.h"
@@ -33,12 +35,12 @@ void Lines::record_this_frame_commands(VkCommandBuffer command_buffer) {
 
   vkCmdBindDescriptorSets(
       command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout_, 0, 1,
-      &descriptor_sets_[app_context_->swap_chain().curr_image_index()], 0,
+      &descriptor_sets_[renderer_->swap_chain().curr_image_index()], 0,
       nullptr);
 
   vkCmdSetLineWidth(
       command_buffer,
-      curr_width_ * app_context_->swap_chain().swap_chain_extent().height);
+      curr_width_ * renderer_->swap_chain().swap_chain_extent().height);
 
   if (indexed_) {
     vkCmdDrawIndexed(command_buffer, config_.indices_count, 1, 0, 0, 0);
@@ -47,7 +49,7 @@ void Lines::record_this_frame_commands(VkCommandBuffer command_buffer) {
   }
 }
 
-void Lines::init_lines(AppContext *app_context,
+void Lines::init_lines(Renderer *renderer,
                        int vertices_count,
                        int indices_count) {
   RenderableConfig config = {
@@ -55,17 +57,19 @@ void Lines::init_lines(AppContext *app_context,
       indices_count,
       sizeof(UniformBufferObject),
       0,
-      app_context->config.package_path + "/shaders/Lines_vk_vert.spv",
-      app_context->config.package_path + "/shaders/Lines_vk_frag.spv",
+      renderer->app_context().config.package_path +
+          "/shaders/Lines_vk_vert.spv",
+      renderer->app_context().config.package_path +
+          "/shaders/Lines_vk_frag.spv",
       TopologyType::Lines,
   };
 
-  Renderable::init(config, app_context);
+  Renderable::init(config, renderer);
   Renderable::init_render_resources();
 }
 
-Lines::Lines(AppContext *app_context) {
-  init_lines(app_context, 4, 6);
+Lines::Lines(Renderer *renderer) {
+  init_lines(renderer, 4, 6);
 }
 
 void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
@@ -73,7 +77,7 @@ void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
 
   MappedMemory mapped(
       app_context_->device(),
-      uniform_buffer_memories_[app_context_->swap_chain().curr_image_index()],
+      uniform_buffer_memories_[renderer_->swap_chain().curr_image_index()],
       sizeof(ubo));
   memcpy(mapped.data, &ubo, sizeof(ubo));
 }
@@ -102,22 +106,22 @@ void Lines::create_descriptor_set_layout() {
 
 void Lines::create_descriptor_sets() {
   std::vector<VkDescriptorSetLayout> layouts(
-      app_context_->get_swap_chain_size(), descriptor_set_layout_);
+      renderer_->swap_chain().chain_size(), descriptor_set_layout_);
 
   VkDescriptorSetAllocateInfo alloc_info{};
   alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   alloc_info.descriptorPool = descriptor_pool_;
-  alloc_info.descriptorSetCount = app_context_->get_swap_chain_size();
+  alloc_info.descriptorSetCount = renderer_->swap_chain().chain_size();
   alloc_info.pSetLayouts = layouts.data();
 
-  descriptor_sets_.resize(app_context_->get_swap_chain_size());
+  descriptor_sets_.resize(renderer_->swap_chain().chain_size());
 
   if (vkAllocateDescriptorSets(app_context_->device(), &alloc_info,
                                descriptor_sets_.data()) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate descriptor sets!");
   }
 
-  for (size_t i = 0; i < app_context_->get_swap_chain_size(); i++) {
+  for (size_t i = 0; i < renderer_->swap_chain().chain_size(); i++) {
     VkDescriptorBufferInfo buffer_info{};
     buffer_info.buffer = uniform_buffers_[i];
     buffer_info.offset = 0;

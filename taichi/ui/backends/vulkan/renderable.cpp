@@ -2,8 +2,8 @@
 #include "taichi/ui/utils/utils.h"
 
 #include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
-#include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
-#include "renderables/kernels.h"
+#include "taichi/ui/backends/vulkan/renderer.h"
+#include "taichi/ui/backends/vulkan/renderables/kernels.h"
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -11,9 +11,11 @@ namespace vulkan {
 
 using namespace taichi::lang;
 
-void Renderable::init(const RenderableConfig &config, AppContext *app_context) {
+void Renderable::init(const RenderableConfig &config,
+                      class Renderer *renderer) {
   config_ = config;
-  app_context_ = app_context;
+  renderer_ = renderer;
+  app_context_ = &renderer->app_context();
 }
 
 void Renderable::init_render_resources() {
@@ -149,7 +151,7 @@ void Renderable::update_data(const RenderableInfo &info) {
 }
 
 void Renderable::create_descriptor_pool() {
-  int swap_chain_size = app_context_->swap_chain().chain_size();
+  int swap_chain_size = renderer_->swap_chain().chain_size();
   std::array<VkDescriptorPoolSize, 3> pool_sizes{};
   pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
   pool_sizes[0].descriptorCount = static_cast<uint32_t>(swap_chain_size);
@@ -228,8 +230,8 @@ void Renderable::create_graphics_pipeline() {
   VkViewport viewport{};
   viewport.x = 0.0f;
   viewport.y = 0.0f;
-  viewport.width = app_context_->swap_chain().swap_chain_extent().width;
-  viewport.height = app_context_->swap_chain().swap_chain_extent().height;
+  viewport.width = renderer_->swap_chain().swap_chain_extent().width;
+  viewport.height = renderer_->swap_chain().swap_chain_extent().height;
   viewport.minDepth = 0.0f;
   viewport.maxDepth = 1.0f;
 
@@ -318,7 +320,7 @@ void Renderable::create_graphics_pipeline() {
   pipeline_info.pColorBlendState = &color_blending;
   pipeline_info.pDynamicState = &dynamic_state;
   pipeline_info.layout = pipeline_layout_;
-  pipeline_info.renderPass = app_context_->render_pass();
+  pipeline_info.renderPass = renderer_->render_passes()[0];
 
   pipeline_info.subpass = 0;
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
@@ -374,10 +376,11 @@ void Renderable::create_uniform_buffers() {
     return;
   }
 
-  uniform_buffers_.resize(app_context_->get_swap_chain_size());
-  uniform_buffer_memories_.resize(app_context_->get_swap_chain_size());
+  size_t chain_size = renderer_->swap_chain().chain_size();
+  uniform_buffers_.resize(chain_size);
+  uniform_buffer_memories_.resize(chain_size);
 
-  for (size_t i = 0; i < app_context_->get_swap_chain_size(); i++) {
+  for (size_t i = 0; i < chain_size; i++) {
     create_buffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -392,10 +395,11 @@ void Renderable::create_storage_buffers() {
     return;
   }
 
-  storage_buffers_.resize(app_context_->get_swap_chain_size());
-  storage_buffer_memories_.resize(app_context_->get_swap_chain_size());
+  size_t chain_size = renderer_->swap_chain().chain_size();
+  storage_buffers_.resize(chain_size);
+  storage_buffer_memories_.resize(chain_size);
 
-  for (size_t i = 0; i < app_context_->get_swap_chain_size(); i++) {
+  for (size_t i = 0; i < chain_size; i++) {
     create_buffer(buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -471,7 +475,7 @@ void Renderable::record_this_frame_commands(VkCommandBuffer command_buffer) {
 
   vkCmdBindDescriptorSets(
       command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout_, 0, 1,
-      &descriptor_sets_[app_context_->swap_chain().curr_image_index()], 0,
+      &descriptor_sets_[renderer_->swap_chain().curr_image_index()], 0,
       nullptr);
 
   if (indexed_) {

@@ -4,15 +4,14 @@ TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
-Window::Window(AppConfig config) : WindowBase(config) {
-  app_context_.config = config;
-  init();
+Window::Window(const AppConfig &config) : WindowBase(config) {
+  init(config);
 }
 
-void Window::init() {
+void Window::init(const AppConfig &config) {
   init_window();
-  init_vulkan();
-  gui_.init(&app_context_, glfw_window_);
+  init_vulkan(config);
+  gui_.init(renderer_.get(), glfw_window_);
   prepare_for_next_frame();
 }
 
@@ -24,7 +23,6 @@ void Window::show() {
 }
 
 void Window::prepare_for_next_frame() {
-  app_context_.swap_chain().update_image_index();
   renderer_->prepare_for_next_frame();
   gui_.prepare_for_next_frame();
 }
@@ -49,15 +47,14 @@ void Window::framebuffer_resize_callback(GLFWwindow *glfw_window_,
   window->recreate_swap_chain();
 }
 
-void Window::init_vulkan() {
-  app_context_.init(glfw_window_);
-  renderer_ = std::make_unique<Renderer>(&app_context_);
+void Window::init_vulkan(const AppConfig &config) {
+  renderer_ = std::make_unique<Renderer>();
+  renderer_->init(glfw_window_, config);
   canvas_ = std::make_unique<Canvas>(renderer_.get());
 }
 
 void Window::cleanup_swap_chain() {
   renderer_->cleanup_swap_chain();
-  app_context_.cleanup_swap_chain();
 }
 
 void Window::cleanup() {
@@ -65,8 +62,6 @@ void Window::cleanup() {
   cleanup_swap_chain();
 
   renderer_->cleanup();
-
-  app_context_.cleanup();
 
   glfwTerminate();
 }
@@ -78,14 +73,12 @@ void Window::recreate_swap_chain() {
     glfwGetFramebufferSize(glfw_window_, &width, &height);
     glfwWaitEvents();
   }
-  app_context_.config.width = width;
-  app_context_.config.height = height;
+  renderer_->app_context().config.width = width;
+  renderer_->app_context().config.height = height;
 
-  vkDeviceWaitIdle(app_context_.device());
+  vkDeviceWaitIdle(renderer_->app_context().device());
 
   cleanup_swap_chain();
-
-  app_context_.recreate_swap_chain();
 
   renderer_->recreate_swap_chain();
 }
@@ -95,10 +88,7 @@ void Window::draw_frame() {
 }
 
 void Window::present_frame() {
-  app_context_.swap_chain().present_frame();
-  if (app_context_.swap_chain().requires_recreate()) {
-    recreate_swap_chain();
-  }
+  renderer_->present_frame();
 }
 
 Window::~Window() {

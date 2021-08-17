@@ -18,7 +18,7 @@ namespace vulkan {
 
 class Gui final : public GuiBase {
  public:
-  void init(AppContext *app_context_, GLFWwindow *window);
+  void init(class Renderer *renderer, GLFWwindow *window);
 
   virtual void begin(std::string name,
                      float x,
@@ -45,6 +45,7 @@ class Gui final : public GuiBase {
 
  private:
   AppContext *app_context_;
+  class Renderer *renderer_;
 
   VkDescriptorPool descriptor_pool_;
 

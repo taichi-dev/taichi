@@ -10,20 +10,34 @@ namespace vulkan {
 
 using namespace taichi::lang;
 
-Renderer::Renderer(AppContext *app_context) : app_context_(app_context) {
+void Renderer::init(GLFWwindow *window, const AppConfig &config) {
+  app_context_.init(window, config);
+  swap_chain_.init(&app_context_);
+  create_render_passes();
+  swap_chain_.create_framebuffers(render_passes_[0]);
+
   create_semaphores();
   import_semaphores();
 
-  cached_command_buffers_.resize(app_context_->swap_chain().chain_size());
-  for (int i = 0; i < app_context_->swap_chain().chain_size(); ++i) {
+  cached_command_buffers_.resize(swap_chain_.chain_size());
+  for (int i = 0; i < swap_chain_.chain_size(); ++i) {
     cached_command_buffers_[i] = VK_NULL_HANDLE;
   }
+}
+
+void Renderer::create_render_passes() {
+  // for now we only have one pass.
+  VkRenderPass pass;
+  create_render_pass(pass, swap_chain_.swap_chain_image_format(),
+                     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, app_context_.device(),
+                     app_context_.physical_device());
+  render_passes_.push_back(pass);
 }
 
 void Renderer::clear_command_buffer_cache() {
   for (int i = 0; i < cached_command_buffers_.size(); ++i) {
     if (cached_command_buffers_[i] != VK_NULL_HANDLE) {
-      vkFreeCommandBuffers(app_context_->device(), app_context_->command_pool(),
+      vkFreeCommandBuffers(app_context_.device(), app_context_.command_pool(),
                            1, &cached_command_buffers_[i]);
     }
     cached_command_buffers_[i] = VK_NULL_HANDLE;
@@ -31,24 +45,24 @@ void Renderer::clear_command_buffer_cache() {
 }
 
 void Renderer::create_semaphores() {
-  create_semaphore(prev_draw_finished_vk_, app_context_->device());
-  create_semaphore(this_draw_data_ready_vk_, app_context_->device());
+  create_semaphore(prev_draw_finished_vk_, app_context_.device());
+  create_semaphore(this_draw_data_ready_vk_, app_context_.device());
 }
 
 template <typename T>
-std::unique_ptr<Renderable> get_new_renderable(AppContext *ctx) {
-  return std::unique_ptr<Renderable>{new T(ctx)};
+std::unique_ptr<Renderable> get_new_renderable(Renderer *r) {
+  return std::unique_ptr<Renderable>{new T(r)};
 }
 
 template <typename T>
 T *Renderer::get_renderable_of_type() {
   if (next_renderable_ >= renderables_.size()) {
-    renderables_.push_back(get_new_renderable<T>(app_context_));
+    renderables_.push_back(get_new_renderable<T>(this));
     clear_command_buffer_cache();
   } else if (dynamic_cast<T *>(renderables_[next_renderable_].get()) ==
              nullptr) {
     renderables_.insert(renderables_.begin() + next_renderable_,
-                        get_new_renderable<T>(app_context_));
+                        get_new_renderable<T>(this));
     clear_command_buffer_cache();
   }
 
@@ -99,79 +113,85 @@ void Renderer::particles(const ParticlesInfo &info, Scene *scene) {
 }
 
 void Renderer::scene(Scene *scene) {
-  
-    if (scene->point_lights_.size() == 0) {
-        printf("warning, there are no light sources in the scene.\n");
-    }
-    float aspect_ratio =
-        app_context_->swap_chain().swap_chain_extent().width /
-        (float)app_context_->swap_chain().swap_chain_extent().height;
-    scene->update_ubo(aspect_ratio);
-    for (int i = 0; i < scene->mesh_infos_.size(); ++i) {
-        mesh(scene->mesh_infos_[i], scene);
-    }
-    for (int i = 0; i < scene->particles_infos_.size(); ++i) {
-        particles(scene->particles_infos_[i], scene);
-    }
-    scene->mesh_infos_.clear();
-    scene->particles_infos_.clear();
-    scene->point_lights_.clear();
- 
+  if (scene->point_lights_.size() == 0) {
+    printf("warning, there are no light sources in the scene.\n");
+  }
+  float aspect_ratio = swap_chain_.swap_chain_extent().width /
+                       (float)swap_chain_.swap_chain_extent().height;
+  scene->update_ubo(aspect_ratio);
+  for (int i = 0; i < scene->mesh_infos_.size(); ++i) {
+    mesh(scene->mesh_infos_[i], scene);
+  }
+  for (int i = 0; i < scene->particles_infos_.size(); ++i) {
+    particles(scene->particles_infos_[i], scene);
+  }
+  scene->mesh_infos_.clear();
+  scene->particles_infos_.clear();
+  scene->point_lights_.clear();
 }
 
 void Renderer::cleanup() {
   for (auto &renderable : renderables_) {
     renderable->cleanup();
   }
-  vkDestroySemaphore(app_context_->device(), prev_draw_finished_vk_, nullptr);
-  vkDestroySemaphore(app_context_->device(), this_draw_data_ready_vk_, nullptr);
+  vkDestroySemaphore(app_context_.device(), prev_draw_finished_vk_, nullptr);
+  vkDestroySemaphore(app_context_.device(), this_draw_data_ready_vk_, nullptr);
+  swap_chain_.cleanup();
+  app_context_.cleanup();
 }
 
 void Renderer::cleanup_swap_chain() {
+  for (VkRenderPass pass : render_passes_) {
+    vkDestroyRenderPass(app_context_.device(), pass, nullptr);
+  }
+  render_passes_.clear();
+
   clear_command_buffer_cache();
   for (auto &renderable : renderables_) {
     renderable->cleanup_swap_chain();
   }
+  swap_chain_.cleanup_swap_chain();
 }
 
 void Renderer::recreate_swap_chain() {
+  create_render_passes();
+  swap_chain_.recreate_swap_chain();
   for (auto &renderable : renderables_) {
     renderable->recreate_swap_chain();
   }
 }
 
 void Renderer::import_semaphores() {
-  if (app_context_->config.ti_arch == Arch::cuda) {
+  if (app_context_.config.ti_arch == Arch::cuda) {
     prev_draw_finished_cuda_ = (uint64_t)cuda_vk_import_semaphore(
-        prev_draw_finished_vk_, app_context_->device());
+        prev_draw_finished_vk_, app_context_.device());
     this_draw_data_ready_cuda_ = (uint64_t)cuda_vk_import_semaphore(
-        this_draw_data_ready_vk_, app_context_->device());
+        this_draw_data_ready_vk_, app_context_.device());
 
     cuda_vk_semaphore_signal((CUexternalSemaphore)prev_draw_finished_cuda_);
   }
 }
 
 void Renderer::prepare_for_next_frame() {
+  swap_chain_.update_image_index();
   next_renderable_ = 0;
-  if (app_context_->config.ti_arch == Arch::cuda) {
+  if (app_context_.config.ti_arch == Arch::cuda) {
     cuda_vk_semaphore_wait((CUexternalSemaphore)prev_draw_finished_cuda_);
   }
 }
 
 void Renderer::draw_frame(Gui *gui) {
-  uint32_t image_index = app_context_->swap_chain().curr_image_index();
+  uint32_t image_index = swap_chain_.curr_image_index();
 
-  if (app_context_->swap_chain().images_in_flight()[image_index] !=
-      VK_NULL_HANDLE) {
-    vkWaitForFences(app_context_->device(), 1,
-                    &app_context_->swap_chain().images_in_flight()[image_index],
-                    VK_TRUE, UINT64_MAX);
+  if (swap_chain_.images_in_flight()[image_index] != VK_NULL_HANDLE) {
+    vkWaitForFences(app_context_.device(), 1,
+                    &swap_chain_.images_in_flight()[image_index], VK_TRUE,
+                    UINT64_MAX);
   }
-  app_context_->swap_chain().images_in_flight()[image_index] =
-      app_context_->swap_chain()
-          .in_flight_scenes()[app_context_->swap_chain().current_frame()];
+  swap_chain_.images_in_flight()[image_index] =
+      swap_chain_.in_flight_scenes()[swap_chain_.current_frame()];
 
-  if (app_context_->config.ti_arch == Arch::cuda) {
+  if (app_context_.config.ti_arch == Arch::cuda) {
     cuda_vk_semaphore_signal((CUexternalSemaphore)this_draw_data_ready_cuda_);
   }
 
@@ -184,8 +204,8 @@ void Renderer::draw_frame(Gui *gui) {
   if (cached_command_buffers_[image_index] != VK_NULL_HANDLE) {
     command_buffer = cached_command_buffers_[image_index];
   } else {
-    command_buffer = create_new_command_buffer(app_context_->command_pool(),
-                                               app_context_->device());
+    command_buffer = create_new_command_buffer(app_context_.command_pool(),
+                                               app_context_.device());
 
     VkCommandBufferBeginInfo begin_info = {};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -197,12 +217,11 @@ void Renderer::draw_frame(Gui *gui) {
 
     VkRenderPassBeginInfo render_pass_info{};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    render_pass_info.renderPass = app_context_->render_pass();
+    render_pass_info.renderPass = render_passes_[0];
     render_pass_info.framebuffer =
-        app_context_->swap_chain().swap_chain_framebuffers()[image_index];
+        swap_chain_.swap_chain_framebuffers()[image_index];
     render_pass_info.renderArea.offset = {0, 0};
-    render_pass_info.renderArea.extent =
-        app_context_->swap_chain().swap_chain_extent();
+    render_pass_info.renderArea.extent = swap_chain_.swap_chain_extent();
 
     std::array<VkClearValue, 2> clear_values{};
     clear_values[0].color = {
@@ -228,15 +247,13 @@ void Renderer::draw_frame(Gui *gui) {
   }
 
   std::vector<VkSemaphore> wait_semaphores = {
-      app_context_->swap_chain().image_available_semaphores()
-          [app_context_->swap_chain().current_frame()]};
+      swap_chain_.image_available_semaphores()[swap_chain_.current_frame()]};
   std::vector<VkPipelineStageFlags> wait_stages = {
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
   std::vector<VkSemaphore> signal_semaphores = {
-      app_context_->swap_chain().render_finished_semaphores()
-          [app_context_->swap_chain().current_frame()]};
+      swap_chain_.render_finished_semaphores()[swap_chain_.current_frame()]};
 
-  if (app_context_->config.ti_arch == Arch::cuda) {
+  if (app_context_.config.ti_arch == Arch::cuda) {
     wait_semaphores.push_back(this_draw_data_ready_vk_);
     wait_stages.push_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
     signal_semaphores.push_back(prev_draw_finished_vk_);
@@ -255,16 +272,41 @@ void Renderer::draw_frame(Gui *gui) {
   submit_info.signalSemaphoreCount = signal_semaphores.size();
   submit_info.pSignalSemaphores = signal_semaphores.data();
 
-  vkResetFences(
-      app_context_->device(), 1,
-      &app_context_->swap_chain()
-           .in_flight_scenes()[app_context_->swap_chain().current_frame()]);
+  vkResetFences(app_context_.device(), 1,
+                &swap_chain_.in_flight_scenes()[swap_chain_.current_frame()]);
 
-  if (vkQueueSubmit(app_context_->graphics_queue(), 1, &submit_info,
-                    app_context_->swap_chain().in_flight_scenes()
-                        [app_context_->swap_chain().current_frame()]) !=
+  if (vkQueueSubmit(
+          app_context_.graphics_queue(), 1, &submit_info,
+          swap_chain_.in_flight_scenes()[swap_chain_.current_frame()]) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to submit draw command buffer!");
+  }
+}
+
+const std::vector<VkRenderPass> &Renderer::render_passes() const {
+  return render_passes_;
+}
+
+const AppContext &Renderer::app_context() const {
+  return app_context_;
+}
+
+AppContext &Renderer::app_context() {
+  return app_context_;
+}
+
+const SwapChain &Renderer::swap_chain() const {
+  return swap_chain_;
+}
+
+SwapChain &Renderer::swap_chain() {
+  return swap_chain_;
+}
+
+void Renderer::present_frame() {
+  swap_chain_.present_frame();
+  if (swap_chain_.requires_recreate()) {
+    recreate_swap_chain();
   }
 }
 

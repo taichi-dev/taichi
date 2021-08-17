@@ -1,5 +1,6 @@
 #include "gui.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
+#include "taichi/ui/backends/vulkan/renderer.h"
 
 using namespace taichi::lang::vulkan;
 
@@ -13,8 +14,9 @@ PFN_vkVoidFunction load_vk_function_for_gui(const char *name, void *userData) {
   return result;
 }
 
-void Gui::init(AppContext *app_context, GLFWwindow *window) {
-  app_context_ = app_context;
+void Gui::init(Renderer *renderer, GLFWwindow *window) {
+  renderer_ = renderer;
+  app_context_ = &renderer->app_context();
 
   create_descriptor_pool();
 
@@ -43,9 +45,9 @@ void Gui::init(AppContext *app_context, GLFWwindow *window) {
   init_info.DescriptorPool = descriptor_pool_;
   init_info.Allocator = VK_NULL_HANDLE;
   ;
-  init_info.MinImageCount = app_context_->swap_chain().chain_size();
-  init_info.ImageCount = app_context_->swap_chain().chain_size();
-  ImGui_ImplVulkan_Init(&init_info, app_context_->render_pass());
+  init_info.MinImageCount = renderer_->swap_chain().chain_size();
+  init_info.ImageCount = renderer_->swap_chain().chain_size();
+  ImGui_ImplVulkan_Init(&init_info, renderer_->render_passes()[0]);
 
   // Load Fonts
   // - If no fonts are loaded, dear imgui will use the default font. You can
@@ -75,7 +77,7 @@ void Gui::init(AppContext *app_context, GLFWwindow *window) {
   {
     // Use any command queue
     VkCommandBuffer command_buffer = begin_single_time_commands(
-        app_context->command_pool(), app_context->device());
+        app_context_->command_pool(), app_context_->device());
 
     ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
 
@@ -84,11 +86,11 @@ void Gui::init(AppContext *app_context, GLFWwindow *window) {
     end_info.commandBufferCount = 1;
     end_info.pCommandBuffers = &command_buffer;
     vkEndCommandBuffer(command_buffer);
-    vkQueueSubmit(app_context->graphics_queue(), 1, &end_info, VK_NULL_HANDLE);
+    vkQueueSubmit(app_context_->graphics_queue(), 1, &end_info, VK_NULL_HANDLE);
 
-    vkDeviceWaitIdle(app_context->device());
-    vkFreeCommandBuffers(app_context->device(), app_context->command_pool(), 1,
-                         &command_buffer);
+    vkDeviceWaitIdle(app_context_->device());
+    vkFreeCommandBuffers(app_context_->device(), app_context_->command_pool(),
+                         1, &command_buffer);
     ImGui_ImplVulkan_DestroyFontUploadObjects();
   }
 }
@@ -124,10 +126,10 @@ void Gui::prepare_for_next_frame() {
 }
 
 float Gui::abs_x(float x) {
-  return x * app_context_->swap_chain().swap_chain_extent().width;
+  return x * renderer_->swap_chain().swap_chain_extent().width;
 }
 float Gui::abs_y(float y) {
-  return y * app_context_->swap_chain().swap_chain_extent().height;
+  return y * renderer_->swap_chain().swap_chain_extent().height;
 }
 
 void Gui::begin(std::string name, float x, float y, float width, float height) {

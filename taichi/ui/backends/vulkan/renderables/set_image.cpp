@@ -2,6 +2,7 @@
 #include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
 #include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
 #include "taichi/ui/utils/utils.h"
+#include "taichi/ui/backends/vulkan/renderer.h"
 
 #include "kernels.h"
 
@@ -29,7 +30,7 @@ void SetImage::update_data(const SetImageInfo &info) {
   if (new_width != width || new_height != height) {
     cleanup_swap_chain();
     cleanup();
-    init_set_image(app_context_, new_width, new_height);
+    init_set_image(renderer_, new_width, new_height);
   }
 
   int actual_width = next_power_of_2(width);
@@ -85,11 +86,11 @@ void SetImage::update_data(const SetImageInfo &info) {
   }
 }
 
-SetImage::SetImage(AppContext *app_context) {
-  init_set_image(app_context, 1, 1);
+SetImage::SetImage(Renderer *renderer) {
+  init_set_image(renderer, 1, 1);
 }
 
-void SetImage::init_set_image(AppContext *app_context,
+void SetImage::init_set_image(Renderer *renderer,
                               int img_width,
                               int img_height) {
   RenderableConfig config = {
@@ -97,12 +98,14 @@ void SetImage::init_set_image(AppContext *app_context,
       6,
       0,
       0,
-      app_context->config.package_path + "/shaders/SetImage_vk_vert.spv",
-      app_context->config.package_path + "/shaders/SetImage_vk_frag.spv",
+      renderer->app_context().config.package_path +
+          "/shaders/SetImage_vk_vert.spv",
+      renderer->app_context().config.package_path +
+          "/shaders/SetImage_vk_frag.spv",
       TopologyType::Triangles,
   };
 
-  Renderable::init(config, app_context);
+  Renderable::init(config, renderer);
 
   width = img_width;
   height = img_height;
@@ -254,22 +257,22 @@ void SetImage::create_descriptor_set_layout() {
 
 void SetImage::create_descriptor_sets() {
   std::vector<VkDescriptorSetLayout> layouts(
-      app_context_->get_swap_chain_size(), descriptor_set_layout_);
+      renderer_->swap_chain().chain_size(), descriptor_set_layout_);
 
   VkDescriptorSetAllocateInfo alloc_info{};
   alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   alloc_info.descriptorPool = descriptor_pool_;
-  alloc_info.descriptorSetCount = app_context_->get_swap_chain_size();
+  alloc_info.descriptorSetCount = renderer_->swap_chain().chain_size();
   alloc_info.pSetLayouts = layouts.data();
 
-  descriptor_sets_.resize(app_context_->get_swap_chain_size());
+  descriptor_sets_.resize(renderer_->swap_chain().chain_size());
 
   if (vkAllocateDescriptorSets(app_context_->device(), &alloc_info,
                                descriptor_sets_.data()) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate descriptor sets!");
   }
 
-  for (size_t i = 0; i < app_context_->get_swap_chain_size(); i++) {
+  for (size_t i = 0; i < renderer_->swap_chain().chain_size(); i++) {
     VkDescriptorImageInfo image_info{};
     image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     image_info.imageView = texture_image_view_;

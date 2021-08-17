@@ -35,29 +35,31 @@ TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
-class Renderer{
-public:
-  Renderer(AppContext *app_context);
+class Renderer {
+ public:
+  void init(GLFWwindow *window, const AppConfig &config);
 
   void prepare_for_next_frame();
 
-  void set_background_color(const glm::vec3 &color) ;
+  void set_background_color(const glm::vec3 &color);
 
-  void set_image(const SetImageInfo &info) ;
+  void set_image(const SetImageInfo &info);
 
-  void triangles(const TrianglesInfo &info) ;
+  void triangles(const TrianglesInfo &info);
 
-  void circles(const CirclesInfo &info) ;
+  void circles(const CirclesInfo &info);
 
-  void lines(const LinesInfo &info) ;
+  void lines(const LinesInfo &info);
 
   void mesh(const MeshInfo &info, Scene *scene);
 
   void particles(const ParticlesInfo &info, Scene *scene);
 
-  void scene(Scene  *scene ) ;
+  void scene(Scene *scene);
 
   void draw_frame(Gui *gui);
+
+  void present_frame();
 
   void cleanup();
 
@@ -65,13 +67,22 @@ public:
 
   void recreate_swap_chain();
 
+  void create_render_passes();
+
+  const std::vector<VkRenderPass> &render_passes() const;
+  const AppContext &app_context() const;
+  AppContext &app_context();
+  const SwapChain &swap_chain() const;
+  SwapChain &swap_chain();
+
  private:
   glm::vec3 background_color_ = glm::vec3(0.f, 0.f, 0.f);
 
   std::vector<std::unique_ptr<Renderable>> renderables_;
   int next_renderable_;
 
-  AppContext *app_context_;
+  SwapChain swap_chain_;
+  AppContext app_context_;
 
   VkSemaphore prev_draw_finished_vk_;
   VkSemaphore this_draw_data_ready_vk_;
@@ -80,6 +91,7 @@ public:
   uint64_t this_draw_data_ready_cuda_;
 
   std::vector<VkCommandBuffer> cached_command_buffers_;
+  std::vector<VkRenderPass> render_passes_;
 
  private:
   void clear_command_buffer_cache();
@@ -91,6 +103,6 @@ public:
   T *get_renderable_of_type();
 };
 
-} //vulkan
+}  // namespace vulkan
 
 TI_UI_NAMESPACE_END

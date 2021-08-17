@@ -4,7 +4,7 @@ namespace vulkan {
 
 class SwapChain {
  public:
-  void init(class AppContext *app_context, VkSurfaceKHR surface);
+  void init(class AppContext *app_context);
   void update_image_index();
   void cleanup_swap_chain();
   void cleanup();

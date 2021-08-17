@@ -28,7 +28,7 @@ namespace vulkan {
 
 class Window final : public WindowBase {
  public:
-  Window(AppConfig config);
+  Window(const AppConfig &config);
 
   virtual void show() override;
   virtual CanvasBase *get_canvas() override;
@@ -38,16 +38,15 @@ class Window final : public WindowBase {
 
  private:
   std::unique_ptr<Canvas> canvas_;
-  AppContext app_context_;
   Gui gui_;
   std::unique_ptr<Renderer> renderer_;
 
  private:
-  void init();
+  void init(const AppConfig &config);
+
+  void init_vulkan(const AppConfig &config);
 
   void init_window();
-
-  void init_vulkan();
 
   void prepare_for_next_frame();
 

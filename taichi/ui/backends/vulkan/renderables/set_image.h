@@ -29,7 +29,7 @@ class SetImage final : public Renderable {
  public:
   int width, height;
 
-  SetImage(AppContext *app_context);
+  SetImage(class Renderer *renderer);
 
   void update_data(const SetImageInfo &info);
 
@@ -47,7 +47,7 @@ class SetImage final : public Renderable {
   uint64_t texture_surface_;
 
  private:
-  void init_set_image(AppContext *app_context, int img_width, int img_height);
+  void init_set_image(class Renderer *renderer, int img_width, int img_height);
 
   virtual void create_descriptor_set_layout() override;
 

@@ -141,8 +141,7 @@ class VulkanPipeline : public Pipeline {
 
 class VulkanCommandList : public CommandList {
  public:
-  VulkanCommandList(VulkanDevice *ti_device,
-                    VkCommandBuffer buffer);
+  VulkanCommandList(VulkanDevice *ti_device, VkCommandBuffer buffer);
   ~VulkanCommandList();
 
   void bind_pipeline(Pipeline *p) override;

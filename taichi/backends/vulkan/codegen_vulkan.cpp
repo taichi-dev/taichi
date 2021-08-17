@@ -1285,8 +1285,7 @@ class KernelCodegen {
     // TODO: Profile these passes, remove ones we don't need to speed up JIT
     // ref:
     // https://github.com/KhronosGroup/SPIRV-Tools/blob/f9893c4549406eb9643e0eb05a521ab70a320fff/source/opt/optimizer.cpp
-    spirv_opt_
-        ->RegisterPass(spvtools::CreateWrapOpKillPass())
+    spirv_opt_->RegisterPass(spvtools::CreateWrapOpKillPass())
         .RegisterPass(spvtools::CreateMergeReturnPass())
         .RegisterPass(spvtools::CreateEliminateDeadFunctionsPass())
         .RegisterPass(spvtools::CreateInlineExhaustivePass())

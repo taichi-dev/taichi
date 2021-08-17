@@ -71,7 +71,7 @@ void AppContext::init(GLFWwindow *glfw_window) {
 
   create_render_passes();
 
-  swap_chain_.create_framebuffers();
+  swap_chain_.create_framebuffers(render_pass_);
 }
 
 void AppContext::create_render_passes() {

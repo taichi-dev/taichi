@@ -65,7 +65,7 @@ void SwapChain::recreate_swap_chain() {
   create_image_views();
 
   create_depth_resources();
-  create_framebuffers();
+  create_framebuffers(render_pass_);
 
   images_in_flight_.resize(swap_chain_images_.size(), VK_NULL_HANDLE);
   requires_recreate_ = false;
@@ -140,7 +140,8 @@ void SwapChain::create_image_views() {
   }
 }
 
-void SwapChain::create_framebuffers() {
+void SwapChain::create_framebuffers(VkRenderPass render_pass) {
+  render_pass_ = render_pass;
   swap_chain_framebuffers_.resize(swap_chain_image_views_.size());
 
   for (size_t i = 0; i < swap_chain_image_views_.size(); i++) {
@@ -149,7 +150,7 @@ void SwapChain::create_framebuffers() {
 
     VkFramebufferCreateInfo framebuffer_info{};
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebuffer_info.renderPass = app_context_->render_pass();
+    framebuffer_info.renderPass = render_pass;
     framebuffer_info.attachmentCount =
         static_cast<uint32_t>(attachments.size());
     framebuffer_info.pAttachments = attachments.data();

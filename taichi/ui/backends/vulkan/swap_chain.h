@@ -14,7 +14,7 @@ class SwapChain {
 
   void create_image_views();
 
-  void create_framebuffers();
+  void create_framebuffers(VkRenderPass render_pass);
 
   void create_depth_resources();
 
@@ -56,6 +56,7 @@ class SwapChain {
   VkExtent2D swap_chain_extent_;
   std::vector<VkImageView> swap_chain_image_views_;
   std::vector<VkFramebuffer> swap_chain_framebuffers_;
+  VkRenderPass render_pass_;
 
   VkImage depth_image_;
   VkDeviceMemory depth_image_memory_;

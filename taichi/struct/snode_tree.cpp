@@ -3,7 +3,7 @@
 namespace taichi {
 namespace lang {
 
-SNodeTree::SNodeTree(int id, std::unique_ptr<SNode> root, bool packed)
+SNodeTree::SNodeTree(int id, std::unique_ptr<SNode> root)
     : id_(id), root_(std::move(root)) {
   check_tree_validity(*root_);
 }

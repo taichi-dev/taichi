@@ -39,9 +39,13 @@ TI_VERSION_PATCH = 29
 version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 if project_name == 'taichi-nightly':
     from datetime import date
-    today = date.today().strftime('%Y_%m_%d')
+    today = date.today().strftime('%Y%m%d')
+    # As required in PEP440, the commit hash cannot be used in version
+    # because it is not meaningful with respect to order. Therefore,
+    # we temperally do not use this commit_sha in our version.
+    # https://www.python.org/dev/peps/pep-0440
     commit_sha = os.getenv('COMMIT_SHA')
-    version += f'.{today}.{commit_sha}'
+    version += f'.dev{today}'
 
 data_files = glob.glob('python/lib/*')
 print(data_files)

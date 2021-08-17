@@ -190,22 +190,37 @@ void VulkanResourceBinder::framebuffer_depth_stencil(DeviceAllocation image) {
 void VulkanResourceBinder::write_to_set(uint32_t index,
                                         VulkanDevice &device,
                                         VkDescriptorSet set) {
-  std::vector<VkDescriptorBufferInfo> buffer_info;
+  std::vector<VkDescriptorBufferInfo> buffer_infos;
   std::vector<VkWriteDescriptorSet> desc_writes;
 
   for (auto &pair : sets_.at(index).bindings) {
     uint32_t binding = pair.first;
-    buffer_info.push_back({device.get_vkbuffer(pair.second.ptr),
-                           pair.second.ptr.offset, pair.second.size});
 
-    desc_writes.push_back(
-        VkWriteDescriptorSet{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                             /*pNext=*/nullptr, set, binding,
-                             /*dstArrayElement=*/0,
-                             /*descriptorCount=*/1, pair.second.type,
-                             /*pImageInfo=*/nullptr,
-                             /*pBufferInfo=*/&buffer_info.back(),
-                             /*pTexelBufferView*/ nullptr});
+    if (pair.second.ptr != kDeviceNullPtr) {
+      VkDescriptorBufferInfo &buffer_info = &buffer_infos.emplace_back();
+      buffer_info.buffer = device.get_vkbuffer(pair.second.ptr);
+      buffer_info.offset = pair.second.ptr.offset;
+      buffer_info.range = pair.second.size;
+
+      VkWriteDescriptorSet &write = desc_writes.emplace_back();
+      write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      write.pNext = nullptr;
+      write.dstSet = set;
+      write.dstBinding = binding;
+      write.dstArrayElement = 0;
+      write.descriptorCount = 1;
+      write.descriptorType = pair.second.type;
+      write.pImageInfo = nullptr;
+      write.pBufferInfo = nullptr;
+      write.pTexelBufferView = nullptr;
+    }
+  }
+
+  // Set these pointers later as std::vector resize can relocate the pointers
+  int i = 0;
+  for (auto &write : desc_writes) {
+    write.pBufferInfo = &buffer_infos[i];
+    i++;
   }
 
   vkUpdateDescriptorSets(device.vk_device(), desc_writes.size(),
@@ -451,8 +466,8 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
   }
 
-  vmaCreateBuffer(allocator_, &buffer_info, &alloc_info, &alloc.buffer,
-                  &alloc.allocation, &alloc.alloc_info);
+  BAIL_ON_VK_BAD_RESULT(vmaCreateBuffer(allocator_, &buffer_info, &alloc_info, &alloc.buffer,
+                  &alloc.allocation, &alloc.alloc_info), "Failed to allocate vk buffer");
 
   return handle;
 }

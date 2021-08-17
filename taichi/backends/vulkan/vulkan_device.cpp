@@ -197,7 +197,7 @@ void VulkanResourceBinder::write_to_set(uint32_t index,
     uint32_t binding = pair.first;
 
     if (pair.second.ptr != kDeviceNullPtr) {
-      VkDescriptorBufferInfo &buffer_info = &buffer_infos.emplace_back();
+      VkDescriptorBufferInfo &buffer_info = buffer_infos.emplace_back();
       buffer_info.buffer = device.get_vkbuffer(pair.second.ptr);
       buffer_info.offset = pair.second.ptr.offset;
       buffer_info.range = pair.second.size;

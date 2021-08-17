@@ -17,7 +17,7 @@ namespace vulkan {
 
 namespace {
 
-constexpr bool kEnableValidationLayers = true;
+constexpr bool kEnableValidationLayers = false;
 const std::vector<const char *> kValidationLayers = {
     "VK_LAYER_KHRONOS_validation",
 };

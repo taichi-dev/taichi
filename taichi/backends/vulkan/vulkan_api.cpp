@@ -196,8 +196,12 @@ EmbeddedVulkanDevice::EmbeddedVulkanDevice(
     params.device = device_;
     params.compute_queue = compute_queue_;
     params.compute_pool = command_pool_;
+    params.compute_queue_family_index =
+        queue_family_indices_.compute_family.value();
     params.graphics_queue = graphics_queue_;
     params.graphics_pool = command_pool_;  // FIXME: This is potentially wrong
+    params.graphics_queue_family_index =
+        queue_family_indices_.graphics_family.value();
     ti_device_->init_vulkan_structs(params);
   }
 }

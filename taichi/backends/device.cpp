@@ -3,7 +3,7 @@
 namespace taichi {
 namespace lang {
 
-DeviceAllocationUnique::~DeviceAllocationUnique() {
+DeviceAllocationGuard::~DeviceAllocationGuard() {
   device->dealloc_memory(*this);
 }
 

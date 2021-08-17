@@ -53,6 +53,9 @@ class StopWatch {
 };
 
 using BufferEnum = TaskAttributes::Buffers;
+
+// TODO: In the future this isn't necessarily a pointer, since DeviceAllocation
+// is already a pretty cheap handle>
 using InputBuffersMap = std::unordered_map<BufferEnum, DeviceAllocation *>;
 
 class HostDeviceContextBlitter {
@@ -252,9 +255,11 @@ class CompiledTaichiKernel {
     cmdlist_ = ti_params.device->new_command_list();
     for (int i = 0; i < task_attribs.size(); ++i) {
       const auto &attribs = task_attribs[i];
-      auto vp = ti_params.device->create_pipeline(
-          PipelineSourceType::spirv_binary, (void *)spirv_bins[i].data(),
-          spirv_bins[i].size() * sizeof(uint32_t), ti_kernel_attribs_.name);
+      PipelineSourceDesc source_desc{PipelineSourceType::spirv_binary,
+                                     (void *)spirv_bins[i].data(),
+                                     spirv_bins[i].size() * sizeof(uint32_t)};
+      auto vp = ti_params.device->create_pipeline(source_desc,
+                                                  ti_kernel_attribs_.name);
       const int group_x = (attribs.advisory_total_num_threads +
                            attribs.advisory_num_threads_per_group - 1) /
                           attribs.advisory_num_threads_per_group;
@@ -304,8 +309,8 @@ class CompiledTaichiKernel {
   // not worth the effort doing another hop via a staging buffer.
   // TODO: Provide an option to use staging buffer. This could be useful if the
   // kernel does lots of IO on the context buffer, e.g., copy a large np array.
-  std::unique_ptr<DeviceAllocationUnique> ctx_buffer_{nullptr};
-  std::unique_ptr<DeviceAllocationUnique> ctx_buffer_host_{nullptr};
+  std::unique_ptr<DeviceAllocationGuard> ctx_buffer_{nullptr};
+  std::unique_ptr<DeviceAllocationGuard> ctx_buffer_host_{nullptr};
   std::vector<std::unique_ptr<Pipeline>> pipelines_;
 
   std::unique_ptr<CommandList> cmdlist_;
@@ -409,8 +414,8 @@ class VkRuntime ::Impl {
 
   std::unique_ptr<EmbeddedVulkanDevice> embedded_device_{nullptr};
 
-  std::unique_ptr<DeviceAllocationUnique> root_buffer_;
-  std::unique_ptr<DeviceAllocationUnique> global_tmps_buffer_;
+  std::unique_ptr<DeviceAllocationGuard> root_buffer_;
+  std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_;
 
   Device *device_;
 

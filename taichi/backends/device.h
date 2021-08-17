@@ -44,11 +44,11 @@ struct DeviceAllocation {
   DevicePtr get_ptr(uint64_t offset) const;
 };
 
-struct DeviceAllocationUnique : public DeviceAllocation {
-  DeviceAllocationUnique(DeviceAllocation alloc) : DeviceAllocation(alloc) {
+struct DeviceAllocationGuard : public DeviceAllocation {
+  DeviceAllocationGuard(DeviceAllocation alloc) : DeviceAllocation(alloc) {
   }
-  DeviceAllocationUnique(const DeviceAllocationUnique &) = delete;
-  ~DeviceAllocationUnique();
+  DeviceAllocationGuard(const DeviceAllocationGuard &) = delete;
+  ~DeviceAllocationGuard();
 };
 
 struct DevicePtr : public DeviceAllocation {
@@ -116,6 +116,16 @@ enum class PipelineSourceType {
   // TODO: other platforms?
 };
 
+enum class PipelineStageType {
+  compute,
+  fragment,
+  vertex,
+  tesselation_control,
+  tesselation_eval,
+  geometry,
+  raytracing
+};
+
 // TODO: Implement this
 class Pipeline {
  public:
@@ -151,6 +161,13 @@ class CommandList {
   }
 };
 
+struct PipelineSourceDesc {
+  PipelineSourceType type;
+  void *data{nullptr};
+  size_t size{0};
+  PipelineStageType stage{PipelineStageType::compute};
+};
+
 class Device {
  public:
   virtual ~Device(){};
@@ -175,14 +192,12 @@ class Device {
   virtual void dealloc_memory(DeviceAllocation allocation) = 0;
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
-      PipelineSourceType src_type,
-      void *source,
-      size_t size,
+      PipelineSourceDesc &src,
       std::string name = "Pipeline") = 0;
 
-  std::unique_ptr<DeviceAllocationUnique> allocate_memory_unique(
+  std::unique_ptr<DeviceAllocationGuard> allocate_memory_unique(
       const AllocParams &params) {
-    return std::make_unique<DeviceAllocationUnique>(
+    return std::make_unique<DeviceAllocationGuard>(
         this->allocate_memory(params));
   }
 
@@ -202,6 +217,7 @@ class Device {
   // Copy memory inter or intra devices (synced)
   static void memcpy(DevicePtr dst, DevicePtr src, uint64_t size);
 
+  // TODO: Add a flag to select graphics / compute pool
   virtual std::unique_ptr<CommandList> new_command_list() = 0;
   virtual void dealloc_command_list(CommandList *cmdlist) = 0;
   virtual void submit(CommandList *cmdlist) = 0;
@@ -213,7 +229,24 @@ class Device {
   std::unordered_map<DeviceCapability, uint32_t> caps_;
 };
 
-class GraphicsDevice : public Device {};
+class Surface {
+ public:
+  virtual ~Surface() {
+  }
+
+  virtual DeviceAllocation get_target_image() = 0;
+  virtual void present_image() = 0;
+};
+
+class GraphicsDevice : public Device {
+ public:
+  virtual std::unique_ptr<Pipeline> create_raster_pipeline(
+      std::vector<PipelineSourceDesc> &src,
+      std::string name = "Pipeline") = 0;
+
+  virtual std::unique_ptr<Surface> create_surface(uint32_t width,
+                                                  uint32_t height) = 0;
+};
 
 }  // namespace lang
 }  // namespace taichi

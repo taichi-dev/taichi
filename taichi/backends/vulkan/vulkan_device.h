@@ -6,6 +6,8 @@
 #include <vulkan/vulkan_core.h>
 #include "vk_mem_alloc.h"
 
+#include <GLFW/glfw3.h>
+
 #include <memory>
 #include <optional>
 
@@ -140,7 +142,6 @@ class VulkanPipeline : public Pipeline {
 class VulkanCommandList : public CommandList {
  public:
   VulkanCommandList(VulkanDevice *ti_device,
-                    VkDevice device,
                     VkCommandBuffer buffer);
   ~VulkanCommandList();
 
@@ -170,7 +171,27 @@ class VulkanCommandList : public CommandList {
   std::vector<std::pair<VkDescriptorSetLayout, VkDescriptorSet>> desc_sets_;
 };
 
-class VulkanDevice : public Device {
+class VulkanSurface : public Surface {
+ public:
+  VulkanSurface(VulkanDevice *device);
+  ~VulkanSurface();
+
+  DeviceAllocation get_target_image() override;
+  void present_image() override;
+
+ private:
+  VulkanDevice *device_;
+  VkSurfaceKHR surface_;
+  VkSwapchainKHR swapchain_;
+  VkSemaphore image_available_;
+  GLFWwindow *window_;
+
+  uint32_t image_index_{0};
+
+  std::vector<DeviceAllocation> swapchain_images_;
+};
+
+class VulkanDevice : public GraphicsDevice {
  public:
   struct Params {
     VkInstance instance;
@@ -178,17 +199,17 @@ class VulkanDevice : public Device {
     VkDevice device;
     VkQueue compute_queue;
     VkCommandPool compute_pool;
+    uint32_t compute_queue_family_index;
     VkQueue graphics_queue;
     VkCommandPool graphics_pool;
+    uint32_t graphics_queue_family_index;
   };
 
   void init_vulkan_structs(Params &params);
   ~VulkanDevice() override;
 
   std::unique_ptr<Pipeline> create_pipeline(
-      PipelineSourceType src_type,
-      void *source,
-      size_t size,
+      PipelineSourceDesc &src,
       std::string name = "Pipeline") override;
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
@@ -211,9 +232,32 @@ class VulkanDevice : public Device {
 
   void command_sync() override;
 
+  std::unique_ptr<Pipeline> create_raster_pipeline(
+      std::vector<PipelineSourceDesc> &src,
+      std::string name = "Pipeline") override;
+
+  std::unique_ptr<Surface> create_surface(uint32_t width,
+                                          uint32_t height) override;
+
   // Vulkan specific functions
+  VkInstance vk_instance() const {
+    return instance_;
+  }
+
   VkDevice vk_device() const {
     return device_;
+  }
+
+  VkPhysicalDevice vk_physical_device() const {
+    return physical_device_;
+  }
+
+  uint32_t compute_queue_family_index() const {
+    return compute_queue_family_index_;
+  }
+
+  uint32_t graphics_queue_family_index() const {
+    return graphics_queue_family_index_;
   }
 
   VkQueue graphics_queue() const {
@@ -237,6 +281,11 @@ class VulkanDevice : public Device {
 
   VkBuffer get_vkbuffer(const DeviceAllocation &alloc) const;
 
+  VkImage get_vk_image(const DeviceAllocation &alloc) const;
+  DeviceAllocation import_vk_image(VkImage image);
+
+  VkImageView get_vk_imageview(const DeviceAllocation &alloc) const;
+
   VkDescriptorSetLayout get_desc_set_layout(VulkanResourceBinder::Set &set);
   VkDescriptorSet alloc_desc_set(VkDescriptorSetLayout layout);
   void dealloc_desc_set(VkDescriptorSetLayout layout, VkDescriptorSet set);
@@ -251,9 +300,11 @@ class VulkanDevice : public Device {
 
   VkQueue compute_queue_;
   VkCommandPool compute_pool_;
+  uint32_t compute_queue_family_index_;
 
   VkQueue graphics_queue_;
   VkCommandPool graphics_pool_;
+  uint32_t graphics_queue_family_index_;
 
   // Memory allocation
   struct AllocationInternal {
@@ -266,6 +317,16 @@ class VulkanDevice : public Device {
   std::unordered_map<uint32_t, AllocationInternal> allocations_;
 
   uint32_t alloc_cnt_ = 0;
+
+  // Images / Image views
+  struct ImageAllocInternal {
+    bool external{false};
+    VmaAllocation allocation;
+    VmaAllocationInfo alloc_info;
+    VkImage image;
+  };
+
+  std::unordered_map<uint32_t, ImageAllocInternal> image_allocations_;
 
   // Command buffer tracking & allocation
   VkFence cmd_sync_fence_;

@@ -218,9 +218,8 @@ void VulkanResourceBinder::lock_layout() {
 }
 
 VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
-                                     VkDevice device,
                                      VkCommandBuffer buffer)
-    : ti_device_(ti_device), device_(device), buffer_(buffer) {
+    : ti_device_(ti_device), device_(ti_device->vk_device()), buffer_(buffer) {
   VkCommandBufferBeginInfo info{};
   info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   info.pNext = nullptr;
@@ -369,8 +368,10 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
   physical_device_ = params.physical_device;
   compute_queue_ = params.compute_queue;
   compute_pool_ = params.compute_pool;
+  compute_queue_family_index_ = params.compute_queue_family_index;
   graphics_queue_ = params.graphics_queue;
   graphics_pool_ = params.graphics_pool;
+  graphics_queue_family_index_ = params.graphics_queue_family_index;
 
   create_vma_allocator();
 
@@ -403,16 +404,14 @@ VulkanDevice::~VulkanDevice() {
   vkDestroyFence(device_, cmd_sync_fence_, kNoVkAllocCallbacks);
 }
 
-std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(
-    PipelineSourceType src_type,
-    void *source,
-    size_t size,
-    std::string name) {
-  TI_ASSERT(src_type == PipelineSourceType::spirv_binary);
+std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(PipelineSourceDesc &src,
+                                                        std::string name) {
+  TI_ASSERT(src.type == PipelineSourceType::spirv_binary &&
+            src.stage == PipelineStageType::compute);
 
   VulkanPipeline::Params params;
-  params.code.data = (uint32_t *)source;
-  params.code.size = size;
+  params.code.data = (uint32_t *)src.data;
+  params.code.size = src.size;
   params.device = this;
   params.name = name;
 
@@ -629,6 +628,17 @@ void VulkanDevice::command_sync() {
   }
 }
 
+std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(
+    std::vector<PipelineSourceDesc> &src,
+    std::string name) {
+  return nullptr;
+}
+
+std::unique_ptr<Surface> VulkanDevice::create_surface(uint32_t width,
+                                                      uint32_t height) {
+  return std::make_unique<VulkanSurface>(this);
+}
+
 std::tuple<VkDeviceMemory, size_t, size_t>
 VulkanDevice::get_vkmemory_offset_size(const DeviceAllocation &alloc) const {
   const AllocationInternal &alloc_int = allocations_.at(alloc.alloc_id);
@@ -642,6 +652,32 @@ VkBuffer VulkanDevice::get_vkbuffer(const DeviceAllocation &alloc) const {
   const AllocationInternal &alloc_int = allocations_.at(alloc.alloc_id);
 
   return alloc_int.buffer;
+}
+
+VkImage VulkanDevice::get_vk_image(const DeviceAllocation &alloc) const {
+  const ImageAllocInternal &alloc_int = image_allocations_.at(alloc.alloc_id);
+
+  return alloc_int.image;
+}
+
+DeviceAllocation VulkanDevice::import_vk_image(VkImage image) {
+  ImageAllocInternal alloc_int;
+  alloc_int.external = true;
+  alloc_int.image = image;
+
+  DeviceAllocation alloc;
+  alloc.device = this;
+  alloc.alloc_id = alloc_cnt_++;
+
+  image_allocations_[alloc.alloc_id] = alloc_int;
+
+  return alloc;
+}
+
+VkImageView VulkanDevice::get_vk_imageview(
+    const DeviceAllocation &alloc) const {
+  // FIXME: impl this
+  return VkImageView();
 }
 
 VkDescriptorSetLayout VulkanDevice::get_desc_set_layout(
@@ -790,6 +826,125 @@ void VulkanDevice::create_vma_allocator() {
   allocatorInfo.pVulkanFunctions = &vk_vma_functions;
 
   vmaCreateAllocator(&allocatorInfo, &allocator_);
+}
+
+VulkanSurface::VulkanSurface(VulkanDevice *device) : device_(device) {
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  window_ = glfwCreateWindow(640, 480, "Taichi", NULL, NULL);
+  VkResult err =
+      glfwCreateWindowSurface(device->vk_instance(), window_, NULL, &surface_);
+  if (err) {
+    TI_ERROR("Failed to create window ({})", err);
+    return;
+  }
+
+  auto choose_surface_format =
+      [](const std::vector<VkSurfaceFormatKHR> &availableFormats) {
+        for (const auto &availableFormat : availableFormats) {
+          if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
+              availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            return availableFormat;
+          }
+        }
+        return availableFormats[0];
+      };
+
+  VkSurfaceCapabilitiesKHR capabilities;
+  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device->vk_physical_device(),
+                                            surface_, &capabilities);
+
+  VkBool32 supported = false;
+  vkGetPhysicalDeviceSurfaceSupportKHR(device->vk_physical_device(),
+                                       device->graphics_queue_family_index(),
+                                       surface_, &supported);
+
+  if (!supported) {
+    TI_ERROR("Selected queue does not support presenting", err);
+    return;
+  }
+
+  uint32_t formatCount;
+  vkGetPhysicalDeviceSurfaceFormatsKHR(device->vk_physical_device(), surface_,
+                                       &formatCount, nullptr);
+  std::vector<VkSurfaceFormatKHR> surface_formats(formatCount);
+  vkGetPhysicalDeviceSurfaceFormatsKHR(device->vk_physical_device(), surface_,
+                                       &formatCount, surface_formats.data());
+
+  VkSurfaceFormatKHR surface_format = choose_surface_format(surface_formats);
+
+  int width, height;
+  glfwGetFramebufferSize(window_, &width, &height);
+
+  VkExtent2D extent = {uint32_t(width), uint32_t(height)};
+
+  VkSwapchainCreateInfoKHR createInfo;
+  createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+  createInfo.pNext = nullptr;
+  createInfo.flags = 0;
+  createInfo.surface = surface_;
+  createInfo.minImageCount = capabilities.minImageCount;
+  createInfo.imageFormat = surface_format.format;
+  createInfo.imageColorSpace = surface_format.colorSpace;
+  createInfo.imageExtent = extent;
+  createInfo.imageArrayLayers = 1;
+  createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+  createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  createInfo.queueFamilyIndexCount = 0;
+  createInfo.pQueueFamilyIndices = nullptr;
+  createInfo.preTransform = capabilities.currentTransform;
+  createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+  createInfo.presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+  createInfo.clipped = VK_TRUE;
+  createInfo.oldSwapchain = nullptr;
+
+  if (vkCreateSwapchainKHR(device->vk_device(), &createInfo,
+                           kNoVkAllocCallbacks, &swapchain_) != VK_SUCCESS) {
+    TI_ERROR("Failed to create swapchain");
+    return;
+  }
+
+  VkSemaphoreCreateInfo sema_create_info;
+  sema_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+  sema_create_info.pNext = nullptr;
+  sema_create_info.flags = 0;
+  vkCreateSemaphore(device->vk_device(), &sema_create_info, kNoVkAllocCallbacks,
+                    &image_available_);
+
+  uint32_t num_images;
+  vkGetSwapchainImagesKHR(device->vk_device(), swapchain_, &num_images,
+                          nullptr);
+  std::vector<VkImage> swapchain_images(num_images);
+  vkGetSwapchainImagesKHR(device->vk_device(), swapchain_, &num_images,
+                          swapchain_images.data());
+
+  for (VkImage img : swapchain_images) {
+    swapchain_images_.push_back(device->import_vk_image(img));
+  }
+}
+
+VulkanSurface::~VulkanSurface() {
+}
+
+DeviceAllocation VulkanSurface::get_target_image() {
+  vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
+                        image_available_, VK_NULL_HANDLE, &image_index_);
+
+  return swapchain_images_[image_index_];
+}
+
+void VulkanSurface::present_image() {
+  // TODO: In the future tie the wait semaphores.
+  // Currently we should just halt and wait on host before present
+  VkPresentInfoKHR presentInfo{};
+  presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+  presentInfo.waitSemaphoreCount = 0;
+  presentInfo.pWaitSemaphores = nullptr;
+  presentInfo.swapchainCount = 1;
+  presentInfo.pSwapchains = &swapchain_;
+  presentInfo.pImageIndices = &image_index_;
+  presentInfo.pResults = nullptr;
+
+  vkQueuePresentKHR(device_->graphics_queue(), &presentInfo);
 }
 
 }  // namespace vulkan

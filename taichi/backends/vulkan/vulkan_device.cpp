@@ -533,7 +533,7 @@ std::unique_ptr<CommandList> VulkanDevice::new_command_list() {
         "failed to allocate command buffer");
   }
 
-  return std::make_unique<VulkanCommandList>(this, device_, buffer);
+  return std::make_unique<VulkanCommandList>(this, buffer);
 }
 
 void VulkanDevice::dealloc_command_list(CommandList *cmdlist) {

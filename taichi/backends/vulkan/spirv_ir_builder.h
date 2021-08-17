@@ -518,7 +518,7 @@ class IRBuilder {
   std::vector<uint32_t> function_;
   // Random Function segment
   std::vector<uint32_t> random_function_;
-  
+
   // Float Atomic Functions segment
   std::vector<uint32_t> atomic_functions_;
 };

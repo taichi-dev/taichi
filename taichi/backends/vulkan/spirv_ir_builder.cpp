@@ -104,8 +104,7 @@ std::vector<uint32_t> IRBuilder::finalize() {
   data.insert(data.end(), func_header_.begin(), func_header_.end());
   data.insert(data.end(), function_.begin(), function_.end());
   if (any_atomic_) {
-    data.insert(data.end(), atomic_functions_.begin(),
-                atomic_functions_.end());
+    data.insert(data.end(), atomic_functions_.begin(), atomic_functions_.end());
   }
   return data;
 }
@@ -649,9 +648,9 @@ Value IRBuilder::query_value(std::string name) const {
 }
 
 Value IRBuilder::float_atomic(AtomicOpType op_type) {
-  auto init_atomic_func_ = [&](Value &func, 
-          std::string name, 
-          std::function<void(Value, Value, Value)> atomic_op) {
+  auto init_atomic_func_ = [&](Value &func, std::string name,
+                               std::function<void(Value, Value, Value)>
+                                   atomic_op) {
     func.id = id_counter_++;
     func.flag = ValueKind::kFunction;
     debug(spv::OpName, func, name);
@@ -754,10 +753,10 @@ Value IRBuilder::float_atomic(AtomicOpType op_type) {
     Value tmp4 = new_value(t_fp32_, ValueKind::kNormal);
     ib_.begin(spv::OpBitcast).add_seq(t_fp32_, tmp4, tmp3).commit(&func_);
     Value tmp5 = new_value(t_fp32_, ValueKind::kNormal);
-    
+
     // atomic operation
     atomic_op(tmp5, tmp4, data);
-    
+
     Value tmp6 = new_value(t_int32_, ValueKind::kNormal);
     ib_.begin(spv::OpBitcast).add_seq(t_int32_, tmp6, tmp5).commit(&func_);
     store_var(new_val, tmp6);
@@ -797,44 +796,56 @@ Value IRBuilder::float_atomic(AtomicOpType op_type) {
     ib_.begin(spv::OpFunctionEnd).commit(&func_);
     // function end
   };
-  
+
   if (op_type == AtomicOpType::add) {
     if (float_atomic_add_.id == 0) {
-      init_atomic_func_(float_atomic_add_, "float_atomic_add", 
-        [&](Value res, Value lhs, Value rhs) {
-          ib_.begin(spv::OpFAdd).add_seq(t_fp32_, res, lhs, rhs).commit(&atomic_functions_);
-        });
+      init_atomic_func_(float_atomic_add_, "float_atomic_add",
+                        [&](Value res, Value lhs, Value rhs) {
+                          ib_.begin(spv::OpFAdd)
+                              .add_seq(t_fp32_, res, lhs, rhs)
+                              .commit(&atomic_functions_);
+                        });
       any_atomic_ = true;
     }
     return float_atomic_add_;
   } else if (op_type == AtomicOpType::sub) {
     if (float_atomic_sub_.id == 0) {
-      init_atomic_func_(float_atomic_sub_, "float_atomic_sub", 
-        [&](Value res, Value lhs, Value rhs) {
-          ib_.begin(spv::OpFSub).add_seq(t_fp32_, res, lhs, rhs).commit(&atomic_functions_);
-        });
+      init_atomic_func_(float_atomic_sub_, "float_atomic_sub",
+                        [&](Value res, Value lhs, Value rhs) {
+                          ib_.begin(spv::OpFSub)
+                              .add_seq(t_fp32_, res, lhs, rhs)
+                              .commit(&atomic_functions_);
+                        });
       any_atomic_ = true;
     }
     return float_atomic_sub_;
   } else if (op_type == AtomicOpType::min) {
     if (float_atomic_min_.id == 0) {
-      init_atomic_func_(float_atomic_min_, "float_atomic_min", 
-        [&](Value res, Value lhs, Value rhs) {
-          Value cond = new_value(t_bool_, ValueKind::kNormal);
-          ib_.begin(spv::OpFOrdLessThan).add_seq(t_bool_, cond, lhs, rhs).commit(&atomic_functions_);
-          ib_.begin(spv::OpSelect).add_seq(t_fp32_, res, cond, lhs, rhs).commit(&atomic_functions_);
-        });
+      init_atomic_func_(float_atomic_min_, "float_atomic_min",
+                        [&](Value res, Value lhs, Value rhs) {
+                          Value cond = new_value(t_bool_, ValueKind::kNormal);
+                          ib_.begin(spv::OpFOrdLessThan)
+                              .add_seq(t_bool_, cond, lhs, rhs)
+                              .commit(&atomic_functions_);
+                          ib_.begin(spv::OpSelect)
+                              .add_seq(t_fp32_, res, cond, lhs, rhs)
+                              .commit(&atomic_functions_);
+                        });
       any_atomic_ = true;
     }
     return float_atomic_min_;
   } else if (op_type == AtomicOpType::max) {
     if (float_atomic_max_.id == 0) {
-      init_atomic_func_(float_atomic_max_, "float_atomic_max", 
-        [&](Value res, Value lhs, Value rhs) {
-          Value cond = new_value(t_bool_, ValueKind::kNormal);
-          ib_.begin(spv::OpFOrdGreaterThan).add_seq(t_bool_, cond, lhs, rhs).commit(&atomic_functions_);
-          ib_.begin(spv::OpSelect).add_seq(t_fp32_, res, cond, lhs, rhs).commit(&atomic_functions_);
-        });
+      init_atomic_func_(float_atomic_max_, "float_atomic_max",
+                        [&](Value res, Value lhs, Value rhs) {
+                          Value cond = new_value(t_bool_, ValueKind::kNormal);
+                          ib_.begin(spv::OpFOrdGreaterThan)
+                              .add_seq(t_bool_, cond, lhs, rhs)
+                              .commit(&atomic_functions_);
+                          ib_.begin(spv::OpSelect)
+                              .add_seq(t_fp32_, res, cond, lhs, rhs)
+                              .commit(&atomic_functions_);
+                        });
       any_atomic_ = true;
     }
     return float_atomic_max_;

@@ -797,8 +797,8 @@ class TaskCodegen : public IRVisitor {
     spirv::Value data = ir_->query_value(stmt->val->raw_name());
     spirv::Value val;
     if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      if (device_->get_cap(DeviceCapability::vk_has_atomic_float_add) 
-          && stmt->op_type == AtomicOpType::add) {
+      if (device_->get_cap(DeviceCapability::vk_has_atomic_float_add) &&
+          stmt->op_type == AtomicOpType::add) {
         val = ir_->make_value(
             spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt), addr_ptr,
             ir_->uint_immediate_number(ir_->u32_type(), 1),
@@ -828,10 +828,10 @@ class TaskCodegen : public IRVisitor {
         TI_NOT_IMPLEMENTED
       }
 
-      val = ir_->make_value(
-          op, ir_->get_primitive_type(dt), addr_ptr,
-          ir_->uint_immediate_number(ir_->u32_type(), 1),
-          ir_->uint_immediate_number(ir_->u32_type(), 0), data);
+      val =
+          ir_->make_value(op, ir_->get_primitive_type(dt), addr_ptr,
+                          ir_->uint_immediate_number(ir_->u32_type(), 1),
+                          ir_->uint_immediate_number(ir_->u32_type(), 0), data);
     } else {
       TI_ERROR("Vulkan only supports 32-bit atomic data types");
     }

@@ -12,6 +12,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_context.h"
+#include "taichi/llvm/llvm_program.h"
 #include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
@@ -29,7 +30,6 @@
 #include "taichi/struct/snode_tree.h"
 #include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/system/memory_pool.h"
-#include "taichi/system/snode_tree_buffer_manager.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
 
@@ -102,8 +102,7 @@ class Program {
   static std::atomic<int> num_instances;
   std::unique_ptr<ThreadPool> thread_pool{nullptr};
   std::unique_ptr<MemoryPool> memory_pool{nullptr};
-  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
-  uint64 *result_buffer{nullptr};  // TODO: move this
+  uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
   void *preallocated_device_buffer{
       nullptr};  // TODO: move this to memory allocator
   std::unordered_map<int, SNode *> snodes;
@@ -387,6 +386,8 @@ class Program {
   std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
+
+  std::unique_ptr<LlvmProgramImpl> llvm_program_;
 
  public:
 #ifdef TI_WITH_CC

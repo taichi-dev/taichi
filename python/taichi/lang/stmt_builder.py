@@ -542,8 +542,7 @@ if 1:
                 # such as class instances ("self"), fields, SNodes, etc.
                 if isinstance(ctx.func.argument_annotations[i], ti.template):
                     continue
-                if isinstance(ctx.func.argument_annotations[i],
-                              (ti.any_arr, ti.ext_arr)):
+                if isinstance(ctx.func.argument_annotations[i], ti.ext_arr):
                     arg_init = parse_stmt(
                         'x = ti.lang.kernel_arguments.decl_ext_arr_arg(0, 0)')
                     arg_init.targets[0].id = arg.arg
@@ -555,6 +554,23 @@ if 1:
                     dt = parse_expr(dt_expr)
                     arg_init.value.args[0] = dt
                     arg_init.value.args[1] = parse_expr("{}".format(array_dim))
+                    arg_decls.append(arg_init)
+                elif isinstance(ctx.func.argument_annotations[i], ti.any_arr):
+                    arg_init = parse_stmt(
+                        'x = ti.lang.kernel_arguments.decl_any_arr_arg(0, 0, 0, 0)')
+                    arg_init.targets[0].id = arg.arg
+                    ctx.create_variable(arg.arg)
+                    array_dt = ctx.arg_features[i][0]
+                    array_dim = ctx.arg_features[i][1]
+                    array_element_shape = ctx.arg_features[i][2]
+                    array_is_soa = ctx.arg_features[i][3]
+                    array_dt = to_taichi_type(array_dt)
+                    dt_expr = 'ti.' + ti.core.data_type_name(array_dt)
+                    dt = parse_expr(dt_expr)
+                    arg_init.value.args[0] = dt
+                    arg_init.value.args[1] = parse_expr("{}".format(array_dim))
+                    arg_init.value.args[2] = parse_expr("{}".format(array_element_shape))
+                    arg_init.value.args[3] = parse_expr("{}".format(array_is_soa))
                     arg_decls.append(arg_init)
                 else:
                     arg_init = parse_stmt(

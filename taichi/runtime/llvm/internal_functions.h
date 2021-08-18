@@ -35,9 +35,11 @@ i32 insert_triplet(Context *context,
   data_base_ptr[triplet_id * 3] = i;
   data_base_ptr[triplet_id * 3 + 1] = j;
   data_base_ptr[triplet_id * 3 + 2] = taichi_union_cast<int32>(value);
-  // taichi_printf(runtime, "Inserting value [%f] at [%d, %d] to sparse matrix
-  // %p (triplet id=%d)\n", value, i, j, base_ptr, triplet_id);
   return 0;
+}
+
+i32 test_internal_func_args(Context *context, float32 i, float32 j, int32 k) {
+  return static_cast<int>((i + j) * k);
 }
 
 i32 test_stack(Context *context) {

@@ -129,13 +129,33 @@ void CodeGenLLVM::visit(Block *stmt_list) {
 }
 
 void CodeGenLLVM::visit(AllocaStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);
-  llvm_val[stmt] =
-      create_entry_block_alloca(stmt->ret_type, stmt->ret_type.is_pointer());
-  // initialize as zero if element is not a pointer
-  if (!stmt->ret_type.is_pointer())
-    builder->CreateStore(tlctx->get_constant(stmt->ret_type, 0),
-                         llvm_val[stmt]);
+  if (stmt->ret_type->is<TensorType>()) {
+    auto tensor_type = stmt->ret_type->cast<TensorType>();
+    auto type = tlctx->get_data_type(tensor_type->get_element_type());
+    auto array_size = tlctx->get_constant(tensor_type->get_num_elements());
+    // Return type is [array_size x type]*.
+    llvm_val[stmt] = create_entry_block_alloca(type, 0, array_size);
+    // Initialize as zero
+    for (int i = 0; i < tensor_type->get_num_elements(); ++i) {
+      auto origin_address = builder->CreatePtrToInt(
+          llvm_val[stmt], llvm::Type::getInt64Ty(*llvm_context));
+      int address_offset = i * data_type_size(tensor_type->get_element_type());
+      auto target_address = builder->CreateAdd(
+          origin_address, tlctx->get_constant((int64)address_offset));
+      auto target_ptr = builder->CreateIntToPtr(
+          target_address, llvm::PointerType::get(type, 0));
+      builder->CreateStore(
+          tlctx->get_constant(tensor_type->get_element_type(), 0), target_ptr);
+    }
+  } else {
+    TI_ASSERT(stmt->width() == 1);
+    llvm_val[stmt] =
+        create_entry_block_alloca(stmt->ret_type, stmt->ret_type.is_pointer());
+    // initialize as zero if element is not a pointer
+    if (!stmt->ret_type.is_pointer())
+      builder->CreateStore(tlctx->get_constant(stmt->ret_type, 0),
+                           llvm_val[stmt]);
+  }
 }
 
 void CodeGenLLVM::visit(RandStmt *stmt) {
@@ -1851,10 +1871,18 @@ void CodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
   auto buffer = call("get_temporary_pointer", runtime,
                      tlctx->get_constant((int64)stmt->offset));
 
-  TI_ASSERT(stmt->width() == 1);
-  auto ptr_type = llvm::PointerType::get(
-      tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
-  llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
+  TI_ASSERT(stmt->width() == 1 || stmt->ret_type->is<TensorType>());
+  if (stmt->ret_type->is<TensorType>()) {
+    auto ptr_type = llvm::PointerType::get(
+        tlctx->get_data_type(
+            stmt->ret_type->cast<TensorType>()->get_element_type()),
+        0);
+    llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
+  } else {
+    auto ptr_type = llvm::PointerType::get(
+        tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
+    llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
+  }
 }
 
 void CodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
@@ -1890,7 +1918,11 @@ void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
   for (auto s : stmt->args) {
     args.push_back(llvm_val[s]);
   }
+<<<<<<< HEAD
   create_call(stmt->func_name, args);
+=======
+  llvm_val[stmt] = create_call(stmt->func_name, args);
+>>>>>>> master
 }
 
 void CodeGenLLVM::visit(AdStackAllocaStmt *stmt) {

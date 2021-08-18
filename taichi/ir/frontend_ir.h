@@ -31,6 +31,13 @@ class FrontendAllocaStmt : public Stmt {
     ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
   }
 
+  FrontendAllocaStmt(const Identifier &lhs,
+                     std::vector<int> shape,
+                     DataType element)
+      : ident(lhs) {
+    ret_type = DataType(TypeFactory::create_tensor_type(shape, element));
+  }
+
   TI_DEFINE_ACCEPT
 };
 
@@ -332,6 +339,33 @@ class TernaryOpExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
+class InternalFuncCallExpression : public Expression {
+ public:
+  std::string func_name;
+  std::vector<Expr> args;
+
+  InternalFuncCallExpression(const std::string &func_name,
+                             const std::vector<Expr> &args_)
+      : func_name(func_name) {
+    for (auto &a : args_) {
+      args.push_back(load_if_ptr(a));
+    }
+  }
+
+  std::string serialize() override {
+    std::string args_str;
+    for (int i = 0; i < args.size(); i++) {
+      if (i != 0) {
+        args_str += ", ";
+      }
+      args_str += args[i]->serialize();
+    }
+    return fmt::format("internal call {}({})", func_name, args_str);
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
 class ExternalFuncCallExpression : public Expression {
  public:
   void *func;
@@ -479,6 +513,33 @@ class GlobalTensorElementExpression : public Expression {
   }
 };
 
+class LocalTensorElementExpression : public Expression {
+ public:
+  Expr var;
+  ExprGroup indices;
+
+  LocalTensorElementExpression(const Expr &var, const ExprGroup &indices)
+      : var(var), indices(indices) {
+  }
+
+  std::string serialize() override {
+    std::string s = fmt::format("{}[", var.serialize());
+    for (int i = 0; i < (int)indices.size(); i++) {
+      s += indices.exprs[i]->serialize();
+      if (i + 1 < (int)indices.size())
+        s += ", ";
+    }
+    s += "]";
+    return s;
+  }
+
+  void flatten(FlattenContext *ctx) override;
+
+  bool is_lvalue() const override {
+    return true;
+  }
+};
+
 class EvalExpression : public Expression {
  public:
   Stmt *stmt_ptr;
@@ -588,6 +649,19 @@ class SNodeOpExpression : public Expression {
   }
 
   std::string serialize() override;
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class LocalLoadExpression : public Expression {
+ public:
+  Expr ptr;
+  LocalLoadExpression(const Expr &ptr) : ptr(ptr) {
+  }
+
+  std::string serialize() override {
+    return "lcl load " + ptr.serialize();
+  }
 
   void flatten(FlattenContext *ctx) override;
 };

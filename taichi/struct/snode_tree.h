@@ -22,7 +22,7 @@ class SNodeTree {
    * @param id Id of the tree
    * @param root Root of the tree
    */
-  explicit SNodeTree(int id, std::unique_ptr<SNode> root, bool packed);
+  explicit SNodeTree(int id, std::unique_ptr<SNode> root);
 
   int id() const {
     return id_;

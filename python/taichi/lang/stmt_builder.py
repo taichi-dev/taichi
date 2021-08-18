@@ -390,7 +390,7 @@ if ti.static(1):
         template = '''
 if ti.static(1):
     __ndrange = 0
-    {} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions)))
+    {} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions), disable_local_tensor=True))
     ___begin = ti.Expr(0)
     ___end = __ndrange.acc_dimensions[0]
     ___begin = ti.cast(___begin, ti.i32)
@@ -433,9 +433,9 @@ if ti.static(1):
             template = '''
 if 1:
     ___loop_var = 0
-    {} = ti.lang.expr.make_var_vector(size=len(___loop_var.loop_range().shape))
+    {} = ti.lang.expr.make_var_vector(size=len(___loop_var.shape))
     ___expr_group = ti.lang.expr.make_expr_group({})
-    ti.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range())
+    ti.begin_frontend_struct_for(___expr_group, ___loop_var)
     ti.core.end_frontend_range_for()
             '''.format(vars, vars)
             t = ast.parse(template).body[0]
@@ -448,7 +448,7 @@ if 1:
 {}
     ___loop_var = 0
     ___expr_group = ti.lang.expr.make_expr_group({})
-    ti.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range())
+    ti.begin_frontend_struct_for(___expr_group, ___loop_var)
     ti.core.end_frontend_range_for()
             '''.format(var_decl, vars)
             t = ast.parse(template).body[0]
@@ -543,7 +543,8 @@ if 1:
                 # such as class instances ("self"), fields, SNodes, etc.
                 if isinstance(ctx.func.argument_annotations[i], ti.template):
                     continue
-                if isinstance(ctx.func.argument_annotations[i], ti.ext_arr):
+                if isinstance(ctx.func.argument_annotations[i],
+                              (ti.any_arr, ti.ext_arr)):
                     arg_init = parse_stmt(
                         'x = ti.lang.kernel_arguments.decl_ext_arr_arg(0, 0)')
                     arg_init.targets[0].id = arg.arg

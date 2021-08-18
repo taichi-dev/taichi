@@ -38,7 +38,7 @@ jobs:
           git remote add upstream https://github.com/taichi-dev/taichi.git
           git fetch upstream master
           sudo apt-get install clang-format
-          python3 -m pip install --user yapf gitpython colorama isort
+          python3 -m pip install --user yapf==0.31.0 gitpython colorama isort
           python3 python/taichi/code_format.py
           git checkout -b _enforced_format
           git commit -am "enforce code format" || true
@@ -57,6 +57,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
@@ -70,12 +73,19 @@ jobs:
         env:
           CI_PLATFORM: ${{ matrix.os }}
 
-      - name: Build
+      - name: Build & Install
         run: |
           TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
-          python misc/ci_setup.py ci
+          python -m pip install -r requirements_dev.txt
+          cd python
+          git fetch origin master
+          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python build.py build
+          cd ..
+          export NUM_WHL=`ls dist/*.whl | wc -l`
+          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
+          pip install dist/*.whl
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
 
@@ -88,9 +98,10 @@ jobs:
           hash -r
           python examples/algorithm/laplace.py
           ti diagnose
-          # TODO: make cpp tests work in both release & dev mode.
-          # Currently cpp tests only works in dev mode since it depends on the path set there.
-          TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
+          ti changelog
+          # taichi_cpp_tests requires passing in TI_LIB_DIR manually.
+          TI_LIB_DIR=`python -c "import taichi;print(taichi.__path__[0])" | tail -1`
+          TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
           ti test -vr2 -t2
 
   build_and_test_cpu:
@@ -114,6 +125,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
@@ -127,15 +141,21 @@ jobs:
         env:
           CI_PLATFORM: ${{ matrix.os }}
 
-      - name: Build
+      - name: Build & Install
         run: |
           TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
-          python misc/ci_setup.py ci
+          python -m pip install -r requirements_dev.txt
+          cd python
+          git fetch origin master
+          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python build.py build
+          cd ..
+          NUM_WHL=`ls dist/*.whl | wc -l`
+          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
+          pip install dist/*.whl
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
-
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
@@ -150,9 +170,10 @@ jobs:
           hash -r
           python examples/algorithm/laplace.py
           ti diagnose
-          # TODO: make cpp tests work in both release & dev mode.
-          # Currently cpp tests only works in dev mode since it depends on the path set there.
-          [ "$RUN_CPP_TESTS" = "ON" ] && TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
+          ti changelog
+          # taichi_cpp_tests requires passing in TI_LIB_DIR manually.
+          TI_LIB_DIR=`python -c "import taichi;print(taichi.__path__[0])" | tail -1`
+          [ "$RUN_CPP_TESTS" = "ON" ] && TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
           ti test -vr2 -t2
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
@@ -163,15 +184,24 @@ jobs:
     runs-on: [self-hosted, cuda, vulkan, cn]
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
 
       - name: Build
         run: |
           git --version
-          export PATH=$LLVM_LIB_ROOT_DIR/bin:$PATH
+          export PATH=$LLVM_LIB_ROOT_DIR/bin:/usr/local/cuda/bin:$PATH
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
           export CXX=clang++-8
           export PYTHON=/usr/bin/python3
-          $PYTHON misc/ci_setup.py ci
+          $PYTHON -m pip install -r requirements_dev.txt
+          cd python
+          git fetch origin master
+          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS $PYTHON build.py build
+          cd ..
+          export NUM_WHL=`ls dist/*.whl | wc -l`
+          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
+          $PYTHON -m pip install dist/*.whl
         env:
           LLVM_LIB_ROOT_DIR: /home/taichi/Libs/taichi-llvm-10.0.0
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_PENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON
@@ -186,6 +216,7 @@ jobs:
           glewinfo
           $PYTHON examples/algorithm/laplace.py
           ti diagnose
+          ti changelog
           ti test -vr2 -t2
 
   build_and_test_windows:
@@ -198,6 +229,9 @@ jobs:
         run: Install-Module 7Zip4PowerShell -Force -Verbose
 
       - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
       - uses: actions/setup-python@v2
         with:
           python-version: 3.7
@@ -218,8 +252,14 @@ jobs:
           $env:PATH += ";C:\taichi_clang\bin"
           clang --version
           cd D:\a\taichi\taichi
-          python -m pip install --user numpy pybind11 gitpython
-          python misc/ci_setup.py ci
+          python -m pip install -r requirements_dev.txt
+          cd python
+          git fetch origin master
+          $env:TAICHI_CMAKE_ARGS = $env:CI_SETUP_CMAKE_ARGS
+          python build.py build
+          cd ..\dist
+          $env:WHL = $(dir *.whl)
+          python -m pip install $env:WHL
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
           CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm
@@ -232,6 +272,7 @@ jobs:
           python -c "import taichi"
           python examples/algorithm/laplace.py
           python bin/taichi diagnose
-          python bin/taichi test -cvr2 -t2
+          python bin/taichi changelog
+          python bin/taichi test -vr2 -t2
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe

@@ -1,6 +1,7 @@
 from taichi.core.primitive_types import u64
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.expr import Expr
+from taichi.lang.ext_array import ExtArray
 from taichi.lang.snode import SNode
 from taichi.lang.sparse_matrix import SparseMatrixProxy
 from taichi.lang.util import cook_dtype, to_taichi_type
@@ -34,6 +35,29 @@ Example::
     >>>
     >>> arr = numpy.zeros(...)
     >>> to_numpy(arr)  # `arr` will be filled with `x`'s data.
+"""
+
+
+class ArgAnyArray:
+    """Type annotation for arbitrary arrays, including external arrays and Taichi ndarrays."""
+    def extract(self, x):
+        return to_taichi_type(x.dtype), len(x.shape)
+
+
+any_arr = ArgAnyArray
+"""Alias for :class:`~taichi.lang.kernel_arguments.ArgAnyArray`.
+
+Example::
+
+    >>> @ti.kernel
+    >>> def to_numpy(x: ti.any_arr(), y: ti.any_arr()):
+    >>>     for i in range(n):
+    >>>         x[i] = y[i]
+    >>>
+    >>> y = ti.ndarray(ti.f64, shape=n)
+    >>> ... # calculate y
+    >>> x = numpy.zeros(n)
+    >>> to_numpy(x, y)  # `x` will be filled with `y`'s data.
 """
 
 
@@ -76,7 +100,7 @@ def decl_scalar_arg(dtype):
 def decl_ext_arr_arg(dtype, dim):
     dtype = cook_dtype(dtype)
     arg_id = _ti_core.decl_arg(dtype, True)
-    return Expr(_ti_core.make_external_tensor_expr(dtype, dim, arg_id))
+    return ExtArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id))
 
 
 # TODO: add data type

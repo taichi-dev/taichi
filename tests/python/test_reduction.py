@@ -32,8 +32,9 @@ np_ops = {
 
 def _test_reduction_single(dtype, criterion, op):
     N = 1024 * 1024
-    if ti.cfg.arch == ti.opengl and dtype == ti.f32:
-        # OpenGL is not capable of such large number in its float32...
+    if (ti.cfg.arch == ti.opengl
+            or ti.cfg.arch == ti.vulkan) and dtype == ti.f32:
+        # OpenGL/Vulkan are not capable of such large number in its float32...
         N = 1024 * 16
 
     a = ti.field(dtype, shape=N)
@@ -84,7 +85,7 @@ def test_reduction_single_i32(op):
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@ti.test(exclude=ti.opengl)
+@ti.all_archs
 def test_reduction_single_u32(op):
     _test_reduction_single(ti.u32, lambda x, y: x % 2**32 == y % 2**32, op)
 

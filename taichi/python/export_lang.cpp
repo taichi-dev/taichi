@@ -171,6 +171,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::advanced_optimization)
       .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
       .def_readwrite("async_mode", &CompileConfig::async_mode)
+      .def_readwrite("dynamic_index", &CompileConfig::dynamic_index)
       .def_readwrite("flatten_if", &CompileConfig::flatten_if)
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
@@ -475,10 +476,9 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(std::move(stmt_unique));
   });
 
-  m.def("create_internal_func_stmt",
-        [&](const std::string &msg, const ExprGroup &args) {
-          current_ast_builder().insert(
-              std::make_unique<FrontendInternalFuncStmt>(msg, args.exprs));
+  m.def("insert_internal_func_call",
+        [&](const std::string &func_name, const ExprGroup &args) {
+          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs);
         });
 
   m.def("begin_frontend_while", [&](const Expr &cond) {
@@ -654,6 +654,29 @@ void export_lang(py::module &m) {
         PrimitiveType::unknown));
     return var;
   });
+  m.def("expr_alloca_local_tensor", [](const std::vector<int> &shape,
+                                       const DataType &element_type,
+                                       const ExprGroup &elements) {
+    auto var = Expr(std::make_shared<IdExpression>());
+    current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
+        std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
+        element_type));
+    for (int i = 0; i < (int)elements.exprs.size(); ++i) {
+      ExprGroup reversed_indices, indices;
+      int linearized_index = i;
+      for (int d = (int)shape.size() - 1; d >= 0; --d) {
+        reversed_indices.push_back(
+            Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
+        linearized_index /= shape[d];
+      }
+      for (int d = 0; d < (int)shape.size(); ++d)
+        indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
+      current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
+          Expr::make<LocalTensorElementExpression>(var, indices),
+          load_if_ptr(elements.exprs[i])));
+    }
+    return var;
+  });
   m.def("expr_assign", expr_assign);
 
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
@@ -715,10 +738,17 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
-  m.def("subscript_with_offset",
+  m.def("global_subscript_with_offset",
         [](const Expr &var, const ExprGroup &indices, int cols, bool is_aos) {
+          // TODO: Add test for dimension check
           return Expr::make<GlobalTensorElementExpression>(var, indices, cols,
                                                            is_aos);
+        });
+
+  m.def("local_subscript_with_offset",
+        [](const Expr &var, const ExprGroup &indices) {
+          // TODO: Add test for dimension check
+          return Expr::make<LocalTensorElementExpression>(var, indices);
         });
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
@@ -749,6 +779,7 @@ void export_lang(py::module &m) {
       .def(py::init<const std::string &, int, int>())
       .def_readonly("instance_id", &FunctionKey::instance_id);
 
+  // This function will call `Expr &Expr::operator=(const Expr &o)` implicitly.
   m.def("create_print",
         [&](std::vector<std::variant<Expr, std::string>> contents) {
           current_ast_builder().insert(

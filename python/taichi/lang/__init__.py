@@ -4,8 +4,9 @@ from copy import deepcopy as _deepcopy
 
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
+from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *
-from taichi.lang.kernel_arguments import ext_arr, template
+from taichi.lang.kernel_arguments import any_arr, ext_arr, template
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, Vector
@@ -358,6 +359,9 @@ def no_activate(*args):
 
 
 def block_local(*args):
+    if ti.current_cfg().dynamic_index:
+        raise InvalidOperationError(
+            'dynamic_index is not allowed when block_local is turned on.')
     for a in args:
         for v in a.get_field_members():
             _ti_core.insert_snode_access_flag(
@@ -972,7 +976,7 @@ def archs_support_sparse(test, **kwargs):
 def torch_test(func):
     if ti.has_pytorch():
         # OpenGL somehow crashes torch test without a reason, unforturnately
-        return ti.archs_excluding(ti.opengl)(func)
+        return ti.test(exclude=[opengl])(func)
     else:
         return lambda: None
 

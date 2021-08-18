@@ -57,11 +57,14 @@ WORKDIR ./taichi
 RUN git cat-file -t $COMMIT_SHA || exit 1
 RUN git checkout $COMMIT_SHA
 # Install Taichi's Python dependencies
-RUN $PYTHON -m pip install --user -r requirements.txt
-# Build Taichi from source
+RUN $PYTHON -m pip install --user -r requirements_dev.txt
+# Build Taichi wheel from source
 RUN git submodule update --init --recursive --depth=1
 WORKDIR /taichi-dev/taichi
-RUN $PYTHON setup.py develop
+WORKDIR python/
+RUN $PYTHON build.py build $TEST_OPTION
+WORKDIR ../
+RUN $PYTHON -m pip install dist/*.whl
 
 # Link Taichi source repo to Python Path
 ENV LANG="C.UTF-8"
@@ -72,6 +75,6 @@ RUN strings build/libtaichi_core.so | grep GLIBC
 
 # Install twine and upload project to pypi.
 RUN $PYTHON -m pip install --user twine
-RUN ti test -t 2
+RUN ti test -vr2
 WORKDIR python/
-RUN $PYTHON build.py upload $TEST_OPTION
+RUN $PYTHON build.py upload --skip_build $TEST_OPTION

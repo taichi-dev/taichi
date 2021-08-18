@@ -25,6 +25,11 @@ class AllocaStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
+  AllocaStmt(const std::vector<int> &shape, DataType type) {
+    ret_type = TypeFactory::create_tensor_type(shape, type);
+    TI_STMT_REG_FIELDS;
+  }
+
   bool has_global_side_effect() const override {
     return false;
   }
@@ -311,9 +316,22 @@ class PtrOffsetStmt : public Stmt {
   Stmt *origin{nullptr};
   Stmt *offset{nullptr};
 
-  PtrOffsetStmt(Stmt *origin, Stmt *offset) : origin(origin), offset(offset) {
-    element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
-    TI_STMT_REG_FIELDS;
+  PtrOffsetStmt(Stmt *, Stmt *);
+
+  bool is_local_ptr() const {
+    if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>()) {
+      TI_ASSERT_INFO(origin->ret_type->is<TensorType>(),
+                     "PtrOffsetStmt can only be used for Alloca (TensorType).");
+    }
+    return origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>();
+  }
+
+  bool is_unlowered_global_ptr() const {
+    return origin->is<GlobalPtrStmt>();
+  }
+
+  bool is_lowered_global_ptr() const {
+    return !is_local_ptr() && !is_unlowered_global_ptr();
   }
 
   bool has_global_side_effect() const override {
@@ -546,7 +564,9 @@ class LocalStoreStmt : public Stmt {
   Stmt *val;
 
   LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
-    TI_ASSERT(dest->is<AllocaStmt>());
+    TI_ASSERT(dest->is<AllocaStmt>() ||
+              (dest->is<PtrOffsetStmt>() &&
+               dest->cast<PtrOffsetStmt>()->is_local_ptr()));
     TI_STMT_REG_FIELDS;
   }
 

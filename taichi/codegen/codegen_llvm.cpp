@@ -2028,7 +2028,7 @@ void CodeGenLLVM::initialize_context() {
   if (kernel->arch == Arch::cuda) {
     tlctx = prog->llvm_context_device.get();
   } else {
-    tlctx = prog->llvm_context_host.get();
+    tlctx = prog->get_llvm_program_impl()->llvm_context_host.get();
   }
   llvm_context = tlctx->get_this_thread_context();
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);

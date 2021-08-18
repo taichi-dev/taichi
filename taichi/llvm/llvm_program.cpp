@@ -7,6 +7,8 @@ namespace taichi {
 namespace lang {
 LlvmProgramImpl::LlvmProgramImpl(CompileConfig config) : config(config) {
   snode_tree_buffer_manager = std::make_unique<SNodeTreeBufferManager>(this);
+
+  llvm_context_host = std::make_unique<TaichiLLVMContext>(host_arch());
 }
 
 void LlvmProgramImpl::device_synchronize() {

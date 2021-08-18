@@ -12,20 +12,11 @@ jobs:
     strategy:
       matrix:
         include:
-          # We disabled three python versions because it would consume a large
+          # We use only one python version because it would consume a large
           # amount of github action minutes.
-          #- os: macos-latest
-          #  python: 3.6
-          #  with_cc: OFF
-          #- os: macos-latest
-          #  python: 3.7
-          #  with_cc: OFF
           - os: macos-latest
             python: 3.8
             with_cc: OFF
-          #- os: macos-latest
-          #  python: 3.9
-          #  with_cc: OFF
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -87,20 +78,11 @@ jobs:
     strategy:
       matrix:
         include:
-          # We disabled three python versions because it would consume a large
+          # We use only one python version because it would consume a large
           # amount of github action minutes.
-          #- os: windows-latest
-          #  python: 3.6
-          #  with_cc: OFF
-          #- os: windows-latest
-          #  python: 3.7
-          #  with_cc: OFF
           - os: windows-latest
             python: 3.8
             with_cc: OFF
-          #- os: windows-latest
-          #  python: 3.9
-          #  with_cc: OFF
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install 7Zip PowerShell

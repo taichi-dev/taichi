@@ -1,5 +1,6 @@
-import taichi as ti
 import time
+
+import taichi as ti
 
 
 # TODO: these are not really tests...
@@ -59,6 +60,7 @@ def test_node_manager_gc():
         ti.call_internal("test_node_allocator_gc_cpu")
 
     test_cpu()
+
 
 @ti.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_return():

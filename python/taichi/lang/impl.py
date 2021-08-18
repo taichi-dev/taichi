@@ -820,4 +820,5 @@ def default_cfg():
 
 
 def call_internal(name, *args):
-    return expr_init(_ti_core.insert_internal_func_call(name, make_expr_group(args)))
+    return expr_init(
+        _ti_core.insert_internal_func_call(name, make_expr_group(args)))

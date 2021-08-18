@@ -87,9 +87,10 @@ class AnyArrayAccess:
 
     @taichi_scope
     def subscript(self, i, j):
-        indices_second = (i,) if len(self.arr.element_shape) == 1 else (i, j)
+        indices_second = (i, ) if len(self.arr.element_shape) == 1 else (i, j)
         if self.arr.is_soa:
             indices = indices_second + self.indices_first
         else:
             indices = self.indices_first + indices_second
-        return Expr(_ti_core.subscript(self.arr.ptr, make_expr_group(*indices)))
+        return Expr(_ti_core.subscript(self.arr.ptr,
+                                       make_expr_group(*indices)))

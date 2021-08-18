@@ -557,7 +557,8 @@ if 1:
                     arg_decls.append(arg_init)
                 elif isinstance(ctx.func.argument_annotations[i], ti.any_arr):
                     arg_init = parse_stmt(
-                        'x = ti.lang.kernel_arguments.decl_any_arr_arg(0, 0, 0, 0)')
+                        'x = ti.lang.kernel_arguments.decl_any_arr_arg(0, 0, 0, 0)'
+                    )
                     arg_init.targets[0].id = arg.arg
                     ctx.create_variable(arg.arg)
                     array_dt = ctx.arg_features[i][0]
@@ -569,8 +570,10 @@ if 1:
                     dt = parse_expr(dt_expr)
                     arg_init.value.args[0] = dt
                     arg_init.value.args[1] = parse_expr("{}".format(array_dim))
-                    arg_init.value.args[2] = parse_expr("{}".format(array_element_shape))
-                    arg_init.value.args[3] = parse_expr("{}".format(array_is_soa))
+                    arg_init.value.args[2] = parse_expr(
+                        "{}".format(array_element_shape))
+                    arg_init.value.args[3] = parse_expr(
+                        "{}".format(array_is_soa))
                     arg_decls.append(arg_init)
                 else:
                     arg_init = parse_stmt(

@@ -1,6 +1,6 @@
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.expr import Expr
-from taichi.lang.ext_array import ExtArray, AnyArray
+from taichi.lang.ext_array import AnyArray, ExtArray
 from taichi.lang.snode import SNode
 from taichi.lang.util import cook_dtype, to_taichi_type
 
@@ -46,20 +46,26 @@ class ArgAnyArray:
         is_soa (bool, optional): Whether to change the layout from AOS (default) to SOA.
     """
     def __init__(self, element_shape=(), is_soa=False):
-        assert len(element_shape) <= 2, "Only scalars, vectors, and matrices are allowed as elements of ti.any_arr()"
+        assert len(
+            element_shape
+        ) <= 2, "Only scalars, vectors, and matrices are allowed as elements of ti.any_arr()"
         self.element_shape = element_shape
         self.is_soa = is_soa
 
     def extract(self, x):
         shape = tuple(x.shape)
         element_dim = len(self.element_shape)
-        assert len(shape) >= element_dim, "Invalid argument passed to ti.any_arr()"
+        assert len(
+            shape) >= element_dim, "Invalid argument passed to ti.any_arr()"
         if element_dim > 0:
             if self.is_soa:
-                assert shape[:element_dim] == self.element_shape, "Invalid argument passed to ti.any_arr()"
+                assert shape[:
+                             element_dim] == self.element_shape, "Invalid argument passed to ti.any_arr()"
             else:
-                assert shape[-element_dim:] == self.element_shape, "Invalid argument passed to ti.any_arr()"
-        return to_taichi_type(x.dtype), len(shape), self.element_shape, self.is_soa
+                assert shape[
+                    -element_dim:] == self.element_shape, "Invalid argument passed to ti.any_arr()"
+        return to_taichi_type(
+            x.dtype), len(shape), self.element_shape, self.is_soa
 
 
 any_arr = ArgAnyArray
@@ -124,7 +130,8 @@ def decl_ext_arr_arg(dtype, dim):
 def decl_any_arr_arg(dtype, dim, element_shape, is_soa):
     dtype = cook_dtype(dtype)
     arg_id = _ti_core.decl_arg(dtype, True)
-    return AnyArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id), element_shape, is_soa)
+    return AnyArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id),
+                    element_shape, is_soa)
 
 
 def decl_scalar_ret(dtype):

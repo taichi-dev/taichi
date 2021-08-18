@@ -6,7 +6,7 @@ import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.ext_array import ExtArray, AnyArray, AnyArrayAccess
+from taichi.lang.ext_array import AnyArray, AnyArrayAccess, ExtArray
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField
 from taichi.lang.ndarray import ScalarNdarray
@@ -171,7 +171,10 @@ def subscript(value, *indices):
             n = value.element_shape[0]
             m = 1 if element_dim == 1 else value.element_shape[1]
             any_array_access = AnyArrayAccess(value, indices)
-            ret = ti.Matrix.with_entries(n, m, [any_array_access.subscript(i, j) for i in range(n) for j in range(m)])
+            ret = ti.Matrix.with_entries(n, m, [
+                any_array_access.subscript(i, j) for i in range(n)
+                for j in range(m)
+            ])
             ret.any_array_access = any_array_access
             return ret
     elif isinstance(value, (ExtArray, SNode)):

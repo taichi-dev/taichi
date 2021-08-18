@@ -149,8 +149,11 @@ def test_mpm88_numpy():
     grid_m = np.zeros((n_grid, n_grid), dtype=np.float32)
 
     @ti.kernel
-    def substep(x: ti.any_arr(element_shape=(dim,)), v: ti.any_arr(element_shape=(dim,)), C: ti.any_arr(element_shape=(dim, dim)),
-                J: ti.any_arr(), grid_v: ti.any_arr(element_shape=(dim,)), grid_m: ti.any_arr()):
+    def substep(x: ti.any_arr(element_shape=(dim, )),
+                v: ti.any_arr(element_shape=(dim, )),
+                C: ti.any_arr(element_shape=(dim, dim)), J: ti.any_arr(),
+                grid_v: ti.any_arr(element_shape=(dim, )),
+                grid_m: ti.any_arr()):
         for p in range(n_particles):
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)

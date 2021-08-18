@@ -30,7 +30,7 @@ class ExternalPtrAccessVisitor : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   ExternalPtrAccessVisitor(std::unordered_map<int, ExternalPtrAccess> &map)
-      : map_(map), BasicStmtVisitor() {
+      : BasicStmtVisitor(), map_(map) {
   }
 
   void visit(GlobalLoadStmt *stmt) override {

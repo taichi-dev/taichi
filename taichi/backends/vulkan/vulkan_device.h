@@ -91,8 +91,6 @@ class VulkanResourceBinder : public ResourceBinder {
  private:
   std::unordered_map<uint32_t, Set> sets_;
   bool layout_locked_{false};
-
-  // TODO: Graphics pipeline stuff
 };
 
 // VulkanPipeline maps to a VkPipeline, or a SPIR-V module (a GLSL compute

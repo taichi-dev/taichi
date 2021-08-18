@@ -42,6 +42,14 @@ struct DeviceAllocation {
   uint32_t alloc_id{0};
 
   DevicePtr get_ptr(uint64_t offset) const;
+
+  bool operator==(const DeviceAllocation &other) const {
+    return other.device == device && other.alloc_id == alloc_id;
+  }
+
+  bool operator!=(const DeviceAllocation &other) const {
+    return !(*this == other);
+  }
 };
 
 struct DeviceAllocationGuard : public DeviceAllocation {
@@ -53,6 +61,15 @@ struct DeviceAllocationGuard : public DeviceAllocation {
 
 struct DevicePtr : public DeviceAllocation {
   uint64_t offset{0};
+
+  bool operator==(const DevicePtr &other) const {
+    return other.device == device && other.alloc_id == alloc_id &&
+           other.offset == offset;
+  }
+
+  bool operator!=(const DevicePtr &other) const {
+    return !(*this == other);
+  }
 };
 
 constexpr DeviceAllocation kDeviceNullAllocation{};

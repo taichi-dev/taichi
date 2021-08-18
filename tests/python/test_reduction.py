@@ -85,7 +85,7 @@ def test_reduction_single_i32(op):
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@ti.all_archs
+@ti.test(exclude=ti.opengl)
 def test_reduction_single_u32(op):
     _test_reduction_single(ti.u32, lambda x, y: x % 2**32 == y % 2**32, op)
 

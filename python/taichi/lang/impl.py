@@ -333,7 +333,8 @@ class PyTaichi:
             if _var.ptr.snode() is None:
                 tb = getattr(_var, 'declaration_tb', str(_var.ptr))
                 not_placed.append(tb)
-
+    
+        '''
         if len(not_placed):
             bar = '=' * 44 + '\n'
             raise RuntimeError(
@@ -341,6 +342,7 @@ class PyTaichi:
                 f'{bar}'.join(not_placed) +
                 f'{bar}Please consider specifying a shape for them. E.g.,' +
                 '\n\n  x = ti.field(float, shape=(2, 3))')
+        '''
 
         for callback in self.materialize_callbacks:
             callback()
@@ -611,7 +613,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     del _taichi_skip_traceback
 
     x, x_grad = create_field_member(dtype, name)
-    x, x_grad = ScalarField(x), ScalarField(x_grad)
+    x, x_grad = ScalarField(x, dtype), ScalarField(x_grad, dtype)
     x.set_grad(x_grad)
 
     if shape is not None:

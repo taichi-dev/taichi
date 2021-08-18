@@ -304,13 +304,6 @@ SwapChain &Renderer::swap_chain() {
   return swap_chain_;
 }
 
-void Renderer::present_frame() {
-  swap_chain_.present_frame();
-  if (swap_chain_.requires_recreate()) {
-    recreate_swap_chain();
-  }
-}
-
 }  // namespace vulkan
 
 TI_UI_NAMESPACE_END

@@ -59,8 +59,6 @@ class Renderer {
 
   void draw_frame(Gui *gui);
 
-  void present_frame();
-
   void cleanup();
 
   void cleanup_swap_chain();

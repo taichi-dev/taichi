@@ -1918,11 +1918,7 @@ void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
   for (auto s : stmt->args) {
     args.push_back(llvm_val[s]);
   }
-<<<<<<< HEAD
-  create_call(stmt->func_name, args);
-=======
   llvm_val[stmt] = create_call(stmt->func_name, args);
->>>>>>> master
 }
 
 void CodeGenLLVM::visit(AdStackAllocaStmt *stmt) {

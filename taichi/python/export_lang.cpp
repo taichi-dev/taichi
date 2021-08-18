@@ -473,9 +473,10 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(std::move(stmt_unique));
   });
 
-  m.def("create_internal_func_stmt", [&](const std::string &msg) {
-    current_ast_builder().insert(std::make_unique<InternalFuncStmt>(msg));
-  });
+  m.def("insert_internal_func_call",
+        [&](const std::string &func_name, const ExprGroup &args) {
+          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs);
+        });
 
   m.def("begin_frontend_while", [&](const Expr &cond) {
     auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);

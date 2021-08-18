@@ -60,12 +60,12 @@ void SwapChain::cleanup() {
   vkDestroySurfaceKHR(app_context_->instance(), surface_, nullptr);
 }
 
-void SwapChain::recreate_swap_chain() {
+void SwapChain::recreate_swap_chain(VkRenderPass render_pass) {
   create_swap_chain();
   create_image_views();
 
   create_depth_resources();
-  create_framebuffers(render_pass_);
+  create_framebuffers(render_pass);
 
   images_in_flight_.resize(swap_chain_images_.size(), VK_NULL_HANDLE);
   requires_recreate_ = false;
@@ -141,7 +141,6 @@ void SwapChain::create_image_views() {
 }
 
 void SwapChain::create_framebuffers(VkRenderPass render_pass) {
-  render_pass_ = render_pass;
   swap_chain_framebuffers_.resize(swap_chain_image_views_.size());
 
   for (size_t i = 0; i < swap_chain_image_views_.size(); i++) {

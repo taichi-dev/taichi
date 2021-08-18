@@ -141,21 +141,22 @@ void Renderer::cleanup() {
 }
 
 void Renderer::cleanup_swap_chain() {
+  clear_command_buffer_cache();
+  for (auto &renderable : renderables_) {
+    renderable->cleanup_swap_chain();
+  }
+
   for (VkRenderPass pass : render_passes_) {
     vkDestroyRenderPass(app_context_.device(), pass, nullptr);
   }
   render_passes_.clear();
 
-  clear_command_buffer_cache();
-  for (auto &renderable : renderables_) {
-    renderable->cleanup_swap_chain();
-  }
   swap_chain_.cleanup_swap_chain();
 }
 
 void Renderer::recreate_swap_chain() {
   create_render_passes();
-  swap_chain_.recreate_swap_chain();
+  swap_chain_.recreate_swap_chain(render_passes_[0]);
   for (auto &renderable : renderables_) {
     renderable->recreate_swap_chain();
   }

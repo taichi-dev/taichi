@@ -104,7 +104,6 @@ class Program {
       nullptr};  // TODO: move this to memory allocator
   std::unordered_map<int, SNode *> snodes;
 
-  std::unique_ptr<Runtime> runtime_mem_info{nullptr};
   std::unique_ptr<AsyncEngine> async_engine{nullptr};
 
   std::vector<std::unique_ptr<Kernel>> kernels;

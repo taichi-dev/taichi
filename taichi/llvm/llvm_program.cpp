@@ -2,10 +2,30 @@
 
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/program/arch.h"
+#include "taichi/platform/cuda/detect_cuda.h"
 
 namespace taichi {
 namespace lang {
-LlvmProgramImpl::LlvmProgramImpl(CompileConfig config) : config(config) {
+LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_) {
+  runtime_mem_info = Runtime::create(config_.arch);
+  if (config_.arch == Arch::cuda) {
+    if (!runtime_mem_info) {
+      TI_WARN("Taichi is not compiled with CUDA.");
+      config_.arch = host_arch();
+    } else if (!is_cuda_api_available()) {
+      TI_WARN("No CUDA driver API detected.");
+      config_.arch = host_arch();
+    } else if (!runtime_mem_info->detected()) {
+      TI_WARN("No CUDA device detected.");
+      config_.arch = host_arch();
+    } else {
+      // CUDA runtime created successfully
+    }
+    if (config_.arch != Arch::cuda) {
+      TI_WARN("Falling back to {}.", arch_name(host_arch()));
+    }
+  }
+  config = config_;
   snode_tree_buffer_manager = std::make_unique<SNodeTreeBufferManager>(this);
 
   llvm_context_host = std::make_unique<TaichiLLVMContext>(host_arch());

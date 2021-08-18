@@ -93,50 +93,34 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
                        : "ri"(fpcr | (1 << 24)));  // Bit 24 is FZ
   __asm__ __volatile__("");
 #endif
+  config = default_compile_config;
+  config.arch = desired_arch;
+  llvm_program_ = std::make_unique<LlvmProgramImpl>(config);
 
-  auto arch = desired_arch;
-  if (arch == Arch::cuda) {
-    runtime_mem_info = Runtime::create(arch);
-    if (!runtime_mem_info) {
-      TI_WARN("Taichi is not compiled with CUDA.");
-      arch = host_arch();
-    } else if (!is_cuda_api_available()) {
-      TI_WARN("No CUDA driver API detected.");
-      arch = host_arch();
-    } else if (!runtime_mem_info->detected()) {
-      TI_WARN("No CUDA device detected.");
-      arch = host_arch();
-    } else {
-      // CUDA runtime created successfully
-    }
-    if (arch != Arch::cuda) {
-      TI_WARN("Falling back to {}.", arch_name(host_arch()));
-    }
-  }
-  if (arch == Arch::metal) {
+  if (config.arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {
       TI_WARN("No Metal API detected.");
-      arch = host_arch();
+      config.arch = host_arch();
     }
   }
-  if (arch == Arch::opengl) {
+  if (config.arch == Arch::opengl) {
     if (!opengl::is_opengl_api_available()) {
       TI_WARN("No OpenGL API detected.");
-      arch = host_arch();
+      config.arch = host_arch();
     }
   }
 
-  if (arch == Arch::cc) {
+  if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
     cc_program = std::make_unique<cccp::CCProgram>(this);
 #else
     TI_WARN("No C backend detected.");
-    arch = host_arch();
+    config.arch = host_arch();
 #endif
   }
 
-  if (arch != desired_arch) {
-    TI_WARN("Falling back to {}", arch_name(arch));
+  if (config.arch != desired_arch) {
+    TI_WARN("Falling back to {}", arch_name(config.arch));
   }
 
   memory_pool = std::make_unique<MemoryPool>(this);
@@ -147,22 +131,19 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   // |llvm_context_device| is initialized before kernel compilation
   TI_ASSERT(current_program == nullptr);
   current_program = this;
-  config = default_compile_config;
-  config.arch = arch;
 
   thread_pool = std::make_unique<ThreadPool>(config.cpu_max_num_threads);
 
-  llvm_program_ = std::make_unique<LlvmProgramImpl>(config);
   // TODO: this cannot be called from LlvmProgramImpl, find a better place.
   llvm_program_->llvm_context_host->init_runtime_jit_module();
 
   // TODO: Can we initialize |llvm_context_device| here?
-  profiler = make_profiler(arch);
+  profiler = make_profiler(config.arch);
 
   preallocated_device_buffer = nullptr;
 
-  if (config.kernel_profiler && runtime_mem_info) {
-    runtime_mem_info->set_profiler(profiler.get());
+  if (config.kernel_profiler && llvm_program_->runtime_mem_info) {
+    llvm_program_->runtime_mem_info->set_profiler(profiler.get());
   }
 #if defined(TI_WITH_CUDA)
   if (config.arch == Arch::cuda) {
@@ -201,7 +182,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
     }
   }
 
-  if (arch == Arch::cuda) {
+  if (config.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     int num_SMs;
     CUDADriver::get_instance().device_get_attribute(
@@ -221,7 +202,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #endif
   }
 
-  if (arch_is_cpu(arch)) {
+  if (arch_is_cpu(config.arch)) {
     config.max_block_dim = 1024;
   }
 
@@ -230,7 +211,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   Timelines::get_instance().set_enabled(config.timeline);
 
   TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this),
-           arch_name(arch));
+           arch_name(config.arch));
 }
 
 TypeFactory &Program::get_type_factory() {
@@ -307,7 +288,7 @@ void Program::initialize_llvm_runtime_system() {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().malloc(
         (void **)&result_buffer, sizeof(uint64) * taichi_result_buffer_entries);
-    const auto total_mem = runtime_mem_info->get_total_memory();
+    const auto total_mem = llvm_program_->runtime_mem_info->get_total_memory();
     if (config.device_memory_fraction == 0) {
       TI_ASSERT(config.device_memory_GB > 0);
       prealloc_size = std::size_t(config.device_memory_GB * (1UL << 30));
@@ -821,8 +802,8 @@ void Program::finalize() {
       ofs << stat_string;
     }
   }
-  if (runtime_mem_info)
-    runtime_mem_info->set_profiler(nullptr);
+  if (llvm_program_->runtime_mem_info)
+    llvm_program_->runtime_mem_info->set_profiler(nullptr);
   synchronize();
   current_program = nullptr;
   memory_pool->terminate();

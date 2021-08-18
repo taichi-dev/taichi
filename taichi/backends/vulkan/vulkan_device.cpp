@@ -31,12 +31,13 @@ VulkanPipeline::VulkanPipeline(const Params &params)
 }
 
 VulkanPipeline::VulkanPipeline(const Params &params,
-                               const RasterParams &raster_params)
+                               const RasterParams &raster_params,
+                               const std::vector<VkFormat> &attachment_formats)
     : device_(params.device->vk_device()), name_(params.name) {
   create_descriptor_set_layout(params);
   create_shader_stages(params);
   create_pipeline_layout();
-  create_graphics_pipeline(raster_params);
+  create_graphics_pipeline(raster_params, attachment_formats);
 
   for (VkShaderModule shader_module : shader_modules_) {
     vkDestroyShaderModule(device_, shader_module, kNoVkAllocCallbacks);
@@ -130,8 +131,6 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
 }
 
 void VulkanPipeline::create_shader_stages(const Params &params) {
-  std::vector<VkPipelineShaderStageCreateInfo> shader_stages_;
-
   for (auto &code_view : params.code) {
     VkPipelineShaderStageCreateInfo &shader_stage_info =
         shader_stages_.emplace_back();
@@ -174,7 +173,8 @@ void VulkanPipeline::create_compute_pipeline(const Params &params) {
 }
 
 void VulkanPipeline::create_graphics_pipeline(
-    const RasterParams &raster_params) {
+    const RasterParams &raster_params,
+    const std::vector<VkFormat> &attachment_formats) {
   // Use dynamic viewport state
   VkPipelineViewportStateCreateInfo viewport_state{};
   viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -263,6 +263,73 @@ void VulkanPipeline::create_graphics_pipeline(
       vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1, &pipeline_info,
                                 nullptr, &pipeline_),
       "Graphics pipeline creation failed");
+
+  std::vector<VkAttachmentDescription> attachments;
+  attachments.reserve(attachment_formats.size());
+
+  std::vector<VkAttachmentReference> color_attachments;
+  color_attachments.reserve(attachment_formats.size());
+
+  VkAttachmentReference depth_attachment;
+
+  uint32_t i = 0;
+  for (auto format : attachment_formats) {
+    VkAttachmentDescription &description = attachments.emplace_back();
+    description.flags = 0;
+    description.format = format;
+    description.samples = VK_SAMPLE_COUNT_1_BIT;
+    description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    if (format == VK_FORMAT_D16_UNORM ||
+        format == VK_FORMAT_D24_UNORM_S8_UINT ||
+        format == VK_FORMAT_D32_SFLOAT) {
+      TI_ASSERT(raster_params.depth_write || raster_params.depth_test);
+      description.finalLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+
+      depth_attachment.attachment = i;
+      depth_attachment.layout =
+          VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    } else {
+      description.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+      VkAttachmentReference &ref = color_attachments.emplace_back();
+      ref.attachment = i;
+      ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    }
+  }
+
+  VkSubpassDescription subpass{};
+  subpass.flags = 0;
+  subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+  subpass.inputAttachmentCount = 0;
+  subpass.pInputAttachments = nullptr;
+  subpass.colorAttachmentCount = color_attachments.size();
+  subpass.pColorAttachments = color_attachments.data();
+  subpass.pResolveAttachments = 0;
+  subpass.pDepthStencilAttachment =
+      (raster_params.depth_test || raster_params.depth_write)
+          ? &depth_attachment
+          : nullptr;
+  subpass.preserveAttachmentCount = 0;
+  subpass.pPreserveAttachments = nullptr;
+
+  VkRenderPassCreateInfo renderpass_info{};
+  renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+  renderpass_info.pNext = nullptr;
+  renderpass_info.flags = 0;
+  renderpass_info.attachmentCount = attachment_formats.size();
+  renderpass_info.pAttachments = attachments.data();
+  renderpass_info.subpassCount = 1;
+  renderpass_info.pSubpasses = nullptr;
+  renderpass_info.dependencyCount = 0;
+  renderpass_info.pDependencies = nullptr;
+
+  vkCreateRenderPass(device_, &renderpass_info, kNoVkAllocCallbacks,
+                     &renderpass_);
 }
 
 VulkanResourceBinder::VulkanResourceBinder(VkPipelineBindPoint bind_point)
@@ -578,11 +645,13 @@ std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(PipelineSourceDesc &src,
   TI_ASSERT(src.type == PipelineSourceType::spirv_binary &&
             src.stage == PipelineStageType::compute);
 
+  SpirvCodeView code;
+  code.data = (uint32_t *)src.data;
+  code.size = src.size;
+  code.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+
   VulkanPipeline::Params params;
-  params.code = {SpirvCodeView()};
-  params.code[0].data = (uint32_t *)src.data;
-  params.code[0].size = src.size;
-  params.code[0].stage = VK_SHADER_STAGE_COMPUTE_BIT;
+  params.code = {code};
   params.device = this;
   params.name = name;
 
@@ -803,6 +872,7 @@ void VulkanDevice::command_sync() {
 
 std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(
     std::vector<PipelineSourceDesc> &src,
+    std::vector<BufferFormat> &render_target_formats,
     std::string name) {
   return nullptr;
 }

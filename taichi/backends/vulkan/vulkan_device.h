@@ -4,7 +4,7 @@
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
-#include "vk_mem_alloc.h"
+#include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
 
 #include <GLFW/glfw3.h>
 
@@ -117,7 +117,9 @@ class VulkanPipeline : public Pipeline {
   };
 
   explicit VulkanPipeline(const Params &params);
-  explicit VulkanPipeline(const Params &params, const RasterParams &raster_params);
+  explicit VulkanPipeline(const Params &params,
+                          const RasterParams &raster_params,
+                          const std::vector<VkFormat> &attachment_formats);
   ~VulkanPipeline();
 
   ResourceBinder *resource_binder() override {
@@ -127,11 +129,17 @@ class VulkanPipeline : public Pipeline {
   VkPipelineLayout pipeline_layout() const {
     return pipeline_layout_;
   }
+
   VkPipeline pipeline() const {
     return pipeline_;
   }
+
   const std::string &name() const {
     return name_;
+  }
+
+  VkRenderPass renderpass() const {
+    return renderpass_;
   }
 
  private:
@@ -139,7 +147,9 @@ class VulkanPipeline : public Pipeline {
   void create_shader_stages(const Params &params);
   void create_pipeline_layout();
   void create_compute_pipeline(const Params &params);
-  void create_graphics_pipeline(const RasterParams &raster_params);
+  void create_graphics_pipeline(
+      const RasterParams &raster_params,
+      const std::vector<VkFormat> &attachment_formats);
 
   static VkShaderModule create_shader_module(VkDevice device,
                                              const SpirvCodeView &code);
@@ -147,7 +157,7 @@ class VulkanPipeline : public Pipeline {
   VkDevice device_{VK_NULL_HANDLE};  // not owned
 
   std::string name_;
-  
+
   std::vector<VkPipelineShaderStageCreateInfo> shader_stages_;
 
   VulkanResourceBinder resource_binder_;
@@ -252,6 +262,7 @@ class VulkanDevice : public GraphicsDevice {
 
   std::unique_ptr<Pipeline> create_raster_pipeline(
       std::vector<PipelineSourceDesc> &src,
+      std::vector<BufferFormat> &render_target_formats,
       std::string name = "Pipeline") override;
 
   std::unique_ptr<Surface> create_surface(uint32_t width,

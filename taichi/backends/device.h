@@ -143,6 +143,31 @@ enum class PipelineStageType {
   raytracing
 };
 
+enum class BufferFormat {
+  r8,
+  rgba8,
+  r8u,
+  rgba8u,
+  r8i,
+  rgba8i,
+  r16,
+  rgba16,
+  r16u,
+  rgba16u,
+  r16i,
+  rgba16i,
+  r16f,
+  rgba16f,
+  r32u,
+  rgba32u,
+  r32i,
+  rgba32i,
+  r32f,
+  rgba32f,
+  depth32,
+  depth24stencil8
+};
+
 // TODO: Implement this
 class Pipeline {
  public:
@@ -259,6 +284,7 @@ class GraphicsDevice : public Device {
  public:
   virtual std::unique_ptr<Pipeline> create_raster_pipeline(
       std::vector<PipelineSourceDesc> &src,
+      std::vector<BufferFormat> &render_target_formats,
       std::string name = "Pipeline") = 0;
 
   virtual std::unique_ptr<Surface> create_surface(uint32_t width,

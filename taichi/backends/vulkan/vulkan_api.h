@@ -6,7 +6,6 @@
 #include <vulkan/vulkan_core.h>
 
 #include <taichi/backends/device.h>
-#include <taichi/backends/vulkan/vulkan_device.h>
 
 #include <memory>
 #include <optional>
@@ -23,6 +22,8 @@
 namespace taichi {
 namespace lang {
 namespace vulkan {
+
+class VulkanDevice;
 
 struct VulkanQueueFamilyIndices {
   std::optional<uint32_t> compute_family;
@@ -99,9 +100,7 @@ class EmbeddedVulkanDevice {
     return queue_family_indices_;
   }
 
-  Device *get_ti_device() const {
-    return ti_device_.get();
-  }
+  Device *get_ti_device() const;
 
  private:
   void create_instance();

@@ -4,6 +4,7 @@
 #include <memory>
 #include "taichi/backends/vulkan/vulkan_api.h"
 #include "taichi/backends/vulkan/loader.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
 
 TI_UI_NAMESPACE_BEGIN

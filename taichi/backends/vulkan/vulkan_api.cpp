@@ -230,6 +230,10 @@ EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
   vkDestroyInstance(instance_, kNoVkAllocCallbacks);
 }
 
+Device *EmbeddedVulkanDevice::get_ti_device() const {
+  return ti_device_.get();
+}
+
 void EmbeddedVulkanDevice::create_instance() {
   VkApplicationInfo app_info{};
   app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;

@@ -82,7 +82,7 @@ VkSurfaceKHR AppContext::surface() const {
 }
 
 VkDevice AppContext::device() const {
-  return vulkan_device_->device()->device();
+  return vulkan_device_->device()->vk_device();
 }
 
 VkPhysicalDevice AppContext::physical_device() const {
@@ -98,11 +98,11 @@ VkQueue AppContext::graphics_queue() const {
 }
 
 VkQueue AppContext::present_queue() const {
-  return vulkan_device_->device()->present_queue();
+  return vulkan_device_->device()->graphics_queue();
 }
 
 VkCommandPool AppContext::command_pool() const {
-  return vulkan_device_->device()->command_pool();
+  return vulkan_device_->device()->compute_cmd_pool();
 }
 
 GLFWwindow *AppContext::glfw_window() const {

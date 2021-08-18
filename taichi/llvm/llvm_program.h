@@ -5,6 +5,7 @@
 #include "taichi/common/logging.h"
 #include "taichi/llvm/llvm_context.h"
 #include "taichi/runtime/runtime.h"
+#include "taichi/system/threading.h"
 
 #include <memory>
 
@@ -17,6 +18,7 @@ class LlvmProgramImpl {
   std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
   std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
   std::unique_ptr<Runtime> runtime_mem_info{nullptr};
+  std::unique_ptr<ThreadPool> thread_pool{nullptr};
 
   LlvmProgramImpl(CompileConfig &config);
 

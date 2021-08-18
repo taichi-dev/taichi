@@ -203,8 +203,8 @@ jobs:
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           $PYTHON -m pip install dist/*.whl
         env:
-          LLVM_LIB_ROOT_DIR: /home/taichi/Libs/taichi-llvm-10.0.0
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_PENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON
+          LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON
           BUILD_NUM_THREADS: 8
 
       - name: Test

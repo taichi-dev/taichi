@@ -68,5 +68,27 @@ uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
   return ret;
 }
 
+void LlvmProgramImpl::print_list_manager_info(void *list_manager,
+                                              uint64 *result_buffer) {
+  auto list_manager_len = runtime_query<int32>("ListManager_get_num_elements",
+                                               result_buffer, list_manager);
+
+  auto element_size = runtime_query<int32>("ListManager_get_element_size",
+                                           result_buffer, list_manager);
+
+  auto elements_per_chunk =
+      runtime_query<int32>("ListManager_get_max_num_elements_per_chunk",
+                           result_buffer, list_manager);
+
+  auto num_active_chunks = runtime_query<int32>(
+      "ListManager_get_num_active_chunks", result_buffer, list_manager);
+
+  auto size_MB = 1e-6f * num_active_chunks * elements_per_chunk * element_size;
+
+  fmt::print(
+      " length={:n}     {:n} chunks x [{:n} x {:n} B]  total={:.4f} MB\n",
+      list_manager_len, num_active_chunks, elements_per_chunk, element_size,
+      size_MB);
+}
 }  // namespace lang
 }  // namespace taichi

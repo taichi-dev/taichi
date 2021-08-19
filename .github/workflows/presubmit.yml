@@ -194,6 +194,7 @@ jobs:
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
           export CXX=clang++-8
           export PYTHON=/usr/bin/python3
+          $PYTHON -m pip uninstall taichi -y
           $PYTHON -m pip install -r requirements_dev.txt
           cd python
           git fetch origin master
@@ -218,7 +219,6 @@ jobs:
           ti diagnose
           ti changelog
           ti test -vr2 -t2
-          $PYTHON -m pip uninstall dist/*.whl -y
 
   build_and_test_windows:
     name: Build and Test (Windows)

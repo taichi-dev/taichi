@@ -3,58 +3,57 @@ sidebar_position: 3
 ---
 
 # Developer installation
-This section documents how to configure the Taichi devolopment environment and build Taichi from source for the compiler developers. The installation instructions are highly varied between different operationg systems. We also provide a Dockerfile which may help setup a containerized Taichi development environment with CUDA support based on the Ubuntu base docker image.
-
-[Developer installation for Linux](#linux)
-
-[Developer installation for macOS](#macos)
-
-[Developer installation for Windows](#windows)
-
-[Developer installation for Docker](#docker)
 
 :::note
 End users should use the pip packages instead of building from source.
 :::
 
-## Linux
+This section documents how to configure the Taichi devolopment environment and build Taichi from source for the compiler developers. The installation instructions might vary between different operationg systems. We also provide a Dockerfile which may help setup a containerized Taichi development environment with CUDA support based on the Ubuntu base docker image.
+
 ### Installing Dependencies
 1. Make sure you are using Python 3.6/3.7/3.8
 
-- Install Python dependencies:
+  - Install Python dependencies for developers:
 
-  ```bash
-  python3 -m pip install --user setuptools astor pybind11 pylint sourceinspect
-  python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
-  python3 -m pip install --user numpy GitPython coverage colorama autograd
-  ```
+    ```bash
+    python3 -m pip install --user -r requirements_dev.txt
+    ```
 
-
-
-2.  Make sure you have `clang` with version \>= 7:
+2.  Make sure you have `clang` with version \>= 7 on Linux or download clang-10 on Windows:
 
   - On Ubuntu, execute `sudo apt install libtinfo-dev clang-8`.
   - On Arch Linux, execute `sudo pacman -S clang`. (This is
     `clang-10`).
   - On other Linux distributions, please search [this
     site](https://pkgs.org) for clang version \>= 7.
+  - On Windows please download [clang-10](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip). Make sure you add the `bin` folder containing `clang.exe` to the `PATH` environment variable.
+
 
 :::note
-Note that on Linux, `clang` is the **only** supported compiler for
-compiling the Taichi compiler.
+Note that on Linux, `clang` is the **only** supported compiler for compiling the Taichi compiler.
 :::
+
 
 3. Make sure you have LLVM 10.0.0. Note that Taichi uses a **customized
   LLVM** so the pre-built binaries from the LLVM official website or
   other sources probably won't work. Here we provide LLVM binaries
   customized for Taichi, which may or may not work depending on your
   system environment:
-  - [LLVM 10.0.0 for
-    Linux](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-linux.zip)
+  - [LLVM 10.0.0 for Linux](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-linux.zip)
+  - [LLVM 10.0.0 for macOS](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip)
+  - [LLVM 10.0.0 for Windows MSVC 2019](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip)
+
+  :::note
+  On Windows, if you use the pre-built LLVM for Taichi, please add
+  `$LLVM_FOLDER/bin` to `PATH`. Later, when you build Taichi please
+  use `cmake -DLLVM_DIR=$LLVM_FOLDER/lib/cmake/llvm`.
+  :::
 
 - If the downloaded LLVM does not work, please build from source:
+  - For Linux:
 
     ```bash
+    # For Linux & OSX
     wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/llvm-10.0.0.src.tar.xz
     tar xvJf llvm-10.0.0.src.tar.xz
     cd llvm-10.0.0.src
@@ -63,14 +62,36 @@ compiling the Taichi compiler.
     cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_TERMINFO=OFF
     # If you are building on NVIDIA Jetson TX2, use -DLLVM_TARGETS_TO_BUILD="ARM;NVPTX"
     # If you are building Taichi for a PyPI release, add -DLLVM_ENABLE_Z3_SOLVER=OFF to reduce the library dependency.
-
     make -j 8
     sudo make install
-
     # Check your LLVM installation
     llvm-config --version  # You should get 10.0.0
     ```
+
+  - For Windows:
+
+    ```bash
+      # For Windows
+      # LLVM 10.0.0 + MSVC 2019
+      cmake .. -G"Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF   -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64   -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
+
+    ```
+
+    - Then open `LLVM.sln` and use Visual Studio 2017+ to build.
+    - Please make sure you are using the `Release` configuration.
+      After building the `INSTALL` project (under folder
+      `CMakePredefinedTargets` in the Solution Explorer window).
+    - If you use MSVC 2019, **make sure you use C++17** for the
+      `INSTALL` project.
+    - After the build is complete, find your LLVM binaries and
+      headers in `build/installed`.
+    - Please add `build/installed/bin` to `PATH`. Later, when you
+    build Taichi please use
+    `cmake -DLLVM_DIR=<path_to_build>/build/installed/lib/cmake/llvm`.
+
+
 ### Setting up CUDA (optional)
+
 :::note
 To build with NVIDIA GPU support, CUDA 10.0+ is needed. This
 installation guide works for Ubuntu 16.04+.
@@ -87,223 +108,28 @@ installer.
 - On **Arch Linux**, you can easily install CUDA via `pacman -S cuda`
   without downloading the installer manually.
 
+
 ### Setting up Taichi for development
 
-1. Set up environment variables for Taichi:
-
-  - Please add the following script to your rc file
-    (`~/.bashrc`, `~/.zshrc` or etc. , same for other occurrences in
-    this documentation):
-
-    ```bash
-    export TAICHI_REPO_DIR=/path/to/taichi  # Path to your taichi repository
-    export PYTHONPATH=$TAICHI_REPO_DIR/python:$PYTHONPATH
-    export PATH=$TAICHI_REPO_DIR/bin:$PATH
-    # export CXX=/path/to/clang  # Uncomment if you encounter issue about compiler in the next step.
-    # export PATH=/opt/llvm/bin:$PATH  # Uncomment if your llvm or clang is installed in /opt
-    ```
-
-  - To reload shell config, please execute
-
-    ```bash
-    source ~/.bashrc
-    ```
-
-    :::note
-    If you're using fish, use `set -x NAME VALUES`, otherwise it
-    won't be loaded by child processes.
-    :::
-
-2. Clone the Taichi repo **recursively**, and build:
+1. Clone the Taichi repo **recursively**, and build:
 
   ```bash
-  git clone https://github.com/taichi-dev/taichi --depth=1 --branch=master
+  git clone --recursive https://github.com/taichi-dev/taichi --depth=1 --branch=master
   cd taichi
-  git submodule update --init --recursive --depth=1
-  mkdir build
-  cd build
-  cmake ..
-  # On Linux, if you do not set clang as the default compiler
-  # use the line below:
-  #   cmake .. -DCMAKE_CXX_COMPILER=clang
-  #
-  # Alternatively, if you would like to set clang as the default compiler
-  # On Unix CMake honors environment variables $CC and $CXX upon deciding which C and C++ compilers to use
-  make -j 8
+  # export CXX=/path/to/clang  # Uncomment if clang is not system default compiler.
+  python3 setup.py --user develop  # Optionally add DEBUG=1 to keep debug information.
   ```
+  - We use MSBUILD.exe to build the generated project on Windows. Please note that Windows
+    could have multiple instances of MSBUILD.exe shipped with different
+    products. Please make sure you add the path for MSBUILD.exe within your
+    MSVS directory and make it a higher priority (for instance than the one
+    shipped with .NET).
 
-3. Check out `examples` for runnable examples. Run them with commands
+2. Check out `examples` for runnable examples. Run them with commands
   like `python3 examples/mpm128.py`.
 
-4. Execute `python3 -m taichi test` to run all the tests. It may take
+3. Execute `python3 -m taichi test` to run all the tests. It may take
   up to 5 minutes to run all tests.
-
-## macOS
-### Installing Dependencies
-1. Make sure you are using Python 3.6/3.7/3.8
-
-- Install Python dependencies:
-
-  ```bash
-  python3 -m pip install --user setuptools astor pybind11 pylint sourceinspect
-  python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
-  python3 -m pip install --user numpy GitPython coverage colorama autograd
-  ```
-
-2. Make sure you have LLVM 10.0.0. Note that Taichi uses a **customized
-  LLVM** so the pre-built binaries from the LLVM official website or
-  other sources probably won't work. Here we provide LLVM binaries
-  customized for Taichi, which may or may not work depending on your
-  system environment:
-  - [LLVM 10.0.0 for macOS](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip)
-
-- If the downloaded LLVM does not work, please build from source:
-    ```bash
-    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/llvm-10.0.0.src.tar.xz
-    tar xvJf llvm-10.0.0.src.tar.xz
-    cd llvm-10.0.0.src
-    mkdir build
-    cd build
-    cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_TERMINFO=OFF
-    # If you are building on NVIDIA Jetson TX2, use -DLLVM_TARGETS_TO_BUILD="ARM;NVPTX"
-
-    make -j 8
-    sudo make install
-
-    # Check your LLVM installation
-    llvm-config --version  # You should get 10.0.0
-    ```
-### Setting up Taichi for development
-
-1. Set up environment variables for Taichi:
-
-  - Please add the following script to your rc file
-    (`~/.bashrc`, `~/.zshrc` or etc. , same for other occurrences in
-    this guide):
-
-    ```bash
-    export TAICHI_REPO_DIR=/path/to/taichi  # Path to your taichi repository
-    export PYTHONPATH=$TAICHI_REPO_DIR/python:$PYTHONPATH
-    export PATH=$TAICHI_REPO_DIR/bin:$PATH
-    # export CXX=/path/to/clang  # Uncomment if you encounter issue about compiler in the next step.
-    # export PATH=/opt/llvm/bin:$PATH  # Uncomment if your llvm or clang is installed in /opt
-    ```
-
-  - To reload shell config, please execute
-
-    ```bash
-    source ~/.bashrc
-    ```
-
-    :::note
-    If you're using fish, use `set -x NAME VALUES`, otherwise it
-    won't be loaded by child processes.
-    :::
-
-2. Clone the taichi repo **recursively**, and build:
-
-  ```bash
-  git clone https://github.com/taichi-dev/taichi --depth=1 --branch=master
-  cd taichi
-  git submodule update --init --recursive --depth=1
-  mkdir build
-  cd build
-  cmake ..
-  # On macOS, if you do not set clang as the default compiler
-  # use the line below:
-  #   cmake .. -DCMAKE_CXX_COMPILER=clang
-  #
-  # Alternatively, if you would like to set clang as the default compiler
-  # On Unix CMake honors environment variables $CC and $CXX upon deciding which C and C++ compilers to use
-  make -j 8
-  ```
-
-3. Check out `examples` for runnable examples. Run them with commands
-  like `python3 examples/mpm128.py`.
-
-4. Execute `python3 -m taichi test` to run all the tests. It may take
-  up to 5 minutes to run all tests.
-
-## Windows
-### Setting up Taichi for development
-For precise build instructions on Windows, please check out
-[appveyor.yml](https://github.com/taichi-dev/taichi/blob/master/appveyor.yml),
-which does basically the same thing as the following instructions. We
-use MSBUILD.exe to build the generated project. Please note that Windows
-could have multiple instances of MSBUILD.exe shipped with different
-products. Please make sure you add the path for MSBUILD.exe within your
-MSVS directory and make it a higher priority (for instance than the one
-shipped with .NET).
-
-:::note
-On Windows, MSVC is the only supported compiler.
-:::
-
-- On Windows, please add these variables by accessing your system
-    settings:
-
-    1.  Add `TAICHI_REPO_DIR` whose value is the path to your taichi
-        repository so that Taichi knows you're a developer.
-    2.  Add or append `PYTHONPATH` with `%TAICHI_REPO_DIR%/python`
-        so that Python imports Taichi from the local repo.
-    3.  Add or append `PATH` with `%TAICHI_REPO_DIR%/bin` so that
-        you can use `ti` command.
-    4.  Add or append `PATH` with path to LLVM binary directory
-        installed in previous section.
-
-### Installing Dependencies
-1. Make sure you are using Python 3.6/3.7/3.8
-
-- Install Python dependencies:
-
-  ```bash
-  python3 -m pip install --user setuptools astor pybind11 pylint sourceinspect
-  python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
-  python3 -m pip install --user numpy GitPython coverage colorama autograd
-  ```
-2. Make sure you have `clang` with version \>= 7:
-Download [clang-10](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip). Make sure you add the `bin` folder containing `clang.exe` to the `PATH` environment variable.
-
-3. Make sure you have LLVM 10.0.0. Note that Taichi uses a **customized
-  LLVM** so the pre-built binaries from the LLVM official website or
-  other sources probably won't work. Here we provide LLVM binaries
-  customized for Taichi, which may or may not work depending on your
-  system environment:
-  - [LLVM 10.0.0 for Windows MSVC
-    2019](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip)
-
-:::note
-On Windows, if you use the pre-built LLVM for Taichi, please add
-`$LLVM_FOLDER/bin` to `PATH`. Later, when you build Taichi using
-`CMake`, set `LLVM_DIR` to `$LLVM_FOLDER/lib/cmake/llvm`.
-:::
-- If the downloaded LLVM does not work, please build from source:
-  ```bash
-    # LLVM 10.0.0 + MSVC 2019
-    cmake .. -G"Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
-    ```
-
-    - Then open `LLVM.sln` and use Visual Studio 2017+ to build.
-    - Please make sure you are using the `Release` configuration.
-      After building the `INSTALL` project (under folder
-      `CMakePredefinedTargets` in the Solution Explorer window).
-    - If you use MSVC 2019, **make sure you use C++17** for the
-      `INSTALL` project.
-    - After the build is complete, find your LLVM binaries and
-      headers in `build/installed`.
-
-    Please add `build/installed/bin` to `PATH`. Later, when you
-    build Taichi using `CMake`, set `LLVM_DIR` to
-    `build/installed/lib/cmake/llvm`.
-
-### Setting up CUDA (optional)
-If you don't have CUDA, go to [this
-website](https://developer.nvidia.com/cuda-downloads) and download the
-installer.
-
-- To check if CUDA is installed, run `nvcc --version` or
-  `cat /usr/local/cuda/version.txt`.
-
 
 ## Docker
 
@@ -396,18 +222,14 @@ sudo systemctl restart docker
 
 ## Troubleshooting Developer Installation
 
+- If `python3 setup.py develop/install` gives `permission denied` error, it means you're
+  installing into system python without write permission. You can work around this by:
+  - `python3 setup.py --user develop/install`
+  - Install conda and use python from conda enviroments.
+
 - If `make` fails to compile and reports
   `fatal error: 'spdlog/XXX.h' file not found`, please try runing
   `git submodule update --init --recursive --depth=1`.
-
-- If importing Taichi causes
-
-  ```
-  FileNotFoundError: [Errno 2] No such file or directory: '/root/taichi/python/taichi/core/../lib/taichi_core.so' -> '/root/taichi/python/taichi/core/../lib/libtaichi_core.so'``
-  ```
-
-  Please try adding `TAICHI_REPO_DIR` to environment variables, see
-  [dev_env_settings](/docs/lang/articles/misc/global_settings).
 
 - If the build succeeded but running any Taichi code results in errors
   like

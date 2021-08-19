@@ -103,9 +103,8 @@ std::vector<uint32_t> IRBuilder::finalize() {
   data.insert(data.end(), global_.begin(), global_.end());
   data.insert(data.end(), func_header_.begin(), func_header_.end());
   data.insert(data.end(), function_.begin(), function_.end());
-  if (float_atomic_add_.id > 0) {
-    data.insert(data.end(), float_atomic_add_function_.begin(),
-                float_atomic_add_function_.end());
+  if (any_atomic_) {
+    data.insert(data.end(), atomic_functions_.begin(), atomic_functions_.end());
   }
   return data;
 }
@@ -648,34 +647,36 @@ Value IRBuilder::query_value(std::string name) const {
   TI_ERROR("{} is not existed.", name);
 }
 
-Value IRBuilder::float_atomic_add() {
-  if (float_atomic_add_.id == 0) {
-    float_atomic_add_.id = id_counter_++;
-    float_atomic_add_.flag = ValueKind::kFunction;
-    debug(spv::OpName, float_atomic_add_, "float_atomic_add");
+Value IRBuilder::float_atomic(AtomicOpType op_type) {
+  auto init_atomic_func_ = [&](Value &func, std::string name,
+                               std::function<void(Value, Value, Value)>
+                                   atomic_op) {
+    func.id = id_counter_++;
+    func.flag = ValueKind::kFunction;
+    debug(spv::OpName, func, name);
 
     SType addr_ptr_type =
         get_pointer_type(t_int32_, spv::StorageClassStorageBuffer);
     SType data_type = t_fp32_;
-    SType float_atomic_add_func_type;
-    float_atomic_add_func_type.id = id_counter_++;
-    float_atomic_add_func_type.flag = TypeKind::kFunc;
-    float_atomic_add_.stype = float_atomic_add_func_type;
+    SType float_atomic_func_type;
+    float_atomic_func_type.id = id_counter_++;
+    float_atomic_func_type.flag = TypeKind::kFunc;
+    func.stype = float_atomic_func_type;
 
-    declare_global(spv::OpTypeFunction, float_atomic_add_func_type, t_fp32_,
+    declare_global(spv::OpTypeFunction, float_atomic_func_type, t_fp32_,
                    addr_ptr_type, data_type);
 
     // function begin
-    auto &func_ = float_atomic_add_function_;
+    auto &func_ = atomic_functions_;
 
     // function header
     ib_.begin(spv::OpFunction)
-        .add_seq(t_fp32_, float_atomic_add_, 0, float_atomic_add_func_type)
+        .add_seq(t_fp32_, func, 0, float_atomic_func_type)
         .commit(&func_);
     Value addr_ptr = new_value(addr_ptr_type, ValueKind::kStructArrayPtr);
-    debug(spv::OpName, addr_ptr, "addr_ptr");
+    debug(spv::OpName, addr_ptr, (name + "_addr_ptr").c_str());
     Value data = new_value(data_type, ValueKind::kNormal);
-    debug(spv::OpName, data, "data");
+    debug(spv::OpName, data, (name + "_data").c_str());
     ib_.begin(spv::OpFunctionParameter)
         .add_seq(addr_ptr_type, addr_ptr)
         .commit(&func_);
@@ -712,10 +713,10 @@ Value IRBuilder::float_atomic_add() {
     Value new_val = alloc_var(t_int32_);
     Value cas_val = alloc_var(t_int32_);
     Value ok = alloc_var(t_int32_);
-    debug(spv::OpName, old_val, "old_val");
-    debug(spv::OpName, new_val, "new_val");
-    debug(spv::OpName, cas_val, "cas_val");
-    debug(spv::OpName, ok, "ok");
+    debug(spv::OpName, old_val, (name + "old_val").c_str());
+    debug(spv::OpName, new_val, (name + "new_val").c_str());
+    debug(spv::OpName, cas_val, (name + "cas_val").c_str());
+    debug(spv::OpName, ok, (name + "ok").c_str());
 
     store_var(old_val, const_i32_zero_);
     store_var(new_val, const_i32_zero_);
@@ -752,7 +753,10 @@ Value IRBuilder::float_atomic_add() {
     Value tmp4 = new_value(t_fp32_, ValueKind::kNormal);
     ib_.begin(spv::OpBitcast).add_seq(t_fp32_, tmp4, tmp3).commit(&func_);
     Value tmp5 = new_value(t_fp32_, ValueKind::kNormal);
-    ib_.begin(spv::OpFAdd).add_seq(t_fp32_, tmp5, tmp4, data).commit(&func_);
+
+    // atomic operation
+    atomic_op(tmp5, tmp4, data);
+
     Value tmp6 = new_value(t_int32_, ValueKind::kNormal);
     ib_.begin(spv::OpBitcast).add_seq(t_int32_, tmp6, tmp5).commit(&func_);
     store_var(new_val, tmp6);
@@ -791,9 +795,63 @@ Value IRBuilder::float_atomic_add() {
     ib_.begin(spv::OpReturnValue).add(tmp15).commit(&func_);
     ib_.begin(spv::OpFunctionEnd).commit(&func_);
     // function end
-  }
+  };
 
-  return float_atomic_add_;
+  if (op_type == AtomicOpType::add) {
+    if (float_atomic_add_.id == 0) {
+      init_atomic_func_(float_atomic_add_, "float_atomic_add",
+                        [&](Value res, Value lhs, Value rhs) {
+                          ib_.begin(spv::OpFAdd)
+                              .add_seq(t_fp32_, res, lhs, rhs)
+                              .commit(&atomic_functions_);
+                        });
+      any_atomic_ = true;
+    }
+    return float_atomic_add_;
+  } else if (op_type == AtomicOpType::sub) {
+    if (float_atomic_sub_.id == 0) {
+      init_atomic_func_(float_atomic_sub_, "float_atomic_sub",
+                        [&](Value res, Value lhs, Value rhs) {
+                          ib_.begin(spv::OpFSub)
+                              .add_seq(t_fp32_, res, lhs, rhs)
+                              .commit(&atomic_functions_);
+                        });
+      any_atomic_ = true;
+    }
+    return float_atomic_sub_;
+  } else if (op_type == AtomicOpType::min) {
+    if (float_atomic_min_.id == 0) {
+      init_atomic_func_(float_atomic_min_, "float_atomic_min",
+                        [&](Value res, Value lhs, Value rhs) {
+                          Value cond = new_value(t_bool_, ValueKind::kNormal);
+                          ib_.begin(spv::OpFOrdLessThan)
+                              .add_seq(t_bool_, cond, lhs, rhs)
+                              .commit(&atomic_functions_);
+                          ib_.begin(spv::OpSelect)
+                              .add_seq(t_fp32_, res, cond, lhs, rhs)
+                              .commit(&atomic_functions_);
+                        });
+      any_atomic_ = true;
+    }
+    return float_atomic_min_;
+  } else if (op_type == AtomicOpType::max) {
+    if (float_atomic_max_.id == 0) {
+      init_atomic_func_(float_atomic_max_, "float_atomic_max",
+                        [&](Value res, Value lhs, Value rhs) {
+                          Value cond = new_value(t_bool_, ValueKind::kNormal);
+                          ib_.begin(spv::OpFOrdGreaterThan)
+                              .add_seq(t_bool_, cond, lhs, rhs)
+                              .commit(&atomic_functions_);
+                          ib_.begin(spv::OpSelect)
+                              .add_seq(t_fp32_, res, cond, lhs, rhs)
+                              .commit(&atomic_functions_);
+                        });
+      any_atomic_ = true;
+    }
+    return float_atomic_max_;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
 }
 
 Value IRBuilder::rand_u32(Value global_tmp_) {

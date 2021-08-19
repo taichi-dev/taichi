@@ -548,6 +548,12 @@ class TypeCheck : public IRVisitor {
       stmt->ret_type.set_is_pointer(true);
   }
 
+  void visit(InternalFuncStmt *stmt) override {
+    // TODO: support return type specification
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+  }
+
   void visit(BitStructStoreStmt *stmt) override {
     // do nothing
   }

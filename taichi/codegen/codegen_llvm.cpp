@@ -1914,7 +1914,11 @@ void CodeGenLLVM::visit(ClearListStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
-  create_call(stmt->func_name, {get_context()});
+  std::vector<llvm::Value *> args{get_context()};
+  for (auto s : stmt->args) {
+    args.push_back(llvm_val[s]);
+  }
+  llvm_val[stmt] = create_call(stmt->func_name, args);
 }
 
 void CodeGenLLVM::visit(AdStackAllocaStmt *stmt) {

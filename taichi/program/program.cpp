@@ -822,17 +822,18 @@ int Program::default_block_dim(const CompileConfig &config) {
 }
 
 void Program::print_list_manager_info(void *list_manager) {
-  auto list_manager_len =
-      runtime_query<int32>("ListManager_get_num_elements", list_manager);
+  auto list_manager_len = llvm_program_->runtime_query<int32>(
+      "ListManager_get_num_elements", result_buffer, list_manager);
 
-  auto element_size =
-      runtime_query<int32>("ListManager_get_element_size", list_manager);
+  auto element_size = llvm_program_->runtime_query<int32>(
+      "ListManager_get_element_size", result_buffer, list_manager);
 
-  auto elements_per_chunk = runtime_query<int32>(
-      "ListManager_get_max_num_elements_per_chunk", list_manager);
+  auto elements_per_chunk = llvm_program_->runtime_query<int32>(
+      "ListManager_get_max_num_elements_per_chunk", result_buffer,
+      list_manager);
 
-  auto num_active_chunks =
-      runtime_query<int32>("ListManager_get_num_active_chunks", list_manager);
+  auto num_active_chunks = llvm_program_->runtime_query<int32>(
+      "ListManager_get_num_active_chunks", result_buffer, list_manager);
 
   auto size_MB = 1e-6f * num_active_chunks * elements_per_chunk * element_size;
 
@@ -853,9 +854,9 @@ void Program::print_memory_profiler_info() {
   // TODO: is there a way to set locale only locally in this function?
 
   std::function<void(SNode *, int)> visit = [&](SNode *snode, int depth) {
-    auto element_list =
-        runtime_query<void *>("LLVMRuntime_get_element_lists",
-                              llvm_program_->llvm_runtime, snode->id);
+    auto element_list = llvm_program_->runtime_query<void *>(
+        "LLVMRuntime_get_element_lists", result_buffer,
+        llvm_program_->llvm_runtime, snode->id);
 
     if (snode->type != SNodeType::place) {
       fmt::print("SNode {:10}\n", snode->get_node_type_name_hinted());
@@ -864,27 +865,27 @@ void Program::print_memory_profiler_info() {
         fmt::print("  active element list:");
         print_list_manager_info(element_list);
 
-        auto node_allocator =
-            runtime_query<void *>("LLVMRuntime_get_node_allocators",
-                                  llvm_program_->llvm_runtime, snode->id);
+        auto node_allocator = llvm_program_->runtime_query<void *>(
+            "LLVMRuntime_get_node_allocators", result_buffer,
+            llvm_program_->llvm_runtime, snode->id);
 
         if (node_allocator) {
-          auto free_list = runtime_query<void *>("NodeManager_get_free_list",
-                                                 node_allocator);
-          auto recycled_list = runtime_query<void *>(
-              "NodeManager_get_recycled_list", node_allocator);
+          auto free_list = llvm_program_->runtime_query<void *>(
+              "NodeManager_get_free_list", result_buffer, node_allocator);
+          auto recycled_list = llvm_program_->runtime_query<void *>(
+              "NodeManager_get_recycled_list", result_buffer, node_allocator);
 
-          auto free_list_len =
-              runtime_query<int32>("ListManager_get_num_elements", free_list);
+          auto free_list_len = llvm_program_->runtime_query<int32>(
+              "ListManager_get_num_elements", result_buffer, free_list);
 
-          auto recycled_list_len = runtime_query<int32>(
-              "ListManager_get_num_elements", recycled_list);
+          auto recycled_list_len = llvm_program_->runtime_query<int32>(
+              "ListManager_get_num_elements", result_buffer, recycled_list);
 
-          auto free_list_used = runtime_query<int32>(
-              "NodeManager_get_free_list_used", node_allocator);
+          auto free_list_used = llvm_program_->runtime_query<int32>(
+              "NodeManager_get_free_list_used", result_buffer, node_allocator);
 
-          auto data_list = runtime_query<void *>("NodeManager_get_data_list",
-                                                 node_allocator);
+          auto data_list = llvm_program_->runtime_query<void *>(
+              "NodeManager_get_data_list", result_buffer, node_allocator);
           fmt::print("  data list:          ");
           print_list_manager_info(data_list);
 
@@ -904,8 +905,9 @@ void Program::print_memory_profiler_info() {
     visit(a->root(), /*depth=*/0);
   }
 
-  auto total_requested_memory = runtime_query<std::size_t>(
-      "LLVMRuntime_get_total_requested_memory", llvm_program_->llvm_runtime);
+  auto total_requested_memory = llvm_program_->runtime_query<std::size_t>(
+      "LLVMRuntime_get_total_requested_memory", result_buffer,
+      llvm_program_->llvm_runtime);
 
   fmt::print(
       "Total requested dynamic memory (excluding alignment padding): {:n} B\n",
@@ -916,14 +918,14 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
   if (config.arch == Arch::metal) {
     return metal_kernel_mgr_->get_snode_num_dynamically_allocated(snode);
   }
-  auto node_allocator =
-      runtime_query<void *>("LLVMRuntime_get_node_allocators",
-                            llvm_program_->llvm_runtime, snode->id);
-  auto data_list =
-      runtime_query<void *>("NodeManager_get_data_list", node_allocator);
+  auto node_allocator = llvm_program_->runtime_query<void *>(
+      "LLVMRuntime_get_node_allocators", result_buffer,
+      llvm_program_->llvm_runtime, snode->id);
+  auto data_list = llvm_program_->runtime_query<void *>(
+      "NodeManager_get_data_list", result_buffer, node_allocator);
 
-  return (std::size_t)runtime_query<int32>("ListManager_get_num_elements",
-                                           data_list);
+  return (std::size_t)llvm_program_->runtime_query<int32>(
+      "ListManager_get_num_elements", result_buffer, data_list);
 }
 
 Program::~Program() {

@@ -370,57 +370,6 @@ void Program::initialize_llvm_runtime_system() {
   }
 }
 
-void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
-                                             StructCompiler *scomp) {
-  TaichiLLVMContext *tlctx = nullptr;
-  if (config.is_cuda_no_unified_memory()) {
-#if defined(TI_WITH_CUDA)
-    tlctx = llvm_program_->llvm_context_device.get();
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    tlctx = llvm_program_->llvm_context_host.get();
-  }
-  auto *const runtime_jit = tlctx->runtime_jit_module;
-  // By the time this creator is called, "this" is already destroyed.
-  // Therefore it is necessary to capture members by values.
-  const auto snodes = scomp->snodes;
-  const int root_id = tree->root()->id;
-
-  TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
-  std::size_t rounded_size =
-      taichi::iroundup(scomp->root_size, taichi_page_size);
-  runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
-      "runtime_initialize_snodes", llvm_program_->llvm_runtime,
-      scomp->root_size, root_id, (int)snodes.size(), tree->id(), rounded_size,
-      llvm_program_->snode_tree_buffer_manager->allocate(
-          runtime_jit, llvm_program_->llvm_runtime, rounded_size,
-          taichi_page_size, tree->id(), result_buffer));
-  for (int i = 0; i < (int)snodes.size(); i++) {
-    if (is_gc_able(snodes[i]->type)) {
-      std::size_t node_size;
-      auto element_size = snodes[i]->cell_size_bytes;
-      if (snodes[i]->type == SNodeType::pointer) {
-        // pointer. Allocators are for single elements
-        node_size = element_size;
-      } else {
-        // dynamic. Allocators are for the chunks
-        node_size = sizeof(void *) + element_size * snodes[i]->chunk_size;
-      }
-      TI_TRACE("Initializing allocator for snode {} (node size {})",
-               snodes[i]->id, node_size);
-      auto rt = llvm_program_->llvm_runtime;
-      runtime_jit->call<void *, int, std::size_t>(
-          "runtime_NodeAllocator_initialize", rt, snodes[i]->id, node_size);
-      TI_TRACE("Allocating ambient element for snode {} (node size {})",
-               snodes[i]->id, node_size);
-      runtime_jit->call<void *, int>("runtime_allocate_ambient", rt, i,
-                                     node_size);
-    }
-  }
-}
-
 // TODO: LLVM specific
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
   llvm_program_->snode_tree_buffer_manager->destroy(snode_tree);
@@ -454,7 +403,8 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
   }
 
   if (arch_is_cpu(config.arch)) {
-    initialize_llvm_runtime_snodes(tree, scomp.get());
+    llvm_program_->initialize_llvm_runtime_snodes(tree, scomp.get(),
+                                                  result_buffer);
   } else if (config.arch == Arch::cuda) {
     auto device_module = llvm_program_->clone_struct_compiler_initial_context(
         snode_trees_, llvm_program_->llvm_context_device.get());
@@ -463,7 +413,8 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
         std::make_unique<StructCompilerLLVM>(Arch::cuda, this,
                                              std::move(device_module));
     scomp_gpu->run(*root);
-    initialize_llvm_runtime_snodes(tree, scomp_gpu.get());
+    llvm_program_->initialize_llvm_runtime_snodes(tree, scomp_gpu.get(),
+                                                  result_buffer);
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,
                    "Metal arch requires that LLVM being enabled");
@@ -508,6 +459,10 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
     vulkan_runtime_ = std::make_unique<vulkan::VkRuntime>(std::move(params));
 #endif
   }
+}
+
+TaichiLLVMContext *Program::get_llvm_context(Arch arch) {
+  return llvm_program_->get_llvm_context(arch);
 }
 
 void Program::check_runtime_error() {

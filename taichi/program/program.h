@@ -247,9 +247,7 @@ class Program {
 
   // TODO: this is specific to LlvmProgramImpl so we might delete it here in the
   //       future. For now we keep it here to avoid changing other files.
-  TaichiLLVMContext *get_llvm_context(Arch arch) {
-    return llvm_program_->get_llvm_context(arch);
-  }
+  TaichiLLVMContext *get_llvm_context(Arch arch);
 
   Kernel &get_snode_reader(SNode *snode);
 
@@ -343,12 +341,6 @@ class Program {
    * Initializes the runtime system for LLVM based backends.
    */
   void initialize_llvm_runtime_system();
-
-  /**
-   * Initializes the SNodes for LLVM based backends.
-   */
-  void initialize_llvm_runtime_snodes(const SNodeTree *tree,
-                                      StructCompiler *scomp);
 
   // Metal related data structures
   std::optional<metal::CompiledStructs> metal_compiled_structs_;

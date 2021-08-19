@@ -143,29 +143,47 @@ enum class PipelineStageType {
   raytracing
 };
 
-enum class BufferFormat {
+enum class BufferFormat : uint32_t {
   r8,
+  rg8,
   rgba8,
   r8u,
+  rg8u,
   rgba8u,
   r8i,
+  rg8i,
   rgba8i,
   r16,
+  rg16,
+  rgb16,
   rgba16,
   r16u,
+  rg16u,
+  rgb16u,
   rgba16u,
   r16i,
+  rg16i,
+  rgb16i,
   rgba16i,
   r16f,
+  rg16f,
+  rgb16f,
   rgba16f,
   r32u,
+  rg32u,
+  rgb32u,
   rgba32u,
   r32i,
+  rg32i,
+  rgb32i,
   rgba32i,
   r32f,
+  rg32f,
+  rgb32f,
   rgba32f,
-  depth32,
-  depth24stencil8
+  depth16,
+  depth24stencil8,
+  depth32f
 };
 
 // TODO: Implement this
@@ -193,6 +211,20 @@ class CommandList {
   virtual void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) = 0;
 
   // These are not implemented in compute only device
+  virtual void begin_renderpass(int x0,
+                                int y0,
+                                int x1,
+                                int y1,
+                                uint32_t num_color_attachments,
+                                DeviceAllocation *color_attachments,
+                                bool *color_clear,
+                                DeviceAllocation *depth_attachment,
+                                bool depth_clear) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void end_renderpass() {
+    TI_NOT_IMPLEMENTED
+  }
   virtual void draw(uint32_t num_verticies, uint32_t start_vertex = 0) {
     TI_NOT_IMPLEMENTED
   }
@@ -280,11 +312,26 @@ class Surface {
   virtual void present_image() = 0;
 };
 
+struct VertexInputBinding {
+  uint32_t binding{0};
+  size_t stride{0};
+  bool instance{false};
+};
+
+struct VertexInputAttribute {
+  uint32_t location{0};
+  uint32_t binding{0};
+  BufferFormat format;
+  uint32_t offset{0};
+};
+
 class GraphicsDevice : public Device {
  public:
   virtual std::unique_ptr<Pipeline> create_raster_pipeline(
       std::vector<PipelineSourceDesc> &src,
       std::vector<BufferFormat> &render_target_formats,
+      std::vector<VertexInputBinding> &vertex_inputs,
+      std::vector<VertexInputAttribute> &vertex_attrs,
       std::string name = "Pipeline") = 0;
 
   virtual std::unique_ptr<Surface> create_surface(uint32_t width,

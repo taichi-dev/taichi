@@ -114,10 +114,10 @@ installer.
 1. Clone the Taichi repo **recursively**, and build:
 
   ```bash
-  git clone --recursive https://github.com/taichi-dev/taichi --depth=1 --branch=master
+  git clone --recursive https://github.com/taichi-dev/taichi
   cd taichi
   # export CXX=/path/to/clang  # Uncomment if clang is not system default compiler.
-  python3 setup.py --user develop  # Optionally add DEBUG=1 to keep debug information.
+  python3 setup.py develop --user  # Optionally add DEBUG=1 to keep debug information.
   ```
   - We use MSBUILD.exe to build the generated project on Windows. Please note that Windows
     could have multiple instances of MSBUILD.exe shipped with different
@@ -222,9 +222,9 @@ sudo systemctl restart docker
 
 ## Troubleshooting Developer Installation
 
-- If `python3 setup.py develop/install` gives `permission denied` error, it means you're
+- If `python3 setup.py develop`(or `python3 setup.py install`) gives `permission denied` error, it means you're
   installing into system python without write permission. You can work around this by:
-  - `python3 setup.py --user develop/install`
+  - `python3 setup.py develop --user` or `python3 setup.py install --user`
   - Install conda and use python from conda enviroments.
 
 - If `make` fails to compile and reports

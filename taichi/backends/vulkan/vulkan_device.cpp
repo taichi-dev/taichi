@@ -1461,6 +1461,12 @@ VulkanSurface::VulkanSurface(VulkanDevice *device) : device_(device) {
 VulkanSurface::~VulkanSurface() {
 }
 
+std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
+  int width, height;
+  glfwGetFramebufferSize(window_, &width, &height);
+  return std::make_pair(width, height);
+}
+
 DeviceAllocation VulkanSurface::get_target_image() {
   vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
                         image_available_, VK_NULL_HANDLE, &image_index_);

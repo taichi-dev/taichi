@@ -310,6 +310,7 @@ class Surface {
 
   virtual DeviceAllocation get_target_image() = 0;
   virtual void present_image() = 0;
+  virtual std::pair<uint32_t, uint32_t> get_size() = 0;
 };
 
 struct VertexInputBinding {

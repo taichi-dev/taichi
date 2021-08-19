@@ -311,6 +311,7 @@ class VulkanSurface : public Surface {
 
   DeviceAllocation get_target_image() override;
   void present_image() override;
+  std::pair<uint32_t, uint32_t> get_size() override;
 
  private:
   VulkanDevice *device_;

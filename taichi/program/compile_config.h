@@ -86,6 +86,11 @@ struct CompileConfig {
   bool quant_opt_store_fusion{true};
   bool quant_opt_atomic_demotion{true};
 
+  // helpers
+  bool is_cuda_no_unified_memory() {
+    return arch == Arch::cuda && !use_unified_memory;
+  }
+
   CompileConfig();
 };
 

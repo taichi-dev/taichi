@@ -218,6 +218,7 @@ jobs:
           ti diagnose
           ti changelog
           ti test -vr2 -t2
+          $PYTHON -m pip uninstall dist/*.whl -y
 
   build_and_test_windows:
     name: Build and Test (Windows)

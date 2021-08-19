@@ -212,7 +212,6 @@ jobs:
         run: |
           export PYTHON=/usr/bin/python3
           export PATH=$PATH:$HOME/.local/bin
-          export DISPLAY=:1
           hash -r
           glewinfo
           $PYTHON examples/algorithm/laplace.py

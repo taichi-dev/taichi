@@ -5,7 +5,6 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/struct/struct.h"
-#include "taichi/program/program.h"
 #include "taichi/util/file_sequence_writer.h"
 
 namespace taichi {
@@ -23,7 +22,7 @@ StructCompilerLLVM::StructCompilerLLVM(Arch arch,
 }
 
 StructCompilerLLVM::StructCompilerLLVM(Arch arch,
-                                       Program *prog,
+                                       LlvmProgramImpl *prog,
                                        std::unique_ptr<llvm::Module> &&module)
     : StructCompilerLLVM(arch,
                          &(prog->config),

@@ -2,7 +2,6 @@
 #pragma once
 
 #include "taichi/ir/snode.h"
-#include "taichi/program/program.h"
 
 namespace taichi {
 namespace lang {

@@ -390,31 +390,9 @@ SNode *Program::get_snode_root(int tree_id) {
 
 void Program::materialize_snode_tree(SNodeTree *tree) {
   auto *const root = tree->root();
-  // always use host_arch() for host accessors
-  auto host_module = llvm_program_->clone_struct_compiler_initial_context(
-      snode_trees_, llvm_program_->llvm_context_host.get());
-  std::unique_ptr<StructCompiler> scomp = std::make_unique<StructCompilerLLVM>(
-      host_arch(), this, std::move(host_module));
-  scomp->run(*root);
-  materialize_snode_expr_attributes();
-
-  for (auto snode : scomp->snodes) {
-    snodes[snode->id] = snode;
-  }
-
-  if (arch_is_cpu(config.arch)) {
-    llvm_program_->initialize_llvm_runtime_snodes(tree, scomp.get(),
-                                                  result_buffer);
-  } else if (config.arch == Arch::cuda) {
-    auto device_module = llvm_program_->clone_struct_compiler_initial_context(
-        snode_trees_, llvm_program_->llvm_context_device.get());
-
-    std::unique_ptr<StructCompiler> scomp_gpu =
-        std::make_unique<StructCompilerLLVM>(Arch::cuda, this,
-                                             std::move(device_module));
-    scomp_gpu->run(*root);
-    llvm_program_->initialize_llvm_runtime_snodes(tree, scomp_gpu.get(),
-                                                  result_buffer);
+  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
+    llvm_program_->materialize_snode_tree(
+        tree, snode_trees_, snodes, snode_to_glb_var_exprs_, result_buffer);
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,
                    "Metal arch requires that LLVM being enabled");
@@ -775,12 +753,6 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
 Program::~Program() {
   if (!finalized)
     finalize();
-}
-
-void Program::materialize_snode_expr_attributes() {
-  for (auto &[snode, glb_var] : snode_to_glb_var_exprs_) {
-    glb_var->set_attribute("dim", std::to_string(snode->num_active_indices));
-  }
 }
 
 std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {

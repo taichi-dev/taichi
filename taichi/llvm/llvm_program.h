@@ -3,6 +3,7 @@
 #include "taichi/inc/constants.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/common/logging.h"
+#include "taichi/llvm/llvm_context.h"
 
 #include <memory>
 
@@ -10,6 +11,7 @@ namespace taichi {
 namespace lang {
 class LlvmProgramImpl {
  public:
+  std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
   std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
 
   LlvmProgramImpl(CompileConfig config);

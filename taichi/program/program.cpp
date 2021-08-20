@@ -140,7 +140,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   }
 
   memory_pool = std::make_unique<MemoryPool>(this);
-  snode_tree_buffer_manager = std::make_unique<SNodeTreeBufferManager>(this);
   TI_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
   total_compilation_time = 0;
   num_instances += 1;
@@ -150,6 +149,8 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   current_program = this;
   config = default_compile_config;
   config.arch = arch;
+
+  llvm_program_ = std::make_unique<LlvmProgramImpl>(config);
 
   thread_pool = std::make_unique<ThreadPool>(config.cpu_max_num_threads);
 
@@ -417,9 +418,9 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
       (int)snodes.size(), tree->id(), rounded_size,
-      snode_tree_buffer_manager->allocate(runtime_jit, llvm_runtime,
-                                          rounded_size, taichi_page_size,
-                                          tree->id()));
+      llvm_program_->snode_tree_buffer_manager->allocate(
+          runtime_jit, llvm_runtime, rounded_size, taichi_page_size, tree->id(),
+          result_buffer));
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
@@ -444,8 +445,9 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 }
 
+// TODO: LLVM specific
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
-  snode_tree_buffer_manager->destroy(snode_tree);
+  llvm_program_->snode_tree_buffer_manager->destroy(snode_tree);
 }
 
 SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {
@@ -597,12 +599,9 @@ void Program::synchronize() {
 }
 
 void Program::device_synchronize() {
+  // TODO: change this to arch_uses_llvm
   if (config.arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().stream_synchronize(nullptr);
-#else
-    TI_ERROR("No CUDA support");
-#endif
+    llvm_program_->device_synchronize();
   } else if (config.arch == Arch::metal) {
     metal_kernel_mgr_->synchronize();
   } else if (config.arch == Arch::vulkan) {
@@ -771,27 +770,10 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 }
 
 uint64 Program::fetch_result_uint64(int i) {
-  // TODO: We are likely doing more synchronization than necessary. Simplify the
-  // sync logic when we fetch the result.
-  device_synchronize();
-  uint64 ret;
-  auto arch = config.arch;
-  if (arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    if (config.use_unified_memory) {
-      // More efficient than a cudaMemcpy call in practice
-      ret = result_buffer[i];
-    } else {
-      CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
-                                                       sizeof(uint64));
-    }
-#else
-    TI_NOT_IMPLEMENTED;
-#endif
-  } else {
-    ret = result_buffer[i];
+  if (arch_uses_llvm(config.arch)) {
+    return llvm_program_->fetch_result_uint64(i, result_buffer);
   }
-  return ret;
+  return result_buffer[i];
 }
 
 void Program::finalize() {

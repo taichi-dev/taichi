@@ -30,6 +30,10 @@ void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field) {
   dec.mem_access_opt.add_flag(field.snode(), v);
 }
 
+void reset_snode_access_flag() {
+  dec.reset();
+}
+
 // Begin: legacy frontend constructs
 
 If::If(const Expr &cond) {

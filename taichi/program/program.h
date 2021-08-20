@@ -280,6 +280,8 @@ class Program {
 
   static int default_block_dim(const CompileConfig &config);
 
+  // Note this method is specific to LlvmProgramImpl, but we keep it here since
+  // it's exposed to python.
   void print_memory_profiler_info();
 
   // Returns zero if the SNode is statically allocated

@@ -53,6 +53,10 @@ class LlvmProgramImpl {
   }
 
   void print_list_manager_info(void *list_manager, uint64 *result_buffer);
+  void print_memory_profiler_info(
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+      uint64 *result_buffer);
+
   void device_synchronize();
 
  private:

@@ -439,18 +439,11 @@ SNode *Program::get_snode_root(int tree_id) {
   return snode_trees_[tree_id]->root();
 }
 
-std::unique_ptr<llvm::Module> Program::clone_struct_compiler_initial_context(
-    TaichiLLVMContext *tlctx) {
-  if (!snode_trees_.empty())
-    return tlctx->clone_struct_module();
-  return tlctx->clone_runtime_module();
-}
-
 void Program::materialize_snode_tree(SNodeTree *tree) {
   auto *const root = tree->root();
   // always use host_arch() for host accessors
-  auto host_module = clone_struct_compiler_initial_context(
-      llvm_program_->llvm_context_host.get());
+  auto host_module = llvm_program_->clone_struct_compiler_initial_context(
+      snode_trees_, llvm_program_->llvm_context_host.get());
   std::unique_ptr<StructCompiler> scomp = std::make_unique<StructCompilerLLVM>(
       host_arch(), this, std::move(host_module));
   scomp->run(*root);
@@ -463,8 +456,8 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
   if (arch_is_cpu(config.arch)) {
     initialize_llvm_runtime_snodes(tree, scomp.get());
   } else if (config.arch == Arch::cuda) {
-    auto device_module = clone_struct_compiler_initial_context(
-        llvm_program_->llvm_context_device.get());
+    auto device_module = llvm_program_->clone_struct_compiler_initial_context(
+        snode_trees_, llvm_program_->llvm_context_device.get());
 
     std::unique_ptr<StructCompiler> scomp_gpu =
         std::make_unique<StructCompilerLLVM>(Arch::cuda, this,

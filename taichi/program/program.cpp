@@ -48,20 +48,9 @@
 namespace taichi {
 namespace lang {
 namespace {
-
-void assert_failed_host(const char *msg) {
-  TI_ERROR("Assertion failure: {}", msg);
-}
-
-void *taichi_allocate_aligned(Program *prog,
-                              std::size_t size,
-                              std::size_t alignment) {
-  return prog->memory_pool->allocate(size, alignment);
-}
-
 inline uint64 *allocate_result_buffer_default(Program *prog) {
-  return (uint64 *)taichi_allocate_aligned(
-      prog, sizeof(uint64) * taichi_result_buffer_entries, 8);
+  return (uint64 *)prog->memory_pool->allocate(
+      sizeof(uint64) * taichi_result_buffer_entries, 8);
 }
 }  // namespace
 
@@ -90,6 +79,10 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #endif
   config = default_compile_config;
   config.arch = desired_arch;
+  // TODO: allow users to run in debug mode without out-of-bound checks
+  if (config.debug)
+    config.check_out_of_bound = true;
+
   llvm_program_ = std::make_unique<LlvmProgramImpl>(config);
 
   if (config.arch == Arch::metal) {
@@ -161,40 +154,12 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
         });
   }
 
-  // TODO: allow users to run in debug mode without out-of-bound checks
-  if (config.debug)
-    config.check_out_of_bound = true;
-
   if (!is_extension_supported(config.arch, Extension::assertion)) {
     if (config.check_out_of_bound) {
       TI_WARN("Out-of-bound access checking is not supported on arch={}",
               arch_name(config.arch));
       config.check_out_of_bound = false;
     }
-  }
-
-  if (config.arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    int num_SMs;
-    CUDADriver::get_instance().device_get_attribute(
-        &num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, nullptr);
-    int query_max_block_dim;
-    CUDADriver::get_instance().device_get_attribute(
-        &query_max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, nullptr);
-
-    if (config.max_block_dim == 0) {
-      config.max_block_dim = query_max_block_dim;
-    }
-
-    if (config.saturating_grid_dim == 0) {
-      // each SM can have 16-32 resident blocks
-      config.saturating_grid_dim = num_SMs * 32;
-    }
-#endif
-  }
-
-  if (arch_is_cpu(config.arch)) {
-    config.max_block_dim = 1024;
   }
 
   stat.clear();
@@ -265,108 +230,8 @@ FunctionType Program::compile_to_backend_executable(Kernel &kernel,
 
 void Program::materialize_runtime() {
   if (arch_uses_llvm(config.arch)) {
-    initialize_llvm_runtime_system();
-  }
-}
-
-// For CPU and CUDA archs only
-void Program::initialize_llvm_runtime_system() {
-  maybe_initialize_cuda_llvm_context();
-
-  std::size_t prealloc_size = 0;
-  TaichiLLVMContext *tlctx = nullptr;
-  if (config.is_cuda_no_unified_memory()) {
-#if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().malloc(
-        (void **)&result_buffer, sizeof(uint64) * taichi_result_buffer_entries);
-    const auto total_mem = llvm_program_->runtime_mem_info->get_total_memory();
-    if (config.device_memory_fraction == 0) {
-      TI_ASSERT(config.device_memory_GB > 0);
-      prealloc_size = std::size_t(config.device_memory_GB * (1UL << 30));
-    } else {
-      prealloc_size = std::size_t(config.device_memory_fraction * total_mem);
-    }
-    TI_ASSERT(prealloc_size <= total_mem);
-
-    TI_TRACE("Allocating device memory {:.2f} GB",
-             1.0 * prealloc_size / (1UL << 30));
-
-    CUDADriver::get_instance().malloc(
-        &llvm_program_->preallocated_device_buffer, prealloc_size);
-    CUDADriver::get_instance().memset(llvm_program_->preallocated_device_buffer,
-                                      0, prealloc_size);
-    tlctx = llvm_program_->llvm_context_device.get();
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    result_buffer = allocate_result_buffer_default(this);
-    tlctx = llvm_program_->llvm_context_host.get();
-  }
-  auto *const runtime_jit = tlctx->runtime_jit_module;
-
-  // Starting random state for the program calculated using the random seed.
-  // The seed is multiplied by 2^20 so that two programs with different seeds
-  // will not have overlapping random states in any thread.
-  int starting_rand_state = config.random_seed * 1048576;
-
-  // Number of random states. One per CPU/CUDA thread.
-  int num_rand_states = 0;
-
-  if (config.arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    // It is important to make sure that every CUDA thread has its own random
-    // state so that we do not need expensive per-state locks.
-    num_rand_states = config.saturating_grid_dim * config.max_block_dim;
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    num_rand_states = config.cpu_max_num_threads;
-  }
-
-  TI_TRACE("Allocating {} random states (used by CUDA only)", num_rand_states);
-
-  runtime_jit->call<void *, void *, std::size_t, void *, int, int, void *,
-                    void *, void *>(
-      "runtime_initialize", result_buffer, this, prealloc_size,
-      llvm_program_->preallocated_device_buffer, starting_rand_state,
-      num_rand_states, (void *)&taichi_allocate_aligned, (void *)std::printf,
-      (void *)std::vsnprintf);
-
-  TI_TRACE("LLVMRuntime initialized (excluding `root`)");
-  llvm_program_->llvm_runtime =
-      fetch_result<void *>(taichi_result_buffer_ret_value_id);
-  TI_TRACE("LLVMRuntime pointer fetched");
-
-  if (arch_use_host_memory(config.arch) || config.use_unified_memory) {
-    runtime_jit->call<void *>("runtime_get_mem_req_queue",
-                              llvm_program_->llvm_runtime);
-    auto mem_req_queue =
-        fetch_result<void *>(taichi_result_buffer_ret_value_id);
-    memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
-  }
-
-  if (arch_use_host_memory(config.arch)) {
-    runtime_jit->call<void *, void *, void *>(
-        "LLVMRuntime_initialize_thread_pool", llvm_program_->llvm_runtime,
-        llvm_program_->thread_pool.get(), (void *)ThreadPool::static_run);
-
-    runtime_jit->call<void *, void *>("LLVMRuntime_set_assert_failed",
-                                      llvm_program_->llvm_runtime,
-                                      (void *)assert_failed_host);
-  }
-  if (arch_is_cpu(config.arch)) {
-    // Profiler functions can only be called on CPU kernels
-    runtime_jit->call<void *, void *>("LLVMRuntime_set_profiler",
-                                      llvm_program_->llvm_runtime,
-                                      profiler.get());
-    runtime_jit->call<void *, void *>(
-        "LLVMRuntime_set_profiler_start", llvm_program_->llvm_runtime,
-        (void *)&KernelProfilerBase::profiler_start);
-    runtime_jit->call<void *, void *>(
-        "LLVMRuntime_set_profiler_stop", llvm_program_->llvm_runtime,
-        (void *)&KernelProfilerBase::profiler_stop);
+    llvm_program_->initialize_llvm_runtime_system(
+        memory_pool.get(), profiler.get(), &result_buffer);
   }
 }
 

@@ -9,6 +9,7 @@ from taichi.lang.matrix import Vector
 from taichi.lang.ops import atomic_add, get_addr
 
 from .utils import *
+from .camera import Camera
 
 normals_field_cache = {}
 
@@ -78,7 +79,7 @@ class Scene(_ti_core.PyScene):
         super().__init__()
 
     def set_camera(self, camera):
-        super().set_camera(camera)
+        super().set_camera(camera.ptr)
 
     def mesh(
             self,

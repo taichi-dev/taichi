@@ -15,9 +15,10 @@ if _ti_core.GGUI_AVAILABLE:
     from .gui import Gui
     from .scene import Scene
     from .window import *
+    from .camera import Camera
 
     def make_camera():
-        return _ti_core.PyCamera()
+        return Camera(_ti_core.PyCamera())
 
     ProjectionMode = _ti_core.ProjectionMode
 

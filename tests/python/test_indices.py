@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_indices():
     a = ti.field(ti.f32, shape=(128, 32, 8))
 
@@ -19,7 +19,7 @@ def test_indices():
     # the virtual first index exposed to the user comes second in memory layout.
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_float_as_index():
     a = ti.field(ti.f32, (8, 5))
 

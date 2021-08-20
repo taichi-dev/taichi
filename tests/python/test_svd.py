@@ -4,8 +4,7 @@ import taichi as ti
 from taichi import approx
 
 
-@ti.require(ti.extension.data64)
-@ti.all_archs_with(fast_math=False)
+@ti.test(require=ti.extension.data64, fast_math=False)
 def test_precision():
     u = ti.field(ti.f64, shape=())
     v = ti.field(ti.f64, shape=())
@@ -66,14 +65,16 @@ def test_svd():
     for fp in [ti.f32, ti.f64]:
         for d in [2, 3]:
 
-            @ti.all_archs_with(default_fp=fp, fast_math=False)
+            @ti.test(require=ti.extension.data64 if fp == ti.f64 else [],
+                     default_fp=fp,
+                     fast_math=False)
             def wrapped():
                 _test_svd(fp, d)
 
             wrapped()
 
 
-@ti.all_archs
+@ti.test()
 def test_transpose_no_loop():
     A = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())
     U = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())

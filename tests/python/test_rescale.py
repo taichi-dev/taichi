@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_rescale():
     a = ti.field(ti.f32)
     b = ti.field(ti.f32)

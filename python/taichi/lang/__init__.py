@@ -981,6 +981,10 @@ def torch_test(func):
         return lambda: None
 
 
+def get_host_arch_list():
+    return [_ti_core.host_arch()]
+
+
 # test with host arch only
 def host_arch_only(func):
     @functools.wraps(func)
@@ -1018,7 +1022,7 @@ def must_throw(ex):
         def func__(*args, **kwargs):
             finishes = False
             try:
-                host_arch_only(func)(*args, **kwargs)
+                func(*args, **kwargs)
                 finishes = True
             except ex:
                 # throws. test passed

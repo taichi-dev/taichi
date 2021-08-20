@@ -1,8 +1,7 @@
 import taichi as ti
 
 
-@ti.require(ti.extension.sparse)
-@ti.all_archs
+@ti.test(require=ti.extension.sparse)
 def test_no_activate():
     x = ti.field(ti.f32)
 

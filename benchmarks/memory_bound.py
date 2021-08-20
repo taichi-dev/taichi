@@ -4,7 +4,7 @@ N = 1024**3 // 4  # 1 GB per buffer
 
 
 # 4 B/it
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=ti.opengl)
 def benchmark_memset():
     a = ti.field(dtype=ti.f32, shape=N)
 
@@ -17,7 +17,7 @@ def benchmark_memset():
 
 
 # 8 B/it
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=ti.opengl)
 def benchmark_sscal():
     a = ti.field(dtype=ti.f32, shape=N)
 
@@ -30,7 +30,7 @@ def benchmark_sscal():
 
 
 # 8 B/it
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=ti.opengl)
 def benchmark_memcpy():
     a = ti.field(dtype=ti.f32, shape=N)
     b = ti.field(dtype=ti.f32, shape=N)
@@ -44,7 +44,7 @@ def benchmark_memcpy():
 
 
 # 12 B/it
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=ti.opengl)
 def benchmark_saxpy():
     x = ti.field(dtype=ti.f32, shape=N)
     y = ti.field(dtype=ti.f32, shape=N)

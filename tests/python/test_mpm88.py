@@ -105,7 +105,7 @@ def run_mpm88_test():
         assert (pos**(i + 1)).mean() == approx(regression[i], rel=1e-2)
 
 
-@ti.all_archs
+@ti.test()
 def test_mpm88():
     run_mpm88_test()
 

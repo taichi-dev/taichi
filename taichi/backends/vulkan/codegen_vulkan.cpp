@@ -15,6 +15,9 @@
 #include "taichi/backends/vulkan/spirv_snode_compiler.h"
 #include "taichi/ir/transforms.h"
 
+#include <spirv-tools/libspirv.hpp>
+#include <spirv-tools/optimizer.hpp>
+
 namespace taichi {
 namespace lang {
 namespace vulkan {
@@ -71,7 +74,7 @@ class TaskCodegen : public IRVisitor {
   }
 
   struct Result {
-    VkRuntime::SpirvBinary spirv_code;
+    std::vector<uint32_t> spirv_code;
     TaskAttributes task_attribs;
   };
 
@@ -784,9 +787,6 @@ class TaskCodegen : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->op_type != AtomicOpType::add) {
-      TI_NOT_IMPLEMENTED;
-    }
     const auto dt = stmt->dest->element_type().ptr_removed();
 
     spirv::Value addr_ptr;
@@ -800,21 +800,41 @@ class TaskCodegen : public IRVisitor {
     spirv::Value data = ir_->query_value(stmt->val->raw_name());
     spirv::Value val;
     if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      if (device_->get_cap(DeviceCapability::vk_has_atomic_float_add)) {
+      if (device_->get_cap(DeviceCapability::vk_has_atomic_float_add) &&
+          stmt->op_type == AtomicOpType::add) {
         val = ir_->make_value(
             spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt), addr_ptr,
             ir_->uint_immediate_number(ir_->u32_type(), 1),
             ir_->uint_immediate_number(ir_->u32_type(), 0), data);
       } else {
-        spirv::Value func = ir_->float_atomic_add();
+        spirv::Value func = ir_->float_atomic(stmt->op_type);
         val = ir_->make_value(spv::OpFunctionCall, ir_->f32_type(), func,
                               addr_ptr, data);
       }
     } else if (is_integral(dt)) {
-      val = ir_->make_value(
-          spv::OpAtomicIAdd, ir_->get_primitive_type(dt), addr_ptr,
-          ir_->uint_immediate_number(ir_->u32_type(), 1),
-          ir_->uint_immediate_number(ir_->u32_type(), 0), data);
+      spv::Op op;
+      if (stmt->op_type == AtomicOpType::add) {
+        op = spv::OpAtomicIAdd;
+      } else if (stmt->op_type == AtomicOpType::sub) {
+        op = spv::OpAtomicISub;
+      } else if (stmt->op_type == AtomicOpType::min) {
+        op = is_signed(dt) ? spv::OpAtomicSMin : spv::OpAtomicUMin;
+      } else if (stmt->op_type == AtomicOpType::max) {
+        op = is_signed(dt) ? spv::OpAtomicSMax : spv::OpAtomicUMax;
+      } else if (stmt->op_type == AtomicOpType::bit_or) {
+        op = spv::OpAtomicOr;
+      } else if (stmt->op_type == AtomicOpType::bit_and) {
+        op = spv::OpAtomicAnd;
+      } else if (stmt->op_type == AtomicOpType::bit_xor) {
+        op = spv::OpAtomicXor;
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+
+      val =
+          ir_->make_value(op, ir_->get_primitive_type(dt), addr_ptr,
+                          ir_->uint_immediate_number(ir_->u32_type(), 1),
+                          ir_->uint_immediate_number(ir_->u32_type(), 0), data);
     } else {
       TI_ERROR("Vulkan only supports 32-bit atomic data types");
     }
@@ -1175,8 +1195,8 @@ class TaskCodegen : public IRVisitor {
     }
     ir_->debug(spv::OpName, buffer_value, buffer_instance_name(buffer));
     buffer_value_map_[buffer] = buffer_value;
-    TI_INFO("buffer name = {}, value = {}", buffer_instance_name(buffer),
-            buffer_value.id);
+    TI_TRACE("buffer name = {}, value = {}", buffer_instance_name(buffer),
+             buffer_value.id);
 
     return buffer_value;
   }
@@ -1243,6 +1263,26 @@ class TaskCodegen : public IRVisitor {
   std::unordered_map<const Stmt *, BuffersEnum> ptr_to_buffers_;
 };
 
+static void spriv_message_consumer(spv_message_level_t level,
+                                   const char *source,
+                                   const spv_position_t &position,
+                                   const char *message) {
+  // TODO: Maybe we can add a macro, e.g. TI_LOG_AT_LEVEL(lv, ...)
+  if (level <= SPV_MSG_FATAL) {
+    TI_ERROR("{}\n[{}:{}:{}] {}", source, position.index, position.line,
+             position.column, message);
+  } else if (level <= SPV_MSG_WARNING) {
+    TI_WARN("{}\n[{}:{}:{}] {}", source, position.index, position.line,
+            position.column, message);
+  } else if (level <= SPV_MSG_INFO) {
+    TI_INFO("{}\n[{}:{}:{}] {}", source, position.index, position.line,
+            position.column, message);
+  } else if (level <= SPV_MSG_INFO) {
+    TI_TRACE("{}\n[{}:{}:{}] {}", source, position.index, position.line,
+             position.column, message);
+  }
+}
+
 class KernelCodegen {
  public:
   struct Params {
@@ -1254,6 +1294,34 @@ class KernelCodegen {
 
   explicit KernelCodegen(const Params &params)
       : params_(params), ctx_attribs_(*params.kernel) {
+    spirv_opt_ = std::make_unique<spvtools::Optimizer>(SPV_ENV_VULKAN_1_2);
+
+    spirv_opt_->SetMessageConsumer(spriv_message_consumer);
+
+    // TODO: Utilize this if KHR_memory_model is supported
+    // TODO: Profile these passes, remove ones we don't need to speed up JIT
+    // ref:
+    // https://github.com/KhronosGroup/SPIRV-Tools/blob/f9893c4549406eb9643e0eb05a521ab70a320fff/source/opt/optimizer.cpp
+    spirv_opt_->RegisterPass(spvtools::CreateWrapOpKillPass())
+        .RegisterPass(spvtools::CreateMergeReturnPass())
+        .RegisterPass(spvtools::CreateEliminateDeadFunctionsPass())
+        .RegisterPass(spvtools::CreateInlineExhaustivePass())
+        .RegisterPass(spvtools::CreateLoopUnrollPass(true))
+        .RegisterPass(spvtools::CreatePrivateToLocalPass())
+        .RegisterPass(spvtools::CreateScalarReplacementPass())
+        .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
+        .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
+        .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
+        .RegisterPass(spvtools::CreateLocalMultiStoreElimPass())
+        .RegisterPass(spvtools::CreateAggressiveDCEPass())
+        .RegisterPass(spvtools::CreateVectorDCEPass())
+        .RegisterPass(spvtools::CreateIfConversionPass())
+        .RegisterPass(spvtools::CreateCopyPropagateArraysPass())
+        .RegisterPass(spvtools::CreateReduceLoadSizePass())
+        .RegisterPass(spvtools::CreateRedundancyEliminationPass())
+        .RegisterPass(spvtools::CreateSimplificationPass());
+
+    _spirv_opt_options.set_run_validator(false);
   }
 
   using Result = VkRuntime::RegisterParams;
@@ -1274,8 +1342,26 @@ class KernelCodegen {
 
       TaskCodegen cgen(tp);
       auto task_res = cgen.run();
+
+      std::vector<uint32_t> optimized_spv;
+
+      TI_WARN_IF(!spirv_opt_->Run(task_res.spirv_code.data(),
+                                  task_res.spirv_code.size(), &optimized_spv,
+                                  _spirv_opt_options),
+                 "SPIRV optimization failed");
+
+      TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
+               task_res.spirv_code.size(), optimized_spv.size());
+
+      // Enable to dump SPIR-V assembly of kernels
+#if 0
+      std::string spirv_asm;
+      spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
+      TI_TRACE("SPIR-V Assembly dump:\n{}\n\n", spirv_asm);
+#endif
+
       kernel_attribs.tasks_attribs.push_back(std::move(task_res.task_attribs));
-      res.task_spirv_source_codes.push_back(std::move(task_res.spirv_code));
+      res.task_spirv_source_codes.push_back(std::move(optimized_spv));
     }
     kernel_attribs.ctx_attribs = std::move(ctx_attribs_);
     kernel_attribs.name = params_.ti_kernel_name;
@@ -1286,6 +1372,9 @@ class KernelCodegen {
  private:
   Params params_;
   KernelContextAttributes ctx_attribs_;
+
+  std::unique_ptr<spvtools::Optimizer> spirv_opt_;
+  spvtools::OptimizerOptions _spirv_opt_options;
 };
 
 }  // namespace

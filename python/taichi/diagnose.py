@@ -29,7 +29,6 @@ def main():
     else:
         print(f'{lsb_release.decode()}')
 
-    print(f'TAICHI_REPO_DIR={os.environ.get("TAICHI_REPO_DIR", "")}')
     for k, v in os.environ.items():
         if k.startswith('TI_'):
             print(f'{k}={v}')

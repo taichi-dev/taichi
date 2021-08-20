@@ -3,9 +3,8 @@ import pytest
 import taichi as ti
 
 
-@ti.require(ti.extension.extfunc)
-@ti.archs_excluding(ti.cpu)
 @pytest.mark.parametrize('x,y', [(2, 3), (-1, 4)])
+@ti.test(exclude=ti.cpu, require=ti.extension.extfunc)
 def test_asm(x, y):
     @ti.kernel
     def func(x: ti.f32, y: ti.f32) -> ti.f32:

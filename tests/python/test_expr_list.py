@@ -11,7 +11,7 @@ def test_expr_list_basic():
     assert func(1, 1.1) == ti.approx(304.1)
 
 
-@ti.all_archs
+@ti.test()
 def test_listcomp_multiple_ifs():
     x = ti.field(ti.i32, shape=(4, ))
 

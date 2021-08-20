@@ -12,4 +12,4 @@ pytest-rerunfailures
 pytest-xdist
 setuptools
 sourceinspect
-yapf
+yapf==0.31.0

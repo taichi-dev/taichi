@@ -6,7 +6,7 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *
-from taichi.lang.kernel_arguments import ext_arr, template
+from taichi.lang.kernel_arguments import any_arr, ext_arr, template
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, Vector
@@ -193,6 +193,7 @@ def is_extension_supported(arch, ext):
 
 
 def reset():
+    _ti_core.reset_snode_access_flag()
     impl.reset()
     global runtime
     runtime = impl.get_runtime()
@@ -980,6 +981,10 @@ def torch_test(func):
         return lambda: None
 
 
+def get_host_arch_list():
+    return [_ti_core.host_arch()]
+
+
 # test with host arch only
 def host_arch_only(func):
     @functools.wraps(func)
@@ -1017,7 +1022,7 @@ def must_throw(ex):
         def func__(*args, **kwargs):
             finishes = False
             try:
-                host_arch_only(func)(*args, **kwargs)
+                func(*args, **kwargs)
                 finishes = True
             except ex:
                 # throws. test passed

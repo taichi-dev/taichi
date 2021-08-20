@@ -473,9 +473,10 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(std::move(stmt_unique));
   });
 
-  m.def("create_internal_func_stmt", [&](const std::string &msg) {
-    current_ast_builder().insert(std::make_unique<InternalFuncStmt>(msg));
-  });
+  m.def("insert_internal_func_call",
+        [&](const std::string &func_name, const ExprGroup &args) {
+          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs);
+        });
 
   m.def("begin_frontend_while", [&](const Expr &cond) {
     auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
@@ -809,6 +810,7 @@ void export_lang(py::module &m) {
       .export_values();
 
   m.def("insert_snode_access_flag", insert_snode_access_flag);
+  m.def("reset_snode_access_flag", reset_snode_access_flag);
   m.def("no_activate", [](SNode *snode) {
     // TODO(#2193): Also apply to @ti.func?
     get_current_program().get_current_kernel().no_activate.push_back(snode);

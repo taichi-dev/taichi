@@ -27,23 +27,21 @@ def _test_pow_i(dt):
             assert z[None] == x**y
 
 
-@ti.all_archs
+@ti.test()
 def test_pow_f32():
     _test_pow_f(ti.f32)
 
 
-@ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test(require=ti.extension.data64)
 def test_pow_f64():
     _test_pow_f(ti.f64)
 
 
-@ti.all_archs
+@ti.test()
 def test_pow_i32():
     _test_pow_i(ti.i32)
 
 
-@ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test(require=ti.extension.data64)
 def test_pow_i64():
     _test_pow_i(ti.i64)

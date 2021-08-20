@@ -5,7 +5,7 @@ from pytest import approx
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def grad_test(tifunc, npfunc=None):
     if npfunc is None:
         npfunc = tifunc

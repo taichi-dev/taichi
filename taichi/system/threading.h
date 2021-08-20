@@ -17,12 +17,6 @@ TI_NAMESPACE_BEGIN
 using RangeForTaskFunc = void(void *, int thread_id, int i);
 using ParallelFor = void(int n, int num_threads, void *, RangeForTaskFunc func);
 
-class PID {
- public:
-  static int get_pid();
-  static int get_parent_pid();
-};
-
 class ThreadPool {
  public:
   std::vector<std::thread> threads;

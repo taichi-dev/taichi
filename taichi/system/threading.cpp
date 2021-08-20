@@ -5,14 +5,6 @@
 
 #include "taichi/system/threading.h"
 
-#if defined(TI_PLATFORM_WINDOWS)
-#include "taichi/platform/windows/windows.h"
-#else
-// Mac and Linux
-#include "threading.h"
-#include <unistd.h>
-#endif
-
 #include <algorithm>
 #include <condition_variable>
 #include <thread>
@@ -32,23 +24,6 @@ bool test_threading() {
     });
   }
   return true;
-}
-
-int PID::get_pid() {
-#if defined(TI_PLATFORM_WINDOWS)
-  return (int)GetCurrentProcessId();
-#else
-  return (int)getpid();
-#endif
-}
-
-int PID::get_parent_pid() {
-#if defined(TI_PLATFORM_WINDOWS)
-  TI_NOT_IMPLEMENTED
-  return -1;
-#else
-  return (int)getppid();
-#endif
 }
 
 ThreadPool::ThreadPool(int max_num_threads) : max_num_threads(max_num_threads) {

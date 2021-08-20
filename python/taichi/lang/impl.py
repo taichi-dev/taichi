@@ -9,7 +9,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.ext_array import ExtArray
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField
-from taichi.lang.ndarray import Ndarray
+from taichi.lang.ndarray import ScalarNdarray
 from taichi.lang.snode import SNode
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
@@ -574,30 +574,18 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
 
 @python_scope
 def ndarray(dtype, shape):
-    """Defines a default Taichi ndarray.
-
-    It is currently implemented with a torch tensor.
+    """Defines a Taichi ndarray with scalar elements.
 
     Args:
         dtype (DataType): Data type of the ndarray.
         shape (Union[int, tuple[int]]): Shape of the ndarray.
 
     Example:
-        The code below shows how a Taichi field can be declared and defined::
+        The code below shows how a Taichi ndarray with scalar elements can be declared and defined::
 
             >>> x = ti.ndarray(ti.f32, shape=(16, 8))
     """
-    if isinstance(shape, numbers.Number):
-        shape = (shape, )
-    assert has_pytorch(
-    ), "PyTorch must be available if you want to create a default Taichi ndarray."
-    import torch
-    if current_cfg().arch == _ti_core.Arch.cuda:
-        device = 'cuda:0'
-    else:
-        device = 'cpu'
-    arr = torch.empty(shape, dtype=to_pytorch_type(dtype), device=device)
-    return Ndarray(arr)
+    return ScalarNdarray(dtype, shape)
 
 
 class Layout:
@@ -863,5 +851,6 @@ def default_cfg():
     return _ti_core.default_compile_config()
 
 
-def call_internal(name):
-    _ti_core.create_internal_func_stmt(name)
+def call_internal(name, *args):
+    return expr_init(
+        _ti_core.insert_internal_func_call(name, make_expr_group(args)))

@@ -1,48 +1,31 @@
 import numpy as np
+import pytest
 
 import taichi as ti
 
-if ti.has_pytorch():
-    import torch
 
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
+def test_ndarray_2d():
+    n = 4
+    m = 7
 
-def _test_ndarray_2d(n, m, a):
     @ti.kernel
-    def run(arr: ti.ext_arr()):
+    def run(x: ti.any_arr(), y: ti.any_arr()):
         for i in range(n):
             for j in range(m):
-                arr[i, j] += i + j
+                x[i, j] += i + j + y[i, j]
 
+    a = ti.ndarray(ti.i32, shape=(n, m))
     for i in range(n):
         for j in range(m):
             a[i, j] = i * j
-
-    run(a)
-
+    b = np.ones((n, m), dtype=np.int32)
+    run(a, b)
     for i in range(n):
         for j in range(m):
-            assert a[i, j] == i * j + i + j
-
-
-@ti.test()
-def test_ndarray_numpy_2d():
-    n = 4
-    m = 7
-    a = ti.Ndarray(np.empty(shape=(n, m), dtype=np.int32))
-    _test_ndarray_2d(n, m, a)
-
-
-@ti.torch_test
-def test_ndarray_torch_2d():
-    n = 4
-    m = 7
-    a = ti.Ndarray(torch.empty((n, m), dtype=torch.int32))
-    _test_ndarray_2d(n, m, a)
-
-
-@ti.torch_test
-def test_ndarray_default_2d():
-    n = 4
-    m = 7
-    a = ti.ndarray(ti.i32, shape=(n, m))
-    _test_ndarray_2d(n, m, a)
+            assert a[i, j] == i * j + i + j + 1
+    run(b, a)
+    for i in range(n):
+        for j in range(m):
+            assert b[i, j] == i * j + (i + j + 1) * 2

@@ -52,15 +52,16 @@ class StructCompiler {
       sn_desc.total_num_cells_from_root *= e.num_elements_from_root;
     }
 
-    TI_INFO("SNodeDescriptor");
-    TI_INFO("* snode={}", sn_desc.snode->id);
-    TI_INFO("* type={} (is_place={})", sn_desc.snode->node_type_name, is_place);
-    TI_INFO("* cell_stride={}", sn_desc.cell_stride);
-    TI_INFO("* cells_per_container_pot={}", sn_desc.cells_per_container_pot());
-    TI_INFO("* container_stride={}", sn_desc.container_stride);
-    TI_INFO("* total_num_cells_from_root={}",
-            sn_desc.total_num_cells_from_root);
-    TI_INFO("");
+    TI_TRACE("SNodeDescriptor");
+    TI_TRACE("* snode={}", sn_desc.snode->id);
+    TI_TRACE("* type={} (is_place={})", sn_desc.snode->node_type_name,
+             is_place);
+    TI_TRACE("* cell_stride={}", sn_desc.cell_stride);
+    TI_TRACE("* cells_per_container_pot={}", sn_desc.cells_per_container_pot());
+    TI_TRACE("* container_stride={}", sn_desc.container_stride);
+    TI_TRACE("* total_num_cells_from_root={}",
+             sn_desc.total_num_cells_from_root);
+    TI_TRACE("");
 
     TI_ASSERT(snode_descriptors_.find(sn->id) == snode_descriptors_.end());
     snode_descriptors_[sn->id] = sn_desc;

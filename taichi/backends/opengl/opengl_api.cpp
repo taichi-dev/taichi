@@ -178,7 +178,7 @@ class GLBuffer {
            void *initial_data = nullptr,
            GLenum type = GL_SHADER_STORAGE_BUFFER,
            GLbitfield access = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT)
-      : size(size), type(type) {
+      : type(type), size(size) {
     glGenBuffers(1, &id);
     check_opengl_error("glGenBuffers");
     glBindBuffer(type, id);

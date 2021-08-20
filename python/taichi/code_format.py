@@ -48,7 +48,7 @@ def find_clang_format_bin():
     except AttributeError:
         pass
 
-    candidates = ['clang-format-6.0', 'clang-format']
+    candidates = ['clang-format-10', 'clang-format']
     result = None
 
     for c in candidates:

@@ -24,6 +24,14 @@ class LlvmProgramImpl {
 
   LlvmProgramImpl(CompileConfig &config);
 
+  TaichiLLVMContext *get_llvm_context(Arch arch) {
+    if (arch_is_cpu(arch)) {
+      return llvm_context_host.get();
+    } else {
+      return llvm_context_device.get();
+    }
+  }
+
   uint64 fetch_result_uint64(int i, uint64 *);
 
   void device_synchronize();

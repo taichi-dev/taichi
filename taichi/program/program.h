@@ -243,12 +243,10 @@ class Program {
     return func;
   }
 
+  // TODO: this is specific to LlvmProgramImpl so we might delete it here in the
+  //       future. For now we keep it here to avoid changing other files.
   TaichiLLVMContext *get_llvm_context(Arch arch) {
-    if (arch_is_cpu(arch)) {
-      return llvm_program_->llvm_context_host.get();
-    } else {
-      return llvm_program_->llvm_context_device.get();
-    }
+    return llvm_program_->get_llvm_context(arch);
   }
 
   Kernel &get_snode_reader(SNode *snode);

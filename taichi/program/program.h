@@ -94,7 +94,6 @@ class Program {
   Callable *current_callable{nullptr};
   void *llvm_runtime{nullptr};
   CompileConfig config;
-  std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
   bool sync{false};  // device/host synchronized?
   bool finalized{false};
   float64 total_compilation_time{0.0};
@@ -252,7 +251,7 @@ class Program {
     if (arch_is_cpu(arch)) {
       return llvm_program_->llvm_context_host.get();
     } else {
-      return llvm_context_device.get();
+      return llvm_program_->llvm_context_device.get();
     }
   }
 
@@ -296,8 +295,8 @@ class Program {
     TI_ASSERT(arch_uses_llvm(config.arch));
 
     TaichiLLVMContext *tlctx = nullptr;
-    if (llvm_context_device) {
-      tlctx = llvm_context_device.get();
+    if (llvm_program_->llvm_context_device) {
+      tlctx = llvm_program_->llvm_context_device.get();
     } else {
       tlctx = llvm_program_->llvm_context_host.get();
     }

@@ -323,7 +323,7 @@ void Program::initialize_llvm_runtime_system() {
                                       prealloc_size);
     CUDADriver::get_instance().memset(preallocated_device_buffer, 0,
                                       prealloc_size);
-    tlctx = llvm_context_device.get();
+    tlctx = llvm_program_->llvm_context_device.get();
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -399,7 +399,7 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   TaichiLLVMContext *tlctx = nullptr;
   if (is_cuda_no_unified_memory(config)) {
 #if defined(TI_WITH_CUDA)
-    tlctx = llvm_context_device.get();
+    tlctx = llvm_program_->llvm_context_device.get();
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -487,8 +487,8 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
   if (arch_is_cpu(config.arch)) {
     initialize_llvm_runtime_snodes(tree, scomp.get());
   } else if (config.arch == Arch::cuda) {
-    auto device_module =
-        clone_struct_compiler_initial_context(llvm_context_device.get());
+    auto device_module = clone_struct_compiler_initial_context(
+        llvm_program_->llvm_context_device.get());
 
     std::unique_ptr<StructCompiler> scomp_gpu =
         std::make_unique<StructCompilerLLVM>(Arch::cuda, this,
@@ -544,10 +544,10 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
 void Program::check_runtime_error() {
   synchronize();
   auto tlctx = llvm_program_->llvm_context_host.get();
-  if (llvm_context_device) {
+  if (llvm_program_->llvm_context_device) {
     // In case there is a standalone device context (e.g. CUDA without unified
     // memory), use the device context instead.
-    tlctx = llvm_context_device.get();
+    tlctx = llvm_program_->llvm_context_device.get();
   }
   auto *runtime_jit_module = tlctx->runtime_jit_module;
   runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
@@ -705,9 +705,11 @@ void Program::visualize_layout(const std::string &fn) {
 }
 
 void Program::maybe_initialize_cuda_llvm_context() {
-  if ((config.arch == Arch::cuda) && (llvm_context_device == nullptr)) {
-    llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::cuda);
-    llvm_context_device->init_runtime_jit_module();
+  if ((config.arch == Arch::cuda) &&
+      (llvm_program_->llvm_context_device == nullptr)) {
+    llvm_program_->llvm_context_device =
+        std::make_unique<TaichiLLVMContext>(Arch::cuda);
+    llvm_program_->llvm_context_device->init_runtime_jit_module();
   }
 }
 

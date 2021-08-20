@@ -2026,7 +2026,7 @@ FunctionCreationGuard CodeGenLLVM::get_function_creation_guard(
 
 void CodeGenLLVM::initialize_context() {
   if (kernel->arch == Arch::cuda) {
-    tlctx = prog->llvm_context_device.get();
+    tlctx = prog->get_llvm_program_impl()->llvm_context_device.get();
   } else {
     tlctx = prog->get_llvm_program_impl()->llvm_context_host.get();
   }

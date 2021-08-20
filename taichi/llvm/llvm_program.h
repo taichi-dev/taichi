@@ -7,11 +7,14 @@
 #include "taichi/runtime/runtime.h"
 #include "taichi/system/threading.h"
 #include "llvm/IR/Module.h"
+#include "taichi/struct/struct.h"
 
 #include <memory>
 
 namespace taichi {
 namespace lang {
+class StructCompiler;
+
 class LlvmProgramImpl {
  public:
   void *llvm_runtime{nullptr};
@@ -38,6 +41,13 @@ class LlvmProgramImpl {
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
       const std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       TaichiLLVMContext *tlctx);
+
+  /**
+   * Initializes the SNodes for LLVM based backends.
+   */
+  void initialize_llvm_runtime_snodes(const SNodeTree *tree,
+                                      StructCompiler *scomp,
+                                      uint64 *result_buffer);
 
   uint64 fetch_result_uint64(int i, uint64 *);
 

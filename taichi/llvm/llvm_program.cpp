@@ -3,6 +3,7 @@
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/program/arch.h"
 #include "taichi/platform/cuda/detect_cuda.h"
+#include "taichi/math/arithmetic.h"
 
 namespace taichi {
 namespace lang {
@@ -58,6 +59,58 @@ LlvmProgramImpl::clone_struct_compiler_initial_context(
   if (!snode_trees_.empty())
     return tlctx->clone_struct_module();
   return tlctx->clone_runtime_module();
+}
+
+void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
+                                                     StructCompiler *scomp,
+                                                     uint64 *result_buffer) {
+  TaichiLLVMContext *tlctx = nullptr;
+  if (config.is_cuda_no_unified_memory()) {
+#if defined(TI_WITH_CUDA)
+    tlctx = llvm_context_device.get();
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    tlctx = llvm_context_host.get();
+  }
+  auto *const runtime_jit = tlctx->runtime_jit_module;
+  // By the time this creator is called, "this" is already destroyed.
+  // Therefore it is necessary to capture members by values.
+  const auto snodes = scomp->snodes;
+  const int root_id = tree->root()->id;
+
+  TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
+  std::size_t rounded_size =
+      taichi::iroundup(scomp->root_size, taichi_page_size);
+  runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
+      "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
+      (int)snodes.size(), tree->id(), rounded_size,
+      snode_tree_buffer_manager->allocate(runtime_jit, llvm_runtime,
+                                          rounded_size, taichi_page_size,
+                                          tree->id(), result_buffer));
+  for (int i = 0; i < (int)snodes.size(); i++) {
+    if (is_gc_able(snodes[i]->type)) {
+      std::size_t node_size;
+      auto element_size = snodes[i]->cell_size_bytes;
+      if (snodes[i]->type == SNodeType::pointer) {
+        // pointer. Allocators are for single elements
+        node_size = element_size;
+      } else {
+        // dynamic. Allocators are for the chunks
+        node_size = sizeof(void *) + element_size * snodes[i]->chunk_size;
+      }
+      TI_TRACE("Initializing allocator for snode {} (node size {})",
+               snodes[i]->id, node_size);
+      auto rt = llvm_runtime;
+      runtime_jit->call<void *, int, std::size_t>(
+          "runtime_NodeAllocator_initialize", rt, snodes[i]->id, node_size);
+      TI_TRACE("Allocating ambient element for snode {} (node size {})",
+               snodes[i]->id, node_size);
+      runtime_jit->call<void *, int>("runtime_allocate_ambient", rt, i,
+                                     node_size);
+    }
+  }
 }
 
 uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {

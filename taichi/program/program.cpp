@@ -150,12 +150,12 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   config = default_compile_config;
   config.arch = arch;
 
-  llvm_program_ = std::make_unique<LlvmProgramImpl>(config);
-
   thread_pool = std::make_unique<ThreadPool>(config.cpu_max_num_threads);
 
-  llvm_context_host = std::make_unique<TaichiLLVMContext>(host_arch());
-  llvm_context_host->init_runtime_jit_module();
+  llvm_program_ = std::make_unique<LlvmProgramImpl>(config);
+  // TODO: this cannot be called from LlvmProgramImpl, find a better place.
+  llvm_program_->llvm_context_host->init_runtime_jit_module();
+
   // TODO: Can we initialize |llvm_context_device| here?
   profiler = make_profiler(arch);
 
@@ -329,7 +329,7 @@ void Program::initialize_llvm_runtime_system() {
 #endif
   } else {
     result_buffer = allocate_result_buffer_default(this);
-    tlctx = llvm_context_host.get();
+    tlctx = llvm_program_->llvm_context_host.get();
   }
   auto *const runtime_jit = tlctx->runtime_jit_module;
 
@@ -404,7 +404,7 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    tlctx = llvm_context_host.get();
+    tlctx = llvm_program_->llvm_context_host.get();
   }
   auto *const runtime_jit = tlctx->runtime_jit_module;
   // By the time this creator is called, "this" is already destroyed.
@@ -473,8 +473,8 @@ std::unique_ptr<llvm::Module> Program::clone_struct_compiler_initial_context(
 void Program::materialize_snode_tree(SNodeTree *tree) {
   auto *const root = tree->root();
   // always use host_arch() for host accessors
-  auto host_module =
-      clone_struct_compiler_initial_context(llvm_context_host.get());
+  auto host_module = clone_struct_compiler_initial_context(
+      llvm_program_->llvm_context_host.get());
   std::unique_ptr<StructCompiler> scomp = std::make_unique<StructCompilerLLVM>(
       host_arch(), this, std::move(host_module));
   scomp->run(*root);
@@ -543,7 +543,7 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
 
 void Program::check_runtime_error() {
   synchronize();
-  auto tlctx = llvm_context_host.get();
+  auto tlctx = llvm_program_->llvm_context_host.get();
   if (llvm_context_device) {
     // In case there is a standalone device context (e.g. CUDA without unified
     // memory), use the device context instead.

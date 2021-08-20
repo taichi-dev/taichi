@@ -94,7 +94,6 @@ class Program {
   Callable *current_callable{nullptr};
   void *llvm_runtime{nullptr};
   CompileConfig config;
-  std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
   std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
   bool sync{false};  // device/host synchronized?
   bool finalized{false};
@@ -251,7 +250,7 @@ class Program {
 
   TaichiLLVMContext *get_llvm_context(Arch arch) {
     if (arch_is_cpu(arch)) {
-      return llvm_context_host.get();
+      return llvm_program_->llvm_context_host.get();
     } else {
       return llvm_context_device.get();
     }
@@ -300,7 +299,7 @@ class Program {
     if (llvm_context_device) {
       tlctx = llvm_context_device.get();
     } else {
-      tlctx = llvm_context_host.get();
+      tlctx = llvm_program_->llvm_context_host.get();
     }
 
     auto runtime = tlctx->runtime_jit_module;
@@ -344,6 +343,10 @@ class Program {
   SNode *get_snode_root(int tree_id);
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
+
+  LlvmProgramImpl *get_llvm_program_impl() {
+    return llvm_program_.get();
+  }
 
  private:
   /**

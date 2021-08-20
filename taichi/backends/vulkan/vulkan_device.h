@@ -306,12 +306,14 @@ class VulkanCommandList : public CommandList {
 
 class VulkanSurface : public Surface {
  public:
-  VulkanSurface(VulkanDevice *device);
+  VulkanSurface(VulkanDevice *device,const SurfaceConfig& config);
   ~VulkanSurface();
 
   DeviceAllocation get_target_image() override;
+  
   void present_image() override;
   std::pair<uint32_t, uint32_t> get_size() override;
+  BufferFormat image_format() override;
 
  private:
   VulkanDevice *device_;
@@ -319,11 +321,12 @@ class VulkanSurface : public Surface {
   VkSwapchainKHR swapchain_;
   VkSemaphore image_available_;
   GLFWwindow *window_;
+  BufferFormat image_format_;
 
   uint32_t image_index_{0};
 
   std::vector<DeviceAllocation> swapchain_images_;
-};
+ };
 
 class VulkanDevice : public GraphicsDevice {
  public:
@@ -373,8 +376,7 @@ class VulkanDevice : public GraphicsDevice {
       std::vector<VertexInputAttribute> &vertex_attrs,
       std::string name = "Pipeline") override;
 
-  std::unique_ptr<Surface> create_surface(uint32_t width,
-                                          uint32_t height) override;
+  std::unique_ptr<Surface> create_surface(const SurfaceConfig& config) override;
 
   // Vulkan specific functions
   VkInstance vk_instance() const {
@@ -502,6 +504,11 @@ class VulkanDevice : public GraphicsDevice {
   std::unordered_multimap<VkDescriptorSet, VkFence> in_flight_desc_sets_;
   std::vector<std::pair<DescPool *, VkDescriptorSet>> dealloc_desc_sets_;
 };
+
+
+VkFormat buffer_format_ti_to_vk(BufferFormat f);
+
+BufferFormat buffer_format_vk_to_ti(VkFormat f);
 
 }  // namespace vulkan
 }  // namespace lang

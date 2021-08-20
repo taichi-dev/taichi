@@ -20,8 +20,8 @@ void Particles::update_ubo(glm::vec3 color,
   ubo.scene = scene.current_ubo_;
   ubo.color = glm::vec4(color, 1);
   ubo.radius = radius;
-  ubo.window_width = renderer_->swap_chain().swap_chain_extent().width;
-  ubo.window_height = renderer_->swap_chain().swap_chain_extent().height;
+  ubo.window_width = renderer_->swap_chain().width();
+  ubo.window_height = renderer_->swap_chain().height();
   ubo.tan_half_fov = tan(glm::radians(scene.camera_.fov) / 2);
   ubo.use_per_vertex_color = use_per_vertex_color;
 

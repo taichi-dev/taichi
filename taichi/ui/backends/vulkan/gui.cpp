@@ -126,10 +126,10 @@ void Gui::prepare_for_next_frame() {
 }
 
 float Gui::abs_x(float x) {
-  return x * renderer_->swap_chain().swap_chain_extent().width;
+  return x * renderer_->swap_chain().width();
 }
 float Gui::abs_y(float y) {
-  return y * renderer_->swap_chain().swap_chain_extent().height;
+  return y * renderer_->swap_chain().height();
 }
 
 void Gui::begin(std::string name, float x, float y, float width, float height) {

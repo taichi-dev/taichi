@@ -46,7 +46,7 @@ void Circles::update_ubo(glm::vec3 color,
                          float radius) {
   UniformBufferObject ubo{
       color, (int)use_per_vertex_color,
-      radius * renderer_->swap_chain().swap_chain_extent().height};
+      radius * renderer_->swap_chain().height()};
 
   MappedMemory mapped(
       app_context_->device(),

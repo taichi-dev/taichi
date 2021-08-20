@@ -40,7 +40,7 @@ void Lines::record_this_frame_commands(VkCommandBuffer command_buffer) {
 
   vkCmdSetLineWidth(
       command_buffer,
-      curr_width_ * renderer_->swap_chain().swap_chain_extent().height);
+      curr_width_ * renderer_->swap_chain().height());
 
   if (indexed_) {
     vkCmdDrawIndexed(command_buffer, config_.indices_count, 1, 0, 0, 0);

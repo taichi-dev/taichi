@@ -2,6 +2,7 @@
 #include "taichi/lang_util.h"
 
 #include "taichi/program/compile_config.h"
+#include <string>
 
 namespace taichi {
 namespace lang {
@@ -147,6 +148,9 @@ enum class BufferFormat : uint32_t {
   r8,
   rg8,
   rgba8,
+  rgba8srgb,
+  bgra8,
+  bgra8srgb,
   r8u,
   rg8u,
   rgba8u,
@@ -309,8 +313,9 @@ class Surface {
   }
 
   virtual DeviceAllocation get_target_image() = 0;
-  virtual void present_image() = 0;
+   virtual void present_image() = 0;
   virtual std::pair<uint32_t, uint32_t> get_size() = 0;
+  virtual BufferFormat image_format() = 0;
 };
 
 struct VertexInputBinding {
@@ -326,6 +331,13 @@ struct VertexInputAttribute {
   uint32_t offset{0};
 };
 
+struct SurfaceConfig{
+  uint32_t width;
+  uint32_t height;
+  bool vsync;
+  void* window_handle;
+};
+
 class GraphicsDevice : public Device {
  public:
   virtual std::unique_ptr<Pipeline> create_raster_pipeline(
@@ -335,8 +347,7 @@ class GraphicsDevice : public Device {
       std::vector<VertexInputAttribute> &vertex_attrs,
       std::string name = "Pipeline") = 0;
 
-  virtual std::unique_ptr<Surface> create_surface(uint32_t width,
-                                                  uint32_t height) = 0;
+  virtual std::unique_ptr<Surface> create_surface(const SurfaceConfig& config) = 0;
 };
 
 }  // namespace lang

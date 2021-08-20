@@ -22,6 +22,9 @@ const std::unordered_map<BufferFormat, VkFormat> buffer_format_ti_2_vk = {
     {BufferFormat::r8, VK_FORMAT_R8_UNORM},
     {BufferFormat::rg8, VK_FORMAT_R8G8_UNORM},
     {BufferFormat::rgba8, VK_FORMAT_R8G8B8A8_UNORM},
+    {BufferFormat::rgba8srgb, VK_FORMAT_R8G8B8A8_SRGB},
+    {BufferFormat::bgra8, VK_FORMAT_B8G8R8A8_UNORM},
+    {BufferFormat::bgra8srgb, VK_FORMAT_B8G8R8A8_SRGB},
     {BufferFormat::r8u, VK_FORMAT_R8_UINT},
     {BufferFormat::rg8u, VK_FORMAT_R8G8_UINT},
     {BufferFormat::rgba8u, VK_FORMAT_R8G8B8A8_UINT},
@@ -59,6 +62,27 @@ const std::unordered_map<BufferFormat, VkFormat> buffer_format_ti_2_vk = {
     {BufferFormat::depth16, VK_FORMAT_D16_UNORM},
     {BufferFormat::depth24stencil8, VK_FORMAT_D24_UNORM_S8_UINT},
     {BufferFormat::depth32f, VK_FORMAT_D32_SFLOAT}};
+
+
+VkFormat buffer_format_ti_to_vk(BufferFormat f){
+  if(buffer_format_ti_2_vk.find(f) == buffer_format_ti_2_vk.end()){
+    TI_ERROR("BufferFormat cannot be mapped to vk");
+  }
+  return buffer_format_ti_2_vk.at(f);
+} 
+
+BufferFormat buffer_format_vk_to_ti(VkFormat f){
+  std::unordered_map< VkFormat,BufferFormat> inverse;
+  for(auto kv:buffer_format_ti_2_vk){
+    inverse[kv.second] = kv.first;
+  }
+  if(inverse.find(f)==inverse.end()){
+    printf("format: %d\n",f);
+    TI_ERROR("VkFormat cannot be mapped to ti");
+  }
+  return inverse.at(f);
+} 
+
 
 VulkanPipeline::VulkanPipeline(const Params &params)
     : device_(params.device->vk_device()), name_(params.name) {
@@ -1036,9 +1060,8 @@ std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(
   return nullptr;
 }
 
-std::unique_ptr<Surface> VulkanDevice::create_surface(uint32_t width,
-                                                      uint32_t height) {
-  return std::make_unique<VulkanSurface>(this);
+std::unique_ptr<Surface> VulkanDevice::create_surface(const SurfaceConfig& config) {
+  return std::make_unique<VulkanSurface>(this,config);
 }
 
 std::tuple<VkDeviceMemory, size_t, size_t>
@@ -1129,17 +1152,18 @@ VkRenderPass VulkanDevice::get_renderpass(const VulkanRenderPassDesc &desc) {
     description.format = format;
     description.samples = VK_SAMPLE_COUNT_1_BIT;
     description.loadOp =
-        clear ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR;
+        clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    description.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    description.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentReference &ref = color_attachments.emplace_back();
     ref.attachment = i;
     ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    i += 1;
   }
 
   if (desc.depth_attachment != VK_FORMAT_UNDEFINED) {
@@ -1147,14 +1171,14 @@ VkRenderPass VulkanDevice::get_renderpass(const VulkanRenderPassDesc &desc) {
     description.flags = 0;
     description.format = desc.depth_attachment;
     description.samples = VK_SAMPLE_COUNT_1_BIT;
-    description.loadOp = desc.clear_depth ? VK_ATTACHMENT_LOAD_OP_LOAD
-                                          : VK_ATTACHMENT_LOAD_OP_CLEAR;
+    description.loadOp = desc.clear_depth ? VK_ATTACHMENT_LOAD_OP_CLEAR
+                                          : VK_ATTACHMENT_LOAD_OP_LOAD;
     description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    description.finalLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+    description.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     depth_attachment.attachment = i;
     depth_attachment.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -1181,7 +1205,7 @@ VkRenderPass VulkanDevice::get_renderpass(const VulkanRenderPassDesc &desc) {
   renderpass_info.attachmentCount = attachments.size();
   renderpass_info.pAttachments = attachments.data();
   renderpass_info.subpassCount = 1;
-  renderpass_info.pSubpasses = nullptr;
+  renderpass_info.pSubpasses = &subpass;
   renderpass_info.dependencyCount = 0;
   renderpass_info.pDependencies = nullptr;
 
@@ -1341,10 +1365,40 @@ void VulkanDevice::create_vma_allocator() {
 
   vmaCreateAllocator(&allocatorInfo, &allocator_);
 }
+ 
+ 
 
-VulkanSurface::VulkanSurface(VulkanDevice *device) : device_(device) {
+VkPresentModeKHR choose_swap_present_mode(
+    const std::vector<VkPresentModeKHR> &available_present_modes,bool vsync) {
+  if (vsync) {
+    for (const auto &available_present_mode : available_present_modes) {
+      if (available_present_mode == VK_PRESENT_MODE_FIFO_KHR) {
+        return available_present_mode;
+      }
+    }
+  } else {
+    for (const auto &available_present_mode : available_present_modes) {
+      if (available_present_mode == VK_PRESENT_MODE_MAILBOX_KHR) {
+        return available_present_mode;
+      }
+    }
+    for (const auto &available_present_mode : available_present_modes) {
+      if (available_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+        return available_present_mode;
+      }
+    }
+  }
+
+  if (available_present_modes.size() == 0) {
+    throw std::runtime_error("no avialble present modes");
+  }
+
+  return available_present_modes[0];
+}
+
+VulkanSurface::VulkanSurface(VulkanDevice *device,const SurfaceConfig& config) : device_(device) {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  window_ = glfwCreateWindow(640, 480, "Taichi", NULL, NULL);
+  window_ = (GLFWwindow*) config.window_handle;
   VkResult err =
       glfwCreateWindowSurface(device->vk_instance(), window_, NULL, &surface_);
   if (err) {
@@ -1355,7 +1409,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device) : device_(device) {
   auto choose_surface_format =
       [](const std::vector<VkSurfaceFormatKHR> &availableFormats) {
         for (const auto &availableFormat : availableFormats) {
-          if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
+          if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
               availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
             return availableFormat;
           }
@@ -1386,11 +1440,25 @@ VulkanSurface::VulkanSurface(VulkanDevice *device) : device_(device) {
 
   VkSurfaceFormatKHR surface_format = choose_surface_format(surface_formats);
 
+
+  uint32_t present_mode_count;
+  std::vector<VkPresentModeKHR> present_modes;
+  vkGetPhysicalDeviceSurfacePresentModesKHR(device->vk_physical_device(), surface_,
+                                            &present_mode_count, nullptr);
+
+  if (present_mode_count != 0) {
+    present_modes.resize(present_mode_count);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device->vk_physical_device(), surface_,
+                                              &present_mode_count,
+                                             present_modes.data());
+  }
+  VkPresentModeKHR present_mode = choose_swap_present_mode(present_modes,config.vsync);
+
   int width, height;
   glfwGetFramebufferSize(window_, &width, &height);
 
   VkExtent2D extent = {uint32_t(width), uint32_t(height)};
-
+ 
   VkSwapchainCreateInfoKHR createInfo;
   createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
   createInfo.pNext = nullptr;
@@ -1407,7 +1475,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device) : device_(device) {
   createInfo.pQueueFamilyIndices = nullptr;
   createInfo.preTransform = capabilities.currentTransform;
   createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-  createInfo.presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+  createInfo.presentMode = present_mode;
   createInfo.clipped = VK_TRUE;
   createInfo.oldSwapchain = nullptr;
 
@@ -1430,6 +1498,8 @@ VulkanSurface::VulkanSurface(VulkanDevice *device) : device_(device) {
   std::vector<VkImage> swapchain_images(num_images);
   vkGetSwapchainImagesKHR(device->vk_device(), swapchain_, &num_images,
                           swapchain_images.data());
+  
+  image_format_ = buffer_format_vk_to_ti(surface_format.format);
 
   for (VkImage img : swapchain_images) {
     VkImageViewCreateInfo view_info{};
@@ -1456,6 +1526,8 @@ VulkanSurface::VulkanSurface(VulkanDevice *device) : device_(device) {
     swapchain_images_.push_back(
         device->import_vk_image(img, view, surface_format.format));
   }
+
+
 }
 
 VulkanSurface::~VulkanSurface() {
@@ -1474,13 +1546,17 @@ DeviceAllocation VulkanSurface::get_target_image() {
   return swapchain_images_[image_index_];
 }
 
+BufferFormat VulkanSurface::image_format() {
+  return image_format_;
+}
+
 void VulkanSurface::present_image() {
   // TODO: In the future tie the wait semaphores.
   // Currently we should just halt and wait on host before present
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-  presentInfo.waitSemaphoreCount = 0;
-  presentInfo.pWaitSemaphores = nullptr;
+  presentInfo.waitSemaphoreCount = 1;
+  presentInfo.pWaitSemaphores = &image_available_; 
   presentInfo.swapchainCount = 1;
   presentInfo.pSwapchains = &swapchain_;
   presentInfo.pImageIndices = &image_index_;

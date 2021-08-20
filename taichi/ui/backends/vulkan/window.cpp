@@ -88,10 +88,7 @@ void Window::draw_frame() {
 }
 
 void Window::present_frame() {
-  renderer_->swap_chain().present_frame();
-  if (renderer_->swap_chain().requires_recreate()) {
-    recreate_swap_chain();
-  }
+  renderer_->swap_chain().surface().present_image();
 }
 
 Window::~Window() {

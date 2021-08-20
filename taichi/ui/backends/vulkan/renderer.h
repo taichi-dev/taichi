@@ -81,7 +81,7 @@ class Renderer {
 
   SwapChain swap_chain_;
   AppContext app_context_;
-
+  
   VkSemaphore prev_draw_finished_vk_;
   VkSemaphore this_draw_data_ready_vk_;
 

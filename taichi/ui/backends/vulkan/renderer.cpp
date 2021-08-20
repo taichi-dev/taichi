@@ -9,12 +9,12 @@ TI_UI_NAMESPACE_BEGIN
 namespace vulkan {
 
 using namespace taichi::lang;
+using namespace taichi::lang::vulkan;
 
 void Renderer::init(GLFWwindow *window, const AppConfig &config) {
   app_context_.init(window, config);
   swap_chain_.init(&app_context_);
-  create_render_passes();
-  swap_chain_.create_framebuffers(render_passes_[0]);
+  create_render_passes(); 
 
   create_semaphores();
   import_semaphores();
@@ -26,11 +26,15 @@ void Renderer::init(GLFWwindow *window, const AppConfig &config) {
 
 void Renderer::create_render_passes() {
   // for now we only have one pass.
-  VkRenderPass pass;
-  create_render_pass(pass, swap_chain_.swap_chain_image_format(),
-                     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, app_context_.device(),
-                     app_context_.physical_device());
+   VulkanRenderPassDesc desc;
+  desc.depth_attachment = swap_chain_.depth_format();
+  printf("depth format: %d\n",swap_chain_.depth_format());
+  desc.clear_depth = true;
+  desc.color_attachments = {{buffer_format_ti_to_vk(swap_chain_.surface().image_format()),true}};
+  
+  VkRenderPass pass = app_context_.vulkan_device().get_renderpass(desc);
   render_passes_.push_back(pass);
+
 }
 
 void Renderer::clear_command_buffer_cache() {
@@ -115,8 +119,8 @@ void Renderer::scene(Scene *scene) {
   if (scene->point_lights_.size() == 0) {
     printf("warning, there are no light sources in the scene.\n");
   }
-  float aspect_ratio = swap_chain_.swap_chain_extent().width /
-                       (float)swap_chain_.swap_chain_extent().height;
+  float aspect_ratio = swap_chain_.width() /
+                       (float)swap_chain_.height();
   scene->update_ubo(aspect_ratio);
   for (int i = 0; i < scene->mesh_infos_.size(); ++i) {
     mesh(scene->mesh_infos_[i], scene);
@@ -135,7 +139,7 @@ void Renderer::cleanup() {
   }
   vkDestroySemaphore(app_context_.device(), prev_draw_finished_vk_, nullptr);
   vkDestroySemaphore(app_context_.device(), this_draw_data_ready_vk_, nullptr);
-  swap_chain_.cleanup();
+
   app_context_.cleanup();
 }
 
@@ -149,13 +153,10 @@ void Renderer::cleanup_swap_chain() {
     vkDestroyRenderPass(app_context_.device(), pass, nullptr);
   }
   render_passes_.clear();
-
-  swap_chain_.cleanup_swap_chain();
 }
 
 void Renderer::recreate_swap_chain() {
   create_render_passes();
-  swap_chain_.recreate_swap_chain(render_passes_[0]);
   for (auto &renderable : renderables_) {
     renderable->recreate_swap_chain();
   }
@@ -173,7 +174,6 @@ void Renderer::import_semaphores() {
 }
 
 void Renderer::prepare_for_next_frame() {
-  swap_chain_.update_image_index();
   next_renderable_ = 0;
   if (app_context_.config.ti_arch == Arch::cuda) {
     cuda_vk_semaphore_wait((CUexternalSemaphore)prev_draw_finished_cuda_);
@@ -183,13 +183,6 @@ void Renderer::prepare_for_next_frame() {
 void Renderer::draw_frame(Gui *gui) {
   uint32_t image_index = 0;
 
-  if (swap_chain_.images_in_flight()[image_index] != VK_NULL_HANDLE) {
-    vkWaitForFences(app_context_.device(), 1,
-                    &swap_chain_.images_in_flight()[image_index], VK_TRUE,
-                    UINT64_MAX);
-  }
-  swap_chain_.images_in_flight()[image_index] =
-      swap_chain_.in_flight_scenes()[swap_chain_.current_frame()];
 
   if (app_context_.config.ti_arch == Arch::cuda) {
     cuda_vk_semaphore_signal((CUexternalSemaphore)this_draw_data_ready_cuda_);
@@ -218,10 +211,10 @@ void Renderer::draw_frame(Gui *gui) {
     VkRenderPassBeginInfo render_pass_info{};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     render_pass_info.renderPass = render_passes_[0];
-    render_pass_info.framebuffer =
-        swap_chain_.swap_chain_framebuffers()[image_index];
+    render_pass_info.framebuffer = swap_chain_.framebuffer(render_passes_[0]);
     render_pass_info.renderArea.offset = {0, 0};
-    render_pass_info.renderArea.extent = swap_chain_.swap_chain_extent();
+    render_pass_info.renderArea.extent.width = swap_chain_.width();
+    render_pass_info.renderArea.extent.height = swap_chain_.height();
 
     std::array<VkClearValue, 2> clear_values{};
     clear_values[0].color = {
@@ -246,12 +239,9 @@ void Renderer::draw_frame(Gui *gui) {
     cached_command_buffers_[image_index] = command_buffer;
   }
 
-  std::vector<VkSemaphore> wait_semaphores = {
-      swap_chain_.image_available_semaphores()[swap_chain_.current_frame()]};
-  std::vector<VkPipelineStageFlags> wait_stages = {
-      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-  std::vector<VkSemaphore> signal_semaphores = {
-      swap_chain_.render_finished_semaphores()[swap_chain_.current_frame()]};
+  std::vector<VkSemaphore> wait_semaphores = {};
+  std::vector<VkPipelineStageFlags> wait_stages = {};
+  std::vector<VkSemaphore> signal_semaphores = {};
 
   if (app_context_.config.ti_arch == Arch::cuda) {
     wait_semaphores.push_back(this_draw_data_ready_vk_);
@@ -271,13 +261,9 @@ void Renderer::draw_frame(Gui *gui) {
 
   submit_info.signalSemaphoreCount = signal_semaphores.size();
   submit_info.pSignalSemaphores = signal_semaphores.data();
-
-  vkResetFences(app_context_.device(), 1,
-                &swap_chain_.in_flight_scenes()[swap_chain_.current_frame()]);
-
+ 
   if (vkQueueSubmit(
-          app_context_.graphics_queue(), 1, &submit_info,
-          swap_chain_.in_flight_scenes()[swap_chain_.current_frame()]) !=
+          app_context_.graphics_queue(), 1, &submit_info,VK_NULL_HANDLE) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to submit draw command buffer!");
   }

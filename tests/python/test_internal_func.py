@@ -13,7 +13,7 @@ def all_archs_for_this(test):
 def test_basic():
     @ti.kernel
     def test():
-        for i in range(10):
+        for _ in range(10):
             ti.call_internal("do_nothing")
 
     test()
@@ -58,5 +58,15 @@ def test_node_manager_gc():
     @ti.kernel
     def test_cpu():
         ti.call_internal("test_node_allocator_gc_cpu")
+
+    test_cpu()
+
+
+@ti.test(arch=[ti.cpu, ti.cuda], debug=True)
+def test_return():
+    @ti.kernel
+    def test_cpu():
+        ret = ti.call_internal("test_internal_func_args", 1.0, 2.0, 3)
+        assert ret == 9
 
     test_cpu()

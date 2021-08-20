@@ -61,6 +61,7 @@ std::string make_list(const std::vector<T> &data,
 
 extern std::string compiled_lib_dir;
 extern std::string runtime_tmp_dir;
+std::string runtime_lib_dir();
 
 bool command_exist(const std::string &command);
 

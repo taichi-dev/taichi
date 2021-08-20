@@ -1,3 +1,10 @@
+# Optional environment variables supported by setup.py:
+#   DEBUG
+#     build the C++ taichi_core extension with debug symbols.
+#
+#   TAICHI_CMAKE_ARGS
+#     extra cmake args for C++ taichi_core extension.
+
 import glob
 import multiprocessing
 import os
@@ -30,6 +37,15 @@ TI_VERSION_MAJOR = 0
 TI_VERSION_MINOR = 7
 TI_VERSION_PATCH = 29
 version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
+if project_name == 'taichi-nightly':
+    from datetime import date
+    today = date.today().strftime('%Y%m%d')
+    # As required in PEP440, the commit hash cannot be used in version
+    # because it is not meaningful with respect to order. Therefore,
+    # we temperally do not use this commit_sha in our version.
+    # https://www.python.org/dev/peps/pep-0440
+    commit_sha = os.getenv('COMMIT_SHA')
+    version += f'.dev{today}'
 
 data_files = glob.glob('python/lib/*')
 print(data_files)
@@ -121,6 +137,7 @@ class CMakeBuild(build_ext):
             f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
         ]
 
+        self.debug = os.getenv('DEBUG', '0') in ('1', 'ON')
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 

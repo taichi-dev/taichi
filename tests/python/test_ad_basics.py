@@ -44,8 +44,8 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
         func()
         func.grad()
 
-        assert y[0] == approx(npfunc(v))
-        assert x.grad[0] == approx(grad(npfunc)(v))
+        assert y[0] == approx(npfunc(v), rel=1e-4)
+        assert x.grad[0] == approx(grad(npfunc)(v), rel=1e-4)
 
     impl()
 

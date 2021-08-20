@@ -97,7 +97,6 @@ class Program {
   bool finalized{false};
   float64 total_compilation_time{0.0};
   static std::atomic<int> num_instances;
-  std::unique_ptr<ThreadPool> thread_pool{nullptr};
   std::unique_ptr<MemoryPool> memory_pool{nullptr};
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
   void *preallocated_device_buffer{

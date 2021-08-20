@@ -132,8 +132,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   TI_ASSERT(current_program == nullptr);
   current_program = this;
 
-  thread_pool = std::make_unique<ThreadPool>(config.cpu_max_num_threads);
-
   // TODO: this cannot be called from LlvmProgramImpl, find a better place.
   llvm_program_->llvm_context_host->init_runtime_jit_module();
 
@@ -359,7 +357,7 @@ void Program::initialize_llvm_runtime_system() {
   if (arch_use_host_memory(config.arch)) {
     runtime_jit->call<void *, void *, void *>(
         "LLVMRuntime_initialize_thread_pool", llvm_program_->llvm_runtime,
-        thread_pool.get(), (void *)ThreadPool::static_run);
+        llvm_program_->thread_pool.get(), (void *)ThreadPool::static_run);
 
     runtime_jit->call<void *, void *>("LLVMRuntime_set_assert_failed",
                                       llvm_program_->llvm_runtime,

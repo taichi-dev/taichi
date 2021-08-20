@@ -28,6 +28,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_) {
   config = config_;
   snode_tree_buffer_manager = std::make_unique<SNodeTreeBufferManager>(this);
 
+  thread_pool = std::make_unique<ThreadPool>(config.cpu_max_num_threads);
   llvm_context_host = std::make_unique<TaichiLLVMContext>(host_arch());
 }
 

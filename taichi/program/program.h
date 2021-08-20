@@ -284,24 +284,6 @@ class Program {
 
   void print_memory_profiler_info();
 
-  template <typename T, typename... Args>
-  T runtime_query(const std::string &key, Args... args) {
-    TI_ASSERT(arch_uses_llvm(config.arch));
-
-    TaichiLLVMContext *tlctx = nullptr;
-    if (llvm_program_->llvm_context_device) {
-      tlctx = llvm_program_->llvm_context_device.get();
-    } else {
-      tlctx = llvm_program_->llvm_context_host.get();
-    }
-
-    auto runtime = tlctx->runtime_jit_module;
-    runtime->call<void *, Args...>("runtime_" + key,
-                                   llvm_program_->llvm_runtime,
-                                   std::forward<Args>(args)...);
-    return fetch_result<T>(taichi_result_buffer_runtime_query_id);
-  }
-
   // Returns zero if the SNode is statically allocated
   std::size_t get_snode_num_dynamically_allocated(SNode *snode);
 

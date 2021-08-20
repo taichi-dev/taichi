@@ -256,23 +256,22 @@ void SetImage::create_descriptor_set_layout() {
 }
 
 void SetImage::create_descriptor_sets() {
-  std::vector<VkDescriptorSetLayout> layouts(
-      renderer_->swap_chain().chain_size(), descriptor_set_layout_);
+  std::vector<VkDescriptorSetLayout> layouts(   1, descriptor_set_layout_);
 
   VkDescriptorSetAllocateInfo alloc_info{};
   alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   alloc_info.descriptorPool = descriptor_pool_;
-  alloc_info.descriptorSetCount = renderer_->swap_chain().chain_size();
+  alloc_info.descriptorSetCount =1;
   alloc_info.pSetLayouts = layouts.data();
 
-  descriptor_sets_.resize(renderer_->swap_chain().chain_size());
+  
 
   if (vkAllocateDescriptorSets(app_context_->device(), &alloc_info,
-                               descriptor_sets_.data()) != VK_SUCCESS) {
+                               &descriptor_set_) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate descriptor sets!");
   }
 
-  for (size_t i = 0; i < renderer_->swap_chain().chain_size(); i++) {
+  
     VkDescriptorImageInfo image_info{};
     image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     image_info.imageView = texture_image_view_;
@@ -281,7 +280,7 @@ void SetImage::create_descriptor_sets() {
     std::array<VkWriteDescriptorSet, 1> descriptor_writes{};
 
     descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptor_writes[0].dstSet = descriptor_sets_[i];
+    descriptor_writes[0].dstSet = descriptor_set_;
     descriptor_writes[0].dstBinding = 1;
     descriptor_writes[0].dstArrayElement = 0;
     descriptor_writes[0].descriptorType =
@@ -292,7 +291,7 @@ void SetImage::create_descriptor_sets() {
     vkUpdateDescriptorSets(app_context_->device(),
                            static_cast<uint32_t>(descriptor_writes.size()),
                            descriptor_writes.data(), 0, nullptr);
-  }
+  
 }
 
 void SetImage::cleanup() {

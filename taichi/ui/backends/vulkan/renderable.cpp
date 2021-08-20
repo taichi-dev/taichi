@@ -151,7 +151,8 @@ void Renderable::update_data(const RenderableInfo &info) {
 }
 
 void Renderable::create_descriptor_pool() {
-  int swap_chain_size = renderer_->swap_chain().chain_size();
+  int swap_chain_size = 1;
+  
   std::array<VkDescriptorPoolSize, 3> pool_sizes{};
   pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
   pool_sizes[0].descriptorCount = static_cast<uint32_t>(swap_chain_size);
@@ -376,36 +377,26 @@ void Renderable::create_uniform_buffers() {
     return;
   }
 
-  size_t chain_size = renderer_->swap_chain().chain_size();
-  uniform_buffers_.resize(chain_size);
-  uniform_buffer_memories_.resize(chain_size);
 
-  for (size_t i = 0; i < chain_size; i++) {
-    create_buffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                  uniform_buffers_[i], uniform_buffer_memories_[i],
-                  app_context_->device(), app_context_->physical_device());
-  }
+  create_buffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                uniform_buffer_, uniform_buffer_memory_,
+                app_context_->device(), app_context_->physical_device());
+  
 }
 
 void Renderable::create_storage_buffers() {
   VkDeviceSize buffer_size = config_.ssbo_size;
   if (buffer_size == 0) {
     return;
-  }
-
-  size_t chain_size = renderer_->swap_chain().chain_size();
-  storage_buffers_.resize(chain_size);
-  storage_buffer_memories_.resize(chain_size);
-
-  for (size_t i = 0; i < chain_size; i++) {
+  } 
     create_buffer(buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                  storage_buffers_[i], storage_buffer_memories_[i],
+                  storage_buffer_, storage_buffer_memory_,
                   app_context_->device(), app_context_->physical_device());
-  }
+  
 }
 
 void Renderable::recreate_swap_chain() {
@@ -420,20 +411,18 @@ void Renderable::destroy_uniform_buffers() {
   if (config_.ubo_size == 0) {
     return;
   }
-  for (int i = 0; i < uniform_buffers_.size(); ++i) {
-    vkDestroyBuffer(app_context_->device(), uniform_buffers_[i], nullptr);
-    vkFreeMemory(app_context_->device(), uniform_buffer_memories_[i], nullptr);
-  }
+   vkDestroyBuffer(app_context_->device(), uniform_buffer_, nullptr);
+  vkFreeMemory(app_context_->device(), uniform_buffer_memory_, nullptr);
+  
 }
 
 void Renderable::destroy_storage_buffers() {
   if (config_.ssbo_size == 0) {
     return;
-  }
-  for (int i = 0; i < storage_buffers_.size(); ++i) {
-    vkDestroyBuffer(app_context_->device(), storage_buffers_[i], nullptr);
-    vkFreeMemory(app_context_->device(), storage_buffer_memories_[i], nullptr);
-  }
+  } 
+    vkDestroyBuffer(app_context_->device(), storage_buffer_, nullptr);
+    vkFreeMemory(app_context_->device(), storage_buffer_memory_, nullptr);
+  
 }
 
 void Renderable::cleanup_swap_chain() {
@@ -475,7 +464,7 @@ void Renderable::record_this_frame_commands(VkCommandBuffer command_buffer) {
 
   vkCmdBindDescriptorSets(
       command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout_, 0, 1,
-      &descriptor_sets_[renderer_->swap_chain().curr_image_index()], 0,
+      &descriptor_set_ , 0,
       nullptr);
 
   if (indexed_) {

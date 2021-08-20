@@ -19,10 +19,9 @@ void Renderer::init(GLFWwindow *window, const AppConfig &config) {
   create_semaphores();
   import_semaphores();
 
-  cached_command_buffers_.resize(swap_chain_.chain_size());
-  for (int i = 0; i < swap_chain_.chain_size(); ++i) {
-    cached_command_buffers_[i] = VK_NULL_HANDLE;
-  }
+  cached_command_buffers_.resize(1);
+  cached_command_buffers_[0] = VK_NULL_HANDLE;
+  
 }
 
 void Renderer::create_render_passes() {
@@ -182,7 +181,7 @@ void Renderer::prepare_for_next_frame() {
 }
 
 void Renderer::draw_frame(Gui *gui) {
-  uint32_t image_index = swap_chain_.curr_image_index();
+  uint32_t image_index = 0;
 
   if (swap_chain_.images_in_flight()[image_index] != VK_NULL_HANDLE) {
     vkWaitForFences(app_context_.device(), 1,

@@ -26,6 +26,9 @@ class AppContext {
   taichi::lang::vulkan::VulkanQueueFamilyIndices queue_family_indices() const;
   GLFWwindow *glfw_window() const;
 
+  taichi::lang::vulkan::VulkanDevice& vulkan_device();
+  const taichi::lang::vulkan::VulkanDevice& vulkan_device() const;
+
   AppConfig config;
 
  private:

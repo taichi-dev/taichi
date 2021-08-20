@@ -45,8 +45,8 @@ void Gui::init(Renderer *renderer, GLFWwindow *window) {
   init_info.DescriptorPool = descriptor_pool_;
   init_info.Allocator = VK_NULL_HANDLE;
   ;
-  init_info.MinImageCount = renderer_->swap_chain().chain_size();
-  init_info.ImageCount = renderer_->swap_chain().chain_size();
+  init_info.MinImageCount = 1;
+  init_info.ImageCount = 1;
   ImGui_ImplVulkan_Init(&init_info, renderer_->render_passes()[0]);
 
   // Load Fonts

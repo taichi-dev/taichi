@@ -69,6 +69,14 @@ void AppContext::init(GLFWwindow *glfw_window, const AppConfig &config) {
   vulkan_device_ = std::make_unique<EmbeddedVulkanDevice>(evd_params);
 }
 
+taichi::lang::vulkan::VulkanDevice& AppContext::vulkan_device(){
+  return *(vulkan_device_->device());
+}
+
+const taichi::lang::vulkan::VulkanDevice& AppContext::vulkan_device() const{
+  return *(vulkan_device_->device());
+}
+
 void AppContext::cleanup() {
   vulkan_device_.reset();
 }

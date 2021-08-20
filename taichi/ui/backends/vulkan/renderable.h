@@ -71,14 +71,14 @@ class Renderable {
   VkBuffer staging_index_buffer_;
   VkDeviceMemory staging_index_buffer_memory_;
 
-  std::vector<VkBuffer> uniform_buffers_;
-  std::vector<VkDeviceMemory> uniform_buffer_memories_;
+  VkBuffer uniform_buffer_;
+  VkDeviceMemory uniform_buffer_memory_;
 
-  std::vector<VkBuffer> storage_buffers_;
-  std::vector<VkDeviceMemory> storage_buffer_memories_;
+  VkBuffer storage_buffer_;
+  VkDeviceMemory storage_buffer_memory_;
 
   VkDescriptorSetLayout descriptor_set_layout_;
-  std::vector<VkDescriptorSet> descriptor_sets_;
+  VkDescriptorSet descriptor_set_;
 
   VkDescriptorPool descriptor_pool_;
 

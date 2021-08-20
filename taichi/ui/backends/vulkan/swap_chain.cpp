@@ -204,6 +204,7 @@ void SwapChain::create_sync_objects() {
 }
 
 void SwapChain::present_frame() {
+  vkDeviceWaitIdle(app_context_->device());
   uint32_t image_index = curr_image_index_;
 
   VkSubmitInfo submit_info{};

@@ -35,7 +35,7 @@ void Lines::record_this_frame_commands(VkCommandBuffer command_buffer) {
 
   vkCmdBindDescriptorSets(
       command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout_, 0, 1,
-      &descriptor_sets_[renderer_->swap_chain().curr_image_index()], 0,
+      &descriptor_set_, 0,
       nullptr);
 
   vkCmdSetLineWidth(
@@ -77,7 +77,7 @@ void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
 
   MappedMemory mapped(
       app_context_->device(),
-      uniform_buffer_memories_[renderer_->swap_chain().curr_image_index()],
+      uniform_buffer_memory_,
       sizeof(ubo));
   memcpy(mapped.data, &ubo, sizeof(ubo));
 }
@@ -105,32 +105,31 @@ void Lines::create_descriptor_set_layout() {
 }
 
 void Lines::create_descriptor_sets() {
-  std::vector<VkDescriptorSetLayout> layouts(
-      renderer_->swap_chain().chain_size(), descriptor_set_layout_);
+  std::vector<VkDescriptorSetLayout> layouts(   1, descriptor_set_layout_);
 
   VkDescriptorSetAllocateInfo alloc_info{};
   alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   alloc_info.descriptorPool = descriptor_pool_;
-  alloc_info.descriptorSetCount = renderer_->swap_chain().chain_size();
+  alloc_info.descriptorSetCount =1;
   alloc_info.pSetLayouts = layouts.data();
 
-  descriptor_sets_.resize(renderer_->swap_chain().chain_size());
+  
 
   if (vkAllocateDescriptorSets(app_context_->device(), &alloc_info,
-                               descriptor_sets_.data()) != VK_SUCCESS) {
+                               &descriptor_set_) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate descriptor sets!");
   }
 
-  for (size_t i = 0; i < renderer_->swap_chain().chain_size(); i++) {
+  
     VkDescriptorBufferInfo buffer_info{};
-    buffer_info.buffer = uniform_buffers_[i];
+    buffer_info.buffer = uniform_buffer_;
     buffer_info.offset = 0;
     buffer_info.range = config_.ubo_size;
 
     std::array<VkWriteDescriptorSet, 1> descriptor_writes{};
 
     descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptor_writes[0].dstSet = descriptor_sets_[i];
+    descriptor_writes[0].dstSet = descriptor_set_;
     descriptor_writes[0].dstBinding = 0;
     descriptor_writes[0].dstArrayElement = 0;
     descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -140,7 +139,7 @@ void Lines::create_descriptor_sets() {
     vkUpdateDescriptorSets(app_context_->device(),
                            static_cast<uint32_t>(descriptor_writes.size()),
                            descriptor_writes.data(), 0, nullptr);
-  }
+  
 }
 
 void Lines::cleanup() {

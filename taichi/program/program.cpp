@@ -821,28 +821,6 @@ int Program::default_block_dim(const CompileConfig &config) {
   }
 }
 
-void Program::print_list_manager_info(void *list_manager) {
-  auto list_manager_len = llvm_program_->runtime_query<int32>(
-      "ListManager_get_num_elements", result_buffer, list_manager);
-
-  auto element_size = llvm_program_->runtime_query<int32>(
-      "ListManager_get_element_size", result_buffer, list_manager);
-
-  auto elements_per_chunk = llvm_program_->runtime_query<int32>(
-      "ListManager_get_max_num_elements_per_chunk", result_buffer,
-      list_manager);
-
-  auto num_active_chunks = llvm_program_->runtime_query<int32>(
-      "ListManager_get_num_active_chunks", result_buffer, list_manager);
-
-  auto size_MB = 1e-6f * num_active_chunks * elements_per_chunk * element_size;
-
-  fmt::print(
-      " length={:n}     {:n} chunks x [{:n} x {:n} B]  total={:.4f} MB\n",
-      list_manager_len, num_active_chunks, elements_per_chunk, element_size,
-      size_MB);
-}
-
 void Program::print_memory_profiler_info() {
   TI_ASSERT(arch_uses_llvm(config.arch));
 
@@ -863,7 +841,7 @@ void Program::print_memory_profiler_info() {
 
       if (element_list) {
         fmt::print("  active element list:");
-        print_list_manager_info(element_list);
+        llvm_program_->print_list_manager_info(element_list, result_buffer);
 
         auto node_allocator = llvm_program_->runtime_query<void *>(
             "LLVMRuntime_get_node_allocators", result_buffer,
@@ -887,7 +865,7 @@ void Program::print_memory_profiler_info() {
           auto data_list = llvm_program_->runtime_query<void *>(
               "NodeManager_get_data_list", result_buffer, node_allocator);
           fmt::print("  data list:          ");
-          print_list_manager_info(data_list);
+          llvm_program_->print_list_manager_info(data_list, result_buffer);
 
           fmt::print(
               "  Allocated elements={:n}; free list length={:n}; recycled list "

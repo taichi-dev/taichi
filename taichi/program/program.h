@@ -280,8 +280,6 @@ class Program {
 
   static int default_block_dim(const CompileConfig &config);
 
-  void print_list_manager_info(void *list_manager);
-
   void print_memory_profiler_info();
 
   // Returns zero if the SNode is statically allocated

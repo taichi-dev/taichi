@@ -6,6 +6,7 @@
 #include "taichi/llvm/llvm_context.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/system/threading.h"
+#include "llvm/IR/Module.h"
 
 #include <memory>
 
@@ -33,6 +34,10 @@ class LlvmProgramImpl {
       return llvm_context_device.get();
     }
   }
+
+  std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
+      const std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+      TaichiLLVMContext *tlctx);
 
   uint64 fetch_result_uint64(int i, uint64 *);
 

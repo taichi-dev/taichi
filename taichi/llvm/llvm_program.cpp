@@ -51,6 +51,15 @@ void LlvmProgramImpl::device_synchronize() {
   }
 }
 
+std::unique_ptr<llvm::Module>
+LlvmProgramImpl::clone_struct_compiler_initial_context(
+    const std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+    TaichiLLVMContext *tlctx) {
+  if (!snode_trees_.empty())
+    return tlctx->clone_struct_module();
+  return tlctx->clone_runtime_module();
+}
+
 uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
   // TODO: We are likely doing more synchronization than necessary. Simplify the
   // sync logic when we fetch the result.

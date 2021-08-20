@@ -10,6 +10,7 @@
 #include "taichi/struct/struct.h"
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/program/snode_expr_utils.h"
+#include "taichi/system/memory_pool.h"
 
 #include <memory>
 
@@ -67,6 +68,12 @@ class LlvmProgramImpl {
 
   uint64 fetch_result_uint64(int i, uint64 *);
 
+  template <typename T>
+  T fetch_result(int i, uint64 *result_buffer) {
+    return taichi_union_cast_with_different_sizes<T>(
+        fetch_result_uint64(i, result_buffer));
+  }
+
   template <typename T, typename... Args>
   T runtime_query(const std::string &key, uint64 *result_buffer, Args... args) {
     TI_ASSERT(arch_uses_llvm(config.arch));
@@ -84,6 +91,14 @@ class LlvmProgramImpl {
     return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(
         taichi_result_buffer_runtime_query_id, result_buffer));
   }
+
+  /**
+   * Initializes the runtime system for LLVM based backends.
+   */
+  void initialize_llvm_runtime_system(MemoryPool *memory_pool,
+                                      KernelProfilerBase *profiler,
+                                      uint64 **result_buffer);
+
   std::size_t get_snode_num_dynamically_allocated(SNode *snode,
                                                   uint64 *result_buffer);
 

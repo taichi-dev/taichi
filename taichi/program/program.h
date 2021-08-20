@@ -333,11 +333,6 @@ class Program {
    */
   void materialize_snode_tree(SNodeTree *tree);
 
-  /**
-   * Initializes the runtime system for LLVM based backends.
-   */
-  void initialize_llvm_runtime_system();
-
   // Metal related data structures
   std::optional<metal::CompiledStructs> metal_compiled_structs_;
   std::unique_ptr<metal::KernelManager> metal_kernel_mgr_;

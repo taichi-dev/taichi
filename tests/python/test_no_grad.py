@@ -26,7 +26,7 @@ def test_no_grad():
 
 @ti.test()
 def test_raise_no_gradient():
-    y = ti.field(shape=(), name='y', dtype=ti.f64, needs_grad=True)
+    y = ti.field(shape=(), name='y', dtype=ti.f32, needs_grad=True)
     x = ti.field(shape=(), name='x', dtype=ti.f32)
     z = np.array([1.0])
 

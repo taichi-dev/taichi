@@ -60,7 +60,7 @@ init_args = {
     'flatten_if': [False, TF],
     'simplify_before_lower_access': [True, TF],
     'simplify_after_lower_access': [True, TF],
-    'use_unified_memory': [ti.get_os_name() != 'win', TF],
+    'use_unified_memory': [ti.get_os_name() not in ['win', 'osx'], TF],
     'print_benchmark_stat': [False, TF],
     'kernel_profiler': [False, TF],
     'check_out_of_bound': [False, TF],

@@ -47,7 +47,9 @@ class ArgAnyArray:
     """
     def __init__(self, element_shape=(), is_soa=False):
         if len(element_shape) > 2:
-            raise ValueError("Only scalars, vectors, and matrices are allowed as elements of ti.any_arr()")
+            raise ValueError(
+                "Only scalars, vectors, and matrices are allowed as elements of ti.any_arr()"
+            )
         self.element_shape = element_shape
         self.is_soa = is_soa
 

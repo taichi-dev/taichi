@@ -193,6 +193,7 @@ def is_extension_supported(arch, ext):
 
 
 def reset():
+    _ti_core.reset_snode_access_flag()
     impl.reset()
     global runtime
     runtime = impl.get_runtime()

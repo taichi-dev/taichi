@@ -159,6 +159,7 @@ def subscript(value, *indices):
         else:
             return Expr(_ti_core.subscript(var, indices_expr_group))
     elif isinstance(value, AnyArray):
+        # TODO: deprecate using get_attribute to get dim
         field_dim = int(value.ptr.get_attribute("dim"))
         element_dim = len(value.element_shape)
         if field_dim != index_dim + element_dim:
@@ -167,16 +168,15 @@ def subscript(value, *indices):
             )
         if element_dim == 0:
             return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
-        else:
-            n = value.element_shape[0]
-            m = 1 if element_dim == 1 else value.element_shape[1]
-            any_array_access = AnyArrayAccess(value, indices)
-            ret = ti.Matrix.with_entries(n, m, [
-                any_array_access.subscript(i, j) for i in range(n)
-                for j in range(m)
-            ])
-            ret.any_array_access = any_array_access
-            return ret
+        n = value.element_shape[0]
+        m = 1 if element_dim == 1 else value.element_shape[1]
+        any_array_access = AnyArrayAccess(value, indices)
+        ret = ti.Matrix.with_entries(n, m, [
+            any_array_access.subscript(i, j) for i in range(n)
+            for j in range(m)
+        ])
+        ret.any_array_access = any_array_access
+        return ret
     elif isinstance(value, (ExtArray, SNode)):
         if isinstance(value, ExtArray):
             field_dim = int(value.ptr.get_attribute("dim"))

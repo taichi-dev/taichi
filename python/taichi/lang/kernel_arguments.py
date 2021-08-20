@@ -46,24 +46,23 @@ class ArgAnyArray:
         is_soa (bool, optional): Whether to change the layout from AOS (default) to SOA.
     """
     def __init__(self, element_shape=(), is_soa=False):
-        assert len(
-            element_shape
-        ) <= 2, "Only scalars, vectors, and matrices are allowed as elements of ti.any_arr()"
+        if len(element_shape) > 2:
+            raise ValueError("Only scalars, vectors, and matrices are allowed as elements of ti.any_arr()")
         self.element_shape = element_shape
         self.is_soa = is_soa
 
     def extract(self, x):
         shape = tuple(x.shape)
         element_dim = len(self.element_shape)
-        assert len(
-            shape) >= element_dim, "Invalid argument passed to ti.any_arr()"
+        if len(shape) < element_dim:
+            raise ValueError("Invalid argument passed to ti.any_arr()")
         if element_dim > 0:
             if self.is_soa:
-                assert shape[:
-                             element_dim] == self.element_shape, "Invalid argument passed to ti.any_arr()"
+                if shape[:element_dim] != self.element_shape:
+                    raise ValueError("Invalid argument passed to ti.any_arr()")
             else:
-                assert shape[
-                    -element_dim:] == self.element_shape, "Invalid argument passed to ti.any_arr()"
+                if shape[-element_dim:] != self.element_shape:
+                    raise ValueError("Invalid argument passed to ti.any_arr()")
         return to_taichi_type(
             x.dtype), len(shape), self.element_shape, self.is_soa
 

@@ -30,6 +30,10 @@ void Renderable::init_render_resources() {
   create_descriptor_sets();
 
   if (app_context_->config.ti_arch == Arch::cuda) {
+    VkDeviceMemory vertex_buffer_memory_ = std::get<0>(app_context_->vulkan_device().get_vkmemory_offset_size(vertex_buffer_));
+
+    VkDeviceMemory index_buffer_memory_ = std::get<0>(app_context_->vulkan_device().get_vkmemory_offset_size(index_buffer_));
+    
     vertex_buffer_device_ptr_ = (Vertex *)get_memory_pointer(
         vertex_buffer_memory_, config_.vertices_count * sizeof(Vertex),
         app_context_->device());
@@ -137,11 +141,11 @@ void Renderable::update_data(const RenderableInfo &info) {
       }
     }
 
-    copy_buffer(staging_vertex_buffer_, vertex_buffer_,
+    copy_buffer(staging_vertex_buffer_,  app_context_->vulkan_device().get_vkbuffer(vertex_buffer_),
                 config_.vertices_count * sizeof(Vertex),
                 app_context_->command_pool(), app_context_->device(),
                 app_context_->graphics_queue());
-    copy_buffer(staging_index_buffer_, index_buffer_,
+    copy_buffer(staging_index_buffer_, app_context_->vulkan_device().get_vkbuffer(index_buffer_),
                 config_.indices_count * sizeof(int),
                 app_context_->command_pool(), app_context_->device(),
                 app_context_->graphics_queue());
@@ -338,12 +342,11 @@ void Renderable::create_graphics_pipeline() {
 
 void Renderable::create_vertex_buffer() {
   VkDeviceSize buffer_size = sizeof(Vertex) * config_.vertices_count;
-  create_buffer(
-      buffer_size,
-      VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertex_buffer_,
-      vertex_buffer_memory_, app_context_->device(),
-      app_context_->physical_device());
+
+
+  Device::AllocParams vb_params {buffer_size,false,false,AllocUsage::Vertex};
+  vertex_buffer_ = app_context_->vulkan_device().allocate_memory(vb_params);
+ 
 
   create_buffer(
       buffer_size,
@@ -356,11 +359,10 @@ void Renderable::create_vertex_buffer() {
 
 void Renderable::create_index_buffer() {
   VkDeviceSize buffer_size = sizeof(int) * config_.indices_count;
-  create_buffer(
-      buffer_size,
-      VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, index_buffer_, index_buffer_memory_,
-      app_context_->device(), app_context_->physical_device());
+
+  Device::AllocParams ib_params {buffer_size,false,false,AllocUsage::Index};
+  index_buffer_ = app_context_->vulkan_device().allocate_memory(ib_params);
+ 
 
   create_buffer(
       buffer_size,
@@ -439,12 +441,6 @@ void Renderable::cleanup() {
   vkDestroyDescriptorSetLayout(app_context_->device(), descriptor_set_layout_,
                                nullptr);
 
-  vkDestroyBuffer(app_context_->device(), index_buffer_, nullptr);
-  vkFreeMemory(app_context_->device(), index_buffer_memory_, nullptr);
-
-  vkDestroyBuffer(app_context_->device(), vertex_buffer_, nullptr);
-  vkFreeMemory(app_context_->device(), vertex_buffer_memory_, nullptr);
-
   vkDestroyBuffer(app_context_->device(), staging_index_buffer_, nullptr);
   vkFreeMemory(app_context_->device(), staging_index_buffer_memory_, nullptr);
 
@@ -456,11 +452,11 @@ void Renderable::record_this_frame_commands(VkCommandBuffer command_buffer) {
   vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     graphics_pipeline_);
 
-  VkBuffer vertex_buffer_s[] = {vertex_buffer_};
+  VkBuffer vertex_buffer_s[] = {app_context_->vulkan_device().get_vkbuffer(vertex_buffer_)};
   VkDeviceSize offsets[] = {0};
   vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffer_s, offsets);
 
-  vkCmdBindIndexBuffer(command_buffer, index_buffer_, 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindIndexBuffer(command_buffer, app_context_->vulkan_device().get_vkbuffer(index_buffer_), 0, VK_INDEX_TYPE_UINT32);
 
   vkCmdBindDescriptorSets(
       command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout_, 0, 1,

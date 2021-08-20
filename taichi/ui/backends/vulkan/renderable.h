@@ -18,6 +18,8 @@
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
 #include "taichi/ui/common/renderable_info.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
+
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -59,10 +61,8 @@ class Renderable {
   VkPipeline graphics_pipeline_;
 
   // TODO: use the memory allocator from ti vulkan backend
-  VkBuffer vertex_buffer_;
-  VkDeviceMemory vertex_buffer_memory_;
-  VkBuffer index_buffer_;
-  VkDeviceMemory index_buffer_memory_;
+  taichi::lang::DeviceAllocation vertex_buffer_;
+  taichi::lang::DeviceAllocation index_buffer_;
 
   // these staging buffers are used to copy data into the actual buffers when
   // `ti.cfg.arch==ti.cpu`

@@ -246,6 +246,22 @@ struct PipelineSourceDesc {
   PipelineStageType stage{PipelineStageType::compute};
 };
 
+//FIXME: this probably isn't backend-neutral enough
+enum class AllocUsage:int{
+    Storage = 1,
+    Uniform = 2,
+    Vertex = 4,
+    Index = 8,
+};
+inline AllocUsage operator|(AllocUsage a, AllocUsage b)
+{
+    return static_cast<AllocUsage>(static_cast<int>(a) | static_cast<int>(b));
+}
+inline bool operator&(AllocUsage a, AllocUsage b)
+{
+    return static_cast<int>(a) & static_cast<int>(b);
+}
+
 class Device {
  public:
   virtual ~Device(){};
@@ -260,11 +276,15 @@ class Device {
     caps_[capability_id] = val;
   }
 
+  
   struct AllocParams {
     uint64_t size{0};
     bool host_write{false};
     bool host_read{false};
+    AllocUsage usage{AllocUsage::Storage};
   };
+
+
 
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
   virtual void dealloc_memory(DeviceAllocation allocation) = 0;

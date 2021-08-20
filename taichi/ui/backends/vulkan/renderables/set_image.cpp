@@ -209,7 +209,7 @@ void SetImage::update_vertex_buffer_() {
            (size_t)config_.vertices_count * sizeof(Vertex));
   }
 
-  copy_buffer(staging_vertex_buffer_, vertex_buffer_,
+  copy_buffer(staging_vertex_buffer_, app_context_->vulkan_device().get_vkbuffer(vertex_buffer_),
               config_.vertices_count * sizeof(Vertex),
               app_context_->command_pool(), app_context_->device(),
               app_context_->graphics_queue());
@@ -227,7 +227,7 @@ void SetImage::update_index_buffer_() {
            (size_t)config_.indices_count * sizeof(int));
   }
 
-  copy_buffer(staging_index_buffer_, index_buffer_,
+  copy_buffer(staging_index_buffer_, app_context_->vulkan_device().get_vkbuffer(index_buffer_),
               config_.indices_count * sizeof(int), app_context_->command_pool(),
               app_context_->device(), app_context_->graphics_queue());
   indexed_ = true;

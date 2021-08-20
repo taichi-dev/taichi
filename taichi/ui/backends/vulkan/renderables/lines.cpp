@@ -27,11 +27,12 @@ void Lines::record_this_frame_commands(VkCommandBuffer command_buffer) {
   vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     graphics_pipeline_);
 
-  VkBuffer vertex_buffer_s[] = {vertex_buffer_};
+  VkBuffer vertex_buffer_s[] = {app_context_->vulkan_device().get_vkbuffer(vertex_buffer_)};
   VkDeviceSize offsets[] = {0};
   vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffer_s, offsets);
 
-  vkCmdBindIndexBuffer(command_buffer, index_buffer_, 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindIndexBuffer(command_buffer, app_context_->vulkan_device().get_vkbuffer(index_buffer_), 0, VK_INDEX_TYPE_UINT32);
+
 
   vkCmdBindDescriptorSets(
       command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout_, 0, 1,

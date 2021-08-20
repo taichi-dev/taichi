@@ -145,7 +145,8 @@ def test_ad_if_parallel():
     assert x.grad[1] == 1
 
 
-@ti.test(require=[ti.extension.adstack, ti.extension.data64], default_fp=ti.f64)
+@ti.test(require=[ti.extension.adstack, ti.extension.data64],
+         default_fp=ti.f64)
 def test_ad_if_parallel_f64():
     x = ti.field(ti.f64, shape=2)
     y = ti.field(ti.f64, shape=2)

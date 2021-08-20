@@ -1,7 +1,7 @@
 import numpy as np
+import pytest
 
 import taichi as ti
-import pytest
 
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')

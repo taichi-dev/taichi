@@ -187,7 +187,8 @@ def test_polar_decomp():
     for dim in [2, 3]:
         for dt in [ti.f32, ti.f64]:
 
-            @ti.test(require=ti.extension.data64 if dt == ti.f64 else [], default_fp=dt)
+            @ti.test(require=ti.extension.data64 if dt == ti.f64 else [],
+                     default_fp=dt)
             def wrapped():
                 _test_polar_decomp(dim, dt)
 

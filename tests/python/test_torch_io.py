@@ -1,7 +1,7 @@
 import numpy as np
+import pytest
 
 import taichi as ti
-import pytest
 
 if ti.has_pytorch():
     import torch

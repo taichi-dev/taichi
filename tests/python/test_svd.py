@@ -65,7 +65,9 @@ def test_svd():
     for fp in [ti.f32, ti.f64]:
         for d in [2, 3]:
 
-            @ti.test(require=ti.extension.data64 if fp == ti.f64 else [], default_fp=fp, fast_math=False)
+            @ti.test(require=ti.extension.data64 if fp == ti.f64 else [],
+                     default_fp=fp,
+                     fast_math=False)
             def wrapped():
                 _test_svd(fp, d)
 

@@ -24,7 +24,8 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
     if npfunc is None:
         npfunc = tifunc
 
-    @ti.test(require=ti.extension.data64 if default_fp == ti.f64 else [], default_fp=default_fp)
+    @ti.test(require=ti.extension.data64 if default_fp == ti.f64 else [],
+             default_fp=default_fp)
     def impl():
         print(f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp}')
         x = ti.field(default_fp)

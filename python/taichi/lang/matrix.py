@@ -9,6 +9,7 @@ from taichi.lang import ops as ops_mod
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
+from taichi.lang.ndarray import Ndarray
 from taichi.lang.util import (in_python_scope, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
 from taichi.misc.util import deprecated, warning
@@ -1012,6 +1013,47 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         return cls._Vector_field(n, dt, *args, **kwargs)
 
+    @classmethod
+    @python_scope
+    def ndarray(cls, n, m, dtype, shape, is_soa=False):
+        """Defines a Taichi ndarray with matrix elements.
+
+        Args:
+            n (int): Number of rows of the matrix.
+            m (int): Number of columns of the matrix.
+            dtype (DataType): Data type of each value.
+            shape (Union[int, tuple[int]]): Shape of the ndarray.
+            is_soa (bool, optional): Whether to change the layout from AOS (default) to SOA.
+
+        Example:
+            The code below shows how a Taichi ndarray with matrix elements can be declared and defined::
+
+                >>> x = ti.Matrix.ndarray(4, 5, ti.f32, shape=(16, 8))
+        """
+        if isinstance(shape, numbers.Number):
+            shape = (shape, )
+        return MatrixNdarray(n, m, dtype, shape, is_soa)
+
+    @classmethod
+    @python_scope
+    def _Vector_ndarray(cls, n, dtype, shape, is_soa=False):
+        """Defines a Taichi ndarray with vector elements.
+
+        Args:
+            n (int): Size of the vector.
+            dtype (DataType): Data type of each value.
+            shape (Union[int, tuple[int]]): Shape of the ndarray.
+            is_soa (bool, optional): Whether to change the layout from AOS (default) to SOA.
+
+        Example:
+            The code below shows how a Taichi ndarray with vector elements can be declared and defined::
+
+                >>> x = ti.Vector.ndarray(3, ti.f32, shape=(16, 8))
+        """
+        if isinstance(shape, numbers.Number):
+            shape = (shape, )
+        return VectorNdarray(n, dtype, shape, is_soa)
+
     @staticmethod
     def rows(rows):
         """Construct a Matrix instance by concactinating Vectors/lists row by row.
@@ -1197,6 +1239,7 @@ def Vector(n, dt=None, shape=None, offset=None, **kwargs):
 
 Vector.var = Matrix._Vector_var
 Vector.field = Matrix._Vector_field
+Vector.ndarray = Matrix._Vector_ndarray
 Vector.zero = Matrix.zero
 Vector.one = Matrix.one
 Vector.dot = Matrix.dot
@@ -1358,3 +1401,55 @@ class MatrixField(Field):
     def __repr__(self):
         # make interactive shell happy, prevent materialization
         return f'<{self.n}x{self.m} ti.Matrix.field>'
+
+
+class MatrixNdarray(Ndarray):
+    """Taichi ndarray with matrix elements implemented with a torch tensor.
+
+    Args:
+        dtype (DataType): Data type of each value.
+        shape (Tuple[int]): Shape of the ndarray.
+    """
+    def __init__(self, dtype, shape):
+        super().__init__(dtype, shape)
+
+    @property
+    def shape(self):
+        return tuple(self.arr.shape)
+
+    @python_scope
+    def __setitem__(self, key, value):
+        return self.arr.__setitem__(key, value)
+
+    @python_scope
+    def __getitem__(self, key):
+        return self.arr.__getitem__(key)
+
+    def __repr__(self):
+        return '<ti.Matrix.ndarray>'
+
+
+class VectorNdarray(Ndarray):
+    """Taichi ndarray with vector elements implemented with a torch tensor.
+
+    Args:
+        dtype (DataType): Data type of each value.
+        shape (Tuple[int]): Shape of the ndarray.
+    """
+    def __init__(self, dtype, shape):
+        super().__init__(dtype, shape)
+
+    @property
+    def shape(self):
+        return tuple(self.arr.shape)
+
+    @python_scope
+    def __setitem__(self, key, value):
+        return self.arr.__setitem__(key, value)
+
+    @python_scope
+    def __getitem__(self, key):
+        return self.arr.__getitem__(key)
+
+    def __repr__(self):
+        return '<ti.Vector.ndarray>'

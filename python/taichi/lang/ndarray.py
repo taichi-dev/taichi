@@ -1,5 +1,3 @@
-import numbers
-
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.util import (has_pytorch, python_scope, to_pytorch_type,
@@ -10,12 +8,10 @@ class Ndarray:
     """Taichi ndarray class implemented with a torch tensor.
 
     Args:
-        dtype (DataType): Data type of the ndarray.
-        shape (Union[int, tuple[int]]): Shape of the torch tensor.
+        dtype (DataType): Data type of each value.
+        shape (Tuple[int]): Shape of the torch tensor.
     """
     def __init__(self, dtype, shape):
-        if isinstance(shape, numbers.Number):
-            shape = (shape, )
         assert has_pytorch(
         ), "PyTorch must be available if you want to create a Taichi ndarray."
         import torch
@@ -23,7 +19,7 @@ class Ndarray:
             device = 'cuda:0'
         else:
             device = 'cpu'
-        self.arr = torch.empty(shape,
+        self.arr = torch.zeros(shape,
                                dtype=to_pytorch_type(dtype),
                                device=device)
 
@@ -72,8 +68,8 @@ class ScalarNdarray(Ndarray):
     """Taichi ndarray with scalar elements implemented with a torch tensor.
 
     Args:
-        dtype (DataType): Data type of the ndarray.
-        shape (Union[int, tuple[int]]): Shape of the ndarray.
+        dtype (DataType): Data type of each value.
+        shape (Tuple[int]): Shape of the ndarray.
     """
     def __init__(self, dtype, shape):
         super().__init__(dtype, shape)

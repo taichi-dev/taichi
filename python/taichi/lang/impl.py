@@ -577,7 +577,7 @@ def ndarray(dtype, shape):
     """Defines a Taichi ndarray with scalar elements.
 
     Args:
-        dtype (DataType): Data type of the ndarray.
+        dtype (DataType): Data type of each value.
         shape (Union[int, tuple[int]]): Shape of the ndarray.
 
     Example:
@@ -585,6 +585,8 @@ def ndarray(dtype, shape):
 
             >>> x = ti.ndarray(ti.f32, shape=(16, 8))
     """
+    if isinstance(shape, numbers.Number):
+        shape = (shape, )
     return ScalarNdarray(dtype, shape)
 
 

@@ -99,8 +99,7 @@ class Program {
   static std::atomic<int> num_instances;
   std::unique_ptr<MemoryPool> memory_pool{nullptr};
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
-  void *preallocated_device_buffer{
-      nullptr};  // TODO: move this to memory allocator
+
   std::unordered_map<int, SNode *> snodes;
 
   std::unique_ptr<AsyncEngine> async_engine{nullptr};

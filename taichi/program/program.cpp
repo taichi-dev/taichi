@@ -63,11 +63,6 @@ inline uint64 *allocate_result_buffer_default(Program *prog) {
   return (uint64 *)taichi_allocate_aligned(
       prog, sizeof(uint64) * taichi_result_buffer_entries, 8);
 }
-
-bool is_cuda_no_unified_memory(const CompileConfig &config) {
-  return (config.arch == Arch::cuda && !config.use_unified_memory);
-}
-
 }  // namespace
 
 Program *current_program = nullptr;
@@ -280,7 +275,7 @@ void Program::initialize_llvm_runtime_system() {
 
   std::size_t prealloc_size = 0;
   TaichiLLVMContext *tlctx = nullptr;
-  if (is_cuda_no_unified_memory(config)) {
+  if (config.is_cuda_no_unified_memory()) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().malloc(
         (void **)&result_buffer, sizeof(uint64) * taichi_result_buffer_entries);
@@ -378,7 +373,7 @@ void Program::initialize_llvm_runtime_system() {
 void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
                                              StructCompiler *scomp) {
   TaichiLLVMContext *tlctx = nullptr;
-  if (is_cuda_no_unified_memory(config)) {
+  if (config.is_cuda_no_unified_memory()) {
 #if defined(TI_WITH_CUDA)
     tlctx = llvm_program_->llvm_context_device.get();
 #else
@@ -694,7 +689,7 @@ Arch Program::get_snode_accessor_arch() {
     return Arch::opengl;
   } else if (config.arch == Arch::vulkan) {
     return Arch::vulkan;
-  } else if (is_cuda_no_unified_memory(config)) {
+  } else if (config.is_cuda_no_unified_memory()) {
     return Arch::cuda;
   } else if (config.arch == Arch::metal) {
     return Arch::metal;

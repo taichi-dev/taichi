@@ -12,7 +12,7 @@ This section documents how to configure the Taichi devolopment environment and b
 
 ### Installing Dependencies
 1. Make sure you are using Python 3.6/3.7/3.8/3.9.
-  - If you are on Apple M1 machine, you might want to install `conda` from [Miniforge](https://github.com/conda-forge/miniforge/#download).
+  - If you are on an Apple M1 machine, you might want to install `conda` from [Miniforge](https://github.com/conda-forge/miniforge/#download).
 
 2.  Make sure you have `clang` with version \>= 7 on Linux or download clang-10 on Windows:
 
@@ -53,7 +53,7 @@ Note that on Linux, `clang` is the **only** supported compiler for compiling the
     mkdir build
     cd build
     cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_TERMINFO=OFF
-    # If you are building on a Apple M1, use -DLLVM_TARGETS_TO_BUILD="AArch64".
+    # If you are building on Apple M1, use -DLLVM_TARGETS_TO_BUILD="AArch64".
     # If you are building on NVIDIA Jetson TX2, use -DLLVM_TARGETS_TO_BUILD="ARM;NVPTX"
     # If you are building for a PyPI release, add -DLLVM_ENABLE_Z3_SOLVER=OFF to reduce the library dependency.
     make -j 8
@@ -253,7 +253,7 @@ sudo systemctl restart docker
   instructions above in [dev_install](#installing-dependencies-1),
   then add their path to environment variable `PATH`.
 
-- If you don't have `wget` on OSX, try installing [homebrew](brew.sh) and then run `brew install wget`.
+- If you don't have `wget` on OSX, try installing [homebrew](https://brew.sh/) and then run `brew install wget`.
 
 - If you get a new Apple machine, you might need to run `xcode-select --install` first.
 

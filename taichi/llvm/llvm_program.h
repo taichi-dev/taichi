@@ -24,6 +24,8 @@ class LlvmProgramImpl {
 
   LlvmProgramImpl(CompileConfig &config);
 
+  void maybe_initialize_cuda_llvm_context();
+
   TaichiLLVMContext *get_llvm_context(Arch arch) {
     if (arch_is_cpu(arch)) {
       return llvm_context_host.get();

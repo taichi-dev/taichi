@@ -163,6 +163,8 @@ class Program {
    * Initializes Program#llvm_context_device, if this has not been done.
    *
    * Not thread safe.
+   * TODO: this is LLVM specific but we keep it here for now to avoid changing
+   * other files.
    */
   void maybe_initialize_cuda_llvm_context();
 

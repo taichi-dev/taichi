@@ -686,12 +686,7 @@ void Program::visualize_layout(const std::string &fn) {
 }
 
 void Program::maybe_initialize_cuda_llvm_context() {
-  if ((config.arch == Arch::cuda) &&
-      (llvm_program_->llvm_context_device == nullptr)) {
-    llvm_program_->llvm_context_device =
-        std::make_unique<TaichiLLVMContext>(Arch::cuda);
-    llvm_program_->llvm_context_device->init_runtime_jit_module();
-  }
+  llvm_program_->maybe_initialize_cuda_llvm_context();
 }
 
 Arch Program::get_snode_accessor_arch() {

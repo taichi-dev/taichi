@@ -11,16 +11,12 @@ End users should use the pip packages instead of building from source.
 This section documents how to configure the Taichi devolopment environment and build Taichi from source for the compiler developers. The installation instructions might vary between different operationg systems. We also provide a Dockerfile which may help setup a containerized Taichi development environment with CUDA support based on the Ubuntu base docker image.
 
 ### Installing Dependencies
-1. Make sure you are using Python 3.6/3.7/3.8
-
-  - Install Python dependencies for developers:
-
-    ```bash
-    python3 -m pip install --user -r requirements_dev.txt
-    ```
+1. Make sure you are using Python 3.6/3.7/3.8/3.9.
+  - If you are on an Apple M1 machine, you might want to install `conda` from [Miniforge](https://github.com/conda-forge/miniforge/#download).
 
 2.  Make sure you have `clang` with version \>= 7 on Linux or download clang-10 on Windows:
 
+  - On OSX: you don’t need to do anything.
   - On Ubuntu, execute `sudo apt install libtinfo-dev clang-8`.
   - On Arch Linux, execute `sudo pacman -S clang`. (This is
     `clang-10`).
@@ -30,7 +26,7 @@ This section documents how to configure the Taichi devolopment environment and b
 
 
 :::note
-Note that on Linux, `clang` is the **only** supported compiler for compiling the Taichi compiler.
+Note that on Linux, `clang` is the **only** supported compiler for compiling the Taichi package.
 :::
 
 
@@ -44,24 +40,22 @@ Note that on Linux, `clang` is the **only** supported compiler for compiling the
   - [LLVM 10.0.0 for Windows MSVC 2019](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip)
 
   :::note
-  On Windows, if you use the pre-built LLVM for Taichi, please add
-  `$LLVM_FOLDER/bin` to `PATH`. Later, when you build Taichi please
-  use `cmake -DLLVM_DIR=$LLVM_FOLDER/lib/cmake/llvm`.
+  If you use the pre-built LLVM for Taichi, please add `$LLVM_FOLDER/bin` to `PATH`, e.g. `export PATH=<path_to_llvm_folder>/bin:$PATH` on Linux.
   :::
 
 - If the downloaded LLVM does not work, please build from source:
-  - For Linux:
+  - For Linux & Mac OSX:
 
     ```bash
-    # For Linux & OSX
     wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/llvm-10.0.0.src.tar.xz
     tar xvJf llvm-10.0.0.src.tar.xz
     cd llvm-10.0.0.src
     mkdir build
     cd build
     cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_TERMINFO=OFF
+    # If you are building on Apple M1, use -DLLVM_TARGETS_TO_BUILD="AArch64".
     # If you are building on NVIDIA Jetson TX2, use -DLLVM_TARGETS_TO_BUILD="ARM;NVPTX"
-    # If you are building Taichi for a PyPI release, add -DLLVM_ENABLE_Z3_SOLVER=OFF to reduce the library dependency.
+    # If you are building for a PyPI release, add -DLLVM_ENABLE_Z3_SOLVER=OFF to reduce the library dependency.
     make -j 8
     sudo make install
     # Check your LLVM installation
@@ -116,6 +110,7 @@ installer.
   ```bash
   git clone --recursive https://github.com/taichi-dev/taichi
   cd taichi
+  python3 -m pip install --user -r requirements_dev.txt
   # export CXX=/path/to/clang  # Uncomment if clang is not system default compiler.
   python3 setup.py develop --user  # Optionally add DEBUG=1 to keep debug information.
   ```
@@ -257,6 +252,17 @@ sudo systemctl restart docker
   If not, please install `clang` and **build LLVM from source** with
   instructions above in [dev_install](#installing-dependencies-1),
   then add their path to environment variable `PATH`.
+
+- If you don't have `wget` on OSX, try installing [homebrew](https://brew.sh/) and then run `brew install wget`.
+
+- If you get a new Apple machine, you might need to run `xcode-select --install` first.
+
+- If you installed `conda` but `which python` still points to the system `python` location, run the following commands to enable it:
+
+  ```
+  source <path_to_conda>/bin/activate
+  conda init
+  ```
 
 - If you encounter other issues, feel free to report (please include the details) by [opening an
   issue on

@@ -1,4 +1,5 @@
 colorama
+cmake
 numpy
 Pillow
 pybind11

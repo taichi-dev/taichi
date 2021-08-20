@@ -100,7 +100,8 @@ class Program {
   std::unique_ptr<MemoryPool> memory_pool{nullptr};
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
 
-  std::unordered_map<int, SNode *> snodes;
+  std::unordered_map<int, SNode *>
+      snodes;  // TODO: seems LLVM specific but used by state_flow_graph.cpp.
 
   std::unique_ptr<AsyncEngine> async_engine{nullptr};
 
@@ -331,11 +332,6 @@ class Program {
    * JIT compiles the @param tree to backend-specific data types.
    */
   void materialize_snode_tree(SNodeTree *tree);
-
-  /**
-   * Sets the attributes of the Exprs that are backed by SNodes.
-   */
-  void materialize_snode_expr_attributes();
 
   /**
    * Initializes the runtime system for LLVM based backends.

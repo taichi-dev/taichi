@@ -269,7 +269,8 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
 }
 
 Context &Kernel::LaunchContextBuilder::get_context() {
-  ctx_->runtime = static_cast<LLVMRuntime *>(kernel_->program->llvm_runtime);
+  ctx_->runtime = static_cast<LLVMRuntime *>(
+      kernel_->program->get_llvm_program_impl()->llvm_runtime);
   return *ctx_;
 }
 

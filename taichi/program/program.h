@@ -92,7 +92,6 @@ class Program {
  public:
   using Kernel = taichi::lang::Kernel;
   Callable *current_callable{nullptr};
-  void *llvm_runtime{nullptr};
   CompileConfig config;
   bool sync{false};  // device/host synchronized?
   bool finalized{false};
@@ -302,7 +301,8 @@ class Program {
     }
 
     auto runtime = tlctx->runtime_jit_module;
-    runtime->call<void *, Args...>("runtime_" + key, llvm_runtime,
+    runtime->call<void *, Args...>("runtime_" + key,
+                                   llvm_program_->llvm_runtime,
                                    std::forward<Args>(args)...);
     return fetch_result<T>(taichi_result_buffer_runtime_query_id);
   }

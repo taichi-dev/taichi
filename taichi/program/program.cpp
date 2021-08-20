@@ -177,7 +177,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   result_buffer = nullptr;
   current_callable = nullptr;
   sync = true;
-  llvm_runtime = nullptr;
+  llvm_program_->llvm_runtime = nullptr;
   finalized = false;
 
   if (config.async_mode) {
@@ -363,11 +363,13 @@ void Program::initialize_llvm_runtime_system() {
       (void *)std::vsnprintf);
 
   TI_TRACE("LLVMRuntime initialized (excluding `root`)");
-  llvm_runtime = fetch_result<void *>(taichi_result_buffer_ret_value_id);
+  llvm_program_->llvm_runtime =
+      fetch_result<void *>(taichi_result_buffer_ret_value_id);
   TI_TRACE("LLVMRuntime pointer fetched");
 
   if (arch_use_host_memory(config.arch) || config.use_unified_memory) {
-    runtime_jit->call<void *>("runtime_get_mem_req_queue", llvm_runtime);
+    runtime_jit->call<void *>("runtime_get_mem_req_queue",
+                              llvm_program_->llvm_runtime);
     auto mem_req_queue =
         fetch_result<void *>(taichi_result_buffer_ret_value_id);
     memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
@@ -375,21 +377,23 @@ void Program::initialize_llvm_runtime_system() {
 
   if (arch_use_host_memory(config.arch)) {
     runtime_jit->call<void *, void *, void *>(
-        "LLVMRuntime_initialize_thread_pool", llvm_runtime, thread_pool.get(),
-        (void *)ThreadPool::static_run);
+        "LLVMRuntime_initialize_thread_pool", llvm_program_->llvm_runtime,
+        thread_pool.get(), (void *)ThreadPool::static_run);
 
     runtime_jit->call<void *, void *>("LLVMRuntime_set_assert_failed",
-                                      llvm_runtime, (void *)assert_failed_host);
+                                      llvm_program_->llvm_runtime,
+                                      (void *)assert_failed_host);
   }
   if (arch_is_cpu(config.arch)) {
     // Profiler functions can only be called on CPU kernels
-    runtime_jit->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime,
+    runtime_jit->call<void *, void *>("LLVMRuntime_set_profiler",
+                                      llvm_program_->llvm_runtime,
                                       profiler.get());
     runtime_jit->call<void *, void *>(
-        "LLVMRuntime_set_profiler_start", llvm_runtime,
+        "LLVMRuntime_set_profiler_start", llvm_program_->llvm_runtime,
         (void *)&KernelProfilerBase::profiler_start);
     runtime_jit->call<void *, void *>(
-        "LLVMRuntime_set_profiler_stop", llvm_runtime,
+        "LLVMRuntime_set_profiler_stop", llvm_program_->llvm_runtime,
         (void *)&KernelProfilerBase::profiler_stop);
   }
 }
@@ -416,11 +420,11 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   std::size_t rounded_size =
       taichi::iroundup(scomp->root_size, taichi_page_size);
   runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
-      "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
-      (int)snodes.size(), tree->id(), rounded_size,
+      "runtime_initialize_snodes", llvm_program_->llvm_runtime,
+      scomp->root_size, root_id, (int)snodes.size(), tree->id(), rounded_size,
       llvm_program_->snode_tree_buffer_manager->allocate(
-          runtime_jit, llvm_runtime, rounded_size, taichi_page_size, tree->id(),
-          result_buffer));
+          runtime_jit, llvm_program_->llvm_runtime, rounded_size,
+          taichi_page_size, tree->id(), result_buffer));
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
@@ -434,7 +438,7 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
       }
       TI_TRACE("Initializing allocator for snode {} (node size {})",
                snodes[i]->id, node_size);
-      auto rt = llvm_runtime;
+      auto rt = llvm_program_->llvm_runtime;
       runtime_jit->call<void *, int, std::size_t>(
           "runtime_NodeAllocator_initialize", rt, snodes[i]->id, node_size);
       TI_TRACE("Allocating ambient element for snode {} (node size {})",
@@ -551,7 +555,7 @@ void Program::check_runtime_error() {
   }
   auto *runtime_jit_module = tlctx->runtime_jit_module;
   runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
-                                   llvm_runtime);
+                                   llvm_program_->llvm_runtime);
   auto error_code = fetch_result<int64>(taichi_result_buffer_error_id);
 
   if (error_code) {
@@ -563,7 +567,7 @@ void Program::check_runtime_error() {
     // "fetch_result" that works across device/host memroy is necessary.
     for (int i = 0;; i++) {
       runtime_jit_module->call<void *>("runtime_retrieve_error_message",
-                                       llvm_runtime, i);
+                                       llvm_program_->llvm_runtime, i);
       auto c = fetch_result<char>(taichi_result_buffer_error_id);
       error_message_template += c;
       if (c == '\0') {
@@ -575,8 +579,8 @@ void Program::check_runtime_error() {
       const auto error_message_formatted = format_error_message(
           error_message_template, [runtime_jit_module, this](int argument_id) {
             runtime_jit_module->call<void *>(
-                "runtime_retrieve_error_message_argument", llvm_runtime,
-                argument_id);
+                "runtime_retrieve_error_message_argument",
+                llvm_program_->llvm_runtime, argument_id);
             return fetch_result<uint64>(taichi_result_buffer_error_id);
           });
       TI_ERROR("Assertion failure: {}", error_message_formatted);
@@ -871,8 +875,9 @@ void Program::print_memory_profiler_info() {
   // TODO: is there a way to set locale only locally in this function?
 
   std::function<void(SNode *, int)> visit = [&](SNode *snode, int depth) {
-    auto element_list = runtime_query<void *>("LLVMRuntime_get_element_lists",
-                                              llvm_runtime, snode->id);
+    auto element_list =
+        runtime_query<void *>("LLVMRuntime_get_element_lists",
+                              llvm_program_->llvm_runtime, snode->id);
 
     if (snode->type != SNodeType::place) {
       fmt::print("SNode {:10}\n", snode->get_node_type_name_hinted());
@@ -881,8 +886,9 @@ void Program::print_memory_profiler_info() {
         fmt::print("  active element list:");
         print_list_manager_info(element_list);
 
-        auto node_allocator = runtime_query<void *>(
-            "LLVMRuntime_get_node_allocators", llvm_runtime, snode->id);
+        auto node_allocator =
+            runtime_query<void *>("LLVMRuntime_get_node_allocators",
+                                  llvm_program_->llvm_runtime, snode->id);
 
         if (node_allocator) {
           auto free_list = runtime_query<void *>("NodeManager_get_free_list",
@@ -921,7 +927,7 @@ void Program::print_memory_profiler_info() {
   }
 
   auto total_requested_memory = runtime_query<std::size_t>(
-      "LLVMRuntime_get_total_requested_memory", llvm_runtime);
+      "LLVMRuntime_get_total_requested_memory", llvm_program_->llvm_runtime);
 
   fmt::print(
       "Total requested dynamic memory (excluding alignment padding): {:n} B\n",
@@ -932,8 +938,9 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
   if (config.arch == Arch::metal) {
     return metal_kernel_mgr_->get_snode_num_dynamically_allocated(snode);
   }
-  auto node_allocator = runtime_query<void *>("LLVMRuntime_get_node_allocators",
-                                              llvm_runtime, snode->id);
+  auto node_allocator =
+      runtime_query<void *>("LLVMRuntime_get_node_allocators",
+                            llvm_program_->llvm_runtime, snode->id);
   auto data_list =
       runtime_query<void *>("NodeManager_get_data_list", node_allocator);
 

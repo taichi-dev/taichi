@@ -566,13 +566,13 @@ void VulkanCommandList::bind_resources(ResourceBinder *ti_binder) {
   }
 
   if (current_pipeline_->is_graphics()) {
-    auto &[idx_ptr, type] = binder->get_index_buffer();
+    auto [idx_ptr, type] = binder->get_index_buffer();
     if (idx_ptr.device) {
       vkCmdBindIndexBuffer(buffer_, ti_device_->get_vkbuffer(idx_ptr),
                            idx_ptr.offset, type);
     }
 
-    for (auto &[binding, ptr] : binder->get_vertex_buffers()) {
+    for (auto [binding, ptr] : binder->get_vertex_buffers()) {
       VkBuffer buffer = ti_device_->get_vkbuffer(ptr);
       vkCmdBindVertexBuffers(buffer_, binding, 1, &buffer, &ptr.offset);
     }
@@ -673,7 +673,7 @@ void VulkanCommandList::begin_renderpass(int x0,
   bool has_depth = false;
 
   if (depth_attachment) {
-    auto &[image, view, format] = ti_device_->get_vk_image(*depth_attachment);
+    auto [image, view, format] = ti_device_->get_vk_image(*depth_attachment);
     rp_desc.depth_attachment = format;
     has_depth = true;
   } else {
@@ -686,7 +686,7 @@ void VulkanCommandList::begin_renderpass(int x0,
   VulkanFramebufferDesc fb_desc;
 
   for (uint32_t i = 0; i < num_color_attachments; i++) {
-    auto &[image, view, format] =
+    auto [image, view, format] =
         ti_device_->get_vk_image(color_attachments[i]);
     rp_desc.color_attachments.emplace_back(format, color_clear[i]);
     fb_desc.attachments.push_back(view);
@@ -694,7 +694,7 @@ void VulkanCommandList::begin_renderpass(int x0,
   }
 
   if (has_depth) {
-    auto &[image, view, format] = ti_device_->get_vk_image(*depth_attachment);
+    auto [image, view, format] = ti_device_->get_vk_image(*depth_attachment);
     clear_values[num_color_attachments].depthStencil =
         VkClearDepthStencilValue{1.0, 0};
     fb_desc.attachments.push_back(view);
@@ -1123,7 +1123,7 @@ VkRenderPass VulkanDevice::get_renderpass(const VulkanRenderPassDesc &desc) {
   VkAttachmentReference depth_attachment;
 
   uint32_t i = 0;
-  for (auto &[format, clear] : desc.color_attachments) {
+  for (auto [format, clear] : desc.color_attachments) {
     VkAttachmentDescription &description = attachments.emplace_back();
     description.flags = 0;
     description.format = format;

@@ -138,8 +138,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   // TODO: Can we initialize |llvm_context_device| here?
   profiler = make_profiler(config.arch);
 
-  preallocated_device_buffer = nullptr;
-
   if (config.kernel_profiler && llvm_program_->runtime_mem_info) {
     llvm_program_->runtime_mem_info->set_profiler(profiler.get());
   }
@@ -298,10 +296,10 @@ void Program::initialize_llvm_runtime_system() {
     TI_TRACE("Allocating device memory {:.2f} GB",
              1.0 * prealloc_size / (1UL << 30));
 
-    CUDADriver::get_instance().malloc(&preallocated_device_buffer,
-                                      prealloc_size);
-    CUDADriver::get_instance().memset(preallocated_device_buffer, 0,
-                                      prealloc_size);
+    CUDADriver::get_instance().malloc(
+        &llvm_program_->preallocated_device_buffer, prealloc_size);
+    CUDADriver::get_instance().memset(llvm_program_->preallocated_device_buffer,
+                                      0, prealloc_size);
     tlctx = llvm_program_->llvm_context_device.get();
 #else
     TI_NOT_IMPLEMENTED
@@ -337,8 +335,8 @@ void Program::initialize_llvm_runtime_system() {
   runtime_jit->call<void *, void *, std::size_t, void *, int, int, void *,
                     void *, void *>(
       "runtime_initialize", result_buffer, this, prealloc_size,
-      preallocated_device_buffer, starting_rand_state, num_rand_states,
-      (void *)&taichi_allocate_aligned, (void *)std::printf,
+      llvm_program_->preallocated_device_buffer, starting_rand_state,
+      num_rand_states, (void *)&taichi_allocate_aligned, (void *)std::printf,
       (void *)std::vsnprintf);
 
   TI_TRACE("LLVMRuntime initialized (excluding `root`)");
@@ -806,8 +804,9 @@ void Program::finalize() {
   current_program = nullptr;
   memory_pool->terminate();
 #if defined(TI_WITH_CUDA)
-  if (preallocated_device_buffer != nullptr)
-    CUDADriver::get_instance().mem_free(preallocated_device_buffer);
+  if (llvm_program_->preallocated_device_buffer != nullptr)
+    CUDADriver::get_instance().mem_free(
+        llvm_program_->preallocated_device_buffer);
 #endif
   finalized = true;
   num_instances -= 1;

@@ -19,6 +19,8 @@ class LlvmProgramImpl {
   std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
   std::unique_ptr<Runtime> runtime_mem_info{nullptr};
   std::unique_ptr<ThreadPool> thread_pool{nullptr};
+  void *preallocated_device_buffer{
+      nullptr};  // TODO: move this to memory allocator
 
   LlvmProgramImpl(CompileConfig &config);
 

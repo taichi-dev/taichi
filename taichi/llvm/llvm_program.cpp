@@ -67,7 +67,20 @@ uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
   }
   return ret;
 }
+std::size_t LlvmProgramImpl::get_snode_num_dynamically_allocated(
+    SNode *snode,
+    uint64 *result_buffer) {
+  TI_ASSERT(arch_uses_llvm(config.arch));
 
+  auto node_allocator =
+      runtime_query<void *>("LLVMRuntime_get_node_allocators", result_buffer,
+                            llvm_runtime, snode->id);
+  auto data_list = runtime_query<void *>("NodeManager_get_data_list",
+                                         result_buffer, node_allocator);
+
+  return (std::size_t)runtime_query<int32>("ListManager_get_num_elements",
+                                           result_buffer, data_list);
+}
 void LlvmProgramImpl::print_list_manager_info(void *list_manager,
                                               uint64 *result_buffer) {
   auto list_manager_len = runtime_query<int32>("ListManager_get_num_elements",

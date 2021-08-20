@@ -51,6 +51,8 @@ class LlvmProgramImpl {
     return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(
         taichi_result_buffer_runtime_query_id, result_buffer));
   }
+  std::size_t get_snode_num_dynamically_allocated(SNode *snode,
+                                                  uint64 *result_buffer);
 
   void print_list_manager_info(void *list_manager, uint64 *result_buffer);
   void print_memory_profiler_info(

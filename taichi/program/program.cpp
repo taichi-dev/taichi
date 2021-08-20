@@ -830,14 +830,8 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
   if (config.arch == Arch::metal) {
     return metal_kernel_mgr_->get_snode_num_dynamically_allocated(snode);
   }
-  auto node_allocator = llvm_program_->runtime_query<void *>(
-      "LLVMRuntime_get_node_allocators", result_buffer,
-      llvm_program_->llvm_runtime, snode->id);
-  auto data_list = llvm_program_->runtime_query<void *>(
-      "NodeManager_get_data_list", result_buffer, node_allocator);
-
-  return (std::size_t)llvm_program_->runtime_query<int32>(
-      "ListManager_get_num_elements", result_buffer, data_list);
+  return llvm_program_->get_snode_num_dynamically_allocated(snode,
+                                                            result_buffer);
 }
 
 Program::~Program() {

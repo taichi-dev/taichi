@@ -37,7 +37,7 @@ jobs:
           git checkout -b _fake_squash
           git remote add upstream https://github.com/taichi-dev/taichi.git
           git fetch upstream master
-          sudo apt-get install clang-format
+          sudo apt install clang-format-10
           python3 -m pip install --user yapf==0.31.0 gitpython colorama isort
           python3 python/taichi/code_format.py
           git checkout -b _enforced_format

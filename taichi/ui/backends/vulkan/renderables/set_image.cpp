@@ -209,10 +209,8 @@ void SetImage::update_vertex_buffer_() {
     app_context_->vulkan_device().unmap(staging_vertex_buffer_);
   }
 
-  copy_buffer(app_context_->vulkan_device().get_vkbuffer(staging_vertex_buffer_), app_context_->vulkan_device().get_vkbuffer(vertex_buffer_),
-              config_.vertices_count * sizeof(Vertex),
-              app_context_->command_pool(), app_context_->device(),
-              app_context_->graphics_queue());
+  app_context_->vulkan_device().memcpy(vertex_buffer_.get_ptr(0),staging_vertex_buffer_.get_ptr(0),config_.vertices_count * sizeof(Vertex));
+  
 }
 
 void SetImage::update_index_buffer_() {
@@ -226,9 +224,8 @@ void SetImage::update_index_buffer_() {
     app_context_->vulkan_device().unmap(staging_index_buffer_);
   }
 
-  copy_buffer(app_context_->vulkan_device().get_vkbuffer(staging_index_buffer_), app_context_->vulkan_device().get_vkbuffer(index_buffer_),
-              config_.indices_count * sizeof(int), app_context_->command_pool(),
-              app_context_->device(), app_context_->graphics_queue());
+  app_context_->vulkan_device().memcpy(index_buffer_.get_ptr(0),staging_index_buffer_.get_ptr(0),config_.indices_count * sizeof(int));
+
   indexed_ = true;
 }
 

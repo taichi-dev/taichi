@@ -992,6 +992,9 @@ void VulkanDevice::unmap(DeviceAllocation alloc) {
 void VulkanDevice::memcpy_internal(DevicePtr dst,
                                    DevicePtr src,
                                    uint64_t size) {
+  // std::unique_ptr<CommandList> cmd = new_command_list();
+  // cmd->buffer_copy(dst,src,size);
+  // submit_synced(cmd.get());
 }
 
 std::unique_ptr<CommandList> VulkanDevice::new_command_list() {

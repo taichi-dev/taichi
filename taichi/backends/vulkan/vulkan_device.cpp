@@ -883,7 +883,6 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
 #endif
 
-  printf("???\n");
   buffer_info.pNext = &external_mem_buffer_create_info;
 
   VmaAllocationCreateInfo alloc_info{};
@@ -992,9 +991,9 @@ void VulkanDevice::unmap(DeviceAllocation alloc) {
 void VulkanDevice::memcpy_internal(DevicePtr dst,
                                    DevicePtr src,
                                    uint64_t size) {
-  // std::unique_ptr<CommandList> cmd = new_command_list();
-  // cmd->buffer_copy(dst,src,size);
-  // submit_synced(cmd.get());
+  std::unique_ptr<CommandList> cmd = new_command_list();
+  cmd->buffer_copy(dst,src,size);
+  submit_synced(cmd.get());
 }
 
 std::unique_ptr<CommandList> VulkanDevice::new_command_list() {

@@ -88,6 +88,7 @@ void Window::draw_frame() {
 }
 
 void Window::present_frame() {
+  vkDeviceWaitIdle(renderer_->app_context().device());
   renderer_->swap_chain().surface().present_image();
 }
 

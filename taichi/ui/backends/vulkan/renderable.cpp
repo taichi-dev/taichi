@@ -141,8 +141,8 @@ void Renderable::update_data(const RenderableInfo &info) {
       }
       app_context_->vulkan_device().unmap(staging_index_buffer_);
     }
-    //app_context_->vulkan_device().memcpy(vertex_buffer_.get_ptr(0),staging_vertex_buffer_.get_ptr(0),config_.vertices_count * sizeof(Vertex));
-    //app_context_->vulkan_device().memcpy(index_buffer_.get_ptr(0),staging_index_buffer_.get_ptr(0),config_.indices_count * sizeof(int));
+    app_context_->vulkan_device().memcpy(vertex_buffer_.get_ptr(0),staging_vertex_buffer_.get_ptr(0),config_.vertices_count * sizeof(Vertex));
+    app_context_->vulkan_device().memcpy(index_buffer_.get_ptr(0),staging_index_buffer_.get_ptr(0),config_.indices_count * sizeof(int));
   } else {
     throw std::runtime_error("unsupported field source");
   }

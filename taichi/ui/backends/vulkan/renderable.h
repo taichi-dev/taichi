@@ -66,10 +66,8 @@ class Renderable {
 
   // these staging buffers are used to copy data into the actual buffers when
   // `ti.cfg.arch==ti.cpu`
-  VkBuffer staging_vertex_buffer_;
-  VkDeviceMemory staging_vertex_buffer_memory_;
-  VkBuffer staging_index_buffer_;
-  VkDeviceMemory staging_index_buffer_memory_;
+  taichi::lang::DeviceAllocation staging_vertex_buffer_;
+  taichi::lang::DeviceAllocation staging_index_buffer_;
 
   VkBuffer uniform_buffer_;
   VkDeviceMemory uniform_buffer_memory_;

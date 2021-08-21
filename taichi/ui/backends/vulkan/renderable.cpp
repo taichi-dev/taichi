@@ -106,14 +106,9 @@ void Renderable::update_data(const RenderableInfo &info) {
 
   } else if (info.vertices.field_source == FieldSource::TaichiX64) {
     {
-      MappedMemory mapped_vbo(app_context_->device(),
-                              staging_vertex_buffer_memory_,
-                              config_.vertices_count * sizeof(Vertex));
-      MappedMemory mapped_ibo(app_context_->device(),
-                              staging_index_buffer_memory_,
-                              config_.indices_count * sizeof(int));
-
-      update_renderables_vertices_x64((Vertex *)mapped_vbo.data,
+      Vertex* mapped_vbo = (Vertex*)app_context_->vulkan_device().map(staging_vertex_buffer_);
+      
+      update_renderables_vertices_x64(mapped_vbo,
                                       (float *)info.vertices.data, num_vertices,
                                       num_components);
       if (info.per_vertex_color.valid) {
@@ -121,7 +116,7 @@ void Renderable::update_data(const RenderableInfo &info) {
           throw std::runtime_error(
               "shape of per_vertex_color should be the same as vertices");
         }
-        update_renderables_colors_x64((Vertex *)mapped_vbo.data,
+        update_renderables_colors_x64(mapped_vbo,
                                       (float *)info.per_vertex_color.data,
                                       num_vertices);
       }
@@ -130,24 +125,28 @@ void Renderable::update_data(const RenderableInfo &info) {
           throw std::runtime_error(
               "shape of normals should be the same as vertices");
         }
-        update_renderables_normals_x64((Vertex *)mapped_vbo.data,
+        update_renderables_normals_x64(mapped_vbo,
                                        (float *)info.normals.data,
                                        num_vertices);
       }
+      app_context_->vulkan_device().unmap(staging_vertex_buffer_);
+
+      int* mapped_ibo = (int*)app_context_->vulkan_device().map(staging_index_buffer_);
       if (info.indices.valid) {
         indexed_ = true;
-        update_renderables_indices_x64((int *)mapped_ibo.data,
+        update_renderables_indices_x64(mapped_ibo,
                                        (int *)info.indices.data, num_indices);
       } else {
         indexed_ = false;
       }
+      app_context_->vulkan_device().unmap(staging_index_buffer_);
     }
 
-    copy_buffer(staging_vertex_buffer_,  app_context_->vulkan_device().get_vkbuffer(vertex_buffer_),
+    copy_buffer(app_context_->vulkan_device().get_vkbuffer(staging_vertex_buffer_),  app_context_->vulkan_device().get_vkbuffer(vertex_buffer_),
                 config_.vertices_count * sizeof(Vertex),
                 app_context_->command_pool(), app_context_->device(),
                 app_context_->graphics_queue());
-    copy_buffer(staging_index_buffer_, app_context_->vulkan_device().get_vkbuffer(index_buffer_),
+    copy_buffer(app_context_->vulkan_device().get_vkbuffer(staging_index_buffer_), app_context_->vulkan_device().get_vkbuffer(index_buffer_),
                 config_.indices_count * sizeof(int),
                 app_context_->command_pool(), app_context_->device(),
                 app_context_->graphics_queue());
@@ -343,36 +342,26 @@ void Renderable::create_graphics_pipeline() {
 }
 
 void Renderable::create_vertex_buffer() {
-  VkDeviceSize buffer_size = sizeof(Vertex) * config_.vertices_count;
+  size_t buffer_size = sizeof(Vertex) * config_.vertices_count;
 
 
   Device::AllocParams vb_params {buffer_size,false,false,true,AllocUsage::Vertex};
   vertex_buffer_ = app_context_->vulkan_device().allocate_memory(vb_params);
- 
 
-  create_buffer(
-      buffer_size,
-      VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-      staging_vertex_buffer_, staging_vertex_buffer_memory_,
-      app_context_->device(), app_context_->physical_device());
+  Device::AllocParams staging_vb_params {buffer_size,true,false,false,AllocUsage::Vertex};
+  staging_vertex_buffer_ = app_context_->vulkan_device().allocate_memory(staging_vb_params);
+ 
 }
 
 void Renderable::create_index_buffer() {
-  VkDeviceSize buffer_size = sizeof(int) * config_.indices_count;
+  size_t buffer_size = sizeof(int) * config_.indices_count;
 
   Device::AllocParams ib_params {buffer_size,false,false,true,AllocUsage::Index};
   index_buffer_ = app_context_->vulkan_device().allocate_memory(ib_params);
- 
 
-  create_buffer(
-      buffer_size,
-      VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-      staging_index_buffer_, staging_index_buffer_memory_,
-      app_context_->device(), app_context_->physical_device());
+  Device::AllocParams staging_ib_params {buffer_size,true,false,false,AllocUsage::Index};
+  staging_index_buffer_ = app_context_->vulkan_device().allocate_memory(staging_ib_params);
+ 
 }
 
 void Renderable::create_uniform_buffers() {
@@ -442,12 +431,6 @@ void Renderable::cleanup_swap_chain() {
 void Renderable::cleanup() {
   vkDestroyDescriptorSetLayout(app_context_->device(), descriptor_set_layout_,
                                nullptr);
-
-  vkDestroyBuffer(app_context_->device(), staging_index_buffer_, nullptr);
-  vkFreeMemory(app_context_->device(), staging_index_buffer_memory_, nullptr);
-
-  vkDestroyBuffer(app_context_->device(), staging_vertex_buffer_, nullptr);
-  vkFreeMemory(app_context_->device(), staging_vertex_buffer_memory_, nullptr);
 }
 
 void Renderable::record_this_frame_commands(VkCommandBuffer command_buffer) {

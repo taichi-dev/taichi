@@ -202,14 +202,14 @@ void SetImage::update_vertex_buffer_() {
   };
 
   {
-    MappedMemory mapped_vbo(app_context_->device(),
-                            staging_vertex_buffer_memory_,
-                            config_.vertices_count * sizeof(Vertex));
-    memcpy(mapped_vbo.data, vertices.data(),
+    Vertex* mapped_vbo = (Vertex*)app_context_->vulkan_device().map(staging_vertex_buffer_);
+      
+    memcpy(mapped_vbo, vertices.data(),
            (size_t)config_.vertices_count * sizeof(Vertex));
+    app_context_->vulkan_device().unmap(staging_vertex_buffer_);
   }
 
-  copy_buffer(staging_vertex_buffer_, app_context_->vulkan_device().get_vkbuffer(vertex_buffer_),
+  copy_buffer(app_context_->vulkan_device().get_vkbuffer(staging_vertex_buffer_), app_context_->vulkan_device().get_vkbuffer(vertex_buffer_),
               config_.vertices_count * sizeof(Vertex),
               app_context_->command_pool(), app_context_->device(),
               app_context_->graphics_queue());
@@ -220,14 +220,13 @@ void SetImage::update_index_buffer_() {
       0, 1, 2, 3, 4, 5,
   };
   {
-    MappedMemory mapped_ibo(app_context_->device(),
-                            staging_index_buffer_memory_,
-                            config_.indices_count * sizeof(int));
-    memcpy(mapped_ibo.data, indices.data(),
+    int* mapped_ibo = (int*)app_context_->vulkan_device().map(staging_index_buffer_);
+    memcpy(mapped_ibo, indices.data(),
            (size_t)config_.indices_count * sizeof(int));
+    app_context_->vulkan_device().unmap(staging_index_buffer_);
   }
 
-  copy_buffer(staging_index_buffer_, app_context_->vulkan_device().get_vkbuffer(index_buffer_),
+  copy_buffer(app_context_->vulkan_device().get_vkbuffer(staging_index_buffer_), app_context_->vulkan_device().get_vkbuffer(index_buffer_),
               config_.indices_count * sizeof(int), app_context_->command_pool(),
               app_context_->device(), app_context_->graphics_queue());
   indexed_ = true;

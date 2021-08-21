@@ -194,8 +194,11 @@ void Renderer::draw_frame(Gui *gui) {
     clear_command_buffer_cache();
   }
 
-  if (cached_command_buffers_[image_index] != VK_NULL_HANDLE) {
+  if (false && cached_command_buffers_[image_index] != VK_NULL_HANDLE) {
+    // don't use caches for now.
+    // FIXME: do this properly... after we completely switch to using the CommandList class
     command_buffer = cached_command_buffers_[image_index];
+    swap_chain_.surface().get_target_image();
   } else {
     command_buffer = create_new_command_buffer(app_context_.command_pool(),
                                                app_context_.device());
@@ -211,7 +214,7 @@ void Renderer::draw_frame(Gui *gui) {
     VkRenderPassBeginInfo render_pass_info{};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     render_pass_info.renderPass = render_passes_[0];
-    render_pass_info.framebuffer = swap_chain_.framebuffer(render_passes_[0]);
+    render_pass_info.framebuffer = swap_chain_.framebuffer(render_passes_[0]); // this call also aquaires the image
     render_pass_info.renderArea.offset = {0, 0};
     render_pass_info.renderArea.extent.width = swap_chain_.width();
     render_pass_info.renderArea.extent.height = swap_chain_.height();

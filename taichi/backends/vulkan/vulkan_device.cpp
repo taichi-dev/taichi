@@ -8,6 +8,7 @@
 #include <set>
 
 #include "taichi/backends/vulkan/vulkan_common.h"
+#include "taichi/backends/vulkan/vulkan_utils.h"
 #include "taichi/backends/vulkan/loader.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/common/logging.h"
@@ -867,6 +868,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   if(params.usage & AllocUsage::Index){
     buffer_info.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
   }
+  
 
   VkExternalMemoryBufferCreateInfo external_mem_buffer_create_info = {};
   external_mem_buffer_create_info.sType =
@@ -885,6 +887,9 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   buffer_info.pNext = &external_mem_buffer_create_info;
 
   VmaAllocationCreateInfo alloc_info{};
+  if (params.export_sharing) {
+    alloc_info.pool = export_pool_.pool;
+  }
 
   if (params.host_read && params.host_write) {
     // This should be the unified memory on integrated GPUs
@@ -899,8 +904,8 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
   }
 
-//   VkExportMemoryAllocateInfoKHR export_mem_alloc_info = {};
-//   export_mem_alloc_info.sType =
+//   VkExportMemoryAllocateInfoKHR export_mem_alloc_info_ = {};
+//   export_mem_alloc_info_.sType =
 //       VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR;
 // #ifdef _WIN64
 //   WindowsSecurityAttributes win_security_attribs;
@@ -914,15 +919,15 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
 //       DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
 //   export_mem_win32_handle_info.name = (LPCWSTR)NULL;
 
-//   export_mem_alloc_info.pNext = &export_mem_win32_handle_info;
-//   export_mem_alloc_info.handleTypes =
+//   export_mem_alloc_info_.pNext = &export_mem_win32_handle_info;
+//   export_mem_alloc_info_.handleTypes =
 //       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 // #else
-//   export_mem_alloc_info.pNext = NULL;
-//   export_mem_alloc_info.handleTypes =
+//   export_mem_alloc_info_.pNext = NULL;
+//   export_mem_alloc_info_.handleTypes =
 //       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
 // #endif
-//   alloc.alloc_info. = &export_mem_alloc_info;
+//   alloc.alloc_info. = &export_mem_alloc_info_;
 
   BAIL_ON_VK_BAD_RESULT(
       vmaCreateBuffer(allocator_, &buffer_info, &alloc_info, &alloc.buffer,
@@ -1416,6 +1421,51 @@ void VulkanDevice::create_vma_allocator() {
   allocatorInfo.pVulkanFunctions = &vk_vma_functions;
 
   vmaCreateAllocator(&allocatorInfo, &allocator_);
+
+  {
+    VkBufferCreateInfo export_buf_create_info = {
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    export_buf_create_info.size = 1024;  // Whatever.
+    export_buf_create_info.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                   VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+    VmaAllocationCreateInfo alloc_create_info = {};
+    alloc_create_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+    uint32_t memTypeIndex;
+    vmaFindMemoryTypeIndexForBufferInfo(allocator_, &export_buf_create_info,
+                                        &alloc_create_info, &memTypeIndex);
+
+    export_pool_.export_mem_alloc_info.sType =
+        VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR;
+#ifdef _WIN64
+
+    export_pool_.export_mem_win32_handle_info.sType =
+        VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR;
+    export_pool_.export_mem_win32_handle_info.pNext = NULL;
+    export_pool_.export_mem_win32_handle_info.pAttributes = &export_pool_.win_security_attribs;
+    export_pool_.export_mem_win32_handle_info.dwAccess =
+        DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
+    export_pool_.export_mem_win32_handle_info.name = (LPCWSTR)NULL;
+
+    export_pool_.export_mem_alloc_info.pNext = &export_pool_.export_mem_win32_handle_info;
+    export_pool_.export_mem_alloc_info.handleTypes =
+        VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+#else
+    export_pool_.export_mem_alloc_info.pNext = NULL;
+    export_pool_.export_mem_alloc_info.handleTypes =
+        VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
+#endif
+
+    VmaPoolCreateInfo pool_info{};
+    pool_info.memoryTypeIndex = memTypeIndex;
+    pool_info.blockSize = 128ull * 1024 * 1024;  // 128MB
+    pool_info.maxBlockCount = 16;
+    pool_info.pMemoryAllocateNext = &export_pool_.export_mem_alloc_info;
+
+    vmaCreatePool(allocator_, &pool_info, &export_pool_.pool);
+  }
 }
  
  

@@ -33,8 +33,9 @@ void *map_buffer_onto_external_memory(CUexternalMemory ext_mem,
                                       unsigned long long size);
 
 void *get_memory_pointer(VkDeviceMemory mem,
+                         VkDeviceSize mem_size,
                          VkDeviceSize offset,
-                         VkDeviceSize size,
+                         VkDeviceSize buffer_size,
                          VkDevice device);
 
 CUsurfObject get_image_surface_object_of_external_memory(

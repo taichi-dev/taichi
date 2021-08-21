@@ -34,11 +34,13 @@ void Renderable::init_render_resources() {
 
     auto [ib_mem,ib_offset,ib_size] = app_context_->vulkan_device().get_vkmemory_offset_size(index_buffer_);
     
+    auto block_size = 128ull * 1024 * 1024;
+
     vertex_buffer_device_ptr_ = (Vertex *)get_memory_pointer(
-        vb_mem,vb_offset,vb_size,
+        vb_mem,block_size,vb_offset,vb_size,
         app_context_->device());
     index_buffer_device_ptr_ = (int *)get_memory_pointer(
-        ib_mem,ib_offset,ib_size,
+        ib_mem,block_size,ib_offset,ib_size,
         app_context_->device());
   }
 }
@@ -344,7 +346,7 @@ void Renderable::create_vertex_buffer() {
   VkDeviceSize buffer_size = sizeof(Vertex) * config_.vertices_count;
 
 
-  Device::AllocParams vb_params {buffer_size,false,false,AllocUsage::Vertex};
+  Device::AllocParams vb_params {buffer_size,false,false,true,AllocUsage::Vertex};
   vertex_buffer_ = app_context_->vulkan_device().allocate_memory(vb_params);
  
 
@@ -360,7 +362,7 @@ void Renderable::create_vertex_buffer() {
 void Renderable::create_index_buffer() {
   VkDeviceSize buffer_size = sizeof(int) * config_.indices_count;
 
-  Device::AllocParams ib_params {buffer_size,false,false,AllocUsage::Index};
+  Device::AllocParams ib_params {buffer_size,false,false,true,AllocUsage::Index};
   index_buffer_ = app_context_->vulkan_device().allocate_memory(ib_params);
  
 

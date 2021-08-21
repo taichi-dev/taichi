@@ -281,6 +281,7 @@ class Device {
     uint64_t size{0};
     bool host_write{false};
     bool host_read{false};
+    bool export_sharing{false};
     AllocUsage usage{AllocUsage::Storage};
   };
 

@@ -4,6 +4,7 @@
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
+
 #include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
 
 #include <GLFW/glfw3.h>
@@ -12,6 +13,8 @@
 #include <optional>
 
 #include <taichi/backends/device.h>
+#include <taichi/backends/vulkan/vulkan_utils.h>
+
 
 namespace taichi {
 namespace lang {
@@ -328,6 +331,19 @@ class VulkanSurface : public Surface {
   std::vector<DeviceAllocation> swapchain_images_;
  };
 
+
+struct VulkanMemoryPool {
+  VmaPool pool;
+
+  // the lifetime of these needs to == the lifetime of the vmapool.
+  // because these are needed for allocating memory, which happens multiple times.
+  VkExportMemoryAllocateInfoKHR export_mem_alloc_info{}; 
+#ifdef _WIN64
+  WindowsSecurityAttributes win_security_attribs;
+  VkExportMemoryWin32HandleInfoKHR export_mem_win32_handle_info{};
+#endif
+};
+
 class VulkanDevice : public GraphicsDevice {
  public:
   struct Params {
@@ -441,6 +457,8 @@ class VulkanDevice : public GraphicsDevice {
   VkDevice device_;
   VkPhysicalDevice physical_device_;
   VmaAllocator allocator_;
+  VulkanMemoryPool export_pool_;
+ 
 
   VkQueue compute_queue_;
   VkCommandPool compute_pool_;

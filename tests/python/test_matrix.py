@@ -161,6 +161,35 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     assert np.allclose(r2[None].value.to_numpy(), ops(a, c))
 
 
+@ti.test()
+def test_matrix_non_constant_index_numpy():
+    @ti.kernel
+    def func1(a: ti.any_arr(element_shape=(2, 2))):
+        for i in range(5):
+            for j, k in ti.ndrange(2, 2):
+                a[i][j, k] = j * j + k * k
+
+    m = np.empty((5, 2, 2), dtype=np.int32)
+    func1(m)
+    assert m[1][0, 1] == 1
+    assert m[2][1, 0] == 1
+    assert m[3][1, 1] == 2
+    assert m[4][0, 1] == 1
+
+    @ti.kernel
+    def func2(b: ti.any_arr(element_shape=(10, ), is_soa=True)):
+        for i in range(5):
+            for j in range(4):
+                b[i][j * j] = j * j
+
+    v = np.empty((10, 5), dtype=np.int32)
+    func2(v)
+    assert v[0][1] == 0
+    assert v[1][1] == 1
+    assert v[4][1] == 4
+    assert v[9][1] == 9
+
+
 @ti.test(require=ti.extension.dynamic_index, dynamic_index=True)
 def test_matrix_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)

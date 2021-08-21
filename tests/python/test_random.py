@@ -139,7 +139,7 @@ def test_random_f64():
     x = ti.field(ti.f64, shape=n)
 
     @ti.kernel
-    def foo() -> ti.f64:
+    def foo():
         for i in x:
             x[i] = ti.random(dtype=ti.f64)
 

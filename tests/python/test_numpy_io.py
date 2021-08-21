@@ -45,6 +45,7 @@ def test_from_numpy_2d():
         for j in range(m):
             assert val[i, j] == i + j * 3
 
+
 @ti.all_archs
 def test_to_numpy_struct():
     n = 16
@@ -59,6 +60,7 @@ def test_to_numpy_struct():
     for i in range(n):
         assert arr_dict["a"][i] == i
         assert arr_dict["b"][i] == i * 2
+
 
 @ti.all_archs
 def test_from_numpy_struct():

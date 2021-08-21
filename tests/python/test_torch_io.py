@@ -167,6 +167,7 @@ def test_io_zeros():
     zeros = mat.to_torch()
     assert zeros[1, 2] == 4
 
+
 @ti.torch_test
 def test_io_struct():
     n = 16

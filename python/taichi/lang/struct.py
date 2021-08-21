@@ -1,11 +1,11 @@
-
 import numbers
 
 from taichi.lang import expr, impl
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.util import (python_scope, taichi_scope)
+from taichi.lang.util import python_scope, taichi_scope
 
 import taichi as ti
+
 
 class Struct:
     """The Struct type class.
@@ -22,7 +22,6 @@ class Struct:
 
     def empty_copy(self):
         return Struct.empty(self.members())
-
 
     def is_global(self):
         results = [False for _ in self.entries.values()]
@@ -43,13 +42,15 @@ class Struct:
         return list(self.entries.values())
 
     def register_member(self, member_name, dtype):
-        self.entries[member_name] = impl.field(dtype, name=self.name + '.' + member_name)
-        setattr(Struct, member_name, 
+        self.entries[member_name] = impl.field(dtype,
+                                               name=self.name + '.' +
+                                               member_name)
+        setattr(
+            Struct, member_name,
             property(
                 Struct.make_getter(member_name),
                 Struct.make_setter(member_name),
-            )
-        )
+            ))
 
     def __call__(self, name):
         _taichi_skip_traceback = 1
@@ -64,7 +65,8 @@ class Struct:
                 ret.entries[k] = impl.subscript(e, *indices)
             return ret
         else:
-            raise TaichiSyntaxError("Custom struct members cannot be locally subscripted")
+            raise TaichiSyntaxError(
+                "Custom struct members cannot be locally subscripted")
 
     def make_grad(self):
         ret = self.empty_copy()
@@ -78,6 +80,7 @@ class Struct:
             """Get an entry from custom struct by name."""
             _taichi_skip_traceback = 1
             return self.entries[member_name]
+
         return getter
 
     @staticmethod
@@ -86,6 +89,7 @@ class Struct:
         def setter(self, value):
             _taichi_skip_traceback = 1
             self.entries[member_name] = value
+
         return setter
 
     class Proxy:
@@ -94,12 +98,12 @@ class Struct:
             self.struct = struct
             self.index = index
             for member_name in self.struct.members():
-                setattr(Struct.Proxy, member_name, 
+                setattr(
+                    Struct.Proxy, member_name,
                     property(
                         Struct.Proxy.make_getter(member_name),
                         Struct.Proxy.make_setter(member_name),
-                    )
-                )
+                    ))
 
         @python_scope
         def _get(self, name):
@@ -114,6 +118,7 @@ class Struct:
             @python_scope
             def getter(self):
                 return self.struct(member_name)[self.index]
+
             return getter
 
         @staticmethod
@@ -121,15 +126,16 @@ class Struct:
             @python_scope
             def setter(self, value):
                 self.struct(member_name)[self.index] = value
+
             return setter
-        
+
         @property
         def value(self):
             ret = self.struct.empty_copy()
             for k in self.struct.members():
                 ret.entries[k] = self.struct(k)[self.index]
             return ret
-    
+
     # host access & python scope operation
     @python_scope
     def __getitem__(self, indices):
@@ -145,11 +151,13 @@ class Struct:
         if self.is_global():
             return Struct.Proxy(self, indices)
         else:
-            raise TaichiSyntaxError("Custom struct members cannot be locally subscripted")
-        
+            raise TaichiSyntaxError(
+                "Custom struct members cannot be locally subscripted")
+
     @python_scope
     def __setitem__(self, indices, item):
-        raise NotImplementedError("Cannot assign the whole struct in Python scope")
+        raise NotImplementedError(
+            "Cannot assign the whole struct in Python scope")
 
     def __len__(self):
         """Get the number of entries in a custom struct"""
@@ -187,7 +195,7 @@ class Struct:
     def from_numpy(self, array_dict):
         for k in self.members():
             self(k).from_numpy(array_dict[k])
-    
+
     @python_scope
     def from_torch(self, array_dict):
         for k in self.members():
@@ -196,7 +204,7 @@ class Struct:
     @python_scope
     def to_numpy(self):
         return {k: v.to_numpy() for k, v in self.entries.items()}
-    
+
     @python_scope
     def to_torch(self):
         return {k: v.to_torch() for k, v in self.entries.items()}
@@ -260,7 +268,8 @@ class Struct:
                                       shape).place(e.grad, offset=offset)
             else:
                 ti.root.dense(impl.index_nd(dim),
-                              shape).place(*tuple(self.entries.values()), offset=offset)
+                              shape).place(*tuple(self.entries.values()),
+                                           offset=offset)
                 if needs_grad:
                     ti.root.dense(impl.index_nd(dim),
                                   shape).place(*tuple(self.entries.values()),

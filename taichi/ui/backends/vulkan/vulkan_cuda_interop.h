@@ -33,6 +33,7 @@ void *map_buffer_onto_external_memory(CUexternalMemory ext_mem,
                                       unsigned long long size);
 
 void *get_memory_pointer(VkDeviceMemory mem,
+                         VkDeviceSize offset,
                          VkDeviceSize size,
                          VkDevice device);
 

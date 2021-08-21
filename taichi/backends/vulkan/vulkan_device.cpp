@@ -899,30 +899,30 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
   }
 
-  VkExportMemoryAllocateInfoKHR export_mem_alloc_info = {};
-  export_mem_alloc_info.sType =
-      VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR;
-#ifdef _WIN64
-  WindowsSecurityAttributes win_security_attribs;
+//   VkExportMemoryAllocateInfoKHR export_mem_alloc_info = {};
+//   export_mem_alloc_info.sType =
+//       VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR;
+// #ifdef _WIN64
+//   WindowsSecurityAttributes win_security_attribs;
 
-  VkExportMemoryWin32HandleInfoKHR export_mem_win32_handle_info = {};
-  export_mem_win32_handle_info.sType =
-      VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR;
-  export_mem_win32_handle_info.pNext = NULL;
-  export_mem_win32_handle_info.pAttributes = &win_security_attribs;
-  export_mem_win32_handle_info.dwAccess =
-      DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
-  export_mem_win32_handle_info.name = (LPCWSTR)NULL;
+//   VkExportMemoryWin32HandleInfoKHR export_mem_win32_handle_info = {};
+//   export_mem_win32_handle_info.sType =
+//       VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR;
+//   export_mem_win32_handle_info.pNext = NULL;
+//   export_mem_win32_handle_info.pAttributes = &win_security_attribs;
+//   export_mem_win32_handle_info.dwAccess =
+//       DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
+//   export_mem_win32_handle_info.name = (LPCWSTR)NULL;
 
-  export_mem_alloc_info.pNext = &export_mem_win32_handle_info;
-  export_mem_alloc_info.handleTypes =
-      VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
-#else
-  export_mem_alloc_info.pNext = NULL;
-  export_mem_alloc_info.handleTypes =
-      VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
-#endif
-  alloc.alloc_info. = &export_mem_alloc_info;
+//   export_mem_alloc_info.pNext = &export_mem_win32_handle_info;
+//   export_mem_alloc_info.handleTypes =
+//       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+// #else
+//   export_mem_alloc_info.pNext = NULL;
+//   export_mem_alloc_info.handleTypes =
+//       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
+// #endif
+//   alloc.alloc_info. = &export_mem_alloc_info;
 
   BAIL_ON_VK_BAD_RESULT(
       vmaCreateBuffer(allocator_, &buffer_info, &alloc_info, &alloc.buffer,

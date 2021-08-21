@@ -113,12 +113,13 @@ void *map_buffer_onto_external_memory(CUexternalMemory ext_mem,
 }
 
 void *get_memory_pointer(VkDeviceMemory mem,
+                         VkDeviceSize offset,
                          VkDeviceSize size,
                          VkDevice device) {
   auto handle = get_device_mem_handle(mem, device);
   CUexternalMemory externalMem =
       import_vk_memory_object_from_handle(handle, size, false);
-  return map_buffer_onto_external_memory(externalMem, 0, size);
+  return map_buffer_onto_external_memory(externalMem, offset, size);
 }
 
 // To understand how this works, please read the following resources:

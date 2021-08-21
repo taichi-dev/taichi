@@ -30,15 +30,15 @@ void Renderable::init_render_resources() {
   create_descriptor_sets();
 
   if (app_context_->config.ti_arch == Arch::cuda) {
-    VkDeviceMemory vertex_buffer_memory_ = std::get<0>(app_context_->vulkan_device().get_vkmemory_offset_size(vertex_buffer_));
+    auto [vb_mem,vb_offset,vb_size] = app_context_->vulkan_device().get_vkmemory_offset_size(vertex_buffer_);
 
-    VkDeviceMemory index_buffer_memory_ = std::get<0>(app_context_->vulkan_device().get_vkmemory_offset_size(index_buffer_));
+    auto [ib_mem,ib_offset,ib_size] = app_context_->vulkan_device().get_vkmemory_offset_size(index_buffer_);
     
     vertex_buffer_device_ptr_ = (Vertex *)get_memory_pointer(
-        vertex_buffer_memory_, config_.vertices_count * sizeof(Vertex),
+        vb_mem,vb_offset,vb_size,
         app_context_->device());
     index_buffer_device_ptr_ = (int *)get_memory_pointer(
-        index_buffer_memory_, config_.indices_count * sizeof(int),
+        ib_mem,ib_offset,ib_size,
         app_context_->device());
   }
 }

@@ -296,6 +296,7 @@ void LocalTensorElementExpression::flatten(FlattenContext *ctx) {
   //        ^^^^^^^^^
   indices[0].set(load_if_ptr(indices[0]));
   indices[0]->flatten(ctx);
+  Stmt *offset_stmt = indices[0]->stmt;
   for (int i = 1; i < (int)shape.size(); ++i) {
     Stmt *accumulated_stmt = ctx->back_stmt();
     Stmt *current_length_stmt =
@@ -307,10 +308,10 @@ void LocalTensorElementExpression::flatten(FlattenContext *ctx) {
     Stmt *current_index_stmt = ctx->back_stmt();
     ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::add, mul_stmt,
                                             current_index_stmt));
+    offset_stmt = ctx->back_stmt();
   }
   // Type A[x, y, ...]
   // ^^^^
-  Stmt *offset_stmt = ctx->back_stmt();
   Stmt *dt_size_stmt = ctx->push_back(
       Stmt::make<ConstStmt>(TypedConstant(data_type_size(element_type))));
   ctx->push_back(

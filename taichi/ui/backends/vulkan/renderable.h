@@ -60,7 +60,6 @@ class Renderable {
   VkPipelineLayout pipeline_layout_;
   VkPipeline graphics_pipeline_;
 
-  // TODO: use the memory allocator from ti vulkan backend
   taichi::lang::DeviceAllocation vertex_buffer_;
   taichi::lang::DeviceAllocation index_buffer_;
 
@@ -69,11 +68,8 @@ class Renderable {
   taichi::lang::DeviceAllocation staging_vertex_buffer_;
   taichi::lang::DeviceAllocation staging_index_buffer_;
 
-  VkBuffer uniform_buffer_;
-  VkDeviceMemory uniform_buffer_memory_;
-
-  VkBuffer storage_buffer_;
-  VkDeviceMemory storage_buffer_memory_;
+  taichi::lang::DeviceAllocation uniform_buffer_;
+  taichi::lang::DeviceAllocation storage_buffer_;
 
   VkDescriptorSetLayout descriptor_set_layout_;
   VkDescriptorSet descriptor_set_;

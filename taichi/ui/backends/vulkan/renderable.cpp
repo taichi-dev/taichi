@@ -358,31 +358,24 @@ void Renderable::create_index_buffer() {
 }
 
 void Renderable::create_uniform_buffers() {
-  VkDeviceSize buffer_size = config_.ubo_size;
+  size_t buffer_size = config_.ubo_size;
   if (buffer_size == 0) {
     return;
   }
 
-
-  create_buffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                uniform_buffer_, uniform_buffer_memory_,
-                app_context_->device(), app_context_->physical_device());
+  Device::AllocParams ub_params {buffer_size,true,false,false,AllocUsage::Uniform};
+  uniform_buffer_ = app_context_->vulkan_device().allocate_memory(ub_params);
   
 }
 
 void Renderable::create_storage_buffers() {
-  VkDeviceSize buffer_size = config_.ssbo_size;
+  size_t buffer_size = config_.ssbo_size;
   if (buffer_size == 0) {
     return;
   } 
-    create_buffer(buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                  storage_buffer_, storage_buffer_memory_,
-                  app_context_->device(), app_context_->physical_device());
   
+  Device::AllocParams sb_params {buffer_size,true,false,false,AllocUsage::Storage};
+  storage_buffer_ = app_context_->vulkan_device().allocate_memory(sb_params); 
 }
 
 void Renderable::recreate_swap_chain() {
@@ -397,18 +390,14 @@ void Renderable::destroy_uniform_buffers() {
   if (config_.ubo_size == 0) {
     return;
   }
-   vkDestroyBuffer(app_context_->device(), uniform_buffer_, nullptr);
-  vkFreeMemory(app_context_->device(), uniform_buffer_memory_, nullptr);
-  
+  app_context_->vulkan_device().dealloc_memory(uniform_buffer_);
 }
 
 void Renderable::destroy_storage_buffers() {
   if (config_.ssbo_size == 0) {
     return;
   } 
-    vkDestroyBuffer(app_context_->device(), storage_buffer_, nullptr);
-    vkFreeMemory(app_context_->device(), storage_buffer_memory_, nullptr);
-  
+  app_context_->vulkan_device().dealloc_memory(storage_buffer_);
 }
 
 void Renderable::cleanup_swap_chain() {

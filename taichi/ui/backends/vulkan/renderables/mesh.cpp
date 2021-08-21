@@ -18,11 +18,9 @@ void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
   ubo.color = info.color;
   ubo.use_per_vertex_color = info.renderable_info.per_vertex_color.valid;
 
-  MappedMemory mapped(
-      app_context_->device(),
-      uniform_buffer_memory_,
-      sizeof(ubo));
-  memcpy(mapped.data, &ubo, sizeof(ubo));
+  void* mapped = renderer_->app_context().vulkan_device().map(uniform_buffer_);
+  memcpy(mapped, &ubo, sizeof(ubo));
+  renderer_->app_context().vulkan_device().unmap(uniform_buffer_);
 }
 
 void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
@@ -36,11 +34,9 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
     resize_storage_buffers(correct_ssbo_size);
   }
   {
-    MappedMemory mapped(
-        app_context_->device(),
-        storage_buffer_memory_,
-        correct_ssbo_size);
-    memcpy(mapped.data, scene.point_lights_.data(), correct_ssbo_size);
+    void* mapped = renderer_->app_context().vulkan_device().map(storage_buffer_);
+    memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
+    renderer_->app_context().vulkan_device().unmap(storage_buffer_);
   }
 
   Renderable::update_data(info.renderable_info);
@@ -112,12 +108,12 @@ void Mesh::create_descriptor_sets() {
 
   
     VkDescriptorBufferInfo ubo_info{};
-    ubo_info.buffer = uniform_buffer_;
+    ubo_info.buffer = renderer_->app_context().vulkan_device().get_vkbuffer(uniform_buffer_);
     ubo_info.offset = 0;
     ubo_info.range = config_.ubo_size;
 
     VkDescriptorBufferInfo ssbo_info{};
-    ssbo_info.buffer = storage_buffer_;
+    ssbo_info.buffer = renderer_->app_context().vulkan_device().get_vkbuffer(storage_buffer_);
     ssbo_info.offset = 0;
     ssbo_info.range = config_.ssbo_size;
 

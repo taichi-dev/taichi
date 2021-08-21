@@ -76,11 +76,9 @@ Lines::Lines(Renderer *renderer) {
 void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
   UniformBufferObject ubo{color, (int)use_per_vertex_color};
 
-  MappedMemory mapped(
-      app_context_->device(),
-      uniform_buffer_memory_,
-      sizeof(ubo));
-  memcpy(mapped.data, &ubo, sizeof(ubo));
+  void* mapped = renderer_->app_context().vulkan_device().map(uniform_buffer_);
+  memcpy(mapped, &ubo, sizeof(ubo));
+  renderer_->app_context().vulkan_device().unmap(uniform_buffer_);
 }
 
 void Lines::create_descriptor_set_layout() {
@@ -123,7 +121,7 @@ void Lines::create_descriptor_sets() {
 
   
     VkDescriptorBufferInfo buffer_info{};
-    buffer_info.buffer = uniform_buffer_;
+    buffer_info.buffer = renderer_->app_context().vulkan_device().get_vkbuffer(uniform_buffer_);
     buffer_info.offset = 0;
     buffer_info.range = config_.ubo_size;
 

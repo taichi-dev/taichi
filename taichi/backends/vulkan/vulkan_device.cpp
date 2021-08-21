@@ -1237,8 +1237,7 @@ DeviceAllocation VulkanDevice::import_vk_image(VkImage image,
 
 VkImageView VulkanDevice::get_vk_imageview(
     const DeviceAllocation &alloc) const {
-  // FIXME: impl this
-  return VkImageView();
+  return  std::get<1>(get_vk_image(alloc));
 }
 
 VkRenderPass VulkanDevice::get_renderpass(const VulkanRenderPassDesc &desc) {

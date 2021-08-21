@@ -20,6 +20,8 @@
 #include "taichi/ui/backends/vulkan/renderable.h"
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/canvas_base.h"
+#include "taichi/backends/device.h"
+
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -37,13 +39,13 @@ class SetImage final : public Renderable {
 
  private:
   // the staging buffer is only used if we have a CPU ti backend.
-  VkBuffer staging_buffer_;
-  VkDeviceMemory staging_buffer_memory_;
+  taichi::lang::DeviceAllocation  staging_buffer_;
 
-  VkImage texture_image_;
+  // TODO: make the device api support allocating images.
   VkDeviceMemory texture_image_memory_;
-  VkImageView texture_image_view_;
   VkSampler texture_sampler_;
+  taichi::lang::DeviceAllocation texture_;
+
   uint64_t texture_surface_;
 
  private:
@@ -53,10 +55,10 @@ class SetImage final : public Renderable {
 
   virtual void create_descriptor_sets() override;
 
-  void create_texture_image_(int W, int H);
-  void create_texture_image_view();
-  void create_texture_sampler();
+  void create_texture();
 
+  void create_texture_sampler();
+  
   void update_vertex_buffer_();
 
   void update_index_buffer_();

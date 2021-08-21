@@ -20,6 +20,7 @@ class SwapChain {
  
   std::vector<VkFramebuffer> swap_chain_framebuffers_;
 
+  // TODO: make the device api support allocating images.
   VkImage depth_image_;
   VkDeviceMemory depth_image_memory_;
   VkImageView depth_image_view_;

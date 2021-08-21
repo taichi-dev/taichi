@@ -138,8 +138,6 @@ def test(arch=None, exclude=None, require=None, **options):
                         current_options[feature] = value
                 if skip:
                     continue
-                if current_options.get('dynamic_index', False):
-                    continue
 
                 ti.init(arch=req_arch, **current_options)
                 foo(*args, **kwargs)

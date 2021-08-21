@@ -195,6 +195,9 @@ def test_matrix_non_constant_index():
         tmp = ti.Vector([1, 2, 3], dt=ti.i32)
         for i in range(3):
             tmp[i] = i * i
+            vec = ti.Vector([4, 5, 6], dt=ti.i32)
+            for j in range(3):
+                vec[tmp[i] % 3] += vec[j % 3]
         assert tmp[0] == 0
         assert tmp[1] == 1
         assert tmp[2] == 4

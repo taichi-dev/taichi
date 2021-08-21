@@ -14,6 +14,28 @@ TLANG_NAMESPACE_BEGIN
 namespace irpass {
 namespace {
 
+class SquashPtrOffset : public IRVisitor {
+ public:
+  SquashPtrOffset() {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+  void visit(Stmt *stmt) override {
+    top_level_ptr = stmt;
+  }
+  void visit(PtrOffsetStmt *stmt) override {
+    stmt->origin->accept(this);
+  }
+  static Stmt *run(Stmt *root) {
+    SquashPtrOffset v;
+    root->accept(&v);
+    return v.top_level_ptr;
+  }
+
+ private:
+  Stmt *top_level_ptr = nullptr;
+};
+
 // Offloaded local variables to its offset in the global tmps memory.
 using StmtToOffsetMap = std::unordered_map<const Stmt *, std::size_t>;
 
@@ -302,28 +324,16 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
       return;
     if (stmt_to_offloaded[stmt] == current_offloaded)
       return;
-    if (config.advanced_optimization) {
-      if (stmt->is<ConstStmt>()) {
-        // Directly insert copies of ConstStmts later
-        return;
-      }
-    }
-    if (stmt->is<GlobalPtrStmt>()) {
-      // We don't support storing a pointer for now.
+    // Directly insert copies of ConstStmts later
+    if (stmt->is<ConstStmt>())
       return;
-    }
+    auto top_level_ptr = SquashPtrOffset::run(stmt);
+    // We don't support storing a pointer for now.
+    if (top_level_ptr->is<GlobalPtrStmt>())
+      return;
     // Not yet allocated
-    if (stmt->is<PtrOffsetStmt>()) {
-      if (local_to_global.find(stmt->cast<PtrOffsetStmt>()->origin) ==
-          local_to_global.end()) {
-        auto alloca_stmt = stmt->cast<PtrOffsetStmt>()->origin;
-        local_to_global[alloca_stmt] = allocate_global(alloca_stmt->ret_type);
-      }
-    } else {
-      // stmt might be AllocaStmt, ExternalTensorShapeAlongAxisStmt
-      if (local_to_global.find(stmt) == local_to_global.end()) {
-        local_to_global[stmt] = allocate_global(stmt->ret_type);
-      }
+    if (local_to_global.find(top_level_ptr) == local_to_global.end()) {
+      local_to_global[top_level_ptr] = allocate_global(top_level_ptr->ret_type);
     }
   }
 
@@ -421,14 +431,28 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     if (stmt->body)
       stmt->body->accept(this);
     if (stmt->task_type == OffloadedStmt::TaskType::range_for) {
-      if (!stmt->const_begin)
+      if (!stmt->const_begin) {
+        TI_ASSERT(offloaded_ranges_->begin_stmts.find(stmt) !=
+                  offloaded_ranges_->begin_stmts.end())
+        TI_ASSERT_INFO(local_to_global_offset.find(
+                           offloaded_ranges_->begin_stmts.find(stmt)->second) !=
+                           local_to_global_offset.end(),
+                       "Begin fails.")
         stmt->begin_offset =
             local_to_global_offset[offloaded_ranges_->begin_stmts.find(stmt)
                                        ->second];
-      if (!stmt->const_end)
+      }
+      if (!stmt->const_end) {
+        TI_ASSERT(offloaded_ranges_->end_stmts.find(stmt) !=
+                  offloaded_ranges_->end_stmts.end())
+        TI_ASSERT_INFO(local_to_global_offset.find(
+                           offloaded_ranges_->end_stmts.find(stmt)->second) !=
+                           local_to_global_offset.end(),
+                       "End fails.")
         stmt->end_offset =
             local_to_global_offset[offloaded_ranges_->end_stmts.find(stmt)
                                        ->second];
+      }
     }
   }
 
@@ -441,10 +465,13 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     local_to_global_vector_type[stmt] = ret_type;
     auto ptr = replacement.push_back<GlobalTemporaryStmt>(
         local_to_global_offset[stmt], ret_type);
+    auto offloaded = stmt_to_offloaded[stmt];
+    stmt_to_offloaded[ptr] = offloaded;
     if (auto tensor_type = stmt->ret_type->cast<TensorType>()) {
       LaneAttribute<TypedConstant> zero(std::vector<TypedConstant>(
           1, TypedConstant(tensor_type->get_element_type())));
       auto const_zero_stmt = replacement.push_back<ConstStmt>(zero);
+      stmt_to_offloaded[const_zero_stmt] = offloaded;
       for (int i = 0; i < tensor_type->get_num_elements(); ++i) {
         LaneAttribute<TypedConstant> offset(std::vector<TypedConstant>(
             1, TypedConstant(i *
@@ -452,155 +479,54 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
         auto const_offset_stmt = replacement.push_back<ConstStmt>(offset);
         auto ptr_offset_stmt =
             replacement.push_back<PtrOffsetStmt>(ptr, const_offset_stmt);
-        replacement.push_back<GlobalStoreStmt>(ptr_offset_stmt,
-                                               const_zero_stmt);
+        auto global_store_stmt = replacement.push_back<GlobalStoreStmt>(
+            ptr_offset_stmt, const_zero_stmt);
+        stmt_to_offloaded[const_offset_stmt] = offloaded;
+        stmt_to_offloaded[ptr_offset_stmt] = offloaded;
+        stmt_to_offloaded[global_store_stmt] = offloaded;
       }
     } else {
       LaneAttribute<TypedConstant> zeros(std::vector<TypedConstant>(
           stmt->width(), TypedConstant(stmt->ret_type)));
       auto const_zeros = replacement.push_back<ConstStmt>(zeros);
-      replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
+      auto global_store_stmt =
+          replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
+      stmt_to_offloaded[global_store_stmt] = offloaded;
     }
 
     stmt->parent->replace_with(stmt, std::move(replacement), false);
-    throw IRModified();
-  }
-
-  void visit(PtrOffsetStmt *stmt) override {
-    auto alloca = stmt->origin;
-    auto offset = stmt->offset;
-
-    if (stmt_to_offloaded[offset] != stmt_to_offloaded[stmt]) {
-      VecStatement replacement;
-      // TODO: offset may not be ConstStmt
-      auto copy_stmt = offset->as<ConstStmt>()->copy();
-      auto copy = replacement.push_back(std::move(copy_stmt));
-      stmt_to_offloaded[copy] = stmt_to_offloaded[stmt];
-      auto ptr_offset = replacement.push_back<PtrOffsetStmt>(alloca, copy);
-      stmt->parent->replace_with(stmt, std::move(replacement));
-      throw IRModified();
-    }
-
-    if (!(alloca->is<AllocaStmt>() &&
-          alloca->cast<AllocaStmt>()->ret_type->is<TensorType>()))
-      return;
-    if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
-      return;
-
-    VecStatement replacement;
-    auto ret_type = alloca->cast<AllocaStmt>()->ret_type;
-
-    auto ptr = replacement.push_back<GlobalTemporaryStmt>(
-        local_to_global_offset[alloca], ret_type);
-    replacement.push_back<PtrOffsetStmt>(ptr, stmt->offset);
-
-    stmt->parent->replace_with(stmt, std::move(replacement));
+    // To deal with the same offloaded visit_operand()
+    stmt_to_offloaded[stmt] = nullptr;
     throw IRModified();
   }
 
   // Replace local LD/ST with global LD/ST
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
-    // TensorType Alloca
-    if (stmt->src[0].var->is<PtrOffsetStmt>() &&
-        stmt->src[0].var->as<PtrOffsetStmt>()->origin->is<AllocaStmt>()) {
-      auto alloca =
-          stmt->src[0].var->as<PtrOffsetStmt>()->origin->as<AllocaStmt>();
-      if (local_to_global_offset.find(alloca) != local_to_global_offset.end()) {
-        // Converted to GlobalTemporaryStmt
-        VecStatement replacement;
-        auto ptr = replacement.push_back<GlobalTemporaryStmt>(
-            local_to_global_offset[alloca], alloca->ret_type);
-        // TODO: offset may not be ConstStmt
-        auto copy_stmt = stmt->src[0]
-                             .var->as<PtrOffsetStmt>()
-                             ->offset->as<ConstStmt>()
-                             ->copy();
-        auto copy = replacement.push_back(std::move(copy_stmt));
-        auto ptr_offset = replacement.push_back<PtrOffsetStmt>(ptr, copy);
-        replacement.push_back<GlobalLoadStmt>(ptr_offset);
-
-        stmt->parent->replace_with(stmt, std::move(replacement));
-        throw IRModified();
-      }
+    generic_visit(stmt);
+    TI_ASSERT(stmt->width() == 1)
+    auto ptr = stmt->src[0].var;
+    auto top_level_ptr = SquashPtrOffset::run(ptr);
+    if (top_level_ptr->is<GlobalTemporaryStmt>()) {
+      VecStatement replacement;
+      auto global_load = replacement.push_back<GlobalLoadStmt>(ptr);
+      stmt_to_offloaded[global_load] = stmt_to_offloaded[stmt];
+      stmt->parent->replace_with(stmt, std::move(replacement));
+      throw IRModified();
     }
-    // Scalar Alloca
-    auto alloca = stmt->src[0].var;
-    if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
-      return;
-
-    VecStatement replacement;
-    auto ret_type = stmt->ret_type;
-
-    auto ptr = replacement.push_back<GlobalTemporaryStmt>(
-        local_to_global_offset[alloca], ret_type);
-    replacement.push_back<GlobalLoadStmt>(ptr);
-
-    stmt->parent->replace_with(stmt, std::move(replacement));
-    throw IRModified();
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    if (visit_operand(stmt, stmt->locate_operand(&stmt->val)))
+    generic_visit(stmt);
+    auto ptr = stmt->dest;
+    auto top_level_ptr = SquashPtrOffset::run(ptr);
+    if (top_level_ptr->is<GlobalTemporaryStmt>()) {
+      VecStatement replacement;
+      auto global_store =
+          replacement.push_back<GlobalStoreStmt>(ptr, stmt->val);
+      stmt_to_offloaded[global_store] = stmt_to_offloaded[stmt];
+      stmt->parent->replace_with(stmt, std::move(replacement));
       throw IRModified();
-    TI_ASSERT(stmt->width() == 1);
-    // TensorType Alloca
-    if (stmt->dest->is<PtrOffsetStmt>() &&
-        stmt->dest->as<PtrOffsetStmt>()->origin->is<AllocaStmt>()) {
-      auto alloca = stmt->dest->as<PtrOffsetStmt>()->origin->as<AllocaStmt>();
-      if (local_to_global_offset.find(alloca) != local_to_global_offset.end()) {
-        // Converted to GlobalTemporaryStmt
-        VecStatement replacement;
-        auto ptr = replacement.push_back<GlobalTemporaryStmt>(
-            local_to_global_offset[alloca], alloca->ret_type);
-        // TODO: offset may not be ConstStmt
-        auto copy_stmt =
-            stmt->dest->as<PtrOffsetStmt>()->offset->as<ConstStmt>()->copy();
-        auto copy = replacement.push_back(std::move(copy_stmt));
-        auto ptr_offset = replacement.push_back<PtrOffsetStmt>(ptr, copy);
-        replacement.push_back<GlobalStoreStmt>(ptr_offset, stmt->val);
-
-        stmt->parent->replace_with(stmt, std::move(replacement));
-        throw IRModified();
-      }
     }
-    // Scalar Alloca
-    auto alloca = stmt->dest;
-    if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
-      return;
-
-    VecStatement replacement;
-    auto ret_type = stmt->ret_type;
-
-    auto ptr = replacement.push_back<GlobalTemporaryStmt>(
-        local_to_global_offset[alloca], ret_type);
-    replacement.push_back<GlobalStoreStmt>(ptr, stmt->val);
-
-    stmt->parent->replace_with(stmt, std::move(replacement));
-    throw IRModified();
-  }
-
-  void visit(AtomicOpStmt *stmt) override {
-    if (!stmt->dest->is<AllocaStmt>()) {
-      generic_visit(stmt);
-      return;
-    }
-    if (visit_operand(stmt, stmt->locate_operand(&stmt->val)))
-      throw IRModified();
-    TI_ASSERT(stmt->width() == 1);
-    auto alloca = stmt->dest;
-    if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
-      return;
-
-    VecStatement replacement;
-    auto ret_type = stmt->dest->ret_type;
-
-    auto ptr = replacement.push_back<GlobalTemporaryStmt>(
-        local_to_global_offset[alloca], ret_type);
-    replacement.push_back<AtomicOpStmt>(stmt->op_type, ptr, stmt->val);
-
-    stmt->parent->replace_with(stmt, std::move(replacement));
-    throw IRModified();
   }
 
   bool visit_operand(Stmt *stmt, int index) {
@@ -611,55 +537,45 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       return false;
     if (stmt_to_offloaded[stmt] == stmt_to_offloaded[op])  // same OffloadedStmt
       return false;
-    if (config.advanced_optimization) {
-      if (op->is<ConstStmt>()) {
-        auto copy = op->as<ConstStmt>()->copy();
-        stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];
-        stmt->set_operand(index, copy.get());
-        stmt->insert_before_me(std::move(copy));
-        return true;
-      }
-    }
+
+    auto offloaded = stmt_to_offloaded[stmt];
+
     if (op->is<GlobalPtrStmt>()) {
       auto copy = op->clone();
       copy->as<GlobalPtrStmt>()->activate = false;
-      stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];
+      stmt_to_offloaded[copy.get()] = offloaded;
       stmt->set_operand(index, copy.get());
       stmt->insert_before_me(std::move(copy));
       return true;
     }
 
-    if (op->is<PtrOffsetStmt>() &&
-        op->cast<PtrOffsetStmt>()->origin->is<AllocaStmt>()) {
-      auto alloca = op->as<PtrOffsetStmt>()->origin->as<AllocaStmt>();
-      if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
-        return false;
-
-      auto global_temporary_stmt = Stmt::make<GlobalTemporaryStmt>(
-          local_to_global_offset[alloca], alloca->ret_type);
-      // TODO: offset may not be ConstStmt
-      auto copy_stmt = op->as<PtrOffsetStmt>()->offset->as<ConstStmt>()->copy();
-      auto ptr_offset_stmt = Stmt::make<PtrOffsetStmt>(
-          global_temporary_stmt.get(), copy_stmt.get());
-      stmt_to_offloaded[copy_stmt.get()] = stmt_to_offloaded[stmt];
-      stmt_to_offloaded[ptr_offset_stmt.get()] = stmt_to_offloaded[stmt];
-      stmt->set_operand(index, ptr_offset_stmt.get());
-      stmt->insert_before_me(std::move(copy_stmt));
-      stmt->insert_before_me(std::move(global_temporary_stmt));
-      stmt->insert_before_me(std::move(ptr_offset_stmt));
-      return true;
+    if (local_to_global_offset.find(op) == local_to_global_offset.end()) {
+      TI_ASSERT_INFO(op->is<ConstStmt>() || op->is<PtrOffsetStmt>() ||
+                         op->is<GlobalTemporaryStmt>(),
+                     "{} is not allowed here.", op->type());
+      // For cases like ConstStmt
+      auto copy = op->clone();
+      stmt_to_offloaded[copy.get()] = offloaded;
+      stmt->set_operand(index, copy.get());
+      stmt->insert_before_me(std::move(copy));
+    } else {
+      auto global_temporary = Stmt::make<GlobalTemporaryStmt>(
+          local_to_global_offset[op], op->ret_type);
+      stmt_to_offloaded[global_temporary.get()] = offloaded;
+      stmt->set_operand(index, global_temporary.get());
+      if (op->is<AllocaStmt>() || op->ret_type.is_pointer()) {
+        // For cases like Alloca both TensorType and Scalar which will be
+        // followed by LocalLoad. Avoid repeated loads here.
+        stmt->insert_before_me(std::move(global_temporary));
+      } else {
+        // For other cases like ArgLoadStmt UnaryOpStmt which needs to load.
+        auto load = Stmt::make<GlobalLoadStmt>(global_temporary.get());
+        stmt_to_offloaded[load.get()] = offloaded;
+        stmt->set_operand(index, load.get());
+        stmt->insert_before_me(std::move(global_temporary));
+        stmt->insert_before_me(std::move(load));
+      }
     }
-
-    if (local_to_global_offset.find(op) == local_to_global_offset.end())
-      return false;
-
-    auto global = Stmt::make<GlobalTemporaryStmt>(local_to_global_offset[op],
-                                                  op->ret_type);
-    auto load = Stmt::make<GlobalLoadStmt>(global.get());
-    stmt_to_offloaded[load.get()] = stmt_to_offloaded[stmt];
-    stmt->set_operand(index, load.get());
-    stmt->insert_before_me(std::move(global));
-    stmt->insert_before_me(std::move(load));
     return true;
   }
 
@@ -675,7 +591,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   }
 
   void visit(Stmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1 || (stmt->ret_type->is<TensorType>()));
+    TI_ASSERT(stmt->width() == 1)
     generic_visit(stmt);
   }
 

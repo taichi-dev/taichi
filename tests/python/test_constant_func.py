@@ -48,29 +48,32 @@ unary_func_table = [
 
 @pytest.mark.parametrize('ti_func,np_func', binary_func_table)
 def test_python_scope_vector_binary(ti_func, np_func):
+    ti.init()
     x = ti.Vector([2, 3])
     y = ti.Vector([5, 4])
 
     result = ti_func(x, y).to_numpy()
     if ti_func in [ops.eq, ops.ne, ops.lt, ops.le, ops.gt, ops.ge]:
-        result = result.astype(np.bool)
+        result = result.astype(bool)
     expected = np_func(x.to_numpy(), y.to_numpy())
     assert allclose(result, expected)
 
 
 @pytest.mark.parametrize('ti_func,np_func', unary_func_table)
 def test_python_scope_vector_unary(ti_func, np_func):
+    ti.init()
     x = ti.Vector([2, 3] if ti_func in
                   [ops.invert, ti.logical_not] else [0.2, 0.3])
 
     result = ti_func(x).to_numpy()
     if ti_func in [ti.logical_not]:
-        result = result.astype(np.bool)
+        result = result.astype(bool)
     expected = np_func(x.to_numpy())
     assert allclose(result, expected)
 
 
 def test_python_scope_matmul():
+    ti.init()
     a = np.array([[1, 2], [3, 4]])
     b = np.array([[5, 6], [7, 8]])
     x = ti.Vector(a)
@@ -82,6 +85,7 @@ def test_python_scope_matmul():
 
 
 def test_python_scope_linalg():
+    ti.init()
     a = np.array([3, 4, -2])
     b = np.array([-5, 0, 6])
     x = ti.Vector(a)

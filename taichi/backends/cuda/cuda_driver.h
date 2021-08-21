@@ -3,6 +3,7 @@
 #include <mutex>
 
 #include "taichi/system/dynamic_loader.h"
+#include "taichi/backends/cuda/cuda_types.h"
 
 #if (0)
 // Turn on to check for comptability
@@ -34,6 +35,10 @@ constexpr uint32 CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 75;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 76;
 constexpr uint32 CUDA_ERROR_ASSERT = 710;
 constexpr uint32 CU_JIT_MAX_REGISTERS = 0;
+constexpr uint32 CU_POINTER_ATTRIBUTE_MEMORY_TYPE = 2;
+constexpr uint32 CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING = 41;
+constexpr uint32 CUDA_SUCCESS = 0;
+constexpr uint32 CU_MEMORYTYPE_DEVICE = 2;
 
 std::string get_cuda_error_message(uint32 err);
 

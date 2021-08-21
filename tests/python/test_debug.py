@@ -12,8 +12,7 @@ def test_cpu_debug_snode_reader():
     assert x[None] == 10.0
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True)
+@ti.test(require=ti.extension.assertion, debug=True)
 def test_cpu_debug_snode_writer_out_of_bound():
     ti.set_gdb_trigger(False)
 
@@ -23,8 +22,7 @@ def test_cpu_debug_snode_writer_out_of_bound():
         x[3] = 10.0
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True)
+@ti.test(require=ti.extension.assertion, debug=True)
 def test_cpu_debug_snode_writer_out_of_bound_negative():
     ti.set_gdb_trigger(False)
 
@@ -33,8 +31,7 @@ def test_cpu_debug_snode_writer_out_of_bound_negative():
         x[-1] = 10.0
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True)
+@ti.test(require=ti.extension.assertion, debug=True)
 def test_cpu_debug_snode_reader_out_of_bound():
     ti.set_gdb_trigger(False)
 
@@ -44,8 +41,7 @@ def test_cpu_debug_snode_reader_out_of_bound():
         a = x[3]
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True)
+@ti.test(require=ti.extension.assertion, debug=True)
 def test_cpu_debug_snode_reader_out_of_bound_negative():
     ti.set_gdb_trigger(False)
 
@@ -54,8 +50,7 @@ def test_cpu_debug_snode_reader_out_of_bound_negative():
         a = x[-1]
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True)
+@ti.test(require=ti.extension.assertion, debug=True)
 def test_out_of_bound():
     ti.set_gdb_trigger(False)
     x = ti.field(ti.i32, shape=(8, 16))
@@ -68,8 +63,7 @@ def test_out_of_bound():
         func()
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True)
+@ti.test(require=ti.extension.assertion, debug=True)
 def test_not_out_of_bound():
     ti.set_gdb_trigger(False)
     x = ti.field(ti.i32, shape=(8, 16))
@@ -81,8 +75,7 @@ def test_not_out_of_bound():
     func()
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True)
+@ti.test(require=ti.extension.assertion, debug=True)
 def test_out_of_bound_dynamic():
     ti.set_gdb_trigger(False)
     x = ti.field(ti.i32)
@@ -97,8 +90,7 @@ def test_out_of_bound_dynamic():
         func()
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True)
+@ti.test(require=ti.extension.assertion, debug=True)
 def test_not_out_of_bound_dynamic():
     ti.set_gdb_trigger(False)
     x = ti.field(ti.i32)
@@ -112,8 +104,7 @@ def test_not_out_of_bound_dynamic():
     func()
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True)
+@ti.test(require=ti.extension.assertion, debug=True)
 def test_out_of_bound_with_offset():
     ti.init(debug=True)
     ti.set_gdb_trigger(False)
@@ -128,8 +119,7 @@ def test_out_of_bound_with_offset():
         func()
 
 
-@ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True)
+@ti.test(require=ti.extension.assertion, debug=True)
 def test_not_out_of_bound_with_offset():
     ti.set_gdb_trigger(False)
     x = ti.field(ti.i32, shape=(8, 16), offset=(-4, -8))

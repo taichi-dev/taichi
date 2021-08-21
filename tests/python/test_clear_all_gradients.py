@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_clear_all_gradients():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)

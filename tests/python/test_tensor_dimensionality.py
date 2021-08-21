@@ -1,14 +1,14 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def _test_dimensionality(d):
     x = ti.Vector.field(2, dtype=ti.i32, shape=(2, ) * d)
 
     @ti.kernel
     def fill():
         for I in ti.grouped(x):
-            x[I] += [I.sum(), I[0]]
+            x[I] += ti.Vector([I.sum(), I[0]], dt=ti.i32)
 
     for i in range(2**d):
         indices = []

@@ -203,7 +203,7 @@ class Serializer {
   };
 };
 
-inline std::vector<uint8> read_data_from_file(const std::string &fn) {
+inline std::vector<uint8_t> read_data_from_file(const std::string &fn) {
   std::vector<uint8_t> data;
   std::FILE *f = fopen(fn.c_str(), "rb");
   if (f == nullptr) {

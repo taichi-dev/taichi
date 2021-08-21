@@ -13,8 +13,39 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
     return AliasResult::same;
   if (!var1 || !var2)
     return AliasResult::different;
-  if (var1->is<AllocaStmt>() || var2->is<AllocaStmt>())
+
+  // TODO: further optimize with offset inside PtrOffsetStmt
+  // If at least one of var1 and var2 is local, they will be treated here.
+  auto retrieve_local = [&](Stmt *var) {
+    if (var->is<AllocaStmt>()) {
+      return var;
+    } else if (var->is<PtrOffsetStmt>() &&
+               var->cast<PtrOffsetStmt>()->is_local_ptr()) {
+      return var->cast<PtrOffsetStmt>()->origin;
+    } else {
+      return (Stmt *)nullptr;
+    }
+  };
+  Stmt *origin1 = retrieve_local(var1);
+  Stmt *origin2 = retrieve_local(var2);
+  if (origin1 != nullptr && origin2 != nullptr) {
+    if (origin1 == origin2)
+      return AliasResult::uncertain;
+    if (origin1->is<AllocaStmt>() || origin2->is<AllocaStmt>())
+      return AliasResult::different;
+    TI_ASSERT(origin1->is<GlobalTemporaryStmt>() &&
+              origin2->is<GlobalTemporaryStmt>());
+    if (origin1->cast<GlobalTemporaryStmt>()->offset ==
+        origin2->cast<GlobalTemporaryStmt>()->offset) {
+      return AliasResult::uncertain;
+    } else {
+      return AliasResult::different;
+    }
+  }
+  if (origin1 != nullptr || origin2 != nullptr) {
     return AliasResult::different;
+  }
+
   if (var1->is<AdStackAllocaStmt>() || var2->is<AdStackAllocaStmt>())
     return AliasResult::different;
 

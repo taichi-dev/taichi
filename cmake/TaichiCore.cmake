@@ -23,10 +23,6 @@ if (APPLE)
         set(TI_WITH_CC OFF)
         message(WARNING "C backend not supported on OS X. Setting TI_WITH_CC to OFF.")
     endif()
-    if (TI_WITH_VULKAN)
-        set(TI_WITH_VULKAN OFF)
-        message(WARNING "Vulkan backend not supported on OS X. Setting TI_WITH_VULKAN to OFF.")
-    endif()
 endif()
 
 if (WIN32)
@@ -36,10 +32,18 @@ if (WIN32)
     endif()
 endif()
 
+set(TI_WITH_GGUI OFF)
+if(TI_WITH_CUDA AND TI_WITH_VULKAN)
+    set(TI_WITH_GGUI ON)
+endif()
+
+
 if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/glad.c")
     set(TI_WITH_OPENGL OFF)
     message(WARNING "external/glad submodule not detected. Settings TI_WITH_OPENGL to OFF.")
 endif()
+
+
 
 file(GLOB TAICHI_CORE_SOURCE
         "taichi/*/*/*/*.cpp" "taichi/*/*/*.cpp" "taichi/*/*.cpp" "taichi/*.cpp"
@@ -53,7 +57,31 @@ file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/
 file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal/*.cpp" "taichi/backends/metal/shaders/*")
 file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/opengl/*.cpp" "taichi/backends/opengl/shaders/*")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
-file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "taichi/backends/vulkan/shaders/*")
+file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "taichi/backends/vulkan/shaders/*" "external/SPIRV-Reflect/spirv_reflect.c")
+
+file(GLOB TAICHI_GGUI_SOURCE
+    "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"  "taichi/ui/*/*/*/*.cpp" "taichi/ui/*/*/*/*/*.cpp"
+    "taichi/ui/*.h"  "taichi/ui/*/*.h" "taichi/ui/*/*/*.h"  "taichi/ui/*/*/*/*.h" "taichi/ui/*/*/*/*/*.h"
+    "taichi/ui/backends/vulkan/renderables/kernels.cu"
+)
+list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_GGUI_SOURCE})
+
+
+if(TI_WITH_GGUI)
+    add_definitions(-DTI_WITH_GGUI)
+
+    enable_language(CUDA)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -use_fast_math -std=c++17" )
+    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GGUI_SOURCE})
+
+    include_directories(SYSTEM external/glm)
+
+endif()
+
+
+
+
+
 # These are required, regardless of whether Vulkan is enabled or not
 # TODO(#2298): Clean up the Vulkan code structure, all Vulkan API related things should be
 # guarded by TI_WITH_VULKAN macro at the source code level.
@@ -217,7 +245,7 @@ if (TI_WITH_VULKAN)
 
     # Is this the best way to include the SPIRV-Headers?
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
-
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/VulkanMemoryAllocator/include)
 
     if (MSVC)
@@ -295,3 +323,16 @@ if (WIN32)
     set_target_properties(${CORE_WITH_PYBIND_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
             "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
 endif ()
+
+
+if(TI_WITH_GGUI)
+
+    # Dear ImGui
+    add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+    set(IMGUI_DIR external/imgui)
+    include_directories(external/glfw/include)
+    include_directories(SYSTEM ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
+    add_library(imgui  ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui_draw.cpp  ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/imgui_widgets.cpp)
+    target_link_libraries(${CORE_LIBRARY_NAME} imgui)
+
+endif()

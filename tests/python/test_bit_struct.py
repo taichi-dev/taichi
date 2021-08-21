@@ -119,6 +119,8 @@ def test_bit_struct():
         set_val(test_case)
         verify_val(test_case)
 
+        ti.reset()
+
     test_single_bit_struct(8, ti.i8, [3, 3, 2],
                            np.array([2**2 - 1, 2**3 - 1, -2**1]))
     test_single_bit_struct(16, ti.i16, [4, 7, 5],

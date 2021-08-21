@@ -3,8 +3,7 @@ import taichi as ti
 from .bls_test_template import bls_particle_grid
 
 
-@ti.require(ti.extension.bls)
-@ti.all_archs
+@ti.test(require=ti.extension.bls)
 def _test_scattering():
     bls_particle_grid(N=128,
                       ppc=10,
@@ -13,8 +12,7 @@ def _test_scattering():
                       use_offset=False)
 
 
-@ti.require(ti.extension.bls)
-@ti.all_archs
+@ti.test(require=ti.extension.bls)
 def _test_scattering_offset():
     bls_particle_grid(N=128,
                       ppc=10,
@@ -23,8 +21,7 @@ def _test_scattering_offset():
                       use_offset=True)
 
 
-@ti.require(ti.extension.bls)
-@ti.all_archs
+@ti.test(require=ti.extension.bls)
 def _test_scattering_two_pointer_levels():
     bls_particle_grid(N=128,
                       ppc=10,
@@ -34,8 +31,7 @@ def _test_scattering_two_pointer_levels():
                       use_offset=False)
 
 
-@ti.require(ti.extension.bls)
-@ti.all_archs
+@ti.test(require=ti.extension.bls, dynamic_index=False)
 def test_gathering():
     bls_particle_grid(N=128,
                       ppc=10,
@@ -44,8 +40,7 @@ def test_gathering():
                       use_offset=False)
 
 
-@ti.require(ti.extension.bls)
-@ti.all_archs
+@ti.test(require=ti.extension.bls)
 def _test_gathering_offset():
     bls_particle_grid(N=128,
                       ppc=10,

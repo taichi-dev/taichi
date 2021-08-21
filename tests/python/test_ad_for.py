@@ -1,8 +1,7 @@
 import taichi as ti
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_ad_sum():
     N = 10
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -64,8 +63,7 @@ def test_ad_sum_local_atomic():
         assert a.grad[i] == b[i]
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_ad_power():
     N = 10
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -96,8 +94,7 @@ def test_ad_power():
         assert a.grad[i] == b[i] * 3**(b[i] - 1)
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_ad_fibonacci():
     N = 15
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -135,8 +132,7 @@ def test_ad_fibonacci():
         assert b.grad[i] == f[i]
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_ad_fibonacci_index():
     N = 5
     M = 10
@@ -168,8 +164,7 @@ def test_ad_fibonacci_index():
         assert b[i] == is_fib * N
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_ad_global_ptr():
     N = 5
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -199,8 +194,7 @@ def test_ad_global_ptr():
         assert a.grad[i] == 2 * i * N
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_integer_stack():
     N = 5
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -239,8 +233,7 @@ def test_integer_stack():
         t = t * 10 + 1
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_double_for_loops():
     N = 5
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -278,8 +271,7 @@ def test_double_for_loops():
         assert b.grad[i] == 2 * i
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_double_for_loops_more_nests():
     N = 6
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -325,8 +317,7 @@ def test_double_for_loops_more_nests():
         assert b.grad[i] == total_grad_b
 
 
-@ti.require(ti.extension.adstack, ti.extension.data64)
-@ti.all_archs
+@ti.test(require=[ti.extension.adstack, ti.extension.data64])
 def test_complex_body():
     N = 5
     a = ti.field(ti.f32, shape=N, needs_grad=True)
@@ -366,8 +357,7 @@ def test_complex_body():
         assert a.grad[i] == g[i]
 
 
-@ti.require(ti.extension.adstack, ti.extension.bls)
-@ti.all_archs
+@ti.test(require=[ti.extension.adstack, ti.extension.bls], dynamic_index=False)
 def test_triple_for_loops_bls():
     N = 8
     M = 3

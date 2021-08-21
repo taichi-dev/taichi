@@ -35,7 +35,9 @@ def build(project_name):
         '{} -m pip install --user --upgrade twine setuptools wheel'.format(
             get_python_executable()))
 
-    os.system(f'{get_python_executable()} -m taichi changelog --save')
+    os.system(
+        f'{get_python_executable()} ../misc/make_changelog.py origin/master ../ True'
+    )
 
     if get_os_name() == 'linux':
         os.system(
@@ -49,7 +51,6 @@ def build(project_name):
         os.remove('taichi/CHANGELOG.md')
     except FileNotFoundError:
         pass
-    shutil.rmtree('../build', ignore_errors=True)
 
 
 def parse_args():
@@ -84,7 +85,8 @@ def main():
 
     env_pypi_pwd = os.environ.get('PYPI_PWD', '')
 
-    shutil.rmtree('../dist', ignore_errors=True)
+    if not args.skip_build:
+        shutil.rmtree('../dist', ignore_errors=True)
 
     if mode == 'try_upload':
         if env_pypi_pwd == '':

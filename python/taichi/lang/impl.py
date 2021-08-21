@@ -6,12 +6,14 @@ import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
+from taichi.lang.ext_array import AnyArray, AnyArrayAccess, ExtArray
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField
+from taichi.lang.ndarray import ScalarNdarray
 from taichi.lang.snode import SNode
 from taichi.lang.tape import TapeImpl
-from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
-                              taichi_scope)
+from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
+                              python_scope, taichi_scope, to_pytorch_type)
 from taichi.misc.util import deprecated, get_traceback, warning
 from taichi.snode.fields_builder import FieldsBuilder
 
@@ -19,11 +21,19 @@ import taichi as ti
 
 
 @taichi_scope
+def expr_init_local_tensor(shape, element_type, elements):
+    return _ti_core.expr_alloca_local_tensor(shape, element_type, elements)
+
+
+@taichi_scope
 def expr_init(rhs):
     if rhs is None:
         return Expr(_ti_core.expr_alloca())
     if is_taichi_class(rhs):
-        return rhs.variable()
+        if rhs.local_tensor_proxy != None:
+            return rhs
+        else:
+            return rhs.variable()
     else:
         if isinstance(rhs, list):
             return [expr_init(e) for e in rhs]
@@ -72,15 +82,15 @@ def expr_init_func(
 
 
 def begin_frontend_struct_for(group, loop_range):
-    if not isinstance(loop_range, Expr) or not loop_range.is_global():
-        raise TypeError('Can only iterate through global variables/fields')
+    if not isinstance(loop_range, (Field, SNode, _Root)):
+        raise TypeError('Can only iterate through Taichi fields')
     if group.size() != len(loop_range.shape):
         raise IndexError(
             'Number of struct-for indices does not match loop variable dimensionality '
             f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
-    _ti_core.begin_frontend_struct_for(group, loop_range.ptr)
+    _ti_core.begin_frontend_struct_for(group, loop_range.loop_range())
 
 
 def begin_frontend_if(cond):
@@ -124,7 +134,9 @@ def subscript(value, *indices):
     indices_expr_group = make_expr_group(*indices)
     index_dim = indices_expr_group.size()
 
-    if isinstance(value, Field):
+    if is_taichi_class(value):
+        return value.subscript(*indices)
+    elif isinstance(value, Field):
         var = value.get_field_members()[0].ptr
         if var.snode() is None:
             if var.is_primal():
@@ -146,14 +158,27 @@ def subscript(value, *indices):
             ])
         else:
             return Expr(_ti_core.subscript(var, indices_expr_group))
-    elif is_taichi_class(value):
-        return value.subscript(*indices)
-    elif isinstance(value, (Expr, SNode)):
-        if isinstance(value, Expr):
-            if not value.ptr.is_external_var():
-                raise TypeError(
-                    'Subscription (e.g., "a[i, j]") only works on fields or external arrays.'
-                )
+    elif isinstance(value, AnyArray):
+        # TODO: deprecate using get_attribute to get dim
+        field_dim = int(value.ptr.get_attribute("dim"))
+        element_dim = len(value.element_shape)
+        if field_dim != index_dim + element_dim:
+            raise IndexError(
+                f'Field with dim {field_dim - element_dim} accessed with indices of dim {index_dim}'
+            )
+        if element_dim == 0:
+            return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
+        n = value.element_shape[0]
+        m = 1 if element_dim == 1 else value.element_shape[1]
+        any_array_access = AnyArrayAccess(value, indices)
+        ret = ti.Matrix.with_entries(n, m, [
+            any_array_access.subscript(i, j) for i in range(n)
+            for j in range(m)
+        ])
+        ret.any_array_access = any_array_access
+        return ret
+    elif isinstance(value, (ExtArray, SNode)):
+        if isinstance(value, ExtArray):
             field_dim = int(value.ptr.get_attribute("dim"))
         else:
             # When reading bit structure we only support the 0-D case for now.
@@ -170,10 +195,17 @@ def subscript(value, *indices):
 
 
 @taichi_scope
-def subscript_with_offset(var, indices, cols, is_aos):
+def local_subscript_with_offset(var, indices):
     return Expr(
-        _ti_core.subscript_with_offset(var.ptr, make_expr_group(*indices),
-                                       cols, is_aos))
+        _ti_core.local_subscript_with_offset(var, make_expr_group(*indices)))
+
+
+@taichi_scope
+def global_subscript_with_offset(var, indices, cols, is_aos):
+    return Expr(
+        _ti_core.global_subscript_with_offset(var.ptr,
+                                              make_expr_group(*indices), cols,
+                                              is_aos))
 
 
 @taichi_scope
@@ -435,13 +467,18 @@ class _Root:
         """Same as :func:`taichi.SNode.parent`"""
         return _root_fb.root.parent(n)
 
-    def loop_range(self, n=1):
+    def loop_range(self):
         """Same as :func:`taichi.SNode.loop_range`"""
         return _root_fb.root.loop_range()
 
     def get_children(self):
         """Same as :func:`taichi.SNode.get_children`"""
         return _root_fb.root.get_children()
+
+    @property
+    def shape(self):
+        """Same as :func:`taichi.SNode.shape`"""
+        return _root_fb.root.shape
 
     @property
     def id(self):
@@ -552,6 +589,22 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
         if needs_grad:
             root.dense(index_nd(dim), shape).place(x_grad)
     return x
+
+
+@python_scope
+def ndarray(dtype, shape):
+    """Defines a Taichi ndarray with scalar elements.
+
+    Args:
+        dtype (DataType): Data type of the ndarray.
+        shape (Union[int, tuple[int]]): Shape of the ndarray.
+
+    Example:
+        The code below shows how a Taichi ndarray with scalar elements can be declared and defined::
+
+            >>> x = ti.ndarray(ti.f32, shape=(16, 8))
+    """
+    return ScalarNdarray(dtype, shape)
 
 
 class Layout:
@@ -714,16 +767,6 @@ def one(x):
     return zero(x) + 1
 
 
-@taichi_scope
-def get_external_tensor_dim(var):
-    return _ti_core.get_external_tensor_dim(var)
-
-
-@taichi_scope
-def get_external_tensor_shape_along_axis(var, i):
-    return _ti_core.get_external_tensor_shape_along_axis(var, i)
-
-
 def indices(*x):
     return [_ti_core.Axis(i) for i in x]
 
@@ -785,7 +828,7 @@ def static(x, *xs):
                   (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
                    ti.GroupedNDRange, zip, filter, map)) or x is None:
         return x
-    elif isinstance(x, Expr) and x.is_global():
+    elif isinstance(x, ExtArray):
         return x
     elif isinstance(x, Field):
         return x
@@ -827,5 +870,6 @@ def default_cfg():
     return _ti_core.default_compile_config()
 
 
-def call_internal(name):
-    _ti_core.create_internal_func_stmt(name)
+def call_internal(name, *args):
+    return expr_init(
+        _ti_core.insert_internal_func_call(name, make_expr_group(args)))

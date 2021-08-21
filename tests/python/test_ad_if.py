@@ -1,8 +1,7 @@
 import taichi as ti
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_ad_if_simple():
     x = ti.field(ti.f32, shape=())
     y = ti.field(ti.f32, shape=())
@@ -23,8 +22,7 @@ def test_ad_if_simple():
     assert x.grad[None] == 1
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_ad_if():
     x = ti.field(ti.f32, shape=2)
     y = ti.field(ti.f32, shape=2)
@@ -52,8 +50,7 @@ def test_ad_if():
     assert x.grad[1] == 1
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_ad_if_nested():
     n = 20
     x = ti.field(ti.f32, shape=n)
@@ -91,8 +88,7 @@ def test_ad_if_nested():
         assert z.grad[i] == i % 4
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_ad_if_mutable():
     x = ti.field(ti.f32, shape=2)
     y = ti.field(ti.f32, shape=2)
@@ -121,8 +117,7 @@ def test_ad_if_mutable():
     assert x.grad[1] == 1
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_ad_if_parallel():
     x = ti.field(ti.f32, shape=2)
     y = ti.field(ti.f32, shape=2)
@@ -150,8 +145,8 @@ def test_ad_if_parallel():
     assert x.grad[1] == 1
 
 
-@ti.require(ti.extension.adstack, ti.extension.data64)
-@ti.all_archs_with(default_fp=ti.f64)
+@ti.test(require=[ti.extension.adstack, ti.extension.data64],
+         default_fp=ti.f64)
 def test_ad_if_parallel_f64():
     x = ti.field(ti.f64, shape=2)
     y = ti.field(ti.f64, shape=2)
@@ -179,8 +174,7 @@ def test_ad_if_parallel_f64():
     assert x.grad[1] == 1
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_ad_if_parallel_complex():
     x = ti.field(ti.f32, shape=2)
     y = ti.field(ti.f32, shape=2)
@@ -237,7 +231,7 @@ def test_ad_if_parallel_complex_f64():
     assert x.grad[1] == -0.25
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_stack():
     @ti.kernel
     def func():

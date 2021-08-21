@@ -199,6 +199,16 @@ class Pipeline {
   virtual ResourceBinder *resource_binder() = 0;
 };
 
+
+enum class CommandListType{
+  Graphics,
+  Compute
+};
+
+struct CommandListConfig{
+  CommandListType type;
+};
+
 // TODO: Implement this
 class CommandList {
  public:
@@ -317,7 +327,7 @@ class Device {
   static void memcpy(DevicePtr dst, DevicePtr src, uint64_t size);
 
   // TODO: Add a flag to select graphics / compute pool
-  virtual std::unique_ptr<CommandList> new_command_list() = 0;
+  virtual std::unique_ptr<CommandList> new_command_list(CommandListConfig config) = 0;
   virtual void dealloc_command_list(CommandList *cmdlist) = 0;
   virtual void submit(CommandList *cmdlist) = 0;
   virtual void submit_synced(CommandList *cmdlist) = 0;

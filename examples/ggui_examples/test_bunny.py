@@ -5,7 +5,7 @@ import pywavefront
 
 import taichi as ti
 
-ti.init(ti.cpu)
+ti.init(ti.gpu)
 
 scene = pywavefront.Wavefront(str(pathlib.Path(__file__).parent) +
                               "/bunny.obj",

@@ -525,8 +525,8 @@ void VulkanResourceBinder::lock_layout() {
 }
 
 VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
-                                     VkCommandBuffer buffer)
-    : ti_device_(ti_device), device_(ti_device->vk_device()), buffer_(buffer) {
+                                     VkCommandBuffer buffer,CommandListConfig config)
+    : ti_device_(ti_device), device_(ti_device->vk_device()), buffer_(buffer),config_(config) {
   VkCommandBufferBeginInfo info{};
   info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   info.pNext = nullptr;
@@ -534,6 +534,10 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
   info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
   vkBeginCommandBuffer(buffer, &info);
+}
+
+const CommandListConfig& VulkanCommandList::config() const{
+  return config_;
 }
 
 VulkanCommandList::~VulkanCommandList() {
@@ -991,23 +995,41 @@ void VulkanDevice::unmap(DeviceAllocation alloc) {
 void VulkanDevice::memcpy_internal(DevicePtr dst,
                                    DevicePtr src,
                                    uint64_t size) {
-  std::unique_ptr<CommandList> cmd = new_command_list();
+  // TODO: always create a queue specifically for transfer
+  CommandListConfig config;
+  if(compute_queue() != VK_NULL_HANDLE){
+    config.type = CommandListType::Compute;
+  }
+  else if(graphics_queue() != VK_NULL_HANDLE){
+    config.type = CommandListType::Graphics;
+  }
+  else{
+    TI_ERROR("cannot find a queue");
+  }
+  std::unique_ptr<CommandList> cmd = new_command_list(config);
   cmd->buffer_copy(dst,src,size);
   submit_synced(cmd.get());
 }
 
-std::unique_ptr<CommandList> VulkanDevice::new_command_list() {
+std::unique_ptr<CommandList> VulkanDevice::new_command_list(CommandListConfig config) {
   VkCommandBuffer buffer = VK_NULL_HANDLE;
 
   if (free_cmdbuffers_.size()) {
     buffer = free_cmdbuffers_.back();
     free_cmdbuffers_.pop_back();
   } else {
-    // FIXME: Proper multi queue support, instead of defaulting to compute
-    // command pool
     VkCommandBufferAllocateInfo alloc_info{};
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    alloc_info.commandPool = compute_cmd_pool();
+    if(config.type == CommandListType::Compute){
+      alloc_info.commandPool = compute_cmd_pool();
+    }
+    else if(config.type == CommandListType::Graphics){
+      alloc_info.commandPool = graphics_cmd_pool();
+    }
+    else{
+      TI_ERROR("unrecognized cmd list type");
+    }
+    
     alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     alloc_info.commandBufferCount = 1;
     BAIL_ON_VK_BAD_RESULT(
@@ -1015,7 +1037,7 @@ std::unique_ptr<CommandList> VulkanDevice::new_command_list() {
         "failed to allocate command buffer");
   }
 
-  return std::make_unique<VulkanCommandList>(this, buffer);
+  return std::make_unique<VulkanCommandList>(this, buffer,config);
 }
 
 void VulkanDevice::dealloc_command_list(CommandList *cmdlist) {
@@ -1055,8 +1077,20 @@ void VulkanDevice::submit(CommandList *cmdlist) {
 
   in_flight_cmdlists_.insert({buffer, fence});
 
+  VkQueue queue;
+  const CommandListConfig& config =  static_cast<VulkanCommandList *>(cmdlist)->config();
+  if(config.type == CommandListType::Compute){
+    queue = compute_queue();
+  }
+  else if(config.type == CommandListType::Graphics){
+    queue = graphics_queue();
+  }
+  else{
+    TI_ERROR("unrecognized cmd list type");
+  }
+
   BAIL_ON_VK_BAD_RESULT(
-      vkQueueSubmit(compute_queue(), /*submitCount=*/1, &submit_info,
+      vkQueueSubmit(queue, /*submitCount=*/1, &submit_info,
                     /*fence=*/fence),
       "failed to submit command buffer");
 }
@@ -1070,13 +1104,26 @@ void VulkanDevice::submit_synced(CommandList *cmdlist) {
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &buffer;
 
+  VkQueue queue;
+  const CommandListConfig& config =  static_cast<VulkanCommandList *>(cmdlist)->config();
+  if(config.type == CommandListType::Compute){
+    queue = compute_queue();
+  }
+  else if(config.type == CommandListType::Graphics){
+    queue = graphics_queue();
+  }
+  else{
+    TI_ERROR("unrecognized cmd list type");
+  }
+
   BAIL_ON_VK_BAD_RESULT(
-      vkQueueSubmit(compute_queue(), /*submitCount=*/1, &submit_info,
+      vkQueueSubmit(queue, /*submitCount=*/1, &submit_info,
                     /*fence=*/cmd_sync_fence_),
       "failed to submit command buffer");
 
   // Timeout is in nanoseconds, 60s = 60,000ms = 60,000,000ns
   vkWaitForFences(device_, 1, &cmd_sync_fence_, true, (60 * 1000 * 1000));
+  vkResetFences(device_,1,&cmd_sync_fence_);
 }
 
 void VulkanDevice::command_sync() {

@@ -262,7 +262,7 @@ class VulkanPipeline : public Pipeline {
 
 class VulkanCommandList : public CommandList {
  public:
-  VulkanCommandList(VulkanDevice *ti_device, VkCommandBuffer buffer);
+  VulkanCommandList(VulkanDevice *ti_device, VkCommandBuffer buffer,CommandListConfig config);
   ~VulkanCommandList();
 
   void bind_pipeline(Pipeline *p) override;
@@ -290,8 +290,11 @@ class VulkanCommandList : public CommandList {
 
   // Vulkan specific functions
   VkCommandBuffer finalize();
+  const CommandListConfig& config() const;
 
  private:
+  CommandListConfig config_;
+
   bool finalized_{false};
   VulkanDevice *ti_device_;
   VkDevice device_;
@@ -378,7 +381,7 @@ class VulkanDevice : public GraphicsDevice {
   // Strictly intra device copy
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 
-  std::unique_ptr<CommandList> new_command_list() override;
+  std::unique_ptr<CommandList> new_command_list(CommandListConfig config) override;
   void dealloc_command_list(CommandList *cmdlist) override;
   void submit(CommandList *cmdlist) override;
   void submit_synced(CommandList *cmdlist) override;

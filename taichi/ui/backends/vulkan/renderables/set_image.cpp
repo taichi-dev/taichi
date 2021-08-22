@@ -11,6 +11,7 @@ TI_UI_NAMESPACE_BEGIN
 namespace vulkan {
 
 using namespace taichi::lang;
+using namespace taichi::lang::vulkan;
 
 void SetImage::update_data(const SetImageInfo &info) {
   const FieldInfo &img = info.img;

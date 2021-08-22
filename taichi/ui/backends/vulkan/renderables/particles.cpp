@@ -8,6 +8,9 @@ TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
+using namespace taichi::lang;
+using namespace taichi::lang::vulkan;
+
 Particles::Particles(Renderer *renderer) {
   init_particles(renderer, 1);
 }
@@ -69,6 +72,13 @@ void Particles::init_particles(Renderer *renderer, int vertices_count) {
   Renderable::init_render_resources();
 }
 
+
+void Particles::create_bindings(){
+  Renderable::create_bindings();
+  ResourceBinder* binder = pipeline_->resource_binder();
+  binder->buffer(0,0,uniform_buffer_);
+  binder->rw_buffer(0,1,storage_buffer_);
+}
 
 
 }  // namespace vulkan

@@ -8,6 +8,9 @@ TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
+using namespace taichi::lang;
+using namespace taichi::lang::vulkan;
+
 void Circles::update_data(const CirclesInfo &info) {
   if (info.renderable_info.vertices.matrix_rows != 2 ||
       info.renderable_info.vertices.matrix_cols != 1) {
@@ -52,6 +55,15 @@ void Circles::update_ubo(glm::vec3 color,
   memcpy(mapped, &ubo, sizeof(ubo));
   renderer_->app_context().vulkan_device().unmap(uniform_buffer_);
 }
+
+
+void Circles::create_bindings(){
+  Renderable::create_bindings();
+  ResourceBinder* binder = pipeline_->resource_binder();
+  binder->buffer(0,0,uniform_buffer_);
+}
+
+
 
 }  // namespace vulkan
 

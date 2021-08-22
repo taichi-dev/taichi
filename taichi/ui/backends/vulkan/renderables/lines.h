@@ -48,6 +48,8 @@ class Lines final : public Renderable {
 
   virtual void cleanup() override;
 
+  virtual void create_bindings() override;
+
   float curr_width_;
 };
 

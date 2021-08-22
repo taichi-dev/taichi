@@ -70,6 +70,12 @@ void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
   renderer_->app_context().vulkan_device().unmap(uniform_buffer_);
 }
 
+void Lines::create_bindings(){
+  Renderable::create_bindings();
+  ResourceBinder* binder = pipeline_->resource_binder();
+  binder->buffer(0,0,uniform_buffer_);
+}
+
 
 void Lines::cleanup() {
   Renderable::cleanup();

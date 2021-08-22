@@ -728,6 +728,7 @@ void VulkanCommandList::begin_renderpass(int x0,
                                          uint32_t num_color_attachments,
                                          DeviceAllocation *color_attachments,
                                          bool *color_clear,
+                                         std::vector<float>* clear_colors,
                                          DeviceAllocation *depth_attachment,
                                          bool depth_clear) {
   VulkanRenderPassDesc &rp_desc = current_renderpass_desc_;
@@ -754,7 +755,7 @@ void VulkanCommandList::begin_renderpass(int x0,
         ti_device_->get_vk_image(color_attachments[i]);
     rp_desc.color_attachments.emplace_back(format, color_clear[i]);
     fb_desc.attachments.push_back(view);
-    clear_values[i].color = VkClearColorValue{0.0, 0.0, 0.0, 0.0};
+    clear_values[i].color = VkClearColorValue{clear_colors[i][0],clear_colors[i][1],clear_colors[i][2],clear_colors[i][3]};
   }
 
   if (has_depth) {
@@ -809,6 +810,12 @@ void VulkanCommandList::draw_indexed(uint32_t num_indicies,
   vkCmdDrawIndexed(buffer_, num_indicies, /*instanceCount=*/1, start_index,
                    start_vertex,
                    /*firstInstance=*/0);
+}
+
+
+  
+void VulkanCommandList::set_line_width(float width){
+  vkCmdSetLineWidth(buffer_,width);
 }
 
 VkCommandBuffer VulkanCommandList::finalize() {

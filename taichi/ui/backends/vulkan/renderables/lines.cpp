@@ -28,17 +28,6 @@ void Lines::update_data(const LinesInfo &info) {
   curr_width_ = info.width;
 }
 
-void Lines::record_this_frame_commands(CommandList* command_list) {
-  command_list->bind_pipeline(pipeline_.get());
-  command_list->bind_resources(pipeline_->resource_binder());
-  //TODO: change line width
-  if (indexed_) {
-    command_list->draw_indexed(config_.indices_count,0,0);
-  } else {
-    command_list->draw(config_.vertices_count,0);
-  }
-}
-
 void Lines::init_lines(Renderer *renderer,
                        int vertices_count,
                        int indices_count) {
@@ -76,6 +65,18 @@ void Lines::create_bindings(){
   binder->buffer(0,0,uniform_buffer_);
 }
 
+
+void Lines::record_this_frame_commands(CommandList* command_list) {
+  command_list->bind_pipeline(pipeline_.get());
+  command_list->bind_resources(pipeline_->resource_binder());
+  command_list->set_line_width( curr_width_ * renderer_->swap_chain().height());
+
+  if (indexed_) {
+    command_list->draw_indexed(config_.indices_count,0,0);
+  } else {
+    command_list->draw(config_.vertices_count,0);
+  }
+}
 
 void Lines::cleanup() {
   Renderable::cleanup();

@@ -280,6 +280,7 @@ class VulkanCommandList : public CommandList {
                         uint32_t num_color_attachments,
                         DeviceAllocation *color_attachments,
                         bool *color_clear,
+                        std::vector<float>* clear_colors,
                         DeviceAllocation *depth_attachment,
                         bool depth_clear) override;
   void end_renderpass() override;
@@ -287,6 +288,7 @@ class VulkanCommandList : public CommandList {
   void draw_indexed(uint32_t num_indicies,
                     uint32_t start_vertex = 0,
                     uint32_t start_index = 0) override;
+  virtual void set_line_width(float width) override;
 
   // Vulkan specific functions
   VkCommandBuffer finalize();

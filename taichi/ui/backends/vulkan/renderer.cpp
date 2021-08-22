@@ -188,9 +188,10 @@ void Renderer::draw_frame(Gui *gui) {
 
   std::unique_ptr<CommandList> cmd_list = app_context().vulkan_device().new_command_list({CommandListType::Graphics});
   bool color_clear = true;
+  std::vector<float> clear_colors = {background_color_[0],background_color_[1],background_color_[2],1};
   auto image = swap_chain_.surface().get_target_image();
   auto depth_image = swap_chain_.depth_allocation();
-  cmd_list->begin_renderpass(0,0,swap_chain_.width(),swap_chain_.height(),1,&image,&color_clear,&depth_image,true);
+  cmd_list->begin_renderpass(0,0,swap_chain_.width(),swap_chain_.height(),1,&image,&color_clear,&clear_colors,&depth_image,true);
 
     
   for (int i = 0; i < next_renderable_; ++i) {

@@ -3,6 +3,7 @@
 
 #include "taichi/program/compile_config.h"
 #include <string>
+#include <vector>
 
 namespace taichi {
 namespace lang {
@@ -232,6 +233,7 @@ class CommandList {
                                 uint32_t num_color_attachments,
                                 DeviceAllocation *color_attachments,
                                 bool *color_clear,
+                                std::vector<float>* clear_colors,
                                 DeviceAllocation *depth_attachment,
                                 bool depth_clear) {
     TI_NOT_IMPLEMENTED
@@ -240,6 +242,12 @@ class CommandList {
     TI_NOT_IMPLEMENTED
   }
   virtual void draw(uint32_t num_verticies, uint32_t start_vertex = 0) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void clear_color(float r,float g, float b, float a){
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void set_line_width(float width){
     TI_NOT_IMPLEMENTED
   }
   virtual void draw_indexed(uint32_t num_indicies,

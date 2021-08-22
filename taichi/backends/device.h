@@ -77,6 +77,13 @@ struct DevicePtr : public DeviceAllocation {
 constexpr DeviceAllocation kDeviceNullAllocation{};
 constexpr DevicePtr kDeviceNullPtr{};
 
+
+// TODO: fill this with the required options
+struct ImageSamplerConfig{
+
+};
+
+
 // TODO: Implement this
 class ResourceBinder {
  public:
@@ -100,6 +107,10 @@ class ResourceBinder {
   virtual void buffer(uint32_t set,
                       uint32_t binding,
                       DeviceAllocation alloc) = 0;
+
+  virtual void image(uint32_t set,uint32_t binding,DeviceAllocation alloc,ImageSamplerConfig sampler_config) {
+    TI_NOT_IMPLEMENTED
+  }
 
   // Set vertex buffer (not implemented in compute only device)
   virtual void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) {

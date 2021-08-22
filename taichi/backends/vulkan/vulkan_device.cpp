@@ -200,7 +200,11 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
           resource_binder_.buffer(set, desc_binding->binding, kDeviceNullPtr,
                                   0);
         } else if (desc_binding->descriptor_type ==
-                   SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE) {
+                   SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+          resource_binder_.image(set, desc_binding->binding, kDeviceNullAllocation,{});
+        }
+        else{
+          TI_WARN("unrecognized binding");
         }
       }
       sets_used.insert(set);
@@ -422,6 +426,32 @@ VulkanResourceBinder::VulkanResourceBinder(VkPipelineBindPoint bind_point)
 VulkanResourceBinder::~VulkanResourceBinder() {
 }
 
+VkSampler create_sampler(ImageSamplerConfig config,VkDevice device) {
+
+  VkSampler sampler  = VK_NULL_HANDLE;
+
+  // todo: fill these using the information from the ImageSamplerConfig
+  VkSamplerCreateInfo sampler_info{};
+  sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+  sampler_info.magFilter = VK_FILTER_LINEAR;
+  sampler_info.minFilter = VK_FILTER_LINEAR;
+  sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  sampler_info.anisotropyEnable = VK_FALSE;
+  sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+  sampler_info.unnormalizedCoordinates = VK_FALSE;
+  sampler_info.compareEnable = VK_FALSE;
+  sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
+  sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
+  if (vkCreateSampler(device, &sampler_info, nullptr,
+                      &sampler) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create texture sampler!");
+  }
+  return sampler;
+}
+
 #define CHECK_SET_BINDINGS                                          \
   bool set_not_found = (sets_.find(set) == sets_.end());            \
   if (set_not_found) {                                              \
@@ -472,7 +502,21 @@ void VulkanResourceBinder::buffer(uint32_t set,
   buffer(set, binding, alloc.get_ptr(0), VK_WHOLE_SIZE);
 }
 
+
+void VulkanResourceBinder::image(uint32_t set,uint32_t binding,DeviceAllocation alloc,ImageSamplerConfig sampler_config){
+  CHECK_SET_BINDINGS 
+  if (layout_locked_) {
+    TI_ASSERT(bindings.at(binding).type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+  }
+  bindings[binding] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, alloc.get_ptr(0), VK_WHOLE_SIZE};
+  if(alloc.device){
+    VulkanDevice* device = static_cast<VulkanDevice*>(alloc.device);
+    bindings[binding].sampler = create_sampler(sampler_config,device->vk_device());
+  }
+}
+
 #undef CHECK_SET_BINDINGS
+
 
 void VulkanResourceBinder::vertex_buffer(DevicePtr ptr, uint32_t binding) {
   vertex_buffers_[binding] = ptr;
@@ -504,16 +548,31 @@ void VulkanResourceBinder::write_to_set(uint32_t index,
                                         VulkanDevice &device,
                                         VkDescriptorSet set) {
   std::vector<VkDescriptorBufferInfo> buffer_infos;
+  std::vector<VkDescriptorImageInfo> image_infos;
+  std::vector<bool> is_image;
   std::vector<VkWriteDescriptorSet> desc_writes;
 
   for (auto &pair : sets_.at(index).bindings) {
     uint32_t binding = pair.first;
 
+
     if (pair.second.ptr != kDeviceNullPtr) {
       VkDescriptorBufferInfo &buffer_info = buffer_infos.emplace_back();
-      buffer_info.buffer = device.get_vkbuffer(pair.second.ptr);
-      buffer_info.offset = pair.second.ptr.offset;
-      buffer_info.range = pair.second.size;
+      VkDescriptorImageInfo &image_info = image_infos.emplace_back();
+
+      if(pair.second.sampler == VK_NULL_HANDLE){
+        buffer_info.buffer = device.get_vkbuffer(pair.second.ptr);
+        buffer_info.offset = pair.second.ptr.offset;
+        buffer_info.range = pair.second.size;
+        is_image.push_back(false);
+      }
+      else{
+        image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        image_info.imageView = std::get<1>(device.get_vk_image(pair.second.ptr));
+        image_info.sampler = pair.second.sampler;
+        is_image.push_back(true);
+      }
+      
 
       VkWriteDescriptorSet &write = desc_writes.emplace_back();
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -532,7 +591,12 @@ void VulkanResourceBinder::write_to_set(uint32_t index,
   // Set these pointers later as std::vector resize can relocate the pointers
   int i = 0;
   for (auto &write : desc_writes) {
-    write.pBufferInfo = &buffer_infos[i];
+    if(is_image[i]){
+      write.pImageInfo = &image_infos[i];
+    }
+    else{
+      write.pBufferInfo = &buffer_infos[i];
+    }
     i++;
   }
 
@@ -1393,13 +1457,15 @@ VkDescriptorSetLayout VulkanDevice::get_desc_set_layout(
 
     VkDescriptorPool pool;
     {
-      const int num_desc_types = 2;
+      const int num_desc_types = 3;
 
       VkDescriptorPoolSize pool_size[num_desc_types];
       pool_size[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       pool_size[0].descriptorCount = 1000;
       pool_size[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
       pool_size[1].descriptorCount = 1000;
+      pool_size[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      pool_size[2].descriptorCount = 1000;
 
       VkDescriptorPoolCreateInfo create_info{};
       create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

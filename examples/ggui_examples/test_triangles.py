@@ -7,7 +7,7 @@ N = 100
 
 vertices = ti.Vector.field(2, ti.f32, 3 * N)
 
-window = ti.ui.Window("heyy", res)
+window = ti.ui.Window("image", res)
 
 
 @ti.kernel
@@ -45,7 +45,7 @@ while window.running:
     if (window.is_pressed(ti.ui.LMB)):
         print(window.get_cursor_pos())
 
-    #canvas.set_image(img)
+    canvas.set_image(img)
     canvas.triangles(vertices=vertices, color=(0.7, 0.9, 0.5))
     #
     window.show()

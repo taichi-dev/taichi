@@ -97,6 +97,7 @@ class VulkanResourceBinder : public ResourceBinder {
     VkDescriptorType type;
     DevicePtr ptr;
     size_t size;
+    VkSampler sampler{VK_NULL_HANDLE}; // used only for images
   };
 
   struct Set {
@@ -135,6 +136,7 @@ class VulkanResourceBinder : public ResourceBinder {
   void rw_buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
   void buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size);
   void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
+  virtual void image(uint32_t set,uint32_t binding,DeviceAllocation alloc,ImageSamplerConfig sampler_config) override;
   virtual void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) override;
   virtual void index_buffer(DevicePtr ptr, size_t index_width) override;
   void framebuffer_color(DeviceAllocation image, uint32_t binding);

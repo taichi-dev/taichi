@@ -43,7 +43,6 @@ class SetImage final : public Renderable {
 
   // TODO: make the device api support allocating images.
   VkDeviceMemory texture_image_memory_;
-  VkSampler texture_sampler_;
   taichi::lang::DeviceAllocation texture_;
 
   uint64_t texture_surface_;
@@ -51,6 +50,7 @@ class SetImage final : public Renderable {
  private:
   void init_set_image(class Renderer *renderer, int img_width, int img_height);
 
+  virtual void create_bindings() override;
 
   void create_texture();
 

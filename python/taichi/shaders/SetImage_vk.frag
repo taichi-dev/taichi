@@ -1,6 +1,6 @@
 #version 450
 
-layout(binding = 1) uniform sampler3D texSampler;
+layout(binding = 0) uniform sampler3D texSampler;
 
 layout(location = 0) in vec2 fragTexCoord;
 

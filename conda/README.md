@@ -11,12 +11,14 @@ Download and install the `conda` matching your OS: https://docs.conda.io/en/late
 Run the following commands:
 
 ```bash
-$ conda env create -f conda_env.yaml
+# Assuming you're in the root directory
+$ cd conda
 
+$ conda env create -f conda_env.yaml
 $ conda activate taichi-dev
 
 # This will only install the dependencies to the 'taichi-dev' environment.
-(taichi-dev) $ python3 -m pip install --user -r ../requirements_dev.txt
+(taichi-dev) $ python3 -m pip install -r ../requirements_dev.txt
 ```
 
 # Update `taichi-dev`'s environment variables

@@ -131,6 +131,10 @@ To avoid directly installing Taichi's dependencies into your existing
 Python environment, we have provided a pre-defined `conda` environment.
 You can find the instructions [here](https://github.com/taichi-dev/taichi/conda/README.md).
 
+Note that this step only helps you setup the development environment,
+you would still need to run `python3 setup.py develop` to re-build
+Taichi.
+
 ## Docker
 
 For those who prefer to use Docker, we also provide a Dockerfile which

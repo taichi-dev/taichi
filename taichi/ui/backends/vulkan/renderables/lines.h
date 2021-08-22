@@ -32,7 +32,7 @@ class Lines final : public Renderable {
   void update_data(const LinesInfo &info);
 
   virtual void record_this_frame_commands(
-      VkCommandBuffer command_buffer) override;
+      taichi::lang::CommandList* command_list) override;
 
  private:
   struct UniformBufferObject {
@@ -45,10 +45,6 @@ class Lines final : public Renderable {
                   int indices_count);
 
   void update_ubo(glm::vec3 color, bool use_per_vertex_color);
-
-  virtual void create_descriptor_set_layout() override;
-
-  virtual void create_descriptor_sets() override;
 
   virtual void cleanup() override;
 

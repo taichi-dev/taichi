@@ -3,6 +3,8 @@
 #include "taichi/ui/backends/vulkan/renderer.h"
 
 using namespace taichi::lang::vulkan;
+using namespace taichi::lang;
+
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -163,12 +165,14 @@ bool Gui::button(std::string text) {
   return ImGui::Button(text.c_str());
 }
 
-void Gui::draw(VkCommandBuffer &command_buffer) {
+void Gui::draw(taichi::lang::CommandList* cmd_list) {
   // Rendering
   ImGui::Render();
   ImDrawData *draw_data = ImGui::GetDrawData();
 
-  ImGui_ImplVulkan_RenderDrawData(draw_data, command_buffer);
+  VkCommandBuffer buffer = static_cast<VulkanCommandList*>(cmd_list)->vk_command_buffer();
+
+  ImGui_ImplVulkan_RenderDrawData(draw_data, buffer);
 }
 
 void Gui::cleanup() {

@@ -11,6 +11,7 @@
 #include <imgui_impl_vulkan.h>
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/common/gui_base.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -36,7 +37,7 @@ class Gui final : public GuiBase {
                                  glm::vec3 old_value) override;
   virtual bool button(std::string text) override;
 
-  void draw(VkCommandBuffer &command_buffer);
+  void draw(taichi::lang::CommandList* cmd_list);
   void cleanup();
 
   void prepare_for_next_frame();

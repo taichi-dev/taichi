@@ -41,7 +41,7 @@ class Renderable {
  public:
   void update_data(const RenderableInfo &info);
 
-  virtual void record_this_frame_commands(VkCommandBuffer command_buffer);
+  virtual void record_this_frame_commands(taichi::lang::CommandList* command_list);
 
   virtual void recreate_swap_chain();
 
@@ -51,14 +51,17 @@ class Renderable {
 
   virtual ~Renderable() = default;
 
+  taichi::lang::vulkan::VulkanPipeline& pipeline();
+  const taichi::lang::vulkan::VulkanPipeline& pipeline() const;
+
+
  protected:
   RenderableConfig config_;
 
   class Renderer *renderer_;
   AppContext *app_context_;
 
-  VkPipelineLayout pipeline_layout_;
-  VkPipeline graphics_pipeline_;
+  std::unique_ptr<taichi::lang::vulkan::VulkanPipeline> pipeline_;
 
   taichi::lang::DeviceAllocation vertex_buffer_;
   taichi::lang::DeviceAllocation index_buffer_;
@@ -71,11 +74,6 @@ class Renderable {
   taichi::lang::DeviceAllocation uniform_buffer_;
   taichi::lang::DeviceAllocation storage_buffer_;
 
-  VkDescriptorSetLayout descriptor_set_layout_;
-  VkDescriptorSet descriptor_set_;
-
-  VkDescriptorPool descriptor_pool_;
-
   Vertex *vertex_buffer_device_ptr_;
   int *index_buffer_device_ptr_;
 
@@ -86,9 +84,8 @@ class Renderable {
 
   void init_render_resources();
 
-  virtual void create_descriptor_set_layout() = 0;
 
-  void create_descriptor_pool();
+  virtual void create_bindings();
 
   void create_graphics_pipeline();
 
@@ -106,7 +103,6 @@ class Renderable {
 
   void resize_storage_buffers(int new_ssbo_size);
 
-  virtual void create_descriptor_sets() = 0;
 };
 
 }  // namespace vulkan

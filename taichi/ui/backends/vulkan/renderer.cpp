@@ -18,9 +18,6 @@ void Renderer::init(GLFWwindow *window, const AppConfig &config) {
 
   create_semaphores();
   import_semaphores();
-
-  cached_command_buffers_.resize(1);
-  cached_command_buffers_[0] = VK_NULL_HANDLE;
   
 }
 
@@ -38,13 +35,7 @@ void Renderer::create_render_passes() {
 }
 
 void Renderer::clear_command_buffer_cache() {
-  for (int i = 0; i < cached_command_buffers_.size(); ++i) {
-    if (cached_command_buffers_[i] != VK_NULL_HANDLE) {
-      vkFreeCommandBuffers(app_context_.device(), app_context_.command_pool(),
-                           1, &cached_command_buffers_[i]);
-    }
-    cached_command_buffers_[i] = VK_NULL_HANDLE;
-  }
+  
 }
 
 void Renderer::create_semaphores() {
@@ -169,14 +160,14 @@ void Renderer::import_semaphores() {
     this_draw_data_ready_cuda_ = (uint64_t)cuda_vk_import_semaphore(
         this_draw_data_ready_vk_, app_context_.device());
 
-    cuda_vk_semaphore_signal((CUexternalSemaphore)prev_draw_finished_cuda_);
+    //cuda_vk_semaphore_signal((CUexternalSemaphore)prev_draw_finished_cuda_);
   }
 }
 
 void Renderer::prepare_for_next_frame() {
   next_renderable_ = 0;
   if (app_context_.config.ti_arch == Arch::cuda) {
-    cuda_vk_semaphore_wait((CUexternalSemaphore)prev_draw_finished_cuda_);
+    //cuda_vk_semaphore_wait((CUexternalSemaphore)prev_draw_finished_cuda_);
   }
 }
 
@@ -185,7 +176,8 @@ void Renderer::draw_frame(Gui *gui) {
 
 
   if (app_context_.config.ti_arch == Arch::cuda) {
-    cuda_vk_semaphore_signal((CUexternalSemaphore)this_draw_data_ready_cuda_);
+    CUDADriver::get_instance().stream_synchronize(nullptr);
+    //cuda_vk_semaphore_signal((CUexternalSemaphore)this_draw_data_ready_cuda_);
   }
 
   VkCommandBuffer command_buffer;
@@ -194,82 +186,21 @@ void Renderer::draw_frame(Gui *gui) {
     clear_command_buffer_cache();
   }
 
-  if (false && cached_command_buffers_[image_index] != VK_NULL_HANDLE) {
-    // don't use caches for now.
-    // FIXME: do this properly... after we completely switch to using the CommandList class
-    command_buffer = cached_command_buffers_[image_index];
-    swap_chain_.surface().get_target_image();
-  } else {
-    command_buffer = create_new_command_buffer(app_context_.command_pool(),
-                                               app_context_.device());
+  std::unique_ptr<CommandList> cmd_list = app_context().vulkan_device().new_command_list({CommandListType::Graphics});
+  bool color_clear = true;
+  auto image = swap_chain_.surface().get_target_image();
+  auto depth_image = swap_chain_.depth_allocation();
+  cmd_list->begin_renderpass(0,0,swap_chain_.width(),swap_chain_.height(),1,&image,&color_clear,&depth_image,true);
 
-    VkCommandBufferBeginInfo begin_info = {};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-
-    if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) {
-      throw std::runtime_error("failed to begin recording command buffer!");
-    }
-
-    VkRenderPassBeginInfo render_pass_info{};
-    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    render_pass_info.renderPass = render_passes_[0];
-    render_pass_info.framebuffer = swap_chain_.framebuffer(render_passes_[0]); // this call also aquaires the image
-    render_pass_info.renderArea.offset = {0, 0};
-    render_pass_info.renderArea.extent.width = swap_chain_.width();
-    render_pass_info.renderArea.extent.height = swap_chain_.height();
-
-    std::array<VkClearValue, 2> clear_values{};
-    clear_values[0].color = {
-        {background_color_.x, background_color_.y, background_color_.z, 1.0f}};
-    clear_values[1].depthStencil = {0.0f, 0};
-
-    render_pass_info.clearValueCount =
-        static_cast<uint32_t>(clear_values.size());
-    render_pass_info.pClearValues = clear_values.data();
-    vkCmdBeginRenderPass(command_buffer, &render_pass_info,
-                         VK_SUBPASS_CONTENTS_INLINE);
-
-    for (int i = 0; i < next_renderable_; ++i) {
-      renderables_[i]->record_this_frame_commands(command_buffer);
-    }
-
-    gui->draw(command_buffer);
-
-    vkCmdEndRenderPass(command_buffer);
-    vkEndCommandBuffer(command_buffer);
-
-    cached_command_buffers_[image_index] = command_buffer;
+    
+  for (int i = 0; i < next_renderable_; ++i) {
+    renderables_[i]->record_this_frame_commands(cmd_list.get());
   }
 
-  std::vector<VkSemaphore> wait_semaphores = {};
-  std::vector<VkPipelineStageFlags> wait_stages = {};
-  std::vector<VkSemaphore> signal_semaphores = {};
+  gui->draw(cmd_list.get());
+  cmd_list->end_renderpass();
+  app_context_.vulkan_device().submit(cmd_list.get());
 
-  if (app_context_.config.ti_arch == Arch::cuda) {
-    wait_semaphores.push_back(this_draw_data_ready_vk_);
-    wait_stages.push_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-    signal_semaphores.push_back(prev_draw_finished_vk_);
-  }
-
-  VkSubmitInfo submit_info{};
-  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-  submit_info.waitSemaphoreCount = wait_semaphores.size();
-  submit_info.pWaitSemaphores = wait_semaphores.data();
-  submit_info.pWaitDstStageMask = wait_stages.data();
-
-  submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &command_buffer;
-
-  submit_info.signalSemaphoreCount = signal_semaphores.size();
-  submit_info.pSignalSemaphores = signal_semaphores.data();
- 
-  if (vkQueueSubmit(
-          app_context_.graphics_queue(), 1, &submit_info,VK_NULL_HANDLE) !=
-      VK_SUCCESS) {
-    throw std::runtime_error("failed to submit draw command buffer!");
-  }
 }
 
 const std::vector<VkRenderPass> &Renderer::render_passes() const {

@@ -43,9 +43,8 @@ class Triangles final : public Renderable {
 
   void update_ubo(glm::vec3 color, bool use_per_vertex_color);
 
-  virtual void create_descriptor_set_layout() override;
+  virtual void create_bindings() override;
 
-  virtual void create_descriptor_sets() override;
 };
 
 }  // namespace vulkan

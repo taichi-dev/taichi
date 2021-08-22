@@ -49,9 +49,7 @@ class Particles final : public Renderable {
                   float radius,
                   const Scene &scene);
 
-  virtual void create_descriptor_set_layout() override;
-
-  virtual void create_descriptor_sets() override;
+  
 };
 
 }  // namespace vulkan

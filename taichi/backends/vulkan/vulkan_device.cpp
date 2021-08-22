@@ -78,7 +78,6 @@ BufferFormat buffer_format_vk_to_ti(VkFormat f){
     inverse[kv.second] = kv.first;
   }
   if(inverse.find(f)==inverse.end()){
-    printf("format: %d\n",f);
     TI_ERROR("VkFormat cannot be mapped to ti");
   }
   return inverse.at(f);
@@ -103,14 +102,12 @@ VulkanPipeline::VulkanPipeline(
     const std::vector<VertexInputBinding> &vertex_inputs,
     const std::vector<VertexInputAttribute> &vertex_attrs)
     : device_(params.device->vk_device()), name_(params.name) {
-  create_descriptor_set_layout(params);
-  create_shader_stages(params);
-  create_pipeline_layout();
-  create_graphics_pipeline(raster_params, vertex_inputs, vertex_attrs);
 
-  for (VkShaderModule shader_module : shader_modules_) {
-    vkDestroyShaderModule(device_, shader_module, kNoVkAllocCallbacks);
-  }
+  create_descriptor_set_layout(params);  
+  create_shader_stages(params); 
+  create_pipeline_layout(); 
+  create_graphics_pipeline(raster_params, vertex_inputs, vertex_attrs); 
+
 }
 
 VulkanPipeline::~VulkanPipeline() {
@@ -210,22 +207,22 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
     }
 
     // Handle special vertex shaders stuff
-    if (code_view.stage == VK_SHADER_STAGE_VERTEX_BIT) {
-      uint32_t attrib_count;
-      result =
-          spvReflectEnumerateInputVariables(&module, &attrib_count, nullptr);
-      TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
-      std::vector<SpvReflectInterfaceVariable *> attribs(attrib_count);
-      result = spvReflectEnumerateOutputVariables(&module, &attrib_count,
-                                                  attribs.data());
-      TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+    // if (code_view.stage == VK_SHADER_STAGE_VERTEX_BIT) {
+    //   uint32_t attrib_count;
+    //   result =
+    //       spvReflectEnumerateInputVariables(&module, &attrib_count, nullptr);
+    //   TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+    //   std::vector<SpvReflectInterfaceVariable *> attribs(attrib_count);
+    //   result = spvReflectEnumerateInputVariables(&module, &attrib_count,
+    //                                               attribs.data());
+    //   TI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
 
-      for (SpvReflectInterfaceVariable *attrib : attribs) {
-        uint32_t location = attrib->location;
-        SpvReflectTypeDescription *type = attrib->type_description;
-        TI_WARN("attrib {}:{}", location, type->type_name);
-      }
-    }
+    //   for (SpvReflectInterfaceVariable *attrib : attribs) {
+    //     uint32_t location = attrib->location;
+    //     SpvReflectTypeDescription *type = attrib->type_description;
+    //     TI_WARN("attrib {}:{}", location, type->type_name);
+    //   }
+    // }
   }
 
   for (uint32_t set : sets_used) {
@@ -287,14 +284,26 @@ void VulkanPipeline::create_graphics_pipeline(
   this->graphics_pipeline_template_ =
       std::make_unique<GraphicsPipelineTemplate>();
 
-  // Use dynamic viewport state
+  // Use dynamic viewport state. These two are just dummies
+  VkViewport viewport;
+  viewport.width = 1;
+  viewport.height = 1;
+  viewport.x = 0;
+  viewport.y = 0;
+  viewport.minDepth = 0.0;
+  viewport.maxDepth = 1.0;
+
+  VkRect2D scissor;
+  scissor.offset = {0, 0};
+  scissor.extent = {1,1};
+
   VkPipelineViewportStateCreateInfo &viewport_state =
       graphics_pipeline_template_->viewport_state;
   viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-  viewport_state.viewportCount = 0;
-  viewport_state.pViewports = nullptr;
-  viewport_state.scissorCount = 0;
-  viewport_state.pScissors = nullptr;
+  viewport_state.viewportCount = 1;
+  viewport_state.pViewports = &viewport;
+  viewport_state.scissorCount = 1;
+  viewport_state.pScissors = &scissor;
 
   for (const VertexInputBinding &binding : vertex_inputs) {
     VkVertexInputBindingDescription &desc =
@@ -331,6 +340,7 @@ void VulkanPipeline::create_graphics_pipeline(
 
   VkPipelineInputAssemblyStateCreateInfo &input_assembly =
       graphics_pipeline_template_->input_assembly;
+  input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
   input_assembly.topology = raster_params.prim_topology;
   input_assembly.primitiveRestartEnable = VK_FALSE;
 
@@ -341,7 +351,7 @@ void VulkanPipeline::create_graphics_pipeline(
   rasterizer.rasterizerDiscardEnable = VK_FALSE;
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
-  rasterizer.cullMode = raster_params.raster_cull_mode;
+  rasterizer.cullMode =  raster_params.raster_cull_mode;
   rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -383,6 +393,8 @@ void VulkanPipeline::create_graphics_pipeline(
       graphics_pipeline_template_->dynamic_state_enables.data();
   dynamic_state.dynamicStateCount =
       graphics_pipeline_template_->dynamic_state_enables.size();
+
+  printf("%p %p\n",shader_stages_[0].module,shader_stages_[1].module);
 
   VkGraphicsPipelineCreateInfo &pipeline_info =
       graphics_pipeline_template_->pipeline_info;
@@ -463,11 +475,20 @@ void VulkanResourceBinder::buffer(uint32_t set,
 #undef CHECK_SET_BINDINGS
 
 void VulkanResourceBinder::vertex_buffer(DevicePtr ptr, uint32_t binding) {
-  TI_NOT_IMPLEMENTED
+  vertex_buffers_[binding] = ptr;
 }
 
 void VulkanResourceBinder::index_buffer(DevicePtr ptr, size_t index_width) {
-  TI_NOT_IMPLEMENTED
+  index_buffer_ = ptr;
+  if(index_width == 32){
+    index_type_ = VK_INDEX_TYPE_UINT32;
+  }
+  else if(index_width == 16){
+    index_type_ = VK_INDEX_TYPE_UINT16;
+  }
+  else{
+    TI_ERROR("unsupported index width");
+  }
 }
 
 void VulkanResourceBinder::framebuffer_color(DeviceAllocation image,
@@ -515,6 +536,7 @@ void VulkanResourceBinder::write_to_set(uint32_t index,
     i++;
   }
 
+
   vkUpdateDescriptorSets(device.vk_device(), desc_writes.size(),
                          desc_writes.data(), /*descriptorCopyCount=*/0,
                          /*pDescriptorCopies=*/nullptr);
@@ -553,7 +575,7 @@ void VulkanCommandList::bind_pipeline(Pipeline *p) {
   if (pipeline->is_graphics()) {
     VkPipeline vk_pipeline = pipeline->graphics_pipeline(
         current_renderpass_desc_, current_renderpass_);
-    vkCmdBindPipeline(buffer_, VK_PIPELINE_BIND_POINT_COMPUTE, vk_pipeline);
+    vkCmdBindPipeline(buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline);
 
     VkViewport viewport;
     viewport.width = viewport_width_;
@@ -585,7 +607,16 @@ void VulkanCommandList::bind_resources(ResourceBinder *ti_binder) {
     VkDescriptorSetLayout layout = ti_device_->get_desc_set_layout(pair.second);
     VkDescriptorSet set = ti_device_->alloc_desc_set(layout);
     binder->write_to_set(pair.first, *ti_device_, set);
-    vkCmdBindDescriptorSets(buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
+
+    VkPipelineBindPoint bind_point;
+    if(current_pipeline_->is_graphics()){
+      bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    }
+    else{
+      bind_point = VK_PIPELINE_BIND_POINT_COMPUTE;
+    }
+    
+    vkCmdBindDescriptorSets(buffer_, bind_point,
                             current_pipeline_->pipeline_layout(),
                             /*firstSet=*/0,
                             /*descriptorSetCount=*/1, &set,
@@ -686,6 +717,10 @@ void VulkanCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
   vkCmdDispatch(buffer_, x, y, z);
 }
 
+VkCommandBuffer VulkanCommandList::vk_command_buffer(){
+  return buffer_;
+}
+
 void VulkanCommandList::begin_renderpass(int x0,
                                          int y0,
                                          int x1,
@@ -725,7 +760,7 @@ void VulkanCommandList::begin_renderpass(int x0,
   if (has_depth) {
     auto [image, view, format] = ti_device_->get_vk_image(*depth_attachment);
     clear_values[num_color_attachments].depthStencil =
-        VkClearDepthStencilValue{1.0, 0};
+        VkClearDepthStencilValue{0.0, 0};
     fb_desc.attachments.push_back(view);
   }
 

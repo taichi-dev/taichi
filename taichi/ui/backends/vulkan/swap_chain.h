@@ -13,6 +13,7 @@ class SwapChain {
   VkFormat depth_format();
   taichi::lang::Surface& surface();
   VkFramebuffer framebuffer(VkRenderPass render_pass);
+  taichi::lang::DeviceAllocation depth_allocation();
 
  private:
 

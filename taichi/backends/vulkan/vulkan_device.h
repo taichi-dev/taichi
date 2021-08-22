@@ -135,8 +135,8 @@ class VulkanResourceBinder : public ResourceBinder {
   void rw_buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
   void buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size);
   void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
-  void vertex_buffer(DevicePtr ptr, uint32_t binding = 0);
-  void index_buffer(DevicePtr ptr, size_t index_width);
+  virtual void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) override;
+  virtual void index_buffer(DevicePtr ptr, size_t index_width) override;
   void framebuffer_color(DeviceAllocation image, uint32_t binding);
   void framebuffer_depth_stencil(DeviceAllocation image);
 
@@ -291,6 +291,8 @@ class VulkanCommandList : public CommandList {
   // Vulkan specific functions
   VkCommandBuffer finalize();
   const CommandListConfig& config() const;
+
+  VkCommandBuffer vk_command_buffer();
 
  private:
   CommandListConfig config_;

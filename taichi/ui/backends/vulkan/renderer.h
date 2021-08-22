@@ -88,7 +88,6 @@ class Renderer {
   uint64_t prev_draw_finished_cuda_;
   uint64_t this_draw_data_ready_cuda_;
 
-  std::vector<VkCommandBuffer> cached_command_buffers_;
   std::vector<VkRenderPass> render_passes_;
 
  private:

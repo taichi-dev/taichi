@@ -233,66 +233,6 @@ void SetImage::update_index_buffer_() {
   indexed_ = true;
 }
 
-void SetImage::create_descriptor_set_layout() {
-  VkDescriptorSetLayoutBinding sampler_layout_binding{};
-  sampler_layout_binding.binding = 1;
-  sampler_layout_binding.descriptorCount = 1;
-  sampler_layout_binding.descriptorType =
-      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  sampler_layout_binding.pImmutableSamplers = nullptr;
-  sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-  std::array<VkDescriptorSetLayoutBinding, 1> bindings = {
-      sampler_layout_binding};
-  VkDescriptorSetLayoutCreateInfo layout_info{};
-  layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  layout_info.bindingCount = static_cast<uint32_t>(bindings.size());
-  layout_info.pBindings = bindings.data();
-
-  if (vkCreateDescriptorSetLayout(app_context_->device(), &layout_info, nullptr,
-                                  &descriptor_set_layout_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor set layout!");
-  }
-}
-
-void SetImage::create_descriptor_sets() {
-  std::vector<VkDescriptorSetLayout> layouts(   1, descriptor_set_layout_);
-
-  VkDescriptorSetAllocateInfo alloc_info{};
-  alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  alloc_info.descriptorPool = descriptor_pool_;
-  alloc_info.descriptorSetCount =1;
-  alloc_info.pSetLayouts = layouts.data();
-
-  
-
-  if (vkAllocateDescriptorSets(app_context_->device(), &alloc_info,
-                               &descriptor_set_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate descriptor sets!");
-  }
-
-  
-    VkDescriptorImageInfo image_info{};
-    image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    image_info.imageView = std::get<1>(renderer_->app_context().vulkan_device().get_vk_image(texture_));
-    image_info.sampler = texture_sampler_;
-
-    std::array<VkWriteDescriptorSet, 1> descriptor_writes{};
-
-    descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptor_writes[0].dstSet = descriptor_set_;
-    descriptor_writes[0].dstBinding = 1;
-    descriptor_writes[0].dstArrayElement = 0;
-    descriptor_writes[0].descriptorType =
-        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptor_writes[0].descriptorCount = 1;
-    descriptor_writes[0].pImageInfo = &image_info;
-
-    vkUpdateDescriptorSets(app_context_->device(),
-                           static_cast<uint32_t>(descriptor_writes.size()),
-                           descriptor_writes.data(), 0, nullptr);
-  
-}
 
 void SetImage::cleanup() {
   Renderable::cleanup();

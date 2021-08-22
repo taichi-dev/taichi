@@ -54,6 +54,11 @@ void SwapChain::create_depth_resources() {
   depth_allocation_ = app_context_->vulkan_device().import_vk_image(depth_image_, depth_image_view_, depth_format_);
 }
 
+
+DeviceAllocation  SwapChain::depth_allocation(){
+  return depth_allocation_;
+}
+
  
 uint32_t  SwapChain::width(){
    return surface_->get_size().first;

@@ -45,7 +45,7 @@ while window.running:
     if (window.is_pressed(ti.ui.LMB)):
         print(window.get_cursor_pos())
 
-    canvas.set_image(img)
+    #canvas.set_image(img)
     canvas.triangles(vertices=vertices, color=(0.7, 0.9, 0.5))
     #
     window.show()

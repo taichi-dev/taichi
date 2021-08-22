@@ -51,9 +51,6 @@ class SetImage final : public Renderable {
  private:
   void init_set_image(class Renderer *renderer, int img_width, int img_height);
 
-  virtual void create_descriptor_set_layout() override;
-
-  virtual void create_descriptor_sets() override;
 
   void create_texture();
 

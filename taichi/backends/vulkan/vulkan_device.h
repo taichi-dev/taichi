@@ -292,6 +292,8 @@ class VulkanCommandList : public CommandList {
                     uint32_t start_index = 0) override;
   virtual void set_line_width(float width) override;
 
+  VkRenderPass current_renderpass();
+
   // Vulkan specific functions
   VkCommandBuffer finalize();
   const CommandListConfig& config() const;

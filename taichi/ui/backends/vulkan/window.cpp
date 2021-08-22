@@ -11,7 +11,7 @@ Window::Window(const AppConfig &config) : WindowBase(config) {
 void Window::init(const AppConfig &config) {
   init_window();
   init_vulkan(config);
-  gui_.init(renderer_.get(), glfw_window_);
+  gui_ = std::make_unique<Gui>(renderer_.get(),glfw_window_);
   prepare_for_next_frame();
 }
 
@@ -24,7 +24,7 @@ void Window::show() {
 
 void Window::prepare_for_next_frame() {
   renderer_->prepare_for_next_frame();
-  gui_.prepare_for_next_frame();
+  gui_->prepare_for_next_frame();
 }
 
 CanvasBase *Window::get_canvas() {
@@ -32,7 +32,7 @@ CanvasBase *Window::get_canvas() {
 }
 
 GuiBase *Window::GUI() {
-  return &gui_;
+  return gui_.get();
 }
 
 void Window::init_window() {
@@ -58,7 +58,7 @@ void Window::cleanup_swap_chain() {
 }
 
 void Window::cleanup() {
-  gui_.cleanup();
+  gui_->cleanup();
   cleanup_swap_chain();
 
   renderer_->cleanup();
@@ -84,7 +84,7 @@ void Window::recreate_swap_chain() {
 }
 
 void Window::draw_frame() {
-  renderer_->draw_frame(&gui_);
+  renderer_->draw_frame(gui_.get());
 }
 
 void Window::present_frame() {

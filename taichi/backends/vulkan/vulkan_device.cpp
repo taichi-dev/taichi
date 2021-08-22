@@ -169,6 +169,8 @@ VkPipeline VulkanPipeline::graphics_pipeline(
   return pipeline;
 }
 
+
+
 void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
   std::unordered_set<uint32_t> sets_used;
 
@@ -881,6 +883,11 @@ void VulkanCommandList::draw_indexed(uint32_t num_indicies,
 void VulkanCommandList::set_line_width(float width){
   vkCmdSetLineWidth(buffer_,width);
 }
+
+VkRenderPass VulkanCommandList::current_renderpass(){
+  return current_renderpass_;
+}
+
 
 VkCommandBuffer VulkanCommandList::finalize() {
   if (!finalized_) {

@@ -65,9 +65,7 @@ class Renderer {
 
   void recreate_swap_chain();
 
-  void create_render_passes();
 
-  const std::vector<VkRenderPass> &render_passes() const;
   const AppContext &app_context() const;
   AppContext &app_context();
   const SwapChain &swap_chain() const;
@@ -87,8 +85,6 @@ class Renderer {
 
   uint64_t prev_draw_finished_cuda_;
   uint64_t this_draw_data_ready_cuda_;
-
-  std::vector<VkRenderPass> render_passes_;
 
  private:
   void clear_command_buffer_cache();

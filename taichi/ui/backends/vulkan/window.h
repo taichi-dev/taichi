@@ -38,7 +38,7 @@ class Window final : public WindowBase {
 
  private:
   std::unique_ptr<Canvas> canvas_;
-  Gui gui_;
+  std::unique_ptr<Gui> gui_;
   std::unique_ptr<Renderer> renderer_;
 
  private:

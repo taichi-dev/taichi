@@ -16,7 +16,7 @@ PFN_vkVoidFunction load_vk_function_for_gui(const char *name, void *userData) {
   return result;
 }
 
-void Gui::init(Renderer *renderer, GLFWwindow *window) {
+Gui::Gui(class Renderer *renderer,GLFWwindow *window){
   renderer_ = renderer;
   app_context_ = &renderer->app_context();
 
@@ -25,17 +25,16 @@ void Gui::init(Renderer *renderer, GLFWwindow *window) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
-  (void)io;
-  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable
-  // Keyboard Controls io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; //
-  // Enable Gamepad Controls
 
-  // Setup Dear ImGui style
   ImGui::StyleColorsDark();
 
   ImGui_ImplGlfw_InitForVulkan(window, true);
   ImGui_ImplVulkan_LoadFunctions(
       load_vk_function_for_gui);  // this is becaus we're using volk.
+}
+
+void Gui::init(VkRenderPass render_pass) {
+  
   ImGui_ImplVulkan_InitInfo init_info = {};
   init_info.Instance = app_context_->instance();
   init_info.PhysicalDevice = app_context_->physical_device();
@@ -49,31 +48,8 @@ void Gui::init(Renderer *renderer, GLFWwindow *window) {
   ;
   init_info.MinImageCount = 1;
   init_info.ImageCount = 1;
-  ImGui_ImplVulkan_Init(&init_info, renderer_->render_passes()[0]);
-
-  // Load Fonts
-  // - If no fonts are loaded, dear imgui will use the default font. You can
-  // also load multiple fonts and use ImGui::PushFont()/PopFont() to select
-  // them.
-  // - AddFontFromFileTTF() will return the ImFont* so you can store it if you
-  // need to select the font among multiple.
-  // - If the file cannot be loaded, the function will return NULL. Please
-  // handle those errors in your application (e.g. use an assertion, or display
-  // an error and quit).
-  // - The fonts will be rasterized at a given size (w/ oversampling) and stored
-  // into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which
-  // ImGui_ImplXXXX_NewFrame below will call.
-  // - Read 'docs/FONTS.md' for more instructions and details.
-  // - Remember that in C/C++ if you want to include a backslash \ in a string
-  // literal you need to write a double backslash \\ !
-  // io.Fonts->AddFontDefault();
-  // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-  // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-  // io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-  // io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
-  // ImFont* font =
-  // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f,
-  // NULL, io.Fonts->GetGlyphRangesJapanese()); IM_ASSERT(font != NULL);
+  ImGui_ImplVulkan_Init(&init_info, render_pass);
+  render_pass_ = render_pass;
 
   // Upload Fonts
   {
@@ -95,6 +71,7 @@ void Gui::init(Renderer *renderer, GLFWwindow *window) {
                          1, &command_buffer);
     ImGui_ImplVulkan_DestroyFontUploadObjects();
   }
+  prepare_for_next_frame();
 }
 
 void Gui::create_descriptor_pool() {
@@ -121,10 +98,17 @@ void Gui::create_descriptor_pool() {
 }
 
 void Gui::prepare_for_next_frame() {
+  if(render_pass_ == VK_NULL_HANDLE){
+    return;
+  }
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
   is_empty = true;
+}
+
+bool Gui::initialized(){
+  return render_pass_ != VK_NULL_HANDLE;
 }
 
 float Gui::abs_x(float x) {
@@ -134,19 +118,32 @@ float Gui::abs_y(float y) {
   return y * renderer_->swap_chain().height();
 }
 
+
 void Gui::begin(std::string name, float x, float y, float width, float height) {
+  if(!initialized()){
+    return;
+  }
   ImGui::SetNextWindowPos(ImVec2(abs_x(x), abs_y(y)), ImGuiCond_Once);
   ImGui::SetNextWindowSize(ImVec2(abs_x(width), abs_y(height)), ImGuiCond_Once);
   ImGui::Begin(name.c_str());
   is_empty = false;
 }
 void Gui::end() {
+  if(!initialized()){
+    return;
+  }
   ImGui::End();
 }
 void Gui::text(std::string text) {
+  if(!initialized()){
+    return;
+  }
   ImGui::Text(text.c_str());
 }
 bool Gui::checkbox(std::string name, bool old_value) {
+  if(!initialized()){
+    return old_value;
+  }
   ImGui::Checkbox(name.c_str(), &old_value);
   return old_value;
 }
@@ -154,14 +151,23 @@ float Gui::slider_float(std::string name,
                         float old_value,
                         float minimum,
                         float maximum) {
+  if(!initialized()){
+    return old_value;
+  }
   ImGui::SliderFloat(name.c_str(), &old_value, minimum, maximum);
   return old_value;
 }
 glm::vec3 Gui::color_edit_3(std::string name, glm::vec3 old_value) {
+  if(!initialized()){
+    return old_value;
+  }
   ImGui::ColorEdit3(name.c_str(), (float *)&old_value);
   return old_value;
 }
 bool Gui::button(std::string text) {
+  if(!initialized()){
+    return false;
+  }
   return ImGui::Button(text.c_str());
 }
 

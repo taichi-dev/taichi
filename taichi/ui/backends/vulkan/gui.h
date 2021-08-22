@@ -19,7 +19,8 @@ namespace vulkan {
 
 class Gui final : public GuiBase {
  public:
-  void init(class Renderer *renderer, GLFWwindow *window);
+  Gui(class Renderer *renderer,GLFWwindow *window);
+  void init(VkRenderPass render_pass);
 
   virtual void begin(std::string name,
                      float x,
@@ -44,9 +45,15 @@ class Gui final : public GuiBase {
 
   bool is_empty;
 
+  VkRenderPass render_pass(){
+    return render_pass_;
+  }
+
  private:
   AppContext *app_context_;
   class Renderer *renderer_;
+  
+  VkRenderPass render_pass_{VK_NULL_HANDLE};
 
   VkDescriptorPool descriptor_pool_;
 
@@ -55,6 +62,8 @@ class Gui final : public GuiBase {
   float abs_x(float x);
 
   float abs_y(float y);
+
+  bool initialized();
 };
 
 }  // namespace vulkan

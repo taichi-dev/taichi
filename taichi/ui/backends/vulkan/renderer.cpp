@@ -14,24 +14,10 @@ using namespace taichi::lang::vulkan;
 void Renderer::init(GLFWwindow *window, const AppConfig &config) {
   app_context_.init(window, config);
   swap_chain_.init(&app_context_);
-  create_render_passes(); 
 
   create_semaphores();
   import_semaphores();
   
-}
-
-void Renderer::create_render_passes() {
-  // for now we only have one pass.
-   VulkanRenderPassDesc desc;
-  desc.depth_attachment = swap_chain_.depth_format();
-  printf("depth format: %d\n",swap_chain_.depth_format());
-  desc.clear_depth = true;
-  desc.color_attachments = {{buffer_format_ti_to_vk(swap_chain_.surface().image_format()),true}};
-  
-  VkRenderPass pass = app_context_.vulkan_device().get_renderpass(desc);
-  render_passes_.push_back(pass);
-
 }
 
 void Renderer::clear_command_buffer_cache() {
@@ -139,15 +125,9 @@ void Renderer::cleanup_swap_chain() {
   for (auto &renderable : renderables_) {
     renderable->cleanup_swap_chain();
   }
-
-  for (VkRenderPass pass : render_passes_) {
-    vkDestroyRenderPass(app_context_.device(), pass, nullptr);
-  }
-  render_passes_.clear();
 }
 
 void Renderer::recreate_swap_chain() {
-  create_render_passes();
   for (auto &renderable : renderables_) {
     renderable->recreate_swap_chain();
   }
@@ -198,14 +178,14 @@ void Renderer::draw_frame(Gui *gui) {
     renderables_[i]->record_this_frame_commands(cmd_list.get());
   }
 
+  if(gui->render_pass()==VK_NULL_HANDLE){
+    VkRenderPass pass = static_cast<VulkanCommandList*>(cmd_list.get())->current_renderpass();
+    gui->init(pass);
+  }
   gui->draw(cmd_list.get());
   cmd_list->end_renderpass();
   app_context_.vulkan_device().submit(cmd_list.get());
 
-}
-
-const std::vector<VkRenderPass> &Renderer::render_passes() const {
-  return render_passes_;
 }
 
 const AppContext &Renderer::app_context() const {

@@ -243,7 +243,7 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
   DataType element_type;
   if (var.is<IdExpression>()) {
     // Local tensor subscripting
-    TI_ASSERT(structural_expansion == 1);
+    TI_ASSERT(layout_stride == 1);
     TI_ASSERT(var_stmt->ret_type->is<TensorType>());
     auto tensor_type = var_stmt->ret_type->cast<TensorType>();
     element_type = tensor_type->get_element_type();
@@ -253,9 +253,9 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
     SNode *snode = var.cast<GlobalPtrExpression>()
                        ->var.cast<GlobalVariableExpression>()
                        ->snode;
-    // structural_expansion != 1 is satisfied if and only if subscripting on SOA
+    // layout_stride != 1 is satisfied if and only if subscripting on SOA
     // global tensor.
-    TI_ASSERT(structural_expansion == 1 || snode->is_path_all_dense);
+    TI_ASSERT(layout_stride == 1 || snode->is_path_all_dense);
     element_type = snode->dt;
   }
   // Compute exact offset
@@ -281,10 +281,10 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(
       Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
   offset_stmt = ctx->back_stmt();
-  Stmt *structural_expansion_stmt = ctx->push_back(
-      Stmt::make<ConstStmt>(TypedConstant(structural_expansion)));
+  Stmt *layout_stride_stmt = ctx->push_back(
+      Stmt::make<ConstStmt>(TypedConstant(layout_stride)));
   ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
-                                          structural_expansion_stmt));
+                                          layout_stride_stmt));
   ctx->push_back(std::make_unique<PtrOffsetStmt>(var_stmt, ctx->back_stmt()));
   stmt = ctx->back_stmt();
 }

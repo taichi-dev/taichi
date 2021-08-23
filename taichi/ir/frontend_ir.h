@@ -469,16 +469,16 @@ class TensorElementExpression : public Expression {
   Expr var;
   ExprGroup indices;
   std::vector<int> shape;
-  int structural_expansion = 1;
+  int layout_stride{1};
 
   TensorElementExpression(const Expr &var,
                           const ExprGroup &indices,
                           const std::vector<int> &shape,
-                          int structural_expansion)
+                          int layout_stride)
       : var(var),
         indices(indices),
         shape(shape),
-        structural_expansion(structural_expansion) {
+        layout_stride(layout_stride) {
   }
 
   bool is_local_tensor() const;
@@ -498,7 +498,7 @@ class TensorElementExpression : public Expression {
       if (i + 1 < (int)shape.size())
         s += ", ";
     }
-    s += ", layout_stride = " + std::to_string(structural_expansion);
+    s += ", layout_stride = " + std::to_string(layout_stride);
     s += ")";
     return s;
   }

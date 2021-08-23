@@ -29,7 +29,9 @@ class LlvmProgramImpl {
       nullptr};  // TODO: move this to memory allocator
   CompileConfig config;
 
-  LlvmProgramImpl(CompileConfig &config);
+  LlvmProgramImpl(CompileConfig &config, KernelProfilerBase *profiler);
+
+  void initialize_host();
 
   /**
    * Initializes Program#llvm_context_device, if this has not been done.
@@ -76,6 +78,8 @@ class LlvmProgramImpl {
   void synchronize();
 
   void check_runtime_error(uint64 *result_buffer);
+
+  void finalize();
 
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(

@@ -6,11 +6,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
-#if defined(TI_WITH_CUDA)
-#include "taichi/backends/cuda/cuda_driver.h"
-#include "taichi/backends/cuda/codegen_cuda.h"
-#include "taichi/backends/cuda/cuda_context.h"
-#endif
 #include "taichi/backends/metal/codegen_metal.h"
 #include "taichi/backends/opengl/codegen_opengl.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
@@ -82,7 +77,8 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   if (config.debug)
     config.check_out_of_bound = true;
 
-  llvm_program_ = std::make_unique<LlvmProgramImpl>(config);
+  profiler = make_profiler(config.arch);
+  llvm_program_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
 
   if (config.arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {
@@ -119,29 +115,11 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   TI_ASSERT(current_program == nullptr);
   current_program = this;
 
-  // TODO: this cannot be called from LlvmProgramImpl, find a better place.
-  llvm_program_->llvm_context_host->init_runtime_jit_module();
-
-  // TODO: Can we initialize |llvm_context_device| here?
-  profiler = make_profiler(config.arch);
-
-  if (config.kernel_profiler && llvm_program_->runtime_mem_info) {
-    llvm_program_->runtime_mem_info->set_profiler(profiler.get());
-  }
-#if defined(TI_WITH_CUDA)
-  if (config.arch == Arch::cuda) {
-    if (config.kernel_profiler) {
-      CUDAContext::get_instance().set_profiler(profiler.get());
-    } else {
-      CUDAContext::get_instance().set_profiler(nullptr);
-    }
-  }
-#endif
+  llvm_program_->initialize_host();
 
   result_buffer = nullptr;
   current_callable = nullptr;
   sync = true;
-  llvm_program_->llvm_runtime = nullptr;
   finalized = false;
 
   if (config.async_mode) {
@@ -526,16 +504,15 @@ void Program::finalize() {
       ofs << stat_string;
     }
   }
-  if (llvm_program_->runtime_mem_info)
-    llvm_program_->runtime_mem_info->set_profiler(nullptr);
+
   synchronize();
   current_program = nullptr;
   memory_pool->terminate();
-#if defined(TI_WITH_CUDA)
-  if (llvm_program_->preallocated_device_buffer != nullptr)
-    CUDADriver::get_instance().mem_free(
-        llvm_program_->preallocated_device_buffer);
-#endif
+
+  if (arch_uses_llvm(config.arch)) {
+    llvm_program_->finalize();
+  }
+
   finalized = true;
   num_instances -= 1;
   TI_TRACE("Program ({}) finalized.", fmt::ptr(this));

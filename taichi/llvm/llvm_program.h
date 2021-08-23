@@ -62,9 +62,9 @@ class LlvmProgramImpl {
   /**
    * Initializes the runtime system for LLVM based backends.
    */
-  void initialize_llvm_runtime_system(MemoryPool *memory_pool,
-                                      KernelProfilerBase *profiler,
-                                      uint64 **result_buffer);
+  void materialize_runtime(MemoryPool *memory_pool,
+                           KernelProfilerBase *profiler,
+                           uint64 **result_buffer);
 
   std::size_t get_snode_num_dynamically_allocated(SNode *snode,
                                                   uint64 *result_buffer);
@@ -73,7 +73,7 @@ class LlvmProgramImpl {
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       uint64 *result_buffer);
 
-  void device_synchronize();
+  void synchronize();
 
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(

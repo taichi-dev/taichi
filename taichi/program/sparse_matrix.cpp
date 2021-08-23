@@ -6,17 +6,17 @@
 namespace taichi {
 namespace lang {
 
-SparseMatrix::SparseMatrix(int n, int m, int max_num_triplets)
+SparseMatrixBuilder::SparseMatrixBuilder(int n, int m, int max_num_triplets)
     : n(n), m(m), max_num_triplets(max_num_triplets), matrix(n, m) {
   data.reserve(max_num_triplets * 3);
   data_base_ptr = get_data_base_ptr();
 }
 
-void *SparseMatrix::get_data_base_ptr() {
+void *SparseMatrixBuilder::get_data_base_ptr() {
   return data.data();
 }
 
-void SparseMatrix::print_triplets() {
+void SparseMatrixBuilder::print_triplets() {
   fmt::print("n={}, m={}, num_triplets={} (max={})", n, m, num_triplets,
              max_num_triplets);
   for (int64 i = 0; i < num_triplets; i++) {
@@ -25,7 +25,7 @@ void SparseMatrix::print_triplets() {
   }
 }
 
-void SparseMatrix::build() {
+void SparseMatrixBuilder::build() {
   TI_ASSERT(built == false);
   built = true;
   using T = Eigen::Triplet<float32>;
@@ -37,7 +37,7 @@ void SparseMatrix::build() {
   matrix.setFromTriplets(triplets.begin(), triplets.end());
 }
 
-void SparseMatrix::print() {
+void SparseMatrixBuilder::print() {
   TI_ASSERT(built);
   Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
   // Note that the code below first converts the sparse matrix into a dense one.
@@ -45,7 +45,7 @@ void SparseMatrix::print() {
   std::cout << Eigen::MatrixXf(matrix).format(clean_fmt) << std::endl;
 }
 
-void SparseMatrix::solve(SparseMatrix *b_) {
+void SparseMatrixBuilder::solve(SparseMatrixBuilder *b_) {
   TI_ASSERT(built);
 
   using namespace Eigen;

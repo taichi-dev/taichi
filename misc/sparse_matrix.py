@@ -4,12 +4,12 @@ ti.init(arch=ti.x64)
 
 n = 8
 
-K = ti.SparseMatrix(n, n, max_num_triplets=1000)
-f = ti.SparseMatrix(n, 1, max_num_triplets=1000)
+K = ti.SparseMatrixBuilder(n, n, max_num_triplets=1000)
+f = ti.SparseMatrixBuilder(n, 1, max_num_triplets=1000)
 
 
 @ti.kernel
-def fill(A: ti.SparseMatrix, b: ti.SparseMatrix, interval: ti.i32):
+def fill(A: ti.SparseMatrixBuilder, b: ti.SparseMatrixBuilder, interval: ti.i32):
     for i in range(n):
         if i > 0:
             A[i - 1, i] += -1.0

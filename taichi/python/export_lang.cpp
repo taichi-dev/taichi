@@ -936,12 +936,12 @@ void export_lang(py::module &m) {
       },
       py::return_value_policy::reference);
 
-  py::class_<SparseMatrix>(m, "SparseMatrix")
-      .def("print_triplets", &SparseMatrix::print_triplets)
-      .def("build", &SparseMatrix::build)
-      .def("print", &SparseMatrix::print)
-      .def("solve", &SparseMatrix::solve)
-      .def("get_addr", [](SparseMatrix *mat) { return uint64(mat); });
+  py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
+      .def("print_triplets", &SparseMatrixBuilder::print_triplets)
+      .def("build", &SparseMatrixBuilder::build)
+      .def("print", &SparseMatrixBuilder::print)
+      .def("solve", &SparseMatrixBuilder::solve)
+      .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 }
 
 TI_NAMESPACE_END

@@ -1,4 +1,4 @@
-class SparseMatrix:
+class SparseMatrixBuilder:
     def __init__(self, n, m=None, max_num_triplets=0):
         self.n = n
         self.m = m if m else n

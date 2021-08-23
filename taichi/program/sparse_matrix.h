@@ -7,9 +7,9 @@
 namespace taichi {
 namespace lang {
 
-class SparseMatrix {
+class SparseMatrixBuilder {
  public:
-  SparseMatrix(int n, int m, int max_num_triplets);
+  SparseMatrixBuilder(int n, int m, int max_num_triplets);
 
   void *get_data_base_ptr();
 
@@ -19,7 +19,7 @@ class SparseMatrix {
 
   void print();
 
-  void solve(SparseMatrix *);
+  void solve(SparseMatrixBuilder *);
 
  private:
   uint64 num_triplets{0};

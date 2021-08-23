@@ -22,6 +22,7 @@ bool is_extension_supported(Arch arch, Extension ext) {
         Extension::quant_basic, Extension::data64, Extension::adstack,
         Extension::bls, Extension::assertion, Extension::packed,
         Extension::dynamic_index}},
+      // TODO: supporting quant & async in metal(tests randomly crashed)
       {Arch::metal,
        {Extension::adstack, Extension::assertion, Extension::sparse}},
       {Arch::opengl, {Extension::extfunc}},

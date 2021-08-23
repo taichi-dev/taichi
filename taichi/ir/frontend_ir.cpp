@@ -232,7 +232,7 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
 void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
   TI_ASSERT(var.is<GlobalPtrExpression>())
   var->flatten(ctx);
-  Stmt *var_stmt = ctx->back_stmt();
+  Stmt *var_stmt = var->stmt;
   SNode *snode = var.cast<GlobalPtrExpression>()
                      ->var.cast<GlobalVariableExpression>()
                      ->snode;
@@ -262,9 +262,7 @@ void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
   //             ^    ^
   if (!is_aos) {
     TI_ASSERT(snode->is_path_all_dense)
-    int size = 1;
-    for (auto *s = snode; s != nullptr; s = s->parent)
-      size *= (int)s->max_num_elements();
+    int size = (int)snode->get_total_num_elements_towards_root();
     Stmt *offset_stmt = ctx->back_stmt();
     Stmt *field_size_stmt =
         ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(size)));

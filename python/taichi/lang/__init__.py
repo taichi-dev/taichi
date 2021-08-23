@@ -3,6 +3,7 @@ import os
 from copy import deepcopy as _deepcopy
 
 from taichi.core.util import ti_core as _ti_core
+from taichi.lang.enums import *
 from taichi.lang import impl
 from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *

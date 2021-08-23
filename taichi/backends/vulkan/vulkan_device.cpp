@@ -490,6 +490,10 @@ void VulkanResourceBinder::rw_buffer(uint32_t set,
 
   if (layout_locked_) {
     TI_ASSERT(bindings.at(binding).type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  } else {
+    if (bindings.find(binding) != bindings.end()) {
+      TI_WARN("Overriding last binding");
+    }
   }
   bindings[binding] = {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, ptr, size};
 }
@@ -508,6 +512,10 @@ void VulkanResourceBinder::buffer(uint32_t set,
 
   if (layout_locked_) {
     TI_ASSERT(bindings.at(binding).type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  } else {
+    if (bindings.find(binding) != bindings.end()) {
+      TI_WARN("Overriding last binding");
+    }
   }
   bindings[binding] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, ptr, size};
 }
@@ -526,6 +534,10 @@ void VulkanResourceBinder::image(uint32_t set,
   if (layout_locked_) {
     TI_ASSERT(bindings.at(binding).type ==
               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+  } else {
+    if (bindings.find(binding) != bindings.end()) {
+      TI_WARN("Overriding last binding");
+    }
   }
   bindings[binding] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                        alloc.get_ptr(0), VK_WHOLE_SIZE};

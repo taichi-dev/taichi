@@ -125,7 +125,7 @@ void SetImage::create_texture() {
   size_t image_size = width * height * 4;
 
   ImageParams params;
-  params.dimension = ImageDimension::d3D;
+  params.dimension = ImageDimension::d2D;
   params.format = BufferFormat::rgba8;
   params.initial_layout = ImageLayout::shader_read;
   params.x = width;

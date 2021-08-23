@@ -184,7 +184,7 @@ void Renderer::draw_frame(Gui *gui) {
   }
   gui->draw(cmd_list.get());
   cmd_list->end_renderpass();
-  app_context_.vulkan_device().submit(cmd_list.get());
+  app_context_.vulkan_device().submit_synced(cmd_list.get());
 
 }
 

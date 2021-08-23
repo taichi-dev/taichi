@@ -498,7 +498,7 @@ class TensorElementExpression : public Expression {
       if (i + 1 < (int)shape.size())
         s += ", ";
     }
-    s += ", SE=" + std::to_string(structural_expansion);
+    s += ", layout_stride = " + std::to_string(structural_expansion);
     s += ")";
     return s;
   }

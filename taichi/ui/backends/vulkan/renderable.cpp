@@ -20,19 +20,28 @@ void Renderable::init(const RenderableConfig &config,
   app_context_ = &renderer->app_context();
 }
 
-void Renderable::init_render_resources() {
-
-
+void Renderable::init_render_resources(){
   create_graphics_pipeline();
+  init_buffers();
+}
 
+void Renderable::free_buffers(){
+  app_context_->device().dealloc_memory(vertex_buffer_);
+  app_context_->device().dealloc_memory(staging_index_buffer_);
+  app_context_->device().dealloc_memory(vertex_buffer_);
+  app_context_->device().dealloc_memory(staging_index_buffer_);
 
+  destroy_uniform_buffers();
+  destroy_storage_buffers();
+}
+
+void Renderable::init_buffers(){
   create_vertex_buffer();
   create_index_buffer();
   create_uniform_buffers();
   create_storage_buffers();
 
   create_bindings();
-
 
   if (app_context_->config.ti_arch == Arch::cuda) {
     auto [vb_mem,vb_offset,vb_size] = app_context_->device().get_vkmemory_offset_size(vertex_buffer_);
@@ -50,6 +59,7 @@ void Renderable::init_render_resources() {
   }
 }
 
+
 void Renderable::update_data(const RenderableInfo &info) {
   int num_vertices = info.vertices.shape[0];
   int num_indices;
@@ -64,10 +74,10 @@ void Renderable::update_data(const RenderableInfo &info) {
   }
   if (num_vertices > config_.vertices_count ||
       num_indices > config_.indices_count) {
-    cleanup();
+    free_buffers();
     config_.vertices_count = num_vertices;
     config_.indices_count = num_indices;
-    init_render_resources();
+    init_buffers();
   }
 
   if (info.vertices.dtype != PrimitiveType::f32) {
@@ -168,6 +178,9 @@ void Renderable::create_bindings(){
 }
 
 void Renderable::create_graphics_pipeline() {
+  if(pipeline_.get()){
+    return;
+  }
   auto vert_code = read_file(config_.vertex_shader_path);
   auto frag_code = read_file(config_.fragment_shader_path);
 
@@ -270,7 +283,7 @@ void Renderable::destroy_storage_buffers() {
 
 
 void Renderable::cleanup() {
-  
+  free_buffers();
 }
 
 void Renderable::record_this_frame_commands(CommandList* command_list) {

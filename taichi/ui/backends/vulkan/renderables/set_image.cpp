@@ -29,7 +29,8 @@ void SetImage::update_data(const SetImageInfo &info) {
   int new_height = img.shape[1];
 
   if (new_width != width || new_height != height) {
-    cleanup();
+    destroy_texture();
+    free_buffers();
     init_set_image(renderer_, new_width, new_height);
   }
 
@@ -158,6 +159,13 @@ void SetImage::create_texture() {
 
 }
 
+void SetImage::destroy_texture(){
+  app_context_->device().destroy_image(texture_);
+  app_context_->device().dealloc_memory(cpu_staging_buffer_);
+  app_context_->device().dealloc_memory(gpu_staging_buffer_);
+}
+
+
 void SetImage::update_vertex_buffer_() {
   const std::vector<Vertex> vertices = {
       {{-1.f, -1.f, 0.f}, {0.f, 0.f, 1.f}, {0.f, 1.f}, {1.f, 1.f, 1.f}},
@@ -202,6 +210,7 @@ void SetImage::update_index_buffer_() {
   indexed_ = true;
 }
 
+
 void SetImage::create_bindings() {
   Renderable::create_bindings();
   ResourceBinder *binder = pipeline_->resource_binder();
@@ -209,6 +218,7 @@ void SetImage::create_bindings() {
 }
 
 void SetImage::cleanup() {
+
   Renderable::cleanup();
 }
 

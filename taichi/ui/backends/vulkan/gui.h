@@ -20,7 +20,7 @@ namespace vulkan {
 class Gui final : public GuiBase {
  public:
   Gui(class Renderer *renderer,GLFWwindow *window);
-  ~Gui();
+  void cleanup();
 
   void init_render_resources(VkRenderPass render_pass);
   void cleanup_render_resources();

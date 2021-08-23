@@ -43,15 +43,14 @@ class Renderable {
 
   virtual void record_this_frame_commands(taichi::lang::CommandList* command_list);
 
-
-
-  virtual void cleanup();
+  
 
   virtual ~Renderable() = default;
 
   taichi::lang::vulkan::VulkanPipeline& pipeline();
   const taichi::lang::vulkan::VulkanPipeline& pipeline() const;
 
+  virtual void cleanup();
 
  protected:
   RenderableConfig config_;
@@ -59,7 +58,7 @@ class Renderable {
   class Renderer *renderer_;
   AppContext *app_context_;
 
-  std::unique_ptr<taichi::lang::vulkan::VulkanPipeline> pipeline_;
+  std::unique_ptr<taichi::lang::vulkan::VulkanPipeline> pipeline_{nullptr};
 
   taichi::lang::DeviceAllocation vertex_buffer_;
   taichi::lang::DeviceAllocation index_buffer_;
@@ -79,9 +78,11 @@ class Renderable {
 
  protected:
   void init(const RenderableConfig &config_, class Renderer *renderer_);
-
+  void free_buffers();
+  void init_buffers();
   void init_render_resources();
 
+  
 
   virtual void create_bindings();
 

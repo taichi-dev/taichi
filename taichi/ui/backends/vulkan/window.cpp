@@ -77,6 +77,7 @@ void Window::present_frame() {
 }
 
 Window::~Window() {
+  gui_->cleanup();
   renderer_->cleanup();
   glfwTerminate();
 }

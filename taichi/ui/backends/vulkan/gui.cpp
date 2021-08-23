@@ -180,7 +180,7 @@ void Gui::cleanup_render_resources() {
   render_pass_ = VK_NULL_HANDLE; 
 }
 
-Gui::~Gui(){
+void Gui::cleanup(){
   ImGui_ImplGlfw_Shutdown();
   cleanup_render_resources();
   ImGui::DestroyContext();

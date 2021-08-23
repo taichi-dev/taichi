@@ -51,8 +51,7 @@ class SetImage final : public Renderable {
   virtual void create_bindings() override;
 
   void create_texture();
-
-  void create_texture_sampler();
+  void destroy_texture();
   
   void update_vertex_buffer_();
 

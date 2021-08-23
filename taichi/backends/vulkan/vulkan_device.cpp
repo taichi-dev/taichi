@@ -1051,6 +1051,7 @@ VulkanDevice::~VulkanDevice() {
     vkDestroyDescriptorSetLayout(device_, pair.second, kNoVkAllocCallbacks);
   }
 
+  vmaDestroyPool(allocator_,export_pool_.pool);
   vmaDestroyAllocator(allocator_);
   vkDestroyFence(device_, cmd_sync_fence_, kNoVkAllocCallbacks);
 }

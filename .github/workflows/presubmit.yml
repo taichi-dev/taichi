@@ -315,4 +315,4 @@ jobs:
           arch -arm64 python3 examples/algorithm/laplace.py
           TI_LIB_DIR=`arch -arm64 python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
           TI_LIB_DIR="$TI_LIB_DIR/lib" arch -arm64 ./build/taichi_cpp_tests
-          arch -arm64 ti test -vr2 -t4 -x
+          arch -arm64 ti test -t2 -x

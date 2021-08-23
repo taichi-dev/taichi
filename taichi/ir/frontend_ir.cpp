@@ -229,6 +229,59 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void TensorElementExpression::flatten(FlattenContext *ctx) {
+  var->flatten(ctx);
+  Stmt *var_stmt = var->stmt;
+  DataType element_type;
+  if (var.is<IdExpression>()) {
+    // Local tensor subscripting
+    TI_ASSERT(structural_expansion == 1);
+    TI_ASSERT(var_stmt->ret_type->is<TensorType>());
+    auto tensor_type = var_stmt->ret_type->cast<TensorType>();
+    element_type = tensor_type->get_element_type();
+  } else {
+    TI_ASSERT(var.is<GlobalPtrExpression>());
+    // Global tensor subscripting
+    SNode *snode = var.cast<GlobalPtrExpression>()
+        ->var.cast<GlobalVariableExpression>()
+        ->snode;
+    // structural_expansion != 1 is satisfied if and only if subscripting on SOA global tensor.
+    TI_ASSERT(structural_expansion == 1 || snode->is_path_all_dense);
+    element_type = snode->dt;
+  }
+  // Compute exact offset
+  // Type A[x, y, ...]
+  //        ^^^^^^^^^
+  indices[0].set(load_if_ptr(indices[0]));
+  indices[0]->flatten(ctx);
+  Stmt *offset_stmt = indices[0]->stmt;
+  for (int i = 1; i < (int)shape.size(); ++i) {
+    Stmt *current_length_stmt =
+        ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(shape[i])));
+    Stmt *mul_stmt = ctx->push_back(Stmt::make<BinaryOpStmt>(
+        BinaryOpType::mul, offset_stmt, current_length_stmt));
+    indices[i].set(load_if_ptr(indices[i]));
+    indices[i]->flatten(ctx);
+    Stmt *current_index_stmt = indices[i]->stmt;
+    ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::add, mul_stmt,
+                                            current_index_stmt));
+    offset_stmt = ctx->back_stmt();
+  }
+  // Type A[x, y, ...]
+  // ^^^^
+  Stmt *dt_size_stmt = ctx->push_back(
+      Stmt::make<ConstStmt>(TypedConstant(data_type_size(element_type))));
+  ctx->push_back(
+      Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
+  offset_stmt = ctx->back_stmt();
+  Stmt *structural_expansion_stmt = ctx->push_back(
+      Stmt::make<ConstStmt>(TypedConstant(structural_expansion)));
+  ctx->push_back(
+      Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, structural_expansion_stmt));
+  ctx->push_back(std::make_unique<PtrOffsetStmt>(var_stmt, ctx->back_stmt()));
+  stmt = ctx->back_stmt();
+}
+
 void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
   TI_ASSERT(var.is<GlobalPtrExpression>())
   var->flatten(ctx);

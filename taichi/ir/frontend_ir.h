@@ -464,6 +464,44 @@ class GlobalPtrExpression : public Expression {
   }
 };
 
+class TensorElementExpression : public Expression {
+ public:
+  Expr var;
+  ExprGroup indices;
+  ExprGroup shape;
+  int structural_expansion = 1;
+
+  TensorElementExpression(const Expr &var,
+                          const ExprGroup indices,
+                          const ExprGroup shape,
+                          int structural_expansion)
+  : var(var), indices(indices), shape(shape), structural_expansion(structural_expansion) {
+  }
+
+  std::string serialize() override {
+    std::string s = fmt::format("{}[", var.serialize());
+    for (int i = 0; i < (int)indices.size(); i++) {
+      s += indices.exprs[i]->serialize();
+      if (i + 1 < (int)indices.size())
+        s += ", ";
+    }
+    s += "] (";
+    for (int i = 0; i < (int)shape.size(); i++) {
+      s += shape.exprs[i]->serialize();
+      if (i + 1 < (int)shape.size())
+        s += ", ";
+    }
+    s += ", SE=" + std::to_string(structural_expansion);
+    s += ")";
+    return s;
+  }
+
+  void flatten(FlattenContext *ctx) override;
+  bool is_lvalue() const override {
+    return true;
+  }
+};
+
 class GlobalTensorElementExpression : public Expression {
  public:
   Expr var;

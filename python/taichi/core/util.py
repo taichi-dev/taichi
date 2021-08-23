@@ -21,7 +21,7 @@ def in_docker():
         return True
 
 
-def import_ti_core(tmp_dir=None):
+def import_ti_core():
     global ti_core
     if settings.get_os_name() != 'win':
         old_flags = sys.getdlopenflags()
@@ -48,8 +48,6 @@ def import_ti_core(tmp_dir=None):
         sys.setdlopenflags(old_flags)
     lib_dir = os.path.join(package_root(), 'lib')
     core.set_lib_dir(locale_encode(lib_dir))
-    if tmp_dir is not None:
-        core.set_tmp_dir(locale_encode(tmp_dir))
 
 
 def locale_encode(path):
@@ -80,19 +78,10 @@ def get_core_shared_object():
     return os.path.join(directory, 'libtaichi_core.so')
 
 
-def get_repo():
-    from git import Repo
-    repo = Repo(settings.get_repo_directory())
-    return repo
-
-
 def print_red_bold(*args, **kwargs):
     print(Fore.RED + Style.BRIGHT, end='')
     print(*args, **kwargs)
     print(Style.RESET_ALL, end='')
-
-
-create_sand_box_on_windows = True
 
 
 def build():
@@ -127,21 +116,6 @@ def check_exists(src):
         )
 
 
-def prepare_sandbox():
-    '''
-    Returns a temporary directory, which will be automatically deleted on exit.
-    It may contain the taichi_core shared object or some misc. files.
-    '''
-    import atexit
-    import shutil
-    from tempfile import mkdtemp
-    tmp_dir = mkdtemp(prefix='taichi-')
-    atexit.register(shutil.rmtree, tmp_dir)
-    print(f'[Taichi] preparing sandbox at {tmp_dir}')
-    os.mkdir(os.path.join(tmp_dir, 'runtime/'))
-    return tmp_dir
-
-
 def get_unique_task_id():
     import datetime
     import random
@@ -149,7 +123,6 @@ def get_unique_task_id():
         '%05d' % random.randint(0, 10000))
 
 
-print("[Taichi] mode=release")
 sys.path.append(os.path.join(package_root(), 'lib'))
 if settings.get_os_name() != 'win':
     link_src = os.path.join(package_root(), 'lib', 'taichi_core.so')
@@ -158,11 +131,6 @@ if settings.get_os_name() != 'win':
     if not os.path.exists(link_dst):
         os.symlink(link_src, link_dst)
 import_ti_core()
-if settings.get_os_name() != 'win':
-    dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_LOCAL)
-    # The C backend needs a temporary directory for the generated .c and compiled .so files:
-    ti_core.set_tmp_dir(locale_encode(prepare_sandbox())
-                        )  # TODO: always allocate a tmp_dir for all situations
 
 ti_core.set_python_package_dir(package_root())
 os.makedirs(ti_core.get_repo_dir(), exist_ok=True)

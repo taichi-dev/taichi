@@ -14,7 +14,7 @@ class SparseMatrixBuilder:
         self.n = n
         self.m = m if m else n
         from taichi.lang.impl import get_runtime
-        self.ptr = get_runtime().create_sparse_matrix(n, m, max_num_triplets)
+        self.ptr = get_runtime().create_sparse_matrix_builder(n, m, max_num_triplets)
         print(f"Creating a sparse matrix of size ({n}, {m})...")
 
     def get_addr(self):

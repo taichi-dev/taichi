@@ -64,7 +64,6 @@ void Renderable::update_data(const RenderableInfo &info) {
   }
   if (num_vertices > config_.vertices_count ||
       num_indices > config_.indices_count) {
-    cleanup_swap_chain();
     cleanup();
     config_.vertices_count = num_vertices;
     config_.indices_count = num_indices;
@@ -255,13 +254,6 @@ void Renderable::create_storage_buffers() {
   storage_buffer_ = app_context_->vulkan_device().allocate_memory(sb_params); 
 }
 
-void Renderable::recreate_swap_chain() {
-  TI_WARN("recreating swapchain");
-  create_graphics_pipeline();
-  create_uniform_buffers();
-  create_storage_buffers();
-}
-
 void Renderable::destroy_uniform_buffers() {
   if (config_.ubo_size == 0) {
     return;
@@ -276,12 +268,6 @@ void Renderable::destroy_storage_buffers() {
   app_context_->vulkan_device().dealloc_memory(storage_buffer_);
 }
 
-void Renderable::cleanup_swap_chain() { 
-
-  destroy_uniform_buffers();
-  destroy_storage_buffers();
- 
-}
 
 void Renderable::cleanup() {
   

@@ -39,6 +39,16 @@ void SwapChain::create_depth_resources() {
   depth_allocation_ = app_context_->vulkan_device().create_image(params);
 }
 
+void SwapChain::resize(uint32_t width, uint32_t height){
+  surface().resize(width,height);
+  app_context_->vulkan_device().destroy_image(depth_allocation_);
+  create_depth_resources();
+}
+
+SwapChain::~SwapChain(){
+
+}
+
 
 DeviceAllocation  SwapChain::depth_allocation(){
   return depth_allocation_;
@@ -51,9 +61,9 @@ uint32_t  SwapChain::width(){
 uint32_t  SwapChain::height(){
   return surface_->get_size().second;
 }
- taichi::lang::Surface& SwapChain::surface(){
-   return *(surface_.get());
- }
+taichi::lang::Surface& SwapChain::surface(){
+  return *(surface_.get());
+}
  
  
  

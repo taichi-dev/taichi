@@ -341,8 +341,14 @@ class VulkanSurface : public Surface {
   void present_image() override;
   std::pair<uint32_t, uint32_t> get_size() override;
   BufferFormat image_format() override;
+  virtual void resize(uint32_t width, uint32_t height) ; 
 
  private:
+  void create_swap_chain();
+  void destroy_swap_chain();
+
+  SurfaceConfig config_;
+
   VulkanDevice *device_;
   VkSurfaceKHR surface_;
   VkSwapchainKHR swapchain_;

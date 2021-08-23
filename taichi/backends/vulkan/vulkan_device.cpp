@@ -1551,9 +1551,10 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
 void VulkanDevice::destroy_image(DeviceAllocation alloc) {
   ImageAllocInternal &alloc_int = image_allocations_.at(alloc.alloc_id);
 
-  TI_ASSERT(!alloc_int.external);
-
-  vmaDestroyImage(allocator_, alloc_int.image, alloc_int.allocation);
+  if(!alloc_int.external){
+    vkDestroyImageView(vk_device(), alloc_int.view, nullptr);
+    vmaDestroyImage(allocator_, alloc_int.image, alloc_int.allocation);
+  }
 
   image_allocations_.erase(alloc.alloc_id);
 }
@@ -1868,17 +1869,28 @@ VkPresentModeKHR choose_swap_present_mode(
 }
 
 VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
-    : device_(device) {
+    : device_(device),config_(config) {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   window_ = (GLFWwindow *)config.window_handle;
   VkResult err =
       glfwCreateWindowSurface(device->vk_instance(), window_, NULL, &surface_);
   if (err) {
-    TI_ERROR("Failed to create window ({})", err);
+    TI_ERROR("Failed to create window surface ({})", err);
     return;
   }
 
-  auto choose_surface_format =
+  create_swap_chain();
+
+  VkSemaphoreCreateInfo sema_create_info;
+  sema_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+  sema_create_info.pNext = nullptr;
+  sema_create_info.flags = 0;
+  vkCreateSemaphore(device->vk_device(), &sema_create_info, kNoVkAllocCallbacks,
+                    &image_available_);
+}
+
+void VulkanSurface::create_swap_chain(){
+   auto choose_surface_format =
       [](const std::vector<VkSurfaceFormatKHR> &availableFormats) {
         for (const auto &availableFormat : availableFormats) {
           if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
@@ -1890,24 +1902,24 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
       };
 
   VkSurfaceCapabilitiesKHR capabilities;
-  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device->vk_physical_device(),
+  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device_->vk_physical_device(),
                                             surface_, &capabilities);
 
   VkBool32 supported = false;
-  vkGetPhysicalDeviceSurfaceSupportKHR(device->vk_physical_device(),
-                                       device->graphics_queue_family_index(),
+  vkGetPhysicalDeviceSurfaceSupportKHR(device_->vk_physical_device(),
+                                       device_->graphics_queue_family_index(),
                                        surface_, &supported);
 
   if (!supported) {
-    TI_ERROR("Selected queue does not support presenting", err);
+    TI_ERROR("Selected queue does not support presenting");
     return;
   }
 
   uint32_t formatCount;
-  vkGetPhysicalDeviceSurfaceFormatsKHR(device->vk_physical_device(), surface_,
+  vkGetPhysicalDeviceSurfaceFormatsKHR(device_->vk_physical_device(), surface_,
                                        &formatCount, nullptr);
   std::vector<VkSurfaceFormatKHR> surface_formats(formatCount);
-  vkGetPhysicalDeviceSurfaceFormatsKHR(device->vk_physical_device(), surface_,
+  vkGetPhysicalDeviceSurfaceFormatsKHR(device_->vk_physical_device(), surface_,
                                        &formatCount, surface_formats.data());
 
   VkSurfaceFormatKHR surface_format = choose_surface_format(surface_formats);
@@ -1915,16 +1927,16 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
   uint32_t present_mode_count;
   std::vector<VkPresentModeKHR> present_modes;
   vkGetPhysicalDeviceSurfacePresentModesKHR(
-      device->vk_physical_device(), surface_, &present_mode_count, nullptr);
+      device_->vk_physical_device(), surface_, &present_mode_count, nullptr);
 
   if (present_mode_count != 0) {
     present_modes.resize(present_mode_count);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device->vk_physical_device(),
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device_->vk_physical_device(),
                                               surface_, &present_mode_count,
                                               present_modes.data());
   }
   VkPresentModeKHR present_mode =
-      choose_swap_present_mode(present_modes, config.vsync);
+      choose_swap_present_mode(present_modes, config_.vsync);
 
   int width, height;
   glfwGetFramebufferSize(window_, &width, &height);
@@ -1951,24 +1963,17 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
   createInfo.clipped = VK_TRUE;
   createInfo.oldSwapchain = nullptr;
 
-  if (vkCreateSwapchainKHR(device->vk_device(), &createInfo,
+  if (vkCreateSwapchainKHR(device_->vk_device(), &createInfo,
                            kNoVkAllocCallbacks, &swapchain_) != VK_SUCCESS) {
     TI_ERROR("Failed to create swapchain");
     return;
   }
 
-  VkSemaphoreCreateInfo sema_create_info;
-  sema_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-  sema_create_info.pNext = nullptr;
-  sema_create_info.flags = 0;
-  vkCreateSemaphore(device->vk_device(), &sema_create_info, kNoVkAllocCallbacks,
-                    &image_available_);
-
   uint32_t num_images;
-  vkGetSwapchainImagesKHR(device->vk_device(), swapchain_, &num_images,
+  vkGetSwapchainImagesKHR(device_->vk_device(), swapchain_, &num_images,
                           nullptr);
   std::vector<VkImage> swapchain_images(num_images);
-  vkGetSwapchainImagesKHR(device->vk_device(), swapchain_, &num_images,
+  vkGetSwapchainImagesKHR(device_->vk_device(), swapchain_, &num_images,
                           swapchain_images.data());
 
   image_format_ = buffer_format_vk_to_ti(surface_format.format);
@@ -1996,11 +2001,29 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
         "Failed to create image view");
 
     swapchain_images_.push_back(
-        device->import_vk_image(img, view, surface_format.format));
+        device_->import_vk_image(img, view, surface_format.format));
   }
+
+}
+
+void VulkanSurface::destroy_swap_chain(){
+  for(auto alloc:swapchain_images_){
+    VkImageView view = std::get<1>(device_->get_vk_image(alloc));
+    vkDestroyImageView(device_->vk_device(), view, nullptr);
+    device_->destroy_image(alloc);
+  }
+  swapchain_images_.clear();
+  vkDestroySwapchainKHR(device_->vk_device(), swapchain_, nullptr);
 }
 
 VulkanSurface::~VulkanSurface() {
+  destroy_swap_chain();
+  vkDestroySemaphore(device_->vk_device(), image_available_, nullptr);
+}
+
+void VulkanSurface::resize(uint32_t width, uint32_t height) {
+  destroy_swap_chain();
+  create_swap_chain();
 }
 
 std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {

@@ -43,9 +43,7 @@ class Renderable {
 
   virtual void record_this_frame_commands(taichi::lang::CommandList* command_list);
 
-  virtual void recreate_swap_chain();
 
-  void cleanup_swap_chain();
 
   virtual void cleanup();
 

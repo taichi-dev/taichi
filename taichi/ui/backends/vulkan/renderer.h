@@ -37,7 +37,9 @@ namespace vulkan {
 
 class Renderer {
  public:
+  
   void init(GLFWwindow *window, const AppConfig &config);
+  ~Renderer();
 
   void prepare_for_next_frame();
 
@@ -59,11 +61,6 @@ class Renderer {
 
   void draw_frame(Gui *gui);
 
-  void cleanup();
-
-  void cleanup_swap_chain();
-
-  void recreate_swap_chain();
 
 
   const AppContext &app_context() const;

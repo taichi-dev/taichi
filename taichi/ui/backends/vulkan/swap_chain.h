@@ -14,6 +14,10 @@ class SwapChain {
   taichi::lang::Surface& surface();
   taichi::lang::DeviceAllocation depth_allocation();
 
+  void resize(uint32_t width, uint32_t height);
+
+  ~SwapChain();
+
  private:
 
   void create_depth_resources();

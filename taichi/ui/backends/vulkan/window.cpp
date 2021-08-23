@@ -44,7 +44,7 @@ void Window::framebuffer_resize_callback(GLFWwindow *glfw_window_,
                                          int height) {
   auto window =
       reinterpret_cast<Window *>(glfwGetWindowUserPointer(glfw_window_));
-  window->recreate_swap_chain();
+  window->resize();
 }
 
 void Window::init_vulkan(const AppConfig &config) {
@@ -53,20 +53,8 @@ void Window::init_vulkan(const AppConfig &config) {
   canvas_ = std::make_unique<Canvas>(renderer_.get());
 }
 
-void Window::cleanup_swap_chain() {
-  renderer_->cleanup_swap_chain();
-}
 
-void Window::cleanup() {
-  gui_->cleanup();
-  cleanup_swap_chain();
-
-  renderer_->cleanup();
-
-  glfwTerminate();
-}
-
-void Window::recreate_swap_chain() {
+void Window::resize() {
   int width = 0, height = 0;
   glfwGetFramebufferSize(glfw_window_, &width, &height);
   while (width == 0 || height == 0) {
@@ -78,9 +66,8 @@ void Window::recreate_swap_chain() {
 
   vkDeviceWaitIdle(renderer_->app_context().device());
 
-  cleanup_swap_chain();
 
-  renderer_->recreate_swap_chain();
+  renderer_->swap_chain().resize(width,height);
 }
 
 void Window::draw_frame() {
@@ -93,7 +80,7 @@ void Window::present_frame() {
 }
 
 Window::~Window() {
-  cleanup();
+  glfwTerminate();
 }
 
 }  // namespace vulkan

@@ -29,7 +29,6 @@ void SetImage::update_data(const SetImageInfo &info) {
   int new_height = img.shape[1];
 
   if (new_width != width || new_height != height) {
-    cleanup_swap_chain();
     cleanup();
     init_set_image(renderer_, new_width, new_height);
   }

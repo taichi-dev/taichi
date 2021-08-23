@@ -29,12 +29,13 @@ Gui::Gui(class Renderer *renderer,GLFWwindow *window){
   ImGui::StyleColorsDark();
 
   ImGui_ImplGlfw_InitForVulkan(window, true);
-  ImGui_ImplVulkan_LoadFunctions(
-      load_vk_function_for_gui);  // this is becaus we're using volk.
+  
 }
 
-void Gui::init(VkRenderPass render_pass) {
-  
+void Gui::init_render_resources(VkRenderPass render_pass) {
+  ImGui_ImplVulkan_LoadFunctions(
+      load_vk_function_for_gui);  // this is becaus we're using volk.
+
   ImGui_ImplVulkan_InitInfo init_info = {};
   init_info.Instance = app_context_->instance();
   init_info.PhysicalDevice = app_context_->physical_device();
@@ -181,11 +182,16 @@ void Gui::draw(taichi::lang::CommandList* cmd_list) {
   ImGui_ImplVulkan_RenderDrawData(draw_data, buffer);
 }
 
-void Gui::cleanup() {
+void Gui::cleanup_render_resources() {
   vkDestroyDescriptorPool(app_context_->device(), descriptor_pool_, nullptr);
 
   ImGui_ImplVulkan_Shutdown();
+  render_pass_ = VK_NULL_HANDLE; 
+}
+
+Gui::~Gui(){
   ImGui_ImplGlfw_Shutdown();
+  cleanup_render_resources();
   ImGui::DestroyContext();
 }
 

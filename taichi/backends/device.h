@@ -398,6 +398,7 @@ class Surface {
   virtual void present_image() = 0;
   virtual std::pair<uint32_t, uint32_t> get_size() = 0;
   virtual BufferFormat image_format() = 0;
+  virtual void resize(uint32_t width, uint32_t height) = 0; 
 };
 
 struct VertexInputBinding {

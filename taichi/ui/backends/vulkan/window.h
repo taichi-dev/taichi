@@ -56,11 +56,7 @@ class Window final : public WindowBase {
 
   void update_image_index();
 
-  void cleanup_swap_chain();
-
-  void cleanup();
-
-  void recreate_swap_chain();
+  void resize();
 
   static void framebuffer_resize_callback(GLFWwindow *glfw_window_,
                                           int width,

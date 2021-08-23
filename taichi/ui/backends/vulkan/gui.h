@@ -20,7 +20,10 @@ namespace vulkan {
 class Gui final : public GuiBase {
  public:
   Gui(class Renderer *renderer,GLFWwindow *window);
-  void init(VkRenderPass render_pass);
+  ~Gui();
+
+  void init_render_resources(VkRenderPass render_pass);
+  void cleanup_render_resources();
 
   virtual void begin(std::string name,
                      float x,
@@ -39,7 +42,7 @@ class Gui final : public GuiBase {
   virtual bool button(std::string text) override;
 
   void draw(taichi::lang::CommandList* cmd_list);
-  void cleanup();
+  
 
   void prepare_for_next_frame();
 

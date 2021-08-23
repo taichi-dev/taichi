@@ -416,8 +416,6 @@ void VulkanPipeline::create_graphics_pipeline(
   dynamic_state.dynamicStateCount =
       graphics_pipeline_template_->dynamic_state_enables.size();
 
-  printf("%p %p\n", shader_stages_[0].module, shader_stages_[1].module);
-
   VkGraphicsPipelineCreateInfo &pipeline_info =
       graphics_pipeline_template_->pipeline_info;
   pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;

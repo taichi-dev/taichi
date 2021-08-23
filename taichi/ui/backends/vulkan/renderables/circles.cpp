@@ -51,9 +51,9 @@ void Circles::update_ubo(glm::vec3 color,
       color, (int)use_per_vertex_color,
       radius * renderer_->swap_chain().height()};
 
-  void* mapped = renderer_->app_context().vulkan_device().map(uniform_buffer_);
+  void* mapped = renderer_->app_context().device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));
-  renderer_->app_context().vulkan_device().unmap(uniform_buffer_);
+  renderer_->app_context().device().unmap(uniform_buffer_);
 }
 
 

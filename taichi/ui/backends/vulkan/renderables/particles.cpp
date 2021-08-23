@@ -28,9 +28,9 @@ void Particles::update_ubo(glm::vec3 color,
   ubo.tan_half_fov = tan(glm::radians(scene.camera_.fov) / 2);
   ubo.use_per_vertex_color = use_per_vertex_color;
 
-  void* mapped = renderer_->app_context().vulkan_device().map(uniform_buffer_);
+  void* mapped = renderer_->app_context().device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));
-  renderer_->app_context().vulkan_device().unmap(uniform_buffer_);
+  renderer_->app_context().device().unmap(uniform_buffer_);
 }
 
 void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
@@ -44,9 +44,9 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
     resize_storage_buffers(correct_ssbo_size);
   }
   {
-    void* mapped = renderer_->app_context().vulkan_device().map(storage_buffer_);
+    void* mapped = renderer_->app_context().device().map(storage_buffer_);
     memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
-    renderer_->app_context().vulkan_device().unmap(storage_buffer_);
+    renderer_->app_context().device().unmap(storage_buffer_);
   }
 
   Renderable::update_data(info.renderable_info);

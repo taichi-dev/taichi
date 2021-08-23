@@ -54,9 +54,9 @@ Lines::Lines(Renderer *renderer) {
 void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
   UniformBufferObject ubo{color, (int)use_per_vertex_color};
 
-  void* mapped = renderer_->app_context().vulkan_device().map(uniform_buffer_);
+  void* mapped = renderer_->app_context().device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));
-  renderer_->app_context().vulkan_device().unmap(uniform_buffer_);
+  renderer_->app_context().device().unmap(uniform_buffer_);
 }
 
 void Lines::create_bindings(){

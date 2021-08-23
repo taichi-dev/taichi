@@ -116,7 +116,7 @@ void Renderer::draw_frame(Gui *gui) {
   }
 
 
-  std::unique_ptr<CommandList> cmd_list = app_context().vulkan_device().new_command_list({CommandListType::Graphics});
+  std::unique_ptr<CommandList> cmd_list = app_context().device().new_command_list({CommandListType::Graphics});
   bool color_clear = true;
   std::vector<float> clear_colors = {background_color_[0],background_color_[1],background_color_[2],1};
   auto image = swap_chain_.surface().get_target_image();
@@ -140,7 +140,7 @@ void Renderer::draw_frame(Gui *gui) {
 
   gui->draw(cmd_list.get());
   cmd_list->end_renderpass();
-  app_context_.vulkan_device().submit_synced(cmd_list.get());
+  app_context_.device().submit_synced(cmd_list.get());
 
 }
 

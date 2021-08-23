@@ -35,18 +35,18 @@ void Renderable::init_render_resources() {
 
 
   if (app_context_->config.ti_arch == Arch::cuda) {
-    auto [vb_mem,vb_offset,vb_size] = app_context_->vulkan_device().get_vkmemory_offset_size(vertex_buffer_);
+    auto [vb_mem,vb_offset,vb_size] = app_context_->device().get_vkmemory_offset_size(vertex_buffer_);
 
-    auto [ib_mem,ib_offset,ib_size] = app_context_->vulkan_device().get_vkmemory_offset_size(index_buffer_);
+    auto [ib_mem,ib_offset,ib_size] = app_context_->device().get_vkmemory_offset_size(index_buffer_);
     
     auto block_size = VulkanDevice::kMemoryBlockSize;
 
     vertex_buffer_device_ptr_ = (Vertex *)get_memory_pointer(
         vb_mem,block_size,vb_offset,vb_size,
-        app_context_->vulkan_device().vk_device());
+        app_context_->device().vk_device());
     index_buffer_device_ptr_ = (int *)get_memory_pointer(
         ib_mem,block_size,ib_offset,ib_size,
-        app_context_->vulkan_device().vk_device());
+        app_context_->device().vk_device());
   }
 }
 
@@ -110,7 +110,7 @@ void Renderable::update_data(const RenderableInfo &info) {
 
   } else if (info.vertices.field_source == FieldSource::TaichiX64) {
     {
-      Vertex* mapped_vbo = (Vertex*)app_context_->vulkan_device().map(staging_vertex_buffer_);
+      Vertex* mapped_vbo = (Vertex*)app_context_->device().map(staging_vertex_buffer_);
       
       update_renderables_vertices_x64(mapped_vbo,
                                       (float *)info.vertices.data, num_vertices,
@@ -133,9 +133,9 @@ void Renderable::update_data(const RenderableInfo &info) {
                                        (float *)info.normals.data,
                                        num_vertices);
       }
-      app_context_->vulkan_device().unmap(staging_vertex_buffer_);
+      app_context_->device().unmap(staging_vertex_buffer_);
 
-      int* mapped_ibo = (int*)app_context_->vulkan_device().map(staging_index_buffer_);
+      int* mapped_ibo = (int*)app_context_->device().map(staging_index_buffer_);
       if (info.indices.valid) {
         indexed_ = true;
         update_renderables_indices_x64(mapped_ibo,
@@ -143,10 +143,10 @@ void Renderable::update_data(const RenderableInfo &info) {
       } else {
         indexed_ = false;
       }
-      app_context_->vulkan_device().unmap(staging_index_buffer_);
+      app_context_->device().unmap(staging_index_buffer_);
     }
-    app_context_->vulkan_device().memcpy(vertex_buffer_.get_ptr(0),staging_vertex_buffer_.get_ptr(0),config_.vertices_count * sizeof(Vertex));
-    app_context_->vulkan_device().memcpy(index_buffer_.get_ptr(0),staging_index_buffer_.get_ptr(0),config_.indices_count * sizeof(int));
+    app_context_->device().memcpy(vertex_buffer_.get_ptr(0),staging_vertex_buffer_.get_ptr(0),config_.vertices_count * sizeof(Vertex));
+    app_context_->device().memcpy(index_buffer_.get_ptr(0),staging_index_buffer_.get_ptr(0),config_.indices_count * sizeof(int));
   } else {
     throw std::runtime_error("unsupported field source");
   }
@@ -182,7 +182,7 @@ void Renderable::create_graphics_pipeline() {
   frag_view.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 
   VulkanPipeline::Params params;
-  params.device = &(renderer_->app_context().vulkan_device());
+  params.device = &(renderer_->app_context().device());
   params.code = {vert_view,frag_view};
 
   VulkanPipeline::RasterParams raster_params;
@@ -215,10 +215,10 @@ void Renderable::create_vertex_buffer() {
 
 
   Device::AllocParams vb_params {buffer_size,false,false,true,AllocUsage::Vertex};
-  vertex_buffer_ = app_context_->vulkan_device().allocate_memory(vb_params);
+  vertex_buffer_ = app_context_->device().allocate_memory(vb_params);
 
   Device::AllocParams staging_vb_params {buffer_size,true,false,false,AllocUsage::Vertex};
-  staging_vertex_buffer_ = app_context_->vulkan_device().allocate_memory(staging_vb_params);
+  staging_vertex_buffer_ = app_context_->device().allocate_memory(staging_vb_params);
  
 }
 
@@ -226,10 +226,10 @@ void Renderable::create_index_buffer() {
   size_t buffer_size = sizeof(int) * config_.indices_count;
 
   Device::AllocParams ib_params {buffer_size,false,false,true,AllocUsage::Index};
-  index_buffer_ = app_context_->vulkan_device().allocate_memory(ib_params);
+  index_buffer_ = app_context_->device().allocate_memory(ib_params);
 
   Device::AllocParams staging_ib_params {buffer_size,true,false,false,AllocUsage::Index};
-  staging_index_buffer_ = app_context_->vulkan_device().allocate_memory(staging_ib_params);
+  staging_index_buffer_ = app_context_->device().allocate_memory(staging_ib_params);
  
 }
 
@@ -240,7 +240,7 @@ void Renderable::create_uniform_buffers() {
   }
 
   Device::AllocParams ub_params {buffer_size,true,false,false,AllocUsage::Uniform};
-  uniform_buffer_ = app_context_->vulkan_device().allocate_memory(ub_params);
+  uniform_buffer_ = app_context_->device().allocate_memory(ub_params);
   
 }
 
@@ -251,21 +251,21 @@ void Renderable::create_storage_buffers() {
   } 
   
   Device::AllocParams sb_params {buffer_size,true,false,false,AllocUsage::Storage};
-  storage_buffer_ = app_context_->vulkan_device().allocate_memory(sb_params); 
+  storage_buffer_ = app_context_->device().allocate_memory(sb_params); 
 }
 
 void Renderable::destroy_uniform_buffers() {
   if (config_.ubo_size == 0) {
     return;
   }
-  app_context_->vulkan_device().dealloc_memory(uniform_buffer_);
+  app_context_->device().dealloc_memory(uniform_buffer_);
 }
 
 void Renderable::destroy_storage_buffers() {
   if (config_.ssbo_size == 0) {
     return;
   } 
-  app_context_->vulkan_device().dealloc_memory(storage_buffer_);
+  app_context_->device().dealloc_memory(storage_buffer_);
 }
 
 

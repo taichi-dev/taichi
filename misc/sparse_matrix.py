@@ -4,8 +4,8 @@ ti.init(arch=ti.x64)
 
 n = 8
 
-K = ti.SparseMatrixBuilder(n, n, max_num_triplets=1000)
-f = ti.SparseMatrixBuilder(n, 1, max_num_triplets=1000)
+K = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+f = ti.SparseMatrixBuilder(n, 1, max_num_triplets=100)
 
 
 @ti.kernel
@@ -33,6 +33,32 @@ K.build(A)
 
 print(">>>>>>>> After build: ")
 A.print()
+
+print(">>>>>>> Summation Test: ")
+C = A + A
+C.print()
+
+print(">>>> Subtraction Test")
+D = A - A
+D.print()
+
+
+print(">>>> Multiplication with scalar")
+E = A * 3.0
+E.print()
+
+print(">>>> Transpose Test")
+F = A.transpose()
+F.print()
+
+print(">>>> Matrix Multiplication")
+G = E @ A
+G.print()
+
+
+print(">>> Elment-wise Multiplication")
+H = E * A
+H.print()
 
 # print()
 #

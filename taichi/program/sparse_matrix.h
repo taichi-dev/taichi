@@ -35,8 +35,17 @@ public:
     SparseMatrix(int n, int m);
     SparseMatrix(Eigen::SparseMatrix<float32>& matrix);
 
+    int num_rows();
+    int num_cols();
     Eigen::SparseMatrix<float32>& get_matrix();
     void print();
+
+    friend SparseMatrix* operator+(const SparseMatrix& sm1, const SparseMatrix& sm2);
+    friend SparseMatrix* operator-(const SparseMatrix& sm1, const SparseMatrix& sm2);
+    friend SparseMatrix* operator*(float scale, const SparseMatrix& sm);
+    friend SparseMatrix* operator*(const SparseMatrix& sm1, const SparseMatrix& sm2);
+    SparseMatrix* matmult(const SparseMatrix& sm);
+    SparseMatrix* transpose();
 
     void solve(SparseMatrix* );
 

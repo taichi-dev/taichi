@@ -53,8 +53,53 @@ void SparseMatrix::print() {
   std::cout << Eigen::MatrixXf(matrix).format(clean_fmt) << std::endl;
 }
 
+int SparseMatrix::num_rows(){
+    return matrix.rows();
+}
+int SparseMatrix::num_cols(){
+    return matrix.cols();
+}
+
 Eigen::SparseMatrix<float32>& SparseMatrix::get_matrix(){
     return matrix;
+}
+
+SparseMatrix* operator+(const SparseMatrix& sm1, const SparseMatrix& sm2){
+    SparseMatrix* res = new SparseMatrix(sm1.m,sm1.n);
+    res->matrix = sm1.matrix + sm2.matrix;
+    return res;
+}
+
+SparseMatrix* operator-(const SparseMatrix& sm1, const SparseMatrix& sm2){
+    SparseMatrix* res = new SparseMatrix(sm1.m,sm1.n);
+    res->matrix = sm1.matrix - sm2.matrix;
+    return res;
+}
+
+SparseMatrix* operator*(float scale, const SparseMatrix& sm){
+    SparseMatrix* res = new SparseMatrix(sm.m,sm.n);
+    res->matrix = scale * sm.matrix;
+    return res;
+}
+
+SparseMatrix* operator*(const SparseMatrix& sm1, const SparseMatrix& sm2){
+    SparseMatrix* res = new SparseMatrix(sm1.m,sm1.n);
+    res->matrix = sm1.matrix.cwiseProduct(sm2.matrix);
+    return res;
+}
+
+
+SparseMatrix* SparseMatrix::matmult(const SparseMatrix& sm){
+    SparseMatrix* res = new SparseMatrix(m,n);
+    res->matrix = matrix * sm.matrix;
+    return res;
+}
+
+SparseMatrix* SparseMatrix::transpose()
+{
+    SparseMatrix* res = new SparseMatrix(n, m);
+    res->matrix = matrix.transpose();
+    return res;
 }
 
 

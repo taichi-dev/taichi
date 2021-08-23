@@ -946,6 +946,14 @@ void export_lang(py::module &m) {
 
   py::class_<SparseMatrix>(m, "SparseMatrix")
     .def("print",&SparseMatrix::print)
+    .def(py::self + py::self, py::return_value_policy::reference_internal)
+    .def(py::self - py::self, py::return_value_policy::reference_internal)
+    .def(float() * py::self, py::return_value_policy::reference_internal)
+    .def(py::self * py::self, py::return_value_policy::reference_internal)
+    .def("matmult", &SparseMatrix::matmult,py::return_value_policy::reference_internal)
+    .def("transpose", &SparseMatrix::transpose, py::return_value_policy::reference_internal)
+    .def("num_rows", &SparseMatrix::num_rows)
+    .def("num_cols", &SparseMatrix::num_cols)
     .def("solve", &SparseMatrix::solve);
 }
 

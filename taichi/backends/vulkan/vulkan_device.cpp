@@ -900,7 +900,7 @@ void VulkanCommandList::draw_indexed(uint32_t num_indicies,
 void VulkanCommandList::image_transition(DeviceAllocation img,
                                          ImageLayout old_layout_,
                                          ImageLayout new_layout_) {
-  auto &[image, view, format] = ti_device_->get_vk_image(img);
+  auto [image, view, format] = ti_device_->get_vk_image(img);
 
   VkImageLayout old_layout = image_layout_ti_to_vk(old_layout_);
   VkImageLayout new_layout = image_layout_ti_to_vk(new_layout_);
@@ -980,7 +980,7 @@ void VulkanCommandList::buffer2image(DeviceAllocation dst_img,
   VkBufferImageCopy copy_info{};
   buffer_image_copy_ti_to_vk(copy_info, src_buf.offset, params);
 
-  auto &[image, view, format] = ti_device_->get_vk_image(dst_img);
+  auto [image, view, format] = ti_device_->get_vk_image(dst_img);
 
   vkCmdCopyBufferToImage(buffer_, ti_device_->get_vkbuffer(src_buf), image,
                          image_layout_ti_to_vk(img_layout), 1, &copy_info);
@@ -993,7 +993,7 @@ void VulkanCommandList::image2buffer(DevicePtr dst_buf,
   VkBufferImageCopy copy_info{};
   buffer_image_copy_ti_to_vk(copy_info, dst_buf.offset, params);
 
-  auto &[image, view, format] = ti_device_->get_vk_image(src_img);
+  auto [image, view, format] = ti_device_->get_vk_image(src_img);
 
   vkCmdCopyImageToBuffer(buffer_, image, image_layout_ti_to_vk(img_layout),
                          ti_device_->get_vkbuffer(dst_buf), 1, &copy_info);

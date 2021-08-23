@@ -527,7 +527,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 
 uint64 Program::fetch_result_uint64(int i) {
   if (arch_uses_llvm(config.arch)) {
-    return llvm_program_->fetch_result_uint64(i, result_buffer);
+    return llvm_program_->fetch_result<uint64>(i, result_buffer);
   }
   return result_buffer[i];
 }

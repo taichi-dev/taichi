@@ -42,9 +42,8 @@ Ptr SNodeTreeBufferManager::allocate(JITModule *runtime_jit,
   if (set_it == size_set_.end()) {
     runtime_jit->call<void *, std::size_t, std::size_t>(
         "runtime_snode_tree_allocate_aligned", runtime, size, alignment);
-    auto ptr =
-        taichi_union_cast_with_different_sizes<Ptr>(prog_->fetch_result_uint64(
-            taichi_result_buffer_runtime_query_id, result_buffer));
+    auto ptr = prog_->fetch_result<Ptr>(taichi_result_buffer_runtime_query_id,
+                                        result_buffer);
     roots_[snode_tree_id] = ptr;
     sizes_[snode_tree_id] = size;
     return ptr;

@@ -72,7 +72,9 @@ class AnyArray:
         if element_dim == 0:
             return ret
         else:
-            return ret[element_dim:] if self.layout == Layout.SOA else ret[:-element_dim]
+            return ret[
+                element_dim:] if self.layout == Layout.SOA else ret[:
+                                                                    -element_dim]
 
 
 class AnyArrayAccess:

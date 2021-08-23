@@ -12,7 +12,6 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-
 void Renderable::init(const RenderableConfig &config,
                       class Renderer *renderer) {
   config_ = config;
@@ -20,22 +19,22 @@ void Renderable::init(const RenderableConfig &config,
   app_context_ = &renderer->app_context();
 }
 
-void Renderable::init_render_resources(){
+void Renderable::init_render_resources() {
   create_graphics_pipeline();
   init_buffers();
 }
 
-void Renderable::free_buffers(){
+void Renderable::free_buffers() {
   app_context_->device().dealloc_memory(vertex_buffer_);
-  app_context_->device().dealloc_memory(staging_index_buffer_);
-  app_context_->device().dealloc_memory(vertex_buffer_);
+  app_context_->device().dealloc_memory(staging_vertex_buffer_);
+  app_context_->device().dealloc_memory(index_buffer_);
   app_context_->device().dealloc_memory(staging_index_buffer_);
 
   destroy_uniform_buffers();
   destroy_storage_buffers();
 }
 
-void Renderable::init_buffers(){
+void Renderable::init_buffers() {
   create_vertex_buffer();
   create_index_buffer();
   create_uniform_buffers();
@@ -44,21 +43,22 @@ void Renderable::init_buffers(){
   create_bindings();
 
   if (app_context_->config.ti_arch == Arch::cuda) {
-    auto [vb_mem,vb_offset,vb_size] = app_context_->device().get_vkmemory_offset_size(vertex_buffer_);
+    auto [vb_mem, vb_offset, vb_size] =
+        app_context_->device().get_vkmemory_offset_size(vertex_buffer_);
 
-    auto [ib_mem,ib_offset,ib_size] = app_context_->device().get_vkmemory_offset_size(index_buffer_);
-    
+    auto [ib_mem, ib_offset, ib_size] =
+        app_context_->device().get_vkmemory_offset_size(index_buffer_);
+
     auto block_size = VulkanDevice::kMemoryBlockSize;
 
-    vertex_buffer_device_ptr_ = (Vertex *)get_memory_pointer(
-        vb_mem,block_size,vb_offset,vb_size,
-        app_context_->device().vk_device());
-    index_buffer_device_ptr_ = (int *)get_memory_pointer(
-        ib_mem,block_size,ib_offset,ib_size,
-        app_context_->device().vk_device());
+    vertex_buffer_device_ptr_ =
+        (Vertex *)get_memory_pointer(vb_mem, block_size, vb_offset, vb_size,
+                                     app_context_->device().vk_device());
+    index_buffer_device_ptr_ =
+        (int *)get_memory_pointer(ib_mem, block_size, ib_offset, ib_size,
+                                  app_context_->device().vk_device());
   }
 }
-
 
 void Renderable::update_data(const RenderableInfo &info) {
   int num_vertices = info.vertices.shape[0];
@@ -120,130 +120,118 @@ void Renderable::update_data(const RenderableInfo &info) {
 
   } else if (info.vertices.field_source == FieldSource::TaichiX64) {
     {
-      Vertex* mapped_vbo = (Vertex*)app_context_->device().map(staging_vertex_buffer_);
-      
-      update_renderables_vertices_x64(mapped_vbo,
-                                      (float *)info.vertices.data, num_vertices,
-                                      num_components);
+      Vertex *mapped_vbo =
+          (Vertex *)app_context_->device().map(staging_vertex_buffer_);
+
+      update_renderables_vertices_x64(mapped_vbo, (float *)info.vertices.data,
+                                      num_vertices, num_components);
       if (info.per_vertex_color.valid) {
         if (info.per_vertex_color.shape[0] != num_vertices) {
           throw std::runtime_error(
               "shape of per_vertex_color should be the same as vertices");
         }
-        update_renderables_colors_x64(mapped_vbo,
-                                      (float *)info.per_vertex_color.data,
-                                      num_vertices);
+        update_renderables_colors_x64(
+            mapped_vbo, (float *)info.per_vertex_color.data, num_vertices);
       }
       if (info.normals.valid) {
         if (info.normals.shape[0] != num_vertices) {
           throw std::runtime_error(
               "shape of normals should be the same as vertices");
         }
-        update_renderables_normals_x64(mapped_vbo,
-                                       (float *)info.normals.data,
+        update_renderables_normals_x64(mapped_vbo, (float *)info.normals.data,
                                        num_vertices);
       }
       app_context_->device().unmap(staging_vertex_buffer_);
 
-      int* mapped_ibo = (int*)app_context_->device().map(staging_index_buffer_);
+      int *mapped_ibo =
+          (int *)app_context_->device().map(staging_index_buffer_);
       if (info.indices.valid) {
         indexed_ = true;
-        update_renderables_indices_x64(mapped_ibo,
-                                       (int *)info.indices.data, num_indices);
+        update_renderables_indices_x64(mapped_ibo, (int *)info.indices.data,
+                                       num_indices);
       } else {
         indexed_ = false;
       }
       app_context_->device().unmap(staging_index_buffer_);
     }
-    app_context_->device().memcpy(vertex_buffer_.get_ptr(0),staging_vertex_buffer_.get_ptr(0),config_.vertices_count * sizeof(Vertex));
-    app_context_->device().memcpy(index_buffer_.get_ptr(0),staging_index_buffer_.get_ptr(0),config_.indices_count * sizeof(int));
+    app_context_->device().memcpy(vertex_buffer_.get_ptr(0),
+                                  staging_vertex_buffer_.get_ptr(0),
+                                  config_.vertices_count * sizeof(Vertex));
+    app_context_->device().memcpy(index_buffer_.get_ptr(0),
+                                  staging_index_buffer_.get_ptr(0),
+                                  config_.indices_count * sizeof(int));
   } else {
     throw std::runtime_error("unsupported field source");
   }
 }
 
-
-VulkanPipeline& Renderable::pipeline(){
+Pipeline &Renderable::pipeline() {
   return *(pipeline_.get());
 }
 
-const VulkanPipeline& Renderable::pipeline() const{
+const Pipeline &Renderable::pipeline() const {
   return *(pipeline_.get());
 }
 
-void Renderable::create_bindings(){
-  ResourceBinder* binder = pipeline_->resource_binder();
-  binder->vertex_buffer(vertex_buffer_.get_ptr(0),0);
-  binder->index_buffer(index_buffer_.get_ptr(0),32);
+void Renderable::create_bindings() {
+  ResourceBinder *binder = pipeline_->resource_binder();
+  binder->vertex_buffer(vertex_buffer_.get_ptr(0), 0);
+  binder->index_buffer(index_buffer_.get_ptr(0), 32);
 }
 
 void Renderable::create_graphics_pipeline() {
-  if(pipeline_.get()){
+  if (pipeline_.get()) {
     return;
   }
   auto vert_code = read_file(config_.vertex_shader_path);
   auto frag_code = read_file(config_.fragment_shader_path);
 
-  SpirvCodeView vert_view;
-  vert_view.data = (uint32_t*)vert_code.data();
-  vert_view.size = vert_code.size();
-  vert_view.stage = VK_SHADER_STAGE_VERTEX_BIT;
+  std::vector<PipelineSourceDesc> source(2);
+  source[0] = {PipelineSourceType::spirv_binary, frag_code.data(),
+               frag_code.size(), PipelineStageType::fragment};
+  source[1] = {PipelineSourceType::spirv_binary, vert_code.data(),
+               vert_code.size(), PipelineStageType::vertex};
 
-  SpirvCodeView frag_view;
-  frag_view.data = (uint32_t*)frag_code.data();
-  frag_view.size = frag_code.size();
-  frag_view.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-  VulkanPipeline::Params params;
-  params.device = &(renderer_->app_context().device());
-  params.code = {vert_view,frag_view};
-
-  VulkanPipeline::RasterParams raster_params;
-  if (config_.topology_type == TopologyType::Triangles) {
-    raster_params.prim_topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-  } else if (config_.topology_type == TopologyType::Lines) {
-    raster_params.prim_topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-  } else if (config_.topology_type == TopologyType::Points) {
-    raster_params.prim_topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-  } else {
-    throw std::runtime_error("invalid topology");
-  }
+  RasterParams raster_params;
+  raster_params.prim_topology = config_.topology_type;
   raster_params.depth_test = true;
   raster_params.depth_write = true;
 
-  std::vector<VertexInputBinding> vertex_inputs = {{0,sizeof(Vertex),false}};
+  std::vector<VertexInputBinding> vertex_inputs = {{0, sizeof(Vertex), false}};
   std::vector<VertexInputAttribute> vertex_attribs = {
-    {0,0,BufferFormat::rgb32f,offsetof(Vertex, pos)},
-    {1,0,BufferFormat::rgb32f,offsetof(Vertex, normal)},
-    {2,0,BufferFormat::rg32f,offsetof(Vertex, texCoord)},
-    {3,0,BufferFormat::rgb32f,offsetof(Vertex, color)}
-  };
-  
-  pipeline_ = std::make_unique<VulkanPipeline>(params,raster_params,vertex_inputs,vertex_attribs);
+      {0, 0, BufferFormat::rgb32f, offsetof(Vertex, pos)},
+      {1, 0, BufferFormat::rgb32f, offsetof(Vertex, normal)},
+      {2, 0, BufferFormat::rg32f, offsetof(Vertex, texCoord)},
+      {3, 0, BufferFormat::rgb32f, offsetof(Vertex, color)}};
 
+  pipeline_ = app_context_->device().create_raster_pipeline(
+      source, raster_params, vertex_inputs, vertex_attribs);
 }
 
 void Renderable::create_vertex_buffer() {
   size_t buffer_size = sizeof(Vertex) * config_.vertices_count;
 
-
-  Device::AllocParams vb_params {buffer_size,false,false,true,AllocUsage::Vertex};
+  Device::AllocParams vb_params{buffer_size, false, false, true,
+                                AllocUsage::Vertex};
   vertex_buffer_ = app_context_->device().allocate_memory(vb_params);
 
-  Device::AllocParams staging_vb_params {buffer_size,true,false,false,AllocUsage::Vertex};
-  staging_vertex_buffer_ = app_context_->device().allocate_memory(staging_vb_params);
- 
+  Device::AllocParams staging_vb_params{buffer_size, true, false, false,
+                                        AllocUsage::Vertex};
+  staging_vertex_buffer_ =
+      app_context_->device().allocate_memory(staging_vb_params);
 }
 
 void Renderable::create_index_buffer() {
   size_t buffer_size = sizeof(int) * config_.indices_count;
 
-  Device::AllocParams ib_params {buffer_size,false,false,true,AllocUsage::Index};
+  Device::AllocParams ib_params{buffer_size, false, false, true,
+                                AllocUsage::Index};
   index_buffer_ = app_context_->device().allocate_memory(ib_params);
 
-  Device::AllocParams staging_ib_params {buffer_size,true,false,false,AllocUsage::Index};
-  staging_index_buffer_ = app_context_->device().allocate_memory(staging_ib_params);
- 
+  Device::AllocParams staging_ib_params{buffer_size, true, false, false,
+                                        AllocUsage::Index};
+  staging_index_buffer_ =
+      app_context_->device().allocate_memory(staging_ib_params);
 }
 
 void Renderable::create_uniform_buffers() {
@@ -252,19 +240,20 @@ void Renderable::create_uniform_buffers() {
     return;
   }
 
-  Device::AllocParams ub_params {buffer_size,true,false,false,AllocUsage::Uniform};
+  Device::AllocParams ub_params{buffer_size, true, false, false,
+                                AllocUsage::Uniform};
   uniform_buffer_ = app_context_->device().allocate_memory(ub_params);
-  
 }
 
 void Renderable::create_storage_buffers() {
   size_t buffer_size = config_.ssbo_size;
   if (buffer_size == 0) {
     return;
-  } 
-  
-  Device::AllocParams sb_params {buffer_size,true,false,false,AllocUsage::Storage};
-  storage_buffer_ = app_context_->device().allocate_memory(sb_params); 
+  }
+
+  Device::AllocParams sb_params{buffer_size, true, false, false,
+                                AllocUsage::Storage};
+  storage_buffer_ = app_context_->device().allocate_memory(sb_params);
 }
 
 void Renderable::destroy_uniform_buffers() {
@@ -277,23 +266,23 @@ void Renderable::destroy_uniform_buffers() {
 void Renderable::destroy_storage_buffers() {
   if (config_.ssbo_size == 0) {
     return;
-  } 
+  }
   app_context_->device().dealloc_memory(storage_buffer_);
 }
 
-
 void Renderable::cleanup() {
   free_buffers();
+  pipeline_.reset();
 }
 
-void Renderable::record_this_frame_commands(CommandList* command_list) {
+void Renderable::record_this_frame_commands(CommandList *command_list) {
   command_list->bind_pipeline(pipeline_.get());
   command_list->bind_resources(pipeline_->resource_binder());
 
   if (indexed_) {
-    command_list->draw_indexed(config_.indices_count,0,0);
+    command_list->draw_indexed(config_.indices_count, 0, 0);
   } else {
-    command_list->draw(config_.vertices_count,0);
+    command_list->draw(config_.vertices_count, 0);
   }
 }
 

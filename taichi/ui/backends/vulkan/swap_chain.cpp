@@ -17,13 +17,12 @@ void SwapChain::init(class AppContext *app_context) {
   config.height = app_context_->config.height;
   config.vsync = app_context_->config.vsync;
   config.window_handle = app_context_->glfw_window();
-  
+
   surface_ = app_context_->device().create_surface(config);
 
-  create_depth_resources(); 
+  create_depth_resources();
 }
 
- 
 void SwapChain::create_depth_resources() {
   auto size = surface_->get_size();
 
@@ -33,41 +32,36 @@ void SwapChain::create_depth_resources() {
   params.initial_layout = ImageLayout::undefined;
   params.x = size.first;
   params.y = size.second;
-  params.z = 1;
   params.export_sharing = false;
 
   depth_allocation_ = app_context_->device().create_image(params);
 }
 
-void SwapChain::resize(uint32_t width, uint32_t height){
-  surface().resize(width,height);
+void SwapChain::resize(uint32_t width, uint32_t height) {
+  surface().resize(width, height);
   app_context_->device().destroy_image(depth_allocation_);
   create_depth_resources();
 }
 
-void SwapChain::cleanup(){
+void SwapChain::cleanup() {
   app_context_->device().destroy_image(depth_allocation_);
   surface_.reset();
 }
 
-
-DeviceAllocation  SwapChain::depth_allocation(){
+DeviceAllocation SwapChain::depth_allocation() {
   return depth_allocation_;
 }
 
- 
-uint32_t  SwapChain::width(){
-   return surface_->get_size().first;
+uint32_t SwapChain::width() {
+  return surface_->get_size().first;
 }
-uint32_t  SwapChain::height(){
+uint32_t SwapChain::height() {
   return surface_->get_size().second;
 }
-taichi::lang::Surface& SwapChain::surface(){
+taichi::lang::Surface &SwapChain::surface() {
   return *(surface_.get());
 }
- 
- 
- 
+
 }  // namespace vulkan
 
 TI_UI_NAMESPACE_END

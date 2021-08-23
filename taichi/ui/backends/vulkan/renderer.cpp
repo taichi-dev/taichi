@@ -99,6 +99,7 @@ void Renderer::cleanup() {
   for (auto &renderable : renderables_) {
     renderable->cleanup();
   }
+  renderables_.clear();
   swap_chain_.cleanup();
   app_context_.cleanup();
 }

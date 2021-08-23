@@ -113,6 +113,7 @@ VulkanPipeline::VulkanPipeline(const Params &params)
   for (VkShaderModule shader_module : shader_modules_) {
     vkDestroyShaderModule(device_, shader_module, kNoVkAllocCallbacks);
   }
+  shader_modules_.clear();
 }
 
 VulkanPipeline::VulkanPipeline(
@@ -363,7 +364,15 @@ void VulkanPipeline::create_graphics_pipeline(
       graphics_pipeline_template_->input_assembly;
   input_assembly.sType =
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-  input_assembly.topology = raster_params.prim_topology;
+  if (raster_params.prim_topology == TopologyType::Triangles) {
+    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  } else if (raster_params.prim_topology == TopologyType::Lines) {
+    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+  } else if (raster_params.prim_topology == TopologyType::Points) {
+    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+  } else {
+    throw std::runtime_error("invalid topology");
+  }
   input_assembly.primitiveRestartEnable = VK_FALSE;
 
   VkPipelineRasterizationStateCreateInfo &rasterizer =
@@ -373,7 +382,13 @@ void VulkanPipeline::create_graphics_pipeline(
   rasterizer.rasterizerDiscardEnable = VK_FALSE;
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
-  rasterizer.cullMode = raster_params.raster_cull_mode;
+  rasterizer.cullMode = 0;
+  if (raster_params.front_face_cull) {
+    rasterizer.cullMode |= VK_CULL_MODE_FRONT_BIT;
+  }
+  if (raster_params.back_face_cull) {
+    rasterizer.cullMode |= VK_CULL_MODE_BACK_BIT;
+  }
   rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -965,16 +980,17 @@ inline void buffer_image_copy_ti_to_vk(VkBufferImageCopy &copy_info,
   copy_info.imageOffset.y = params.image_offset.y;
   copy_info.imageOffset.z = params.image_offset.z;
   copy_info.imageSubresource.aspectMask =
-      VK_IMAGE_ASPECT_COLOR_BIT; // FIXME: add option in BufferImageCopyParams to support copying depth images
+      VK_IMAGE_ASPECT_COLOR_BIT;  // FIXME: add option in BufferImageCopyParams
+                                  // to support copying depth images
   copy_info.imageSubresource.baseArrayLayer = params.image_base_layer;
   copy_info.imageSubresource.layerCount = params.image_layer_count;
   copy_info.imageSubresource.mipLevel = params.image_mip_level;
 }
 
 void VulkanCommandList::buffer_to_image(DeviceAllocation dst_img,
-                                     DevicePtr src_buf,
-                                     ImageLayout img_layout,
-                                     const BufferImageCopyParams &params) {
+                                        DevicePtr src_buf,
+                                        ImageLayout img_layout,
+                                        const BufferImageCopyParams &params) {
   VkBufferImageCopy copy_info{};
   buffer_image_copy_ti_to_vk(copy_info, src_buf.offset, params);
 
@@ -985,9 +1001,9 @@ void VulkanCommandList::buffer_to_image(DeviceAllocation dst_img,
 }
 
 void VulkanCommandList::image_to_buffer(DevicePtr dst_buf,
-                                     DeviceAllocation src_img,
-                                     ImageLayout img_layout,
-                                     const BufferImageCopyParams &params) {
+                                        DeviceAllocation src_img,
+                                        ImageLayout img_layout,
+                                        const BufferImageCopyParams &params) {
   VkBufferImageCopy copy_info{};
   buffer_image_copy_ti_to_vk(copy_info, dst_buf.offset, params);
 
@@ -1051,7 +1067,15 @@ VulkanDevice::~VulkanDevice() {
     vkDestroyDescriptorSetLayout(device_, pair.second, kNoVkAllocCallbacks);
   }
 
-  vmaDestroyPool(allocator_,export_pool_.pool);
+  for (auto &pair : framebuffer_pools_) {
+    vkDestroyFramebuffer(device_, pair.second, kNoVkAllocCallbacks);
+  }
+
+  for (auto &pair : renderpass_pools_) {
+    vkDestroyRenderPass(device_, pair.second, kNoVkAllocCallbacks);
+  }
+
+  vmaDestroyPool(allocator_, export_pool_.pool);
   vmaDestroyAllocator(allocator_);
   vkDestroyFence(device_, cmd_sync_fence_, kNoVkAllocCallbacks);
 }
@@ -1074,11 +1098,13 @@ std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(PipelineSourceDesc &src,
   return std::make_unique<VulkanPipeline>(params);
 }
 
+// #define TI_VULKAN_DEBUG_ALLOCATIONS
+
 DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   DeviceAllocation handle;
 
   handle.device = this;
-  handle.alloc_id = (alloc_cnt_++);
+  handle.alloc_id = alloc_cnt_++;
 
   allocations_[handle.alloc_id] = {};
   AllocationInternal &alloc = allocations_[handle.alloc_id];
@@ -1141,15 +1167,30 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
                       &alloc.allocation, &alloc.alloc_info),
       "Failed to allocate vk buffer");
 
+#ifdef TI_VULKAN_DEBUG_ALLOCATIONS
+  TI_TRACE("Allocate VK buffer {}, alloc_id={}", (void *)alloc.buffer,
+           handle.alloc_id);
+#endif
+
   return handle;
 }
 
-void VulkanDevice::dealloc_memory(DeviceAllocation allocation) {
-  AllocationInternal &alloc = allocations_[allocation.alloc_id];
+void VulkanDevice::dealloc_memory(DeviceAllocation handle) {
+  auto map_pair = allocations_.find(handle.alloc_id);
+
+  TI_ASSERT_INFO(map_pair != allocations_.end(),
+                 "Invalid handle (double free?) {}", handle.alloc_id);
+
+  AllocationInternal &alloc = map_pair->second;
+
+#ifdef TI_VULKAN_DEBUG_ALLOCATIONS
+  TI_TRACE("Dealloc VK buffer {}, alloc_id={}", (void *)alloc.buffer,
+           handle.alloc_id);
+#endif
 
   vmaDestroyBuffer(allocator_, alloc.buffer, alloc.allocation);
 
-  allocations_.erase(allocation.alloc_id);
+  allocations_.erase(handle.alloc_id);
 }
 
 void *VulkanDevice::map_range(DevicePtr ptr, uint64_t size) {
@@ -1355,12 +1396,36 @@ void VulkanDevice::command_sync() {
 }
 
 std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(
-    std::vector<PipelineSourceDesc> &src,
-    std::vector<BufferFormat> &render_target_formats,
-    std::vector<VertexInputBinding> &vertex_inputs,
-    std::vector<VertexInputAttribute> &vertex_attrs,
+    const std::vector<PipelineSourceDesc> &src,
+    const RasterParams &raster_params,
+    const std::vector<VertexInputBinding> &vertex_inputs,
+    const std::vector<VertexInputAttribute> &vertex_attrs,
     std::string name) {
-  return nullptr;
+  VulkanPipeline::Params params;
+  params.code = {};
+  params.device = this;
+  params.name = name;
+
+  for (auto src_desc : src) {
+    SpirvCodeView &code = params.code.emplace_back();
+    code.data = (uint32_t *)src_desc.data;
+    code.size = src_desc.size;
+    code.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+    if (src_desc.stage == PipelineStageType::fragment) {
+      code.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    } else if (src_desc.stage == PipelineStageType::vertex) {
+      code.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    } else if (src_desc.stage == PipelineStageType::geometry) {
+      code.stage == VK_SHADER_STAGE_GEOMETRY_BIT;
+    } else if (src_desc.stage == PipelineStageType::tesselation_control) {
+      code.stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+    } else if (src_desc.stage == PipelineStageType::tesselation_eval) {
+      code.stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+    }
+  }
+
+  return std::make_unique<VulkanPipeline>(params, raster_params, vertex_inputs,
+                                          vertex_attrs);
 }
 
 std::unique_ptr<Surface> VulkanDevice::create_surface(
@@ -1475,7 +1540,7 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   image_info.format = buffer_format_ti_to_vk(params.format);
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  image_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | 
+  image_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT |
                      VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
   if (is_depth) {
@@ -1540,22 +1605,36 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
       vkCreateImageView(device_, &view_info, nullptr, &alloc.view),
       "Failed to create image view");
 
-  if(params.initial_layout != ImageLayout::undefined){
-    image_transition(handle,ImageLayout::undefined,params.initial_layout);
+  if (params.initial_layout != ImageLayout::undefined) {
+    image_transition(handle, ImageLayout::undefined, params.initial_layout);
   }
+
+#ifdef TI_VULKAN_DEBUG_ALLOCATIONS
+  TI_TRACE("Allocate VK image {}, alloc_id={}", (void *)alloc.image,
+           handle.alloc_id);
+#endif
 
   return handle;
 }
 
-void VulkanDevice::destroy_image(DeviceAllocation alloc) {
-  ImageAllocInternal &alloc_int = image_allocations_.at(alloc.alloc_id);
+void VulkanDevice::destroy_image(DeviceAllocation handle) {
+  auto map_pair = image_allocations_.find(handle.alloc_id);
 
-  if(!alloc_int.external){
+  TI_ASSERT_INFO(map_pair != image_allocations_.end(),
+                 "Invalid handle (double free?) {}", handle.alloc_id);
+
+  ImageAllocInternal &alloc_int = map_pair->second;
+
+  if (!alloc_int.external) {
+#ifdef TI_VULKAN_DEBUG_ALLOCATIONS
+    TI_TRACE("Dealloc VK image {}, alloc_id={}", (void *)alloc_int.image,
+             handle.alloc_id);
+#endif
     vkDestroyImageView(vk_device(), alloc_int.view, nullptr);
     vmaDestroyImage(allocator_, alloc_int.image, alloc_int.allocation);
   }
 
-  image_allocations_.erase(alloc.alloc_id);
+  image_allocations_.erase(handle.alloc_id);
 }
 
 VkRenderPass VulkanDevice::get_renderpass(const VulkanRenderPassDesc &desc) {
@@ -1868,7 +1947,7 @@ VkPresentModeKHR choose_swap_present_mode(
 }
 
 VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
-    : device_(device),config_(config) {
+    : device_(device), config_(config) {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   window_ = (GLFWwindow *)config.window_handle;
   VkResult err =
@@ -1888,8 +1967,8 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
                     &image_available_);
 }
 
-void VulkanSurface::create_swap_chain(){
-   auto choose_surface_format =
+void VulkanSurface::create_swap_chain() {
+  auto choose_surface_format =
       [](const std::vector<VkSurfaceFormatKHR> &availableFormats) {
         for (const auto &availableFormat : availableFormats) {
           if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
@@ -2002,11 +2081,10 @@ void VulkanSurface::create_swap_chain(){
     swapchain_images_.push_back(
         device_->import_vk_image(img, view, surface_format.format));
   }
-
 }
 
-void VulkanSurface::destroy_swap_chain(){
-  for(auto alloc:swapchain_images_){
+void VulkanSurface::destroy_swap_chain() {
+  for (auto alloc : swapchain_images_) {
     VkImageView view = std::get<1>(device_->get_vk_image(alloc));
     vkDestroyImageView(device_->vk_device(), view, nullptr);
     device_->destroy_image(alloc);

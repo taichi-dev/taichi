@@ -146,6 +146,8 @@ enum class PipelineStageType {
   raytracing
 };
 
+enum class TopologyType : int { Triangles = 0, Lines = 1, Points = 2 };
+
 enum class BufferFormat : uint32_t {
   r8,
   rg8,
@@ -291,15 +293,15 @@ class CommandList {
     TI_NOT_IMPLEMENTED
   }
   virtual void buffer_to_image(DeviceAllocation dst_img,
-                            DevicePtr src_buf,
-                            ImageLayout img_layout,
-                            const BufferImageCopyParams &params) {
+                               DevicePtr src_buf,
+                               ImageLayout img_layout,
+                               const BufferImageCopyParams &params) {
     TI_NOT_IMPLEMENTED
   }
   virtual void image_to_buffer(DevicePtr dst_buf,
-                            DeviceAllocation src_img,
-                            ImageLayout img_layout,
-                            const BufferImageCopyParams &params) {
+                               DeviceAllocation src_img,
+                               ImageLayout img_layout,
+                               const BufferImageCopyParams &params) {
     TI_NOT_IMPLEMENTED
   }
 };
@@ -348,7 +350,7 @@ class Device {
   };
 
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
-  virtual void dealloc_memory(DeviceAllocation allocation) = 0;
+  virtual void dealloc_memory(DeviceAllocation handle) = 0;
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
       PipelineSourceDesc &src,
@@ -398,7 +400,7 @@ class Surface {
   virtual void present_image() = 0;
   virtual std::pair<uint32_t, uint32_t> get_size() = 0;
   virtual BufferFormat image_format() = 0;
-  virtual void resize(uint32_t width, uint32_t height) = 0; 
+  virtual void resize(uint32_t width, uint32_t height) = 0;
 };
 
 struct VertexInputBinding {
@@ -425,37 +427,45 @@ struct ImageParams {
   ImageDimension dimension;
   BufferFormat format;
   ImageLayout initial_layout;
-  uint32_t x{0};
-  uint32_t y{0};
-  uint32_t z{0};
+  uint32_t x{1};
+  uint32_t y{1};
+  uint32_t z{1};
   bool export_sharing{false};
+};
+
+struct RasterParams {
+  TopologyType prim_topology;
+  bool front_face_cull{false};
+  bool back_face_cull{false};
+  bool depth_test{false};
+  bool depth_write{false};
 };
 
 class GraphicsDevice : public Device {
  public:
   virtual std::unique_ptr<Pipeline> create_raster_pipeline(
-      std::vector<PipelineSourceDesc> &src,
-      std::vector<BufferFormat> &render_target_formats,
-      std::vector<VertexInputBinding> &vertex_inputs,
-      std::vector<VertexInputAttribute> &vertex_attrs,
+      const std::vector<PipelineSourceDesc> &src,
+      const RasterParams &raster_params,
+      const std::vector<VertexInputBinding> &vertex_inputs,
+      const std::vector<VertexInputAttribute> &vertex_attrs,
       std::string name = "Pipeline") = 0;
 
   virtual std::unique_ptr<Surface> create_surface(
       const SurfaceConfig &config) = 0;
   virtual DeviceAllocation create_image(const ImageParams &params) = 0;
-  virtual void destroy_image(DeviceAllocation alloc) = 0;
+  virtual void destroy_image(DeviceAllocation handle) = 0;
 
   virtual void image_transition(DeviceAllocation img,
-                        ImageLayout old_layout,
-                        ImageLayout new_layout);
+                                ImageLayout old_layout,
+                                ImageLayout new_layout);
   virtual void buffer_to_image(DeviceAllocation dst_img,
-                    DevicePtr src_buf,
-                    ImageLayout img_layout,
-                    const BufferImageCopyParams &params);
+                               DevicePtr src_buf,
+                               ImageLayout img_layout,
+                               const BufferImageCopyParams &params);
   virtual void image_to_buffer(DevicePtr dst_buf,
-                    DeviceAllocation src_img,
-                    ImageLayout img_layout,
-                    const BufferImageCopyParams &params);
+                               DeviceAllocation src_img,
+                               ImageLayout img_layout,
+                               const BufferImageCopyParams &params);
 };
 
 }  // namespace lang

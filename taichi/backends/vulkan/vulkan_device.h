@@ -178,13 +178,6 @@ class VulkanPipeline : public Pipeline {
     std::string name{"Pipeline"};
   };
 
-  struct RasterParams {
-    VkPrimitiveTopology prim_topology{VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
-    VkCullModeFlagBits raster_cull_mode{VK_CULL_MODE_NONE};
-    bool depth_test{false};
-    bool depth_write{false};
-  };
-
   explicit VulkanPipeline(const Params &params);
   explicit VulkanPipeline(
       const Params &params,
@@ -396,7 +389,7 @@ class VulkanDevice : public GraphicsDevice {
       std::string name = "Pipeline") override;
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
-  void dealloc_memory(DeviceAllocation allocation) override;
+  void dealloc_memory(DeviceAllocation handle) override;
 
   // Mapping can fail and will return nullptr
   void *map_range(DevicePtr ptr, uint64_t size) override;
@@ -417,16 +410,16 @@ class VulkanDevice : public GraphicsDevice {
   void command_sync() override;
 
   std::unique_ptr<Pipeline> create_raster_pipeline(
-      std::vector<PipelineSourceDesc> &src,
-      std::vector<BufferFormat> &render_target_formats,
-      std::vector<VertexInputBinding> &vertex_inputs,
-      std::vector<VertexInputAttribute> &vertex_attrs,
+      const std::vector<PipelineSourceDesc> &src,
+      const RasterParams &raster_params,
+      const std::vector<VertexInputBinding> &vertex_inputs,
+      const std::vector<VertexInputAttribute> &vertex_attrs,
       std::string name = "Pipeline") override;
 
   std::unique_ptr<Surface> create_surface(const SurfaceConfig &config) override;
 
   DeviceAllocation create_image(const ImageParams &params) override;
-  void destroy_image(DeviceAllocation alloc) override;
+  void destroy_image(DeviceAllocation handle) override;
 
   // Vulkan specific functions
   VkInstance vk_instance() const {

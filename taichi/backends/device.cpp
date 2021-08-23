@@ -22,31 +22,29 @@ void Device::memcpy(DevicePtr dst, DevicePtr src, uint64_t size) {
 #endif
 }
 
-
 void GraphicsDevice::image_transition(DeviceAllocation img,
-                    ImageLayout old_layout,
-                    ImageLayout new_layout){
+                                      ImageLayout old_layout,
+                                      ImageLayout new_layout) {
   auto cmd_list = new_command_list({CommandListType::Graphics});
-  cmd_list->image_transition(img,old_layout,new_layout);
+  cmd_list->image_transition(img, old_layout, new_layout);
   submit_synced(cmd_list.get());
 }
 void GraphicsDevice::buffer_to_image(DeviceAllocation dst_img,
-                DevicePtr src_buf,
-                ImageLayout img_layout,
-                const BufferImageCopyParams &params){
+                                     DevicePtr src_buf,
+                                     ImageLayout img_layout,
+                                     const BufferImageCopyParams &params) {
   auto cmd_list = new_command_list({CommandListType::Graphics});
-  cmd_list->buffer_to_image(dst_img,src_buf,img_layout,params);
+  cmd_list->buffer_to_image(dst_img, src_buf, img_layout, params);
   submit_synced(cmd_list.get());
 }
 void GraphicsDevice::image_to_buffer(DevicePtr dst_buf,
-                DeviceAllocation src_img,
-                ImageLayout img_layout,
-                const BufferImageCopyParams &params){
+                                     DeviceAllocation src_img,
+                                     ImageLayout img_layout,
+                                     const BufferImageCopyParams &params) {
   auto cmd_list = new_command_list({CommandListType::Graphics});
-  cmd_list->image_to_buffer(dst_buf,src_img,img_layout,params);
+  cmd_list->image_to_buffer(dst_buf, src_img, img_layout, params);
   submit_synced(cmd_list.get());
 }
-
 
 }  // namespace lang
 }  // namespace taichi

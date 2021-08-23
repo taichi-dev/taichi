@@ -25,8 +25,6 @@ TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
 
-enum class TopologyType : int { Triangles = 0, Lines = 1, Points = 2 };
-
 struct RenderableConfig {
   int vertices_count;
   int indices_count;
@@ -34,7 +32,7 @@ struct RenderableConfig {
   size_t ssbo_size;
   std::string vertex_shader_path;
   std::string fragment_shader_path;
-  TopologyType topology_type;
+  taichi::lang::TopologyType topology_type;
 };
 
 class Renderable {
@@ -47,8 +45,8 @@ class Renderable {
 
   virtual ~Renderable() = default;
 
-  taichi::lang::vulkan::VulkanPipeline& pipeline();
-  const taichi::lang::vulkan::VulkanPipeline& pipeline() const;
+  taichi::lang::Pipeline& pipeline();
+  const taichi::lang::Pipeline& pipeline() const;
 
   virtual void cleanup();
 
@@ -58,7 +56,7 @@ class Renderable {
   class Renderer *renderer_;
   AppContext *app_context_;
 
-  std::unique_ptr<taichi::lang::vulkan::VulkanPipeline> pipeline_{nullptr};
+  std::unique_ptr<taichi::lang::Pipeline> pipeline_{nullptr};
 
   taichi::lang::DeviceAllocation vertex_buffer_;
   taichi::lang::DeviceAllocation index_buffer_;

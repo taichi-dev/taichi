@@ -29,16 +29,23 @@ void update_renderables_normals_x64(Vertex *vbo,
                                     int num_vertices);
 
 template <typename T>
-void copy_to_texture_fuffer_cuda(T *src,
+void copy_to_texture_buffer_surface_cuda(T *src,
                                  uint64_t surface,
                                  int width,
                                  int height,
                                  int actual_width,
                                  int actual_height,
                                  int channels);
-
 template <typename T>
-void copy_to_texture_fuffer_x64(T *src,
+void copy_to_texture_buffer_cuda(T *src,
+                                unsigned char *dest,
+                                int width,
+                                int height,
+                                int actual_width,
+                                int actual_height,
+                                int channels);
+template <typename T>
+void copy_to_texture_buffer_x64(T *src,
                                 unsigned char *dest,
                                 int width,
                                 int height,

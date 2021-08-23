@@ -38,51 +38,55 @@ void SetImage::update_data(const SetImageInfo &info) {
   int actual_height = next_power_of_2(height);
 
   int pixels = width * height;
+ 
+  app_context_->vulkan_device().image_transition(texture_,ImageLayout::shader_read,ImageLayout::transfer_dst);
 
-  VkImage texture_image = std::get<0>(
-      renderer_->app_context().vulkan_device().get_vk_image(texture_));
+  BufferImageCopyParams copy_params;
+  copy_params.image_extent.x = width;
+  copy_params.image_extent.y = height;
 
   if (img.field_source == FieldSource::TaichiCuda) {
-    if (img.dtype == PrimitiveType::u8) {
-      copy_to_texture_fuffer_cuda((unsigned char *)img.data,
-                                  (uint64_t)texture_surface_, width, height,
-                                  actual_width, actual_height, img.matrix_rows);
-    } else if (img.dtype == PrimitiveType::f32) {
-      copy_to_texture_fuffer_cuda((float *)img.data, (uint64_t)texture_surface_,
-                                  width, height, actual_width, actual_height,
-                                  img.matrix_rows);
-    } else {
-      throw std::runtime_error("for set image, dtype must be u8 or f32");
-    }
-  } else if (img.field_source == FieldSource::TaichiX64) {
-    app_context_->vulkan_device().image_transition(texture_,ImageLayout::shader_read,ImageLayout::transfer_dst);
 
-    BufferImageCopyParams copy_params;
-    copy_params.image_extent.x = width;
-    copy_params.image_extent.y = height;
-    
-
-    unsigned char *mapped =
-        (unsigned char *)app_context_->vulkan_device().map(staging_buffer_);
+    unsigned char *mapped = device_ptr_;
 
     if (img.dtype == PrimitiveType::u8) {
-      copy_to_texture_fuffer_x64((unsigned char *)img.data, mapped, width,
+      copy_to_texture_buffer_cuda((unsigned char *)img.data, mapped, width,
                                  height, actual_width, actual_height,
                                  img.matrix_rows);
     } else if (img.dtype == PrimitiveType::f32) {
-      copy_to_texture_fuffer_x64((float *)img.data, mapped, width, height,
+      copy_to_texture_buffer_cuda((float *)img.data, mapped, width, height,
                                  actual_width, actual_height, img.matrix_rows);
     } else {
       throw std::runtime_error("for set image, dtype must be u8 or f32");
     }
 
-    app_context_->vulkan_device().unmap(staging_buffer_);
-    app_context_->vulkan_device().buffer_to_image(texture_,staging_buffer_.get_ptr(0),ImageLayout::transfer_dst,copy_params);
+    app_context_->vulkan_device().buffer_to_image(texture_,gpu_staging_buffer_.get_ptr(0),ImageLayout::transfer_dst,copy_params);
 
-    app_context_->vulkan_device().image_transition(texture_,ImageLayout::transfer_dst ,ImageLayout::shader_read);
+  } else if (img.field_source == FieldSource::TaichiX64) {
+
+    unsigned char *mapped =
+        (unsigned char *)app_context_->vulkan_device().map(cpu_staging_buffer_);
+
+    if (img.dtype == PrimitiveType::u8) {
+      copy_to_texture_buffer_x64((unsigned char *)img.data, mapped, width,
+                                 height, actual_width, actual_height,
+                                 img.matrix_rows);
+    } else if (img.dtype == PrimitiveType::f32) {
+      copy_to_texture_buffer_x64((float *)img.data, mapped, width, height,
+                                 actual_width, actual_height, img.matrix_rows);
+    } else {
+      throw std::runtime_error("for set image, dtype must be u8 or f32");
+    }
+
+    app_context_->vulkan_device().unmap(gpu_staging_buffer_);
+    app_context_->vulkan_device().buffer_to_image(texture_,cpu_staging_buffer_.get_ptr(0),ImageLayout::transfer_dst,copy_params);
+
+    
   } else {
     throw std::runtime_error("unsupported field source");
   }
+
+  app_context_->vulkan_device().image_transition(texture_,ImageLayout::transfer_dst ,ImageLayout::shader_read);
 }
 
 SetImage::SetImage(Renderer *renderer) {
@@ -132,28 +136,26 @@ void SetImage::create_texture() {
   texture_ = renderer_->app_context().vulkan_device().create_image(params);
 
 
-  if (app_context_->config.ti_arch == Arch::cuda) {
-    auto [image, view, format] = renderer_->app_context().vulkan_device().get_vk_image(texture_);
-    auto [device_mem, offset, size] = renderer_->app_context().vulkan_device().get_vkmemory_offset_size(texture_);
-    VkMemoryRequirements mem_requirements;
-    vkGetImageMemoryRequirements(app_context_->device(), image, &mem_requirements);
 
+  Device::AllocParams cpu_staging_buffer_params{image_size, true, false, false,
+                                            AllocUsage::Uniform};
+  cpu_staging_buffer_ = renderer_->app_context().vulkan_device().allocate_memory(
+      cpu_staging_buffer_params);
+
+  Device::AllocParams gpu_staging_buffer_params{image_size, false, false, true,
+                                            AllocUsage::Uniform};
+  gpu_staging_buffer_ = renderer_->app_context().vulkan_device().allocate_memory(
+      gpu_staging_buffer_params);
+
+  if (app_context_->config.ti_arch == Arch::cuda) {
+    auto [mem,offset,size] = app_context_->vulkan_device().get_vkmemory_offset_size(gpu_staging_buffer_);
+  
     auto block_size = VulkanDevice::kMemoryBlockSize;
 
-    auto handle =
-        get_device_mem_handle(device_mem, app_context_->device());
-
-    CUexternalMemory external_mem = import_vk_memory_object_from_handle(
-        handle, block_size, true);
-
-    texture_surface_ = (uint64_t)get_image_surface_object_of_external_memory(
-        external_mem, offset, width, height, 1);
+    device_ptr_ = (unsigned char *)get_memory_pointer(
+        mem,block_size,offset,size,
+        app_context_->device());
   }
-
-  Device::AllocParams staging_buffer_params{image_size, true, false, false,
-                                            AllocUsage::Uniform};
-  staging_buffer_ = renderer_->app_context().vulkan_device().allocate_memory(
-      staging_buffer_params);
 
 }
 

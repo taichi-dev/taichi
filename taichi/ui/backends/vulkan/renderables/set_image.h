@@ -38,12 +38,12 @@ class SetImage final : public Renderable {
   virtual void cleanup() override;
 
  private:
-  // the staging buffer is only used if we have a CPU ti backend.
-  taichi::lang::DeviceAllocation  staging_buffer_;
+  taichi::lang::DeviceAllocation  cpu_staging_buffer_;
+  taichi::lang::DeviceAllocation  gpu_staging_buffer_;
 
   taichi::lang::DeviceAllocation texture_;
 
-  uint64_t texture_surface_;
+  unsigned char* device_ptr_{nullptr};
 
  private:
   void init_set_image(class Renderer *renderer, int img_width, int img_height);

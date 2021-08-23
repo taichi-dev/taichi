@@ -15,7 +15,6 @@
 #include <taichi/backends/device.h>
 #include <taichi/backends/vulkan/vulkan_utils.h>
 
-
 namespace taichi {
 namespace lang {
 namespace vulkan {
@@ -97,7 +96,7 @@ class VulkanResourceBinder : public ResourceBinder {
     VkDescriptorType type;
     DevicePtr ptr;
     size_t size;
-    VkSampler sampler{VK_NULL_HANDLE}; // used only for images
+    VkSampler sampler{VK_NULL_HANDLE};  // used only for images
   };
 
   struct Set {
@@ -136,7 +135,10 @@ class VulkanResourceBinder : public ResourceBinder {
   void rw_buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
   void buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size);
   void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
-  virtual void image(uint32_t set,uint32_t binding,DeviceAllocation alloc,ImageSamplerConfig sampler_config) override;
+  virtual void image(uint32_t set,
+                     uint32_t binding,
+                     DeviceAllocation alloc,
+                     ImageSamplerConfig sampler_config) override;
   virtual void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) override;
   virtual void index_buffer(DevicePtr ptr, size_t index_width) override;
   void framebuffer_color(DeviceAllocation image, uint32_t binding);
@@ -264,7 +266,9 @@ class VulkanPipeline : public Pipeline {
 
 class VulkanCommandList : public CommandList {
  public:
-  VulkanCommandList(VulkanDevice *ti_device, VkCommandBuffer buffer,CommandListConfig config);
+  VulkanCommandList(VulkanDevice *ti_device,
+                    VkCommandBuffer buffer,
+                    CommandListConfig config);
   ~VulkanCommandList();
 
   void bind_pipeline(Pipeline *p) override;
@@ -282,7 +286,7 @@ class VulkanCommandList : public CommandList {
                         uint32_t num_color_attachments,
                         DeviceAllocation *color_attachments,
                         bool *color_clear,
-                        std::vector<float>* clear_colors,
+                        std::vector<float> *clear_colors,
                         DeviceAllocation *depth_attachment,
                         bool depth_clear) override;
   void end_renderpass() override;
@@ -290,13 +294,24 @@ class VulkanCommandList : public CommandList {
   void draw_indexed(uint32_t num_indicies,
                     uint32_t start_vertex = 0,
                     uint32_t start_index = 0) override;
-  virtual void set_line_width(float width) override;
+  void set_line_width(float width) override;
+  void image_transition(DeviceAllocation img,
+                        ImageLayout old_layout,
+                        ImageLayout new_layout) override;
+  void buffer2image(DeviceAllocation dst_img,
+                    DevicePtr src_buf,
+                    ImageLayout img_layout,
+                    const BufferImageCopyParams &params) override;
+  void image2buffer(DevicePtr dst_buf,
+                    DeviceAllocation src_img,
+                    ImageLayout img_layout,
+                    const BufferImageCopyParams &params) override;
 
   VkRenderPass current_renderpass();
 
   // Vulkan specific functions
   VkCommandBuffer finalize();
-  const CommandListConfig& config() const;
+  const CommandListConfig &config() const;
 
   VkCommandBuffer vk_command_buffer();
 
@@ -320,11 +335,11 @@ class VulkanCommandList : public CommandList {
 
 class VulkanSurface : public Surface {
  public:
-  VulkanSurface(VulkanDevice *device,const SurfaceConfig& config);
+  VulkanSurface(VulkanDevice *device, const SurfaceConfig &config);
   ~VulkanSurface();
 
   DeviceAllocation get_target_image() override;
-  
+
   void present_image() override;
   std::pair<uint32_t, uint32_t> get_size() override;
   BufferFormat image_format() override;
@@ -340,15 +355,15 @@ class VulkanSurface : public Surface {
   uint32_t image_index_{0};
 
   std::vector<DeviceAllocation> swapchain_images_;
- };
-
+};
 
 struct VulkanMemoryPool {
   VmaPool pool;
 
   // the lifetime of these needs to == the lifetime of the vmapool.
-  // because these are needed for allocating memory, which happens multiple times.
-  VkExportMemoryAllocateInfoKHR export_mem_alloc_info{}; 
+  // because these are needed for allocating memory, which happens multiple
+  // times.
+  VkExportMemoryAllocateInfoKHR export_mem_alloc_info{};
 #ifdef _WIN64
   WindowsSecurityAttributes win_security_attribs;
   VkExportMemoryWin32HandleInfoKHR export_mem_win32_handle_info{};
@@ -389,7 +404,8 @@ class VulkanDevice : public GraphicsDevice {
   // Strictly intra device copy
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 
-  std::unique_ptr<CommandList> new_command_list(CommandListConfig config) override;
+  std::unique_ptr<CommandList> new_command_list(
+      CommandListConfig config) override;
   void dealloc_command_list(CommandList *cmdlist) override;
   void submit(CommandList *cmdlist) override;
   void submit_synced(CommandList *cmdlist) override;
@@ -403,7 +419,10 @@ class VulkanDevice : public GraphicsDevice {
       std::vector<VertexInputAttribute> &vertex_attrs,
       std::string name = "Pipeline") override;
 
-  std::unique_ptr<Surface> create_surface(const SurfaceConfig& config) override;
+  std::unique_ptr<Surface> create_surface(const SurfaceConfig &config) override;
+
+  DeviceAllocation create_image(const ImageParams &params) override;
+  void destroy_image(DeviceAllocation alloc) override;
 
   // Vulkan specific functions
   VkInstance vk_instance() const {
@@ -449,7 +468,9 @@ class VulkanDevice : public GraphicsDevice {
 
   std::tuple<VkImage, VkImageView, VkFormat> get_vk_image(
       const DeviceAllocation &alloc) const;
-  DeviceAllocation import_vk_image(VkImage image, VkImageView view, VkFormat format);
+  DeviceAllocation import_vk_image(VkImage image,
+                                   VkImageView view,
+                                   VkFormat format);
 
   VkImageView get_vk_imageview(const DeviceAllocation &alloc) const;
 
@@ -469,7 +490,6 @@ class VulkanDevice : public GraphicsDevice {
   VkPhysicalDevice physical_device_;
   VmaAllocator allocator_;
   VulkanMemoryPool export_pool_;
- 
 
   VkQueue compute_queue_;
   VkCommandPool compute_pool_;
@@ -533,7 +553,6 @@ class VulkanDevice : public GraphicsDevice {
   std::unordered_multimap<VkDescriptorSet, VkFence> in_flight_desc_sets_;
   std::vector<std::pair<DescPool *, VkDescriptorSet>> dealloc_desc_sets_;
 };
-
 
 VkFormat buffer_format_ti_to_vk(BufferFormat f);
 

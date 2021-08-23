@@ -77,12 +77,8 @@ struct DevicePtr : public DeviceAllocation {
 constexpr DeviceAllocation kDeviceNullAllocation{};
 constexpr DevicePtr kDeviceNullPtr{};
 
-
 // TODO: fill this with the required options
-struct ImageSamplerConfig{
-
-};
-
+struct ImageSamplerConfig {};
 
 // TODO: Implement this
 class ResourceBinder {
@@ -108,7 +104,10 @@ class ResourceBinder {
                       uint32_t binding,
                       DeviceAllocation alloc) = 0;
 
-  virtual void image(uint32_t set,uint32_t binding,DeviceAllocation alloc,ImageSamplerConfig sampler_config) {
+  virtual void image(uint32_t set,
+                     uint32_t binding,
+                     DeviceAllocation alloc,
+                     ImageSamplerConfig sampler_config) {
     TI_NOT_IMPLEMENTED
   }
 
@@ -143,7 +142,8 @@ enum class PipelineSourceType {
   dxil_binary,
   llvm_ir_src,
   llvm_ir_binary,
-  // TODO: other platforms?
+  metal_src,
+  metal_ir
 };
 
 enum class PipelineStageType {
@@ -211,14 +211,43 @@ class Pipeline {
   virtual ResourceBinder *resource_binder() = 0;
 };
 
+enum class CommandListType { Graphics, Compute };
 
-enum class CommandListType{
-  Graphics,
-  Compute
+struct CommandListConfig {
+  CommandListType type;
 };
 
-struct CommandListConfig{
-  CommandListType type;
+enum class ImageDimension { d1D, d2D, d3D };
+
+enum class ImageLayout {
+  undefined,
+  shader_read,
+  shader_write,
+  shader_read_write,
+  color_attachment,
+  color_attachment_read,
+  depth_attachment,
+  depth_attachment_read,
+  transfer_dst,
+  transfer_src
+};
+
+struct BufferImageCopyParams {
+  uint32_t buffer_row_length{0};
+  uint32_t buffer_image_height{0};
+  uint32_t image_mip_level{0};
+  struct {
+    uint32_t x{0};
+    uint32_t y{0};
+    uint32_t z{0};
+  } image_offset;
+  struct {
+    uint32_t x{1};
+    uint32_t y{1};
+    uint32_t z{1};
+  } image_extent;
+  uint32_t image_base_layer{0};
+  uint32_t image_layer_count{1};
 };
 
 // TODO: Implement this
@@ -244,7 +273,7 @@ class CommandList {
                                 uint32_t num_color_attachments,
                                 DeviceAllocation *color_attachments,
                                 bool *color_clear,
-                                std::vector<float>* clear_colors,
+                                std::vector<float> *clear_colors,
                                 DeviceAllocation *depth_attachment,
                                 bool depth_clear) {
     TI_NOT_IMPLEMENTED
@@ -255,15 +284,32 @@ class CommandList {
   virtual void draw(uint32_t num_verticies, uint32_t start_vertex = 0) {
     TI_NOT_IMPLEMENTED
   }
-  virtual void clear_color(float r,float g, float b, float a){
+  virtual void clear_color(float r, float g, float b, float a) {
     TI_NOT_IMPLEMENTED
   }
-  virtual void set_line_width(float width){
+  virtual void set_line_width(float width) {
     TI_NOT_IMPLEMENTED
   }
   virtual void draw_indexed(uint32_t num_indicies,
                             uint32_t start_vertex = 0,
                             uint32_t start_index = 0) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void image_transition(DeviceAllocation img,
+                                ImageLayout old_layout,
+                                ImageLayout new_layout) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void buffer2image(DeviceAllocation dst_img,
+                            DevicePtr src_buf,
+                            ImageLayout img_layout,
+                            const BufferImageCopyParams &params) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void image2buffer(DevicePtr dst_buf,
+                            DeviceAllocation src_img,
+                            ImageLayout img_layout,
+                            const BufferImageCopyParams &params) {
     TI_NOT_IMPLEMENTED
   }
 };
@@ -275,20 +321,18 @@ struct PipelineSourceDesc {
   PipelineStageType stage{PipelineStageType::compute};
 };
 
-//FIXME: this probably isn't backend-neutral enough
-enum class AllocUsage:int{
-    Storage = 1,
-    Uniform = 2,
-    Vertex = 4,
-    Index = 8,
+// FIXME: this probably isn't backend-neutral enough
+enum class AllocUsage : int {
+  Storage = 1,
+  Uniform = 2,
+  Vertex = 4,
+  Index = 8,
 };
-inline AllocUsage operator|(AllocUsage a, AllocUsage b)
-{
-    return static_cast<AllocUsage>(static_cast<int>(a) | static_cast<int>(b));
+inline AllocUsage operator|(AllocUsage a, AllocUsage b) {
+  return static_cast<AllocUsage>(static_cast<int>(a) | static_cast<int>(b));
 }
-inline bool operator&(AllocUsage a, AllocUsage b)
-{
-    return static_cast<int>(a) & static_cast<int>(b);
+inline bool operator&(AllocUsage a, AllocUsage b) {
+  return static_cast<int>(a) & static_cast<int>(b);
 }
 
 class Device {
@@ -305,7 +349,6 @@ class Device {
     caps_[capability_id] = val;
   }
 
-  
   struct AllocParams {
     uint64_t size{0};
     bool host_write{false};
@@ -313,8 +356,6 @@ class Device {
     bool export_sharing{false};
     AllocUsage usage{AllocUsage::Storage};
   };
-
-
 
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
   virtual void dealloc_memory(DeviceAllocation allocation) = 0;
@@ -346,7 +387,8 @@ class Device {
   static void memcpy(DevicePtr dst, DevicePtr src, uint64_t size);
 
   // TODO: Add a flag to select graphics / compute pool
-  virtual std::unique_ptr<CommandList> new_command_list(CommandListConfig config) = 0;
+  virtual std::unique_ptr<CommandList> new_command_list(
+      CommandListConfig config) = 0;
   virtual void dealloc_command_list(CommandList *cmdlist) = 0;
   virtual void submit(CommandList *cmdlist) = 0;
   virtual void submit_synced(CommandList *cmdlist) = 0;
@@ -363,7 +405,7 @@ class Surface {
   }
 
   virtual DeviceAllocation get_target_image() = 0;
-   virtual void present_image() = 0;
+  virtual void present_image() = 0;
   virtual std::pair<uint32_t, uint32_t> get_size() = 0;
   virtual BufferFormat image_format() = 0;
 };
@@ -381,11 +423,21 @@ struct VertexInputAttribute {
   uint32_t offset{0};
 };
 
-struct SurfaceConfig{
+struct SurfaceConfig {
   uint32_t width;
   uint32_t height;
   bool vsync;
-  void* window_handle;
+  void *window_handle;
+};
+
+struct ImageParams {
+  ImageDimension dimension;
+  BufferFormat format;
+  ImageLayout initial_layout;
+  uint32_t x{0};
+  uint32_t y{0};
+  uint32_t z{0};
+  bool export_sharing{false};
 };
 
 class GraphicsDevice : public Device {
@@ -397,7 +449,10 @@ class GraphicsDevice : public Device {
       std::vector<VertexInputAttribute> &vertex_attrs,
       std::string name = "Pipeline") = 0;
 
-  virtual std::unique_ptr<Surface> create_surface(const SurfaceConfig& config) = 0;
+  virtual std::unique_ptr<Surface> create_surface(
+      const SurfaceConfig &config) = 0;
+  virtual DeviceAllocation create_image(const ImageParams &params) = 0;
+  virtual void destroy_image(DeviceAllocation alloc) = 0;
 };
 
 }  // namespace lang

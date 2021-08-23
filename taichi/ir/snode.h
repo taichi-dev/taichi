@@ -302,6 +302,13 @@ class SNode {
     return n;
   }
 
+  int64 get_total_num_elements_towards_root() const {
+    int64 total_num_elemts = 1;
+    for (auto *s = this; s != nullptr; s = s->parent)
+      total_num_elemts *= (int)s->max_num_elements();
+    return total_num_elemts;
+  }
+
   int shape_along_axis(int i) const;
 
   uint64 fetch_reader_result();  // TODO: refactor

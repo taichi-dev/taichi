@@ -80,6 +80,7 @@ void Window::present_frame() {
 }
 
 Window::~Window() {
+  renderer_->cleanup();
   glfwTerminate();
 }
 

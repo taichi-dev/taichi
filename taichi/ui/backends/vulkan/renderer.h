@@ -39,7 +39,7 @@ class Renderer {
  public:
   
   void init(GLFWwindow *window, const AppConfig &config);
-  ~Renderer();
+  void cleanup();
 
   void prepare_for_next_frame();
 

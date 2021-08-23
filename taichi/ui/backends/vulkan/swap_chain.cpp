@@ -45,8 +45,9 @@ void SwapChain::resize(uint32_t width, uint32_t height){
   create_depth_resources();
 }
 
-SwapChain::~SwapChain(){
-
+void SwapChain::cleanup(){
+  app_context_->vulkan_device().destroy_image(depth_allocation_);
+  surface_.reset();
 }
 
 

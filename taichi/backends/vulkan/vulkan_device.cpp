@@ -2019,6 +2019,7 @@ void VulkanSurface::destroy_swap_chain(){
 VulkanSurface::~VulkanSurface() {
   destroy_swap_chain();
   vkDestroySemaphore(device_->vk_device(), image_available_, nullptr);
+  vkDestroySurfaceKHR(device_->vk_instance(), surface_, nullptr);
 }
 
 void VulkanSurface::resize(uint32_t width, uint32_t height) {

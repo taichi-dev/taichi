@@ -95,10 +95,11 @@ void Renderer::scene(Scene *scene) {
   scene->point_lights_.clear();
 }
 
-Renderer::~Renderer() {
+void Renderer::cleanup() {
   for (auto &renderable : renderables_) {
     renderable->cleanup();
   }
+  swap_chain_.cleanup();
   app_context_.cleanup();
 }
 

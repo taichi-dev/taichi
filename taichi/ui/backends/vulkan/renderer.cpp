@@ -13,21 +13,13 @@ using namespace taichi::lang::vulkan;
 
 void Renderer::init(GLFWwindow *window, const AppConfig &config) {
   app_context_.init(window, config);
-  swap_chain_.init(&app_context_);
-
-  create_semaphores();
-  import_semaphores();
-  
+  swap_chain_.init(&app_context_); 
 }
 
 void Renderer::clear_command_buffer_cache() {
   
 }
-
-void Renderer::create_semaphores() {
-  create_semaphore(prev_draw_finished_vk_, app_context_.device());
-  create_semaphore(this_draw_data_ready_vk_, app_context_.device());
-}
+ 
 
 template <typename T>
 std::unique_ptr<Renderable> get_new_renderable(Renderer *r) {
@@ -114,9 +106,6 @@ void Renderer::cleanup() {
   for (auto &renderable : renderables_) {
     renderable->cleanup();
   }
-  vkDestroySemaphore(app_context_.device(), prev_draw_finished_vk_, nullptr);
-  vkDestroySemaphore(app_context_.device(), this_draw_data_ready_vk_, nullptr);
-
   app_context_.cleanup();
 }
 
@@ -133,22 +122,9 @@ void Renderer::recreate_swap_chain() {
   }
 }
 
-void Renderer::import_semaphores() {
-  if (app_context_.config.ti_arch == Arch::cuda) {
-    prev_draw_finished_cuda_ = (uint64_t)cuda_vk_import_semaphore(
-        prev_draw_finished_vk_, app_context_.device());
-    this_draw_data_ready_cuda_ = (uint64_t)cuda_vk_import_semaphore(
-        this_draw_data_ready_vk_, app_context_.device());
-
-    //cuda_vk_semaphore_signal((CUexternalSemaphore)prev_draw_finished_cuda_);
-  }
-}
 
 void Renderer::prepare_for_next_frame() {
   next_renderable_ = 0;
-  if (app_context_.config.ti_arch == Arch::cuda) {
-    //cuda_vk_semaphore_wait((CUexternalSemaphore)prev_draw_finished_cuda_);
-  }
 }
 
 void Renderer::draw_frame(Gui *gui) {
@@ -157,7 +133,6 @@ void Renderer::draw_frame(Gui *gui) {
 
   if (app_context_.config.ti_arch == Arch::cuda) {
     CUDADriver::get_instance().stream_synchronize(nullptr);
-    //cuda_vk_semaphore_signal((CUexternalSemaphore)this_draw_data_ready_cuda_);
   }
 
   VkCommandBuffer command_buffer;

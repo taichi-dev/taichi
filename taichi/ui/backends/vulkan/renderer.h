@@ -80,17 +80,8 @@ class Renderer {
   SwapChain swap_chain_;
   AppContext app_context_;
   
-  VkSemaphore prev_draw_finished_vk_;
-  VkSemaphore this_draw_data_ready_vk_;
-
-  uint64_t prev_draw_finished_cuda_;
-  uint64_t this_draw_data_ready_cuda_;
-
  private:
   void clear_command_buffer_cache();
-
-  void create_semaphores();
-  void import_semaphores();
 
   template <typename T>
   T *get_renderable_of_type();

@@ -118,7 +118,8 @@ class Matrix(TaichiOperations):
                                 mat.append(
                                     list([
                                         ti.local_subscript_with_offset(
-                                            self.local_tensor_proxy, (i, ), (len(n), ))
+                                            self.local_tensor_proxy, (i, ),
+                                            (len(n), ))
                                     ]))
                 else:
                     mat = [[x] for x in n]
@@ -151,7 +152,8 @@ class Matrix(TaichiOperations):
                         for j in range(len(n[0])):
                             mat[i].append(
                                 ti.local_subscript_with_offset(
-                                    self.local_tensor_proxy, (i, j), (len(n), len(n[0]))))
+                                    self.local_tensor_proxy, (i, j),
+                                    (len(n), len(n[0]))))
             self.n = len(mat)
             if len(mat) > 0:
                 self.m = len(mat[0])
@@ -335,7 +337,7 @@ class Matrix(TaichiOperations):
         elif self.local_tensor_proxy != None:
             if len(indices) == 1:
                 return ti.local_subscript_with_offset(self.local_tensor_proxy,
-                                                      (i,), (self.n,))
+                                                      (i, ), (self.n, ))
             else:
                 return ti.local_subscript_with_offset(self.local_tensor_proxy,
                                                       (i, j), (self.n, self.m))

@@ -740,16 +740,18 @@ void export_lang(py::module &m) {
   });
 
   m.def("global_subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices, const ExprGroup &shape, bool is_aos) {
+        [](const Expr &var, const ExprGroup &indices, const ExprGroup &shape,
+           bool is_aos) {
           // TODO: Add test for dimension check
           if (is_aos)
             return Expr::make<TensorElementExpression>(var, indices, shape, 1);
           else {
             SNode *snode = var.cast<GlobalPtrExpression>()
-                ->var.cast<GlobalVariableExpression>()
-                ->snode;
-            return Expr::make<TensorElementExpression>(var, indices, shape,
-                                                       snode->get_total_num_elements_towards_root());
+                               ->var.cast<GlobalVariableExpression>()
+                               ->snode;
+            return Expr::make<TensorElementExpression>(
+                var, indices, shape,
+                snode->get_total_num_elements_towards_root());
           }
         });
 

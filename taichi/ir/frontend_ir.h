@@ -475,7 +475,10 @@ class TensorElementExpression : public Expression {
                           const ExprGroup indices,
                           const ExprGroup shape,
                           int structural_expansion)
-  : var(var), indices(indices), shape(shape), structural_expansion(structural_expansion) {
+      : var(var),
+        indices(indices),
+        shape(shape),
+        structural_expansion(structural_expansion) {
   }
 
   bool is_local_tensor() const;

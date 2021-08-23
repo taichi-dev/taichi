@@ -251,9 +251,10 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
     TI_ASSERT(var.is<GlobalPtrExpression>());
     // Global tensor subscripting
     SNode *snode = var.cast<GlobalPtrExpression>()
-        ->var.cast<GlobalVariableExpression>()
-        ->snode;
-    // structural_expansion != 1 is satisfied if and only if subscripting on SOA global tensor.
+                       ->var.cast<GlobalVariableExpression>()
+                       ->snode;
+    // structural_expansion != 1 is satisfied if and only if subscripting on SOA
+    // global tensor.
     TI_ASSERT(structural_expansion == 1 || snode->is_path_all_dense);
     element_type = snode->dt;
   }
@@ -266,10 +267,12 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
   for (int i = 1; i < (int)shape.size(); ++i) {
     TI_ASSERT(shape[i].is<ConstExpression>())
     shape[i]->flatten(ctx);
-    Stmt *mul_stmt = ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, shape[i]->stmt));
+    Stmt *mul_stmt = ctx->push_back(Stmt::make<BinaryOpStmt>(
+        BinaryOpType::mul, offset_stmt, shape[i]->stmt));
     indices[i].set(load_if_ptr(indices[i]));
     indices[i]->flatten(ctx);
-    ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::add, mul_stmt, indices[i]->stmt));
+    ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::add, mul_stmt,
+                                            indices[i]->stmt));
     offset_stmt = ctx->back_stmt();
   }
   // Type A[x, y, ...]
@@ -281,8 +284,8 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
   offset_stmt = ctx->back_stmt();
   Stmt *structural_expansion_stmt = ctx->push_back(
       Stmt::make<ConstStmt>(TypedConstant(structural_expansion)));
-  ctx->push_back(
-      Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, structural_expansion_stmt));
+  ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
+                                          structural_expansion_stmt));
   ctx->push_back(std::make_unique<PtrOffsetStmt>(var_stmt, ctx->back_stmt()));
   stmt = ctx->back_stmt();
 }

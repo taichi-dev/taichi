@@ -123,6 +123,7 @@ class Program {
   std::mutex jit_evaluator_cache_mut;
 
   std::vector<std::unique_ptr<SparseMatrixBuilder>> sparse_matrices_builder;
+  std::vector<std::unique_ptr<SparseMatrix>> sparse_matrices;
 
   // Note: for now we let all Programs share a single TypeFactory for smooth
   // migration. In the future each program should have its own copy.
@@ -348,6 +349,8 @@ class Program {
   SNode *get_snode_root(int tree_id);
 
   SparseMatrixBuilder *create_sparse_matrix_builder(int n, int m, uint64 max_num_entries);
+
+  SparseMatrix *create_sparse_matrix(int n, int m);
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 

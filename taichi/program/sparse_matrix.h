@@ -17,9 +17,8 @@ class SparseMatrixBuilder {
 
   void print_triplets();
 
-  void build();
+  void build(SparseMatrix* sm);
 
-  SparseMatrix get_matrix();
 
  private:
   uint64 num_triplets{0};
@@ -28,22 +27,22 @@ class SparseMatrixBuilder {
   int n, m;
   uint64 max_num_triplets;
   bool built{false};
-  Eigen::SparseMatrix<float32> matrix;
 };
 
 class SparseMatrix{
 public:
     SparseMatrix(){}
-
+    SparseMatrix(int n, int m);
     SparseMatrix(Eigen::SparseMatrix<float32>& matrix);
 
+    Eigen::SparseMatrix<float32>& get_matrix();
     void print();
 
     void solve(SparseMatrix* );
 
 private:
   int n, m;
-  Eigen::SparseMatrix<float32>* matrix;
+  Eigen::SparseMatrix<float32> matrix;
 };
 
 

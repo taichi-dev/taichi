@@ -248,6 +248,8 @@ void export_lang(py::module &m) {
       .def("get_snode_root", &Program::get_snode_root,
            py::return_value_policy::reference)
       .def("create_sparse_matrix_builder", &Program::create_sparse_matrix_builder,
+           py::return_value_policy::reference)
+      .def("create_sparse_matrix", &Program::create_sparse_matrix,
            py::return_value_policy::reference);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -940,7 +942,6 @@ void export_lang(py::module &m) {
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
       .def("print_triplets", &SparseMatrixBuilder::print_triplets)
       .def("build", &SparseMatrixBuilder::build)
-      .def("get_matrix", &SparseMatrixBuilder::get_matrix)
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 
   py::class_<SparseMatrix>(m, "SparseMatrix")

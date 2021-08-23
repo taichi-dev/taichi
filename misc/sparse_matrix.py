@@ -14,10 +14,10 @@ def fill(A: ti.SparseMatrixBuilder, b: ti.SparseMatrixBuilder,
     for i in range(n):
         if i > 0:
             A[i - 1, i] += -1.0
-            A[i, i] -= 1.0
+            A[i, i] += 1.0
         if i < n - 1:
             A[i + 1, i] += -1.0
-            A[i, i] -= 1.0
+            A[i, i] += 1.0
 
         if i % interval == 0:
             b[i, 0] += 1.0
@@ -27,7 +27,10 @@ fill(K, f, 3)
 
 print(">>>>>>>> Before build: ")
 K.print_triplets()
-A = K.build()
+
+A = ti.SparseMatrix(n, n)
+K.build(A)
+
 print(">>>>>>>> After build: ")
 A.print()
 

@@ -7,7 +7,7 @@ namespace taichi {
 namespace lang {
 
 SparseMatrixBuilder::SparseMatrixBuilder(int n, int m, int max_num_triplets)
-    : n(n), m(m), max_num_triplets(max_num_triplets), matrix(n, m) {
+    : n(n), m(m), max_num_triplets(max_num_triplets){
   data.reserve(max_num_triplets * 3);
   data_base_ptr = get_data_base_ptr();
 }
@@ -16,9 +16,6 @@ void *SparseMatrixBuilder::get_data_base_ptr() {
   return data.data();
 }
 
-SparseMatrix SparseMatrixBuilder::get_matrix(){
- return SparseMatrix(matrix);
-}
 
 void SparseMatrixBuilder::print_triplets() {
   fmt::print("n={}, m={}, num_triplets={} (max={})", n, m, num_triplets,
@@ -30,7 +27,7 @@ void SparseMatrixBuilder::print_triplets() {
   fmt::print("\n");
 }
 
-void SparseMatrixBuilder::build() {
+void SparseMatrixBuilder::build(SparseMatrix* sm) {
   TI_ASSERT(built == false);
   built = true;
   using T = Eigen::Triplet<float32>;
@@ -39,19 +36,25 @@ void SparseMatrixBuilder::build() {
     triplets.push_back({data[i * 3], data[i * 3 + 1],
                         taichi_union_cast<float32>(data[i * 3 + 2])});
   }
-  matrix.setFromTriplets(triplets.begin(), triplets.end());
+  sm->get_matrix().setFromTriplets(triplets.begin(), triplets.end());
 }
 
 SparseMatrix::SparseMatrix(Eigen::SparseMatrix<float32>& matrix){
- this->matrix = &matrix;
+ this->matrix = matrix;
 }
+
+ SparseMatrix::SparseMatrix(int n, int m):matrix(n,m){}
 
 
 void SparseMatrix::print() {
   Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
   // Note that the code below first converts the sparse matrix into a dense one.
   // https://stackoverflow.com/questions/38553335/how-can-i-print-in-console-a-formatted-sparse-matrix-with-eigen
-  std::cout << Eigen::MatrixXf(*matrix).format(clean_fmt) << std::endl;
+  std::cout << Eigen::MatrixXf(matrix).format(clean_fmt) << std::endl;
+}
+
+Eigen::SparseMatrix<float32>& SparseMatrix::get_matrix(){
+    return matrix;
 }
 
 
@@ -62,8 +65,8 @@ void SparseMatrix::solve(SparseMatrix *b_) {
 
   b.setZero();
 
-  for (int k = 0; k < b_->matrix->outerSize(); ++k)
-    for (Eigen::SparseMatrix<float32>::InnerIterator it(*(b_->matrix), k); it;
+  for (int k = 0; k < b_->matrix.outerSize(); ++k)
+    for (Eigen::SparseMatrix<float32>::InnerIterator it(b_->matrix, k); it;
          ++it) {
       b[it.row()] = it.value();
     }
@@ -74,7 +77,7 @@ void SparseMatrix::solve(SparseMatrix *b_) {
   solver.factorize(matrix);
   x = solver.solve(b);
    */
-  x = Eigen::MatrixXf(*matrix).ldlt().solve(b);
+  x = Eigen::MatrixXf(matrix).ldlt().solve(b);
 
   Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
   // Note that the code below first converts the sparse matrix into a dense one.

@@ -472,6 +472,14 @@ SparseMatrixBuilder *Program::create_sparse_matrix_builder(int n,
   return sparse_matrices_builder.back().get();
 }
 
+SparseMatrix *Program::create_sparse_matrix(int n, int m){
+  TI_ASSERT(arch_is_cpu(config.arch));
+  sparse_matrices.emplace_back(
+      std::make_unique<SparseMatrix>(n, m));
+  return sparse_matrices.back().get();
+}
+
+
 std::unique_ptr<llvm::Module> Program::clone_struct_compiler_initial_context(
     TaichiLLVMContext *tlctx) {
   if (!snode_trees_.empty())

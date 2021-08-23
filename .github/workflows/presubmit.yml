@@ -313,7 +313,5 @@ jobs:
           export PATH=$PATH:$HOME/Library/Python/3.8/bin
           arch -arm64 python3 examples/algorithm/laplace.py
           TI_LIB_DIR=`arch -arm64 python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
-          [ "$RUN_CPP_TESTS" = "ON" ] && TI_LIB_DIR="$TI_LIB_DIR/lib" arch -arm64 ./build/taichi_cpp_tests
+          TI_LIB_DIR="$TI_LIB_DIR/lib" arch -arm64 ./build/taichi_cpp_tests
           arch -arm64 ti test -vr2 -t2 -x
-        env:
-          RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}

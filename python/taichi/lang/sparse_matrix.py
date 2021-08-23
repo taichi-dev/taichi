@@ -38,9 +38,13 @@ class SparseMatrixEntry:
         self.j = j
 
     def augassign(self, value, op):
-        assert op == 'Add'
+        assert op == 'Add' or op == 'Sub'
         from taichi.lang.impl import call_internal
-        call_internal("insert_triplet", self.ptr, self.i, self.j, value)
+        if op == 'Add':
+            call_internal("insert_triplet", self.ptr, self.i, self.j, value)
+            print("---------------------------")
+        elif op == 'Sub':
+            call_internal("insert_triplet", self.ptr, self.i, self.j, -value)
 
 
 class SparseMatrixProxy:

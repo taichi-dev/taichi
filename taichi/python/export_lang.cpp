@@ -56,7 +56,6 @@ void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
 std::vector<std::unique_ptr<ASTBuilder::ScopeGuard>> scope_stack;
 
 std::string libdevice_path();
-std::string get_runtime_dir();
 
 SNodeRwAccessorsBank::Accessors get_snode_rw_accessors(SNode *snode) {
   return get_current_program().get_snode_rw_accessors_bank().get(snode);
@@ -827,7 +826,6 @@ void export_lang(py::module &m) {
 
   m.def("set_lib_dir", [&](const std::string &dir) { compiled_lib_dir = dir; });
   m.def("set_tmp_dir", [&](const std::string &dir) { runtime_tmp_dir = dir; });
-  m.def("get_runtime_dir", get_runtime_dir);
 
   m.def("get_commit_hash", get_commit_hash);
   m.def("get_version_string", get_version_string);

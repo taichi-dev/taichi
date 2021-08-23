@@ -135,14 +135,12 @@ class VulkanResourceBinder : public ResourceBinder {
   void rw_buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
   void buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size);
   void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
-  virtual void image(uint32_t set,
+  void image(uint32_t set,
                      uint32_t binding,
                      DeviceAllocation alloc,
                      ImageSamplerConfig sampler_config) override;
-  virtual void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) override;
-  virtual void index_buffer(DevicePtr ptr, size_t index_width) override;
-  void framebuffer_color(DeviceAllocation image, uint32_t binding);
-  void framebuffer_depth_stencil(DeviceAllocation image);
+  void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) override;
+  void index_buffer(DevicePtr ptr, size_t index_width) override;
 
   void write_to_set(uint32_t index, VulkanDevice &device, VkDescriptorSet set);
   Set &get_set(uint32_t index) {

@@ -122,16 +122,6 @@ class ResourceBinder {
   virtual void index_buffer(DevicePtr ptr, size_t index_width) {
     TI_NOT_IMPLEMENTED
   }
-
-  // Set frame buffer (not implemented in compute only device)
-  virtual void framebuffer_color(DeviceAllocation image, uint32_t binding) {
-    TI_NOT_IMPLEMENTED
-  }
-
-  // Set frame buffer (not implemented in compute only device)
-  virtual void framebuffer_depth_stencil(DeviceAllocation image) {
-    TI_NOT_IMPLEMENTED
-  }
 };
 
 enum class PipelineSourceType {

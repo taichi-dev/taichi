@@ -565,15 +565,6 @@ void VulkanResourceBinder::index_buffer(DevicePtr ptr, size_t index_width) {
   }
 }
 
-void VulkanResourceBinder::framebuffer_color(DeviceAllocation image,
-                                             uint32_t binding) {
-  TI_NOT_IMPLEMENTED
-}
-
-void VulkanResourceBinder::framebuffer_depth_stencil(DeviceAllocation image) {
-  TI_NOT_IMPLEMENTED
-}
-
 void VulkanResourceBinder::write_to_set(uint32_t index,
                                         VulkanDevice &device,
                                         VkDescriptorSet set) {

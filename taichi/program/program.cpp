@@ -28,7 +28,6 @@
 #include "taichi/program/async_engine.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/util/statistics.h"
-#include "taichi/util/str.h"
 #include "taichi/math/arithmetic.h"
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/struct_cc.h"
@@ -305,48 +304,8 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
 }
 
 void Program::check_runtime_error() {
-  synchronize();
-  auto tlctx = llvm_program_->llvm_context_host.get();
-  if (llvm_program_->llvm_context_device) {
-    // In case there is a standalone device context (e.g. CUDA without unified
-    // memory), use the device context instead.
-    tlctx = llvm_program_->llvm_context_device.get();
-  }
-  auto *runtime_jit_module = tlctx->runtime_jit_module;
-  runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
-                                   llvm_program_->llvm_runtime);
-  auto error_code = fetch_result<int64>(taichi_result_buffer_error_id);
-
-  if (error_code) {
-    std::string error_message_template;
-
-    // Here we fetch the error_message_template char by char.
-    // This is not efficient, but fortunately we only need to do this when an
-    // assertion fails. Note that we may not have unified memory here, so using
-    // "fetch_result" that works across device/host memroy is necessary.
-    for (int i = 0;; i++) {
-      runtime_jit_module->call<void *>("runtime_retrieve_error_message",
-                                       llvm_program_->llvm_runtime, i);
-      auto c = fetch_result<char>(taichi_result_buffer_error_id);
-      error_message_template += c;
-      if (c == '\0') {
-        break;
-      }
-    }
-
-    if (error_code == 1) {
-      const auto error_message_formatted = format_error_message(
-          error_message_template, [runtime_jit_module, this](int argument_id) {
-            runtime_jit_module->call<void *>(
-                "runtime_retrieve_error_message_argument",
-                llvm_program_->llvm_runtime, argument_id);
-            return fetch_result<uint64>(taichi_result_buffer_error_id);
-          });
-      TI_ERROR("Assertion failure: {}", error_message_formatted);
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
-  }
+  TI_ASSERT(arch_uses_llvm(config.arch));
+  llvm_program_->check_runtime_error(result_buffer);
 }
 
 void Program::synchronize() {

@@ -75,6 +75,8 @@ class LlvmProgramImpl {
 
   void synchronize();
 
+  void check_runtime_error(uint64 *result_buffer);
+
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
       const std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,

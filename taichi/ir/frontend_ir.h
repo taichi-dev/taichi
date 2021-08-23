@@ -468,12 +468,12 @@ class TensorElementExpression : public Expression {
  public:
   Expr var;
   ExprGroup indices;
-  ExprGroup shape;
+  std::vector<int> shape;
   int structural_expansion = 1;
 
   TensorElementExpression(const Expr &var,
-                          const ExprGroup indices,
-                          const ExprGroup shape,
+                          const ExprGroup &indices,
+                          const std::vector<int> &shape,
                           int structural_expansion)
       : var(var),
         indices(indices),
@@ -494,7 +494,7 @@ class TensorElementExpression : public Expression {
     }
     s += "] (";
     for (int i = 0; i < (int)shape.size(); i++) {
-      s += shape.exprs[i]->serialize();
+      s += std::to_string(shape[i]);
       if (i + 1 < (int)shape.size())
         s += ", ";
     }

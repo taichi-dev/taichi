@@ -658,9 +658,6 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
         std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
         element_type));
-    ExprGroup shape_copy;
-    for (int d = 0; d < (int)shape.size(); ++d)
-      shape_copy.push_back(Expr::make<ConstExpression, int32>((int32)shape[d]));
     for (int i = 0; i < (int)elements.exprs.size(); ++i) {
       ExprGroup reversed_indices;
       int linearized_index = i;
@@ -673,7 +670,7 @@ void export_lang(py::module &m) {
       for (int d = 0; d < (int)shape.size(); ++d)
         indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
       current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-          Expr::make<TensorElementExpression>(var, indices, shape_copy, 1),
+          Expr::make<TensorElementExpression>(var, indices, shape, 1),
           load_if_ptr(elements.exprs[i])));
     }
     return var;
@@ -740,7 +737,7 @@ void export_lang(py::module &m) {
   });
 
   m.def("global_subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices, const ExprGroup &shape,
+        [](const Expr &var, const ExprGroup &indices, const std::vector<int> &shape,
            bool is_aos) {
           // TODO: Add test for dimension check
           if (is_aos)
@@ -756,7 +753,7 @@ void export_lang(py::module &m) {
         });
 
   m.def("local_subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices, const ExprGroup &shape) {
+        [](const Expr &var, const ExprGroup &indices, const std::vector<int> &shape) {
           // TODO: Add test for dimension check
           return Expr::make<TensorElementExpression>(var, indices, shape, 1);
         });

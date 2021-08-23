@@ -36,13 +36,14 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
   ImGui_ImplVulkan_LoadFunctions(
       load_vk_function_for_gui);  // this is becaus we're using volk.
 
+  auto& vulkan_device = app_context_->vulkan_device();
+
   ImGui_ImplVulkan_InitInfo init_info = {};
-  init_info.Instance = app_context_->instance();
-  init_info.PhysicalDevice = app_context_->physical_device();
-  init_info.Device = app_context_->device();
-  init_info.QueueFamily =
-      app_context_->queue_family_indices().graphics_family.value();
-  init_info.Queue = app_context_->graphics_queue();
+  init_info.Instance = vulkan_device.vk_instance();
+  init_info.PhysicalDevice =  vulkan_device.vk_physical_device();
+  init_info.Device = vulkan_device.vk_device();
+  init_info.QueueFamily = vulkan_device.graphics_queue_family_index();
+  init_info.Queue = vulkan_device.graphics_queue();
   init_info.PipelineCache = VK_NULL_HANDLE;
   init_info.DescriptorPool = descriptor_pool_;
   init_info.Allocator = VK_NULL_HANDLE;
@@ -56,7 +57,7 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
   {
     // Use any command queue
     VkCommandBuffer command_buffer = begin_single_time_commands(
-        app_context_->command_pool(), app_context_->device());
+        vulkan_device.graphics_cmd_pool(), vulkan_device.vk_device());
 
     ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
 
@@ -65,10 +66,10 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
     end_info.commandBufferCount = 1;
     end_info.pCommandBuffers = &command_buffer;
     vkEndCommandBuffer(command_buffer);
-    vkQueueSubmit(app_context_->graphics_queue(), 1, &end_info, VK_NULL_HANDLE);
+    vkQueueSubmit(vulkan_device.graphics_queue(), 1, &end_info, VK_NULL_HANDLE);
 
-    vkDeviceWaitIdle(app_context_->device());
-    vkFreeCommandBuffers(app_context_->device(), app_context_->command_pool(),
+    vkDeviceWaitIdle( vulkan_device.vk_device());
+    vkFreeCommandBuffers( vulkan_device.vk_device(),vulkan_device.graphics_cmd_pool(),
                          1, &command_buffer);
     ImGui_ImplVulkan_DestroyFontUploadObjects();
   }
@@ -94,7 +95,7 @@ void Gui::create_descriptor_pool() {
   pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
   pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
   pool_info.pPoolSizes = pool_sizes;
-  VkResult err = vkCreateDescriptorPool(app_context_->device(), &pool_info,
+  VkResult err = vkCreateDescriptorPool(app_context_->vulkan_device().vk_device(), &pool_info,
                                         VK_NULL_HANDLE, &descriptor_pool_);
 }
 
@@ -183,7 +184,7 @@ void Gui::draw(taichi::lang::CommandList* cmd_list) {
 }
 
 void Gui::cleanup_render_resources() {
-  vkDestroyDescriptorPool(app_context_->device(), descriptor_pool_, nullptr);
+  vkDestroyDescriptorPool(app_context_->vulkan_device().vk_device(), descriptor_pool_, nullptr);
 
   ImGui_ImplVulkan_Shutdown();
   render_pass_ = VK_NULL_HANDLE; 

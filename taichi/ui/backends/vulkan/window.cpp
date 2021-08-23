@@ -64,8 +64,6 @@ void Window::resize() {
   renderer_->app_context().config.width = width;
   renderer_->app_context().config.height = height;
 
-  vkDeviceWaitIdle(renderer_->app_context().device());
-
 
   renderer_->swap_chain().resize(width,height);
 }
@@ -75,7 +73,6 @@ void Window::draw_frame() {
 }
 
 void Window::present_frame() {
-  vkDeviceWaitIdle(renderer_->app_context().device());
   renderer_->swap_chain().surface().present_image();
 }
 

@@ -153,7 +153,7 @@ void SetImage::create_texture() {
 
     device_ptr_ = (unsigned char *)get_memory_pointer(
         mem,block_size,offset,size,
-        app_context_->device());
+        app_context_->vulkan_device().vk_device());
   }
 
 }

@@ -2047,6 +2047,7 @@ BufferFormat VulkanSurface::image_format() {
 void VulkanSurface::present_image() {
   // TODO: In the future tie the wait semaphores.
   // Currently we should just halt and wait on host before present
+  vkDeviceWaitIdle(device_->vk_device());
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
   presentInfo.waitSemaphoreCount = 1;

@@ -43,10 +43,10 @@ void Renderable::init_render_resources() {
 
     vertex_buffer_device_ptr_ = (Vertex *)get_memory_pointer(
         vb_mem,block_size,vb_offset,vb_size,
-        app_context_->device());
+        app_context_->vulkan_device().vk_device());
     index_buffer_device_ptr_ = (int *)get_memory_pointer(
         ib_mem,block_size,ib_offset,ib_size,
-        app_context_->device());
+        app_context_->vulkan_device().vk_device());
   }
 }
 

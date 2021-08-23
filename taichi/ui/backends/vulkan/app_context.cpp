@@ -81,37 +81,6 @@ void AppContext::cleanup() {
   vulkan_device_.reset();
 }
 
-VkInstance AppContext::instance() const {
-  return vulkan_device_->instance();
-}
-
-VkSurfaceKHR AppContext::surface() const {
-  return vulkan_device_->surface();
-}
-
-VkDevice AppContext::device() const {
-  return vulkan_device_->device()->vk_device();
-}
-
-VkPhysicalDevice AppContext::physical_device() const {
-  return vulkan_device_->physical_device();
-}
-
-VulkanQueueFamilyIndices AppContext::queue_family_indices() const {
-  return vulkan_device_->queue_family_indices();
-}
-
-VkQueue AppContext::graphics_queue() const {
-  return vulkan_device_->device()->graphics_queue();
-}
-
-VkQueue AppContext::present_queue() const {
-  return vulkan_device_->device()->graphics_queue();
-}
-
-VkCommandPool AppContext::command_pool() const {
-  return vulkan_device_->device()->compute_cmd_pool();
-}
 
 GLFWwindow *AppContext::glfw_window() const {
   return glfw_window_;

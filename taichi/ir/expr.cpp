@@ -161,15 +161,21 @@ void Expr::operator/=(const Expr &o) {
 }
 
 Expr load_if_ptr(const Expr &ptr) {
-  if (ptr.is<GlobalPtrExpression>() ||
-      ptr.is<GlobalTensorElementExpression>()) {
+  if (ptr.is<GlobalPtrExpression>()) {
     return Expr::make<GlobalLoadExpression>(ptr);
   } else if (ptr.is<GlobalVariableExpression>()) {
     TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
               0);
     return Expr::make<GlobalLoadExpression>(ptr[ExprGroup()]);
-  } else if (ptr.is<LocalTensorElementExpression>()) {
-    return Expr::make<LocalLoadExpression>(ptr);
+  } else if (ptr.is<TensorElementExpression>()) {
+    auto tensor_ptr = ptr.cast<TensorElementExpression>();
+    if (tensor_ptr->is_global_tensor())
+      return Expr::make<GlobalLoadExpression>(ptr);
+    else if (tensor_ptr->is_local_tensor())
+      return Expr::make<LocalLoadExpression>(ptr);
+    else {
+      TI_NOT_IMPLEMENTED
+    }
   } else
     return ptr;
 }

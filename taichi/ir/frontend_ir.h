@@ -478,6 +478,10 @@ class TensorElementExpression : public Expression {
   : var(var), indices(indices), shape(shape), structural_expansion(structural_expansion) {
   }
 
+  bool is_local_tensor() const;
+
+  bool is_global_tensor() const;
+
   std::string serialize() override {
     std::string s = fmt::format("{}[", var.serialize());
     for (int i = 0; i < (int)indices.size(); i++) {
@@ -493,65 +497,6 @@ class TensorElementExpression : public Expression {
     }
     s += ", SE=" + std::to_string(structural_expansion);
     s += ")";
-    return s;
-  }
-
-  void flatten(FlattenContext *ctx) override;
-  bool is_lvalue() const override {
-    return true;
-  }
-};
-
-class GlobalTensorElementExpression : public Expression {
- public:
-  Expr var;
-  ExprGroup indices;
-  int cols{0};
-  bool is_aos{false};
-
-  GlobalTensorElementExpression(const Expr &var,
-                                const ExprGroup &indices,
-                                int cols,
-                                bool is_aos)
-      : var(var), indices(indices), cols(cols), is_aos(is_aos) {
-  }
-
-  std::string serialize() override {
-    std::string s = fmt::format("{}[", var.serialize());
-    for (int i = 0; i < (int)indices.size(); i++) {
-      s += indices.exprs[i]->serialize();
-      if (i + 1 < (int)indices.size())
-        s += ", ";
-    }
-    s += "]";
-    s += " (col=" + std::to_string(cols) + (is_aos ? ", AOS)" : ", SOA)");
-    return s;
-  }
-
-  void flatten(FlattenContext *ctx) override;
-
-  bool is_lvalue() const override {
-    return true;
-  }
-};
-
-class LocalTensorElementExpression : public Expression {
- public:
-  Expr var;
-  ExprGroup indices;
-
-  LocalTensorElementExpression(const Expr &var, const ExprGroup &indices)
-      : var(var), indices(indices) {
-  }
-
-  std::string serialize() override {
-    std::string s = fmt::format("{}[", var.serialize());
-    for (int i = 0; i < (int)indices.size(); i++) {
-      s += indices.exprs[i]->serialize();
-      if (i + 1 < (int)indices.size())
-        s += ", ";
-    }
-    s += "]";
     return s;
   }
 

@@ -658,18 +658,22 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
         std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
         element_type));
+    ExprGroup shape_copy;
+    for (int d = 0; d < (int)shape.size(); ++d)
+      shape_copy.push_back(Expr::make<ConstExpression, int32>((int32)shape[d]));
     for (int i = 0; i < (int)elements.exprs.size(); ++i) {
-      ExprGroup reversed_indices, indices;
+      ExprGroup reversed_indices;
       int linearized_index = i;
       for (int d = (int)shape.size() - 1; d >= 0; --d) {
         reversed_indices.push_back(
             Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
         linearized_index /= shape[d];
       }
+      ExprGroup indices;
       for (int d = 0; d < (int)shape.size(); ++d)
         indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
       current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-          Expr::make<LocalTensorElementExpression>(var, indices),
+          Expr::make<TensorElementExpression>(var, indices, shape_copy, 1),
           load_if_ptr(elements.exprs[i])));
     }
     return var;
@@ -736,16 +740,23 @@ void export_lang(py::module &m) {
   });
 
   m.def("global_subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices, int cols, bool is_aos) {
+        [](const Expr &var, const ExprGroup &indices, const ExprGroup &shape, bool is_aos) {
           // TODO: Add test for dimension check
-          return Expr::make<GlobalTensorElementExpression>(var, indices, cols,
-                                                           is_aos);
+          if (is_aos)
+            return Expr::make<TensorElementExpression>(var, indices, shape, 1);
+          else {
+            SNode *snode = var.cast<GlobalPtrExpression>()
+                ->var.cast<GlobalVariableExpression>()
+                ->snode;
+            return Expr::make<TensorElementExpression>(var, indices, shape,
+                                                       snode->get_total_num_elements_towards_root());
+          }
         });
 
   m.def("local_subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices) {
+        [](const Expr &var, const ExprGroup &indices, const ExprGroup &shape) {
           // TODO: Add test for dimension check
-          return Expr::make<LocalTensorElementExpression>(var, indices);
+          return Expr::make<TensorElementExpression>(var, indices, shape, 1);
         });
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {

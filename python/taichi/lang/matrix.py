@@ -118,7 +118,7 @@ class Matrix(TaichiOperations):
                                 mat.append(
                                     list([
                                         ti.local_subscript_with_offset(
-                                            self.local_tensor_proxy, (i, ))
+                                            self.local_tensor_proxy, (i, ), (len(n), ))
                                     ]))
                 else:
                     mat = [[x] for x in n]
@@ -151,7 +151,7 @@ class Matrix(TaichiOperations):
                         for j in range(len(n[0])):
                             mat[i].append(
                                 ti.local_subscript_with_offset(
-                                    self.local_tensor_proxy, (i, j)))
+                                    self.local_tensor_proxy, (i, j), (len(n), len(n[0]))))
             self.n = len(mat)
             if len(mat) > 0:
                 self.m = len(mat[0])
@@ -333,14 +333,19 @@ class Matrix(TaichiOperations):
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
         elif self.local_tensor_proxy != None:
-            return ti.local_subscript_with_offset(self.local_tensor_proxy,
-                                                  (i, j))
+            if len(indices) == 1:
+                return ti.local_subscript_with_offset(self.local_tensor_proxy,
+                                                      (i,), (self.n,))
+            else:
+                return ti.local_subscript_with_offset(self.local_tensor_proxy,
+                                                      (i, j), (self.n, self.m))
         # ptr.is_global_ptr() will check whether it's an element in the field (which is different from ptr.is_global_var()).
         elif isinstance(self.entries[0],
                         ti.Expr) and self.entries[0].ptr.is_global_ptr(
                         ) and ti.current_cfg().dynamic_index:
+            # TODO: Add API to query whether AOS or SOA
             return ti.global_subscript_with_offset(self.entries[0], (i, j),
-                                                   self.m, True)
+                                                   (self.n, self.m), True)
         else:
             return self(i, j)
 

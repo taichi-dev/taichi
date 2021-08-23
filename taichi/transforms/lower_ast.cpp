@@ -362,14 +362,16 @@ class LowerAST : public IRVisitor {
       fctx.push_back<LocalStoreStmt>(
           assign->parent->lookup_var(assign->lhs.cast<IdExpression>()->id),
           expr->stmt);
-    } else if (assign->lhs.is<LocalTensorElementExpression>()) {
-      auto local_ptr = assign->lhs.cast<LocalTensorElementExpression>();
-      local_ptr->flatten(&fctx);
-      fctx.push_back<LocalStoreStmt>(fctx.back_stmt(), expr->stmt);
-    } else if (assign->lhs.is<GlobalTensorElementExpression>()) {
-      auto global_ptr = assign->lhs.cast<GlobalTensorElementExpression>();
-      global_ptr->flatten(&fctx);
-      fctx.push_back<GlobalStoreStmt>(fctx.back_stmt(), expr->stmt);
+    } else if (assign->lhs.is<TensorElementExpression>()) {
+      auto tensor_ptr = assign->lhs.cast<TensorElementExpression>();
+      tensor_ptr->flatten(&fctx);
+      if (tensor_ptr->is_local_tensor()) {
+        fctx.push_back<LocalStoreStmt>(tensor_ptr->stmt, expr->stmt);
+      } else if (tensor_ptr->is_global_tensor()) {
+        fctx.push_back<GlobalStoreStmt>(tensor_ptr->stmt, expr->stmt);
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
     } else {  // global variable
       TI_ASSERT(assign->lhs.is<GlobalPtrExpression>());
       auto global_ptr = assign->lhs.cast<GlobalPtrExpression>();

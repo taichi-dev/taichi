@@ -9,7 +9,7 @@ from taichi.lang import ops as ops_mod
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
-from taichi.lang.ndarray import Ndarray
+from taichi.lang.ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.util import (in_python_scope, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
 from taichi.misc.util import deprecated, warning
@@ -1407,49 +1407,86 @@ class MatrixNdarray(Ndarray):
     """Taichi ndarray with matrix elements implemented with a torch tensor.
 
     Args:
+        n (int): Number of rows of the matrix.
+        m (int): Number of columns of the matrix.
         dtype (DataType): Data type of each value.
-        shape (Tuple[int]): Shape of the ndarray.
+        shape (Union[int, tuple[int]]): Shape of the ndarray.
+        is_soa (bool): Whether to change the layout from AOS (default) to SOA.
     """
-    def __init__(self, dtype, shape):
-        super().__init__(dtype, shape)
+    def __init__(self, n, m, dtype, shape, is_soa):
+        self.is_soa = is_soa
+        arr_shape = (n, m) + shape if is_soa else shape + (n, m)
+        super().__init__(dtype, arr_shape)
+
+    @property
+    def n(self):
+        return self.arr.shape[0 if self.is_soa else -2]
+
+    @property
+    def m(self):
+        return self.arr.shape[1 if self.is_soa else -1]
 
     @property
     def shape(self):
-        return tuple(self.arr.shape)
+        arr_shape = tuple(self.arr.shape)
+        return arr_shape[2:] if self.is_soa else arr_shape[:-2]
 
     @python_scope
     def __setitem__(self, key, value):
-        return self.arr.__setitem__(key, value)
+        if not isinstance(value, (list, tuple)):
+            value = list(value)
+        if not isinstance(value[0], (list, tuple)):
+            value = [[i] for i in value]
+        for i in range(self.n):
+            for j in range(self.m):
+                self[key][i, j] = value[i][j]
 
     @python_scope
     def __getitem__(self, key):
-        return self.arr.__getitem__(key)
+        return Matrix.with_entries(
+            self.n, self.m,
+            [NdarrayHostAccess(self, key, (i, j)) for i in range(self.n) for j in range(self.m)])
 
     def __repr__(self):
-        return '<ti.Matrix.ndarray>'
+        return f'<{self.n}x{self.m} ti.Matrix.ndarray>'
 
 
 class VectorNdarray(Ndarray):
     """Taichi ndarray with vector elements implemented with a torch tensor.
 
     Args:
+        n (int): Size of the vector.
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the ndarray.
+        is_soa (bool): Whether to change the layout from AOS (default) to SOA.
     """
-    def __init__(self, dtype, shape):
-        super().__init__(dtype, shape)
+    def __init__(self, n, dtype, shape, is_soa):
+        self.is_soa = is_soa
+        arr_shape = (n,) + shape if is_soa else shape + (n,)
+        super().__init__(dtype, arr_shape)
+
+    @property
+    def n(self):
+        return self.arr.shape[0 if self.is_soa else -1]
 
     @property
     def shape(self):
-        return tuple(self.arr.shape)
+        arr_shape = tuple(self.arr.shape)
+        return arr_shape[1:] if self.is_soa else arr_shape[:-1]
 
     @python_scope
     def __setitem__(self, key, value):
+        if not isinstance(value, (list, tuple)):
+            value = list(value)
+        for i in range(self.n):
+            self[key][i] = value[i]
         return self.arr.__setitem__(key, value)
 
     @python_scope
     def __getitem__(self, key):
-        return self.arr.__getitem__(key)
+        return Matrix.with_entries(
+            self.n, 1,
+            [NdarrayHostAccess(self, key, (i,)) for i in range(self.n)])
 
     def __repr__(self):
-        return '<ti.Vector.ndarray>'
+        return f'<{self.n} ti.Vector.ndarray>'

@@ -80,7 +80,7 @@ class ScalarNdarray(Ndarray):
 
     @python_scope
     def __setitem__(self, key, value):
-        return self.arr.__setitem__(key, value)
+        self.arr.__setitem__(key, value)
 
     @python_scope
     def __getitem__(self, key):
@@ -88,3 +88,24 @@ class ScalarNdarray(Ndarray):
 
     def __repr__(self):
         return '<ti.ndarray>'
+
+
+class NdarrayHostAccess:
+    """Class for accessing VectorNdarray/MatrixNdarray in Python scope.
+    Args:
+        arr (Union[VectorNdarray, MatrixNdarray]): See above.
+        indices_first (Tuple[Int]): Indices of first-level access.
+        indices_second (Tuple[Int]): Indices of second-level access.
+    """
+    def __init__(self, arr, indices_first, indices_second):
+        self.arr = arr.arr
+        if arr.is_soa:
+            self.indices = indices_second + indices_first
+        else:
+            self.indices = indices_first + indices_second
+
+    def get(self):
+        return self.arr[self.indices]
+
+    def set(self, value):
+        self.arr[self.indices] = value

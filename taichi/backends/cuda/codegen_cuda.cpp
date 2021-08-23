@@ -41,7 +41,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     }
 
     auto jit = kernel->program->get_llvm_program_impl()
-                   ->llvm_context_device->jit.get();
+                   ->get_llvm_context(Arch::cuda)
+                   ->jit.get();
     auto cuda_module =
         jit->add_module(std::move(module), kernel->program->config.gpu_max_reg);
 

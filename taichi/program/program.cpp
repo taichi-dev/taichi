@@ -111,7 +111,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   total_compilation_time = 0;
   num_instances += 1;
   SNode::counter = 0;
-  // |llvm_context_device| is initialized before kernel compilation
   TI_ASSERT(current_program == nullptr);
   current_program = this;
 

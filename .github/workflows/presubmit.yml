@@ -295,6 +295,7 @@ jobs:
       - name: Build
         run: |
           arch -arm64 python3 -m pip uninstall taichi -y
+          rm -r $HOME/Library/Python/3.8/lib/python/site-packages/taichi
           git --version
           export CXX=clang++
           arch -arm64 python3 -m pip install -r requirements_dev.txt

@@ -304,10 +304,6 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
   }
 }
 
-TaichiLLVMContext *Program::get_llvm_context(Arch arch) {
-  return llvm_program_->get_llvm_context(arch);
-}
-
 void Program::check_runtime_error() {
   synchronize();
   auto tlctx = llvm_program_->llvm_context_host.get();
@@ -469,10 +465,6 @@ void Program::visualize_layout(const std::string &fn) {
     emit(tail);
   }
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
-}
-
-void Program::maybe_initialize_cuda_llvm_context() {
-  llvm_program_->maybe_initialize_cuda_llvm_context();
 }
 
 Arch Program::get_snode_accessor_arch() {

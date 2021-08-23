@@ -81,7 +81,6 @@ class Renderer {
   AppContext app_context_;
   
  private:
-  void clear_command_buffer_cache();
 
   template <typename T>
   T *get_renderable_of_type();

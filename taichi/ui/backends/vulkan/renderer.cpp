@@ -16,11 +16,6 @@ void Renderer::init(GLFWwindow *window, const AppConfig &config) {
   swap_chain_.init(&app_context_); 
 }
 
-void Renderer::clear_command_buffer_cache() {
-  
-}
- 
-
 template <typename T>
 std::unique_ptr<Renderable> get_new_renderable(Renderer *r) {
   return std::unique_ptr<Renderable>{new T(r)};
@@ -30,12 +25,10 @@ template <typename T>
 T *Renderer::get_renderable_of_type() {
   if (next_renderable_ >= renderables_.size()) {
     renderables_.push_back(get_new_renderable<T>(this));
-    clear_command_buffer_cache();
   } else if (dynamic_cast<T *>(renderables_[next_renderable_].get()) ==
              nullptr) {
     renderables_.insert(renderables_.begin() + next_renderable_,
                         get_new_renderable<T>(this));
-    clear_command_buffer_cache();
   }
 
   if (T *t = dynamic_cast<T *>(renderables_[next_renderable_].get())) {
@@ -110,7 +103,7 @@ void Renderer::cleanup() {
 }
 
 void Renderer::cleanup_swap_chain() {
-  clear_command_buffer_cache();
+  
   for (auto &renderable : renderables_) {
     renderable->cleanup_swap_chain();
   }
@@ -130,16 +123,11 @@ void Renderer::prepare_for_next_frame() {
 void Renderer::draw_frame(Gui *gui) {
   uint32_t image_index = 0;
 
-
   if (app_context_.config.ti_arch == Arch::cuda) {
     CUDADriver::get_instance().stream_synchronize(nullptr);
   }
 
   VkCommandBuffer command_buffer;
-
-  if (!gui->is_empty) {
-    clear_command_buffer_cache();
-  }
 
   std::unique_ptr<CommandList> cmd_list = app_context().vulkan_device().new_command_list({CommandListType::Graphics});
   bool color_clear = true;

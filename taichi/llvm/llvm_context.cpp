@@ -146,13 +146,6 @@ std::string get_runtime_src_dir() {
   return get_repo_dir() + "/taichi/runtime/llvm/";
 }
 
-std::string get_runtime_dir() {
-  if (runtime_tmp_dir.size() == 0)
-    return get_runtime_src_dir();
-  else
-    return runtime_tmp_dir + "/runtime/";
-}
-
 std::string libdevice_path() {
   std::string folder;
   folder = runtime_lib_dir();

@@ -22,8 +22,8 @@ void CCKernel::compile() {
                               ActionArg("kernel_source", source),
                           });
 
-  obj_path = fmt::format("{}/{}.o", runtime_tmp_dir, name);
-  src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
+  obj_path = fmt::format("{}/{}.o", runtime_lib_dir(), name);
+  src_path = fmt::format("{}/{}.c", runtime_lib_dir(), name);
 
   std::ofstream(src_path) << program->get_runtime()->header << "\n"
                           << program->get_layout()->source << "\n"
@@ -55,9 +55,9 @@ size_t CCLayout::compile() {
                                             ActionArg("layout_source", source),
                                         });
 
-  obj_path = fmt::format("{}/_rti_root.o", runtime_tmp_dir);
-  src_path = fmt::format("{}/_rti_root.c", runtime_tmp_dir);
-  auto dll_path = fmt::format("{}/libti_roottest.so", runtime_tmp_dir);
+  obj_path = fmt::format("{}/_rti_root.o", runtime_lib_dir());
+  src_path = fmt::format("{}/_rti_root.c", runtime_lib_dir());
+  auto dll_path = fmt::format("{}/libti_roottest.so", runtime_lib_dir());
 
   std::ofstream(src_path) << program->get_runtime()->header << "\n"
                           << source << "\n"
@@ -90,8 +90,8 @@ void CCRuntime::compile() {
                                             ActionArg("runtime_source", source),
                                         });
 
-  obj_path = fmt::format("{}/_rti_runtime.o", runtime_tmp_dir);
-  src_path = fmt::format("{}/_rti_runtime.c", runtime_tmp_dir);
+  obj_path = fmt::format("{}/_rti_runtime.o", runtime_lib_dir());
+  src_path = fmt::format("{}/_rti_runtime.c", runtime_lib_dir());
 
   std::ofstream(src_path) << header << "\n" << source;
   TI_DEBUG("[cc] compiling runtime -> [{}]:\n{}\n", obj_path, source);
@@ -102,7 +102,7 @@ void CCProgram::relink() {
   if (!need_relink)
     return;
 
-  dll_path = fmt::format("{}/libti_program.so", runtime_tmp_dir);
+  dll_path = fmt::format("{}/libti_program.so", runtime_lib_dir());
 
   std::vector<std::string> objects;
   objects.push_back(runtime->get_object());

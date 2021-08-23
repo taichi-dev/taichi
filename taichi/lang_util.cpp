@@ -14,7 +14,6 @@ namespace lang {
 
 CompileConfig default_compile_config;
 std::string compiled_lib_dir;
-std::string runtime_tmp_dir;
 
 std::string runtime_lib_dir() {
   std::string folder;

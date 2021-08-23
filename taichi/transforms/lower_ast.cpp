@@ -49,13 +49,6 @@ class LowerAST : public IRVisitor {
     capturing_loop = nullptr;
   }
 
-  Expr load_if_ptr(Expr expr) {
-    if (expr.is<GlobalPtrStmt>()) {
-      return load(expr);
-    } else
-      return expr;
-  }
-
   void visit(Block *stmt_list) override {
     auto backup_block = this->current_block;
     this->current_block = stmt_list;

@@ -40,6 +40,7 @@ void *get_memory_pointer(VkDeviceMemory mem,
 
 CUsurfObject get_image_surface_object_of_external_memory(
     CUexternalMemory external_mem,
+    uint64_t offset,
     int width,
     int height,
     int depth);

@@ -39,7 +39,7 @@ void Renderable::init_render_resources() {
 
     auto [ib_mem,ib_offset,ib_size] = app_context_->vulkan_device().get_vkmemory_offset_size(index_buffer_);
     
-    auto block_size = 128ull * 1024 * 1024;
+    auto block_size = VulkanDevice::kMemoryBlockSize;
 
     vertex_buffer_device_ptr_ = (Vertex *)get_memory_pointer(
         vb_mem,block_size,vb_offset,vb_size,

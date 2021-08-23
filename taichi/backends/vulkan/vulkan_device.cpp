@@ -967,13 +967,13 @@ inline void buffer_image_copy_ti_to_vk(VkBufferImageCopy &copy_info,
   copy_info.imageOffset.y = params.image_offset.y;
   copy_info.imageOffset.z = params.image_offset.z;
   copy_info.imageSubresource.aspectMask =
-      VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
+      VK_IMAGE_ASPECT_COLOR_BIT; // FIXME: add option in BufferImageCopyParams to support copying depth images
   copy_info.imageSubresource.baseArrayLayer = params.image_base_layer;
   copy_info.imageSubresource.layerCount = params.image_layer_count;
   copy_info.imageSubresource.mipLevel = params.image_mip_level;
 }
 
-void VulkanCommandList::buffer2image(DeviceAllocation dst_img,
+void VulkanCommandList::buffer_to_image(DeviceAllocation dst_img,
                                      DevicePtr src_buf,
                                      ImageLayout img_layout,
                                      const BufferImageCopyParams &params) {
@@ -986,7 +986,7 @@ void VulkanCommandList::buffer2image(DeviceAllocation dst_img,
                          image_layout_ti_to_vk(img_layout), 1, &copy_info);
 }
 
-void VulkanCommandList::image2buffer(DevicePtr dst_buf,
+void VulkanCommandList::image_to_buffer(DevicePtr dst_buf,
                                      DeviceAllocation src_img,
                                      ImageLayout img_layout,
                                      const BufferImageCopyParams &params) {
@@ -1136,31 +1136,6 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   } else {
     alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
   }
-
-  //   VkExportMemoryAllocateInfoKHR export_mem_alloc_info_ = {};
-  //   export_mem_alloc_info_.sType =
-  //       VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR;
-  // #ifdef _WIN64
-  //   WindowsSecurityAttributes win_security_attribs;
-
-  //   VkExportMemoryWin32HandleInfoKHR export_mem_win32_handle_info = {};
-  //   export_mem_win32_handle_info.sType =
-  //       VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR;
-  //   export_mem_win32_handle_info.pNext = NULL;
-  //   export_mem_win32_handle_info.pAttributes = &win_security_attribs;
-  //   export_mem_win32_handle_info.dwAccess =
-  //       DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
-  //   export_mem_win32_handle_info.name = (LPCWSTR)NULL;
-
-  //   export_mem_alloc_info_.pNext = &export_mem_win32_handle_info;
-  //   export_mem_alloc_info_.handleTypes =
-  //       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
-  // #else
-  //   export_mem_alloc_info_.pNext = NULL;
-  //   export_mem_alloc_info_.handleTypes =
-  //       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
-  // #endif
-  //   alloc.alloc_info. = &export_mem_alloc_info_;
 
   BAIL_ON_VK_BAD_RESULT(
       vmaCreateBuffer(allocator_, &buffer_info, &alloc_info, &alloc.buffer,
@@ -1501,13 +1476,13 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   image_info.format = buffer_format_ti_to_vk(params.format);
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  image_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT |
+  image_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | 
                      VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
   if (is_depth) {
-    image_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
   } else {
-    image_info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    image_info.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
   }
   image_info.samples = VK_SAMPLE_COUNT_1_BIT;
   image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -1543,7 +1518,13 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   view_info.pNext = nullptr;
   view_info.image = alloc.image;
-  view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  if (params.dimension == ImageDimension::d1D) {
+    view_info.viewType = VK_IMAGE_VIEW_TYPE_1D;
+  } else if (params.dimension == ImageDimension::d2D) {
+    view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  } else if (params.dimension == ImageDimension::d3D) {
+    view_info.viewType = VK_IMAGE_VIEW_TYPE_3D;
+  }
   view_info.format = image_info.format;
   view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
   view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -1559,6 +1540,10 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   BAIL_ON_VK_BAD_RESULT(
       vkCreateImageView(device_, &view_info, nullptr, &alloc.view),
       "Failed to create image view");
+
+  if(params.initial_layout != ImageLayout::undefined){
+    image_transition(handle,ImageLayout::undefined,params.initial_layout);
+  }
 
   return handle;
 }
@@ -1845,7 +1830,7 @@ void VulkanDevice::create_vma_allocator() {
 
     VmaPoolCreateInfo pool_info{};
     pool_info.memoryTypeIndex = memTypeIndex;
-    pool_info.blockSize = 128ull * 1024 * 1024;  // 128MB
+    pool_info.blockSize = kMemoryBlockSize;  // 128MB
     pool_info.maxBlockCount = 16;
     pool_info.pMemoryAllocateNext = &export_pool_.export_mem_alloc_info;
 

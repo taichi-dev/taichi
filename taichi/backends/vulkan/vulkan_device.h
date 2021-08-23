@@ -296,11 +296,11 @@ class VulkanCommandList : public CommandList {
   void image_transition(DeviceAllocation img,
                         ImageLayout old_layout,
                         ImageLayout new_layout) override;
-  void buffer2image(DeviceAllocation dst_img,
+  void buffer_to_image(DeviceAllocation dst_img,
                     DevicePtr src_buf,
                     ImageLayout img_layout,
                     const BufferImageCopyParams &params) override;
-  void image2buffer(DevicePtr dst_buf,
+  void image_to_buffer(DevicePtr dst_buf,
                     DeviceAllocation src_img,
                     ImageLayout img_layout,
                     const BufferImageCopyParams &params) override;
@@ -479,6 +479,8 @@ class VulkanDevice : public GraphicsDevice {
   VkDescriptorSetLayout get_desc_set_layout(VulkanResourceBinder::Set &set);
   VkDescriptorSet alloc_desc_set(VkDescriptorSetLayout layout);
   void dealloc_desc_set(VkDescriptorSetLayout layout, VkDescriptorSet set);
+
+  static constexpr size_t kMemoryBlockSize = 128ull * 1024 * 1024;
 
  private:
   void create_vma_allocator();

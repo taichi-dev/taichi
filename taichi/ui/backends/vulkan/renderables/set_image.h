@@ -41,8 +41,6 @@ class SetImage final : public Renderable {
   // the staging buffer is only used if we have a CPU ti backend.
   taichi::lang::DeviceAllocation  staging_buffer_;
 
-  // TODO: make the device api support allocating images.
-  VkDeviceMemory texture_image_memory_;
   taichi::lang::DeviceAllocation texture_;
 
   uint64_t texture_surface_;

@@ -55,11 +55,12 @@ void SetImage::update_data(const SetImageInfo &info) {
       throw std::runtime_error("for set image, dtype must be u8 or f32");
     }
   } else if (img.field_source == FieldSource::TaichiX64) {
-    transition_image_layout(
-        texture_image, VK_FORMAT_R8G8B8A8_SRGB,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, app_context_->command_pool(),
-        app_context_->device(), app_context_->graphics_queue());
+    app_context_->vulkan_device().image_transition(texture_,ImageLayout::shader_read,ImageLayout::transfer_dst);
+
+    BufferImageCopyParams copy_params;
+    copy_params.image_extent.x = width;
+    copy_params.image_extent.y = height;
+    
 
     unsigned char *mapped =
         (unsigned char *)app_context_->vulkan_device().map(staging_buffer_);
@@ -76,17 +77,9 @@ void SetImage::update_data(const SetImageInfo &info) {
     }
 
     app_context_->vulkan_device().unmap(staging_buffer_);
+    app_context_->vulkan_device().buffer_to_image(texture_,staging_buffer_.get_ptr(0),ImageLayout::transfer_dst,copy_params);
 
-    copy_buffer_to_image(
-        app_context_->vulkan_device().get_vkbuffer(staging_buffer_),
-        texture_image, width, height, app_context_->command_pool(),
-        app_context_->device(), app_context_->graphics_queue());
-
-    transition_image_layout(
-        texture_image, VK_FORMAT_R8G8B8A8_SRGB,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, app_context_->command_pool(),
-        app_context_->device(), app_context_->graphics_queue());
+    app_context_->vulkan_device().image_transition(texture_,ImageLayout::transfer_dst ,ImageLayout::shader_read);
   } else {
     throw std::runtime_error("unsupported field source");
   }
@@ -125,37 +118,36 @@ void SetImage::init_set_image(Renderer *renderer,
 }
 
 void SetImage::create_texture() {
-  VkImage texture_image;
-  VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
   size_t image_size = width * height * 4;
 
-  create_image(3, width, height, 1, format, VK_IMAGE_TILING_OPTIMAL,
-               VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture_image,
-               texture_image_memory_, app_context_->device(),
-               app_context_->physical_device());
+  ImageParams params;
+  params.dimension = ImageDimension::d3D;
+  params.format = BufferFormat::rgba8;
+  params.initial_layout = ImageLayout::shader_read;
+  params.x = width;
+  params.y = height;
+  params.z = 1;
+  params.export_sharing = true;
 
-  transition_image_layout(texture_image, format, VK_IMAGE_LAYOUT_UNDEFINED,
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          app_context_->command_pool(), app_context_->device(),
-                          app_context_->graphics_queue());
-  transition_image_layout(
-      texture_image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, app_context_->command_pool(),
-      app_context_->device(), app_context_->graphics_queue());
+  texture_ = renderer_->app_context().vulkan_device().create_image(params);
+
 
   if (app_context_->config.ti_arch == Arch::cuda) {
+    auto [image, view, format] = renderer_->app_context().vulkan_device().get_vk_image(texture_);
+    auto [device_mem, offset, size] = renderer_->app_context().vulkan_device().get_vkmemory_offset_size(texture_);
     VkMemoryRequirements mem_requirements;
-    vkGetImageMemoryRequirements(app_context_->device(), texture_image,
-                                 &mem_requirements);
+    vkGetImageMemoryRequirements(app_context_->device(), image, &mem_requirements);
+
+    auto block_size = VulkanDevice::kMemoryBlockSize;
 
     auto handle =
-        get_device_mem_handle(texture_image_memory_, app_context_->device());
+        get_device_mem_handle(device_mem, app_context_->device());
+
     CUexternalMemory external_mem = import_vk_memory_object_from_handle(
-        handle, mem_requirements.size, true);
+        handle, block_size, true);
 
     texture_surface_ = (uint64_t)get_image_surface_object_of_external_memory(
-        external_mem, width, height, 1);
+        external_mem, offset, width, height, 1);
   }
 
   Device::AllocParams staging_buffer_params{image_size, true, false, false,
@@ -163,12 +155,6 @@ void SetImage::create_texture() {
   staging_buffer_ = renderer_->app_context().vulkan_device().allocate_memory(
       staging_buffer_params);
 
-  VkImageView view =
-      create_image_view(3, texture_image, VK_FORMAT_R8G8B8A8_UNORM,
-                        VK_IMAGE_ASPECT_COLOR_BIT, app_context_->device());
-
-  texture_ = renderer_->app_context().vulkan_device().import_vk_image(
-      texture_image, view, format);
 }
 
 void SetImage::update_vertex_buffer_() {
@@ -223,8 +209,6 @@ void SetImage::create_bindings() {
 
 void SetImage::cleanup() {
   Renderable::cleanup();
-
-  vkFreeMemory(app_context_->device(), texture_image_memory_, nullptr);
 }
 
 }  // namespace vulkan

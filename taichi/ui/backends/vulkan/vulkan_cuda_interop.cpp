@@ -132,15 +132,18 @@ void *get_memory_pointer(VkDeviceMemory mem,
 
 CUsurfObject get_image_surface_object_of_external_memory(
     CUexternalMemory external_mem,
+    uint64_t offset,
     int width,
     int height,
     int depth) {
   CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC external_mem_mipmapped_array_desc;
 
+  printf("%ld,%d,%d,%d\n",offset,width,height,depth);
+
   memset(&external_mem_mipmapped_array_desc, 0,
          sizeof(external_mem_mipmapped_array_desc));
 
-  external_mem_mipmapped_array_desc.offset = 0;
+  external_mem_mipmapped_array_desc.offset = offset;
   external_mem_mipmapped_array_desc.numLevels = 1;
   external_mem_mipmapped_array_desc.arrayDesc.Width = width;
   external_mem_mipmapped_array_desc.arrayDesc.Height = height;

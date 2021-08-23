@@ -25,7 +25,7 @@ bool is_extension_supported(Arch arch, Extension ext) {
       // TODO: supporting quant & async in metal(tests randomly crashed)
       {Arch::metal,
        {Extension::adstack, Extension::assertion, Extension::sparse,
-        Extension::async_mode, Extension::quant}},
+        Extension::async_mode, Extension::quant_basic}},
       {Arch::opengl, {Extension::extfunc}},
       {Arch::cc, {Extension::data64, Extension::extfunc, Extension::adstack}},
   };

@@ -265,9 +265,10 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
   indices[0]->flatten(ctx);
   Stmt *offset_stmt = indices[0]->stmt;
   for (int i = 1; i < (int)shape.size(); ++i) {
-    Stmt *shape_on_i = ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(shape[i])));
-    Stmt *mul_stmt = ctx->push_back(Stmt::make<BinaryOpStmt>(
-            BinaryOpType::mul, offset_stmt, shape_on_i));
+    Stmt *shape_on_i =
+        ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(shape[i])));
+    Stmt *mul_stmt = ctx->push_back(
+        Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, shape_on_i));
     indices[i].set(load_if_ptr(indices[i]));
     indices[i]->flatten(ctx);
     ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::add, mul_stmt,
@@ -281,8 +282,8 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(
       Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
   offset_stmt = ctx->back_stmt();
-  Stmt *layout_stride_stmt = ctx->push_back(
-      Stmt::make<ConstStmt>(TypedConstant(layout_stride)));
+  Stmt *layout_stride_stmt =
+      ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(layout_stride)));
   ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
                                           layout_stride_stmt));
   ctx->push_back(std::make_unique<PtrOffsetStmt>(var_stmt, ctx->back_stmt()));

@@ -737,8 +737,8 @@ void export_lang(py::module &m) {
   });
 
   m.def("global_subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices, const std::vector<int> &shape,
-           bool is_aos) {
+        [](const Expr &var, const ExprGroup &indices,
+           const std::vector<int> &shape, bool is_aos) {
           // TODO: Add test for dimension check
           if (is_aos)
             return Expr::make<TensorElementExpression>(var, indices, shape, 1);
@@ -753,7 +753,8 @@ void export_lang(py::module &m) {
         });
 
   m.def("local_subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices, const std::vector<int> &shape) {
+        [](const Expr &var, const ExprGroup &indices,
+           const std::vector<int> &shape) {
           // TODO: Add test for dimension check
           return Expr::make<TensorElementExpression>(var, indices, shape, 1);
         });

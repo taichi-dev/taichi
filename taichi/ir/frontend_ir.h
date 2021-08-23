@@ -475,10 +475,7 @@ class TensorElementExpression : public Expression {
                           const ExprGroup &indices,
                           const std::vector<int> &shape,
                           int layout_stride)
-      : var(var),
-        indices(indices),
-        shape(shape),
-        layout_stride(layout_stride) {
+      : var(var), indices(indices), shape(shape), layout_stride(layout_stride) {
   }
 
   bool is_local_tensor() const;

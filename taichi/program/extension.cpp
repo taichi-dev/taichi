@@ -24,7 +24,7 @@ bool is_extension_supported(Arch arch, Extension ext) {
         Extension::dynamic_index}},
       {Arch::metal,
        {Extension::adstack, Extension::assertion, Extension::quant_basic,
-        Extension::sparse}},
+        Extension::async_mode, Extension::sparse}},
       {Arch::opengl, {Extension::extfunc}},
       {Arch::cc, {Extension::data64, Extension::extfunc, Extension::adstack}},
   };

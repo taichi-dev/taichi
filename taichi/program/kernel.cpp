@@ -24,7 +24,7 @@ Kernel::Kernel(Program &program,
   // Do not corrupt the context calling this kernel here -- maybe unnecessary
   auto backup_context = std::move(taichi::lang::context);
 
-  program.maybe_initialize_cuda_llvm_context();
+  program.get_llvm_program_impl()->maybe_initialize_cuda_llvm_context();
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;

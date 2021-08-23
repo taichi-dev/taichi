@@ -32,6 +32,11 @@ class LlvmProgramImpl {
 
   LlvmProgramImpl(CompileConfig &config);
 
+  /**
+   * Initializes Program#llvm_context_device, if this has not been done.
+   *
+   * Not thread safe.
+   */
   void maybe_initialize_cuda_llvm_context();
 
   TaichiLLVMContext *get_llvm_context(Arch arch) {

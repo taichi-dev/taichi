@@ -7,6 +7,8 @@
 namespace taichi {
 namespace lang {
 
+class SparseMatrix;
+
 class SparseMatrixBuilder {
  public:
   SparseMatrixBuilder(int n, int m, int max_num_triplets);
@@ -17,9 +19,7 @@ class SparseMatrixBuilder {
 
   void build();
 
-  void print();
-
-  void solve(SparseMatrixBuilder *);
+  SparseMatrix get_matrix();
 
  private:
   uint64 num_triplets{0};
@@ -30,6 +30,22 @@ class SparseMatrixBuilder {
   bool built{false};
   Eigen::SparseMatrix<float32> matrix;
 };
+
+class SparseMatrix{
+public:
+    SparseMatrix(){}
+
+    SparseMatrix(Eigen::SparseMatrix<float32>& matrix);
+
+    void print();
+
+    void solve(SparseMatrix* );
+
+private:
+  int n, m;
+  Eigen::SparseMatrix<float32>* matrix;
+};
+
 
 }  // namespace lang
 }  // namespace taichi

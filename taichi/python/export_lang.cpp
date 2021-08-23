@@ -7,6 +7,7 @@
 
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/eigen.h"
 
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/frontend_ir.h"
@@ -939,9 +940,12 @@ void export_lang(py::module &m) {
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
       .def("print_triplets", &SparseMatrixBuilder::print_triplets)
       .def("build", &SparseMatrixBuilder::build)
-      .def("print", &SparseMatrixBuilder::print)
-      .def("solve", &SparseMatrixBuilder::solve)
+      .def("get_matrix", &SparseMatrixBuilder::get_matrix)
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
+
+  py::class_<SparseMatrix>(m, "SparseMatrix")
+    .def("print",&SparseMatrix::print)
+    .def("solve", &SparseMatrix::solve);
 }
 
 TI_NAMESPACE_END

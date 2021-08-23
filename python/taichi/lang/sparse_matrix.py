@@ -1,3 +1,14 @@
+class SparseMatrix:
+    def __init__(self, ptr):
+        self.matrix = ptr.get_matrix()
+
+    def print(self):
+        self.matrix.print()
+
+    def solve(self, b):
+        self.matrix.solve(b)
+
+
 class SparseMatrixBuilder:
     def __init__(self, n, m=None, max_num_triplets=0):
         self.n = n
@@ -15,11 +26,9 @@ class SparseMatrixBuilder:
     def print(self):
         self.ptr.print()
 
-    def solve(self, b):
-        self.ptr.solve(b.ptr)
-
     def build(self):
         self.ptr.build()
+        return SparseMatrix(self.ptr)
 
 
 class SparseMatrixEntry:

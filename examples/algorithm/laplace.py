@@ -1,8 +1,4 @@
-from taichi.lang import *
-
 import taichi as ti
-
-print(is_arch_supported(ti.vulkan))
 
 ti.init(arch=ti.cpu)
 

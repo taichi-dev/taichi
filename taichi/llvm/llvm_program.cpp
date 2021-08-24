@@ -6,6 +6,11 @@
 #include "taichi/math/arithmetic.h"
 #include "taichi/runtime/llvm/mem_request.h"
 #include "taichi/util/str.h"
+#if defined(TI_WITH_CUDA)
+#include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/backends/cuda/codegen_cuda.h"
+#include "taichi/backends/cuda/cuda_context.h"
+#endif
 
 namespace taichi {
 namespace lang {
@@ -21,7 +26,8 @@ void *taichi_allocate_aligned(MemoryPool *memory_pool,
 }
 }  // namespace
 
-LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_) {
+LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
+                                 KernelProfilerBase *profiler) {
   runtime_mem_info = Runtime::create(config_.arch);
   if (config_.arch == Arch::cuda) {
     if (!runtime_mem_info) {
@@ -46,6 +52,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_) {
   thread_pool = std::make_unique<ThreadPool>(config.cpu_max_num_threads);
 
   preallocated_device_buffer = nullptr;
+  llvm_runtime = nullptr;
   llvm_context_host = std::make_unique<TaichiLLVMContext>(host_arch());
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
@@ -70,10 +77,29 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_) {
   if (arch_is_cpu(config.arch)) {
     config_.max_block_dim = 1024;
   }
+
+  if (config.kernel_profiler && runtime_mem_info) {
+    runtime_mem_info->set_profiler(profiler);
+  }
+#if defined(TI_WITH_CUDA)
+  if (config.arch == Arch::cuda) {
+    if (config.kernel_profiler) {
+      CUDAContext::get_instance().set_profiler(profiler);
+    } else {
+      CUDAContext::get_instance().set_profiler(nullptr);
+    }
+  }
+#endif
   // TODO: CompileConfig should be refactored. Currently we make a copy of
   // CompileConfig from Program. If config is updated after Program
   // initialization, please make sure it's synced.
   config = config_;
+}
+
+void LlvmProgramImpl::initialize_host() {
+  // Note this cannot be placed inside LlvmProgramImpl constructor, see doc
+  // string for init_runtime_jit_module() for more details.
+  llvm_context_host->init_runtime_jit_module();
 }
 
 void LlvmProgramImpl::maybe_initialize_cuda_llvm_context() {
@@ -401,6 +427,15 @@ void LlvmProgramImpl::check_runtime_error(uint64 *result_buffer) {
       TI_NOT_IMPLEMENTED
     }
   }
+}
+
+void LlvmProgramImpl::finalize() {
+  if (runtime_mem_info)
+    runtime_mem_info->set_profiler(nullptr);
+#if defined(TI_WITH_CUDA)
+  if (preallocated_device_buffer != nullptr)
+    CUDADriver::get_instance().mem_free(preallocated_device_buffer);
+#endif
 }
 
 void LlvmProgramImpl::print_memory_profiler_info(

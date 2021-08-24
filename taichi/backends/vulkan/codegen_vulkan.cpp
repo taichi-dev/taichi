@@ -1416,7 +1416,7 @@ FunctionType compile_to_executable(Kernel *kernel,
                                    VkRuntime *runtime) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
-  TI_INFO("VK codegen for Taichi kernel={}", taichi_kernel_name);
+  TI_TRACE("VK codegen for Taichi kernel={}", taichi_kernel_name);
   KernelCodegen::Params params;
   params.ti_kernel_name = taichi_kernel_name;
   params.kernel = kernel;

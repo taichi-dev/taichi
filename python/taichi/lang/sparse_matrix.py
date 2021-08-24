@@ -11,7 +11,7 @@ class SparseMatrix:
             self.m = sm.num_cols()
             self.matrix = sm
 
-    def __create_sparse_matrix(self):
+    def _create_sparse_matrix(self):
         from taichi.lang.impl import get_runtime
         sm = get_runtime().create_sparse_matrix(self.n, self.m)
         return sm

@@ -804,6 +804,7 @@ def is_arch_supported(arch):
     Returns:
         bool: Whether `arch` is supported on the machine.
     """
+    print('vulkan: ',  _ti_core.with_vulkan)
     arch_table = {
         cuda: _ti_core.with_cuda,
         metal: _ti_core.with_metal,

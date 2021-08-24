@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cpu)
+ti.init(arch=ti.vulkan)
 
 N = 16
 

@@ -59,21 +59,3 @@ H = E * A
 H.print()
 
 print(f">>> Element Access: A[0,0] = {A.get_ele(0,0)}")
-
-# print()
-#
-# K.print_triplets()
-# K.build()
-#
-# print('K = ')
-# K.print()
-# print()
-#
-# print('f = ')
-# f.build()
-# f.print()
-#
-# print()
-# print('u = ')
-# K.solve(f)
-# TODO: where to store the results?

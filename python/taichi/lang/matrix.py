@@ -10,6 +10,7 @@ from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.ext_array import AnyArrayAccess
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
+from taichi.lang.types import CompoundType
 from taichi.lang.util import (in_python_scope, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
 from taichi.misc.util import deprecated, warning
@@ -1221,7 +1222,7 @@ class MatrixField(Field):
     """Taichi matrix field with SNode implementation.
 
     Args:
-        vars (Expr): Field members.
+        vars (List[Expr]): Field members.
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
@@ -1279,7 +1280,7 @@ class MatrixField(Field):
 
     @python_scope
     def to_numpy(self, keep_dims=False, as_vector=None, dtype=None):
-        """Converts `self` to a numpy array.
+        """Converts the field instance to a NumPy array.
 
         Args:
             keep_dims (bool, optional): Whether to keep the dimension after conversion.
@@ -1292,7 +1293,7 @@ class MatrixField(Field):
             dtype (DataType, optional): The desired data type of returned numpy array.
 
         Returns:
-            numpy.ndarray: The result numpy array.
+            numpy.ndarray: The result NumPy array.
         """
         if as_vector is not None:
             warning(
@@ -1312,7 +1313,7 @@ class MatrixField(Field):
         return arr
 
     def to_torch(self, device=None, keep_dims=False):
-        """Converts `self` to a torch tensor.
+        """Converts the field instance to a PyTorch tensor.
 
         Args:
             device (torch.device, optional): The desired device of returned tensor.
@@ -1369,3 +1370,56 @@ class MatrixField(Field):
     def __repr__(self):
         # make interactive shell happy, prevent materialization
         return f'<{self.n}x{self.m} ti.Matrix.field>'
+
+
+class MatrixType(CompoundType):
+
+    def __init__(self, m, n, dtype):
+        self.m = m
+        self.n = n
+        self.dtype = dtype
+
+
+    def __call__(self, *args):
+        if len(args) == 0:
+            raise TaichiSyntaxError("Custom type instances need to be created with an initial value.")
+        elif len(args) == 1:
+            # fill a single scalar
+            if isinstance(args[0], numbers.Number):
+                return self.scalar_filled(args[0])
+            # fill a single vector or matrix
+            entries = args[0]
+        else:
+            # fill in a concatenation of scalars/vectors/matrices
+            entries = []
+            for x in args:
+                if isinstance(x, numbers.Number):
+                    entries.append(x)
+                elif isinstance(x, (list, tuple)):
+                    entries += x
+                elif isinstance(x, Matrix):
+                    entries += x.entries
+        # convert vector to nx1 matrix
+        if isinstance(entries[0], numbers.Number):
+            entries = [[e] for e in entries]
+        # type cast
+        mat = self.cast(Matrix(entries))
+        return mat
+
+    def cast(self, mat, in_place=False):
+        if not in_place:
+            mat = mat.copy()
+        # sanity check shape
+        if self.m != mat.m or self.n != mat.n:
+            raise TaichiSyntaxError("Incompatible arguments for the custom vector/matrix type!")
+        mat.entries = [cast(x, self.dtype) for x in mat.entries]
+        return mat
+        
+    def empty(self):
+        """
+        Create an empty instance of the given compound type.
+        """
+        return Matrix.empty(self.m, self.n)
+
+    def field(self, **kwargs):
+        return Matrix.field(self.m, self.n, **kwargs)

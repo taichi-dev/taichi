@@ -312,7 +312,8 @@ class IRBuilder {
   // Get the spirv type for a given Taichi data type
   SType get_primitive_type(const DataType &dt) const;
   // Get the spirv type for the buffer for a given Taichi data type
-  SType get_primitive_buffer_type(const DataType &dt) const;
+  SType get_primitive_buffer_type(const bool struct_compiled,
+                                  const DataType &dt) const;
   // Get the pointer type that points to value_type
   SType get_pointer_type(const SType &value_type,
                          spv::StorageClass storage_class);

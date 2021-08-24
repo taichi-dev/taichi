@@ -221,9 +221,9 @@ class TaskCodegen : public IRVisitor {
       TI_ASSERT(ptr_to_buffers_.count(stmt) == 0);
       ptr_to_buffers_[stmt] = BuffersEnum::Root;
 
-      spirv::SType dt_ptr =
-          ir_->get_pointer_type(ir_->get_primitive_buffer_type(out_snode->dt),
-                                spv::StorageClassStorageBuffer);
+      spirv::SType dt_ptr = ir_->get_pointer_type(
+          ir_->get_primitive_buffer_type(true, out_snode->dt),
+          spv::StorageClassStorageBuffer);
       val = ir_->make_value(spv::OpAccessChain, dt_ptr, input_ptr_val, offset);
     } else {
       spirv::SType snode_array =
@@ -344,17 +344,20 @@ class TaskCodegen : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     const auto dt = stmt->val->element_type();
+    bool struct_compiled = false;
     spirv::Value buffer_ptr;
     spirv::Value val = ir_->query_value(stmt->val->raw_name());
     if (ptr_to_buffers_.at(stmt->dest) == BuffersEnum::Root) {
       buffer_ptr = ir_->query_value(stmt->dest->raw_name());
       buffer_ptr.flag =
           spirv::ValueKind::kVariablePtr;  // make this value could store/load
+      struct_compiled = true;
     } else {
       buffer_ptr = at_buffer(stmt->dest, dt);
     }
 
-    const auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
+    const auto &primitive_buffer_type =
+        ir_->get_primitive_buffer_type(struct_compiled, dt);
     if (buffer_ptr.stype.element_type_id == val.stype.id) {
       // No bit cast
       ir_->store_variable(buffer_ptr, val);
@@ -368,17 +371,20 @@ class TaskCodegen : public IRVisitor {
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->element_type();
+    bool struct_compiled = false;
     spirv::Value buffer_ptr;
     spirv::Value val;
     if (ptr_to_buffers_.at(stmt->src) == BuffersEnum::Root) {
       buffer_ptr = ir_->query_value(stmt->src->raw_name());
       buffer_ptr.flag =
           spirv::ValueKind::kVariablePtr;  // make this value could store/load
+      struct_compiled = true;
     } else {
       buffer_ptr = at_buffer(stmt->src, dt);
     }
 
-    const auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
+    const auto &primitive_buffer_type =
+        ir_->get_primitive_buffer_type(struct_compiled, dt);
     if (buffer_ptr.stype.element_type_id == val.stype.id) {
       // No bit cast
       val = ir_->load_variable(buffer_ptr, primitive_buffer_type);
@@ -790,10 +796,12 @@ class TaskCodegen : public IRVisitor {
     const auto dt = stmt->dest->element_type().ptr_removed();
 
     spirv::Value addr_ptr;
+    bool is_compiled_struct = false;
     if (ptr_to_buffers_.at(stmt->dest) == BuffersEnum::Root) {
       addr_ptr = ir_->query_value(stmt->dest->raw_name());
       addr_ptr.flag =
           spirv::ValueKind::kVariablePtr;  // make this value could store/load
+      is_compiled_struct = true;
     } else {
       addr_ptr = at_buffer(stmt->dest, dt);
     }
@@ -801,15 +809,25 @@ class TaskCodegen : public IRVisitor {
     spirv::Value val;
     if (dt->is_primitive(PrimitiveTypeID::f32)) {
       if (device_->get_cap(DeviceCapability::vk_has_atomic_float_add) &&
-          stmt->op_type == AtomicOpType::add) {
+          stmt->op_type == AtomicOpType::add && is_compiled_struct) {
         val = ir_->make_value(
             spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt), addr_ptr,
             ir_->uint_immediate_number(ir_->u32_type(), 1),
             ir_->uint_immediate_number(ir_->u32_type(), 0), data);
-      } else {
+      } else if (device_->get_cap(DeviceCapability::vk_has_spv_variable_ptr)) {
         spirv::Value func = ir_->float_atomic(stmt->op_type);
         val = ir_->make_value(spv::OpFunctionCall, ir_->f32_type(), func,
                               addr_ptr, data);
+      } else {
+        if (is_compiled_struct) {
+          TI_ERROR(
+              "Atomic operation requires either shader atomic float capability "
+              "or OpVariablePtr capability");
+        } else {
+          TI_ERROR(
+              "Atomic operation on global temporaries or context buffers "
+              "requires OpVariablePtr capability");
+        }
       }
     } else if (is_integral(dt)) {
       spv::Op op;
@@ -1173,7 +1191,9 @@ class TaskCodegen : public IRVisitor {
         ir_->make_value(spv::OpShiftRightArithmetic, ir_->i32_type(), ptr_val,
                         ir_->int_immediate_number(ir_->i32_type(), 2));
     spirv::Value ret = ir_->struct_array_access(
-        ir_->get_primitive_buffer_type(dt), buffer, idx_val);
+        ir_->get_primitive_buffer_type(
+            ptr_to_buffers_.at(ptr) == BuffersEnum::Root, dt),
+        buffer, idx_val);
     return ret;
   }
 

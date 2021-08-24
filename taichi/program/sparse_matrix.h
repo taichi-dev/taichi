@@ -17,8 +17,7 @@ class SparseMatrixBuilder {
 
   void print_triplets();
 
-  void build(SparseMatrix* sm);
-
+  void build(SparseMatrix *sm);
 
  private:
   uint64 num_triplets{0};
@@ -29,32 +28,34 @@ class SparseMatrixBuilder {
   bool built{false};
 };
 
-class SparseMatrix{
-public:
-    SparseMatrix() = delete;
-    SparseMatrix(int n, int m);
-    SparseMatrix(Eigen::SparseMatrix<float32>& matrix);
+class SparseMatrix {
+ public:
+  SparseMatrix() = delete;
+  SparseMatrix(int n, int m);
+  SparseMatrix(Eigen::SparseMatrix<float32> &matrix);
 
-    int num_rows();
-    int num_cols();
-    void print();
-    Eigen::SparseMatrix<float32>& get_matrix();
-    float32 get_coeff(int row, int col);
+  int num_rows();
+  int num_cols();
+  void print();
+  Eigen::SparseMatrix<float32> &get_matrix();
+  float32 get_coeff(int row, int col);
 
-    friend SparseMatrix* operator+(const SparseMatrix& sm1, const SparseMatrix& sm2);
-    friend SparseMatrix* operator-(const SparseMatrix& sm1, const SparseMatrix& sm2);
-    friend SparseMatrix* operator*(float scale, const SparseMatrix& sm);
-    friend SparseMatrix* operator*(const SparseMatrix& sm1, const SparseMatrix& sm2);
-    SparseMatrix* matmult(const SparseMatrix& sm);
-    SparseMatrix* transpose();
+  friend SparseMatrix *operator+(const SparseMatrix &sm1,
+                                 const SparseMatrix &sm2);
+  friend SparseMatrix *operator-(const SparseMatrix &sm1,
+                                 const SparseMatrix &sm2);
+  friend SparseMatrix *operator*(float scale, const SparseMatrix &sm);
+  friend SparseMatrix *operator*(const SparseMatrix &sm1,
+                                 const SparseMatrix &sm2);
+  SparseMatrix *matmult(const SparseMatrix &sm);
+  SparseMatrix *transpose();
 
-    void solve(SparseMatrix* );
+  void solve(SparseMatrix *);
 
-private:
+ private:
   int n, m;
   Eigen::SparseMatrix<float32> matrix;
 };
-
 
 }  // namespace lang
 }  // namespace taichi

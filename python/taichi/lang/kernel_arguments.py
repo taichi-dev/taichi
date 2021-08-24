@@ -130,7 +130,6 @@ def decl_ext_arr_arg(dtype, dim):
     return ExtArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id))
 
 
-
 # TODO: add data type
 def decl_sparse_matrix():
     ptr_type = cook_dtype(u64)
@@ -138,12 +137,12 @@ def decl_sparse_matrix():
     arg_id = _ti_core.decl_arg(ptr_type, False)
     return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type))
 
+
 def decl_any_arr_arg(dtype, dim, element_shape, is_soa):
     dtype = cook_dtype(dtype)
     arg_id = _ti_core.decl_arg(dtype, True)
     return AnyArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id),
                     element_shape, is_soa)
-
 
 
 def decl_scalar_ret(dtype):

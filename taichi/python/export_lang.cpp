@@ -246,7 +246,8 @@ void export_lang(py::module &m) {
       .def("get_snode_tree_size", &Program::get_snode_tree_size)
       .def("get_snode_root", &Program::get_snode_root,
            py::return_value_policy::reference)
-      .def("create_sparse_matrix_builder", &Program::create_sparse_matrix_builder,
+      .def("create_sparse_matrix_builder",
+           &Program::create_sparse_matrix_builder,
            py::return_value_policy::reference)
       .def("create_sparse_matrix", &Program::create_sparse_matrix,
            py::return_value_policy::reference);
@@ -955,17 +956,19 @@ void export_lang(py::module &m) {
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 
   py::class_<SparseMatrix>(m, "SparseMatrix")
-    .def("print",&SparseMatrix::print)
-    .def(py::self + py::self, py::return_value_policy::reference_internal)
-    .def(py::self - py::self, py::return_value_policy::reference_internal)
-    .def(float() * py::self, py::return_value_policy::reference_internal)
-    .def(py::self * py::self, py::return_value_policy::reference_internal)
-    .def("matmult", &SparseMatrix::matmult,py::return_value_policy::reference_internal)
-    .def("transpose", &SparseMatrix::transpose, py::return_value_policy::reference_internal)
-    .def("get_coeff", &SparseMatrix::get_coeff)
-    .def("num_rows", &SparseMatrix::num_rows)
-    .def("num_cols", &SparseMatrix::num_cols)
-    .def("solve", &SparseMatrix::solve);
+      .def("print", &SparseMatrix::print)
+      .def(py::self + py::self, py::return_value_policy::reference_internal)
+      .def(py::self - py::self, py::return_value_policy::reference_internal)
+      .def(float() * py::self, py::return_value_policy::reference_internal)
+      .def(py::self * py::self, py::return_value_policy::reference_internal)
+      .def("matmult", &SparseMatrix::matmult,
+           py::return_value_policy::reference_internal)
+      .def("transpose", &SparseMatrix::transpose,
+           py::return_value_policy::reference_internal)
+      .def("get_coeff", &SparseMatrix::get_coeff)
+      .def("num_rows", &SparseMatrix::num_rows)
+      .def("num_cols", &SparseMatrix::num_cols)
+      .def("solve", &SparseMatrix::solve);
 }
 
 TI_NAMESPACE_END

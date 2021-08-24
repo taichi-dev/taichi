@@ -20,12 +20,12 @@ class SparseMatrixBuilder {
   void build(SparseMatrix *sm);
 
  private:
-  uint64 num_triplets{0};
+  uint64 num_triplets_{0};
   void *data_base_ptr{nullptr};
-  std::vector<uint32> data;
-  int n, m;
-  uint64 max_num_triplets;
-  bool built{false};
+  std::vector<uint32> data_;
+  int n_, m_;
+  uint64 max_num_triplets_;
+  bool built_{false};
 };
 
 class SparseMatrix {
@@ -53,8 +53,8 @@ class SparseMatrix {
   void solve(SparseMatrix *);
 
  private:
-  int n, m;
-  Eigen::SparseMatrix<float32> matrix;
+  int n_, m_;
+  Eigen::SparseMatrix<float32> matrix_;
 };
 
 }  // namespace lang

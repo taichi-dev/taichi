@@ -417,10 +417,8 @@ struct VertexInputAttribute {
 };
 
 struct SurfaceConfig {
-  uint32_t width;
-  uint32_t height;
-  bool vsync;
-  void *window_handle;
+  bool vsync{false};
+  void *window_handle{nullptr};
 };
 
 struct ImageParams {

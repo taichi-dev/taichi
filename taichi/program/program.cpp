@@ -230,8 +230,8 @@ FunctionType Program::compile_to_backend_executable(Kernel &kernel,
 
 void Program::materialize_runtime() {
   if (arch_uses_llvm(config.arch)) {
-    llvm_program_->initialize_llvm_runtime_system(
-        memory_pool.get(), profiler.get(), &result_buffer);
+    llvm_program_->materialize_runtime(memory_pool.get(), profiler.get(),
+                                       &result_buffer);
   }
 }
 
@@ -354,21 +354,17 @@ void Program::synchronize() {
     if (config.async_mode) {
       async_engine->synchronize();
     }
-    if (profiler)
+    if (profiler) {
       profiler->sync();
-    device_synchronize();
+    }
+    if (arch_uses_llvm(config.arch)) {
+      llvm_program_->synchronize();
+    } else if (config.arch == Arch::metal) {
+      metal_kernel_mgr_->synchronize();
+    } else if (config.arch == Arch::vulkan) {
+      vulkan_runtime_->synchronize();
+    }
     sync = true;
-  }
-}
-
-void Program::device_synchronize() {
-  // TODO: change this to arch_uses_llvm
-  if (config.arch == Arch::cuda) {
-    llvm_program_->device_synchronize();
-  } else if (config.arch == Arch::metal) {
-    metal_kernel_mgr_->synchronize();
-  } else if (config.arch == Arch::vulkan) {
-    vulkan_runtime_->synchronize();
   }
 }
 

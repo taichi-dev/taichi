@@ -185,7 +185,6 @@ EmbeddedVulkanDevice::EmbeddedVulkanDevice(
   pick_physical_device();
   create_logical_device();
   create_command_pool();
-  create_debug_swapchain();
 
   // TODO: Change the ownership hierarchy, the taichi Device class should be at
   // the top level
@@ -207,18 +206,6 @@ EmbeddedVulkanDevice::EmbeddedVulkanDevice(
 }
 
 EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
-#ifdef TI_VULKAN_DEBUG
-  if (capability_.has_presentation) {
-    vkDestroySemaphore(device_, debug_struct_.image_available,
-                       kNoVkAllocCallbacks);
-    vkDestroySwapchainKHR(device_, debug_struct_.swapchain,
-                          kNoVkAllocCallbacks);
-    vkDestroySurfaceKHR(instance_, debug_struct_.surface, kNoVkAllocCallbacks);
-    glfwDestroyWindow(debug_struct_.window);
-    glfwTerminate();
-  }
-#endif
-
   ti_device_.reset();
 
   if constexpr (kEnableValidationLayers) {
@@ -279,15 +266,6 @@ void EmbeddedVulkanDevice::create_instance() {
   for (auto ext : params_.additional_instance_extensions) {
     extensions.insert(std::string(ext));
   }
-
-#ifdef TI_VULKAN_DEBUG
-  glfwInit();
-  uint32_t count;
-  const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&count);
-  for (uint32_t i = 0; i < count; i++) {
-    extensions.insert(glfw_extensions[i]);
-  }
-#endif
 
   uint32_t num_instance_extensions;
   vkEnumerateInstanceExtensionProperties(nullptr, &num_instance_extensions,
@@ -599,98 +577,6 @@ void EmbeddedVulkanDevice::create_command_pool() {
       vkCreateCommandPool(device_, &pool_info, kNoVkAllocCallbacks,
                           &command_pool_),
       "failed to create command pool");
-}
-
-void EmbeddedVulkanDevice::create_debug_swapchain() {
-#ifdef TI_VULKAN_DEBUG
-  TI_TRACE("Creating debug swapchian");
-  if (capability_.has_presentation) {
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    debug_struct_.window =
-        glfwCreateWindow(640, 480, "Taichi Debug Swapchain", NULL, NULL);
-    VkResult err = glfwCreateWindowSurface(instance_, debug_struct_.window,
-                                           NULL, &debug_struct_.surface);
-    if (err) {
-      TI_ERROR("Failed to create debug window ({})", err);
-      return;
-    }
-
-    auto choose_surface_format =
-        [](const std::vector<VkSurfaceFormatKHR> &availableFormats) {
-          for (const auto &availableFormat : availableFormats) {
-            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
-                availableFormat.colorSpace ==
-                    VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-              return availableFormat;
-            }
-          }
-          return availableFormats[0];
-        };
-
-    VkSurfaceCapabilitiesKHR capabilities;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-        physical_device_, debug_struct_.surface, &capabilities);
-
-    VkBool32 supported = false;
-    vkGetPhysicalDeviceSurfaceSupportKHR(
-        physical_device_, queue_family_indices_.compute_family.value(),
-        debug_struct_.surface, &supported);
-
-    if (!supported) {
-      TI_ERROR("Selected queue does not support presenting", err);
-      return;
-    }
-
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(
-        physical_device_, debug_struct_.surface, &formatCount, nullptr);
-    std::vector<VkSurfaceFormatKHR> surface_formats(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device_,
-                                         debug_struct_.surface, &formatCount,
-                                         surface_formats.data());
-
-    VkSurfaceFormatKHR surface_format = choose_surface_format(surface_formats);
-
-    int width, height;
-    glfwGetFramebufferSize(debug_struct_.window, &width, &height);
-
-    VkExtent2D extent = {uint32_t(width), uint32_t(height)};
-
-    VkSwapchainCreateInfoKHR createInfo;
-    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.pNext = nullptr;
-    createInfo.flags = 0;
-    createInfo.surface = debug_struct_.surface;
-    createInfo.minImageCount = capabilities.minImageCount;
-    createInfo.imageFormat = surface_format.format;
-    createInfo.imageColorSpace = surface_format.colorSpace;
-    createInfo.imageExtent = extent;
-    createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    createInfo.queueFamilyIndexCount = 0;
-    createInfo.pQueueFamilyIndices = nullptr;
-    createInfo.preTransform = capabilities.currentTransform;
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
-    createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = nullptr;
-
-    if (vkCreateSwapchainKHR(device_, &createInfo, kNoVkAllocCallbacks,
-                             &debug_struct_.swapchain) != VK_SUCCESS) {
-      TI_ERROR("Failed to create debug swapchain");
-      return;
-    }
-
-    VkSemaphoreCreateInfo sema_create_info;
-    sema_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    sema_create_info.pNext = nullptr;
-    sema_create_info.flags = 0;
-    vkCreateSemaphore(device_, &sema_create_info, kNoVkAllocCallbacks,
-                      &debug_struct_.image_available);
-    TI_TRACE("Creating debug swapchian3");
-  }
-#endif
 }
 
 }  // namespace vulkan

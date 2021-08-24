@@ -3,7 +3,7 @@ class SparseMatrix:
     is_taichi_class = True
 
     def __init__(self, n=None, m=None, sm=None):
-        if m is not None:
+        if sm is None:
             self.n = n
             self.m = m if m else n
             self.matrix = self._create_sparse_matrix()

@@ -8,9 +8,9 @@
 
 TI_UI_NAMESPACE_BEGIN
 
-struct PointLight {
-  glm::vec3 pos;
-  glm::vec3 color;
+struct alignas(16) PointLight {
+  glm::vec4 pos;
+  glm::vec4 color;
 };
 
 struct MeshInfo {
@@ -26,8 +26,6 @@ struct ParticlesInfo {
 
 class SceneBase {
  public:
-  static constexpr int kMaxPointLights = 16;
-
   void set_camera(const Camera &camera) {
     camera_ = camera;
   }
@@ -39,10 +37,7 @@ class SceneBase {
     particles_infos_.push_back(info);
   }
   void point_light(glm::vec3 pos, glm::vec3 color) {
-    if (point_lights_.size() >= kMaxPointLights) {
-      throw std::runtime_error("point light count exceeds kMaxPointLights");
-    }
-    point_lights_.push_back({pos, color});
+    point_lights_.push_back({glm::vec4(pos, 1.0), glm::vec4(color, 1.0)});
   }
   void ambient_light(glm::vec3 color) {
     ambient_light_color_ = color;

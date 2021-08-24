@@ -5,6 +5,12 @@
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/runtime/llvm/mem_request.h"
+#include "taichi/util/str.h"
+#if defined(TI_WITH_CUDA)
+#include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/backends/cuda/codegen_cuda.h"
+#include "taichi/backends/cuda/cuda_context.h"
+#endif
 
 namespace taichi {
 namespace lang {
@@ -20,7 +26,8 @@ void *taichi_allocate_aligned(MemoryPool *memory_pool,
 }
 }  // namespace
 
-LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_) {
+LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
+                                 KernelProfilerBase *profiler) {
   runtime_mem_info = Runtime::create(config_.arch);
   if (config_.arch == Arch::cuda) {
     if (!runtime_mem_info) {
@@ -45,6 +52,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_) {
   thread_pool = std::make_unique<ThreadPool>(config.cpu_max_num_threads);
 
   preallocated_device_buffer = nullptr;
+  llvm_runtime = nullptr;
   llvm_context_host = std::make_unique<TaichiLLVMContext>(host_arch());
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
@@ -69,10 +77,29 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_) {
   if (arch_is_cpu(config.arch)) {
     config_.max_block_dim = 1024;
   }
+
+  if (config.kernel_profiler && runtime_mem_info) {
+    runtime_mem_info->set_profiler(profiler);
+  }
+#if defined(TI_WITH_CUDA)
+  if (config.arch == Arch::cuda) {
+    if (config.kernel_profiler) {
+      CUDAContext::get_instance().set_profiler(profiler);
+    } else {
+      CUDAContext::get_instance().set_profiler(nullptr);
+    }
+  }
+#endif
   // TODO: CompileConfig should be refactored. Currently we make a copy of
   // CompileConfig from Program. If config is updated after Program
   // initialization, please make sure it's synced.
   config = config_;
+}
+
+void LlvmProgramImpl::initialize_host() {
+  // Note this cannot be placed inside LlvmProgramImpl constructor, see doc
+  // string for init_runtime_jit_module() for more details.
+  llvm_context_host->init_runtime_jit_module();
 }
 
 void LlvmProgramImpl::maybe_initialize_cuda_llvm_context() {
@@ -82,7 +109,7 @@ void LlvmProgramImpl::maybe_initialize_cuda_llvm_context() {
   }
 }
 
-void LlvmProgramImpl::device_synchronize() {
+void LlvmProgramImpl::synchronize() {
   if (config.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().stream_synchronize(nullptr);
@@ -194,7 +221,7 @@ void LlvmProgramImpl::materialize_snode_expr_attributes(
 uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
   // TODO: We are likely doing more synchronization than necessary. Simplify the
   // sync logic when we fetch the result.
-  device_synchronize();
+  synchronize();
   uint64 ret;
   auto arch = config.arch;
   if (arch == Arch::cuda) {
@@ -214,6 +241,7 @@ uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
   }
   return ret;
 }
+
 std::size_t LlvmProgramImpl::get_snode_num_dynamically_allocated(
     SNode *snode,
     uint64 *result_buffer) {
@@ -228,6 +256,7 @@ std::size_t LlvmProgramImpl::get_snode_num_dynamically_allocated(
   return (std::size_t)runtime_query<int32>("ListManager_get_num_elements",
                                            result_buffer, data_list);
 }
+
 void LlvmProgramImpl::print_list_manager_info(void *list_manager,
                                               uint64 *result_buffer) {
   auto list_manager_len = runtime_query<int32>("ListManager_get_num_elements",
@@ -251,11 +280,9 @@ void LlvmProgramImpl::print_list_manager_info(void *list_manager,
       size_MB);
 }
 
-// For CPU and CUDA archs only
-void LlvmProgramImpl::initialize_llvm_runtime_system(
-    MemoryPool *memory_pool,
-    KernelProfilerBase *profiler,
-    uint64 **result_buffer_ptr) {
+void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
+                                          KernelProfilerBase *profiler,
+                                          uint64 **result_buffer_ptr) {
   maybe_initialize_cuda_llvm_context();
 
   std::size_t prealloc_size = 0;
@@ -352,6 +379,63 @@ void LlvmProgramImpl::initialize_llvm_runtime_system(
         "LLVMRuntime_set_profiler_stop", llvm_runtime,
         (void *)&KernelProfilerBase::profiler_stop);
   }
+}
+
+void LlvmProgramImpl::check_runtime_error(uint64 *result_buffer) {
+  synchronize();
+  auto tlctx = llvm_context_host.get();
+  if (llvm_context_device) {
+    // In case there is a standalone device context (e.g. CUDA without unified
+    // memory), use the device context instead.
+    tlctx = llvm_context_device.get();
+  }
+  auto *runtime_jit_module = tlctx->runtime_jit_module;
+  runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
+                                   llvm_runtime);
+  auto error_code =
+      fetch_result<int64>(taichi_result_buffer_error_id, result_buffer);
+
+  if (error_code) {
+    std::string error_message_template;
+
+    // Here we fetch the error_message_template char by char.
+    // This is not efficient, but fortunately we only need to do this when an
+    // assertion fails. Note that we may not have unified memory here, so using
+    // "fetch_result" that works across device/host memroy is necessary.
+    for (int i = 0;; i++) {
+      runtime_jit_module->call<void *>("runtime_retrieve_error_message",
+                                       llvm_runtime, i);
+      auto c = fetch_result<char>(taichi_result_buffer_error_id, result_buffer);
+      error_message_template += c;
+      if (c == '\0') {
+        break;
+      }
+    }
+
+    if (error_code == 1) {
+      const auto error_message_formatted = format_error_message(
+          error_message_template,
+          [runtime_jit_module, result_buffer, this](int argument_id) {
+            runtime_jit_module->call<void *>(
+                "runtime_retrieve_error_message_argument", llvm_runtime,
+                argument_id);
+            return fetch_result<uint64>(taichi_result_buffer_error_id,
+                                        result_buffer);
+          });
+      TI_ERROR("Assertion failure: {}", error_message_formatted);
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+  }
+}
+
+void LlvmProgramImpl::finalize() {
+  if (runtime_mem_info)
+    runtime_mem_info->set_profiler(nullptr);
+#if defined(TI_WITH_CUDA)
+  if (preallocated_device_buffer != nullptr)
+    CUDADriver::get_instance().mem_free(preallocated_device_buffer);
+#endif
 }
 
 void LlvmProgramImpl::print_memory_profiler_info(

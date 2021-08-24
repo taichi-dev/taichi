@@ -2,6 +2,7 @@ import functools
 import os
 from copy import deepcopy as _deepcopy
 
+from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.exception import InvalidOperationError
@@ -248,6 +249,21 @@ class _SpecialConfig:
         self.experimental_real_function = False
 
 
+def prepare_sandbox():
+    '''
+    Returns a temporary directory, which will be automatically deleted on exit.
+    It may contain the taichi_core shared object or some misc. files.
+    '''
+    import atexit
+    import shutil
+    from tempfile import mkdtemp
+    tmp_dir = mkdtemp(prefix='taichi-')
+    atexit.register(shutil.rmtree, tmp_dir)
+    print(f'[Taichi] preparing sandbox at {tmp_dir}')
+    os.mkdir(os.path.join(tmp_dir, 'runtime/'))
+    return tmp_dir
+
+
 def init(arch=None,
          default_fp=None,
          default_ip=None,
@@ -340,6 +356,8 @@ def init(arch=None,
         ti.info(f'Following TI_ARCH setting up for arch={env_arch}')
         arch = _ti_core.arch_from_name(env_arch)
     ti.cfg.arch = adaptive_arch_select(arch)
+    if ti.cfg.arch == cc:
+        _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(ti.cfg.arch)}')
 
     if _test_mode:
@@ -792,7 +810,7 @@ def is_arch_supported(arch):
         metal: _ti_core.with_metal,
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
-        vulkan: lambda: _ti_core.with_vulkan,
+        vulkan: lambda: _ti_core.with_vulkan(),
         wasm: lambda: True,
         cpu: lambda: True,
     }
@@ -814,7 +832,7 @@ def supported_archs():
     Returns:
         List[taichi_core.Arch]: All supported archs on the machine.
     """
-    archs = [cpu, cuda, metal, opengl, cc]
+    archs = [cpu, cuda, metal, vulkan, opengl, cc]
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')

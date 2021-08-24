@@ -195,16 +195,17 @@ def subscript(value, *indices):
 
 
 @taichi_scope
-def local_subscript_with_offset(var, indices):
+def local_subscript_with_offset(var, indices, shape):
     return Expr(
-        _ti_core.local_subscript_with_offset(var, make_expr_group(*indices)))
+        _ti_core.local_subscript_with_offset(var, make_expr_group(*indices),
+                                             shape))
 
 
 @taichi_scope
-def global_subscript_with_offset(var, indices, cols, is_aos):
+def global_subscript_with_offset(var, indices, shape, is_aos):
     return Expr(
         _ti_core.global_subscript_with_offset(var.ptr,
-                                              make_expr_group(*indices), cols,
+                                              make_expr_group(*indices), shape,
                                               is_aos))
 
 

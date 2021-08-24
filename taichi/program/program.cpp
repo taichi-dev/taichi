@@ -6,11 +6,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
-#if defined(TI_WITH_CUDA)
-#include "taichi/backends/cuda/cuda_driver.h"
-#include "taichi/backends/cuda/codegen_cuda.h"
-#include "taichi/backends/cuda/cuda_context.h"
-#endif
 #include "taichi/backends/metal/codegen_metal.h"
 #include "taichi/backends/opengl/codegen_opengl.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
@@ -28,7 +23,6 @@
 #include "taichi/program/async_engine.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/util/statistics.h"
-#include "taichi/util/str.h"
 #include "taichi/math/arithmetic.h"
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/struct_cc.h"
@@ -83,7 +77,8 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   if (config.debug)
     config.check_out_of_bound = true;
 
-  llvm_program_ = std::make_unique<LlvmProgramImpl>(config);
+  profiler = make_profiler(config.arch);
+  llvm_program_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
 
   if (config.arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {
@@ -116,33 +111,14 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   total_compilation_time = 0;
   num_instances += 1;
   SNode::counter = 0;
-  // |llvm_context_device| is initialized before kernel compilation
   TI_ASSERT(current_program == nullptr);
   current_program = this;
 
-  // TODO: this cannot be called from LlvmProgramImpl, find a better place.
-  llvm_program_->llvm_context_host->init_runtime_jit_module();
-
-  // TODO: Can we initialize |llvm_context_device| here?
-  profiler = make_profiler(config.arch);
-
-  if (config.kernel_profiler && llvm_program_->runtime_mem_info) {
-    llvm_program_->runtime_mem_info->set_profiler(profiler.get());
-  }
-#if defined(TI_WITH_CUDA)
-  if (config.arch == Arch::cuda) {
-    if (config.kernel_profiler) {
-      CUDAContext::get_instance().set_profiler(profiler.get());
-    } else {
-      CUDAContext::get_instance().set_profiler(nullptr);
-    }
-  }
-#endif
+  llvm_program_->initialize_host();
 
   result_buffer = nullptr;
   current_callable = nullptr;
   sync = true;
-  llvm_program_->llvm_runtime = nullptr;
   finalized = false;
 
   if (config.async_mode) {
@@ -200,8 +176,8 @@ FunctionType Program::compile(Kernel &kernel) {
   } else if (kernel.arch == Arch::cc) {
     ret = cccp::compile_kernel(&kernel);
 #endif
-  } else if (kernel.arch == Arch::vulkan) {
 #ifdef TI_WITH_VULKAN
+  } else if (kernel.arch == Arch::vulkan) {
     vulkan::lower(&kernel);
     ret = vulkan::compile_to_executable(
         &kernel, &vulkan_compiled_structs_.value(), vulkan_runtime_.get());
@@ -230,14 +206,14 @@ FunctionType Program::compile_to_backend_executable(Kernel &kernel,
 
 void Program::materialize_runtime() {
   if (arch_uses_llvm(config.arch)) {
-    llvm_program_->initialize_llvm_runtime_system(
-        memory_pool.get(), profiler.get(), &result_buffer);
+    llvm_program_->materialize_runtime(memory_pool.get(), profiler.get(),
+                                       &result_buffer);
   }
 }
 
-// TODO: LLVM specific
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
-  llvm_program_->snode_tree_buffer_manager->destroy(snode_tree);
+  TI_ASSERT(arch_uses_llvm(config.arch));
+  llvm_program_->destroy_snode_tree(snode_tree);
 }
 
 SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {
@@ -304,53 +280,9 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
   }
 }
 
-TaichiLLVMContext *Program::get_llvm_context(Arch arch) {
-  return llvm_program_->get_llvm_context(arch);
-}
-
 void Program::check_runtime_error() {
-  synchronize();
-  auto tlctx = llvm_program_->llvm_context_host.get();
-  if (llvm_program_->llvm_context_device) {
-    // In case there is a standalone device context (e.g. CUDA without unified
-    // memory), use the device context instead.
-    tlctx = llvm_program_->llvm_context_device.get();
-  }
-  auto *runtime_jit_module = tlctx->runtime_jit_module;
-  runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
-                                   llvm_program_->llvm_runtime);
-  auto error_code = fetch_result<int64>(taichi_result_buffer_error_id);
-
-  if (error_code) {
-    std::string error_message_template;
-
-    // Here we fetch the error_message_template char by char.
-    // This is not efficient, but fortunately we only need to do this when an
-    // assertion fails. Note that we may not have unified memory here, so using
-    // "fetch_result" that works across device/host memroy is necessary.
-    for (int i = 0;; i++) {
-      runtime_jit_module->call<void *>("runtime_retrieve_error_message",
-                                       llvm_program_->llvm_runtime, i);
-      auto c = fetch_result<char>(taichi_result_buffer_error_id);
-      error_message_template += c;
-      if (c == '\0') {
-        break;
-      }
-    }
-
-    if (error_code == 1) {
-      const auto error_message_formatted = format_error_message(
-          error_message_template, [runtime_jit_module, this](int argument_id) {
-            runtime_jit_module->call<void *>(
-                "runtime_retrieve_error_message_argument",
-                llvm_program_->llvm_runtime, argument_id);
-            return fetch_result<uint64>(taichi_result_buffer_error_id);
-          });
-      TI_ERROR("Assertion failure: {}", error_message_formatted);
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
-  }
+  TI_ASSERT(arch_uses_llvm(config.arch));
+  llvm_program_->check_runtime_error(result_buffer);
 }
 
 void Program::synchronize() {
@@ -358,21 +290,17 @@ void Program::synchronize() {
     if (config.async_mode) {
       async_engine->synchronize();
     }
-    if (profiler)
+    if (profiler) {
       profiler->sync();
-    device_synchronize();
+    }
+    if (arch_uses_llvm(config.arch)) {
+      llvm_program_->synchronize();
+    } else if (config.arch == Arch::metal) {
+      metal_kernel_mgr_->synchronize();
+    } else if (config.arch == Arch::vulkan) {
+      vulkan_runtime_->synchronize();
+    }
     sync = true;
-  }
-}
-
-void Program::device_synchronize() {
-  // TODO: change this to arch_uses_llvm
-  if (config.arch == Arch::cuda) {
-    llvm_program_->device_synchronize();
-  } else if (config.arch == Arch::metal) {
-    metal_kernel_mgr_->synchronize();
-  } else if (config.arch == Arch::vulkan) {
-    vulkan_runtime_->synchronize();
   }
 }
 
@@ -471,10 +399,6 @@ void Program::visualize_layout(const std::string &fn) {
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
 
-void Program::maybe_initialize_cuda_llvm_context() {
-  llvm_program_->maybe_initialize_cuda_llvm_context();
-}
-
 Arch Program::get_snode_accessor_arch() {
   if (config.arch == Arch::opengl) {
     return Arch::opengl;
@@ -535,7 +459,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 
 uint64 Program::fetch_result_uint64(int i) {
   if (arch_uses_llvm(config.arch)) {
-    return llvm_program_->fetch_result_uint64(i, result_buffer);
+    return llvm_program_->fetch_result<uint64>(i, result_buffer);
   }
   return result_buffer[i];
 }
@@ -579,16 +503,15 @@ void Program::finalize() {
       ofs << stat_string;
     }
   }
-  if (llvm_program_->runtime_mem_info)
-    llvm_program_->runtime_mem_info->set_profiler(nullptr);
+
   synchronize();
   current_program = nullptr;
   memory_pool->terminate();
-#if defined(TI_WITH_CUDA)
-  if (llvm_program_->preallocated_device_buffer != nullptr)
-    CUDADriver::get_instance().mem_free(
-        llvm_program_->preallocated_device_buffer);
-#endif
+
+  if (arch_uses_llvm(config.arch)) {
+    llvm_program_->finalize();
+  }
+
   finalized = true;
   num_instances -= 1;
   TI_TRACE("Program ({}) finalized.", fmt::ptr(this));

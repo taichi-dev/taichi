@@ -11,7 +11,6 @@
 #include "taichi/ir/type_factory.h"
 #include "taichi/ir/snode.h"
 #include "taichi/lang_util.h"
-#include "taichi/llvm/llvm_context.h"
 #include "taichi/llvm/llvm_program.h"
 #include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
@@ -160,20 +159,8 @@ class Program {
     return profiler.get();
   }
 
-  /**
-   * Initializes Program#llvm_context_device, if this has not been done.
-   *
-   * Not thread safe.
-   * TODO: this is LLVM specific but we keep it here for now to avoid changing
-   * other files.
-   */
-  void maybe_initialize_cuda_llvm_context();
-
   void synchronize();
 
-  // This is more primitive than synchronize(). It directly calls to the
-  // targeted GPU backend's synchronization (or commit in Metal's terminology).
-  void device_synchronize();
   // See AsyncEngine::flush().
   // Only useful when async mode is enabled.
   void async_flush();
@@ -245,10 +232,6 @@ class Program {
     auto *func = dynamic_cast<Function *>(current_callable);
     return func;
   }
-
-  // TODO: this is specific to LlvmProgramImpl so we might delete it here in the
-  //       future. For now we keep it here to avoid changing other files.
-  TaichiLLVMContext *get_llvm_context(Arch arch);
 
   Kernel &get_snode_reader(SNode *snode);
 

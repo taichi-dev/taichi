@@ -54,7 +54,7 @@ CompileConfig::CompileConfig() {
   print_kernel_llvm_ir_optimized = false;
 
   // CUDA backend options:
-#if defined(TI_PLATFORM_WINDOWS) or defined(TI_ARCH_ARM)
+#if defined(TI_PLATFORM_WINDOWS) or defined(TI_PLATFORM_OSX)
   use_unified_memory = false;
 #else
   use_unified_memory = true;

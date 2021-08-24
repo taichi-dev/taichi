@@ -65,10 +65,9 @@ Note that on Linux, `clang` is the **only** supported compiler for compiling the
   - For Windows:
 
     ```bash
-      # For Windows
-      # LLVM 10.0.0 + MSVC 2019
-      cmake .. -G"Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF   -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64   -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
-
+    # For Windows
+    # LLVM 10.0.0 + MSVC 2019
+    cmake .. -G"Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF   -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64   -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
     ```
 
     - Then open `LLVM.sln` and use Visual Studio 2017+ to build.
@@ -125,6 +124,16 @@ installer.
 
 3. Execute `python3 -m taichi test` to run all the tests. It may take
   up to 5 minutes to run all tests.
+
+## Conda
+
+To avoid directly installing Taichi's dependencies into your existing
+Python environment, we have provided a pre-defined `conda` environment.
+You can find the instructions [here](https://github.com/taichi-dev/taichi/conda/README.md).
+
+Note that this step only helps you setup the development environment,
+you would still need to run `python3 setup.py develop` to re-build
+Taichi.
 
 ## Docker
 

@@ -252,7 +252,7 @@ class CompiledTaichiKernel {
     const auto &spirv_bins = ti_params.spirv_bins;
     TI_ASSERT(task_attribs.size() == spirv_bins.size());
 
-    cmdlist_ = ti_params.device->new_command_list();
+    cmdlist_ = ti_params.device->new_command_list({CommandListType::Compute});
     for (int i = 0; i < task_attribs.size(); ++i) {
       const auto &attribs = task_attribs[i];
       PipelineSourceDesc source_desc{PipelineSourceType::spirv_binary,
@@ -401,7 +401,7 @@ class VkRuntime ::Impl {
     global_tmps_buffer_ = device_->allocate_memory_unique({gtmp_buffer_size});
 
     // Need to zero fill the buffers, otherwise there could be NaN.
-    auto cmdlist = device_->new_command_list();
+    auto cmdlist = device_->new_command_list({CommandListType::Compute});
     cmdlist->buffer_fill(root_buffer_->get_ptr(0), root_buffer_size,
                          /*data=*/0);
     cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), gtmp_buffer_size,

@@ -129,7 +129,6 @@ Expr bit_cast(const Expr &input) {
 }
 
 Expr load_if_ptr(const Expr &ptr);
-Expr load(const Expr &ptr);
 Expr ptr_if_global(const Expr &var);
 
 inline Expr smart_load(const Expr &var) {

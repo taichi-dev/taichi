@@ -28,7 +28,7 @@ void Particles::update_ubo(glm::vec3 color,
   ubo.tan_half_fov = tan(glm::radians(scene.camera_.fov) / 2);
   ubo.use_per_vertex_color = use_per_vertex_color;
 
-  void* mapped = renderer_->app_context().device().map(uniform_buffer_);
+  void *mapped = renderer_->app_context().device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));
   renderer_->app_context().device().unmap(uniform_buffer_);
 }
@@ -44,7 +44,7 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
     resize_storage_buffers(correct_ssbo_size);
   }
   {
-    void* mapped = renderer_->app_context().device().map(storage_buffer_);
+    void *mapped = renderer_->app_context().device().map(storage_buffer_);
     memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
     renderer_->app_context().device().unmap(storage_buffer_);
   }
@@ -72,14 +72,12 @@ void Particles::init_particles(Renderer *renderer, int vertices_count) {
   Renderable::init_render_resources();
 }
 
-
-void Particles::create_bindings(){
+void Particles::create_bindings() {
   Renderable::create_bindings();
-  ResourceBinder* binder = pipeline_->resource_binder();
-  binder->buffer(0,0,uniform_buffer_);
-  binder->rw_buffer(0,1,storage_buffer_);
+  ResourceBinder *binder = pipeline_->resource_binder();
+  binder->buffer(0, 0, uniform_buffer_);
+  binder->rw_buffer(0, 1, storage_buffer_);
 }
-
 
 }  // namespace vulkan
 

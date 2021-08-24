@@ -8,7 +8,6 @@
 #include <VersionHelpers.h>
 #endif
 
-
 #include <volk.h>
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
@@ -28,7 +27,6 @@ class VulkanEnvSettings {
     return VK_API_VERSION_1_2;
   }
 };
-
 
 #ifdef _WIN64
 
@@ -98,7 +96,7 @@ inline WindowsSecurityAttributes::~WindowsSecurityAttributes() {
   free(security_descriptor);
 }
 
-#endif //_WIN64
+#endif  //_WIN64
 
 }  // namespace vulkan
 }  // namespace lang

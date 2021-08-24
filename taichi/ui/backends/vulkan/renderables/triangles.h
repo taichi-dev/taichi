@@ -44,7 +44,6 @@ class Triangles final : public Renderable {
   void update_ubo(glm::vec3 color, bool use_per_vertex_color);
 
   virtual void create_bindings() override;
-
 };
 
 }  // namespace vulkan

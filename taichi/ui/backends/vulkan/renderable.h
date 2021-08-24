@@ -20,7 +20,6 @@
 #include "taichi/ui/common/renderable_info.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 
-
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -39,14 +38,13 @@ class Renderable {
  public:
   void update_data(const RenderableInfo &info);
 
-  virtual void record_this_frame_commands(taichi::lang::CommandList* command_list);
-
-  
+  virtual void record_this_frame_commands(
+      taichi::lang::CommandList *command_list);
 
   virtual ~Renderable() = default;
 
-  taichi::lang::Pipeline& pipeline();
-  const taichi::lang::Pipeline& pipeline() const;
+  taichi::lang::Pipeline &pipeline();
+  const taichi::lang::Pipeline &pipeline() const;
 
   virtual void cleanup();
 
@@ -80,8 +78,6 @@ class Renderable {
   void init_buffers();
   void init_render_resources();
 
-  
-
   virtual void create_bindings();
 
   void create_graphics_pipeline();
@@ -99,7 +95,6 @@ class Renderable {
   void destroy_storage_buffers();
 
   void resize_storage_buffers(int new_ssbo_size);
-
 };
 
 }  // namespace vulkan

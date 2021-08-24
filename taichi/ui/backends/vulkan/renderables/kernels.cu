@@ -154,12 +154,12 @@ __device__ __host__ inline unsigned char get_color_value<float>(float x) {
 
 template <typename T>
 __global__ void copy_to_texture_buffer_surface_cuda_impl(T *src,
-                                                 uint64_t surface,
-                                                 int width,
-                                                 int height,
-                                                 int actual_width,
-                                                 int actual_height,
-                                                 int channels) {
+                                                         uint64_t surface,
+                                                         int width,
+                                                         int height,
+                                                         int actual_width,
+                                                         int actual_height,
+                                                         int channels) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i >= width * height)
     return;
@@ -180,12 +180,12 @@ __global__ void copy_to_texture_buffer_surface_cuda_impl(T *src,
 
 template <typename T>
 void copy_to_texture_buffer_surface_cuda(T *src,
-                                 uint64_t surface,
-                                 int width,
-                                 int height,
-                                 int actual_width,
-                                 int actual_height,
-                                 int channels) {
+                                         uint64_t surface,
+                                         int width,
+                                         int height,
+                                         int actual_width,
+                                         int actual_height,
+                                         int channels) {
   int num_blocks, num_threads;
   set_num_blocks_threads(width * height, num_blocks, num_threads);
   copy_to_texture_buffer_surface_cuda_impl<<<num_blocks, num_threads>>>(
@@ -217,20 +217,18 @@ void copy_to_texture_buffer_x64(T *src,
   }
 }
 
-
 template <typename T>
-__global__
-void copy_to_texture_buffer_cuda_impl(T *src,
-                                unsigned char *dest,
-                                int width,
-                                int height,
-                                int actual_width,
-                                int actual_height,
-                                int channels) {
+__global__ void copy_to_texture_buffer_cuda_impl(T *src,
+                                                 unsigned char *dest,
+                                                 int width,
+                                                 int height,
+                                                 int actual_width,
+                                                 int actual_height,
+                                                 int channels) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i >= width * height)
     return;
-  
+
   int y = i / width;
   int x = i % width;
 
@@ -243,54 +241,52 @@ void copy_to_texture_buffer_cuda_impl(T *src,
   data.w = 255;
 
   ((uchar4 *)dest)[y * width + x] = data;
-  
 }
-
 
 template <typename T>
 void copy_to_texture_buffer_cuda(T *src,
-                                unsigned char *dest,
-                                int width,
-                                int height,
-                                int actual_width,
-                                int actual_height,
-                                int channels) {
+                                 unsigned char *dest,
+                                 int width,
+                                 int height,
+                                 int actual_width,
+                                 int actual_height,
+                                 int channels) {
   int num_blocks, num_threads;
   set_num_blocks_threads(width * height, num_blocks, num_threads);
   copy_to_texture_buffer_cuda_impl<<<num_blocks, num_threads>>>(
-      src, dest, width, height, actual_width, actual_height,
-      channels);
+      src, dest, width, height, actual_width, actual_height, channels);
 }
 
 template void copy_to_texture_buffer_surface_cuda<float>(float *src,
-                                                 uint64_t surface,
-                                                 int width,
-                                                 int height,
-                                                 int actual_width,
-                                                 int actual_height,
-                                                 int channels);
-template void copy_to_texture_buffer_surface_cuda<unsigned char>(unsigned char *src,
                                                          uint64_t surface,
                                                          int width,
                                                          int height,
                                                          int actual_width,
                                                          int actual_height,
                                                          int channels);
+template void copy_to_texture_buffer_surface_cuda<unsigned char>(
+    unsigned char *src,
+    uint64_t surface,
+    int width,
+    int height,
+    int actual_width,
+    int actual_height,
+    int channels);
 
 template void copy_to_texture_buffer_cuda<float>(float *src,
-                                                unsigned char *dest,
-                                                int width,
-                                                int height,
-                                                int actual_width,
-                                                int actual_height,
-                                                int channels);
+                                                 unsigned char *dest,
+                                                 int width,
+                                                 int height,
+                                                 int actual_width,
+                                                 int actual_height,
+                                                 int channels);
 template void copy_to_texture_buffer_cuda<unsigned char>(unsigned char *src,
-                                                        unsigned char *dest,
-                                                        int width,
-                                                        int height,
-                                                        int actual_width,
-                                                        int actual_height,
-                                                        int channels);
+                                                         unsigned char *dest,
+                                                         int width,
+                                                         int height,
+                                                         int actual_width,
+                                                         int actual_height,
+                                                         int channels);
 template void copy_to_texture_buffer_x64<float>(float *src,
                                                 unsigned char *dest,
                                                 int width,

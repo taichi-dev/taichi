@@ -54,27 +54,26 @@ Lines::Lines(Renderer *renderer) {
 void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
   UniformBufferObject ubo{color, (int)use_per_vertex_color};
 
-  void* mapped = renderer_->app_context().device().map(uniform_buffer_);
+  void *mapped = renderer_->app_context().device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));
   renderer_->app_context().device().unmap(uniform_buffer_);
 }
 
-void Lines::create_bindings(){
+void Lines::create_bindings() {
   Renderable::create_bindings();
-  ResourceBinder* binder = pipeline_->resource_binder();
-  binder->buffer(0,0,uniform_buffer_);
+  ResourceBinder *binder = pipeline_->resource_binder();
+  binder->buffer(0, 0, uniform_buffer_);
 }
 
-
-void Lines::record_this_frame_commands(CommandList* command_list) {
+void Lines::record_this_frame_commands(CommandList *command_list) {
   command_list->bind_pipeline(pipeline_.get());
   command_list->bind_resources(pipeline_->resource_binder());
-  command_list->set_line_width( curr_width_ * renderer_->swap_chain().height());
+  command_list->set_line_width(curr_width_ * renderer_->swap_chain().height());
 
   if (indexed_) {
-    command_list->draw_indexed(config_.indices_count,0,0);
+    command_list->draw_indexed(config_.indices_count, 0, 0);
   } else {
-    command_list->draw(config_.vertices_count,0);
+    command_list->draw(config_.vertices_count, 0);
   }
 }
 

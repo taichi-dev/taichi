@@ -45,7 +45,6 @@ class Mesh final : public Renderable {
   void update_ubo(const MeshInfo &info, const Scene &scene);
 
   virtual void create_bindings() override;
-
 };
 
 }  // namespace vulkan

@@ -11,11 +11,11 @@ from .utils import *
 
 if _ti_core.GGUI_AVAILABLE:
 
+    from .camera import Camera
     from .canvas import Canvas
     from .gui import Gui
     from .scene import Scene
     from .window import *
-    from .camera import Camera
 
     def make_camera():
         return Camera(_ti_core.PyCamera())

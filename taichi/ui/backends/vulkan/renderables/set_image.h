@@ -22,7 +22,6 @@
 #include "taichi/ui/common/canvas_base.h"
 #include "taichi/backends/device.h"
 
-
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -38,12 +37,12 @@ class SetImage final : public Renderable {
   virtual void cleanup() override;
 
  private:
-  taichi::lang::DeviceAllocation  cpu_staging_buffer_;
-  taichi::lang::DeviceAllocation  gpu_staging_buffer_;
+  taichi::lang::DeviceAllocation cpu_staging_buffer_;
+  taichi::lang::DeviceAllocation gpu_staging_buffer_;
 
   taichi::lang::DeviceAllocation texture_;
 
-  unsigned char* device_ptr_{nullptr};
+  unsigned char *device_ptr_{nullptr};
 
  private:
   void init_set_image(class Renderer *renderer, int img_width, int img_height);
@@ -52,7 +51,7 @@ class SetImage final : public Renderable {
 
   void create_texture();
   void destroy_texture();
-  
+
   void update_vertex_buffer_();
 
   void update_index_buffer_();

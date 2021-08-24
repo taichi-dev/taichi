@@ -10,8 +10,8 @@ class SwapChain {
   void init(class AppContext *app_context);
   uint32_t width();
   uint32_t height();
- 
-  taichi::lang::Surface& surface();
+
+  taichi::lang::Surface &surface();
   taichi::lang::DeviceAllocation depth_allocation();
 
   void resize(uint32_t width, uint32_t height);
@@ -19,13 +19,11 @@ class SwapChain {
   void cleanup();
 
  private:
-
   void create_depth_resources();
-  
+
   taichi::lang::DeviceAllocation depth_allocation_;
 
-  std::unique_ptr<taichi::lang::Surface> surface_; 
-
+  std::unique_ptr<taichi::lang::Surface> surface_;
 
   class AppContext *app_context_;
 };

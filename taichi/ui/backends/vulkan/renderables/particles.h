@@ -48,10 +48,8 @@ class Particles final : public Renderable {
                   bool use_per_vertex_color,
                   float radius,
                   const Scene &scene);
-  
-  virtual void create_bindings() override;
 
-  
+  virtual void create_bindings() override;
 };
 
 }  // namespace vulkan

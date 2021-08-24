@@ -13,7 +13,7 @@ using namespace taichi::lang::vulkan;
 
 void Renderer::init(GLFWwindow *window, const AppConfig &config) {
   app_context_.init(window, config);
-  swap_chain_.init(&app_context_); 
+  swap_chain_.init(&app_context_);
 }
 
 template <typename T>
@@ -81,8 +81,7 @@ void Renderer::scene(Scene *scene) {
   if (scene->point_lights_.size() == 0) {
     printf("warning, there are no light sources in the scene.\n");
   }
-  float aspect_ratio = swap_chain_.width() /
-                       (float)swap_chain_.height();
+  float aspect_ratio = swap_chain_.width() / (float)swap_chain_.height();
   scene->update_ubo(aspect_ratio);
   for (int i = 0; i < scene->mesh_infos_.size(); ++i) {
     mesh(scene->mesh_infos_[i], scene);
@@ -104,7 +103,6 @@ void Renderer::cleanup() {
   app_context_.cleanup();
 }
 
-
 void Renderer::prepare_for_next_frame() {
   next_renderable_ = 0;
 }
@@ -116,25 +114,27 @@ void Renderer::draw_frame(Gui *gui) {
     CUDADriver::get_instance().stream_synchronize(nullptr);
   }
 
-
-  std::unique_ptr<CommandList> cmd_list = app_context().device().new_command_list({CommandListType::Graphics});
+  std::unique_ptr<CommandList> cmd_list =
+      app_context().device().new_command_list({CommandListType::Graphics});
   bool color_clear = true;
-  std::vector<float> clear_colors = {background_color_[0],background_color_[1],background_color_[2],1};
+  std::vector<float> clear_colors = {background_color_[0], background_color_[1],
+                                     background_color_[2], 1};
   auto image = swap_chain_.surface().get_target_image();
   auto depth_image = swap_chain_.depth_allocation();
-  cmd_list->begin_renderpass(0,0,swap_chain_.width(),swap_chain_.height(),1,&image,&color_clear,&clear_colors,&depth_image,true);
+  cmd_list->begin_renderpass(0, 0, swap_chain_.width(), swap_chain_.height(), 1,
+                             &image, &color_clear, &clear_colors, &depth_image,
+                             true);
 
-    
   for (int i = 0; i < next_renderable_; ++i) {
     renderables_[i]->record_this_frame_commands(cmd_list.get());
   }
 
-  VkRenderPass pass = static_cast<VulkanCommandList*>(cmd_list.get())->current_renderpass();
-  
-  if(gui->render_pass()==VK_NULL_HANDLE){
+  VkRenderPass pass =
+      static_cast<VulkanCommandList *>(cmd_list.get())->current_renderpass();
+
+  if (gui->render_pass() == VK_NULL_HANDLE) {
     gui->init_render_resources(pass);
-  }
-  else if(gui->render_pass() != pass){
+  } else if (gui->render_pass() != pass) {
     gui->cleanup_render_resources();
     gui->init_render_resources(pass);
   }
@@ -142,7 +142,6 @@ void Renderer::draw_frame(Gui *gui) {
   gui->draw(cmd_list.get());
   cmd_list->end_renderpass();
   app_context_.device().submit_synced(cmd_list.get());
-
 }
 
 const AppContext &Renderer::app_context() const {

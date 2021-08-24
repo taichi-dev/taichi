@@ -207,7 +207,7 @@ EmbeddedVulkanDevice::EmbeddedVulkanDevice(
 
 EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
   ti_device_.reset();
-  if(surface_ != VK_NULL_HANDLE){
+  if (surface_ != VK_NULL_HANDLE) {
     vkDestroySurfaceKHR(instance_, surface_, kNoVkAllocCallbacks);
   }
   if constexpr (kEnableValidationLayers) {

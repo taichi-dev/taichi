@@ -18,8 +18,8 @@ class AppContext {
 
   GLFWwindow *glfw_window() const;
 
-  taichi::lang::vulkan::VulkanDevice& device();
-  const taichi::lang::vulkan::VulkanDevice& device() const;
+  taichi::lang::vulkan::VulkanDevice &device();
+  const taichi::lang::vulkan::VulkanDevice &device() const;
 
   AppConfig config;
 

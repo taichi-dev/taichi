@@ -37,7 +37,6 @@ namespace vulkan {
 
 class Renderer {
  public:
-  
   void init(GLFWwindow *window, const AppConfig &config);
   void cleanup();
 
@@ -61,8 +60,6 @@ class Renderer {
 
   void draw_frame(Gui *gui);
 
-
-
   const AppContext &app_context() const;
   AppContext &app_context();
   const SwapChain &swap_chain() const;
@@ -76,9 +73,8 @@ class Renderer {
 
   SwapChain swap_chain_;
   AppContext app_context_;
-  
- private:
 
+ private:
   template <typename T>
   T *get_renderable_of_type();
 };

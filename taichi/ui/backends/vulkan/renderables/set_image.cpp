@@ -38,32 +38,33 @@ void SetImage::update_data(const SetImageInfo &info) {
   int actual_height = next_power_of_2(height);
 
   int pixels = width * height;
- 
-  app_context_->device().image_transition(texture_,ImageLayout::shader_read,ImageLayout::transfer_dst);
+
+  app_context_->device().image_transition(texture_, ImageLayout::shader_read,
+                                          ImageLayout::transfer_dst);
 
   BufferImageCopyParams copy_params;
   copy_params.image_extent.x = width;
   copy_params.image_extent.y = height;
 
   if (img.field_source == FieldSource::TaichiCuda) {
-
     unsigned char *mapped = device_ptr_;
 
     if (img.dtype == PrimitiveType::u8) {
       copy_to_texture_buffer_cuda((unsigned char *)img.data, mapped, width,
-                                 height, actual_width, actual_height,
-                                 img.matrix_rows);
+                                  height, actual_width, actual_height,
+                                  img.matrix_rows);
     } else if (img.dtype == PrimitiveType::f32) {
       copy_to_texture_buffer_cuda((float *)img.data, mapped, width, height,
-                                 actual_width, actual_height, img.matrix_rows);
+                                  actual_width, actual_height, img.matrix_rows);
     } else {
       throw std::runtime_error("for set image, dtype must be u8 or f32");
     }
 
-    app_context_->device().buffer_to_image(texture_,gpu_staging_buffer_.get_ptr(0),ImageLayout::transfer_dst,copy_params);
+    app_context_->device().buffer_to_image(
+        texture_, gpu_staging_buffer_.get_ptr(0), ImageLayout::transfer_dst,
+        copy_params);
 
   } else if (img.field_source == FieldSource::TaichiX64) {
-
     unsigned char *mapped =
         (unsigned char *)app_context_->device().map(cpu_staging_buffer_);
 
@@ -79,14 +80,16 @@ void SetImage::update_data(const SetImageInfo &info) {
     }
 
     app_context_->device().unmap(gpu_staging_buffer_);
-    app_context_->device().buffer_to_image(texture_,cpu_staging_buffer_.get_ptr(0),ImageLayout::transfer_dst,copy_params);
+    app_context_->device().buffer_to_image(
+        texture_, cpu_staging_buffer_.get_ptr(0), ImageLayout::transfer_dst,
+        copy_params);
 
-    
   } else {
     throw std::runtime_error("unsupported field source");
   }
 
-  app_context_->device().image_transition(texture_,ImageLayout::transfer_dst ,ImageLayout::shader_read);
+  app_context_->device().image_transition(texture_, ImageLayout::transfer_dst,
+                                          ImageLayout::shader_read);
 }
 
 SetImage::SetImage(Renderer *renderer) {
@@ -135,36 +138,32 @@ void SetImage::create_texture() {
 
   texture_ = renderer_->app_context().device().create_image(params);
 
-
-
   Device::AllocParams cpu_staging_buffer_params{image_size, true, false, false,
-                                            AllocUsage::Uniform};
+                                                AllocUsage::Uniform};
   cpu_staging_buffer_ = renderer_->app_context().device().allocate_memory(
       cpu_staging_buffer_params);
 
   Device::AllocParams gpu_staging_buffer_params{image_size, false, false, true,
-                                            AllocUsage::Uniform};
+                                                AllocUsage::Uniform};
   gpu_staging_buffer_ = renderer_->app_context().device().allocate_memory(
       gpu_staging_buffer_params);
 
   if (app_context_->config.ti_arch == Arch::cuda) {
-    auto [mem,offset,size] = app_context_->device().get_vkmemory_offset_size(gpu_staging_buffer_);
-  
+    auto [mem, offset, size] =
+        app_context_->device().get_vkmemory_offset_size(gpu_staging_buffer_);
+
     auto block_size = VulkanDevice::kMemoryBlockSize;
 
     device_ptr_ = (unsigned char *)get_memory_pointer(
-        mem,block_size,offset,size,
-        app_context_->device().vk_device());
+        mem, block_size, offset, size, app_context_->device().vk_device());
   }
-
 }
 
-void SetImage::destroy_texture(){
+void SetImage::destroy_texture() {
   app_context_->device().destroy_image(texture_);
   app_context_->device().dealloc_memory(cpu_staging_buffer_);
   app_context_->device().dealloc_memory(gpu_staging_buffer_);
 }
-
 
 void SetImage::update_vertex_buffer_() {
   const std::vector<Vertex> vertices = {
@@ -187,8 +186,8 @@ void SetImage::update_vertex_buffer_() {
   }
 
   app_context_->device().memcpy(vertex_buffer_.get_ptr(0),
-                                       staging_vertex_buffer_.get_ptr(0),
-                                       config_.vertices_count * sizeof(Vertex));
+                                staging_vertex_buffer_.get_ptr(0),
+                                config_.vertices_count * sizeof(Vertex));
 }
 
 void SetImage::update_index_buffer_() {
@@ -196,20 +195,18 @@ void SetImage::update_index_buffer_() {
       0, 1, 2, 3, 4, 5,
   };
   {
-    int *mapped_ibo =
-        (int *)app_context_->device().map(staging_index_buffer_);
+    int *mapped_ibo = (int *)app_context_->device().map(staging_index_buffer_);
     memcpy(mapped_ibo, indices.data(),
            (size_t)config_.indices_count * sizeof(int));
     app_context_->device().unmap(staging_index_buffer_);
   }
 
   app_context_->device().memcpy(index_buffer_.get_ptr(0),
-                                       staging_index_buffer_.get_ptr(0),
-                                       config_.indices_count * sizeof(int));
+                                staging_index_buffer_.get_ptr(0),
+                                config_.indices_count * sizeof(int));
 
   indexed_ = true;
 }
-
 
 void SetImage::create_bindings() {
   Renderable::create_bindings();

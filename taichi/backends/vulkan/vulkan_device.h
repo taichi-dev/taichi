@@ -136,9 +136,9 @@ class VulkanResourceBinder : public ResourceBinder {
   void buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size);
   void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
   void image(uint32_t set,
-                     uint32_t binding,
-                     DeviceAllocation alloc,
-                     ImageSamplerConfig sampler_config) override;
+             uint32_t binding,
+             DeviceAllocation alloc,
+             ImageSamplerConfig sampler_config) override;
   void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) override;
   void index_buffer(DevicePtr ptr, size_t index_width) override;
 
@@ -290,13 +290,13 @@ class VulkanCommandList : public CommandList {
                         ImageLayout old_layout,
                         ImageLayout new_layout) override;
   void buffer_to_image(DeviceAllocation dst_img,
-                    DevicePtr src_buf,
-                    ImageLayout img_layout,
-                    const BufferImageCopyParams &params) override;
+                       DevicePtr src_buf,
+                       ImageLayout img_layout,
+                       const BufferImageCopyParams &params) override;
   void image_to_buffer(DevicePtr dst_buf,
-                    DeviceAllocation src_img,
-                    ImageLayout img_layout,
-                    const BufferImageCopyParams &params) override;
+                       DeviceAllocation src_img,
+                       ImageLayout img_layout,
+                       const BufferImageCopyParams &params) override;
 
   VkRenderPass current_renderpass();
 
@@ -334,7 +334,7 @@ class VulkanSurface : public Surface {
   void present_image() override;
   std::pair<uint32_t, uint32_t> get_size() override;
   BufferFormat image_format() override;
-  virtual void resize(uint32_t width, uint32_t height) ; 
+  virtual void resize(uint32_t width, uint32_t height);
 
  private:
   void create_swap_chain();

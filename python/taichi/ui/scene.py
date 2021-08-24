@@ -8,8 +8,8 @@ from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
 from taichi.lang.ops import atomic_add, get_addr
 
-from .utils import *
 from .camera import Camera
+from .utils import *
 
 normals_field_cache = {}
 

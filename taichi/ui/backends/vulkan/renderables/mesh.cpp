@@ -21,7 +21,7 @@ void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
   ubo.color = info.color;
   ubo.use_per_vertex_color = info.renderable_info.per_vertex_color.valid;
 
-  void* mapped = renderer_->app_context().device().map(uniform_buffer_);
+  void *mapped = renderer_->app_context().device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));
   renderer_->app_context().device().unmap(uniform_buffer_);
 }
@@ -37,7 +37,7 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
     resize_storage_buffers(correct_ssbo_size);
   }
   {
-    void* mapped = renderer_->app_context().device().map(storage_buffer_);
+    void *mapped = renderer_->app_context().device().map(storage_buffer_);
     memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
     renderer_->app_context().device().unmap(storage_buffer_);
   }
@@ -64,11 +64,11 @@ void Mesh::init_mesh(Renderer *renderer,
   Renderable::init_render_resources();
 }
 
-void Mesh::create_bindings(){
+void Mesh::create_bindings() {
   Renderable::create_bindings();
-  ResourceBinder* binder = pipeline_->resource_binder();
-  binder->buffer(0,0,uniform_buffer_);
-  binder->rw_buffer(0,1,storage_buffer_);
+  ResourceBinder *binder = pipeline_->resource_binder();
+  binder->buffer(0, 0, uniform_buffer_);
+  binder->rw_buffer(0, 1, storage_buffer_);
 }
 
 }  // namespace vulkan

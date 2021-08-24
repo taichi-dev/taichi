@@ -5,7 +5,6 @@
 using namespace taichi::lang::vulkan;
 using namespace taichi::lang;
 
-
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -16,7 +15,7 @@ PFN_vkVoidFunction load_vk_function_for_gui(const char *name, void *userData) {
   return result;
 }
 
-Gui::Gui(class Renderer *renderer,GLFWwindow *window){
+Gui::Gui(class Renderer *renderer, GLFWwindow *window) {
   renderer_ = renderer;
   app_context_ = &renderer->app_context();
 
@@ -29,18 +28,17 @@ Gui::Gui(class Renderer *renderer,GLFWwindow *window){
   ImGui::StyleColorsDark();
 
   ImGui_ImplGlfw_InitForVulkan(window, true);
-  
 }
 
 void Gui::init_render_resources(VkRenderPass render_pass) {
   ImGui_ImplVulkan_LoadFunctions(
       load_vk_function_for_gui);  // this is becaus we're using volk.
 
-  auto& device = app_context_->device();
+  auto &device = app_context_->device();
 
   ImGui_ImplVulkan_InitInfo init_info = {};
   init_info.Instance = device.vk_instance();
-  init_info.PhysicalDevice =  device.vk_physical_device();
+  init_info.PhysicalDevice = device.vk_physical_device();
   init_info.Device = device.vk_device();
   init_info.QueueFamily = device.graphics_queue_family_index();
   init_info.Queue = device.graphics_queue();
@@ -55,9 +53,11 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
   // Upload Fonts
   {
     // Use any command queue
-    std::unique_ptr<CommandList> cmd_list = device.new_command_list({CommandListType::Graphics});
-    VkCommandBuffer command_buffer = static_cast<VulkanCommandList*>(cmd_list.get())->vk_command_buffer();
-    
+    std::unique_ptr<CommandList> cmd_list =
+        device.new_command_list({CommandListType::Graphics});
+    VkCommandBuffer command_buffer =
+        static_cast<VulkanCommandList *>(cmd_list.get())->vk_command_buffer();
+
     ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
 
     device.submit_synced(cmd_list.get());
@@ -85,12 +85,13 @@ void Gui::create_descriptor_pool() {
   pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
   pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
   pool_info.pPoolSizes = pool_sizes;
-  VkResult err = vkCreateDescriptorPool(app_context_->device().vk_device(), &pool_info,
-                                        VK_NULL_HANDLE, &descriptor_pool_);
+  VkResult err =
+      vkCreateDescriptorPool(app_context_->device().vk_device(), &pool_info,
+                             VK_NULL_HANDLE, &descriptor_pool_);
 }
 
 void Gui::prepare_for_next_frame() {
-  if(render_pass_ == VK_NULL_HANDLE){
+  if (render_pass_ == VK_NULL_HANDLE) {
     return;
   }
   ImGui_ImplVulkan_NewFrame();
@@ -99,7 +100,7 @@ void Gui::prepare_for_next_frame() {
   is_empty = true;
 }
 
-bool Gui::initialized(){
+bool Gui::initialized() {
   return render_pass_ != VK_NULL_HANDLE;
 }
 
@@ -110,9 +111,8 @@ float Gui::abs_y(float y) {
   return y * renderer_->swap_chain().height();
 }
 
-
 void Gui::begin(std::string name, float x, float y, float width, float height) {
-  if(!initialized()){
+  if (!initialized()) {
     return;
   }
   ImGui::SetNextWindowPos(ImVec2(abs_x(x), abs_y(y)), ImGuiCond_Once);
@@ -121,19 +121,19 @@ void Gui::begin(std::string name, float x, float y, float width, float height) {
   is_empty = false;
 }
 void Gui::end() {
-  if(!initialized()){
+  if (!initialized()) {
     return;
   }
   ImGui::End();
 }
 void Gui::text(std::string text) {
-  if(!initialized()){
+  if (!initialized()) {
     return;
   }
   ImGui::Text(text.c_str());
 }
 bool Gui::checkbox(std::string name, bool old_value) {
-  if(!initialized()){
+  if (!initialized()) {
     return old_value;
   }
   ImGui::Checkbox(name.c_str(), &old_value);
@@ -143,44 +143,46 @@ float Gui::slider_float(std::string name,
                         float old_value,
                         float minimum,
                         float maximum) {
-  if(!initialized()){
+  if (!initialized()) {
     return old_value;
   }
   ImGui::SliderFloat(name.c_str(), &old_value, minimum, maximum);
   return old_value;
 }
 glm::vec3 Gui::color_edit_3(std::string name, glm::vec3 old_value) {
-  if(!initialized()){
+  if (!initialized()) {
     return old_value;
   }
   ImGui::ColorEdit3(name.c_str(), (float *)&old_value);
   return old_value;
 }
 bool Gui::button(std::string text) {
-  if(!initialized()){
+  if (!initialized()) {
     return false;
   }
   return ImGui::Button(text.c_str());
 }
 
-void Gui::draw(taichi::lang::CommandList* cmd_list) {
+void Gui::draw(taichi::lang::CommandList *cmd_list) {
   // Rendering
   ImGui::Render();
   ImDrawData *draw_data = ImGui::GetDrawData();
 
-  VkCommandBuffer buffer = static_cast<VulkanCommandList*>(cmd_list)->vk_command_buffer();
+  VkCommandBuffer buffer =
+      static_cast<VulkanCommandList *>(cmd_list)->vk_command_buffer();
 
   ImGui_ImplVulkan_RenderDrawData(draw_data, buffer);
 }
 
 void Gui::cleanup_render_resources() {
-  vkDestroyDescriptorPool(app_context_->device().vk_device(), descriptor_pool_, nullptr);
+  vkDestroyDescriptorPool(app_context_->device().vk_device(), descriptor_pool_,
+                          nullptr);
 
   ImGui_ImplVulkan_Shutdown();
-  render_pass_ = VK_NULL_HANDLE; 
+  render_pass_ = VK_NULL_HANDLE;
 }
 
-void Gui::cleanup(){
+void Gui::cleanup() {
   ImGui_ImplGlfw_Shutdown();
   cleanup_render_resources();
   ImGui::DestroyContext();

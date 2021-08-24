@@ -47,23 +47,19 @@ Circles::Circles(Renderer *renderer) {
 void Circles::update_ubo(glm::vec3 color,
                          bool use_per_vertex_color,
                          float radius) {
-  UniformBufferObject ubo{
-      color, (int)use_per_vertex_color,
-      radius * renderer_->swap_chain().height()};
+  UniformBufferObject ubo{color, (int)use_per_vertex_color,
+                          radius * renderer_->swap_chain().height()};
 
-  void* mapped = renderer_->app_context().device().map(uniform_buffer_);
+  void *mapped = renderer_->app_context().device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));
   renderer_->app_context().device().unmap(uniform_buffer_);
 }
 
-
-void Circles::create_bindings(){
+void Circles::create_bindings() {
   Renderable::create_bindings();
-  ResourceBinder* binder = pipeline_->resource_binder();
-  binder->buffer(0,0,uniform_buffer_);
+  ResourceBinder *binder = pipeline_->resource_binder();
+  binder->buffer(0, 0, uniform_buffer_);
 }
-
-
 
 }  // namespace vulkan
 

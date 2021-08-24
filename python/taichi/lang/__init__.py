@@ -804,13 +804,13 @@ def is_arch_supported(arch):
     Returns:
         bool: Whether `arch` is supported on the machine.
     """
-    print('vulkan: ', _ti_core.with_vulkan)
+    print('vulkan: ', _ti_core.with_vulkan())
     arch_table = {
         cuda: _ti_core.with_cuda,
         metal: _ti_core.with_metal,
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
-        vulkan: lambda: _ti_core.with_vulkan,
+        vulkan: lambda: _ti_core.with_vulkan(),
         wasm: lambda: True,
         cpu: lambda: True,
     }

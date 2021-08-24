@@ -1,6 +1,3 @@
-from taichi.lang.impl import get_runtime
-
-
 class SparseMatrix:
     is_taichi_class = True
 
@@ -15,6 +12,7 @@ class SparseMatrix:
             self.matrix = sm
 
     def _create_sparse_matrix(self):
+        from taichi.lang.impl import get_runtime
         sm = get_runtime().create_sparse_matrix(self.n, self.m)
         return sm
 

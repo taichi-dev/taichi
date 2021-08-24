@@ -21,12 +21,7 @@ class StructCompiler;
 class LlvmProgramImpl {
  public:
   void *llvm_runtime{nullptr};
-  std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
-  std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
   std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
-  std::unique_ptr<Runtime> runtime_mem_info{nullptr};
-  void *preallocated_device_buffer{
-      nullptr};  // TODO: move this to memory allocator
   CompileConfig config;
 
   LlvmProgramImpl(CompileConfig &config, KernelProfilerBase *profiler);
@@ -122,7 +117,11 @@ class LlvmProgramImpl {
   void print_list_manager_info(void *list_manager, uint64 *result_buffer);
 
  private:
+  std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
+  std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
   std::unique_ptr<ThreadPool> thread_pool{nullptr};
+  std::unique_ptr<Runtime> runtime_mem_info{nullptr};
+  void *preallocated_device_buffer{nullptr};  // TODO: move to memory allocator
 };
 }  // namespace lang
 }  // namespace taichi

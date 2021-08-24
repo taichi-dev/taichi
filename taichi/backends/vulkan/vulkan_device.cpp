@@ -459,6 +459,16 @@ VulkanResourceBinder::VulkanResourceBinder(VkPipelineBindPoint bind_point)
 }
 
 VulkanResourceBinder::~VulkanResourceBinder() {
+  for(auto& set_pair:sets_){
+    Set& set = set_pair.second;
+    for(auto& binding_pair: set.bindings){
+      VkSampler sampler = binding_pair.second.sampler;
+      if(sampler != VK_NULL_HANDLE){
+        Device* dev = binding_pair.second.ptr.device;
+        vkDestroySampler(static_cast<VulkanDevice*>(dev)->vk_device(), sampler,kNoVkAllocCallbacks);
+      }
+    }
+  }
 }
 
 VkSampler create_sampler(ImageSamplerConfig config, VkDevice device) {
@@ -556,14 +566,15 @@ void VulkanResourceBinder::image(uint32_t set,
       TI_WARN("Overriding last binding");
     }
   }
+  if(bindings[binding].sampler != VK_NULL_HANDLE){
+    Device* dev = bindings[binding].ptr.device;
+    vkDestroySampler(static_cast<VulkanDevice*>(dev)->vk_device(),bindings[binding].sampler,kNoVkAllocCallbacks);
+  }
   bindings[binding] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                        alloc.get_ptr(0), VK_WHOLE_SIZE};
   if (alloc.device) {
     VulkanDevice *device = static_cast<VulkanDevice *>(alloc.device);
-    if(bindings[binding].sampler != VK_NULL_HANDLE){
-      vkDestroySampler(device->vk_device(),bindings[binding].sampler,kNoVkAllocCallbacks);
-    }
-    bindings[binding].sampler =
+        bindings[binding].sampler =
         create_sampler(sampler_config, device->vk_device());
   }
 }

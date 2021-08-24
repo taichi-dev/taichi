@@ -1,6 +1,10 @@
 import taichi as ti
 
-ti.init(arch=ti.vulkan)
+from taichi.lang import *
+
+print (is_arch_supported(ti.vulkan))
+
+ti.init(arch=ti.cpu)
 
 N = 16
 

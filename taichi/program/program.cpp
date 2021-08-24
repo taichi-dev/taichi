@@ -211,9 +211,9 @@ void Program::materialize_runtime() {
   }
 }
 
-// TODO: LLVM specific
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
-  llvm_program_->snode_tree_buffer_manager->destroy(snode_tree);
+  TI_ASSERT(arch_uses_llvm(config.arch));
+  llvm_program_->destroy_snode_tree(snode_tree);
 }
 
 SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {

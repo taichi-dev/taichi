@@ -11,6 +11,9 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/system/memory_pool.h"
+#define TI_RUNTIME_HOST
+#include "taichi/program/context.h"
+#undef TI_RUNTIME_HOST
 
 #include <memory>
 
@@ -20,8 +23,6 @@ class StructCompiler;
 
 class LlvmProgramImpl {
  public:
-  void *llvm_runtime{nullptr};
-  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
   CompileConfig config;
 
   LlvmProgramImpl(CompileConfig &config, KernelProfilerBase *profiler);
@@ -41,6 +42,10 @@ class LlvmProgramImpl {
     } else {
       return llvm_context_device.get();
     }
+  }
+
+  LLVMRuntime *get_llvm_runtime() {
+    return static_cast<LLVMRuntime *>(llvm_runtime);
   }
 
   void materialize_snode_tree(
@@ -65,6 +70,10 @@ class LlvmProgramImpl {
 
   std::size_t get_snode_num_dynamically_allocated(SNode *snode,
                                                   uint64 *result_buffer);
+
+  void destroy_snode_tree(SNodeTree *snode_tree) {
+    snode_tree_buffer_manager->destroy(snode_tree);
+  }
 
   void print_memory_profiler_info(
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
@@ -121,6 +130,8 @@ class LlvmProgramImpl {
   std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
   std::unique_ptr<ThreadPool> thread_pool{nullptr};
   std::unique_ptr<Runtime> runtime_mem_info{nullptr};
+  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
+  void *llvm_runtime{nullptr};
   void *preallocated_device_buffer{nullptr};  // TODO: move to memory allocator
 };
 }  // namespace lang

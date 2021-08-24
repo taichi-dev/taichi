@@ -27,7 +27,7 @@ void SparseMatrixBuilder::print_triplets() {
 }
 
 void SparseMatrixBuilder::build(SparseMatrix *sm) {
-  TI_ASSERT(built == false);
+  TI_ASSERT(built_ == false);
   built_ = true;
   using T = Eigen::Triplet<float32>;
   std::vector<T> triplets;

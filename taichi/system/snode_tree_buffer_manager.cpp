@@ -3,7 +3,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
-SNodeTreeBufferManager::SNodeTreeBufferManager(Program *prog) : prog_(prog) {
+SNodeTreeBufferManager::SNodeTreeBufferManager(LlvmProgramImpl *prog)
+    : prog_(prog) {
   TI_TRACE("SNode tree buffer manager created.");
 }
 
@@ -34,13 +35,15 @@ Ptr SNodeTreeBufferManager::allocate(JITModule *runtime_jit,
                                      void *runtime,
                                      std::size_t size,
                                      std::size_t alignment,
-                                     const int snode_tree_id) {
+                                     const int snode_tree_id,
+                                     uint64 *result_buffer) {
   TI_TRACE("allocating memory for SNode Tree {}", snode_tree_id);
   auto set_it = size_set_.lower_bound(std::make_pair(size, nullptr));
   if (set_it == size_set_.end()) {
     runtime_jit->call<void *, std::size_t, std::size_t>(
         "runtime_snode_tree_allocate_aligned", runtime, size, alignment);
-    auto ptr = prog_->fetch_result<Ptr>(taichi_result_buffer_runtime_query_id);
+    auto ptr = prog_->fetch_result<Ptr>(taichi_result_buffer_runtime_query_id,
+                                        result_buffer);
     roots_[snode_tree_id] = ptr;
     sizes_[snode_tree_id] = size;
     return ptr;

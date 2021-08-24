@@ -13,7 +13,7 @@ from taichi import make_temp_file
 @pytest.mark.parametrize('resx,resy', [(201, 173)])
 @pytest.mark.parametrize('is_field', [False, True])
 @pytest.mark.parametrize('dt', [ti.u8])
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_image_io(resx, resy, comp, ext, is_field, dt):
     if comp != 1:
         shape = (resx, resy, comp)
@@ -40,7 +40,7 @@ def test_image_io(resx, resy, comp, ext, is_field, dt):
 @pytest.mark.parametrize('comp,ext', [(3, 'png'), (4, 'png')])
 @pytest.mark.parametrize('resx,resy', [(91, 81)])
 @pytest.mark.parametrize('dt', [ti.f32, ti.f64])
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_image_io_vector(resx, resy, comp, ext, dt):
     shape = (resx, resy)
     pixel = np.random.rand(*shape, comp).astype(ti.to_numpy_type(dt))
@@ -56,7 +56,7 @@ def test_image_io_vector(resx, resy, comp, ext, dt):
 @pytest.mark.parametrize('comp,ext', [(3, 'png')])
 @pytest.mark.parametrize('resx,resy', [(91, 81)])
 @pytest.mark.parametrize('dt', [ti.u16, ti.u32, ti.u64])
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_image_io_uint(resx, resy, comp, ext, dt):
     shape = (resx, resy)
     np_type = ti.to_numpy_type(dt)
@@ -76,7 +76,7 @@ def test_image_io_uint(resx, resy, comp, ext, dt):
 @pytest.mark.parametrize('comp', [1, 3])
 @pytest.mark.parametrize('resx,resy', [(91, 81)])
 @pytest.mark.parametrize('scale', [1, 2, 3])
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_image_resize_sum(resx, resy, comp, scale):
     shape = (resx, resy)
     if comp != 1:

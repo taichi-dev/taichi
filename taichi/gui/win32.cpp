@@ -164,11 +164,6 @@ void GUI::create_window() {
   dwMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
   dwMinorVersion = (DWORD)(HIBYTE(LOWORD(dwVersion)));
 
-  if (dwMajorVersion > 6 || (dwMajorVersion == 6 && dwMinorVersion >= 3))
-    SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
-  else if (dwMajorVersion >= 6)
-    SetProcessDPIAware();
-
   WNDCLASS wc = {};
 
   wc.lpfnWndProc = WindowProc;

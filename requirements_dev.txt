@@ -1,4 +1,6 @@
+cmake
 colorama
+coverage
 numpy
 Pillow
 pybind11
@@ -12,5 +14,4 @@ pytest
 pytest-xdist
 pytest-rerunfailures
 pytest-cov
-coverage
 torch

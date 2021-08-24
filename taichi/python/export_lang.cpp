@@ -58,7 +58,6 @@ void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
 std::vector<std::unique_ptr<ASTBuilder::ScopeGuard>> scope_stack;
 
 std::string libdevice_path();
-std::string get_runtime_dir();
 
 SNodeRwAccessorsBank::Accessors get_snode_rw_accessors(SNode *snode) {
   return get_current_program().get_snode_rw_accessors_bank().get(snode);
@@ -665,17 +664,18 @@ void export_lang(py::module &m) {
         std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
         element_type));
     for (int i = 0; i < (int)elements.exprs.size(); ++i) {
-      ExprGroup reversed_indices, indices;
+      ExprGroup reversed_indices;
       int linearized_index = i;
       for (int d = (int)shape.size() - 1; d >= 0; --d) {
         reversed_indices.push_back(
             Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
         linearized_index /= shape[d];
       }
+      ExprGroup indices;
       for (int d = 0; d < (int)shape.size(); ++d)
         indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
       current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-          Expr::make<LocalTensorElementExpression>(var, indices),
+          Expr::make<TensorElementExpression>(var, indices, shape, 1),
           load_if_ptr(elements.exprs[i])));
     }
     return var;
@@ -742,16 +742,26 @@ void export_lang(py::module &m) {
   });
 
   m.def("global_subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices, int cols, bool is_aos) {
+        [](const Expr &var, const ExprGroup &indices,
+           const std::vector<int> &shape, bool is_aos) {
           // TODO: Add test for dimension check
-          return Expr::make<GlobalTensorElementExpression>(var, indices, cols,
-                                                           is_aos);
+          if (is_aos)
+            return Expr::make<TensorElementExpression>(var, indices, shape, 1);
+          else {
+            SNode *snode = var.cast<GlobalPtrExpression>()
+                               ->var.cast<GlobalVariableExpression>()
+                               ->snode;
+            return Expr::make<TensorElementExpression>(
+                var, indices, shape,
+                snode->get_total_num_elements_towards_root());
+          }
         });
 
   m.def("local_subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices) {
+        [](const Expr &var, const ExprGroup &indices,
+           const std::vector<int> &shape) {
           // TODO: Add test for dimension check
-          return Expr::make<LocalTensorElementExpression>(var, indices);
+          return Expr::make<TensorElementExpression>(var, indices, shape, 1);
         });
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
@@ -816,6 +826,7 @@ void export_lang(py::module &m) {
       .export_values();
 
   m.def("insert_snode_access_flag", insert_snode_access_flag);
+  m.def("reset_snode_access_flag", reset_snode_access_flag);
   m.def("no_activate", [](SNode *snode) {
     // TODO(#2193): Also apply to @ti.func?
     get_current_program().get_current_kernel().no_activate.push_back(snode);
@@ -832,7 +843,6 @@ void export_lang(py::module &m) {
 
   m.def("set_lib_dir", [&](const std::string &dir) { compiled_lib_dir = dir; });
   m.def("set_tmp_dir", [&](const std::string &dir) { runtime_tmp_dir = dir; });
-  m.def("get_runtime_dir", get_runtime_dir);
 
   m.def("get_commit_hash", get_commit_hash);
   m.def("get_version_string", get_version_string);

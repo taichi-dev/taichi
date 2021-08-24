@@ -11,7 +11,7 @@
 #include "taichi/ir/type_factory.h"
 #include "taichi/ir/snode.h"
 #include "taichi/lang_util.h"
-#include "taichi/llvm/llvm_context.h"
+#include "taichi/llvm/llvm_program.h"
 #include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
@@ -29,7 +29,6 @@
 #include "taichi/struct/snode_tree.h"
 #include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/system/memory_pool.h"
-#include "taichi/system/snode_tree_buffer_manager.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/program/sparse_matrix.h"
@@ -93,23 +92,17 @@ class Program {
  public:
   using Kernel = taichi::lang::Kernel;
   Callable *current_callable{nullptr};
-  void *llvm_runtime{nullptr};
   CompileConfig config;
-  std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
-  std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
   bool sync{false};  // device/host synchronized?
   bool finalized{false};
   float64 total_compilation_time{0.0};
   static std::atomic<int> num_instances;
-  std::unique_ptr<ThreadPool> thread_pool{nullptr};
   std::unique_ptr<MemoryPool> memory_pool{nullptr};
-  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
-  uint64 *result_buffer{nullptr};  // TODO: move this
-  void *preallocated_device_buffer{
-      nullptr};  // TODO: move this to memory allocator
-  std::unordered_map<int, SNode *> snodes;
+  uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
 
-  std::unique_ptr<Runtime> runtime_mem_info{nullptr};
+  std::unordered_map<int, SNode *>
+      snodes;  // TODO: seems LLVM specific but used by state_flow_graph.cpp.
+
   std::unique_ptr<AsyncEngine> async_engine{nullptr};
 
   std::vector<std::unique_ptr<Kernel>> kernels;
@@ -169,13 +162,6 @@ class Program {
   KernelProfilerBase *get_profiler() {
     return profiler.get();
   }
-
-  /**
-   * Initializes Program#llvm_context_device, if this has not been done.
-   *
-   * Not thread safe.
-   */
-  void maybe_initialize_cuda_llvm_context();
 
   void synchronize();
 
@@ -254,14 +240,6 @@ class Program {
     return func;
   }
 
-  TaichiLLVMContext *get_llvm_context(Arch arch) {
-    if (arch_is_cpu(arch)) {
-      return llvm_context_host.get();
-    } else {
-      return llvm_context_device.get();
-    }
-  }
-
   Kernel &get_snode_reader(SNode *snode);
 
   Kernel &get_snode_writer(SNode *snode);
@@ -293,26 +271,9 @@ class Program {
 
   static int default_block_dim(const CompileConfig &config);
 
-  void print_list_manager_info(void *list_manager);
-
+  // Note this method is specific to LlvmProgramImpl, but we keep it here since
+  // it's exposed to python.
   void print_memory_profiler_info();
-
-  template <typename T, typename... Args>
-  T runtime_query(const std::string &key, Args... args) {
-    TI_ASSERT(arch_uses_llvm(config.arch));
-
-    TaichiLLVMContext *tlctx = nullptr;
-    if (llvm_context_device) {
-      tlctx = llvm_context_device.get();
-    } else {
-      tlctx = llvm_context_host.get();
-    }
-
-    auto runtime = tlctx->runtime_jit_module;
-    runtime->call<void *, Args...>("runtime_" + key, llvm_runtime,
-                                   std::forward<Args>(args)...);
-    return fetch_result<T>(taichi_result_buffer_runtime_query_id);
-  }
 
   // Returns zero if the SNode is statically allocated
   std::size_t get_snode_num_dynamically_allocated(SNode *snode);
@@ -354,6 +315,10 @@ class Program {
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 
+  LlvmProgramImpl *get_llvm_program_impl() {
+    return llvm_program_.get();
+  }
+
  private:
   /**
    * Materializes a new SNodeTree.
@@ -361,25 +326,6 @@ class Program {
    * JIT compiles the @param tree to backend-specific data types.
    */
   void materialize_snode_tree(SNodeTree *tree);
-
-  /**
-   * Sets the attributes of the Exprs that are backed by SNodes.
-   */
-  void materialize_snode_expr_attributes();
-
-  /**
-   * Initializes the runtime system for LLVM based backends.
-   */
-  void initialize_llvm_runtime_system();
-
-  /**
-   * Initializes the SNodes for LLVM based backends.
-   */
-  void initialize_llvm_runtime_snodes(const SNodeTree *tree,
-                                      StructCompiler *scomp);
-
-  std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
-      TaichiLLVMContext *tlctx);
 
   // Metal related data structures
   std::optional<metal::CompiledStructs> metal_compiled_structs_;
@@ -395,6 +341,8 @@ class Program {
   std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
+
+  std::unique_ptr<LlvmProgramImpl> llvm_program_;
 
  public:
 #ifdef TI_WITH_CC

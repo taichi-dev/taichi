@@ -6,7 +6,7 @@ import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.ext_array import ExtArray
+from taichi.lang.ext_array import AnyArray, AnyArrayAccess, ExtArray
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField
 from taichi.lang.ndarray import ScalarNdarray
@@ -158,6 +158,25 @@ def subscript(value, *indices):
             ])
         else:
             return Expr(_ti_core.subscript(var, indices_expr_group))
+    elif isinstance(value, AnyArray):
+        # TODO: deprecate using get_attribute to get dim
+        field_dim = int(value.ptr.get_attribute("dim"))
+        element_dim = len(value.element_shape)
+        if field_dim != index_dim + element_dim:
+            raise IndexError(
+                f'Field with dim {field_dim - element_dim} accessed with indices of dim {index_dim}'
+            )
+        if element_dim == 0:
+            return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
+        n = value.element_shape[0]
+        m = 1 if element_dim == 1 else value.element_shape[1]
+        any_array_access = AnyArrayAccess(value, indices)
+        ret = ti.Matrix.with_entries(n, m, [
+            any_array_access.subscript(i, j) for i in range(n)
+            for j in range(m)
+        ])
+        ret.any_array_access = any_array_access
+        return ret
     elif isinstance(value, (ExtArray, SNode)):
         if isinstance(value, ExtArray):
             field_dim = int(value.ptr.get_attribute("dim"))
@@ -176,16 +195,17 @@ def subscript(value, *indices):
 
 
 @taichi_scope
-def local_subscript_with_offset(var, indices):
+def local_subscript_with_offset(var, indices, shape):
     return Expr(
-        _ti_core.local_subscript_with_offset(var, make_expr_group(*indices)))
+        _ti_core.local_subscript_with_offset(var, make_expr_group(*indices),
+                                             shape))
 
 
 @taichi_scope
-def global_subscript_with_offset(var, indices, cols, is_aos):
+def global_subscript_with_offset(var, indices, shape, is_aos):
     return Expr(
         _ti_core.global_subscript_with_offset(var.ptr,
-                                              make_expr_group(*indices), cols,
+                                              make_expr_group(*indices), shape,
                                               is_aos))
 
 

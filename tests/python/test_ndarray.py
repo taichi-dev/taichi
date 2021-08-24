@@ -1,9 +1,11 @@
 import numpy as np
+import pytest
 
 import taichi as ti
 
 
-@ti.torch_test
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
 def test_ndarray_2d():
     n = 4
     m = 7

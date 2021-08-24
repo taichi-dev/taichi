@@ -524,7 +524,7 @@ struct LLVMRuntime {
   assert_failed_type assert_failed;
   host_printf_type host_printf;
   host_vsnprintf_type host_vsnprintf;
-  Ptr program;
+  Ptr memory_pool;
 
   Ptr roots[taichi_max_num_snode_trees];
   size_t root_mem_sizes[taichi_max_num_snode_trees];
@@ -774,7 +774,7 @@ Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
   if (preallocated) {
     return allocate_from_buffer(size, alignment);
   }
-  return (Ptr)vm_allocator(program, size, alignment);
+  return (Ptr)vm_allocator(memory_pool, size, alignment);
 }
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
@@ -851,7 +851,7 @@ void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
 
 void runtime_initialize(
     Ptr result_buffer,
-    Ptr program,
+    Ptr memory_pool,
     std::size_t
         preallocated_size,  // Non-zero means use the preallocated buffer
     Ptr preallocated_buffer,
@@ -871,7 +871,8 @@ void runtime_initialize(
     preallocated_buffer +=
         taichi::iroundup(sizeof(LLVMRuntime), taichi_page_size);
   } else {
-    runtime = (LLVMRuntime *)vm_allocator(program, sizeof(LLVMRuntime), 128);
+    runtime =
+        (LLVMRuntime *)vm_allocator(memory_pool, sizeof(LLVMRuntime), 128);
   }
 
   runtime->preallocated = preallocated_size > 0;
@@ -883,7 +884,7 @@ void runtime_initialize(
   runtime->vm_allocator = vm_allocator;
   runtime->host_printf = host_printf;
   runtime->host_vsnprintf = host_vsnprintf;
-  runtime->program = program;
+  runtime->memory_pool = memory_pool;
 
   runtime->total_requested_memory = 0;
 

@@ -24,7 +24,7 @@ Kernel::Kernel(Program &program,
   // Do not corrupt the context calling this kernel here -- maybe unnecessary
   auto backup_context = std::move(taichi::lang::context);
 
-  program.maybe_initialize_cuda_llvm_context();
+  program.get_llvm_program_impl()->maybe_initialize_cuda_llvm_context();
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;
@@ -269,7 +269,8 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
 }
 
 Context &Kernel::LaunchContextBuilder::get_context() {
-  ctx_->runtime = static_cast<LLVMRuntime *>(kernel_->program->llvm_runtime);
+  ctx_->runtime = static_cast<LLVMRuntime *>(
+      kernel_->program->get_llvm_program_impl()->llvm_runtime);
   return *ctx_;
 }
 

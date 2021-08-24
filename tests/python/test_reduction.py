@@ -85,7 +85,7 @@ def test_reduction_single_i32(op):
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@ti.all_archs
+@ti.test(exclude=ti.opengl)
 def test_reduction_single_u32(op):
     _test_reduction_single(ti.u32, lambda x, y: x % 2**32 == y % 2**32, op)
 
@@ -97,27 +97,24 @@ def test_reduction_single_f32(op):
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test(require=ti.extension.data64)
 def test_reduction_single_i64(op):
     _test_reduction_single(ti.i64, lambda x, y: x % 2**64 == y % 2**64, op)
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@ti.require(ti.extension.data64)
-@ti.archs_excluding(ti.opengl)  # OpenGL doesn't have u64 yet
+@ti.test(exclude=ti.opengl, require=ti.extension.data64)
 def test_reduction_single_u64(op):
     _test_reduction_single(ti.u64, lambda x, y: x % 2**64 == y % 2**64, op)
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test(require=ti.extension.data64)
 def test_reduction_single_f64(op):
     _test_reduction_single(ti.f64, lambda x, y: x == approx(y, 1e-12), op)
 
 
-@ti.all_archs
+@ti.test()
 def test_reduction_different_scale():
     @ti.kernel
     def func(n: ti.template()) -> ti.i32:

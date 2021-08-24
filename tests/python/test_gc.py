@@ -58,7 +58,9 @@ def test_block():
     _test_block_gc()
 
 
+#TODO: Remove exclude of ti.metal.
 @ti.test(require=[ti.extension.sparse, ti.extension.async_mode],
+         exclude=[ti.metal],
          async_mode=True)
 def test_block_async():
     _test_block_gc()

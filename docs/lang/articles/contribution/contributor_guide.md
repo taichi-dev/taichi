@@ -162,7 +162,7 @@ This design is terrible.
 ## Enforcing code style
 
 - Locally, you can run `ti format` in the command line to re-format
-  code style. Note that you have to install `clang-format-6.0` and
+  code style. Note that you have to install `clang-format-10` and
   `yapf v0.31.0` locally before you use `ti format`.
 
 - If you don't have these formatting tools locally, feel free to

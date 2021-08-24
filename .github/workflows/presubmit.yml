@@ -37,7 +37,7 @@ jobs:
           git checkout -b _fake_squash
           git remote add upstream https://github.com/taichi-dev/taichi.git
           git fetch upstream master
-          sudo apt-get install clang-format
+          sudo apt install clang-format-10
           python3 -m pip install --user yapf==0.31.0 gitpython colorama isort
           python3 python/taichi/code_format.py
           git checkout -b _enforced_format
@@ -194,6 +194,7 @@ jobs:
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
           export CXX=clang++-8
           export PYTHON=/usr/bin/python3
+          $PYTHON -m pip uninstall taichi -y
           $PYTHON -m pip install -r requirements_dev.txt
           cd python
           git fetch origin master
@@ -203,8 +204,8 @@ jobs:
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           $PYTHON -m pip install dist/*.whl
         env:
-          LLVM_LIB_ROOT_DIR: /home/taichi/Libs/taichi-llvm-10.0.0
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_PENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON
+          LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON
           BUILD_NUM_THREADS: 8
 
       - name: Test
@@ -276,3 +277,42 @@ jobs:
           python bin/taichi test -vr2 -t2
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
+
+  build_and_test_m1:
+    name: Build and Test (Apple M1)
+    needs: check_code_format
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            python: 3.8
+    runs-on: [self-hosted, m1]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Build
+        run: |
+          arch -arm64 python3 -m pip uninstall taichi -y
+          rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
+          git --version
+          export CXX=clang++
+          arch -arm64 python3 -m pip install -r requirements_dev.txt
+          cd python
+          git fetch origin master
+          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS arch -arm64 python3 build.py build
+          cd ..
+          export NUM_WHL=`ls dist/*.whl | wc -l`
+          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
+          arch -arm64 python3 -m pip install dist/*.whl
+        env:
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+
+      - name: Test
+        run: |
+          export PATH=$PATH:$HOME/Library/Python/3.8/bin
+          arch -arm64 python3 examples/algorithm/laplace.py
+          TI_LIB_DIR=`arch -arm64 python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
+          TI_LIB_DIR="$TI_LIB_DIR/lib" arch -arm64 ./build/taichi_cpp_tests
+          arch -arm64 ti test -t2 -x

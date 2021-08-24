@@ -254,7 +254,6 @@ void LlvmProgramImpl::print_list_manager_info(void *list_manager,
       size_MB);
 }
 
-// For CPU and CUDA archs only
 void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                           KernelProfilerBase *profiler,
                                           uint64 **result_buffer_ptr) {

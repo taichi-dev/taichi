@@ -39,6 +39,7 @@ def build(project_name):
         f'{get_python_executable()} ../misc/make_changelog.py origin/master ../ True'
     )
 
+    # This env var is used in setup.py below.
     os.environ['PROJECT_NAME'] = project_name
     project_tag = ''
     if project_name == 'taichi-nightly':

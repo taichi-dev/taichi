@@ -42,7 +42,6 @@ print(">>>> Subtraction Test")
 D = A - A
 D.print()
 
-
 print(">>>> Multiplication with scalar")
 E = A * 3.0
 E.print()
@@ -54,7 +53,6 @@ F.print()
 print(">>>> Matrix Multiplication")
 G = E @ A
 G.print()
-
 
 print(">>> Elment-wise Multiplication")
 H = E * A

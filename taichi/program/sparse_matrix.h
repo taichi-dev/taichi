@@ -37,8 +37,8 @@ public:
 
     int num_rows();
     int num_cols();
-    Eigen::SparseMatrix<float32>& get_matrix();
     void print();
+    Eigen::SparseMatrix<float32>& get_matrix();
 
     friend SparseMatrix* operator+(const SparseMatrix& sm1, const SparseMatrix& sm2);
     friend SparseMatrix* operator-(const SparseMatrix& sm1, const SparseMatrix& sm2);

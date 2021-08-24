@@ -218,7 +218,7 @@ void SetImage::create_bindings() {
 }
 
 void SetImage::cleanup() {
-
+  destroy_texture();
   Renderable::cleanup();
 }
 

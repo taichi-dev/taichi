@@ -131,6 +131,10 @@ VulkanPipeline::VulkanPipeline(
 VulkanPipeline::~VulkanPipeline() {
   vkDestroyPipeline(device_, pipeline_, kNoVkAllocCallbacks);
   vkDestroyPipelineLayout(device_, pipeline_layout_, kNoVkAllocCallbacks);
+  for (VkShaderModule shader_module : shader_modules_) {
+    vkDestroyShaderModule(device_, shader_module, kNoVkAllocCallbacks);
+  }
+  shader_modules_.clear();
 }
 
 VkShaderModule VulkanPipeline::create_shader_module(VkDevice device,
@@ -556,6 +560,9 @@ void VulkanResourceBinder::image(uint32_t set,
                        alloc.get_ptr(0), VK_WHOLE_SIZE};
   if (alloc.device) {
     VulkanDevice *device = static_cast<VulkanDevice *>(alloc.device);
+    if(bindings[binding].sampler != VK_NULL_HANDLE){
+      vkDestroySampler(device->vk_device(),bindings[binding].sampler,kNoVkAllocCallbacks);
+    }
     bindings[binding].sampler =
         create_sampler(sampler_config, device->vk_device());
   }

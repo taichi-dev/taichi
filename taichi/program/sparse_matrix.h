@@ -39,6 +39,7 @@ public:
     int num_cols();
     void print();
     Eigen::SparseMatrix<float32>& get_matrix();
+    float32 get_coeff(int row, int col);
 
     friend SparseMatrix* operator+(const SparseMatrix& sm1, const SparseMatrix& sm2);
     friend SparseMatrix* operator-(const SparseMatrix& sm1, const SparseMatrix& sm2);

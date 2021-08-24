@@ -102,6 +102,10 @@ SparseMatrix* SparseMatrix::transpose()
     return res;
 }
 
+float32 SparseMatrix::get_coeff(int row, int col){
+    return matrix.coeff(row, col);
+}
+
 
 void SparseMatrix::solve(SparseMatrix *b_) {
   using namespace Eigen;

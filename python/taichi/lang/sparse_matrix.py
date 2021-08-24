@@ -1,4 +1,6 @@
 class SparseMatrix:
+    is_taichi_class = True
+
     def __init__(self, n=None, m=None, sm=None):
         if m is not None:
             self.n = n
@@ -49,6 +51,9 @@ class SparseMatrix:
         sm = self.__create_sparse_matrix()
         sm = self.matrix.matmult(other.matrix)
         return SparseMatrix(sm=sm)
+
+    def get_ele(self, i, j):
+        return self.matrix.get_coeff(i, j)
 
 
 class SparseMatrixBuilder:

@@ -58,6 +58,8 @@ print(">>> Elment-wise Multiplication")
 H = E * A
 H.print()
 
+print(f">>> Element Access: A[0,0] = {A.get_ele(0,0)}")
+
 # print()
 #
 # K.print_triplets()

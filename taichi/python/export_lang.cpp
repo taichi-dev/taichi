@@ -952,6 +952,7 @@ void export_lang(py::module &m) {
     .def(py::self * py::self, py::return_value_policy::reference_internal)
     .def("matmult", &SparseMatrix::matmult,py::return_value_policy::reference_internal)
     .def("transpose", &SparseMatrix::transpose, py::return_value_policy::reference_internal)
+    .def("get_coeff", &SparseMatrix::get_coeff)
     .def("num_rows", &SparseMatrix::num_rows)
     .def("num_cols", &SparseMatrix::num_cols)
     .def("solve", &SparseMatrix::solve);

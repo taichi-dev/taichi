@@ -1,4 +1,6 @@
 from taichi.lang.impl import get_runtime
+
+
 class SparseMatrix:
     is_taichi_class = True
 

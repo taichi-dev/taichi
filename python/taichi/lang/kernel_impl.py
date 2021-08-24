@@ -369,7 +369,7 @@ class Kernel:
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass
-                elif id(annotation) == id(SparseMatrixBuilder):
+                elif isinstance(annotation, SparseMatrixBuilder):
                     pass
                 else:
                     _taichi_skip_traceback = 1

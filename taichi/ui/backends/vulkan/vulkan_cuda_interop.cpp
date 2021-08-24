@@ -137,9 +137,7 @@ CUsurfObject get_image_surface_object_of_external_memory(
     int height,
     int depth) {
   CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC external_mem_mipmapped_array_desc;
-
-  printf("%ld,%d,%d,%d\n", offset, width, height, depth);
-
+  
   memset(&external_mem_mipmapped_array_desc, 0,
          sizeof(external_mem_mipmapped_array_desc));
 

@@ -125,20 +125,6 @@ class Offloader {
           offloaded->body->insert(std::move(st->body->statements[j]));
         }
         offloaded->snode = st->snode;
-        offloaded->bls_prologue = std::make_unique<Block>();
-        offloaded->bls_prologue->parent_stmt = offloaded.get();
-        Stmt* mesh_idx = offloaded->bls_prologue->push_back<InternalFuncStmt, const std::string, const std::vector<Stmt*>>("mesh_idx", {});
-        Stmt* one = offloaded->bls_prologue->push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-          TypedConstant(TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32), 1)));
-        Stmt* mesh_idx_1 = offloaded->bls_prologue->push_back<BinaryOpStmt>(BinaryOpType::add, mesh_idx, one);
-        auto get_print = [&](Stmt* idx) {
-          const auto lane = std::vector<Stmt*>{idx};
-          Stmt* globalptr = offloaded->bls_prologue->push_back<GlobalPtrStmt>(LaneAttribute<SNode*>{st->snode}, lane);
-          Stmt* load = offloaded->bls_prologue->push_back<GlobalLoadStmt>(globalptr);
-          offloaded->bls_prologue->push_back<PrintStmt>(load);
-        };
-        get_print(mesh_idx);
-        get_print(mesh_idx_1);
         root_block->insert(std::move(offloaded));
       } else {
         pending_serial_statements->body->insert(std::move(stmt));

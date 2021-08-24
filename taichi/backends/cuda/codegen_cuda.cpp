@@ -585,12 +585,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       auto guard = get_function_creation_guard(
           {llvm::PointerType::get(get_runtime_type("Context"), 0), tlctx->get_data_type<int>()});
 
-      llvm_val[stmt->bls_prologue->statements[0].get()] = get_arg(1);
+      //llvm_val[stmt->bls_prologue->statements[0].get()] = get_arg(1);
       std::vector<llvm::Value*> bounds;
-      for (int i = 1; i < stmt->bls_prologue->size(); i++) {
+      for (int i = 0; i < stmt->bls_prologue->size(); i++) {
         auto &s = stmt->bls_prologue->statements[i];
         if (auto s_print = s->cast<PrintStmt>()) {
           bounds.push_back(llvm_val[std::get<Stmt*>(s_print->contents.front())]);
+        }
+        else if (auto s_in = s->cast<InternalFuncStmt>()) {
+          if (s_in->func_name == "mesh_idx") llvm_val[s.get()] = get_arg(1);
+          else s->accept(this);
         }
         else s->accept(this);
       }
@@ -616,7 +620,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         builder->SetInsertPoint(loop_body_bb);
         //loop_vars_llvm[stmt].push_back(get_arg(1));
         loop_vars_llvm[stmt].push_back(loop_index);
-        stmt->body->accept(this);
+        for (int i = 0; i < stmt->body->size(); i++) {
+          auto &s = stmt->body->statements[i];
+          if (auto s_in = s->cast<InternalFuncStmt>()) {
+            if (s_in->func_name == "mesh_idx") llvm_val[s.get()] = get_arg(1);
+            //else if (s_in->func_name == "l2g") llvm_val[s.get()] = llvm_val[s_in->args[0]];
+            else s->accept(this);
+          }
+          else s->accept(this);
+        }
+        //stmt->body->accept(this);
         builder->CreateStore(
             builder->CreateAdd(builder->CreateLoad(loop_index), block_dim),
             loop_index);

@@ -48,7 +48,9 @@ def build(project_name):
             f'cd ..; {get_python_executable()} setup.py {project_tag} bdist_wheel -p manylinux1_x86_64'
         )
     else:
-        os.system(f'cd .. && {get_python_executable()} setup.py {project_tag} bdist_wheel')
+        os.system(
+            f'cd .. && {get_python_executable()} setup.py {project_tag} bdist_wheel'
+        )
 
     try:
         os.remove('taichi/CHANGELOG.md')

@@ -113,12 +113,14 @@ void *map_buffer_onto_external_memory(CUexternalMemory ext_mem,
 }
 
 void *get_memory_pointer(VkDeviceMemory mem,
-                         VkDeviceSize size,
+                         VkDeviceSize mem_size,
+                         VkDeviceSize offset,
+                         VkDeviceSize buffer_size,
                          VkDevice device) {
   auto handle = get_device_mem_handle(mem, device);
   CUexternalMemory externalMem =
-      import_vk_memory_object_from_handle(handle, size, false);
-  return map_buffer_onto_external_memory(externalMem, 0, size);
+      import_vk_memory_object_from_handle(handle, mem_size, false);
+  return map_buffer_onto_external_memory(externalMem, offset, buffer_size);
 }
 
 // To understand how this works, please read the following resources:
@@ -130,15 +132,18 @@ void *get_memory_pointer(VkDeviceMemory mem,
 
 CUsurfObject get_image_surface_object_of_external_memory(
     CUexternalMemory external_mem,
+    uint64_t offset,
     int width,
     int height,
     int depth) {
   CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC external_mem_mipmapped_array_desc;
 
+  printf("%ld,%d,%d,%d\n", offset, width, height, depth);
+
   memset(&external_mem_mipmapped_array_desc, 0,
          sizeof(external_mem_mipmapped_array_desc));
 
-  external_mem_mipmapped_array_desc.offset = 0;
+  external_mem_mipmapped_array_desc.offset = offset;
   external_mem_mipmapped_array_desc.numLevels = 1;
   external_mem_mipmapped_array_desc.arrayDesc.Width = width;
   external_mem_mipmapped_array_desc.arrayDesc.Height = height;

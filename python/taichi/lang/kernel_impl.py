@@ -486,7 +486,7 @@ class Kernel:
                     if not isinstance(v, int):
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
-                elif id(needed) == id(SparseMatrixBuilder):
+                elif isinstance(needed, SparseMatrixBuilder):
                     # Pass only the base pointer of the ti.SparseMatrixBuilder argument
                     launch_ctx.set_arg_int(actual_argument_slot, v.get_addr())
                 elif (isinstance(needed, (any_arr, ext_arr)) and self.match_ext_arr(v)) or \

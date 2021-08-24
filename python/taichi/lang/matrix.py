@@ -27,7 +27,7 @@ class Matrix(TaichiOperations):
         shape ( Union[int, tuple of int], optional): the shape of a matrix field.
         offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
         empty (Bool, deprecated): True if the matrix is empty, False otherwise.
-        layout (TypeVar, optional): The filed layout (AOS or SOA).
+        layout (Layout, optional): The filed layout (Layout.AOS or Layout.SOA).
         needs_grad (Bool, optional): True if used in auto diff, False otherwise.
         keep_raw (Bool, optional): Keep the contents in `n` as is.
         rows (List, deprecated): construct matrix rows.
@@ -914,7 +914,7 @@ class Matrix(TaichiOperations):
               name="",
               offset=None,
               needs_grad=False,
-              layout=Layout.AOS):  # TODO(archibate): deprecate layout
+              layout=Layout.AOS):
         """Construct a data container to hold all elements of the Matrix.
 
         Args:

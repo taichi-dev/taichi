@@ -31,7 +31,7 @@ class SparseMatrixBuilder {
 
 class SparseMatrix{
 public:
-    SparseMatrix(){}
+    SparseMatrix() = delete;
     SparseMatrix(int n, int m);
     SparseMatrix(Eigen::SparseMatrix<float32>& matrix);
 

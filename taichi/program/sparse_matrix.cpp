@@ -43,7 +43,7 @@ SparseMatrix::SparseMatrix(Eigen::SparseMatrix<float32>& matrix){
  this->matrix = matrix;
 }
 
- SparseMatrix::SparseMatrix(int n, int m):matrix(n,m){}
+ SparseMatrix::SparseMatrix(int n, int m):n(n),m(m), matrix(n,m){}
 
 
 void SparseMatrix::print() {
@@ -65,32 +65,32 @@ Eigen::SparseMatrix<float32>& SparseMatrix::get_matrix(){
 }
 
 SparseMatrix* operator+(const SparseMatrix& sm1, const SparseMatrix& sm2){
-    SparseMatrix* res = new SparseMatrix(sm1.m,sm1.n);
+    SparseMatrix* res = new SparseMatrix(sm1.n,sm1.m);
     res->matrix = sm1.matrix + sm2.matrix;
     return res;
 }
 
 SparseMatrix* operator-(const SparseMatrix& sm1, const SparseMatrix& sm2){
-    SparseMatrix* res = new SparseMatrix(sm1.m,sm1.n);
+    SparseMatrix* res = new SparseMatrix(sm1.n,sm1.m);
     res->matrix = sm1.matrix - sm2.matrix;
     return res;
 }
 
 SparseMatrix* operator*(float scale, const SparseMatrix& sm){
-    SparseMatrix* res = new SparseMatrix(sm.m,sm.n);
+    SparseMatrix* res = new SparseMatrix(sm.n,sm.m);
     res->matrix = scale * sm.matrix;
     return res;
 }
 
 SparseMatrix* operator*(const SparseMatrix& sm1, const SparseMatrix& sm2){
-    SparseMatrix* res = new SparseMatrix(sm1.m,sm1.n);
+    SparseMatrix* res = new SparseMatrix(sm1.n,sm1.m);
     res->matrix = sm1.matrix.cwiseProduct(sm2.matrix);
     return res;
 }
 
 
 SparseMatrix* SparseMatrix::matmult(const SparseMatrix& sm){
-    SparseMatrix* res = new SparseMatrix(m,n);
+    SparseMatrix* res = new SparseMatrix(n,m);
     res->matrix = matrix * sm.matrix;
     return res;
 }

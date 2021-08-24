@@ -21,7 +21,7 @@
 #include "taichi/backends/wasm/aot_module_builder_impl.h"
 #include "taichi/backends/opengl/struct_opengl.h"
 #include "taichi/platform/cuda/detect_cuda.h"
-#include "taichi/system/unified_allocator.h"
+#include "taichi/system/unified_allocator.h"clone_struct_compiler_initial_context
 #include "taichi/system/timeline.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
@@ -267,13 +267,6 @@ SparseMatrix *Program::create_sparse_matrix(int n, int m) {
   TI_ASSERT(arch_is_cpu(config.arch));
   sparse_matrices.emplace_back(std::make_unique<SparseMatrix>(n, m));
   return sparse_matrices.back().get();
-}
-
-std::unique_ptr<llvm::Module> Program::clone_struct_compiler_initial_context(
-    TaichiLLVMContext *tlctx) {
-  if (!snode_trees_.empty())
-    return tlctx->clone_struct_module();
-  return tlctx->clone_runtime_module();
 }
 
 void Program::materialize_snode_tree(SNodeTree *tree) {

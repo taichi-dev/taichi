@@ -182,7 +182,7 @@ jobs:
     name: Build and Test (GPU)
     needs: check_code_format
     runs-on: [self-hosted, cuda, vulkan, cn]
-    timeout-minutes: 2
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v2
         with:

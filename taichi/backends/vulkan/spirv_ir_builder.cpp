@@ -240,7 +240,8 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
   }
 }
 
-SType IRBuilder::get_primitive_buffer_type(const bool struct_compiled, const DataType &dt) const {
+SType IRBuilder::get_primitive_buffer_type(const bool struct_compiled,
+                                           const DataType &dt) const {
   if (struct_compiled) {
     if (dt->is_primitive(PrimitiveTypeID::f32) &&
         device_->get_cap(cap::vk_has_atomic_float_add)) {
@@ -251,7 +252,7 @@ SType IRBuilder::get_primitive_buffer_type(const bool struct_compiled, const Dat
     } else if (dt->is_primitive(PrimitiveTypeID::i64) &&
                device_->get_cap(cap::vk_has_atomic_i64)) {
       return t_int64_;
-    }  
+    }
   }
   return t_int32_;
 }

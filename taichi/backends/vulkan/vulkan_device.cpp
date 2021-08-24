@@ -130,6 +130,9 @@ VulkanPipeline::VulkanPipeline(
 
 VulkanPipeline::~VulkanPipeline() {
   vkDestroyPipeline(device_, pipeline_, kNoVkAllocCallbacks);
+  for(auto& pair:graphics_pipeline_){
+    vkDestroyPipeline(device_, pair.second, kNoVkAllocCallbacks);
+  }
   vkDestroyPipelineLayout(device_, pipeline_layout_, kNoVkAllocCallbacks);
   for (VkShaderModule shader_module : shader_modules_) {
     vkDestroyShaderModule(device_, shader_module, kNoVkAllocCallbacks);

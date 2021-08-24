@@ -47,7 +47,7 @@ def test_for_break2():
                 assert x[i, j] == 100 * i + j
 
 
-@ti.test()
+@ti.archs_excluding(ti.vulkan)
 def test_for_break3():
     x = ti.field(ti.i32)
     N, M = 8, 8

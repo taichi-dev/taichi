@@ -200,8 +200,8 @@ FunctionType Program::compile(Kernel &kernel) {
   } else if (kernel.arch == Arch::cc) {
     ret = cccp::compile_kernel(&kernel);
 #endif
-  } else if (kernel.arch == Arch::vulkan) {
 #ifdef TI_WITH_VULKAN
+  } else if (kernel.arch == Arch::vulkan) {
     vulkan::lower(&kernel);
     ret = vulkan::compile_to_executable(
         &kernel, &vulkan_compiled_structs_.value(), vulkan_runtime_.get());

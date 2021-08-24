@@ -809,7 +809,7 @@ def is_arch_supported(arch):
         metal: _ti_core.with_metal,
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
-        vulkan: lambda: _ti_core.with_vulkan,
+        vulkan: lambda: _ti_core.with_vulkan(),
         wasm: lambda: True,
         cpu: lambda: True,
     }
@@ -831,7 +831,7 @@ def supported_archs():
     Returns:
         List[taichi_core.Arch]: All supported archs on the machine.
     """
-    archs = [cpu, cuda, metal, opengl, cc]
+    archs = [cpu, cuda, metal, vulkan, opengl, cc]
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')

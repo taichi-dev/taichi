@@ -61,7 +61,7 @@ For example, this creates a struct with a float member `a` and vector member `b`
 
     # Taichi-scope
     x = ti.Struct({'a': 1.0, 'b': [1.0, 1.0, 1.0]})
-    # or 
+    # or
     x = ti.Struct(a=1.0, b=ti.Vector([1.0, 1.0, 1.0]))
 
 :::
@@ -106,4 +106,3 @@ Members of a local struct can be accessed using both attributes (object-like) or
 ## Element-wise operations (WIP)
 
 TODO: add element wise operations docs
-

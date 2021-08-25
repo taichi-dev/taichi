@@ -223,4 +223,3 @@ ro = vec3f(0.0) # ti.Vector([0.0, 0.0, 0.0])
 rd = vec3f(vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
 ray2 = ray3f(ro=ro, rd=rd, l=1.0)
 ```
-

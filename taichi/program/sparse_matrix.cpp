@@ -26,7 +26,7 @@ void SparseMatrixBuilder::print_triplets() {
   fmt::print("\n");
 }
 
-  void SparseMatrixBuilder::build(SparseMatrix& sm){
+void SparseMatrixBuilder::build(SparseMatrix &sm) {
   TI_ASSERT(built_ == false);
   built_ = true;
   using T = Eigen::Triplet<float32>;

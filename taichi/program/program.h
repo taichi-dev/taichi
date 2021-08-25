@@ -115,7 +115,6 @@ class Program {
       jit_evaluator_cache;
   std::mutex jit_evaluator_cache_mut;
 
-
   // Note: for now we let all Programs share a single TypeFactory for smooth
   // migration. In the future each program should have its own copy.
   static TypeFactory &get_type_factory();
@@ -305,8 +304,8 @@ class Program {
   SNode *get_snode_root(int tree_id);
 
   SparseMatrixBuilder create_sparse_matrix_builder(int n,
-                                                    int m,
-                                                    uint64 max_num_entries);
+                                                   int m,
+                                                   uint64 max_num_entries);
 
   SparseMatrix create_sparse_matrix(int n, int m);
 

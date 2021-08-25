@@ -17,7 +17,7 @@ class SparseMatrixBuilder {
 
   void print_triplets();
 
-  void build(SparseMatrix& sm);
+  void build(SparseMatrix &sm);
 
  private:
   uint64 num_triplets_{0};
@@ -41,12 +41,12 @@ class SparseMatrix {
   float32 get_coeff(int row, int col);
 
   friend SparseMatrix operator+(const SparseMatrix &sm1,
-                                 const SparseMatrix &sm2);
+                                const SparseMatrix &sm2);
   friend SparseMatrix operator-(const SparseMatrix &sm1,
-                                 const SparseMatrix &sm2);
+                                const SparseMatrix &sm2);
   friend SparseMatrix operator*(float scale, const SparseMatrix &sm);
   friend SparseMatrix operator*(const SparseMatrix &sm1,
-                                 const SparseMatrix &sm2);
+                                const SparseMatrix &sm2);
   SparseMatrix matmult(const SparseMatrix &sm);
   SparseMatrix transpose();
 

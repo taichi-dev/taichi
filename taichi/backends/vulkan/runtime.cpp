@@ -133,6 +133,22 @@ class HostDeviceContextBlitter {
       return;
     }
 
+    bool require_sync = ctx_attribs_->rets().size() > 0;
+    if (!require_sync) {
+      for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
+        const auto &arg = ctx_attribs_->args()[i];
+        if (arg.is_array) {
+          require_sync = true;
+        }
+      }    
+    }
+
+    if (require_sync) {
+      device_->command_sync();
+    } else {
+      return;
+    }
+
     char *const device_base =
         reinterpret_cast<char *>(device_->map(*host_shadow_buffer_));
 
@@ -241,10 +257,12 @@ class CompiledTaichiKernel {
       Device::AllocParams params;
       ctx_buffer_ = ti_params.device->allocate_memory_unique(
           {size_t(ctx_sz),
-           /*host_write*/ true, /*host_read*/ false});
+           /*host_write=*/true, /*host_read=*/false,
+           /*export_sharing=*/false, AllocUsage::Storage});
       ctx_buffer_host_ = ti_params.device->allocate_memory_unique(
           {size_t(ctx_sz),
-           /*host_write*/ false, /*host_read*/ true});
+           /*host_write=*/false, /*host_read=*/true,
+           /*export_sharing=*/false, AllocUsage::Storage});
       input_buffers[BufferEnum::Context] = ctx_buffer_.get();
     }
 
@@ -378,7 +396,6 @@ class VkRuntime ::Impl {
 
     device_->submit(ti_kernel->command_list());
     if (ctx_blitter) {
-      synchronize();
       ctx_blitter->device_to_host();
     }
   }
@@ -397,8 +414,14 @@ class VkRuntime ::Impl {
     size_t root_buffer_size = 64 * 1024 * 1024;
     size_t gtmp_buffer_size = 1024 * 1024;
 
-    root_buffer_ = device_->allocate_memory_unique({root_buffer_size});
-    global_tmps_buffer_ = device_->allocate_memory_unique({gtmp_buffer_size});
+    root_buffer_ = device_->allocate_memory_unique(
+        {root_buffer_size,
+         /*host_write=*/false, /*host_read=*/false,
+         /*export_sharing=*/false, AllocUsage::Storage});
+    global_tmps_buffer_ = device_->allocate_memory_unique(
+        {gtmp_buffer_size,
+         /*host_write=*/false, /*host_read=*/false,
+         /*export_sharing=*/false, AllocUsage::Storage});
 
     // Need to zero fill the buffers, otherwise there could be NaN.
     auto cmdlist = device_->new_command_list({CommandListType::Compute});

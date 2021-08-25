@@ -1,5 +1,7 @@
 #include "taichi/program/sparse_matrix.h"
 
+#include <sstream>
+
 #include "Eigen/Dense"
 #include "Eigen/SparseLU"
 
@@ -47,11 +49,13 @@ SparseMatrix::SparseMatrix(Eigen::SparseMatrix<float32> &matrix) {
 SparseMatrix::SparseMatrix(int n, int m) : n_(n), m_(m), matrix_(n, m) {
 }
 
-void SparseMatrix::print() {
+std::string SparseMatrix::print() {
   Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
   // Note that the code below first converts the sparse matrix into a dense one.
   // https://stackoverflow.com/questions/38553335/how-can-i-print-in-console-a-formatted-sparse-matrix-with-eigen
-  std::cout << Eigen::MatrixXf(matrix_).format(clean_fmt) << std::endl;
+  std::ostringstream ostr;
+  ostr<< Eigen::MatrixXf(matrix_).format(clean_fmt);
+  return ostr.str();
 }
 
 int SparseMatrix::num_rows() {

@@ -46,6 +46,9 @@ class SparseMatrix:
     def get_ele(self, i, j):
         return self.matrix.get_coeff(i, j)
 
+    def __str__(self):
+        return self.matrix.print()
+
 
 class SparseMatrixBuilder:
     def __init__(self, n, m=None, max_num_triplets=0):

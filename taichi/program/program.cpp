@@ -232,12 +232,12 @@ SNode *Program::get_snode_root(int tree_id) {
 
 SparseMatrixBuilder
 Program::create_sparse_matrix_builder(int n, int m, uint64 max_num_entries) {
-  TI_ASSERT(arch_is_cpu(config.arch));
+  TI_ERROR_IF(!arch_is_cpu(config.arch), "Only CPU arch is supported right now!");
   return SparseMatrixBuilder(n, m, max_num_entries);
 }
 
 SparseMatrix Program::create_sparse_matrix(int n, int m) {
-  TI_ASSERT(arch_is_cpu(config.arch));
+  TI_ERROR_IF(!arch_is_cpu(config.arch), "Only CPU arch is supported right now!");
   return SparseMatrix(n, m);
 }
 

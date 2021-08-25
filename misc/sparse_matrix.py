@@ -31,30 +31,30 @@ K.print_triplets()
 A = K.build()
 
 print(">>>>>>>> After build: ")
-A.print()
+print(A)
 
 print(">>>>>>> Summation Test: ")
 C = A + A
-C.print()
+print(C)
 
 print(">>>> Subtraction Test")
 D = A - A
-D.print()
+print(D)
 
 print(">>>> Multiplication with scalar")
 E = A * 3.0
-E.print()
+print(E)
 
 print(">>>> Transpose Test")
 F = A.transpose()
-F.print()
+print(F)
 
 print(">>>> Matrix Multiplication")
 G = E @ A
-G.print()
+print(G)
 
 print(">>> Elment-wise Multiplication")
 H = E * A
-H.print()
+print(H)
 
 print(f">>> Element Access: A[0,0] = {A.get_ele(0,0)}")

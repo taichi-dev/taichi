@@ -37,7 +37,7 @@ class SparseMatrix {
 
   int num_rows();
   int num_cols();
-  void print();
+  std::string print();
   Eigen::SparseMatrix<float32> &get_matrix();
   float32 get_coeff(int row, int col);
 
@@ -54,7 +54,8 @@ class SparseMatrix {
   void solve(SparseMatrix *);
 
  private:
-  int n_, m_;
+  int n_{0};
+  int m_{0};
   Eigen::SparseMatrix<float32> matrix_;
 };
 

@@ -1,10 +1,16 @@
----
-sidebar_position: 1
----
+<!-- taichi-api-docstring documentation master file, created by
+sphinx-quickstart on Sat Jul 24 23:51:26 2021.
+You can adapt this file completely to your liking, but it should at least
+contain the root `toctree` directive. -->
+# Welcome to taichi-api-docstring’s documentation!
 
-# API Docs
+# Indices and tables
 
-:::danger WIP Notice
-Sorry for the inconvenience, the Taichi API docs are under construction and not in
-a stable state yet!
-:::
+
+* Index
+
+
+* Module Index
+
+
+* Search Page

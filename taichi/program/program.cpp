@@ -230,18 +230,18 @@ SNode *Program::get_snode_root(int tree_id) {
   return snode_trees_[tree_id]->root();
 }
 
-SparseMatrixBuilder *
+std::unique_ptr<SparseMatrixBuilder>
 Program::create_sparse_matrix_builder(int n, int m, uint64 max_num_entries) {
   TI_ASSERT(arch_is_cpu(config.arch));
   sparse_matrices_builder.emplace_back(
       std::make_unique<SparseMatrixBuilder>(n, m, max_num_entries));
-  return sparse_matrices_builder.back().get();
+  return std::move(sparse_matrices_builder.back());
 }
 
-SparseMatrix *Program::create_sparse_matrix(int n, int m) {
+std::unique_ptr<SparseMatrix> Program::create_sparse_matrix(int n, int m) {
   TI_ASSERT(arch_is_cpu(config.arch));
   sparse_matrices.emplace_back(std::make_unique<SparseMatrix>(n, m));
-  return sparse_matrices.back().get();
+  return std::move(sparse_matrices.back());
 }
 
 void Program::materialize_snode_tree(SNodeTree *tree) {

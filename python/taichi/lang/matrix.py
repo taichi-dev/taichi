@@ -9,6 +9,7 @@ from taichi.lang import expr, impl
 from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod
 from taichi.lang.common_ops import TaichiOperations
+from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr
 from taichi.lang.ext_array import AnyArrayAccess
@@ -31,7 +32,7 @@ class Matrix(TaichiOperations):
         shape ( Union[int, tuple of int], optional): the shape of a matrix field.
         offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
         empty (Bool, deprecated): True if the matrix is empty, False otherwise.
-        layout (TypeVar, optional): The filed layout(AOS or SOA).
+        layout (Layout, optional): The filed layout (Layout.AOS or Layout.SOA).
         needs_grad (Bool, optional): True if used in auto diff, False otherwise.
         keep_raw (Bool, optional): Keep the contents in `n` as is.
         rows (List, deprecated): construct matrix rows.
@@ -48,7 +49,7 @@ class Matrix(TaichiOperations):
                  shape=None,
                  offset=None,
                  empty=False,
-                 layout=None,
+                 layout=Layout.AOS,
                  needs_grad=False,
                  keep_raw=False,
                  disable_local_tensor=False,
@@ -935,7 +936,7 @@ class Matrix(TaichiOperations):
               name="",
               offset=None,
               needs_grad=False,
-              layout=None):  # TODO(archibate): deprecate layout
+              layout=Layout.AOS):
         """Construct a data container to hold all elements of the Matrix.
 
         Args:
@@ -946,7 +947,7 @@ class Matrix(TaichiOperations):
             name (string, optional): The custom name of the field.
             offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
             needs_grad (bool, optional): Whether the Matrix need gradients.
-            layout (:class:`~taichi.lang.impl.Layout`, optional): The field layout, i.e., Array Of Structure(AOS) or Structure Of Array(SOA).
+            layout (Layout, optional): The field layout, i.e., Array Of Structure (AOS) or Structure Of Array (SOA).
 
         Returns:
             :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance serves as the data container.
@@ -979,8 +980,6 @@ class Matrix(TaichiOperations):
             entries_grad, n, m)
         entries.set_grad(entries_grad)
 
-        if layout is not None:
-            assert shape is not None, 'layout is useless without shape'
         if shape is None:
             assert offset is None, "shape cannot be None when offset is being set"
 
@@ -995,11 +994,8 @@ class Matrix(TaichiOperations):
                     offset
                 ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
-            if layout is None:
-                layout = ti.AOS
-
             dim = len(shape)
-            if layout.soa:
+            if layout == Layout.SOA:
                 for e in entries.get_field_members():
                     ti.root.dense(impl.index_nd(dim),
                                   shape).place(ScalarField(e), offset=offset)

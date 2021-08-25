@@ -10,6 +10,7 @@ from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.ext_array import AnyArrayAccess
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
+from taichi.lang.ops import cast
 from taichi.lang.types import CompoundType
 from taichi.lang.util import (in_python_scope, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
@@ -1374,9 +1375,9 @@ class MatrixField(Field):
 
 class MatrixType(CompoundType):
 
-    def __init__(self, m, n, dtype):
-        self.m = m
+    def __init__(self, n, m, dtype):
         self.n = n
+        self.m = m
         self.dtype = dtype
 
 
@@ -1411,7 +1412,7 @@ class MatrixType(CompoundType):
             mat = mat.copy()
         # sanity check shape
         if self.m != mat.m or self.n != mat.n:
-            raise TaichiSyntaxError("Incompatible arguments for the custom vector/matrix type!")
+            raise TaichiSyntaxError(f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({mat.n}, {mat.m})")
         mat.entries = [cast(x, self.dtype) for x in mat.entries]
         return mat
         
@@ -1419,7 +1420,7 @@ class MatrixType(CompoundType):
         """
         Create an empty instance of the given compound type.
         """
-        return Matrix.empty(self.m, self.n)
+        return Matrix.empty(self.n, self.m)
 
     def field(self, **kwargs):
-        return Matrix.field(self.m, self.n, **kwargs)
+        return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)

@@ -1,28 +1,39 @@
 import copy
 import numbers
 
-from taichi.lang import expr, impl
+
+from taichi.lang import impl
+from taichi.lang.common_ops import TaichiOperations
+from taichi.lang.expr import Expr
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, SNodeHostAccess
 from taichi.lang.matrix import Matrix
+from taichi.lang.ops import cast
 from taichi.lang.types import CompoundType
-from taichi.lang.util import python_scope, taichi_scope
+from taichi.lang.util import is_taichi_class, python_scope, taichi_scope
 
 
 import taichi as ti
 
 
-class Struct:
+class Struct(TaichiOperations):
     """The Struct type class.
     Args:
         entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): keys and values for struct members.
     """
     is_taichi_class = True
 
-    def __init__(self, entries):
+    def __init__(self, *args, **kwargs):
         # converts lists to matrices and dicts to structs
-        self.entries = {}
-        for k, v in entries.items:
+        if len(args) == 1 and kwargs == {} and isinstance(args[0], dict):
+            self.entries = args[0]
+        elif len(args) == 0:
+            self.entries = kwargs
+        else:
+            raise TaichiSyntaxError(
+                "Custom structs need to be initialized using either dictionary or keyword arguments"
+            )
+        for k, v in self.entries.items():
             if isinstance(v, (list, tuple)):
                 v = Matrix(v)
             if isinstance(v, dict):
@@ -38,16 +49,9 @@ class Struct:
     def members(self):
         return list(self.entries.values())
 
+    @property
     def items(self):
         return self.entries.items()
-
-    def empty_copy(self):
-        return Struct.empty(self.members)
-
-    def copy(self):
-        ret = self.empty_copy()
-        ret.entries = copy.copy(self.entries)
-        return ret
 
     def register_members(self):
         for k in self.keys:
@@ -83,6 +87,102 @@ class Struct:
             self.entries[key] = value
         return setter
 
+    def element_wise_unary(self, foo):
+        _taichi_skip_traceback = 1
+        ret = self.empty_copy()
+        for k, v in self.items:
+            if isinstance(v, Expr):
+                ret.entries[k] = foo(v)
+            else:
+                ret.entries[k] = v.element_wise_unary(foo)
+        return ret
+
+    def element_wise_binary(self, foo, other):
+        _taichi_skip_traceback = 1
+        ret = self.empty_copy()
+        if isinstance(other, (dict)):
+            other = Struct(other)
+        if isinstance(other, Struct):
+            assert self.entries.keys() == other.entries.keys(), f"Member mismatch between structs {self.keys}, {other.keys}"
+            for k, v in self.items:
+                if isinstance(v, Expr):
+                    ret.entries[k] = foo(v, other.entries[k])
+                else:
+                    ret.entries[k] = v.element_wise_binary(foo, other.entries[k])
+        else:  # assumed to be scalar
+            for k, v in self.items:
+                if isinstance(v, Expr):
+                    ret.entries[k] = foo(v, other.entries[k])
+                else:
+                    ret.entries[k] = v.element_wise_binary(foo, other.entries[k])
+        return ret
+
+    def broadcast_copy(self, other):
+        if isinstance(other, dict):
+            other = Struct(other)
+        if not isinstance(other, Struct):
+            ret = self.empty_copy()
+            ret.entries = {k: other for k in ret.keys}
+            other = ret
+        assert self.entries.keys() == other.entries.keys(), f"Member mismatch between structs {self.keys}, {other.keys}"
+        return other
+
+    def element_wise_writeback_binary(self, foo, other):
+        ret = self.empty_copy()
+        if isinstance(other, (dict)):
+            other = Struct(other)
+        if is_taichi_class(other):
+            other = other.variable()
+        if foo.__name__ == 'assign' and not isinstance(other, Struct):
+            raise TaichiSyntaxError(
+                'cannot assign scalar expr to '
+                f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
+            )
+        if isinstance(other, Struct):
+            assert self.entries.keys() == other.entries.keys(), f"Member mismatch between structs {self.keys}, {other.keys}"
+            for k, v in self.items:
+                if isinstance(v, Expr):
+                    ret.entries[k] = foo(v, other.entries[k])
+                else:
+                    ret.entries[k] = v.element_wise_binary(foo, other.entries[k])
+        else:  # assumed to be scalar
+            for k, v in self.items:
+                if isinstance(v, Expr):
+                    ret.entries[k] = foo(v, other.entries[k])
+                else:
+                    ret.entries[k] = v.element_wise_binary(foo, other.entries[k])
+        return ret
+
+    def element_wise_ternary(self, foo, other, extra):
+        ret = self.empty_copy()
+        other = self.broadcast_copy(other)
+        extra = self.broadcast_copy(extra)
+        for k, v in self.items:
+            if isinstance(v, Expr):
+                ret.entries[k] = foo(v, other.entries[k],
+                                    extra.entries[k])
+            else:
+                ret.entries[k] = v.element_wise_ternary(
+                    foo, other.entries[k], extra.entries[k]
+                )
+        return ret
+
+    def empty_copy(self):
+        return Struct.empty(self.keys)
+
+    def copy(self):
+        ret = self.empty_copy()
+        ret.entries = copy.copy(self.entries)
+        return ret
+
+    @taichi_scope
+    def variable(self):
+        ret = self.copy()
+        ret.entries = {
+            k : impl.expr_init(v) if isinstance(v, Expr) else v.variable()
+            for k, v in ret.items
+        }
+        return ret
 
     def __len__(self):
         """Get the number of entries in a custom struct"""
@@ -90,6 +190,7 @@ class Struct:
 
     def __iter__(self):
         return self.entries.values()
+
 
     def __str__(self):
         """Python scope struct array print support."""
@@ -195,8 +296,12 @@ class StructField(Field):
     def __init__(self, field_dict, name=None):
         # will not call Field initializer
         self.field_dict = field_dict
-        self.name = name
+        self._name = name
         self.register_fields()
+        
+    @property
+    def name(self):
+        return self._name
 
     @property
     def keys(self):
@@ -205,6 +310,10 @@ class StructField(Field):
     @property
     def members(self):
         return list(self.field_dict.values())
+
+    @property
+    def items(self):
+        return self.field_dict.items()
 
     @staticmethod
     def make_getter(key):
@@ -318,10 +427,10 @@ class StructField(Field):
         Returns:
             Dict[str, Union[numpy.ndarray, Dict]]: The result NumPy array.
         """
-        return {k: v.to_numpy() for k, v in self.field_dict.items()}
+        return {k: v.to_numpy() for k, v in self.items}
 
     @python_scope
-    def to_torch(self, device):
+    def to_torch(self, device=None):
         """Converts the Struct field instance to a dictionary of PyTorch tensors. The dictionary may be nested when converting
            nested structs.
 
@@ -330,7 +439,7 @@ class StructField(Field):
         Returns:
             Dict[str, Union[torch.Tensor, Dict]]: The result PyTorch tensor.
         """
-        return {k: v.to_torch(device=device) for k, v in self.field_dict.items()}
+        return {k: v.to_torch(device=device) for k, v in self.items}
 
     
     @python_scope
@@ -342,9 +451,8 @@ class StructField(Field):
     @python_scope
     def __getitem__(self, indices):
         self.initialize_host_accessors()
-        indices = self.pad_key(indices)
         entries = {
-            k: v[indices] for k, v in self.field_dict.items()
+            k: v[indices] for k, v in self.items
         }
         return Struct(entries)
     
@@ -388,7 +496,7 @@ class StructType(CompoundType):
         """
         Create an empty instance of the given compound type.
         """
-        return Struct.empty(self.members)
+        return Struct.empty(self.members.keys())
     
     def field(self, **kwargs):
-        return Struct.field(self.m, self.n, **kwargs)
+        return Struct.field(self.members, **kwargs)

@@ -1,7 +1,6 @@
 import numbers
 
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.ops import cast
 
 
 class CompoundType:
@@ -15,8 +14,7 @@ class CompoundType:
 
     def scalar_filled(self, value):
         instance = self.empty()
-        instance.fill(value)
-        return value
+        return instance.broadcast_copy(value)
 
     def field(self, **kwargs):
         raise NotImplementedError

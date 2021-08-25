@@ -140,11 +140,11 @@ class HostDeviceContextBlitter {
         if (arg.is_array) {
           require_sync = true;
         }
-      }    
+      }
     }
 
     if (require_sync) {
-      device_->command_sync();
+      device_->get_compute_stream()->command_sync();
     } else {
       return;
     }
@@ -247,8 +247,9 @@ class CompiledTaichiKernel {
   };
 
   CompiledTaichiKernel(const Params &ti_params)
-      : ti_kernel_attribs_(*ti_params.ti_kernel_attribs) {
-    InputBuffersMap input_buffers = {
+      : ti_kernel_attribs_(*ti_params.ti_kernel_attribs),
+        device_(ti_params.device) {
+    input_buffers_ = {
         {BufferEnum::Root, ti_params.root_buffer},
         {BufferEnum::GlobalTmps, ti_params.global_tmps_buffer},
     };
@@ -263,39 +264,20 @@ class CompiledTaichiKernel {
           {size_t(ctx_sz),
            /*host_write=*/false, /*host_read=*/true,
            /*export_sharing=*/false, AllocUsage::Storage});
-      input_buffers[BufferEnum::Context] = ctx_buffer_.get();
+      input_buffers_[BufferEnum::Context] = ctx_buffer_.get();
     }
 
     const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
     const auto &spirv_bins = ti_params.spirv_bins;
     TI_ASSERT(task_attribs.size() == spirv_bins.size());
 
-    cmdlist_ = ti_params.device->new_command_list({CommandListType::Compute});
     for (int i = 0; i < task_attribs.size(); ++i) {
-      const auto &attribs = task_attribs[i];
       PipelineSourceDesc source_desc{PipelineSourceType::spirv_binary,
                                      (void *)spirv_bins[i].data(),
                                      spirv_bins[i].size() * sizeof(uint32_t)};
       auto vp = ti_params.device->create_pipeline(source_desc,
                                                   ti_kernel_attribs_.name);
-      const int group_x = (attribs.advisory_total_num_threads +
-                           attribs.advisory_num_threads_per_group - 1) /
-                          attribs.advisory_num_threads_per_group;
-      ResourceBinder *binder = vp->resource_binder();
-      for (auto &pair : input_buffers) {
-        binder->rw_buffer(0, uint32_t(pair.first), *pair.second);
-      }
-      cmdlist_->bind_pipeline(vp.get());
-      cmdlist_->bind_resources(binder);
-      cmdlist_->dispatch(group_x);
-      cmdlist_->memory_barrier();
       pipelines_.push_back(std::move(vp));
-    }
-
-    if (!ti_kernel_attribs_.ctx_attribs.empty()) {
-      cmdlist_->buffer_copy(ctx_buffer_host_->get_ptr(0),
-                            ctx_buffer_->get_ptr(0), ctx_sz);
-      cmdlist_->buffer_barrier(*ctx_buffer_host_);
     }
   }
 
@@ -315,12 +297,44 @@ class CompiledTaichiKernel {
     return ctx_buffer_host_.get();
   }
 
-  CommandList *command_list() const {
-    return cmdlist_.get();
+  std::unique_ptr<CommandList> command_list() const {
+    const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
+    
+    std::unique_ptr<CommandList> cmdlist_ =
+        device_->get_compute_stream()->new_command_list();
+    for (int i = 0; i < task_attribs.size(); ++i) {
+      const auto &attribs = task_attribs[i];
+      auto vp = pipelines_[i].get();
+      const int group_x = (attribs.advisory_total_num_threads +
+                           attribs.advisory_num_threads_per_group - 1) /
+                          attribs.advisory_num_threads_per_group;
+      ResourceBinder *binder = vp->resource_binder();
+      for (auto &pair : input_buffers_) {
+        binder->rw_buffer(0, uint32_t(pair.first), *pair.second);
+      }
+      cmdlist_->bind_pipeline(vp);
+      cmdlist_->bind_resources(binder);
+      cmdlist_->dispatch(group_x);
+      cmdlist_->memory_barrier();
+    }
+
+    const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
+    if (!ti_kernel_attribs_.ctx_attribs.empty()) {
+      cmdlist_->buffer_copy(ctx_buffer_host_->get_ptr(0),
+                            ctx_buffer_->get_ptr(0), ctx_sz);
+      cmdlist_->buffer_barrier(*ctx_buffer_host_);
+    }
+
+    return std::move(cmdlist_);
   }
 
  private:
   TaichiKernelAttributes ti_kernel_attribs_;
+  std::vector<TaskAttributes> tasks_attribs_;
+
+  Device *device_;
+
+  InputBuffersMap input_buffers_;
 
   // Right now |ctx_buffer_| is allocated from a HOST_VISIBLE|COHERENT
   // memory, because we do not do computation on this buffer anyway, and it may
@@ -330,8 +344,6 @@ class CompiledTaichiKernel {
   std::unique_ptr<DeviceAllocationGuard> ctx_buffer_{nullptr};
   std::unique_ptr<DeviceAllocationGuard> ctx_buffer_host_{nullptr};
   std::vector<std::unique_ptr<Pipeline>> pipelines_;
-
-  std::unique_ptr<CommandList> cmdlist_;
 };
 
 }  // namespace
@@ -394,14 +406,16 @@ class VkRuntime ::Impl {
       ctx_blitter->host_to_device();
     }
 
-    device_->submit(ti_kernel->command_list());
+    auto cmdlist = ti_kernel->command_list();
+
+    device_->get_compute_stream()->submit(cmdlist.get());
     if (ctx_blitter) {
       ctx_blitter->device_to_host();
     }
   }
 
   void synchronize() {
-    device_->command_sync();
+    device_->get_compute_stream()->command_sync();
   }
 
   Device *get_ti_device() const {
@@ -424,12 +438,13 @@ class VkRuntime ::Impl {
          /*export_sharing=*/false, AllocUsage::Storage});
 
     // Need to zero fill the buffers, otherwise there could be NaN.
-    auto cmdlist = device_->new_command_list({CommandListType::Compute});
+    Stream *stream = device_->get_compute_stream();
+    auto cmdlist = stream->new_command_list();
     cmdlist->buffer_fill(root_buffer_->get_ptr(0), root_buffer_size,
                          /*data=*/0);
     cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), gtmp_buffer_size,
                          /*data=*/0);
-    device_->submit_synced(cmdlist.get());
+    stream->submit_synced(cmdlist.get());
   }
 
   const SNodeDescriptorsMap *const snode_descriptors_;

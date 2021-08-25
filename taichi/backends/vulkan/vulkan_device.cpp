@@ -664,12 +664,12 @@ void VulkanResourceBinder::lock_layout() {
 }
 
 VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
-                                     VkCommandBuffer buffer,
-                                     CommandListConfig config)
+                                     VulkanStream *stream,
+                                     VkCommandBuffer buffer)
     : ti_device_(ti_device),
+      stream_(stream),
       device_(ti_device->vk_device()),
-      buffer_(buffer),
-      config_(config) {
+      buffer_(buffer) {
   VkCommandBufferBeginInfo info{};
   info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   info.pNext = nullptr;
@@ -679,15 +679,11 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
   vkBeginCommandBuffer(buffer, &info);
 }
 
-const CommandListConfig &VulkanCommandList::config() const {
-  return config_;
-}
-
 VulkanCommandList::~VulkanCommandList() {
   for (auto pair : desc_sets_) {
     ti_device_->dealloc_desc_set(pair.first, pair.second);
   }
-  ti_device_->dealloc_command_list(this);
+  stream_->dealloc_command_list(this);
 }
 
 void VulkanCommandList::bind_pipeline(Pipeline *p) {
@@ -1057,22 +1053,15 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
   device_ = params.device;
   physical_device_ = params.physical_device;
   compute_queue_ = params.compute_queue;
-  compute_pool_ = params.compute_pool;
   compute_queue_family_index_ = params.compute_queue_family_index;
   graphics_queue_ = params.graphics_queue;
-  graphics_pool_ = params.graphics_pool;
   graphics_queue_family_index_ = params.graphics_queue_family_index;
 
   create_vma_allocator();
-
-  VkFenceCreateInfo fence_info{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, 0};
-  BAIL_ON_VK_BAD_RESULT(vkCreateFence(device_, &fence_info, kNoVkAllocCallbacks,
-                                      &cmd_sync_fence_),
-                        "failed to create fence");
 }
 
 VulkanDevice::~VulkanDevice() {
-  command_sync();
+  vkDeviceWaitIdle(device_);
 
   TI_TRACE("Total #{} descriptor pools created", layout_to_pools_.size());
 
@@ -1097,7 +1086,6 @@ VulkanDevice::~VulkanDevice() {
 
   vmaDestroyPool(allocator_, export_pool_.pool);
   vmaDestroyAllocator(allocator_);
-  vkDestroyFence(device_, cmd_sync_fence_, kNoVkAllocCallbacks);
 }
 
 std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(PipelineSourceDesc &src,
@@ -1260,55 +1248,65 @@ void VulkanDevice::memcpy_internal(DevicePtr dst,
                                    DevicePtr src,
                                    uint64_t size) {
   // TODO: always create a queue specifically for transfer
-  CommandListConfig config;
-  if (compute_queue() != VK_NULL_HANDLE) {
-    config.type = CommandListType::Compute;
-  } else if (graphics_queue() != VK_NULL_HANDLE) {
-    config.type = CommandListType::Graphics;
-  } else {
-    TI_ERROR("cannot find a queue");
-  }
-  std::unique_ptr<CommandList> cmd = new_command_list(config);
+  Stream *stream = get_compute_stream();
+  std::unique_ptr<CommandList> cmd = stream->new_command_list();
   cmd->buffer_copy(dst, src, size);
-  submit_synced(cmd.get());
+  stream->submit_synced(cmd.get());
 }
 
-std::unique_ptr<CommandList> VulkanDevice::new_command_list(
-    CommandListConfig config) {
+Stream *VulkanDevice::get_compute_stream() {
+  auto tid = std::this_thread::get_id();
+  auto iter = compute_stream_.find(tid);
+  if (iter == compute_stream_.end()) {
+    compute_stream_[tid] = std::make_unique<VulkanStream>(
+        *this, compute_queue_, compute_queue_family_index_);
+    return compute_stream_.at(tid).get();
+  } else {
+    return iter->second.get();
+  }
+}
+
+Stream *VulkanDevice::get_graphics_stream() {
+  auto tid = std::this_thread::get_id();
+  auto iter = graphics_stream_.find(tid);
+  if (iter == graphics_stream_.end()) {
+    graphics_stream_[tid] = std::make_unique<VulkanStream>(
+        *this, graphics_queue_, graphics_queue_family_index_);
+    return graphics_stream_.at(tid).get();
+  } else {
+    return iter->second.get();
+  }
+}
+
+std::unique_ptr<CommandList> VulkanStream::new_command_list() {
   VkCommandBuffer buffer = cmdbuffer_pool_.gc_pop_one(VK_NULL_HANDLE);
 
   if (buffer == VK_NULL_HANDLE) {
     VkCommandBufferAllocateInfo alloc_info{};
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    if (config.type == CommandListType::Compute) {
-      alloc_info.commandPool = compute_cmd_pool();
-    } else if (config.type == CommandListType::Graphics) {
-      alloc_info.commandPool = graphics_cmd_pool();
-    } else {
-      TI_ERROR("unrecognized cmd list type");
-    }
-
+    alloc_info.commandPool = command_pool_;
     alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     alloc_info.commandBufferCount = 1;
+
     BAIL_ON_VK_BAD_RESULT(
-        vkAllocateCommandBuffers(device_, &alloc_info, &buffer),
+        vkAllocateCommandBuffers(device_.vk_device(), &alloc_info, &buffer),
         "failed to allocate command buffer");
   }
 
   cmdbuffer_pool_.inc(buffer);
 
-  return std::make_unique<VulkanCommandList>(this, buffer, config);
+  return std::make_unique<VulkanCommandList>(&device_, this, buffer);
 }
 
-void VulkanDevice::dealloc_command_list(CommandList *cmdlist) {
+void VulkanStream::dealloc_command_list(CommandList *cmdlist) {
   VkCommandBuffer buffer =
       static_cast<VulkanCommandList *>(cmdlist)->finalize();
   cmdbuffer_pool_.dec(buffer);
 }
 
-void VulkanDevice::submit(CommandList *cmdlist) {
-  VkCommandBuffer buffer =
-      static_cast<VulkanCommandList *>(cmdlist)->finalize();
+void VulkanStream::submit(CommandList *cmdlist_) {
+  VulkanCommandList *cmdlist = static_cast<VulkanCommandList *>(cmdlist_);
+  VkCommandBuffer buffer = cmdlist->finalize();
 
   /*
   if (in_flight_cmdlists_.find(buffer) != in_flight_cmdlists_.end()) {
@@ -1325,23 +1323,18 @@ void VulkanDevice::submit(CommandList *cmdlist) {
   cmdbuffer_pool_.inc(buffer);
   submitted_cmdbuffers_.push_back(buffer);
 
-  VkQueue queue;
-  const CommandListConfig &config =
-      static_cast<VulkanCommandList *>(cmdlist)->config();
-  if (config.type == CommandListType::Compute) {
-    queue = compute_queue();
-  } else if (config.type == CommandListType::Graphics) {
-    queue = graphics_queue();
-  } else {
-    TI_ERROR("unrecognized cmd list type");
+  for (auto pair : cmdlist->desc_sets()) {
+    auto pool = device_.get_pool_from_layout(pair.first);
+    pool->sets.inc(pair.second);
+    submitted_desc_sets_.push_back(std::make_pair(pool, pair.second));
   }
 
-  BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue, /*submitCount=*/1, &submit_info,
+  BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
                                       /*fence=*/VK_NULL_HANDLE),
                         "failed to submit command buffer");
 }
 
-void VulkanDevice::submit_synced(CommandList *cmdlist) {
+void VulkanStream::submit_synced(CommandList *cmdlist) {
   VkCommandBuffer buffer =
       static_cast<VulkanCommandList *>(cmdlist)->finalize();
 
@@ -1350,30 +1343,18 @@ void VulkanDevice::submit_synced(CommandList *cmdlist) {
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &buffer;
 
-  VkQueue queue;
-  const CommandListConfig &config =
-      static_cast<VulkanCommandList *>(cmdlist)->config();
-  if (config.type == CommandListType::Compute) {
-    queue = compute_queue();
-  } else if (config.type == CommandListType::Graphics) {
-    queue = graphics_queue();
-  } else {
-    TI_ERROR("unrecognized cmd list type");
-  }
-
-  BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue, /*submitCount=*/1, &submit_info,
+  BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
                                       /*fence=*/cmd_sync_fence_),
                         "failed to submit command buffer");
 
   // Timeout is in nanoseconds, 60s = 60,000ms = 60,000,000ns
-  vkWaitForFences(device_, 1, &cmd_sync_fence_, true, (60 * 1000 * 1000));
-  vkResetFences(device_, 1, &cmd_sync_fence_);
+  vkWaitForFences(device_.vk_device(), 1, &cmd_sync_fence_, true,
+                  (60 * 1000 * 1000));
+  vkResetFences(device_.vk_device(), 1, &cmd_sync_fence_);
 }
 
-void VulkanDevice::command_sync() {
-  if (graphics_queue_)
-    vkQueueWaitIdle(graphics_queue_);
-  vkQueueWaitIdle(compute_queue_);
+void VulkanStream::command_sync() {
+  vkQueueWaitIdle(queue_);
 
   for (VkCommandBuffer buf : submitted_cmdbuffers_) {
     cmdbuffer_pool_.dec(buf);
@@ -1804,6 +1785,10 @@ void VulkanDevice::dealloc_desc_set(VkDescriptorSetLayout layout,
   pool->sets.dec(set);
 }
 
+DescPool *VulkanDevice::get_pool_from_layout(VkDescriptorSetLayout layout) {
+  return layout_to_pools_.at(layout).get();
+}
+
 void VulkanDevice::create_vma_allocator() {
   VolkDeviceTable table;
   VmaVulkanFunctions vk_vma_functions;
@@ -2119,6 +2104,32 @@ void VulkanSurface::present_image() {
   presentInfo.pResults = nullptr;
 
   vkQueuePresentKHR(device_->graphics_queue(), &presentInfo);
+}
+
+VulkanStream::VulkanStream(VulkanDevice &device,
+                           VkQueue queue,
+                           uint32_t queue_family_index)
+    : device_(device), queue_(queue), queue_family_index_(queue_family_index) {
+  VkCommandPoolCreateInfo create_info{};
+  create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  create_info.pNext = nullptr;
+  create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+  create_info.queueFamilyIndex = queue_family_index;
+
+  BAIL_ON_VK_BAD_RESULT(
+      vkCreateCommandPool(device_.vk_device(), &create_info,
+                          kNoVkAllocCallbacks, &command_pool_),
+      "Failed to create command pool");
+
+  VkFenceCreateInfo fence_info{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, 0};
+  BAIL_ON_VK_BAD_RESULT(vkCreateFence(device_.vk_device(), &fence_info,
+                                      kNoVkAllocCallbacks, &cmd_sync_fence_),
+                        "failed to create fence");
+}
+
+VulkanStream::~VulkanStream() {
+  vkDestroyCommandPool(device_.vk_device(), command_pool_, kNoVkAllocCallbacks);
+  vkDestroyFence(device_.vk_device(), cmd_sync_fence_, kNoVkAllocCallbacks);
 }
 
 }  // namespace vulkan

@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>taichi.aot package &#8212; taichi-api-docstring  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="taichi-aot-package">
+<h1>taichi.aot package<a class="headerlink" href="#taichi-aot-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-taichi.aot.module">
+<span id="taichi-aot-module-module"></span><h2>taichi.aot.module module<a class="headerlink" href="#module-taichi.aot.module" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="taichi.aot.module.Module">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">taichi.aot.module.</span></span><span class="sig-name descname"><span class="pre">Module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arch</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#taichi.aot.module.Module" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>An AOT module to save and load Taichi kernels.</p>
+<p>This module serializes the Taichi kernels for a specific arch. The
+serialized module can later be loaded to run on that backend, without the
+Python environment.</p>
+<p class="rubric">Example</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">ti</span><span class="o">.</span><span class="n">aot</span><span class="o">.</span><span class="n">Module</span><span class="p">(</span><span class="n">ti</span><span class="o">.</span><span class="n">metal</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_kernel</span><span class="p">(</span><span class="n">foo</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">add_kernel</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span>
+
+<span class="n">m</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;/path/to/module&#39;</span><span class="p">)</span>
+
+<span class="c1"># Now the module file &#39;/path/to/module&#39; contains the Metal kernels</span>
+<span class="c1"># for running ``foo`` and ``bar``.</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="taichi.aot.module.Module.add_field">
+<span class="sig-name descname"><span class="pre">add_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#taichi.aot.module.Module.add_field" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a taichi field to the AOT module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – name of taichi field</p></li>
+<li><p><strong>field</strong> – taichi field</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>Usage:</p>
+<p>a = ti.field(ti.f32, shape=(4,4))
+b = ti.field(“something”)</p>
+<p>m.add_field(a)
+m.add_field(b)</p>
+<p># Must add in sequence</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="taichi.aot.module.Module.add_kernel">
+<span class="sig-name descname"><span class="pre">add_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_fn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#taichi.aot.module.Module.add_kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a taichi kernel to the AOT module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel_fn</strong> (<em>Function</em>) – the function decorated by taichi <cite>kernel</cite>.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – Name to identify this kernel in the module. If not
+provided, uses the built-in <code class="docutils literal notranslate"><span class="pre">__name__</span></code> attribute of <cite>kernel_fn</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="taichi.aot.module.Module.add_kernel_template">
+<span class="sig-name descname"><span class="pre">add_kernel_template</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_fn</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#taichi.aot.module.Module.add_kernel_template" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a taichi kernel (with template parameters) to the AOT module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>kernel_fn</strong> (<em>Function</em>) – the function decorated by taichi <cite>kernel</cite>.</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@ti</span><span class="o">.</span><span class="n">kernel</span>
+<span class="k">def</span> <span class="nf">bar_tmpl</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">ti</span><span class="o">.</span><span class="n">template</span><span class="p">()):</span>
+  <span class="n">x</span> <span class="o">=</span> <span class="n">a</span>
+  <span class="c1"># or y = a</span>
+  <span class="c1"># do something with `x` or `y`</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">ti</span><span class="o">.</span><span class="n">aot</span><span class="o">.</span><span class="n">Module</span><span class="p">(</span><span class="n">arch</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">m</span><span class="o">.</span><span class="n">add_kernel_template</span><span class="p">(</span><span class="n">bar_tmpl</span><span class="p">)</span> <span class="k">as</span> <span class="n">kt</span><span class="p">:</span>
+  <span class="n">kt</span><span class="o">.</span><span class="n">instantiate</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">x</span><span class="p">)</span>
+  <span class="n">kt</span><span class="o">.</span><span class="n">instantiate</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+
+<span class="nd">@ti</span><span class="o">.</span><span class="n">kernel</span>
+<span class="k">def</span> <span class="nf">bar_tmpl_multiple_args</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">ti</span><span class="o">.</span><span class="n">template</span><span class="p">(),</span> <span class="n">b</span><span class="p">:</span> <span class="n">ti</span><span class="o">.</span><span class="n">template</span><span class="p">())</span>
+  <span class="n">x</span> <span class="o">=</span> <span class="n">a</span>
+  <span class="n">y</span> <span class="o">=</span> <span class="n">b</span>
+  <span class="c1"># do something with `x` and `y`</span>
+
+<span class="k">with</span> <span class="n">m</span><span class="o">.</span><span class="n">add_kernel_template</span><span class="p">(</span><span class="n">bar_tmpl</span><span class="p">)</span> <span class="k">as</span> <span class="n">kt</span><span class="p">:</span>
+  <span class="n">kt</span><span class="o">.</span><span class="n">instantiate</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-taichi.aot">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-taichi.aot" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">taichi-api-docstring</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Taichi Graphics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/src/taichi.aot.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

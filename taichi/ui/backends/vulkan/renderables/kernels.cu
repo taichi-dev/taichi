@@ -4,6 +4,7 @@
 namespace taichi {
 namespace ui {
 
+namespace {
 int div_up(int a, int b) {
   if (b == 0) {
     return 1;
@@ -17,6 +18,8 @@ void set_num_blocks_threads(int N, int &num_blocks, int &num_threads) {
   num_threads = min(N, MAX_THREADS_PER_BLOCK);
   num_blocks = div_up(N, num_threads);
 }
+#undef MAX_THREADS_PER_BLOCK
+}  // namespace
 
 __global__ void update_renderables_vertices_cuda_impl(Vertex *vbo,
                                                       float *data,
@@ -79,65 +82,6 @@ void update_renderables_indices_cuda(int *ibo, int *indices, int num_indices) {
 void update_renderables_indices_x64(int *ibo, int *indices, int num_indices) {
   for (int i = 0; i < num_indices; ++i) {
     ibo[i] = indices[i];
-  }
-}
-
-__global__ void update_renderables_colors_cuda_impl(Vertex *vbo,
-                                                    float *colors,
-                                                    int num_vertices) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i >= num_vertices)
-    return;
-
-  vbo[i].color.x = colors[i * 3];
-  vbo[i].color.y = colors[i * 3 + 1];
-  vbo[i].color.z = colors[i * 3 + 2];
-}
-void update_renderables_colors_cuda(Vertex *vbo,
-                                    float *colors,
-                                    int num_vertices) {
-  int num_blocks, num_threads;
-  set_num_blocks_threads(num_vertices, num_blocks, num_threads);
-  update_renderables_colors_cuda_impl<<<num_blocks, num_threads>>>(
-      vbo, colors, num_vertices);
-}
-
-void update_renderables_colors_x64(Vertex *vbo,
-                                   float *colors,
-                                   int num_vertices) {
-  for (int i = 0; i < num_vertices; ++i) {
-    vbo[i].color.x = colors[i * 3];
-    vbo[i].color.y = colors[i * 3 + 1];
-    vbo[i].color.z = colors[i * 3 + 2];
-  }
-}
-
-__global__ void update_renderables_normals_cuda_impl(Vertex *vbo,
-                                                     float *normals,
-                                                     int num_vertices) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i >= num_vertices)
-    return;
-
-  vbo[i].normal.x = normals[i * 3];
-  vbo[i].normal.y = normals[i * 3 + 1];
-  vbo[i].normal.z = normals[i * 3 + 2];
-}
-void update_renderables_normals_cuda(Vertex *vbo,
-                                     float *normals,
-                                     int num_vertices) {
-  int num_blocks, num_threads;
-  set_num_blocks_threads(num_vertices, num_blocks, num_threads);
-  update_renderables_normals_cuda_impl<<<num_blocks, num_threads>>>(
-      vbo, normals, num_vertices);
-}
-void update_renderables_normals_x64(Vertex *vbo,
-                                    float *normals,
-                                    int num_vertices) {
-  for (int i = 0; i < num_vertices; ++i) {
-    vbo[i].normal.x = normals[i * 3];
-    vbo[i].normal.y = normals[i * 3 + 1];
-    vbo[i].normal.z = normals[i * 3 + 2];
   }
 }
 

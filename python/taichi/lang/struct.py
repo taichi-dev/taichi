@@ -2,8 +2,6 @@ import copy
 import numbers
 
 from numpy.lib.arraysetops import isin
-
-import taichi as ti
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiSyntaxError
@@ -14,6 +12,8 @@ from taichi.lang.ops import cast
 from taichi.lang.types import CompoundType
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
+
+import taichi as ti
 
 
 class Struct(TaichiOperations):

@@ -11,11 +11,11 @@ from functools import wraps
 from pathlib import Path
 
 from colorama import Back, Fore, Style
-
-import taichi as ti
 from taichi.core import settings
 from taichi.core import ti_core as _ti_core
 from taichi.tools import video
+
+import taichi as ti
 
 
 def timer(func):

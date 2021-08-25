@@ -35,7 +35,7 @@ SparseMatrix SparseMatrixBuilder::build() {
     triplets.push_back(T(data_[i * 3], data_[i * 3 + 1],
                          taichi_union_cast<float32>(data_[i * 3 + 2])));
   }
-  SparseMatrix sm(n_,m_);
+  SparseMatrix sm(n_, m_);
   sm.get_matrix().setFromTriplets(triplets.begin(), triplets.end());
   return sm;
 }

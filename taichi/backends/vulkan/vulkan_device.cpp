@@ -1074,17 +1074,14 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
 VulkanDevice::~VulkanDevice() {
   command_sync();
 
-  TI_TRACE("Total #{} descriptor pools created", desc_set_pools_.size());
+  TI_TRACE("Total #{} descriptor pools created", layout_to_pools_.size());
 
   size_t desc_count = 0;
 
-  for (auto &pair : desc_set_pools_) {
-    vkResetDescriptorPool(device_, pair.second.pool, 0);
-    vkDestroyDescriptorPool(device_, pair.second.pool, kNoVkAllocCallbacks);
-    desc_count += pair.second.free_sets.size();
+  for (auto &pair : layout_to_pools_) {
+    vkResetDescriptorPool(device_, pair.second->pool, 0);
+    vkDestroyDescriptorPool(device_, pair.second->pool, kNoVkAllocCallbacks);
   }
-
-  TI_TRACE("Total #{} descriptors allocated", desc_count);
 
   for (auto &pair : desc_set_layouts_) {
     vkDestroyDescriptorSetLayout(device_, pair.second, kNoVkAllocCallbacks);
@@ -1165,10 +1162,9 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
 #endif
 
-  buffer_info.pNext = &external_mem_buffer_create_info;
-
   VmaAllocationCreateInfo alloc_info{};
   if (params.export_sharing) {
+    buffer_info.pNext = &external_mem_buffer_create_info;
     alloc_info.pool = export_pool_.pool;
   }
 
@@ -1279,12 +1275,9 @@ void VulkanDevice::memcpy_internal(DevicePtr dst,
 
 std::unique_ptr<CommandList> VulkanDevice::new_command_list(
     CommandListConfig config) {
-  VkCommandBuffer buffer = VK_NULL_HANDLE;
+  VkCommandBuffer buffer = cmdbuffer_pool_.gc_pop_one(VK_NULL_HANDLE);
 
-  if (free_cmdbuffers_.size()) {
-    buffer = free_cmdbuffers_.back();
-    free_cmdbuffers_.pop_back();
-  } else {
+  if (buffer == VK_NULL_HANDLE) {
     VkCommandBufferAllocateInfo alloc_info{};
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     if (config.type == CommandListType::Compute) {
@@ -1302,19 +1295,15 @@ std::unique_ptr<CommandList> VulkanDevice::new_command_list(
         "failed to allocate command buffer");
   }
 
+  cmdbuffer_pool_.inc(buffer);
+
   return std::make_unique<VulkanCommandList>(this, buffer, config);
 }
 
 void VulkanDevice::dealloc_command_list(CommandList *cmdlist) {
   VkCommandBuffer buffer =
       static_cast<VulkanCommandList *>(cmdlist)->finalize();
-  if (in_flight_cmdlists_.find(buffer) == in_flight_cmdlists_.end()) {
-    // Not in flight
-    free_cmdbuffers_.push_back(buffer);
-  } else {
-    // In flight
-    dealloc_cmdlists_.push_back(buffer);
-  }
+  cmdbuffer_pool_.dec(buffer);
 }
 
 void VulkanDevice::submit(CommandList *cmdlist) {
@@ -1333,14 +1322,8 @@ void VulkanDevice::submit(CommandList *cmdlist) {
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &buffer;
 
-  // FIXME: Reuse fences as well?
-  VkFence fence;
-  VkFenceCreateInfo fence_info{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, 0};
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreateFence(device_, &fence_info, kNoVkAllocCallbacks, &fence),
-      "failed to create fence");
-
-  in_flight_cmdlists_.insert({buffer, fence});
+  cmdbuffer_pool_.inc(buffer);
+  submitted_cmdbuffers_.push_back(buffer);
 
   VkQueue queue;
   const CommandListConfig &config =
@@ -1354,7 +1337,7 @@ void VulkanDevice::submit(CommandList *cmdlist) {
   }
 
   BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue, /*submitCount=*/1, &submit_info,
-                                      /*fence=*/fence),
+                                      /*fence=*/VK_NULL_HANDLE),
                         "failed to submit command buffer");
 }
 
@@ -1388,34 +1371,19 @@ void VulkanDevice::submit_synced(CommandList *cmdlist) {
 }
 
 void VulkanDevice::command_sync() {
-  if (!in_flight_cmdlists_.size()) {
-    return;
+  if (graphics_queue_)
+    vkQueueWaitIdle(graphics_queue_);
+  vkQueueWaitIdle(compute_queue_);
+
+  for (VkCommandBuffer buf : submitted_cmdbuffers_) {
+    cmdbuffer_pool_.dec(buf);
   }
+  submitted_cmdbuffers_.clear();
 
-  std::vector<VkFence> fences;
-  fences.reserve(in_flight_cmdlists_.size());
-
-  for (auto &pair : in_flight_cmdlists_) {
-    fences.push_back(pair.second);
+  for (auto &pair : submitted_desc_sets_) {
+    pair.first->sets.dec(pair.second);
   }
-
-  vkWaitForFences(device_, fences.size(), fences.data(), true,
-                  (60 * 1000 * 1000));
-
-  for (auto &pair : in_flight_cmdlists_) {
-    vkDestroyFence(device_, pair.second, kNoVkAllocCallbacks);
-  }
-
-  in_flight_cmdlists_.clear();
-  in_flight_desc_sets_.clear();
-
-  for (auto buf : dealloc_cmdlists_) {
-    free_cmdbuffers_.push_back(buf);
-  }
-
-  for (auto &pair : dealloc_desc_sets_) {
-    pair.first->free_sets.push_back(pair.second);
-  }
+  submitted_desc_sets_.clear();
 }
 
 std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(
@@ -1795,7 +1763,7 @@ VkDescriptorSetLayout VulkanDevice::get_desc_set_layout(
     }
 
     desc_set_layouts_[set] = layout;
-    desc_set_pools_[layout] = {pool, {}};
+    layout_to_pools_[layout] = std::move(std::make_unique<DescPool>(pool));
 
     TI_TRACE("New descriptor set layout {}", (void *)layout);
 
@@ -1809,13 +1777,11 @@ VkDescriptorSet VulkanDevice::alloc_desc_set(VkDescriptorSetLayout layout) {
   // TODO: Currently we assume the calling code has called get_desc_set_layout
   // before allocating a desc set. Either we should guard against this or
   // maintain this assumption in other parts of the VulkanBackend
-  DescPool &desc_pool = desc_set_pools_.at(layout);
+  DescPool &desc_pool = *layout_to_pools_.at(layout);
 
-  if (desc_pool.free_sets.size()) {
-    VkDescriptorSet set = desc_pool.free_sets.back();
-    desc_pool.free_sets.pop_back();
-    return set;
-  } else {
+  VkDescriptorSet set = desc_pool.sets.gc_pop_one(VK_NULL_HANDLE);
+
+  if (set == VK_NULL_HANDLE) {
     VkDescriptorSetAllocateInfo alloc_info{};
     alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     alloc_info.pNext = nullptr;
@@ -1823,24 +1789,19 @@ VkDescriptorSet VulkanDevice::alloc_desc_set(VkDescriptorSetLayout layout) {
     alloc_info.descriptorSetCount = 1;
     alloc_info.pSetLayouts = &layout;
 
-    VkDescriptorSet set;
     BAIL_ON_VK_BAD_RESULT(vkAllocateDescriptorSets(device_, &alloc_info, &set),
                           "Alloc descriptor set from pool failed");
-
-    return set;
   }
+
+  desc_pool.sets.inc(set);
+
+  return set;
 }
 
 void VulkanDevice::dealloc_desc_set(VkDescriptorSetLayout layout,
                                     VkDescriptorSet set) {
-  DescPool *pool = &desc_set_pools_.at(layout);
-  if (in_flight_desc_sets_.find(set) == in_flight_desc_sets_.end()) {
-    // Not in-flight
-    pool->free_sets.push_back(set);
-  } else {
-    // Still in-flight
-    dealloc_desc_sets_.push_back(std::make_pair(pool, set));
-  }
+  DescPool *pool = layout_to_pools_.at(layout).get();
+  pool->sets.dec(set);
 }
 
 void VulkanDevice::create_vma_allocator() {

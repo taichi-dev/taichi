@@ -22,6 +22,98 @@ namespace vulkan {
 class VulkanDevice;
 class VulkanResourceBinder;
 
+class RefCount {
+ public:
+  void inc() {
+    ref_count++;
+  }
+  int dec() {
+    return --ref_count;
+  }
+  int count() {
+    return ref_count;
+  }
+
+ private:
+  int ref_count{1};
+};
+
+template <class T, bool sync>
+class RefCountedPool {
+ public:
+  void inc(T obj) {
+    if constexpr (sync) {
+      gc_pool_lock_.lock();
+    }
+
+    auto iter = counts_.find(obj);
+
+    if (iter == counts_.end()) {
+      counts_[obj] = RefCount();
+    } else {
+      iter->second.inc();
+    }
+
+    if constexpr (sync) {
+      gc_pool_lock_.unlock();
+    }
+  }
+
+  void dec(T obj) {
+    if constexpr (sync) {
+      gc_pool_lock_.lock();
+    }
+
+    auto iter = counts_.find(obj);
+
+    if (iter == counts_.end()) {
+      TI_ERROR("Can not find counted reference");
+    } else {
+      int c = iter->second.dec();
+      if (c == 0) {
+        gc_pool_.push_back(iter->first);
+        counts_.erase(iter);
+      }
+    }
+
+    if constexpr (sync) {
+      gc_pool_lock_.unlock();
+    }
+  }
+
+  const std::vector<T> &gc_pool() const {
+    return gc_pool_;
+  }
+
+  std::mutex &mutex() {
+    return gc_pool_lock_;
+  }
+
+  T gc_pop_one(T null) {
+    if constexpr (sync) {
+      gc_pool_lock_.lock();
+    }
+
+    T obj = null;
+
+    if (gc_pool_.size()) {
+      obj = gc_pool_.back();
+      gc_pool_.pop_back();
+    }
+
+    if constexpr (sync) {
+      gc_pool_lock_.unlock();
+    }
+
+    return obj;
+  }
+
+ private:
+  std::unordered_map<T, RefCount> counts_;
+  std::vector<T> gc_pool_;
+  std::mutex gc_pool_lock_;
+};
+
 struct SpirvCodeView {
   const uint32_t *data = nullptr;
   size_t size = 0;
@@ -525,9 +617,9 @@ class VulkanDevice : public GraphicsDevice {
   // Command buffer tracking & allocation
   VkFence cmd_sync_fence_;
 
-  std::unordered_multimap<VkCommandBuffer, VkFence> in_flight_cmdlists_;
-  std::vector<VkCommandBuffer> dealloc_cmdlists_;
-  std::vector<VkCommandBuffer> free_cmdbuffers_;
+  // Command pools are per-thread
+  RefCountedPool<VkCommandBuffer, false> cmdbuffer_pool_;
+  std::vector<VkCommandBuffer> submitted_cmdbuffers_;
 
   // Renderpass
   std::unordered_map<VulkanRenderPassDesc, VkRenderPass, RenderPassDescHasher>
@@ -539,18 +631,19 @@ class VulkanDevice : public GraphicsDevice {
   // Descriptors / Layouts / Pools
   struct DescPool {
     VkDescriptorPool pool;
-    std::vector<VkDescriptorSet> free_sets;
+    // Threads share descriptor sets
+    RefCountedPool<VkDescriptorSet, true> sets;
+
+    DescPool(VkDescriptorPool pool) : pool(pool) {
+    }
   };
 
   std::unordered_map<VulkanResourceBinder::Set,
                      VkDescriptorSetLayout,
                      VulkanResourceBinder::SetLayoutHasher>
       desc_set_layouts_;
-
-  std::unordered_map<VkDescriptorSetLayout, DescPool> desc_set_pools_;
-
-  std::unordered_multimap<VkDescriptorSet, VkFence> in_flight_desc_sets_;
-  std::vector<std::pair<DescPool *, VkDescriptorSet>> dealloc_desc_sets_;
+  std::unordered_map<VkDescriptorSetLayout, std::unique_ptr<DescPool>> layout_to_pools_;
+  std::vector<std::pair<DescPool *, VkDescriptorSet>> submitted_desc_sets_;
 };
 
 VkFormat buffer_format_ti_to_vk(BufferFormat f);

@@ -32,8 +32,8 @@ void SparseMatrixBuilder::build(SparseMatrix *sm) {
   using T = Eigen::Triplet<float32>;
   std::vector<T> triplets;
   for (int i = 0; i < num_triplets_; i++) {
-    triplets.push_back({data_[i * 3], data_[i * 3 + 1],
-                        taichi_union_cast<float32>(data_[i * 3 + 2])});
+    triplets.push_back(T(data_[i * 3], data_[i * 3 + 1],
+                        taichi_union_cast<float32>(data_[i * 3 + 2])));
   }
   sm->get_matrix().setFromTriplets(triplets.begin(), triplets.end());
 }

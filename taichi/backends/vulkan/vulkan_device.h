@@ -21,6 +21,7 @@ namespace vulkan {
 
 class VulkanDevice;
 class VulkanResourceBinder;
+class VulkanStream;
 
 class RefCount {
  public:
@@ -350,8 +351,8 @@ class VulkanPipeline : public Pipeline {
 class VulkanCommandList : public CommandList {
  public:
   VulkanCommandList(VulkanDevice *ti_device,
-                    VkCommandBuffer buffer,
-                    CommandListConfig config);
+                    VulkanStream *stream,
+                    VkCommandBuffer buffer);
   ~VulkanCommandList();
 
   void bind_pipeline(Pipeline *p) override;
@@ -394,15 +395,17 @@ class VulkanCommandList : public CommandList {
 
   // Vulkan specific functions
   VkCommandBuffer finalize();
-  const CommandListConfig &config() const;
 
   VkCommandBuffer vk_command_buffer();
 
- private:
-  CommandListConfig config_;
+  std::vector<std::pair<VkDescriptorSetLayout, VkDescriptorSet>> &desc_sets() {
+    return desc_sets_;
+  }
 
+ private:
   bool finalized_{false};
   VulkanDevice *ti_device_;
+  VulkanStream *stream_;
   VkDevice device_;
   VkCommandBuffer buffer_;
   VulkanPipeline *current_pipeline_{nullptr};
@@ -459,6 +462,42 @@ struct VulkanMemoryPool {
 #endif
 };
 
+struct DescPool {
+  VkDescriptorPool pool;
+  // Threads share descriptor sets
+  RefCountedPool<VkDescriptorSet, true> sets;
+
+  DescPool(VkDescriptorPool pool) : pool(pool) {
+  }
+};
+
+class VulkanStream : public Stream {
+ public:
+  VulkanStream(VulkanDevice &device,
+               VkQueue queue,
+               uint32_t queue_family_index);
+  ~VulkanStream();
+
+  std::unique_ptr<CommandList> new_command_list() override;
+  void dealloc_command_list(CommandList *cmdlist) override;
+  void submit(CommandList *cmdlist) override;
+  void submit_synced(CommandList *cmdlist) override;
+
+  void command_sync() override;
+
+ private:
+  VkFence cmd_sync_fence_;
+  VulkanDevice &device_;
+  VkQueue queue_;
+  VkCommandPool command_pool_;
+  uint32_t queue_family_index_;
+
+  // Command pools are per-thread
+  RefCountedPool<VkCommandBuffer, false> cmdbuffer_pool_;
+  std::vector<VkCommandBuffer> submitted_cmdbuffers_;
+  std::vector<std::pair<DescPool *, VkDescriptorSet>> submitted_desc_sets_;
+};
+
 class VulkanDevice : public GraphicsDevice {
  public:
   struct Params {
@@ -466,10 +505,8 @@ class VulkanDevice : public GraphicsDevice {
     VkPhysicalDevice physical_device;
     VkDevice device;
     VkQueue compute_queue;
-    VkCommandPool compute_pool;
     uint32_t compute_queue_family_index;
     VkQueue graphics_queue;
-    VkCommandPool graphics_pool;
     uint32_t graphics_queue_family_index;
   };
 
@@ -493,13 +530,8 @@ class VulkanDevice : public GraphicsDevice {
   // Strictly intra device copy
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 
-  std::unique_ptr<CommandList> new_command_list(
-      CommandListConfig config) override;
-  void dealloc_command_list(CommandList *cmdlist) override;
-  void submit(CommandList *cmdlist) override;
-  void submit_synced(CommandList *cmdlist) override;
-
-  void command_sync() override;
+  Stream *get_compute_stream() override;
+  Stream *get_graphics_stream() override;
 
   std::unique_ptr<Pipeline> create_raster_pipeline(
       const std::vector<PipelineSourceDesc> &src,
@@ -542,14 +574,6 @@ class VulkanDevice : public GraphicsDevice {
     return compute_queue_;
   }
 
-  VkCommandPool graphics_cmd_pool() const {
-    return graphics_pool_;
-  }
-
-  VkCommandPool compute_cmd_pool() const {
-    return compute_pool_;
-  }
-
   std::tuple<VkDeviceMemory, size_t, size_t> get_vkmemory_offset_size(
       const DeviceAllocation &alloc) const;
 
@@ -570,6 +594,7 @@ class VulkanDevice : public GraphicsDevice {
   VkDescriptorSetLayout get_desc_set_layout(VulkanResourceBinder::Set &set);
   VkDescriptorSet alloc_desc_set(VkDescriptorSetLayout layout);
   void dealloc_desc_set(VkDescriptorSetLayout layout, VkDescriptorSet set);
+  DescPool *get_pool_from_layout(VkDescriptorSetLayout layout);
 
   static constexpr size_t kMemoryBlockSize = 128ull * 1024 * 1024;
 
@@ -583,12 +608,15 @@ class VulkanDevice : public GraphicsDevice {
   VulkanMemoryPool export_pool_;
 
   VkQueue compute_queue_;
-  VkCommandPool compute_pool_;
   uint32_t compute_queue_family_index_;
 
   VkQueue graphics_queue_;
-  VkCommandPool graphics_pool_;
   uint32_t graphics_queue_family_index_;
+
+  std::unordered_map<std::thread::id, std::unique_ptr<VulkanStream>>
+      compute_stream_;
+  std::unordered_map<std::thread::id, std::unique_ptr<VulkanStream>>
+      graphics_stream_;
 
   // Memory allocation
   struct AllocationInternal {
@@ -614,13 +642,6 @@ class VulkanDevice : public GraphicsDevice {
 
   std::unordered_map<uint32_t, ImageAllocInternal> image_allocations_;
 
-  // Command buffer tracking & allocation
-  VkFence cmd_sync_fence_;
-
-  // Command pools are per-thread
-  RefCountedPool<VkCommandBuffer, false> cmdbuffer_pool_;
-  std::vector<VkCommandBuffer> submitted_cmdbuffers_;
-
   // Renderpass
   std::unordered_map<VulkanRenderPassDesc, VkRenderPass, RenderPassDescHasher>
       renderpass_pools_;
@@ -629,21 +650,12 @@ class VulkanDevice : public GraphicsDevice {
           framebuffer_pools_;
 
   // Descriptors / Layouts / Pools
-  struct DescPool {
-    VkDescriptorPool pool;
-    // Threads share descriptor sets
-    RefCountedPool<VkDescriptorSet, true> sets;
-
-    DescPool(VkDescriptorPool pool) : pool(pool) {
-    }
-  };
-
   std::unordered_map<VulkanResourceBinder::Set,
                      VkDescriptorSetLayout,
                      VulkanResourceBinder::SetLayoutHasher>
       desc_set_layouts_;
-  std::unordered_map<VkDescriptorSetLayout, std::unique_ptr<DescPool>> layout_to_pools_;
-  std::vector<std::pair<DescPool *, VkDescriptorSet>> submitted_desc_sets_;
+  std::unordered_map<VkDescriptorSetLayout, std::unique_ptr<DescPool>>
+      layout_to_pools_;
 };
 
 VkFormat buffer_format_ti_to_vk(BufferFormat f);

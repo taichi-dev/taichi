@@ -97,7 +97,6 @@ class EmbeddedVulkanDevice {
   void create_surface();
   void pick_physical_device();
   void create_logical_device();
-  void create_command_pool();
 
   VkInstance instance_{VK_NULL_HANDLE};
   VkDebugUtilsMessengerEXT debug_messenger_{VK_NULL_HANDLE};

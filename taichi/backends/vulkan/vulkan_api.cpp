@@ -184,7 +184,6 @@ EmbeddedVulkanDevice::EmbeddedVulkanDevice(
   }
   pick_physical_device();
   create_logical_device();
-  create_command_pool();
 
   // TODO: Change the ownership hierarchy, the taichi Device class should be at
   // the top level
@@ -194,11 +193,9 @@ EmbeddedVulkanDevice::EmbeddedVulkanDevice(
     params.physical_device = physical_device_;
     params.device = device_;
     params.compute_queue = compute_queue_;
-    params.compute_pool = command_pool_;
     params.compute_queue_family_index =
         queue_family_indices_.compute_family.value();
     params.graphics_queue = graphics_queue_;
-    params.graphics_pool = command_pool_;  // FIXME: This is potentially wrong
     params.graphics_queue_family_index =
         queue_family_indices_.graphics_family.value();
     ti_device_->init_vulkan_structs(params);
@@ -214,7 +211,6 @@ EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
     destroy_debug_utils_messenger_ext(instance_, debug_messenger_,
                                       kNoVkAllocCallbacks);
   }
-  vkDestroyCommandPool(device_, command_pool_, kNoVkAllocCallbacks);
   vkDestroyDevice(device_, kNoVkAllocCallbacks);
   vkDestroyInstance(instance_, kNoVkAllocCallbacks);
 }
@@ -566,21 +562,6 @@ void EmbeddedVulkanDevice::create_logical_device() {
                      &compute_queue_);
   }
 }  // namespace vulkan
-
-void EmbeddedVulkanDevice::create_command_pool() {
-  VkCommandPoolCreateInfo pool_info{};
-  pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-  if (params_.is_for_ui) {
-    pool_info.queueFamilyIndex = queue_family_indices_.graphics_family.value();
-  } else {
-    pool_info.queueFamilyIndex = queue_family_indices_.compute_family.value();
-  }
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreateCommandPool(device_, &pool_info, kNoVkAllocCallbacks,
-                          &command_pool_),
-      "failed to create command pool");
-}
 
 }  // namespace vulkan
 }  // namespace lang

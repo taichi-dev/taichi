@@ -11,6 +11,9 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/system/memory_pool.h"
+#define TI_RUNTIME_HOST
+#include "taichi/program/context.h"
+#undef TI_RUNTIME_HOST
 
 #include <memory>
 
@@ -20,16 +23,11 @@ class StructCompiler;
 
 class LlvmProgramImpl {
  public:
-  void *llvm_runtime{nullptr};
-  std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
-  std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
-  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
-  std::unique_ptr<Runtime> runtime_mem_info{nullptr};
-  void *preallocated_device_buffer{
-      nullptr};  // TODO: move this to memory allocator
   CompileConfig config;
 
-  LlvmProgramImpl(CompileConfig &config);
+  LlvmProgramImpl(CompileConfig &config, KernelProfilerBase *profiler);
+
+  void initialize_host();
 
   /**
    * Initializes Program#llvm_context_device, if this has not been done.
@@ -44,6 +42,10 @@ class LlvmProgramImpl {
     } else {
       return llvm_context_device.get();
     }
+  }
+
+  LLVMRuntime *get_llvm_runtime() {
+    return static_cast<LLVMRuntime *>(llvm_runtime);
   }
 
   void materialize_snode_tree(
@@ -62,18 +64,26 @@ class LlvmProgramImpl {
   /**
    * Initializes the runtime system for LLVM based backends.
    */
-  void initialize_llvm_runtime_system(MemoryPool *memory_pool,
-                                      KernelProfilerBase *profiler,
-                                      uint64 **result_buffer);
+  void materialize_runtime(MemoryPool *memory_pool,
+                           KernelProfilerBase *profiler,
+                           uint64 **result_buffer);
 
   std::size_t get_snode_num_dynamically_allocated(SNode *snode,
                                                   uint64 *result_buffer);
+
+  void destroy_snode_tree(SNodeTree *snode_tree) {
+    snode_tree_buffer_manager->destroy(snode_tree);
+  }
 
   void print_memory_profiler_info(
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       uint64 *result_buffer);
 
-  void device_synchronize();
+  void synchronize();
+
+  void check_runtime_error(uint64 *result_buffer);
+
+  void finalize();
 
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
@@ -116,7 +126,13 @@ class LlvmProgramImpl {
   void print_list_manager_info(void *list_manager, uint64 *result_buffer);
 
  private:
+  std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
+  std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
   std::unique_ptr<ThreadPool> thread_pool{nullptr};
+  std::unique_ptr<Runtime> runtime_mem_info{nullptr};
+  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
+  void *llvm_runtime{nullptr};
+  void *preallocated_device_buffer{nullptr};  // TODO: move to memory allocator
 };
 }  // namespace lang
 }  // namespace taichi

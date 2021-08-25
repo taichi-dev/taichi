@@ -5,6 +5,7 @@ from copy import deepcopy as _deepcopy
 from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
+from taichi.lang.enums import Layout
 from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *
 from taichi.lang.kernel_arguments import any_arr, ext_arr, template
@@ -810,7 +811,7 @@ def is_arch_supported(arch):
         metal: _ti_core.with_metal,
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
-        vulkan: lambda: _ti_core.with_vulkan,
+        vulkan: lambda: _ti_core.with_vulkan(),
         wasm: lambda: True,
         cpu: lambda: True,
     }
@@ -832,7 +833,7 @@ def supported_archs():
     Returns:
         List[taichi_core.Arch]: All supported archs on the machine.
     """
-    archs = [cpu, cuda, metal, opengl, cc]
+    archs = [cpu, cuda, metal, vulkan, opengl, cc]
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')

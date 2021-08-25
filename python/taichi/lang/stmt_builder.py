@@ -571,7 +571,7 @@ if 1:
                     array_dt = ctx.arg_features[i][0]
                     array_dim = ctx.arg_features[i][1]
                     array_element_shape = ctx.arg_features[i][2]
-                    array_is_soa = ctx.arg_features[i][3]
+                    array_layout = ctx.arg_features[i][3]
                     array_dt = to_taichi_type(array_dt)
                     dt_expr = 'ti.' + ti.core.data_type_name(array_dt)
                     dt = parse_expr(dt_expr)
@@ -580,7 +580,7 @@ if 1:
                     arg_init.value.args[2] = parse_expr(
                         "{}".format(array_element_shape))
                     arg_init.value.args[3] = parse_expr(
-                        "{}".format(array_is_soa))
+                        "ti.{}".format(array_layout))
                     arg_decls.append(arg_init)
                 else:
                     arg_init = parse_stmt(

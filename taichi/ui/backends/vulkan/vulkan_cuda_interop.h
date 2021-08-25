@@ -1,7 +1,6 @@
 #pragma once
 
 #include "taichi/ui/utils/utils.h"
-#include "taichi/ui/backends/vulkan/vulkan_utils.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 
 TI_UI_NAMESPACE_BEGIN
@@ -33,11 +32,14 @@ void *map_buffer_onto_external_memory(CUexternalMemory ext_mem,
                                       unsigned long long size);
 
 void *get_memory_pointer(VkDeviceMemory mem,
-                         VkDeviceSize size,
+                         VkDeviceSize mem_size,
+                         VkDeviceSize offset,
+                         VkDeviceSize buffer_size,
                          VkDevice device);
 
 CUsurfObject get_image_surface_object_of_external_memory(
     CUexternalMemory external_mem,
+    uint64_t offset,
     int width,
     int height,
     int depth);

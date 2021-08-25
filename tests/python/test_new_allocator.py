@@ -50,7 +50,7 @@ def test_3d():
 def test_matrix():
     N = 16
 
-    x = ti.Matrix.field(2, 2, dtype=ti.f32, shape=(N, ), layout=ti.AOS)
+    x = ti.Matrix.field(2, 2, dtype=ti.f32, shape=(N, ), layout=ti.Layout.AOS)
 
     @ti.kernel
     def func():

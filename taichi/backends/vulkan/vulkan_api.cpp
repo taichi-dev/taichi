@@ -220,7 +220,9 @@ EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
 #endif
 
   ti_device_.reset();
-
+  if (surface_ != VK_NULL_HANDLE) {
+    vkDestroySurfaceKHR(instance_, surface_, kNoVkAllocCallbacks);
+  }
   if constexpr (kEnableValidationLayers) {
     destroy_debug_utils_messenger_ext(instance_, debug_messenger_,
                                       kNoVkAllocCallbacks);
@@ -228,6 +230,10 @@ EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
   vkDestroyCommandPool(device_, command_pool_, kNoVkAllocCallbacks);
   vkDestroyDevice(device_, kNoVkAllocCallbacks);
   vkDestroyInstance(instance_, kNoVkAllocCallbacks);
+}
+
+Device *EmbeddedVulkanDevice::get_ti_device() const {
+  return ti_device_.get();
 }
 
 void EmbeddedVulkanDevice::create_instance() {
@@ -432,8 +438,8 @@ void EmbeddedVulkanDevice::create_logical_device() {
       has_swapchain = true;
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME) {
-      ti_device_->set_cap(DeviceCapability::vk_has_atomic_float_add, true);
-      enabled_extensions.push_back(ext.extensionName);
+      // ti_device_->set_cap(DeviceCapability::vk_has_atomic_float_add, true);
+      // enabled_extensions.push_back(ext.extensionName);
     } else if (name == "VK_EXT_shader_atomic_float2") {
       // FIXME: This feature requires vulkan headers with
       // VK_EXT_shader_atomic_float2
@@ -442,8 +448,8 @@ void EmbeddedVulkanDevice::create_logical_device() {
       enabled_extensions.push_back(ext.extensionName);
       */
     } else if (name == VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME) {
-      ti_device_->set_cap(DeviceCapability::vk_has_atomic_i64, true);
-      enabled_extensions.push_back(ext.extensionName);
+      // ti_device_->set_cap(DeviceCapability::vk_has_atomic_i64, true);
+      // enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SPIRV_1_4_EXTENSION_NAME) {
@@ -531,13 +537,14 @@ void EmbeddedVulkanDevice::create_logical_device() {
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
       if (shader_atomic_float_feature.shaderBufferFloat32AtomicAdd) {
-        ti_device_->set_cap(DeviceCapability::vk_has_atomic_float_add, true);
+        // ti_device_->set_cap(DeviceCapability::vk_has_atomic_float_add, true);
       } else if (shader_atomic_float_feature.shaderBufferFloat64AtomicAdd) {
-        ti_device_->set_cap(DeviceCapability::vk_has_atomic_float64_add, true);
+        // ti_device_->set_cap(DeviceCapability::vk_has_atomic_float64_add,
+        // true);
       } else if (shader_atomic_float_feature.shaderBufferFloat32Atomics) {
-        ti_device_->set_cap(DeviceCapability::vk_has_atomic_float, true);
+        // ti_device_->set_cap(DeviceCapability::vk_has_atomic_float, true);
       } else if (shader_atomic_float_feature.shaderBufferFloat64Atomics) {
-        ti_device_->set_cap(DeviceCapability::vk_has_atomic_float64, true);
+        // ti_device_->set_cap(DeviceCapability::vk_has_atomic_float64, true);
       }
       *pNextEnd = &shader_atomic_float_feature;
       pNextEnd = &shader_atomic_float_feature.pNext;

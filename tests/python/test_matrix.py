@@ -177,7 +177,7 @@ def test_matrix_non_constant_index_numpy():
     assert m[4][0, 1] == 1
 
     @ti.kernel
-    def func2(b: ti.any_arr(element_shape=(10, ), is_soa=True)):
+    def func2(b: ti.any_arr(element_shape=(10, ), layout=ti.Layout.SOA)):
         for i in range(5):
             for j in range(4):
                 b[i][j * j] = j * j

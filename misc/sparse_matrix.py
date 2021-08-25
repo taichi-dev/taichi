@@ -28,8 +28,7 @@ fill(K, f, 3)
 print(">>>>>>>> Before build: ")
 K.print_triplets()
 
-A = ti.SparseMatrix(n, n)
-K.build(A)
+A = K.build()
 
 print(">>>>>>>> After build: ")
 A.print()

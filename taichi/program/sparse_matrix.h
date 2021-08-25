@@ -17,7 +17,7 @@ class SparseMatrixBuilder {
 
   void print_triplets();
 
-  void build(SparseMatrix &sm);
+  SparseMatrix build();
 
  private:
   uint64 num_triplets_{0};

@@ -13,8 +13,7 @@ def test_sparse_matrix_builder():
             Abuilder[i, j] += float(i + j)
 
     fill(Abuilder)
-    A = ti.SparseMatrix(n, n)
-    Abuilder.build(A)
+    A = Abuilder.build()
     for i in range(n):
         for j in range(n):
             assert A.get_ele(i, j) == float(i + j)
@@ -32,8 +31,7 @@ def test_sparse_matrix_element_access():
             Abuilder[i, i] += 1.0
 
     fill(Abuilder)
-    A = ti.SparseMatrix(n, n)
-    Abuilder.build(A)
+    A = Abuilder.build()
     for i in range(n):
         assert A.get_ele(i, i) == 1.0
 
@@ -53,10 +51,8 @@ def test_sparse_matrix_addition():
             Bbuilder[i, j] += float(i - j)
 
     fill(Abuilder, Bbuilder)
-    A = ti.SparseMatrix(n, n)
-    B = ti.SparseMatrix(n, n)
-    Abuilder.build(A)
-    Bbuilder.build(B)
+    A = Abuilder.build()
+    B = Bbuilder.build()
     C = A + B
     for i in range(n):
         for j in range(n):
@@ -78,10 +74,8 @@ def test_sparse_matrix_subtraction():
             Bbuilder[i, j] += float(i - j)
 
     fill(Abuilder, Bbuilder)
-    A = ti.SparseMatrix(n, n)
-    B = ti.SparseMatrix(n, n)
-    Abuilder.build(A)
-    Bbuilder.build(B)
+    A = Abuilder.build()
+    B = Bbuilder.build()
     C = A - B
     for i in range(n):
         for j in range(n):
@@ -100,8 +94,7 @@ def test_sparse_matrix_scalar_multiplication():
             Abuilder[i, j] += float(i + j)
 
     fill(Abuilder)
-    A = ti.SparseMatrix(n, n)
-    Abuilder.build(A)
+    A = Abuilder.build()
     B = A * 3.0
     for i in range(n):
         for j in range(n):
@@ -120,8 +113,7 @@ def test_sparse_matrix_transpose():
             Abuilder[i, j] += float(i + j)
 
     fill(Abuilder)
-    A = ti.SparseMatrix(n, n)
-    Abuilder.build(A)
+    A = Abuilder.build()
     B = A.transpose()
     for i in range(n):
         for j in range(n):
@@ -143,10 +135,8 @@ def test_sparse_matrix_elementwise_multiplication():
             Bbuilder[i, j] += float(i - j)
 
     fill(Abuilder, Bbuilder)
-    A = ti.SparseMatrix(n, n)
-    B = ti.SparseMatrix(n, n)
-    Abuilder.build(A)
-    Bbuilder.build(B)
+    A = Abuilder.build()
+    B = Bbuilder.build()
     C = A * B
     for i in range(n):
         for j in range(n):
@@ -168,10 +158,8 @@ def test_sparse_matrix_multiplication():
             Bbuilder[i, j] += float(i - j)
 
     fill(Abuilder, Bbuilder)
-    A = ti.SparseMatrix(n, n)
-    B = ti.SparseMatrix(n, n)
-    Abuilder.build(A)
-    Bbuilder.build(B)
+    A = Abuilder.build()
+    B = Bbuilder.build()
     C = A @ B
     assert C.get_ele(0, 0) == 1.0
     assert C.get_ele(0, 1) == 0.0

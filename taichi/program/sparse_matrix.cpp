@@ -26,7 +26,7 @@ void SparseMatrixBuilder::print_triplets() {
   fmt::print("\n");
 }
 
-void SparseMatrixBuilder::build(SparseMatrix &sm) {
+SparseMatrix SparseMatrixBuilder::build() {
   TI_ASSERT(built_ == false);
   built_ = true;
   using T = Eigen::Triplet<float32>;
@@ -35,7 +35,9 @@ void SparseMatrixBuilder::build(SparseMatrix &sm) {
     triplets.push_back(T(data_[i * 3], data_[i * 3 + 1],
                          taichi_union_cast<float32>(data_[i * 3 + 2])));
   }
+  SparseMatrix sm(n_,m_);
   sm.get_matrix().setFromTriplets(triplets.begin(), triplets.end());
+  return sm;
 }
 
 SparseMatrix::SparseMatrix(Eigen::SparseMatrix<float32> &matrix) {

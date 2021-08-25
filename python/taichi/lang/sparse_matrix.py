@@ -65,8 +65,9 @@ class SparseMatrixBuilder:
     def print(self):
         self.ptr.print()
 
-    def build(self, other):
-        self.ptr.build(other.matrix)
+    def build(self):
+        sm = self.ptr.build()
+        return SparseMatrix(sm=sm)
 
 
 class SparseMatrixEntry:

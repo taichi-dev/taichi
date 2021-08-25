@@ -40,15 +40,15 @@ class SparseMatrix {
   Eigen::SparseMatrix<float32> &get_matrix();
   float32 get_coeff(int row, int col);
 
-  friend SparseMatrix *operator+(const SparseMatrix &sm1,
+  friend SparseMatrix operator+(const SparseMatrix &sm1,
                                  const SparseMatrix &sm2);
-  friend SparseMatrix *operator-(const SparseMatrix &sm1,
+  friend SparseMatrix operator-(const SparseMatrix &sm1,
                                  const SparseMatrix &sm2);
-  friend SparseMatrix *operator*(float scale, const SparseMatrix &sm);
-  friend SparseMatrix *operator*(const SparseMatrix &sm1,
+  friend SparseMatrix operator*(float scale, const SparseMatrix &sm);
+  friend SparseMatrix operator*(const SparseMatrix &sm1,
                                  const SparseMatrix &sm2);
-  SparseMatrix *matmult(const SparseMatrix &sm);
-  SparseMatrix *transpose();
+  SparseMatrix matmult(const SparseMatrix &sm);
+  SparseMatrix transpose();
 
   void solve(SparseMatrix *);
 

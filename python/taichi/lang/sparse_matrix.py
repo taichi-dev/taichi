@@ -17,10 +17,12 @@ class SparseMatrix:
         self.matrix.solve(b)
 
     def __add__(self, other):
+        assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}), ({other.n}, {other.m})"
         sm = self.matrix + other.matrix
         return SparseMatrix(sm=sm)
 
     def __sub__(self, other):
+        assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}), ({other.n}, {other.m})"
         sm = self.matrix - other.matrix
         return SparseMatrix(sm=sm)
 
@@ -29,6 +31,7 @@ class SparseMatrix:
             sm = other * self.matrix
             return SparseMatrix(sm=sm)
         elif isinstance(other, SparseMatrix):
+            assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}), ({other.n}, {other.m})"
             sm = self.matrix * other.matrix
             return SparseMatrix(sm=sm)
 
@@ -73,7 +76,7 @@ class SparseMatrixEntry:
         self.j = j
 
     def augassign(self, value, op):
-        assert op == 'Add' or op == 'Sub'
+        assert op == 'Add' or op == 'Sub', f"Only operation '+=' and '-=' is support right now"
         from taichi.lang.impl import call_internal
         if op == 'Add':
             call_internal("insert_triplet", self.ptr, self.i, self.j, value)

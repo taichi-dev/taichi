@@ -63,39 +63,39 @@ Eigen::SparseMatrix<float32> &SparseMatrix::get_matrix() {
   return matrix_;
 }
 
-SparseMatrix *operator+(const SparseMatrix &sm1, const SparseMatrix &sm2) {
-  SparseMatrix *res = new SparseMatrix(sm1.n_, sm1.m_);
-  res->matrix_ = sm1.matrix_ + sm2.matrix_;
+SparseMatrix operator+(const SparseMatrix &sm1, const SparseMatrix &sm2) {
+  SparseMatrix res(sm1.n_, sm1.m_);
+  res.matrix_ = sm1.matrix_ + sm2.matrix_;
   return res;
 }
 
-SparseMatrix *operator-(const SparseMatrix &sm1, const SparseMatrix &sm2) {
-  SparseMatrix *res = new SparseMatrix(sm1.n_, sm1.m_);
-  res->matrix_ = sm1.matrix_ - sm2.matrix_;
+SparseMatrix operator-(const SparseMatrix &sm1, const SparseMatrix &sm2) {
+  SparseMatrix res(sm1.n_, sm1.m_);
+  res.matrix_ = sm1.matrix_ - sm2.matrix_;
   return res;
 }
 
-SparseMatrix *operator*(float scale, const SparseMatrix &sm) {
-  SparseMatrix *res = new SparseMatrix(sm.n_, sm.m_);
-  res->matrix_ = scale * sm.matrix_;
+SparseMatrix operator*(float scale, const SparseMatrix &sm) {
+  SparseMatrix res(sm.n_, sm.m_);
+  res.matrix_ = scale * sm.matrix_;
   return res;
 }
 
-SparseMatrix *operator*(const SparseMatrix &sm1, const SparseMatrix &sm2) {
-  SparseMatrix *res = new SparseMatrix(sm1.n_, sm1.m_);
-  res->matrix_ = sm1.matrix_.cwiseProduct(sm2.matrix_);
+SparseMatrix operator*(const SparseMatrix &sm1, const SparseMatrix &sm2) {
+  SparseMatrix res(sm1.n_, sm1.m_);
+  res.matrix_ = sm1.matrix_.cwiseProduct(sm2.matrix_);
   return res;
 }
 
-SparseMatrix *SparseMatrix::matmult(const SparseMatrix &sm) {
-  SparseMatrix *res = new SparseMatrix(n_, m_);
-  res->matrix_ = matrix_ * sm.matrix_;
+SparseMatrix SparseMatrix::matmult(const SparseMatrix &sm) {
+  SparseMatrix res(sm.n_, sm.m_);
+  res.matrix_ = matrix_ * sm.matrix_;
   return res;
 }
 
-SparseMatrix *SparseMatrix::transpose() {
-  SparseMatrix *res = new SparseMatrix(n_, m_);
-  res->matrix_ = matrix_.transpose();
+SparseMatrix SparseMatrix::transpose() {
+  SparseMatrix res(n_, m_);
+  res.matrix_ = matrix_.transpose();
   return res;
 }
 

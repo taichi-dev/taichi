@@ -608,20 +608,6 @@ def ndarray(dtype, shape):
     return ScalarNdarray(dtype, shape)
 
 
-class Layout:
-    def __init__(self, soa=False):
-        self.soa = soa
-
-
-SOA = Layout(soa=True)
-AOS = Layout(soa=False)
-
-
-@python_scope
-def layout(func):
-    raise InvalidOperationError('layout(): Deprecated')
-
-
 @taichi_scope
 def ti_print(*vars, sep=' ', end='\n'):
     def entry2content(var):

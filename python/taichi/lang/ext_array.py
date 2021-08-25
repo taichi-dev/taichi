@@ -1,4 +1,5 @@
 from taichi.core.util import ti_core as _ti_core
+from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.util import taichi_scope
 
@@ -46,13 +47,13 @@ class AnyArray:
     Args:
         ptr (taichi_core.Expr): A taichi_core.Expr wrapping a taichi_core.ExternalTensorExpression.
         element_shape (Tuple[Int]): () if scalar elements (default), (n) if vector elements, and (n, m) if matrix elements.
-        is_soa (bool): Whether to change the layout from AOS (default) to SOA.
+        layout (Layout): Memory layout.
     """
-    def __init__(self, ptr, element_shape, is_soa):
+    def __init__(self, ptr, element_shape, layout):
         assert ptr.is_external_var()
         self.ptr = ptr
         self.element_shape = element_shape
-        self.is_soa = is_soa
+        self.layout = layout
 
     @property
     @taichi_scope
@@ -71,7 +72,9 @@ class AnyArray:
         if element_dim == 0:
             return ret
         else:
-            return ret[element_dim:] if self.is_soa else ret[:-element_dim]
+            return ret[
+                element_dim:] if self.layout == Layout.SOA else ret[:
+                                                                    -element_dim]
 
 
 class AnyArrayAccess:
@@ -88,7 +91,7 @@ class AnyArrayAccess:
     @taichi_scope
     def subscript(self, i, j):
         indices_second = (i, ) if len(self.arr.element_shape) == 1 else (i, j)
-        if self.arr.is_soa:
+        if self.arr.layout == Layout.SOA:
             indices = indices_second + self.indices_first
         else:
             indices = self.indices_first + indices_second

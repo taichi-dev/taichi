@@ -44,6 +44,15 @@ void IRBuilder::init_header() {
         .commit(&header_);
   }
 
+  if (device_->get_cap(cap::vk_has_spv_variable_ptr)) {
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityVariablePointers)
+        .commit(&header_);
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityVariablePointersStorageBuffer)
+        .commit(&header_);
+  }
+
   if (device_->get_cap(cap::vk_has_int8)) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt8).commit(&header_);
   }

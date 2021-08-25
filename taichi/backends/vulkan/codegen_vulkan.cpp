@@ -1315,6 +1315,7 @@ class KernelCodegen {
   explicit KernelCodegen(const Params &params)
       : params_(params), ctx_attribs_(*params.kernel) {
     spirv_opt_ = std::make_unique<spvtools::Optimizer>(SPV_ENV_VULKAN_1_2);
+    spirv_tools_ = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
 
     spirv_opt_->SetMessageConsumer(spriv_message_consumer);
 
@@ -1394,6 +1395,7 @@ class KernelCodegen {
   KernelContextAttributes ctx_attribs_;
 
   std::unique_ptr<spvtools::Optimizer> spirv_opt_;
+  std::unique_ptr<spvtools::SpirvTools> spirv_tools_;
   spvtools::OptimizerOptions _spirv_opt_options;
 };
 

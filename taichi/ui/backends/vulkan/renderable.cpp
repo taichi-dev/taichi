@@ -118,6 +118,8 @@ void Renderable::update_data(const RenderableInfo &info) {
 
   } else if (info.vertices.field_source == FieldSource::TaichiX64) {
     {
+      // TODO: Support for FieldSource::Numpy, investigate how
+      // packed-mode/powe4-of-2 fields/multiple level dense layouts affect this.
       Vertex *mapped_vbo =
           (Vertex *)app_context_->device().map(staging_vertex_buffer_);
 
@@ -155,12 +157,15 @@ void Renderable::update_data(const RenderableInfo &info) {
       }
       app_context_->device().unmap(staging_index_buffer_);
     }
-    app_context_->device().memcpy(vertex_buffer_.get_ptr(0),
-                                  staging_vertex_buffer_.get_ptr(0),
-                                  config_.vertices_count * sizeof(Vertex));
-    app_context_->device().memcpy(index_buffer_.get_ptr(0),
-                                  staging_index_buffer_.get_ptr(0),
-                                  config_.indices_count * sizeof(int));
+    auto cmd_list =
+        app_context_->device().new_command_list({CommandListType::Graphics});
+    cmd_list->buffer_copy(vertex_buffer_.get_ptr(0),
+                          staging_vertex_buffer_.get_ptr(0),
+                          config_.vertices_count * sizeof(Vertex));
+    cmd_list->buffer_copy(index_buffer_.get_ptr(0),
+                          staging_index_buffer_.get_ptr(0),
+                          config_.indices_count * sizeof(int));
+    app_context_->device().submit_synced(cmd_list.get());
   } else {
     throw std::runtime_error("unsupported field source");
   }
@@ -199,6 +204,7 @@ void Renderable::create_graphics_pipeline() {
   raster_params.depth_write = true;
 
   std::vector<VertexInputBinding> vertex_inputs = {{0, sizeof(Vertex), false}};
+  // TODO: consider using uint8 for colors and normals
   std::vector<VertexInputAttribute> vertex_attribs = {
       {0, 0, BufferFormat::rgb32f, offsetof(Vertex, pos)},
       {1, 0, BufferFormat::rgb32f, offsetof(Vertex, normal)},

@@ -299,7 +299,7 @@ class CompiledTaichiKernel {
 
   std::unique_ptr<CommandList> command_list() const {
     const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
-    
+
     std::unique_ptr<CommandList> cmdlist_ =
         device_->get_compute_stream()->new_command_list();
     for (int i = 0; i < task_attribs.size(); ++i) {

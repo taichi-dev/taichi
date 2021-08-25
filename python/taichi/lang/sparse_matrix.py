@@ -1,20 +1,14 @@
 class SparseMatrix:
-    is_taichi_class = True
-
     def __init__(self, n=None, m=None, sm=None):
         if sm is None:
             self.n = n
             self.m = m if m else n
-            self.matrix = self._create_sparse_matrix()
+            from taichi.lang.impl import get_runtime
+            self.matrix = get_runtime().create_sparse_matrix(n, m)
         else:
             self.n = sm.num_rows()
             self.m = sm.num_cols()
             self.matrix = sm
-
-    def _create_sparse_matrix(self):
-        from taichi.lang.impl import get_runtime
-        sm = get_runtime().create_sparse_matrix(self.n, self.m)
-        return sm
 
     def print(self):
         self.matrix.print()
@@ -23,32 +17,26 @@ class SparseMatrix:
         self.matrix.solve(b)
 
     def __add__(self, other):
-        sm = self._create_sparse_matrix()
         sm = self.matrix + other.matrix
         return SparseMatrix(sm=sm)
 
     def __sub__(self, other):
-        sm = self._create_sparse_matrix()
         sm = self.matrix - other.matrix
         return SparseMatrix(sm=sm)
 
     def __mul__(self, other):
         if isinstance(other, float):
-            sm = self._create_sparse_matrix()
             sm = other * self.matrix
             return SparseMatrix(sm=sm)
         elif isinstance(other, SparseMatrix):
-            sm = self._create_sparse_matrix()
             sm = self.matrix * other.matrix
             return SparseMatrix(sm=sm)
 
     def transpose(self):
-        sm = self._create_sparse_matrix()
         sm = self.matrix.transpose()
         return SparseMatrix(sm=sm)
 
     def __matmul__(self, other):
-        sm = self._create_sparse_matrix()
         sm = self.matrix.matmult(other.matrix)
         return SparseMatrix(sm=sm)
 
@@ -74,8 +62,8 @@ class SparseMatrixBuilder:
     def print(self):
         self.ptr.print()
 
-    def build(self, sm):
-        self.ptr.build(sm.matrix)
+    def build(self, other):
+        self.ptr.build(other.matrix)
 
 
 class SparseMatrixEntry:

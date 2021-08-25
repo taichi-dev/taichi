@@ -1,8 +1,7 @@
+import taichi as ti
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.util import python_scope, to_numpy_type, to_pytorch_type
-
-import taichi as ti
 
 
 class Field:
@@ -205,6 +204,9 @@ class Field:
         self.host_accessors = [
             SNodeHostAccessor(e.ptr.snode()) for e in self.vars
         ]
+
+    def host_access(self, key):
+        return [SNodeHostAccess(e, key) for e in self.host_accessors]
 
 
 class ScalarField(Field):

@@ -3,6 +3,8 @@ import warnings
 from types import FunctionType, MethodType
 
 import numpy as np
+
+import taichi as ti
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
@@ -17,8 +19,6 @@ from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
                               python_scope, taichi_scope, to_pytorch_type)
 from taichi.misc.util import deprecated, get_traceback, warning
 from taichi.snode.fields_builder import FieldsBuilder
-
-import taichi as ti
 
 
 @taichi_scope
@@ -158,9 +158,9 @@ def subscript(value, *indices):
                 for e in value.get_field_members()
             ])
         elif isinstance(value, StructField):
-            return ti.Struct({
-                k: subscript(v, *indices) for k, v in value.items
-            })
+            return ti.Struct(
+                {k: subscript(v, *indices)
+                 for k, v in value.items})
         else:
             return Expr(_ti_core.subscript(var, indices_expr_group))
     elif isinstance(value, AnyArray):

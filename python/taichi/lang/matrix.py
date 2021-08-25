@@ -3,20 +3,22 @@ import numbers
 from collections.abc import Iterable
 
 import numpy as np
+
+import taichi as ti
 from taichi.lang import expr, impl
 from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.expr import Expr
 from taichi.lang.ext_array import AnyArrayAccess
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.ops import cast
 from taichi.lang.types import CompoundType
-from taichi.lang.util import (in_python_scope, is_taichi_class, python_scope,
-                              taichi_scope, to_numpy_type, to_pytorch_type)
+from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
+                              python_scope, taichi_scope, to_numpy_type,
+                              to_pytorch_type)
 from taichi.misc.util import deprecated, warning
-
-import taichi as ti
 
 
 class Matrix(TaichiOperations):
@@ -468,6 +470,16 @@ class Matrix(TaichiOperations):
         else:
             return ([self(i, j) for j in range(self.m)] for i in range(self.n))
 
+    @python_scope
+    def set_entries(self, value):
+        if not isinstance(value, (list, tuple)):
+            value = list(value)
+        if not isinstance(value[0], (list, tuple)):
+            value = [[i] for i in value]
+        for i in range(self.n):
+            for j in range(self.m):
+                self[i, j] = value[i][j]
+
     def empty_copy(self):
         return Matrix.empty(self.n, self.m)
 
@@ -788,7 +800,7 @@ class Matrix(TaichiOperations):
         """
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        return np.array(self.entries).reshape(shape_ext)
+        return np.array(self.value).reshape(shape_ext)
 
     @taichi_scope
     def __ti_repr__(self):
@@ -1352,21 +1364,13 @@ class MatrixField(Field):
     @python_scope
     def __setitem__(self, key, value):
         self.initialize_host_accessors()
-        if not isinstance(value, (list, tuple)):
-            value = list(value)
-        if not isinstance(value[0], (list, tuple)):
-            value = [[i] for i in value]
-        for i in range(self.n):
-            for j in range(self.m):
-                self[key][i, j] = value[i][j]
+        self[key].set_entries(value)
 
     @python_scope
     def __getitem__(self, key):
         self.initialize_host_accessors()
         key = self.pad_key(key)
-        return Matrix.with_entries(
-            self.n, self.m,
-            [SNodeHostAccess(e, key) for e in self.host_accessors])
+        return Matrix.with_entries(self.n, self.m, self.host_access(key))
 
     def __repr__(self):
         # make interactive shell happy, prevent materialization
@@ -1374,19 +1378,19 @@ class MatrixField(Field):
 
 
 class MatrixType(CompoundType):
-
     def __init__(self, n, m, dtype):
         self.n = n
         self.m = m
-        self.dtype = dtype
-
+        self.dtype = cook_dtype(dtype)
 
     def __call__(self, *args):
         if len(args) == 0:
-            raise TaichiSyntaxError("Custom type instances need to be created with an initial value.")
+            raise TaichiSyntaxError(
+                "Custom type instances need to be created with an initial value."
+            )
         elif len(args) == 1:
             # fill a single scalar
-            if isinstance(args[0], numbers.Number):
+            if isinstance(args[0], (numbers.Number, Expr)):
                 return self.scalar_filled(args[0])
             # fill a single vector or matrix
             entries = args[0]
@@ -1394,17 +1398,17 @@ class MatrixType(CompoundType):
             # fill in a concatenation of scalars/vectors/matrices
             entries = []
             for x in args:
-                if isinstance(x, numbers.Number):
-                    entries.append(x)
-                elif isinstance(x, (list, tuple)):
+                if isinstance(x, (list, tuple)):
                     entries += x
                 elif isinstance(x, Matrix):
                     entries += x.entries
+                else:
+                    entries.append(x)
         # convert vector to nx1 matrix
         if isinstance(entries[0], numbers.Number):
             entries = [[e] for e in entries]
         # type cast
-        mat = self.cast(Matrix(entries))
+        mat = self.cast(Matrix(entries, dt=self.dtype))
         return mat
 
     def cast(self, mat, in_place=False):
@@ -1412,10 +1416,19 @@ class MatrixType(CompoundType):
             mat = mat.copy()
         # sanity check shape
         if self.m != mat.m or self.n != mat.n:
-            raise TaichiSyntaxError(f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({mat.n}, {mat.m})")
-        mat.entries = [cast(x, self.dtype) for x in mat.entries]
+            raise TaichiSyntaxError(
+                f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({mat.n}, {mat.m})"
+            )
+        if in_python_scope():
+            mat.entries = [
+                int(x) if self.dtype in ti.integer_types else x
+                for x in mat.entries
+            ]
+        else:
+            # only performs casting in Taichi scope
+            mat.entries = [cast(x, self.dtype) for x in mat.entries]
         return mat
-        
+
     def empty(self):
         """
         Create an empty instance of the given compound type.

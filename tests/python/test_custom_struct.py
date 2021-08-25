@@ -1,7 +1,8 @@
-from pytest import approx
 import numpy as np
+from pytest import approx
 
 import taichi as ti
+
 
 @ti.test()
 def test_struct_member_access():
@@ -39,7 +40,7 @@ def test_struct_member_access():
 @ti.test()
 def test_struct_whole_access():
     n = 32
-    
+
     # also tests implicit cast
     x = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
     y = ti.Struct.field({"a": ti.f32, "b": ti.i32})
@@ -73,7 +74,6 @@ def test_struct_whole_access():
     for i in range(n):
         assert y[i].a == 2 * i
         assert y[i].b == int(1.01 * i)
-    
 
 
 @ti.test()
@@ -81,7 +81,11 @@ def test_struct_fill():
     n = 32
 
     # also tests implicit cast
-    x = ti.Struct.field({"a": ti.f32, "b": ti.types.vector(3, ti.i32)}, shape=(n,))
+    x = ti.Struct.field({
+        "a": ti.f32,
+        "b": ti.types.vector(3, ti.i32)
+    },
+                        shape=(n, ))
 
     def fill_each():
         x.a.fill(1.0)
@@ -108,6 +112,7 @@ def test_struct_fill():
         assert x[i].a == i + 0.5
         assert np.allclose(x[i].b.to_numpy(), int(x[i].a))
 
+
 @ti.test()
 def test_matrix_type():
     n = 32
@@ -130,10 +135,10 @@ def test_matrix_type():
 
     run_taichi_scope()
     for i in range(n):
-        assert np.allclose(x[i].to_numpy(), np.array([i, i, i + 1])) 
+        assert np.allclose(x[i].to_numpy(), np.array([i, i, i + 1]))
     run_python_scope()
     for i in range(n):
-        assert np.allclose(x[i].to_numpy(), np.array([i + 1, i, i])) 
+        assert np.allclose(x[i].to_numpy(), np.array([i + 1, i, i]))
 
 
 @ti.test()
@@ -142,7 +147,7 @@ def test_struct_type():
     vec3f = ti.types.vector(3, float)
     line3f = ti.types.struct(linedir=vec3f, length=float)
     mystruct = ti.types.struct(line=line3f, idx=int)
-    x = mystruct.field(shape=(n,))
+    x = mystruct.field(shape=(n, ))
 
     @ti.kernel
     def run_taichi_scope():
@@ -150,11 +155,17 @@ def test_struct_type():
             v = vec3f(1)
             line = line3f(linedir=v, length=i + 0.5)
             x[i] = mystruct(line=line, idx=i)
-            
+
     def run_python_scope():
         for i in range(n):
             v = vec3f(1)
-            x[i] = ti.Struct({"line": {"linedir": v, "length": i + 0.5}, "idx": i})
+            x[i] = ti.Struct({
+                "line": {
+                    "linedir": v,
+                    "length": i + 0.5
+                },
+                "idx": i
+            })
 
     x.fill(5)
     for i in range(n):
@@ -180,8 +191,8 @@ def test_struct_assign():
     vec3f = ti.types.vector(3, float)
     line3f = ti.types.struct(linedir=vec3f, length=float)
     mystruct = ti.types.struct(line=line3f, idx=int)
-    x = mystruct.field(shape=(n,))
-    y = line3f.field(shape=(n,))
+    x = mystruct.field(shape=(n, ))
+    y = line3f.field(shape=(n, ))
 
     @ti.kernel
     def init():
@@ -193,7 +204,7 @@ def test_struct_assign():
         for i in x:
             x[i].idx = i
             x[i].line = y[i]
-            
+
     def run_python_scope():
         for i in range(n):
             x[i].idx = i

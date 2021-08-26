@@ -54,7 +54,7 @@ std::string SparseMatrix::print() {
   // Note that the code below first converts the sparse matrix into a dense one.
   // https://stackoverflow.com/questions/38553335/how-can-i-print-in-console-a-formatted-sparse-matrix-with-eigen
   std::ostringstream ostr;
-  ostr<< Eigen::MatrixXf(matrix_).format(clean_fmt);
+  ostr << Eigen::MatrixXf(matrix_).format(clean_fmt);
   return ostr.str();
 }
 

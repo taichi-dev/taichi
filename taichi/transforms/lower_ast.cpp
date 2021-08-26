@@ -441,7 +441,6 @@ class LowerAST : public IRVisitor {
     throw IRModified();
   }
 
-
   void visit(FrontendExprStmt *stmt) override {
     auto fctx = make_flatten_ctx();
     stmt->val->flatten(&fctx);

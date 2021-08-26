@@ -82,14 +82,6 @@ class RefCountedPool {
     }
   }
 
-  const std::vector<T> &gc_pool() const {
-    return gc_pool_;
-  }
-
-  std::mutex &mutex() {
-    return gc_pool_lock_;
-  }
-
   T gc_pop_one(T null) {
     if constexpr (sync) {
       gc_pool_lock_.lock();
@@ -107,6 +99,15 @@ class RefCountedPool {
     }
 
     return obj;
+  }
+
+  void gc_remove_all(std::function<void(T)> deallocator) {
+    std::lock_guard<std::mutex> lg(gc_pool_lock_);
+
+    for (T : gc_pool_) {
+      deallocator(gc_pool_);
+    }
+    gc_pool_.clear();
   }
 
  private:

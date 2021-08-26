@@ -409,6 +409,7 @@ if ti.static(1):
     ti.core.end_frontend_range_for()
         '''.format(target, target)
         t = ast.parse(template).body[0]
+        node.iter.args[0].args = build_exprs(ctx, node.iter.args[0].args)
         t.body[0].value = node.iter.args[0]
         cut = len(t.body) - 1
         t.body = t.body[:cut] + node.body + t.body[cut:]

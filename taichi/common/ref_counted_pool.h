@@ -6,7 +6,7 @@
 
 #include "taichi/common/core.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 class RefCount {
  public:
@@ -101,4 +101,4 @@ class RefCountedPool {
   std::mutex gc_pool_lock_;
 };
 
-TI_NAMESPACE_END
+}  // namespace taichi

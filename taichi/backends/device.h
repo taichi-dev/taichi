@@ -203,12 +203,6 @@ class Pipeline {
   virtual ResourceBinder *resource_binder() = 0;
 };
 
-enum class CommandListType { Graphics, Compute };
-
-struct CommandListConfig {
-  CommandListType type;
-};
-
 enum class ImageDimension { d1D, d2D, d3D };
 
 enum class ImageLayout {

@@ -973,7 +973,7 @@ void export_lang(py::module &m) {
 
   m.def("create_sparse_matrix", [](int n, int m) {
     TI_ERROR_IF(!arch_is_cpu(get_current_program().config.arch),
-                "Only CPU arch is supported right now!");
+                "SparseMatrix only supports CPU for now.");
     return SparseMatrix(n, m);
   });
 }

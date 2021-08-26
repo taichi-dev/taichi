@@ -46,7 +46,7 @@ SparseMatrix::SparseMatrix(Eigen::SparseMatrix<float32> &matrix) {
   this->matrix_ = matrix;
 }
 
-SparseMatrix::SparseMatrix(int n, int m) : n_(n), m_(m), matrix_(n, m) {
+SparseMatrix::SparseMatrix(int n, int m) : matrix_(n, m) {
 }
 
 std::string SparseMatrix::print() {

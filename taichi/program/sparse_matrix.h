@@ -52,8 +52,6 @@ class SparseMatrix {
   SparseMatrix transpose();
 
  private:
-  int n_{0};
-  int m_{0};
   Eigen::SparseMatrix<float32> matrix_;
 };
 

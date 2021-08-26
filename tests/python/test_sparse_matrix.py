@@ -9,13 +9,13 @@ def test_sparse_matrix_builder():
     @ti.kernel
     def fill(Abuilder: ti.SparseMatrixBuilder):
         for i, j in ti.ndrange(n, n):
-            Abuilder[i, j] += float(i + j)
+            Abuilder[i, j] += i + j
 
     fill(Abuilder)
     A = Abuilder.build()
     for i in range(n):
         for j in range(n):
-            assert A[i, j] == float(i + j)
+            assert A[i, j] == i + j
 
 
 @ti.test(arch=ti.cpu)
@@ -31,7 +31,8 @@ def test_sparse_matrix_element_access():
     fill(Abuilder)
     A = Abuilder.build()
     for i in range(n):
-        assert A[i, i] == 1.0
+        for j in range(n):
+            assert A[i, i] == int(i == j)
 
 
 @ti.test(arch=ti.cpu)
@@ -53,7 +54,7 @@ def test_sparse_matrix_addition():
     C = A + B
     for i in range(n):
         for j in range(n):
-            assert C[i, j] == float(2.0 * i)
+            assert C[i, j] == 2 * i
 
 
 @ti.test(arch=ti.cpu)
@@ -75,7 +76,7 @@ def test_sparse_matrix_subtraction():
     C = A - B
     for i in range(n):
         for j in range(n):
-            assert C[i, j] == float(2.0 * j)
+            assert C[i, j] == 2 * j
 
 
 @ti.test(arch=ti.cpu)
@@ -93,7 +94,7 @@ def test_sparse_matrix_scalar_multiplication():
     B = A * 3.0
     for i in range(n):
         for j in range(n):
-            assert B[i, j] == float(i + j) * 3.0
+            assert B[i, j] == (i + j) * 3.0
 
 
 @ti.test(arch=ti.cpu)
@@ -133,7 +134,7 @@ def test_sparse_matrix_elementwise_multiplication():
     C = A * B
     for i in range(n):
         for j in range(n):
-            assert C[i, j] == float(i + j) * float(i - j)
+            assert C[i, j] == (i + j) * (i - j)
 
 
 @ti.test(arch=ti.cpu)

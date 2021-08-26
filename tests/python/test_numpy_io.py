@@ -68,8 +68,8 @@ def test_from_numpy_struct():
     f = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
 
     arr_dict = {
-        "a": np.arange(n),
-        "b": np.arange(n) * 2,
+        "a": np.arange(n, dtype=np.int32),
+        "b": np.arange(n, dtype=np.int32) * 2,
     }
 
     f.from_numpy(arr_dict)

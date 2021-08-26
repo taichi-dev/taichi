@@ -51,7 +51,6 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
 
   // Upload Fonts
   {
-    // Use any command queue
     std::unique_ptr<CommandList> cmd_list =
         device.new_command_list({CommandListType::Graphics});
     VkCommandBuffer command_buffer =

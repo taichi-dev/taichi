@@ -9,8 +9,6 @@ from taichi.lang import ops as ops_mod
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.expr import Expr
-from taichi.lang.ext_array import AnyArrayAccess
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.ops import cast
 from taichi.lang.types import CompoundType
@@ -1390,7 +1388,7 @@ class MatrixType(CompoundType):
             )
         elif len(args) == 1:
             # fill a single scalar
-            if isinstance(args[0], (numbers.Number, Expr)):
+            if isinstance(args[0], (numbers.Number, expr.Expr)):
                 return self.scalar_filled(args[0])
             # fill a single vector or matrix
             entries = args[0]

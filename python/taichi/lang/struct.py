@@ -1,10 +1,10 @@
 import copy
 import numbers
 
-from numpy.lib.arraysetops import isin
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix
@@ -264,10 +264,8 @@ class Struct(TaichiOperations):
               name="<Struct>",
               offset=None,
               needs_grad=False,
-              layout=None):
+              layout=Layout.AOS):
 
-        if layout is not None:
-            assert shape is not None, 'layout is useless without shape'
         if shape is None:
             assert offset is None, "shape cannot be None when offset is being set"
 
@@ -298,11 +296,8 @@ class Struct(TaichiOperations):
                     offset
                 ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
-            if layout is None:
-                layout = ti.AOS
-
             dim = len(shape)
-            if layout.soa:
+            if layout == Layout.SOA:
                 for e in field_dict.values():
                     ti.root.dense(impl.index_nd(dim),
                                   shape).place(e, offset=offset)

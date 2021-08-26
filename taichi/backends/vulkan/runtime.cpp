@@ -297,11 +297,9 @@ class CompiledTaichiKernel {
     return ctx_buffer_host_.get();
   }
 
-  std::unique_ptr<CommandList> command_list() const {
+  void command_list(CommandList *cmdlist) const {
     const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
 
-    std::unique_ptr<CommandList> cmdlist_ =
-        device_->get_compute_stream()->new_command_list();
     for (int i = 0; i < task_attribs.size(); ++i) {
       const auto &attribs = task_attribs[i];
       auto vp = pipelines_[i].get();
@@ -312,20 +310,18 @@ class CompiledTaichiKernel {
       for (auto &pair : input_buffers_) {
         binder->rw_buffer(0, uint32_t(pair.first), *pair.second);
       }
-      cmdlist_->bind_pipeline(vp);
-      cmdlist_->bind_resources(binder);
-      cmdlist_->dispatch(group_x);
-      cmdlist_->memory_barrier();
+      cmdlist->bind_pipeline(vp);
+      cmdlist->bind_resources(binder);
+      cmdlist->dispatch(group_x);
+      cmdlist->memory_barrier();
     }
 
     const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
     if (!ti_kernel_attribs_.ctx_attribs.empty()) {
-      cmdlist_->buffer_copy(ctx_buffer_host_->get_ptr(0),
-                            ctx_buffer_->get_ptr(0), ctx_sz);
-      cmdlist_->buffer_barrier(*ctx_buffer_host_);
+      cmdlist->buffer_copy(ctx_buffer_host_->get_ptr(0),
+                           ctx_buffer_->get_ptr(0), ctx_sz);
+      cmdlist->buffer_barrier(*ctx_buffer_host_);
     }
-
-    return std::move(cmdlist_);
   }
 
  private:
@@ -406,11 +402,17 @@ class VkRuntime ::Impl {
       ctx_blitter->host_to_device();
     }
 
-    auto cmdlist = ti_kernel->command_list();
+    if (!current_cmdlist_) {
+      current_cmdlist_ = device_->get_compute_stream()->new_command_list();
+    }
 
-    device_->get_compute_stream()->submit(cmdlist.get());
+    ti_kernel->command_list(current_cmdlist_.get());
+
     if (ctx_blitter) {
+      device_->get_compute_stream()->submit(current_cmdlist_.get());
       ctx_blitter->device_to_host();
+
+      current_cmdlist_ = nullptr;
     }
   }
 
@@ -456,6 +458,8 @@ class VkRuntime ::Impl {
   std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_;
 
   Device *device_;
+
+  std::unique_ptr<CommandList> current_cmdlist_{nullptr};
 
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;
 };

@@ -89,8 +89,8 @@ class RefCountedPool {
   void gc_remove_all(std::function<void(T)> deallocator) {
     std::lock_guard<std::mutex> lg(gc_pool_lock_);
 
-    for (T : gc_pool_) {
-      deallocator(gc_pool_);
+    for (T obj : gc_pool_) {
+      deallocator(obj);
     }
     gc_pool_.clear();
   }

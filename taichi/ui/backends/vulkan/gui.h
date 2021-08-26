@@ -37,6 +37,7 @@ class Gui final : public GuiBase {
                              float old_value,
                              float minimum,
                              float maximum) override;
+  // TODO: consider renaming this?
   virtual glm::vec3 color_edit_3(std::string name,
                                  glm::vec3 old_value) override;
   virtual bool button(std::string text) override;

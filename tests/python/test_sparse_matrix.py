@@ -1,9 +1,8 @@
 import taichi as ti
 
 
-@ti.test(ti.cpu)
+@ti.test(arch=ti.cpu)
 def test_sparse_matrix_builder():
-    ti.init(arch=ti.cpu)
     n = 8
     Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
@@ -19,9 +18,8 @@ def test_sparse_matrix_builder():
             assert A[i, j] == float(i + j)
 
 
-@ti.test(ti.cpu)
+@ti.test(arch=ti.cpu)
 def test_sparse_matrix_element_access():
-    ti.init(arch=ti.cpu)
     n = 8
     Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
@@ -36,9 +34,8 @@ def test_sparse_matrix_element_access():
         assert A[i, i] == 1.0
 
 
-@ti.test(ti.cpu)
+@ti.test(arch=ti.cpu)
 def test_sparse_matrix_addition():
-    ti.init(arch=ti.cpu)
     n = 8
     Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
     Bbuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -59,9 +56,8 @@ def test_sparse_matrix_addition():
             assert C[i, j] == float(2.0 * i)
 
 
-@ti.test(ti.cpu)
+@ti.test(arch=ti.cpu)
 def test_sparse_matrix_subtraction():
-    ti.init(arch=ti.cpu)
     n = 8
     Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
     Bbuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -84,7 +80,6 @@ def test_sparse_matrix_subtraction():
 
 @ti.test(ti.cpu)
 def test_sparse_matrix_scalar_multiplication():
-    ti.init(arch=ti.cpu)
     n = 8
     Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
 

@@ -386,7 +386,6 @@ class Device {
 
   // Each thraed will acquire its own stream
   virtual Stream *get_compute_stream() = 0;
-  virtual Stream *get_graphics_stream() = 0;
 
  private:
   std::unordered_map<DeviceCapability, uint32_t> caps_;
@@ -448,6 +447,8 @@ class GraphicsDevice : public Device {
       const std::vector<VertexInputBinding> &vertex_inputs,
       const std::vector<VertexInputAttribute> &vertex_attrs,
       std::string name = "Pipeline") = 0;
+
+  virtual Stream *get_graphics_stream() = 0;
 
   virtual std::unique_ptr<Surface> create_surface(
       const SurfaceConfig &config) = 0;

@@ -45,13 +45,14 @@ class Gui final : public GuiBase {
 
   void prepare_for_next_frame();
 
-  bool is_empty;
-
   VkRenderPass render_pass() {
     return render_pass_;
   }
 
+  bool is_empty();
+
  private:
+  bool is_empty_;
   AppContext *app_context_;
 
   VkRenderPass render_pass_{VK_NULL_HANDLE};

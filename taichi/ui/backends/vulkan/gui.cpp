@@ -95,7 +95,7 @@ void Gui::prepare_for_next_frame() {
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
-  is_empty = true;
+  is_empty_ = true;
 }
 
 bool Gui::initialized() {
@@ -116,7 +116,7 @@ void Gui::begin(std::string name, float x, float y, float width, float height) {
   ImGui::SetNextWindowPos(ImVec2(abs_x(x), abs_y(y)), ImGuiCond_Once);
   ImGui::SetNextWindowSize(ImVec2(abs_x(width), abs_y(height)), ImGuiCond_Once);
   ImGui::Begin(name.c_str());
-  is_empty = false;
+  is_empty_ = false;
 }
 void Gui::end() {
   if (!initialized()) {
@@ -184,6 +184,10 @@ void Gui::cleanup() {
   ImGui_ImplGlfw_Shutdown();
   cleanup_render_resources();
   ImGui::DestroyContext();
+}
+
+bool Gui::is_empty() {
+  return is_empty_;
 }
 
 }  // namespace vulkan

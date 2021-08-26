@@ -12,11 +12,16 @@ class SpirvSNodeCompiler {
   CompiledSpirvSNode run(IRBuilder *builder,
                          const CompiledSNodeStructs *compiled_structs) {
     CompiledSpirvSNode result;
-    result.root_stype = compute_snode_stype(
-        builder, compiled_structs,
-        compiled_structs->snode_descriptors.find(compiled_structs->root->id)
-            ->second,
-        &result.snode_id_struct_stype_tbl, &result.snode_id_array_stype_tbl);
+    if (compiled_structs->root_size != 0) {
+      result.root_stype = compute_snode_stype(
+          builder, compiled_structs,
+          compiled_structs->snode_descriptors.find(compiled_structs->root->id)
+              ->second,
+          &result.snode_id_struct_stype_tbl, &result.snode_id_array_stype_tbl);
+    } 
+    else { // Use a arbitary default type to skip empty root buffer
+      result.root_stype = builder->i32_type();
+    }
     return result;
   }
 

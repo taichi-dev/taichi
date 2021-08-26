@@ -18,7 +18,7 @@ class SpirvSNodeCompiler {
           compiled_structs->snode_descriptors.find(compiled_structs->root->id)
               ->second,
           &result.snode_id_struct_stype_tbl, &result.snode_id_array_stype_tbl);
-    } else {  // Use a arbitary default type to skip empty root buffer
+    } else {  // Use an arbitary default type to skip empty root buffer
       result.root_stype = builder->i32_type();
     }
     return result;

@@ -314,6 +314,8 @@ class Matrix(TaichiOperations):
         ret = self.entries[self.linearize_entry_id(*args)]
         if isinstance(ret, SNodeHostAccess):
             ret = ret.accessor.getter(*ret.key)
+        elif isinstance(ret, NdarrayHostAccess):
+            ret = ret.getter()
         return ret
 
     def set_entry(self, i, j, e):
@@ -323,6 +325,8 @@ class Matrix(TaichiOperations):
         else:
             if isinstance(self.entries[idx], SNodeHostAccess):
                 self.entries[idx].accessor.setter(e, *self.entries[idx].key)
+            elif isinstance(self.entries[idx], NdarrayHostAccess):
+                self.entries[idx].setter(e)
             else:
                 self.entries[idx] = e
 
@@ -1021,7 +1025,7 @@ class Matrix(TaichiOperations):
 
     @classmethod
     @python_scope
-    def ndarray(cls, n, m, dtype, shape, is_soa=False):
+    def ndarray(cls, n, m, dtype, shape, layout=Layout.AOS):
         """Defines a Taichi ndarray with matrix elements.
 
         Args:
@@ -1029,7 +1033,7 @@ class Matrix(TaichiOperations):
             m (int): Number of columns of the matrix.
             dtype (DataType): Data type of each value.
             shape (Union[int, tuple[int]]): Shape of the ndarray.
-            is_soa (bool, optional): Whether to change the layout from AOS (default) to SOA.
+            layout (Layout, optional): Memory layout, AOS by default.
 
         Example:
             The code below shows how a Taichi ndarray with matrix elements can be declared and defined::
@@ -1038,18 +1042,18 @@ class Matrix(TaichiOperations):
         """
         if isinstance(shape, numbers.Number):
             shape = (shape, )
-        return MatrixNdarray(n, m, dtype, shape, is_soa)
+        return MatrixNdarray(n, m, dtype, shape, layout)
 
     @classmethod
     @python_scope
-    def _Vector_ndarray(cls, n, dtype, shape, is_soa=False):
+    def _Vector_ndarray(cls, n, dtype, shape, layout=Layout.AOS):
         """Defines a Taichi ndarray with vector elements.
 
         Args:
             n (int): Size of the vector.
             dtype (DataType): Data type of each value.
             shape (Union[int, tuple[int]]): Shape of the ndarray.
-            is_soa (bool, optional): Whether to change the layout from AOS (default) to SOA.
+            layout (Layout, optional): Memory layout, AOS by default.
 
         Example:
             The code below shows how a Taichi ndarray with vector elements can be declared and defined::
@@ -1058,7 +1062,7 @@ class Matrix(TaichiOperations):
         """
         if isinstance(shape, numbers.Number):
             shape = (shape, )
-        return VectorNdarray(n, dtype, shape, is_soa)
+        return VectorNdarray(n, dtype, shape, layout)
 
     @staticmethod
     def rows(rows):
@@ -1417,25 +1421,25 @@ class MatrixNdarray(Ndarray):
         m (int): Number of columns of the matrix.
         dtype (DataType): Data type of each value.
         shape (Union[int, tuple[int]]): Shape of the ndarray.
-        is_soa (bool): Whether to change the layout from AOS (default) to SOA.
+        layout (Layout): Memory layout.
     """
-    def __init__(self, n, m, dtype, shape, is_soa):
-        self.is_soa = is_soa
-        arr_shape = (n, m) + shape if is_soa else shape + (n, m)
+    def __init__(self, n, m, dtype, shape, layout):
+        self.layout = layout
+        arr_shape = (n, m) + shape if layout == Layout.SOA else shape + (n, m)
         super().__init__(dtype, arr_shape)
 
     @property
     def n(self):
-        return self.arr.shape[0 if self.is_soa else -2]
+        return self.arr.shape[0 if self.layout == Layout.SOA else -2]
 
     @property
     def m(self):
-        return self.arr.shape[1 if self.is_soa else -1]
+        return self.arr.shape[1 if self.layout == Layout.SOA else -1]
 
     @property
     def shape(self):
         arr_shape = tuple(self.arr.shape)
-        return arr_shape[2:] if self.is_soa else arr_shape[:-2]
+        return arr_shape[2:] if self.layout == Layout.SOA else arr_shape[:-2]
 
     @python_scope
     def __setitem__(self, key, value):
@@ -1449,6 +1453,7 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def __getitem__(self, key):
+        key = () if key is None else (key, ) if isinstance(key, numbers.Number) else tuple(key)
         return Matrix.with_entries(
             self.n, self.m,
             [NdarrayHostAccess(self, key, (i, j)) for i in range(self.n) for j in range(self.m)])
@@ -1464,21 +1469,21 @@ class VectorNdarray(Ndarray):
         n (int): Size of the vector.
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the ndarray.
-        is_soa (bool): Whether to change the layout from AOS (default) to SOA.
+        layout (Layout): Memory layout.
     """
-    def __init__(self, n, dtype, shape, is_soa):
-        self.is_soa = is_soa
-        arr_shape = (n,) + shape if is_soa else shape + (n,)
+    def __init__(self, n, dtype, shape, layout):
+        self.layout = layout
+        arr_shape = (n,) + shape if layout == Layout.SOA else shape + (n,)
         super().__init__(dtype, arr_shape)
 
     @property
     def n(self):
-        return self.arr.shape[0 if self.is_soa else -1]
+        return self.arr.shape[0 if self.layout == Layout.SOA else -1]
 
     @property
     def shape(self):
         arr_shape = tuple(self.arr.shape)
-        return arr_shape[1:] if self.is_soa else arr_shape[:-1]
+        return arr_shape[1:] if self.layout == Layout.SOA else arr_shape[:-1]
 
     @python_scope
     def __setitem__(self, key, value):
@@ -1486,10 +1491,10 @@ class VectorNdarray(Ndarray):
             value = list(value)
         for i in range(self.n):
             self[key][i] = value[i]
-        return self.arr.__setitem__(key, value)
 
     @python_scope
     def __getitem__(self, key):
+        key = () if key is None else (key, ) if isinstance(key, numbers.Number) else tuple(key)
         return Matrix.with_entries(
             self.n, 1,
             [NdarrayHostAccess(self, key, (i,)) for i in range(self.n)])

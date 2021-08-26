@@ -420,11 +420,15 @@ class Matrix(TaichiOperations):
     @property
     @python_scope
     def value(self):
-        assert isinstance(self.entries[0], SNodeHostAccess)
-        ret = self.empty_copy()
-        for i in range(self.n):
-            for j in range(self.m):
-                ret.entries[i * self.m + j] = self(i, j)
+        if isinstance(self.entries[0], SNodeHostAccess):
+            # fetch values from SNodeHostAccessor
+            ret = self.empty_copy()
+            for i in range(self.n):
+                for j in range(self.m):
+                    ret.entries[i * self.m + j] = self(i, j)
+        else:
+            # is local python-scope matrix
+            ret = self.entries
         return ret
 
     # host access & python scope operation

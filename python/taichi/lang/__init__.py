@@ -2,13 +2,12 @@ import functools
 import os
 from copy import deepcopy as _deepcopy
 
-from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, types
 from taichi.lang.enums import Layout
 from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *
-from taichi.lang.kernel_arguments import any_arr, ext_arr, template
+from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, Vector
@@ -16,13 +15,11 @@ from taichi.lang.ndrange import GroupedNDRange, ndrange
 from taichi.lang.ops import *
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
-from taichi.lang.struct import Struct
 from taichi.lang.transformer import TaichiSyntaxError
 from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
-from taichi.misc.util import deprecated
 from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
@@ -64,6 +61,12 @@ wasm = _ti_core.wasm
 vulkan = _ti_core.vulkan
 gpu = [cuda, metal, opengl, vulkan]
 cpu = _ti_core.host_arch()
+kernel_profiler_print = lambda: impl.get_runtime().prog.kernel_profiler_print()
+query_kernel_profiler = lambda name: impl.get_runtime(
+).prog.query_kernel_profiler(name)
+kernel_profiler_clear = lambda: impl.get_runtime().prog.kernel_profiler_clear()
+kernel_profiler_total_time = lambda: impl.get_runtime(
+).prog.kernel_profiler_total_time()
 timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()
 timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
 
@@ -71,110 +74,7 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
 type_factory_ = _ti_core.get_type_factory_instance()
 
 
-@deprecated('kernel_profiler_print()', 'print_kernel_profile_info()')
-def kernel_profiler_print():
-    return print_kernel_profile_info()
-
-
-def print_kernel_profile_info():
-    """Print the elapsed time(min,max,avg) of Taichi kernels on devices.
-    To enable this profiler, set `kernel_profiler=True` in `ti.init`.
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(ti.cpu, kernel_profiler=True)
-        >>> var = ti.field(ti.f32, shape=1)
-
-        >>> @ti.kernel
-        >>> def compute():
-        >>>     var[0] = 1.0
-
-        >>> compute()
-        >>> ti.print_kernel_profile_info() #[1]
-
-    Note:
-        [1] Currently the result of `KernelProfiler` could be incorrect on OpenGL
-        backend due to its lack of support for `ti.sync()`.
-    """
-    impl.get_runtime().prog.print_kernel_profile_info()
-
-
-def query_kernel_profile_info(name):
-    """Query kernel elapsed time(min,avg,max) on devices using the kernel name.
-    To enable this profiler, set `kernel_profiler=True` in `ti.init`.
-
-    Args:
-        name (str): kernel name.
-
-    Returns:
-        struct KernelProfilerQueryResult with member varaibles(counter, min, max, avg)
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(ti.cpu, kernel_profiler=True)
-        >>> n = 1024*1024
-        >>> var = ti.field(ti.f32, shape=n)
-
-        >>> @ti.kernel
-        >>> def fill():
-        >>>     for i in range(n):
-        >>>         var[i] = 0.1
-
-        >>> fill()
-        >>> ti.clear_kernel_profile_info() #[1]
-        >>> for i in range(100):
-        >>>     fill()
-        >>> query_result = ti.query_kernel_profile_info(fill.__name__) #[2]
-        >>> print("kernel excuted times =",query_result.counter)
-        >>> print("kernel elapsed time(min_in_ms) =",query_result.min)
-        >>> print("kernel elapsed time(max_in_ms) =",query_result.max)
-        >>> print("kernel elapsed time(avg_in_ms) =",query_result.avg)
-
-    Note:
-        [1] To get the correct result, query_kernel_profile_info() must be used in conjunction with
-        clear_kernel_profile_info().
-
-        [2] Currently the result of `KernelProfiler` could be incorrect on OpenGL
-        backend due to its lack of support for `ti.sync()`.
-    """
-    return impl.get_runtime().prog.query_kernel_profile_info(name)
-
-
-@deprecated('kernel_profiler_clear()', 'clear_kernel_profile_info()')
-def kernel_profiler_clear():
-    return clear_kernel_profile_info()
-
-
-def clear_kernel_profile_info():
-    """
-    Clear all KernelProfiler records.
-    """
-    impl.get_runtime().prog.clear_kernel_profile_info()
-
-
-def kernel_profiler_total_time():
-    """
-    Get elapsed time of all kernels recorded in KernelProfiler.
-
-    Returns:
-        time (double): total time in second
-    """
-    return impl.get_runtime().prog.kernel_profiler_total_time()
-
-
-@deprecated('memory_profiler_print()', 'print_memory_profile_info()')
 def memory_profiler_print():
-    return print_memory_profile_info()
-
-
-def print_memory_profile_info():
-    """Memory profiling tool for LLVM backends with full sparse support.
-    This profiler is automatically on.
-    """
     impl.get_runtime().materialize()
     impl.get_runtime().prog.print_memory_profiler_info()
 
@@ -196,7 +96,6 @@ def is_extension_supported(arch, ext):
 
 
 def reset():
-    _ti_core.reset_snode_access_flag()
     impl.reset()
     global runtime
     runtime = impl.get_runtime()
@@ -248,21 +147,6 @@ class _SpecialConfig:
         self.gdb_trigger = False
         self.excepthook = False
         self.experimental_real_function = False
-
-
-def prepare_sandbox():
-    '''
-    Returns a temporary directory, which will be automatically deleted on exit.
-    It may contain the taichi_core shared object or some misc. files.
-    '''
-    import atexit
-    import shutil
-    from tempfile import mkdtemp
-    tmp_dir = mkdtemp(prefix='taichi-')
-    atexit.register(shutil.rmtree, tmp_dir)
-    print(f'[Taichi] preparing sandbox at {tmp_dir}')
-    os.mkdir(os.path.join(tmp_dir, 'runtime/'))
-    return tmp_dir
 
 
 def init(arch=None,
@@ -357,8 +241,6 @@ def init(arch=None,
         ti.info(f'Following TI_ARCH setting up for arch={env_arch}')
         arch = _ti_core.arch_from_name(env_arch)
     ti.cfg.arch = adaptive_arch_select(arch)
-    if ti.cfg.arch == cc:
-        _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(ti.cfg.arch)}')
 
     if _test_mode:
@@ -379,9 +261,6 @@ def no_activate(*args):
 
 
 def block_local(*args):
-    if ti.current_cfg().dynamic_index:
-        raise InvalidOperationError(
-            'dynamic_index is not allowed when block_local is turned on.')
     for a in args:
         for v in a.get_field_members():
             _ti_core.insert_snode_access_flag(
@@ -531,33 +410,6 @@ tr = deprecated('ti.tr(a)', 'a.trace()')(Matrix.trace)
 
 
 def Tape(loss, clear_gradients=True):
-    """Return a context manager of :class:`~taichi.lang.tape.TapeImpl`. The
-    context manager would catching all of the callings of functions that
-    decorated by :func:`~taichi.lang.kernel_impl.kernel` or
-    :func:`~taichi.lang.complex_kernel` under `with` statement, and calculate
-    all the partial gradients of a given loss variable by calling all of the
-    gradient function of the callings caught in reverse order while `with`
-    statement ended.
-
-    See also :func:`~taichi.lang.kernel_impl.kernel` and
-    :func:`~taichi.lang.complex_kernel` for gradient functions.
-
-    Args:
-        loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().
-        clear_gradients(Bool): Before `with` body start, clear all gradients or not.
-
-    Returns:
-        :class:`~taichi.lang.tape.TapeImpl`: The context manager.
-
-    Example::
-
-        >>> @ti.kernel
-        >>> def sum(a: ti.float32):
-        >>>     for I in ti.grouped(x):
-        >>>         y[None] += x[I] ** a
-        >>>
-        >>> with ti.Tape(loss = y):
-        >>>     sum(2)"""
     impl.get_runtime().materialize()
     if len(loss.shape) != 0:
         raise RuntimeError(
@@ -576,7 +428,6 @@ def Tape(loss, clear_gradients=True):
 
 
 def clear_all_gradients():
-    """Set all fields' gradients to 0."""
     impl.get_runtime().materialize()
 
     def visit(node):
@@ -628,7 +479,7 @@ def benchmark(func, repeat=300, args=()):
         for i in range(3):
             func(*args)
             ti.sync()
-        ti.clear_kernel_profile_info()
+        ti.kernel_profiler_clear()
         t = time.time()
         for n in range(repeat):
             func(*args)
@@ -811,7 +662,7 @@ def is_arch_supported(arch):
         metal: _ti_core.with_metal,
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
-        vulkan: lambda: _ti_core.with_vulkan(),
+        vulkan: lambda: _ti_core.with_vulkan,
         wasm: lambda: True,
         cpu: lambda: True,
     }
@@ -833,7 +684,7 @@ def supported_archs():
     Returns:
         List[taichi_core.Arch]: All supported archs on the machine.
     """
-    archs = [cpu, cuda, metal, vulkan, opengl, cc]
+    archs = [cpu, cuda, metal, opengl, cc]
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')
@@ -996,13 +847,9 @@ def archs_support_sparse(test, **kwargs):
 def torch_test(func):
     if ti.has_pytorch():
         # OpenGL somehow crashes torch test without a reason, unforturnately
-        return ti.test(exclude=[opengl])(func)
+        return ti.archs_excluding(ti.opengl)(func)
     else:
         return lambda: None
-
-
-def get_host_arch_list():
-    return [_ti_core.host_arch()]
 
 
 # test with host arch only
@@ -1042,7 +889,7 @@ def must_throw(ex):
         def func__(*args, **kwargs):
             finishes = False
             try:
-                func(*args, **kwargs)
+                host_arch_only(func)(*args, **kwargs)
                 finishes = True
             except ex:
                 # throws. test passed
@@ -1060,38 +907,6 @@ def must_throw(ex):
 
 
 def complex_kernel(func):
-    """A decorator for python function that user can customize the gradient
-    function by the decorator generated by
-    :func:`~taichi.lang.complex_kernel_grad` for this function, and could be
-    caught automatically by ti.Tape(). This decorator would not automatically
-    converted the function to a taichi kernel. Users should call other taichi
-    kernels if in need to enable automatic parallel computing.
-
-    Args:
-        fn (Callable): The Python function which needs to be decorated.
-
-    Returns:
-        Callable: The decorated function.
-
-    Example::
-
-        >>> @ti.kernel
-        >>> def multiply(a: ti.float32):
-        >>>     for I in ti.grouped(x):
-        >>>         y[I] = x[I] * a
-        >>>
-        >>> @ti.kernel
-        >>> def multiply_grad(a: ti.float32):
-        >>>     for I in ti.grouped(x):
-        >>>         x.grad[I] = y.grad[I] / a
-        >>>
-        >>> @ti.complex_kernel
-        >>> def foo(a):
-        >>>     multiply(a)
-        >>>
-        >>> @ti.complex_kernel_grad(foo)
-        >>> def foo_grad(a):
-        >>>     multiply_grad(a)"""
     def decorated(*args, **kwargs):
         impl.get_runtime().inside_complex_kernel = True
         if impl.get_runtime().target_tape:
@@ -1106,15 +921,6 @@ def complex_kernel(func):
 
 
 def complex_kernel_grad(primal):
-    """Generate the gradient decorator for a given function decorated by
-    :func:`~taichi.lang.complex_kernel`. See :func:`~taichi.lang.complex_kernel`
-    to get further information and examples.
-
-    Args:
-        primal (Callable): The primal function for the decorator.
-
-    Returns:
-        Callable: The decorator."""
     def decorator(func):
         def decorated(*args, **kwargs):
             func(*args, **kwargs)

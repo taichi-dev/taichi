@@ -16,7 +16,7 @@ def test_sparse_matrix_builder():
     A = Abuilder.build()
     for i in range(n):
         for j in range(n):
-            assert A.get_ele(i, j) == float(i + j)
+            assert A[i, j] == float(i + j)
 
 
 @ti.test(ti.cpu)
@@ -33,7 +33,7 @@ def test_sparse_matrix_element_access():
     fill(Abuilder)
     A = Abuilder.build()
     for i in range(n):
-        assert A.get_ele(i, i) == 1.0
+        assert A[i, i] == 1.0
 
 
 @ti.test(ti.cpu)
@@ -56,7 +56,7 @@ def test_sparse_matrix_addition():
     C = A + B
     for i in range(n):
         for j in range(n):
-            assert C.get_ele(i, j) == float(2.0 * i)
+            assert C[i, j] == float(2.0 * i)
 
 
 @ti.test(ti.cpu)
@@ -79,7 +79,7 @@ def test_sparse_matrix_subtraction():
     C = A - B
     for i in range(n):
         for j in range(n):
-            assert C.get_ele(i, j) == float(2.0 * j)
+            assert C[i, j] == float(2.0 * j)
 
 
 @ti.test(ti.cpu)
@@ -98,7 +98,7 @@ def test_sparse_matrix_scalar_multiplication():
     B = A * 3.0
     for i in range(n):
         for j in range(n):
-            assert B.get_ele(i, j) == float(i + j) * 3.0
+            assert B[i, j] == float(i + j) * 3.0
 
 
 @ti.test(ti.cpu)
@@ -117,7 +117,7 @@ def test_sparse_matrix_transpose():
     B = A.transpose()
     for i in range(n):
         for j in range(n):
-            assert B.get_ele(i, j) == A.get_ele(j, i)
+            assert B[i, j] == A[j, i]
 
 
 @ti.test(ti.cpu)
@@ -140,7 +140,7 @@ def test_sparse_matrix_elementwise_multiplication():
     C = A * B
     for i in range(n):
         for j in range(n):
-            assert C.get_ele(i, j) == float(i + j) * float(i - j)
+            assert C[i, j] == float(i + j) * float(i - j)
 
 
 @ti.test(ti.cpu)
@@ -161,7 +161,7 @@ def test_sparse_matrix_multiplication():
     A = Abuilder.build()
     B = Bbuilder.build()
     C = A @ B
-    assert C.get_ele(0, 0) == 1.0
-    assert C.get_ele(0, 1) == 0.0
-    assert C.get_ele(1, 0) == 2.0
-    assert C.get_ele(1, 1) == -1.0
+    assert C[0, 0] == 1.0
+    assert C[0, 1] == 0.0
+    assert C[1, 0] == 2.0
+    assert C[1, 1] == -1.0

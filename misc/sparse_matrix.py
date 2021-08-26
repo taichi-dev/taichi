@@ -57,4 +57,4 @@ print(">>> Elment-wise Multiplication")
 H = E * A
 print(H)
 
-print(f">>> Element Access: A[0,0] = {A.get_ele(0,0)}")
+print(f">>> Element Access: A[0,0] = {A[0,0]}")

@@ -10,9 +10,6 @@ class SparseMatrix:
             self.m = sm.num_cols()
             self.matrix = sm
 
-    def solve(self, b):
-        self.matrix.solve(b)
-
     def __add__(self, other):
         assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}), ({other.n}, {other.m})"
         sm = self.matrix + other.matrix
@@ -40,8 +37,8 @@ class SparseMatrix:
         sm = self.matrix.matmult(other.matrix)
         return SparseMatrix(sm=sm)
 
-    def get_ele(self, i, j):
-        return self.matrix.get_coeff(i, j)
+    def __getitem__(self, item):
+        return self.matrix.get_coeff(item[0], item[1])
 
     def __str__(self):
         return self.matrix.print()
@@ -61,9 +58,6 @@ class SparseMatrixBuilder:
 
     def print_triplets(self):
         self.ptr.print_triplets()
-
-    def print(self):
-        self.ptr.print()
 
     def build(self):
         sm = self.ptr.build()

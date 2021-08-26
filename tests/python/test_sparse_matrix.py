@@ -78,7 +78,7 @@ def test_sparse_matrix_subtraction():
             assert C[i, j] == float(2.0 * j)
 
 
-@ti.test(ti.cpu)
+@ti.test(arch=ti.cpu)
 def test_sparse_matrix_scalar_multiplication():
     n = 8
     Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -96,9 +96,8 @@ def test_sparse_matrix_scalar_multiplication():
             assert B[i, j] == float(i + j) * 3.0
 
 
-@ti.test(ti.cpu)
+@ti.test(arch=ti.cpu)
 def test_sparse_matrix_transpose():
-    ti.init(arch=ti.cpu)
     n = 8
     Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
@@ -115,9 +114,8 @@ def test_sparse_matrix_transpose():
             assert B[i, j] == A[j, i]
 
 
-@ti.test(ti.cpu)
+@ti.test(arch=ti.cpu)
 def test_sparse_matrix_elementwise_multiplication():
-    ti.init(arch=ti.cpu)
     n = 8
     Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
     Bbuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -138,9 +136,8 @@ def test_sparse_matrix_elementwise_multiplication():
             assert C[i, j] == float(i + j) * float(i - j)
 
 
-@ti.test(ti.cpu)
+@ti.test(arch=ti.cpu)
 def test_sparse_matrix_multiplication():
-    ti.init(arch=ti.cpu)
     n = 2
     Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
     Bbuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)

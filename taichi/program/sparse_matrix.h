@@ -25,7 +25,7 @@ class SparseMatrixBuilder {
   std::vector<uint32> data_;
   int n_{0};
   int m_{0};
-  uint64 max_num_triplets_;
+  uint64 max_num_triplets_{0};
   bool built_{false};
 };
 

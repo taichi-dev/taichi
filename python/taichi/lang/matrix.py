@@ -1453,10 +1453,12 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def __getitem__(self, key):
-        key = () if key is None else (key, ) if isinstance(key, numbers.Number) else tuple(key)
-        return Matrix.with_entries(
-            self.n, self.m,
-            [NdarrayHostAccess(self, key, (i, j)) for i in range(self.n) for j in range(self.m)])
+        key = () if key is None else (
+            key, ) if isinstance(key, numbers.Number) else tuple(key)
+        return Matrix.with_entries(self.n, self.m, [
+            NdarrayHostAccess(self, key, (i, j)) for i in range(self.n)
+            for j in range(self.m)
+        ])
 
     def __repr__(self):
         return f'<{self.n}x{self.m} ti.Matrix.ndarray>'
@@ -1473,7 +1475,7 @@ class VectorNdarray(Ndarray):
     """
     def __init__(self, n, dtype, shape, layout):
         self.layout = layout
-        arr_shape = (n,) + shape if layout == Layout.SOA else shape + (n,)
+        arr_shape = (n, ) + shape if layout == Layout.SOA else shape + (n, )
         super().__init__(dtype, arr_shape)
 
     @property
@@ -1494,10 +1496,11 @@ class VectorNdarray(Ndarray):
 
     @python_scope
     def __getitem__(self, key):
-        key = () if key is None else (key, ) if isinstance(key, numbers.Number) else tuple(key)
+        key = () if key is None else (
+            key, ) if isinstance(key, numbers.Number) else tuple(key)
         return Matrix.with_entries(
             self.n, 1,
-            [NdarrayHostAccess(self, key, (i,)) for i in range(self.n)])
+            [NdarrayHostAccess(self, key, (i, )) for i in range(self.n)])
 
     def __repr__(self):
         return f'<{self.n} ti.Vector.ndarray>'

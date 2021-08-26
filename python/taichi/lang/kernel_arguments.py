@@ -56,17 +56,24 @@ class ArgAnyArray:
         self.layout = layout
 
     def extract(self, x):
-        from taichi.lang.ndarray import ScalarNdarray, Ndarray
-        from taichi.lang.matrix import VectorNdarray, MatrixNdarray
+        from taichi.lang.matrix import MatrixNdarray, VectorNdarray
+        from taichi.lang.ndarray import Ndarray, ScalarNdarray
         element_dim = len(self.element_shape)
         if isinstance(x, Ndarray):
             if isinstance(x, ScalarNdarray) and element_dim != 0:
                 raise ValueError("Invalid argument passed to ti.any_arr()")
-            if isinstance(x, VectorNdarray) and (element_dim != 1 or self.element_shape[0] != x.n or self.layout != x.layout):
+            if isinstance(x, VectorNdarray) and (element_dim != 1 or
+                                                 self.element_shape[0] != x.n
+                                                 or self.layout != x.layout):
                 raise ValueError("Invalid argument passed to ti.any_arr()")
-            if isinstance(x, MatrixNdarray) and (element_dim != 2 or self.element_shape[0] != x.n or self.element_shape[1] != x.m or self.layout != x.layout):
+            if isinstance(x,
+                          MatrixNdarray) and (element_dim != 2
+                                              or self.element_shape[0] != x.n
+                                              or self.element_shape[1] != x.m
+                                              or self.layout != x.layout):
                 raise ValueError("Invalid argument passed to ti.any_arr()")
-            return x.dtype, len(x.shape) + element_dim, self.element_shape, self.layout
+            return x.dtype, len(
+                x.shape) + element_dim, self.element_shape, self.layout
         shape = tuple(x.shape)
         if len(shape) < element_dim:
             raise ValueError("Invalid argument passed to ti.any_arr()")

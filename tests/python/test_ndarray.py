@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-import taichi as ti
 
+import taichi as ti
 
 # properties
 

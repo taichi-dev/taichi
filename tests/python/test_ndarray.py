@@ -115,7 +115,7 @@ def test_ndarray_2d():
 
 @pytest.mark.parametrize('layout', layouts)
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-@ti.test()
+@ti.test(exclude=ti.opengl)
 def test_matrix_ndarray_python_scope(layout):
     a = ti.Matrix.ndarray(2, 2, ti.i32, 5, layout=layout)
     for i in range(5):
@@ -130,7 +130,26 @@ def test_matrix_ndarray_python_scope(layout):
 
 @pytest.mark.parametrize('layout', layouts)
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-@ti.test()
+@ti.test(exclude=ti.opengl)
+def test_matrix_ndarray_taichi_scope(layout):
+    @ti.kernel
+    def func(a: ti.any_arr(element_shape=(2, 2), layout=layout)):
+        for i in range(5):
+            for j, k in ti.ndrange(2, 2):
+                a[i][j, k] = j * j + k * k
+
+    m = ti.Matrix.ndarray(2, 2, ti.i32, 5, layout=layout)
+    func(m)
+    assert m[0][0, 0] == 0
+    assert m[1][0, 1] == 1
+    assert m[2][1, 0] == 1
+    assert m[3][1, 1] == 2
+    assert m[4][0, 1] == 1
+
+
+@pytest.mark.parametrize('layout', layouts)
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
 def test_vector_ndarray_python_scope(layout):
     a = ti.Vector.ndarray(10, ti.i32, 5, layout=layout)
     for i in range(5):
@@ -141,3 +160,22 @@ def test_vector_ndarray_python_scope(layout):
     assert a[2][1] == 1
     assert a[3][4] == 4
     assert a[4][9] == 9
+
+
+@pytest.mark.parametrize('layout', layouts)
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
+def test_vector_ndarray_taichi_scope(layout):
+    @ti.kernel
+    def func(a: ti.any_arr(element_shape=(10, ), layout=layout)):
+        for i in range(5):
+            for j in range(4):
+                a[i][j * j] = j * j
+
+    v = ti.Vector.ndarray(10, ti.i32, 5, layout=layout)
+    func(v)
+    assert v[0][6] == 0
+    assert v[1][0] == 0
+    assert v[2][1] == 1
+    assert v[3][4] == 4
+    assert v[4][9] == 9

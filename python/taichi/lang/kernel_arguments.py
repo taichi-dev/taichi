@@ -41,6 +41,7 @@ class ArgAnyArray:
     """Type annotation for arbitrary arrays, including external arrays and Taichi ndarrays.
 
     For external arrays, we can treat it as a Taichi field with Vector or Matrix elements by specifying element shape and layout.
+    For Taichi vector/matrix ndarrays, we need to specify element shape and layout for type checking.
 
     Args:
         element_shape (Tuple[Int], optional): () if scalar elements (default), (n) if vector elements, and (n, m) if matrix elements.
@@ -55,8 +56,18 @@ class ArgAnyArray:
         self.layout = layout
 
     def extract(self, x):
-        shape = tuple(x.shape)
+        from taichi.lang.ndarray import ScalarNdarray, Ndarray
+        from taichi.lang.matrix import VectorNdarray, MatrixNdarray
         element_dim = len(self.element_shape)
+        if isinstance(x, Ndarray):
+            if isinstance(x, ScalarNdarray) and element_dim != 0:
+                raise ValueError("Invalid argument passed to ti.any_arr()")
+            if isinstance(x, VectorNdarray) and (element_dim != 1 or self.element_shape[0] != x.n or self.layout != x.layout):
+                raise ValueError("Invalid argument passed to ti.any_arr()")
+            if isinstance(x, MatrixNdarray) and (element_dim != 2 or self.element_shape[0] != x.n or self.element_shape[1] != x.m or self.layout != x.layout):
+                raise ValueError("Invalid argument passed to ti.any_arr()")
+            return x.dtype, len(x.shape) + element_dim, self.element_shape, self.layout
+        shape = tuple(x.shape)
         if len(shape) < element_dim:
             raise ValueError("Invalid argument passed to ti.any_arr()")
         if element_dim > 0:

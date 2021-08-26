@@ -3,15 +3,12 @@ class SparseMatrix:
         if sm is None:
             self.n = n
             self.m = m if m else n
-            from taichi.lang.impl import get_runtime
-            self.matrix = get_runtime().create_sparse_matrix(n, m)
+            from taichi.core.util import ti_core as _ti_core
+            self.matrix = _ti_core.create_sparse_matrix(n, m)
         else:
             self.n = sm.num_rows()
             self.m = sm.num_cols()
             self.matrix = sm
-
-    def print(self):
-        self.matrix.print()
 
     def solve(self, b):
         self.matrix.solve(b)
@@ -54,8 +51,8 @@ class SparseMatrixBuilder:
     def __init__(self, n, m=None, max_num_triplets=0):
         self.n = n
         self.m = m if m else n
-        from taichi.lang.impl import get_runtime
-        self.ptr = get_runtime().create_sparse_matrix_builder(
+        from taichi.core.util import ti_core as _ti_core
+        self.ptr = _ti_core.create_sparse_matrix_builder(
             n, m, max_num_triplets)
         print(f"Creating a sparse matrix of size ({n}, {m})...")
 

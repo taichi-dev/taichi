@@ -51,8 +51,6 @@ class SparseMatrix {
   SparseMatrix matmult(const SparseMatrix &sm);
   SparseMatrix transpose();
 
-  void solve(SparseMatrix *);
-
  private:
   int n_{0};
   int m_{0};

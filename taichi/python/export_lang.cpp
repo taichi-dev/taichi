@@ -245,12 +245,8 @@ void export_lang(py::module &m) {
       .def("make_aot_module_builder", &Program::make_aot_module_builder)
       .def("get_snode_tree_size", &Program::get_snode_tree_size)
       .def("get_snode_root", &Program::get_snode_root,
-           py::return_value_policy::reference)
-      .def("create_sparse_matrix_builder",
-           &Program::create_sparse_matrix_builder,
-           py::return_value_policy::reference)
-      .def("create_sparse_matrix", &Program::create_sparse_matrix,
            py::return_value_policy::reference);
+
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
@@ -955,6 +951,11 @@ void export_lang(py::module &m) {
       .def("build", &SparseMatrixBuilder::build)
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 
+  m.def("create_sparse_matrix_builder",[](int n, int m, uint64 max_num_entries){
+        TI_ERROR_IF(!arch_is_cpu(get_current_program().config.arch), "Only CPU arch is supported right now!");
+        return SparseMatrixBuilder(n, m, max_num_entries);});
+
+
   py::class_<SparseMatrix>(m, "SparseMatrix")
       .def("print", &SparseMatrix::print)
       .def(py::self + py::self, py::return_value_policy::reference_internal)
@@ -967,8 +968,11 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference_internal)
       .def("get_coeff", &SparseMatrix::get_coeff)
       .def("num_rows", &SparseMatrix::num_rows)
-      .def("num_cols", &SparseMatrix::num_cols)
-      .def("solve", &SparseMatrix::solve);
+      .def("num_cols", &SparseMatrix::num_cols);
+
+  m.def("create_sparse_matrix", [](int n, int m){
+        TI_ERROR_IF(!arch_is_cpu(get_current_program().config.arch), "Only CPU arch is supported right now!");
+        return SparseMatrix(n, m);});
 }
 
 TI_NAMESPACE_END

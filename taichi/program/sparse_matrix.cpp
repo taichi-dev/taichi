@@ -109,26 +109,5 @@ float32 SparseMatrix::get_coeff(int row, int col) {
   return matrix_.coeff(row, col);
 }
 
-void SparseMatrix::solve(SparseMatrix *b_) {
-  using namespace Eigen;
-
-  VectorXf x(n_), b(m_);
-
-  b.setZero();
-
-  for (int k = 0; k < b_->matrix_.outerSize(); ++k)
-    for (Eigen::SparseMatrix<float32>::InnerIterator it(b_->matrix_, k); it;
-         ++it) {
-      b[it.row()] = it.value();
-    }
-
-  x = Eigen::MatrixXf(matrix_).ldlt().solve(b);
-
-  Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
-  // Note that the code below first converts the sparse matrix into a dense one.
-  // https://stackoverflow.com/questions/38553335/how-can-i-print-in-console-a-formatted-sparse-matrix-with-eigen
-  std::cout << Eigen::MatrixXf(x).format(clean_fmt) << std::endl;
-}
-
 }  // namespace lang
 }  // namespace taichi

@@ -230,17 +230,6 @@ SNode *Program::get_snode_root(int tree_id) {
   return snode_trees_[tree_id]->root();
 }
 
-SparseMatrixBuilder
-Program::create_sparse_matrix_builder(int n, int m, uint64 max_num_entries) {
-  TI_ERROR_IF(!arch_is_cpu(config.arch), "Only CPU arch is supported right now!");
-  return SparseMatrixBuilder(n, m, max_num_entries);
-}
-
-SparseMatrix Program::create_sparse_matrix(int n, int m) {
-  TI_ERROR_IF(!arch_is_cpu(config.arch), "Only CPU arch is supported right now!");
-  return SparseMatrix(n, m);
-}
-
 void Program::materialize_snode_tree(SNodeTree *tree) {
   auto *const root = tree->root();
   if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {

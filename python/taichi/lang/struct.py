@@ -3,8 +3,8 @@ import numbers
 
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
-from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.enums import Layout
+from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix

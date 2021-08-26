@@ -140,7 +140,8 @@ class JITSessionCPU : public JITSession {
         cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
             DL.getGlobalPrefix())));
     auto *thread_safe_context = get_current_program()
-                                    .get_llvm_context(host_arch())
+                                    .get_llvm_program_impl()
+                                    ->get_llvm_context(host_arch())
                                     ->get_this_thread_thread_safe_context();
     cantFail(compile_layer.add(dylib, llvm::orc::ThreadSafeModule(
                                           std::move(M), *thread_safe_context)));

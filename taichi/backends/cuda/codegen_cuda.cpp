@@ -40,7 +40,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
     }
 
-    auto jit = kernel->program->llvm_context_device->jit.get();
+    auto jit = kernel->program->get_llvm_program_impl()
+                   ->get_llvm_context(Arch::cuda)
+                   ->jit.get();
     auto cuda_module =
         jit->add_module(std::move(module), kernel->program->config.gpu_max_reg);
 

@@ -292,11 +292,13 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
                          IRNode *ir,
                          std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
-    : LLVMModuleBuilder(module == nullptr
-                            ? kernel->program->get_llvm_context(kernel->arch)
+    : LLVMModuleBuilder(
+          module == nullptr ? kernel->program->get_llvm_program_impl()
+                                  ->get_llvm_context(kernel->arch)
                                   ->clone_struct_module()
                             : std::move(module),
-                        kernel->program->get_llvm_context(kernel->arch)),
+          kernel->program->get_llvm_program_impl()->get_llvm_context(
+              kernel->arch)),
       kernel(kernel),
       ir(ir),
       prog(kernel->program) {
@@ -1914,7 +1916,11 @@ void CodeGenLLVM::visit(ClearListStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
-  create_call(stmt->func_name, {get_context()});
+  std::vector<llvm::Value *> args{get_context()};
+  for (auto s : stmt->args) {
+    args.push_back(llvm_val[s]);
+  }
+  llvm_val[stmt] = create_call(stmt->func_name, args);
 }
 
 void CodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
@@ -2021,11 +2027,7 @@ FunctionCreationGuard CodeGenLLVM::get_function_creation_guard(
 }
 
 void CodeGenLLVM::initialize_context() {
-  if (kernel->arch == Arch::cuda) {
-    tlctx = prog->llvm_context_device.get();
-  } else {
-    tlctx = prog->llvm_context_host.get();
-  }
+  tlctx = prog->get_llvm_program_impl()->get_llvm_context(kernel->arch);
   llvm_context = tlctx->get_this_thread_context();
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
 }

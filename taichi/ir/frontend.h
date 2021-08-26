@@ -167,6 +167,8 @@ inline Expr LoopUnique(const Expr &input, const std::vector<SNode *> &covers) {
 
 void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field);
 
+void reset_snode_access_flag();
+
 // Begin: legacy frontend constructs
 
 class If {

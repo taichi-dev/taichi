@@ -2,6 +2,7 @@ import taichi as ti
 
 
 def test_binding():
+    ti.init()
     taichi_lang = ti.core
     print(taichi_lang.BinaryOpType.mul)
     one = taichi_lang.make_const_expr_i32(1)

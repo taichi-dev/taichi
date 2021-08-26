@@ -323,6 +323,33 @@ class TernaryOpExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
+class InternalFuncCallExpression : public Expression {
+ public:
+  std::string func_name;
+  std::vector<Expr> args;
+
+  InternalFuncCallExpression(const std::string &func_name,
+                             const std::vector<Expr> &args_)
+      : func_name(func_name) {
+    for (auto &a : args_) {
+      args.push_back(load_if_ptr(a));
+    }
+  }
+
+  std::string serialize() override {
+    std::string args_str;
+    for (int i = 0; i < args.size(); i++) {
+      if (i != 0) {
+        args_str += ", ";
+      }
+      args_str += args[i]->serialize();
+    }
+    return fmt::format("internal call {}({})", func_name, args_str);
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
 class ExternalFuncCallExpression : public Expression {
  public:
   void *func;
@@ -437,19 +464,23 @@ class GlobalPtrExpression : public Expression {
   }
 };
 
-class GlobalTensorElementExpression : public Expression {
+class TensorElementExpression : public Expression {
  public:
   Expr var;
   ExprGroup indices;
-  int cols{0};
-  bool is_aos{false};
+  std::vector<int> shape;
+  int layout_stride{1};
 
-  GlobalTensorElementExpression(const Expr &var,
-                                const ExprGroup &indices,
-                                int cols,
-                                bool is_aos)
-      : var(var), indices(indices), cols(cols), is_aos(is_aos) {
+  TensorElementExpression(const Expr &var,
+                          const ExprGroup &indices,
+                          const std::vector<int> &shape,
+                          int layout_stride)
+      : var(var), indices(indices), shape(shape), layout_stride(layout_stride) {
   }
+
+  bool is_local_tensor() const;
+
+  bool is_global_tensor() const;
 
   std::string serialize() override {
     std::string s = fmt::format("{}[", var.serialize());
@@ -458,35 +489,14 @@ class GlobalTensorElementExpression : public Expression {
       if (i + 1 < (int)indices.size())
         s += ", ";
     }
-    s += "]";
-    s += " (col=" + std::to_string(cols) + (is_aos ? ", AOS)" : ", SOA)");
-    return s;
-  }
-
-  void flatten(FlattenContext *ctx) override;
-
-  bool is_lvalue() const override {
-    return true;
-  }
-};
-
-class LocalTensorElementExpression : public Expression {
- public:
-  Expr var;
-  ExprGroup indices;
-
-  LocalTensorElementExpression(const Expr &var, const ExprGroup &indices)
-      : var(var), indices(indices) {
-  }
-
-  std::string serialize() override {
-    std::string s = fmt::format("{}[", var.serialize());
-    for (int i = 0; i < (int)indices.size(); i++) {
-      s += indices.exprs[i]->serialize();
-      if (i + 1 < (int)indices.size())
+    s += "] (";
+    for (int i = 0; i < (int)shape.size(); i++) {
+      s += std::to_string(shape[i]);
+      if (i + 1 < (int)shape.size())
         s += ", ";
     }
-    s += "]";
+    s += ", layout_stride = " + std::to_string(layout_stride);
+    s += ")";
     return s;
   }
 

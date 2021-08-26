@@ -1,9 +1,11 @@
+cmake
 colorama
+coverage
 numpy
 Pillow
 pybind11
 GitPython
-yapf
+yapf==0.31.0
 distro
 autograd
 astor
@@ -12,5 +14,4 @@ pytest
 pytest-xdist
 pytest-rerunfailures
 pytest-cov
-coverage
 torch

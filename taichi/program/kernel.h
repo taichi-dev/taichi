@@ -6,10 +6,6 @@
 #include "taichi/program/arch.h"
 #include "taichi/program/callable.h"
 
-#define TI_RUNTIME_HOST
-#include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
-
 TLANG_NAMESPACE_BEGIN
 
 class Program;

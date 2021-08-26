@@ -1,6 +1,7 @@
 from taichi.core.util import ti_core as _ti_core
+from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
-from taichi.lang.ext_array import ExtArray
+from taichi.lang.ext_array import AnyArray, ExtArray
 from taichi.lang.snode import SNode
 from taichi.lang.util import cook_dtype, to_taichi_type
 
@@ -37,9 +38,36 @@ Example::
 
 
 class ArgAnyArray:
-    """Type annotation for arbitrary arrays, including external arrays and Taichi ndarrays."""
+    """Type annotation for arbitrary arrays, including external arrays and Taichi ndarrays.
+
+    For external arrays, we can treat it as a Taichi field with Vector or Matrix elements by specifying element shape and layout.
+
+    Args:
+        element_shape (Tuple[Int], optional): () if scalar elements (default), (n) if vector elements, and (n, m) if matrix elements.
+        layout (Layout, optional): Memory layout, AOS by default.
+    """
+    def __init__(self, element_shape=(), layout=Layout.AOS):
+        if len(element_shape) > 2:
+            raise ValueError(
+                "Only scalars, vectors, and matrices are allowed as elements of ti.any_arr()"
+            )
+        self.element_shape = element_shape
+        self.layout = layout
+
     def extract(self, x):
-        return to_taichi_type(x.dtype), len(x.shape)
+        shape = tuple(x.shape)
+        element_dim = len(self.element_shape)
+        if len(shape) < element_dim:
+            raise ValueError("Invalid argument passed to ti.any_arr()")
+        if element_dim > 0:
+            if self.layout == Layout.SOA:
+                if shape[:element_dim] != self.element_shape:
+                    raise ValueError("Invalid argument passed to ti.any_arr()")
+            else:
+                if shape[-element_dim:] != self.element_shape:
+                    raise ValueError("Invalid argument passed to ti.any_arr()")
+        return to_taichi_type(
+            x.dtype), len(shape), self.element_shape, self.layout
 
 
 any_arr = ArgAnyArray
@@ -99,6 +127,13 @@ def decl_ext_arr_arg(dtype, dim):
     dtype = cook_dtype(dtype)
     arg_id = _ti_core.decl_arg(dtype, True)
     return ExtArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id))
+
+
+def decl_any_arr_arg(dtype, dim, element_shape, layout):
+    dtype = cook_dtype(dtype)
+    arg_id = _ti_core.decl_arg(dtype, True)
+    return AnyArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id),
+                    element_shape, layout)
 
 
 def decl_scalar_ret(dtype):

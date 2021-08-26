@@ -20,6 +20,10 @@ i32 refresh_counter(Context *context) {
   return 0;
 }
 
+i32 test_internal_func_args(Context *context, float32 i, float32 j, int32 k) {
+  return static_cast<int>((i + j) * k);
+}
+
 i32 test_stack(Context *context) {
   auto stack = new u8[132];
   stack_push(stack, 16, 4);

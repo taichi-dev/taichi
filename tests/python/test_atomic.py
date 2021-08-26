@@ -4,11 +4,6 @@ from taichi import approx
 n = 128
 
 
-def ti_support_atomic_more_than_add(test):
-    return ti.archs_excluding(ti.vulkan)(
-        test)  # TODO(changyu): support atomicSub/Mul/Min/Max on Vulkan backend
-
-
 def run_atomic_add_global_case(vartype, step, valproc=lambda x: x):
     x = ti.field(vartype)
     y = ti.field(vartype)
@@ -40,19 +35,19 @@ def run_atomic_add_global_case(vartype, step, valproc=lambda x: x):
         assert valproc(ya) == e
 
 
-@ti.all_archs
+@ti.test()
 def test_atomic_add_global_i32():
     run_atomic_add_global_case(ti.i32, 42)
 
 
-@ti.all_archs
+@ti.test()
 def test_atomic_add_global_f32():
     run_atomic_add_global_case(ti.f32,
                                4.2,
                                valproc=lambda x: approx(x, rel=1e-5))
 
 
-@ti.all_archs
+@ti.test()
 def test_atomic_add_expr_evaled():
     c = ti.field(ti.i32)
     step = 42
@@ -70,7 +65,7 @@ def test_atomic_add_expr_evaled():
     assert c[None] == n * step
 
 
-@ti.all_archs
+@ti.test()
 def test_atomic_add_demoted():
     # Ensure demoted atomics do not crash the program.
     x = ti.field(ti.i32)
@@ -94,7 +89,7 @@ def test_atomic_add_demoted():
         assert y[i] == i + step
 
 
-@ti.all_archs
+@ti.test()
 def test_atomic_add_with_local_store_simplify1():
     # Test for the following LocalStoreStmt simplification case:
     #
@@ -127,7 +122,7 @@ def test_atomic_add_with_local_store_simplify1():
         assert y[i] == i
 
 
-@ti.all_archs
+@ti.test()
 def test_atomic_add_with_local_store_simplify2():
     # Test for the following LocalStoreStmt simplification case:
     #
@@ -153,7 +148,7 @@ def test_atomic_add_with_local_store_simplify2():
         assert x[i] == i
 
 
-@ti.all_archs
+@ti.test()
 def test_atomic_add_with_if_simplify():
     # Make sure IfStmt simplification doesn't move stmts depending on the result
     # of atomic_add()
@@ -187,7 +182,7 @@ def test_atomic_add_with_if_simplify():
         assert x[i] == expect
 
 
-@ti.all_archs
+@ti.test()
 def test_local_atomic_with_if():
     ret = ti.field(dtype=ti.i32, shape=())
 
@@ -202,7 +197,7 @@ def test_local_atomic_with_if():
     assert ret[None] == 1
 
 
-@ti_support_atomic_more_than_add
+@ti.test()
 def test_atomic_sub_expr_evaled():
     c = ti.field(ti.i32)
     step = 42
@@ -220,7 +215,7 @@ def test_atomic_sub_expr_evaled():
     assert c[None] == -n * step
 
 
-@ti_support_atomic_more_than_add
+@ti.test()
 def test_atomic_max_expr_evaled():
     c = ti.field(ti.i32)
     step = 42
@@ -238,7 +233,7 @@ def test_atomic_max_expr_evaled():
     assert c[None] == (n - 1) * step
 
 
-@ti_support_atomic_more_than_add
+@ti.test()
 def test_atomic_min_expr_evaled():
     c = ti.field(ti.i32)
     step = 42
@@ -257,7 +252,7 @@ def test_atomic_min_expr_evaled():
     assert c[None] == 0
 
 
-@ti_support_atomic_more_than_add
+@ti.test()
 def test_atomic_and_expr_evaled():
     c = ti.field(ti.i32)
     step = 42
@@ -278,7 +273,7 @@ def test_atomic_and_expr_evaled():
     assert c[None] == 0
 
 
-@ti_support_atomic_more_than_add
+@ti.test()
 def test_atomic_or_expr_evaled():
     c = ti.field(ti.i32)
     step = 42
@@ -297,7 +292,7 @@ def test_atomic_or_expr_evaled():
     assert c[None] == 1023
 
 
-@ti_support_atomic_more_than_add
+@ti.test()
 def test_atomic_xor_expr_evaled():
     c = ti.field(ti.i32)
     step = 42

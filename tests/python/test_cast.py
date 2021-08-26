@@ -3,7 +3,7 @@ import pytest
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_cast_f32():
     z = ti.field(ti.i32, shape=())
 
@@ -15,8 +15,7 @@ def test_cast_f32():
     assert z[None] == 1000
 
 
-@ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test(require=ti.extension.data64)
 def test_cast_f64():
     z = ti.field(ti.i32, shape=())
 
@@ -55,7 +54,7 @@ def test_cast_default_ip(dtype):
         assert func(233, large) == 233 * large
 
 
-@ti.all_archs
+@ti.test()
 def test_cast_within_while():
     ret = ti.field(ti.i32, shape=())
 
@@ -70,7 +69,7 @@ def test_cast_within_while():
     func()
 
 
-@ti.all_archs
+@ti.test()
 def test_bit_cast():
     x = ti.field(ti.i32, shape=())
     y = ti.field(ti.f32, shape=())

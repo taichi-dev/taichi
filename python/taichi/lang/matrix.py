@@ -7,6 +7,7 @@ from taichi.lang import expr, impl
 from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod
 from taichi.lang.common_ops import TaichiOperations
+from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.ndarray import Ndarray, NdarrayHostAccess
@@ -27,7 +28,7 @@ class Matrix(TaichiOperations):
         shape ( Union[int, tuple of int], optional): the shape of a matrix field.
         offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
         empty (Bool, deprecated): True if the matrix is empty, False otherwise.
-        layout (TypeVar, optional): The filed layout(AOS or SOA).
+        layout (Layout, optional): The filed layout (Layout.AOS or Layout.SOA).
         needs_grad (Bool, optional): True if used in auto diff, False otherwise.
         keep_raw (Bool, optional): Keep the contents in `n` as is.
         rows (List, deprecated): construct matrix rows.
@@ -44,13 +45,14 @@ class Matrix(TaichiOperations):
                  shape=None,
                  offset=None,
                  empty=False,
-                 layout=None,
+                 layout=Layout.AOS,
                  needs_grad=False,
                  keep_raw=False,
                  disable_local_tensor=False,
                  rows=None,
                  cols=None):
         self.local_tensor_proxy = None
+        self.any_array_access = None
         self.grad = None
 
         # construct from rows or cols (deprecated)
@@ -117,7 +119,8 @@ class Matrix(TaichiOperations):
                                 mat.append(
                                     list([
                                         ti.local_subscript_with_offset(
-                                            self.local_tensor_proxy, (i, ))
+                                            self.local_tensor_proxy, (i, ),
+                                            (len(n), ))
                                     ]))
                 else:
                     mat = [[x] for x in n]
@@ -150,7 +153,8 @@ class Matrix(TaichiOperations):
                         for j in range(len(n[0])):
                             mat[i].append(
                                 ti.local_subscript_with_offset(
-                                    self.local_tensor_proxy, (i, j)))
+                                    self.local_tensor_proxy, (i, j),
+                                    (len(n), len(n[0]))))
             self.n = len(mat)
             if len(mat) > 0:
                 self.m = len(mat[0])
@@ -329,15 +333,22 @@ class Matrix(TaichiOperations):
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
 
-        if self.local_tensor_proxy != None:
-            return ti.local_subscript_with_offset(self.local_tensor_proxy,
-                                                  (i, j))
+        if self.any_array_access:
+            return self.any_array_access.subscript(i, j)
+        elif self.local_tensor_proxy != None:
+            if len(indices) == 1:
+                return ti.local_subscript_with_offset(self.local_tensor_proxy,
+                                                      (i, ), (self.n, ))
+            else:
+                return ti.local_subscript_with_offset(self.local_tensor_proxy,
+                                                      (i, j), (self.n, self.m))
         # ptr.is_global_ptr() will check whether it's an element in the field (which is different from ptr.is_global_var()).
         elif isinstance(self.entries[0],
                         ti.Expr) and self.entries[0].ptr.is_global_ptr(
                         ) and ti.current_cfg().dynamic_index:
+            # TODO: Add API to query whether AOS or SOA
             return ti.global_subscript_with_offset(self.entries[0], (i, j),
-                                                   self.m, True)
+                                                   (self.n, self.m), True)
         else:
             return self(i, j)
 
@@ -911,7 +922,7 @@ class Matrix(TaichiOperations):
               name="",
               offset=None,
               needs_grad=False,
-              layout=None):  # TODO(archibate): deprecate layout
+              layout=Layout.AOS):
         """Construct a data container to hold all elements of the Matrix.
 
         Args:
@@ -922,7 +933,7 @@ class Matrix(TaichiOperations):
             name (string, optional): The custom name of the field.
             offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
             needs_grad (bool, optional): Whether the Matrix need gradients.
-            layout (:class:`~taichi.lang.impl.Layout`, optional): The field layout, i.e., Array Of Structure(AOS) or Structure Of Array(SOA).
+            layout (Layout, optional): The field layout, i.e., Array Of Structure (AOS) or Structure Of Array (SOA).
 
         Returns:
             :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance serves as the data container.
@@ -955,8 +966,6 @@ class Matrix(TaichiOperations):
             entries_grad, n, m)
         entries.set_grad(entries_grad)
 
-        if layout is not None:
-            assert shape is not None, 'layout is useless without shape'
         if shape is None:
             assert offset is None, "shape cannot be None when offset is being set"
 
@@ -971,11 +980,8 @@ class Matrix(TaichiOperations):
                     offset
                 ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
-            if layout is None:
-                layout = ti.AOS
-
             dim = len(shape)
-            if layout.soa:
+            if layout == Layout.SOA:
                 for e in entries.get_field_members():
                     ti.root.dense(impl.index_nd(dim),
                                   shape).place(ScalarField(e), offset=offset)

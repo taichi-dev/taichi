@@ -35,8 +35,17 @@ classifiers = [
 project_name = os.getenv('PROJECT_NAME', 'taichi')
 TI_VERSION_MAJOR = 0
 TI_VERSION_MINOR = 7
-TI_VERSION_PATCH = 30
+TI_VERSION_PATCH = 29
 version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
+if project_name == 'taichi-nightly':
+    from datetime import date
+    today = date.today().strftime('%Y%m%d')
+    # As required in PEP440, the commit hash cannot be used in version
+    # because it is not meaningful with respect to order. Therefore,
+    # we temperally do not use this commit_sha in our version.
+    # https://www.python.org/dev/peps/pep-0440
+    commit_sha = os.getenv('COMMIT_SHA')
+    version += f'.dev{today}'
 
 data_files = glob.glob('python/lib/*')
 print(data_files)
@@ -190,6 +199,12 @@ class CMakeBuild(build_ext):
                 if f.startswith('runtime_') and f.endswith('.bc'):
                     print(f"Fetching runtime file {f} to {target} folder")
                     shutil.copy(os.path.join(llvm_runtime_dir, f), target)
+
+            ui_kernel_dir = 'taichi/ui/backends/vulkan'
+            for f in os.listdir(ui_kernel_dir):
+                if f.endswith('.bc'):
+                    print(f"Fetching ui kernel file {f} to {target} folder")
+                    shutil.copy(os.path.join(ui_kernel_dir, f), target)
 
 
 setup(name=project_name,

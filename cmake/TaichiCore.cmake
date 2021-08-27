@@ -62,7 +62,6 @@ file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vul
 file(GLOB TAICHI_GGUI_SOURCE
     "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"  "taichi/ui/*/*/*/*.cpp" "taichi/ui/*/*/*/*/*.cpp"
     "taichi/ui/*.h"  "taichi/ui/*/*.h" "taichi/ui/*/*/*.h"  "taichi/ui/*/*/*/*.h" "taichi/ui/*/*/*/*/*.h"
-    "taichi/ui/backends/vulkan/renderables/kernels.cu"
 )
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_GGUI_SOURCE})
 
@@ -70,8 +69,6 @@ list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_GGUI_SOURCE})
 if(TI_WITH_GGUI)
     add_definitions(-DTI_WITH_GGUI)
 
-    enable_language(CUDA)
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -use_fast_math -std=c++17" )
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GGUI_SOURCE})
 
     include_directories(SYSTEM external/glm)
@@ -79,7 +76,9 @@ if(TI_WITH_GGUI)
 endif()
 
 
+file(GLOB BYTECODE_SOURCE "taichi/runtime/llvm/runtime.cpp" "taichi/runtime/llvm/ui_kernels.cpp")
 
+list(REMOVE_ITEM TAICHI_CORE_SOURCE ${BYTECODE_SOURCE})
 
 
 # These are required, regardless of whether Vulkan is enabled or not

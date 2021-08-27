@@ -64,7 +64,7 @@ class Renderable {
   taichi::lang::DeviceAllocation uniform_buffer_;
   taichi::lang::DeviceAllocation storage_buffer_;
 
-  Vertex *vertex_buffer_device_ptr_;
+  float *vertex_buffer_device_ptr_;
   int *index_buffer_device_ptr_;
 
   bool indexed_{false};

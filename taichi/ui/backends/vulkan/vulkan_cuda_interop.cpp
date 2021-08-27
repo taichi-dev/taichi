@@ -1,4 +1,5 @@
 #include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
+#include "taichi/llvm/llvm_context.h"
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -137,6 +138,8 @@ CUsurfObject get_image_surface_object_of_external_memory(
     int height,
     int depth) {
   CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC external_mem_mipmapped_array_desc;
+
+  printf("%ld,%d,%d,%d\n", offset, width, height, depth);
 
   memset(&external_mem_mipmapped_array_desc, 0,
          sizeof(external_mem_mipmapped_array_desc));
@@ -277,6 +280,179 @@ CUexternalSemaphore cuda_vk_import_semaphore(VkSemaphore semaphore,
   CUDADriver::get_instance().import_external_semaphore(
       &result, &external_semaphore_handle_desc);
   return result;
+}
+
+void update_renderables_vertices_x64(float *vbo,
+                                     int stride,
+                                     float *data,
+                                     int num_vertices,
+                                     int num_components,
+                                     int offset_bytes) {
+  int offset = offset_bytes / sizeof(float);
+  for (int i = 0; i < num_vertices; ++i) {
+    float *dst = vbo + i * stride + offset;
+    float *src = data + i * num_components;
+    for (int c = 0; c < num_components; ++c) {
+      dst[c] = src[c];
+    }
+  }
+}
+
+void update_renderables_indices_x64(int *ibo, int *indices, int num_indices) {
+  memcpy(ibo, indices, num_indices * sizeof(int));
+}
+
+template <typename T>
+inline unsigned char get_color_value(T x);
+
+template <>
+inline unsigned char get_color_value<unsigned char>(unsigned char x) {
+  return x;
+}
+
+template <>
+inline unsigned char get_color_value<float>(float x) {
+  x = max(0.f, min(1.f, x));
+  return (unsigned char)(x * 255);
+}
+
+template <typename T>
+void copy_to_texture_buffer_x64(T *src,
+                                unsigned char *dest,
+                                int width,
+                                int height,
+                                int actual_width,
+                                int actual_height,
+                                int channels) {
+  for (int i = 0; i < width * height; ++i) {
+    int y = i / width;
+    int x = i % width;
+
+    T *src_base_addr = src + (x * actual_height + y) * channels;
+    unsigned char *dest_base_addr = dest + (y * width + x) * 4;
+
+    dest_base_addr[0] = get_color_value<T>(src_base_addr[0]);
+    dest_base_addr[1] = get_color_value<T>(src_base_addr[1]);
+    dest_base_addr[2] = get_color_value<T>(src_base_addr[2]);
+    dest_base_addr[3] = 255;
+  }
+}
+
+template void copy_to_texture_buffer_x64<float>(float *src,
+                                                unsigned char *dest,
+                                                int width,
+                                                int height,
+                                                int actual_width,
+                                                int actual_height,
+                                                int channels);
+template void copy_to_texture_buffer_x64<unsigned char>(unsigned char *src,
+                                                        unsigned char *dest,
+                                                        int width,
+                                                        int height,
+                                                        int actual_width,
+                                                        int actual_height,
+                                                        int channels);
+
+JITSessionCUDA *InteropCUDALauncher::session() {
+  return session_.get();
+}
+
+JITModuleCUDA *InteropCUDALauncher::module() {
+  return module_;
+}
+
+InteropCUDALauncher::InteropCUDALauncher() {
+  session_ = std::unique_ptr<JITSessionCUDA>{
+      (JITSessionCUDA *)create_llvm_jit_session_cuda(Arch::cuda).release()};
+  TaichiLLVMContext tlctx(Arch::cuda);
+  std::unique_ptr<llvm::Module> ll_module =
+      tlctx.clone_module("ui_kernels_cuda.bc");
+
+  std::vector<std::string> kernels = {"update_renderables_vertices",
+                                      "copy_to_texture_buffer_f32",
+                                      "copy_to_texture_buffer_u8"};
+  for (const auto &name : kernels) {
+    auto *f = ll_module->getFunction(name);
+    if (f == nullptr) {
+      TI_ERROR("{} not found", name);
+    }
+    tlctx.mark_function_as_cuda_kernel(f);
+  }
+
+  module_ = static_cast<JITModuleCUDA *>(
+      session_->add_module(std::move(ll_module), 0));
+}
+
+namespace {
+int div_up(int a, int b) {
+  if (b == 0) {
+    return 1;
+  }
+  int result = (a % b != 0) ? (a / b + 1) : (a / b);
+  return result;
+}
+
+void set_num_blocks_threads(int N, int &num_blocks, int &num_threads) {
+#define MAX_THREADS_PER_BLOCK 1024
+  num_threads = min(N, 1024);
+  num_blocks = div_up(N, num_threads);
+#undef MAX_THREADS_PER_BLOCK
+}
+
+}  // namespace
+
+void InteropCUDALauncher::update_renderables_vertices(float *vbo,
+                                                      int stride,
+                                                      float *data,
+                                                      int num_vertices,
+                                                      int num_components,
+                                                      int offset_bytes) {
+  std::string f = "update_renderables_vertices";
+  int num_blocks, num_threads;
+  set_num_blocks_threads(num_vertices, num_blocks, num_threads);
+  std::vector<void *> args = {&vbo,          &stride,         &data,
+                              &num_vertices, &num_components, &offset_bytes};
+  module_->launch(f, num_blocks, num_threads, 0, args);
+}
+
+void InteropCUDALauncher::update_renderables_indices(int *ibo,
+                                                     int *indices,
+                                                     int num_indices) {
+  CUDADriver::get_instance().memcpy_device_to_device(ibo, indices,
+                                                     num_indices * sizeof(int));
+}
+
+template <>
+void InteropCUDALauncher::copy_to_texture_buffer<unsigned char>(
+    unsigned char *src,
+    unsigned char *dest,
+    int width,
+    int height,
+    int actual_width,
+    int actual_height,
+    int channels) {
+  std::string f = "copy_to_texture_buffer_u8";
+  int num_blocks, num_threads;
+  set_num_blocks_threads(width * height, num_blocks, num_threads);
+  std::vector<void *> args = {&src,          &dest,          &width,   &height,
+                              &actual_width, &actual_height, &channels};
+  module_->launch(f, num_blocks, num_threads, 0, args);
+}
+
+template <>
+void InteropCUDALauncher::copy_to_texture_buffer<float>(float *src,
+                                                        unsigned char *dest,
+                                                        int width,
+                                                        int height,
+                                                        int actual_width,
+                                                        int actual_height,
+                                                        int channels) {
+  std::string f = "copy_to_texture_buffer_f32";
+  int num_blocks, num_threads;
+  set_num_blocks_threads(width * height, num_blocks, num_threads);
+  std::vector<void *> args = {&src,          &dest,          &width,   &height,
+                              &actual_width, &actual_height, &channels};
+  module_->launch(f, num_blocks, num_threads, 0, args);
 }
 
 }  // namespace vulkan

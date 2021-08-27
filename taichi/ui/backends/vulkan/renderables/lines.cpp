@@ -3,8 +3,6 @@
 
 #include "taichi/ui/utils/utils.h"
 
-#include "taichi/ui/backends/vulkan/renderables/kernels.h"
-
 #include "taichi/backends/vulkan/vulkan_device.h"
 
 TI_UI_NAMESPACE_BEGIN

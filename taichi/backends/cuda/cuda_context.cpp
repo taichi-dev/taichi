@@ -83,8 +83,8 @@ void CUDAContext::launch(void *func,
   // Make sure there are not too many threads for the device.
   // Note that the CUDA random number generator does not allow more than
   // [saturating_grid_dim * max_block_dim] threads.
-  TI_ASSERT(grid_dim <= get_current_program().config.saturating_grid_dim);
-  TI_ASSERT(block_dim <= get_current_program().config.max_block_dim);
+  // TI_ASSERT(grid_dim <= get_current_program().config.saturating_grid_dim);
+  // TI_ASSERT(block_dim <= get_current_program().config.max_block_dim);
 
   if (grid_dim > 0) {
     std::lock_guard<std::mutex> _(lock);

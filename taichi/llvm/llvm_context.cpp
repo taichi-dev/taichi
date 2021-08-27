@@ -263,121 +263,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   TI_AUTO_PROF
   TI_ASSERT(std::this_thread::get_id() == main_thread_id);
   auto data = get_this_thread_data();
-  auto ctx = get_this_thread_context();
   if (!data->runtime_module) {
-    data->runtime_module = module_from_bitcode_file(
-        fmt::format("{}/{}", runtime_lib_dir(), get_runtime_fn(arch)), ctx);
-    if (arch == Arch::cuda) {
-      auto &runtime_module = data->runtime_module;
-      runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
-
-#if defined(TI_WITH_CUDA)
-      auto func = runtime_module->getFunction("cuda_compute_capability");
-      TI_ERROR_UNLESS(func, "Function cuda_compute_capability not found");
-      func->deleteBody();
-      auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
-      IRBuilder<> builder(*ctx);
-      builder.SetInsertPoint(bb);
-      builder.CreateRet(
-          get_constant(CUDAContext::get_instance().get_compute_capability()));
-      TaichiLLVMContext::mark_inline(func);
-#endif
-
-      auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
-                                 bool ret = true,
-                                 std::vector<llvm::Type *> types = {},
-                                 std::vector<llvm::Value *> extra_args = {}) {
-        auto func = runtime_module->getFunction(name);
-        TI_ERROR_UNLESS(func, "Function {} not found", name);
-        func->deleteBody();
-        auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
-        IRBuilder<> builder(*ctx);
-        builder.SetInsertPoint(bb);
-        std::vector<llvm::Value *> args;
-        for (auto &arg : func->args())
-          args.push_back(&arg);
-        args.insert(args.end(), extra_args.begin(), extra_args.end());
-        if (ret) {
-          builder.CreateRet(builder.CreateIntrinsic(intrin, types, args));
-        } else {
-          builder.CreateIntrinsic(intrin, types, args);
-          builder.CreateRetVoid();
-        }
-        TaichiLLVMContext::mark_inline(func);
-      };
-
-      auto patch_atomic_add = [&](std::string name,
-                                  llvm::AtomicRMWInst::BinOp op) {
-        auto func = runtime_module->getFunction(name);
-        func->deleteBody();
-        auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
-        IRBuilder<> builder(*ctx);
-        builder.SetInsertPoint(bb);
-        std::vector<llvm::Value *> args;
-        for (auto &arg : func->args())
-          args.push_back(&arg);
-        builder.CreateRet(builder.CreateAtomicRMW(
-            op, args[0], args[1],
-            llvm::AtomicOrdering::SequentiallyConsistent));
-        TaichiLLVMContext::mark_inline(func);
-      };
-
-      patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
-      patch_intrinsic("cuda_clock_i64", Intrinsic::nvvm_read_ptx_sreg_clock64);
-      patch_intrinsic("block_idx", Intrinsic::nvvm_read_ptx_sreg_ctaid_x);
-      patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
-      patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
-      patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
-      patch_intrinsic("warp_barrier", Intrinsic::nvvm_bar_warp_sync, false);
-      patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
-      patch_intrinsic("grid_memfence", Intrinsic::nvvm_membar_gl, false);
-      patch_intrinsic("system_memfence", Intrinsic::nvvm_membar_sys, false);
-
-      patch_intrinsic("cuda_ballot", Intrinsic::nvvm_vote_ballot);
-      patch_intrinsic("cuda_ballot_sync", Intrinsic::nvvm_vote_ballot_sync);
-
-      patch_intrinsic("cuda_shfl_down_sync_i32",
-                      Intrinsic::nvvm_shfl_sync_down_i32);
-      patch_intrinsic("cuda_shfl_down_sync_f32",
-                      Intrinsic::nvvm_shfl_sync_down_f32);
-
-      patch_intrinsic("cuda_match_any_sync_i32",
-                      Intrinsic::nvvm_match_any_sync_i32);
-
-      // LLVM 10.0.0 seems to have a bug on this intrinsic function
-      /*
-      patch_intrinsic("cuda_match_any_sync_i64",
-                      Intrinsic::nvvm_match_any_sync_i64);
-                      */
-
-      patch_intrinsic("ctlz_i32", Intrinsic::ctlz, true,
-                      {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
-      patch_intrinsic("cttz_i32", Intrinsic::cttz, true,
-                      {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
-
-      patch_atomic_add("atomic_add_i32", llvm::AtomicRMWInst::Add);
-
-      patch_atomic_add("atomic_add_i64", llvm::AtomicRMWInst::Add);
-
-      patch_atomic_add("atomic_add_f32", llvm::AtomicRMWInst::FAdd);
-
-      patch_atomic_add("atomic_add_f64", llvm::AtomicRMWInst::FAdd);
-
-      patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
-
-      link_module_with_cuda_libdevice(data->runtime_module);
-
-      // To prevent potential symbol name conflicts, we use "cuda_vprintf"
-      // instead of "vprintf" in llvm/runtime.cpp. Now we change it back for
-      // linking
-      for (auto &f : *runtime_module) {
-        if (f.getName() == "cuda_vprintf") {
-          f.setName("vprintf");
-        }
-      }
-
-      // runtime_module->print(llvm::errs(), nullptr);
-    }
+    data->runtime_module = clone_module(get_runtime_fn(arch));
   }
 
   std::unique_ptr<llvm::Module> cloned;
@@ -389,6 +276,130 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   TI_ASSERT(cloned != nullptr);
 
   return cloned;
+}
+
+std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module(
+    const std::string &file) {
+  auto ctx = get_this_thread_context();
+  std::unique_ptr<llvm::Module> module = module_from_bitcode_file(
+      fmt::format("{}/{}", runtime_lib_dir(), file), ctx);
+  if (arch == Arch::cuda) {
+    module->setTargetTriple("nvptx64-nvidia-cuda");
+
+#if defined(TI_WITH_CUDA)
+    auto func = module->getFunction("cuda_compute_capability");
+    if (func) {
+      func->deleteBody();
+      auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
+      IRBuilder<> builder(*ctx);
+      builder.SetInsertPoint(bb);
+      builder.CreateRet(
+          get_constant(CUDAContext::get_instance().get_compute_capability()));
+      TaichiLLVMContext::mark_inline(func);
+    }
+#endif
+
+    auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
+                               bool ret = true,
+                               std::vector<llvm::Type *> types = {},
+                               std::vector<llvm::Value *> extra_args = {}) {
+      auto func = module->getFunction(name);
+      if (!func) {
+        return;
+      }
+      func->deleteBody();
+      auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
+      IRBuilder<> builder(*ctx);
+      builder.SetInsertPoint(bb);
+      std::vector<llvm::Value *> args;
+      for (auto &arg : func->args())
+        args.push_back(&arg);
+      args.insert(args.end(), extra_args.begin(), extra_args.end());
+      if (ret) {
+        builder.CreateRet(builder.CreateIntrinsic(intrin, types, args));
+      } else {
+        builder.CreateIntrinsic(intrin, types, args);
+        builder.CreateRetVoid();
+      }
+      TaichiLLVMContext::mark_inline(func);
+    };
+
+    auto patch_atomic_add = [&](std::string name,
+                                llvm::AtomicRMWInst::BinOp op) {
+      auto func = module->getFunction(name);
+      if (!func) {
+        return;
+      }
+      func->deleteBody();
+      auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
+      IRBuilder<> builder(*ctx);
+      builder.SetInsertPoint(bb);
+      std::vector<llvm::Value *> args;
+      for (auto &arg : func->args())
+        args.push_back(&arg);
+      builder.CreateRet(builder.CreateAtomicRMW(
+          op, args[0], args[1], llvm::AtomicOrdering::SequentiallyConsistent));
+      TaichiLLVMContext::mark_inline(func);
+    };
+
+    patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
+    patch_intrinsic("cuda_clock_i64", Intrinsic::nvvm_read_ptx_sreg_clock64);
+    patch_intrinsic("block_idx", Intrinsic::nvvm_read_ptx_sreg_ctaid_x);
+    patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
+    patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
+    patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
+    patch_intrinsic("warp_barrier", Intrinsic::nvvm_bar_warp_sync, false);
+    patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
+    patch_intrinsic("grid_memfence", Intrinsic::nvvm_membar_gl, false);
+    patch_intrinsic("system_memfence", Intrinsic::nvvm_membar_sys, false);
+
+    patch_intrinsic("cuda_ballot", Intrinsic::nvvm_vote_ballot);
+    patch_intrinsic("cuda_ballot_sync", Intrinsic::nvvm_vote_ballot_sync);
+
+    patch_intrinsic("cuda_shfl_down_sync_i32",
+                    Intrinsic::nvvm_shfl_sync_down_i32);
+    patch_intrinsic("cuda_shfl_down_sync_f32",
+                    Intrinsic::nvvm_shfl_sync_down_f32);
+
+    patch_intrinsic("cuda_match_any_sync_i32",
+                    Intrinsic::nvvm_match_any_sync_i32);
+
+    // LLVM 10.0.0 seems to have a bug on this intrinsic function
+    /*
+    patch_intrinsic("cuda_match_any_sync_i64",
+                    Intrinsic::nvvm_match_any_sync_i64);
+                    */
+
+    patch_intrinsic("ctlz_i32", Intrinsic::ctlz, true,
+                    {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
+    patch_intrinsic("cttz_i32", Intrinsic::cttz, true,
+                    {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
+
+    patch_atomic_add("atomic_add_i32", llvm::AtomicRMWInst::Add);
+
+    patch_atomic_add("atomic_add_i64", llvm::AtomicRMWInst::Add);
+
+    patch_atomic_add("atomic_add_f32", llvm::AtomicRMWInst::FAdd);
+
+    patch_atomic_add("atomic_add_f64", llvm::AtomicRMWInst::FAdd);
+
+    patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
+
+    link_module_with_cuda_libdevice(module);
+
+    // To prevent potential symbol name conflicts, we use "cuda_vprintf"
+    // instead of "vprintf" in llvm/runtime.cpp. Now we change it back for
+    // linking
+    for (auto &f : *module) {
+      if (f.getName() == "cuda_vprintf") {
+        f.setName("vprintf");
+      }
+    }
+
+    // runtime_module->print(llvm::errs(), nullptr);
+  }
+
+  return module;
 }
 
 void TaichiLLVMContext::link_module_with_cuda_libdevice(

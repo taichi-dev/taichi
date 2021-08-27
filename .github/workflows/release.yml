@@ -7,17 +7,26 @@ on:
     - cron: "0 0 * * *"
 
 jobs:
+  # This job set environment matrix with respect to production release and nightly release.
+  matrix_prep:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          # For nightly release, we only run on python 3.8
+          [ -z "${{ github.event.action }}" ] && matrix="[{\"with_cc\":\"OFF\",\"python\":\"3.8\"}]"
+          # For production release, we run on four python versions.
+          [ -z "${{ github.event.action }}" ] || matrix="[{\"with_cc\":\"OFF\",\"python\":\"3.6\"},{\"with_cc\":\"OFF\",\"python\":\"3.7\"},{\"with_cc\":\"OFF\",\"python\":\"3.8\"},{\"with_cc\":\"OFF\",\"python\":\"3.9\"}]"
+          echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
+
   build_and_upload_mac:
     name: Build and Upload (macOS only)
+    needs: matrix_prep
     strategy:
-      matrix:
-        include:
-          # We use only one python version because it would consume a large
-          # amount of github action minutes.
-          - os: macos-latest
-            python: 3.8
-            with_cc: OFF
-    runs-on: ${{ matrix.os }}
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
         with:
@@ -75,15 +84,10 @@ jobs:
 
   build_and_upload_windows:
     name: Build and Upload (Windows only)
+    needs: matrix_prep
     strategy:
-      matrix:
-        include:
-          # We use only one python version because it would consume a large
-          # amount of github action minutes.
-          - os: windows-latest
-            python: 3.8
-            with_cc: OFF
-    runs-on: ${{ matrix.os }}
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    runs-on: windows-latest
     steps:
       - name: Install 7Zip PowerShell
         shell: powershell

@@ -23,5 +23,4 @@ int block_dim() {
 int grid_dim() {
   return 0;
 }
-
 }

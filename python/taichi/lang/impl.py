@@ -889,12 +889,6 @@ def grouped(x):
         return x.grouped()
     return x
 
-@taichi_scope
-def mesh_range(x):
-    """
-    A hack now, to mark a mesh for 
-    """
-    return x
 
 def stop_grad(x):
     _ti_core.stop_grad(x.snode.ptr)

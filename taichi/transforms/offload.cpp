@@ -124,7 +124,10 @@ class Offloader {
         for (int j = 0; j < (int)st->body->statements.size(); j++) {
           offloaded->body->insert(std::move(st->body->statements[j]));
         }
-        offloaded->snode = st->snode;
+        offloaded->mesh = st->mesh;
+        offloaded->major_from_type = std::move(st->major_from_type);
+        offloaded->major_to_types = std::move(st->major_to_types);
+        offloaded->minor_relation_types = std::move(st->minor_relation_types);
         root_block->insert(std::move(offloaded));
       } else {
         pending_serial_statements->body->insert(std::move(stmt));

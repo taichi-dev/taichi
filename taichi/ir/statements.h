@@ -4,6 +4,7 @@
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/program/arch.h"
+#include "taichi/ir/mesh.h"
 
 namespace taichi {
 namespace lang {
@@ -802,13 +803,16 @@ class StructForStmt : public Stmt {
  */
 class MeshForStmt : public Stmt {
  public:
-  SNode *snode;
+  mesh::Mesh *mesh;
   std::unique_ptr<Block> body;
   int block_dim;
+  mesh::MeshElementType major_from_type;
+  std::vector<mesh::MeshElementType> major_to_types{};
+  std::vector<mesh::MeshRelationType> minor_relation_types{};
 
-  MeshForStmt(SNode *snode,
-                std::unique_ptr<Block> &&body,
-                int block_dim);
+  MeshForStmt(mesh::Mesh *mesh, mesh::MeshElementType element_type,
+              std::unique_ptr<Block> &&body,
+              int block_dim);
 
   bool is_container_statement() const override {
     return true;
@@ -816,7 +820,7 @@ class MeshForStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  TI_STMT_DEF_FIELDS(snode,
+  TI_STMT_DEF_FIELDS(mesh, major_from_type,
                      block_dim);
   TI_DEFINE_ACCEPT
 };
@@ -1102,6 +1106,11 @@ class OffloadedStmt : public Stmt {
   int block_dim{1};
   bool reversed{false};
   int num_cpu_threads{1};
+
+  mesh::Mesh *mesh{nullptr};
+  mesh::MeshElementType major_from_type;
+  std::vector<mesh::MeshElementType> major_to_types;
+  std::vector<mesh::MeshRelationType> minor_relation_types;
 
   std::vector<int> index_offsets;
 

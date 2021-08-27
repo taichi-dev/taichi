@@ -12,15 +12,10 @@ from taichi.lang.impl import *
 from taichi.lang import impl
 import taichi.core.primitive_types as primitive_type
 from taichi.misc.mesh_loader import *
+from taichi.lang.enums import Layout
 
-class MeshElementType:
-    Vertex = 0
-    Edge   = 1
-    Face   = 2
-    Cell   = 3
-    SurfaceVertex = 4
-    SurfaceEdge   = 5
-    SurfaceFace   = 6
+MeshElementType = _ti_core.MeshElementType
+MeshRelationType = _ti_core.MeshRelationType
 
 class MeshElementReorderingType:
     NonReordering = 0
@@ -28,26 +23,8 @@ class MeshElementReorderingType:
     SurfaceFirst = 2
     CellFirst    = 3
 
-class MeshRelationType:
-    VV = 0
-    VE = 1
-    VF = 2
-    VC = 3
-    EV = 4
-    EE = 5
-    EF = 6
-    EC = 7
-    FV = 8
-    FE = 9
-    FF = 10
-    FC = 11
-    CV = 12
-    CE = 13
-    CF = 14
-    CC = 15
-
 def element_order(element_type):
-    return element_type
+    return int(element_type)
 
 def from_end_element_order(rel):
     return int(rel) // 4
@@ -70,7 +47,7 @@ class MeshAttribute:
 class MeshElement:
     def __init__(self, type):
         self.type = type
-        self.data_layout = impl.SOA
+        self.data_layout = Layout.SOA
         self.attributes = {}
 
     def place(self, name, field, reordering=MeshElementReorderingType.NonReordering):
@@ -83,9 +60,9 @@ class MeshElement:
             raise ValueError(f'{field} cannot be placed')
 
     def _SOA(self, soa=True): # AOS/SOA
-        self.data_layout = impl.SOA if soa else impl.AOS
+        self.data_layout = Layout.SOA if soa else Layout.AOS
     def _AOS(self, aos=True):
-        self.data_layout = impl.AOS if aos else impl.SOA
+        self.data_layout = Layout.AOS if aos else Layout.SOA
     
     SOA = property(fget = _SOA)
     AOS = property(fget = _AOS)
@@ -179,6 +156,14 @@ class MeshInstance:
         self.type_instantiated = False
         self.data_instantiated = False
 
+        self.mesh_ptr = _ti_core.create_mesh()
+
+    def set_owned_offset(self, element_type : MeshElementType, owned_offset : ScalarField):
+        _ti_core.set_owned_offset(self.mesh_ptr, element_type, owned_offset.vars[0].ptr.snode())
+    
+    def set_total_offset(self, element_type : MeshElementType, total_offset : ScalarField):
+        _ti_core.set_total_offset(self.mesh_ptr, element_type, total_offset.vars[0].ptr.snode())
+
     def _materialize_fields(self, element_type_set : list, element_num_set : list):
         for element_type, num_elements in zip(element_type_set, element_num_set):
             if self.element_data_layout[element_type] is impl.SOA:
@@ -250,12 +235,9 @@ class TriInstance(MeshInstance):
         return self
 
 class TetInstance(MeshInstance):
-    def __init__(self, type, has_surface = False):
+    def __init__(self, type):
         super().__init__(type)
-        self.has_surface = has_surface
         self.relations = MeshGlobalRelationGroup(MeshElementType.Cell)
-        if has_surface:
-            self.surface_relations = MeshGlobalRelationGroup(MeshElementType.Face)
 
     def load_from_file(self, filename):
         self._type_but_no_data_check()
@@ -322,8 +304,6 @@ class TetInstance(MeshInstance):
         num_faces = len(faces_dist)
         num_cells = file.cells.shape[0]
 
-        
-
         self._materialize_fields([MeshElementType.Vertex, MeshElementType.Edge, MeshElementType.Face, MeshElementType.Cell], 
                                  [num_vertices, num_edges, num_faces, num_cells])
 
@@ -368,39 +348,13 @@ class TetType(MeshType):
         self.edges = MeshElement(MeshElementType.Edge)
         self.faces = MeshElement(MeshElementType.Face)
         self.cells = MeshElement(MeshElementType.Cell)
-        self._surfaces = TriType()
-        self._has_surface = False
-        # surface element alias
-        self.surface_vertices = None
-        self.surface_edges = None
-        self.surface_faces = None
-    
-    def _validate_surface(self, valid):
-        if valid:
-            self._has_surface = True
-            self.surface_vertices = self._surfaces.vertices
-            self.surface_edges = self._surfaces.edges
-            self.surface_faces = self._surfaces.faces
-        else:
-            self._has_surface = False
-            self.surface_vertices = None
-            self.surface_edges = None
-            self.surface_faces = None
-    
-    surface = property(fset = _validate_surface)
     
     def instance(self):
-        inst = TetInstance(self, self._has_surface)
+        inst = TetInstance(self)
         for element_type, data in zip([MeshElementType.Vertex, MeshElementType.Edge, MeshElementType.Face, MeshElementType.Cell],
                                 [self.vertices, self.edges, self.faces, self.cells]):
             inst.element_data_layout[element_type] = data.data_layout
             inst.element_attrs[element_type] = data.instance(inst, element_type)
-
-        if self._has_surface:
-            for element_type, data in zip([MeshElementType.SurfaceVertex, MeshElementType.SurfaceEdge, MeshElementType.SurfaceFace],
-                                [self.surface_vertices, self.surface_edges, self.surface_faces]):
-                inst.element_data_layout[element_type] = data.data_layout
-                inst.element_attrs[element_type] = data.instance(inst, element_type)
 
         inst.type_instantiated = True
         return inst
@@ -434,3 +388,6 @@ class Mesh:
     @staticmethod
     def tri():
         return TriType()
+
+def ti_create_mesh():
+    return _ti_core.create_mesh()

@@ -1429,9 +1429,9 @@ void gpu_parallel_range_for(RuntimeContext *context,
 }
 
 void gpu_parallel_mesh_for(RuntimeContext *context,
-                            int snode_size,
+                            int num_element,
                             MeshForTaskFunc *func) {
-  for (int i = block_idx(); i < snode_size - 1; i += grid_dim()) {
+  for (int i = block_idx(); i < num_element; i += grid_dim()) {
     func(context, i);
   }
 }

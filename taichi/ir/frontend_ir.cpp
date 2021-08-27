@@ -160,6 +160,7 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
 void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> arg_statements, output_statements;
   for (auto &s : args) {
+    s.set(load_if_ptr(s));
     s->flatten(ctx);
     arg_statements.push_back(s->stmt);
   }

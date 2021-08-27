@@ -13,6 +13,7 @@
 #include "taichi/transforms/inlining.h"
 #include "taichi/transforms/lower_access.h"
 #include "taichi/transforms/make_block_local.h"
+#include "taichi/transforms/make_mesh_attribute_local.h"
 #include "taichi/transforms/simplify.h"
 #include "taichi/common/trait.h"
 
@@ -62,6 +63,9 @@ bool check_out_of_bound(IRNode *root,
 void make_thread_local(IRNode *root, const CompileConfig &config);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
 void make_block_local(IRNode *root,
+                      const CompileConfig &config,
+                      const MakeBlockLocalPass::Args &args);
+void make_mesh_attribute_local(IRNode *root,
                       const CompileConfig &config,
                       const MakeBlockLocalPass::Args &args);
 bool remove_loop_unique(IRNode *root);

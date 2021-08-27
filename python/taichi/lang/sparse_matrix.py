@@ -73,11 +73,11 @@ class SparseMatrixEntry:
         self.j = j
 
     def augassign(self, value, op):
-        from taichi.lang.impl import call_internal
+        from taichi.lang.impl import call_internal, ti_float
         if op == 'Add':
-            call_internal("insert_triplet", self.ptr, self.i, self.j, float(value))
+            call_internal("insert_triplet", self.ptr, self.i, self.j, ti_float(value))
         elif op == 'Sub':
-            call_internal("insert_triplet", self.ptr, self.i, self.j, -value)
+            call_internal("insert_triplet", self.ptr, self.i, self.j, -ti_float(value))
         else:
             assert False, f"Only operations '+=' and '-=' are supported on sparse matrices."
 

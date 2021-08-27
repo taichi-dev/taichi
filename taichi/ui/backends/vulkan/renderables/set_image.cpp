@@ -59,15 +59,14 @@ void SetImage::update_data(const SetImageInfo &info) {
       throw std::runtime_error("for set image, dtype must be u8 or f32");
     }
 
-    auto cmd_list =
-        app_context_->device().new_command_list({CommandListType::Graphics});
+    auto stream = app_context_->device().get_graphics_stream();
+    auto cmd_list = stream->new_command_list();
     cmd_list->buffer_to_image(texture_, gpu_staging_buffer_.get_ptr(0),
                               ImageLayout::transfer_dst, copy_params);
 
     cmd_list->image_transition(texture_, ImageLayout::transfer_dst,
                                ImageLayout::shader_read);
-    app_context_->device().submit_synced(cmd_list.get());
-
+    stream->submit_synced(cmd_list.get());
   } else if (img.field_source == FieldSource::TaichiX64) {
     unsigned char *mapped =
         (unsigned char *)app_context_->device().map(cpu_staging_buffer_);
@@ -85,15 +84,14 @@ void SetImage::update_data(const SetImageInfo &info) {
 
     app_context_->device().unmap(cpu_staging_buffer_);
 
-    auto cmd_list =
-        app_context_->device().new_command_list({CommandListType::Graphics});
+    auto stream = app_context_->device().get_graphics_stream();
+    auto cmd_list = stream->new_command_list();
     cmd_list->buffer_to_image(texture_, cpu_staging_buffer_.get_ptr(0),
                               ImageLayout::transfer_dst, copy_params);
 
     cmd_list->image_transition(texture_, ImageLayout::transfer_dst,
                                ImageLayout::shader_read);
-    app_context_->device().submit_synced(cmd_list.get());
-
+    stream->submit_synced(cmd_list.get());
   } else {
     throw std::runtime_error("unsupported field source");
   }

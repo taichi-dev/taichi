@@ -203,12 +203,6 @@ class Pipeline {
   virtual ResourceBinder *resource_binder() = 0;
 };
 
-enum class CommandListType { Graphics, Compute };
-
-struct CommandListConfig {
-  CommandListType type;
-};
-
 enum class ImageDimension { d1D, d2D, d3D };
 
 enum class ImageLayout {
@@ -327,6 +321,18 @@ inline bool operator&(AllocUsage a, AllocUsage b) {
   return static_cast<int>(a) & static_cast<int>(b);
 }
 
+class Stream {
+ public:
+  virtual ~Stream(){};
+
+  virtual std::unique_ptr<CommandList> new_command_list() = 0;
+  virtual void dealloc_command_list(CommandList *cmdlist) = 0;
+  virtual void submit(CommandList *cmdlist) = 0;
+  virtual void submit_synced(CommandList *cmdlist) = 0;
+
+  virtual void command_sync() = 0;
+};
+
 class Device {
  public:
   virtual ~Device(){};
@@ -378,14 +384,8 @@ class Device {
   // Copy memory inter or intra devices (synced)
   static void memcpy(DevicePtr dst, DevicePtr src, uint64_t size);
 
-  // TODO: Add a flag to select graphics / compute pool
-  virtual std::unique_ptr<CommandList> new_command_list(
-      CommandListConfig config) = 0;
-  virtual void dealloc_command_list(CommandList *cmdlist) = 0;
-  virtual void submit(CommandList *cmdlist) = 0;
-  virtual void submit_synced(CommandList *cmdlist) = 0;
-
-  virtual void command_sync() = 0;
+  // Each thraed will acquire its own stream
+  virtual Stream *get_compute_stream() = 0;
 
  private:
   std::unordered_map<DeviceCapability, uint32_t> caps_;
@@ -447,6 +447,8 @@ class GraphicsDevice : public Device {
       const std::vector<VertexInputBinding> &vertex_inputs,
       const std::vector<VertexInputAttribute> &vertex_attrs,
       std::string name = "Pipeline") = 0;
+
+  virtual Stream *get_graphics_stream() = 0;
 
   virtual std::unique_ptr<Surface> create_surface(
       const SurfaceConfig &config) = 0;

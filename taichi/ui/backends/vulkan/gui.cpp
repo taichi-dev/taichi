@@ -51,14 +51,14 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
 
   // Upload Fonts
   {
-    std::unique_ptr<CommandList> cmd_list =
-        device.new_command_list({CommandListType::Graphics});
+    auto stream = device.get_graphics_stream();
+    std::unique_ptr<CommandList> cmd_list = stream->new_command_list();
     VkCommandBuffer command_buffer =
         static_cast<VulkanCommandList *>(cmd_list.get())->vk_command_buffer();
 
     ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
 
-    device.submit_synced(cmd_list.get());
+    stream->submit_synced(cmd_list.get());
     ImGui_ImplVulkan_DestroyFontUploadObjects();
   }
   prepare_for_next_frame();

@@ -157,15 +157,15 @@ void Renderable::update_data(const RenderableInfo &info) {
       }
       app_context_->device().unmap(staging_index_buffer_);
     }
-    auto cmd_list =
-        app_context_->device().new_command_list({CommandListType::Graphics});
+    auto stream = app_context_->device().get_graphics_stream();
+    auto cmd_list = stream->new_command_list();
     cmd_list->buffer_copy(vertex_buffer_.get_ptr(0),
                           staging_vertex_buffer_.get_ptr(0),
                           config_.vertices_count * sizeof(Vertex));
     cmd_list->buffer_copy(index_buffer_.get_ptr(0),
                           staging_index_buffer_.get_ptr(0),
                           config_.indices_count * sizeof(int));
-    app_context_->device().submit_synced(cmd_list.get());
+    stream->submit_synced(cmd_list.get());
   } else {
     throw std::runtime_error("unsupported field source");
   }

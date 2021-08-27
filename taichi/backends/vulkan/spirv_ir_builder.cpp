@@ -314,6 +314,14 @@ SType IRBuilder::get_struct_array_type(const SType &value_type,
     TI_ERROR("buffer type must be primitive or snode struct");
   }
 
+  if (nbytes == 0) {
+    if (value_type.flag == TypeKind::kPrimitive) {
+      TI_WARN("Invalid primitive bit size");
+    } else {
+      TI_WARN("Invalid container stride");
+    }
+  }
+
   // decorate the array type
   this->decorate(spv::OpDecorate, arr_type, spv::DecorationArrayStride, nbytes);
   // declare struct of array

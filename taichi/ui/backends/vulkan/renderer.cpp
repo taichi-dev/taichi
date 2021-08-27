@@ -34,7 +34,7 @@ T *Renderer::get_renderable_of_type() {
   if (T *t = dynamic_cast<T *>(renderables_[next_renderable_].get())) {
     return t;
   } else {
-    throw std::runtime_error("Failed to Get Renderable.");
+    TI_ERROR("Failed to Get Renderable.");
   }
 }
 void Renderer::set_background_color(const glm::vec3 &color) {
@@ -79,7 +79,7 @@ void Renderer::particles(const ParticlesInfo &info, Scene *scene) {
 
 void Renderer::scene(Scene *scene) {
   if (scene->point_lights_.size() == 0) {
-    printf("warning, there are no light sources in the scene.\n");
+    TI_WARN("warning, there are no light sources in the scene.\n");
   }
   float aspect_ratio = swap_chain_.width() / (float)swap_chain_.height();
   scene->update_ubo(aspect_ratio);
@@ -114,16 +114,18 @@ void Renderer::draw_frame(Gui *gui) {
     CUDADriver::get_instance().stream_synchronize(nullptr);
   }
 
-  std::unique_ptr<CommandList> cmd_list =
-      app_context().device().new_command_list({CommandListType::Graphics});
+  auto stream = app_context_.device().get_graphics_stream();
+  auto cmd_list = stream->new_command_list();
   bool color_clear = true;
   std::vector<float> clear_colors = {background_color_[0], background_color_[1],
                                      background_color_[2], 1};
   auto image = swap_chain_.surface().get_target_image();
   auto depth_image = swap_chain_.depth_allocation();
-  cmd_list->begin_renderpass(0, 0, swap_chain_.width(), swap_chain_.height(), 1,
-                             &image, &color_clear, &clear_colors, &depth_image,
-                             true);
+  cmd_list->begin_renderpass(
+      /*xmin=*/0, /*ymin=*/0, /*xmax=*/swap_chain_.width(),
+      /*ymax=*/swap_chain_.height(), /*num_color_attachments=*/1, &image,
+      &color_clear, &clear_colors, &depth_image,
+      /*depth_clear=*/true);
 
   for (int i = 0; i < next_renderable_; ++i) {
     renderables_[i]->record_this_frame_commands(cmd_list.get());
@@ -141,7 +143,7 @@ void Renderer::draw_frame(Gui *gui) {
 
   gui->draw(cmd_list.get());
   cmd_list->end_renderpass();
-  app_context_.device().submit_synced(cmd_list.get());
+  stream->submit_synced(cmd_list.get());
 }
 
 const AppContext &Renderer::app_context() const {

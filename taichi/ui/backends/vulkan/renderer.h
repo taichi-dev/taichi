@@ -73,7 +73,6 @@ class Renderer {
   SwapChain swap_chain_;
   AppContext app_context_;
 
- private:
   template <typename T>
   T *get_renderable_of_type();
 };

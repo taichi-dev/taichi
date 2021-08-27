@@ -155,10 +155,10 @@ TypeFactory &Program::get_type_factory() {
 
 Function *Program::create_function(const FunctionKey &func_key) {
   TI_TRACE("Creating function {}...", func_key.get_full_name());
-  functions.emplace_back(std::make_unique<Function>(this, func_key));
+  functions_.emplace_back(std::make_unique<Function>(this, func_key));
   TI_ASSERT(function_map_.count(func_key) == 0);
-  function_map_[func_key] = functions.back().get();
-  return functions.back().get();
+  function_map_[func_key] = functions_.back().get();
+  return functions_.back().get();
 }
 
 FunctionType Program::compile(Kernel &kernel) {

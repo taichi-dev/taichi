@@ -1724,17 +1724,17 @@ VkDescriptorSetLayout VulkanDevice::get_desc_set_layout(
 
       VkDescriptorPoolSize pool_size[num_desc_types];
       pool_size[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-      pool_size[0].descriptorCount = 1000;
+      pool_size[0].descriptorCount = 5000;
       pool_size[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-      pool_size[1].descriptorCount = 1000;
+      pool_size[1].descriptorCount = 5000;
       pool_size[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      pool_size[2].descriptorCount = 1000;
+      pool_size[2].descriptorCount = 5000;
 
       VkDescriptorPoolCreateInfo create_info{};
       create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
       create_info.pNext = nullptr;
       create_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-      create_info.maxSets = 1000;
+      create_info.maxSets = 5000;
       create_info.poolSizeCount = num_desc_types;
       create_info.pPoolSizes = pool_size;
 

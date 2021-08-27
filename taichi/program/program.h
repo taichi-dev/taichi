@@ -246,7 +246,7 @@ class Program {
   Arch get_snode_accessor_arch();
 
   float64 get_total_compilation_time() {
-    return total_compilation_time;
+    return total_compilation_time_;
   }
 
   void finalize();
@@ -327,11 +327,11 @@ class Program {
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
 
   std::vector<std::unique_ptr<Function>> functions;
-  std::unordered_map<FunctionKey, Function *> function_map;
+  std::unordered_map<FunctionKey, Function *> function_map_;
   std::unique_ptr<LlvmProgramImpl> llvm_program_;
-  float64 total_compilation_time{0.0};
-  static std::atomic<int> num_instances;
-  bool finalized{false};
+  float64 total_compilation_time_{0.0};
+  static std::atomic<int> num_instances_;
+  bool finalized_{false};
 
  public:
 #ifdef TI_WITH_CC

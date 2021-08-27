@@ -49,7 +49,7 @@ inline uint64 *allocate_result_buffer_default(Program *prog) {
 }  // namespace
 
 Program *current_program = nullptr;
-std::atomic<int> Program::num_instances;
+std::atomic<int> Program::num_instances_;
 
 Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
@@ -107,9 +107,9 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   }
 
   memory_pool = std::make_unique<MemoryPool>(this);
-  TI_ASSERT_INFO(num_instances == 0, "Only one instance at a time");
-  total_compilation_time = 0;
-  num_instances += 1;
+  TI_ASSERT_INFO(num_instances_ == 0, "Only one instance at a time");
+  total_compilation_time_ = 0;
+  num_instances_ += 1;
   SNode::counter = 0;
   TI_ASSERT(current_program == nullptr);
   current_program = this;
@@ -119,7 +119,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   result_buffer = nullptr;
   current_callable = nullptr;
   sync = true;
-  finalized = false;
+  finalized_ = false;
 
   if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");
@@ -156,8 +156,8 @@ TypeFactory &Program::get_type_factory() {
 Function *Program::create_function(const FunctionKey &func_key) {
   TI_TRACE("Creating function {}...", func_key.get_full_name());
   functions.emplace_back(std::make_unique<Function>(this, func_key));
-  TI_ASSERT(function_map.count(func_key) == 0);
-  function_map[func_key] = functions.back().get();
+  TI_ASSERT(function_map_.count(func_key) == 0);
+  function_map_[func_key] = functions.back().get();
   return functions.back().get();
 }
 
@@ -186,7 +186,7 @@ FunctionType Program::compile(Kernel &kernel) {
     TI_NOT_IMPLEMENTED;
   }
   TI_ASSERT(ret);
-  total_compilation_time += Time::get_time() - start_t;
+  total_compilation_time_ += Time::get_time() - start_t;
   return ret;
 }
 
@@ -512,9 +512,9 @@ void Program::finalize() {
     llvm_program_->finalize();
   }
 
-  finalized = true;
-  num_instances -= 1;
-  TI_TRACE("Program ({}) finalized.", fmt::ptr(this));
+  finalized_ = true;
+  num_instances_ -= 1;
+  TI_TRACE("Program ({}) finalized_.", fmt::ptr(this));
 }
 
 int Program::default_block_dim(const CompileConfig &config) {
@@ -539,7 +539,7 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
 }
 
 Program::~Program() {
-  if (!finalized)
+  if (!finalized_)
     finalize();
 }
 

@@ -28,11 +28,10 @@ std::size_t MetalProgramImpl::get_snode_num_dynamically_allocated(
   return metal_kernel_mgr_->get_snode_num_dynamically_allocated(snode);
 }
 
-void MetalProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    uint64 **result_buffer_ptr,
-    MemoryPool *memory_pool,
-    KernelProfilerBase *profiler) {
+void MetalProgramImpl::materialize_snode_tree(SNodeTree *tree,
+                                              uint64 **result_buffer_ptr,
+                                              MemoryPool *memory_pool,
+                                              KernelProfilerBase *profiler) {
   TI_ASSERT_INFO(config.use_llvm,
                  "Metal arch requires that LLVM being enabled");
   auto *const root = tree->root();

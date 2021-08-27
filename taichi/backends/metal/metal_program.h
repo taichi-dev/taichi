@@ -21,11 +21,10 @@ class MetalProgramImpl {
 
   std::size_t get_snode_num_dynamically_allocated(SNode *snode);
 
-  void materialize_snode_tree(
-      SNodeTree *tree,
-      uint64 **result_buffer_ptr,
-      MemoryPool *memory_pool,
-      KernelProfilerBase *profiler);
+  void materialize_snode_tree(SNodeTree *tree,
+                              uint64 **result_buffer_ptr,
+                              MemoryPool *memory_pool,
+                              KernelProfilerBase *profiler);
 
   void synchronize() {
     metal_kernel_mgr_->synchronize();

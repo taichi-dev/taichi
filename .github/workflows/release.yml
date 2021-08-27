@@ -55,8 +55,8 @@ jobs:
           git fetch origin master
           export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
           export COMMIT_SHA=$(git rev-parse --short "$GITHUB_SHA")
-          [ -z "${{ github.event.action }}" ] && python build.py build --project_name taichi-nightly
-          [ -z "${{ github.event.action }}" ] || python build.py build
+          if [ $RELEASE_TYPE == "night" ]; then python build.py build --project_name taichi-nightly
+          elif [ $RELEASE_TYPE == "prod" ]; then python build.py build; fi
           cd ..
           NUM_WHL=`ls dist/*.whl | wc -l`
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
@@ -78,10 +78,8 @@ jobs:
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
         run: |
           cd python
-          [ -z "${{ github.event.action }}" ] && export PYPI_PWD="$NIGHT_PWD"
-          [ -z "${{ github.event.action }}" ] && python build.py upload --skip_build --testpypi --project_name taichi-nightly
-          [ -z "${{ github.event.action }}" ] || export PYPI_PWD="$PROD_PWD"
-          [ -z "${{ github.event.action }}" ] || python build.py upload --skip_build
+          if [ $RELEASE_TYPE == "night" ]; then export PYPI_PWD="$NIGHT_PWD" && python build.py upload --skip_build --testpypi --project_name taichi-nightly
+          elif [ $RELEASE_TYPE == "prod" ]; then export PYPI_PWD="$PROD_PWD" && python build.py upload --skip_build; fi
         env:
           RELEASE_TYPE: ${{ matrix.release_type }}
 
@@ -125,8 +123,8 @@ jobs:
           git fetch origin master
           $env:TAICHI_CMAKE_ARGS = $env:CI_SETUP_CMAKE_ARGS
           $env:COMMIT_SHA = $(git rev-parse --short $env:GITHUB_SHA)
-          if ([string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py build --project_name taichi-nightly}
-          if ( -not [string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py build}
+          if ( $env:RELEASE_TYPE -eq "night" ) {python build.py build --project_name taichi-nightly}
+          if ( $env:RELEASE_TYPE -eq "prod" ) {python build.py build}
           cd ..\dist
           $env:WHL = $(dir *.whl)
           python -m pip install $env:WHL
@@ -152,9 +150,9 @@ jobs:
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
         run: |
           cd python
-          if ([string]::IsNullOrEmpty("${{ github.event.action }}")) {$env:PYPI_PWD = "$env:NIGHT_PWD"}
-          if ([string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py upload --skip_build --testpypi --project_name taichi-nightly}
-          if ( -not [string]::IsNullOrEmpty("${{ github.event.action }}")) {$env:PYPI_PWD = "$env:PROD_PWD"}
-          if ( -not [string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py upload --skip_build}
+          if ( $env:RELEASE_TYPE -eq "night" ) {$env:PYPI_PWD = "$env:NIGHT_PWD"}
+          if ( $env:RELEASE_TYPE -eq "night" ) {python build.py upload --skip_build --testpypi --project_name taichi-nightly}
+          if ( $env:RELEASE_TYPE -eq "prod" ) {$env:PYPI_PWD = "$env:PROD_PWD"}
+          if ( $env:RELEASE_TYPE -eq "prod" ) {python build.py upload --skip_build}
         env:
           RELEASE_TYPE: ${{ matrix.release_type }}

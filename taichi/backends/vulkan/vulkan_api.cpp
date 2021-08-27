@@ -557,7 +557,7 @@ void EmbeddedVulkanDevice::create_logical_device() {
   }
 
   vkGetDeviceQueue(device_, queue_family_indices_.compute_family.value(), 0,
-                    &compute_queue_);
+                   &compute_queue_);
 }  // namespace vulkan
 
 }  // namespace vulkan

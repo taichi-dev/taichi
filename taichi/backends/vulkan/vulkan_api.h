@@ -17,6 +17,12 @@
 #include <string>
 #include <functional>
 
+// #define TI_VULKAN_DEBUG
+
+#ifdef TI_VULKAN_DEBUG
+#include <GLFW/glfw3.h>
+#endif
+
 namespace taichi {
 namespace lang {
 namespace vulkan {
@@ -40,6 +46,15 @@ struct VulkanQueueFamilyIndices {
     return graphics_family.has_value() && present_family.has_value();
   }
 };
+
+#ifdef TI_VULKAN_DEBUG
+struct VulkanDeviceDebugStruct {
+  GLFWwindow *window{nullptr};
+  VkSurfaceKHR surface;
+  VkSwapchainKHR swapchain;
+  VkSemaphore image_available;
+};
+#endif
 
 /**
  * This class creates a VulkanDevice instance. The underlying Vk* resources are
@@ -97,6 +112,12 @@ class EmbeddedVulkanDevice {
   void create_surface();
   void pick_physical_device();
   void create_logical_device();
+  void create_command_pool();
+  void create_debug_swapchain();
+
+#ifdef TI_VULKAN_DEBUG
+  VulkanDeviceDebugStruct debug_struct_;
+#endif
 
   VkInstance instance_{VK_NULL_HANDLE};
   VkDebugUtilsMessengerEXT debug_messenger_{VK_NULL_HANDLE};

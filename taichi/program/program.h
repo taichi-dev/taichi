@@ -93,9 +93,6 @@ class Program {
   Callable *current_callable{nullptr};
   CompileConfig config;
   bool sync{false};  // device/host synchronized?
-  bool finalized{false};
-  float64 total_compilation_time{0.0};
-  static std::atomic<int> num_instances;
   std::unique_ptr<MemoryPool> memory_pool{nullptr};
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
 
@@ -105,8 +102,6 @@ class Program {
   std::unique_ptr<AsyncEngine> async_engine{nullptr};
 
   std::vector<std::unique_ptr<Kernel>> kernels;
-  std::vector<std::unique_ptr<Function>> functions;
-  std::unordered_map<FunctionKey, Function *> function_map;
 
   std::unique_ptr<KernelProfilerBase> profiler{nullptr};
 
@@ -331,7 +326,12 @@ class Program {
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
 
+  std::vector<std::unique_ptr<Function>> functions;
+  std::unordered_map<FunctionKey, Function *> function_map;
   std::unique_ptr<LlvmProgramImpl> llvm_program_;
+  float64 total_compilation_time{0.0};
+  static std::atomic<int> num_instances;
+  bool finalized{false};
 
  public:
 #ifdef TI_WITH_CC

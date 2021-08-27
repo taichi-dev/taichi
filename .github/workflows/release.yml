@@ -16,9 +16,9 @@ jobs:
       - id: set-matrix
         run: |
           # For nightly release, we only run on python 3.8
-          [ -z "${{ github.event.action }}" ] && matrix="[{\"release_type\":\"night\",\"python\":\"3.8\"}]"
+          [ -z "${{ github.event.action }}" ] && matrix="[{\"name\":\"taichi-nightly\",\"python\":\"3.8\"}]"
           # For production release, we run on four python versions.
-          [ -z "${{ github.event.action }}" ] || matrix="[{\"release_type\":\"prod\",\"python\":\"3.6\"},{\"release_type\":\"prod\",\"python\":\"3.7\"},{\"release_type\":\"prod\",\"python\":\"3.8\"},{\"release_type\":\"prod\",\"python\":\"3.9\"}]"
+          [ -z "${{ github.event.action }}" ] || matrix="[{\"name\":\"taichi\",\"python\":\"3.6\"},{\"name\":\"taichi\",\"python\":\"3.7\"},{\"name\":\"taichi\",\"python\":\"3.8\"},{\"name\":\"taichi\",\"python\":\"3.9\"}]"
           echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
 
   build_and_upload_mac:
@@ -55,15 +55,14 @@ jobs:
           git fetch origin master
           export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
           export COMMIT_SHA=$(git rev-parse --short "$GITHUB_SHA")
-          if [ $RELEASE_TYPE == "night" ]; then python build.py build --project_name taichi-nightly
-          elif [ $RELEASE_TYPE == "prod" ]; then python build.py build; fi
+          python build.py build --project_name $PROJECT_NAME
           cd ..
           NUM_WHL=`ls dist/*.whl | wc -l`
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           pip install dist/*.whl
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
-          RELEASE_TYPE: ${{ matrix.release_type }}
+          PROJECT_NAME: ${{ matrix.name }}
 
       - name: Test
         run: |
@@ -78,10 +77,10 @@ jobs:
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
         run: |
           cd python
-          if [ $RELEASE_TYPE == "night" ]; then export PYPI_PWD="$NIGHT_PWD" && python build.py upload --skip_build --testpypi --project_name taichi-nightly
-          elif [ $RELEASE_TYPE == "prod" ]; then export PYPI_PWD="$PROD_PWD" && python build.py upload --skip_build; fi
+          if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
+          elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python build.py upload --skip_build; fi
         env:
-          RELEASE_TYPE: ${{ matrix.release_type }}
+          PROJECT_NAME: ${{ matrix.name }}
 
   build_and_upload_windows:
     name: Build and Upload (Windows only)
@@ -123,14 +122,13 @@ jobs:
           git fetch origin master
           $env:TAICHI_CMAKE_ARGS = $env:CI_SETUP_CMAKE_ARGS
           $env:COMMIT_SHA = $(git rev-parse --short $env:GITHUB_SHA)
-          if ( $env:RELEASE_TYPE -eq "night" ) {python build.py build --project_name taichi-nightly}
-          if ( $env:RELEASE_TYPE -eq "prod" ) {python build.py build}
+          python build.py build --project_name $env:PROJECT_NAME
           cd ..\dist
           $env:WHL = $(dir *.whl)
           python -m pip install $env:WHL
         env:
           CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm
-          RELEASE_TYPE: ${{ matrix.release_type }}
+          PROJECT_NAME: ${{ matrix.name }}
 
       - name: Test
         shell: powershell
@@ -150,9 +148,9 @@ jobs:
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
         run: |
           cd python
-          if ( $env:RELEASE_TYPE -eq "night" ) {$env:PYPI_PWD = "$env:NIGHT_PWD"}
-          if ( $env:RELEASE_TYPE -eq "night" ) {python build.py upload --skip_build --testpypi --project_name taichi-nightly}
-          if ( $env:RELEASE_TYPE -eq "prod" ) {$env:PYPI_PWD = "$env:PROD_PWD"}
-          if ( $env:RELEASE_TYPE -eq "prod" ) {python build.py upload --skip_build}
+          if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {$env:PYPI_PWD = "$env:NIGHT_PWD"}
+          if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {python build.py upload --skip_build --testpypi --project_name $env:PROJECT_NAME}
+          if ( $env:PROJECT_NAME -eq "taichi" ) {$env:PYPI_PWD = "$env:PROD_PWD"}
+          if ( $env:PROJECT_NAME -eq "taichi" ) {python build.py upload --skip_build}
         env:
-          RELEASE_TYPE: ${{ matrix.release_type }}
+          PROJECT_NAME: ${{ matrix.name }}

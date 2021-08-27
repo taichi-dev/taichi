@@ -68,7 +68,6 @@ class InteropCUDALauncher {
     return instance;
   }
 
- public:
   InteropCUDALauncher(InteropCUDALauncher const &) = delete;
   void operator=(InteropCUDALauncher const &) = delete;
   taichi::lang::JITSessionCUDA *session();

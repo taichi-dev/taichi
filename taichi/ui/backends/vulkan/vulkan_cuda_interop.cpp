@@ -24,13 +24,13 @@ HANDLE get_device_mem_handle(VkDeviceMemory &mem, VkDevice device) {
           device, "vkGetMemoryWin32HandleKHR");
 
   if (fpGetMemoryWin32HandleKHR == nullptr) {
-    printf("vkGetMemoryFdKHR is nullptr\n");
+    TI_ERROR("vkGetMemoryFdKHR is nullptr");
   }
 
   auto result =
       fpGetMemoryWin32HandleKHR(device, &memory_get_win32_handle_info, &handle);
   if (result != VK_SUCCESS) {
-    printf("vkGetMemoryWin32HandleKHR failed\n");
+    TI_ERROR("vkGetMemoryWin32HandleKHR failed");
   }
 
   return handle;
@@ -50,7 +50,7 @@ int get_device_mem_handle(VkDeviceMemory &mem, VkDevice device) {
       (PFN_vkGetMemoryFdKHR)vkGetDeviceProcAddr(device, "vkGetMemoryFdKHR");
 
   if (fpGetMemoryFdKHR == nullptr) {
-    printf("vkGetMemoryFdKHR is nullptr\n");
+    TI_ERROR("vkGetMemoryFdKHR is nullptr");
   }
   fpGetMemoryFdKHR(device, &memory_get_fd_info, &fd);
 
@@ -139,8 +139,6 @@ CUsurfObject get_image_surface_object_of_external_memory(
     int depth) {
   CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC external_mem_mipmapped_array_desc;
 
-  printf("%ld,%d,%d,%d\n", offset, width, height, depth);
-
   memset(&external_mem_mipmapped_array_desc, 0,
          sizeof(external_mem_mipmapped_array_desc));
 
@@ -195,7 +193,7 @@ HANDLE get_vk_semaphore_handle(
           device, "vkGetSemaphoreWin32HandleKHR");
 
   if (fpGetSemaphoreWin32HandleKHR == nullptr) {
-    printf("fpGetSemaphoreWin32HandleKHR is nullptr\n");
+    TI_ERROR("fpGetSemaphoreWin32HandleKHR is nullptr");
   }
 
   fpGetSemaphoreWin32HandleKHR(device, &semaphore_get_win32_handle_info,
@@ -223,7 +221,7 @@ int get_vk_semaphore_handle(
         device, "vkGetSemaphoreFdKHR");
 
     if (fpGetSemaphoreFdKHR == nullptr) {
-      printf("vkGetSemaphoreFdKHR is nullptr\n");
+      TI_ERROR("vkGetSemaphoreFdKHR is nullptr");
     }
 
     fpGetSemaphoreFdKHR(device, &semaphore_get_fd_info, &fd);

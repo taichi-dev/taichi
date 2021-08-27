@@ -83,8 +83,14 @@ void CUDAContext::launch(void *func,
   // Make sure there are not too many threads for the device.
   // Note that the CUDA random number generator does not allow more than
   // [saturating_grid_dim * max_block_dim] threads.
-  // TI_ASSERT(grid_dim <= get_current_program().config.saturating_grid_dim);
-  // TI_ASSERT(block_dim <= get_current_program().config.max_block_dim);
+
+  // These asserts are currently remove so that when GGUI calls CUDA kernels,
+  // the grid and block dim won't be limited by the limits set by Program. With
+  // these limits, GGUI would have to use kernels with grid strided loops, which
+  // is harmful to performance. A simple example of rendering a bunny can drop
+  // from 2000FPS to 1000FPS because of this. TI_ASSERT(grid_dim <=
+  // get_current_program().config.saturating_grid_dim); TI_ASSERT(block_dim <=
+  // get_current_program().config.max_block_dim);
 
   if (grid_dim > 0) {
     std::lock_guard<std::mutex> _(lock);

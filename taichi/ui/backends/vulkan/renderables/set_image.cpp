@@ -47,13 +47,13 @@ void SetImage::update_data(const SetImageInfo &info) {
     unsigned char *mapped = device_ptr_;
 
     if (img.dtype == PrimitiveType::u8) {
-      InteropCUDALauncher::instance().copy_to_texture_buffer(
-          (unsigned char *)img.data, mapped, width, height, actual_width,
-          actual_height, img.matrix_rows);
+      cuda_launcher_->copy_to_texture_buffer((unsigned char *)img.data, mapped,
+                                             width, height, actual_width,
+                                             actual_height, img.matrix_rows);
     } else if (img.dtype == PrimitiveType::f32) {
-      InteropCUDALauncher::instance().copy_to_texture_buffer(
-          (float *)img.data, mapped, width, height, actual_width, actual_height,
-          img.matrix_rows);
+      cuda_launcher_->copy_to_texture_buffer((float *)img.data, mapped, width,
+                                             height, actual_width,
+                                             actual_height, img.matrix_rows);
     } else {
       throw std::runtime_error("for set image, dtype must be u8 or f32");
     }

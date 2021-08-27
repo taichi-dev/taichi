@@ -1,21 +1,7 @@
 
+#include "taichi/inc/cuda_kernel_utils.inc.h"
 
 extern "C" {
-int thread_idx() {
-  return 0;
-}
-
-int block_idx() {
-  return 0;
-}
-
-int block_dim() {
-  return 0;
-}
-
-int grid_dim() {
-  return 0;
-}
 
 void update_renderables_vertices(float *vbo,
                                  int stride,
@@ -25,15 +11,11 @@ void update_renderables_vertices(float *vbo,
                                  int offset_bytes) {
   int i = block_idx() * block_dim() + thread_idx();
 
-  // for(int i = i0; i < num_vertices; i += grid_dim() * block_dim()){
-
   float *dst = vbo + i * stride + offset_bytes / sizeof(float);
   float *src = data + i * num_components;
   for (int c = 0; c < num_components; ++c) {
     dst[c] = src[c];
   }
-
-  //}
 }
 
 unsigned char get_color_value(float x) {

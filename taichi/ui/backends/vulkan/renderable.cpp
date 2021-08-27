@@ -13,6 +13,7 @@ using namespace taichi::lang::vulkan;
 void Renderable::init(const RenderableConfig &config, AppContext *app_context) {
   config_ = config;
   app_context_ = app_context;
+  cuda_launcher_ = &InteropCUDALauncher::instance();
 }
 
 void Renderable::init_render_resources() {
@@ -83,8 +84,7 @@ void Renderable::update_data(const RenderableInfo &info) {
   int num_components = info.vertices.matrix_rows;
 
   if (info.vertices.field_source == FieldSource::TaichiCuda) {
-    // InteropCUDALauncher::instance();
-    InteropCUDALauncher::instance().update_renderables_vertices(
+    cuda_launcher_->update_renderables_vertices(
         vertex_buffer_device_ptr_, sizeof(Vertex) / sizeof(float),
         (float *)info.vertices.data, num_vertices, num_components,
         offsetof(Vertex, pos));
@@ -94,7 +94,7 @@ void Renderable::update_data(const RenderableInfo &info) {
         throw std::runtime_error(
             "shape of per_vertex_color should be the same as vertices");
       }
-      InteropCUDALauncher::instance().update_renderables_vertices(
+      cuda_launcher_->update_renderables_vertices(
           vertex_buffer_device_ptr_, sizeof(Vertex) / sizeof(float),
           (float *)info.per_vertex_color.data, num_vertices, 3,
           offsetof(Vertex, color));
@@ -105,7 +105,7 @@ void Renderable::update_data(const RenderableInfo &info) {
         throw std::runtime_error(
             "shape of normals should be the same as vertices");
       }
-      InteropCUDALauncher::instance().update_renderables_vertices(
+      cuda_launcher_->update_renderables_vertices(
           vertex_buffer_device_ptr_, sizeof(Vertex) / sizeof(float),
           (float *)info.normals.data, num_vertices, 3,
           offsetof(Vertex, normal));
@@ -113,7 +113,7 @@ void Renderable::update_data(const RenderableInfo &info) {
 
     if (info.indices.valid) {
       indexed_ = true;
-      InteropCUDALauncher::instance().update_renderables_indices(
+      cuda_launcher_->update_renderables_indices(
           index_buffer_device_ptr_, (int *)info.indices.data, num_indices);
     } else {
       indexed_ = false;

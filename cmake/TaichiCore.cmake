@@ -75,9 +75,8 @@ if(TI_WITH_GGUI)
 
 endif()
 
-
+# These files are compiled into .bc and loaded as LLVM module dynamically. They should not be compiled into libtaichi. So they're removed here
 file(GLOB BYTECODE_SOURCE "taichi/runtime/llvm/runtime.cpp" "taichi/runtime/llvm/ui_kernels.cpp")
-
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${BYTECODE_SOURCE})
 
 

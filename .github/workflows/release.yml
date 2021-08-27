@@ -16,9 +16,9 @@ jobs:
       - id: set-matrix
         run: |
           # For nightly release, we only run on python 3.8
-          [ -z "${{ github.event.action }}" ] && matrix="[{\"with_cc\":\"OFF\",\"python\":\"3.8\"}]"
+          [ -z "${{ github.event.action }}" ] && matrix="[{\"release_type\":\"night\",\"python\":\"3.8\"}]"
           # For production release, we run on four python versions.
-          [ -z "${{ github.event.action }}" ] || matrix="[{\"with_cc\":\"OFF\",\"python\":\"3.6\"},{\"with_cc\":\"OFF\",\"python\":\"3.7\"},{\"with_cc\":\"OFF\",\"python\":\"3.8\"},{\"with_cc\":\"OFF\",\"python\":\"3.9\"}]"
+          [ -z "${{ github.event.action }}" ] || matrix="[{\"release_type\":\"prod\",\"python\":\"3.6\"},{\"release_type\":\"prod\",\"python\":\"3.7\"},{\"release_type\":\"prod\",\"python\":\"3.8\"},{\"release_type\":\"prod\",\"python\":\"3.9\"}]"
           echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
 
   build_and_upload_mac:
@@ -62,7 +62,8 @@ jobs:
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           pip install dist/*.whl
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          RELEASE_TYPE: ${{ matrix.release_type }}
 
       - name: Test
         run: |
@@ -81,6 +82,8 @@ jobs:
           [ -z "${{ github.event.action }}" ] && python build.py upload --skip_build --testpypi --project_name taichi-nightly
           [ -z "${{ github.event.action }}" ] || export PYPI_PWD="$PROD_PWD"
           [ -z "${{ github.event.action }}" ] || python build.py upload --skip_build
+        env:
+          RELEASE_TYPE: ${{ matrix.release_type }}
 
   build_and_upload_windows:
     name: Build and Upload (Windows only)
@@ -129,6 +132,7 @@ jobs:
           python -m pip install $env:WHL
         env:
           CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm
+          RELEASE_TYPE: ${{ matrix.release_type }}
 
       - name: Test
         shell: powershell
@@ -152,3 +156,5 @@ jobs:
           if ([string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py upload --skip_build --testpypi --project_name taichi-nightly}
           if ( -not [string]::IsNullOrEmpty("${{ github.event.action }}")) {$env:PYPI_PWD = "$env:PROD_PWD"}
           if ( -not [string]::IsNullOrEmpty("${{ github.event.action }}")) {python build.py upload --skip_build}
+        env:
+          RELEASE_TYPE: ${{ matrix.release_type }}

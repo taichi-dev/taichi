@@ -8,8 +8,8 @@
 namespace taichi {
 namespace lang {
 
-SparseMatrixBuilder::SparseMatrixBuilder(int n, int m, int max_num_triplets)
-    : n_(n), m_(m), max_num_triplets_(max_num_triplets) {
+SparseMatrixBuilder::SparseMatrixBuilder(int rows, int cols, int max_num_triplets)
+    : rows_(rows), cols_(cols), max_num_triplets_(max_num_triplets) {
   data_.reserve(max_num_triplets * 3);
   data_base_ptr_ = get_data_base_ptr();
 }
@@ -19,7 +19,7 @@ void *SparseMatrixBuilder::get_data_base_ptr() {
 }
 
 void SparseMatrixBuilder::print_triplets() {
-  fmt::print("n={}, m={}, num_triplets={} (max={})", n_, m_, num_triplets_,
+  fmt::print("n={}, m={}, num_triplets={} (max={})", rows_, cols_, num_triplets_,
              max_num_triplets_);
   for (int64 i = 0; i < num_triplets_; i++) {
     fmt::print("({}, {}) val={}", data_[i * 3], data_[i * 3 + 1],
@@ -37,7 +37,7 @@ SparseMatrix SparseMatrixBuilder::build() {
     triplets.push_back(T(data_[i * 3], data_[i * 3 + 1],
                          taichi_union_cast<float32>(data_[i * 3 + 2])));
   }
-  SparseMatrix sm(n_, m_);
+  SparseMatrix sm(rows_, cols_);
   sm.get_matrix().setFromTriplets(triplets.begin(), triplets.end());
   return sm;
 }
@@ -46,10 +46,10 @@ SparseMatrix::SparseMatrix(Eigen::SparseMatrix<float32> &matrix) {
   this->matrix_ = matrix;
 }
 
-SparseMatrix::SparseMatrix(int n, int m) : matrix_(n, m) {
+SparseMatrix::SparseMatrix(int rows, int cols) : matrix_(rows, cols) {
 }
 
-std::string SparseMatrix::print() {
+const std::string SparseMatrix::to_string() const{
   Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
   // Note that the code below first converts the sparse matrix into a dense one.
   // https://stackoverflow.com/questions/38553335/how-can-i-print-in-console-a-formatted-sparse-matrix-with-eigen
@@ -58,10 +58,10 @@ std::string SparseMatrix::print() {
   return ostr.str();
 }
 
-int SparseMatrix::num_rows() {
+const int SparseMatrix::num_rows() const{
   return matrix_.rows();
 }
-int SparseMatrix::num_cols() {
+const int SparseMatrix::num_cols() const{
   return matrix_.cols();
 }
 
@@ -70,37 +70,37 @@ Eigen::SparseMatrix<float32> &SparseMatrix::get_matrix() {
 }
 
 SparseMatrix operator+(const SparseMatrix &sm1, const SparseMatrix &sm2) {
-  SparseMatrix res(sm1.n_, sm1.m_);
+  SparseMatrix res(sm1.num_rows(), sm1.num_cols());
   res.matrix_ = sm1.matrix_ + sm2.matrix_;
   return res;
 }
 
 SparseMatrix operator-(const SparseMatrix &sm1, const SparseMatrix &sm2) {
-  SparseMatrix res(sm1.n_, sm1.m_);
+  SparseMatrix res(sm1.num_rows(), sm1.num_cols());
   res.matrix_ = sm1.matrix_ - sm2.matrix_;
   return res;
 }
 
 SparseMatrix operator*(float scale, const SparseMatrix &sm) {
-  SparseMatrix res(sm.n_, sm.m_);
+  SparseMatrix res(sm.num_rows(), sm.num_cols());
   res.matrix_ = scale * sm.matrix_;
   return res;
 }
 
 SparseMatrix operator*(const SparseMatrix &sm1, const SparseMatrix &sm2) {
-  SparseMatrix res(sm1.n_, sm1.m_);
+  SparseMatrix res(sm1.num_rows(), sm1.num_cols());
   res.matrix_ = sm1.matrix_.cwiseProduct(sm2.matrix_);
   return res;
 }
 
 SparseMatrix SparseMatrix::matmult(const SparseMatrix &sm) {
-  SparseMatrix res(sm.n_, sm.m_);
+  SparseMatrix res(sm.num_rows(), sm.num_cols());
   res.matrix_ = matrix_ * sm.matrix_;
   return res;
 }
 
 SparseMatrix SparseMatrix::transpose() {
-  SparseMatrix res(n_, m_);
+  SparseMatrix res(num_rows(), num_cols());
   res.matrix_ = matrix_.transpose();
   return res;
 }

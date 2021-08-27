@@ -958,7 +958,7 @@ void export_lang(py::module &m) {
         });
 
   py::class_<SparseMatrix>(m, "SparseMatrix")
-      .def("print", &SparseMatrix::print)
+      .def("to_string", &SparseMatrix::to_string)
       .def(py::self + py::self, py::return_value_policy::reference_internal)
       .def(py::self - py::self, py::return_value_policy::reference_internal)
       .def(float() * py::self, py::return_value_policy::reference_internal)

@@ -11,7 +11,7 @@ class SparseMatrix;
 
 class SparseMatrixBuilder {
  public:
-  SparseMatrixBuilder(int n, int m, int max_num_triplets);
+  SparseMatrixBuilder(int rows, int cols, int max_num_triplets);
 
   void *get_data_base_ptr();
 
@@ -23,8 +23,8 @@ class SparseMatrixBuilder {
   uint64 num_triplets_{0};
   void *data_base_ptr_{nullptr};
   std::vector<uint32> data_;
-  int n_{0};
-  int m_{0};
+  int rows_{0};
+  int cols_{0};
   uint64 max_num_triplets_{0};
   bool built_{false};
 };
@@ -32,12 +32,12 @@ class SparseMatrixBuilder {
 class SparseMatrix {
  public:
   SparseMatrix() = delete;
-  SparseMatrix(int n, int m);
+  SparseMatrix(int rows, int cols);
   SparseMatrix(Eigen::SparseMatrix<float32> &matrix);
 
-  int num_rows();
-  int num_cols();
-  std::string print();
+  const int num_rows() const;
+  const int num_cols() const;
+  const std::string to_string() const;
   Eigen::SparseMatrix<float32> &get_matrix();
   float32 get_coeff(int row, int col);
 

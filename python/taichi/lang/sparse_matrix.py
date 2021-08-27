@@ -41,7 +41,10 @@ class SparseMatrix:
         return self.matrix.get_coeff(item[0], item[1])
 
     def __str__(self):
-        return self.matrix.print()
+        return self.matrix.to_string()
+
+    def __repr__(self):
+        return self.matrix.to_string()
 
 
 class SparseMatrixBuilder:
@@ -72,7 +75,7 @@ class SparseMatrixEntry:
     def augassign(self, value, op):
         from taichi.lang.impl import call_internal
         if op == 'Add':
-            call_internal("insert_triplet", self.ptr, self.i, self.j, value)
+            call_internal("insert_triplet", self.ptr, self.i, self.j, float(value))
         elif op == 'Sub':
             call_internal("insert_triplet", self.ptr, self.i, self.j, -value)
         else:

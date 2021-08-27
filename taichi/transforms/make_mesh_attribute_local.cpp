@@ -47,7 +47,8 @@ void make_mesh_attribute_local_offload(OffloadedStmt *offload,
   Stmt* mesh_idx_1 = offload->bls_prologue->push_back<BinaryOpStmt>(BinaryOpType::add, mesh_idx, one);
   auto get_print = [&](Stmt* idx) {
     const auto lane = std::vector<Stmt*>{idx};
-    Stmt* globalptr = offload->bls_prologue->push_back<GlobalPtrStmt>(LaneAttribute<SNode*>{offload->snode}, lane);
+    Stmt* globalptr = offload->bls_prologue->push_back<GlobalPtrStmt>(LaneAttribute<SNode*>{
+      offload->mesh->owned_offset.find(offload->major_from_type)->second}, lane);
     Stmt* load = offload->bls_prologue->push_back<GlobalLoadStmt>(globalptr);
     offload->bls_prologue->push_back<PrintStmt>(load);
   };

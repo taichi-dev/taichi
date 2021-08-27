@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/mesh.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -112,8 +113,9 @@ class IRBuilder {
                                    int bit_vectorize = -1,
                                    int num_cpu_threads = 0,
                                    int block_dim = 0);
-  MeshForStmt *create_mesh_for(SNode *snode,
-                                   int block_dim);
+  MeshForStmt *create_mesh_for(mesh::Mesh *mesh,
+                               mesh::MeshElementType element_type,
+                               int block_dim);
   WhileStmt *create_while_true();
   IfStmt *create_if(Stmt *cond);
   WhileControlStmt *create_break();

@@ -8,6 +8,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
 #include "taichi/program/function.h"
+#include "taichi/ir/mesh.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -144,10 +145,13 @@ class FrontendForStmt : public Stmt {
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
   int block_dim;
+
   bool mesh_for = false;
+  mesh::Mesh* mesh;
+  mesh::MeshElementType element_type;
 
   bool is_ranged() const {
-    if (global_var.expr == nullptr) {
+    if (global_var.expr == nullptr && !mesh_for) {
       return true;
     } else {
       return false;
@@ -155,6 +159,8 @@ class FrontendForStmt : public Stmt {
   }
 
   FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var);
+
+  FrontendForStmt(const ExprGroup &loop_var, const mesh::MeshPtr &mesh, const mesh::MeshElementType &element_type);
 
   FrontendForStmt(const Expr &loop_var, const Expr &begin, const Expr &end);
 

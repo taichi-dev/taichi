@@ -286,10 +286,11 @@ std::unique_ptr<Stmt> StructForStmt::clone() const {
   return new_stmt;
 }
 
-MeshForStmt::MeshForStmt(SNode *snode,
-                             std::unique_ptr<Block> &&body,
-                             int block_dim)
-    : snode(snode),
+MeshForStmt::MeshForStmt(mesh::Mesh *mesh,
+                         mesh::MeshElementType element_type,
+                         std::unique_ptr<Block> &&body,
+                        int block_dim)
+    : mesh(mesh), major_from_type(element_type),
       body(std::move(body)),
       block_dim(block_dim) {
   this->body->parent_stmt = this;
@@ -297,7 +298,9 @@ MeshForStmt::MeshForStmt(SNode *snode,
 }
 
 std::unique_ptr<Stmt> MeshForStmt::clone() const {
-  auto new_stmt = std::make_unique<MeshForStmt>(snode, body->clone(), block_dim);
+  auto new_stmt = std::make_unique<MeshForStmt>(mesh, major_from_type, body->clone(), block_dim);
+  new_stmt->major_to_types = major_to_types;
+  new_stmt->minor_relation_types = minor_relation_types;
   return new_stmt;
 }
 

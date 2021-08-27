@@ -105,8 +105,8 @@ StructForStmt *IRBuilder::create_struct_for(SNode *snode,
       num_cpu_threads, block_dim));
 }
 
-MeshForStmt *IRBuilder::create_mesh_for(SNode *snode, int block_dim) {
-  return insert(Stmt::make_typed<MeshForStmt>(snode, std::make_unique<Block>(), block_dim));
+MeshForStmt *IRBuilder::create_mesh_for(mesh::Mesh *mesh, mesh::MeshElementType element_type, int block_dim) {
+  return insert(Stmt::make_typed<MeshForStmt>(mesh, element_type, std::make_unique<Block>(), block_dim));
 }
 
 WhileStmt *IRBuilder::create_while_true() {

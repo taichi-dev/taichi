@@ -330,6 +330,8 @@ class IRPrinter : public IRVisitor {
       print("{} : for {} in range({}, {}) {}{{", for_stmt->name(), vars,
             for_stmt->begin.serialize(), for_stmt->end.serialize(),
             block_dim_info(for_stmt->block_dim));
+    } else if (for_stmt->mesh_for) {
+      print("{} : for {} in mesh {{", for_stmt->name(), vars);
     } else {
       print("{} : for {} in {} {}{}{{", for_stmt->name(), vars,
             for_stmt->global_var.is<GlobalVariableExpression>()

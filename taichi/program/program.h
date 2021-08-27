@@ -326,7 +326,7 @@ class Program {
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
 
-  std::vector<std::unique_ptr<Function>> functions;
+  std::vector<std::unique_ptr<Function>> functions_;
   std::unordered_map<FunctionKey, Function *> function_map_;
   std::unique_ptr<LlvmProgramImpl> llvm_program_;
   float64 total_compilation_time_{0.0};

@@ -22,12 +22,18 @@ class SparseMatrix:
 
     def __mul__(self, other):
         if isinstance(other, float):
-            sm = other * self.matrix
+            sm = self.matrix * other
             return SparseMatrix(sm=sm)
         elif isinstance(other, SparseMatrix):
             assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}), ({other.n}, {other.m})"
             sm = self.matrix * other.matrix
             return SparseMatrix(sm=sm)
+
+    def __rmul__(self, other):
+        if isinstance(other, float):
+            sm = other * self.matrix
+            return SparseMatrix(sm=sm)
+
 
     def transpose(self):
         sm = self.matrix.transpose()

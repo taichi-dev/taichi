@@ -220,8 +220,6 @@ llvm_map_components_to_libnames(llvm_libs
         )
 target_link_libraries(${LIBRARY_NAME} ${llvm_libs})
 
-include_directories(${LLVM_INCLUDE_DIRS})
-
 if (APPLE AND "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64")
     llvm_map_components_to_libnames(llvm_aarch64_libs AArch64)
     target_link_libraries(${LIBRARY_NAME} ${llvm_aarch64_libs})

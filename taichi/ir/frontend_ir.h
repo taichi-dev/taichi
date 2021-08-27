@@ -78,22 +78,6 @@ class FrontendAssertStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-class FrontendInternalFuncStmt : public Stmt {
- public:
-  std::string func_name;
-  std::vector<Expr> args;
-
-  FrontendInternalFuncStmt(const std::string &func_name,
-                           std::vector<Expr> args_)
-      : func_name(func_name) {
-    for (auto &a : args_) {
-      args.push_back(load_if_ptr(a));
-    }
-  }
-
-  TI_DEFINE_ACCEPT
-};
-
 class FrontendAssignStmt : public Stmt {
  public:
   Expr lhs, rhs;

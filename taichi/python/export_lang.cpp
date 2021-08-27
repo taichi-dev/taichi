@@ -7,7 +7,6 @@
 
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
-#include "pybind11/eigen.h"
 
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/frontend_ir.h"
@@ -962,6 +961,7 @@ void export_lang(py::module &m) {
       .def(py::self + py::self, py::return_value_policy::reference_internal)
       .def(py::self - py::self, py::return_value_policy::reference_internal)
       .def(float() * py::self, py::return_value_policy::reference_internal)
+      .def(py::self * float(), py::return_value_policy::reference_internal)
       .def(py::self * py::self, py::return_value_policy::reference_internal)
       .def("matmult", &SparseMatrix::matmult,
            py::return_value_policy::reference_internal)

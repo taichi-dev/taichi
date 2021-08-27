@@ -33,7 +33,7 @@ A = K.build()
 print(">>>>>>>> After build: ")
 print(A)
 
-print(">>>>>>> Summation Test: ")
+print(">>>> Summation Test: ")
 C = A + A
 print(C)
 
@@ -41,8 +41,12 @@ print(">>>> Subtraction Test")
 D = A - A
 print(D)
 
-print(">>>> Multiplication with scalar")
+print(">>>> Multiplication with scalar at right")
 E = A * 3.0
+print(E)
+
+print(">>>> Multiplication with scalar at left")
+E = 3.0 * A
 print(E)
 
 print(">>>> Transpose Test")
@@ -53,8 +57,8 @@ print(">>>> Matrix Multiplication")
 G = E @ A
 print(G)
 
-print(">>> Elment-wise Multiplication")
+print(">>>> Elment-wise Multiplication")
 H = E * A
 print(H)
 
-print(f">>> Element Access: A[0,0] = {A[0,0]}")
+print(f">>>> Element Access: A[0,0] = {A[0,0]}")

@@ -636,44 +636,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         builder->CreateBr(loop_test_bb);
         builder->SetInsertPoint(func_exit);
       }
-      /*auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
-      loop_vars_llvm[stmt].push_back(loop_var);
-      builder->CreateStore(indices[0], loop_var);
-      stmt->body->accept(this);*/
-      
-      /*llvm::Value *thread_idx = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
-      llvm::Value *block_dim = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
-      llvm::Value *root = builder->CreateBitCast(
-        get_root(stmt->snode->parent->parent->get_snode_tree_id()),
-        llvm::PointerType::get(
-            StructCompiler::get_llvm_node_type(module.get(), stmt->root()),
-            0));
-      llvm::Value *lookup_0 = builder->CreateGEP(root, tlctx->get_constant(0));
-      llvm::Value *ch_0 = create_call(stmt->snode->parent->get_ch_from_parent_func_name(),
-                          {builder->CreateBitCast(
-                              lookup_0,
-                              llvm::PointerType::getInt8PtrTy(*llvm_context))});
-      llvm::Value *getch_0 = builder->CreateBitCast(
-        ch_0, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
-                                       module.get(), stmt->snode->parent),
-                                   0));
-      //TODO: activate snode?
-      llvm::Value *lookup_1 = call(snode, llvm_val[stmt->snode->parent], "lookup_element",
-                          {get_arg(1)});
-      llvm::Value *ch_1 = create_call(stmt->snode->get_ch_from_parent_func_name(),
-                          {builder->CreateBitCast(
-                              lookup_1,
-                              llvm::PointerType::getInt8PtrTy(*llvm_context))});
-      llvm::Value *getch_1 = builder->CreateBitCast(
-        ch_1, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
-                                       module.get(), stmt->snode),
-                                   0));
-      llvm::Value *load = builder->CreateLoad(tlctx->get_data_type<int>(), getch_1);
-      auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
-      loop_vars_llvm[stmt].push_back(loop_var);
-      builder->CreateStore(load, loop_var);
-      stmt->body->accept(this);*/
-
 
       body = guard.body;
     }

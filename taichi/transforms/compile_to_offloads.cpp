@@ -187,6 +187,10 @@ void offload_to_executable(IRNode *ir,
   if (make_block_local) {
     irpass::make_block_local(ir, config, {kernel->get_name()});
     print("Make block local");
+
+    // mesh-for related make-local passes
+    irpass::make_mesh_attribute_local(ir, config, {kernel->get_name()});
+    print("Make mesh attribute local");
   }
 
   irpass::demote_atomics(ir, config);

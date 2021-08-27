@@ -9,52 +9,9 @@ TLANG_NAMESPACE_BEGIN
 
 namespace {
 
-void make_mesh_block_local_offload(OffloadedStmt *offload,
-                              const CompileConfig &config,
-                              const std::string &kernel_name) {
-  for (int j = 0; j < (int)offload->body->statements.size(); j++) {
-    if (auto ifs = offload->body->statements[j]->cast<InternalFuncStmt>()) {
-      if (ifs->func_name == "l2g") {
-        VecStatement block;
-        SNode *l2g = ifs->args[0]->cast<GlobalLoadStmt>()->src->cast<GlobalPtrStmt>()->snodes[0];
-        SNode *offset = ifs->args[2]->cast<GlobalLoadStmt>()->src->cast<GlobalPtrStmt>()->snodes[0];
-        auto get_load = [&](SNode *snode, Stmt* idx) {
-          const auto lane = std::vector<Stmt*>{idx};
-          Stmt* globalptr = block.push_back<GlobalPtrStmt>(LaneAttribute<SNode*>{snode}, lane);
-          Stmt* load = block.push_back<GlobalLoadStmt>(globalptr);
-          return load;
-        };
-        Stmt* mesh_idx = block.push_back<InternalFuncStmt, const std::string, const std::vector<Stmt*>>("mesh_idx", {});
-        Stmt* total_v = get_load(offset, mesh_idx);
-        Stmt* index = block.push_back<BinaryOpStmt>(BinaryOpType::add, total_v, ifs->args[1]);
-        Stmt* ans = get_load(l2g, index);
-        ifs->replace_with(std::move(block));
-      }
-    }
-  }
-  offload->bls_prologue = std::make_unique<Block>();
-  offload->bls_prologue->parent_stmt = offload;
-  Stmt* mesh_idx = offload->bls_prologue->push_back<InternalFuncStmt, const std::string, const std::vector<Stmt*>>("mesh_idx", {});
-  Stmt* one = offload->bls_prologue->push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-    TypedConstant(TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32), 1)));
-  Stmt* mesh_idx_1 = offload->bls_prologue->push_back<BinaryOpStmt>(BinaryOpType::add, mesh_idx, one);
-  auto get_print = [&](Stmt* idx) {
-    const auto lane = std::vector<Stmt*>{idx};
-    Stmt* globalptr = offload->bls_prologue->push_back<GlobalPtrStmt>(LaneAttribute<SNode*>{offload->snode}, lane);
-    Stmt* load = offload->bls_prologue->push_back<GlobalLoadStmt>(globalptr);
-    offload->bls_prologue->push_back<PrintStmt>(load);
-  };
-  get_print(mesh_idx);
-  get_print(mesh_idx_1);
-}
-
 void make_block_local_offload(OffloadedStmt *offload,
                               const CompileConfig &config,
                               const std::string &kernel_name) {
-  if (offload->task_type == OffloadedStmt::TaskType::mesh_for) {
-    make_mesh_block_local_offload(offload, config, kernel_name);
-    return;
-  }
   if (offload->task_type != OffloadedStmt::TaskType::struct_for)
     return;
 

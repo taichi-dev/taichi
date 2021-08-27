@@ -120,7 +120,7 @@ installer.
     shipped with .NET).
 
 2. Check out `examples` for runnable examples. Run them with commands
-  like `python3 examples/mpm128.py`.
+  like `python3 examples/simulation/mpm128.py`.
 
 3. Execute `python3 -m taichi test` to run all the tests. It may take
   up to 5 minutes to run all tests.

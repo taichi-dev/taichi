@@ -417,7 +417,12 @@ struct VertexInputAttribute {
 };
 
 struct SurfaceConfig {
+  // VSync:
+  // - true: will attempt to wait for V-Blank
+  // - when adaptive is true: when supported, if a V-Blank is missed, instead of
+  //   waiting, a tearing may appear, reduces overall latency
   bool vsync{false};
+  bool adaptive{true};
   void *window_handle{nullptr};
 };
 

@@ -144,25 +144,6 @@ class SparseMatrixProxy:
     def subscript(self, i, j):
         return SparseMatrixEntry(self.ptr, i, j)
 
-class SparseMatrixBuilder:
-    def __init__(self, n=None, m=None, max_num_triplets=0):
-        self.n = n
-        self.m = m if m else n
-        if n is not None and m is not None:
-            from taichi.core.util import ti_core as _ti_core
-            self.ptr = _ti_core.create_sparse_matrix_builder(
-                n, m, max_num_triplets)
-
-    def get_addr(self):
-        return self.ptr.get_addr()
-
-    def print_triplets(self):
-        self.ptr.print_triplets()
-
-    def build(self):
-        sm = self.ptr.build()
-        return SparseMatrix(sm=sm)
-
 sparse_matrix_builder = SparseMatrixBuilder
 """Alias for :class:`~taichi.lang.sparse_matrix.SparseMatrixBuilder`.
 """

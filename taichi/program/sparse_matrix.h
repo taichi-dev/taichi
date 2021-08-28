@@ -39,7 +39,7 @@ class SparseMatrix {
   const int num_cols() const;
   const std::string to_string() const;
   Eigen::SparseMatrix<float32> &get_matrix();
-  float32 get_coeff(int row, int col);
+  float32 get_element(int row, int col);
 
   friend SparseMatrix operator+(const SparseMatrix &sm1,
                                 const SparseMatrix &sm2);

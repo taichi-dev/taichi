@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.x64, print_preprocessed=True)
+ti.init(arch=ti.x64)
 
 n = 8
 
@@ -25,39 +25,39 @@ def fill(A: ti.sparse_matrix_builder(), b: ti.sparse_matrix_builder(),
 
 fill(K, f, 3)
 
-print(">>>> Triplets")
+print(">>>> K.print_triplets()")
 K.print_triplets()
 
 A = K.build()
 
-print(">>>> Built")
+print(">>>> A = K.build()")
 print(A)
 
-print(">>>> Summation")
+print(">>>> Summation: C = A + A")
 C = A + A
 print(C)
 
-print(">>>> Subtraction")
+print(">>>> Subtraction: D = A - A")
 D = A - A
 print(D)
 
-print(">>>> Multiplication with a scalar on the right")
+print(">>>> Multiplication with a scalar on the right: E = A * 3.0")
 E = A * 3.0
 print(E)
 
-print(">>>> Multiplication with a scalar on the left")
+print(">>>> Multiplication with a scalar on the left: E = 3.0 * A")
 E = 3.0 * A
 print(E)
 
-print(">>>> Transpose")
+print(">>>> Transpose: F = A.transpose()")
 F = A.transpose()
 print(F)
 
-print(">>>> Matrix multiplication")
+print(">>>> Matrix multiplication: G = E @ A")
 G = E @ A
 print(G)
 
-print(">>>> Element-wise multiplication")
+print(">>>> Element-wise multiplication: H = E * A")
 H = E * A
 print(H)
 

@@ -952,7 +952,7 @@ void export_lang(py::module &m) {
   m.def("create_sparse_matrix_builder",
         [](int n, int m, uint64 max_num_entries) {
           TI_ERROR_IF(!arch_is_cpu(get_current_program().config.arch),
-                      "Only CPU arch is supported right now!");
+                      "SparseMatrix only supports CPU for now.");
           return SparseMatrixBuilder(n, m, max_num_entries);
         });
 
@@ -967,7 +967,7 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference_internal)
       .def("transpose", &SparseMatrix::transpose,
            py::return_value_policy::reference_internal)
-      .def("get_coeff", &SparseMatrix::get_coeff)
+      .def("get_element", &SparseMatrix::get_element)
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols);
 

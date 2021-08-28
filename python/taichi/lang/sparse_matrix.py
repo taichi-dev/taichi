@@ -43,8 +43,8 @@ class SparseMatrix:
         sm = self.matrix.matmul(other.matrix)
         return SparseMatrix(sm=sm)
 
-    def __getitem__(self, item):
-        return self.matrix.get_coeff(item[0], item[1])
+    def __getitem__(self, indices):
+        return self.matrix.get_element(indices[0], indices[1])
 
     def __str__(self):
         return self.matrix.to_string()
@@ -54,13 +54,13 @@ class SparseMatrix:
 
 
 class SparseMatrixBuilder:
-    def __init__(self, n=None, m=None, max_num_triplets=0):
-        self.n = n
-        self.m = m if m else n
-        if n is not None and m is not None:
+    def __init__(self, num_rows=None, num_cols=None, max_num_triplets=0):
+        self.num_rows = num_rows
+        self.num_cols = num_cols if num_cols else num_rows
+        if num_rows is not None:
             from taichi.core.util import ti_core as _ti_core
             self.ptr = _ti_core.create_sparse_matrix_builder(
-                n, m, max_num_triplets)
+                num_rows, num_cols, max_num_triplets)
 
     def get_addr(self):
         return self.ptr.get_addr()

@@ -112,7 +112,7 @@ SparseMatrix SparseMatrix::transpose() {
   return res;
 }
 
-float32 SparseMatrix::get_coeff(int row, int col) {
+float32 SparseMatrix::get_element(int row, int col) {
   return matrix_.coeff(row, col);
 }
 

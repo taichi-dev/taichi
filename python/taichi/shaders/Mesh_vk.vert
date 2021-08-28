@@ -10,37 +10,36 @@ layout(location = 1) out vec3 frag_normal;
 layout(location = 2) out vec2 frag_texcoord;
 layout(location = 3) out vec3 selected_color;
 
-
-struct SceneUBO{
-    vec3 camera_pos;
-    mat4 view;
-    mat4 projection;
-    vec3 ambient_light;
-    int point_light_count;
+struct SceneUBO {
+  vec3 camera_pos;
+  mat4 view;
+  mat4 projection;
+  vec3 ambient_light;
+  int point_light_count;
 };
 
-struct PointLight{
-    vec3 pos;
-    vec3 color;
+struct PointLight {
+  vec3 pos;
+  vec3 color;
 };
 
 layout(binding = 0) uniform UBO {
-    SceneUBO scene;
-    vec3 color;
-    int use_per_vertex_color;
-} ubo;
+  SceneUBO scene;
+  vec3 color;
+  int use_per_vertex_color;
+}
+ubo;
 
 void main() {
-    gl_Position =  ubo.scene.projection * ubo.scene.view * vec4(in_position,1.0);
-    gl_Position.y *= -1.0;
-    frag_texcoord = in_texcoord;
-    frag_pos = in_position;
-    frag_normal = in_normal;
+  gl_Position = ubo.scene.projection * ubo.scene.view * vec4(in_position, 1.0);
+  gl_Position.y *= -1.0;
+  frag_texcoord = in_texcoord;
+  frag_pos = in_position;
+  frag_normal = in_normal;
 
-    if(ubo.use_per_vertex_color == 0){
-        selected_color = ubo.color;
-    }
-    else{
-        selected_color = in_color;
-    }
+  if (ubo.use_per_vertex_color == 0) {
+    selected_color = ubo.color;
+  } else {
+    selected_color = in_color;
+  }
 }

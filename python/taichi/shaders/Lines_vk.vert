@@ -8,24 +8,23 @@ layout(location = 3) in vec3 in_color;
 layout(location = 0) out vec2 frag_texcoord;
 
 layout(binding = 0) uniform UniformBufferObject {
-    vec3 color;
-    int use_per_vertex_color;
-} ubo;
-
+  vec3 color;
+  int use_per_vertex_color;
+}
+ubo;
 
 layout(location = 1) out vec3 selected_color;
 
 void main() {
-    float x = in_position.x * 2.0 - 1.0;
-    float y = - (in_position.y * 2.0 - 1.0);
+  float x = in_position.x * 2.0 - 1.0;
+  float y = -(in_position.y * 2.0 - 1.0);
 
-    gl_Position = vec4(x,y,0.0, 1.0);
-    frag_texcoord = in_texcoord;
+  gl_Position = vec4(x, y, 0.0, 1.0);
+  frag_texcoord = in_texcoord;
 
-    if(ubo.use_per_vertex_color == 0){
-        selected_color = ubo.color;
-    }
-    else{
-        selected_color = in_color;
-    }
+  if (ubo.use_per_vertex_color == 0) {
+    selected_color = ubo.color;
+  } else {
+    selected_color = in_color;
+  }
 }

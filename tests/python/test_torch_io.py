@@ -175,7 +175,8 @@ def test_io_zeros():
     assert zeros[1, 2] == 4
 
 
-@ti.torch_test
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
 def test_io_struct():
     n = 16
     x1 = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))

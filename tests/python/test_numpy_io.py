@@ -46,7 +46,7 @@ def test_from_numpy_2d():
             assert val[i, j] == i + j * 3
 
 
-@ti.all_archs
+@ti.test()
 def test_to_numpy_struct():
     n = 16
     f = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
@@ -62,7 +62,7 @@ def test_to_numpy_struct():
         assert arr_dict["b"][i] == i * 2
 
 
-@ti.all_archs
+@ti.test()
 def test_from_numpy_struct():
     n = 16
     f = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))

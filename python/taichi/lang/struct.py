@@ -1,11 +1,12 @@
 import copy
 import numbers
 
-from taichi.lang import impl
+from numpy import broadcast
+
+from taichi.lang import expr, impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.expr import Expr
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix
 from taichi.lang.ops import cast
@@ -108,7 +109,7 @@ class Struct(TaichiOperations):
         _taichi_skip_traceback = 1
         ret = self.empty_copy()
         for k, v in self.items:
-            if isinstance(v, Expr):
+            if isinstance(v, expr.Expr):
                 ret.entries[k] = foo(v)
             else:
                 ret.entries[k] = v.element_wise_unary(foo)
@@ -123,14 +124,14 @@ class Struct(TaichiOperations):
             assert self.entries.keys() == other.entries.keys(
             ), f"Member mismatch between structs {self.keys}, {other.keys}"
             for k, v in self.items:
-                if isinstance(v, Expr):
+                if isinstance(v, expr.Expr):
                     ret.entries[k] = foo(v, other.entries[k])
                 else:
                     ret.entries[k] = v.element_wise_binary(
                         foo, other.entries[k])
         else:  # assumed to be scalar
             for k, v in self.items:
-                if isinstance(v, Expr):
+                if isinstance(v, expr.Expr):
                     ret.entries[k] = foo(v, other)
                 else:
                     ret.entries[k] = v.element_wise_binary(foo, other)
@@ -141,7 +142,11 @@ class Struct(TaichiOperations):
             other = Struct(other)
         if not isinstance(other, Struct):
             ret = self.empty_copy()
-            ret.entries = {k: other for k in ret.keys}
+            for k, v in ret.items:
+                if isinstance(v, (Matrix, Struct)):
+                    ret.entries[k] = v.broadcast_copy(other)
+                else:
+                    ret.entries[k] = other
             other = ret
         assert self.entries.keys() == other.entries.keys(
         ), f"Member mismatch between structs {self.keys}, {other.keys}"
@@ -162,14 +167,14 @@ class Struct(TaichiOperations):
             assert self.entries.keys() == other.entries.keys(
             ), f"Member mismatch between structs {self.keys}, {other.keys}"
             for k, v in self.items:
-                if isinstance(v, Expr):
+                if isinstance(v, expr.Expr):
                     ret.entries[k] = foo(v, other.entries[k])
                 else:
                     ret.entries[k] = v.element_wise_binary(
                         foo, other.entries[k])
         else:  # assumed to be scalar
             for k, v in self.items:
-                if isinstance(v, Expr):
+                if isinstance(v, expr.Expr):
                     ret.entries[k] = foo(v, other)
                 else:
                     ret.entries[k] = v.element_wise_binary(foo, other)
@@ -180,7 +185,7 @@ class Struct(TaichiOperations):
         other = self.broadcast_copy(other)
         extra = self.broadcast_copy(extra)
         for k, v in self.items:
-            if isinstance(v, Expr):
+            if isinstance(v, expr.Expr):
                 ret.entries[k] = foo(v, other.entries[k], extra.entries[k])
             else:
                 ret.entries[k] = v.element_wise_ternary(
@@ -200,7 +205,14 @@ class Struct(TaichiOperations):
         return self.element_wise_writeback_binary(assign_renamed, val)
 
     def empty_copy(self):
-        return Struct.empty(self.keys)
+        """
+        Nested structs and matrices need to be recursively handled.
+        """
+        struct = Struct.empty(self.keys)
+        for k, v in self.items:
+            if isinstance(v, (Struct, Matrix)):
+                struct.entries[k] = v.empty_copy()
+        return struct
 
     def copy(self):
         ret = self.empty_copy()
@@ -211,7 +223,7 @@ class Struct(TaichiOperations):
     def variable(self):
         ret = self.copy()
         ret.entries = {
-            k: impl.expr_init(v) if isinstance(v, Expr) else v.variable()
+            k: impl.expr_init(v) if isinstance(v, (numbers.Number, expr.Expr)) else v.variable()
             for k, v in ret.items
         }
         return ret
@@ -226,7 +238,8 @@ class Struct(TaichiOperations):
     def __str__(self):
         """Python scope struct array print support."""
         if impl.inside_kernel():
-            return f'<ti.Struct {", ".join([str(k) + "=" + str(v) for k, v in self.entries])}>'
+            item_str = ", ".join([str(k) + "=" + str(v) for k, v in self.items])
+            return f'<ti.Struct {item_str}>'
         else:
             return str(self.to_dict())
 
@@ -509,15 +522,16 @@ class StructType(CompoundType):
                 )
             else:
                 # initialize struct members by keywords
-                entries = kwargs
+                entries = Struct(kwargs)
         elif len(args) == 1:
             # fill a single scalar
-            if isinstance(args[0], numbers.Number):
-                return self.scalar_filled(args[0])
-            # fill a single vector or matrix
-            # initialize struct members by dictionary
-            entries = args[0]
-        struct = self.cast(Struct(entries))
+            if isinstance(args[0], (numbers.Number, expr.Expr)):
+                entries = self.scalar_filled(args[0])
+            else:
+                # fill a single vector or matrix
+                # initialize struct members by dictionary
+                entries = Struct(args[0])
+        struct = self.cast(entries)
         return struct
 
     def cast(self, struct, in_place=False):
@@ -534,7 +548,7 @@ class StructType(CompoundType):
                 if in_python_scope():
                     v = struct.entries[k]
                     struct.entries[k] = int(
-                        v) if self.dtype in ti.integer_types else v
+                        v) if dtype in ti.integer_types else float(v)
                 else:
                     struct.entries[k] = cast(struct.entries[k], dtype)
         return struct
@@ -542,8 +556,13 @@ class StructType(CompoundType):
     def empty(self):
         """
         Create an empty instance of the given compound type.
+        Nested structs and matrices need to be recursively handled.
         """
-        return Struct.empty(self.members.keys())
+        struct = Struct.empty(self.members.keys())
+        for k, dtype in self.members.items():
+            if isinstance(dtype, CompoundType):
+                struct.entries[k] = dtype.empty()
+        return struct
 
     def field(self, **kwargs):
         return Struct.field(self.members, **kwargs)

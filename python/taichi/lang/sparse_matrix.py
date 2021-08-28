@@ -39,6 +39,7 @@ class SparseMatrix:
         return SparseMatrix(sm=sm)
 
     def __matmul__(self, other):
+        assert self.m == other.n, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
         sm = self.matrix.matmul(other.matrix)
         return SparseMatrix(sm=sm)
 

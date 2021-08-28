@@ -72,21 +72,18 @@ Eigen::SparseMatrix<float32> &SparseMatrix::get_matrix() {
 }
 
 SparseMatrix operator+(const SparseMatrix &sm1, const SparseMatrix &sm2) {
-  SparseMatrix res(sm1.num_rows(), sm1.num_cols());
-  res.matrix_ = sm1.matrix_ + sm2.matrix_;
-  return res;
+  Eigen::SparseMatrix<float32> res(sm1.matrix_ + sm2.matrix_);
+  return SparseMatrix(res);
 }
 
 SparseMatrix operator-(const SparseMatrix &sm1, const SparseMatrix &sm2) {
-  SparseMatrix res(sm1.num_rows(), sm1.num_cols());
-  res.matrix_ = sm1.matrix_ - sm2.matrix_;
-  return res;
+  Eigen::SparseMatrix<float32> res(sm1.matrix_ - sm2.matrix_);
+  return SparseMatrix(res);
 }
 
 SparseMatrix operator*(float scale, const SparseMatrix &sm) {
-  SparseMatrix res(sm.num_rows(), sm.num_cols());
-  res.matrix_ = scale * sm.matrix_;
-  return res;
+  Eigen::SparseMatrix<float32> res(scale * sm.matrix_);
+  return SparseMatrix(res);
 }
 
 SparseMatrix operator*(const SparseMatrix &sm, float scale) {
@@ -94,21 +91,18 @@ SparseMatrix operator*(const SparseMatrix &sm, float scale) {
 }
 
 SparseMatrix operator*(const SparseMatrix &sm1, const SparseMatrix &sm2) {
-  SparseMatrix res(sm1.num_rows(), sm1.num_cols());
-  res.matrix_ = sm1.matrix_.cwiseProduct(sm2.matrix_);
-  return res;
+  Eigen::SparseMatrix<float32> res(sm1.matrix_.cwiseProduct(sm2.matrix_));
+  return SparseMatrix(res);
 }
 
 SparseMatrix SparseMatrix::matmul(const SparseMatrix &sm) {
-  SparseMatrix res(sm.num_rows(), sm.num_cols());
-  res.matrix_ = matrix_ * sm.matrix_;
-  return res;
+  Eigen::SparseMatrix<float32> res(matrix_ * sm.matrix_);
+  return SparseMatrix(res);
 }
 
 SparseMatrix SparseMatrix::transpose() {
-  SparseMatrix res(num_rows(), num_cols());
-  res.matrix_ = matrix_.transpose();
-  return res;
+  Eigen::SparseMatrix<float32> res(matrix_.transpose());
+  return SparseMatrix(res);
 }
 
 float32 SparseMatrix::get_element(int row, int col) {

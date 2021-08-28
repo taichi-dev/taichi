@@ -556,6 +556,13 @@ if 1:
                     arg_init.value.args[0] = dt
                     arg_init.value.args[1] = parse_expr("{}".format(array_dim))
                     arg_decls.append(arg_init)
+                elif isinstance(ctx.func.argument_annotations[i],
+                                ti.sparse_matrix_builder):
+                    arg_init = parse_stmt(
+                        'x = ti.lang.kernel_arguments.decl_sparse_matrix()')
+                    arg_init.targets[0].id = arg.arg
+                    ctx.create_variable(arg.arg)
+                    arg_decls.append(arg_init)
                 elif isinstance(ctx.func.argument_annotations[i], ti.any_arr):
                     arg_init = parse_stmt(
                         'x = ti.lang.kernel_arguments.decl_any_arr_arg(0, 0, 0, 0)'

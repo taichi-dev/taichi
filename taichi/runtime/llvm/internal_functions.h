@@ -20,6 +20,23 @@ i32 refresh_counter(Context *context) {
   return 0;
 }
 
+i32 insert_triplet(Context *context,
+                   int64 base_ptr_,
+                   int i,
+                   int j,
+                   float value) {
+  auto base_ptr = (int64 *)base_ptr_;
+
+  int64 *num_triplets = base_ptr;
+  auto data_base_ptr = *(int32 **)(base_ptr + 1);
+
+  auto triplet_id = atomic_add_i64(num_triplets, 1);
+  data_base_ptr[triplet_id * 3] = i;
+  data_base_ptr[triplet_id * 3 + 1] = j;
+  data_base_ptr[triplet_id * 3 + 2] = taichi_union_cast<int32>(value);
+  return 0;
+}
+
 i32 test_internal_func_args(Context *context, float32 i, float32 j, int32 k) {
   return static_cast<int>((i + j) * k);
 }

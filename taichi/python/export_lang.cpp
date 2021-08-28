@@ -23,6 +23,7 @@
 #include "taichi/util/action_recorder.h"
 #include "taichi/system/timeline.h"
 #include "taichi/python/snode_registry.h"
+#include "taichi/program/sparse_matrix.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
@@ -942,6 +943,39 @@ void export_lang(py::module &m) {
         return program->add_snode_tree(registry->finalize(root));
       },
       py::return_value_policy::reference);
+
+  py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
+      .def("print_triplets", &SparseMatrixBuilder::print_triplets)
+      .def("build", &SparseMatrixBuilder::build)
+      .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
+
+  m.def("create_sparse_matrix_builder",
+        [](int n, int m, uint64 max_num_entries) {
+          TI_ERROR_IF(!arch_is_cpu(get_current_program().config.arch),
+                      "SparseMatrix only supports CPU for now.");
+          return SparseMatrixBuilder(n, m, max_num_entries);
+        });
+
+  py::class_<SparseMatrix>(m, "SparseMatrix")
+      .def("to_string", &SparseMatrix::to_string)
+      .def(py::self + py::self, py::return_value_policy::reference_internal)
+      .def(py::self - py::self, py::return_value_policy::reference_internal)
+      .def(float() * py::self, py::return_value_policy::reference_internal)
+      .def(py::self * float(), py::return_value_policy::reference_internal)
+      .def(py::self * py::self, py::return_value_policy::reference_internal)
+      .def("matmul", &SparseMatrix::matmul,
+           py::return_value_policy::reference_internal)
+      .def("transpose", &SparseMatrix::transpose,
+           py::return_value_policy::reference_internal)
+      .def("get_element", &SparseMatrix::get_element)
+      .def("num_rows", &SparseMatrix::num_rows)
+      .def("num_cols", &SparseMatrix::num_cols);
+
+  m.def("create_sparse_matrix", [](int n, int m) {
+    TI_ERROR_IF(!arch_is_cpu(get_current_program().config.arch),
+                "SparseMatrix only supports CPU for now.");
+    return SparseMatrix(n, m);
+  });
 }
 
 TI_NAMESPACE_END

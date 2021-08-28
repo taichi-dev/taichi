@@ -31,6 +31,7 @@
 #include "taichi/system/memory_pool.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
+#include "taichi/program/sparse_matrix.h"
 
 namespace taichi {
 namespace lang {

@@ -24,6 +24,7 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
+
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"

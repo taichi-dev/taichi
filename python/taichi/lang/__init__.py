@@ -8,7 +8,8 @@ from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *
-from taichi.lang.kernel_arguments import any_arr, ext_arr, template
+from taichi.lang.kernel_arguments import (any_arr, ext_arr,
+                                          sparse_matrix_builder, template)
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, Vector
@@ -16,6 +17,7 @@ from taichi.lang.ndrange import GroupedNDRange, ndrange
 from taichi.lang.ops import *
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
+from taichi.lang.sparse_matrix import SparseMatrix, SparseMatrixBuilder
 from taichi.lang.transformer import TaichiSyntaxError
 from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,

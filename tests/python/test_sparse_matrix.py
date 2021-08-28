@@ -161,22 +161,23 @@ def test_sparse_matrix_multiplication():
 
 @ti.test(arch=ti.cpu)
 def test_sparse_matrix_nonsymmetric_multiplication():
-    n, m = 2, 3
-    Abuilder = ti.SparseMatrixBuilder(n, m, max_num_triplets=100)
-    Bbuilder = ti.SparseMatrixBuilder(m, n, max_num_triplets=100)
+    n, k, m = 2, 3, 4
+    Abuilder = ti.SparseMatrixBuilder(n, k, max_num_triplets=100)
+    Bbuilder = ti.SparseMatrixBuilder(k, m, max_num_triplets=100)
 
     @ti.kernel
     def fill(Abuilder: ti.sparse_matrix_builder(),
              Bbuilder: ti.sparse_matrix_builder()):
-        for i, j in ti.ndrange(n, m):
+        for i, j in ti.ndrange(n, k):
             Abuilder[i, j] += i + j
-            Bbuilder[j, i] += i - j
+        for i, j in ti.ndrange(k, m):
+            Bbuilder[i, j] -= i + j
 
     fill(Abuilder, Bbuilder)
     A = Abuilder.build()
     B = Bbuilder.build()
     C = A @ B
-    assert C[0, 0] == -5
-    assert C[0, 1] == -2
-    assert C[1, 0] == -8
-    assert C[1, 1] == -2
+    GT = [[-5, -8, -11, -14], [-8, -14, -20, -26]]
+    for i in range(n):
+        for j in range(m):
+            assert C[i, j] == GT[i][j]

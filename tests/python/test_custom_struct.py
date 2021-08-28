@@ -150,6 +150,15 @@ def test_struct_type():
     x = mystruct.field(shape=(n, ))
 
     @ti.kernel
+    def init_taichi_scope():
+        for i in x:
+            x[i] = mystruct(1)
+
+    def init_python_scope():
+        for i in range(n):
+            x[i] = mystruct(3)
+
+    @ti.kernel
     def run_taichi_scope():
         for i in x:
             v = vec3f(1)
@@ -167,22 +176,31 @@ def test_struct_type():
                 "idx": i
             })
 
-    x.fill(5)
+    init_taichi_scope()
     for i in range(n):
-        assert x[i].idx == 5
-        assert np.allclose(x[i].line.linedir.to_numpy(), 5.0)
-        assert x[i].line.length == 5.0
+        assert x[i].idx == 1
+        assert np.allclose(x[i].line.linedir.to_numpy(), 1.0)
+        assert x[i].line.length == 1.0
     run_taichi_scope()
     for i in range(n):
         assert x[i].idx == i
         assert np.allclose(x[i].line.linedir.to_numpy(), 1.0)
         assert x[i].line.length == i + 0.5
-    x.fill(5)
+    init_python_scope()
+    for i in range(n):
+        assert x[i].idx == 3
+        assert np.allclose(x[i].line.linedir.to_numpy(), 3.0)
+        assert x[i].line.length == 3.0
     run_python_scope()
     for i in range(n):
         assert x[i].idx == i
         assert np.allclose(x[i].line.linedir.to_numpy(), 1.0)
         assert x[i].line.length == i + 0.5
+    x.fill(5)
+    for i in range(n):
+        assert x[i].idx == 5
+        assert np.allclose(x[i].line.linedir.to_numpy(), 5.0)
+        assert x[i].line.length == 5.0
 
 
 @ti.test()
@@ -222,3 +240,40 @@ def test_struct_assign():
         assert x[i].idx == i
         assert np.allclose(x[i].line.linedir.to_numpy(), 1.0)
         assert x[i].line.length == i + 0.5
+
+@ti.test()
+def test_compound_type_implicit_cast():
+    vec2i = ti.types.vector(2, int)
+    vec2f = ti.types.vector(2, float)
+    structi = ti.types.struct(a=int, b=vec2i)
+    structf = ti.types.struct(a=float, b=vec2f)
+    
+
+    @ti.kernel
+    def f2i_taichi_scope() -> int:
+        s = structi(2.5)
+        return s.a + s.b[0] + s.b[1]
+
+    def f2i_python_scope():
+        s = structi(2.5)
+        return s.a + s.b[0] + s.b[1]
+
+    @ti.kernel
+    def i2f_taichi_scope() -> float:
+        s = structf(2)
+        return s.a + s.b[0] + s.b[1]
+
+    def i2f_python_scope():
+        s = structf(2)
+        return s.a + s.b[0] + s.b[1]
+    
+    int_value = f2i_taichi_scope()
+    assert type(int_value) == int and int_value == 6
+    int_value = f2i_python_scope()
+    assert type(int_value) == int and int_value == 6
+    float_value = i2f_taichi_scope()
+    assert type(float_value) == float and float_value == approx(6.0, rel=1e-4)
+    float_value = i2f_python_scope()
+    assert type(float_value) == float and float_value == approx(6.0, rel=1e-4)
+
+

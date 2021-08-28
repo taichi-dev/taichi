@@ -4,7 +4,7 @@ from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
 from taichi.lang.ext_array import AnyArray, ExtArray
 from taichi.lang.snode import SNode
-from taichi.lang.sparse_matrix import SparseMatrixProxy
+from taichi.lang.sparse_matrix import SparseMatrixBuilder
 from taichi.lang.util import cook_dtype, to_taichi_type
 
 
@@ -116,6 +116,55 @@ class Template:
 
 template = Template
 """Alias for :class:`~taichi.lang.kernel_arguments.Template`.
+"""
+
+class SparseMatrixEntry:
+    def __init__(self, ptr, i, j):
+        self.ptr = ptr
+        self.i = i
+        self.j = j
+
+    def augassign(self, value, op):
+        from taichi.lang.impl import call_internal, ti_float
+        if op == 'Add':
+            call_internal("insert_triplet", self.ptr, self.i, self.j,
+                          ti_float(value))
+        elif op == 'Sub':
+            call_internal("insert_triplet", self.ptr, self.i, self.j,
+                          -ti_float(value))
+        else:
+            assert False, f"Only operations '+=' and '-=' are supported on sparse matrices."
+
+class SparseMatrixProxy:
+    is_taichi_class = True
+
+    def __init__(self, ptr):
+        self.ptr = ptr
+
+    def subscript(self, i, j):
+        return SparseMatrixEntry(self.ptr, i, j)
+
+class SparseMatrixBuilder:
+    def __init__(self, n=None, m=None, max_num_triplets=0):
+        self.n = n
+        self.m = m if m else n
+        if n is not None and m is not None:
+            from taichi.core.util import ti_core as _ti_core
+            self.ptr = _ti_core.create_sparse_matrix_builder(
+                n, m, max_num_triplets)
+
+    def get_addr(self):
+        return self.ptr.get_addr()
+
+    def print_triplets(self):
+        self.ptr.print_triplets()
+
+    def build(self):
+        sm = self.ptr.build()
+        return SparseMatrix(sm=sm)
+
+sparse_matrix_builder = SparseMatrixBuilder
+"""Alias for :class:`~taichi.lang.sparse_matrix.SparseMatrixBuilder`.
 """
 
 

@@ -54,12 +54,13 @@ class SparseMatrix:
 
 
 class SparseMatrixBuilder:
-    def __init__(self, n, m=None, max_num_triplets=0):
+    def __init__(self, n=None, m=None, max_num_triplets=0):
         self.n = n
         self.m = m if m else n
-        from taichi.core.util import ti_core as _ti_core
-        self.ptr = _ti_core.create_sparse_matrix_builder(
-            n, m, max_num_triplets)
+        if n is not None and m is not None:
+            from taichi.core.util import ti_core as _ti_core
+            self.ptr = _ti_core.create_sparse_matrix_builder(
+                n, m, max_num_triplets)
 
     def get_addr(self):
         return self.ptr.get_addr()
@@ -72,29 +73,4 @@ class SparseMatrixBuilder:
         return SparseMatrix(sm=sm)
 
 
-class SparseMatrixEntry:
-    def __init__(self, ptr, i, j):
-        self.ptr = ptr
-        self.i = i
-        self.j = j
 
-    def augassign(self, value, op):
-        from taichi.lang.impl import call_internal, ti_float
-        if op == 'Add':
-            call_internal("insert_triplet", self.ptr, self.i, self.j,
-                          ti_float(value))
-        elif op == 'Sub':
-            call_internal("insert_triplet", self.ptr, self.i, self.j,
-                          -ti_float(value))
-        else:
-            assert False, f"Only operations '+=' and '-=' are supported on sparse matrices."
-
-
-class SparseMatrixProxy:
-    is_taichi_class = True
-
-    def __init__(self, ptr):
-        self.ptr = ptr
-
-    def subscript(self, i, j):
-        return SparseMatrixEntry(self.ptr, i, j)

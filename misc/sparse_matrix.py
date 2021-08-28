@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.x64)
+ti.init(arch=ti.x64, print_preprocessed=True)
 
 n = 8
 
@@ -9,7 +9,7 @@ f = ti.SparseMatrixBuilder(n, 1, max_num_triplets=100)
 
 
 @ti.kernel
-def fill(A: ti.SparseMatrixBuilder, b: ti.SparseMatrixBuilder,
+def fill(A: ti.sparse_matrix_builder(), b: ti.sparse_matrix_builder(),
          interval: ti.i32):
     for i in range(n):
         if i > 0:

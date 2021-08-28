@@ -10,10 +10,9 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
 from taichi.lang.ast_checker import KernelSimplicityASTChecker
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.kernel_arguments import any_arr, ext_arr, template
+from taichi.lang.kernel_arguments import any_arr, ext_arr, template, sparse_matrix_builder
 from taichi.lang.ndarray import ScalarNdarray
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.sparse_matrix import SparseMatrixBuilder
 from taichi.lang.transformer import ASTTransformerTotal
 from taichi.misc.util import obsolete
 
@@ -369,7 +368,7 @@ class Kernel:
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass
-                elif id(annotation) == id(SparseMatrixBuilder):
+                elif isinstance(annotation, sparse_matrix_builder):
                     pass
                 else:
                     _taichi_skip_traceback = 1
@@ -486,8 +485,8 @@ class Kernel:
                     if not isinstance(v, int):
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
-                elif id(needed) == id(SparseMatrixBuilder):
-                    # Pass only the base pointer of the ti.SparseMatrixBuilder argument
+                elif isinstance(needed, sparse_matrix_builder):
+                    # Pass only the base pointer of the ti.sparse_matrix_builder() argument
                     launch_ctx.set_arg_int(actual_argument_slot, v.get_addr())
                 elif (isinstance(needed, (any_arr, ext_arr)) and self.match_ext_arr(v)) or \
                      (isinstance(needed, any_arr) and isinstance(v, ScalarNdarray)):

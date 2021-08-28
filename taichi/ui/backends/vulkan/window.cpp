@@ -9,9 +9,13 @@ Window::Window(const AppConfig &config) : WindowBase(config) {
 }
 
 void Window::init(const AppConfig &config) {
-  init_window();
-  init_vulkan(config);
+  glfwSetFramebufferSizeCallback(glfw_window_, framebuffer_resize_callback);
+
+  renderer_ = std::make_unique<Renderer>();
+  renderer_->init(glfw_window_, config);
+  canvas_ = std::make_unique<Canvas>(renderer_.get());
   gui_ = std::make_unique<Gui>(&renderer_->app_context(), glfw_window_);
+
   prepare_for_next_frame();
 }
 
@@ -35,22 +39,12 @@ GuiBase *Window::GUI() {
   return gui_.get();
 }
 
-void Window::init_window() {
-  glfwSetFramebufferSizeCallback(glfw_window_, framebuffer_resize_callback);
-}
-
 void Window::framebuffer_resize_callback(GLFWwindow *glfw_window_,
                                          int width,
                                          int height) {
   auto window =
       reinterpret_cast<Window *>(glfwGetWindowUserPointer(glfw_window_));
   window->resize();
-}
-
-void Window::init_vulkan(const AppConfig &config) {
-  renderer_ = std::make_unique<Renderer>();
-  renderer_->init(glfw_window_, config);
-  canvas_ = std::make_unique<Canvas>(renderer_.get());
 }
 
 void Window::resize() {

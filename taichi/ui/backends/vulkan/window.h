@@ -44,17 +44,11 @@ class Window final : public WindowBase {
  private:
   void init(const AppConfig &config);
 
-  void init_vulkan(const AppConfig &config);
-
-  void init_window();
-
   void prepare_for_next_frame();
 
   void draw_frame();
 
   void present_frame();
-
-  void update_image_index();
 
   void resize();
 

@@ -241,13 +241,13 @@ def test_struct_assign():
         assert np.allclose(x[i].line.linedir.to_numpy(), 1.0)
         assert x[i].line.length == i + 0.5
 
+
 @ti.test()
 def test_compound_type_implicit_cast():
     vec2i = ti.types.vector(2, int)
     vec2f = ti.types.vector(2, float)
     structi = ti.types.struct(a=int, b=vec2i)
     structf = ti.types.struct(a=float, b=vec2f)
-    
 
     @ti.kernel
     def f2i_taichi_scope() -> int:
@@ -266,7 +266,7 @@ def test_compound_type_implicit_cast():
     def i2f_python_scope():
         s = structf(2)
         return s.a + s.b[0] + s.b[1]
-    
+
     int_value = f2i_taichi_scope()
     assert type(int_value) == int and int_value == 6
     int_value = f2i_python_scope()
@@ -275,5 +275,3 @@ def test_compound_type_implicit_cast():
     assert type(float_value) == float and float_value == approx(6.0, rel=1e-4)
     float_value = i2f_python_scope()
     assert type(float_value) == float and float_value == approx(6.0, rel=1e-4)
-
-

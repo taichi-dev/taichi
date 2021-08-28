@@ -2,7 +2,6 @@ import copy
 import numbers
 
 from numpy import broadcast
-
 from taichi.lang import expr, impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
@@ -223,7 +222,9 @@ class Struct(TaichiOperations):
     def variable(self):
         ret = self.copy()
         ret.entries = {
-            k: impl.expr_init(v) if isinstance(v, (numbers.Number, expr.Expr)) else v.variable()
+            k: impl.expr_init(v) if isinstance(v,
+                                               (numbers.Number,
+                                                expr.Expr)) else v.variable()
             for k, v in ret.items
         }
         return ret
@@ -238,7 +239,8 @@ class Struct(TaichiOperations):
     def __str__(self):
         """Python scope struct array print support."""
         if impl.inside_kernel():
-            item_str = ", ".join([str(k) + "=" + str(v) for k, v in self.items])
+            item_str = ", ".join(
+                [str(k) + "=" + str(v) for k, v in self.items])
             return f'<ti.Struct {item_str}>'
         else:
             return str(self.to_dict())

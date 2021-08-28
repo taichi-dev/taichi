@@ -11,12 +11,12 @@ class SparseMatrix:
             self.matrix = sm
 
     def __add__(self, other):
-        assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}), ({other.n}, {other.m})"
+        assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
         sm = self.matrix + other.matrix
         return SparseMatrix(sm=sm)
 
     def __sub__(self, other):
-        assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}), ({other.n}, {other.m})"
+        assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
         sm = self.matrix - other.matrix
         return SparseMatrix(sm=sm)
 
@@ -25,7 +25,7 @@ class SparseMatrix:
             sm = self.matrix * other
             return SparseMatrix(sm=sm)
         elif isinstance(other, SparseMatrix):
-            assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}), ({other.n}, {other.m})"
+            assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
             sm = self.matrix * other.matrix
             return SparseMatrix(sm=sm)
 
@@ -40,7 +40,7 @@ class SparseMatrix:
         return SparseMatrix(sm=sm)
 
     def __matmul__(self, other):
-        sm = self.matrix.matmult(other.matrix)
+        sm = self.matrix.matmul(other.matrix)
         return SparseMatrix(sm=sm)
 
     def __getitem__(self, item):

@@ -25,39 +25,39 @@ def fill(A: ti.sparse_matrix_builder(), b: ti.sparse_matrix_builder(),
 
 fill(K, f, 3)
 
-print(">>>>>>>> Before build: ")
+print(">>>> Triplets")
 K.print_triplets()
 
 A = K.build()
 
-print(">>>>>>>> After build: ")
+print(">>>> Built")
 print(A)
 
-print(">>>> Summation Test: ")
+print(">>>> Summation")
 C = A + A
 print(C)
 
-print(">>>> Subtraction Test")
+print(">>>> Subtraction")
 D = A - A
 print(D)
 
-print(">>>> Multiplication with scalar at right")
+print(">>>> Multiplication with a scalar on the right")
 E = A * 3.0
 print(E)
 
-print(">>>> Multiplication with scalar at left")
+print(">>>> Multiplication with a scalar on the left")
 E = 3.0 * A
 print(E)
 
-print(">>>> Transpose Test")
+print(">>>> Transpose")
 F = A.transpose()
 print(F)
 
-print(">>>> Matrix Multiplication")
+print(">>>> Matrix multiplication")
 G = E @ A
 print(G)
 
-print(">>>> Elment-wise Multiplication")
+print(">>>> Element-wise multiplication")
 H = E * A
 print(H)
 

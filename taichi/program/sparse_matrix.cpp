@@ -100,7 +100,7 @@ SparseMatrix operator*(const SparseMatrix &sm1, const SparseMatrix &sm2) {
   return res;
 }
 
-SparseMatrix SparseMatrix::matmult(const SparseMatrix &sm) {
+SparseMatrix SparseMatrix::matmul(const SparseMatrix &sm) {
   SparseMatrix res(sm.num_rows(), sm.num_cols());
   res.matrix_ = matrix_ * sm.matrix_;
   return res;

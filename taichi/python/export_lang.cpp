@@ -963,7 +963,7 @@ void export_lang(py::module &m) {
       .def(float() * py::self, py::return_value_policy::reference_internal)
       .def(py::self * float(), py::return_value_policy::reference_internal)
       .def(py::self * py::self, py::return_value_policy::reference_internal)
-      .def("matmult", &SparseMatrix::matmult,
+      .def("matmul", &SparseMatrix::matmul,
            py::return_value_policy::reference_internal)
       .def("transpose", &SparseMatrix::transpose,
            py::return_value_policy::reference_internal)

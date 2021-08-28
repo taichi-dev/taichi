@@ -89,10 +89,9 @@ SparseMatrix operator*(float scale, const SparseMatrix &sm) {
   return res;
 }
 
-SparseMatrix operator*(const SparseMatrix &sm, float scale){
+SparseMatrix operator*(const SparseMatrix &sm, float scale) {
   return scale * sm;
 }
-
 
 SparseMatrix operator*(const SparseMatrix &sm1, const SparseMatrix &sm2) {
   SparseMatrix res(sm1.num_rows(), sm1.num_cols());

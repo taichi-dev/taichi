@@ -10,7 +10,8 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
 from taichi.lang.ast_checker import KernelSimplicityASTChecker
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.kernel_arguments import any_arr, ext_arr, template, sparse_matrix_builder
+from taichi.lang.kernel_arguments import (any_arr, ext_arr,
+                                          sparse_matrix_builder, template)
 from taichi.lang.ndarray import ScalarNdarray
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.transformer import ASTTransformerTotal

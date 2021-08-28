@@ -118,6 +118,7 @@ template = Template
 """Alias for :class:`~taichi.lang.kernel_arguments.Template`.
 """
 
+
 class SparseMatrixEntry:
     def __init__(self, ptr, i, j):
         self.ptr = ptr
@@ -135,6 +136,7 @@ class SparseMatrixEntry:
         else:
             assert False, f"Only operations '+=' and '-=' are supported on sparse matrices."
 
+
 class SparseMatrixProxy:
     is_taichi_class = True
 
@@ -143,6 +145,7 @@ class SparseMatrixProxy:
 
     def subscript(self, i, j):
         return SparseMatrixEntry(self.ptr, i, j)
+
 
 sparse_matrix_builder = SparseMatrixBuilder
 """Alias for :class:`~taichi.lang.sparse_matrix.SparseMatrixBuilder`.

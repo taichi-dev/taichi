@@ -34,7 +34,6 @@ class SparseMatrix:
             sm = other * self.matrix
             return SparseMatrix(sm=sm)
 
-
     def transpose(self):
         sm = self.matrix.transpose()
         return SparseMatrix(sm=sm)
@@ -71,6 +70,3 @@ class SparseMatrixBuilder:
     def build(self):
         sm = self.ptr.build()
         return SparseMatrix(sm=sm)
-
-
-

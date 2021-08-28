@@ -116,4 +116,4 @@ particle_field[0].pos = ti.Vector([0.0, 0.0, 0.0])
 particle_field.mass # global ti.Vector.field
 particle_field.mass.fill(1.0)
 ```
-- See [Structs](../../api/struct.md) for more on matrices.
+- See [Structs](../../api/struct.md) for more on structs.

@@ -310,7 +310,7 @@ inline unsigned char get_color_value<unsigned char>(unsigned char x) {
 
 template <>
 inline unsigned char get_color_value<float>(float x) {
-  x = max(0.f, min(1.f, x));
+  x = fmaxf(0.f, fminf(1.f, x));
   return (unsigned char)(x * 255);
 }
 

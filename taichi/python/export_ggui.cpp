@@ -24,11 +24,11 @@ TI_UI_NAMESPACE_BEGIN
 
 using namespace taichi::lang;
 
-inline glm::vec3 tuple_to_vec3(pybind11::tuple t) {
+glm::vec3 tuple_to_vec3(pybind11::tuple t) {
   return glm::vec3(t[0].cast<float>(), t[1].cast<float>(), t[2].cast<float>());
 }
 
-inline pybind11::tuple vec3_to_tuple(glm::vec3 v) {
+pybind11::tuple vec3_to_tuple(glm::vec3 v) {
   return pybind11::make_tuple(v.x, v.y, v.z);
 }
 
@@ -103,6 +103,7 @@ struct PyScene {
   SceneBase *scene;  // owned
 
   PyScene() {
+    // todo: support other ggui backends
     scene = new vulkan::Scene();
   }
 
@@ -237,6 +238,7 @@ struct PyWindow {
            Arch ti_arch) {
     AppConfig config = {name,  res[0].cast<int>(), res[1].cast<int>(),
                         vsync, package_path,       ti_arch};
+    // todo: support other ggui backends
     window = new vulkan::Window(config);
   }
 

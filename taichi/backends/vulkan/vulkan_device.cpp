@@ -1888,7 +1888,8 @@ void VulkanDevice::create_vma_allocator() {
 
 VkPresentModeKHR choose_swap_present_mode(
     const std::vector<VkPresentModeKHR> &available_present_modes,
-    bool vsync, bool adaptive) {
+    bool vsync,
+    bool adaptive) {
   if (vsync) {
     if (adaptive) {
       for (const auto &available_present_mode : available_present_modes) {

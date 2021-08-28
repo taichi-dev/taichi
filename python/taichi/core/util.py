@@ -130,6 +130,27 @@ if settings.get_os_name() != 'win':
     # For llvm jit to find the runtime symbols
     if not os.path.exists(link_dst):
         os.symlink(link_src, link_dst)
+else:
+    bin_dir = os.path.join(settings.get_repo_directory(), 'runtimes')
+    possible_folders = ['Debug', 'RelWithDebInfo', 'Release']
+    detected_dlls = []
+    for folder in possible_folders:
+        dll_path = os.path.join(bin_dir, folder, 'taichi_core.dll')
+        if os.path.exists(dll_path):
+            detected_dlls.append(dll_path)
+    if len(detected_dlls) == 0:
+        raise FileNotFoundError(
+            f'Cannot find Taichi core dll under {bin_dir}/{possible_folders}'
+        )
+    elif len(detected_dlls) != 1:
+        print('Warning: multiple Taichi core dlls found: %s' %
+            ','.join(detected_dlls))
+        print(f'Using {detected_dlls[0]}')
+    dll_path = detected_dlls[0]
+    old_wd = os.getcwd()
+    os.chdir(bin_dir)
+    shutil.copy(dll_path, os.path.join(bin_dir, 'taichi_core.pyd'))
+    sys.path.append(bin_dir)
 import_ti_core()
 
 ti_core.set_python_package_dir(package_root())

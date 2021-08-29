@@ -9,8 +9,8 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, matrix
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.snode import SNode
 from taichi.lang.field import Field
+from taichi.lang.snode import SNode
 from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
 
 unary_ops = []
@@ -931,8 +931,10 @@ def rescale_index(a, b, I):
         rescaled grouped loop index
 
     """
-    assert isinstance(a, Field) or isinstance(a, SNode), f"first argument must be a field or an SNode"
-    assert isinstance(b, Field) or isinstance(b, SNode), f"second argument must be a field or an SNode"
+    assert isinstance(a, Field) or isinstance(
+        a, SNode), f"first argument must be a field or an SNode"
+    assert isinstance(b, Field) or isinstance(
+        b, SNode), f"second argument must be a field or an SNode"
     assert isinstance(I,
                       matrix.Matrix), f"third argument must be a grouped index"
     Ib = I.copy()

@@ -2,7 +2,6 @@ import numpy as np
 
 import taichi as ti
 
-
 ti.init(arch=ti.gpu)  # Try to run on GPU
 
 quality = 1  # Use a larger value for higher-res simulations
@@ -31,11 +30,10 @@ attractor_strength = ti.field(dtype=float, shape=())
 attractor_pos = ti.Vector.field(2, dtype=float, shape=())
 
 group_size = n_particles // 3
-water = ti.Vector.field(2, dtype=float, shape= group_size)  # position
-jelly = ti.Vector.field(2, dtype=float, shape= group_size)  # position
-snow = ti.Vector.field(2, dtype=float, shape= group_size)  # position
-mouse_circle = ti.Vector.field(2,dtype=float,shape = (1,))
-
+water = ti.Vector.field(2, dtype=float, shape=group_size)  # position
+jelly = ti.Vector.field(2, dtype=float, shape=group_size)  # position
+snow = ti.Vector.field(2, dtype=float, shape=group_size)  # position
+mouse_circle = ti.Vector.field(2, dtype=float, shape=(1, ))
 
 
 @ti.kernel
@@ -128,21 +126,21 @@ def reset():
         Jp[i] = 1
         C[i] = ti.Matrix.zero(float, 2, 2)
 
+
 @ti.kernel
 def render():
     for i in range(group_size):
         water[i] = x[i]
-        jelly[i] = x[i+group_size]
-        snow [i] = x[i+2*group_size]
-
+        jelly[i] = x[i + group_size]
+        snow[i] = x[i + 2 * group_size]
 
 
 print(
     "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. Press R to reset."
 )
 
-res = (512,512)
-window = ti.ui.Window("Taichi MLS-MPM-128", res=res,vsync = True)
+res = (512, 512)
+window = ti.ui.Window("Taichi MLS-MPM-128", res=res, vsync=True)
 canvas = window.get_canvas()
 radius = 0.003
 
@@ -160,19 +158,19 @@ while window.running:
     if window.is_pressed(ti.ui.DOWN, 's'): gravity[None][1] = -1
     mouse = window.get_cursor_pos()
     mouse_circle[0] = ti.Vector([mouse[0], mouse[1]])
-    canvas.circles(mouse_circle, color=(0.2,0.4,0.6), radius=0.05)
+    canvas.circles(mouse_circle, color=(0.2, 0.4, 0.6), radius=0.05)
     attractor_pos[None] = [mouse[0], mouse[1]]
     attractor_strength[None] = 0
     if window.is_pressed(ti.ui.LMB):
         attractor_strength[None] = 1
     if window.is_pressed(ti.ui.RMB):
         attractor_strength[None] = -1
-        
+
     for s in range(int(2e-3 // dt)):
         substep()
     render()
-    canvas.set_background_color((0.067,0.184,0.255))
-    canvas.circles(water, radius=radius, color=(0,0.5,0.5))
-    canvas.circles(jelly, radius=radius, color=(0.93,0.33,0.23))
-    canvas.circles(snow, radius=radius, color=(1,1,1))
+    canvas.set_background_color((0.067, 0.184, 0.255))
+    canvas.circles(water, radius=radius, color=(0, 0.5, 0.5))
+    canvas.circles(jelly, radius=radius, color=(0.93, 0.33, 0.23))
+    canvas.circles(snow, radius=radius, color=(1, 1, 1))
     window.show()

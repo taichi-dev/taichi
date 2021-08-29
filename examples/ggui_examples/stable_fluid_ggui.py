@@ -248,7 +248,7 @@ def reset():
     dyes_pair.cur.fill(0)
 
 
-window = ti.ui.Window('Stable Fluid', (res, res),vsync = True)
+window = ti.ui.Window('Stable Fluid', (res, res), vsync=True)
 canvas = window.get_canvas()
 md_gen = MouseDataGen()
 

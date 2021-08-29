@@ -18,8 +18,9 @@ v = ti.Vector.field(2, dtype=ti.f32, shape=max_num_particles)
 f = ti.Vector.field(2, dtype=ti.f32, shape=max_num_particles)
 fixed = ti.field(dtype=ti.i32, shape=max_num_particles)
 
-indices = ti.field(dtype=ti.i32, shape=max_num_particles* max_num_particles * 2)
-per_vertex_color = ti.Vector.field(3,ti.f32,shape = max_num_particles)
+indices = ti.field(dtype=ti.i32,
+                   shape=max_num_particles * max_num_particles * 2)
+per_vertex_color = ti.Vector.field(3, ti.f32, shape=max_num_particles)
 
 # rest_length[i, j] == 0 means i and j are NOT connected
 rest_length = ti.field(dtype=ti.f32,
@@ -102,23 +103,24 @@ def render():
     for i in indices:
         indices[i] = max_num_particles - 1
     n = num_particles[None]
-    for i in range(n+1,max_num_particles):
-        x[i] = ti.Vector([-1,-1]) # hide them
+    for i in range(n + 1, max_num_particles):
+        x[i] = ti.Vector([-1, -1])  # hide them
     for i in range(n):
         if fixed[i]:
-            per_vertex_color[i] = ti.Vector([1,0,0]) 
+            per_vertex_color[i] = ti.Vector([1, 0, 0])
         else:
-            per_vertex_color[i] = ti.Vector([0,0,0]) 
+            per_vertex_color[i] = ti.Vector([0, 0, 0])
     for i in range(n):
-        for j in range(i+1,n):
-            line_id = i*max_num_particles + j 
+        for j in range(i + 1, n):
+            line_id = i * max_num_particles + j
             if rest_length[i, j] != 0:
-                indices[line_id*2 ] = i
-                indices[line_id*2 + 1] = j
+                indices[line_id * 2] = i
+                indices[line_id * 2 + 1] = j
 
 
 def main():
-    window = ti.ui.Window('Explicit Mass Spring System',(1024,1024),vsync = True)
+    window = ti.ui.Window('Explicit Mass Spring System', (1024, 1024),
+                          vsync=True)
     canvas = window.get_canvas()
 
     spring_Y[None] = 1000
@@ -152,16 +154,22 @@ def main():
                 substep()
 
         render()
-        canvas.set_background_color((1,1,1))
-        canvas.lines(x,indices = indices,color = (0,0,0),width = 0.01)
-        canvas.circles(x,per_vertex_color = per_vertex_color,radius = 0.02)
-        
-        window.GUI.begin("mass spring",0.05,0.05,0.9,0.2)
-        window.GUI.text("Left click: add mass point (with shift to fix); Right click: attract")
+        canvas.set_background_color((1, 1, 1))
+        canvas.lines(x, indices=indices, color=(0, 0, 0), width=0.01)
+        canvas.circles(x, per_vertex_color=per_vertex_color, radius=0.02)
+
+        window.GUI.begin("mass spring", 0.05, 0.05, 0.9, 0.2)
+        window.GUI.text(
+            "Left click: add mass point (with shift to fix); Right click: attract"
+        )
         window.GUI.text("C: clear all; Space: pause")
-        spring_Y[None] = window.GUI.slider_float("Spring Young's modulus",spring_Y[None],100,10000)
-        drag_damping[None] = window.GUI.slider_float("Drag damping",drag_damping[None],0.0,10)
-        dashpot_damping[None] = window.GUI.slider_float("Dashpot damping",dashpot_damping[None],10,1000)
+        spring_Y[None] = window.GUI.slider_float("Spring Young's modulus",
+                                                 spring_Y[None], 100, 10000)
+        drag_damping[None] = window.GUI.slider_float("Drag damping",
+                                                     drag_damping[None], 0.0,
+                                                     10)
+        dashpot_damping[None] = window.GUI.slider_float(
+            "Dashpot damping", dashpot_damping[None], 10, 1000)
         window.GUI.end()
 
         window.show()

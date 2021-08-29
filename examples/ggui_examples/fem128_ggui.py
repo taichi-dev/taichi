@@ -1,5 +1,5 @@
 import taichi as ti
- 
+
 ti.init(arch=ti.gpu)
 
 N = 12
@@ -91,15 +91,17 @@ def init_mesh():
         f2v[k + 0] = [a, b, c]
         f2v[k + 1] = [c, d, a]
 
-window = ti.ui.Window('FEM128',(512,512))
+
+window = ti.ui.Window('FEM128', (512, 512))
 canvas = window.get_canvas()
 
 # rendering related fields
 vertexColors = ti.Vector.field(3, float, NV)
-vertexPositions = ti.Vector.field(2, float,NV)
-triangleIndices = ti.field(int, NF*3)
-mouse_circle = ti.Vector.field(2,dtype=float,shape = (1,))
-ball_circle = ti.Vector.field(2,dtype=float,shape = (1,))
+vertexPositions = ti.Vector.field(2, float, NV)
+triangleIndices = ti.field(int, NF * 3)
+mouse_circle = ti.Vector.field(2, dtype=float, shape=(1, ))
+ball_circle = ti.Vector.field(2, dtype=float, shape=(1, ))
+
 
 @ti.kernel
 def paint_triangles():
@@ -115,9 +117,9 @@ def paint_triangles():
         vertexPositions[ia] = pos[ia]
         vertexPositions[ib] = pos[ib]
         vertexPositions[ic] = pos[ic]
-        triangleIndices[i*3+0] = ia
-        triangleIndices[i*3+1] = ib
-        triangleIndices[i*3+2] = ic
+        triangleIndices[i * 3 + 0] = ia
+        triangleIndices[i * 3 + 1] = ib
+        triangleIndices[i * 3 + 2] = ic
 
 
 def paint_mouse_ball():
@@ -125,20 +127,23 @@ def paint_mouse_ball():
     mouse_circle[0] = ti.Vector([mouse[0], mouse[1]])
     ball_circle[0] = ball_pos
 
+
 def render():
     paint_triangles()
     paint_mouse_ball()
 
-    canvas.circles(mouse_circle, color=(0.2,0.4,0.6), radius=0.02)
-    canvas.circles(ball_circle, color=(0.4,0.4,0.4), radius=ball_radius)
-     
-    canvas.triangles(vertexPositions,indices = triangleIndices,per_vertex_color = vertexColors)
-    canvas.circles(vertexPositions, radius=0.003, color=(1,0.6,0.2))
+    canvas.circles(mouse_circle, color=(0.2, 0.4, 0.6), radius=0.02)
+    canvas.circles(ball_circle, color=(0.4, 0.4, 0.4), radius=ball_radius)
+
+    canvas.triangles(vertexPositions,
+                     indices=triangleIndices,
+                     per_vertex_color=vertexColors)
+    canvas.circles(vertexPositions, radius=0.003, color=(1, 0.6, 0.2))
+
 
 init_mesh()
 init_pos()
 gravity[None] = [0, -1]
-
 
 print(
     "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. Press R to reset."
@@ -160,7 +165,8 @@ while window.running:
 
     mouse_pos = window.get_cursor_pos()
     attractor_pos[None] = mouse_pos
-    attractor_strength[None] = window.is_pressed(ti.ui.LMB) - window.is_pressed(ti.ui.RMB)
+    attractor_strength[None] = window.is_pressed(
+        ti.ui.LMB) - window.is_pressed(ti.ui.RMB)
     for i in range(50):
         with ti.Tape(loss=U):
             update_U()

@@ -11,8 +11,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class Program;
-
 // A memory pool that runs on the host
 
 class MemoryPool {
@@ -25,13 +23,11 @@ class MemoryPool {
   std::mutex mut_allocators;
   std::unique_ptr<std::thread> th;
   int processed_tail;
-  bool use_unified_memory;
-  Program *prog;
 
   MemRequestQueue *queue;
   void *cuda_stream{nullptr};
 
-  MemoryPool(Program *prog);
+  MemoryPool(Arch arch);
 
   template <typename T>
   T fetch(volatile void *ptr);
@@ -51,6 +47,7 @@ class MemoryPool {
 
  private:
   static constexpr bool use_cuda_stream = false;
+  Arch arch_;
 };
 
 TLANG_NAMESPACE_END

@@ -39,13 +39,6 @@
 
 namespace taichi {
 namespace lang {
-namespace {
-inline uint64 *allocate_result_buffer_default(Program *prog) {
-  return (uint64 *)prog->memory_pool->allocate(
-      sizeof(uint64) * taichi_result_buffer_entries, 8);
-}
-}  // namespace
-
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances_;
 
@@ -107,7 +100,8 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
     TI_WARN("Falling back to {}", arch_name(config.arch));
   }
 
-  memory_pool = std::make_unique<MemoryPool>(this);
+  // Must have handled all the arch fallback logic by this point.
+  memory_pool = std::make_unique<MemoryPool>(config.arch);
   TI_ASSERT_INFO(num_instances_ == 0, "Only one instance at a time");
   total_compilation_time_ = 0;
   num_instances_ += 1;
@@ -227,7 +221,8 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
                                            memory_pool.get(), profiler.get());
   } else if (config.arch == Arch::opengl) {
     TI_ASSERT(result_buffer == nullptr);
-    result_buffer = allocate_result_buffer_default(this);
+    result_buffer = (uint64 *)memory_pool->allocate(
+        sizeof(uint64) * taichi_result_buffer_entries, 8);
     opengl::OpenglStructCompiler scomp;
     opengl_struct_compiled_ = scomp.run(*root);
     TI_TRACE("OpenGL root buffer size: {} B",
@@ -238,12 +233,14 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
 #ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
     TI_ASSERT(result_buffer == nullptr);
-    result_buffer = allocate_result_buffer_default(this);
+    result_buffer = (uint64 *)memory_pool->allocate(
+        sizeof(uint64) * taichi_result_buffer_entries, 8);
     cc_program->compile_layout(root);
 #endif
   } else if (config.arch == Arch::vulkan) {
 #ifdef TI_WITH_VULKAN
-    result_buffer = allocate_result_buffer_default(this);
+    result_buffer = (uint64 *)memory_pool->allocate(
+        sizeof(uint64) * taichi_result_buffer_entries, 8);
     vulkan_compiled_structs_ = vulkan::compile_snode_structs(*root);
     vulkan::VkRuntime::Params params;
     params.snode_descriptors = &(vulkan_compiled_structs_->snode_descriptors);

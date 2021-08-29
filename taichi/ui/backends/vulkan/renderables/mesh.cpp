@@ -34,6 +34,7 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
   size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
   if (config_.ssbo_size != correct_ssbo_size) {
     resize_storage_buffers(correct_ssbo_size);
+    create_bindings();
   }
   {
     void *mapped = app_context_->device().map(storage_buffer_);

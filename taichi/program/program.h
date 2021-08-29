@@ -197,13 +197,6 @@ class Program {
     return *kernels.back();
   }
 
-  void start_kernel_definition(Kernel *kernel) {
-    current_callable = kernel;
-  }
-
-  void end_kernel_definition() {
-  }
-
   Function *create_function(const FunctionKey &func_key);
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)

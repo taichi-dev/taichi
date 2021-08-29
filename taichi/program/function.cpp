@@ -12,10 +12,10 @@ Function::Function(Program *program, const FunctionKey &func_key)
 
 void Function::set_function_body(const std::function<void()> &func) {
   // Do not corrupt the context calling this function here
-  auto backup_context = std::move(taichi::lang::context);
+  auto backup_context = std::move(context);
 
-  taichi::lang::context = std::make_unique<FrontendContext>();
-  ir = taichi::lang::context->get_root();
+  context = std::make_unique<FrontendContext>();
+  ir = context->get_root();
   {
     // Note: this is not a mutex
     CurrentCallableGuard _(program, this);
@@ -26,7 +26,7 @@ void Function::set_function_body(const std::function<void()> &func) {
                                   /*verbose=*/program->config.print_ir,
                                   /*start_from_ast=*/true);
 
-  taichi::lang::context = std::move(backup_context);
+  context = std::move(backup_context);
 }
 
 void Function::set_function_body(std::unique_ptr<IRNode> func_body) {

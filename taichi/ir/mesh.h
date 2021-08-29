@@ -40,6 +40,8 @@ class Mesh {
     total_offset.clear();
   }
 
+  uint32_t num_patches {0};
+
   template<typename T>
   using MeshMapping = std::unordered_map<MeshElementType, T>;
 

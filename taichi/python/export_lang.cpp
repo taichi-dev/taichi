@@ -1135,6 +1135,7 @@ void export_lang(py::module &m) {
     },
     py::return_value_policy::reference);
   
+  // ad-hoc setters
   m.def(
     "set_owned_offset",
     [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode* snode) {
@@ -1144,6 +1145,11 @@ void export_lang(py::module &m) {
     "set_total_offset",
     [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode* snode) {
       mesh_ptr.ptr->total_offset.insert(std::pair(type, snode));
+    });
+  m.def(
+    "set_num_patches",
+    [](mesh::MeshPtr &mesh_ptr, uint32_t num_patches) {
+      mesh_ptr.ptr->num_patches = num_patches;
     });
 }
 

@@ -163,6 +163,9 @@ class MeshInstance:
     
     def set_total_offset(self, element_type : MeshElementType, total_offset : ScalarField):
         _ti_core.set_total_offset(self.mesh_ptr, element_type, total_offset.vars[0].ptr.snode())
+    
+    def set_num_patches(self, num_patches : int):
+        _ti_core.set_num_patches(self.mesh_ptr, num_patches)
 
     def _materialize_fields(self, element_type_set : list, element_num_set : list):
         for element_type, num_elements in zip(element_type_set, element_num_set):

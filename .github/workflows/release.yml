@@ -75,12 +75,11 @@ jobs:
           # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
           PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
+          PROJECT_NAME: ${{ matrix.name }}
         run: |
           cd python
           if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
           elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python build.py upload --skip_build; fi
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
 
   build_and_upload_windows:
     name: Build and Upload (Windows only)
@@ -146,11 +145,10 @@ jobs:
           # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
           PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
+          PROJECT_NAME: ${{ matrix.name }}
         run: |
           cd python
           if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {$env:PYPI_PWD = "$env:NIGHT_PWD"}
           if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {python build.py upload --skip_build --testpypi --project_name $env:PROJECT_NAME}
           if ( $env:PROJECT_NAME -eq "taichi" ) {$env:PYPI_PWD = "$env:PROD_PWD"}
           if ( $env:PROJECT_NAME -eq "taichi" ) {python build.py upload --skip_build}
-        env:
-          PROJECT_NAME: ${{ matrix.name }}

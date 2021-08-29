@@ -1161,6 +1161,26 @@ class OffloadedStmt : public Stmt {
 };
 
 /**
+ * The patch index of the |mesh_loop|.
+ */
+class MeshPatchIndexStmt : public Stmt {
+ public:
+  Stmt *loop;
+
+  MeshPatchIndexStmt(Stmt *loop) : loop(loop) {
+    this->ret_type = PrimitiveType::u32;
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, loop);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
  * The |index|-th index of the |loop|.
  */
 class LoopIndexStmt : public Stmt {

@@ -592,10 +592,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         if (auto s_print = s->cast<PrintStmt>()) {
           bounds.push_back(llvm_val[std::get<Stmt*>(s_print->contents.front())]);
         }
-        else if (auto s_in = s->cast<InternalFuncStmt>()) {
-          if (s_in->func_name == "mesh_idx") llvm_val[s.get()] = get_arg(1);
-          else s->accept(this);
-        }
         else s->accept(this);
       }
       auto loop_test_bb = BasicBlock::Create(*llvm_context, "loop_test", func);
@@ -622,12 +618,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         loop_vars_llvm[stmt].push_back(loop_index);
         for (int i = 0; i < stmt->body->size(); i++) {
           auto &s = stmt->body->statements[i];
-          if (auto s_in = s->cast<InternalFuncStmt>()) {
-            if (s_in->func_name == "mesh_idx") llvm_val[s.get()] = get_arg(1);
-            //else if (s_in->func_name == "l2g") llvm_val[s.get()] = llvm_val[s_in->args[0]];
-            else s->accept(this);
-          }
-          else s->accept(this);
+          s->accept(this);
         }
         //stmt->body->accept(this);
         builder->CreateStore(
@@ -748,6 +739,10 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         "bls_buffer", nullptr, llvm::GlobalVariable::NotThreadLocal,
         3 /*addrspace=shared*/);
     bls_buffer->setAlignment(llvm::MaybeAlign(8));
+  }
+
+  void visit(MeshPatchIndexStmt *stmt) override {
+    llvm_val[stmt] = get_arg(1);
   }
 
   void visit(OffloadedStmt *stmt) override {

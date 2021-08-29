@@ -1971,6 +1971,10 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   block_corner_coordinates = nullptr;
 }
 
+void CodeGenLLVM::visit(MeshPatchIndexStmt *stmt) {
+  TI_NOT_IMPLEMENTED; // TODO(changyu): need a x64 version impl.
+}
+
 void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
       stmt->loop->as<OffloadedStmt>()->task_type ==

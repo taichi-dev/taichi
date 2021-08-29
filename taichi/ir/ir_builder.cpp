@@ -130,6 +130,10 @@ FuncCallStmt *IRBuilder::create_func_call(Function *func,
   return insert(Stmt::make_typed<FuncCallStmt>(func, args));
 }
 
+MeshPatchIndexStmt *IRBuilder::get_patch_index(Stmt *loop) {
+  return insert(Stmt::make_typed<MeshPatchIndexStmt>(loop));
+}
+
 LoopIndexStmt *IRBuilder::get_loop_index(Stmt *loop, int index) {
   return insert(Stmt::make_typed<LoopIndexStmt>(loop, index));
 }

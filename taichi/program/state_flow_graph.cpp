@@ -238,11 +238,14 @@ void StateFlowGraph::Node::disconnect_with(StateFlowGraph::Node *other) {
   input_edges.remove_node(other);
 }
 
-StateFlowGraph::StateFlowGraph(AsyncEngine *engine, IRBank *ir_bank)
+StateFlowGraph::StateFlowGraph(AsyncEngine *engine,
+                               IRBank *ir_bank,
+                               const CompileConfig *const config,
+                               const std::unordered_map<int, SNode *> &snodes)
     : first_pending_task_index_(1 /*after initial node*/),
       ir_bank_(ir_bank),
       engine_(engine),
-      program_(engine->program) {
+      config_(config) {
   nodes_.push_back(std::make_unique<Node>());
   initial_node_ = nodes_.back().get();
   initial_meta_.name = "initial_state";
@@ -253,7 +256,7 @@ StateFlowGraph::StateFlowGraph(AsyncEngine *engine, IRBank *ir_bank)
   initial_node_->output_edges.node_id = 0;
   initial_node_->mark_executed();
 
-  for (auto snode : program_->snodes) {
+  for (const auto snode : snodes) {
     list_up_to_date_[snode.second] = false;
   }
 }
@@ -321,7 +324,7 @@ void StateFlowGraph::insert_tasks(const std::vector<TaskLaunchRecord> &records,
                                   bool filter_listgen) {
   TI_AUTO_PROF;
   std::vector<TaskLaunchRecord> filtered_records;
-  if (filter_listgen && program_->config.async_opt_listgen) {
+  if (filter_listgen && config_->async_opt_listgen) {
     /*
      * Here we find all the ClearList/ListGen pairs and try to evict obviously
      * redundant list operations.
@@ -723,9 +726,8 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
     fused[i] = nodes[i]->rec.empty();
   }
   const auto initial_remaining_fuses_per_task =
-      (program_->config.async_max_fuse_per_task > 0)
-          ? program_->config.async_max_fuse_per_task
-          : n;
+      (config_->async_max_fuse_per_task > 0) ? config_->async_max_fuse_per_task
+                                             : n;
 
   // The case without an edge: O(sum(size * min(size, n / 64))) = O(n^2 / 64)
   const int kLargeFusionSetThreshold = std::max(n / 16, 16);

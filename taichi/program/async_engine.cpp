@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "taichi/program/kernel.h"
-#include "taichi/program/program.h"
 #include "taichi/system/timeline.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/util/testing.h"
@@ -188,11 +187,12 @@ ExecutionQueue::ExecutionQueue(
       compile_to_backend_(compile_to_backend) {
 }
 
-AsyncEngine::AsyncEngine(Program *program,
+AsyncEngine::AsyncEngine(const CompileConfig *const config,
+                         const std::unordered_map<int, SNode *> &snodes,
                          const BackendExecCompilationFunc &compile_to_backend)
     : queue(&ir_bank_, compile_to_backend),
-      program(program),
-      sfg(std::make_unique<StateFlowGraph>(this, &ir_bank_)) {
+      config_(config),
+      sfg(std::make_unique<StateFlowGraph>(this, &ir_bank_, config, snodes)) {
   Timeline::get_this_thread_instance().set_name("host");
   ir_bank_.set_sfg(sfg.get());
 }
@@ -222,10 +222,9 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
     TaskLaunchRecord rec(context, kernel, kmeta.ir_handle_cached[i]);
     records.push_back(rec);
   }
-  const auto &config = program->config;
-  sfg->insert_tasks(records, config.async_listgen_fast_filtering);
-  if ((config.async_flush_every > 0) &&
-      (sfg->num_pending_tasks() >= config.async_flush_every)) {
+  sfg->insert_tasks(records, config_->async_listgen_fast_filtering);
+  if ((config_->async_flush_every > 0) &&
+      (sfg->num_pending_tasks() >= config_->async_flush_every)) {
     TI_TRACE("Async flushing {} tasks", sfg->num_pending_tasks());
     flush();
   }
@@ -253,35 +252,34 @@ void AsyncEngine::flush() {
   TI_TRACE("Synchronizing SFG of {} nodes ({} pending)", sfg->size(),
            sfg->num_pending_tasks());
   debug_sfg("initial");
-  if (program->config.debug) {
+  if (config_->debug) {
     sfg->verify();
   }
-  for (int pass = 0; pass < program->config.async_opt_passes && modified;
-       pass++) {
+  for (int pass = 0; pass < config_->async_opt_passes && modified; pass++) {
     modified = false;
-    if (program->config.async_opt_activation_demotion) {
+    if (config_->async_opt_activation_demotion) {
       while (sfg->demote_activation()) {
         debug_sfg("act");
         modified = true;
       }
     }
     sfg->verify();
-    if (program->config.async_opt_listgen) {
+    if (config_->async_opt_listgen) {
       while (sfg->optimize_listgen()) {
         debug_sfg("listgen");
         modified = true;
       }
     }
     sfg->verify();
-    if (program->config.async_opt_dse) {
+    if (config_->async_opt_dse) {
       while (sfg->optimize_dead_store()) {
         debug_sfg("dse");
         modified = true;
       }
     }
     sfg->verify();
-    if (program->config.async_opt_fusion) {
-      auto max_iter = program->config.async_opt_fusion_max_iter;
+    if (config_->async_opt_fusion) {
+      auto max_iter = config_->async_opt_fusion_max_iter;
       for (int iter = 0; max_iter == 0 || iter < max_iter; iter++) {
         if (sfg->fuse()) {
           debug_sfg("fuse");
@@ -307,7 +305,7 @@ void AsyncEngine::flush() {
 
 void AsyncEngine::debug_sfg(const std::string &stage) {
   TI_TRACE("Ran {}, counter={}", stage, cur_sync_sfg_debug_counter_);
-  auto prefix = program->config.async_opt_intermediate_file;
+  auto prefix = config_->async_opt_intermediate_file;
   if (prefix.empty())
     return;
   auto dot = sfg->dump_dot(/*rankdir=*/std::nullopt);

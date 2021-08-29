@@ -225,7 +225,10 @@ class StateFlowGraph {
     void disconnect_with(Node *other);
   };
 
-  StateFlowGraph(AsyncEngine *engine, IRBank *ir_bank);
+  StateFlowGraph(AsyncEngine *engine,
+                 IRBank *ir_bank,
+                 const CompileConfig *const config,
+                 const std::unordered_map<int, SNode *> &snodes);
 
   std::vector<Node *> get_pending_tasks() const;
 
@@ -329,7 +332,7 @@ class StateFlowGraph {
   IRBank *ir_bank_;
   std::unordered_map<SNode *, bool> list_up_to_date_;
   [[maybe_unused]] AsyncEngine *engine_;
-  Program *program_;
+  const CompileConfig *const config_;
 };
 
 TLANG_NAMESPACE_END

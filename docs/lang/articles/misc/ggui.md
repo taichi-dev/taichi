@@ -5,13 +5,13 @@ sidebar_position: 1
 
 # A New UI system: GGUI
 
-A new UI system is to be added to Taichi. The new GUI system will use GPU for rendering, which will enable it to be much faster and to render 3d scenes. For this reason, this new system is sometimes referred to as GGUI. This doc describes the APIs provided. 
+A new UI system is to be added to Taichi. The new GUI system will use GPU for rendering, which will enable it to be much faster and to render 3d scenes. For this reason, this new system is sometimes referred to as GGUI. This doc describes the APIs provided.
 
 Apart from this doc, a good way of getting familiarized with GGUI is to look at the examples. Please checkout the example code provided in  `examples/ggui_examples`.
 
 ## Creating a window
 
-`ti.ui.Window(name, res)` creates a window. 
+`ti.ui.Window(name, res)` creates a window.
 
 ```python
 window = ti.ui.Window('Window Title', (640, 360))
@@ -69,7 +69,7 @@ scene.set_camera(camera)
 ### Configuring light sources
 #### adding a point light
 ```python
-scene.point_light(pos,color) 
+scene.point_light(pos,color)
 ```
 Note that, `point_light` needs to be called every frame. Similar to the `canvas` methods, you should call this within your render loop.
 
@@ -80,13 +80,13 @@ scene.mesh(vertices,indices,normals,color,per_vertex_color)
 scene.particles(vertices,radius,color,per_vertex_color)
 ```
 
-Again, the arguments `vertices`, `indices`, `per_vertex_color`, `image` are all expected to be `taichi` fields. If `per_vertex_color` is provided, `color` will be ignored. 
+Again, the arguments `vertices`, `indices`, `per_vertex_color`, `image` are all expected to be `taichi` fields. If `per_vertex_color` is provided, `color` will be ignored.
 
 The positions/centers of geometries should be in world-space coordinates.
 
 
-### Rendering the scene 
-A scene can be rendered on a canvas. 
+### Rendering the scene
+A scene can be rendered on a canvas.
 ```python
 canvas.scene(scene)
 ```

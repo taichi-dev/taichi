@@ -31,7 +31,7 @@ void main() {
   float distance = length(in_position - ubo.scene.camera_pos);
 
   gl_PointSize =
-      (ubo.window_height / 2.0) * ubo.radius / (ubo.tan_half_fov * distance);
+      ubo.window_height * ubo.radius / (ubo.tan_half_fov * distance);
 
   pos_camera_space = ubo.scene.view * vec4(in_position, 1.0);
   gl_Position = ubo.scene.projection * pos_camera_space;

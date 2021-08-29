@@ -24,7 +24,7 @@ void Particles::update_ubo(glm::vec3 color,
   ubo.radius = radius;
   ubo.window_width = app_context_->config.width;
   ubo.window_height = app_context_->config.height;
-  ubo.tan_half_fov = tan(glm::radians(scene.camera_.fov) / 2);
+  ubo.tan_half_fov = tanf(glm::radians(scene.camera_.fov) / 2);
   ubo.use_per_vertex_color = use_per_vertex_color;
 
   void *mapped = app_context_->device().map(uniform_buffer_);
@@ -41,6 +41,7 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
   size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
   if (config_.ssbo_size != correct_ssbo_size) {
     resize_storage_buffers(correct_ssbo_size);
+    create_bindings();
   }
   {
     void *mapped = app_context_->device().map(storage_buffer_);

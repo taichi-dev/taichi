@@ -1165,9 +1165,10 @@ class OffloadedStmt : public Stmt {
  */
 class MeshPatchIndexStmt : public Stmt {
  public:
-  Stmt *loop;
+  OffloadedStmt *loop;
 
-  MeshPatchIndexStmt(Stmt *loop) : loop(loop) {
+  MeshPatchIndexStmt(OffloadedStmt *loop) : loop(loop) {
+    TI_ASSERT(loop->task_type == OffloadedStmt::TaskType::mesh_for);
     this->ret_type = PrimitiveType::u32;
     TI_STMT_REG_FIELDS;
   }

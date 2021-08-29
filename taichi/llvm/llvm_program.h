@@ -48,6 +48,8 @@ class LlvmProgramImpl {
     return static_cast<LLVMRuntime *>(llvm_runtime);
   }
 
+  FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded);
+
   void materialize_snode_tree(
       SNodeTree *tree,
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,

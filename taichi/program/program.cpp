@@ -127,7 +127,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
     TI_ASSERT(is_extension_supported(config.arch, Extension::async_mode));
     async_engine = std::make_unique<AsyncEngine>(
         this, [this](Kernel &kernel, OffloadedStmt *offloaded) {
-          return this->compile_to_backend_executable(kernel, offloaded);
+          return this->compile(kernel, offloaded);
         });
   }
 
@@ -162,13 +162,14 @@ Function *Program::create_function(const FunctionKey &func_key) {
   return functions_.back().get();
 }
 
-FunctionType Program::compile(Kernel &kernel) {
+FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
-  if (Kernel::supports_lowering(kernel.arch)) {
-    kernel.lower();
-    ret = compile_to_backend_executable(kernel, /*offloaded=*/nullptr);
+  if (arch_uses_llvm(config.arch)) {
+    return llvm_program_->compile(&kernel, offloaded);
+  } else if (kernel.arch == Arch::metal) {
+    return metal_program_->compile(&kernel, offloaded);
   } else if (kernel.arch == Arch::opengl) {
     opengl::OpenglCodeGen codegen(kernel.name, &opengl_struct_compiled_.value(),
                                   opengl_kernel_launcher_.get());
@@ -189,18 +190,6 @@ FunctionType Program::compile(Kernel &kernel) {
   TI_ASSERT(ret);
   total_compilation_time_ += Time::get_time() - start_t;
   return ret;
-}
-
-FunctionType Program::compile_to_backend_executable(Kernel &kernel,
-                                                    OffloadedStmt *offloaded) {
-  if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda) {
-    auto codegen = KernelCodeGen::create(kernel.arch, &kernel, offloaded);
-    return codegen->compile();
-  } else if (kernel.arch == Arch::metal) {
-    return metal_program_->compile_to_backend_executable(&kernel, offloaded);
-  }
-  TI_NOT_IMPLEMENTED;
-  return nullptr;
 }
 
 void Program::materialize_runtime() {

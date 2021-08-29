@@ -15,8 +15,7 @@ class MetalProgramImpl {
  public:
   CompileConfig config;
   MetalProgramImpl(CompileConfig &config);
-  FunctionType compile_to_backend_executable(Kernel *kernel,
-                                             OffloadedStmt *offloaded);
+  FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded);
   // TODO: materialize_runtime
 
   std::size_t get_snode_num_dynamically_allocated(SNode *snode);

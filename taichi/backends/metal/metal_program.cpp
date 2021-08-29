@@ -7,9 +7,11 @@ namespace lang {
 MetalProgramImpl::MetalProgramImpl(CompileConfig &config_) : config(config_) {
 }
 
-FunctionType MetalProgramImpl::compile_to_backend_executable(
-    Kernel *kernel,
-    OffloadedStmt *offloaded) {
+FunctionType MetalProgramImpl::compile(Kernel *kernel,
+                                       OffloadedStmt *offloaded) {
+  if (!kernel->lowered()) {
+    kernel->lower();
+  }
   return metal::compile_to_metal_executable(kernel, metal_kernel_mgr_.get(),
                                             &metal_compiled_structs_.value(),
                                             offloaded);

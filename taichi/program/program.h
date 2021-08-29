@@ -207,18 +207,6 @@ class Program {
 
   void check_runtime_error();
 
-  // TODO(#2193): Remove get_current_kernel() and get_current_function()?
-  inline Kernel &get_current_kernel() const {
-    auto *kernel = dynamic_cast<Kernel *>(current_callable);
-    TI_ASSERT(kernel);
-    return *kernel;
-  }
-
-  inline Function *get_current_function() const {
-    auto *func = dynamic_cast<Function *>(current_callable);
-    return func;
-  }
-
   Kernel &get_snode_reader(SNode *snode);
 
   Kernel &get_snode_writer(SNode *snode);

@@ -824,7 +824,10 @@ void export_lang(py::module &m) {
   m.def("reset_snode_access_flag", reset_snode_access_flag);
   m.def("no_activate", [](SNode *snode) {
     // TODO(#2193): Also apply to @ti.func?
-    get_current_program().get_current_kernel().no_activate.push_back(snode);
+    auto *kernel =
+        dynamic_cast<Kernel *>(get_current_program().current_callable);
+    TI_ASSERT(kernel);
+    kernel->no_activate.push_back(snode);
   });
   m.def("stop_grad",
         [](SNode *snode) { current_ast_builder().stop_gradient(snode); });

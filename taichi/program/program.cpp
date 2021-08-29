@@ -120,7 +120,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
     TI_WARN("Running in async mode. This is experimental.");
     TI_ASSERT(is_extension_supported(config.arch, Extension::async_mode));
     async_engine = std::make_unique<AsyncEngine>(
-        this, [this](Kernel &kernel, OffloadedStmt *offloaded) {
+        &config, snodes, [this](Kernel &kernel, OffloadedStmt *offloaded) {
           return this->compile(kernel, offloaded);
         });
   }

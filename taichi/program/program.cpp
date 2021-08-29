@@ -4,15 +4,12 @@
 
 #include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
-#include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
-#include "taichi/backends/metal/codegen_metal.h"
 #include "taichi/backends/opengl/codegen_opengl.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
 #include "taichi/struct/struct_llvm.h"
-#include "taichi/backends/metal/aot_module_builder_impl.h"
-#include "taichi/backends/metal/struct_metal.h"
+#include "taichi/backends/metal/api.h"
 #include "taichi/backends/wasm/aot_module_builder_impl.h"
 #include "taichi/backends/opengl/struct_opengl.h"
 #include "taichi/platform/cuda/detect_cuda.h"
@@ -85,8 +82,11 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
     if (!metal::is_metal_api_available()) {
       TI_WARN("No Metal API detected.");
       config.arch = host_arch();
+    } else {
+      metal_program_ = std::make_unique<MetalProgramImpl>(config);
     }
   }
+
   if (config.arch == Arch::opengl) {
     if (!opengl::is_opengl_api_available()) {
       TI_WARN("No OpenGL API detected.");
@@ -197,9 +197,7 @@ FunctionType Program::compile_to_backend_executable(Kernel &kernel,
     auto codegen = KernelCodeGen::create(kernel.arch, &kernel, offloaded);
     return codegen->compile();
   } else if (kernel.arch == Arch::metal) {
-    return metal::compile_to_metal_executable(&kernel, metal_kernel_mgr_.get(),
-                                              &metal_compiled_structs_.value(),
-                                              offloaded);
+    return metal_program_->compile_to_backend_executable(&kernel, offloaded);
   }
   TI_NOT_IMPLEMENTED;
   return nullptr;
@@ -236,23 +234,8 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
     llvm_program_->materialize_snode_tree(
         tree, snode_trees_, snodes, snode_to_glb_var_exprs_, result_buffer);
   } else if (config.arch == Arch::metal) {
-    TI_ASSERT_INFO(config.use_llvm,
-                   "Metal arch requires that LLVM being enabled");
-    metal_compiled_structs_ = metal::compile_structs(*root);
-    if (metal_kernel_mgr_ == nullptr) {
-      TI_ASSERT(result_buffer == nullptr);
-      result_buffer = allocate_result_buffer_default(this);
-
-      metal::KernelManager::Params params;
-      params.compiled_structs = metal_compiled_structs_.value();
-      params.config = &config;
-      params.mem_pool = memory_pool.get();
-      params.host_result_buffer = result_buffer;
-      params.profiler = profiler.get();
-      params.root_id = root->id;
-      metal_kernel_mgr_ =
-          std::make_unique<metal::KernelManager>(std::move(params));
-    }
+    metal_program_->materialize_snode_tree(tree, &result_buffer,
+                                           memory_pool.get(), profiler.get());
   } else if (config.arch == Arch::opengl) {
     TI_ASSERT(result_buffer == nullptr);
     result_buffer = allocate_result_buffer_default(this);
@@ -297,7 +280,7 @@ void Program::synchronize() {
     if (arch_uses_llvm(config.arch)) {
       llvm_program_->synchronize();
     } else if (config.arch == Arch::metal) {
-      metal_kernel_mgr_->synchronize();
+      metal_program_->synchronize();
     } else if (config.arch == Arch::vulkan) {
       vulkan_runtime_->synchronize();
     }
@@ -533,7 +516,7 @@ void Program::print_memory_profiler_info() {
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
   if (config.arch == Arch::metal) {
-    return metal_kernel_mgr_->get_snode_num_dynamically_allocated(snode);
+    return metal_program_->get_snode_num_dynamically_allocated(snode);
   }
   return llvm_program_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
@@ -546,9 +529,7 @@ Program::~Program() {
 
 std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
   if (arch == Arch::metal) {
-    return std::make_unique<metal::AotModuleBuilderImpl>(
-        &(metal_compiled_structs_.value()),
-        metal_kernel_mgr_->get_buffer_meta_data());
+    return metal_program_->make_aot_module_builder();
   } else if (arch == Arch::wasm) {
     return std::make_unique<wasm::AotModuleBuilderImpl>();
   }

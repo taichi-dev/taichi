@@ -12,7 +12,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_program.h"
-#include "taichi/backends/metal/kernel_manager.h"
+#include "taichi/backends/metal/metal_program.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
 #include "taichi/backends/vulkan/runtime.h"
@@ -25,7 +25,6 @@
 #include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/program/context.h"
 #include "taichi/runtime/runtime.h"
-#include "taichi/backends/metal/struct_metal.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/system/memory_pool.h"
@@ -312,9 +311,6 @@ class Program {
    */
   void materialize_snode_tree(SNodeTree *tree);
 
-  // Metal related data structures
-  std::optional<metal::CompiledStructs> metal_compiled_structs_;
-  std::unique_ptr<metal::KernelManager> metal_kernel_mgr_;
   // OpenGL related data structures
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
   std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
@@ -330,6 +326,7 @@ class Program {
   std::vector<std::unique_ptr<Function>> functions_;
   std::unordered_map<FunctionKey, Function *> function_map_;
   std::unique_ptr<LlvmProgramImpl> llvm_program_;
+  std::unique_ptr<MetalProgramImpl> metal_program_;
   float64 total_compilation_time_{0.0};
   static std::atomic<int> num_instances_;
   bool finalized_{false};

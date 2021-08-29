@@ -388,6 +388,3 @@ class Mesh:
     @staticmethod
     def tri():
         return TriType()
-
-def ti_create_mesh():
-    return _ti_core.create_mesh()

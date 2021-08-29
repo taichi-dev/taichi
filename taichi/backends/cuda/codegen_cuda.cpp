@@ -631,10 +631,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       body = guard.body;
     }
 
-    TI_ASSERT(stmt->mesh->owned_offset.find(stmt->major_from_type) != stmt->mesh->owned_offset.end());
     create_call("gpu_parallel_mesh_for",
                 {get_arg(0), 
-                tlctx->get_constant(int32_t(stmt->mesh->owned_offset.find(stmt->major_from_type)->second->parent->extractors[0].num_elements_from_root)), body});
+                tlctx->get_constant(uint32_t(stmt->mesh->num_patches)), body});
   }
 
   void emit_cuda_gc(OffloadedStmt *stmt) {

@@ -7,15 +7,14 @@ from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.ops import get_addr
 
-from .utils import *
-
 if _ti_core.GGUI_AVAILABLE:
 
     from .camera import Camera
     from .canvas import Canvas
+    from .constants import *
     from .gui import Gui
     from .scene import Scene
-    from .window import *
+    from .window import Window
 
     def make_camera():
         return Camera(_ti_core.PyCamera())

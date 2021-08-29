@@ -8,29 +8,9 @@ from taichi.lang.kernel_impl import kernel
 from taichi.lang.ops import get_addr
 
 from .canvas import Canvas
+from .constants import *
 from .gui import Gui
 from .utils import *
-
-SHIFT = 'Shift'
-ALT = 'Alt'
-CTRL = 'Control'
-ESCAPE = 'Escape'
-RETURN = 'Return'
-TAB = 'Tab'
-BACKSPACE = 'BackSpace'
-SPACE = 'Space'
-UP = 'Up'
-DOWN = 'Down'
-LEFT = 'Left'
-RIGHT = 'Right'
-CAPSLOCK = 'CapsLock'
-LMB = 'LMB'
-MMB = 'MMB'
-RMB = 'RMB'
-
-# Event types
-PRESS = "Press"
-RELEASE = "Release"
 
 
 class Window(_ti_core.PyWindow):

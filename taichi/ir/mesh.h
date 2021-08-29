@@ -5,6 +5,8 @@
 #include "taichi/ir/type.h"
 #include "taichi/ir/snode.h"
 
+#include <unordered_set>
+
 namespace taichi {
 namespace lang {
 namespace mesh {
@@ -23,22 +25,40 @@ enum class MeshRelationType {
   CV = 12, CE = 13, CF = 14, CC = 15,
 };
 
+enum class MeshElementReorderingType {
+  NonReordering = 0,
+  Reordering   = 1,
+  SurfaceFirst = 2,
+  CellFirst    = 3
+};
+
 struct MeshAttribute {
- public:
-  MeshAttribute() {}
+  MeshAttribute(MeshElementType type_, SNode *snode_, MeshElementReorderingType reordering_type_) :
+    type(type_), snode(snode_), reordering_type(reordering_type_) {}
+  
+  bool operator == (const MeshAttribute &rhs) const {
+    return type == rhs.type && snode == rhs.snode && reordering_type == rhs.reordering_type;
+  }
+  
+  struct Hash {
+    size_t operator()(const MeshAttribute &attr) const {
+      uintptr_t ad = (uintptr_t) attr.snode;
+      return (size_t) ((13*ad) ^ (ad >> 15));
+    }
+  };
+
+  MeshElementType type;
+  SNode *snode;
+  MeshElementReorderingType reordering_type;
 };
 
 struct MeshLocalRelation {
- public:
   MeshLocalRelation() {}
 };
 
 class Mesh {
  public:
-  Mesh() {
-    owned_offset.clear();
-    total_offset.clear();
-  }
+  Mesh() {}
 
   uint32_t num_patches {0};
 
@@ -49,14 +69,8 @@ class Mesh {
   MeshMapping<SNode*> total_offset{}; // prefix of total element
   MeshMapping<SNode*> l2g_map{}; // local to global index mapping
 
-  MeshMapping<std::size_t /*offset*/> owned_offset_local;
-  MeshMapping<std::size_t /*offset*/> total_offset_local;
-  MeshMapping<std::size_t /*offset*/> owned_num_local;
-  MeshMapping<std::size_t /*offset*/> total_num_local;
-
+  MeshMapping<std::unordered_set<MeshAttribute, MeshAttribute::Hash>> attributes;
   std::map<MeshRelationType, MeshLocalRelation> relations;
-
-  std::unordered_map</*snode_id*/ int, MeshAttribute> attribute;
 };
 
 struct MeshPtr { // Mesh wrapper in python

@@ -389,6 +389,16 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->reversed = reversed;
   new_stmt->num_cpu_threads = num_cpu_threads;
   new_stmt->index_offsets = index_offsets;
+
+  new_stmt->mesh = mesh;
+  new_stmt->major_from_type = major_from_type;
+  new_stmt->major_to_types = major_to_types;
+  new_stmt->minor_relation_types = minor_relation_types;
+  new_stmt->owned_offset_local = owned_offset_local;
+  new_stmt->total_offset_local = total_offset_local;
+  new_stmt->owned_num_local = owned_num_local;
+  new_stmt->total_num_local = total_num_local;
+
   if (tls_prologue) {
     new_stmt->tls_prologue = tls_prologue->clone();
     new_stmt->tls_prologue->parent_stmt = new_stmt.get();
@@ -396,6 +406,10 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   if (bls_prologue) {
     new_stmt->bls_prologue = bls_prologue->clone();
     new_stmt->bls_prologue->parent_stmt = new_stmt.get();
+  }
+  if (body_prologue) {
+    new_stmt->body_prologue = body_prologue->clone();
+    new_stmt->body_prologue->parent_stmt = new_stmt.get();
   }
   if (body) {
     new_stmt->body = body->clone();

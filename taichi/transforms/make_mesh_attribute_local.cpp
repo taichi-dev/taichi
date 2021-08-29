@@ -2,7 +2,6 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
-#include "taichi/ir/scratch_pad.h"
 #include "taichi/transforms/make_mesh_attribute_local.h"
 
 namespace taichi {
@@ -39,21 +38,6 @@ void make_mesh_attribute_local_offload(OffloadedStmt *offload,
       }
     }
   }
-  offload->bls_prologue = std::make_unique<Block>();
-  offload->bls_prologue->parent_stmt = offload;
-  Stmt* patch_idx = offload->bls_prologue->push_back<MeshPatchIndexStmt>(offload);
-  Stmt* one = offload->bls_prologue->push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-    TypedConstant(TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32), 1)));
-  Stmt* patch_idx_1 = offload->bls_prologue->push_back<BinaryOpStmt>(BinaryOpType::add, patch_idx, one);
-  auto get_print = [&](Stmt* idx) {
-    const auto lane = std::vector<Stmt*>{idx};
-    Stmt* globalptr = offload->bls_prologue->push_back<GlobalPtrStmt>(LaneAttribute<SNode*>{
-      offload->mesh->owned_offset.find(offload->major_from_type)->second}, lane);
-    Stmt* load = offload->bls_prologue->push_back<GlobalLoadStmt>(globalptr);
-    offload->bls_prologue->push_back<PrintStmt>(load);
-  };
-  get_print(patch_idx);
-  get_print(patch_idx_1);
 }
 
 // This pass should happen after offloading but before lower_access
@@ -75,6 +59,5 @@ void make_mesh_attribute_local(IRNode *root,
 }
 
 }  // namespace irpass
-
-}
-}
+}  // namespace lang
+}  // namespace taichi

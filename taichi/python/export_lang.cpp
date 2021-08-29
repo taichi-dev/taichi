@@ -1123,6 +1123,13 @@ void export_lang(py::module &m) {
   .value("CC", mesh::MeshRelationType::CC)
   .export_values();
 
+  py::enum_<mesh::MeshElementReorderingType>(m, "MeshElementReorderingType", py::arithmetic())
+  .value("NonReordering", mesh::MeshElementReorderingType::NonReordering)
+  .value("Reordering", mesh::MeshElementReorderingType::Reordering)
+  .value("SurfaceFirst", mesh::MeshElementReorderingType::SurfaceFirst)
+  .value("CellFirst", mesh::MeshElementReorderingType::CellFirst)
+  .export_values();
+
   py::class_<mesh::Mesh>(m, "Mesh");
   py::class_<mesh::MeshPtr>(m, "MeshPtr");
 
@@ -1150,6 +1157,14 @@ void export_lang(py::module &m) {
     "set_num_patches",
     [](mesh::MeshPtr &mesh_ptr, uint32_t num_patches) {
       mesh_ptr.ptr->num_patches = num_patches;
+    });
+  m.def(
+    "add_mesh_attribute",
+    [] (mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode, mesh::MeshElementReorderingType reordering_type) {
+      if (mesh_ptr.ptr->attributes.find(type) == mesh_ptr.ptr->attributes.end()) {
+        mesh_ptr.ptr->attributes.insert(std::pair(type, std::move(std::unordered_set<mesh::MeshAttribute, mesh::MeshAttribute::Hash>())));
+      }
+      mesh_ptr.ptr->attributes.find(type)->second.emplace(type, snode, reordering_type);
     });
 }
 

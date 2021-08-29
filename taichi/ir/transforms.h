@@ -65,6 +65,9 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
 void make_block_local(IRNode *root,
                       const CompileConfig &config,
                       const MakeBlockLocalPass::Args &args);
+void make_mesh_thread_local(IRNode *root,
+                      const CompileConfig &config,
+                      const MakeBlockLocalPass::Args &args);
 void make_mesh_attribute_local(IRNode *root,
                       const CompileConfig &config,
                       const MakeBlockLocalPass::Args &args);

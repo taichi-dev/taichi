@@ -579,21 +579,23 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void create_offload_mesh_for(OffloadedStmt *stmt) {
+    auto tls_prologue = create_mesh_xlogue(stmt->tls_prologue);
 
     llvm::Function *body;
     {
       auto guard = get_function_creation_guard(
-          {llvm::PointerType::get(get_runtime_type("Context"), 0), tlctx->get_data_type<int>()});
+          {llvm::PointerType::get(get_runtime_type("Context"), 0), 
+          get_tls_buffer_type(),
+          tlctx->get_data_type<int>()});
 
-      //llvm_val[stmt->bls_prologue->statements[0].get()] = get_arg(1);
-      std::vector<llvm::Value*> bounds;
-      for (int i = 0; i < stmt->bls_prologue->size(); i++) {
-        auto &s = stmt->bls_prologue->statements[i];
-        if (auto s_print = s->cast<PrintStmt>()) {
-          bounds.push_back(llvm_val[std::get<Stmt*>(s_print->contents.front())]);
-        }
-        else s->accept(this);
+      for (int i = 0; i < stmt->body_prologue->size(); i++) {
+        auto &s = stmt->body_prologue->statements[i];
+        s->accept(this);
       }
+
+      auto bound_0 = llvm_val[stmt->owned_offset_local.find(stmt->major_from_type)->second];
+      auto bound_1 = builder->CreateAdd(bound_0, llvm_val[stmt->owned_num_local.find(stmt->major_from_type)->second]);
+
       auto loop_test_bb = BasicBlock::Create(*llvm_context, "loop_test", func);
       auto loop_body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
       auto func_exit = BasicBlock::Create(*llvm_context, "func_exit", func);
@@ -601,26 +603,24 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           create_entry_block_alloca(llvm::Type::getInt32Ty(*llvm_context));
       llvm::Value *thread_idx = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
       llvm::Value *block_dim = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
-      builder->CreateStore(builder->CreateAdd(thread_idx, bounds[0]), loop_index);
+      builder->CreateStore(builder->CreateAdd(thread_idx, bound_0), loop_index);
       builder->CreateBr(loop_test_bb);
 
       {
         builder->SetInsertPoint(loop_test_bb);
         auto cond =
             builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                                builder->CreateLoad(loop_index), bounds[1]);
+                                builder->CreateLoad(loop_index), bound_1);
         builder->CreateCondBr(cond, loop_body_bb, func_exit);
       }
 
       {
         builder->SetInsertPoint(loop_body_bb);
-        //loop_vars_llvm[stmt].push_back(get_arg(1));
         loop_vars_llvm[stmt].push_back(loop_index);
         for (int i = 0; i < stmt->body->size(); i++) {
           auto &s = stmt->body->statements[i];
           s->accept(this);
         }
-        //stmt->body->accept(this);
         builder->CreateStore(
             builder->CreateAdd(builder->CreateLoad(loop_index), block_dim),
             loop_index);
@@ -631,9 +631,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       body = guard.body;
     }
 
+    auto tls_epilogue = create_mesh_xlogue(stmt->tls_epilogue);
+
     create_call("gpu_parallel_mesh_for",
                 {get_arg(0), 
-                tlctx->get_constant(uint32_t(stmt->mesh->num_patches)), body});
+                tlctx->get_constant(stmt->mesh->num_patches), tls_prologue, body, tls_epilogue, tlctx->get_constant(stmt->tls_size)});
   }
 
   void emit_cuda_gc(OffloadedStmt *stmt) {
@@ -741,7 +743,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void visit(MeshPatchIndexStmt *stmt) override {
-    llvm_val[stmt] = get_arg(1);
+    llvm_val[stmt] = get_arg(2);
   }
 
   void visit(OffloadedStmt *stmt) override {

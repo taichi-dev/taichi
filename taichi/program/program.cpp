@@ -173,7 +173,7 @@ FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
   } else if (kernel.arch == Arch::opengl) {
     opengl::OpenglCodeGen codegen(kernel.name, &opengl_struct_compiled_.value(),
                                   opengl_kernel_launcher_.get());
-    ret = codegen.compile(*this, kernel);
+    ret = codegen.compile(kernel);
 #ifdef TI_WITH_CC
   } else if (kernel.arch == Arch::cc) {
     ret = cccp::compile_kernel(&kernel);

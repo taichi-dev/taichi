@@ -3,9 +3,11 @@ sidebar_position: 1
 
 ---
 
-# New UI system
+# A New UI system: GGUI
 
-A new UI system is to be added to Taichi. The new GUI system will use GPU for rendering, which will enable it to be much faster and to render 3d scenes (for this reason, this new system is somtimes referred to as GGUI). This doc describes the APIs proveded.
+A new UI system is to be added to Taichi. The new GUI system will use GPU for rendering, which will enable it to be much faster and to render 3d scenes. For this reason, this new system is sometimes referred to as GGUI. This doc describes the APIs provided. 
+
+Apart from this doc, a good way of getting familiarized with GGUI is to look at the examples. Please checkout the example code provided in  `examples/ggui_examples`.
 
 ## Creating a window
 
@@ -33,17 +35,18 @@ this retrieves a `Canvas` object that covers the entire window.
 ### Drawing on the canvas
 
 ```python
-canvas.set_back_ground_color(...)
-canvas.triangles(...)
-canvas.circles(...)
-canvas.lines(...)
-canvas.set_image(...)
+canvas.set_back_ground_color(color)
+canvas.triangles(vertices,color,indices,per_vertex_color)
+canvas.circles(vertices,radius,color,per_vertex_color)
+canvas.lines(vertices,width,indices,color,per_vertex_color)
+canvas.set_image(image)
 ```
 
-To see examples of how
+The arguments `vertices`, `indices`, `per_vertex_color`, `image` are all expected to be `taichi` fields. If `per_vertex_color` is provided, `color` will be ignored.
 
-The positions/centers of geometries will be represented as floats between 0 and 1, which indicate relative positions on the canvas.
+The positions/centers of geometries will be represented as floats between 0 and 1, which indicate relative positions on the canvas. For `circles` and `lines`, the `radius` and `width` argument is relative to the height of the window.
 
+The canvas is cleared after every frame. You should call these methods within the render loop.
 
 
 ## 3D Scene
@@ -55,33 +58,37 @@ scene =  ti.ui.Scene()
 ### Configuring camera
 ```python
 camera = ti.ui.make_camera()
+camera.position(pos)
 camera.lookat(pos)
 camera.up(dir)
-camera.center(pos)
 camera.projection_mode(mode)
 scene.set_camera(camera)
 ```
-where `mode` is either `ti.ui.Scene.PROJECTION_PERSPECTIVE` or `ti.ui.Scene.PROJECTION_ORTHOGONAL`
 
 
 ### Configuring light sources
-#### adding a light source
+#### adding a point light
 ```python
 scene.point_light(pos,color) 
 ```
+Note that, `point_light` needs to be called every frame. Similar to the `canvas` methods, you should call this within your render loop.
 
 
 ### 3d Geometries
 ```python
-scene.mesh(vertices,indices,color)
-scene.particles(positions,radius,color)
+scene.mesh(vertices,indices,normals,color,per_vertex_color)
+scene.particles(vertices,radius,color,per_vertex_color)
 ```
+
+Again, the arguments `vertices`, `indices`, `per_vertex_color`, `image` are all expected to be `taichi` fields. If `per_vertex_color` is provided, `color` will be ignored. 
+
+The positions/centers of geometries should be in world-space coordinates.
 
 
 ### Rendering the scene 
-a scene is rendered by first rendering it on a canvas.
+A scene can be rendered on a canvas. 
 ```python
-canvas.render(scene)
+canvas.scene(scene)
 ```
 
 ## GUI components
@@ -90,20 +97,22 @@ The support for GUI components will closely follow Dear IMGUI (and will likely b
 
 ```python
 window.GUI.begin(name,x,y,width,height)
-window.GUI.text(...)
-window.GUI.button(...)
+window.GUI.text(text)
+is_clicked = window.GUI.button(name)
+new_value = window.GUI.slider_float(name,old_value,min_value,max_value)
+new_color = window.GUI.slider_float(name,old_color)
 window.GUI.end()
 ```
 
 
-## Clearing and showing a window
+## Showing a window
 ```python
 ...
 window.show()
 ```
+Call this method at the very end of the frame
 
-
-## Events Processing
+## User Input Processing
 To obtain the events that have occurred since the previous poll:
 
 ```python
@@ -111,48 +120,11 @@ events = window.get_events()
 ```
 
 Each `event` in `events` is an instance of `ti.ui.Event`. It has the following properties:
-* `event.action`, which could be `ti.ui.ACTION_PRESSED`, `ti.ui.ACTION_RELEASED`, ...
-* `event.key`, which is `ti.ui.KEY_XXXX`
+* `event.action`, which could be `ti.ui.PRESS`, `ti.ui.RELEASE`, ...
+* `event.key`, which indicates the key related to this event
 
 To obtain mouse position:
-* `window.get_mouse_position()`
+* `window.get_cursor_pos()`
 
-
-## Example Application
-
-```python
-import taichi as ti
-
-window = ti.ui.Window("Amazing Window",res)
-canvas = window.get_canvas()
-scene = ti.ui.Scene()
-
-
-while window.running:
-  events = window.get_event()
-  if ev.action == ti.ui.ACTION_PRESSED and ev.key == ti.ui.KEY_SHIFT:
-      ...
-
-  canvas.clear(...)
-  canvas.triangles(...)
-
-  scene.clear()
-  camera = ti.ui.make_camera()
-  camera.lookat(pos)
-  camera.up(dir)
-  camera.center(pos)
-  camera.projection_mode(mode)
-  scene.set_camera(camera)
-  scene.point_light(pos,color) 
-  scene.mesh(...)
-  canvas.render(scene)
-  
-  window.GUI.begin(name,x,y,width,height)
-  window.GUI.text(...)
-  window.GUI.button(...)
-  window.GUI.end()
-
-  window.show()
-  
-    
-```
+To check if a specific key is currently pressed:
+* `window.is_pressed(key)`

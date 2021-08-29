@@ -16,12 +16,7 @@ from taichi.lang.enums import Layout
 
 MeshElementType = _ti_core.MeshElementType
 MeshRelationType = _ti_core.MeshRelationType
-
-class MeshElementReorderingType:
-    NonReordering = 0
-    Reordering   = 1
-    SurfaceFirst = 2
-    CellFirst    = 3
+MeshElementReorderingType = _ti_core.MeshElementReorderingType
 
 def element_order(element_type):
     return int(element_type)
@@ -166,6 +161,9 @@ class MeshInstance:
     
     def set_num_patches(self, num_patches : int):
         _ti_core.set_num_patches(self.mesh_ptr, num_patches)
+    
+    def add_mesh_attribute(self, element_type, snode, reordering_type):
+        _ti_core.add_mesh_attribute(self.mesh_ptr, element_type, snode, reordering_type)
 
     def _materialize_fields(self, element_type_set : list, element_num_set : list):
         for element_type, num_elements in zip(element_type_set, element_num_set):
@@ -178,6 +176,10 @@ class MeshInstance:
                     fields.appends(attr.field)
                 if len(fields) > 0:
                     root.dense(indices(0), num_elements).place(fields)
+        
+            for attr in self.element_attrs[element_type]:
+                for i in range(len(attr.field.vars)):
+                    self.add_mesh_attribute(element_type, attr.field.vars[i].ptr.snode(), attr.reordering)
         
         self.data_instantiated = True
     

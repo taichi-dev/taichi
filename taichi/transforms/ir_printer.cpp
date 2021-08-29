@@ -558,7 +558,8 @@ class IRPrinter : public IRVisitor {
     }
     else if (stmt->task_type == OffloadedTaskType::mesh_for) {
       details =
-          fmt::format("mesh_for");
+          fmt::format("mesh_for(num_patches={}) grid_dim={} block_dim={}", stmt->mesh->num_patches,
+                      stmt->grid_dim, stmt->block_dim);
     }
     if (stmt->task_type == OffloadedTaskType::listgen) {
       print("{} = offloaded listgen {}->{}", stmt->name(),
@@ -577,6 +578,12 @@ class IRPrinter : public IRVisitor {
       if (stmt->bls_prologue) {
         print("bls prologue {{");
         stmt->bls_prologue->accept(this);
+        print("}}");
+      }
+      if (stmt->body_prologue) {
+        TI_ASSERT(stmt->task_type == OffloadedTaskType::mesh_for);
+        print("body prologue {{");
+        stmt->body_prologue->accept(this);
         print("}}");
       }
       TI_ASSERT(stmt->body);
@@ -599,6 +606,11 @@ class IRPrinter : public IRVisitor {
   void visit(ClearListStmt *stmt) override {
     print("{} = clear_list {}", stmt->name(),
           stmt->snode->get_node_type_name_hinted());
+  }
+
+  void visit(MeshPatchIndexStmt *stmt) override {
+    print("{}{} = loop {} patch idx", stmt->type_hint(), stmt->name(),
+          stmt->loop->name());
   }
 
   void visit(LoopIndexStmt *stmt) override {

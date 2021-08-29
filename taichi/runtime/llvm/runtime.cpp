@@ -35,7 +35,7 @@ using host_vsnprintf_type = int (*)(char *,
                                     std::va_list);
 using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
 using RangeForTaskFunc = void(RuntimeContext *, const char *tls, int i);
-using MeshForTaskFunc = void(RuntimeContext *, int i);
+using MeshForTaskFunc = void(RuntimeContext *, const char *tls, uint32_t i);
 using parallel_for_type = void (*)(void *thread_pool,
                                    int splits,
                                    int num_desired_threads,
@@ -1330,6 +1330,7 @@ void parallel_struct_for(RuntimeContext *context,
 }
 
 using range_for_xlogue = void (*)(RuntimeContext *, /*TLS*/ char *tls_base);
+using mesh_for_xlogue = void (*)(RuntimeContext *, /*TLS*/ char *tls_base, uint32_t patch_idx);
 
 struct range_task_helper_context {
   RuntimeContext *context;
@@ -1430,9 +1431,18 @@ void gpu_parallel_range_for(RuntimeContext *context,
 
 void gpu_parallel_mesh_for(RuntimeContext *context,
                             uint32_t num_patches,
-                            MeshForTaskFunc *func) {
+                            mesh_for_xlogue prologue,
+                            MeshForTaskFunc *func,
+                            mesh_for_xlogue epilogue,
+                            const std::size_t tls_size) {
+  alignas(8) char tls_buffer[tls_size];
+  auto tls_ptr = &tls_buffer[0];
   for (uint32_t idx = block_idx(); idx < num_patches; idx += grid_dim()) {
-    func(context, idx);
+    if (prologue)
+      prologue(context, tls_ptr, idx);
+    func(context, tls_ptr, idx);
+    if (epilogue)
+      epilogue(context, tls_ptr, idx);
   }
 }
 

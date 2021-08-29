@@ -1111,11 +1111,16 @@ class OffloadedStmt : public Stmt {
   mesh::MeshElementType major_from_type;
   std::vector<mesh::MeshElementType> major_to_types;
   std::vector<mesh::MeshRelationType> minor_relation_types;
+  std::unordered_map<mesh::MeshElementType, Stmt*> owned_offset_local;
+  std::unordered_map<mesh::MeshElementType, Stmt*> total_offset_local;
+  std::unordered_map<mesh::MeshElementType, Stmt*> owned_num_local;
+  std::unordered_map<mesh::MeshElementType, Stmt*> total_num_local;
 
   std::vector<int> index_offsets;
 
   std::unique_ptr<Block> tls_prologue;
   std::unique_ptr<Block> bls_prologue;
+  std::unique_ptr<Block> body_prologue; // mesh-for only block
   std::unique_ptr<Block> body;
   std::unique_ptr<Block> bls_epilogue;
   std::unique_ptr<Block> tls_epilogue;

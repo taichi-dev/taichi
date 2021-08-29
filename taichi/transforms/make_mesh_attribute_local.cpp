@@ -31,8 +31,8 @@ void make_mesh_attribute_local_offload(OffloadedStmt *offload,
           Stmt* load = block.push_back<GlobalLoadStmt>(globalptr);
           return load;
         };
-        Stmt* mesh_idx = block.push_back<InternalFuncStmt, const std::string, const std::vector<Stmt*>>("mesh_idx", {});
-        Stmt* total_v = get_load(offset, mesh_idx);
+        Stmt* patch_idx = block.push_back<MeshPatchIndexStmt>(offload);
+        Stmt* total_v = get_load(offset, patch_idx);
         Stmt* index = block.push_back<BinaryOpStmt>(BinaryOpType::add, total_v, ifs->args[1]);
         Stmt* ans = get_load(l2g, index);
         ifs->replace_with(std::move(block));
@@ -41,10 +41,10 @@ void make_mesh_attribute_local_offload(OffloadedStmt *offload,
   }
   offload->bls_prologue = std::make_unique<Block>();
   offload->bls_prologue->parent_stmt = offload;
-  Stmt* mesh_idx = offload->bls_prologue->push_back<InternalFuncStmt, const std::string, const std::vector<Stmt*>>("mesh_idx", {});
+  Stmt* patch_idx = offload->bls_prologue->push_back<MeshPatchIndexStmt>(offload);
   Stmt* one = offload->bls_prologue->push_back<ConstStmt>(LaneAttribute<TypedConstant>(
     TypedConstant(TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32), 1)));
-  Stmt* mesh_idx_1 = offload->bls_prologue->push_back<BinaryOpStmt>(BinaryOpType::add, mesh_idx, one);
+  Stmt* patch_idx_1 = offload->bls_prologue->push_back<BinaryOpStmt>(BinaryOpType::add, patch_idx, one);
   auto get_print = [&](Stmt* idx) {
     const auto lane = std::vector<Stmt*>{idx};
     Stmt* globalptr = offload->bls_prologue->push_back<GlobalPtrStmt>(LaneAttribute<SNode*>{
@@ -52,8 +52,8 @@ void make_mesh_attribute_local_offload(OffloadedStmt *offload,
     Stmt* load = offload->bls_prologue->push_back<GlobalLoadStmt>(globalptr);
     offload->bls_prologue->push_back<PrintStmt>(load);
   };
-  get_print(mesh_idx);
-  get_print(mesh_idx_1);
+  get_print(patch_idx);
+  get_print(patch_idx_1);
 }
 
 // This pass should happen after offloading but before lower_access

@@ -113,7 +113,6 @@ class Offloader {
         assemble_serial_statements();
         auto offloaded = Stmt::make_typed<OffloadedStmt>(
             OffloadedStmt::TaskType::mesh_for, arch);
-        // offloaded->body is an empty block now.
         offloaded->grid_dim = config.saturating_grid_dim;
         if (st->block_dim == 0) {
           offloaded->block_dim = Program::default_block_dim(config);

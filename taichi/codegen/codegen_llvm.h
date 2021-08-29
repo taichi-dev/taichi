@@ -310,6 +310,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false);
 
+  void visit(MeshPatchIndexStmt *stmt) override;
+
   void visit(LoopIndexStmt *stmt) override;
 
   void visit(LoopLinearIndexStmt *stmt) override;

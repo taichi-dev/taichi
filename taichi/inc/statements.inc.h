@@ -72,6 +72,7 @@ PER_STATEMENT(ElementShuffleStmt)
 
 // Offloaded
 PER_STATEMENT(OffloadedStmt)
+PER_STATEMENT(MeshPatchIndexStmt)
 PER_STATEMENT(LoopIndexStmt)
 PER_STATEMENT(LoopLinearIndexStmt)
 PER_STATEMENT(GlobalThreadIndexStmt)

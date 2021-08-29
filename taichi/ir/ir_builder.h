@@ -125,6 +125,9 @@ class IRBuilder {
   FuncCallStmt *create_func_call(Function *func,
                                  const std::vector<Stmt *> &args);
 
+  // Mesh patch index.
+  MeshPatchIndexStmt *get_patch_index(Stmt *loop);
+
   // Loop index.
   LoopIndexStmt *get_loop_index(Stmt *loop, int index = 0);
 

@@ -86,5 +86,4 @@ void main() {
       (pos_camera_space.z / pos_camera_space.w) + z_in_sphere * ubo.radius;
 
   gl_FragDepth = project_z(depth);
-  gl_FragDepth = 0.5 * (1.0 + gl_FragDepth);
 }

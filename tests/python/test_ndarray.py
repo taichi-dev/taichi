@@ -179,3 +179,26 @@ def test_vector_ndarray_taichi_scope(layout):
     assert v[2][1] == 1
     assert v[3][4] == 4
     assert v[4][9] == 9
+
+
+# number of compiled functions
+
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
+def test_compiled_functions():
+    @ti.kernel
+    def func(a: ti.any_arr(element_shape=(10, ))):
+        for i in range(5):
+            for j in range(4):
+                a[i][j * j] = j * j
+
+    v = ti.Vector.ndarray(10, ti.i32, 5)
+    func(v)
+    assert ti.get_runtime().get_num_compiled_functions() == 1
+    v = np.zeros((6, 10), dtype=np.int32)
+    func(v)
+    assert ti.get_runtime().get_num_compiled_functions() == 1
+    import torch
+    v = torch.zeros((7, 10), dtype=torch.int32)
+    func(v)
+    assert ti.get_runtime().get_num_compiled_functions() == 1

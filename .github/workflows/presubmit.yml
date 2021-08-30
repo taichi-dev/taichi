@@ -291,6 +291,10 @@ jobs:
         include:
           - os: macos-latest
             python: 3.8
+    defaults:
+      run:
+        # https://github.com/actions/runner/issues/805#issuecomment-844426478
+        shell: "/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}"
     runs-on: [self-hosted, m1]
     steps:
       - uses: actions/checkout@v2
@@ -299,25 +303,25 @@ jobs:
 
       - name: Build
         run: |
-          arch -arm64 python3 -m pip uninstall taichi -y
+          python3 -m pip uninstall taichi -y
           rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
           git --version
           export CXX=clang++
-          arch -arm64 python3 -m pip install -r requirements_dev.txt
+          python3 -m pip install -r requirements_dev.txt
           cd python
           git fetch origin master
-          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS arch -arm64 python3 build.py build
+          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python3 build.py build
           cd ..
           export NUM_WHL=`ls dist/*.whl | wc -l`
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          arch -arm64 python3 -m pip install dist/*.whl
+          python3 -m pip install dist/*.whl
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Test
         run: |
           export PATH=$PATH:$HOME/Library/Python/3.8/bin
-          arch -arm64 python3 examples/algorithm/laplace.py
-          TI_LIB_DIR=`arch -arm64 python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
-          TI_LIB_DIR="$TI_LIB_DIR/lib" arch -arm64 ./build/taichi_cpp_tests
-          arch -arm64 ti test -vr2 -t4 -x
+          python3 examples/algorithm/laplace.py
+          TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
+          TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
+          ti test -vr2 -t4 -x

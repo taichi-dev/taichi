@@ -121,7 +121,9 @@ class Struct(TaichiOperations):
             other = Struct(other)
         if isinstance(other, Struct):
             if self.entries.keys() != other.entries.keys():
-                raise TypeError(f"Member mismatch between structs {self.keys}, {other.keys}")
+                raise TypeError(
+                    f"Member mismatch between structs {self.keys}, {other.keys}"
+                )
             for k, v in self.items:
                 if isinstance(v, expr.Expr):
                     ret.entries[k] = foo(v, other.entries[k])
@@ -148,7 +150,8 @@ class Struct(TaichiOperations):
                     ret.entries[k] = other
             other = ret
         if self.entries.keys() != other.entries.keys():
-            raise TypeError(f"Member mismatch between structs {self.keys}, {other.keys}")
+            raise TypeError(
+                f"Member mismatch between structs {self.keys}, {other.keys}")
         return other
 
     def element_wise_writeback_binary(self, foo, other):
@@ -164,7 +167,9 @@ class Struct(TaichiOperations):
             )
         if isinstance(other, Struct):
             if self.entries.keys() != other.entries.keys():
-                raise TypeError(f"Member mismatch between structs {self.keys}, {other.keys}")
+                raise TypeError(
+                    f"Member mismatch between structs {self.keys}, {other.keys}"
+                )
             for k, v in self.items:
                 if isinstance(v, expr.Expr):
                     ret.entries[k] = foo(v, other.entries[k])
@@ -282,7 +287,8 @@ class Struct(TaichiOperations):
               layout=Layout.AOS):
 
         if shape is None and offset is not None:
-            raise TaichiSyntaxError("shape cannot be None when offset is being set")
+            raise TaichiSyntaxError(
+                "shape cannot be None when offset is being set")
 
         field_dict = {}
 

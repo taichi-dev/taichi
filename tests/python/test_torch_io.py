@@ -177,6 +177,26 @@ def test_io_zeros():
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
+def test_io_struct():
+    n = 16
+    x1 = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
+    t1 = {
+        "a": torch.tensor(2 * np.ones(n, dtype=np.int32)),
+        "b": torch.tensor(3 * np.ones(n, dtype=np.float32))
+    }
+
+    x1.from_torch(t1)
+    for i in range(n):
+        assert x1[i].a == 2
+        assert x1[i].b == 3
+
+    t2 = x1.to_torch()
+    for k in t1:
+        assert (t1[k] == t2[k]).all()
+
+
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
 def test_fused_kernels():
     n = 12
     X = ti.Matrix.field(3, 2, ti.f32, shape=(n, n, n))

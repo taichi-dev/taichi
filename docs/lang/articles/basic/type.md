@@ -4,6 +4,10 @@ sidebar_position: 2
 
 # Type system
 
+Data types in Taichi consist of Primitive Types and Compound Types. Primitive Types are the numerical data types used by backends, while Compound Types are user-defined types of data records composed of multiple members.
+
+## Primitive types
+
 Taichi supports common numerical data types. Each type is denoted as a
 character indicating its _category_ and a number of _precision bits_,
 e.g., `i32` and `f64`.
@@ -29,9 +33,9 @@ For example, the two most commonly used types:
 - `i32` represents a 32-bit signed integer.
 - `f32` represents a 32-bit floating pointer number.
 
-## Supported types
+## Supported primitive types
 
-Currently, supported basic types in Taichi are
+Currently, supported primitive types in Taichi are
 
 - int8 `ti.i8`
 - int16 `ti.i16`
@@ -184,3 +188,38 @@ the same width as the the old type. For example, bit-casting `i32` to
 :::note
 For people from C++, `ti.bit_cast` is equivalent to `reinterpret_cast`.
 :::
+
+## Compound types
+
+User-defined compound types are created using the `ti.types` module. Supported compound types include vectors, matrices, and structs:
+
+```python
+vec2i = ti.types.vector(2, ti.i32)
+vec3f = ti.types.vector(3, float)
+mat2f = ti.types.matrix(2, 2, float)
+ray = ti.types.struct(ro=vec3f, rd=vec3f, l=ti.f32)
+```
+
+### Creating fields
+
+Fields of a given compound type can be created with the `.field()` method of a Compound Type:
+
+```python
+# ti.Vector.field(2, dtype=ti.i32, shape=(233, 666))
+x = vec2i.field(shape=(233, 666))
+
+# ti.Matrix.field(2, 2, dtype=ti.i32, shape=(233, 666))
+x = mat2f.field(shape=(233, 666))
+
+# ti.Struct.field({'ro': vec3f, 'rd': vec3f, 'l': ti.f32}, shape=(233, 666))
+x = ray.field(shape=(233, 666))
+```
+
+### Creating local variables
+Compound types can be directly called to create matrix or struct instances. Vectors and matrices can be created using GLSL-like broadcast syntax since the shape of the vector or matrix is already known:
+```python
+ray = ray3f(0.0) # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
+ro = vec3f(0.0) # ti.Vector([0.0, 0.0, 0.0])
+rd = vec3f(vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
+ray2 = ray3f(ro=ro, rd=rd, l=1.0)
+```

@@ -83,7 +83,7 @@ field.from_numpy(array)  # the input array must be of shape (233, 666, 3)
 ```
 
 - For matrix fields, if the matrix is `n*m`, then **the shape of NumPy
-  array should be** `(*field_shape, matrix_n, matrix_m)`:
+array should be** `(*field_shape, matrix_n, matrix_m)`:
 
 ```python
 field = ti.Matrix.field(3, 4, ti.i32, shape=(233, 666))
@@ -95,6 +95,20 @@ array = field.to_numpy()
 array.shape  # (233, 666, 3, 4)
 
 field.from_numpy(array)  # the input array must be of shape (233, 666, 3, 4)
+```
+
+- For struct fields, the external array will be exported as **a dictionary of arrays** with the keys being struct member names and values being struct member arrays. Nested structs will be exported as nested dictionaries:
+
+```python
+field = ti.Struct.field({'a': ti.i32, 'b': ti.types.vector(float, 3)} shape=(233, 666))
+field.shape # (233, 666)
+
+array_dict = field.to_numpy()
+array_dict.keys() # dict_keys(['a', 'b'])
+array_dict['a'].shape # (233, 666)
+array_dict['b'].shape # (233, 666, 3)
+
+field.from_numpy(array_dict) # the input array must have the same keys as the field=
 ```
 
 ## Using external arrays as Taichi kernel arguments

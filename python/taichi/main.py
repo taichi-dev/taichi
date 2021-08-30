@@ -440,7 +440,7 @@ class TaichiMain:
             args.inputs = sorted(
                 str(p.resolve()) for p in Path('.').glob('*.png'))
 
-        assert 1 <= args.crf <= 51, "The range of the CRF scale is 1–51, where 1 is almost lossless, 20 is the default, and 51 is worst quality possible."
+        assert 1 <= args.crf <= 51, "The range of the CRF scale is 1-51, where 1 is almost lossless, 20 is the default, and 51 is worst quality possible."
 
         ti.info(f'Making video using {len(args.inputs)} png files...')
         ti.info(f'frame_rate = {args.framerate}')

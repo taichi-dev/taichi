@@ -20,7 +20,7 @@ A simple example might help you understand scalar fields. Assume you have a rect
 heat field on the wok:
 
 ``` python
-heat_field = taichi.field(dtype=ti.f32, shape=(width_wok, height_wok))
+heat_field = ti.field(dtype=ti.f32, shape=(width_wok, height_wok))
 ```
 
 - Every global variable is an N-dimensional field.
@@ -40,7 +40,7 @@ heat_field = taichi.field(dtype=ti.f32, shape=(width_wok, height_wok))
 ## Vector fields
 We are all live in a gravitational field which is a vector field. At each position of the 3D space, there is a gravity force vector. The gravitational field could be represent with:
 ```python
-gravitational_field = taichi.Vector.field(n = 3,dtype=ti.f32,shape=(x,y,z))
+gravitational_field = ti.Vector.field(n = 3,dtype=ti.f32,shape=(x,y,z))
 ```
 `x,y,z` are the sizes of each dimension of the 3D space respectively.  `n` is the number of elements of the gravity force vector.
 
@@ -51,7 +51,7 @@ gravitational_field = taichi.Vector.field(n = 3,dtype=ti.f32,shape=(x,y,z))
 Field elements can also be matrices. In continuum mechanics, each
 infinitesimal point in a material exists a strain and a stress tensor. The strain and stress tensor is a 3 by 3 matrix in the 3D space. To represent this tensor field we could use:
 ```python
-strain_tensor_field = taichi.Matrix.field(n = 3,m = 3, dtype=ti.f32, shape=(x,y,z))
+strain_tensor_field = ti.Matrix.field(n = 3,m = 3, dtype=ti.f32, shape=(x,y,z))
 ```
 
 `x,y,z` are the sizes of each dimension of the 3D material respectively. `n, m` are the dimensions of the strain tensor.
@@ -87,3 +87,33 @@ declare a field of size `64`. E.g., instead of declaring
 `ti.Matrix.field(64, 32, dtype=ti.f32, shape=(3, 2))`, declare
 `ti.Matrix.field(3, 2, dtype=ti.f32, shape=(64, 32))`. Try to put large
 dimensions to fields instead of matrices.
+
+## Struct fields
+In addition to vectors and matrices, field elements can be user-defined structs. A struct variable may contain scalars, vectors/matrices, or other structs as its members. A struct field is created by providing a dictionary of name and data type of each member. For example, a 1D field of particles with position, velocity, acceleration, and mass for each particle can be represented as:
+```python
+particle_field = ti.Struct.field({
+    "pos": ti.types.vector(3, ti.f32),
+    "vel": ti.types.vector(3, ti.f32),
+    "acc": ti.types.vector(3, ti.f32),
+    "mass": ti.f32,
+  }, shape=(n,))
+```
+[Compound types](type.md#compound-types) (`ti.types.vector`, `ti.types.matrix`, and `ti.types.struct`) need to be used to create vectors, matrices, or structs as field members. Apart from using `ti.Struct.field`, the above particle field can be alternatively created using field creation from compound types as:
+```python
+vec3f = ti.types.vector(3, ti.f32)
+particle = ti.types.struct(
+  pos=vec3f, vel=vec3f, acc=vec3f, mass=ti.f32,
+)
+particle_field = particle.field(shape=(n,))
+```
+Members of a struct field can be accessed either locally (i.e., member of a struct field element) or globally (i.e., member field of a struct field):
+```python
+# set the position of the first particle to origin
+particle_field[0] # local ti.Struct
+particle_field[0].pos = ti.Vector([0.0, 0.0, 0.0])
+
+# make the mass of all particles be 1
+particle_field.mass # global ti.Vector.field
+particle_field.mass.fill(1.0)
+```
+- See [Structs](../../api/struct.md) for more on structs.

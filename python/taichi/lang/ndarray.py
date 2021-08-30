@@ -95,8 +95,8 @@ class NdarrayHostAccess:
     """Class for accessing VectorNdarray/MatrixNdarray in Python scope.
     Args:
         arr (Union[VectorNdarray, MatrixNdarray]): See above.
-        indices_first (Tuple[Int]): Indices of first-level access.
-        indices_second (Tuple[Int]): Indices of second-level access.
+        indices_first (Tuple[Int]): Indices of first-level access (coordinates in the field).
+        indices_second (Tuple[Int]): Indices of second-level access (indices in the vector/matrix).
     """
     def __init__(self, arr, indices_first, indices_second):
         self.arr = arr.arr

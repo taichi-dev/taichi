@@ -1532,7 +1532,7 @@ class MatrixNdarray(Ndarray):
         ])
 
     def __repr__(self):
-        return f'<{self.n}x{self.m} ti.Matrix.ndarray>'
+        return f'<{self.n}x{self.m} {self.layout} ti.Matrix.ndarray>'
 
 
 class VectorNdarray(Ndarray):
@@ -1574,4 +1574,4 @@ class VectorNdarray(Ndarray):
             [NdarrayHostAccess(self, key, (i, )) for i in range(self.n)])
 
     def __repr__(self):
-        return f'<{self.n} ti.Vector.ndarray>'
+        return f'<{self.n} {self.layout} ti.Vector.ndarray>'

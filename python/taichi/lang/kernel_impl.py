@@ -12,7 +12,7 @@ from taichi.lang.ast_checker import KernelSimplicityASTChecker
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.kernel_arguments import (any_arr, ext_arr,
                                           sparse_matrix_builder, template)
-from taichi.lang.ndarray import ScalarNdarray
+from taichi.lang.ndarray import Ndarray
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.transformer import ASTTransformerTotal
 from taichi.misc.util import obsolete
@@ -490,8 +490,8 @@ class Kernel:
                     # Pass only the base pointer of the ti.sparse_matrix_builder() argument
                     launch_ctx.set_arg_int(actual_argument_slot, v.get_addr())
                 elif (isinstance(needed, (any_arr, ext_arr)) and self.match_ext_arr(v)) or \
-                     (isinstance(needed, any_arr) and isinstance(v, ScalarNdarray)):
-                    if isinstance(v, ScalarNdarray):
+                     (isinstance(needed, any_arr) and isinstance(v, Ndarray)):
+                    if isinstance(v, Ndarray):
                         v = v.arr
                     has_external_arrays = True
                     has_torch = util.has_pytorch()

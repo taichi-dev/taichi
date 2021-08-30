@@ -817,7 +817,7 @@ class TaichiMain:
                             '--show',
                             dest='show_output',
                             action='store_true',
-                            help='Show Output, do not caputure')
+                            help='Show output (do not capture)')
         parser.add_argument('-v',
                             '--verbose',
                             dest='verbose',

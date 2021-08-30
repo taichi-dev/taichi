@@ -50,7 +50,11 @@ class SparseMatrix {
   friend SparseMatrix operator*(const SparseMatrix &sm1,
                                 const SparseMatrix &sm2);
   SparseMatrix matmul(const SparseMatrix &sm);
+  Eigen::VectorXf mat_vec_mul(const Eigen::Ref<const Eigen::VectorXf> &b);
+
   SparseMatrix transpose();
+
+  Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b);
 
  private:
   Eigen::SparseMatrix<float32> matrix_;

@@ -39,9 +39,14 @@ class SparseMatrix:
         return SparseMatrix(sm=sm)
 
     def __matmul__(self, other):
-        assert self.m == other.n, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
-        sm = self.matrix.matmul(other.matrix)
-        return SparseMatrix(sm=sm)
+        import numpy as np
+        if isinstance(other, SparseMatrix):
+            assert self.m == other.n, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
+            sm = self.matrix.matmul(other.matrix)
+            return SparseMatrix(sm=sm)
+        elif isinstance(other, np.ndarray):
+            assert self.m == other.shape[0], f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
+            return self.matrix.mat_vec_mul(other)
 
     def __getitem__(self, indices):
         return self.matrix.get_element(indices[0], indices[1])
@@ -52,6 +57,8 @@ class SparseMatrix:
     def __repr__(self):
         return self.matrix.to_string()
 
+    def solve(self, b):
+        return self.matrix.solve(b)
 
 class SparseMatrixBuilder:
     def __init__(self, num_rows=None, num_cols=None, max_num_triplets=0):

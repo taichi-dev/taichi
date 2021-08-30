@@ -7,6 +7,8 @@
 
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/eigen.h"
+#include "pybind11/numpy.h"
 
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/frontend_ir.h"
@@ -965,11 +967,13 @@ void export_lang(py::module &m) {
       .def(py::self * py::self, py::return_value_policy::reference_internal)
       .def("matmul", &SparseMatrix::matmul,
            py::return_value_policy::reference_internal)
+      .def("mat_vec_mul", &SparseMatrix::mat_vec_mul)
       .def("transpose", &SparseMatrix::transpose,
            py::return_value_policy::reference_internal)
       .def("get_element", &SparseMatrix::get_element)
       .def("num_rows", &SparseMatrix::num_rows)
-      .def("num_cols", &SparseMatrix::num_cols);
+      .def("num_cols", &SparseMatrix::num_cols)
+      .def("solve", &SparseMatrix::solve);
 
   m.def("create_sparse_matrix", [](int n, int m) {
     TI_ERROR_IF(!arch_is_cpu(get_current_program().config.arch),

@@ -183,6 +183,7 @@ def test_vector_ndarray_taichi_scope(layout):
 
 # number of compiled functions
 
+
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
 def test_compiled_functions():

@@ -16,6 +16,7 @@
 #include "taichi/ui/backends/vulkan/vertex.h"
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
+#include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
 #include "taichi/ui/common/renderable_info.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 
@@ -64,7 +65,9 @@ class Renderable {
   taichi::lang::DeviceAllocation uniform_buffer_;
   taichi::lang::DeviceAllocation storage_buffer_;
 
-  Vertex *vertex_buffer_device_ptr_;
+  InteropCUDALauncher *cuda_launcher_{nullptr};
+
+  float *vertex_buffer_device_ptr_;
   int *index_buffer_device_ptr_;
 
   bool indexed_{false};

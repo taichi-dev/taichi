@@ -23,7 +23,7 @@ class OpenglCodeGen {
         kernel_launcher_(launcher) {
   }
 
-  FunctionType compile(Program &program, Kernel &kernel);
+  FunctionType compile(Kernel &kernel);
 
  private:
   void lower();
@@ -31,7 +31,6 @@ class OpenglCodeGen {
 
   const std::string kernel_name_;
 
-  Program *prog_;
   Kernel *kernel_;
   [[maybe_unused]] StructCompiledResult *struct_compiled_;
   [[maybe_unused]] GLSLLauncher *kernel_launcher_;

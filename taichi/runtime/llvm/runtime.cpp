@@ -23,6 +23,7 @@
 #include <cstring>
 
 #include "taichi/inc/constants.h"
+#include "taichi/inc/cuda_kernel_utils.inc.h"
 #include "taichi/math/arithmetic.h"
 
 struct Context;
@@ -963,26 +964,6 @@ void mutex_unlock_i32(Ptr mutex) {
   atomic_exchange_i32((i32 *)mutex, 0);
 }
 
-int32 thread_idx() {
-  return 0;
-}
-
-i32 warp_size() {
-  return 32;
-}
-
-i32 warp_idx() {
-  return thread_idx() % warp_size();
-}
-
-int32 block_idx() {
-  return 0;
-}
-
-int32 block_dim() {
-  return 0;
-}
-
 int32 ctlz_i32(i32 val) {
   return 0;
 }
@@ -1046,10 +1027,6 @@ uint32 cuda_active_mask() {
   return 0;
 }
 #endif
-
-int32 grid_dim() {
-  return 0;
-}
 
 void block_barrier() {
 }

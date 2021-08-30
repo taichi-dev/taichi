@@ -49,6 +49,7 @@ jobs:
     # This job will be required to pass before merging to master branch.
     name: Required Build and Test (CPU)
     needs: check_code_format
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -87,7 +88,7 @@ jobs:
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           pip install dist/*.whl
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Test
         run: |
@@ -107,6 +108,7 @@ jobs:
   build_and_test_cpu:
     name: Build and Test (CPU)
     needs: build_and_test_cpu_required
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -155,7 +157,7 @@ jobs:
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           pip install dist/*.whl
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
@@ -226,6 +228,7 @@ jobs:
     name: Build and Test (Windows)
     needs: check_code_format
     runs-on: windows-latest
+    timeout-minutes: 60
     steps:
       - name: Install 7Zip PowerShell
         shell: powershell
@@ -283,6 +286,7 @@ jobs:
   build_and_test_m1:
     name: Build and Test (Apple M1)
     needs: check_code_format
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -309,7 +313,7 @@ jobs:
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           arch -arm64 python3 -m pip install dist/*.whl
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Test
         run: |

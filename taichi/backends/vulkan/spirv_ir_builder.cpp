@@ -44,6 +44,15 @@ void IRBuilder::init_header() {
         .commit(&header_);
   }
 
+  if (device_->get_cap(cap::vk_has_spv_variable_ptr)) {
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityVariablePointers)
+        .commit(&header_);
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityVariablePointersStorageBuffer)
+        .commit(&header_);
+  }
+
   if (device_->get_cap(cap::vk_has_int8)) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt8).commit(&header_);
   }
@@ -240,16 +249,19 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
   }
 }
 
-SType IRBuilder::get_primitive_buffer_type(const DataType &dt) const {
-  if (dt->is_primitive(PrimitiveTypeID::f32) &&
-      device_->get_cap(cap::vk_has_atomic_float_add)) {
-    return t_fp32_;
-  } else if (dt->is_primitive(PrimitiveTypeID::f64) &&
-             device_->get_cap(cap::vk_has_atomic_float64_add)) {
-    return t_fp64_;
-  } else if (dt->is_primitive(PrimitiveTypeID::i64) &&
-             device_->get_cap(cap::vk_has_atomic_i64)) {
-    return t_int64_;
+SType IRBuilder::get_primitive_buffer_type(const bool struct_compiled,
+                                           const DataType &dt) const {
+  if (struct_compiled) {
+    if (dt->is_primitive(PrimitiveTypeID::f32) &&
+        device_->get_cap(cap::vk_has_atomic_float_add)) {
+      return t_fp32_;
+    } else if (dt->is_primitive(PrimitiveTypeID::f64) &&
+               device_->get_cap(cap::vk_has_atomic_float64_add)) {
+      return t_fp64_;
+    } else if (dt->is_primitive(PrimitiveTypeID::i64) &&
+               device_->get_cap(cap::vk_has_atomic_i64)) {
+      return t_int64_;
+    }
   }
   return t_int32_;
 }
@@ -300,6 +312,14 @@ SType IRBuilder::get_struct_array_type(const SType &value_type,
     nbytes = value_type.snode_desc.container_stride;
   } else {
     TI_ERROR("buffer type must be primitive or snode struct");
+  }
+
+  if (nbytes == 0) {
+    if (value_type.flag == TypeKind::kPrimitive) {
+      TI_WARN("Invalid primitive bit size");
+    } else {
+      TI_WARN("Invalid container stride");
+    }
   }
 
   // decorate the array type

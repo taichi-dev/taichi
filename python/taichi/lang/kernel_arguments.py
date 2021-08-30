@@ -1,8 +1,10 @@
+from taichi.core.primitive_types import u64
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
 from taichi.lang.ext_array import AnyArray, ExtArray
 from taichi.lang.snode import SNode
+from taichi.lang.sparse_matrix import SparseMatrixBuilder
 from taichi.lang.util import cook_dtype, to_taichi_type
 
 
@@ -135,6 +137,39 @@ template = Template
 """
 
 
+class SparseMatrixEntry:
+    def __init__(self, ptr, i, j):
+        self.ptr = ptr
+        self.i = i
+        self.j = j
+
+    def augassign(self, value, op):
+        from taichi.lang.impl import call_internal, ti_float
+        if op == 'Add':
+            call_internal("insert_triplet", self.ptr, self.i, self.j,
+                          ti_float(value))
+        elif op == 'Sub':
+            call_internal("insert_triplet", self.ptr, self.i, self.j,
+                          -ti_float(value))
+        else:
+            assert False, f"Only operations '+=' and '-=' are supported on sparse matrices."
+
+
+class SparseMatrixProxy:
+    is_taichi_class = True
+
+    def __init__(self, ptr):
+        self.ptr = ptr
+
+    def subscript(self, i, j):
+        return SparseMatrixEntry(self.ptr, i, j)
+
+
+sparse_matrix_builder = SparseMatrixBuilder
+"""Alias for :class:`~taichi.lang.sparse_matrix.SparseMatrixBuilder`.
+"""
+
+
 def decl_scalar_arg(dtype):
     dtype = cook_dtype(dtype)
     arg_id = _ti_core.decl_arg(dtype, False)
@@ -145,6 +180,13 @@ def decl_ext_arr_arg(dtype, dim):
     dtype = cook_dtype(dtype)
     arg_id = _ti_core.decl_arg(dtype, True)
     return ExtArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id))
+
+
+def decl_sparse_matrix():
+    ptr_type = cook_dtype(u64)
+    # Treat the sparse matrix argument as a scalar since we only need to pass in the base pointer
+    arg_id = _ti_core.decl_arg(ptr_type, False)
+    return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type))
 
 
 def decl_any_arr_arg(dtype, dim, element_shape, layout):

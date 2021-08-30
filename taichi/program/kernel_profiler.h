@@ -31,12 +31,20 @@ struct KernelProfileRecord {
   float uti_dram;
 
   KernelProfileRecord(const std::string &name)
-      : name(name), counter(0), min(0), max(0), total(0), ldg(0), stg(0), uti_core(0), uti_dram(0) {
+      : name(name),
+        counter(0),
+        min(0),
+        max(0),
+        total(0),
+        ldg(0),
+        stg(0),
+        uti_core(0),
+        uti_dram(0) {
   }
 
   void insert_sample(double t);
-  void cuda_global_access(double ld,double st);
-  void cuda_uti_ratio(float core,float dram);
+  void cuda_global_access(double ld, double st);
+  void cuda_uti_ratio(float core, float dram);
 
   bool operator<(const KernelProfileRecord &o) const;
 };
@@ -82,12 +90,15 @@ class KernelProfilerBase {
 
   double get_total_time() const;
 
-  KernelProfilerMode get_mode(){return mode_;}
+  KernelProfilerMode get_mode() {
+    return mode_;
+  }
 
   virtual ~KernelProfilerBase() {
   }
 };
 
-std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, KernelProfilerMode mode);
+std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch,
+                                                  KernelProfilerMode mode);
 
 TLANG_NAMESPACE_END

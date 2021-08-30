@@ -11,18 +11,16 @@
 TLANG_NAMESPACE_BEGIN
 
 typedef enum CUDA_KERNEL_PROFILER {
-  CUDA_KERNEL_PROFILER_UNDEF  = 0,
-  CUDA_KERNEL_PROFILER_EVENT  = 1,
-  CUDA_KERNEL_PROFILER_CUPTI  = 2
+  CUDA_KERNEL_PROFILER_UNDEF = 0,
+  CUDA_KERNEL_PROFILER_EVENT = 1,
+  CUDA_KERNEL_PROFILER_CUPTI = 2
 } CUDAKernalProfiler;
 
-
-struct profilerConfig
-{
+struct profilerConfig {
   bool enable = false;
   CUDAKernalProfiler profiler_type = CUDA_KERNEL_PROFILER_UNDEF;
   KernelProfilerMode profiling_mode = KernelProfilerMode::disable;
-  uint32_t num_ranges = 1024*16;
+  uint32_t num_ranges = 1024 * 16;
   std::vector<std::string> metric_names;
 #if defined(TI_WITH_TOOLKIT_CUDA)
   CUpti_ProfilerRange profiler_range = CUPTI_AutoRange;
@@ -39,8 +37,7 @@ struct CUDAKernelTracedRecord {
   float utilization_ratio_mem;
 };
 
-struct profilerRawData
-{
+struct profilerRawData {
   std::string chipName;
   std::vector<uint8_t> counterDataImagePrefix;
   std::vector<uint8_t> configImage;
@@ -50,38 +47,42 @@ struct profilerRawData
 };
 
 class CUDAProfiler {
-
-public:
+ public:
   CUDAProfiler();
   ~CUDAProfiler();
 
   static CUDAProfiler &get_instance();
   static CUDAProfiler &get_instance_without_context();
-  
+
   bool set_profiling_mode(KernelProfilerMode profiling_mode);
-  CUDAKernalProfiler get_profiler_type(){return profiler_config_.profiler_type;}
-  KernelProfilerMode get_profiling_mode(){return profiler_config_.profiling_mode;}
+  CUDAKernalProfiler get_profiler_type() {
+    return profiler_config_.profiler_type;
+  }
+  KernelProfilerMode get_profiling_mode() {
+    return profiler_config_.profiling_mode;
+  }
 
   bool init_cupti();
   bool deinit_cupti();
   bool begin_profiling();
   bool end_profiling();
 
-  void record_launched_kernel(std::string name){
+  void record_launched_kernel(std::string name) {
     CUDAKernelTracedRecord record;
     record.kernel_name = name;
     traced_records_.push_back(record);
   }
 
   bool traceMetricValues();
-  bool statisticsOnRecords(std::vector<KernelProfileRecord> &records,double &total_time_ms);
+  bool statisticsOnRecords(std::vector<KernelProfileRecord> &records,
+                           double &total_time_ms);
   bool resetCUPTIprofiler();
   bool printTracedRecords();
-  void clearTracedRecords(){ 
-    traced_records_.clear(); 
+  void clearTracedRecords() {
+    traced_records_.clear();
   }
 
-private:
+ private:
   profilerConfig profiler_config_;
   profilerRawData profiler_data_;
   std::vector<CUDAKernelTracedRecord> traced_records_;

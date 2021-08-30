@@ -270,7 +270,7 @@ def prepare_sandbox():
 def init(arch=None,
          default_fp=None,
          default_ip=None,
-         kernel_profiler = None,
+         kernel_profiler=None,
          _test_mode=False,
          **kwargs):
 
@@ -376,7 +376,8 @@ def init(arch=None,
         elif type(kernel_profiler) == ti.core.KernelProfilerMode:
             ti.cfg.kernel_profiler = kernel_profiler
         else:
-            _ti_core.warn(f'kernel_profiler mode error : {type(kernel_profiler)}')
+            _ti_core.warn(
+                f'kernel_profiler mode error : {type(kernel_profiler)}')
 
     # create a new program:
     impl.get_runtime().create_program()

@@ -35,10 +35,10 @@ class CUDAContext {
   std::size_t get_total_memory();
   std::size_t get_free_memory();
 
-  void* get_device(){ 
-    return device; 
+  void *get_device() {
+    return device;
   }
-  void* get_context() {
+  void *get_context() {
     return context;
   }
 

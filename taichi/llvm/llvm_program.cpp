@@ -80,18 +80,19 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     config_.max_block_dim = 1024;
   }
 
-  if ((config.kernel_profiler != KernelProfilerMode::disable) && runtime_mem_info) {
+  if ((config.kernel_profiler != KernelProfilerMode::disable) &&
+      runtime_mem_info) {
     runtime_mem_info->set_profiler(profiler);
   }
-// #if defined(TI_WITH_CUDA)
-//   if (config.arch == Arch::cuda) {
-//     if (config.kernel_profiler != KernelProfilerMode::disable) {
-//       CUDAContext::get_instance().set_profiler(profiler);
-//     } else {
-//       CUDAContext::get_instance().set_profiler(nullptr);
-//     }
-//   }
-// #endif
+  // #if defined(TI_WITH_CUDA)
+  //   if (config.arch == Arch::cuda) {
+  //     if (config.kernel_profiler != KernelProfilerMode::disable) {
+  //       CUDAContext::get_instance().set_profiler(profiler);
+  //     } else {
+  //       CUDAContext::get_instance().set_profiler(nullptr);
+  //     }
+  //   }
+  // #endif
   // TODO: CompileConfig should be refactored. Currently we make a copy of
   // CompileConfig from Program. If config is updated after Program
   // initialization, please make sure it's synced.

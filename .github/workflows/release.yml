@@ -43,7 +43,7 @@ jobs:
           cd taichi-llvm
           unzip ../taichi-llvm.zip
         env:
-          CI_PLATFORM: ${{ matrix.os }}
+          CI_PLATFORM: macos-latest
 
       - name: Create Python Wheel
         run: |

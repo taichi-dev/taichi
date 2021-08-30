@@ -21,15 +21,13 @@ Kernel::Kernel(Program &program,
                bool grad)
     : grad(grad), lowered_(false) {
   this->program = &program;
-  // Do not corrupt the context calling this kernel here -- maybe unnecessary
-  auto backup_context = std::move(taichi::lang::context);
 
   program.get_llvm_program_impl()->maybe_initialize_cuda_llvm_context();
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;
-  taichi::lang::context = std::make_unique<FrontendContext>();
-  ir = taichi::lang::context->get_root();
+  context = std::make_unique<FrontendContext>();
+  ir = context->get_root();
   ir_is_ast_ = true;
 
   {
@@ -37,9 +35,7 @@ Kernel::Kernel(Program &program,
     // concurrently, we need to lock this block of code together with
     // taichi::lang::context with a mutex.
     CurrentCallableGuard _(this->program, this);
-    program.start_kernel_definition(this);
     func();
-    program.end_kernel_definition();
     ir->as<Block>()->kernel = this;
   }
 
@@ -53,8 +49,6 @@ Kernel::Kernel(Program &program,
 
   if (!program.config.lazy_compilation)
     compile();
-
-  taichi::lang::context = std::move(backup_context);
 }
 
 Kernel::Kernel(Program &program,

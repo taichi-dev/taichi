@@ -197,13 +197,6 @@ class Program {
     return *kernels.back();
   }
 
-  void start_kernel_definition(Kernel *kernel) {
-    current_callable = kernel;
-  }
-
-  void end_kernel_definition() {
-  }
-
   Function *create_function(const FunctionKey &func_key);
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
@@ -213,18 +206,6 @@ class Program {
   FunctionType compile(Kernel &kernel, OffloadedStmt *offloaded = nullptr);
 
   void check_runtime_error();
-
-  // TODO(#2193): Remove get_current_kernel() and get_current_function()?
-  inline Kernel &get_current_kernel() const {
-    auto *kernel = dynamic_cast<Kernel *>(current_callable);
-    TI_ASSERT(kernel);
-    return *kernel;
-  }
-
-  inline Function *get_current_function() const {
-    auto *func = dynamic_cast<Function *>(current_callable);
-    return func;
-  }
 
   Kernel &get_snode_reader(SNode *snode);
 

@@ -120,8 +120,8 @@ class Struct(TaichiOperations):
         if isinstance(other, (dict)):
             other = Struct(other)
         if isinstance(other, Struct):
-            assert self.entries.keys() == other.entries.keys(
-            ), f"Member mismatch between structs {self.keys}, {other.keys}"
+            if self.entries.keys() != other.entries.keys():
+                raise TypeError(f"Member mismatch between structs {self.keys}, {other.keys}")
             for k, v in self.items:
                 if isinstance(v, expr.Expr):
                     ret.entries[k] = foo(v, other.entries[k])
@@ -147,8 +147,8 @@ class Struct(TaichiOperations):
                 else:
                     ret.entries[k] = other
             other = ret
-        assert self.entries.keys() == other.entries.keys(
-        ), f"Member mismatch between structs {self.keys}, {other.keys}"
+        if self.entries.keys() != other.entries.keys():
+            raise TypeError(f"Member mismatch between structs {self.keys}, {other.keys}")
         return other
 
     def element_wise_writeback_binary(self, foo, other):
@@ -163,8 +163,8 @@ class Struct(TaichiOperations):
                 f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
             )
         if isinstance(other, Struct):
-            assert self.entries.keys() == other.entries.keys(
-            ), f"Member mismatch between structs {self.keys}, {other.keys}"
+            if self.entries.keys() != other.entries.keys():
+                raise TypeError(f"Member mismatch between structs {self.keys}, {other.keys}")
             for k, v in self.items:
                 if isinstance(v, expr.Expr):
                     ret.entries[k] = foo(v, other.entries[k])
@@ -281,8 +281,8 @@ class Struct(TaichiOperations):
               needs_grad=False,
               layout=Layout.AOS):
 
-        if shape is None:
-            assert offset is None, "shape cannot be None when offset is being set"
+        if shape is None and offset is not None:
+            raise TaichiSyntaxError("shape cannot be None when offset is being set")
 
         field_dict = {}
 
@@ -306,11 +306,10 @@ class Struct(TaichiOperations):
             if isinstance(offset, numbers.Number):
                 offset = (offset, )
 
-            if offset is not None:
-                assert len(shape) == len(
-                    offset
-                ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
-
+            if offset is not None and len(shape) != len(offset):
+                raise TaichiSyntaxError(
+                    f'The dimensionality of shape and offset must be the same ({len(shape)} != {len(offset)})'
+                )
             dim = len(shape)
             if layout == Layout.SOA:
                 for e in field_dict.values():

@@ -3,7 +3,7 @@
 #include <array>
 
 #include "taichi/backends/vulkan/spirv_header.h"
-#include "taichi/backends/vulkan/vulkan_api.h"
+#include "taichi/backends/vulkan/embedded_device.h"
 #include "taichi/lang_util.h"
 #include "taichi/ir/type.h"
 #include "taichi/util/testing.h"

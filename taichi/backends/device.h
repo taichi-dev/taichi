@@ -331,7 +331,6 @@ class Stream {
   virtual ~Stream(){};
 
   virtual std::unique_ptr<CommandList> new_command_list() = 0;
-  virtual void dealloc_command_list(CommandList *cmdlist) = 0;
   virtual void submit(CommandList *cmdlist) = 0;
   virtual void submit_synced(CommandList *cmdlist) = 0;
 

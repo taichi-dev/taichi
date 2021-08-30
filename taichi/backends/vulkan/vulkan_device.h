@@ -401,7 +401,6 @@ class VulkanStream : public Stream {
   ~VulkanStream();
 
   std::unique_ptr<CommandList> new_command_list() override;
-  void dealloc_command_list(CommandList *cmdlist) override;
   void submit(CommandList *cmdlist) override;
   void submit_synced(CommandList *cmdlist) override;
 

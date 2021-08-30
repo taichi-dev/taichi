@@ -661,7 +661,6 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
 }
 
 VulkanCommandList::~VulkanCommandList() {
-  stream_->dealloc_command_list(this);
 }
 
 void VulkanCommandList::bind_pipeline(Pipeline *p) {
@@ -1274,9 +1273,6 @@ std::unique_ptr<CommandList> VulkanStream::new_command_list() {
       vkapi::allocate_command_buffer(command_pool_);
 
   return std::make_unique<VulkanCommandList>(&device_, this, buffer);
-}
-
-void VulkanStream::dealloc_command_list(CommandList *cmdlist) {
 }
 
 void VulkanStream::submit(CommandList *cmdlist_) {

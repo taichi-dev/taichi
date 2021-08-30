@@ -11,9 +11,6 @@ Function::Function(Program *program, const FunctionKey &func_key)
 }
 
 void Function::set_function_body(const std::function<void()> &func) {
-  // Do not corrupt the context calling this function here
-  auto backup_context = std::move(context);
-
   context = std::make_unique<FrontendContext>();
   ir = context->get_root();
   {
@@ -25,8 +22,6 @@ void Function::set_function_body(const std::function<void()> &func) {
                                   /*grad=*/false,
                                   /*verbose=*/program->config.print_ir,
                                   /*start_from_ast=*/true);
-
-  context = std::move(backup_context);
 }
 
 void Function::set_function_body(std::unique_ptr<IRNode> func_body) {

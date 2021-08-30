@@ -21,8 +21,6 @@ Kernel::Kernel(Program &program,
                bool grad)
     : grad(grad), lowered_(false) {
   this->program = &program;
-  // Do not corrupt the context calling this kernel here -- maybe unnecessary
-  auto backup_context = std::move(context);
 
   program.get_llvm_program_impl()->maybe_initialize_cuda_llvm_context();
   is_accessor = false;
@@ -51,8 +49,6 @@ Kernel::Kernel(Program &program,
 
   if (!program.config.lazy_compilation)
     compile();
-
-  context = std::move(backup_context);
 }
 
 Kernel::Kernel(Program &program,

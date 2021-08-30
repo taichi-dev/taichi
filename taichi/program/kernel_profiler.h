@@ -12,18 +12,31 @@
 
 TLANG_NAMESPACE_BEGIN
 
+enum class KernelProfilerMode : int {
+#define PER_MODE(x) x,
+#include "taichi/inc/kernel_profiler_mode.inc.h"
+
+#undef PER_MODE
+};
+
 struct KernelProfileRecord {
   std::string name;
   int counter;
   double min;
   double max;
   double total;
+  double ldg;
+  double stg;
+  float uti_core;
+  float uti_dram;
 
   KernelProfileRecord(const std::string &name)
-      : name(name), counter(0), min(0), max(0), total(0) {
+      : name(name), counter(0), min(0), max(0), total(0), ldg(0), stg(0), uti_core(0), uti_dram(0) {
   }
 
   void insert_sample(double t);
+  void cuda_global_access(double ld,double st);
+  void cuda_uti_ratio(float core,float dram);
 
   bool operator<(const KernelProfileRecord &o) const;
 };
@@ -32,16 +45,13 @@ class KernelProfilerBase {
  protected:
   std::vector<KernelProfileRecord> records;
   double total_time_ms;
+  KernelProfilerMode mode_ = KernelProfilerMode::disable;
 
  public:
   // Needed for the CUDA backend since we need to know which task to "stop"
   using TaskHandle = void *;
 
-  void clear() {
-    sync();
-    total_time_ms = 0;
-    records.clear();
-  }
+  virtual void clear();
 
   virtual void sync() = 0;
 
@@ -62,7 +72,7 @@ class KernelProfilerBase {
 
   static void profiler_stop(KernelProfilerBase *profiler);
 
-  void print();
+  virtual void print();
 
   void query(const std::string &kernel_name,
              int &counter,
@@ -72,10 +82,12 @@ class KernelProfilerBase {
 
   double get_total_time() const;
 
+  KernelProfilerMode get_mode(){return mode_;}
+
   virtual ~KernelProfilerBase() {
   }
 };
 
-std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch);
+std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, KernelProfilerMode mode);
 
 TLANG_NAMESPACE_END

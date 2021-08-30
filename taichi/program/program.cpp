@@ -21,7 +21,9 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
-
+#if defined(TI_WITH_CUDA)
+#include "taichi/backends/cuda/cuda_context.h"
+#endif
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"
@@ -68,8 +70,18 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   if (config.debug)
     config.check_out_of_bound = true;
 
-  profiler = make_profiler(config.arch);
+  profiler = make_profiler(config.arch, config.kernel_profiler);
   llvm_program_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
+
+#if defined(TI_WITH_CUDA)
+  if (config.arch == Arch::cuda) {
+    if (config.kernel_profiler != KernelProfilerMode::disable) {
+      CUDAContext::get_instance().set_profiler(profiler.get());
+    } else {
+      CUDAContext::get_instance().set_profiler(nullptr);
+    }
+  }
+#endif
 
   if (config.arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {

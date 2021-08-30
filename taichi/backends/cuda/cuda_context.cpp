@@ -8,11 +8,13 @@
 #include "taichi/program/program.h"
 #include "taichi/system/threading.h"
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/backends/cuda/cuda_profiler.h"
 
 TLANG_NAMESPACE_BEGIN
 
 CUDAContext::CUDAContext()
-    : profiler(nullptr), driver(CUDADriver::get_instance_without_context()) {
+    : profiler(nullptr), driver(CUDADriver::get_instance_without_context()),
+      cuda_kernel_profiler(CUDAProfiler::get_instance_without_context()) {
   // CUDA initialization
   dev_count = 0;
   driver.init(0);
@@ -75,8 +77,12 @@ void CUDAContext::launch(void *func,
 
   KernelProfilerBase::TaskHandle task_handle;
   // Kernel launch
-  if (profiler)
+  if (CUDAProfiler::get_instance().get_profiler_type() == CUDA_KERNEL_PROFILER_EVENT){
     task_handle = profiler->start_with_handle(task_name);
+  }
+  else if (CUDAProfiler::get_instance().get_profiler_type() == CUDA_KERNEL_PROFILER_CUPTI){
+    cuda_kernel_profiler.record_launched_kernel(task_name);
+  }
   auto context_guard = CUDAContext::get_instance().get_guard();
 
   // TODO: remove usages of get_current_program here.
@@ -98,7 +104,7 @@ void CUDAContext::launch(void *func,
                          shared_mem_bytes, nullptr, arg_pointers.data(),
                          nullptr);
   }
-  if (profiler)
+  if (CUDAProfiler::get_instance().get_profiler_type() == CUDA_KERNEL_PROFILER_EVENT)
     profiler->stop(task_handle);
 
   if (get_current_program().config.debug) {

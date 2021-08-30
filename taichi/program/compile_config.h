@@ -1,6 +1,7 @@
 #pragma once
 
 #include "arch.h"
+#include "kernel_profiler.h"
 #include "taichi/lang_util.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -28,7 +29,7 @@ struct CompileConfig {
   bool advanced_optimization;
   bool use_llvm;
   bool verbose_kernel_launches;
-  bool kernel_profiler;
+  KernelProfilerMode kernel_profiler;
   bool timeline{false};
   bool verbose;
   bool fast_math;

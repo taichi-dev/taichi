@@ -29,7 +29,7 @@ CompileConfig::CompileConfig() {
   default_fp = PrimitiveType::f32;
   default_ip = PrimitiveType::i32;
   verbose_kernel_launches = false;
-  kernel_profiler = false;
+  kernel_profiler = KernelProfilerMode::disable;
   default_cpu_block_dim = 32;
   default_gpu_block_dim = 128;
   gpu_max_reg = 0;  // 0 means using the default value from the CUDA driver.

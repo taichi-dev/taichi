@@ -2,6 +2,7 @@
 
 #include "taichi/system/timer.h"
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/backends/cuda/cuda_profiler.h"
 #include "taichi/system/timeline.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -15,6 +16,16 @@ void KernelProfileRecord::insert_sample(double t) {
   min = std::min(min, t);
   max = std::max(max, t);
   total += t;
+}
+
+void KernelProfileRecord::cuda_global_access(double ld,double st){
+  ldg += ld;
+  stg += st;
+}
+
+void KernelProfileRecord::cuda_uti_ratio(float core,float dram){
+  uti_core += core;
+  uti_dram += dram;
 }
 
 bool KernelProfileRecord::operator<(const KernelProfileRecord &o) const {
@@ -91,6 +102,15 @@ double KernelProfilerBase::get_total_time() const {
   return total_time_ms / 1000.0;
 }
 
+void KernelProfilerBase::clear() {
+  sync();
+  total_time_ms = 0;
+  records.clear();
+#if defined(TI_WITH_CUDA)
+  CUDAProfiler::get_instance().clearTracedRecords();
+#endif
+}
+
 namespace {
 // A simple profiler that uses Time::get_time()
 class DefaultProfiler : public KernelProfilerBase {
@@ -135,10 +155,20 @@ class DefaultProfiler : public KernelProfilerBase {
 class KernelProfilerCUDA : public KernelProfilerBase {
  public:
 #if defined(TI_WITH_CUDA)
-
   std::map<std::string, std::vector<std::pair<void *, void *>>>
       outstanding_events;
 #endif
+
+  explicit KernelProfilerCUDA(KernelProfilerMode mode){
+    mode_ = mode; 
+#if defined(TI_WITH_CUDA)
+    CUDAProfiler::get_instance().set_profiling_mode(mode_);
+    if(CUDAProfiler::get_instance().get_profiler_type() == CUDA_KERNEL_PROFILER_CUPTI){
+      CUDAProfiler::get_instance().init_cupti();
+      CUDAProfiler::get_instance().begin_profiling();
+    }
+#endif
+  }
 
   TaskHandle start_with_handle(const std::string &kernel_name) override {
 #if defined(TI_WITH_CUDA)
@@ -191,59 +221,170 @@ class KernelProfilerCUDA : public KernelProfilerBase {
   }
 
   std::string title() const override {
-    return "CUDA Profiler";
+    if(CUDAProfiler::get_instance().get_profiling_mode() == KernelProfilerMode::disable)
+      return "Profiler disabled";
+    else if (CUDAProfiler::get_instance().get_profiler_type() == CUDA_KERNEL_PROFILER_EVENT)
+      return "cuEvent Profiler";
+    else if (CUDAProfiler::get_instance().get_profiler_type() == CUDA_KERNEL_PROFILER_CUPTI){
+      std::string mode = CUDAProfiler::get_instance().get_profiling_mode() == KernelProfilerMode::cuda_accurate ? "accurate mode" : "detailed mode";
+      return "nvCUPTI Profiler :: " + mode;
+    }
   }
 
   void sync() override {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().stream_synchronize(nullptr);
-    auto &timeline = Timeline::get_this_thread_instance();
-    for (auto &map_elem : outstanding_events) {
-      auto &list = map_elem.second;
-      for (auto &item : list) {
-        auto start = item.first, stop = item.second;
-        float kernel_time;
-        CUDADriver::get_instance().event_elapsed_time(&kernel_time, start,
-                                                      stop);
 
-        if (Timelines::get_instance().get_enabled()) {
-          float time_since_base;
-          CUDADriver::get_instance().event_elapsed_time(&time_since_base,
-                                                        base_event_, start);
-          timeline.insert_event({map_elem.first, true,
-                                 base_time_ + time_since_base * 1e-3, "cuda"});
-          timeline.insert_event(
-              {map_elem.first, false,
-               base_time_ + (time_since_base + kernel_time) * 1e-3, "cuda"});
+    if(CUDAProfiler::get_instance().get_profiler_type() == CUDA_KERNEL_PROFILER_EVENT){
+      auto &timeline = Timeline::get_this_thread_instance();
+      for (auto &map_elem : outstanding_events) {
+        auto &list = map_elem.second;
+        for (auto &item : list) {
+          auto start = item.first, stop = item.second;
+          float kernel_time;
+          CUDADriver::get_instance().event_elapsed_time(&kernel_time, start,
+                                                        stop);
+
+          if (Timelines::get_instance().get_enabled()) {
+            float time_since_base;
+            CUDADriver::get_instance().event_elapsed_time(&time_since_base,
+                                                          base_event_, start);
+            timeline.insert_event({map_elem.first, true,
+                                  base_time_ + time_since_base * 1e-3, "cuda"});
+            timeline.insert_event(
+                {map_elem.first, false,
+                base_time_ + (time_since_base + kernel_time) * 1e-3, "cuda"});
+          }
+
+          auto it = std::find_if(
+              records.begin(), records.end(),
+              [&](KernelProfileRecord &r) { return r.name == map_elem.first; });
+          if (it == records.end()) {
+            records.emplace_back(map_elem.first);
+            it = std::prev(records.end());
+          }
+          it->insert_sample(kernel_time);
+          total_time_ms += kernel_time;
+
+          // TODO: the following two lines seem to increases profiler overhead a
+          // little bit. Is there a way to avoid the overhead while not creating
+          // too many events?
+          CUDADriver::get_instance().event_destroy(start);
+          CUDADriver::get_instance().event_destroy(stop);
         }
-
-        auto it = std::find_if(
-            records.begin(), records.end(),
-            [&](KernelProfileRecord &r) { return r.name == map_elem.first; });
-        if (it == records.end()) {
-          records.emplace_back(map_elem.first);
-          it = std::prev(records.end());
-        }
-        it->insert_sample(kernel_time);
-        total_time_ms += kernel_time;
-
-        // TODO: the following two lines seem to increases profiler overhead a
-        // little bit. Is there a way to avoid the overhead while not creating
-        // too many events?
-        CUDADriver::get_instance().event_destroy(start);
-        CUDADriver::get_instance().event_destroy(stop);
       }
+      outstanding_events.clear();
     }
-    outstanding_events.clear();
+    else if(CUDAProfiler::get_instance().get_profiler_type() == CUDA_KERNEL_PROFILER_CUPTI){
+      CUDAProfiler::get_instance().traceMetricValues();//from cupti image . trace (per kernel)
+      CUDAProfiler::get_instance().statisticsOnRecords(records,total_time_ms);
+      CUDAProfiler::get_instance().end_profiling();
+      CUDAProfiler::get_instance().deinit_cupti();
+      CUDAProfiler::get_instance().init_cupti();
+      CUDAProfiler::get_instance().begin_profiling();
+    }
 #else
-    printf("CUDA Profiler not implemented;\n");
+    TI_WARN("Profiler not implemented;");
 #endif
   }
 
-  static KernelProfilerCUDA &get_instance() {
-    static KernelProfilerCUDA profiler;
-    return profiler;
+
+void print() override {
+  sync();
+  if(CUDAProfiler::get_instance().get_profiling_mode() != KernelProfilerMode::disable){
+    fmt::print("{}\n", title());
   }
+  if(CUDAProfiler::get_instance().get_profiling_mode() == KernelProfilerMode::enable){
+    fmt::print(
+        "========================================================================"
+        "=\n");
+    fmt::print(
+        "[      %     total   count |      min       avg       max   ] Kernel "
+        "name\n");
+    std::sort(records.begin(), records.end());
+    for (auto &rec : records) {
+      auto fraction = rec.total / total_time_ms * 100.0f;
+      fmt::print("[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms] {}\n",
+                fraction, rec.total / 1000.0f, rec.counter, rec.min,
+                rec.total / rec.counter, rec.max, rec.name);
+    }
+    fmt::print(
+        "------------------------------------------------------------------------"
+        "-\n");
+    fmt::print(
+        "[100.00%] Total kernel execution time: {:7.3f} s   number of records: "
+        "{}\n",
+        get_total_time(), records.size());
+
+    fmt::print(
+        "========================================================================"
+        "=\n");
+  }
+  else if(CUDAProfiler::get_instance().get_profiling_mode() == KernelProfilerMode::cuda_accurate){
+    fmt::print(
+        "=================================================================================================="
+        "=\n");
+    fmt::print(
+        "[      %     total   count |      min       avg       max    |    load.g   store.g    ] Kernel "
+        "name\n");
+    std::sort(records.begin(), records.end());
+    for (auto &rec : records) {
+      auto fraction = rec.total / total_time_ms * 100.0f;
+      fmt::print("[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms | {:9.3f} {:9.3f}  MB] {}\n",
+                fraction, rec.total / 1000.0f, rec.counter, rec.min,
+                rec.total / rec.counter, rec.max, rec.ldg/rec.counter/1024/1024, rec.stg/rec.counter/1024/1024, rec.name);
+    }
+    fmt::print(
+        "--------------------------------------------------------------------------------------------------"
+        "-\n");
+    fmt::print(
+        "[100.00%] Total kernel execution time: {:7.3f} s   number of records: "
+        "{}\n",
+        get_total_time(), records.size());
+
+    fmt::print(
+        "=================================================================================================="
+        "=\n");
+  }
+  else if(CUDAProfiler::get_instance().get_profiling_mode() == KernelProfilerMode::cuda_detailed){
+    fmt::print(
+        "============================================================================================================================"
+        "=\n");
+    fmt::print(
+        "[      %     total   count |      min       avg       max    |    load.g   store.g     |  uti.core   uti.dram ] Kernel "
+        "name\n");
+    std::sort(records.begin(), records.end());
+    for (auto &rec : records) {
+      auto fraction = rec.total / total_time_ms * 100.0f;
+      fmt::print("[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms | {:9.3f} {:9.3f}  MB |    {:2.2f}%     {:2.2f}% ] {}\n",
+                fraction, rec.total / 1000.0f, rec.counter, rec.min,
+                rec.total / rec.counter, rec.max,
+                rec.ldg/rec.counter/1024/1024,
+                rec.stg/rec.counter/1024/1024,
+                rec.uti_core/rec.counter,
+                rec.uti_dram/rec.counter,
+                rec.name);
+    }
+    fmt::print(
+        "----------------------------------------------------------------------------------------------------------------------------"
+        "-\n");
+    fmt::print(
+        "[100.00%] Total kernel execution time: {:7.3f} s   number of records: "
+        "{}\n",
+        get_total_time(), records.size());
+
+    fmt::print(
+        "============================================================================================================================"
+        "=\n");
+  }
+
+}
+
+  //deprecated
+  // static KernelProfilerCUDA &get_instance() {
+  //   static KernelProfilerCUDA profiler;
+  //   return profiler;
+  // }
 
  private:
   void *base_event_{nullptr};
@@ -251,9 +392,9 @@ class KernelProfilerCUDA : public KernelProfilerBase {
 };
 }  // namespace
 
-std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch) {
+std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, KernelProfilerMode mode) {
   if (arch == Arch::cuda) {
-    return std::make_unique<KernelProfilerCUDA>();
+    return std::make_unique<KernelProfilerCUDA>(mode);
   } else {
     return std::make_unique<DefaultProfiler>(arch);
   }

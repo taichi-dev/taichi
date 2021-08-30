@@ -1,5 +1,6 @@
 from taichi.core.logging import *
 from taichi.core.primitive_types import *
+from taichi.core.profiler_modes import *
 from taichi.core.record import *
 from taichi.core.settings import get_os_name
 from taichi.core.util import *

@@ -11,8 +11,11 @@ from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.ndarray import Ndarray, NdarrayHostAccess
-from taichi.lang.util import (in_python_scope, is_taichi_class, python_scope,
-                              taichi_scope, to_numpy_type, to_pytorch_type)
+from taichi.lang.ops import cast
+from taichi.lang.types import CompoundType
+from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
+                              python_scope, taichi_scope, to_numpy_type,
+                              to_pytorch_type)
 from taichi.misc.util import deprecated, warning
 
 import taichi as ti
@@ -420,11 +423,15 @@ class Matrix(TaichiOperations):
     @property
     @python_scope
     def value(self):
-        assert isinstance(self.entries[0], SNodeHostAccess)
-        ret = self.empty_copy()
-        for i in range(self.n):
-            for j in range(self.m):
-                ret.entries[i * self.m + j] = self(i, j)
+        if isinstance(self.entries[0], SNodeHostAccess):
+            # fetch values from SNodeHostAccessor
+            ret = self.empty_copy()
+            for i in range(self.n):
+                for j in range(self.m):
+                    ret.entries[i * self.m + j] = self(i, j)
+        else:
+            # is local python-scope matrix
+            ret = self.entries
         return ret
 
     # host access & python scope operation
@@ -470,6 +477,16 @@ class Matrix(TaichiOperations):
             return (self(i) for i in range(self.n))
         else:
             return ([self(i, j) for j in range(self.m)] for i in range(self.n))
+
+    @python_scope
+    def set_entries(self, value):
+        if not isinstance(value, (list, tuple)):
+            value = list(value)
+        if not isinstance(value[0], (list, tuple)):
+            value = [[i] for i in value]
+        for i in range(self.n):
+            for j in range(self.m):
+                self[i, j] = value[i][j]
 
     def empty_copy(self):
         return Matrix.empty(self.n, self.m)
@@ -791,7 +808,7 @@ class Matrix(TaichiOperations):
         """
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        return np.array(self.entries).reshape(shape_ext)
+        return np.array(self.value).reshape(shape_ext)
 
     @taichi_scope
     def __ti_repr__(self):
@@ -1263,7 +1280,7 @@ class MatrixField(Field):
     """Taichi matrix field with SNode implementation.
 
     Args:
-        vars (Expr): Field members.
+        vars (List[Expr]): Field members.
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
@@ -1321,7 +1338,7 @@ class MatrixField(Field):
 
     @python_scope
     def to_numpy(self, keep_dims=False, as_vector=None, dtype=None):
-        """Converts `self` to a numpy array.
+        """Converts the field instance to a NumPy array.
 
         Args:
             keep_dims (bool, optional): Whether to keep the dimension after conversion.
@@ -1334,7 +1351,7 @@ class MatrixField(Field):
             dtype (DataType, optional): The desired data type of returned numpy array.
 
         Returns:
-            numpy.ndarray: The result numpy array.
+            numpy.ndarray: The result NumPy array.
         """
         if as_vector is not None:
             warning(
@@ -1354,7 +1371,7 @@ class MatrixField(Field):
         return arr
 
     def to_torch(self, device=None, keep_dims=False):
-        """Converts `self` to a torch tensor.
+        """Converts the field instance to a PyTorch tensor.
 
         Args:
             device (torch.device, optional): The desired device of returned tensor.
@@ -1392,25 +1409,79 @@ class MatrixField(Field):
     @python_scope
     def __setitem__(self, key, value):
         self.initialize_host_accessors()
-        if not isinstance(value, (list, tuple)):
-            value = list(value)
-        if not isinstance(value[0], (list, tuple)):
-            value = [[i] for i in value]
-        for i in range(self.n):
-            for j in range(self.m):
-                self[key][i, j] = value[i][j]
+        self[key].set_entries(value)
 
     @python_scope
     def __getitem__(self, key):
         self.initialize_host_accessors()
         key = self.pad_key(key)
-        return Matrix.with_entries(
-            self.n, self.m,
-            [SNodeHostAccess(e, key) for e in self.host_accessors])
+        return Matrix.with_entries(self.n, self.m, self.host_access(key))
 
     def __repr__(self):
         # make interactive shell happy, prevent materialization
         return f'<{self.n}x{self.m} ti.Matrix.field>'
+
+
+class MatrixType(CompoundType):
+    def __init__(self, n, m, dtype):
+        self.n = n
+        self.m = m
+        self.dtype = cook_dtype(dtype)
+
+    def __call__(self, *args):
+        if len(args) == 0:
+            raise TaichiSyntaxError(
+                "Custom type instances need to be created with an initial value."
+            )
+        elif len(args) == 1:
+            # fill a single scalar
+            if isinstance(args[0], (numbers.Number, expr.Expr)):
+                return self.scalar_filled(args[0])
+            # fill a single vector or matrix
+            entries = args[0]
+        else:
+            # fill in a concatenation of scalars/vectors/matrices
+            entries = []
+            for x in args:
+                if isinstance(x, (list, tuple)):
+                    entries += x
+                elif isinstance(x, Matrix):
+                    entries += x.entries
+                else:
+                    entries.append(x)
+        # convert vector to nx1 matrix
+        if isinstance(entries[0], numbers.Number):
+            entries = [[e] for e in entries]
+        # type cast
+        mat = self.cast(Matrix(entries, dt=self.dtype))
+        return mat
+
+    def cast(self, mat, in_place=False):
+        if not in_place:
+            mat = mat.copy()
+        # sanity check shape
+        if self.m != mat.m or self.n != mat.n:
+            raise TaichiSyntaxError(
+                f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({mat.n}, {mat.m})"
+            )
+        if in_python_scope():
+            mat.entries = [
+                int(x) if self.dtype in ti.integer_types else x
+                for x in mat.entries
+            ]
+        else:
+            # only performs casting in Taichi scope
+            mat.entries = [cast(x, self.dtype) for x in mat.entries]
+        return mat
+
+    def empty(self):
+        """
+        Create an empty instance of the given compound type.
+        """
+        return Matrix.empty(self.n, self.m)
+
+    def field(self, **kwargs):
+        return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)
 
 
 class MatrixNdarray(Ndarray):

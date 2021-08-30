@@ -206,6 +206,9 @@ class Field:
             SNodeHostAccessor(e.ptr.snode()) for e in self.vars
         ]
 
+    def host_access(self, key):
+        return [SNodeHostAccess(e, key) for e in self.host_accessors]
+
 
 class ScalarField(Field):
     """Taichi scalar field with SNode implementation.

@@ -4,7 +4,7 @@ from copy import deepcopy as _deepcopy
 
 from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
-from taichi.lang import impl
+from taichi.lang import impl, types
 from taichi.lang.enums import Layout
 from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *
@@ -18,6 +18,7 @@ from taichi.lang.ops import *
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.sparse_matrix import SparseMatrix, SparseMatrixBuilder
+from taichi.lang.struct import Struct
 from taichi.lang.transformer import TaichiSyntaxError
 from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,

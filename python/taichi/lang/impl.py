@@ -1,6 +1,6 @@
 import numbers
-import types
 import warnings
+from types import FunctionType, MethodType
 
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
@@ -11,6 +11,7 @@ from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField
 from taichi.lang.ndarray import ScalarNdarray
 from taichi.lang.snode import SNode
+from taichi.lang.struct import StructField
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
                               python_scope, taichi_scope, to_pytorch_type)
@@ -156,6 +157,10 @@ def subscript(value, *indices):
                 Expr(_ti_core.subscript(e.ptr, indices_expr_group))
                 for e in value.get_field_members()
             ])
+        elif isinstance(value, StructField):
+            return ti.Struct(
+                {k: subscript(v, *indices)
+                 for k, v in value.items})
         else:
             return Expr(_ti_core.subscript(var, indices_expr_group))
     elif isinstance(value, AnyArray):
@@ -821,7 +826,7 @@ def static(x, *xs):
         return x
     elif isinstance(x, Field):
         return x
-    elif isinstance(x, (types.FunctionType, types.MethodType)):
+    elif isinstance(x, (FunctionType, MethodType)):
         return x
     else:
         raise ValueError(

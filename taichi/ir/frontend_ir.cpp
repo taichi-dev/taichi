@@ -160,6 +160,7 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
 void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> arg_statements, output_statements;
   for (auto &s : args) {
+    s.set(load_if_ptr(s));
     s->flatten(ctx);
     arg_statements.push_back(s->stmt);
   }
@@ -468,6 +469,11 @@ void FuncCallExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+std::string FuncCallExpression::serialize() {
+  return fmt::format("func_call(\"{}\", {})", func->func_key.get_full_name(),
+                     args.serialize());
+}
+
 Block *ASTBuilder::current_block() {
   if (stack.empty())
     return nullptr;
@@ -501,9 +507,7 @@ std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
 }
 
 ASTBuilder &current_ast_builder() {
-  return context->builder();
+  return get_current_program().current_callable->context->builder();
 }
-
-std::unique_ptr<FrontendContext> context;
 
 TLANG_NAMESPACE_END

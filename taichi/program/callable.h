@@ -7,11 +7,13 @@ namespace lang {
 
 class Program;
 class IRNode;
+class FrontendContext;
 
 class Callable {
  public:
   Program *program;
   std::unique_ptr<IRNode> ir;
+  std::unique_ptr<FrontendContext> context;
 
   struct Arg {
     DataType dt;

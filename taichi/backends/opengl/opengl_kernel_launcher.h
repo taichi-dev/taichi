@@ -36,6 +36,7 @@ struct StructCompiledResult {
   std::unordered_map<SNodeId, SNodeInfo> snode_map;
   // Root buffer size in bytes.
   size_t root_size;
+  std::string root_snode_type_name;
 };
 
 }  // namespace opengl

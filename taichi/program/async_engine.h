@@ -133,11 +133,12 @@ class AsyncEngine {
   // TODO: state machine
 
   ExecutionQueue queue;
-  Program *program;
+  const CompileConfig *const config_;
 
   std::unique_ptr<StateFlowGraph> sfg;
 
-  explicit AsyncEngine(Program *program,
+  explicit AsyncEngine(const CompileConfig *const config,
+                       const std::unordered_map<int, SNode *> &snodes,
                        const BackendExecCompilationFunc &compile_to_backend);
 
   void clear_cache() {

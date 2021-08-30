@@ -85,6 +85,8 @@ class ExprBuilder(Builder):
             return node
         node.func = build_expr(ctx, node.func)
         node.args = build_exprs(ctx, node.args)
+        for i in range(len(node.keywords)):
+            node.keywords[i].value = build_expr(ctx, node.keywords[i].value)
         if isinstance(node.func, ast.Attribute):
             attr_name = node.func.attr
             if attr_name == 'format':

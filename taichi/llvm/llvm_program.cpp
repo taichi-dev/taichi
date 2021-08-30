@@ -6,6 +6,8 @@
 #include "taichi/math/arithmetic.h"
 #include "taichi/runtime/llvm/mem_request.h"
 #include "taichi/util/str.h"
+#include "taichi/codegen/codegen.h"
+#include "taichi/ir/statements.h"
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/codegen_cuda.h"
@@ -107,6 +109,15 @@ void LlvmProgramImpl::maybe_initialize_cuda_llvm_context() {
     llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::cuda);
     llvm_context_device->init_runtime_jit_module();
   }
+}
+
+FunctionType LlvmProgramImpl::compile(Kernel *kernel,
+                                      OffloadedStmt *offloaded) {
+  if (!kernel->lowered()) {
+    kernel->lower();
+  }
+  auto codegen = KernelCodeGen::create(kernel->arch, kernel, offloaded);
+  return codegen->compile();
 }
 
 void LlvmProgramImpl::synchronize() {

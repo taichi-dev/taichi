@@ -30,7 +30,9 @@ inline Kernel &kernel(const std::function<void()> &body) {
 }
 
 inline void kernel_name(std::string name) {
-  get_current_program().get_current_kernel().name = name;
+  auto *kernel = dynamic_cast<Kernel *>(get_current_program().current_callable);
+  TI_ASSERT(kernel);
+  kernel->name = name;
 }
 
 template <typename T>

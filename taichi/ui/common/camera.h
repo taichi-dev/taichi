@@ -26,7 +26,7 @@ struct Camera {
   }
   glm::mat4 get_projection_matrix(float aspect_ratio) {
     if (projection_mode == ProjectionMode::Perspective) {
-      return glm::perspective(fov, aspect_ratio, z_far, z_near);
+      return glm::perspective(glm::radians(fov), aspect_ratio, z_far, z_near);
     } else if (projection_mode == ProjectionMode::Orthogonal) {
       return glm::ortho(left, right, top, bottom, z_far, z_near);
     } else {

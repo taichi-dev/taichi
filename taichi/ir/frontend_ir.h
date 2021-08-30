@@ -683,10 +683,7 @@ class FuncCallExpression : public Expression {
   Function *func;
   ExprGroup args;
 
-  std::string serialize() override {
-    return fmt::format("func_call(\"{}\", {})", func->func_key.get_full_name(),
-                       args.serialize());
-  }
+  std::string serialize() override;
 
   FuncCallExpression(Function *func, const ExprGroup &args)
       : func(func), args(args) {
@@ -745,7 +742,5 @@ class FrontendContext {
     return std::move(root_node);
   }
 };
-
-extern std::unique_ptr<FrontendContext> context;
 
 TLANG_NAMESPACE_END

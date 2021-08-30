@@ -6,6 +6,8 @@
 namespace taichi {
 namespace lang {
 
+class Program;
+
 class Function : public Callable {
  public:
   FunctionKey func_key;

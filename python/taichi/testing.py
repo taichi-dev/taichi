@@ -101,15 +101,18 @@ def test(arch=None, exclude=None, require=None, **options):
         exclude = [exclude]
     if not isinstance(require, (list, tuple)):
         require = [require]
+    supported_archs = ti.supported_archs()
     if len(arch) == 0:
-        arch = ti.supported_archs()
+        arch = supported_archs
+    else:
+        arch = list(filter(lambda x: x in supported_archs, arch))
 
     def decorator(foo):
         import functools
 
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
-            arch_params_sets = [ti.supported_archs(), *_test_features.values()]
+            arch_params_sets = [arch, *_test_features.values()]
             arch_params_combinations = list(
                 itertools.product(*arch_params_sets))
 

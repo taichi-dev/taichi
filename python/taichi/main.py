@@ -727,7 +727,9 @@ class TaichiMain:
         print(f'Starting {threads} testing thread(s)...')
         if args.show_output:
             pytest_args += ['-s']
-            print(f'Due to how pytest-xdist is implemented, the -s option does not work with multiple thread...')
+            print(
+                f'Due to how pytest-xdist is implemented, the -s option does not work with multiple thread...'
+            )
         else:
             if int(threads) > 1:
                 pytest_args += ['-n', str(threads)]

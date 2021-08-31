@@ -107,10 +107,10 @@ class ResourceBinder {
                       uint32_t binding,
                       DeviceAllocation alloc) = 0;
 
-  virtual void image(uint32_t set,
-                     uint32_t binding,
-                     DeviceAllocation alloc,
-                     ImageSamplerConfig sampler_config) {
+  virtual void texture(uint32_t set,
+                       uint32_t binding,
+                       DeviceAllocation alloc,
+                       ImageSamplerConfig sampler_config) {
     TI_NOT_IMPLEMENTED
   }
 
@@ -197,7 +197,6 @@ enum class BufferFormat : uint32_t {
   depth32f
 };
 
-// TODO: Implement this
 class Pipeline {
  public:
   virtual ~Pipeline() {

@@ -150,10 +150,10 @@ class VulkanResourceBinder : public ResourceBinder {
   void rw_buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
   void buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size);
   void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
-  void image(uint32_t set,
-             uint32_t binding,
-             DeviceAllocation alloc,
-             ImageSamplerConfig sampler_config) override;
+  void texture(uint32_t set,
+               uint32_t binding,
+               DeviceAllocation alloc,
+               ImageSamplerConfig sampler_config) override;
   void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) override;
   void index_buffer(DevicePtr ptr, size_t index_width) override;
 

@@ -217,8 +217,8 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
                                   0);
         } else if (desc_binding->descriptor_type ==
                    SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-          resource_binder_.image(set, desc_binding->binding,
-                                 kDeviceNullAllocation, {});
+          resource_binder_.texture(set, desc_binding->binding,
+                                   kDeviceNullAllocation, {});
         } else {
           TI_WARN("unrecognized binding");
         }
@@ -535,10 +535,10 @@ void VulkanResourceBinder::buffer(uint32_t set,
   buffer(set, binding, alloc.get_ptr(0), VK_WHOLE_SIZE);
 }
 
-void VulkanResourceBinder::image(uint32_t set,
-                                 uint32_t binding,
-                                 DeviceAllocation alloc,
-                                 ImageSamplerConfig sampler_config) {
+void VulkanResourceBinder::texture(uint32_t set,
+                                   uint32_t binding,
+                                   DeviceAllocation alloc,
+                                   ImageSamplerConfig sampler_config) {
   CHECK_SET_BINDINGS
   if (layout_locked_) {
     TI_ASSERT(bindings.at(binding).type ==
@@ -725,18 +725,23 @@ void VulkanCommandList::bind_resources(ResourceBinder *ti_binder) {
 
   if (current_pipeline_->is_graphics()) {
     auto [idx_ptr, type] = binder->get_index_buffer();
-    auto index_buffer = ti_device_->get_vkbuffer(idx_ptr);
-    if (idx_ptr.device) {
-      vkCmdBindIndexBuffer(buffer_->buffer, index_buffer->buffer,
-                           idx_ptr.offset, type);
-      buffer_->refs.push_back(index_buffer);
+
+    if (idx_ptr != kDeviceNullPtr) {
+      auto index_buffer = ti_device_->get_vkbuffer(idx_ptr);
+      if (idx_ptr.device) {
+        vkCmdBindIndexBuffer(buffer_->buffer, index_buffer->buffer,
+                             idx_ptr.offset, type);
+        buffer_->refs.push_back(index_buffer);
+      }
     }
 
     for (auto [binding, ptr] : binder->get_vertex_buffers()) {
-      auto buffer = ti_device_->get_vkbuffer(ptr);
-      vkCmdBindVertexBuffers(buffer_->buffer, binding, 1, &buffer->buffer,
-                             &ptr.offset);
-      buffer_->refs.push_back(buffer);
+      if (ptr != kDeviceNullPtr) {
+        auto buffer = ti_device_->get_vkbuffer(ptr);
+        vkCmdBindVertexBuffers(buffer_->buffer, binding, 1, &buffer->buffer,
+                               &ptr.offset);
+        buffer_->refs.push_back(buffer);
+      }
     }
   }
 }
@@ -945,6 +950,10 @@ void VulkanCommandList::image_transition(DeviceAllocation img,
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.image = image->image;
   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  if (format == VK_FORMAT_D16_UNORM || format == VK_FORMAT_D24_UNORM_S8_UINT ||
+      format == VK_FORMAT_D32_SFLOAT) {
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+  }
   barrier.subresourceRange.baseMipLevel = 0;
   barrier.subresourceRange.levelCount = 1;
   barrier.subresourceRange.baseArrayLayer = 0;
@@ -960,6 +969,8 @@ void VulkanCommandList::image_transition(DeviceAllocation img,
       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
   stages[VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL] =
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  stages[VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL] =
+      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
   static std::unordered_map<VkImageLayout, VkAccessFlagBits> access;
   access[VK_IMAGE_LAYOUT_UNDEFINED] = (VkAccessFlagBits)0;
@@ -967,6 +978,8 @@ void VulkanCommandList::image_transition(DeviceAllocation img,
   access[VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL] = VK_ACCESS_SHADER_READ_BIT;
   access[VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL] =
       VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  access[VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL] =
+      VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
   if (stages.find(old_layout) == stages.end() ||
       stages.find(new_layout) == stages.end()) {

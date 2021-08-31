@@ -12,7 +12,7 @@
 #include "taichi/util/environ_config.h"
 
 #ifdef TI_WITH_VULKAN
-#include "taichi/backends/vulkan/vulkan_api.h"
+#include "taichi/backends/vulkan/embedded_device.h"
 #include "taichi/backends/vulkan/vulkan_utils.h"
 #include "taichi/backends/vulkan/loader.h"
 

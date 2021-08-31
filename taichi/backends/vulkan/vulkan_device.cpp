@@ -1,10 +1,11 @@
-#include "taichi/backends/vulkan/vulkan_api.h"
+#include "taichi/backends/vulkan/embedded_device.h"
 
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <array>
 #include <set>
 
 #include "taichi/backends/vulkan/vulkan_common.h"
@@ -129,11 +130,6 @@ VulkanPipeline::VulkanPipeline(
 }
 
 VulkanPipeline::~VulkanPipeline() {
-  vkDestroyPipeline(device_, pipeline_, kNoVkAllocCallbacks);
-  for (auto &pair : graphics_pipeline_) {
-    vkDestroyPipeline(device_, pair.second, kNoVkAllocCallbacks);
-  }
-  vkDestroyPipelineLayout(device_, pipeline_layout_, kNoVkAllocCallbacks);
   for (VkShaderModule shader_module : shader_modules_) {
     vkDestroyShaderModule(device_, shader_module, kNoVkAllocCallbacks);
   }
@@ -155,9 +151,9 @@ VkShaderModule VulkanPipeline::create_shader_module(VkDevice device,
   return shader_module;
 }
 
-VkPipeline VulkanPipeline::graphics_pipeline(
+vkapi::IVkPipeline VulkanPipeline::graphics_pipeline(
     const VulkanRenderPassDesc &renderpass_desc,
-    VkRenderPass renderpass) {
+    vkapi::IVkRenderPass renderpass) {
   if (graphics_pipeline_.find(renderpass) != graphics_pipeline_.end()) {
     return graphics_pipeline_.at(renderpass);
   }
@@ -176,14 +172,9 @@ VkPipeline VulkanPipeline::graphics_pipeline(
   graphics_pipeline_template_->color_blending.pAttachments =
       blend_attachments.data();
 
-  graphics_pipeline_template_->pipeline_info.renderPass = renderpass;
-
-  VkPipeline pipeline;
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1,
-                                &graphics_pipeline_template_->pipeline_info,
-                                nullptr, &pipeline),
-      "Graphics pipeline creation failed");
+  vkapi::IVkPipeline pipeline = vkapi::create_graphics_pipeline(
+      device_, &graphics_pipeline_template_->pipeline_info, renderpass,
+      pipeline_layout_);
 
   graphics_pipeline_[renderpass] = pipeline;
 
@@ -255,7 +246,7 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
   }
 
   for (uint32_t set : sets_used) {
-    VkDescriptorSetLayout layout =
+    vkapi::IVkDescriptorSetLayout layout =
         params.device->get_desc_set_layout(resource_binder_.get_set(set));
 
     set_layouts_.push_back(layout);
@@ -282,28 +273,12 @@ void VulkanPipeline::create_shader_stages(const Params &params) {
 }
 
 void VulkanPipeline::create_pipeline_layout() {
-  VkPipelineLayoutCreateInfo pipeline_layout_info{};
-  pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipeline_layout_info.setLayoutCount = set_layouts_.size();
-  pipeline_layout_info.pSetLayouts = set_layouts_.data();
-  pipeline_layout_info.pushConstantRangeCount = 0;
-  pipeline_layout_info.pPushConstantRanges = nullptr;
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreatePipelineLayout(device_, &pipeline_layout_info,
-                             kNoVkAllocCallbacks, &pipeline_layout_),
-      "failed to create pipeline layout");
+  pipeline_layout_ = vkapi::create_pipeline_layout(device_, set_layouts_);
 }
 
 void VulkanPipeline::create_compute_pipeline(const Params &params) {
-  VkComputePipelineCreateInfo pipeline_info{};
-  pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-  pipeline_info.stage = shader_stages_[0];
-  pipeline_info.layout = pipeline_layout_;
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreateComputePipelines(device_, /*pipelineCache=*/VK_NULL_HANDLE,
-                               /*createInfoCount=*/1, &pipeline_info,
-                               kNoVkAllocCallbacks, &pipeline_),
-      "failed to create pipeline");
+  pipeline_ = vkapi::create_compute_pipeline(device_, 0, shader_stages_[0],
+                                             pipeline_layout_);
 }
 
 void VulkanPipeline::create_graphics_pipeline(
@@ -451,7 +426,6 @@ void VulkanPipeline::create_graphics_pipeline(
   pipeline_info.pDepthStencilState = &depth_stencil;
   pipeline_info.pColorBlendState = &color_blending;
   pipeline_info.pDynamicState = &dynamic_state;
-  pipeline_info.layout = pipeline_layout_;
   pipeline_info.renderPass = VK_NULL_HANDLE;  // Filled in later
   pipeline_info.subpass = 0;
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
@@ -473,6 +447,10 @@ VulkanResourceBinder::~VulkanResourceBinder() {
       }
     }
   }
+}
+
+std::unique_ptr<ResourceBinder::Bindings> VulkanResourceBinder::materialize() {
+  return std::unique_ptr<Bindings>();
 }
 
 VkSampler create_sampler(ImageSamplerConfig config, VkDevice device) {
@@ -603,7 +581,7 @@ void VulkanResourceBinder::index_buffer(DevicePtr ptr, size_t index_width) {
 
 void VulkanResourceBinder::write_to_set(uint32_t index,
                                         VulkanDevice &device,
-                                        VkDescriptorSet set) {
+                                        vkapi::IVkDescriptorSet set) {
   std::vector<VkDescriptorBufferInfo> buffer_infos;
   std::vector<VkDescriptorImageInfo> image_infos;
   std::vector<bool> is_image;
@@ -617,22 +595,25 @@ void VulkanResourceBinder::write_to_set(uint32_t index,
       VkDescriptorImageInfo &image_info = image_infos.emplace_back();
 
       if (pair.second.sampler == VK_NULL_HANDLE) {
-        buffer_info.buffer = device.get_vkbuffer(pair.second.ptr);
+        auto buffer = device.get_vkbuffer(pair.second.ptr);
+        buffer_info.buffer = buffer->buffer;
         buffer_info.offset = pair.second.ptr.offset;
         buffer_info.range = pair.second.size;
         is_image.push_back(false);
+        set->ref_binding_objs[binding] = buffer;
       } else {
+        auto view = std::get<1>(device.get_vk_image(pair.second.ptr));
         image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        image_info.imageView =
-            std::get<1>(device.get_vk_image(pair.second.ptr));
+        image_info.imageView = view->view;
         image_info.sampler = pair.second.sampler;
         is_image.push_back(true);
+        set->ref_binding_objs[binding] = view;
       }
 
       VkWriteDescriptorSet &write = desc_writes.emplace_back();
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = nullptr;
-      write.dstSet = set;
+      write.dstSet = set->set;
       write.dstBinding = binding;
       write.dstArrayElement = 0;
       write.descriptorCount = 1;
@@ -665,7 +646,7 @@ void VulkanResourceBinder::lock_layout() {
 
 VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
                                      VulkanStream *stream,
-                                     VkCommandBuffer buffer)
+                                     vkapi::IVkCommandBuffer buffer)
     : ti_device_(ti_device),
       stream_(stream),
       device_(ti_device->vk_device()),
@@ -676,23 +657,20 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
   info.pInheritanceInfo = nullptr;
   info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
-  vkBeginCommandBuffer(buffer, &info);
+  vkBeginCommandBuffer(buffer->buffer, &info);
 }
 
 VulkanCommandList::~VulkanCommandList() {
-  for (auto pair : desc_sets_) {
-    ti_device_->dealloc_desc_set(pair.first, pair.second);
-  }
-  stream_->dealloc_command_list(this);
 }
 
 void VulkanCommandList::bind_pipeline(Pipeline *p) {
   auto pipeline = static_cast<VulkanPipeline *>(p);
 
   if (pipeline->is_graphics()) {
-    VkPipeline vk_pipeline = pipeline->graphics_pipeline(
+    vkapi::IVkPipeline vk_pipeline = pipeline->graphics_pipeline(
         current_renderpass_desc_, current_renderpass_);
-    vkCmdBindPipeline(buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline);
+    vkCmdBindPipeline(buffer_->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      vk_pipeline->pipeline);
 
     VkViewport viewport;
     viewport.width = viewport_width_;
@@ -706,12 +684,15 @@ void VulkanCommandList::bind_pipeline(Pipeline *p) {
     scissor.offset = {0, 0};
     scissor.extent = {viewport_width_, viewport_height_};
 
-    vkCmdSetViewport(buffer_, 0, 1, &viewport);
-    vkCmdSetScissor(buffer_, 0, 1, &scissor);
-    vkCmdSetLineWidth(buffer_, 1.0f);
+    vkCmdSetViewport(buffer_->buffer, 0, 1, &viewport);
+    vkCmdSetScissor(buffer_->buffer, 0, 1, &scissor);
+    vkCmdSetLineWidth(buffer_->buffer, 1.0f);
+    buffer_->refs.push_back(vk_pipeline);
   } else {
-    vkCmdBindPipeline(buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
-                      pipeline->pipeline());
+    auto vk_pipeline = pipeline->pipeline();
+    vkCmdBindPipeline(buffer_->buffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+                      vk_pipeline->pipeline);
+    buffer_->refs.push_back(vk_pipeline);
   }
 
   current_pipeline_ = pipeline;
@@ -721,8 +702,9 @@ void VulkanCommandList::bind_resources(ResourceBinder *ti_binder) {
   VulkanResourceBinder *binder = static_cast<VulkanResourceBinder *>(ti_binder);
 
   for (auto &pair : binder->get_sets()) {
-    VkDescriptorSetLayout layout = ti_device_->get_desc_set_layout(pair.second);
-    VkDescriptorSet set = ti_device_->alloc_desc_set(layout);
+    vkapi::IVkDescriptorSetLayout layout =
+        ti_device_->get_desc_set_layout(pair.second);
+    vkapi::IVkDescriptorSet set = ti_device_->alloc_desc_set(layout);
     binder->write_to_set(pair.first, *ti_device_, set);
 
     VkPipelineBindPoint bind_point;
@@ -732,36 +714,46 @@ void VulkanCommandList::bind_resources(ResourceBinder *ti_binder) {
       bind_point = VK_PIPELINE_BIND_POINT_COMPUTE;
     }
 
-    vkCmdBindDescriptorSets(buffer_, bind_point,
-                            current_pipeline_->pipeline_layout(),
+    vkCmdBindDescriptorSets(buffer_->buffer, bind_point,
+                            current_pipeline_->pipeline_layout()->layout,
                             /*firstSet=*/0,
-                            /*descriptorSetCount=*/1, &set,
+                            /*descriptorSetCount=*/1, &set->set,
                             /*dynamicOffsetCount=*/0,
                             /*pDynamicOffsets=*/nullptr);
-    desc_sets_.push_back(std::make_pair(layout, set));
+    buffer_->refs.push_back(set);
   }
 
   if (current_pipeline_->is_graphics()) {
     auto [idx_ptr, type] = binder->get_index_buffer();
+    auto index_buffer = ti_device_->get_vkbuffer(idx_ptr);
     if (idx_ptr.device) {
-      vkCmdBindIndexBuffer(buffer_, ti_device_->get_vkbuffer(idx_ptr),
+      vkCmdBindIndexBuffer(buffer_->buffer, index_buffer->buffer,
                            idx_ptr.offset, type);
+      buffer_->refs.push_back(index_buffer);
     }
 
     for (auto [binding, ptr] : binder->get_vertex_buffers()) {
-      VkBuffer buffer = ti_device_->get_vkbuffer(ptr);
-      vkCmdBindVertexBuffers(buffer_, binding, 1, &buffer, &ptr.offset);
+      auto buffer = ti_device_->get_vkbuffer(ptr);
+      vkCmdBindVertexBuffers(buffer_->buffer, binding, 1, &buffer->buffer,
+                             &ptr.offset);
+      buffer_->refs.push_back(buffer);
     }
   }
+}
+
+void VulkanCommandList::bind_resources(ResourceBinder *binder,
+                                       ResourceBinder::Bindings *bindings) {
 }
 
 void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) {
   TI_ASSERT(ptr.device == ti_device_);
 
+  auto buffer = ti_device_->get_vkbuffer(ptr);
+
   VkBufferMemoryBarrier barrier;
   barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
   barrier.pNext = nullptr;
-  barrier.buffer = ti_device_->get_vkbuffer(ptr);
+  barrier.buffer = buffer->buffer;
   barrier.offset = ptr.offset;
   barrier.size = size;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -774,7 +766,7 @@ void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) {
        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 
   vkCmdPipelineBarrier(
-      buffer_,
+      buffer_->buffer,
       /*srcStageMask=*/
       VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
       /*dstStageMask=*/VK_PIPELINE_STAGE_TRANSFER_BIT |
@@ -784,6 +776,7 @@ void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) {
       /*pBufferMemoryBarriers=*/&barrier,
       /*imageMemoryBarrierCount=*/0,
       /*pImageMemoryBarriers=*/nullptr);
+  buffer_->refs.push_back(buffer);
 }
 
 void VulkanCommandList::buffer_barrier(DeviceAllocation alloc) {
@@ -802,7 +795,7 @@ void VulkanCommandList::memory_barrier() {
        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 
   vkCmdPipelineBarrier(
-      buffer_,
+      buffer_->buffer,
       /*srcStageMask=*/
       VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
       /*dstStageMask=*/VK_PIPELINE_STAGE_TRANSFER_BIT |
@@ -819,21 +812,25 @@ void VulkanCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   copy_region.srcOffset = src.offset;
   copy_region.dstOffset = dst.offset;
   copy_region.size = size;
-  vkCmdCopyBuffer(buffer_, ti_device_->get_vkbuffer(src),
-                  ti_device_->get_vkbuffer(dst), /*regionCount=*/1,
-                  &copy_region);
+  auto src_buffer = ti_device_->get_vkbuffer(src);
+  auto dst_buffer = ti_device_->get_vkbuffer(dst);
+  vkCmdCopyBuffer(buffer_->buffer, src_buffer->buffer, dst_buffer->buffer,
+                  /*regionCount=*/1, &copy_region);
+  buffer_->refs.push_back(src_buffer);
+  buffer_->refs.push_back(dst_buffer);
 }
 
 void VulkanCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
-  vkCmdFillBuffer(buffer_, ti_device_->get_vkbuffer(ptr), ptr.offset, size,
-                  data);
+  auto buffer = ti_device_->get_vkbuffer(ptr);
+  vkCmdFillBuffer(buffer_->buffer, buffer->buffer, ptr.offset, size, data);
+  buffer_->refs.push_back(buffer);
 }
 
 void VulkanCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
-  vkCmdDispatch(buffer_, x, y, z);
+  vkCmdDispatch(buffer_->buffer, x, y, z);
 }
 
-VkCommandBuffer VulkanCommandList::vk_command_buffer() {
+vkapi::IVkCommandBuffer VulkanCommandList::vk_command_buffer() {
   return buffer_;
 }
 
@@ -900,32 +897,35 @@ void VulkanCommandList::begin_renderpass(int x0,
   VkRenderPassBeginInfo begin_info{};
   begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   begin_info.pNext = nullptr;
-  begin_info.renderPass = current_renderpass_;
-  begin_info.framebuffer = current_framebuffer_;
+  begin_info.renderPass = current_renderpass_->renderpass;
+  begin_info.framebuffer = current_framebuffer_->framebuffer;
   begin_info.renderArea = render_area;
   begin_info.clearValueCount = clear_values.size();
   begin_info.pClearValues = clear_values.data();
 
-  vkCmdBeginRenderPass(buffer_, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+  vkCmdBeginRenderPass(buffer_->buffer, &begin_info,
+                       VK_SUBPASS_CONTENTS_INLINE);
+  buffer_->refs.push_back(current_renderpass_);
+  buffer_->refs.push_back(current_framebuffer_);
 }
 
 void VulkanCommandList::end_renderpass() {
-  vkCmdEndRenderPass(buffer_);
+  vkCmdEndRenderPass(buffer_->buffer);
 
   current_renderpass_ = VK_NULL_HANDLE;
   current_framebuffer_ = VK_NULL_HANDLE;
 }
 
 void VulkanCommandList::draw(uint32_t num_verticies, uint32_t start_vertex) {
-  vkCmdDraw(buffer_, num_verticies, /*instanceCount=*/1, start_vertex,
+  vkCmdDraw(buffer_->buffer, num_verticies, /*instanceCount=*/1, start_vertex,
             /*firstInstance=*/0);
 }
 
 void VulkanCommandList::draw_indexed(uint32_t num_indicies,
                                      uint32_t start_vertex,
                                      uint32_t start_index) {
-  vkCmdDrawIndexed(buffer_, num_indicies, /*instanceCount=*/1, start_index,
-                   start_vertex,
+  vkCmdDrawIndexed(buffer_->buffer, num_indicies, /*instanceCount=*/1,
+                   start_index, start_vertex,
                    /*firstInstance=*/0);
 }
 
@@ -943,7 +943,7 @@ void VulkanCommandList::image_transition(DeviceAllocation img,
   barrier.newLayout = new_layout;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image = image;
+  barrier.image = image->image;
   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   barrier.subresourceRange.baseMipLevel = 0;
   barrier.subresourceRange.levelCount = 1;
@@ -982,8 +982,9 @@ void VulkanCommandList::image_transition(DeviceAllocation img,
   barrier.srcAccessMask = access.at(old_layout);
   barrier.dstAccessMask = access.at(new_layout);
 
-  vkCmdPipelineBarrier(buffer_, source_stage, destination_stage, 0, 0, nullptr,
-                       0, nullptr, 1, &barrier);
+  vkCmdPipelineBarrier(buffer_->buffer, source_stage, destination_stage, 0, 0,
+                       nullptr, 0, nullptr, 1, &barrier);
+  buffer_->refs.push_back(image);
 }
 
 inline void buffer_image_copy_ti_to_vk(VkBufferImageCopy &copy_info,
@@ -1014,9 +1015,12 @@ void VulkanCommandList::buffer_to_image(DeviceAllocation dst_img,
   buffer_image_copy_ti_to_vk(copy_info, src_buf.offset, params);
 
   auto [image, view, format] = ti_device_->get_vk_image(dst_img);
+  auto buffer = ti_device_->get_vkbuffer(src_buf);
 
-  vkCmdCopyBufferToImage(buffer_, ti_device_->get_vkbuffer(src_buf), image,
+  vkCmdCopyBufferToImage(buffer_->buffer, buffer->buffer, image->image,
                          image_layout_ti_to_vk(img_layout), 1, &copy_info);
+  buffer_->refs.push_back(image);
+  buffer_->refs.push_back(buffer);
 }
 
 void VulkanCommandList::image_to_buffer(DevicePtr dst_buf,
@@ -1027,22 +1031,26 @@ void VulkanCommandList::image_to_buffer(DevicePtr dst_buf,
   buffer_image_copy_ti_to_vk(copy_info, dst_buf.offset, params);
 
   auto [image, view, format] = ti_device_->get_vk_image(src_img);
+  auto buffer = ti_device_->get_vkbuffer(dst_buf);
 
-  vkCmdCopyImageToBuffer(buffer_, image, image_layout_ti_to_vk(img_layout),
-                         ti_device_->get_vkbuffer(dst_buf), 1, &copy_info);
+  vkCmdCopyImageToBuffer(buffer_->buffer, image->image,
+                         image_layout_ti_to_vk(img_layout), buffer->buffer, 1,
+                         &copy_info);
+  buffer_->refs.push_back(image);
+  buffer_->refs.push_back(buffer);
 }
 
 void VulkanCommandList::set_line_width(float width) {
-  vkCmdSetLineWidth(buffer_, width);
+  vkCmdSetLineWidth(buffer_->buffer, width);
 }
 
-VkRenderPass VulkanCommandList::current_renderpass() {
+vkapi::IVkRenderPass VulkanCommandList::current_renderpass() {
   return current_renderpass_;
 }
 
-VkCommandBuffer VulkanCommandList::finalize() {
+vkapi::IVkCommandBuffer VulkanCommandList::finalize() {
   if (!finalized_) {
-    vkEndCommandBuffer(buffer_);
+    vkEndCommandBuffer(buffer_->buffer);
     finalized_ = true;
   }
   return buffer_;
@@ -1058,31 +1066,16 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
   graphics_queue_family_index_ = params.graphics_queue_family_index;
 
   create_vma_allocator();
+  new_descriptor_pool();
 }
 
 VulkanDevice::~VulkanDevice() {
   vkDeviceWaitIdle(device_);
 
-  TI_TRACE("Total #{} descriptor pools created", layout_to_pools_.size());
+  desc_pool_ = nullptr;
 
-  size_t desc_count = 0;
-
-  for (auto &pair : layout_to_pools_) {
-    vkResetDescriptorPool(device_, pair.second->pool, 0);
-    vkDestroyDescriptorPool(device_, pair.second->pool, kNoVkAllocCallbacks);
-  }
-
-  for (auto &pair : desc_set_layouts_) {
-    vkDestroyDescriptorSetLayout(device_, pair.second, kNoVkAllocCallbacks);
-  }
-
-  for (auto &pair : framebuffer_pools_) {
-    vkDestroyFramebuffer(device_, pair.second, kNoVkAllocCallbacks);
-  }
-
-  for (auto &pair : renderpass_pools_) {
-    vkDestroyRenderPass(device_, pair.second, kNoVkAllocCallbacks);
-  }
+  framebuffer_pools_.clear();
+  renderpass_pools_.clear();
 
   vmaDestroyPool(allocator_, export_pool_.pool);
   vmaDestroyAllocator(allocator_);
@@ -1169,10 +1162,9 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
   }
 
-  BAIL_ON_VK_BAD_RESULT(
-      vmaCreateBuffer(allocator_, &buffer_info, &alloc_info, &alloc.buffer,
-                      &alloc.allocation, &alloc.alloc_info),
-      "Failed to allocate vk buffer");
+  alloc.buffer =
+      vkapi::create_buffer(device_, allocator_, &buffer_info, &alloc_info);
+  vmaGetAllocationInfo(allocator_, alloc.buffer->allocation, &alloc.alloc_info);
 
 #ifdef TI_VULKAN_DEBUG_ALLOCATIONS
   TI_TRACE("Allocate VK buffer {}, alloc_id={}", (void *)alloc.buffer,
@@ -1194,8 +1186,6 @@ void VulkanDevice::dealloc_memory(DeviceAllocation handle) {
   TI_TRACE("Dealloc VK buffer {}, alloc_id={}", (void *)alloc.buffer,
            handle.alloc_id);
 #endif
-
-  vmaDestroyBuffer(allocator_, alloc.buffer, alloc.allocation);
 
   allocations_.erase(handle.alloc_id);
 }
@@ -1279,34 +1269,15 @@ Stream *VulkanDevice::get_graphics_stream() {
 }
 
 std::unique_ptr<CommandList> VulkanStream::new_command_list() {
-  VkCommandBuffer buffer = cmdbuffer_pool_.gc_pop_one(VK_NULL_HANDLE);
-
-  if (buffer == VK_NULL_HANDLE) {
-    VkCommandBufferAllocateInfo alloc_info{};
-    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    alloc_info.commandPool = command_pool_;
-    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    alloc_info.commandBufferCount = 1;
-
-    BAIL_ON_VK_BAD_RESULT(
-        vkAllocateCommandBuffers(device_.vk_device(), &alloc_info, &buffer),
-        "failed to allocate command buffer");
-  }
-
-  cmdbuffer_pool_.inc(buffer);
+  vkapi::IVkCommandBuffer buffer =
+      vkapi::allocate_command_buffer(command_pool_);
 
   return std::make_unique<VulkanCommandList>(&device_, this, buffer);
 }
 
-void VulkanStream::dealloc_command_list(CommandList *cmdlist) {
-  VkCommandBuffer buffer =
-      static_cast<VulkanCommandList *>(cmdlist)->finalize();
-  cmdbuffer_pool_.dec(buffer);
-}
-
 void VulkanStream::submit(CommandList *cmdlist_) {
   VulkanCommandList *cmdlist = static_cast<VulkanCommandList *>(cmdlist_);
-  VkCommandBuffer buffer = cmdlist->finalize();
+  vkapi::IVkCommandBuffer buffer = cmdlist->finalize();
 
   /*
   if (in_flight_cmdlists_.find(buffer) != in_flight_cmdlists_.end()) {
@@ -1318,16 +1289,9 @@ void VulkanStream::submit(CommandList *cmdlist_) {
   VkSubmitInfo submit_info{};
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &buffer;
+  submit_info.pCommandBuffers = &buffer->buffer;
 
-  cmdbuffer_pool_.inc(buffer);
   submitted_cmdbuffers_.push_back(buffer);
-
-  for (auto pair : cmdlist->desc_sets()) {
-    auto pool = device_.get_pool_from_layout(pair.first);
-    pool->sets.inc(pair.second);
-    submitted_desc_sets_.push_back(std::make_pair(pool, pair.second));
-  }
 
   BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
                                       /*fence=*/VK_NULL_HANDLE),
@@ -1335,36 +1299,28 @@ void VulkanStream::submit(CommandList *cmdlist_) {
 }
 
 void VulkanStream::submit_synced(CommandList *cmdlist) {
-  VkCommandBuffer buffer =
+  vkapi::IVkCommandBuffer buffer =
       static_cast<VulkanCommandList *>(cmdlist)->finalize();
 
   VkSubmitInfo submit_info{};
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &buffer;
+  submit_info.pCommandBuffers = &buffer->buffer;
 
   BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
-                                      /*fence=*/cmd_sync_fence_),
+                                      /*fence=*/cmd_sync_fence_->fence),
                         "failed to submit command buffer");
 
   // Timeout is in nanoseconds, 60s = 60,000ms = 60,000,000ns
-  vkWaitForFences(device_.vk_device(), 1, &cmd_sync_fence_, true,
+  vkWaitForFences(device_.vk_device(), 1, &cmd_sync_fence_->fence, true,
                   (60 * 1000 * 1000));
-  vkResetFences(device_.vk_device(), 1, &cmd_sync_fence_);
+  vkResetFences(device_.vk_device(), 1, &cmd_sync_fence_->fence);
 }
 
 void VulkanStream::command_sync() {
   vkQueueWaitIdle(queue_);
 
-  for (VkCommandBuffer buf : submitted_cmdbuffers_) {
-    cmdbuffer_pool_.dec(buf);
-  }
   submitted_cmdbuffers_.clear();
-
-  for (auto &pair : submitted_desc_sets_) {
-    pair.first->sets.dec(pair.second);
-  }
-  submitted_desc_sets_.clear();
 }
 
 std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(
@@ -1421,46 +1377,36 @@ VulkanDevice::get_vkmemory_offset_size(const DeviceAllocation &alloc) const {
   }
 }
 
-VkBuffer VulkanDevice::get_vkbuffer(const DeviceAllocation &alloc) const {
+vkapi::IVkBuffer VulkanDevice::get_vkbuffer(
+    const DeviceAllocation &alloc) const {
   const AllocationInternal &alloc_int = allocations_.at(alloc.alloc_id);
 
   return alloc_int.buffer;
 }
 
-std::tuple<VkImage, VkImageView, VkFormat> VulkanDevice::get_vk_image(
-    const DeviceAllocation &alloc) const {
+std::tuple<vkapi::IVkImage, vkapi::IVkImageView, VkFormat>
+VulkanDevice::get_vk_image(const DeviceAllocation &alloc) const {
   const ImageAllocInternal &alloc_int = image_allocations_.at(alloc.alloc_id);
 
   return std::make_tuple(alloc_int.image, alloc_int.view, alloc_int.format);
 }
 
-VkFramebuffer VulkanDevice::get_framebuffer(const VulkanFramebufferDesc &desc) {
+vkapi::IVkFramebuffer VulkanDevice::get_framebuffer(
+    const VulkanFramebufferDesc &desc) {
   if (framebuffer_pools_.find(desc) != framebuffer_pools_.end()) {
     return framebuffer_pools_.at(desc);
   }
 
-  VkFramebufferCreateInfo create_info{};
-  create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-  create_info.pNext = nullptr;
-  create_info.flags = 0;
-  create_info.renderPass = desc.renderpass;
-  create_info.attachmentCount = desc.attachments.size();
-  create_info.pAttachments = desc.attachments.data();
-  create_info.width = desc.width;
-  create_info.height = desc.height;
-  create_info.layers = 1;
+  vkapi::IVkFramebuffer framebuffer = vkapi::create_framebuffer(
+      0, desc.renderpass, desc.attachments, desc.width, desc.height, 1);
 
-  VkFramebuffer framebuffer_;
-  vkCreateFramebuffer(device_, &create_info, kNoVkAllocCallbacks,
-                      &framebuffer_);
+  framebuffer_pools_.insert({desc, framebuffer});
 
-  framebuffer_pools_.insert({desc, framebuffer_});
-
-  return framebuffer_;
+  return framebuffer;
 }
 
-DeviceAllocation VulkanDevice::import_vk_image(VkImage image,
-                                               VkImageView view,
+DeviceAllocation VulkanDevice::import_vk_image(vkapi::IVkImage image,
+                                               vkapi::IVkImageView view,
                                                VkFormat format) {
   ImageAllocInternal alloc_int;
   alloc_int.external = true;
@@ -1477,7 +1423,7 @@ DeviceAllocation VulkanDevice::import_vk_image(VkImage image,
   return alloc;
 }
 
-VkImageView VulkanDevice::get_vk_imageview(
+vkapi::IVkImageView VulkanDevice::get_vk_imageview(
     const DeviceAllocation &alloc) const {
   return std::get<1>(get_vk_image(alloc));
 }
@@ -1547,13 +1493,13 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   }
   alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-  vmaCreateImage(allocator_, &image_info, &alloc_info, &alloc.image,
-                 &alloc.allocation, &alloc.alloc_info);
+  alloc.image =
+      vkapi::create_image(device_, allocator_, &image_info, &alloc_info);
+  vmaGetAllocationInfo(allocator_, alloc.image->allocation, &alloc.alloc_info);
 
   VkImageViewCreateInfo view_info{};
   view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   view_info.pNext = nullptr;
-  view_info.image = alloc.image;
   if (params.dimension == ImageDimension::d1D) {
     view_info.viewType = VK_IMAGE_VIEW_TYPE_1D;
   } else if (params.dimension == ImageDimension::d2D) {
@@ -1573,9 +1519,7 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   view_info.subresourceRange.baseArrayLayer = 0;
   view_info.subresourceRange.layerCount = 1;
 
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreateImageView(device_, &view_info, nullptr, &alloc.view),
-      "Failed to create image view");
+  alloc.view = vkapi::create_image_view(device_, alloc.image, &view_info);
 
   if (params.initial_layout != ImageLayout::undefined) {
     image_transition(handle, ImageLayout::undefined, params.initial_layout);
@@ -1597,19 +1541,11 @@ void VulkanDevice::destroy_image(DeviceAllocation handle) {
 
   ImageAllocInternal &alloc_int = map_pair->second;
 
-  if (!alloc_int.external) {
-#ifdef TI_VULKAN_DEBUG_ALLOCATIONS
-    TI_TRACE("Dealloc VK image {}, alloc_id={}", (void *)alloc_int.image,
-             handle.alloc_id);
-#endif
-    vkDestroyImageView(vk_device(), alloc_int.view, nullptr);
-    vmaDestroyImage(allocator_, alloc_int.image, alloc_int.allocation);
-  }
-
   image_allocations_.erase(handle.alloc_id);
 }
 
-VkRenderPass VulkanDevice::get_renderpass(const VulkanRenderPassDesc &desc) {
+vkapi::IVkRenderPass VulkanDevice::get_renderpass(
+    const VulkanRenderPassDesc &desc) {
   if (renderpass_pools_.find(desc) != renderpass_pools_.end()) {
     return renderpass_pools_.at(desc);
   }
@@ -1683,16 +1619,15 @@ VkRenderPass VulkanDevice::get_renderpass(const VulkanRenderPassDesc &desc) {
   renderpass_info.dependencyCount = 0;
   renderpass_info.pDependencies = nullptr;
 
-  VkRenderPass renderpass;
-  vkCreateRenderPass(device_, &renderpass_info, kNoVkAllocCallbacks,
-                     &renderpass);
+  vkapi::IVkRenderPass renderpass =
+      vkapi::create_render_pass(device_, &renderpass_info);
 
   renderpass_pools_.insert({desc, renderpass});
 
   return renderpass;
 }
 
-VkDescriptorSetLayout VulkanDevice::get_desc_set_layout(
+vkapi::IVkDescriptorSetLayout VulkanDevice::get_desc_set_layout(
     VulkanResourceBinder::Set &set) {
   if (desc_set_layouts_.find(set) == desc_set_layouts_.end()) {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
@@ -1703,90 +1638,33 @@ VkDescriptorSetLayout VulkanDevice::get_desc_set_layout(
           /*pImmutableSamplers=*/nullptr});
     }
 
-    VkDescriptorSetLayout layout;
-    {
-      VkDescriptorSetLayoutCreateInfo create_info{};
-      create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-      create_info.pNext = nullptr;
-      create_info.flags = 0;
-      create_info.bindingCount = bindings.size();
-      create_info.pBindings = bindings.data();
+    VkDescriptorSetLayoutCreateInfo create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    create_info.pNext = nullptr;
+    create_info.flags = 0;
+    create_info.bindingCount = bindings.size();
+    create_info.pBindings = bindings.data();
 
-      BAIL_ON_VK_BAD_RESULT(
-          vkCreateDescriptorSetLayout(device_, &create_info,
-                                      kNoVkAllocCallbacks, &layout),
-          "Create descriptor layout failed");
-    }
-
-    VkDescriptorPool pool;
-    {
-      const int num_desc_types = 3;
-
-      VkDescriptorPoolSize pool_size[num_desc_types];
-      pool_size[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-      pool_size[0].descriptorCount = 5000;
-      pool_size[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-      pool_size[1].descriptorCount = 5000;
-      pool_size[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      pool_size[2].descriptorCount = 5000;
-
-      VkDescriptorPoolCreateInfo create_info{};
-      create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-      create_info.pNext = nullptr;
-      create_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-      create_info.maxSets = 5000;
-      create_info.poolSizeCount = num_desc_types;
-      create_info.pPoolSizes = pool_size;
-
-      BAIL_ON_VK_BAD_RESULT(vkCreateDescriptorPool(device_, &create_info,
-                                                   kNoVkAllocCallbacks, &pool),
-                            "Create descriptor pool failed");
-    }
-
-    desc_set_layouts_[set] = layout;
-    layout_to_pools_[layout] = std::move(std::make_unique<DescPool>(pool));
-
-    TI_TRACE("New descriptor set layout {}", (void *)layout);
-
-    return layout;
+    return vkapi::create_descriptor_set_layout(device_, &create_info);
   } else {
     return desc_set_layouts_.at(set);
   }
 }
 
-VkDescriptorSet VulkanDevice::alloc_desc_set(VkDescriptorSetLayout layout) {
+vkapi::IVkDescriptorSet VulkanDevice::alloc_desc_set(
+    vkapi::IVkDescriptorSetLayout layout) {
   // TODO: Currently we assume the calling code has called get_desc_set_layout
   // before allocating a desc set. Either we should guard against this or
   // maintain this assumption in other parts of the VulkanBackend
-  DescPool &desc_pool = *layout_to_pools_.at(layout);
+  vkapi::IVkDescriptorSet set =
+      vkapi::allocate_descriptor_sets(desc_pool_, layout);
 
-  VkDescriptorSet set = desc_pool.sets.gc_pop_one(VK_NULL_HANDLE);
-
-  if (set == VK_NULL_HANDLE) {
-    VkDescriptorSetAllocateInfo alloc_info{};
-    alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    alloc_info.pNext = nullptr;
-    alloc_info.descriptorPool = desc_pool.pool;
-    alloc_info.descriptorSetCount = 1;
-    alloc_info.pSetLayouts = &layout;
-
-    BAIL_ON_VK_BAD_RESULT(vkAllocateDescriptorSets(device_, &alloc_info, &set),
-                          "Alloc descriptor set from pool failed");
+  if (set == nullptr) {
+    new_descriptor_pool();
+    set = vkapi::allocate_descriptor_sets(desc_pool_, layout);
   }
 
-  desc_pool.sets.inc(set);
-
   return set;
-}
-
-void VulkanDevice::dealloc_desc_set(VkDescriptorSetLayout layout,
-                                    VkDescriptorSet set) {
-  DescPool *pool = layout_to_pools_.at(layout).get();
-  pool->sets.dec(set);
-}
-
-DescPool *VulkanDevice::get_pool_from_layout(VkDescriptorSetLayout layout) {
-  return layout_to_pools_.at(layout).get();
 }
 
 void VulkanDevice::create_vma_allocator() {
@@ -1884,6 +1762,28 @@ void VulkanDevice::create_vma_allocator() {
 
     vmaCreatePool(allocator_, &pool_info, &export_pool_.pool);
   }
+}
+
+void VulkanDevice::new_descriptor_pool() {
+  std::vector<VkDescriptorPoolSize> pool_sizes{
+      {VK_DESCRIPTOR_TYPE_SAMPLER, 64},
+      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 256},
+      {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 256},
+      {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 256},
+      {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 256},
+      {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 256},
+      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 256},
+      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 512},
+      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 128},
+      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 128},
+      {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 128}};
+  VkDescriptorPoolCreateInfo pool_info = {};
+  pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+  pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+  pool_info.maxSets = 64;
+  pool_info.poolSizeCount = pool_sizes.size();
+  pool_info.pPoolSizes = pool_sizes.data();
+  desc_pool_ = vkapi::create_descriptor_pool(device_, &pool_info);
 }
 
 VkPresentModeKHR choose_swap_present_mode(
@@ -2050,20 +1950,18 @@ void VulkanSurface::create_swap_chain() {
     view_info.subresourceRange.baseArrayLayer = 0;
     view_info.subresourceRange.layerCount = 1;
 
-    VkImageView view;
-    BAIL_ON_VK_BAD_RESULT(
-        vkCreateImageView(device_->vk_device(), &view_info, nullptr, &view),
-        "Failed to create image view");
+    vkapi::IVkImage image = vkapi::create_image(device_->vk_device(), img);
+    vkapi::IVkImageView view =
+        vkapi::create_image_view(device_->vk_device(), image, &view_info);
 
     swapchain_images_.push_back(
-        device_->import_vk_image(img, view, surface_format.format));
+        device_->import_vk_image(image, view, surface_format.format));
   }
 }
 
 void VulkanSurface::destroy_swap_chain() {
   for (auto alloc : swapchain_images_) {
-    VkImageView view = std::get<1>(device_->get_vk_image(alloc));
-    vkDestroyImageView(device_->vk_device(), view, nullptr);
+    std::get<1>(device_->get_vk_image(alloc)) = nullptr;
     device_->destroy_image(alloc);
   }
   swapchain_images_.clear();
@@ -2118,26 +2016,14 @@ VulkanStream::VulkanStream(VulkanDevice &device,
                            VkQueue queue,
                            uint32_t queue_family_index)
     : device_(device), queue_(queue), queue_family_index_(queue_family_index) {
-  VkCommandPoolCreateInfo create_info{};
-  create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  create_info.pNext = nullptr;
-  create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-  create_info.queueFamilyIndex = queue_family_index;
+  command_pool_ = vkapi::create_command_pool(
+      device_.vk_device(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+      queue_family_index);
 
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreateCommandPool(device_.vk_device(), &create_info,
-                          kNoVkAllocCallbacks, &command_pool_),
-      "Failed to create command pool");
-
-  VkFenceCreateInfo fence_info{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, 0};
-  BAIL_ON_VK_BAD_RESULT(vkCreateFence(device_.vk_device(), &fence_info,
-                                      kNoVkAllocCallbacks, &cmd_sync_fence_),
-                        "failed to create fence");
+  cmd_sync_fence_ = vkapi::create_fence(device_.vk_device(), 0);
 }
 
 VulkanStream::~VulkanStream() {
-  vkDestroyCommandPool(device_.vk_device(), command_pool_, kNoVkAllocCallbacks);
-  vkDestroyFence(device_.vk_device(), cmd_sync_fence_, kNoVkAllocCallbacks);
 }
 
 }  // namespace vulkan

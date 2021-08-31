@@ -80,11 +80,14 @@ constexpr DevicePtr kDeviceNullPtr{};
 // TODO: fill this with the required options
 struct ImageSamplerConfig {};
 
-// TODO: Implement this
 class ResourceBinder {
  public:
   virtual ~ResourceBinder() {
   }
+
+  struct Bindings {};
+
+  virtual std::unique_ptr<Bindings> materialize() = 0;
 
   // In Vulkan this is called Storage Buffer (shader can store)
   virtual void rw_buffer(uint32_t set,
@@ -244,6 +247,8 @@ class CommandList {
 
   virtual void bind_pipeline(Pipeline *p) = 0;
   virtual void bind_resources(ResourceBinder *binder) = 0;
+  virtual void bind_resources(ResourceBinder *binder,
+                              ResourceBinder::Bindings *bindings) = 0;
   virtual void buffer_barrier(DevicePtr ptr, size_t size) = 0;
   virtual void buffer_barrier(DeviceAllocation alloc) = 0;
   virtual void memory_barrier() = 0;
@@ -326,7 +331,6 @@ class Stream {
   virtual ~Stream(){};
 
   virtual std::unique_ptr<CommandList> new_command_list() = 0;
-  virtual void dealloc_command_list(CommandList *cmdlist) = 0;
   virtual void submit(CommandList *cmdlist) = 0;
   virtual void submit_synced(CommandList *cmdlist) = 0;
 

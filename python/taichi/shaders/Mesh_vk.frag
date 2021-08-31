@@ -18,6 +18,7 @@ layout(binding = 0) uniform UBO {
   SceneUBO scene;
   vec3 color;
   int use_per_vertex_color;
+  int two_sided;
 }
 ubo;
 
@@ -42,8 +43,14 @@ vec3 lambertian() {
 
     vec3 light_dir = normalize(ssbo.point_lights[i].pos - frag_pos);
     vec3 normal = normalize(frag_normal);
-    vec3 diffuse =
-        max(dot(light_dir, normal), 0) * selected_color * light_color;
+    float factor = 0.0;
+    if(ubo.two_sided != 0){
+      factor = abs(dot(light_dir, normal));
+    }
+    else{
+      factor = max(dot(light_dir, normal), 0);
+    }
+    vec3 diffuse = factor * selected_color * light_color;
     result += diffuse;
   }
 

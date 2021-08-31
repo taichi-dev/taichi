@@ -440,7 +440,7 @@ class TaichiMain:
             args.inputs = sorted(
                 str(p.resolve()) for p in Path('.').glob('*.png'))
 
-        assert 1 <= args.crf <= 51, "The range of the CRF scale is 1–51, where 1 is almost lossless, 20 is the default, and 51 is worst quality possible."
+        assert 1 <= args.crf <= 51, "The range of the CRF scale is 1-51, where 1 is almost lossless, 20 is the default, and 51 is worst quality possible."
 
         ti.info(f'Making video using {len(args.inputs)} png files...')
         ti.info(f'frame_rate = {args.framerate}')
@@ -694,7 +694,7 @@ class TaichiMain:
             # run all the tests
             pytest_args = [test_dir]
         if args.verbose:
-            pytest_args += ['-s', '-v']
+            pytest_args += ['-v']
         if args.rerun:
             pytest_args += ['--reruns', args.rerun]
         try:
@@ -725,8 +725,14 @@ class TaichiMain:
         env_threads = os.environ.get('TI_TEST_THREADS', '')
         threads = args.threads or env_threads or threads
         print(f'Starting {threads} testing thread(s)...')
-        if int(threads) > 1:
-            pytest_args += ['-n', str(threads)]
+        if args.show_output:
+            pytest_args += ['-s']
+            print(
+                f'Due to how pytest-xdist is implemented, the -s option does not work with multiple thread...'
+            )
+        else:
+            if int(threads) > 1:
+                pytest_args += ['-n', str(threads)]
         return int(pytest.main(pytest_args))
 
     @staticmethod
@@ -807,6 +813,11 @@ class TaichiMain:
                             dest='cpp',
                             action='store_true',
                             help='Only run the C++ tests')
+        parser.add_argument('-s',
+                            '--show',
+                            dest='show_output',
+                            action='store_true',
+                            help='Show output (do not capture)')
         parser.add_argument('-v',
                             '--verbose',
                             dest='verbose',

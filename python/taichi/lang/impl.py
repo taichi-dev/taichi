@@ -1,16 +1,17 @@
 import numbers
-import types
 import warnings
+from types import FunctionType, MethodType
 
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
+from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.ext_array import AnyArray, AnyArrayAccess, ExtArray
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField
 from taichi.lang.ndarray import ScalarNdarray
 from taichi.lang.snode import SNode
+from taichi.lang.struct import StructField
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
                               python_scope, taichi_scope, to_pytorch_type)
@@ -156,6 +157,10 @@ def subscript(value, *indices):
                 Expr(_ti_core.subscript(e.ptr, indices_expr_group))
                 for e in value.get_field_members()
             ])
+        elif isinstance(value, StructField):
+            return ti.Struct(
+                {k: subscript(v, *indices)
+                 for k, v in value.items})
         else:
             return Expr(_ti_core.subscript(var, indices_expr_group))
     elif isinstance(value, AnyArray):
@@ -177,12 +182,9 @@ def subscript(value, *indices):
         ])
         ret.any_array_access = any_array_access
         return ret
-    elif isinstance(value, (ExtArray, SNode)):
-        if isinstance(value, ExtArray):
-            field_dim = int(value.ptr.get_attribute("dim"))
-        else:
-            # When reading bit structure we only support the 0-D case for now.
-            field_dim = 0
+    elif isinstance(value, SNode):
+        # When reading bit structure we only support the 0-D case for now.
+        field_dim = 0
         if field_dim != index_dim:
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
@@ -597,7 +599,7 @@ def ndarray(dtype, shape):
     """Defines a Taichi ndarray with scalar elements.
 
     Args:
-        dtype (DataType): Data type of the ndarray.
+        dtype (DataType): Data type of each value.
         shape (Union[int, tuple[int]]): Shape of the ndarray.
 
     Example:
@@ -605,6 +607,8 @@ def ndarray(dtype, shape):
 
             >>> x = ti.ndarray(ti.f32, shape=(16, 8))
     """
+    if isinstance(shape, numbers.Number):
+        shape = (shape, )
     return ScalarNdarray(dtype, shape)
 
 
@@ -815,11 +819,11 @@ def static(x, *xs):
                   (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
                    ti.GroupedNDRange, zip, filter, map)) or x is None:
         return x
-    elif isinstance(x, ExtArray):
+    elif isinstance(x, AnyArray):
         return x
     elif isinstance(x, Field):
         return x
-    elif isinstance(x, (types.FunctionType, types.MethodType)):
+    elif isinstance(x, (FunctionType, MethodType)):
         return x
     else:
         raise ValueError(

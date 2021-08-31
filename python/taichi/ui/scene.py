@@ -80,14 +80,13 @@ class Scene(_ti_core.PyScene):
     def set_camera(self, camera):
         super().set_camera(camera.ptr)
 
-    def mesh(
-            self,
-            vertices,
-            indices=None,
-            normals=None,
-            color=(0.5, 0.5, 0.5),
-            per_vertex_color=None,
-    ):
+    def mesh(self,
+             vertices,
+             indices=None,
+             normals=None,
+             color=(0.5, 0.5, 0.5),
+             per_vertex_color=None,
+             two_sided=False):
         vertices_info = get_field_info(vertices)
         if normals is None:
             normals = gen_normals(vertices, indices)
@@ -95,7 +94,7 @@ class Scene(_ti_core.PyScene):
         indices_info = get_field_info(indices)
         colors_info = get_field_info(per_vertex_color)
         super().mesh(vertices_info, normals_info, colors_info, indices_info,
-                     color)
+                     color, two_sided)
 
     def particles(
             self,

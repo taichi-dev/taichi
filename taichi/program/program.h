@@ -12,7 +12,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_program.h"
-#include "taichi/backends/metal/kernel_manager.h"
+#include "taichi/backends/metal/metal_program.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
 #include "taichi/backends/vulkan/runtime.h"
@@ -25,7 +25,6 @@
 #include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/program/context.h"
 #include "taichi/runtime/runtime.h"
-#include "taichi/backends/metal/struct_metal.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/system/memory_pool.h"
@@ -198,36 +197,15 @@ class Program {
     return *kernels.back();
   }
 
-  void start_kernel_definition(Kernel *kernel) {
-    current_callable = kernel;
-  }
-
-  void end_kernel_definition() {
-  }
-
   Function *create_function(const FunctionKey &func_key);
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?
-  FunctionType compile(Kernel &kernel);
-
-  // Just does the per-backend executable compilation without kernel lowering.
-  FunctionType compile_to_backend_executable(Kernel &kernel,
-                                             OffloadedStmt *stmt);
+  // TODO: Optional offloaded is used by async mode, we might refactor it in the
+  // future.
+  FunctionType compile(Kernel &kernel, OffloadedStmt *offloaded = nullptr);
 
   void check_runtime_error();
-
-  // TODO(#2193): Remove get_current_kernel() and get_current_function()?
-  inline Kernel &get_current_kernel() const {
-    auto *kernel = dynamic_cast<Kernel *>(current_callable);
-    TI_ASSERT(kernel);
-    return *kernel;
-  }
-
-  inline Function *get_current_function() const {
-    auto *func = dynamic_cast<Function *>(current_callable);
-    return func;
-  }
 
   Kernel &get_snode_reader(SNode *snode);
 
@@ -312,9 +290,6 @@ class Program {
    */
   void materialize_snode_tree(SNodeTree *tree);
 
-  // Metal related data structures
-  std::optional<metal::CompiledStructs> metal_compiled_structs_;
-  std::unique_ptr<metal::KernelManager> metal_kernel_mgr_;
   // OpenGL related data structures
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
   std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
@@ -330,6 +305,7 @@ class Program {
   std::vector<std::unique_ptr<Function>> functions_;
   std::unordered_map<FunctionKey, Function *> function_map_;
   std::unique_ptr<LlvmProgramImpl> llvm_program_;
+  std::unique_ptr<MetalProgramImpl> metal_program_;
   float64 total_compilation_time_{0.0};
   static std::atomic<int> num_instances_;
   bool finalized_{false};

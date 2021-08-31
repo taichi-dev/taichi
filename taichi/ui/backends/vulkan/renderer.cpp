@@ -131,8 +131,9 @@ void Renderer::draw_frame(Gui *gui) {
     renderables_[i]->record_this_frame_commands(cmd_list.get());
   }
 
-  VkRenderPass pass =
-      static_cast<VulkanCommandList *>(cmd_list.get())->current_renderpass();
+  VkRenderPass pass = static_cast<VulkanCommandList *>(cmd_list.get())
+                          ->current_renderpass()
+                          ->renderpass;
 
   if (gui->render_pass() == VK_NULL_HANDLE) {
     gui->init_render_resources(pass);

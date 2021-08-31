@@ -27,6 +27,7 @@ layout(binding = 0) uniform UBO {
   SceneUBO scene;
   vec3 color;
   int use_per_vertex_color;
+  int two_sided;
 }
 ubo;
 

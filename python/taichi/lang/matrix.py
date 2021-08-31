@@ -10,8 +10,12 @@ from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
-from taichi.lang.util import (in_python_scope, is_taichi_class, python_scope,
-                              taichi_scope, to_numpy_type, to_pytorch_type)
+from taichi.lang.ndarray import Ndarray, NdarrayHostAccess
+from taichi.lang.ops import cast
+from taichi.lang.types import CompoundType
+from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
+                              python_scope, taichi_scope, to_numpy_type,
+                              to_pytorch_type)
 from taichi.misc.util import deprecated, warning
 
 import taichi as ti
@@ -313,6 +317,8 @@ class Matrix(TaichiOperations):
         ret = self.entries[self.linearize_entry_id(*args)]
         if isinstance(ret, SNodeHostAccess):
             ret = ret.accessor.getter(*ret.key)
+        elif isinstance(ret, NdarrayHostAccess):
+            ret = ret.getter()
         return ret
 
     def set_entry(self, i, j, e):
@@ -322,6 +328,8 @@ class Matrix(TaichiOperations):
         else:
             if isinstance(self.entries[idx], SNodeHostAccess):
                 self.entries[idx].accessor.setter(e, *self.entries[idx].key)
+            elif isinstance(self.entries[idx], NdarrayHostAccess):
+                self.entries[idx].setter(e)
             else:
                 self.entries[idx] = e
 
@@ -415,11 +423,15 @@ class Matrix(TaichiOperations):
     @property
     @python_scope
     def value(self):
-        assert isinstance(self.entries[0], SNodeHostAccess)
-        ret = self.empty_copy()
-        for i in range(self.n):
-            for j in range(self.m):
-                ret.entries[i * self.m + j] = self(i, j)
+        if isinstance(self.entries[0], SNodeHostAccess):
+            # fetch values from SNodeHostAccessor
+            ret = self.empty_copy()
+            for i in range(self.n):
+                for j in range(self.m):
+                    ret.entries[i * self.m + j] = self(i, j)
+        else:
+            # is local python-scope matrix
+            ret = self.entries
         return ret
 
     # host access & python scope operation
@@ -465,6 +477,16 @@ class Matrix(TaichiOperations):
             return (self(i) for i in range(self.n))
         else:
             return ([self(i, j) for j in range(self.m)] for i in range(self.n))
+
+    @python_scope
+    def set_entries(self, value):
+        if not isinstance(value, (list, tuple)):
+            value = list(value)
+        if not isinstance(value[0], (list, tuple)):
+            value = [[i] for i in value]
+        for i in range(self.n):
+            for j in range(self.m):
+                self[i, j] = value[i][j]
 
     def empty_copy(self):
         return Matrix.empty(self.n, self.m)
@@ -786,7 +808,7 @@ class Matrix(TaichiOperations):
         """
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        return np.array(self.entries).reshape(shape_ext)
+        return np.array(self.value).reshape(shape_ext)
 
     @taichi_scope
     def __ti_repr__(self):
@@ -1018,6 +1040,47 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         return cls._Vector_field(n, dt, *args, **kwargs)
 
+    @classmethod
+    @python_scope
+    def ndarray(cls, n, m, dtype, shape, layout=Layout.AOS):
+        """Defines a Taichi ndarray with matrix elements.
+
+        Args:
+            n (int): Number of rows of the matrix.
+            m (int): Number of columns of the matrix.
+            dtype (DataType): Data type of each value.
+            shape (Union[int, tuple[int]]): Shape of the ndarray.
+            layout (Layout, optional): Memory layout, AOS by default.
+
+        Example:
+            The code below shows how a Taichi ndarray with matrix elements can be declared and defined::
+
+                >>> x = ti.Matrix.ndarray(4, 5, ti.f32, shape=(16, 8))
+        """
+        if isinstance(shape, numbers.Number):
+            shape = (shape, )
+        return MatrixNdarray(n, m, dtype, shape, layout)
+
+    @classmethod
+    @python_scope
+    def _Vector_ndarray(cls, n, dtype, shape, layout=Layout.AOS):
+        """Defines a Taichi ndarray with vector elements.
+
+        Args:
+            n (int): Size of the vector.
+            dtype (DataType): Data type of each value.
+            shape (Union[int, tuple[int]]): Shape of the ndarray.
+            layout (Layout, optional): Memory layout, AOS by default.
+
+        Example:
+            The code below shows how a Taichi ndarray with vector elements can be declared and defined::
+
+                >>> x = ti.Vector.ndarray(3, ti.f32, shape=(16, 8))
+        """
+        if isinstance(shape, numbers.Number):
+            shape = (shape, )
+        return VectorNdarray(n, dtype, shape, layout)
+
     @staticmethod
     def rows(rows):
         """Construct a Matrix instance by concactinating Vectors/lists row by row.
@@ -1203,6 +1266,7 @@ def Vector(n, dt=None, shape=None, offset=None, **kwargs):
 
 Vector.var = Matrix._Vector_var
 Vector.field = Matrix._Vector_field
+Vector.ndarray = Matrix._Vector_ndarray
 Vector.zero = Matrix.zero
 Vector.one = Matrix.one
 Vector.dot = Matrix.dot
@@ -1216,7 +1280,7 @@ class MatrixField(Field):
     """Taichi matrix field with SNode implementation.
 
     Args:
-        vars (Expr): Field members.
+        vars (List[Expr]): Field members.
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
@@ -1274,7 +1338,7 @@ class MatrixField(Field):
 
     @python_scope
     def to_numpy(self, keep_dims=False, as_vector=None, dtype=None):
-        """Converts `self` to a numpy array.
+        """Converts the field instance to a NumPy array.
 
         Args:
             keep_dims (bool, optional): Whether to keep the dimension after conversion.
@@ -1287,7 +1351,7 @@ class MatrixField(Field):
             dtype (DataType, optional): The desired data type of returned numpy array.
 
         Returns:
-            numpy.ndarray: The result numpy array.
+            numpy.ndarray: The result NumPy array.
         """
         if as_vector is not None:
             warning(
@@ -1307,7 +1371,7 @@ class MatrixField(Field):
         return arr
 
     def to_torch(self, device=None, keep_dims=False):
-        """Converts `self` to a torch tensor.
+        """Converts the field instance to a PyTorch tensor.
 
         Args:
             device (torch.device, optional): The desired device of returned tensor.
@@ -1345,6 +1409,111 @@ class MatrixField(Field):
     @python_scope
     def __setitem__(self, key, value):
         self.initialize_host_accessors()
+        self[key].set_entries(value)
+
+    @python_scope
+    def __getitem__(self, key):
+        self.initialize_host_accessors()
+        key = self.pad_key(key)
+        return Matrix.with_entries(self.n, self.m, self.host_access(key))
+
+    def __repr__(self):
+        # make interactive shell happy, prevent materialization
+        return f'<{self.n}x{self.m} ti.Matrix.field>'
+
+
+class MatrixType(CompoundType):
+    def __init__(self, n, m, dtype):
+        self.n = n
+        self.m = m
+        self.dtype = cook_dtype(dtype)
+
+    def __call__(self, *args):
+        if len(args) == 0:
+            raise TaichiSyntaxError(
+                "Custom type instances need to be created with an initial value."
+            )
+        elif len(args) == 1:
+            # fill a single scalar
+            if isinstance(args[0], (numbers.Number, expr.Expr)):
+                return self.scalar_filled(args[0])
+            # fill a single vector or matrix
+            entries = args[0]
+        else:
+            # fill in a concatenation of scalars/vectors/matrices
+            entries = []
+            for x in args:
+                if isinstance(x, (list, tuple)):
+                    entries += x
+                elif isinstance(x, Matrix):
+                    entries += x.entries
+                else:
+                    entries.append(x)
+        # convert vector to nx1 matrix
+        if isinstance(entries[0], numbers.Number):
+            entries = [[e] for e in entries]
+        # type cast
+        mat = self.cast(Matrix(entries, dt=self.dtype))
+        return mat
+
+    def cast(self, mat, in_place=False):
+        if not in_place:
+            mat = mat.copy()
+        # sanity check shape
+        if self.m != mat.m or self.n != mat.n:
+            raise TaichiSyntaxError(
+                f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({mat.n}, {mat.m})"
+            )
+        if in_python_scope():
+            mat.entries = [
+                int(x) if self.dtype in ti.integer_types else x
+                for x in mat.entries
+            ]
+        else:
+            # only performs casting in Taichi scope
+            mat.entries = [cast(x, self.dtype) for x in mat.entries]
+        return mat
+
+    def empty(self):
+        """
+        Create an empty instance of the given compound type.
+        """
+        return Matrix.empty(self.n, self.m)
+
+    def field(self, **kwargs):
+        return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)
+
+
+class MatrixNdarray(Ndarray):
+    """Taichi ndarray with matrix elements implemented with a torch tensor.
+
+    Args:
+        n (int): Number of rows of the matrix.
+        m (int): Number of columns of the matrix.
+        dtype (DataType): Data type of each value.
+        shape (Union[int, tuple[int]]): Shape of the ndarray.
+        layout (Layout): Memory layout.
+    """
+    def __init__(self, n, m, dtype, shape, layout):
+        self.layout = layout
+        arr_shape = (n, m) + shape if layout == Layout.SOA else shape + (n, m)
+        super().__init__(dtype, arr_shape)
+
+    @property
+    def n(self):
+        return self.arr.shape[0 if self.layout == Layout.SOA else -2]
+
+    @property
+    def m(self):
+        return self.arr.shape[1 if self.layout == Layout.SOA else -1]
+
+    @property
+    def shape(self):
+        arr_shape = tuple(self.arr.shape)
+        return arr_shape[2:] if self.layout == Layout.SOA else arr_shape[:-2]
+
+    @python_scope
+    def __setitem__(self, key, value):
         if not isinstance(value, (list, tuple)):
             value = list(value)
         if not isinstance(value[0], (list, tuple)):
@@ -1355,12 +1524,54 @@ class MatrixField(Field):
 
     @python_scope
     def __getitem__(self, key):
-        self.initialize_host_accessors()
-        key = self.pad_key(key)
-        return Matrix.with_entries(
-            self.n, self.m,
-            [SNodeHostAccess(e, key) for e in self.host_accessors])
+        key = () if key is None else (
+            key, ) if isinstance(key, numbers.Number) else tuple(key)
+        return Matrix.with_entries(self.n, self.m, [
+            NdarrayHostAccess(self, key, (i, j)) for i in range(self.n)
+            for j in range(self.m)
+        ])
 
     def __repr__(self):
-        # make interactive shell happy, prevent materialization
-        return f'<{self.n}x{self.m} ti.Matrix.field>'
+        return f'<{self.n}x{self.m} {self.layout} ti.Matrix.ndarray>'
+
+
+class VectorNdarray(Ndarray):
+    """Taichi ndarray with vector elements implemented with a torch tensor.
+
+    Args:
+        n (int): Size of the vector.
+        dtype (DataType): Data type of each value.
+        shape (Tuple[int]): Shape of the ndarray.
+        layout (Layout): Memory layout.
+    """
+    def __init__(self, n, dtype, shape, layout):
+        self.layout = layout
+        arr_shape = (n, ) + shape if layout == Layout.SOA else shape + (n, )
+        super().__init__(dtype, arr_shape)
+
+    @property
+    def n(self):
+        return self.arr.shape[0 if self.layout == Layout.SOA else -1]
+
+    @property
+    def shape(self):
+        arr_shape = tuple(self.arr.shape)
+        return arr_shape[1:] if self.layout == Layout.SOA else arr_shape[:-1]
+
+    @python_scope
+    def __setitem__(self, key, value):
+        if not isinstance(value, (list, tuple)):
+            value = list(value)
+        for i in range(self.n):
+            self[key][i] = value[i]
+
+    @python_scope
+    def __getitem__(self, key):
+        key = () if key is None else (
+            key, ) if isinstance(key, numbers.Number) else tuple(key)
+        return Matrix.with_entries(
+            self.n, 1,
+            [NdarrayHostAccess(self, key, (i, )) for i in range(self.n)])
+
+    def __repr__(self):
+        return f'<{self.n} {self.layout} ti.Vector.ndarray>'

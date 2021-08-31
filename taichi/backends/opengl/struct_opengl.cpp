@@ -20,6 +20,7 @@ OpenglStructCompiler::CompiledResult OpenglStructCompiler::run(SNode &node) {
   CompiledResult result;
   result.snode_map = std::move(snode_map_);
   result.root_size = compute_snode_size(node);
+  result.root_snode_type_name = node.node_type_name;
   return result;
 }
 

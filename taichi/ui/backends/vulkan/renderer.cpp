@@ -14,6 +14,42 @@ using namespace taichi::lang::vulkan;
 void Renderer::init(GLFWwindow *window, const AppConfig &config) {
   app_context_.init(window, config);
   swap_chain_.init(&app_context_);
+
+  {
+    ImageParams params;
+    params.dimension = ImageDimension::d2D;
+    params.format = BufferFormat::rgba16f;
+    params.initial_layout = ImageLayout::color_attachment;
+    params.x = swap_chain_.width();
+    params.y = swap_chain_.height();
+
+    framebuffer_hdr_ = app_context_.device().create_image(params);
+  }
+
+  {
+    auto vert_code = read_file(app_context_.config.package_path +
+                               "/shaders/Postprocessing_vk_vert.spv");
+    auto frag_code = read_file(app_context_.config.package_path +
+                               "/shaders/Tonemap_vk_frag.spv");
+
+    std::vector<PipelineSourceDesc> source(2);
+    source[0] = {PipelineSourceType::spirv_binary, frag_code.data(),
+                 frag_code.size(), PipelineStageType::fragment};
+    source[1] = {PipelineSourceType::spirv_binary, vert_code.data(),
+                 vert_code.size(), PipelineStageType::vertex};
+
+    RasterParams raster_params;
+    raster_params.prim_topology = TopologyType::Triangles;
+    raster_params.depth_test = false;
+    raster_params.depth_write = false;
+
+    tonemap_pipeline_ = app_context_.device().create_raster_pipeline(
+        source, raster_params, {}, {});
+
+    auto tonemap_resources = tonemap_pipeline_->resource_binder();
+    tonemap_resources->texture(0, 0, framebuffer_hdr_, {});
+    tonemap_resources->texture(0, 1, swap_chain_.depth_allocation(), {});
+  }
 }
 
 template <typename T>
@@ -95,6 +131,9 @@ void Renderer::scene(Scene *scene) {
 }
 
 void Renderer::cleanup() {
+  app_context_.device().destroy_image(framebuffer_hdr_);
+  tonemap_pipeline_.reset();
+
   for (auto &renderable : renderables_) {
     renderable->cleanup();
   }
@@ -116,34 +155,78 @@ void Renderer::draw_frame(Gui *gui) {
 
   auto stream = app_context_.device().get_graphics_stream();
   auto cmd_list = stream->new_command_list();
-  bool color_clear = true;
-  std::vector<float> clear_colors = {background_color_[0], background_color_[1],
-                                     background_color_[2], 1};
-  auto image = swap_chain_.surface().get_target_image();
-  auto depth_image = swap_chain_.depth_allocation();
-  cmd_list->begin_renderpass(
-      /*xmin=*/0, /*ymin=*/0, /*xmax=*/swap_chain_.width(),
-      /*ymax=*/swap_chain_.height(), /*num_color_attachments=*/1, &image,
-      &color_clear, &clear_colors, &depth_image,
-      /*depth_clear=*/true);
 
-  for (int i = 0; i < next_renderable_; ++i) {
-    renderables_[i]->record_this_frame_commands(cmd_list.get());
+  // Main HDR renderpass
+  {
+    bool color_clear = true;
+    std::vector<float> clear_colors = {
+        background_color_[0], background_color_[1], background_color_[2], 1};
+
+    auto depth_image = swap_chain_.depth_allocation();
+    cmd_list->begin_renderpass(
+        /*xmin=*/0, /*ymin=*/0, /*xmax=*/swap_chain_.width(),
+        /*ymax=*/swap_chain_.height(), /*num_color_attachments=*/1,
+        &framebuffer_hdr_, &color_clear, &clear_colors, &depth_image,
+        /*depth_clear=*/true);
+
+    for (int i = 0; i < next_renderable_; ++i) {
+      renderables_[i]->record_this_frame_commands(cmd_list.get(), true);
+    }
+
+    cmd_list->end_renderpass();
   }
 
-  VkRenderPass pass = static_cast<VulkanCommandList *>(cmd_list.get())
-                          ->current_renderpass()
-                          ->renderpass;
+  // This is not great, maybe add a parameter to begin_renderpass that specifies
+  // the final layout
+  cmd_list->image_transition(framebuffer_hdr_, ImageLayout::undefined,
+                             ImageLayout::shader_read);
+  cmd_list->image_transition(swap_chain_.depth_allocation(),
+                             ImageLayout::undefined, ImageLayout::shader_read);
 
-  if (gui->render_pass() == VK_NULL_HANDLE) {
-    gui->init_render_resources(pass);
-  } else if (gui->render_pass() != pass) {
-    gui->cleanup_render_resources();
-    gui->init_render_resources(pass);
+  // Tonemapping & UI & 2d scene
+  {
+    bool color_clear = true;
+    std::vector<float> clear_colors = {
+        background_color_[0], background_color_[1], background_color_[2], 1};
+    auto swapchain_image = swap_chain_.surface().get_target_image();
+    cmd_list->begin_renderpass(
+        /*xmin=*/0, /*ymin=*/0, /*xmax=*/swap_chain_.width(),
+        /*ymax=*/swap_chain_.height(), /*num_color_attachments=*/1,
+        &swapchain_image, &color_clear, &clear_colors,
+        /*depth_attachment=*/nullptr,
+        /*depth_clear=*/false);
+
+    // Tonemap
+    cmd_list->bind_pipeline(tonemap_pipeline_.get());
+    cmd_list->bind_resources(tonemap_pipeline_->resource_binder());
+    cmd_list->draw(3, 0);
+
+    /*
+    cmd_list->image_transition(swap_chain_.depth_allocation(),
+                               ImageLayout::undefined,
+                               ImageLayout::depth_attachment);
+                               */
+    // 2D scene
+    for (int i = 0; i < next_renderable_; ++i) {
+      renderables_[i]->record_this_frame_commands(cmd_list.get(), false);
+    }
+
+    // Render ImGui
+    VkRenderPass pass = static_cast<VulkanCommandList *>(cmd_list.get())
+                            ->current_renderpass()
+                            ->renderpass;
+
+    if (gui->render_pass() == VK_NULL_HANDLE) {
+      gui->init_render_resources(pass);
+    } else if (gui->render_pass() != pass) {
+      gui->cleanup_render_resources();
+      gui->init_render_resources(pass);
+    }
+
+    gui->draw(cmd_list.get());
+    cmd_list->end_renderpass();
   }
 
-  gui->draw(cmd_list.get());
-  cmd_list->end_renderpass();
   stream->submit_synced(cmd_list.get());
 }
 

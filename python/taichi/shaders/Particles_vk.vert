@@ -15,6 +15,7 @@ struct SceneUBO {
 
 layout(binding = 0) uniform UBO {
   SceneUBO scene;
+  mat4 view_inverse;
   vec3 color;
   int use_per_vertex_color;
   float radius;
@@ -23,6 +24,8 @@ layout(binding = 0) uniform UBO {
   float tan_half_fov;
 }
 ubo;
+
+#include "color.glslinc"
 
 layout(location = 0) out vec4 pos_camera_space;
 layout(location = 1) out vec3 selected_color;
@@ -38,8 +41,8 @@ void main() {
   gl_Position.y *= -1;
 
   if (ubo.use_per_vertex_color == 0) {
-    selected_color = ubo.color;
+    selected_color = fromGamma(ubo.color);
   } else {
-    selected_color = in_color;
+    selected_color = fromGamma(in_color);
   }
 }

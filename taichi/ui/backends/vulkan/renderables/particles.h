@@ -34,6 +34,7 @@ class Particles final : public Renderable {
  private:
   struct UniformBufferObject {
     Scene::SceneUniformBuffer scene;
+    glm::mat4 view_inverse;
     alignas(16) glm::vec3 color;
     int use_per_vertex_color;
     float radius;

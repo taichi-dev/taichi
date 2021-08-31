@@ -288,14 +288,18 @@ void Renderable::cleanup() {
   pipeline_.reset();
 }
 
-void Renderable::record_this_frame_commands(CommandList *command_list) {
-  command_list->bind_pipeline(pipeline_.get());
-  command_list->bind_resources(pipeline_->resource_binder());
+void Renderable::record_this_frame_commands(CommandList *command_list,
+                                            bool hdr) {
+  if (hdr == config_.hdr) {
+    command_list->bind_pipeline(pipeline_.get());
+    command_list->bind_resources(pipeline_->resource_binder());
 
-  if (indexed_) {
-    command_list->draw_indexed(config_.indices_count, 0, 0);
-  } else {
-    command_list->draw(config_.vertices_count, 0);
+    if (indexed_) {
+      command_list->draw_indexed(config_.indices_count, 0, 0);
+    } else {
+      command_list->draw(config_.vertices_count, 0);
+    }
+  
   }
 }
 

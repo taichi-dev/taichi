@@ -32,6 +32,7 @@ struct RenderableConfig {
   std::string vertex_shader_path;
   std::string fragment_shader_path;
   taichi::lang::TopologyType topology_type;
+  bool hdr{false};
 };
 
 class Renderable {
@@ -39,7 +40,8 @@ class Renderable {
   void update_data(const RenderableInfo &info);
 
   virtual void record_this_frame_commands(
-      taichi::lang::CommandList *command_list);
+      taichi::lang::CommandList *command_list,
+      bool hdr = true);
 
   virtual ~Renderable() = default;
 

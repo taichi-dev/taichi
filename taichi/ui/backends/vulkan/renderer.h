@@ -73,6 +73,9 @@ class Renderer {
   SwapChain swap_chain_;
   AppContext app_context_;
 
+  taichi::lang::DeviceAllocation framebuffer_hdr_;
+  std::unique_ptr<taichi::lang::Pipeline> tonemap_pipeline_;
+
   template <typename T>
   T *get_renderable_of_type();
 };

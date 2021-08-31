@@ -1,0 +1,15 @@
+#ifndef _INCLUDE_COLOR
+#define _INCLUDE_COLOR
+
+const float gamma = 2.2f;
+const float inv_gamma = 1.0 / gamma;
+
+vec3 fromGamma(vec3 c) {
+    return pow(vec3(c), vec3(gamma));
+}
+
+vec3 toGamma(vec3 c) {
+    return pow(vec3(c), vec3(inv_gamma));
+}
+
+#endif

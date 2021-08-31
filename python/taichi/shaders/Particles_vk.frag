@@ -10,6 +10,7 @@ struct SceneUBO {
 
 layout(binding = 0) uniform UBO {
   SceneUBO scene;
+  mat4 view_inverse;
   vec3 color;
   int use_per_vertex_color;
   float radius;
@@ -18,16 +19,6 @@ layout(binding = 0) uniform UBO {
   float tan_half_fov;
 }
 ubo;
-
-struct PointLight {
-  vec3 pos;
-  vec3 color;
-};
-
-layout(binding = 1, std430) buffer SSBO {
-  PointLight point_lights[];
-}
-ssbo;
 
 layout(location = 0) out vec4 out_color;
 
@@ -44,25 +35,7 @@ vec3 to_camera_space(vec3 pos) {
   return temp.xyz / temp.w;
 }
 
-// operates in camera space !!
-vec3 lambertian(vec3 frag_pos, vec3 frag_normal) {
-  vec3 ambient = ubo.scene.ambient_light * selected_color;
-  vec3 result = ambient;
-
-  for (int i = 0; i < ubo.scene.point_light_count; ++i) {
-    vec3 light_color = ssbo.point_lights[i].color;
-
-    vec3 light_dir =
-        normalize(to_camera_space(ssbo.point_lights[i].pos) - frag_pos);
-    vec3 normal = normalize(frag_normal);
-    vec3 diffuse =
-        max(dot(light_dir, normal), 0.0) * selected_color * light_color;
-
-    result += diffuse;
-  }
-
-  return result;
-}
+#include "lighting.glslinc"
 
 void main() {
   vec2 coord2D;
@@ -79,8 +52,16 @@ void main() {
   vec3 frag_pos =
       pos_camera_space.xyz / pos_camera_space.w + coord_in_sphere * ubo.radius;
   vec3 frag_normal = coord_in_sphere;
-  vec3 color = lambertian(frag_pos, frag_normal);
-  out_color = vec4(color, 1.0);
+
+  vec4 world_pos = ubo.view_inverse * vec4(frag_pos, 1.0);
+  //world_pos /= world_pos.w;
+  vec3 world_normal = mat3(ubo.view_inverse) * frag_normal;
+
+  vec3 radiance = ubo.scene.ambient_light;
+  radiance += get_point_light_radiance(world_pos.xyz, world_normal);
+  radiance *= selected_color;
+
+  out_color = vec4(radiance, 1.0);
 
   float depth =
       (pos_camera_space.z / pos_camera_space.w) + z_in_sphere * ubo.radius;

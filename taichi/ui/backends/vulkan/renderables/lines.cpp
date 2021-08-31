@@ -36,6 +36,7 @@ void Lines::init_lines(AppContext *app_context,
       app_context->config.package_path + "/shaders/Lines_vk_vert.spv",
       app_context->config.package_path + "/shaders/Lines_vk_frag.spv",
       TopologyType::Lines,
+      false
   };
 
   Renderable::init(config, app_context);
@@ -60,15 +61,17 @@ void Lines::create_bindings() {
   binder->buffer(0, 0, uniform_buffer_);
 }
 
-void Lines::record_this_frame_commands(CommandList *command_list) {
-  command_list->bind_pipeline(pipeline_.get());
-  command_list->bind_resources(pipeline_->resource_binder());
-  command_list->set_line_width(curr_width_ * app_context_->config.height);
+void Lines::record_this_frame_commands(CommandList *command_list, bool hdr) {
+  if (config_.hdr == hdr) {
+    command_list->bind_pipeline(pipeline_.get());
+    command_list->bind_resources(pipeline_->resource_binder());
+    command_list->set_line_width(curr_width_ * app_context_->config.height);
 
-  if (indexed_) {
-    command_list->draw_indexed(config_.indices_count, 0, 0);
-  } else {
-    command_list->draw(config_.vertices_count, 0);
+    if (indexed_) {
+      command_list->draw_indexed(config_.indices_count, 0, 0);
+    } else {
+      command_list->draw(config_.vertices_count, 0);
+    }  
   }
 }
 

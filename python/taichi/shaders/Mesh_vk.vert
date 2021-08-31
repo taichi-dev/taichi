@@ -31,6 +31,8 @@ layout(binding = 0) uniform UBO {
 }
 ubo;
 
+#include "color.glslinc"
+
 void main() {
   gl_Position = ubo.scene.projection * ubo.scene.view * vec4(in_position, 1.0);
   gl_Position.y *= -1.0;
@@ -39,8 +41,8 @@ void main() {
   frag_normal = in_normal;
 
   if (ubo.use_per_vertex_color == 0) {
-    selected_color = ubo.color;
+    selected_color = fromGamma(ubo.color);
   } else {
-    selected_color = in_color;
+    selected_color = fromGamma(in_color);
   }
 }

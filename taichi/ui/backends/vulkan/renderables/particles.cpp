@@ -20,7 +20,8 @@ void Particles::update_ubo(glm::vec3 color,
                            const Scene &scene) {
   UniformBufferObject ubo;
   ubo.scene = scene.current_ubo_;
-  ubo.color = glm::vec4(color, 1);
+  ubo.view_inverse = glm::inverse(scene.current_ubo_.view);
+  ubo.color = color;
   ubo.radius = radius;
   ubo.window_width = app_context_->config.width;
   ubo.window_height = app_context_->config.height;
@@ -64,6 +65,7 @@ void Particles::init_particles(AppContext *app_context, int vertices_count) {
       app_context->config.package_path + "/shaders/Particles_vk_vert.spv",
       app_context->config.package_path + "/shaders/Particles_vk_frag.spv",
       TopologyType::Points,
+      true
   };
 
   Renderable::init(config, app_context);

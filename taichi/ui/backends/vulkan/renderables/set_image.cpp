@@ -113,6 +113,7 @@ void SetImage::init_set_image(AppContext *app_context,
       app_context->config.package_path + "/shaders/SetImage_vk_vert.spv",
       app_context->config.package_path + "/shaders/SetImage_vk_frag.spv",
       TopologyType::Triangles,
+      false
   };
 
   Renderable::init(config, app_context);
@@ -215,7 +216,7 @@ void SetImage::update_index_buffer_() {
 void SetImage::create_bindings() {
   Renderable::create_bindings();
   ResourceBinder *binder = pipeline_->resource_binder();
-  binder->image(0, 0, texture_, {});
+  binder->texture(0, 0, texture_, {});
 }
 
 void SetImage::cleanup() {

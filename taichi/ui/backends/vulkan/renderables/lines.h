@@ -32,7 +32,8 @@ class Lines final : public Renderable {
   void update_data(const LinesInfo &info);
 
   virtual void record_this_frame_commands(
-      taichi::lang::CommandList *command_list) override;
+      taichi::lang::CommandList *command_list,
+      bool hdr) override;
 
  private:
   struct UniformBufferObject {

@@ -544,7 +544,7 @@ if 1:
                 if isinstance(ctx.func.argument_annotations[i], ti.template):
                     continue
                 if isinstance(ctx.func.argument_annotations[i],
-                                ti.sparse_matrix_builder):
+                              ti.sparse_matrix_builder):
                     arg_init = parse_stmt(
                         'x = ti.lang.kernel_arguments.decl_sparse_matrix()')
                     arg_init.targets[0].id = arg.arg

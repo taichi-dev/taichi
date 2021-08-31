@@ -4,9 +4,9 @@ from types import FunctionType, MethodType
 
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
+from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField
 from taichi.lang.ndarray import ScalarNdarray

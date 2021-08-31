@@ -129,7 +129,8 @@ class Module:
         for i in range(len(kernel.argument_annotations)):
             anno = kernel.argument_annotations[i]
             if isinstance(anno, kernel_arguments.ArgAnyArray):
-                raise RuntimeError('Arg type `ext_arr`/`any_arr` not supported yet')
+                raise RuntimeError(
+                    'Arg type `ext_arr`/`any_arr` not supported yet')
             else:
                 # For primitive types, we can just inject a dummy value.
                 injected_args.append(0)

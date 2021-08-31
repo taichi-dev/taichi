@@ -36,8 +36,7 @@ void Lines::init_lines(AppContext *app_context,
       app_context->config.package_path + "/shaders/Lines_vk_vert.spv",
       app_context->config.package_path + "/shaders/Lines_vk_frag.spv",
       TopologyType::Lines,
-      false
-  };
+      false};
 
   Renderable::init(config, app_context);
   Renderable::init_render_resources();
@@ -71,7 +70,7 @@ void Lines::record_this_frame_commands(CommandList *command_list, bool hdr) {
       command_list->draw_indexed(config_.indices_count, 0, 0);
     } else {
       command_list->draw(config_.vertices_count, 0);
-    }  
+    }
   }
 }
 

@@ -31,8 +31,7 @@ void Circles::init_circles(AppContext *app_context, int vertices_count) {
       app_context->config.package_path + "/shaders/Circles_vk_vert.spv",
       app_context->config.package_path + "/shaders/Circles_vk_frag.spv",
       TopologyType::Points,
-      false
-  };
+      false};
 
   Renderable::init(config, app_context);
   Renderable::init_render_resources();

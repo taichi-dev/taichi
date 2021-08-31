@@ -65,8 +65,7 @@ void Particles::init_particles(AppContext *app_context, int vertices_count) {
       app_context->config.package_path + "/shaders/Particles_vk_vert.spv",
       app_context->config.package_path + "/shaders/Particles_vk_frag.spv",
       TopologyType::Points,
-      true
-  };
+      true};
 
   Renderable::init(config, app_context);
   Renderable::init_render_resources();

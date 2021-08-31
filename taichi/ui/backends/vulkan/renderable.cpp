@@ -299,7 +299,6 @@ void Renderable::record_this_frame_commands(CommandList *command_list,
     } else {
       command_list->draw(config_.vertices_count, 0);
     }
-  
   }
 }
 

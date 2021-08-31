@@ -59,8 +59,7 @@ void Mesh::init_mesh(AppContext *app_context,
       app_context->config.package_path + "/shaders/Mesh_vk_vert.spv",
       app_context->config.package_path + "/shaders/Mesh_vk_frag.spv",
       TopologyType::Triangles,
-      true
-  };
+      true};
 
   Renderable::init(config, app_context);
   Renderable::init_render_resources();

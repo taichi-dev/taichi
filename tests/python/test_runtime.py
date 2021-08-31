@@ -62,7 +62,6 @@ init_args = {
     'simplify_after_lower_access': [True, TF],
     'use_unified_memory': [ti.get_os_name() == 'linux', TF],
     'print_benchmark_stat': [False, TF],
-    'kernel_profiler': [False, TF],
     'check_out_of_bound': [False, TF],
     'print_accessor_ir': [False, TF],
     'print_evaluator_ir': [False, TF],
@@ -124,6 +123,17 @@ def test_init_arch(arch):
                                  excludes=['TI_ARCH']):
         ti.init(arch=ti.cc)
         assert ti.cfg.arch == arch
+
+
+@pytest.mark.parametrize('kernel_profiler', ti.kernel_profiler_modes)
+def test_init_kernel_profiler(kernel_profiler):
+    with patch_os_environ_helper({}, excludes=['TI_KERNEL_PROFILER']):
+        ti.init(kernel_profiler=kernel_profiler)
+        assert ti.cfg.kernel_profiler == ti.get_kernel_profiler_mode(kernel_profiler)
+    with patch_os_environ_helper({'TI_KERNEL_PROFILER': ti.core.kernel_profiler_name(ti.get_kernel_profiler_mode(kernel_profiler))},
+                                 excludes=['TI_KERNEL_PROFILER']):
+        ti.init(kernel_profiler=kernel_profiler)
+        assert ti.cfg.kernel_profiler == ti.get_kernel_profiler_mode(kernel_profiler)
 
 
 def test_init_bad_arg():

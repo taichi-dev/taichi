@@ -19,6 +19,10 @@ enum class KernelProfilerMode : int {
 #undef PER_MODE
 };
 
+std::string kernel_profiler_name(KernelProfilerMode mode);
+
+KernelProfilerMode kernel_profiler_from_name(const std::string &mode);
+
 struct KernelProfileRecord {
   std::string name;
   int counter;

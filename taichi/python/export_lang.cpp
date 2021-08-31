@@ -83,6 +83,9 @@ void export_lang(py::module &m) {
 #undef PER_MODE
       .export_values();
 
+  m.def("kernel_profiler_name", kernel_profiler_name);
+  m.def("kernel_profiler_from_name", kernel_profiler_from_name);
+
   py::enum_<SNodeType>(m, "SNodeType", py::arithmetic())
 #define PER_SNODE(x) .value(#x, SNodeType::x)
 #include "taichi/inc/snodes.inc.h"

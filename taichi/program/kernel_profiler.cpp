@@ -7,6 +7,39 @@
 
 TLANG_NAMESPACE_BEGIN
 
+
+std::string kernel_profiler_name(KernelProfilerMode mode) {
+  switch (mode) {
+#define PER_MODE(x) \
+  case KernelProfilerMode::x:     \
+    return #x;      \
+    break;
+#include "taichi/inc/kernel_profiler_mode.inc.h"
+
+#undef PER_MODE
+    default:
+      TI_NOT_IMPLEMENTED
+  }
+}
+
+KernelProfilerMode kernel_profiler_from_name(const std::string &mode) {
+#define PER_MODE(x)           \
+  else if (mode == #x) { \
+    return KernelProfilerMode::x;           \
+  }
+
+  if (false) {
+  }
+#include "taichi/inc/kernel_profiler_mode.inc.h"
+
+  else {
+    TI_ERROR("Unknown kernel profiler name: {}", mode);
+  }
+
+#undef PER_MODE
+}
+
+
 void KernelProfileRecord::insert_sample(double t) {
   if (counter == 0) {
     min = t;
@@ -222,6 +255,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
   }
 
   std::string title() const override {
+#if defined(TI_WITH_CUDA)
     if (CUDAProfiler::get_instance().get_profiling_mode() ==
         KernelProfilerMode::disable)
       return "Profiler disabled";
@@ -236,6 +270,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
                              : "detailed mode";
       return "nvCUPTI Profiler :: " + mode;
     }
+#endif
   }
 
   void sync() override {
@@ -299,6 +334,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
   }
 
   void print() override {
+#if defined(TI_WITH_CUDA)
     sync();
     if (CUDAProfiler::get_instance().get_profiling_mode() !=
         KernelProfilerMode::disable) {
@@ -408,6 +444,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
           "========================================================"
           "=\n");
     }
+#endif
   }
 
   // deprecated

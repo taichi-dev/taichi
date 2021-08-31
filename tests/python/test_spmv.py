@@ -21,7 +21,7 @@ def test_sparse_matrix_vector_multiplication1():
     for i in range(n):
         assert x[i] == 8 * i
 
-
+@ti.test(arch=ti.cpu)
 def test_sparse_matrix_vector_multiplication2():
     n = 8
     Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -44,7 +44,7 @@ def test_sparse_matrix_vector_multiplication2():
     for i in range(n):
         assert x[i] == res[i]
 
-
+@ti.test(arch=ti.cpu)
 def test_sparse_matrix_vector_multiplication3():
     n = 8
     Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
@@ -63,6 +63,6 @@ def test_sparse_matrix_vector_multiplication3():
 
     x = A @ b.to_numpy()
     import numpy as np
-    res = np.array([44, 52, 60, 68, 76, 84, 92, 100])
+    res = np.array([28, 36, 44, 52, 60, 68, 76, 84])
     for i in range(n):
         assert x[i] == res[i]

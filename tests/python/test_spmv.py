@@ -21,6 +21,7 @@ def test_sparse_matrix_vector_multiplication1():
     for i in range(n):
         assert x[i] == 8 * i
 
+
 @ti.test(arch=ti.cpu)
 def test_sparse_matrix_vector_multiplication2():
     n = 8
@@ -43,6 +44,7 @@ def test_sparse_matrix_vector_multiplication2():
     res = np.array([-28, -20, -12, -4, 4, 12, 20, 28])
     for i in range(n):
         assert x[i] == res[i]
+
 
 @ti.test(arch=ti.cpu)
 def test_sparse_matrix_vector_multiplication3():

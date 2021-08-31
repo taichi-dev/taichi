@@ -1131,7 +1131,7 @@ def complex_kernel_grad(primal):
     return decorator
 
 
-def get_kernel_profiler_mode(kernel_profiler = None):
+def get_kernel_profiler_mode(kernel_profiler=None):
     if kernel_profiler is None:
         return ti.core.KernelProfilerMode.disable
     if kernel_profiler is False:
@@ -1142,5 +1142,6 @@ def get_kernel_profiler_mode(kernel_profiler = None):
         return kernel_profiler
     else:
         _ti_core.warn(f'kernel_profiler mode error : {type(kernel_profiler)}')
+
 
 __all__ = [s for s in dir() if not s.startswith('_')]

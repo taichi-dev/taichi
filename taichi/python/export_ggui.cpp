@@ -115,7 +115,8 @@ struct PyScene {
             FieldInfo normals,
             FieldInfo per_vertex_color,
             FieldInfo indices,
-            py::tuple color_) {
+            py::tuple color,
+            bool two_sided) {
     RenderableInfo renderable_info;
     renderable_info.vertices = vertices;
     renderable_info.normals = normals;
@@ -124,7 +125,8 @@ struct PyScene {
 
     MeshInfo info;
     info.renderable_info = renderable_info;
-    info.color = tuple_to_vec3(color_);
+    info.color = tuple_to_vec3(color);
+    info.two_sided = two_sided;
 
     scene->mesh(info);
   }

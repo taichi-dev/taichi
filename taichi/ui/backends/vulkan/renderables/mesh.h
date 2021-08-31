@@ -36,6 +36,7 @@ class Mesh final : public Renderable {
     Scene::SceneUniformBuffer scene;
     alignas(16) glm::vec3 color;
     int use_per_vertex_color;
+    int two_sided;
   };
 
   void init_mesh(AppContext *app_context,

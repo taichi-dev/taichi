@@ -8,10 +8,10 @@ from taichi.testing import *
 from taichi.tools import *
 from taichi.torch_io import from_torch, to_torch
 
+import taichi.ui as ui
+
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
 from taichi import aot  # isort:skip
-
-from taichi.ui import *  # isort:skip
 
 deprecated_names = {'SOA': 'Layout.SOA', 'AOS': 'Layout.AOS'}
 if sys.version_info.minor < 7:

@@ -19,6 +19,7 @@ void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
   ubo.scene = scene.current_ubo_;
   ubo.color = info.color;
   ubo.use_per_vertex_color = info.renderable_info.per_vertex_color.valid;
+  ubo.two_sided = info.two_sided;
 
   void *mapped = app_context_->device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));

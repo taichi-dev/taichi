@@ -6,7 +6,7 @@ import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.ext_array import AnyArray, AnyArrayAccess, ExtArray
+from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField
 from taichi.lang.ndarray import ScalarNdarray
@@ -182,12 +182,9 @@ def subscript(value, *indices):
         ])
         ret.any_array_access = any_array_access
         return ret
-    elif isinstance(value, (ExtArray, SNode)):
-        if isinstance(value, ExtArray):
-            field_dim = int(value.ptr.get_attribute("dim"))
-        else:
-            # When reading bit structure we only support the 0-D case for now.
-            field_dim = 0
+    elif isinstance(value, SNode):
+        # When reading bit structure we only support the 0-D case for now.
+        field_dim = 0
         if field_dim != index_dim:
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
@@ -822,7 +819,7 @@ def static(x, *xs):
                   (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
                    ti.GroupedNDRange, zip, filter, map)) or x is None:
         return x
-    elif isinstance(x, ExtArray):
+    elif isinstance(x, AnyArray):
         return x
     elif isinstance(x, Field):
         return x

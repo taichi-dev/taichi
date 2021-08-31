@@ -13,7 +13,6 @@ import taichi.ui as ui
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
 from taichi import aot  # isort:skip
 
-
 deprecated_names = {'SOA': 'Layout.SOA', 'AOS': 'Layout.AOS'}
 if sys.version_info.minor < 7:
     for name, alter in deprecated_names.items():

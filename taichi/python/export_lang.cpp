@@ -26,6 +26,7 @@
 #include "taichi/system/timeline.h"
 #include "taichi/python/snode_registry.h"
 #include "taichi/program/sparse_matrix.h"
+#include "taichi/program/sparse_solver.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
@@ -972,14 +973,34 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference_internal)
       .def("get_element", &SparseMatrix::get_element)
       .def("num_rows", &SparseMatrix::num_rows)
-      .def("num_cols", &SparseMatrix::num_cols)
-      .def("solve", &SparseMatrix::solve);
+      .def("num_cols", &SparseMatrix::num_cols);
 
   m.def("create_sparse_matrix", [](int n, int m) {
     TI_ERROR_IF(!arch_is_cpu(get_current_program().config.arch),
                 "SparseMatrix only supports CPU for now.");
     return SparseMatrix(n, m);
   });
+
+  py::class_<SparseLUSolver>(m, "SparseLUSolver")
+    .def(py::init<>())
+    .def("compute", &SparseLUSolver::compute)
+    .def("analyzePattern", &SparseLUSolver::analyzePattern)
+    .def("factorize", &SparseLUSolver::factorize)
+    .def("solve", &SparseLUSolver::solve);
+
+  py::class_<SparseLDLTSolver>(m, "SparseLDLTSolver")
+    .def(py::init<>())
+    .def("compute", &SparseLDLTSolver::compute)
+    .def("analyzePattern", &SparseLDLTSolver::analyzePattern)
+    .def("factorize", &SparseLDLTSolver::factorize)
+    .def("solve", &SparseLDLTSolver::solve);
+
+  py::class_<SparseLLTSolver>(m, "SparseLLTSolver")
+    .def(py::init<>())
+    .def("compute", &SparseLLTSolver::compute)
+    .def("analyzePattern", &SparseLLTSolver::analyzePattern)
+    .def("factorize", &SparseLLTSolver::factorize)
+    .def("solve", &SparseLLTSolver::solve);
 }
 
 TI_NAMESPACE_END

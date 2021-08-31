@@ -71,6 +71,11 @@ Eigen::SparseMatrix<float32> &SparseMatrix::get_matrix() {
   return matrix_;
 }
 
+const Eigen::SparseMatrix<float32> &SparseMatrix::get_matrix() const{
+    return matrix_;
+}
+
+
 SparseMatrix operator+(const SparseMatrix &sm1, const SparseMatrix &sm2) {
   Eigen::SparseMatrix<float32> res(sm1.matrix_ + sm2.matrix_);
   return SparseMatrix(res);
@@ -113,23 +118,6 @@ SparseMatrix SparseMatrix::transpose() {
 float32 SparseMatrix::get_element(int row, int col) {
   return matrix_.coeff(row, col);
 }
-
-Eigen::VectorXf SparseMatrix::solve(const Eigen::Ref<const Eigen::VectorXf> &b){
-  using namespace Eigen;
-
-  VectorXf x(this->num_cols());
-  /*
-  SparseLU<Eigen::SparseMatrix<float32>, COLAMDOrdering<int>> solver;
-  solver.analyzePattern(matrix);
-  solver.factorize(matrix);
-  x = solver.solve(b);
-   */
-  x = Eigen::MatrixXf(matrix_).ldlt().solve(b);
-  Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
-  std::cout << Eigen::MatrixXf(x).format(clean_fmt) << std::endl;
-  return x;
-}
-
 
 }  // namespace lang
 }  // namespace taichi

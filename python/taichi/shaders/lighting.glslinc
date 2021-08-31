@@ -24,7 +24,7 @@ float oren_nayer(vec3 v, vec3 l, vec3 n, float r) {
 	return max(0.0,nl) * (a + b*max(0.0,ga) * sqrt((1.0-nv*nv)*(1.0-nl*nl)) / max(nl, nv));
 }
 
-vec3 get_point_light_radiance(vec3 world_pos, vec3 normal) {
+vec3 get_point_light_radiance(vec3 world_pos, vec3 normal, bool two_sided) {
   vec3 result = vec3(0.0);
 
   vec3 view_dir = -normalize(world_pos);
@@ -39,6 +39,13 @@ vec3 get_point_light_radiance(vec3 world_pos, vec3 normal) {
     light_dir *= inv_distance;
 
     float attenuation = inv_distance * inv_distance;
+
+    vec3 normal_adjusted;
+    if (two_sided && dot(normal, view_dir) < 0.0) {
+      normal_adjusted = -normal;
+    } else {
+      normal_adjusted = normal;
+    }
 
     vec3 diffuse = oren_nayer(view_dir, light_dir, normal, roughness) * light_color * attenuation;
     result += diffuse;

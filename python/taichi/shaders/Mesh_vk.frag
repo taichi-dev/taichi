@@ -28,7 +28,7 @@ layout(location = 3) in vec3 selected_color;
 
 void main() {
   vec3 radiance = ubo.scene.ambient_light;
-  radiance += get_point_light_radiance(frag_pos, normalize(frag_normal));
+  radiance += get_point_light_radiance(frag_pos, normalize(frag_normal), ubo.two_sided > 0);
   radiance *= selected_color;
 
   out_color = vec4(radiance, 1.0f);

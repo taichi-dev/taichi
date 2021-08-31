@@ -58,7 +58,7 @@ void main() {
   vec3 world_normal = mat3(ubo.view_inverse) * frag_normal;
 
   vec3 radiance = ubo.scene.ambient_light;
-  radiance += get_point_light_radiance(world_pos.xyz, world_normal);
+  radiance += get_point_light_radiance(world_pos.xyz, world_normal, false);
   radiance *= selected_color;
 
   out_color = vec4(radiance, 1.0);

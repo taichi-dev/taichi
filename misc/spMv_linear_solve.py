@@ -7,9 +7,9 @@ n = 8
 K = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
 b = ti.field(ti.f32, shape=n)
 
+
 @ti.kernel
-def fill(A: ti.sparse_matrix_builder(), b: ti.template(),
-         interval: ti.i32):
+def fill(A: ti.sparse_matrix_builder(), b: ti.template(), interval: ti.i32):
     for i in range(n):
         A[i, i] += 2.0
 
@@ -35,4 +35,3 @@ solver.analyzePattern(A)
 solver.factorize(A)
 x = solver.solve(b.to_numpy())
 print(x)
-

@@ -1,80 +1,82 @@
 #include "sparse_solver.h"
 
-namespace taichi{
-namespace lang{
+namespace taichi {
+namespace lang {
 
-SparseLUSolver::SparseLUSolver():solver_(std::make_unique<LU>()){}
-
-bool SparseLUSolver::compute(const SparseMatrix& sm){
-    solver_->compute(sm.get_matrix());
-    if(solver_->info() != Eigen::Success){
-        return false;
-    }
-    else
-        return true;
+SparseLUSolver::SparseLUSolver() : solver_(std::make_unique<LU>()) {
 }
 
-void SparseLUSolver::analyzePattern(const SparseMatrix& sm){
-    solver_->analyzePattern(sm.get_matrix());
+bool SparseLUSolver::compute(const SparseMatrix &sm) {
+  solver_->compute(sm.get_matrix());
+  if (solver_->info() != Eigen::Success) {
+    return false;
+  } else
+    return true;
 }
 
-void SparseLUSolver::factorize(const SparseMatrix& sm){
-    solver_->factorize(sm.get_matrix());
+void SparseLUSolver::analyzePattern(const SparseMatrix &sm) {
+  solver_->analyzePattern(sm.get_matrix());
 }
 
-Eigen::VectorXf SparseLUSolver::solve(const Eigen::Ref<const Eigen::VectorXf> &b){
-    Eigen::VectorXf x =  solver_->solve(b);
-    return x;
+void SparseLUSolver::factorize(const SparseMatrix &sm) {
+  solver_->factorize(sm.get_matrix());
 }
 
-SparseLDLTSolver::SparseLDLTSolver():solver_(std::make_unique<LDLT>()){}
-
-bool SparseLDLTSolver::compute(const SparseMatrix& sm){
-    solver_->compute(sm.get_matrix());
-    if(solver_->info() != Eigen::Success){
-        return false;
-    }
-    else
-        return true;
+Eigen::VectorXf SparseLUSolver::solve(
+    const Eigen::Ref<const Eigen::VectorXf> &b) {
+  Eigen::VectorXf x = solver_->solve(b);
+  return x;
 }
 
-void SparseLDLTSolver::analyzePattern(const SparseMatrix& sm){
-    solver_->analyzePattern(sm.get_matrix());
+SparseLDLTSolver::SparseLDLTSolver() : solver_(std::make_unique<LDLT>()) {
 }
 
-void SparseLDLTSolver::factorize(const SparseMatrix& sm){
-    solver_->factorize(sm.get_matrix());
+bool SparseLDLTSolver::compute(const SparseMatrix &sm) {
+  solver_->compute(sm.get_matrix());
+  if (solver_->info() != Eigen::Success) {
+    return false;
+  } else
+    return true;
 }
 
-Eigen::VectorXf SparseLDLTSolver::solve(const Eigen::Ref<const Eigen::VectorXf> &b){
-    Eigen::VectorXf x =  solver_->solve(b);
-    return x;
+void SparseLDLTSolver::analyzePattern(const SparseMatrix &sm) {
+  solver_->analyzePattern(sm.get_matrix());
 }
 
-
-SparseLLTSolver::SparseLLTSolver():solver_(std::make_unique<LLT>()){}
-
-bool SparseLLTSolver::compute(const SparseMatrix& sm){
-    solver_->compute(sm.get_matrix());
-    if(solver_->info() != Eigen::Success){
-        return false;
-    }
-    else
-        return true;
+void SparseLDLTSolver::factorize(const SparseMatrix &sm) {
+  solver_->factorize(sm.get_matrix());
 }
 
-void SparseLLTSolver::analyzePattern(const SparseMatrix& sm){
-    solver_->analyzePattern(sm.get_matrix());
+Eigen::VectorXf SparseLDLTSolver::solve(
+    const Eigen::Ref<const Eigen::VectorXf> &b) {
+  Eigen::VectorXf x = solver_->solve(b);
+  return x;
 }
 
-void SparseLLTSolver::factorize(const SparseMatrix& sm){
-    solver_->factorize(sm.get_matrix());
+SparseLLTSolver::SparseLLTSolver() : solver_(std::make_unique<LLT>()) {
 }
 
-Eigen::VectorXf SparseLLTSolver::solve(const Eigen::Ref<const Eigen::VectorXf> &b){
-    Eigen::VectorXf x =  solver_->solve(b);
-    return x;
+bool SparseLLTSolver::compute(const SparseMatrix &sm) {
+  solver_->compute(sm.get_matrix());
+  if (solver_->info() != Eigen::Success) {
+    return false;
+  } else
+    return true;
 }
 
+void SparseLLTSolver::analyzePattern(const SparseMatrix &sm) {
+  solver_->analyzePattern(sm.get_matrix());
 }
+
+void SparseLLTSolver::factorize(const SparseMatrix &sm) {
+  solver_->factorize(sm.get_matrix());
 }
+
+Eigen::VectorXf SparseLLTSolver::solve(
+    const Eigen::Ref<const Eigen::VectorXf> &b) {
+  Eigen::VectorXf x = solver_->solve(b);
+  return x;
+}
+
+}  // namespace lang
+}  // namespace taichi

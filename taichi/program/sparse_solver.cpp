@@ -24,8 +24,7 @@ void SparseLUSolver::factorize(const SparseMatrix &sm) {
 
 Eigen::VectorXf SparseLUSolver::solve(
     const Eigen::Ref<const Eigen::VectorXf> &b) {
-  Eigen::VectorXf x = solver_->solve(b);
-  return x;
+    return solver_->solve(b);
 }
 
 SparseLDLTSolver::SparseLDLTSolver() : solver_(std::make_unique<LDLT>()) {
@@ -49,8 +48,7 @@ void SparseLDLTSolver::factorize(const SparseMatrix &sm) {
 
 Eigen::VectorXf SparseLDLTSolver::solve(
     const Eigen::Ref<const Eigen::VectorXf> &b) {
-  Eigen::VectorXf x = solver_->solve(b);
-  return x;
+  return solver_->solve(b);
 }
 
 SparseLLTSolver::SparseLLTSolver() : solver_(std::make_unique<LLT>()) {
@@ -74,8 +72,7 @@ void SparseLLTSolver::factorize(const SparseMatrix &sm) {
 
 Eigen::VectorXf SparseLLTSolver::solve(
     const Eigen::Ref<const Eigen::VectorXf> &b) {
-  Eigen::VectorXf x = solver_->solve(b);
-  return x;
+  return solver_->solve(b);
 }
 
 }  // namespace lang

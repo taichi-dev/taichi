@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import taichi as ti
 """
@@ -27,8 +28,9 @@ res = np.array([
 ])
 
 
+@pytest.mark.parametrize("solver_type", ["LLT", "LDLT", "LU"])
 @ti.test(arch=ti.cpu)
-def test_sparse_LLT_solver():
+def test_sparse_LLT_solver(solver_type):
     n = 4
     Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
     b = ti.field(ti.f32, shape=n)
@@ -43,57 +45,9 @@ def test_sparse_LLT_solver():
 
     fill(Abuilder, Aarray, b)
     A = Abuilder.build()
-    solver = ti.SparseSolver(solver_type="LLT")
+    solver = ti.SparseSolver(solver_type=solver_type)
     solver.analyze_pattern(A)
     solver.factorize(A)
     x = solver.solve(b)
     for i in range(n):
-        assert x[i] - res[i] < 1.0e-6
-
-
-@ti.test(arch=ti.cpu)
-def test_sparse_LDLT_solver():
-    n = 4
-    Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
-    b = ti.field(ti.f32, shape=n)
-
-    @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder(), InputArray: ti.ext_arr(),
-             b: ti.template()):
-        for i, j in ti.ndrange(n, n):
-            Abuilder[i, j] += InputArray[i, j]
-        for i in range(n):
-            b[i] = i + 1
-
-    fill(Abuilder, Aarray, b)
-    A = Abuilder.build()
-    solver = ti.SparseSolver(solver_type="LDLT")
-    solver.analyze_pattern(A)
-    solver.factorize(A)
-    x = solver.solve(b)
-    for i in range(n):
-        assert x[i] - res[i] < 1.0e-6
-
-
-@ti.test(arch=ti.cpu)
-def test_sparse_LU_solver():
-    n = 4
-    Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
-    b = ti.field(ti.f32, shape=n)
-
-    @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder(), InputArray: ti.ext_arr(),
-             b: ti.template()):
-        for i, j in ti.ndrange(n, n):
-            Abuilder[i, j] += InputArray[i, j]
-        for i in range(n):
-            b[i] = i + 1
-
-    fill(Abuilder, Aarray, b)
-    A = Abuilder.build()
-    solver = ti.SparseSolver(solver_type="LU")
-    solver.analyze_pattern(A)
-    solver.factorize(A)
-    x = solver.solve(b)
-    for i in range(n):
-        assert x[i] - res[i] < 1.0e-6
+        assert x[i] == ti.approx(res[i])

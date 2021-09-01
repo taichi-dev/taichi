@@ -49,8 +49,12 @@ class SparseMatrix:
             assert self.m == other.shape[
                 0], f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
             return self.matrix.mat_vec_mul(other.to_numpy())
+        elif isinstance(other, np.ndarray):
+            assert self.m == other.shape[
+                0], f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
+            return self.matrix.mat_vec_mul(other)
         else:
-            assert False, f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now."
+            assert False, f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now. Supported types are SparseMatrix, Field, numpy.ndarray."
 
     def __getitem__(self, indices):
         return self.matrix.get_element(indices[0], indices[1])

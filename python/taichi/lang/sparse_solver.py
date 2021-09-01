@@ -4,15 +4,14 @@ from taichi.lang.sparse_matrix import SparseMatrix
 
 class SparseSolver:
     def __init__(self, solver_type="LLT"):
-        solver_map = {"LLT": 0, "LDLT": 1, "LU": 2}
+        from taichi.core.util import ti_core as _ti_core
+        solver_map = {
+            "LLT": lambda: _ti_core.SparseLLTSolver(),
+            "LDLT": lambda: _ti_core.SparseLDLTSolver(),
+            "LU": lambda: _ti_core.SparseLUSolver()
+        }
         if solver_type in solver_map:
-            from taichi.core.util import ti_core as _ti_core
-            if solver_type == "LLT":
-                self.solver = _ti_core.SparseLLTSolver()
-            elif solver_type == "LDLT":
-                self.solver = _ti_core.SparseLDLTSolver()
-            elif solver_type == "LU":
-                self.solver = _ti_core.SparseLUSolver()
+            self.solver = solver_map[solver_type]()
         else:
             assert False, f"The solver type is not support for now."
 

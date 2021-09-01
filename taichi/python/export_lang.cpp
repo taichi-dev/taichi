@@ -987,21 +987,21 @@ void export_lang(py::module &m) {
   py::class_<SparseLUSolver>(m, "SparseLUSolver")
       .def(py::init<>())
       .def("compute", &SparseLUSolver::compute)
-      .def("analyzePattern", &SparseLUSolver::analyzePattern)
+      .def("analyze_pattern", &SparseLUSolver::analyze_pattern)
       .def("factorize", &SparseLUSolver::factorize)
       .def("solve", &SparseLUSolver::solve);
 
   py::class_<SparseLDLTSolver>(m, "SparseLDLTSolver")
       .def(py::init<>())
       .def("compute", &SparseLDLTSolver::compute)
-      .def("analyzePattern", &SparseLDLTSolver::analyzePattern)
+      .def("analyze_pattern", &SparseLDLTSolver::analyze_pattern)
       .def("factorize", &SparseLDLTSolver::factorize)
       .def("solve", &SparseLDLTSolver::solve);
 
   py::class_<SparseLLTSolver>(m, "SparseLLTSolver")
       .def(py::init<>())
       .def("compute", &SparseLLTSolver::compute)
-      .def("analyzePattern", &SparseLLTSolver::analyzePattern)
+      .def("analyze_pattern", &SparseLLTSolver::analyze_pattern)
       .def("factorize", &SparseLLTSolver::factorize)
       .def("solve", &SparseLLTSolver::solve);
 }

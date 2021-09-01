@@ -14,7 +14,7 @@ bool SparseLUSolver::compute(const SparseMatrix &sm) {
     return true;
 }
 
-void SparseLUSolver::analyzePattern(const SparseMatrix &sm) {
+void SparseLUSolver::analyze_pattern(const SparseMatrix &sm) {
   solver_->analyzePattern(sm.get_matrix());
 }
 
@@ -39,7 +39,7 @@ bool SparseLDLTSolver::compute(const SparseMatrix &sm) {
     return true;
 }
 
-void SparseLDLTSolver::analyzePattern(const SparseMatrix &sm) {
+void SparseLDLTSolver::analyze_pattern(const SparseMatrix &sm) {
   solver_->analyzePattern(sm.get_matrix());
 }
 
@@ -64,7 +64,7 @@ bool SparseLLTSolver::compute(const SparseMatrix &sm) {
     return true;
 }
 
-void SparseLLTSolver::analyzePattern(const SparseMatrix &sm) {
+void SparseLLTSolver::analyze_pattern(const SparseMatrix &sm) {
   solver_->analyzePattern(sm.get_matrix());
 }
 

@@ -1,7 +1,6 @@
 import numpy as np
 
 import taichi as ti
-
 """
 The symmetric positive definite matrix is created in matlab using the following script:
     A = diag([1,2,3,4]);
@@ -45,7 +44,7 @@ def test_sparse_LLT_solver():
     fill(Abuilder, Aarray, b)
     A = Abuilder.build()
     solver = ti.SparseSolver(solver_type="LLT")
-    solver.analyzePattern(A)
+    solver.analyze_pattern(A)
     solver.factorize(A)
     x = solver.solve(b.to_numpy())
     for i in range(n):
@@ -69,7 +68,7 @@ def test_sparse_LDLT_solver():
     fill(Abuilder, Aarray, b)
     A = Abuilder.build()
     solver = ti.SparseSolver(solver_type="LDLT")
-    solver.analyzePattern(A)
+    solver.analyze_pattern(A)
     solver.factorize(A)
     x = solver.solve(b.to_numpy())
     for i in range(n):
@@ -93,7 +92,7 @@ def test_sparse_LU_solver():
     fill(Abuilder, Aarray, b)
     A = Abuilder.build()
     solver = ti.SparseSolver(solver_type="LU")
-    solver.analyzePattern(A)
+    solver.analyze_pattern(A)
     solver.factorize(A)
     x = solver.solve(b.to_numpy())
     for i in range(n):

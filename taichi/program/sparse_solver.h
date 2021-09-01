@@ -13,7 +13,7 @@ class SparseLUSolver {
  public:
   SparseLUSolver();
   bool compute(const SparseMatrix &sm);
-  void analyzePattern(const SparseMatrix &sm);
+  void analyze_pattern(const SparseMatrix &sm);
   void factorize(const SparseMatrix &sm);
   Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b);
 
@@ -26,7 +26,7 @@ class SparseLDLTSolver {
  public:
   SparseLDLTSolver();
   bool compute(const SparseMatrix &sm);
-  void analyzePattern(const SparseMatrix &sm);
+  void analyze_pattern(const SparseMatrix &sm);
   void factorize(const SparseMatrix &sm);
   Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b);
 
@@ -39,7 +39,7 @@ class SparseLLTSolver {
  public:
   SparseLLTSolver();
   bool compute(const SparseMatrix &sm);
-  void analyzePattern(const SparseMatrix &sm);
+  void analyze_pattern(const SparseMatrix &sm);
   void factorize(const SparseMatrix &sm);
   Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b);
 

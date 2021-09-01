@@ -31,7 +31,7 @@ print(x)
 
 print("Solving sparse linear systems Ax = b with the solution x:")
 solver = ti.SparseSolver(solver_type="LU")
-solver.analyzePattern(A)
+solver.analyze_pattern(A)
 solver.factorize(A)
 x = solver.solve(b.to_numpy())
 print(x)

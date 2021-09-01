@@ -25,7 +25,7 @@ StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        LlvmProgramImpl *prog,
                                        std::unique_ptr<llvm::Module> &&module)
     : StructCompilerLLVM(arch,
-                         &(prog->config),
+                         prog->config,
                          prog->get_llvm_context(arch),
                          std::move(module)) {
 }

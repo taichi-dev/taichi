@@ -190,6 +190,9 @@ void Program::materialize_runtime() {
   if (arch_uses_llvm(config.arch)) {
     llvm_program_->materialize_runtime(memory_pool.get(), profiler.get(),
                                        &result_buffer);
+  } else if (config.arch == Arch::metal) {
+    metal_program_->materialize_runtime(memory_pool.get(), profiler.get(),
+                                        &result_buffer);
   }
 }
 
@@ -217,8 +220,8 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
     llvm_program_->materialize_snode_tree(
         tree, snode_trees_, snodes, snode_to_glb_var_exprs_, result_buffer);
   } else if (config.arch == Arch::metal) {
-    metal_program_->materialize_snode_tree(tree, &result_buffer,
-                                           memory_pool.get(), profiler.get());
+    metal_program_->materialize_snode_tree(
+        tree, snode_trees_, snodes, snode_to_glb_var_exprs_, result_buffer);
   } else if (config.arch == Arch::opengl) {
     TI_ASSERT(result_buffer == nullptr);
     result_buffer = (uint64 *)memory_pool->allocate(
@@ -502,7 +505,8 @@ void Program::print_memory_profiler_info() {
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
   if (config.arch == Arch::metal) {
-    return metal_program_->get_snode_num_dynamically_allocated(snode);
+    return metal_program_->get_snode_num_dynamically_allocated(snode,
+                                                               result_buffer);
   }
   return llvm_program_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);

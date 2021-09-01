@@ -11,6 +11,7 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/system/memory_pool.h"
+#include "taichi/program/program_impl.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
@@ -21,10 +22,8 @@ namespace taichi {
 namespace lang {
 class StructCompiler;
 
-class LlvmProgramImpl {
+class LlvmProgramImpl : public ProgramImpl {
  public:
-  CompileConfig config;
-
   LlvmProgramImpl(CompileConfig &config, KernelProfilerBase *profiler);
 
   void initialize_host();
@@ -48,14 +47,14 @@ class LlvmProgramImpl {
     return static_cast<LLVMRuntime *>(llvm_runtime);
   }
 
-  FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded);
+  FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   void materialize_snode_tree(
       SNodeTree *tree,
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       std::unordered_map<int, SNode *> &snodes,
       SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
-      uint64 *result_buffer);
+      uint64 *result_buffer) override;
 
   template <typename T>
   T fetch_result(int i, uint64 *result_buffer) {
@@ -68,10 +67,11 @@ class LlvmProgramImpl {
    */
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
-                           uint64 **result_buffer);
+                           uint64 **result_buffer_ptr) override;
 
-  std::size_t get_snode_num_dynamically_allocated(SNode *snode,
-                                                  uint64 *result_buffer);
+  std::size_t get_snode_num_dynamically_allocated(
+      SNode *snode,
+      uint64 *result_buffer) override;
 
   void destroy_snode_tree(SNodeTree *snode_tree) {
     snode_tree_buffer_manager->destroy(snode_tree);
@@ -81,7 +81,7 @@ class LlvmProgramImpl {
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       uint64 *result_buffer);
 
-  void synchronize();
+  void synchronize() override;
 
   void check_runtime_error(uint64 *result_buffer);
 
@@ -109,7 +109,7 @@ class LlvmProgramImpl {
 
   template <typename T, typename... Args>
   T runtime_query(const std::string &key, uint64 *result_buffer, Args... args) {
-    TI_ASSERT(arch_uses_llvm(config.arch));
+    TI_ASSERT(arch_uses_llvm(config->arch));
 
     TaichiLLVMContext *tlctx = nullptr;
     if (llvm_context_device) {
@@ -126,6 +126,10 @@ class LlvmProgramImpl {
   }
 
   void print_list_manager_info(void *list_manager, uint64 *result_buffer);
+
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
+    TI_NOT_IMPLEMENTED;
+  }
 
  private:
   std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};

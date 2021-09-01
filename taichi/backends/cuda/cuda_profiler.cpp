@@ -15,33 +15,35 @@ CUDAProfiler::~CUDAProfiler() {
   }
 }
 
-bool CUDAProfiler::set_profiling_mode(KernelProfilerMode profiling_mode) {
-  bool enable = profiling_mode == KernelProfilerMode::enable |
-                profiling_mode == KernelProfilerMode::cuda_accurate |
-                profiling_mode == KernelProfilerMode::cuda_detailed;
-  if (!enable) {
+
+bool CUDAProfiler::is_cuda_profiler(KernelProfilerMode profiling_mode){
+  bool ret  = profiling_mode == KernelProfilerMode::enable 
+            | profiling_mode == KernelProfilerMode::cuda_accurate
+            | profiling_mode == KernelProfilerMode::cuda_detailed;
+  return ret;
+}
+
+bool CUDAProfiler::set_profiler(KernelProfilerMode profiling_mode) {
+
+  if (!is_cuda_profiler(profiling_mode)) {
     return false;
   }
 
-  CUDAKernalProfiler profiler_type =
-      (profiling_mode == KernelProfilerMode::cuda_accurate) ||
-              (profiling_mode == KernelProfilerMode::cuda_detailed)
+  CUDAKernalProfiler profiler_type = 
+          (profiling_mode == KernelProfilerMode::enable)
           ? CUDA_KERNEL_PROFILER_CUPTI
           : CUDA_KERNEL_PROFILER_EVENT;
-  profiler_config_.profiling_mode = profiling_mode;
 
-  if (enable && profiler_type == CUDA_KERNEL_PROFILER_EVENT) {
-    profiler_config_.enable = true;
+  if (profiling_mode == KernelProfilerMode::enable) {
     profiler_config_.profiler_type = CUDA_KERNEL_PROFILER_EVENT;
     profiler_config_.profiling_mode = KernelProfilerMode::enable;
     TI_TRACE("CUDA_KERNEL_PROFILER_EVENT : enable");
-    TI_TRACE("CUDAProfiler enable = {}", profiler_config_.enable);
     TI_TRACE("profiler_type : {}", profiler_config_.profiler_type);
     return true;
   }
 
 #if !defined(TI_WITH_TOOLKIT_CUDA)
-  if (enable && profiler_type == CUDA_KERNEL_PROFILER_CUPTI) {
+  if (profiler_type == CUDA_KERNEL_PROFILER_CUPTI) {
     TI_WARN(
         "CUPTI toolkit is not compiled with taichi, fallback to cuEvent kernel "
         "profiler");
@@ -50,12 +52,10 @@ bool CUDAProfiler::set_profiling_mode(KernelProfilerMode profiling_mode) {
         "TAICHI_CMAKE_ARGS=-DTI_WITH_TOOLKIT_CUDA=True python3 setup.py "
         "develop --user");
 
-    profiler_config_.enable = true;
     profiler_config_.profiler_type = CUDA_KERNEL_PROFILER_EVENT;
     profiler_config_.profiling_mode = KernelProfilerMode::enable;
 
     TI_TRACE("CUDA_KERNEL_PROFILER_EVENT : enable");
-    TI_TRACE("CUDAProfiler enable = {}", profiler_config_.enable);
     TI_TRACE("profiler_type : {}", profiler_config_.profiler_type);
     return true;
   }
@@ -64,16 +64,32 @@ bool CUDAProfiler::set_profiling_mode(KernelProfilerMode profiling_mode) {
 #endif
 }
 
-bool CUDAProfiler::statisticsOnRecords(
+
+CUDAKernalProfiler CUDAProfiler::get_profiler_type() {
+  return profiler_config_.profiler_type;
+}
+
+KernelProfilerMode CUDAProfiler::get_profiling_mode() {
+  return profiler_config_.profiling_mode;
+}
+
+
+void CUDAProfiler::record_launched_kernel(std::string name) {
+  CUDAKernelTracedRecord record;
+  record.kernel_name = name;
+  traced_records_.push_back(record);
+}
+
+bool CUDAProfiler::statistics_on_traced_records(
     std::vector<KernelProfileRecord> &records,
     double &total_time_ms) {
-  size_t result_nums = traced_records_.size();
-  if (!result_nums) {
+  size_t records_size = traced_records_.size();
+  if (!records_size) {
     TI_WARN("traced_records_ is empty!");
     return false;
   }
 
-  for (size_t resultIndex = 0; resultIndex < result_nums; ++resultIndex) {
+  for (size_t resultIndex = 0; resultIndex < records_size; ++resultIndex) {
     auto it = std::find_if(
         records.begin(), records.end(), [&](KernelProfileRecord &r) {
           return r.name == traced_records_[resultIndex].kernel_name;
@@ -102,6 +118,11 @@ bool CUDAProfiler::statisticsOnRecords(
   return true;
 }
 
+void CUDAProfiler::clear_traced_records() {
+  traced_records_.clear();
+}
+
+
 CUDAProfiler &CUDAProfiler::get_instance_without_context() {
   static CUDAProfiler *instance = new CUDAProfiler();
   return *instance;
@@ -112,39 +133,15 @@ CUDAProfiler &CUDAProfiler::get_instance() {
   return get_instance_without_context();
 }
 
-bool CUDAProfiler::printTracedRecords() {
-  size_t result_nums = traced_records_.size();
-  if (!result_nums) {
-    TI_WARN("traced_records_ is empty!");
-    return false;
-  }
-
-  for (size_t resultIndex = 0; resultIndex < result_nums; ++resultIndex) {
-    TI_INFO("Kernel: name[{}] time[{:6.6f}]ms ldg[{}]bytes stg[{}]bytes",
-            traced_records_[resultIndex].kernel_name,
-            traced_records_[resultIndex].kernel_elapsed_time_in_ms,
-            traced_records_[resultIndex].kernel_gloabl_load_byets,
-            traced_records_[resultIndex].kernel_gloabl_store_byets);
-    if (profiler_config_.profiling_mode == KernelProfilerMode::cuda_detailed) {
-      TI_INFO(
-          "        detailed metrics: sm.utilization.ratio[{:7.2f}] "
-          "mem.utilization.ratio[{:7.2f}]",
-          traced_records_[resultIndex].utilization_ratio_sm,
-          traced_records_[resultIndex].utilization_ratio_mem);
-    }
-  }
-
-  return true;
-}
 
 #if defined(TI_WITH_TOOLKIT_CUDA)
 // TODO::CUPTI_PROFILER
 #else
-bool CUDAProfiler::init_cupti(){};
+bool CUDAProfiler::init_cupti(){};       //TODO TI_WARN 
 bool CUDAProfiler::begin_profiling(){};
 bool CUDAProfiler::end_profiling(){};
 bool CUDAProfiler::deinit_cupti(){};
-bool CUDAProfiler::traceMetricValues(){};
+bool CUDAProfiler::trace_metric_values(){};
 #endif
 
 TLANG_NAMESPACE_END

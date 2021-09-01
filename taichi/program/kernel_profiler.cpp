@@ -138,7 +138,7 @@ void KernelProfilerBase::clear() {
   total_time_ms = 0;
   records.clear();
 #if defined(TI_WITH_CUDA)
-  CUDAProfiler::get_instance().clearTracedRecords();
+  CUDAProfiler::get_instance().clear_traced_records();
 #endif
 }
 
@@ -193,7 +193,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
   explicit KernelProfilerCUDA(KernelProfilerMode mode) {
     mode_ = mode;
 #if defined(TI_WITH_CUDA)
-    CUDAProfiler::get_instance().set_profiling_mode(mode_);
+    CUDAProfiler::get_instance().set_profiler(mode_);
     if (CUDAProfiler::get_instance().get_profiler_type() ==
         CUDA_KERNEL_PROFILER_CUPTI) {
       CUDAProfiler::get_instance().init_cupti();
@@ -318,9 +318,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
       outstanding_events.clear();
     } else if (CUDAProfiler::get_instance().get_profiler_type() ==
                CUDA_KERNEL_PROFILER_CUPTI) {
-      CUDAProfiler::get_instance()
-          .traceMetricValues();  // from cupti image . trace (per kernel)
-      CUDAProfiler::get_instance().statisticsOnRecords(records, total_time_ms);
+      CUDAProfiler::get_instance().trace_metric_values();
+      CUDAProfiler::get_instance().statistics_on_traced_records(records, total_time_ms);
       CUDAProfiler::get_instance().end_profiling();
       CUDAProfiler::get_instance().deinit_cupti();
       CUDAProfiler::get_instance().init_cupti();

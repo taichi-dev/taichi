@@ -14,7 +14,6 @@ namespace taichi {
 namespace lang {
 class MetalProgramImpl : public ProgramImpl {
  public:
-  // CompileConfig config;
   MetalProgramImpl(CompileConfig &config);
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
   // TODO: materialize_runtime

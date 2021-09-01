@@ -24,8 +24,6 @@ class StructCompiler;
 
 class LlvmProgramImpl : public ProgramImpl {
  public:
-  // CompileConfig config;
-
   LlvmProgramImpl(CompileConfig &config, KernelProfilerBase *profiler);
 
   void initialize_host();

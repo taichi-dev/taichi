@@ -17,12 +17,22 @@ class ProgramImpl {
  public:
   ProgramImpl(CompileConfig &config);
 
+  /**
+   * Codegen to specific backend
+   */
   virtual FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) = 0;
 
+  /**
+   * Allocate runtime buffer, e.g result_buffer or backend specific runtime
+   * buffer, e.g. preallocated_device_buffer on CUDA.
+   */
   virtual void materialize_runtime(MemoryPool *memory_pool,
                                    KernelProfilerBase *profiler,
                                    uint64 **result_buffer_ptr) = 0;
 
+  /**
+   * Run StructCompiler for the backend.
+   */
   virtual void materialize_snode_tree(
       SNodeTree *tree,
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
@@ -34,8 +44,14 @@ class ProgramImpl {
       SNode *snode,
       uint64 *result_buffer) = 0;
 
+  /**
+   * Perform a backend synchronization.
+   */
   virtual void synchronize() = 0;
 
+  /**
+   * Make a AotModulerBuilder, currently only supported by metal and wasm.
+   */
   virtual std::unique_ptr<AotModuleBuilder> make_aot_module_builder() = 0;
 
   virtual ~ProgramImpl() {

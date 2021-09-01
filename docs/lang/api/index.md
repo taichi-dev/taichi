@@ -4,7 +4,6 @@ sidebar_position: 1
 
 # API Docs
 
-:::danger WIP Notice
-Sorry for the inconvenience, the Taichi API docs are under construction and not in
-a stable state yet!
+:::info Taichi language API reference
+Please refer to https://api-docs.taichi.graphics for the most up-to-date Taichi language's API reference while we are working on improving this page, thanks for your understanding!
 :::

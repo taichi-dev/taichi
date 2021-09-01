@@ -1,6 +1,7 @@
 import numpy as np
 
 import taichi as ti
+
 """
 The symmetric positive definite matrix is created in matlab using the following script:
     A = diag([1,2,3,4]);

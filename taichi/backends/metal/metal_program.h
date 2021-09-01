@@ -16,14 +16,21 @@ class MetalProgramImpl : public ProgramImpl {
  public:
   MetalProgramImpl(CompileConfig &config);
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
-  // TODO: materialize_runtime
 
-  std::size_t get_snode_num_dynamically_allocated(SNode *snode) override;
+  std::size_t get_snode_num_dynamically_allocated(
+      SNode *snode,
+      uint64 *result_buffer) override;
 
-  void materialize_snode_tree(SNodeTree *tree,
-                              uint64 **result_buffer_ptr,
-                              MemoryPool *memory_pool,
-                              KernelProfilerBase *profiler) override;
+  void materialize_runtime(MemoryPool *memory_pool,
+                           KernelProfilerBase *profiler,
+                           uint64 **result_buffer_ptr) override;
+
+  void materialize_snode_tree(
+      SNodeTree *tree,
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+      std::unordered_map<int, SNode *> &snodes,
+      SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
+      uint64 *result_buffer) override;
 
   void synchronize() override {
     metal_kernel_mgr_->synchronize();
@@ -40,6 +47,7 @@ class MetalProgramImpl : public ProgramImpl {
  private:
   std::optional<metal::CompiledStructs> metal_compiled_structs_;
   std::unique_ptr<metal::KernelManager> metal_kernel_mgr_;
+  metal::KernelManager::Params params_;
 };
 }  // namespace lang
 }  // namespace taichi

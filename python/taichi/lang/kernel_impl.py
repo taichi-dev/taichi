@@ -10,7 +10,9 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
 from taichi.lang.ast_checker import KernelSimplicityASTChecker
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.kernel_arguments import ext_arr, template
+from taichi.lang.kernel_arguments import (any_arr, sparse_matrix_builder,
+                                          template)
+from taichi.lang.ndarray import Ndarray
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.transformer import ASTTransformerTotal
 from taichi.misc.util import obsolete
@@ -363,9 +365,11 @@ class Kernel:
                     raise KernelDefError(
                         'Taichi kernels parameters must be type annotated')
             else:
-                if isinstance(annotation, (template, ext_arr)):
+                if isinstance(annotation, (template, any_arr)):
                     pass
                 elif id(annotation) in primitive_types.type_ids:
+                    pass
+                elif isinstance(annotation, sparse_matrix_builder):
                     pass
                 else:
                     _taichi_skip_traceback = 1
@@ -442,9 +446,11 @@ class Kernel:
                 )
             self.runtime.inside_kernel = True
             self.runtime.current_kernel = self
-            compiled()
-            self.runtime.inside_kernel = False
-            self.runtime.current_kernel = None
+            try:
+                compiled()
+            finally:
+                self.runtime.inside_kernel = False
+                self.runtime.current_kernel = None
 
         taichi_kernel = taichi_kernel.define(taichi_ast_generator)
         self.kernel_cpp = taichi_kernel
@@ -480,7 +486,13 @@ class Kernel:
                     if not isinstance(v, int):
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
-                elif self.match_ext_arr(v, needed):
+                elif isinstance(needed, sparse_matrix_builder):
+                    # Pass only the base pointer of the ti.sparse_matrix_builder() argument
+                    launch_ctx.set_arg_int(actual_argument_slot, v.get_addr())
+                elif isinstance(needed, any_arr) and (self.match_ext_arr(v) or
+                                                      isinstance(v, Ndarray)):
+                    if isinstance(v, Ndarray):
+                        v = v.arr
                     has_external_arrays = True
                     has_torch = util.has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
@@ -564,15 +576,12 @@ class Kernel:
 
         return func__
 
-    def match_ext_arr(self, v, needed):
-        needs_array = isinstance(
-            needed, np.ndarray) or needed == np.ndarray or isinstance(
-                needed, ext_arr)
+    def match_ext_arr(self, v):
         has_array = isinstance(v, np.ndarray)
         if not has_array and util.has_pytorch():
             import torch
             has_array = isinstance(v, torch.Tensor)
-        return has_array and needs_array
+        return has_array
 
     def ensure_compiled(self, *args):
         instance_id, arg_features = self.mapper.lookup(args)

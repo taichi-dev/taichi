@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import taichi as ti
 
@@ -6,7 +7,8 @@ if ti.has_pytorch():
     import torch
 
 
-@ti.torch_test
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
 def test_torch_ad():
     n = 32
 
@@ -45,7 +47,8 @@ def test_torch_ad():
             assert ret[j] == 4
 
 
-@ti.torch_test
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
 def test_torch_ad_gpu():
     if not torch.cuda.is_available():
         return

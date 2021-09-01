@@ -11,7 +11,7 @@ import taichi as ti
 from taichi import approx
 
 
-@ti.all_archs
+@ti.test()
 def test_matrix_self_assign():
     a = ti.Vector.field(2, ti.f32, ())
     b = ti.Matrix.field(2, 2, ti.f32, ())
@@ -21,7 +21,7 @@ def test_matrix_self_assign():
     def func():
         a[None] = a[None].normalized()
         b[None] = b[None].transpose()
-        c[None] = ti.Vector([c[None][1], c[None][0]])
+        c[None] = ti.Vector([c[None][1], c[None][0]], dt=ti.f32)
 
     inv_sqrt2 = 1 / math.sqrt(2)
 
@@ -34,20 +34,20 @@ def test_matrix_self_assign():
     assert c[None].value == ti.Vector([3, 2])
 
 
-@ti.all_archs
+@ti.test()
 def test_random_vector_dup_eval():
     a = ti.Vector.field(2, ti.f32, ())
 
     @ti.kernel
     def func():
-        a[None] = ti.Vector([ti.random(), 1]).normalized()
+        a[None] = ti.Vector([ti.random(), 1], dt=ti.f32).normalized()
 
     for i in range(4):
         func()
         assert a[None].value.norm_sqr() == approx(1)
 
 
-@ti.all_archs
+@ti.test()
 def test_func_argument_dup_eval():
     @ti.func
     def func(a, t):
@@ -61,15 +61,15 @@ def test_func_argument_dup_eval():
         assert kern(1.0) == 0.0
 
 
-@ti.all_archs
+@ti.test()
 def test_func_random_argument_dup_eval():
     @ti.func
     def func(a):
-        return ti.Vector([ti.cos(a), ti.sin(a)])
+        return ti.Vector([ti.cos(a), ti.sin(a)], dt=ti.f32)
 
     @ti.kernel
     def kern() -> ti.f32:
         return func(ti.random()).norm_sqr()
 
     for i in range(4):
-        assert kern() == approx(1.0)
+        assert kern() == approx(1.0, rel=5e-5)

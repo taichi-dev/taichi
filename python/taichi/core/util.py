@@ -21,7 +21,7 @@ def in_docker():
         return True
 
 
-def import_ti_core(tmp_dir=None):
+def import_ti_core():
     global ti_core
     if settings.get_os_name() != 'win':
         old_flags = sys.getdlopenflags()
@@ -48,8 +48,6 @@ def import_ti_core(tmp_dir=None):
         sys.setdlopenflags(old_flags)
     lib_dir = os.path.join(package_root(), 'lib')
     core.set_lib_dir(locale_encode(lib_dir))
-    if tmp_dir is not None:
-        core.set_tmp_dir(locale_encode(tmp_dir))
 
 
 def locale_encode(path):
@@ -75,31 +73,15 @@ def package_root():
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), '../')
 
 
-def is_release():
-    return os.environ.get('TAICHI_REPO_DIR', '') == ''
-
-
 def get_core_shared_object():
-    if is_release():
-        directory = os.path.join(package_root(), 'lib')
-    else:
-        directory = settings.get_bin_directory()
+    directory = os.path.join(package_root(), 'lib')
     return os.path.join(directory, 'libtaichi_core.so')
-
-
-def get_repo():
-    from git import Repo
-    repo = Repo(settings.get_repo_directory())
-    return repo
 
 
 def print_red_bold(*args, **kwargs):
     print(Fore.RED + Style.BRIGHT, end='')
     print(*args, **kwargs)
     print(Style.RESET_ALL, end='')
-
-
-create_sand_box_on_windows = True
 
 
 def build():
@@ -134,21 +116,6 @@ def check_exists(src):
         )
 
 
-def prepare_sandbox():
-    '''
-    Returns a temporary directory, which will be automatically deleted on exit.
-    It may contain the taichi_core shared object or some misc. files.
-    '''
-    import atexit
-    import shutil
-    from tempfile import mkdtemp
-    tmp_dir = mkdtemp(prefix='taichi-')
-    atexit.register(shutil.rmtree, tmp_dir)
-    print(f'[Taichi] preparing sandbox at {tmp_dir}')
-    os.mkdir(os.path.join(tmp_dir, 'runtime/'))
-    return tmp_dir
-
-
 def get_unique_task_id():
     import datetime
     import random
@@ -156,123 +123,17 @@ def get_unique_task_id():
         '%05d' % random.randint(0, 10000))
 
 
-if is_release():
-    print("[Taichi] mode=release")
-    sys.path.append(os.path.join(package_root(), 'lib'))
-    if settings.get_os_name() != 'win':
-        link_src = os.path.join(package_root(), 'lib', 'taichi_core.so')
-        link_dst = os.path.join(package_root(), 'lib', 'libtaichi_core.so')
-        # For llvm jit to find the runtime symbols
-        if not os.path.exists(link_dst):
-            os.symlink(link_src, link_dst)
-    import_ti_core()
-    if settings.get_os_name() != 'win':
-        dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_LOCAL)
-        # The C backend needs a temporary directory for the generated .c and compiled .so files:
-        ti_core.set_tmp_dir(locale_encode(prepare_sandbox(
-        )))  # TODO: always allocate a tmp_dir for all situations
+sys.path.append(os.path.join(package_root(), 'lib'))
+if settings.get_os_name() != 'win':
+    link_src = os.path.join(package_root(), 'lib', 'taichi_core.so')
+    link_dst = os.path.join(package_root(), 'lib', 'libtaichi_core.so')
+    # For llvm jit to find the runtime symbols
+    if not os.path.exists(link_dst):
+        os.symlink(link_src, link_dst)
+import_ti_core()
 
-    ti_core.set_python_package_dir(package_root())
-    os.makedirs(ti_core.get_repo_dir(), exist_ok=True)
-else:
-    print("[Taichi] mode=development")
-    if settings.get_os_name() == 'osx':
-        bin_dir = settings.get_bin_directory()
-        os.environ[
-            'DYLD_FALLBACK_LIBRARY_PATH'] = settings.get_runtime_directory()
-        lib_path = os.path.join(bin_dir, 'libtaichi_core.dylib')
-        tmp_cwd = os.getcwd()
-        tmp_dir = prepare_sandbox()
-        check_exists(lib_path)
-        shutil.copy(lib_path, os.path.join(tmp_dir, 'taichi_core.so'))
-        os.chdir(tmp_dir)
-        sys.path.append(tmp_dir)
-        import taichi_core as ti_core
-        os.chdir(tmp_cwd)
-
-    # TODO: unify importing infrastructure:
-    elif settings.get_os_name() == 'linux':
-        bin_dir = settings.get_bin_directory()
-        if 'LD_LIBRARY_PATH' in os.environ:
-            os.environ['LD_LIBRARY_PATH'] += ':/usr/lib64/'
-        else:
-            os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
-        lib_path = os.path.join(bin_dir, 'libtaichi_core.so')
-        check_exists(lib_path)
-        tmp_cwd = os.getcwd()
-        tmp_dir = prepare_sandbox()
-        check_exists(lib_path)
-        shutil.copy(lib_path, os.path.join(tmp_dir, 'taichi_core.so'))
-        os.chdir(tmp_dir)
-        sys.path.append(tmp_dir)
-        try:
-            import_ti_core(tmp_dir)
-        except Exception as e:
-            print_red_bold("Taichi core import failed: ", end='')
-            print(e)
-            print(
-                Fore.YELLOW + "check this page for possible solutions:\n"
-                "https://taichi.readthedocs.io/en/stable/install.html#troubleshooting"
-                + Fore.RESET)
-            raise e from None
-        os.chdir(tmp_cwd)
-
-    elif settings.get_os_name() == 'win':
-        bin_dir = settings.get_bin_directory()
-        dll_path_invalid = os.path.join(bin_dir, 'libtaichi_core.dll')
-        assert not os.path.exists(dll_path_invalid)
-
-        possible_folders = ['Debug', 'RelWithDebInfo', 'Release']
-        detected_dlls = []
-        for folder in possible_folders:
-            dll_path = os.path.join(bin_dir, folder, 'taichi_core.dll')
-            if os.path.exists(dll_path):
-                detected_dlls.append(dll_path)
-
-        if len(detected_dlls) == 0:
-            raise FileNotFoundError(
-                f'Cannot find Taichi core dll under {settings.get_bin_directory()}/{possible_folders}'
-            )
-        elif len(detected_dlls) != 1:
-            print('Warning: multiple Taichi core dlls found:')
-            for dll in detected_dlls:
-                print(' ', dll)
-            print(f'Using {detected_dlls[0]}')
-
-        dll_path = detected_dlls[0]
-
-        # On windows when an dll/pyd is loaded, we cannot write to it any more
-        old_wd = os.getcwd()
-        os.chdir(bin_dir)
-
-        if create_sand_box_on_windows:
-            # Create a sandbox for separated core lib development and loading
-            folder = os.path.join(settings.get_output_directory(), 'tmp',
-                                  get_unique_task_id())
-
-            lib_dir = os.path.join(settings.get_repo_directory(), 'external',
-                                   'lib')
-            os.environ['PATH'] += ';' + lib_dir
-
-            os.makedirs(folder)
-            shutil.copy(dll_path, os.path.join(folder, 'taichi_core.pyd'))
-            os.environ['PATH'] += ';' + folder
-            sys.path.append(folder)
-        else:
-            shutil.copy(dll_path, os.path.join(bin_dir, 'taichi_core.pyd'))
-            sys.path.append(bin_dir)
-        try:
-            import taichi_core as ti_core
-        except Exception as e:
-            print(e)
-            print()
-            print(
-                'Hint: please make sure the major and minor versions of the Python executable is correct.'
-            )
-            print()
-            raise e
-
-        os.chdir(old_wd)
+ti_core.set_python_package_dir(package_root())
+os.makedirs(ti_core.get_repo_dir(), exist_ok=True)
 
 log_level = os.environ.get('TI_LOG_LEVEL', '')
 if log_level:
@@ -311,12 +172,6 @@ def load_module(name, verbose=True):
 
 
 def at_startup():
-    if not is_release():
-        output_dir = settings.get_output_directory()
-        if not os.path.exists(output_dir):
-            print('Making output directory')
-            os.mkdir(output_dir)
-
     ti_core.set_core_state_python_imported(True)
 
 
@@ -368,13 +223,8 @@ at_startup()
 
 
 def _print_taichi_header():
-    dev_mode = not is_release()
-
     header = '[Taichi] '
-    if dev_mode:
-        header += '<dev mode>, '
-    else:
-        header += f'version {ti_core.get_version_string()}, '
+    header += f'version {ti_core.get_version_string()}, '
 
     llvm_version = ti_core.get_llvm_version_string()
     header += f'llvm {llvm_version}, '
@@ -398,7 +248,6 @@ __all__ = [
     'build',
     'load_module',
     'start_memory_monitoring',
-    'is_release',
     'package_root',
     'require_version',
 ]

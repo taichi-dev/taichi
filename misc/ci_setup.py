@@ -186,11 +186,12 @@ class Installer:
             "autograd",
             "astor",
             "sourceinspect",
-            "pytest==6.0.2",
+            "pytest",
             "pytest-xdist",
             "pytest-rerunfailures",
             "pytest-cov",
             "coverage",
+            "torch",
         ])
         print("importing numpy test:")
         ret = subprocess.run(

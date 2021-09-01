@@ -23,6 +23,7 @@
 #include "taichi/util/action_recorder.h"
 #include "taichi/system/timeline.h"
 #include "taichi/python/snode_registry.h"
+#include "taichi/program/sparse_matrix.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
@@ -56,7 +57,6 @@ void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
 std::vector<std::unique_ptr<ASTBuilder::ScopeGuard>> scope_stack;
 
 std::string libdevice_path();
-std::string get_runtime_dir();
 
 SNodeRwAccessorsBank::Accessors get_snode_rw_accessors(SNode *snode) {
   return get_current_program().get_snode_rw_accessors_bank().get(snode);
@@ -170,6 +170,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::advanced_optimization)
       .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
       .def_readwrite("async_mode", &CompileConfig::async_mode)
+      .def_readwrite("dynamic_index", &CompileConfig::dynamic_index)
       .def_readwrite("flatten_if", &CompileConfig::flatten_if)
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
@@ -472,9 +473,10 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(std::move(stmt_unique));
   });
 
-  m.def("create_internal_func_stmt", [&](const std::string &msg) {
-    current_ast_builder().insert(std::make_unique<InternalFuncStmt>(msg));
-  });
+  m.def("insert_internal_func_call",
+        [&](const std::string &func_name, const ExprGroup &args) {
+          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs);
+        });
 
   m.def("begin_frontend_while", [&](const Expr &cond) {
     auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
@@ -649,6 +651,30 @@ void export_lang(py::module &m) {
         PrimitiveType::unknown));
     return var;
   });
+  m.def("expr_alloca_local_tensor", [](const std::vector<int> &shape,
+                                       const DataType &element_type,
+                                       const ExprGroup &elements) {
+    auto var = Expr(std::make_shared<IdExpression>());
+    current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
+        std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
+        element_type));
+    for (int i = 0; i < (int)elements.exprs.size(); ++i) {
+      ExprGroup reversed_indices;
+      int linearized_index = i;
+      for (int d = (int)shape.size() - 1; d >= 0; --d) {
+        reversed_indices.push_back(
+            Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
+        linearized_index /= shape[d];
+      }
+      ExprGroup indices;
+      for (int d = 0; d < (int)shape.size(); ++d)
+        indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
+      current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
+          Expr::make<TensorElementExpression>(var, indices, shape, 1),
+          load_if_ptr(elements.exprs[i])));
+    }
+    return var;
+  });
   m.def("expr_assign", expr_assign);
 
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
@@ -710,10 +736,27 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
-  m.def("subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices, int cols, bool is_aos) {
-          return Expr::make<GlobalTensorElementExpression>(var, indices, cols,
-                                                           is_aos);
+  m.def("global_subscript_with_offset",
+        [](const Expr &var, const ExprGroup &indices,
+           const std::vector<int> &shape, bool is_aos) {
+          // TODO: Add test for dimension check
+          if (is_aos)
+            return Expr::make<TensorElementExpression>(var, indices, shape, 1);
+          else {
+            SNode *snode = var.cast<GlobalPtrExpression>()
+                               ->var.cast<GlobalVariableExpression>()
+                               ->snode;
+            return Expr::make<TensorElementExpression>(
+                var, indices, shape,
+                snode->get_total_num_elements_towards_root());
+          }
+        });
+
+  m.def("local_subscript_with_offset",
+        [](const Expr &var, const ExprGroup &indices,
+           const std::vector<int> &shape) {
+          // TODO: Add test for dimension check
+          return Expr::make<TensorElementExpression>(var, indices, shape, 1);
         });
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
@@ -744,6 +787,7 @@ void export_lang(py::module &m) {
       .def(py::init<const std::string &, int, int>())
       .def_readonly("instance_id", &FunctionKey::instance_id);
 
+  // This function will call `Expr &Expr::operator=(const Expr &o)` implicitly.
   m.def("create_print",
         [&](std::vector<std::variant<Expr, std::string>> contents) {
           current_ast_builder().insert(
@@ -777,9 +821,13 @@ void export_lang(py::module &m) {
       .export_values();
 
   m.def("insert_snode_access_flag", insert_snode_access_flag);
+  m.def("reset_snode_access_flag", reset_snode_access_flag);
   m.def("no_activate", [](SNode *snode) {
     // TODO(#2193): Also apply to @ti.func?
-    get_current_program().get_current_kernel().no_activate.push_back(snode);
+    auto *kernel =
+        dynamic_cast<Kernel *>(get_current_program().current_callable);
+    TI_ASSERT(kernel);
+    kernel->no_activate.push_back(snode);
   });
   m.def("stop_grad",
         [](SNode *snode) { current_ast_builder().stop_gradient(snode); });
@@ -793,7 +841,6 @@ void export_lang(py::module &m) {
 
   m.def("set_lib_dir", [&](const std::string &dir) { compiled_lib_dir = dir; });
   m.def("set_tmp_dir", [&](const std::string &dir) { runtime_tmp_dir = dir; });
-  m.def("get_runtime_dir", get_runtime_dir);
 
   m.def("get_commit_hash", get_commit_hash);
   m.def("get_version_string", get_version_string);
@@ -899,6 +946,39 @@ void export_lang(py::module &m) {
         return program->add_snode_tree(registry->finalize(root));
       },
       py::return_value_policy::reference);
+
+  py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
+      .def("print_triplets", &SparseMatrixBuilder::print_triplets)
+      .def("build", &SparseMatrixBuilder::build)
+      .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
+
+  m.def("create_sparse_matrix_builder",
+        [](int n, int m, uint64 max_num_entries) {
+          TI_ERROR_IF(!arch_is_cpu(get_current_program().config.arch),
+                      "SparseMatrix only supports CPU for now.");
+          return SparseMatrixBuilder(n, m, max_num_entries);
+        });
+
+  py::class_<SparseMatrix>(m, "SparseMatrix")
+      .def("to_string", &SparseMatrix::to_string)
+      .def(py::self + py::self, py::return_value_policy::reference_internal)
+      .def(py::self - py::self, py::return_value_policy::reference_internal)
+      .def(float() * py::self, py::return_value_policy::reference_internal)
+      .def(py::self * float(), py::return_value_policy::reference_internal)
+      .def(py::self * py::self, py::return_value_policy::reference_internal)
+      .def("matmul", &SparseMatrix::matmul,
+           py::return_value_policy::reference_internal)
+      .def("transpose", &SparseMatrix::transpose,
+           py::return_value_policy::reference_internal)
+      .def("get_element", &SparseMatrix::get_element)
+      .def("num_rows", &SparseMatrix::num_rows)
+      .def("num_cols", &SparseMatrix::num_cols);
+
+  m.def("create_sparse_matrix", [](int n, int m) {
+    TI_ERROR_IF(!arch_is_cpu(get_current_program().config.arch),
+                "SparseMatrix only supports CPU for now.");
+    return SparseMatrix(n, m);
+  });
 }
 
 TI_NAMESPACE_END

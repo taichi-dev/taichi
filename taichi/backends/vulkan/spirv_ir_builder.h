@@ -3,11 +3,12 @@
 #include <array>
 
 #include "taichi/backends/vulkan/spirv_header.h"
-#include "taichi/backends/vulkan/vulkan_api.h"
+#include "taichi/backends/vulkan/embedded_device.h"
 #include "taichi/lang_util.h"
 #include "taichi/ir/type.h"
 #include "taichi/util/testing.h"
 #include "taichi/backends/vulkan/snode_struct_compiler.h"
+#include "taichi/ir/statements.h"
 
 namespace taichi {
 namespace lang {
@@ -203,7 +204,7 @@ class InstrBuilder {
 // Builder to build up a single SPIR-V module
 class IRBuilder {
  public:
-  IRBuilder(const VulkanCapabilities &vulkan_cap) : vulkan_cap_(vulkan_cap) {
+  IRBuilder(const Device *device) : device_(device) {
   }
 
   template <typename... Args>
@@ -311,7 +312,8 @@ class IRBuilder {
   // Get the spirv type for a given Taichi data type
   SType get_primitive_type(const DataType &dt) const;
   // Get the spirv type for the buffer for a given Taichi data type
-  SType get_primitive_buffer_type(const DataType &dt) const;
+  SType get_primitive_buffer_type(const bool struct_compiled,
+                                  const DataType &dt) const;
   // Get the pointer type that points to value_type
   SType get_pointer_type(const SType &value_type,
                          spv::StorageClass storage_class);
@@ -428,14 +430,10 @@ class IRBuilder {
   Value const_i32_one_;
 
   // Use float_atomic_add
-  Value float_atomic_add();
+  Value float_atomic(AtomicOpType op_type);
   Value rand_u32(Value global_tmp_);
   Value rand_f32(Value global_tmp_);
   Value rand_i32(Value global_tmp_);
-
-  const VulkanCapabilities &get_vulkan_cap() const {
-    return vulkan_cap_;
-  }
 
  private:
   Value new_value(const SType &type, ValueKind flag) {
@@ -451,7 +449,7 @@ class IRBuilder {
 
   void init_random_function(Value global_tmp_);
 
-  const VulkanCapabilities &vulkan_cap_;
+  const Device *device_;
 
   // internal instruction builder
   InstrBuilder ib_;
@@ -482,8 +480,13 @@ class IRBuilder {
   Value gl_num_work_groups;
   Value gl_work_group_size;
 
-  // Float type atomic add function
+  // Float type atomic functions
+  bool any_atomic_{false};
   Value float_atomic_add_;
+  Value float_atomic_sub_;
+  Value float_atomic_min_;
+  Value float_atomic_max_;
+
   // Random function and variables
   bool init_rand_{false};
   Value _rand_x_;
@@ -516,8 +519,9 @@ class IRBuilder {
   std::vector<uint32_t> function_;
   // Random Function segment
   std::vector<uint32_t> random_function_;
-  // Float Atomic Add Function segment
-  std::vector<uint32_t> float_atomic_add_function_;
+
+  // Float Atomic Functions segment
+  std::vector<uint32_t> atomic_functions_;
 };
 }  // namespace spirv
 }  // namespace vulkan

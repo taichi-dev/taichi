@@ -1,6 +1,7 @@
 import taichi as ti
 
 
+@ti.test()
 @ti.must_throw(UnboundLocalError)
 def test_if():
     x = ti.field(ti.f32)
@@ -18,6 +19,7 @@ def test_if():
     func()
 
 
+@ti.test()
 @ti.must_throw(UnboundLocalError)
 def test_for():
     x = ti.field(ti.f32)
@@ -33,6 +35,7 @@ def test_for():
     func()
 
 
+@ti.test()
 @ti.must_throw(UnboundLocalError)
 def test_while():
     x = ti.field(ti.f32)

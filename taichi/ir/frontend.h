@@ -30,7 +30,9 @@ inline Kernel &kernel(const std::function<void()> &body) {
 }
 
 inline void kernel_name(std::string name) {
-  get_current_program().get_current_kernel().name = name;
+  auto *kernel = dynamic_cast<Kernel *>(get_current_program().current_callable);
+  TI_ASSERT(kernel);
+  kernel->name = name;
 }
 
 template <typename T>
@@ -166,6 +168,8 @@ inline Expr LoopUnique(const Expr &input, const std::vector<SNode *> &covers) {
 }
 
 void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field);
+
+void reset_snode_access_flag();
 
 // Begin: legacy frontend constructs
 

@@ -115,7 +115,6 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
   rets_bytes_ = arrange_scalar_before_array(&ret_attribs_vec_, args_bytes_);
   TI_TRACE("sizes: args={} rets={} ctx={} total={}", args_bytes(), rets_bytes(),
            ctx_bytes(), total_bytes());
-  TI_ASSERT(has_args() == (args_bytes_ > 0));
   TI_ASSERT(has_rets() == (rets_bytes_ > 0));
 }
 

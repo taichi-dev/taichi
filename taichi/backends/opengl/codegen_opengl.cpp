@@ -79,7 +79,6 @@ class KernelGen : public IRVisitor {
  private:
   // constants:
   StructCompiledResult *struct_compiled_;
-  const SNode *root_snode_;
   GetRootStmt *root_stmt_;
   std::string kernel_name_;
   std::string root_snode_type_name_;
@@ -1161,9 +1160,8 @@ class KernelGen : public IRVisitor {
     return std::move(compiled_program_);
   }
 
-  void run(const SNode &root_snode) {
-    root_snode_ = &root_snode;
-    root_snode_type_name_ = root_snode.node_type_name;
+  void run() {
+    root_snode_type_name_ = struct_compiled_->root_snode_type_name;
     kernel->ir->accept(this);
   }
 };
@@ -1173,7 +1171,7 @@ class KernelGen : public IRVisitor {
 FunctionType OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
-  codegen.run(*prog_->get_snode_root(SNodeTree::kFirstID));
+  codegen.run();
   auto compiled = codegen.get_compiled_program();
   auto *ptr = compiled.get();
   kernel_launcher_->keep(std::move(compiled));
@@ -1199,8 +1197,7 @@ void OpenglCodeGen::lower() {
 #endif
 }
 
-FunctionType OpenglCodeGen::compile(Program &program, Kernel &kernel) {
-  this->prog_ = &program;
+FunctionType OpenglCodeGen::compile(Kernel &kernel) {
   this->kernel_ = &kernel;
 
   this->lower();

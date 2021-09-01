@@ -36,7 +36,8 @@ def test_simple_array():
     verify_val.__wrapped__()
 
 
-@ti.test(require=ti.extension.quant_basic, debug=True)
+# TODO: remove excluding of ti.metal
+@ti.test(require=ti.extension.quant_basic, exclude=[ti.metal], debug=True)
 def test_custom_int_load_and_store():
     ci13 = ti.quant.int(13, True)
     cu14 = ti.quant.int(14, False)
@@ -118,6 +119,8 @@ def test_bit_struct():
 
         set_val(test_case)
         verify_val(test_case)
+
+        ti.reset()
 
     test_single_bit_struct(8, ti.i8, [3, 3, 2],
                            np.array([2**2 - 1, 2**3 - 1, -2**1]))

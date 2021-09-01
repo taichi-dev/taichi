@@ -7,7 +7,7 @@ import taichi as ti
 from taichi import approx
 
 
-@ti.all_archs
+@ti.test()
 def test_const_init():
     a = ti.Matrix.field(2, 3, dtype=ti.i32, shape=())
     b = ti.Vector.field(3, dtype=ti.i32, shape=())
@@ -27,7 +27,7 @@ def test_const_init():
         assert b[None][j] == j
 
 
-@ti.all_archs
+@ti.test()
 def test_basic_utils():
     a = ti.Vector.field(3, dtype=ti.f32)
     b = ti.Vector.field(2, dtype=ti.f32)
@@ -68,7 +68,7 @@ def test_basic_utils():
     assert aNormalized[None][2] == approx(3.0 * invSqrt14)
 
 
-@ti.all_archs
+@ti.test()
 def test_cross():
     a = ti.Vector.field(3, dtype=ti.f32)
     b = ti.Vector.field(3, dtype=ti.f32)
@@ -97,7 +97,7 @@ def test_cross():
     assert c2[None] == -3.0
 
 
-@ti.all_archs
+@ti.test()
 def test_dot():
     a = ti.Vector.field(3, dtype=ti.f32)
     b = ti.Vector.field(3, dtype=ti.f32)
@@ -124,7 +124,7 @@ def test_dot():
     assert c2[None] == 14.0
 
 
-@ti.all_archs
+@ti.test()
 def test_transpose():
     dim = 3
     m = ti.Matrix.field(dim, dim, ti.f32)
@@ -187,14 +187,15 @@ def test_polar_decomp():
     for dim in [2, 3]:
         for dt in [ti.f32, ti.f64]:
 
-            @ti.all_archs_with(default_fp=dt)
+            @ti.test(require=ti.extension.data64 if dt == ti.f64 else [],
+                     default_fp=dt)
             def wrapped():
                 _test_polar_decomp(dim, dt)
 
             wrapped()
 
 
-@ti.all_archs
+@ti.test()
 def test_matrix():
     x = ti.Matrix.field(2, 2, dtype=ti.i32)
 
@@ -218,7 +219,7 @@ def test_matrix():
         assert x[i][1, 1] == 1 + i
 
 
-@ti.all_archs
+@ti.test()
 def _test_mat_inverse_size(n):
     m = ti.Matrix.field(n, n, dtype=ti.f32, shape=())
     M = np.empty(shape=(n, n), dtype=np.float32)
@@ -244,7 +245,7 @@ def test_mat_inverse():
         _test_mat_inverse_size(n)
 
 
-@ti.all_archs
+@ti.test()
 def test_matrix_factories():
     a = ti.Vector.field(3, dtype=ti.i32, shape=3)
     b = ti.Matrix.field(2, 2, dtype=ti.f32, shape=2)
@@ -276,7 +277,7 @@ def test_matrix_factories():
 # TODO: move codes below to test_matrix.py:
 
 
-@ti.all_archs
+@ti.test()
 def test_init_matrix_from_vectors():
     m1 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
     m2 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
@@ -308,7 +309,7 @@ def test_init_matrix_from_vectors():
 
 # TODO: Remove this once the APIs are obsolete.
 @pytest.mark.filterwarnings('ignore')
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_init_matrix_from_vectors_deprecated():
     m1 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
     m2 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
@@ -339,7 +340,7 @@ def test_init_matrix_from_vectors_deprecated():
 
 
 @pytest.mark.filterwarnings('ignore')
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_to_numpy_as_vector_deprecated():
     v = ti.Vector.field(3, dtype=ti.f32, shape=(2))
     u = np.array([[2, 3, 4], [5, 6, 7]])
@@ -348,7 +349,7 @@ def test_to_numpy_as_vector_deprecated():
     assert v.to_numpy() == approx(u)
 
 
-@ti.all_archs
+@ti.test()
 def test_any_all():
     a = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
     b = ti.field(dtype=ti.i32, shape=())
@@ -378,7 +379,7 @@ def test_any_all():
                 assert c[None] == 0
 
 
-@ti.all_archs
+@ti.test()
 def test_min_max():
     a = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
     b = ti.field(dtype=ti.i32, shape=())
@@ -402,7 +403,7 @@ def test_min_max():
 
 
 # must not throw any error:
-@ti.all_archs
+@ti.test()
 def test_matrix_list_assign():
 
     m = ti.Matrix.field(2, 2, dtype=ti.i32, shape=(2, 2, 1))
@@ -426,7 +427,7 @@ def test_matrix_list_assign():
     assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([10, 12]))
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_vector_xyzw_accessor():
     u = ti.Vector.field(2, dtype=ti.i32, shape=(2, 2, 1))
     v = ti.Vector.field(4, dtype=ti.i32, shape=(2, 2, 1))
@@ -449,7 +450,7 @@ def test_vector_xyzw_accessor():
     assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([6, 0, -3, 4]))
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.get_host_arch_list())
 def test_diag():
     m1 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())
 

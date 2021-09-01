@@ -5,8 +5,8 @@ import taichi as ti
 from taichi import make_temp_file
 
 
-@ti.host_arch_only
 @pytest.mark.parametrize('dtype', [ti.u8, ti.f32])
+@ti.test(arch=ti.get_host_arch_list())
 def test_save_image_without_window(dtype):
     n = 255
     pixels = ti.field(dtype=dtype, shape=(n, n, 3))

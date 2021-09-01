@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "taichi/backends/device.h"
 #include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/backends/vulkan/kernel_utils.h"
 #include "taichi/program/compile_config.h"
@@ -10,8 +11,6 @@
 namespace taichi {
 namespace lang {
 namespace vulkan {
-
-struct VulkanCapabilities;
 
 class VkRuntime {
  private:
@@ -35,11 +34,9 @@ class VkRuntime {
     int id_ = -1;
   };
 
-  using SpirvBinary = std::vector<uint32_t>;
-
   struct RegisterParams {
     TaichiKernelAttributes kernel_attribs;
-    std::vector<SpirvBinary> task_spirv_source_codes;
+    std::vector<std::vector<uint32_t>> task_spirv_source_codes;
   };
 
   KernelHandle register_taichi_kernel(RegisterParams params);
@@ -48,9 +45,7 @@ class VkRuntime {
 
   void synchronize();
 
-#ifdef TI_WITH_VULKAN
-  const VulkanCapabilities &get_capabilities() const;
-#endif
+  Device *get_ti_device() const;
 
  private:
   std::unique_ptr<Impl> impl_;

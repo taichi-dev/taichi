@@ -18,14 +18,13 @@ def _test_type_assign_argument(dt):
 
 
 @pytest.mark.parametrize('dt', _TI_TYPES)
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_type_assign_argument(dt):
     _test_type_assign_argument(dt)
 
 
 @pytest.mark.parametrize('dt', _TI_64_TYPES)
-@ti.require(ti.extension.data64)
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan], require=ti.extension.data64)
 def test_type_assign_argument64(dt):
     _test_type_assign_argument(dt)
 
@@ -51,14 +50,13 @@ def _test_type_operator(dt):
 
 
 @pytest.mark.parametrize('dt', _TI_TYPES)
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_type_operator(dt):
     _test_type_operator(dt)
 
 
 @pytest.mark.parametrize('dt', _TI_64_TYPES)
-@ti.require(ti.extension.data64)
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan], require=ti.extension.data64)
 def test_type_operator64(dt):
     _test_type_operator(dt)
 
@@ -77,14 +75,13 @@ def _test_type_field(dt):
 
 
 @pytest.mark.parametrize('dt', _TI_TYPES)
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_type_field(dt):
     _test_type_field(dt)
 
 
 @pytest.mark.parametrize('dt', _TI_64_TYPES)
-@ti.require(ti.extension.data64)
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan], require=ti.extension.data64)
 def test_type_field64(dt):
     _test_type_field(dt)
 
@@ -120,7 +117,7 @@ def _test_overflow(dt, n):
     (ti.i32, 32),
     (ti.u32, 32),
 ])
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan])
 def test_overflow(dt, n):
     _test_overflow(dt, n)
 
@@ -129,8 +126,7 @@ def test_overflow(dt, n):
     (ti.i64, 64),
     (ti.u64, 64),
 ])
-@ti.require(ti.extension.data64)
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=[ti.opengl, ti.vulkan], require=ti.extension.data64)
 def test_overflow64(dt, n):
     _test_overflow(dt, n)
 

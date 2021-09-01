@@ -1,3 +1,10 @@
+# Optional environment variables supported by setup.py:
+#   DEBUG
+#     build the C++ taichi_core extension with debug symbols.
+#
+#   TAICHI_CMAKE_ARGS
+#     extra cmake args for C++ taichi_core extension.
+
 import glob
 import multiprocessing
 import os
@@ -28,7 +35,7 @@ classifiers = [
 project_name = os.getenv('PROJECT_NAME', 'taichi')
 TI_VERSION_MAJOR = 0
 TI_VERSION_MINOR = 7
-TI_VERSION_PATCH = 28
+TI_VERSION_PATCH = 30
 version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 
 data_files = glob.glob('python/lib/*')
@@ -121,6 +128,7 @@ class CMakeBuild(build_ext):
             f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
         ]
 
+        self.debug = os.getenv('DEBUG', '0') in ('1', 'ON')
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
@@ -182,6 +190,12 @@ class CMakeBuild(build_ext):
                 if f.startswith('runtime_') and f.endswith('.bc'):
                     print(f"Fetching runtime file {f} to {target} folder")
                     shutil.copy(os.path.join(llvm_runtime_dir, f), target)
+
+            ui_kernel_dir = 'taichi/ui/backends/vulkan'
+            for f in os.listdir(ui_kernel_dir):
+                if f.endswith('.bc'):
+                    print(f"Fetching ui kernel file {f} to {target} folder")
+                    shutil.copy(os.path.join(ui_kernel_dir, f), target)
 
 
 setup(name=project_name,

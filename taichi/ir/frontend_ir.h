@@ -31,6 +31,13 @@ class FrontendAllocaStmt : public Stmt {
     ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
   }
 
+  FrontendAllocaStmt(const Identifier &lhs,
+                     std::vector<int> shape,
+                     DataType element)
+      : ident(lhs) {
+    ret_type = DataType(TypeFactory::create_tensor_type(shape, element));
+  }
+
   TI_DEFINE_ACCEPT
 };
 
@@ -316,6 +323,33 @@ class TernaryOpExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
+class InternalFuncCallExpression : public Expression {
+ public:
+  std::string func_name;
+  std::vector<Expr> args;
+
+  InternalFuncCallExpression(const std::string &func_name,
+                             const std::vector<Expr> &args_)
+      : func_name(func_name) {
+    for (auto &a : args_) {
+      args.push_back(load_if_ptr(a));
+    }
+  }
+
+  std::string serialize() override {
+    std::string args_str;
+    for (int i = 0; i < args.size(); i++) {
+      if (i != 0) {
+        args_str += ", ";
+      }
+      args_str += args[i]->serialize();
+    }
+    return fmt::format("internal call {}({})", func_name, args_str);
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
 class ExternalFuncCallExpression : public Expression {
  public:
   void *func;
@@ -430,19 +464,23 @@ class GlobalPtrExpression : public Expression {
   }
 };
 
-class GlobalTensorElementExpression : public Expression {
+class TensorElementExpression : public Expression {
  public:
   Expr var;
   ExprGroup indices;
-  int cols{0};
-  bool is_aos{false};
+  std::vector<int> shape;
+  int layout_stride{1};
 
-  GlobalTensorElementExpression(const Expr &var,
-                                const ExprGroup &indices,
-                                int cols,
-                                bool is_aos)
-      : var(var), indices(indices), cols(cols), is_aos(is_aos) {
+  TensorElementExpression(const Expr &var,
+                          const ExprGroup &indices,
+                          const std::vector<int> &shape,
+                          int layout_stride)
+      : var(var), indices(indices), shape(shape), layout_stride(layout_stride) {
   }
+
+  bool is_local_tensor() const;
+
+  bool is_global_tensor() const;
 
   std::string serialize() override {
     std::string s = fmt::format("{}[", var.serialize());
@@ -451,8 +489,14 @@ class GlobalTensorElementExpression : public Expression {
       if (i + 1 < (int)indices.size())
         s += ", ";
     }
-    s += "]";
-    s += " (col=" + std::to_string(cols) + (is_aos ? ", AOS)" : ", SOA)");
+    s += "] (";
+    for (int i = 0; i < (int)shape.size(); i++) {
+      s += std::to_string(shape[i]);
+      if (i + 1 < (int)shape.size())
+        s += ", ";
+    }
+    s += ", layout_stride = " + std::to_string(layout_stride);
+    s += ")";
     return s;
   }
 
@@ -576,6 +620,19 @@ class SNodeOpExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
+class LocalLoadExpression : public Expression {
+ public:
+  Expr ptr;
+  LocalLoadExpression(const Expr &ptr) : ptr(ptr) {
+  }
+
+  std::string serialize() override {
+    return "lcl load " + ptr.serialize();
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
 class GlobalLoadExpression : public Expression {
  public:
   Expr ptr;
@@ -626,10 +683,7 @@ class FuncCallExpression : public Expression {
   Function *func;
   ExprGroup args;
 
-  std::string serialize() override {
-    return fmt::format("func_call(\"{}\", {})", func->func_key.get_full_name(),
-                       args.serialize());
-  }
+  std::string serialize() override;
 
   FuncCallExpression(Function *func, const ExprGroup &args)
       : func(func), args(args) {
@@ -688,7 +742,5 @@ class FrontendContext {
     return std::move(root_node);
   }
 };
-
-extern std::unique_ptr<FrontendContext> context;
 
 TLANG_NAMESPACE_END

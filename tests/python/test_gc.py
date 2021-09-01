@@ -21,7 +21,9 @@ def _test_block_gc():
     @ti.kernel
     def init():
         for i in x:
-            x[i] = [ti.random() * 0.1 + 0.5, ti.random() * 0.1 + 0.5]
+            x[i] = ti.Vector(
+                [ti.random() * 0.1 + 0.5,
+                 ti.random() * 0.1 + 0.5], dt=ti.f32)
 
     init()
 
@@ -56,7 +58,9 @@ def test_block():
     _test_block_gc()
 
 
+#TODO: Remove exclude of ti.metal.
 @ti.test(require=[ti.extension.sparse, ti.extension.async_mode],
+         exclude=[ti.metal],
          async_mode=True)
 def test_block_async():
     _test_block_gc()

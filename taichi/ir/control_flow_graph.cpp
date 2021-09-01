@@ -261,10 +261,15 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
       bool regular = true;
       auto alloca = local_load->src[0].var;
-      for (int l = 0; l < stmt->width(); l++) {
-        if (local_load->src[l].offset != l ||
-            local_load->src[l].var != alloca) {
-          regular = false;
+      // TODO: store-to-load forwarding with TensorType Alloca
+      if (alloca->is<PtrOffsetStmt>()) {
+        regular = false;
+      } else {
+        for (int l = 0; l < stmt->width(); l++) {
+          if (local_load->src[l].offset != l ||
+              local_load->src[l].var != alloca) {
+            regular = false;
+          }
         }
       }
       if (regular) {
@@ -626,7 +631,11 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
         auto stmt = nodes[i]->block->statements[j].get();
         if (stmt->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
             stmt->is<BlockLocalPtrStmt>() || stmt->is<ThreadLocalPtrStmt>() ||
-            stmt->is<GlobalTemporaryStmt>() || stmt->is<PtrOffsetStmt>()) {
+            stmt->is<GlobalTemporaryStmt>() ||
+            (stmt->is<PtrOffsetStmt>() &&
+             stmt->cast<PtrOffsetStmt>()->origin->is<GlobalTemporaryStmt>()) ||
+            (stmt->is<PtrOffsetStmt>() &&
+             stmt->cast<PtrOffsetStmt>()->is_unlowered_global_ptr())) {
           // TODO: unify them
           // A global pointer that may contain some data before this kernel.
           nodes[start_node]->reach_gen.insert(stmt);

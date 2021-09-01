@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_singleton():
     x = ti.field(ti.i32, shape=())
 
@@ -15,7 +15,7 @@ def test_singleton():
     assert x[None] == 3
 
 
-@ti.all_archs
+@ti.test()
 def test_singleton2():
     x = ti.field(ti.i32)
 
@@ -31,7 +31,7 @@ def test_singleton2():
     assert x[None] == 3
 
 
-@ti.all_archs
+@ti.test()
 def test_linear():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -54,7 +54,7 @@ def test_linear():
         assert y[i] == i * 2
 
 
-@ti.all_archs
+@ti.test()
 def test_nested():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -77,7 +77,7 @@ def test_nested():
         assert y[i] == i * 2
 
 
-@ti.all_archs
+@ti.test()
 def test_nested2():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -102,7 +102,7 @@ def test_nested2():
         assert y[i] == i * 2
 
 
-@ti.all_archs
+@ti.test()
 def test_2d():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -123,7 +123,7 @@ def test_2d():
             assert x[i, j] == i + j * 2
 
 
-@ti.all_archs
+@ti.test()
 def test_2d_non_POT():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32, shape=())
@@ -146,7 +146,7 @@ def test_2d_non_POT():
     assert y[None] == tot
 
 
-@ti.all_archs
+@ti.test()
 def test_nested_2d():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -167,7 +167,7 @@ def test_nested_2d():
             assert x[i, j] == i + j * 2
 
 
-@ti.all_archs
+@ti.test()
 def test_nested_2d_more_nests():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -191,7 +191,7 @@ def test_nested_2d_more_nests():
             assert x[i, j] == i + j * 2
 
 
-@ti.all_archs
+@ti.test()
 def test_linear_k():
     x = ti.field(ti.i32)
 

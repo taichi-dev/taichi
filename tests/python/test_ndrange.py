@@ -3,7 +3,7 @@ import numpy as np
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_1d():
     x = ti.field(ti.f32, shape=(16))
 
@@ -21,7 +21,7 @@ def test_1d():
             assert x[i] == 0
 
 
-@ti.all_archs
+@ti.test()
 def test_2d():
     x = ti.field(ti.f32, shape=(16, 32))
 
@@ -42,7 +42,7 @@ def test_2d():
                 assert x[i, j] == 0
 
 
-@ti.all_archs
+@ti.test()
 def test_3d():
     x = ti.field(ti.f32, shape=(16, 32, 64))
 
@@ -61,7 +61,33 @@ def test_3d():
                     assert x[i, j, k] == 0
 
 
-@ti.all_archs
+@ti.test()
+def test_tensor_based_3d():
+    x = ti.field(ti.i32, shape=(6, 6, 6))
+    y = ti.field(ti.i32, shape=(6, 6, 6))
+
+    @ti.kernel
+    def func():
+        lower = ti.Vector([0, 1, 2])
+        upper = ti.Vector([3, 4, 5])
+        for I in ti.grouped(
+                ti.ndrange((lower[0], upper[0]), (lower[1], upper[1]),
+                           (lower[2], upper[2]))):
+            x[I] = I[0] + I[1] + I[2]
+        for i in range(0, 3):
+            for j in range(1, 4):
+                for k in range(2, 5):
+                    y[i, j, k] = i + j + k
+
+    func()
+
+    for i in range(6):
+        for j in range(6):
+            for k in range(6):
+                assert x[i, j, k] == y[i, j, k]
+
+
+@ti.test()
 def test_static_grouped():
     x = ti.field(ti.f32, shape=(16, 32, 64))
 
@@ -80,7 +106,7 @@ def test_static_grouped():
                     assert x[i, j, k] == 0
 
 
-@ti.all_archs
+@ti.test()
 def test_static_grouped_static():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=(16, 4))
 
@@ -98,7 +124,7 @@ def test_static_grouped_static():
                     assert x[i, j][k, l] == k + l * 10 + i + j * 4
 
 
-@ti.all_archs
+@ti.test()
 def test_field_init_eye():
     # https://github.com/taichi-dev/taichi/issues/1824
 
@@ -116,7 +142,7 @@ def test_field_init_eye():
     assert np.allclose(A.to_numpy(), np.eye(n, dtype=np.float32))
 
 
-@ti.all_archs
+@ti.test()
 def test_ndrange_index_floordiv():
     # https://github.com/taichi-dev/taichi/issues/1829
 

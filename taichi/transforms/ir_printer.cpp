@@ -615,7 +615,17 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(InternalFuncStmt *stmt) override {
-    print("{} = call internal \"{}\"", stmt->name(), stmt->func_name);
+    std::string args;
+    bool first = true;
+    for (auto &arg : stmt->args) {
+      if (!first) {
+        args += ", ";
+      }
+      args += arg->name();
+      first = false;
+    }
+    print("{}{} = internal call {}({})", stmt->type_hint(), stmt->name(),
+          stmt->func_name, args);
   }
 
   void visit(AdStackAllocaStmt *stmt) override {
@@ -649,8 +659,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
-    print("external_tensor_shape_along_axis {}, arg_id {}", stmt->axis,
-          stmt->arg_id);
+    print("{}{} = external_tensor_shape_along_axis {}, arg_id {}",
+          stmt->type_hint(), stmt->name(), stmt->axis, stmt->arg_id);
   }
 
   void visit(BitStructStoreStmt *stmt) override {

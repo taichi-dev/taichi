@@ -147,9 +147,20 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
+  std::vector<Stmt *> args_stmts(args.size());
+  for (int i = 0; i < (int)args.size(); ++i) {
+    args[i]->flatten(ctx);
+    args_stmts[i] = args[i]->stmt;
+  }
+  ctx->push_back<InternalFuncStmt>(func_name, args_stmts);
+  stmt = ctx->back_stmt();
+}
+
 void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> arg_statements, output_statements;
   for (auto &s : args) {
+    s.set(load_if_ptr(s));
     s->flatten(ctx);
     arg_statements.push_back(s->stmt);
   }
@@ -219,55 +230,63 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void GlobalTensorElementExpression::flatten(FlattenContext *ctx) {
-  TI_ASSERT(var.is<GlobalPtrExpression>())
+bool TensorElementExpression::is_local_tensor() const {
+  return var.is<IdExpression>();
+}
+
+bool TensorElementExpression::is_global_tensor() const {
+  return var.is<GlobalPtrExpression>();
+}
+
+void TensorElementExpression::flatten(FlattenContext *ctx) {
   var->flatten(ctx);
-  Stmt *var_stmt = ctx->back_stmt();
-  SNode *snode = var.cast<GlobalPtrExpression>()
-                     ->var.cast<GlobalVariableExpression>()
-                     ->snode;
-  // Compute exact offset
-  // Type A[i, j][x, y]
-  //              ^^^^
-  TI_ASSERT(1 <= indices.size() && indices.size() <= 2)
-  if (indices.size() == 1) {
-    indices[0].set(load_if_ptr(indices[0]));
-    indices[0]->flatten(ctx);
+  Stmt *var_stmt = var->stmt;
+  DataType element_type;
+  if (var.is<IdExpression>()) {
+    // Local tensor subscripting
+    TI_ASSERT(layout_stride == 1);
+    TI_ASSERT(var_stmt->ret_type->is<TensorType>());
+    auto tensor_type = var_stmt->ret_type->cast<TensorType>();
+    element_type = tensor_type->get_element_type();
   } else {
-    indices[0].set(load_if_ptr(indices[0]));
-    indices[0]->flatten(ctx);
-    Stmt *i_stmt = ctx->back_stmt();
-    Stmt *cols_stmt =
-        ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(cols)));
-    Stmt *i_mul_cols_stmt = ctx->push_back(
-        Stmt::make<BinaryOpStmt>(BinaryOpType::mul, i_stmt, cols_stmt));
-    indices[1].set(load_if_ptr(indices[1]));
-    indices[1]->flatten(ctx);
-    Stmt *j_stmt = ctx->back_stmt();
-    ctx->push_back(
-        Stmt::make<BinaryOpStmt>(BinaryOpType::add, i_mul_cols_stmt, j_stmt));
+    TI_ASSERT(var.is<GlobalPtrExpression>());
+    // Global tensor subscripting
+    SNode *snode = var.cast<GlobalPtrExpression>()
+                       ->var.cast<GlobalVariableExpression>()
+                       ->snode;
+    // layout_stride != 1 is satisfied if and only if subscripting on SOA
+    // global tensor.
+    TI_ASSERT(layout_stride == 1 || snode->is_path_all_dense);
+    element_type = snode->dt;
   }
-  // Type A[i, j][x, y]
-  //             ^    ^
-  if (!is_aos) {
-    TI_ASSERT(snode->is_path_all_dense)
-    int size = 1;
-    for (auto *s = snode; s != nullptr; s = s->parent)
-      size *= (int)s->max_num_elements();
-    Stmt *offset_stmt = ctx->back_stmt();
-    Stmt *field_size_stmt =
-        ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(size)));
-    ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
-                                            field_size_stmt));
+  // Compute exact offset
+  // Type A[x, y, ...]
+  //        ^^^^^^^^^
+  indices[0].set(load_if_ptr(indices[0]));
+  indices[0]->flatten(ctx);
+  Stmt *offset_stmt = indices[0]->stmt;
+  for (int i = 1; i < (int)shape.size(); ++i) {
+    Stmt *shape_on_i =
+        ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(shape[i])));
+    Stmt *mul_stmt = ctx->push_back(
+        Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, shape_on_i));
+    indices[i].set(load_if_ptr(indices[i]));
+    indices[i]->flatten(ctx);
+    ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::add, mul_stmt,
+                                            indices[i]->stmt));
+    offset_stmt = ctx->back_stmt();
   }
-  // Type A[i, j][x, y]
+  // Type A[x, y, ...]
   // ^^^^
-  Stmt *offset_stmt = ctx->back_stmt();
   Stmt *dt_size_stmt = ctx->push_back(
-      Stmt::make<ConstStmt>(TypedConstant(data_type_size(snode->dt))));
+      Stmt::make<ConstStmt>(TypedConstant(data_type_size(element_type))));
   ctx->push_back(
       Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, dt_size_stmt));
-
+  offset_stmt = ctx->back_stmt();
+  Stmt *layout_stride_stmt =
+      ctx->push_back(Stmt::make<ConstStmt>(TypedConstant(layout_stride)));
+  ctx->push_back(Stmt::make<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
+                                          layout_stride_stmt));
   ctx->push_back(std::make_unique<PtrOffsetStmt>(var_stmt, ctx->back_stmt()));
   stmt = ctx->back_stmt();
 }
@@ -304,8 +323,15 @@ void LoopUniqueExpression::flatten(FlattenContext *ctx) {
 void IdExpression::flatten(FlattenContext *ctx) {
   auto var_stmt = ctx->current_block->lookup_var(id);
   if (var_stmt->is<AllocaStmt>()) {
-    ctx->push_back(std::make_unique<LocalLoadStmt>(LocalAddress(var_stmt, 0)));
-    stmt = ctx->back_stmt();
+    if (var_stmt->ret_type->is<TensorType>()) {
+      // For TensorType alloca, directly return the first element's address
+      stmt = var_stmt;
+    } else {
+      // For other alloca, load the value and then return
+      ctx->push_back(
+          std::make_unique<LocalLoadStmt>(LocalAddress(var_stmt, 0)));
+      stmt = ctx->back_stmt();
+    }
   } else {
     // The loop index may have a coordinate offset.
     TI_ASSERT(var_stmt->is<LoopIndexStmt>() || var_stmt->is<BinaryOpStmt>());
@@ -350,10 +376,10 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     // emit local store stmt
     auto alloca = ctx->current_block->lookup_var(dest.cast<IdExpression>()->id);
     ctx->push_back<AtomicOpStmt>(op_type, alloca, expr->stmt);
-  } else if (dest.is<GlobalTensorElementExpression>()) {
-    auto global_ptr = dest.cast<GlobalTensorElementExpression>();
-    global_ptr->flatten(ctx);
-    ctx->push_back<AtomicOpStmt>(op_type, ctx->back_stmt(), expr->stmt);
+  } else if (dest.is<TensorElementExpression>()) {
+    auto tensor_ptr = dest.cast<TensorElementExpression>();
+    tensor_ptr->flatten(ctx);
+    ctx->push_back<AtomicOpStmt>(op_type, tensor_ptr->stmt, expr->stmt);
   } else {  // global variable
     TI_ASSERT(dest.is<GlobalPtrExpression>());
     auto global_ptr = dest.cast<GlobalPtrExpression>();
@@ -404,6 +430,17 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void LocalLoadExpression::flatten(FlattenContext *ctx) {
+  ptr->flatten(ctx);
+  auto ptr_offset_stmt = ctx->back_stmt();
+  TI_ASSERT(ptr_offset_stmt->is<PtrOffsetStmt>());
+  auto local_addr =
+      LaneAttribute<LocalAddress>(LocalAddress(ptr_offset_stmt, 0));
+  auto local_load_stmt =
+      ctx->push_back<LocalLoadStmt>(LaneAttribute<LocalAddress>(local_addr));
+  stmt = local_load_stmt;
+}
+
 void GlobalLoadExpression::flatten(FlattenContext *ctx) {
   ptr->flatten(ctx);
   ctx->push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
@@ -430,6 +467,11 @@ void FuncCallExpression::flatten(FlattenContext *ctx) {
   }
   ctx->push_back<FuncCallStmt>(func, stmt_args);
   stmt = ctx->back_stmt();
+}
+
+std::string FuncCallExpression::serialize() {
+  return fmt::format("func_call(\"{}\", {})", func->func_key.get_full_name(),
+                     args.serialize());
 }
 
 Block *ASTBuilder::current_block() {
@@ -465,9 +507,7 @@ std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
 }
 
 ASTBuilder &current_ast_builder() {
-  return context->builder();
+  return get_current_program().current_callable->context->builder();
 }
-
-std::unique_ptr<FrontendContext> context;
 
 TLANG_NAMESPACE_END

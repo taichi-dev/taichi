@@ -36,6 +36,7 @@ CompileConfig::CompileConfig() {
   verbose = true;
   fast_math = true;
   async_mode = false;
+  dynamic_index = false;
   flatten_if = false;
   make_thread_local = true;
   make_block_local = true;
@@ -53,7 +54,7 @@ CompileConfig::CompileConfig() {
   print_kernel_llvm_ir_optimized = false;
 
   // CUDA backend options:
-#if defined(TI_PLATFORM_WINDOWS) or defined(TI_ARCH_ARM)
+#if defined(TI_PLATFORM_WINDOWS) or defined(TI_PLATFORM_OSX)
   use_unified_memory = false;
 #else
   use_unified_memory = true;

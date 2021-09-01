@@ -11,7 +11,7 @@ namespace opengl {
 struct CompiledProgram;
 struct GLSLLauncherImpl;
 struct GLSLLauncher;
-struct GLBuffer;
+class GLBuffer;
 
 struct GLSLLauncher {
   std::unique_ptr<GLSLLauncherImpl> impl;
@@ -36,6 +36,7 @@ struct StructCompiledResult {
   std::unordered_map<SNodeId, SNodeInfo> snode_map;
   // Root buffer size in bytes.
   size_t root_size;
+  std::string root_snode_type_name;
 };
 
 }  // namespace opengl

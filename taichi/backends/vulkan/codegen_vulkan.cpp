@@ -15,6 +15,9 @@
 #include "taichi/backends/vulkan/spirv_snode_compiler.h"
 #include "taichi/ir/transforms.h"
 
+#include <spirv-tools/libspirv.hpp>
+#include <spirv-tools/optimizer.hpp>
+
 namespace taichi {
 namespace lang {
 namespace vulkan {
@@ -49,7 +52,7 @@ class TaskCodegen : public IRVisitor {
  public:
   struct Params {
     OffloadedStmt *task_ir;
-    VkRuntime *runtime;
+    Device *device;
     const CompiledSNodeStructs *compiled_structs;
     const KernelContextAttributes *ctx_attribs;
     std::string ti_kernel_name;
@@ -63,16 +66,15 @@ class TaskCodegen : public IRVisitor {
         task_name_(fmt::format("{}_t{:02d}",
                                params.ti_kernel_name,
                                params.task_id_in_kernel)),
-        runtime_(params.runtime) {
+        device_(params.device) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
 
-    ir_ =
-        std::make_shared<spirv::IRBuilder>(params.runtime->get_capabilities());
+    ir_ = std::make_shared<spirv::IRBuilder>(params.device);
   }
 
   struct Result {
-    VkRuntime::SpirvBinary spirv_code;
+    std::vector<uint32_t> spirv_code;
     TaskAttributes task_attribs;
   };
 
@@ -219,9 +221,9 @@ class TaskCodegen : public IRVisitor {
       TI_ASSERT(ptr_to_buffers_.count(stmt) == 0);
       ptr_to_buffers_[stmt] = BuffersEnum::Root;
 
-      spirv::SType dt_ptr =
-          ir_->get_pointer_type(ir_->get_primitive_buffer_type(out_snode->dt),
-                                spv::StorageClassStorageBuffer);
+      spirv::SType dt_ptr = ir_->get_pointer_type(
+          ir_->get_primitive_buffer_type(true, out_snode->dt),
+          spv::StorageClassStorageBuffer);
       val = ir_->make_value(spv::OpAccessChain, dt_ptr, input_ptr_val, offset);
     } else {
       spirv::SType snode_array =
@@ -241,7 +243,7 @@ class TaskCodegen : public IRVisitor {
     spirv::SType snode_struct;
     if (stmt->input_snode) {
       parent = stmt->input_snode->raw_name();
-      if (stmt->snode->id == 0) {
+      if (stmt->snode->id == compiled_structs_->root->id) {
         snode_struct = spirv_snode_.root_stype;
         is_root = true;
       } else {
@@ -342,17 +344,20 @@ class TaskCodegen : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     const auto dt = stmt->val->element_type();
+    bool struct_compiled = false;
     spirv::Value buffer_ptr;
     spirv::Value val = ir_->query_value(stmt->val->raw_name());
     if (ptr_to_buffers_.at(stmt->dest) == BuffersEnum::Root) {
       buffer_ptr = ir_->query_value(stmt->dest->raw_name());
       buffer_ptr.flag =
           spirv::ValueKind::kVariablePtr;  // make this value could store/load
+      struct_compiled = true;
     } else {
       buffer_ptr = at_buffer(stmt->dest, dt);
     }
 
-    const auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
+    const auto &primitive_buffer_type =
+        ir_->get_primitive_buffer_type(struct_compiled, dt);
     if (buffer_ptr.stype.element_type_id == val.stype.id) {
       // No bit cast
       ir_->store_variable(buffer_ptr, val);
@@ -366,17 +371,20 @@ class TaskCodegen : public IRVisitor {
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->element_type();
+    bool struct_compiled = false;
     spirv::Value buffer_ptr;
     spirv::Value val;
     if (ptr_to_buffers_.at(stmt->src) == BuffersEnum::Root) {
       buffer_ptr = ir_->query_value(stmt->src->raw_name());
       buffer_ptr.flag =
           spirv::ValueKind::kVariablePtr;  // make this value could store/load
+      struct_compiled = true;
     } else {
       buffer_ptr = at_buffer(stmt->src, dt);
     }
 
-    const auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
+    const auto &primitive_buffer_type =
+        ir_->get_primitive_buffer_type(struct_compiled, dt);
     if (buffer_ptr.stype.element_type_id == val.stype.id) {
       // No bit cast
       val = ir_->load_variable(buffer_ptr, primitive_buffer_type);
@@ -430,6 +438,22 @@ class TaskCodegen : public IRVisitor {
                                                  false);  // Named Constant
     ir_->register_value(stmt->raw_name(), val);
     ptr_to_buffers_[stmt] = BuffersEnum::GlobalTmps;
+  }
+
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    const auto name = stmt->raw_name();
+    const auto arg_id = stmt->arg_id;
+    const auto axis = stmt->axis;
+    const auto extra_args_mem_offset = ctx_attribs_->extra_args_mem_offset();
+    const auto extra_args_index_base =
+        (extra_args_mem_offset / sizeof(int32_t));
+    spirv::Value index = ir_->int_immediate_number(
+        ir_->i32_type(),
+        extra_args_index_base + arg_id * taichi_max_num_indices + axis);
+    spirv::Value var_ptr = ir_->struct_array_access(
+        ir_->i32_type(), get_buffer_value(BuffersEnum::Context), index);
+    spirv::Value var = ir_->load_variable(var_ptr, ir_->i32_type());
+    ir_->register_value(name, var);
   }
 
   void visit(ExternalPtrStmt *stmt) override {
@@ -642,7 +666,14 @@ class TaskCodegen : public IRVisitor {
     BINARY_OP_TO_SPIRV_BITWISE(bit_xor, OpBitwiseXor)
     BINARY_OP_TO_SPIRV_BITWISE(bit_shl, OpShiftLeftLogical)
     BINARY_OP_TO_SPIRV_BITWISE(bit_shr, OpShiftRightLogical)
-    BINARY_OP_TO_SPIRV_BITWISE(bit_sar, OpShiftRightArithmetic)
+    // NOTE: `OpShiftRightArithmetic` will treat the first bit as sign bit even
+    // it's the unsigned type
+    else if (op_type == BinaryOpType::bit_sar) {
+      bin_value = ir_->make_value(is_unsigned(dst_type.dt)
+                                      ? spv::OpShiftRightLogical
+                                      : spv::OpShiftRightArithmetic,
+                                  dst_type, lhs_value, rhs_value);
+    }
 #undef BINARY_OP_TO_SPIRV_BITWISE
 
 #define BINARY_OP_TO_SPIRV_LOGICAL(op, func)                          \
@@ -660,8 +691,37 @@ class TaskCodegen : public IRVisitor {
     BINARY_OP_TO_SPIRV_LOGICAL(cmp_ne, ne)
 #undef BINARY_OP_TO_SPIRV_LOGICAL
 
-#define BINARY_OP_TO_SPIRV_FLOAT_FUNC(op, instruction, instruction_id,         \
-                                      max_bits)                                \
+#define INT_OR_FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(op, instruction,            \
+                                                   instruction_id, max_bits)   \
+  else if (op_type == BinaryOpType::op) {                                      \
+    const uint32_t instruction = instruction_id;                               \
+    if (is_real(bin->element_type()) || is_integral(bin->element_type())) {    \
+      if (data_type_bits(bin->element_type()) > max_bits) {                    \
+        TI_ERROR(                                                              \
+            "[glsl450] the operand type of instruction {}({}) must <= {}bits", \
+            #instruction, instruction_id, max_bits);                           \
+      }                                                                        \
+      if (is_integral(bin->element_type())) {                                  \
+        bin_value = ir_->cast(                                                 \
+            dst_type,                                                          \
+            ir_->add(ir_->call_glsl450(ir_->f32_type(), instruction,           \
+                                       ir_->cast(ir_->f32_type(), lhs_value),  \
+                                       ir_->cast(ir_->f32_type(), rhs_value)), \
+                     ir_->float_immediate_number(ir_->f32_type(), 0.5f)));     \
+      } else {                                                                 \
+        bin_value =                                                            \
+            ir_->call_glsl450(dst_type, instruction, lhs_value, rhs_value);    \
+      }                                                                        \
+    } else {                                                                   \
+      TI_NOT_IMPLEMENTED                                                       \
+    }                                                                          \
+  }
+
+    INT_OR_FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(pow, Pow, 26, 32)
+#undef INT_OR_FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC
+
+#define FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(op, instruction, instruction_id,   \
+                                            max_bits)                          \
   else if (op_type == BinaryOpType::op) {                                      \
     const uint32_t instruction = instruction_id;                               \
     if (is_real(bin->element_type())) {                                        \
@@ -677,9 +737,8 @@ class TaskCodegen : public IRVisitor {
     }                                                                          \
   }
 
-    BINARY_OP_TO_SPIRV_FLOAT_FUNC(atan2, Atan2, 25, 32)
-    BINARY_OP_TO_SPIRV_FLOAT_FUNC(pow, Pow, 26, 32)
-#undef BINARY_OP_TO_SPIRV_FLOAT_FUNC
+    FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(atan2, Atan2, 25, 32)
+#undef FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC
 
 #define BINARY_OP_TO_SPIRV_FUNC(op, S_inst, S_inst_id, U_inst, U_inst_id,      \
                                 F_inst, F_inst_id)                             \
@@ -734,37 +793,66 @@ class TaskCodegen : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->op_type != AtomicOpType::add) {
-      TI_NOT_IMPLEMENTED;
-    }
     const auto dt = stmt->dest->element_type().ptr_removed();
 
     spirv::Value addr_ptr;
+    bool is_compiled_struct = false;
     if (ptr_to_buffers_.at(stmt->dest) == BuffersEnum::Root) {
       addr_ptr = ir_->query_value(stmt->dest->raw_name());
       addr_ptr.flag =
           spirv::ValueKind::kVariablePtr;  // make this value could store/load
+      is_compiled_struct = true;
     } else {
       addr_ptr = at_buffer(stmt->dest, dt);
     }
     spirv::Value data = ir_->query_value(stmt->val->raw_name());
     spirv::Value val;
     if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      if (ir_->get_vulkan_cap().has_atomic_float) {
+      if (device_->get_cap(DeviceCapability::vk_has_atomic_float_add) &&
+          stmt->op_type == AtomicOpType::add && is_compiled_struct) {
         val = ir_->make_value(
             spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt), addr_ptr,
             ir_->uint_immediate_number(ir_->u32_type(), 1),
             ir_->uint_immediate_number(ir_->u32_type(), 0), data);
-      } else {
-        spirv::Value func = ir_->float_atomic_add();
+      } else if (device_->get_cap(DeviceCapability::vk_has_spv_variable_ptr)) {
+        spirv::Value func = ir_->float_atomic(stmt->op_type);
         val = ir_->make_value(spv::OpFunctionCall, ir_->f32_type(), func,
                               addr_ptr, data);
+      } else {
+        if (is_compiled_struct) {
+          TI_ERROR(
+              "Atomic operation requires either shader atomic float capability "
+              "or OpVariablePtr capability");
+        } else {
+          TI_ERROR(
+              "Atomic operation on global temporaries or context buffers "
+              "requires OpVariablePtr capability");
+        }
       }
     } else if (is_integral(dt)) {
-      val = ir_->make_value(
-          spv::OpAtomicIAdd, ir_->get_primitive_type(dt), addr_ptr,
-          ir_->uint_immediate_number(ir_->u32_type(), 1),
-          ir_->uint_immediate_number(ir_->u32_type(), 0), data);
+      spv::Op op;
+      if (stmt->op_type == AtomicOpType::add) {
+        op = spv::OpAtomicIAdd;
+      } else if (stmt->op_type == AtomicOpType::sub) {
+        op = spv::OpAtomicISub;
+      } else if (stmt->op_type == AtomicOpType::min) {
+        op = is_signed(dt) ? spv::OpAtomicSMin : spv::OpAtomicUMin;
+      } else if (stmt->op_type == AtomicOpType::max) {
+        op = is_signed(dt) ? spv::OpAtomicSMax : spv::OpAtomicUMax;
+      } else if (stmt->op_type == AtomicOpType::bit_or) {
+        op = spv::OpAtomicOr;
+      } else if (stmt->op_type == AtomicOpType::bit_and) {
+        op = spv::OpAtomicAnd;
+      } else if (stmt->op_type == AtomicOpType::bit_xor) {
+        op = spv::OpAtomicXor;
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+
+      val =
+          ir_->make_value(op, ir_->get_primitive_type(dt), addr_ptr,
+                          ir_->uint_immediate_number(ir_->u32_type(), 1),
+                          ir_->uint_immediate_number(ir_->u32_type(), 0), data);
     } else {
       TI_ERROR("Vulkan only supports 32-bit atomic data types");
     }
@@ -929,7 +1017,7 @@ class TaskCodegen : public IRVisitor {
         task_attribs_.advisory_num_threads_per_group, 1, 1};
     ir_->set_work_group_size(group_size);
     std::vector<spirv::Value> buffers;
-    if (runtime_->get_capabilities().spirv_version > 0x10300) {
+    if (device_->get_cap(DeviceCapability::vk_spirv_version) > 0x10300) {
       for (const auto &bb : task_attribs_.buffer_binds) {
         const auto it = buffer_value_map_.find(bb.type);
         if (it != buffer_value_map_.end()) {
@@ -1050,7 +1138,7 @@ class TaskCodegen : public IRVisitor {
         ir_->mul(ir_->get_num_work_groups(0),
                  ir_->uint_immediate_number(
                      ir_->u32_type(),
-                     task_attribs_.advisory_num_threads_per_group, false)));
+                     task_attribs_.advisory_num_threads_per_group, true)));
     ir_->debug(spv::OpName, total_invocs, total_invocs_name);
 
     // Must get init label after making value(to make sure they are correct)
@@ -1103,7 +1191,9 @@ class TaskCodegen : public IRVisitor {
         ir_->make_value(spv::OpShiftRightArithmetic, ir_->i32_type(), ptr_val,
                         ir_->int_immediate_number(ir_->i32_type(), 2));
     spirv::Value ret = ir_->struct_array_access(
-        ir_->get_primitive_buffer_type(dt), buffer, idx_val);
+        ir_->get_primitive_buffer_type(
+            ptr_to_buffers_.at(ptr) == BuffersEnum::Root, dt),
+        buffer, idx_val);
     return ret;
   }
 
@@ -1125,8 +1215,8 @@ class TaskCodegen : public IRVisitor {
     }
     ir_->debug(spv::OpName, buffer_value, buffer_instance_name(buffer));
     buffer_value_map_[buffer] = buffer_value;
-    TI_INFO("buffer name = {}, value = {}", buffer_instance_name(buffer),
-            buffer_value.id);
+    TI_TRACE("buffer name = {}, value = {}", buffer_instance_name(buffer),
+             buffer_value.id);
 
     return buffer_value;
   }
@@ -1171,7 +1261,7 @@ class TaskCodegen : public IRVisitor {
     return continue_label_stack_.front();
   }
 
-  VkRuntime *runtime_;
+  Device *device_;
 
   std::shared_ptr<spirv::IRBuilder> ir_;  // spirv binary code builder
   std::unordered_map<TaskAttributes::Buffers, spirv::Value> buffer_value_map_;
@@ -1193,17 +1283,66 @@ class TaskCodegen : public IRVisitor {
   std::unordered_map<const Stmt *, BuffersEnum> ptr_to_buffers_;
 };
 
+static void spriv_message_consumer(spv_message_level_t level,
+                                   const char *source,
+                                   const spv_position_t &position,
+                                   const char *message) {
+  // TODO: Maybe we can add a macro, e.g. TI_LOG_AT_LEVEL(lv, ...)
+  if (level <= SPV_MSG_FATAL) {
+    TI_ERROR("{}\n[{}:{}:{}] {}", source, position.index, position.line,
+             position.column, message);
+  } else if (level <= SPV_MSG_WARNING) {
+    TI_WARN("{}\n[{}:{}:{}] {}", source, position.index, position.line,
+            position.column, message);
+  } else if (level <= SPV_MSG_INFO) {
+    TI_INFO("{}\n[{}:{}:{}] {}", source, position.index, position.line,
+            position.column, message);
+  } else if (level <= SPV_MSG_INFO) {
+    TI_TRACE("{}\n[{}:{}:{}] {}", source, position.index, position.line,
+             position.column, message);
+  }
+}
+
 class KernelCodegen {
  public:
   struct Params {
     std::string ti_kernel_name;
     Kernel *kernel;
     const CompiledSNodeStructs *compiled_structs;
-    VkRuntime *runtime;
+    Device *device;
   };
 
   explicit KernelCodegen(const Params &params)
       : params_(params), ctx_attribs_(*params.kernel) {
+    spirv_opt_ = std::make_unique<spvtools::Optimizer>(SPV_ENV_VULKAN_1_2);
+    spirv_tools_ = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
+
+    spirv_opt_->SetMessageConsumer(spriv_message_consumer);
+
+    // TODO: Utilize this if KHR_memory_model is supported
+    // TODO: Profile these passes, remove ones we don't need to speed up JIT
+    // ref:
+    // https://github.com/KhronosGroup/SPIRV-Tools/blob/f9893c4549406eb9643e0eb05a521ab70a320fff/source/opt/optimizer.cpp
+    spirv_opt_->RegisterPass(spvtools::CreateWrapOpKillPass())
+        .RegisterPass(spvtools::CreateMergeReturnPass())
+        .RegisterPass(spvtools::CreateEliminateDeadFunctionsPass())
+        .RegisterPass(spvtools::CreateInlineExhaustivePass())
+        .RegisterPass(spvtools::CreateLoopUnrollPass(true))
+        .RegisterPass(spvtools::CreatePrivateToLocalPass())
+        .RegisterPass(spvtools::CreateScalarReplacementPass())
+        .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
+        .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
+        .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
+        .RegisterPass(spvtools::CreateLocalMultiStoreElimPass())
+        .RegisterPass(spvtools::CreateAggressiveDCEPass())
+        .RegisterPass(spvtools::CreateVectorDCEPass())
+        .RegisterPass(spvtools::CreateIfConversionPass())
+        .RegisterPass(spvtools::CreateCopyPropagateArraysPass())
+        .RegisterPass(spvtools::CreateReduceLoadSizePass())
+        .RegisterPass(spvtools::CreateRedundancyEliminationPass())
+        .RegisterPass(spvtools::CreateSimplificationPass());
+
+    _spirv_opt_options.set_run_validator(false);
   }
 
   using Result = VkRuntime::RegisterParams;
@@ -1220,12 +1359,30 @@ class KernelCodegen {
       tp.compiled_structs = params_.compiled_structs;
       tp.ctx_attribs = &ctx_attribs_;
       tp.ti_kernel_name = params_.ti_kernel_name;
-      tp.runtime = params_.runtime;
+      tp.device = params_.device;
 
       TaskCodegen cgen(tp);
       auto task_res = cgen.run();
+
+      std::vector<uint32_t> optimized_spv;
+
+      TI_WARN_IF(!spirv_opt_->Run(task_res.spirv_code.data(),
+                                  task_res.spirv_code.size(), &optimized_spv,
+                                  _spirv_opt_options),
+                 "SPIRV optimization failed");
+
+      TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
+               task_res.spirv_code.size(), optimized_spv.size());
+
+      // Enable to dump SPIR-V assembly of kernels
+#if 0
+      std::string spirv_asm;
+      spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
+      TI_TRACE("SPIR-V Assembly dump:\n{}\n\n", spirv_asm);
+#endif
+
       kernel_attribs.tasks_attribs.push_back(std::move(task_res.task_attribs));
-      res.task_spirv_source_codes.push_back(std::move(task_res.spirv_code));
+      res.task_spirv_source_codes.push_back(std::move(optimized_spv));
     }
     kernel_attribs.ctx_attribs = std::move(ctx_attribs_);
     kernel_attribs.name = params_.ti_kernel_name;
@@ -1236,6 +1393,10 @@ class KernelCodegen {
  private:
   Params params_;
   KernelContextAttributes ctx_attribs_;
+
+  std::unique_ptr<spvtools::Optimizer> spirv_opt_;
+  std::unique_ptr<spvtools::SpirvTools> spirv_tools_;
+  spvtools::OptimizerOptions _spirv_opt_options;
 };
 
 }  // namespace
@@ -1255,12 +1416,12 @@ FunctionType compile_to_executable(Kernel *kernel,
                                    VkRuntime *runtime) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
-  TI_INFO("VK codegen for Taichi kernel={}", taichi_kernel_name);
+  TI_TRACE("VK codegen for Taichi kernel={}", taichi_kernel_name);
   KernelCodegen::Params params;
   params.ti_kernel_name = taichi_kernel_name;
   params.kernel = kernel;
   params.compiled_structs = compiled_structs;
-  params.runtime = runtime;
+  params.device = runtime->get_ti_device();
   KernelCodegen codegen(params);
   auto res = codegen.run();
   auto handle = runtime->register_taichi_kernel(std::move(res));

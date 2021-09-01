@@ -2,6 +2,7 @@ import taichi as ti
 from taichi import approx
 
 
+@ti.test()
 @ti.must_throw(ti.TaichiSyntaxError)
 def _test_return_not_last_stmt():  # TODO: make this work
     x = ti.field(ti.i32, ())
@@ -14,6 +15,7 @@ def _test_return_not_last_stmt():  # TODO: make this work
     kernel()
 
 
+@ti.test()
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_return_without_type_hint():
     @ti.kernel
@@ -24,6 +26,8 @@ def test_return_without_type_hint():
 
 
 def test_const_func_ret():
+    ti.init()
+
     @ti.kernel
     def func1() -> ti.f32:
         return 3
@@ -36,7 +40,7 @@ def test_const_func_ret():
     assert func2() == 3
 
 
-@ti.all_archs
+@ti.test()
 def _test_binary_func_ret(dt1, dt2, dt3, castor):
     @ti.kernel
     def func(a: dt1, b: dt2) -> dt3:

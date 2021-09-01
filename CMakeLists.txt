@@ -60,6 +60,8 @@ if (TI_BUILD_TESTS)
   include(cmake/TaichiTests.cmake)
 endif()
 
+include_directories(${PROJECT_SOURCE_DIR}/external/eigen)
+
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
 message("Build type: ${CMAKE_BUILD_TYPE}")
 
@@ -100,6 +102,14 @@ foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
   )
   add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${arch}")
 endforeach()
+
+add_custom_target(
+      "generate_ui_interop_kernels_cuda"
+      COMMAND ${CLANG_EXECUTABLE} -S ui_kernels.cpp -o "ui_kernels_cuda.ll" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
+      COMMAND ${LLVM_AS_EXECUTABLE} "ui_kernels_cuda.ll" -o "ui_kernels_cuda.bc"
+      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/taichi/ui/backends/vulkan"
+)
+add_dependencies(${CORE_LIBRARY_NAME} "generate_ui_interop_kernels_cuda")
 
 FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
         "#pragma once\n"

@@ -512,7 +512,7 @@ void DelayedIRModifier::mark_as_modified() {
 }
 
 LocalAddress::LocalAddress(Stmt *var, int offset) : var(var), offset(offset) {
-  TI_ASSERT(var->is<AllocaStmt>());
+  TI_ASSERT(var->is<AllocaStmt>() || var->is<PtrOffsetStmt>());
 }
 
 }  // namespace lang

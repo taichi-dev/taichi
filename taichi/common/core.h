@@ -323,8 +323,6 @@ class DeferedExecution {
 
 #define TI_DEFER(x) taichi::DeferedExecution _defered([&]() { x; });
 
-bool is_release();
-
 std::string get_repo_dir();
 
 std::string get_python_package_dir();
@@ -333,24 +331,6 @@ void set_python_package_dir(const std::string &dir);
 
 inline std::string assets_dir() {
   return get_repo_dir() + "/assets/";
-}
-
-inline std::string absolute_path(std::string path) {
-  // If 'path' is actually relative to TAICHI_REPO_DIR, convert it to an
-  // absolute one. There are three types of paths:
-  //    A. Those who start with / or "C:/" are absolute paths
-  //    B. Those who start with "." are relative to cwd
-  //    C. Those who start with "$" are relative to assets_dir()
-  //    D. Others are relative to $ENV{TAICHI_REPO_DIR}
-
-  TI_ASSERT(!path.empty());
-  if (path[0] == '$') {
-    path = assets_dir() + path.substr(1, (int)path.size() - 1);
-  } else if (path[0] != '.' && path[0] != '/' &&
-             (path.size() >= 2 && path[1] != ':')) {
-    path = get_repo_dir() + "/" + path;
-  }
-  return path;
 }
 
 std::string cpp_demangle(const std::string &mangled_name);
@@ -366,5 +346,11 @@ std::string get_version_string();
 std::string get_commit_hash();
 
 std::string get_cuda_version_string();
+
+class PID {
+ public:
+  static int get_pid();
+  static int get_parent_pid();
+};
 
 TI_NAMESPACE_END

@@ -12,10 +12,15 @@ class SpirvSNodeCompiler {
   CompiledSpirvSNode run(IRBuilder *builder,
                          const CompiledSNodeStructs *compiled_structs) {
     CompiledSpirvSNode result;
-    result.root_stype = compute_snode_stype(
-        builder, compiled_structs,
-        compiled_structs->snode_descriptors.find(0)->second,
-        &result.snode_id_struct_stype_tbl, &result.snode_id_array_stype_tbl);
+    if (compiled_structs->root_size != 0) {
+      result.root_stype = compute_snode_stype(
+          builder, compiled_structs,
+          compiled_structs->snode_descriptors.find(compiled_structs->root->id)
+              ->second,
+          &result.snode_id_struct_stype_tbl, &result.snode_id_array_stype_tbl);
+    } else {  // Use an arbitary default type to skip empty root buffer
+      result.root_stype = builder->i32_type();
+    }
     return result;
   }
 
@@ -26,7 +31,7 @@ class SpirvSNodeCompiler {
                             SNodeSTypeTbl *snode_id_array_stype_tbl_) {
     const auto &sn = sn_desc.snode;
     if (sn->is_place()) {
-      return ir_->get_primitive_buffer_type(sn->dt);
+      return ir_->get_primitive_buffer_type(true, sn->dt);
     } else {
       SType sn_type = ir_->get_null_type();
       sn_type.snode_desc = sn_desc;

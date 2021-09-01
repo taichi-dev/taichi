@@ -23,6 +23,7 @@
 #include <cstring>
 
 #include "taichi/inc/constants.h"
+#include "taichi/inc/cuda_kernel_utils.inc.h"
 #include "taichi/math/arithmetic.h"
 
 struct Context;
@@ -524,7 +525,7 @@ struct LLVMRuntime {
   assert_failed_type assert_failed;
   host_printf_type host_printf;
   host_vsnprintf_type host_vsnprintf;
-  Ptr program;
+  Ptr memory_pool;
 
   Ptr roots[taichi_max_num_snode_trees];
   size_t root_mem_sizes[taichi_max_num_snode_trees];
@@ -774,7 +775,7 @@ Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
   if (preallocated) {
     return allocate_from_buffer(size, alignment);
   }
-  return (Ptr)vm_allocator(program, size, alignment);
+  return (Ptr)vm_allocator(memory_pool, size, alignment);
 }
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
@@ -851,7 +852,7 @@ void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
 
 void runtime_initialize(
     Ptr result_buffer,
-    Ptr program,
+    Ptr memory_pool,
     std::size_t
         preallocated_size,  // Non-zero means use the preallocated buffer
     Ptr preallocated_buffer,
@@ -871,7 +872,8 @@ void runtime_initialize(
     preallocated_buffer +=
         taichi::iroundup(sizeof(LLVMRuntime), taichi_page_size);
   } else {
-    runtime = (LLVMRuntime *)vm_allocator(program, sizeof(LLVMRuntime), 128);
+    runtime =
+        (LLVMRuntime *)vm_allocator(memory_pool, sizeof(LLVMRuntime), 128);
   }
 
   runtime->preallocated = preallocated_size > 0;
@@ -883,7 +885,7 @@ void runtime_initialize(
   runtime->vm_allocator = vm_allocator;
   runtime->host_printf = host_printf;
   runtime->host_vsnprintf = host_vsnprintf;
-  runtime->program = program;
+  runtime->memory_pool = memory_pool;
 
   runtime->total_requested_memory = 0;
 
@@ -962,26 +964,6 @@ void mutex_unlock_i32(Ptr mutex) {
   atomic_exchange_i32((i32 *)mutex, 0);
 }
 
-int32 thread_idx() {
-  return 0;
-}
-
-i32 warp_size() {
-  return 32;
-}
-
-i32 warp_idx() {
-  return thread_idx() % warp_size();
-}
-
-int32 block_idx() {
-  return 0;
-}
-
-int32 block_dim() {
-  return 0;
-}
-
 int32 ctlz_i32(i32 val) {
   return 0;
 }
@@ -1045,10 +1027,6 @@ uint32 cuda_active_mask() {
   return 0;
 }
 #endif
-
-int32 grid_dim() {
-  return 0;
-}
 
 void block_barrier() {
 }

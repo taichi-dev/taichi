@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_running_loss():
     return
     steps = 16
@@ -30,7 +30,7 @@ def test_running_loss():
     assert additional_loss.grad[None] == 3
 
 
-@ti.all_archs
+@ti.test()
 def test_reduce_separate():
     a = ti.field(ti.f32, shape=(16))
     b = ti.field(ti.f32, shape=(4))
@@ -58,7 +58,7 @@ def test_reduce_separate():
         assert a.grad[i] == 1
 
 
-@ti.all_archs
+@ti.test()
 def test_reduce_merged():
     a = ti.field(ti.f32, shape=(16))
     b = ti.field(ti.f32, shape=(4))

@@ -71,10 +71,10 @@ def test_require_extensions_2():
 ### `ti.approx` and `ti.allclose`
 
 
-@ti.test()
 @pytest.mark.parametrize('x', [0.1, 3])
 @pytest.mark.parametrize('allclose',
                          [ti.allclose, lambda x, y: x == ti.approx(y)])
+@ti.test()
 def test_allclose_rel(x, allclose):
     rel = ti.get_rel_eps()
     assert not allclose(x + x * rel * 3.0, x)
@@ -89,9 +89,9 @@ def test_allclose_rel(x, allclose):
 
 
 @pytest.mark.parametrize('x', [0.1, 3])
-@ti.test()
 @pytest.mark.parametrize('allclose',
                          [ti.allclose, lambda x, y: x == ti.approx(y)])
+@ti.test()
 def test_allclose_rel_reordered1(x, allclose):
     rel = ti.get_rel_eps()
     assert not allclose(x + x * rel * 3.0, x)

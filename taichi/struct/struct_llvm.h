@@ -1,11 +1,11 @@
+#pragma once
 // Codegen for the hierarchical data structure (LLVM)
-
+#include "taichi/llvm/llvm_program.h"
 #include "taichi/llvm/llvm_codegen_utils.h"
 #include "taichi/struct/struct.h"
 
 namespace taichi {
 namespace lang {
-
 class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
  public:
   StructCompilerLLVM(Arch arch,
@@ -14,7 +14,7 @@ class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
                      std::unique_ptr<llvm::Module> &&module);
 
   StructCompilerLLVM(Arch arch,
-                     Program *prog,
+                     LlvmProgramImpl *prog,
                      std::unique_ptr<llvm::Module> &&module);
 
   void generate_types(SNode &snode) override;

@@ -20,6 +20,7 @@ PYBIND11_MODULE(taichi_core, m) {
   export_math(m);
   export_misc(m);
   export_visual(m);
+  export_ggui(m);
 }
 
 TI_NAMESPACE_END

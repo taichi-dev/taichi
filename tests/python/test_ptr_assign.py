@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_ptr_scalar():
     a = ti.field(dtype=ti.f32, shape=())
 
@@ -18,7 +18,7 @@ def test_ptr_scalar():
         assert a[None] == x * y + y
 
 
-@ti.all_archs
+@ti.test()
 def test_ptr_matrix():
     a = ti.Matrix.field(2, 2, dtype=ti.f32, shape=())
 
@@ -33,7 +33,7 @@ def test_ptr_matrix():
         assert a[None][1, 0] == x
 
 
-@ti.all_archs
+@ti.test()
 def test_ptr_field():
     a = ti.field(dtype=ti.f32, shape=(3, 4))
 
@@ -51,7 +51,7 @@ def test_ptr_field():
         assert a[2, 0] == x + y
 
 
-@ti.all_archs
+@ti.test()
 def test_pythonish_tuple_assign():
     a = ti.field(dtype=ti.f32, shape=())
     b = ti.field(dtype=ti.f32, shape=())
@@ -68,7 +68,7 @@ def test_pythonish_tuple_assign():
         assert b[None] == x
 
 
-@ti.all_archs
+@ti.test()
 def test_ptr_func():
     a = ti.field(dtype=ti.f32, shape=())
 
@@ -85,7 +85,7 @@ def test_ptr_func():
     assert a[None] == 5.0
 
 
-@ti.all_archs
+@ti.test()
 def test_ptr_class_func():
     @ti.data_oriented
     class MyClass:

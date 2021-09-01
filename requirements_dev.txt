@@ -1,0 +1,17 @@
+cmake
+colorama
+coverage
+numpy
+Pillow
+pybind11
+GitPython
+yapf==0.31.0
+distro
+autograd
+astor
+sourceinspect
+pytest
+pytest-xdist
+pytest-rerunfailures
+pytest-cov
+torch

@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_1D():
     N = 2
     x = ti.field(ti.f32)

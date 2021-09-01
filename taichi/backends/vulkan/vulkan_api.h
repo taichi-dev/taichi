@@ -5,302 +5,275 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+#include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
+
 #include <memory>
-#include <optional>
 #include <vector>
-#include <string>
+#include <stack>
+#include <unordered_map>
 
-// #define TI_VULKAN_DEBUG
+namespace vkapi {
 
-#ifdef TI_VULKAN_DEBUG
-#include <GLFW/glfw3.h>
-#endif
-
-namespace taichi {
-namespace lang {
-namespace vulkan {
-
-struct SpirvCodeView {
-  const uint32_t *data = nullptr;
-  size_t size = 0;
-
-  SpirvCodeView() = default;
-
-  explicit SpirvCodeView(const std::vector<uint32_t> &code)
-      : data(code.data()), size(code.size() * sizeof(uint32_t)) {
-  }
+struct DeviceObj {
+  VkDevice device{VK_NULL_HANDLE};
+  virtual ~DeviceObj() = default;
 };
+using IDeviceObj = std::shared_ptr<DeviceObj>;
+IDeviceObj create_device_obj(VkDevice device);
 
-struct VulkanQueueFamilyIndices {
-  std::optional<uint32_t> compute_family;
-  // TODO: While it is the case that all COMPUTE/GRAPHICS queue also support
-  // TRANSFER by default, maye there are some performance benefits to find a
-  // TRANSFER-dedicated queue family.
-  // https://vulkan-tutorial.com/Vertex_buffers/Staging_buffer#page_Transfer-queue
-
-  bool is_complete() const {
-    return compute_family.has_value();
-  }
+// VkSemaphore
+struct DeviceObjVkSemaphore : public DeviceObj {
+  VkSemaphore semaphore{VK_NULL_HANDLE};
+  ~DeviceObjVkSemaphore() override;
 };
+using IVkSemaphore = std::shared_ptr<DeviceObjVkSemaphore>;
+IVkSemaphore create_semaphore(VkDevice device,
+                              VkSemaphoreCreateFlags flags,
+                              void *pnext = nullptr);
 
-#ifdef TI_VULKAN_DEBUG
-struct VulkanDeviceDebugStruct {
-  GLFWwindow *window{nullptr};
-  VkSurfaceKHR surface;
-  VkSwapchainKHR swapchain;
-  VkSemaphore image_available;
+// VkFence
+struct DeviceObjVkFence : public DeviceObj {
+  VkFence fence{VK_NULL_HANDLE};
+  ~DeviceObjVkFence() override;
 };
-#endif
+using IVkFence = std::shared_ptr<DeviceObjVkFence>;
+IVkFence create_fence(VkDevice device,
+                      VkFenceCreateFlags flags,
+                      void *pnext = nullptr);
 
-// Many classes here are inspired by TVM's runtime
-// https://github.com/apache/tvm/tree/main/src/runtime/vulkan
-//
-// VulkanDevice maps to a (VkDevice, VkQueue) tuple. Right now we only use
-// a single queue from a single device, so it does not make a difference to
-// separate the queue from the device. This is similar to using a single CUDA
-// stream.
-//
-// Note that this class does NOT own the underlying Vk* resources. The idea is
-// that users of this lib can provide such resources already created in their
-// Vulkan pipeline.
-//
-// TODO: Think of a better class name.
-class VulkanDevice {
- public:
-  struct Params {
-    VkDevice device{VK_NULL_HANDLE};
-    VkQueue compute_queue{VK_NULL_HANDLE};
-    VkCommandPool command_pool{VK_NULL_HANDLE};
-  };
-
-  explicit VulkanDevice(const Params &params);
-
-  VkDevice device() const {
-    return rep_.device;
-  }
-
-  VkQueue compute_queue() const {
-    return rep_.compute_queue;
-  }
-
-  VkCommandPool command_pool() const {
-    return rep_.command_pool;
-  }
-
-#ifdef TI_VULKAN_DEBUG
-  void set_debug_struct(VulkanDeviceDebugStruct *s) {
-    this->debug_struct_ = s;
-  }
-#endif
-
-  void debug_frame_marker() const;
-
- private:
-#ifdef TI_VULKAN_DEBUG
-  VulkanDeviceDebugStruct *debug_struct_{nullptr};
-#endif
-  Params rep_;
+// VkDescriptorSetLayout
+struct DeviceObjVkDescriptorSetLayout : public DeviceObj {
+  VkDescriptorSetLayout layout{VK_NULL_HANDLE};
+  ~DeviceObjVkDescriptorSetLayout() override;
 };
+using IVkDescriptorSetLayout = std::shared_ptr<DeviceObjVkDescriptorSetLayout>;
+IVkDescriptorSetLayout create_descriptor_set_layout(
+    VkDevice device,
+    VkDescriptorSetLayoutCreateInfo *create_info);
 
-struct VulkanCapabilities {
-  uint32_t api_version;
-  uint32_t spirv_version;
-
-  bool has_int8{false};
-  bool has_int16{false};
-  bool has_int64{false};
-  bool has_float64{false};
-
-  bool has_nvidia_interop{false};
-  bool has_atomic_i64{false};
-  bool has_atomic_float{false};
-  bool has_presentation{false};
-  bool has_spv_variable_ptr{false};
+// VkDescriptorPool
+struct DeviceObjVkDescriptorPool : public DeviceObj {
+  VkDescriptorPool pool{VK_NULL_HANDLE};
+  // Can recyling of this actually be trivial?
+  // std::unordered_multimap<VkDescriptorSetLayout, VkDescriptorSet> free_list;
+  ~DeviceObjVkDescriptorPool() override;
 };
+using IVkDescriptorPool = std::shared_ptr<DeviceObjVkDescriptorPool>;
+IVkDescriptorPool create_descriptor_pool(
+    VkDevice device,
+    VkDescriptorPoolCreateInfo *create_info);
 
-/**
- * This class creates a VulkanDevice instance. The underlying Vk* resources are
- * embedded directly inside the class.
- */
-class EmbeddedVulkanDevice {
- public:
-  struct Params {
-    std::optional<uint32_t> api_version;
-  };
-
-  explicit EmbeddedVulkanDevice(const Params &params);
-  ~EmbeddedVulkanDevice();
-
-  VkInstance instance() {
-    return instance_;
-  }
-
-  VulkanDevice *device() {
-    return owned_device_.get();
-  }
-
-  const VulkanDevice *device() const {
-    return owned_device_.get();
-  }
-
-  VkPhysicalDevice physical_device() const {
-    return physical_device_;
-  }
-
-  const VulkanQueueFamilyIndices &queue_family_indices() const {
-    return queue_family_indices_;
-  }
-
-  const VulkanCapabilities &get_capabilities() const {
-    return capability_;
-  }
-
- private:
-  void create_instance(const Params &params);
-  void setup_debug_messenger();
-  void pick_physical_device();
-  void create_logical_device();
-  void create_command_pool();
-  void create_debug_swapchain();
-
-#ifdef TI_VULKAN_DEBUG
-  VulkanDeviceDebugStruct debug_struct_;
-#endif
-
-  VkInstance instance_{VK_NULL_HANDLE};
-  VkDebugUtilsMessengerEXT debug_messenger_{VK_NULL_HANDLE};
-  VkPhysicalDevice physical_device_{VK_NULL_HANDLE};
-  VulkanQueueFamilyIndices queue_family_indices_;
-  VkDevice device_{VK_NULL_HANDLE};
-  // TODO: It's probably not right to put these per-queue things here. However,
-  // in Taichi we only use a single queue on a single device (i.e. a single CUDA
-  // stream), so it doesn't make a difference.
-  VkQueue compute_queue_{VK_NULL_HANDLE};
-  // TODO: Shall we have dedicated command pools for COMPUTE and TRANSFER
-  // commands, respectively?
-  VkCommandPool command_pool_{VK_NULL_HANDLE};
-
-  VulkanCapabilities capability_;
-
-  std::unique_ptr<VulkanDevice> owned_device_{nullptr};
+// VkDescriptorSet
+struct DeviceObjVkDescriptorSet : public DeviceObj {
+  VkDescriptorSet set{VK_NULL_HANDLE};
+  IVkDescriptorSetLayout ref_layout{nullptr};
+  IVkDescriptorPool ref_pool{nullptr};
+  std::unordered_map<uint32_t, IDeviceObj> ref_binding_objs;
+  ~DeviceObjVkDescriptorSet() override;
 };
+using IVkDescriptorSet = std::shared_ptr<DeviceObjVkDescriptorSet>;
+// Returns nullptr is pool is full
+IVkDescriptorSet allocate_descriptor_sets(IVkDescriptorPool pool,
+                                          IVkDescriptorSetLayout layout,
+                                          void *pnext = nullptr);
 
-// VulkanPipeline maps to a VkPipeline, or a SPIR-V module (a GLSL compute
-// shader). Because Taichi's buffers are all pre-allocated upon startup, we
-// only need to set up the descriptor set (i.e., bind the buffers via
-// VkWriteDescriptorSet) once during the pipeline initialization.
-class VulkanPipeline {
- public:
-  struct BufferBinding {
-    VkBuffer buffer{VK_NULL_HANDLE};
-    uint32_t binding{0};
-  };
-
-  struct Params {
-    const VulkanDevice *device{nullptr};
-    std::vector<BufferBinding> buffer_bindings;
-    SpirvCodeView code;
-    std::string name{"Pipeline"};
-  };
-
-  explicit VulkanPipeline(const Params &params);
-  ~VulkanPipeline();
-
-  VkPipelineLayout pipeline_layout() const {
-    return pipeline_layout_;
-  }
-  VkPipeline pipeline() const {
-    return pipeline_;
-  }
-  const VkDescriptorSet &descriptor_set() const {
-    return descriptor_set_;
-  }
-  const std::string &name() const {
-    return name_;
-  }
-
- private:
-  void create_descriptor_set_layout(const Params &params);
-  void create_compute_pipeline(const Params &params);
-  void create_descriptor_pool(const Params &params);
-  void create_descriptor_sets(const Params &params);
-
-  VkDevice device_{VK_NULL_HANDLE};  // not owned
-
-  std::string name_;
-
-  // TODO: Commands using the same Taichi buffers should be able to share the
-  // same descriptor set layout?
-  VkDescriptorSetLayout descriptor_set_layout_{VK_NULL_HANDLE};
-  // TODO: Commands having the same |descriptor_set_layout_| should be able to
-  // share the same pipeline layout?
-  VkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};
-  // This maps 1:1 to a shader, so it needs to be created per compute
-  // shader.
-  VkPipeline pipeline_{VK_NULL_HANDLE};
-  VkDescriptorPool descriptor_pool_{VK_NULL_HANDLE};
-  VkDescriptorSet descriptor_set_{VK_NULL_HANDLE};
+// VkCommandPool
+struct DeviceObjVkCommandPool : public DeviceObj {
+  VkCommandPool pool{VK_NULL_HANDLE};
+  uint32_t queue_family_index{0};
+  std::stack<VkCommandBuffer> free_primary;
+  std::stack<VkCommandBuffer> free_secondary;
+  ~DeviceObjVkCommandPool() override;
 };
+using IVkCommandPool = std::shared_ptr<DeviceObjVkCommandPool>;
+IVkCommandPool create_command_pool(VkDevice device,
+                                   VkCommandPoolCreateFlags flags,
+                                   uint32_t queue_family_index);
 
-enum class VulkanCopyBufferDirection {
-  H2D,
-  D2H,
-  // D2D does not have a use case yet
+// VkCommandBuffer
+// Should keep track of used objects in the ref_pool
+struct DeviceObjVkCommandBuffer : public DeviceObj {
+  VkCommandBuffer buffer{VK_NULL_HANDLE};
+  VkCommandBufferLevel level{VK_COMMAND_BUFFER_LEVEL_PRIMARY};
+  IVkCommandPool ref_pool{nullptr};
+  std::vector<IDeviceObj> refs;
+  ~DeviceObjVkCommandBuffer() override;
 };
+using IVkCommandBuffer = std::shared_ptr<DeviceObjVkCommandBuffer>;
+IVkCommandBuffer allocate_command_buffer(
+    IVkCommandPool pool,
+    VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-// VulkanCommandBuilder builds a VkCommandBuffer by recording a given series of
-// VulkanPipelines. The workgroup count needs to be known at recording time.
-// TODO: Do we ever need to adjust the workgroup count at runtime?
-class VulkanCommandBuilder {
- public:
-  explicit VulkanCommandBuilder(const VulkanDevice *device);
-
-  ~VulkanCommandBuilder();
-
-  VkCommandBuffer build();
-
-  void dispatch(const VulkanPipeline &pipeline, int group_count_x);
-
-  void copy(VkBuffer src_buffer,
-            VkBuffer dst_buffer,
-            VkDeviceSize size,
-            VulkanCopyBufferDirection direction);
-
- protected:
-  // VkCommandBuffers are destroyed when the underlying command pool is
-  // destroyed.
-  // https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Command_buffers#page_Command-buffer-allocation
-  VkCommandBuffer command_buffer_{VK_NULL_HANDLE};
-  VkDevice device_;  // do not own
+// VkRenderPass
+struct DeviceObjVkRenderPass : public DeviceObj {
+  VkRenderPass renderpass{VK_NULL_HANDLE};
+  ~DeviceObjVkRenderPass() override;
 };
+using IVkRenderPass = std::shared_ptr<DeviceObjVkRenderPass>;
+IVkRenderPass create_render_pass(VkDevice device,
+                                 VkRenderPassCreateInfo *create_info);
 
-VkCommandBuffer record_copy_buffer_command(const VulkanDevice *device,
-                                           VkBuffer src_buffer,
-                                           VkBuffer dst_buffer,
-                                           VkDeviceSize size,
-                                           VulkanCopyBufferDirection direction);
-
-// A vulkan stream models an asynchronous GPU execution queue.
-// Commands are submitted via launch() and executed asynchronously.
-// synchronize()s blocks the host, until all the launched commands have
-// completed execution.
-class VulkanStream {
- public:
-  VulkanStream(const VulkanDevice *device);
-
-  void launch(VkCommandBuffer command);
-  void synchronize();
-
-  const VulkanDevice *device() const {
-    return device_;
-  }
-
- private:
-  const VulkanDevice *const device_;
-
-  std::vector<VkFence> in_flight_fences_;
+// VkPipelineLayout
+struct DeviceObjVkPipelineLayout : public DeviceObj {
+  VkPipelineLayout layout{VK_NULL_HANDLE};
+  std::vector<IVkDescriptorSetLayout> ref_desc_layouts;
+  ~DeviceObjVkPipelineLayout() override;
 };
+using IVkPipelineLayout = std::shared_ptr<DeviceObjVkPipelineLayout>;
+IVkPipelineLayout create_pipeline_layout(
+    VkDevice device,
+    std::vector<IVkDescriptorSetLayout> &set_layouts,
+    uint32_t push_constant_range_count = 0,
+    VkPushConstantRange *push_constant_ranges = nullptr);
 
-}  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+// VkPipelineCache
+struct DeviceObjVkPipelineCache : public DeviceObj {
+  VkPipelineCache cache{VK_NULL_HANDLE};
+  ~DeviceObjVkPipelineCache() override;
+};
+using IVkPipelineCache = std::shared_ptr<DeviceObjVkPipelineCache>;
+IVkPipelineCache create_pipeline_cache(VkDevice device,
+                                       VkPipelineCacheCreateFlags flags,
+                                       size_t initial_size = 0,
+                                       const void *initial_data = nullptr);
+
+// VkPipeline
+struct DeviceObjVkPipeline : public DeviceObj {
+  VkPipeline pipeline{VK_NULL_HANDLE};
+  IVkPipelineLayout ref_layout{nullptr};
+  IVkRenderPass ref_renderpass{nullptr};
+  IVkPipelineCache ref_cache{nullptr};
+  std::vector<std::shared_ptr<DeviceObjVkPipeline>> ref_pipeline_libraries;
+  ~DeviceObjVkPipeline() override;
+};
+using IVkPipeline = std::shared_ptr<DeviceObjVkPipeline>;
+IVkPipeline create_compute_pipeline(VkDevice device,
+                                    VkPipelineCreateFlags flags,
+                                    VkPipelineShaderStageCreateInfo &stage,
+                                    IVkPipelineLayout layout,
+                                    IVkPipelineCache cache = nullptr,
+                                    IVkPipeline base_pipeline = nullptr);
+IVkPipeline create_graphics_pipeline(VkDevice device,
+                                     VkGraphicsPipelineCreateInfo *create_info,
+                                     IVkRenderPass renderpass,
+                                     IVkPipelineLayout layout,
+                                     IVkPipelineCache cache = nullptr,
+                                     IVkPipeline base_pipeline = nullptr);
+IVkPipeline create_raytracing_pipeline(
+    VkDevice device,
+    VkRayTracingPipelineCreateInfoKHR *create_info,
+    IVkPipelineLayout layout,
+    std::vector<IVkPipeline> &pipeline_libraries,
+    VkDeferredOperationKHR deferredOperation = VK_NULL_HANDLE,
+    IVkPipelineCache cache = nullptr,
+    IVkPipeline base_pipeline = nullptr);
+
+// VkImage
+struct DeviceObjVkImage : public DeviceObj {
+  VkImage image{VK_NULL_HANDLE};
+  VkFormat format{VK_FORMAT_UNDEFINED};
+  VkImageType type{VK_IMAGE_TYPE_2D};
+  uint32_t width{1};
+  uint32_t height{1};
+  uint32_t depth{1};
+  uint32_t mip_levels{1};
+  uint32_t array_layers{1};
+  VmaAllocator allocator{nullptr};
+  VmaAllocation allocation{nullptr};
+  ~DeviceObjVkImage() override;
+};
+using IVkImage = std::shared_ptr<DeviceObjVkImage>;
+// Allocate image
+IVkImage create_image(VkDevice device,
+                      VmaAllocator allocator,
+                      VkImageCreateInfo *image_info,
+                      VmaAllocationCreateInfo *alloc_info);
+// Importing external image
+IVkImage create_image(VkDevice device, VkImage image);
+
+// VkImageView
+struct DeviceObjVkImageView : public DeviceObj {
+  VkImageView view{VK_NULL_HANDLE};
+  VkImageViewType type{VK_IMAGE_VIEW_TYPE_2D};
+  VkImageSubresourceRange subresource_range{
+      VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
+  IVkImage ref_image{nullptr};
+  ~DeviceObjVkImageView() override;
+};
+using IVkImageView = std::shared_ptr<DeviceObjVkImageView>;
+IVkImageView create_image_view(VkDevice device,
+                               IVkImage image,
+                               VkImageViewCreateInfo *create_info);
+
+// VkFramebuffer
+struct DeviceObjVkFramebuffer : public DeviceObj {
+  VkFramebuffer framebuffer{VK_NULL_HANDLE};
+  uint32_t width{0};
+  uint32_t height{0};
+  uint32_t layers{1};
+  std::vector<IVkImageView> ref_attachments;
+  IVkRenderPass ref_renderpass{nullptr};
+  ~DeviceObjVkFramebuffer() override;
+};
+using IVkFramebuffer = std::shared_ptr<DeviceObjVkFramebuffer>;
+IVkFramebuffer create_framebuffer(VkFramebufferCreateFlags flags,
+                                  IVkRenderPass renderpass,
+                                  const std::vector<IVkImageView> &attachments,
+                                  uint32_t width,
+                                  uint32_t height,
+                                  uint32_t layers = 1,
+                                  void *pnext = nullptr);
+
+// VkBuffer
+struct DeviceObjVkBuffer : public DeviceObj {
+  VkBuffer buffer{VK_NULL_HANDLE};
+  size_t size{0};
+  VmaAllocator allocator{nullptr};
+  VmaAllocation allocation{nullptr};
+  ~DeviceObjVkBuffer() override;
+};
+using IVkBuffer = std::shared_ptr<DeviceObjVkBuffer>;
+// Allocate buffer
+IVkBuffer create_buffer(VkDevice device,
+                        VmaAllocator allocator,
+                        VkBufferCreateInfo *buffer_info,
+                        VmaAllocationCreateInfo *alloc_info);
+// Importing external buffer
+IVkBuffer create_buffer(VkDevice device, VkBuffer buffer);
+
+// VkBufferView
+struct DeviceObjVkBufferView : public DeviceObj {
+  VkBufferView view{VK_NULL_HANDLE};
+  VkFormat format{VK_FORMAT_UNDEFINED};
+  VkDeviceSize offset{0};
+  VkDeviceSize range{0};
+  IVkBuffer ref_buffer{nullptr};
+  ~DeviceObjVkBufferView() override;
+};
+using IVkBufferView = std::shared_ptr<DeviceObjVkBufferView>;
+IVkBufferView create_buffer_view(IVkBuffer buffer,
+                                 VkBufferViewCreateFlags flags,
+                                 VkFormat format,
+                                 VkDeviceSize offset,
+                                 VkDeviceSize range);
+
+// VkAccelerationStructureKHR
+struct DeviceObjVkAccelerationStructureKHR : public DeviceObj {
+  VkAccelerationStructureKHR accel{VK_NULL_HANDLE};
+  VkAccelerationStructureTypeKHR type{
+      VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR};
+  VkDeviceSize offset{0};
+  VkDeviceSize size{0};
+  IVkBuffer ref_buffer{nullptr};
+  ~DeviceObjVkAccelerationStructureKHR() override;
+};
+using IVkAccelerationStructureKHR =
+    std::shared_ptr<DeviceObjVkAccelerationStructureKHR>;
+IVkAccelerationStructureKHR create_acceleration_structure(
+    VkAccelerationStructureCreateFlagsKHR flags,
+    IVkBuffer buffer,
+    VkDeviceSize offset,
+    VkDeviceSize size,
+    VkAccelerationStructureTypeKHR type);
+
+}  // namespace vkapi

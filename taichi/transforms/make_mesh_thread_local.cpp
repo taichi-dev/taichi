@@ -100,12 +100,10 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
               offset_tls_offset,
               TypeFactory::create_vector_or_scalar_type(1, data_type, true));
       auto offset_val = offload->body_prologue->push_back<GlobalLoadStmt>(offset_ptr);
-      offset_val->ret_type = data_type;
       auto num_ptr = offload->body_prologue->push_back<ThreadLocalPtrStmt>(
               num_tls_offset,
               TypeFactory::create_vector_or_scalar_type(1, data_type, true));
       auto num_val = offload->body_prologue->push_back<GlobalLoadStmt>(num_ptr);
-      num_val->ret_type = data_type;
 
       offset_local.insert(std::pair(element_type, offset_val));
       num_local.insert(std::pair(element_type, num_val));

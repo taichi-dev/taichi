@@ -1144,7 +1144,7 @@ class OffloadedStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  void all_blocks_accept(IRVisitor *visitor);
+  void all_blocks_accept(IRVisitor *visitor, bool skip_body_prologue = false);
 
   TI_STMT_DEF_FIELDS(ret_type /*inherited from Stmt*/,
                      task_type,

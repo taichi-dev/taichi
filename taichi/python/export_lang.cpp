@@ -912,9 +912,16 @@ void export_lang(py::module &m) {
     }
   });
 
-  m.def("print_sfg", async_print_sfg);
-  m.def("dump_dot", async_dump_dot, py::arg("rankdir").none(true),
-        py::arg("embed_states_threshold"));
+  m.def("print_sfg",
+        []() { return get_current_program().async_engine->sfg->print(); });
+  m.def(
+      "dump_dot",
+      [](std::optional<std::string> rankdir, int embed_states_threshold) {
+        // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
+        return get_current_program().async_engine->sfg->dump_dot(
+            rankdir, embed_states_threshold);
+      },
+      py::arg("rankdir").none(true), py::arg("embed_states_threshold"));
 
   // Type system
 

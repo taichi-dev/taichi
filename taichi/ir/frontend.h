@@ -25,53 +25,6 @@ inline int maximum(int a) {
 
 TLANG_NAMESPACE_BEGIN
 
-inline Kernel &kernel(const std::function<void()> &body) {
-  return get_current_program().kernel(body);
-}
-
-inline void kernel_name(std::string name) {
-  auto *kernel = dynamic_cast<Kernel *>(get_current_program().current_callable);
-  TI_ASSERT(kernel);
-  kernel->name = name;
-}
-
-template <typename T>
-inline void declare_var(Expr &a) {
-  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(a.expr)->id, get_data_type<T>()));
-}
-
-inline void declare_unnamed_var(Expr &a, DataType dt) {
-  auto id = Identifier();
-  auto a_ = Expr::make<IdExpression>(id);
-
-  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(id, dt));
-
-  if (a.expr) {
-    a_ = a;  // assign
-  }
-
-  a.set(a_);
-}
-
-inline void declare_var(Expr &a) {
-  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(a.expr)->id,
-      PrimitiveType::unknown));
-}
-
-inline void set_ambient(Expr expr_, float32 val) {
-  auto expr = expr_.cast<GlobalVariableExpression>();
-  expr->ambient_value = TypedConstant(val);
-  expr->has_ambient = true;
-}
-
-inline void set_ambient(Expr expr_, int32 val) {
-  auto expr = expr_.cast<GlobalVariableExpression>();
-  expr->ambient_value = TypedConstant(val);
-  expr->has_ambient = true;
-}
-
 Expr global_new(Expr id_expr, DataType dt);
 
 Expr global_new(DataType dt, std::string name = "");
@@ -173,19 +126,6 @@ void reset_snode_access_flag();
 
 // Begin: legacy frontend constructs
 
-class If {
- public:
-  FrontendIfStmt *stmt;
-
-  explicit If(const Expr &cond);
-
-  If(const Expr &cond, const std::function<void()> &func);
-
-  If &Then(const std::function<void()> &func);
-
-  If &Else(const std::function<void()> &func);
-};
-
 class For {
  public:
   For(const Expr &i,
@@ -200,28 +140,6 @@ class For {
   For(const Expr &s, const Expr &e, const std::function<void(Expr)> &func);
 };
 
-class While {
- public:
-  While(const Expr &cond, const std::function<void()> &func);
-};
-
 // End: legacy frontend constructs
 
 TLANG_NAMESPACE_END
-
-TI_NAMESPACE_BEGIN
-inline Dict parse_param(std::vector<std::string> cli_param) {
-  Dict dict;
-  for (auto &s : cli_param) {
-    auto div = s.find('=');
-    if (div == std::string::npos) {
-      TI_INFO("CLI parameter format: key=value, e.g. file_name=test.bin.");
-      exit(-1);
-    }
-    dict.set(s.substr(0, div), s.substr(div + 1));
-  }
-  TI_P(dict);
-  return dict;
-}
-
-TI_NAMESPACE_END

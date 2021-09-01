@@ -101,7 +101,7 @@ void CUDAContext::launch(void *func,
   if (profiler)
     profiler->stop(task_handle);
 
-  if (get_current_program().config.debug) {
+  if (debug) {
     driver.stream_synchronize(nullptr);
   }
 }

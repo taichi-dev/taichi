@@ -106,8 +106,7 @@ SparseMatrix SparseMatrix::matmul(const SparseMatrix &sm) {
 
 Eigen::VectorXf SparseMatrix::mat_vec_mul(
     const Eigen::Ref<const Eigen::VectorXf> &b) {
-  Eigen::VectorXf res = matrix_ * b;
-  return res;
+  return matrix_ * b;
 }
 
 SparseMatrix SparseMatrix::transpose() {

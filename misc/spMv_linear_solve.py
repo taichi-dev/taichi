@@ -26,12 +26,12 @@ print("b:")
 print(b.to_numpy())
 
 print("Sparse matrix-vector multiplication (SpMV): A @ b =")
-x = A @ b.to_numpy()
+x = A @ b
 print(x)
 
 print("Solving sparse linear systems Ax = b with the solution x:")
 solver = ti.SparseSolver(solver_type="LU")
 solver.analyze_pattern(A)
 solver.factorize(A)
-x = solver.solve(b.to_numpy())
+x = solver.solve(b)
 print(x)

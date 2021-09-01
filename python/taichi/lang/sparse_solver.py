@@ -39,7 +39,8 @@ class SparseSolver:
             self.type_assert(sparse_matrix)
 
     def solve(self, b):
-        if isinstance(b, np.ndarray):
-            return self.solver.solve(b)
+        from taichi.lang import Field
+        if isinstance(b, Field):
+            return self.solver.solve(b.to_numpy())
         else:
             assert False, f"The parameter type: {type(b)} is not support in linear solver for now."

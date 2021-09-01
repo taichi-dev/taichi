@@ -87,6 +87,19 @@ class StructCompiler;
 
 class AsyncEngine;
 
+/**
+ * Note [Backend-specific ProgramImpl]
+ * We're working in progress to keep Program class minimal and move all backend
+ * specific logic to their corresponding backend ProgramImpls.
+
+ * If you are thinking about exposing/adding attributes/methods to Program
+ class,
+ * please first think about if it's general for all backends:
+ * - If so, please consider adding it to ProgramImpl class first.
+ * - Otherwise please add it to a backend-specific ProgramImpl, e.g.
+ * LlvmProgramImpl, MetalProgramImpl..
+ */
+
 class Program {
  public:
   using Kernel = taichi::lang::Kernel;
@@ -279,7 +292,7 @@ class Program {
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 
   LlvmProgramImpl *get_llvm_program_impl() {
-    return llvm_program_.get();
+    return static_cast<LlvmProgramImpl *>(program_impl_.get());
   }
 
  private:
@@ -304,8 +317,8 @@ class Program {
 
   std::vector<std::unique_ptr<Function>> functions_;
   std::unordered_map<FunctionKey, Function *> function_map_;
-  std::unique_ptr<LlvmProgramImpl> llvm_program_;
-  std::unique_ptr<MetalProgramImpl> metal_program_;
+
+  std::unique_ptr<ProgramImpl> program_impl_;
   float64 total_compilation_time_{0.0};
   static std::atomic<int> num_instances_;
   bool finalized_{false};

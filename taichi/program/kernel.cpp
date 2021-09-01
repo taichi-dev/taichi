@@ -21,8 +21,9 @@ Kernel::Kernel(Program &program,
                bool grad)
     : grad(grad), lowered_(false) {
   this->program = &program;
-
-  program.get_llvm_program_impl()->maybe_initialize_cuda_llvm_context();
+  if (auto *llvm_program_impl = program.get_llvm_program_impl()) {
+    llvm_program_impl->maybe_initialize_cuda_llvm_context();
+  }
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;
@@ -263,7 +264,9 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
 }
 
 Context &Kernel::LaunchContextBuilder::get_context() {
-  ctx_->runtime = kernel_->program->get_llvm_program_impl()->get_llvm_runtime();
+  if (auto *llvm_program_impl = kernel_->program->get_llvm_program_impl()) {
+    ctx_->runtime = llvm_program_impl->get_llvm_runtime();
+  }
   return *ctx_;
 }
 

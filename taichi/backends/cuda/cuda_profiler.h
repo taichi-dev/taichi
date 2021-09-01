@@ -20,8 +20,8 @@ struct ProfilerConfig {
   CUDAKernalProfiler profiler_type = CUDA_KERNEL_PROFILER_UNDEF;
   KernelProfilerMode profiling_mode = KernelProfilerMode::disable;
 #if defined(TI_WITH_TOOLKIT_CUDA)
-  uint32_t num_ranges = 16384; //max number of kernels traced by CUPTI
-  std::vector<std::string> metric_list; //metric name list
+  uint32_t num_ranges = 16384;  // max number of kernels traced by CUPTI
+  std::vector<std::string> metric_list;  // metric name list
   CUpti_ProfilerRange profiler_range = CUPTI_AutoRange;
   CUpti_ProfilerReplayMode profiler_replay_mode = CUPTI_KernelReplay;
 #endif
@@ -67,7 +67,7 @@ class CUDAProfiler {
   void record_launched_kernel(std::string name);
   bool calculate_metric_values();
   bool statistics_on_traced_records(std::vector<KernelProfileRecord> &records,
-                           double &total_time_ms);
+                                    double &total_time_ms);
   void clear_traced_records();
 
  private:

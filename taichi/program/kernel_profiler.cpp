@@ -319,7 +319,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
     } else if (CUDAProfiler::get_instance().get_profiler_type() ==
                CUDA_KERNEL_PROFILER_CUPTI) {
       CUDAProfiler::get_instance().calculate_metric_values();
-      CUDAProfiler::get_instance().statistics_on_traced_records(records, total_time_ms);
+      CUDAProfiler::get_instance().statistics_on_traced_records(records,
+                                                                total_time_ms);
       CUDAProfiler::get_instance().end_profiling();
       CUDAProfiler::get_instance().deinit_cupti();
       CUDAProfiler::get_instance().init_cupti();
@@ -423,7 +424,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
             fraction, rec.total / 1000.0f, rec.counter, rec.min,
             rec.total / rec.counter, rec.max,
             rec.mem_load_in_bytes / rec.counter / 1024 / 1024,
-            rec.mem_store_in_bytes / rec.counter / 1024 / 1024, rec.utilization_core / rec.counter,
+            rec.mem_store_in_bytes / rec.counter / 1024 / 1024,
+            rec.utilization_core / rec.counter,
             rec.utilization_mem / rec.counter, rec.name);
       }
       fmt::print(

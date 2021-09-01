@@ -15,22 +15,20 @@ CUDAProfiler::~CUDAProfiler() {
   }
 }
 
-
-bool CUDAProfiler::is_cuda_profiler(KernelProfilerMode profiling_mode){
-  bool ret  = profiling_mode == KernelProfilerMode::enable 
-            | profiling_mode == KernelProfilerMode::cuda_accurate
-            | profiling_mode == KernelProfilerMode::cuda_detailed;
+bool CUDAProfiler::is_cuda_profiler(KernelProfilerMode profiling_mode) {
+  bool ret = profiling_mode == KernelProfilerMode::enable |
+             profiling_mode == KernelProfilerMode::cuda_accurate |
+             profiling_mode == KernelProfilerMode::cuda_detailed;
   return ret;
 }
 
 bool CUDAProfiler::set_profiler(KernelProfilerMode profiling_mode) {
-
   if (!is_cuda_profiler(profiling_mode)) {
     return false;
   }
 
-  CUDAKernalProfiler profiler_type = 
-          (profiling_mode == KernelProfilerMode::enable)
+  CUDAKernalProfiler profiler_type =
+      (profiling_mode == KernelProfilerMode::enable)
           ? CUDA_KERNEL_PROFILER_CUPTI
           : CUDA_KERNEL_PROFILER_EVENT;
 
@@ -64,7 +62,6 @@ bool CUDAProfiler::set_profiler(KernelProfilerMode profiling_mode) {
 #endif
 }
 
-
 CUDAKernalProfiler CUDAProfiler::get_profiler_type() {
   return profiler_config_.profiler_type;
 }
@@ -72,7 +69,6 @@ CUDAKernalProfiler CUDAProfiler::get_profiler_type() {
 KernelProfilerMode CUDAProfiler::get_profiling_mode() {
   return profiler_config_.profiling_mode;
 }
-
 
 void CUDAProfiler::record_launched_kernel(std::string name) {
   CUDAKernelTracedRecord record;
@@ -110,8 +106,9 @@ bool CUDAProfiler::statistics_on_traced_records(
       it->cuda_mem_access(
           traced_records_[resultIndex].kernel_gloabl_load_byets,
           traced_records_[resultIndex].kernel_gloabl_store_byets);
-      it->cuda_utilization_ratio(traced_records_[resultIndex].utilization_ratio_sm,
-                         traced_records_[resultIndex].utilization_ratio_mem);
+      it->cuda_utilization_ratio(
+          traced_records_[resultIndex].utilization_ratio_sm,
+          traced_records_[resultIndex].utilization_ratio_mem);
     }
   }
 
@@ -121,7 +118,6 @@ bool CUDAProfiler::statistics_on_traced_records(
 void CUDAProfiler::clear_traced_records() {
   traced_records_.clear();
 }
-
 
 CUDAProfiler &CUDAProfiler::get_instance_without_context() {
   static CUDAProfiler *instance = new CUDAProfiler();
@@ -133,11 +129,10 @@ CUDAProfiler &CUDAProfiler::get_instance() {
   return get_instance_without_context();
 }
 
-
 #if defined(TI_WITH_TOOLKIT_CUDA)
 // TODO::CUPTI_PROFILER
 #else
-bool CUDAProfiler::init_cupti(){};       //TODO TI_WARN 
+bool CUDAProfiler::init_cupti(){};  // TODO TI_WARN
 bool CUDAProfiler::begin_profiling(){};
 bool CUDAProfiler::end_profiling(){};
 bool CUDAProfiler::deinit_cupti(){};

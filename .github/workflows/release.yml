@@ -93,7 +93,7 @@ jobs:
     runs-on: [self-hosted, m1]
     defaults:
       run:
-        shell: /bin/bash -l {0}
+        shell: "/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}"
     steps:
       - uses: actions/checkout@v2
         with:
@@ -101,20 +101,19 @@ jobs:
 
       - name: Build
         run: |
-          conda activate $PYTHON
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
-          arch -arm64 python3 -m pip uninstall taichi -y
+          python3 -m pip uninstall taichi -y
           git --version
           export CXX=clang++
-          arch -arm64 python3 -m pip install -r requirements_dev.txt
+          python3 -m pip install -r requirements_dev.txt
           cd python
           git fetch origin master
           export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
-          arch -arm64 python3 build.py build --project_name $PROJECT_NAME
+          python3 build.py build --project_name $PROJECT_NAME
           cd ..
           export NUM_WHL=`ls dist/*.whl | wc -l`
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          arch -arm64 python3 -m pip install dist/*.whl
+          python3 -m pip install dist/*.whl
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
@@ -130,7 +129,6 @@ jobs:
           cd python
           if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
           elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
-          conda deactivate
 
   build_and_upload_windows:
     name: Build and Upload (Windows only)

@@ -841,6 +841,13 @@ void export_lang(py::module &m) {
 
   m.def("get_external_tensor_shape_along_axis",
         Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
+  
+  // Mesh related.
+  m.def("get_relation_size", [](mesh::MeshPtr mesh_ptr, 
+                                const Expr &mesh_idx, 
+                                mesh::MeshElementType to_type) {
+    return Expr::make<MeshRelationSizeExpression>(mesh_ptr.ptr.get(), mesh_idx, to_type);
+  });
 
   m.def(
       "create_kernel",
@@ -1097,6 +1104,11 @@ void export_lang(py::module &m) {
   m.def("get_sparse_solver", &get_sparse_solver);
   
   // Mesh Class
+  py::enum_<mesh::MeshTopology>(m, "MeshTopology", py::arithmetic())
+  .value("Triangle", mesh::MeshTopology::Triangle)
+  .value("Tetrahedron", mesh::MeshTopology::Tetrahedron)
+  .export_values();
+
   py::enum_<mesh::MeshElementType>(m, "MeshElementType", py::arithmetic())
   .value("Vertex", mesh::MeshElementType::Vertex)
   .value("Edge", mesh::MeshElementType::Edge)
@@ -1132,6 +1144,12 @@ void export_lang(py::module &m) {
 
   py::class_<mesh::Mesh>(m, "Mesh");
   py::class_<mesh::MeshPtr>(m, "MeshPtr");
+
+  m.def("element_order", mesh::element_order);
+  m.def("from_end_element_order", mesh::from_end_element_order);
+  m.def("to_end_element_order", mesh::to_end_element_order);
+  m.def("relation_by_orders", mesh::relation_by_orders);
+  m.def("inverse_relation", mesh::inverse_relation);
 
   m.def(
     "create_mesh",

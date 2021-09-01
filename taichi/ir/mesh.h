@@ -9,7 +9,15 @@
 
 namespace taichi {
 namespace lang {
+
+class Stmt;
+
 namespace mesh {
+
+enum class MeshTopology {
+  Triangle = 3,
+  Tetrahedron = 4
+};
 
 enum class MeshElementType {
   Vertex = 0,
@@ -17,6 +25,8 @@ enum class MeshElementType {
   Face = 2,
   Cell = 3
 };
+
+const char * element_type_str(MeshElementType type);
 
 enum class MeshRelationType {
   VV = 0, VE = 1, VF = 2, VC = 3,
@@ -31,6 +41,12 @@ enum class MeshElementReorderingType {
   SurfaceFirst = 2,
   CellFirst    = 3
 };
+
+int element_order(MeshElementType type);
+int from_end_element_order(MeshRelationType rel);
+int to_end_element_order(MeshRelationType rel);
+int relation_by_orders(int from_order, int to_order);
+int inverse_relation(MeshRelationType rel);
 
 struct MeshAttribute {
   MeshAttribute(MeshElementType type_, SNode *snode_, MeshElementReorderingType reordering_type_) :
@@ -68,6 +84,11 @@ class Mesh {
   MeshMapping<SNode*> owned_offset{}; // prefix of owned element
   MeshMapping<SNode*> total_offset{}; // prefix of total element
   MeshMapping<SNode*> l2g_map{}; // local to global index mapping
+
+  std::unordered_map<mesh::MeshElementType, Stmt*> owned_offset_local; // |owned_offset[idx]|
+  std::unordered_map<mesh::MeshElementType, Stmt*> total_offset_local; // |total_offset[idx]|
+  std::unordered_map<mesh::MeshElementType, Stmt*> owned_num_local;    // |owned_offset[idx+1] - owned_offset[idx]|
+  std::unordered_map<mesh::MeshElementType, Stmt*> total_num_local;    // |total_offset[idx+1] - total_offset[idx]|
 
   MeshMapping<std::unordered_set<MeshAttribute, MeshAttribute::Hash>> attributes;
   std::map<MeshRelationType, MeshLocalRelation> relations;

@@ -394,10 +394,6 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->major_from_type = major_from_type;
   new_stmt->major_to_types = major_to_types;
   new_stmt->minor_relation_types = minor_relation_types;
-  new_stmt->owned_offset_local = owned_offset_local;
-  new_stmt->total_offset_local = total_offset_local;
-  new_stmt->owned_num_local = owned_num_local;
-  new_stmt->total_num_local = total_num_local;
 
   if (tls_prologue) {
     new_stmt->tls_prologue = tls_prologue->clone();

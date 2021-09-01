@@ -125,9 +125,6 @@ class IRBuilder {
   FuncCallStmt *create_func_call(Function *func,
                                  const std::vector<Stmt *> &args);
 
-  // Mesh patch index.
-  MeshPatchIndexStmt *get_patch_index(OffloadedStmt *loop);
-
   // Loop index.
   LoopIndexStmt *get_loop_index(Stmt *loop, int index = 0);
 
@@ -263,6 +260,10 @@ class IRBuilder {
   AdStackLoadTopStmt *ad_stack_load_top(AdStackAllocaStmt *stack);
   AdStackLoadTopAdjStmt *ad_stack_load_top_adjoint(AdStackAllocaStmt *stack);
   void ad_stack_accumulate_adjoint(AdStackAllocaStmt *stack, Stmt *val);
+
+  // Mesh related.
+  MeshRelationSizeStmt *get_relation_size(mesh::Mesh *mesh, Stmt *stmt, mesh::MeshElementType to_type);
+  MeshPatchIndexStmt *get_patch_index(OffloadedStmt *loop);
 
  private:
   std::unique_ptr<Block> root_{nullptr};

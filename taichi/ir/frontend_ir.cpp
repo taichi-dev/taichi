@@ -765,6 +765,13 @@ void FuncCallExpression::serialize(std::ostream &ss) {
   ss << ')';
 }
 
+// Mesh related.
+void MeshRelationSizeExpression::flatten(FlattenContext *ctx) {
+  mesh_idx->flatten(ctx);
+  ctx->push_back<MeshRelationSizeStmt>(mesh, mesh_idx->stmt, to_type);
+  stmt = ctx->back_stmt();
+}
+
 Block *ASTBuilder::current_block() {
   if (stack.empty())
     return nullptr;

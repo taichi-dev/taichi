@@ -288,13 +288,16 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
   std::size_t allocate_global(DataType type) {
     TI_ASSERT(type->vector_width() == 1 || type->is<TensorType>());
     auto ret = global_offset;
+    std::size_t size = 0;
     if (type->is<TensorType>()) {
       auto tensor_type = type->cast<TensorType>();
-      global_offset += tensor_type->get_num_elements() *
-                       data_type_size(tensor_type->get_element_type());
+      size = tensor_type->get_num_elements() *
+             data_type_size(tensor_type->get_element_type());
     } else {
-      global_offset += data_type_size(type);
+      size = data_type_size(type);
     }
+    auto aligned_size = [](std::size_t size, const std::size_t alignment){return ((size+alignment-1)/alignment)*alignment;};
+    global_offset += aligned_size(size, sizeof(double));
     TI_ASSERT(global_offset < taichi_global_tmp_buffer_size);
     return ret;
   }

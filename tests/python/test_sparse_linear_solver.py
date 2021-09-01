@@ -46,7 +46,7 @@ def test_sparse_LLT_solver():
     solver = ti.SparseSolver(solver_type="LLT")
     solver.analyze_pattern(A)
     solver.factorize(A)
-    x = solver.solve(b.to_numpy())
+    x = solver.solve(b)
     for i in range(n):
         assert x[i] - res[i] < 1.0e-6
 
@@ -70,7 +70,7 @@ def test_sparse_LDLT_solver():
     solver = ti.SparseSolver(solver_type="LDLT")
     solver.analyze_pattern(A)
     solver.factorize(A)
-    x = solver.solve(b.to_numpy())
+    x = solver.solve(b)
     for i in range(n):
         assert x[i] - res[i] < 1.0e-6
 
@@ -94,6 +94,6 @@ def test_sparse_LU_solver():
     solver = ti.SparseSolver(solver_type="LU")
     solver.analyze_pattern(A)
     solver.factorize(A)
-    x = solver.solve(b.to_numpy())
+    x = solver.solve(b)
     for i in range(n):
         assert x[i] - res[i] < 1.0e-6

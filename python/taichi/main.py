@@ -694,7 +694,8 @@ class TaichiMain:
             # run all the tests
             pytest_args = [test_dir]
         if args.verbose:
-            pytest_args += ['-v']
+            # -rP forwards python prints to console as well
+            pytest_args += ['-v', '-rP']
         if args.rerun:
             pytest_args += ['--reruns', args.rerun]
         try:

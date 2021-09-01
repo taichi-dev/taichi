@@ -4,7 +4,8 @@
 
 namespace taichi {
 namespace lang {
-MetalProgramImpl::MetalProgramImpl(CompileConfig &config_) : config(config_) {
+MetalProgramImpl::MetalProgramImpl(CompileConfig &config_)
+    : ProgramImpl(config_) {
 }
 
 FunctionType MetalProgramImpl::compile(Kernel *kernel,
@@ -26,7 +27,7 @@ void MetalProgramImpl::materialize_snode_tree(SNodeTree *tree,
                                               uint64 **result_buffer_ptr,
                                               MemoryPool *memory_pool,
                                               KernelProfilerBase *profiler) {
-  TI_ASSERT_INFO(config.use_llvm,
+  TI_ASSERT_INFO(config->use_llvm,
                  "Metal arch requires that LLVM being enabled");
   auto *const root = tree->root();
 
@@ -37,7 +38,7 @@ void MetalProgramImpl::materialize_snode_tree(SNodeTree *tree,
         sizeof(uint64) * taichi_result_buffer_entries, 8);
     metal::KernelManager::Params params;
     params.compiled_structs = metal_compiled_structs_.value();
-    params.config = &config;
+    params.config = config;
     params.mem_pool = memory_pool;
     params.host_result_buffer = *result_buffer_ptr;
     params.profiler = profiler;

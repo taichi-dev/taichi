@@ -2,10 +2,14 @@ name: Presubmit Checks
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - master
 
 jobs:
   title_format:
     name: Check PR Title
+    if: ${{ github.event.pull_request }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

@@ -296,7 +296,9 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     } else {
       size = data_type_size(type);
     }
-    auto aligned_size = [](std::size_t size, const std::size_t alignment){return ((size+alignment-1)/alignment)*alignment;};
+    auto aligned_size = [](std::size_t size, const std::size_t alignment) {
+      return ((size + alignment - 1) / alignment) * alignment;
+    };
     global_offset += aligned_size(size, sizeof(double));
     TI_ASSERT(global_offset < taichi_global_tmp_buffer_size);
     return ret;

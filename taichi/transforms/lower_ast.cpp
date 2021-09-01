@@ -267,7 +267,7 @@ class LowerAST : public IRVisitor {
         new_while->body->mask_var = new_while->mask;
         fctx.push_back(std::move(new_while));
       }
-    } else if (stmt->global_var.is<GlobalVariableExpression>()){
+    } else if (stmt->global_var.is<GlobalVariableExpression>()) {
       auto snode = stmt->global_var.cast<GlobalVariableExpression>()->snode;
       std::vector<int> offsets;
       if (snode->type == SNodeType::place) {
@@ -315,13 +315,15 @@ class LowerAST : public IRVisitor {
     } else {
       auto tensor = stmt->global_var.cast<ExternalTensorExpression>();
       std::vector<Stmt *> shape;
-      if (tensor->element_dim > 0) { // Layout.SOA
+      if (tensor->element_dim > 0) {  // Layout.SOA
         for (int i = tensor->element_dim; i < tensor->dim; i++) {
-          shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(i, tensor->arg_id));
+          shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(
+              i, tensor->arg_id));
         }
-      } else { // Layout.AOS
+      } else {  // Layout.AOS
         for (int i = 0; i < tensor->dim + tensor->element_dim; i++) {
-          shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(i, tensor->arg_id));
+          shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(
+              i, tensor->arg_id));
         }
       }
       Stmt *begin = fctx.push_back<ConstStmt>(TypedConstant(0));
@@ -334,10 +336,14 @@ class LowerAST : public IRVisitor {
           stmt->bit_vectorize, stmt->num_cpu_threads, stmt->block_dim,
           stmt->strictly_serialized);
       VecStatement new_statements;
-      Stmt *loop_index = new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);
+      Stmt *loop_index =
+          new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);
       for (int i = (int)shape.size() - 1; i >= 0; i--) {
-        new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] = new_statements.push_back<BinaryOpStmt>(BinaryOpType::mod, loop_index, shape[i]);
-        loop_index = new_statements.push_back<BinaryOpStmt>(BinaryOpType::div, loop_index, shape[i]);
+        new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] =
+            new_statements.push_back<BinaryOpStmt>(BinaryOpType::mod,
+                                                   loop_index, shape[i]);
+        loop_index = new_statements.push_back<BinaryOpStmt>(
+            BinaryOpType::div, loop_index, shape[i]);
       }
       new_for->body->insert(std::move(new_statements), 0);
       fctx.push_back(std::move(new_for));

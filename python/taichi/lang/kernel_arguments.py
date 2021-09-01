@@ -177,8 +177,9 @@ def decl_any_arr_arg(dtype, dim, element_shape, layout):
     element_dim = len(element_shape)
     if layout == Layout.AOS:
         element_dim = -element_dim
-    return AnyArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim),
-                    element_shape, layout)
+    return AnyArray(
+        _ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim),
+        element_shape, layout)
 
 
 def decl_scalar_ret(dtype):

@@ -792,6 +792,28 @@ class FuncCallExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
+// Mesh related.
+
+class MeshRelationSizeExpression : public Expression {
+ public:
+  mesh::Mesh *mesh;
+  Expr mesh_idx;
+  mesh::MeshElementType to_type;
+
+  std::string serialize() override {
+    return fmt::format("mesh_relation_size({}, {})",
+                       mesh_idx->serialize(), mesh::element_type_str(to_type));
+  }
+
+  MeshRelationSizeExpression(mesh::Mesh *mesh, 
+                             const Expr mesh_idx, 
+                             mesh::MeshElementType to_type) 
+    : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
 class ASTBuilder {
  private:
   std::vector<Block *> stack;

@@ -593,8 +593,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         s->accept(this);
       }
 
-      auto bound_0 = llvm_val[stmt->owned_offset_local.find(stmt->major_from_type)->second];
-      auto bound_1 = builder->CreateAdd(bound_0, llvm_val[stmt->owned_num_local.find(stmt->major_from_type)->second]);
+      auto bound_0 = llvm_val[stmt->mesh->owned_offset_local.find(stmt->major_from_type)->second];
+      auto bound_1 = builder->CreateAdd(bound_0, llvm_val[stmt->mesh->owned_num_local.find(stmt->major_from_type)->second]);
 
       auto loop_test_bb = BasicBlock::Create(*llvm_context, "loop_test", func);
       auto loop_body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
@@ -742,10 +742,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     bls_buffer->setAlignment(llvm::MaybeAlign(8));
   }
 
-  void visit(MeshPatchIndexStmt *stmt) override {
-    llvm_val[stmt] = get_arg(2);
-  }
-
   void visit(OffloadedStmt *stmt) override {
     stat.add("codegen_offloaded_tasks");
     if (stmt->bls_size > 0)
@@ -865,6 +861,30 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       llvm_val[stmt] = builder->CreateFPTrunc(
           llvm_val[stmt], llvm::Type::getHalfTy(*llvm_context));
     }
+  }
+  
+  // Mesh related.
+
+  void visit(MeshRelationSizeStmt *stmt) override {
+    if (auto idx = stmt->mesh_idx->cast<LoopIndexStmt>()) {
+      if (mesh::element_order(idx->mesh_index_type()) > 
+          mesh::element_order(stmt->to_type)) { // high-to-low
+        llvm_val[stmt] = tlctx->get_constant(
+          idx->mesh_index_type() == mesh::MeshElementType::Cell &&
+          stmt->to_type == mesh::MeshElementType::Edge ? /*Cell-Edge=*/6 : 
+          (mesh::element_order(idx->mesh_index_type()) + 1)
+        );
+      } else {
+        TI_NOT_IMPLEMENTED; // TODO(changyu): wait for low-to-high loop
+      }
+    }
+    else { // Mesh Relation Access statement
+      TI_NOT_IMPLEMENTED; // TODO(changyu): wait for new statement
+    }
+  }
+
+  void visit(MeshPatchIndexStmt *stmt) override {
+    llvm_val[stmt] = get_arg(2);
   }
 };
 

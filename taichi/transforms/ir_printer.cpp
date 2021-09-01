@@ -365,7 +365,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(MeshForStmt *for_stmt) override {
-    print("{} : mesh for {} {{", for_stmt->name(), for_stmt->block_dim);
+    print("{} : mesh for {} {{", for_stmt->name(), mesh::element_type_str(for_stmt->major_from_type));
     for_stmt->body->accept(this);
     print("}}");
   }
@@ -608,11 +608,6 @@ class IRPrinter : public IRVisitor {
           stmt->snode->get_node_type_name_hinted());
   }
 
-  void visit(MeshPatchIndexStmt *stmt) override {
-    print("{}{} = loop {} patch idx", stmt->type_hint(), stmt->name(),
-          stmt->loop->name());
-  }
-
   void visit(LoopIndexStmt *stmt) override {
     print("{}{} = loop {} index {}", stmt->type_hint(), stmt->name(),
           stmt->loop->name(), stmt->index);
@@ -713,6 +708,17 @@ class IRPrinter : public IRVisitor {
     }
     print("{} : {}bit_struct_store {}, ch_ids=[{}], values=[{}]", stmt->name(),
           stmt->is_atomic ? "atomic " : "", stmt->ptr->name(), ch_ids, values);
+  }
+
+  // Mesh related.
+  void visit(MeshRelationSizeStmt *stmt) override {
+    print("{}{} = {} idx relation {} size", stmt->type_hint(), stmt->name(),
+      stmt->mesh_idx->name(), element_type_str(stmt->to_type));
+  }
+
+  void visit(MeshPatchIndexStmt *stmt) override {
+    print("{}{} = loop {} patch idx", stmt->type_hint(), stmt->name(),
+          stmt->loop->name());
   }
 };
 

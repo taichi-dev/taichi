@@ -42,7 +42,7 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
     offload->body_prologue = std::make_unique<Block>();
     offload->body_prologue->parent_stmt = offload;
   }
-  
+
   auto patch_idx = offload->tls_prologue->insert(
           std::make_unique<MeshPatchIndexStmt>(offload), -1);
   auto one = offload->tls_prologue->insert(
@@ -113,15 +113,15 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
   for (auto element_type : accessed.first) {
     make_thread_local_store(element_type, 
           offload->mesh->owned_offset,
-          offload->owned_offset_local,
-          offload->owned_num_local);
+          offload->mesh->owned_offset_local,
+          offload->mesh->owned_num_local);
   }
 
   for (auto element_type : accessed.second) {
     make_thread_local_store(element_type, 
           offload->mesh->total_offset,
-          offload->total_offset_local,
-          offload->total_num_local);
+          offload->mesh->total_offset_local,
+          offload->mesh->total_num_local);
   }
   offload->tls_size = std::max(std::size_t(1), tls_offset);
 }

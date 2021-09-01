@@ -130,10 +130,6 @@ FuncCallStmt *IRBuilder::create_func_call(Function *func,
   return insert(Stmt::make_typed<FuncCallStmt>(func, args));
 }
 
-MeshPatchIndexStmt *IRBuilder::get_patch_index(OffloadedStmt *loop) {
-  return insert(Stmt::make_typed<MeshPatchIndexStmt>(loop));
-}
-
 LoopIndexStmt *IRBuilder::get_loop_index(Stmt *loop, int index) {
   return insert(Stmt::make_typed<LoopIndexStmt>(loop, index));
 }
@@ -451,6 +447,16 @@ AdStackLoadTopAdjStmt *IRBuilder::ad_stack_load_top_adjoint(
 void IRBuilder::ad_stack_accumulate_adjoint(AdStackAllocaStmt *stack,
                                             Stmt *val) {
   insert(Stmt::make_typed<AdStackAccAdjointStmt>(stack, val));
+}
+
+// Mesh related.
+
+MeshRelationSizeStmt *IRBuilder::get_relation_size(mesh::Mesh *mesh, Stmt *mesh_idx, mesh::MeshElementType to_type) {
+  return insert(Stmt::make_typed<MeshRelationSizeStmt>(mesh, mesh_idx, to_type));
+}
+
+MeshPatchIndexStmt *IRBuilder::get_patch_index(OffloadedStmt *loop) {
+  return insert(Stmt::make_typed<MeshPatchIndexStmt>(loop));
 }
 
 TLANG_NAMESPACE_END

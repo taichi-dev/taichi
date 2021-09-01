@@ -37,7 +37,7 @@ from taichi.lang.matrix import Matrix, MatrixField, Vector
 from taichi.lang.ndrange import GroupedNDRange, ndrange
 from taichi.lang.ops import *  # pylint: disable=W0622
 from taichi.lang.quant_impl import quant
-from taichi.lang.mesh import Mesh
+from taichi.lang.mesh import Mesh, TriMesh, TetMesh
 from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.snode import SNode
 from taichi.lang.source_builder import SourceBuilder

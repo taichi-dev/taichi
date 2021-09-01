@@ -331,6 +331,8 @@ class CFGBuilder : public IRVisitor {
    * } -> node_bls_prologue;
    * node_bls_prologue {
    *   ...
+   * } -> node_body_prologue;
+   *   ...
    * } -> node_body;
    * node_body {
    *   ...
@@ -367,12 +369,23 @@ class CFGBuilder : public IRVisitor {
       begin_location = offload_stmt_id + 1;
       CFGNode::add_edge(before_offload, graph->nodes[block_begin_index].get());
     }
+    if (stmt->body_prologue) {
+      auto before_offload = new_node(-1);
+      int offload_stmt_id = current_stmt_id;
+      auto block_begin_index = graph->size();
+      stmt->body_prologue->accept(this);
+      prev_nodes.push_back(graph->back());
+      // Container statements don't belong to any CFGNodes.
+      begin_location = offload_stmt_id + 1;
+      CFGNode::add_edge(before_offload, graph->nodes[block_begin_index].get());
+    }
     if (stmt->has_body()) {
       auto before_offload = new_node(-1);
       int offload_stmt_id = current_stmt_id;
       auto block_begin_index = graph->size();
       if (stmt->task_type == OffloadedStmt::TaskType::range_for ||
-          stmt->task_type == OffloadedStmt::TaskType::struct_for) {
+          stmt->task_type == OffloadedStmt::TaskType::struct_for ||
+          stmt->task_type == OffloadedStmt::TaskType::mesh_for) {
         in_parallel_for = true;
       }
       stmt->body->accept(this);

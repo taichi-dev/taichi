@@ -90,6 +90,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     } else {
       CUDAContext::get_instance().set_profiler(nullptr);
     }
+    CUDAContext::get_instance().set_debug(config.debug);
   }
 #endif
   // TODO: CompileConfig should be refactored. Currently we make a copy of

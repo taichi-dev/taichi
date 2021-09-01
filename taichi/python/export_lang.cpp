@@ -686,7 +686,7 @@ void export_lang(py::module &m) {
         Expr::make<ArgLoadExpression, int, const DataType &>);
 
   m.def("make_external_tensor_expr",
-        Expr::make<ExternalTensorExpression, const DataType &, int, int>);
+        Expr::make<ExternalTensorExpression, const DataType &, int, int, int>);
 
   m.def("make_id_expr", Expr::make<IdExpression, std::string>);
 

@@ -429,11 +429,13 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   return new_stmt;
 }
 
-void OffloadedStmt::all_blocks_accept(IRVisitor *visitor) {
+void OffloadedStmt::all_blocks_accept(IRVisitor *visitor, bool skip_body_prologue) {
   if (tls_prologue)
     tls_prologue->accept(visitor);
   if (bls_prologue)
     bls_prologue->accept(visitor);
+  if (body_prologue && !skip_body_prologue)
+    body_prologue->accept(visitor);
   if (body)
     body->accept(visitor);
   if (bls_epilogue)

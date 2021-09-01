@@ -101,6 +101,9 @@ jobs:
 
       - name: Build
         run: |
+          # We hacked here because conda activate in CI won't update python PATH
+          # automatically. So we don't activate and use desired python version
+          # directly.
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           python3 -m pip uninstall taichi -y
           git --version

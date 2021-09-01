@@ -394,7 +394,10 @@ class ExternalTensorExpression : public Expression {
   int arg_id;
   int element_dim;
 
-  ExternalTensorExpression(const DataType &dt, int dim, int arg_id, int element_dim)
+  ExternalTensorExpression(const DataType &dt,
+                           int dim,
+                           int arg_id,
+                           int element_dim)
       : dt(dt), dim(dim), arg_id(arg_id), element_dim(element_dim) {
     set_attribute("dim", std::to_string(dim));
   }

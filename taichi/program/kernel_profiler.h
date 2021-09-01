@@ -29,10 +29,10 @@ struct KernelProfileRecord {
   double min;
   double max;
   double total;
-  double ldg;
-  double stg;
-  float uti_core;
-  float uti_dram;
+  float mem_load_in_bytes;
+  float mem_store_in_bytes;
+  float utilization_core;
+  float utilization_mem;
 
   KernelProfileRecord(const std::string &name)
       : name(name),
@@ -40,15 +40,15 @@ struct KernelProfileRecord {
         min(0),
         max(0),
         total(0),
-        ldg(0),
-        stg(0),
-        uti_core(0),
-        uti_dram(0) {
+        mem_load_in_bytes(0),
+        mem_store_in_bytes(0),
+        utilization_core(0),
+        utilization_mem(0) {
   }
 
   void insert_sample(double t);
-  void cuda_global_access(double ld, double st);
-  void cuda_uti_ratio(float core, float dram);
+  void cuda_mem_access(float load, float store);
+  void cuda_utilization_ratio(float core, float mem);
 
   bool operator<(const KernelProfileRecord &o) const;
 };

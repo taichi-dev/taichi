@@ -29,20 +29,20 @@ struct ProfilerConfig {
 
 struct CUDAKernelTracedRecord {
   std::string kernel_name;
-  float kernel_elapsed_time_in_ms;
-  double kernel_gloabl_load_byets;
-  double kernel_gloabl_store_byets;
-  float utilization_ratio_sm;
-  float utilization_ratio_mem;
+  float kernel_elapsed_time_in_ms{0.0};
+  float kernel_gloabl_load_byets{0.0};
+  float kernel_gloabl_store_byets{0.0};
+  float utilization_ratio_sm{0.0};
+  float utilization_ratio_mem{0.0};
 };
 
 struct ProfilerRawData {
-  std::string chipName;
-  std::vector<uint8_t> counterDataImagePrefix;
-  std::vector<uint8_t> configImage;
-  std::vector<uint8_t> counterDataImage;
-  std::vector<uint8_t> counterDataScratchBuffer;
-  std::vector<uint8_t> counterAvailabilityImage;
+  std::string chip_name;
+  std::vector<uint8_t> config_image;
+  std::vector<uint8_t> counter_availability_image;
+  std::vector<uint8_t> counter_data_scratch_buffer;
+  std::vector<uint8_t> counter_data_image_prefix;
+  std::vector<uint8_t> counter_data_image;
 };
 
 class CUDAProfiler {
@@ -65,7 +65,7 @@ class CUDAProfiler {
   bool end_profiling();
 
   void record_launched_kernel(std::string name);
-  bool trace_metric_values();
+  bool calculate_metric_values();
   bool statistics_on_traced_records(std::vector<KernelProfileRecord> &records,
                            double &total_time_ms);
   void clear_traced_records();

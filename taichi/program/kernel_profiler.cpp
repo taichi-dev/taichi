@@ -49,14 +49,14 @@ void KernelProfileRecord::insert_sample(double t) {
   total += t;
 }
 
-void KernelProfileRecord::cuda_global_access(double ld, double st) {
-  ldg += ld;
-  stg += st;
+void KernelProfileRecord::cuda_mem_access(float load, float store) {
+  mem_load_in_bytes += load;
+  mem_store_in_bytes += store;
 }
 
-void KernelProfileRecord::cuda_uti_ratio(float core, float dram) {
-  uti_core += core;
-  uti_dram += dram;
+void KernelProfileRecord::cuda_utilization_ratio(float core, float mem) {
+  utilization_core += core;
+  utilization_mem += mem;
 }
 
 bool KernelProfileRecord::operator<(const KernelProfileRecord &o) const {
@@ -318,7 +318,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
       outstanding_events.clear();
     } else if (CUDAProfiler::get_instance().get_profiler_type() ==
                CUDA_KERNEL_PROFILER_CUPTI) {
-      CUDAProfiler::get_instance().trace_metric_values();
+      CUDAProfiler::get_instance().calculate_metric_values();
       CUDAProfiler::get_instance().statistics_on_traced_records(records, total_time_ms);
       CUDAProfiler::get_instance().end_profiling();
       CUDAProfiler::get_instance().deinit_cupti();
@@ -387,8 +387,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
             "{:9.3f}  MB] {}\n",
             fraction, rec.total / 1000.0f, rec.counter, rec.min,
             rec.total / rec.counter, rec.max,
-            rec.ldg / rec.counter / 1024 / 1024,
-            rec.stg / rec.counter / 1024 / 1024, rec.name);
+            rec.mem_load_in_bytes / rec.counter / 1024 / 1024,
+            rec.mem_store_in_bytes / rec.counter / 1024 / 1024, rec.name);
       }
       fmt::print(
           "--------------------------------------------------------------------"
@@ -422,9 +422,9 @@ class KernelProfilerCUDA : public KernelProfilerBase {
             "{:9.3f}  MB |    {:2.2f}%     {:2.2f}% ] {}\n",
             fraction, rec.total / 1000.0f, rec.counter, rec.min,
             rec.total / rec.counter, rec.max,
-            rec.ldg / rec.counter / 1024 / 1024,
-            rec.stg / rec.counter / 1024 / 1024, rec.uti_core / rec.counter,
-            rec.uti_dram / rec.counter, rec.name);
+            rec.mem_load_in_bytes / rec.counter / 1024 / 1024,
+            rec.mem_store_in_bytes / rec.counter / 1024 / 1024, rec.utilization_core / rec.counter,
+            rec.utilization_mem / rec.counter, rec.name);
       }
       fmt::print(
           "--------------------------------------------------------------------"

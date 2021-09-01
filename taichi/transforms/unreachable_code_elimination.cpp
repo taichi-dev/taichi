@@ -84,9 +84,13 @@ class UnreachableCodeEliminator : public BasicStmtVisitor {
 
     if (stmt->bls_prologue)
       stmt->bls_prologue->accept(this);
+    
+    if (stmt->body_prologue)
+      stmt->body_prologue->accept(this);
 
     if (stmt->task_type == OffloadedStmt::TaskType::range_for ||
-        stmt->task_type == OffloadedStmt::TaskType::struct_for)
+        stmt->task_type == OffloadedStmt::TaskType::struct_for ||
+        stmt->task_type == OffloadedStmt::TaskType::mesh_for)
       visit_loop(stmt->body.get());
     else if (stmt->body)
       stmt->body->accept(this);

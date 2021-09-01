@@ -8,31 +8,33 @@
 #include "taichi/backends/metal/data_types.h"
 #include "taichi/backends/metal/aot_module_builder_impl.h"
 #include "taichi/backends/metal/struct_metal.h"
+#include "taichi/program/program_impl.h"
 
 namespace taichi {
 namespace lang {
-class MetalProgramImpl {
+class MetalProgramImpl : public ProgramImpl {
  public:
-  CompileConfig config;
   MetalProgramImpl(CompileConfig &config);
-  FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded);
+  FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
   // TODO: materialize_runtime
 
-  std::size_t get_snode_num_dynamically_allocated(SNode *snode);
+  std::size_t get_snode_num_dynamically_allocated(SNode *snode) override;
 
   void materialize_snode_tree(SNodeTree *tree,
                               uint64 **result_buffer_ptr,
                               MemoryPool *memory_pool,
-                              KernelProfilerBase *profiler);
+                              KernelProfilerBase *profiler) override;
 
-  void synchronize() {
+  void synchronize() override {
     metal_kernel_mgr_->synchronize();
   }
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() {
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
     return std::make_unique<metal::AotModuleBuilderImpl>(
         &(metal_compiled_structs_.value()),
         metal_kernel_mgr_->get_buffer_meta_data());
+  }
+  ~MetalProgramImpl() {
   }
 
  private:

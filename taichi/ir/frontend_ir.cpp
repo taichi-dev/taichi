@@ -172,6 +172,22 @@ void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void CallCppExpression::flatten(FlattenContext *ctx) {
+  std::vector<Stmt *> arg_statements, output_statements;
+  for (auto &s : args) {
+    s.set(load_if_ptr(s));
+    s->flatten(ctx);
+    arg_statements.push_back(s->stmt);
+  }
+  for (auto &s : outputs) {
+    output_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
+  }
+  ctx->push_back(std::make_unique<CallCppStmt>(
+      filename, funcname, arg_statements, output_statements));
+  stmt = ctx->back_stmt();
+}
+
+
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, dt, /*is_ptr=*/true);
   ctx->push_back(std::move(ptr));

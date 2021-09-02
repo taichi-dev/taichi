@@ -387,6 +387,41 @@ class ExternalFuncCallExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
+
+class CallCppExpression : public Expression {
+ public:
+  std::string filename;
+  std::string funcname;
+  std::vector<Expr> args;
+  std::vector<Expr> outputs;
+
+  CallCppExpression(const std::string &filename,
+                    const std::string &funcname,
+                    const std::vector<Expr> &args,
+                    const std::vector<Expr> &outputs)
+      : filename(filename), funcname(funcname), args(args), outputs(outputs) {
+  }
+
+  std::string serialize() override {
+    std::string io = "inputs=";
+
+    for (auto &s : args) {
+      io += s.serialize();
+    }
+
+    io += ", outputs=";
+
+    for (auto &s : outputs) {
+      io += s.serialize();
+    }
+
+    return fmt::format("call_cpp {}:{} ({})", filename, funcname, io);
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+
 class ExternalTensorExpression : public Expression {
  public:
   DataType dt;

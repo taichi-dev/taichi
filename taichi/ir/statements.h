@@ -429,6 +429,31 @@ class ExternalFuncCallStmt : public Stmt {
 };
 
 /**
+ * Call an external (C++) function.
+ */
+class CallCppStmt : public Stmt {
+ public:
+  std::string filename;
+  std::string funcname;
+  std::vector<Stmt *> arg_stmts;
+  std::vector<Stmt *> output_stmts;
+
+  CallCppStmt(const std::string &filename,
+              const std::string &funcname,
+              const std::vector<Stmt *> &arg_stmts,
+              const std::vector<Stmt *> &output_stmts)
+      : filename(filename),
+        funcname(funcname),
+        arg_stmts(arg_stmts),
+        output_stmts(output_stmts) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(filename, funcname, arg_stmts, output_stmts);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
  * A hint to the Taichi compiler about the relation of the values of two
  * statements.
  * This statement simply returns the input statement at the backend, and hints

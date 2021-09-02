@@ -145,6 +145,21 @@ class IRPrinter : public IRVisitor {
           extras);
   }
 
+  void visit(CallCppStmt *stmt) override {
+    std::string extras = "inputs=";
+    for (auto &arg : stmt->arg_stmts) {
+      extras += ", ";
+      extras += arg->name();
+    }
+    extras += "outputs=";
+    for (auto &output : stmt->output_stmts) {
+      extras += ", ";
+      extras += output->name();
+    }
+    print("{} : func_call {}:{}, {}", stmt->name(), stmt->filename, stmt->funcname,
+          extras);
+  }
+
   void visit(FrontendSNodeOpStmt *stmt) override {
     std::string extras = "[";
     for (int i = 0; i < (int)stmt->indices.size(); i++) {

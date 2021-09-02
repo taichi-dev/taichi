@@ -891,6 +891,11 @@ def external_func_call(func, args=[], outputs=[]):
                                        make_expr_group(outputs))
 
 
+def call_cpp(filename, funcname, args=[], outputs=[]):
+    _ti_core.insert_call_cpp(filename, funcname, make_expr_group(args),
+                             make_expr_group(outputs))
+
+
 def asm(source, inputs=[], outputs=[]):
     _ti_core.insert_external_func_call(0, source, make_expr_group(inputs),
                                        make_expr_group(outputs))

@@ -93,7 +93,9 @@ class Ndarray:
         if not isinstance(arr, np.ndarray):
             raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
         if tuple(self.arr.shape) != tuple(arr.shape):
-            raise ValueError(f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided")
+            raise ValueError(
+                f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
+            )
         import torch
         self.arr = torch.from_numpy(arr).to(self.arr.dtype)
 

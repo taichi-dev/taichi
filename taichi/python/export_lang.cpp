@@ -857,6 +857,23 @@ void export_lang(py::module &m) {
         return &get_current_program().kernel(body, name, grad);
       },
       py::return_value_policy::reference);
+  m.def("get_relation_access", [](mesh::MeshPtr mesh_ptr, 
+                                const Expr &mesh_idx, 
+                                mesh::MeshElementType to_type,
+                                const Expr &neighbor_idx) {
+    return Expr::make<MeshRelationAccessExpression>(mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
+  });
+
+  m.def("get_index_conversion", [](mesh::MeshPtr mesh_ptr,
+                                   const Expr &idx, 
+                                   mesh::ConvType &conv_type) {
+    return Expr::make<MeshIndexConversionExpression>(mesh_ptr.ptr.get(), idx, conv_type);
+  });
+
+  m.def("create_kernel",
+        [&](std::string name, bool grad) -> Program::KernelProxy {
+          return get_current_program().kernel(name, grad);
+        });
 
   m.def(
       "create_function",
@@ -1104,6 +1121,7 @@ void export_lang(py::module &m) {
   m.def("get_sparse_solver", &get_sparse_solver);
   
   // Mesh Class
+  // Mesh related.
   py::enum_<mesh::MeshTopology>(m, "MeshTopology", py::arithmetic())
   .value("Triangle", mesh::MeshTopology::Triangle)
   .value("Tetrahedron", mesh::MeshTopology::Tetrahedron)
@@ -1140,6 +1158,11 @@ void export_lang(py::module &m) {
   .value("Reordering", mesh::MeshElementReorderingType::Reordering)
   .value("SurfaceFirst", mesh::MeshElementReorderingType::SurfaceFirst)
   .value("CellFirst", mesh::MeshElementReorderingType::CellFirst)
+  .export_values();
+
+  py::enum_<mesh::ConvType>(m, "ConvType", py::arithmetic())
+  .value("l2g", mesh::ConvType::l2g)
+  .value("l2r", mesh::ConvType::l2r)
   .export_values();
 
   py::class_<mesh::Mesh>(m, "Mesh");

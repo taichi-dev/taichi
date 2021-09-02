@@ -814,6 +814,48 @@ class MeshRelationSizeExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
+class MeshRelationAccessExpression : public Expression {
+ public:
+  mesh::Mesh *mesh;
+  Expr mesh_idx;
+  mesh::MeshElementType to_type;
+  Expr neighbor_idx;
+
+  std::string serialize() override {
+    return fmt::format("mesh_relation_acess({}, {}[{}])",
+                       mesh_idx->serialize(), mesh::element_type_str(to_type), neighbor_idx->serialize());
+  }
+
+  MeshRelationAccessExpression(mesh::Mesh *mesh, 
+                             const Expr mesh_idx, 
+                             mesh::MeshElementType to_type,
+                             const Expr neighbor_idx) 
+    : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type), neighbor_idx(neighbor_idx) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class MeshIndexConversionExpression : public Expression {
+  public:
+   mesh::Mesh *mesh;
+   Expr idx;
+   mesh::ConvType conv_type;
+
+   std::string serialize() override {
+    return fmt::format("mesh_index_conversion({}, {})",
+      mesh::conv_type_str(conv_type), idx->serialize());
+   }
+
+   MeshIndexConversionExpression(mesh::Mesh *mesh, 
+                             const Expr idx, 
+                             mesh::ConvType conv_type) 
+    : mesh(mesh), idx(idx), conv_type(conv_type) {
+  }
+
+   void flatten(FlattenContext *ctx) override;
+};
+
 class ASTBuilder {
  private:
   std::vector<Block *> stack;

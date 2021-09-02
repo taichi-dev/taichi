@@ -1570,11 +1570,62 @@ class MeshRelationSizeStmt : public Stmt {
 
     bool has_global_side_effect() const override {
     return false;
-  }
+    }
 
-  TI_STMT_DEF_FIELDS(ret_type, mesh, mesh_idx, to_type);
-  TI_DEFINE_ACCEPT_AND_CLONE
+    TI_STMT_DEF_FIELDS(ret_type, mesh, mesh_idx, to_type);
+    TI_DEFINE_ACCEPT_AND_CLONE
 };
+
+/**
+ * The relation access, mesh_idx -> to_type[neighbor_idx]
+ */
+class MeshRelationAccessStmt : public Stmt {
+  public:
+    mesh::Mesh *mesh;
+    Stmt *mesh_idx;
+    mesh::MeshElementType to_type;
+    Stmt *neighbor_idx;
+
+    MeshRelationAccessStmt(mesh::Mesh *mesh, Stmt *mesh_idx, 
+                            mesh::MeshElementType to_type, Stmt *neighbor_idx)
+      : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type), neighbor_idx(neighbor_idx) {
+      this->ret_type = PrimitiveType::i32;
+      TI_STMT_REG_FIELDS;
+    }
+    
+    bool has_global_side_effect() const override {
+    return false;
+    }
+
+    TI_STMT_DEF_FIELDS(ret_type, mesh, mesh_idx, to_type, neighbor_idx);
+    TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
+ *  Convert a mesh index to another index space
+ */
+class MeshIndexConversionStmt : public Stmt {
+  public:
+    mesh::Mesh *mesh;
+    Stmt *idx;
+
+    mesh::ConvType conv_type;
+
+    MeshIndexConversionStmt(mesh::Mesh *mesh, Stmt *idx, 
+                               mesh::ConvType conv_type)
+      : mesh(mesh), idx(idx), conv_type(conv_type) {
+      this->ret_type = PrimitiveType::i32;
+      TI_STMT_REG_FIELDS;
+    }
+
+    bool has_global_side_effect() const override {
+    return false;
+    }
+
+    TI_STMT_DEF_FIELDS(ret_type, mesh, idx, conv_type);
+    TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 
 /**
  * The patch index of the |mesh_loop|.

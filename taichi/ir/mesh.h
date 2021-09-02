@@ -42,6 +42,12 @@ enum class MeshElementReorderingType {
   CellFirst    = 3
 };
 
+enum class ConvType {
+  l2g, l2r
+};
+
+const char *conv_type_str(ConvType type);
+
 int element_order(MeshElementType type);
 int from_end_element_order(MeshRelationType rel);
 int to_end_element_order(MeshRelationType rel);

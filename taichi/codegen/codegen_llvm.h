@@ -359,6 +359,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(ExternalFuncCallStmt *stmt) override;
   
   // Mesh related.
+
   void visit(MeshPatchIndexStmt *stmt) override;
 
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);

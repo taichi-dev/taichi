@@ -15,7 +15,7 @@ class SparseSolver:
 
     @staticmethod
     def type_assert(sparse_matrix):
-        assert False, f"The parameter type: {type(sparse_matrix)} is not support in linear solver for now."
+        assert False, f"The parameter type: {type(sparse_matrix)} is not supported in linear solvers for now."
 
     def compute(self, sparse_matrix):
         if isinstance(sparse_matrix, SparseMatrix):
@@ -43,4 +43,4 @@ class SparseSolver:
         elif isinstance(b, np.ndarray):
             return self.solver.solve(b)
         else:
-            assert False, f"The parameter type: {type(b)} is not support in linear solver for now."
+            assert False, f"The parameter type: {type(b)} is not supported in linear solvers for now."

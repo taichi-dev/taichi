@@ -39,7 +39,7 @@ std::unique_ptr<SparseSolver> get_sparse_solver(
     using LLT = Eigen::SimplicialLLT<Eigen::SparseMatrix<float32>>;
     return std::make_unique<EigenSparseSolver<LLT>>();
   } else
-    return nullptr;
+    TI_ERROR("Not supported sparse solver type: {}", solver_type);
 }
 
 }  // namespace lang

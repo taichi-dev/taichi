@@ -221,7 +221,6 @@ void CallCppExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, dt, /*is_ptr=*/true);
   ctx->push_back(std::move(ptr));

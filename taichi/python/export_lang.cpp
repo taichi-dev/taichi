@@ -517,14 +517,13 @@ void export_lang(py::module &m) {
           current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
         });
 
-  m.def("insert_call_cpp",
-        [](std::string filename, std::string funcname, const ExprGroup &args,
-           const ExprGroup &outputs) {
-          auto expr = Expr::make<CallCppExpression>(
-              filename, funcname, args.exprs, outputs.exprs);
+  m.def("insert_call_cpp", [](std::string filename, std::string funcname,
+                              const ExprGroup &args, const ExprGroup &outputs) {
+    auto expr = Expr::make<CallCppExpression>(filename, funcname, args.exprs,
+                                              outputs.exprs);
 
-          current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
-        });
+    current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
+  });
 
   m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
     return is_active(snode, indices);

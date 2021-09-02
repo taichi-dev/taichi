@@ -65,9 +65,6 @@ class SparseMatrix:
     def __repr__(self):
         return self.matrix.to_string()
 
-    def solve(self, b):
-        return self.matrix.solve(b)
-
 
 class SparseMatrixBuilder:
     def __init__(self, num_rows=None, num_cols=None, max_num_triplets=0):

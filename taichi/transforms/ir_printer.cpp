@@ -156,7 +156,7 @@ class IRPrinter : public IRVisitor {
       extras += ", ";
       extras += output->name();
     }
-    print("{} : func_call {}:{}, {}", stmt->name(), stmt->filename,
+    print("{} : call_cpp {}:{}, {}", stmt->name(), stmt->filename,
           stmt->funcname, extras);
   }
 

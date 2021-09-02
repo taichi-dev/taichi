@@ -8,27 +8,28 @@
 namespace taichi {
 namespace lang {
 
-class SparseSolver{
-public:
-  virtual ~SparseSolver() { };
+class SparseSolver {
+ public:
+  virtual ~SparseSolver(){};
   virtual bool compute(const SparseMatrix &sm) = 0;
   virtual void analyze_pattern(const SparseMatrix &sm) = 0;
   virtual void factorize(const SparseMatrix &sm) = 0;
   virtual Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) = 0;
 };
 
-template<class EigenSolver>
-class EigenSparseSolver: public SparseSolver{
-private:
+template <class EigenSolver>
+class EigenSparseSolver : public SparseSolver {
+ private:
   EigenSolver solver_;
-public:
-  virtual ~EigenSparseSolver() { };
+
+ public:
+  virtual ~EigenSparseSolver(){};
   virtual bool compute(const SparseMatrix &sm) override;
   virtual void analyze_pattern(const SparseMatrix &sm) override;
   virtual void factorize(const SparseMatrix &sm) override;
-  virtual Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) override;
+  virtual Eigen::VectorXf solve(
+      const Eigen::Ref<const Eigen::VectorXf> &b) override;
 };
-
 
 std::unique_ptr<SparseSolver> get_sparse_solver(const std::string &solver_type);
 

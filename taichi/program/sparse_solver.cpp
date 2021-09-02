@@ -3,7 +3,7 @@
 namespace taichi {
 namespace lang {
 
-template<class EigenSolver>
+template <class EigenSolver>
 bool EigenSparseSolver<EigenSolver>::compute(const SparseMatrix &sm) {
   solver_.compute(sm.get_matrix());
   if (solver_.info() != Eigen::Success) {
@@ -11,37 +11,35 @@ bool EigenSparseSolver<EigenSolver>::compute(const SparseMatrix &sm) {
   } else
     return true;
 }
-template<class EigenSolver>
+template <class EigenSolver>
 void EigenSparseSolver<EigenSolver>::analyze_pattern(const SparseMatrix &sm) {
   solver_.analyzePattern(sm.get_matrix());
 }
 
-template<class EigenSolver>
+template <class EigenSolver>
 void EigenSparseSolver<EigenSolver>::factorize(const SparseMatrix &sm) {
   solver_.factorize(sm.get_matrix());
 }
 
-template<class EigenSolver>
+template <class EigenSolver>
 Eigen::VectorXf EigenSparseSolver<EigenSolver>::solve(
     const Eigen::Ref<const Eigen::VectorXf> &b) {
-    return solver_.solve(b);
+  return solver_.solve(b);
 }
 
-std::unique_ptr<SparseSolver> get_sparse_solver(const std::string &solver_type){
-    if (solver_type == "LU") {
-      using LU = Eigen::SparseLU<Eigen::SparseMatrix<float32>>;
-      return std::make_unique<EigenSparseSolver<LU>>();
-    }
-    else if(solver_type == "LDLT"){
-      using LDLT = Eigen::SimplicialLDLT<Eigen::SparseMatrix<float32>>;
-      return std::make_unique<EigenSparseSolver<LDLT>>();
-    }
-    else if(solver_type == "LLT"){
-      using LLT = Eigen::SimplicialLLT<Eigen::SparseMatrix<float32>>;
-      return std::make_unique<EigenSparseSolver<LLT>>();
-    }
-    else
-      return nullptr;
+std::unique_ptr<SparseSolver> get_sparse_solver(
+    const std::string &solver_type) {
+  if (solver_type == "LU") {
+    using LU = Eigen::SparseLU<Eigen::SparseMatrix<float32>>;
+    return std::make_unique<EigenSparseSolver<LU>>();
+  } else if (solver_type == "LDLT") {
+    using LDLT = Eigen::SimplicialLDLT<Eigen::SparseMatrix<float32>>;
+    return std::make_unique<EigenSparseSolver<LDLT>>();
+  } else if (solver_type == "LLT") {
+    using LLT = Eigen::SimplicialLLT<Eigen::SparseMatrix<float32>>;
+    return std::make_unique<EigenSparseSolver<LLT>>();
+  } else
+    return nullptr;
 }
 
 }  // namespace lang

@@ -983,13 +983,12 @@ void export_lang(py::module &m) {
   });
 
   py::class_<SparseSolver>(m, "SparseSolver")
-    .def("compute", &SparseSolver::compute)
-    .def("analyze_pattern", &SparseSolver::analyze_pattern)
-    .def("factorize", &SparseSolver::factorize)
-    .def("solve", &SparseSolver::solve);
+      .def("compute", &SparseSolver::compute)
+      .def("analyze_pattern", &SparseSolver::analyze_pattern)
+      .def("factorize", &SparseSolver::factorize)
+      .def("solve", &SparseSolver::solve);
 
   m.def("get_sparse_solver", &get_sparse_solver);
-
 }
 
 TI_NAMESPACE_END

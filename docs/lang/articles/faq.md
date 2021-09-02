@@ -32,7 +32,7 @@ Yes, Taichi supports various popular Python packages. Please check out [Interact
 
 ### How do I declare a field with a **dynamic length**?
 
-The `dynamic` SNode supports variable-length fields. It acts similarly to `std::vector` in C++ or `list` in Python. Please check out [Working with dynamic SNodes](../api/snode.md#working-with-dynamic-snodes) for more details.
+The `dynamic` SNode supports variable-length fields. It acts similarly to `std::vector` in C++ or `list` in Python.
 
 :::tip
 An alternative solution is to allocate a large enough `dense` field, with a corresponding 0-D field

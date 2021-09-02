@@ -267,14 +267,13 @@ class LowerAST : public IRVisitor {
         new_while->body->mask_var = new_while->mask;
         fctx.push_back(std::move(new_while));
       }
-    } else if (stmt->global_var.is<GlobalVariableExpression>()) {
     } else if (stmt->mesh_for) {
       auto &&new_for = std::make_unique<MeshForStmt>(stmt->mesh, stmt->element_type, std::move(stmt->body), stmt->block_dim);
       new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0), 0);
       new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] = new_for->body->statements[0].get();
       new_for->fields_registered = true;
       fctx.push_back(std::move(new_for));
-    } else {
+    } else if (stmt->global_var.is<GlobalVariableExpression>()) {
       auto snode = stmt->global_var.cast<GlobalVariableExpression>()->snode;
       std::vector<int> offsets;
       if (snode->type == SNodeType::place) {

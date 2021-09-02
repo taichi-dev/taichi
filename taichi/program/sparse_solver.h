@@ -4,49 +4,33 @@
 
 #include "taichi/common/core.h"
 #include "taichi/inc/constants.h"
-#include "Eigen/Sparse"
 
 namespace taichi {
 namespace lang {
 
-class SparseLUSolver {
- public:
-  SparseLUSolver();
-  bool compute(const SparseMatrix &sm);
-  void analyze_pattern(const SparseMatrix &sm);
-  void factorize(const SparseMatrix &sm);
-  Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b);
-
- private:
-  using LU = Eigen::SparseLU<Eigen::SparseMatrix<float32>>;
-  std::unique_ptr<LU> solver_{nullptr};
+class SparseSolver{
+public:
+  virtual ~SparseSolver() { };
+  virtual bool compute(const SparseMatrix &sm) = 0;
+  virtual void analyze_pattern(const SparseMatrix &sm) = 0;
+  virtual void factorize(const SparseMatrix &sm) = 0;
+  virtual Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) = 0;
 };
 
-class SparseLDLTSolver {
- public:
-  SparseLDLTSolver();
-  bool compute(const SparseMatrix &sm);
-  void analyze_pattern(const SparseMatrix &sm);
-  void factorize(const SparseMatrix &sm);
-  Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b);
-
- private:
-  using LDLT = Eigen::SimplicialLDLT<Eigen::SparseMatrix<float32>>;
-  std::unique_ptr<LDLT> solver_{nullptr};
+template<class EigenSolver>
+class EigenSparseSolver: public SparseSolver{
+private:
+  EigenSolver solver_;
+public:
+  virtual ~EigenSparseSolver() { };
+  virtual bool compute(const SparseMatrix &sm) override;
+  virtual void analyze_pattern(const SparseMatrix &sm) override;
+  virtual void factorize(const SparseMatrix &sm) override;
+  virtual Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) override;
 };
 
-class SparseLLTSolver {
- public:
-  SparseLLTSolver();
-  bool compute(const SparseMatrix &sm);
-  void analyze_pattern(const SparseMatrix &sm);
-  void factorize(const SparseMatrix &sm);
-  Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b);
 
- private:
-  using LLT = Eigen::SimplicialLLT<Eigen::SparseMatrix<float32>>;
-  std::unique_ptr<LLT> solver_{nullptr};
-};
+std::unique_ptr<SparseSolver> get_sparse_solver(const std::string &solver_type);
 
 }  // namespace lang
 }  // namespace taichi

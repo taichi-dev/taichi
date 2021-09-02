@@ -33,13 +33,11 @@
 #endif
 
 TI_NAMESPACE_BEGIN
-
 bool test_threading();
 
 TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
-
 void async_print_sfg();
 
 std::string async_dump_dot(std::optional<std::string> rankdir,
@@ -984,26 +982,14 @@ void export_lang(py::module &m) {
     return SparseMatrix(n, m);
   });
 
-  py::class_<SparseLUSolver>(m, "SparseLUSolver")
-      .def(py::init<>())
-      .def("compute", &SparseLUSolver::compute)
-      .def("analyze_pattern", &SparseLUSolver::analyze_pattern)
-      .def("factorize", &SparseLUSolver::factorize)
-      .def("solve", &SparseLUSolver::solve);
+  py::class_<SparseSolver>(m, "SparseSolver")
+    .def("compute", &SparseSolver::compute)
+    .def("analyze_pattern", &SparseSolver::analyze_pattern)
+    .def("factorize", &SparseSolver::factorize)
+    .def("solve", &SparseSolver::solve);
 
-  py::class_<SparseLDLTSolver>(m, "SparseLDLTSolver")
-      .def(py::init<>())
-      .def("compute", &SparseLDLTSolver::compute)
-      .def("analyze_pattern", &SparseLDLTSolver::analyze_pattern)
-      .def("factorize", &SparseLDLTSolver::factorize)
-      .def("solve", &SparseLDLTSolver::solve);
+  m.def("get_sparse_solver", &get_sparse_solver);
 
-  py::class_<SparseLLTSolver>(m, "SparseLLTSolver")
-      .def(py::init<>())
-      .def("compute", &SparseLLTSolver::compute)
-      .def("analyze_pattern", &SparseLLTSolver::analyze_pattern)
-      .def("factorize", &SparseLLTSolver::factorize)
-      .def("solve", &SparseLLTSolver::solve);
 }
 
 TI_NAMESPACE_END

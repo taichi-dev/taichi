@@ -8,7 +8,7 @@ class SparseSolver:
             from taichi.core.util import ti_core as _ti_core
             from taichi.lang.impl import get_runtime
             taichi_arch = get_runtime().prog.config.arch
-            assert taichi_arch == _ti_core.Arch.x64, "SparseSolver only supports CPU for now."
+            assert taichi_arch == _ti_core.Arch.x64, f"{taichi_arch}: SparseSolver only supports CPU for now."
             self.solver = _ti_core.get_sparse_solver(solver_type)
         else:
             assert False, f"The solver type {solver_type} is not support for now. Only {solver_type_list} are supported."
@@ -36,8 +36,11 @@ class SparseSolver:
             self.type_assert(sparse_matrix)
 
     def solve(self, b):
+        import numpy as np
         from taichi.lang import Field
         if isinstance(b, Field):
             return self.solver.solve(b.to_numpy())
+        elif isinstance(b, np.ndarray):
+            return self.solver.solve(b)
         else:
             assert False, f"The parameter type: {type(b)} is not support in linear solver for now."

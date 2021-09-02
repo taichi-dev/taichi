@@ -2,9 +2,6 @@
 
 #include "sparse_matrix.h"
 
-#include "taichi/common/core.h"
-#include "taichi/inc/constants.h"
-
 namespace taichi {
 namespace lang {
 

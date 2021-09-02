@@ -294,7 +294,7 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
                        data_type_size(tensor_type->get_element_type());
     } else {
       std::size_t type_size = data_type_size(type);
-      //align global_offset to a multiple of type_size
+      // align global_offset to a multiple of type_size
       global_offset = ((global_offset + type_size - 1) / type_size) * type_size;
       ret = global_offset;
       global_offset += type_size;

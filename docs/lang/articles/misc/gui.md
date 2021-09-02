@@ -57,7 +57,7 @@ If the window size is `(x, y)`, then `img` must be one of:
 - `ti.field(shape=(x, y, 2))`, where `2` is for `(r, g)` channels
 
 - `ti.Vector.field(3, shape=(x, y))` `(r, g, b)` channels on each
-  component (see [vector](../../api/vector.md#vector-fields) for details)
+  component
 
 - `ti.Vector.field(2, shape=(x, y))` `(r, g)` channels on each component
 

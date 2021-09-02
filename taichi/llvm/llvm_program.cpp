@@ -84,8 +84,8 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     runtime_mem_info->set_profiler(profiler);
   }
 #if defined(TI_WITH_CUDA)
-  if (config.arch == Arch::cuda) {
-    if (config.kernel_profiler) {
+  if (config_.arch == Arch::cuda) {
+    if (config_.kernel_profiler) {
       CUDAContext::get_instance().set_profiler(profiler);
     } else {
       CUDAContext::get_instance().set_profiler(nullptr);

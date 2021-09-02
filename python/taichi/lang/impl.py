@@ -83,8 +83,10 @@ def expr_init_func(
 
 
 def begin_frontend_struct_for(group, loop_range):
-    if not isinstance(loop_range, (Field, SNode, _Root)):
-        raise TypeError('Can only iterate through Taichi fields')
+    if not isinstance(loop_range, (AnyArray, Field, SNode, _Root)):
+        raise TypeError(
+            'Can only iterate through Taichi fields/snodes (via template) or dense arrays (via any_arr)'
+        )
     if group.size() != len(loop_range.shape):
         raise IndexError(
             'Number of struct-for indices does not match loop variable dimensionality '

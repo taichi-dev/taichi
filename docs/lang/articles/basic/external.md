@@ -48,11 +48,9 @@ arrays**. External arrays refers to NumPy arrays or PyTorch tensors.
 
 We suggest common users to start with NumPy arrays.
 
-For details, check [Field in API references](../../api/reference/field.md)
-
 ## External array shapes
 
-Shapes of Taichi fields (see [Scalar fields](../../api/scalar_field.md)) and those of corresponding NumPy arrays are closely
+Shapes of Taichi fields and those of corresponding NumPy arrays are closely
 connected via the following rules:
 
 - For scalar fields, **the shape of NumPy array is exactly the same as

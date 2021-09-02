@@ -82,6 +82,21 @@ class Ndarray:
         """
         return self.arr.cpu().numpy()
 
+    @python_scope
+    def from_numpy(self, arr):
+        """Loads all values from a numpy array.
+
+        Args:
+            arr (numpy.ndarray): The source numpy array.
+        """
+        import numpy as np
+        if not isinstance(arr, np.ndarray):
+            raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
+        if tuple(self.arr.shape) != tuple(arr.shape):
+            raise ValueError(f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided")
+        import torch
+        self.arr = torch.from_numpy(arr).to(self.arr.dtype)
+
 
 class ScalarNdarray(Ndarray):
     """Taichi ndarray with scalar elements implemented with a torch tensor.

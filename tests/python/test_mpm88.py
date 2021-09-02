@@ -148,7 +148,7 @@ def test_mpm88_numpy_and_ndarray():
                 C: ti.any_arr(element_shape=(dim, dim)), J: ti.any_arr(),
                 grid_v: ti.any_arr(element_shape=(dim, )),
                 grid_m: ti.any_arr()):
-        for p in range(n_particles):
+        for p in x:
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
             w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
@@ -157,14 +157,14 @@ def test_mpm88_numpy_and_ndarray():
                                dt=ti.f32) + p_mass * C[p]
             for i in ti.static(range(3)):
                 for j in ti.static(range(3)):
-                    offset = ti.Vector([i, j], dt=ti.i32)
+                    offset = ti.Vector([i, j])
                     dpos = (offset.cast(float) - fx) * dx
                     weight = w[i][0] * w[j][1]
                     grid_v[base + offset].atomic_add(
                         weight * (p_mass * v[p] + affine @ dpos))
                     grid_m[base + offset].atomic_add(weight * p_mass)
 
-        for i, j in ti.ndrange(n_grid, n_grid):
+        for i, j in grid_m:
             if grid_m[i, j] > 0:
                 bound = 3
                 inv_m = 1 / grid_m[i, j]
@@ -179,7 +179,7 @@ def test_mpm88_numpy_and_ndarray():
                 if j > n_grid - bound and grid_v[i, j][1] > 0:
                     grid_v[i, j][1] = 0
 
-        for p in range(n_particles):
+        for p in x:
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
             w = [
@@ -189,8 +189,8 @@ def test_mpm88_numpy_and_ndarray():
             new_C = ti.Matrix.zero(ti.f32, 2, 2)
             for i in ti.static(range(3)):
                 for j in ti.static(range(3)):
-                    dpos = ti.Vector([i, j], dt=ti.i32).cast(float) - fx
-                    g_v = grid_v[base + ti.Vector([i, j], dt=ti.i32)]
+                    dpos = ti.Vector([i, j]).cast(float) - fx
+                    g_v = grid_v[base + ti.Vector([i, j])]
                     weight = w[i][0] * w[j][1]
                     new_v += weight * g_v
                     new_C += 4 * weight * g_v.outer_product(dpos) * inv_dx

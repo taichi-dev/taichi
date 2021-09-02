@@ -194,3 +194,27 @@ def test_numpy_zero():
     test_numpy(np.empty(shape=(0), dtype=np.int32))
     test_numpy(np.empty(shape=(0, 5), dtype=np.int32))
     test_numpy(np.empty(shape=(5, 0), dtype=np.int32))
+
+
+@ti.test()
+def test_numpy_struct_for():
+    @ti.kernel
+    def func1(a: ti.any_arr()):
+        for i, j in a:
+            a[i, j] = i + j
+
+    m = np.zeros((123, 456), dtype=np.int32)
+    func1(m)
+    for i in range(123):
+        for j in range(456):
+            assert m[i, j] == i + j
+
+    @ti.kernel
+    def func2(a: ti.any_arr()):
+        for I in ti.grouped(a):
+            a[I] = I.sum()
+
+    n = np.zeros((98, 76, 54), dtype=np.int32)
+    func2(n)
+    for i, j, k in ti.ndrange(98, 76, 54):
+        assert n[i, j, k] == i + j + k

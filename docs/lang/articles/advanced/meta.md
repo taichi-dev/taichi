@@ -92,8 +92,6 @@ def print_field_info(x: ti.template()):
     ti.static_print('Field data type is', x.dtype)
 ```
 
-See [Scalar fields](../../api/scalar_field.md) for more details.
-
 :::note
 For sparse fields, the full domain shape will be returned.
 :::

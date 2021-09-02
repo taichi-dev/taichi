@@ -71,7 +71,12 @@ std::vector<Stmt *> get_store_destination(Stmt *store_stmt) {
   } else if (auto external_func = store_stmt->cast<ExternalFuncCallStmt>()) {
     return external_func->output_stmts;
   } else if (auto cpp_func = store_stmt->cast<CallCppStmt>()) {
-    return cpp_func->output_stmts;
+    std::vector<Stmt *> all_stmts;
+    for (auto &s : cpp_func->arg_stmts)
+      all_stmts.push_back(s);
+    for (auto &s : cpp_func->output_stmts)
+      all_stmts.push_back(s);
+    return all_stmts;
   } else {
     return std::vector<Stmt *>();
   }

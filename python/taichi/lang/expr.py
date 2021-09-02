@@ -63,5 +63,9 @@ def make_expr_group(*exprs):
             exprs = mat.entries
     expr_group = _ti_core.ExprGroup()
     for i in exprs:
-        expr_group.push_back(Expr(i).ptr)
+        if isinstance(i, ti.Matrix):
+            assert i.local_tensor_proxy is not None
+            expr_group.push_back(i.local_tensor_proxy)
+        else:
+            expr_group.push_back(Expr(i).ptr)
     return expr_group

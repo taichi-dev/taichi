@@ -155,7 +155,8 @@ class TaichiLLVMContext {
   std::mutex thread_map_mut;
 };
 
-std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path, llvm::LLVMContext *ctx);
+std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
+                                                       llvm::LLVMContext *ctx);
 
 }  // namespace lang
 }  // namespace taichi

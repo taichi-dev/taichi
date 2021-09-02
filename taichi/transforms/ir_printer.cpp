@@ -156,8 +156,8 @@ class IRPrinter : public IRVisitor {
       extras += ", ";
       extras += output->name();
     }
-    print("{} : func_call {}:{}, {}", stmt->name(), stmt->filename, stmt->funcname,
-          extras);
+    print("{} : func_call {}:{}, {}", stmt->name(), stmt->filename,
+          stmt->funcname, extras);
   }
 
   void visit(FrontendSNodeOpStmt *stmt) override {

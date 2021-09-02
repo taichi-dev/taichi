@@ -2012,10 +2012,12 @@ void CodeGenLLVM::visit(CallCppStmt *stmt) {
     arg_values.push_back(llvm_val[s]);
   }
 
-  std::unique_ptr<llvm::Module> cpp_module = module_from_bitcode_file(fmt::format("{}", stmt->filename), llvm_context);
+  std::unique_ptr<llvm::Module> cpp_module =
+      module_from_bitcode_file(fmt::format("{}", stmt->filename), llvm_context);
 
   auto *f_old = cpp_module->getFunction(stmt->funcname);
-  TI_ASSERT_INFO(f_old != nullptr, "{} is not founded in {}.", stmt->funcname, stmt->filename);
+  TI_ASSERT_INFO(f_old != nullptr, "{} is not founded in {}.", stmt->funcname,
+                 stmt->filename);
   for (int i = 0; i < f_old->getFunctionType()->getNumParams(); ++i)
     TI_ASSERT(f_old->getArg(i)->getType() == arg_values[i]->getType());
 

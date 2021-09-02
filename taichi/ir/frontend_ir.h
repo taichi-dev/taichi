@@ -387,7 +387,6 @@ class ExternalFuncCallExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
-
 class CallCppExpression : public Expression {
  public:
   std::string filename;
@@ -420,7 +419,6 @@ class CallCppExpression : public Expression {
 
   void flatten(FlattenContext *ctx) override;
 };
-
 
 class ExternalTensorExpression : public Expression {
  public:

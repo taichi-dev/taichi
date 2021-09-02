@@ -4,6 +4,9 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
 
+#include "llvm/Bitcode/BitcodeReader.h"
+#include "llvm/Linker/Linker.h"
+
 TLANG_NAMESPACE_BEGIN
 
 // TODO: sort function definitions to match declaration order in header
@@ -2015,6 +2018,37 @@ void CodeGenLLVM::visit(RangeAssumptionStmt *stmt) {
 
 void CodeGenLLVM::visit(LoopUniqueStmt *stmt) {
   llvm_val[stmt] = llvm_val[stmt->input];
+}
+
+void CodeGenLLVM::visit(CallCppStmt *stmt) {
+  std::vector<llvm::Type *> arg_types;
+  std::vector<llvm::Value *> arg_values;
+
+  for (auto s : stmt->arg_stmts) {
+    TI_ASSERT(s->width() == 1);
+    arg_types.push_back(tlctx->get_data_type(s->ret_type));
+    arg_values.push_back(llvm_val[s]);
+  }
+
+  for (auto s : stmt->output_stmts) {
+    TI_ASSERT(s->width() == 1);
+    auto t = tlctx->get_data_type(s->ret_type);
+    auto ptr = llvm::PointerType::get(t, 0);
+    arg_types.push_back(ptr);
+    arg_values.push_back(llvm_val[s]);
+  }
+
+  std::unique_ptr<llvm::Module> cpp_module = module_from_bitcode_file(fmt::format("{}", stmt->filename), llvm_context);
+
+  auto *f_old = cpp_module->getFunction(stmt->funcname);
+  TI_ASSERT_INFO(f_old != nullptr, "{} is not founded in {}.", stmt->funcname, stmt->filename);
+  for (int i = 0; i < f_old->getFunctionType()->getNumParams(); ++i)
+    TI_ASSERT(f_old->getArg(i)->getType() == arg_values[i]->getType());
+
+  auto link_error = llvm::Linker::linkModules(*module, std::move(cpp_module));
+  TI_ASSERT(!link_error);
+  auto *f_new = module->getFunction(stmt->funcname);
+  builder->CreateCall(f_new, arg_values);
 }
 
 void CodeGenLLVM::eliminate_unused_functions() {

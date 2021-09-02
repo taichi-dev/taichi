@@ -344,6 +344,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(LoopUniqueStmt *stmt) override;
 
+  void visit(CallCppStmt *stmt) override;
+
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
 
   llvm::Value *extract_exponent_from_float(llvm::Value *f);

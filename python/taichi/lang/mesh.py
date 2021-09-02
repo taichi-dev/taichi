@@ -21,6 +21,7 @@ MeshTopology = _ti_core.MeshTopology
 MeshElementType = _ti_core.MeshElementType
 MeshRelationType = _ti_core.MeshRelationType
 MeshElementReorderingType = _ti_core.MeshElementReorderingType
+ConvType = _ti_core.ConvType
 element_order = _ti_core.element_order
 from_end_element_order = _ti_core.from_end_element_order
 to_end_element_order = _ti_core.to_end_element_order

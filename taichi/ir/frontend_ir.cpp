@@ -772,6 +772,19 @@ void MeshRelationSizeExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
+  mesh_idx->flatten(ctx);
+  neighbor_idx->flatten(ctx);
+  ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx->stmt, to_type, neighbor_idx->stmt);
+  stmt = ctx->back_stmt();
+}
+
+void MeshIndexConversionExpression::flatten(FlattenContext *ctx) {
+  idx->flatten(ctx);
+  ctx->push_back<MeshIndexConversionStmt>(mesh, idx->stmt, conv_type);
+  stmt = ctx->back_stmt();
+}
+
 Block *ASTBuilder::current_block() {
   if (stack.empty())
     return nullptr;

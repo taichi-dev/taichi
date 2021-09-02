@@ -2210,6 +2210,7 @@ void CodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
 }
 
 // Mesh related.
+
 void CodeGenLLVM::visit(MeshPatchIndexStmt *stmt) {
   TI_NOT_IMPLEMENTED; // TODO(changyu): need a x64 version impl.
 }

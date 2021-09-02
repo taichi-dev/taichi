@@ -18,6 +18,16 @@ const char * element_type_str(MeshElementType type) {
   }
 }
 
+const char *conv_type_str(ConvType type) {
+  if (type == mesh::ConvType::l2g)
+    return "local to global";
+  else if (type == mesh::ConvType::l2r)
+    return "local to reordered";
+  else {
+    TI_NOT_IMPLEMENTED;
+  }
+}
+
 int element_order(MeshElementType type) {
   return int(type);
 }

@@ -113,6 +113,18 @@ def test_ndarray_2d():
             assert b[i, j] == i * j + (i + j + 1) * 2
 
 
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
+def test_ndarray_numpy_io():
+    n = 7
+    m = 4
+    a = ti.ndarray(ti.i32, shape=(n, m))
+    a.fill(2)
+    b = ti.ndarray(ti.i32, shape=(n, m))
+    b.from_numpy(np.ones((n, m), dtype=np.int32) * 2)
+    assert (a.to_numpy() == b.to_numpy()).all()
+
+
 @pytest.mark.parametrize('layout', layouts)
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)

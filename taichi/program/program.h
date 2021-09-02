@@ -16,6 +16,8 @@
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
 #include "taichi/backends/vulkan/runtime.h"
+#include "taichi/backends/dx/struct_directx.h"
+#include "taichi/backends/dx/directx_api.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/aot_module_builder.h"
 #include "taichi/program/function.h"
@@ -323,6 +325,9 @@ class Program {
   // OpenGL related data structures
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
   std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
+  // DX related data structures
+  std::optional<dx::StructCompiledResult> dx_struct_compiled_;
+  std::unique_ptr<dx::HLSLLauncher> dx_kernel_launcher_;
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;

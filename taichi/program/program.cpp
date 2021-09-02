@@ -25,6 +25,10 @@
 #include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
 
+#include "taichi/backends/dx/codegen_dx.h"
+#include "taichi/backends/dx/struct_directx.h"
+#include "taichi/backends/dx/directx_api.h"
+
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"
@@ -100,6 +104,14 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #else
     TI_WARN("No C backend detected.");
     config.arch = host_arch();
+#endif
+  }
+
+  if (config.arch == Arch::dx) {
+#ifdef TI_WITH_DX
+    {}
+#else
+    TI_WARN("No DX API detected.");
 #endif
   }
 
@@ -183,6 +195,10 @@ FunctionType Program::compile(Kernel &kernel) {
     ret = vulkan::compile_to_executable(
         &kernel, &vulkan_compiled_structs_.value(), vulkan_runtime_.get());
 #endif  // TI_WITH_VULKAN
+  } else if (kernel.arch == Arch::dx) {
+    dx::DxCodeGen codegen(kernel.name, &dx_struct_compiled_.value(),
+                          dx_kernel_launcher_.get());
+    ret = codegen.Compile(this, &kernel);
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -278,6 +294,15 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
     params.host_result_buffer = result_buffer;
     vulkan_runtime_ = std::make_unique<vulkan::VkRuntime>(std::move(params));
 #endif
+  } else if (config.arch == Arch::dx) {
+    TI_ASSERT(result_buffer == nullptr);
+    result_buffer = allocate_result_buffer_default(this);
+    dx::DxStructCompiler sc;
+    dx_struct_compiled_ = sc.Run(root);
+    TI_TRACE("DX root buffer size: {} B", dx_struct_compiled_->root_size);
+    dx_kernel_launcher_ =
+        std::make_unique<dx::HLSLLauncher>(dx_struct_compiled_->root_size);
+    dx_kernel_launcher_->result_buffer = result_buffer;
   }
 }
 
@@ -411,6 +436,8 @@ Arch Program::get_snode_accessor_arch() {
     return Arch::metal;
   } else if (config.arch == Arch::cc) {
     return Arch::cc;
+  } else if (config.arch == Arch::dx) {
+    return Arch::dx;
   } else {
     return get_host_arch();
   }

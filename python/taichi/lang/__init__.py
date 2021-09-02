@@ -63,7 +63,8 @@ opengl = _ti_core.opengl
 cc = _ti_core.cc
 wasm = _ti_core.wasm
 vulkan = _ti_core.vulkan
-gpu = [cuda, metal, opengl, vulkan]
+dx = _ti_core.dx
+gpu = [cuda, metal, opengl, vulkan, dx]
 cpu = _ti_core.host_arch()
 timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()
 timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
@@ -812,6 +813,7 @@ def is_arch_supported(arch):
         metal: _ti_core.with_metal,
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
+        dx: _ti_core.with_dx,
         vulkan: lambda: _ti_core.with_vulkan(),
         wasm: lambda: True,
         cpu: lambda: True,

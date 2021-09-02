@@ -64,6 +64,24 @@ class Ndarray:
         """
         raise NotImplementedError()
 
+    @python_scope
+    def fill(self, val):
+        """Fills ndarray with a specific scalar value.
+
+        Args:
+            val (Union[int, float]): Value to fill.
+        """
+        self.arr.fill_(val)
+
+    @python_scope
+    def to_numpy(self):
+        """Converts ndarray to a numpy array.
+
+        Returns:
+            numpy.ndarray: The result numpy array.
+        """
+        return self.arr.cpu().numpy()
+
 
 class ScalarNdarray(Ndarray):
     """Taichi ndarray with scalar elements implemented with a torch tensor.

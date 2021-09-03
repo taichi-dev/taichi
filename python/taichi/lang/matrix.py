@@ -883,7 +883,8 @@ class Matrix(TaichiOperations):
             if layout == Layout.SOA:
                 for e in entries.get_field_members():
                     ti.root.dense(impl.index_nd(dim),
-                                  shape).place(ScalarField(e, dtype), offset=offset)
+                                  shape).place(ScalarField(e, dtype),
+                                               offset=offset)
                 if needs_grad:
                     for e in entries_grad.get_field_members():
                         ti.root.dense(impl.index_nd(dim),

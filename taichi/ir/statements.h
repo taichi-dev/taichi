@@ -810,7 +810,8 @@ class MeshForStmt : public Stmt {
   std::vector<mesh::MeshElementType> major_to_types{};
   std::vector<mesh::MeshRelationType> minor_relation_types{};
 
-  MeshForStmt(mesh::Mesh *mesh, mesh::MeshElementType element_type,
+  MeshForStmt(mesh::Mesh *mesh,
+              mesh::MeshElementType element_type,
               std::unique_ptr<Block> &&body,
               int block_dim);
 
@@ -820,8 +821,7 @@ class MeshForStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  TI_STMT_DEF_FIELDS(mesh, major_from_type,
-                     block_dim);
+  TI_STMT_DEF_FIELDS(mesh, major_from_type, block_dim);
   TI_DEFINE_ACCEPT
 };
 
@@ -1116,7 +1116,7 @@ class OffloadedStmt : public Stmt {
 
   std::unique_ptr<Block> tls_prologue;
   std::unique_ptr<Block> bls_prologue;
-  std::unique_ptr<Block> body_prologue; // mesh-for only block
+  std::unique_ptr<Block> body_prologue;  // mesh-for only block
   std::unique_ptr<Block> body;
   std::unique_ptr<Block> bls_epilogue;
   std::unique_ptr<Block> tls_epilogue;
@@ -1557,75 +1557,80 @@ class BitStructStoreStmt : public Stmt {
  * The number of neighbours (length of relation) of a mesh idx
  */
 class MeshRelationSizeStmt : public Stmt {
-  public:
-    mesh::Mesh *mesh;
-    Stmt *mesh_idx;
-    mesh::MeshElementType to_type;
+ public:
+  mesh::Mesh *mesh;
+  Stmt *mesh_idx;
+  mesh::MeshElementType to_type;
 
-    MeshRelationSizeStmt(mesh::Mesh *mesh, Stmt *mesh_idx, mesh::MeshElementType to_type) 
+  MeshRelationSizeStmt(mesh::Mesh *mesh,
+                       Stmt *mesh_idx,
+                       mesh::MeshElementType to_type)
       : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
-        this->ret_type = PrimitiveType::i32;
-        TI_STMT_REG_FIELDS;
-    }
+    this->ret_type = PrimitiveType::i32;
+    TI_STMT_REG_FIELDS;
+  }
 
-    bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
-    }
+  }
 
-    TI_STMT_DEF_FIELDS(ret_type, mesh, mesh_idx, to_type);
-    TI_DEFINE_ACCEPT_AND_CLONE
+  TI_STMT_DEF_FIELDS(ret_type, mesh, mesh_idx, to_type);
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 /**
  * The relation access, mesh_idx -> to_type[neighbor_idx]
  */
 class MeshRelationAccessStmt : public Stmt {
-  public:
-    mesh::Mesh *mesh;
-    Stmt *mesh_idx;
-    mesh::MeshElementType to_type;
-    Stmt *neighbor_idx;
+ public:
+  mesh::Mesh *mesh;
+  Stmt *mesh_idx;
+  mesh::MeshElementType to_type;
+  Stmt *neighbor_idx;
 
-    MeshRelationAccessStmt(mesh::Mesh *mesh, Stmt *mesh_idx, 
-                            mesh::MeshElementType to_type, Stmt *neighbor_idx)
-      : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type), neighbor_idx(neighbor_idx) {
-      this->ret_type = PrimitiveType::i32;
-      TI_STMT_REG_FIELDS;
-    }
-    
-    bool has_global_side_effect() const override {
+  MeshRelationAccessStmt(mesh::Mesh *mesh,
+                         Stmt *mesh_idx,
+                         mesh::MeshElementType to_type,
+                         Stmt *neighbor_idx)
+      : mesh(mesh),
+        mesh_idx(mesh_idx),
+        to_type(to_type),
+        neighbor_idx(neighbor_idx) {
+    this->ret_type = PrimitiveType::i32;
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
     return false;
-    }
+  }
 
-    TI_STMT_DEF_FIELDS(ret_type, mesh, mesh_idx, to_type, neighbor_idx);
-    TI_DEFINE_ACCEPT_AND_CLONE
+  TI_STMT_DEF_FIELDS(ret_type, mesh, mesh_idx, to_type, neighbor_idx);
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 /**
  *  Convert a mesh index to another index space
  */
 class MeshIndexConversionStmt : public Stmt {
-  public:
-    mesh::Mesh *mesh;
-    Stmt *idx;
+ public:
+  mesh::Mesh *mesh;
+  Stmt *idx;
 
-    mesh::ConvType conv_type;
+  mesh::ConvType conv_type;
 
-    MeshIndexConversionStmt(mesh::Mesh *mesh, Stmt *idx, 
-                               mesh::ConvType conv_type)
+  MeshIndexConversionStmt(mesh::Mesh *mesh, Stmt *idx, mesh::ConvType conv_type)
       : mesh(mesh), idx(idx), conv_type(conv_type) {
-      this->ret_type = PrimitiveType::i32;
-      TI_STMT_REG_FIELDS;
-    }
+    this->ret_type = PrimitiveType::i32;
+    TI_STMT_REG_FIELDS;
+  }
 
-    bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
-    }
+  }
 
-    TI_STMT_DEF_FIELDS(ret_type, mesh, idx, conv_type);
-    TI_DEFINE_ACCEPT_AND_CLONE
+  TI_STMT_DEF_FIELDS(ret_type, mesh, idx, conv_type);
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
-
 
 /**
  * The patch index of the |mesh_loop|.

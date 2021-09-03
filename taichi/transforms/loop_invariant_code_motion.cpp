@@ -125,7 +125,7 @@ class LoopInvariantCodeMotion : public BasicStmtVisitor {
 
     if (stmt->bls_prologue)
       stmt->bls_prologue->accept(this);
-    
+
     if (stmt->body_prologue)
       stmt->body_prologue->accept(this);
 

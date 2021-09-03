@@ -66,11 +66,11 @@ void make_block_local(IRNode *root,
                       const CompileConfig &config,
                       const MakeBlockLocalPass::Args &args);
 void make_mesh_thread_local(IRNode *root,
-                      const CompileConfig &config,
-                      const MakeBlockLocalPass::Args &args);
+                            const CompileConfig &config,
+                            const MakeBlockLocalPass::Args &args);
 void make_mesh_attribute_local(IRNode *root,
-                      const CompileConfig &config,
-                      const MakeBlockLocalPass::Args &args);
+                               const CompileConfig &config,
+                               const MakeBlockLocalPass::Args &args);
 bool remove_loop_unique(IRNode *root);
 bool remove_range_assumption(IRNode *root);
 bool lower_access(IRNode *root,

@@ -365,7 +365,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(MeshForStmt *for_stmt) override {
-    print("{} : mesh for {} {{", for_stmt->name(), mesh::element_type_str(for_stmt->major_from_type));
+    print("{} : mesh for {} {{", for_stmt->name(),
+          mesh::element_type_str(for_stmt->major_from_type));
     for_stmt->body->accept(this);
     print("}}");
   }
@@ -555,11 +556,10 @@ class IRPrinter : public IRVisitor {
           fmt::format("struct_for({}) grid_dim={} block_dim={} bls={}",
                       stmt->snode->get_node_type_name_hinted(), stmt->grid_dim,
                       stmt->block_dim, scratch_pad_info(stmt->mem_access_opt));
-    }
-    else if (stmt->task_type == OffloadedTaskType::mesh_for) {
+    } else if (stmt->task_type == OffloadedTaskType::mesh_for) {
       details =
-          fmt::format("mesh_for(num_patches={}) grid_dim={} block_dim={}", stmt->mesh->num_patches,
-                      stmt->grid_dim, stmt->block_dim);
+          fmt::format("mesh_for(num_patches={}) grid_dim={} block_dim={}",
+                      stmt->mesh->num_patches, stmt->grid_dim, stmt->block_dim);
     }
     if (stmt->task_type == OffloadedTaskType::listgen) {
       print("{} = offloaded listgen {}->{}", stmt->name(),
@@ -713,18 +713,18 @@ class IRPrinter : public IRVisitor {
   // Mesh related.
   void visit(MeshRelationSizeStmt *stmt) override {
     print("{}{} = {} idx relation [{}] size", stmt->type_hint(), stmt->name(),
-      stmt->mesh_idx->name(), mesh::element_type_str(stmt->to_type));
+          stmt->mesh_idx->name(), mesh::element_type_str(stmt->to_type));
   }
 
   void visit(MeshRelationAccessStmt *stmt) override {
-    print("{}{} = {} idx access relation {}[{}]", stmt->type_hint(), stmt->name(),
-      stmt->mesh_idx->name(), mesh::element_type_str(stmt->to_type), 
-      stmt->neighbor_idx->name());
+    print("{}{} = {} idx access relation {}[{}]", stmt->type_hint(),
+          stmt->name(), stmt->mesh_idx->name(),
+          mesh::element_type_str(stmt->to_type), stmt->neighbor_idx->name());
   }
 
   void visit(MeshIndexConversionStmt *stmt) override {
-    print("{}{} = {} {}", stmt->type_hint(), stmt->name(), 
-    mesh::conv_type_str(stmt->conv_type), stmt->idx->name());
+    print("{}{} = {} {}", stmt->type_hint(), stmt->name(),
+          mesh::conv_type_str(stmt->conv_type), stmt->idx->name());
   }
 
   void visit(MeshPatchIndexStmt *stmt) override {

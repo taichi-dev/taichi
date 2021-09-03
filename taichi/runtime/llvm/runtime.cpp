@@ -1330,7 +1330,9 @@ void parallel_struct_for(RuntimeContext *context,
 }
 
 using range_for_xlogue = void (*)(RuntimeContext *, /*TLS*/ char *tls_base);
-using mesh_for_xlogue = void (*)(RuntimeContext *, /*TLS*/ char *tls_base, uint32_t patch_idx);
+using mesh_for_xlogue = void (*)(RuntimeContext *,
+                                 /*TLS*/ char *tls_base,
+                                 uint32_t patch_idx);
 
 struct range_task_helper_context {
   RuntimeContext *context;
@@ -1430,11 +1432,11 @@ void gpu_parallel_range_for(RuntimeContext *context,
 }
 
 void gpu_parallel_mesh_for(RuntimeContext *context,
-                            uint32_t num_patches,
-                            mesh_for_xlogue prologue,
-                            MeshForTaskFunc *func,
-                            mesh_for_xlogue epilogue,
-                            const std::size_t tls_size) {
+                           uint32_t num_patches,
+                           mesh_for_xlogue prologue,
+                           MeshForTaskFunc *func,
+                           mesh_for_xlogue epilogue,
+                           const std::size_t tls_size) {
   alignas(8) char tls_buffer[tls_size];
   auto tls_ptr = &tls_buffer[0];
   for (uint32_t idx = block_idx(); idx < num_patches; idx += grid_dim()) {

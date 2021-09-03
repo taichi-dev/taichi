@@ -215,7 +215,7 @@ class ScalarField(Field):
     Args:
         var (Expr): Field member.
     """
-    def __init__(self, var, dtype= None):
+    def __init__(self, var, dtype=None):
         super().__init__([var], dtype)
 
     @python_scope

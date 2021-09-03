@@ -12,25 +12,26 @@ const PassID MakeMeshThreadLocal::id = "MakeMeshThreadLocal";
 namespace irpass {
 
 void make_mesh_thread_local_offload(OffloadedStmt *offload,
-                              const CompileConfig &config,
-                              const std::string &kernel_name) {
+                                    const CompileConfig &config,
+                                    const std::string &kernel_name) {
   if (offload->task_type != OffloadedStmt::TaskType::mesh_for) {
     return;
   }
 
-  std::pair</* owned= */ std::unordered_set<mesh::MeshElementType>, 
-            /* total= */ std::unordered_set<mesh::MeshElementType>> accessed;
+  std::pair</* owned= */ std::unordered_set<mesh::MeshElementType>,
+            /* total= */ std::unordered_set<mesh::MeshElementType>>
+      accessed;
 
-  // TODO(changyu): An analyzer to gather each mesh element's 
+  // TODO(changyu): An analyzer to gather each mesh element's
   // owned_elements_offset and total_elements_offset
   // is needed or not, now make it with a hack
 
-  accessed.first.insert(mesh::MeshElementType::Cell);     // FIXME: a hack.
+  accessed.first.insert(mesh::MeshElementType::Cell);  // FIXME: a hack.
   accessed.second.insert(mesh::MeshElementType::Vertex);
 
   std::size_t tls_offset = offload->tls_size;
 
-  auto data_type = PrimitiveType::u32; // uint32_t type address
+  auto data_type = PrimitiveType::u32;  // uint32_t type address
   auto dtype_size = data_type_size(data_type);
 
   if (offload->tls_prologue == nullptr) {
@@ -44,115 +45,126 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
   }
 
   auto patch_idx = offload->tls_prologue->insert(
-          std::make_unique<MeshPatchIndexStmt>(offload), -1);
+      std::make_unique<MeshPatchIndexStmt>(offload), -1);
   auto one = offload->tls_prologue->insert(
-          std::make_unique<ConstStmt>(TypedConstant(data_type, 1)), -1);
+      std::make_unique<ConstStmt>(TypedConstant(data_type, 1)), -1);
   auto patch_idx_1 = offload->tls_prologue->insert(
-          std::make_unique<BinaryOpStmt>(BinaryOpType::add, patch_idx, one), -1);
+      std::make_unique<BinaryOpStmt>(BinaryOpType::add, patch_idx, one), -1);
 
-  auto make_thread_local_store = [&](mesh::MeshElementType element_type,
-          const std::unordered_map<mesh::MeshElementType, SNode*> &offset_,
-          std::unordered_map<mesh::MeshElementType, Stmt*> &offset_local,
-          std::unordered_map<mesh::MeshElementType, Stmt*> &num_local) {
-    
-    const auto offset_tls_offset = (tls_offset += (dtype_size - tls_offset % dtype_size) % dtype_size);
-    tls_offset += dtype_size; // allocate storage for the TLS variable
-    
-    const auto num_tls_offset = (tls_offset += (dtype_size - tls_offset % dtype_size) % dtype_size);
-    tls_offset += dtype_size;
-    
-    // Step 1:
-    // Create thread local storage
-    {
-      auto offset_ptr = offload->tls_prologue->push_back<ThreadLocalPtrStmt>(
-            offset_tls_offset,
-            TypeFactory::create_vector_or_scalar_type(1, data_type, true));
-      auto num_ptr = offload->tls_prologue->push_back<ThreadLocalPtrStmt>(
-            num_tls_offset,
-            TypeFactory::create_vector_or_scalar_type(1, data_type, true));
+  auto make_thread_local_store =
+      [&](mesh::MeshElementType element_type,
+          const std::unordered_map<mesh::MeshElementType, SNode *> &offset_,
+          std::unordered_map<mesh::MeshElementType, Stmt *> &offset_local,
+          std::unordered_map<mesh::MeshElementType, Stmt *> &num_local) {
+        const auto offset_tls_offset =
+            (tls_offset += (dtype_size - tls_offset % dtype_size) % dtype_size);
+        tls_offset += dtype_size;  // allocate storage for the TLS variable
 
+        const auto num_tls_offset =
+            (tls_offset += (dtype_size - tls_offset % dtype_size) % dtype_size);
+        tls_offset += dtype_size;
 
-      const auto offset_snode = offset_.find(element_type);
-      TI_ASSERT(offset_snode != offset_.end());
-      auto offset_globalptr = offload->tls_prologue->insert(
-          std::make_unique<GlobalPtrStmt>(LaneAttribute<SNode*>{offset_snode->second}, 
-          std::vector<Stmt*>{patch_idx}), -1);
-      auto offset_load = offload->tls_prologue->insert(
-          std::make_unique<GlobalLoadStmt>(offset_globalptr), -1);
-      auto offset_1_globalptr = offload->tls_prologue->insert(
-          std::make_unique<GlobalPtrStmt>(LaneAttribute<SNode*>{offset_snode->second}, 
-          std::vector<Stmt*>{patch_idx_1}), -1);
-      auto offset_1_load = offload->tls_prologue->insert(
-          std::make_unique<GlobalLoadStmt>(offset_1_globalptr), -1);
-      auto num_load = offload->tls_prologue->insert(
-          std::make_unique<BinaryOpStmt>(BinaryOpType::sub, offset_1_load, offset_load), -1);
-    
-      // TODO: do not use GlobalStore for TLS ptr.
-      offload->tls_prologue->push_back<GlobalStoreStmt>(offset_ptr, offset_load);
-      offload->tls_prologue->push_back<GlobalStoreStmt>(num_ptr, num_load);
-    }
-
-    // Step 2:
-    // Store TLS body_prologue ptr to the offloaded statement
-    {
-
-      auto offset_ptr = offload->body_prologue->push_back<ThreadLocalPtrStmt>(
-              offset_tls_offset,
-              TypeFactory::create_vector_or_scalar_type(1, data_type, true));
-      auto offset_val = offload->body_prologue->push_back<GlobalLoadStmt>(offset_ptr);
-      auto num_ptr = offload->body_prologue->push_back<ThreadLocalPtrStmt>(
+        // Step 1:
+        // Create thread local storage
+        {
+          auto offset_ptr =
+              offload->tls_prologue->push_back<ThreadLocalPtrStmt>(
+                  offset_tls_offset, TypeFactory::create_vector_or_scalar_type(
+                                         1, data_type, true));
+          auto num_ptr = offload->tls_prologue->push_back<ThreadLocalPtrStmt>(
               num_tls_offset,
               TypeFactory::create_vector_or_scalar_type(1, data_type, true));
-      auto num_val = offload->body_prologue->push_back<GlobalLoadStmt>(num_ptr);
 
-      offset_local.insert(std::pair(element_type, offset_val));
-      num_local.insert(std::pair(element_type, num_val));
-    }
-  };
+          const auto offset_snode = offset_.find(element_type);
+          TI_ASSERT(offset_snode != offset_.end());
+          auto offset_globalptr = offload->tls_prologue->insert(
+              std::make_unique<GlobalPtrStmt>(
+                  LaneAttribute<SNode *>{offset_snode->second},
+                  std::vector<Stmt *>{patch_idx}),
+              -1);
+          auto offset_load = offload->tls_prologue->insert(
+              std::make_unique<GlobalLoadStmt>(offset_globalptr), -1);
+          auto offset_1_globalptr = offload->tls_prologue->insert(
+              std::make_unique<GlobalPtrStmt>(
+                  LaneAttribute<SNode *>{offset_snode->second},
+                  std::vector<Stmt *>{patch_idx_1}),
+              -1);
+          auto offset_1_load = offload->tls_prologue->insert(
+              std::make_unique<GlobalLoadStmt>(offset_1_globalptr), -1);
+          auto num_load = offload->tls_prologue->insert(
+              std::make_unique<BinaryOpStmt>(BinaryOpType::sub, offset_1_load,
+                                             offset_load),
+              -1);
+
+          // TODO: do not use GlobalStore for TLS ptr.
+          offload->tls_prologue->push_back<GlobalStoreStmt>(offset_ptr,
+                                                            offset_load);
+          offload->tls_prologue->push_back<GlobalStoreStmt>(num_ptr, num_load);
+        }
+
+        // Step 2:
+        // Store TLS body_prologue ptr to the offloaded statement
+        {
+          auto offset_ptr =
+              offload->body_prologue->push_back<ThreadLocalPtrStmt>(
+                  offset_tls_offset, TypeFactory::create_vector_or_scalar_type(
+                                         1, data_type, true));
+          auto offset_val =
+              offload->body_prologue->push_back<GlobalLoadStmt>(offset_ptr);
+          auto num_ptr = offload->body_prologue->push_back<ThreadLocalPtrStmt>(
+              num_tls_offset,
+              TypeFactory::create_vector_or_scalar_type(1, data_type, true));
+          auto num_val =
+              offload->body_prologue->push_back<GlobalLoadStmt>(num_ptr);
+
+          offset_local.insert(std::pair(element_type, offset_val));
+          num_local.insert(std::pair(element_type, num_val));
+        }
+      };
 
   for (auto element_type : accessed.first) {
-    make_thread_local_store(element_type, 
-          offload->mesh->owned_offset,
-          offload->mesh->owned_offset_local,
-          offload->mesh->owned_num_local);
+    make_thread_local_store(element_type, offload->mesh->owned_offset,
+                            offload->mesh->owned_offset_local,
+                            offload->mesh->owned_num_local);
   }
 
   for (auto element_type : accessed.second) {
-    make_thread_local_store(element_type, 
-          offload->mesh->total_offset,
-          offload->mesh->total_offset_local,
-          offload->mesh->total_num_local);
+    make_thread_local_store(element_type, offload->mesh->total_offset,
+                            offload->mesh->total_offset_local,
+                            offload->mesh->total_num_local);
   }
   offload->tls_size = std::max(std::size_t(1), tls_offset);
 }
 
 // This pass should happen after offloading but before lower_access
 void make_mesh_thread_local(IRNode *root,
-                      const CompileConfig &config,
-                      const MakeBlockLocalPass::Args &args) {
+                            const CompileConfig &config,
+                            const MakeBlockLocalPass::Args &args) {
   TI_AUTO_PROF;
 
   // =========================================================================================
   // This pass generates code like this:
   // uint32_t total_vertices_offset = _total_vertices_offset[blockIdx.x];
-  // uint32_t total_vertices = _total_vertices_offset[blockIdx.x + 1] - total_vertices_offset;
+  // uint32_t total_vertices = _total_vertices_offset[blockIdx.x + 1] -
+  // total_vertices_offset;
 
   // uint32_t total_cells_offset = _total_cells_offset[blockIdx.x];
   // uint32_t total_cells = _total_cells_offset[blockIdx.x + 1] -
   // total_cells_offset;
 
   // uint32_t owned_cells_offset = _owned_cells_offset[blockIdx.x];
-  // uint32_t owned_cells = _owned_cells_offset[blockIdx.x + 1] - owned_cells_offset;
+  // uint32_t owned_cells = _owned_cells_offset[blockIdx.x + 1] -
+  // owned_cells_offset;
   // =========================================================================================
 
   if (auto root_block = root->cast<Block>()) {
     for (auto &offload : root_block->statements) {
       make_mesh_thread_local_offload(offload->cast<OffloadedStmt>(), config,
-                               args.kernel_name);
+                                     args.kernel_name);
     }
   } else {
     make_mesh_thread_local_offload(root->as<OffloadedStmt>(), config,
-                             args.kernel_name);
+                                   args.kernel_name);
   }
   type_check(root, config);
 }

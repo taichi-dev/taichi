@@ -4,7 +4,7 @@ namespace taichi {
 namespace lang {
 namespace mesh {
 
-const char * element_type_str(MeshElementType type) {
+const char *element_type_str(MeshElementType type) {
   if (type == MeshElementType::Vertex)
     return "Vertex";
   else if (type == MeshElementType::Edge)
@@ -45,9 +45,10 @@ int relation_by_orders(int from_order, int to_order) {
 }
 
 int inverse_relation(MeshRelationType rel) {
-  return relation_by_orders(to_end_element_order(rel), from_end_element_order(rel));
+  return relation_by_orders(to_end_element_order(rel),
+                            from_end_element_order(rel));
 }
 
-} /*mesh*/
-} /*lang*/
-} /*taichi*/
+}  // namespace mesh
+}  // namespace lang
+}  // namespace taichi

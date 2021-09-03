@@ -567,12 +567,15 @@ void export_lang(py::module &m) {
     scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
   });
 
-  m.def("begin_frontend_mesh_for", [&](const Expr &i, const mesh::MeshPtr &mesh_ptr, const mesh::MeshElementType &element_type) {
-    auto stmt_unique = std::make_unique<FrontendForStmt>(i, mesh_ptr, element_type);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
-  });
+  m.def("begin_frontend_mesh_for",
+        [&](const Expr &i, const mesh::MeshPtr &mesh_ptr,
+            const mesh::MeshElementType &element_type) {
+          auto stmt_unique =
+              std::make_unique<FrontendForStmt>(i, mesh_ptr, element_type);
+          auto stmt = stmt_unique.get();
+          current_ast_builder().insert(std::move(stmt_unique));
+          scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
+        });
 
   m.def("end_frontend_range_for", [&]() { scope_stack.pop_back(); });
   m.def("pop_scope", [&]() { scope_stack.pop_back(); });
@@ -841,12 +844,12 @@ void export_lang(py::module &m) {
 
   m.def("get_external_tensor_shape_along_axis",
         Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
-  
+
   // Mesh related.
-  m.def("get_relation_size", [](mesh::MeshPtr mesh_ptr, 
-                                const Expr &mesh_idx, 
+  m.def("get_relation_size", [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
                                 mesh::MeshElementType to_type) {
-    return Expr::make<MeshRelationSizeExpression>(mesh_ptr.ptr.get(), mesh_idx, to_type);
+    return Expr::make<MeshRelationSizeExpression>(mesh_ptr.ptr.get(), mesh_idx,
+                                                  to_type);
   });
 
   m.def(
@@ -864,11 +867,11 @@ void export_lang(py::module &m) {
     return Expr::make<MeshRelationAccessExpression>(mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
   });
 
-  m.def("get_index_conversion", [](mesh::MeshPtr mesh_ptr,
-                                   const Expr &idx, 
-                                   mesh::ConvType &conv_type) {
-    return Expr::make<MeshIndexConversionExpression>(mesh_ptr.ptr.get(), idx, conv_type);
-  });
+  m.def("get_index_conversion",
+        [](mesh::MeshPtr mesh_ptr, const Expr &idx, mesh::ConvType &conv_type) {
+          return Expr::make<MeshIndexConversionExpression>(mesh_ptr.ptr.get(),
+                                                           idx, conv_type);
+        });
 
   m.def("create_kernel",
         [&](std::string name, bool grad) -> Program::KernelProxy {
@@ -1123,47 +1126,48 @@ void export_lang(py::module &m) {
   // Mesh Class
   // Mesh related.
   py::enum_<mesh::MeshTopology>(m, "MeshTopology", py::arithmetic())
-  .value("Triangle", mesh::MeshTopology::Triangle)
-  .value("Tetrahedron", mesh::MeshTopology::Tetrahedron)
-  .export_values();
+      .value("Triangle", mesh::MeshTopology::Triangle)
+      .value("Tetrahedron", mesh::MeshTopology::Tetrahedron)
+      .export_values();
 
   py::enum_<mesh::MeshElementType>(m, "MeshElementType", py::arithmetic())
-  .value("Vertex", mesh::MeshElementType::Vertex)
-  .value("Edge", mesh::MeshElementType::Edge)
-  .value("Face", mesh::MeshElementType::Face)
-  .value("Cell", mesh::MeshElementType::Cell)
-  .export_values();
+      .value("Vertex", mesh::MeshElementType::Vertex)
+      .value("Edge", mesh::MeshElementType::Edge)
+      .value("Face", mesh::MeshElementType::Face)
+      .value("Cell", mesh::MeshElementType::Cell)
+      .export_values();
 
   py::enum_<mesh::MeshRelationType>(m, "MeshRelationType", py::arithmetic())
-  .value("VV", mesh::MeshRelationType::VV)
-  .value("VE", mesh::MeshRelationType::VE)
-  .value("VF", mesh::MeshRelationType::VF)
-  .value("VC", mesh::MeshRelationType::VC)
-  .value("EV", mesh::MeshRelationType::EV)
-  .value("EE", mesh::MeshRelationType::EE)
-  .value("EF", mesh::MeshRelationType::EF)
-  .value("EC", mesh::MeshRelationType::EC)
-  .value("FV", mesh::MeshRelationType::FV)
-  .value("FE", mesh::MeshRelationType::FE)
-  .value("FF", mesh::MeshRelationType::FF)
-  .value("FC", mesh::MeshRelationType::FC)
-  .value("CV", mesh::MeshRelationType::CV)
-  .value("CE", mesh::MeshRelationType::CE)
-  .value("CF", mesh::MeshRelationType::CF)
-  .value("CC", mesh::MeshRelationType::CC)
-  .export_values();
+      .value("VV", mesh::MeshRelationType::VV)
+      .value("VE", mesh::MeshRelationType::VE)
+      .value("VF", mesh::MeshRelationType::VF)
+      .value("VC", mesh::MeshRelationType::VC)
+      .value("EV", mesh::MeshRelationType::EV)
+      .value("EE", mesh::MeshRelationType::EE)
+      .value("EF", mesh::MeshRelationType::EF)
+      .value("EC", mesh::MeshRelationType::EC)
+      .value("FV", mesh::MeshRelationType::FV)
+      .value("FE", mesh::MeshRelationType::FE)
+      .value("FF", mesh::MeshRelationType::FF)
+      .value("FC", mesh::MeshRelationType::FC)
+      .value("CV", mesh::MeshRelationType::CV)
+      .value("CE", mesh::MeshRelationType::CE)
+      .value("CF", mesh::MeshRelationType::CF)
+      .value("CC", mesh::MeshRelationType::CC)
+      .export_values();
 
-  py::enum_<mesh::MeshElementReorderingType>(m, "MeshElementReorderingType", py::arithmetic())
-  .value("NonReordering", mesh::MeshElementReorderingType::NonReordering)
-  .value("Reordering", mesh::MeshElementReorderingType::Reordering)
-  .value("SurfaceFirst", mesh::MeshElementReorderingType::SurfaceFirst)
-  .value("CellFirst", mesh::MeshElementReorderingType::CellFirst)
-  .export_values();
+  py::enum_<mesh::MeshElementReorderingType>(m, "MeshElementReorderingType",
+                                             py::arithmetic())
+      .value("NonReordering", mesh::MeshElementReorderingType::NonReordering)
+      .value("Reordering", mesh::MeshElementReorderingType::Reordering)
+      .value("SurfaceFirst", mesh::MeshElementReorderingType::SurfaceFirst)
+      .value("CellFirst", mesh::MeshElementReorderingType::CellFirst)
+      .export_values();
 
   py::enum_<mesh::ConvType>(m, "ConvType", py::arithmetic())
-  .value("l2g", mesh::ConvType::l2g)
-  .value("l2r", mesh::ConvType::l2r)
-  .export_values();
+      .value("l2g", mesh::ConvType::l2g)
+      .value("l2r", mesh::ConvType::l2r)
+      .export_values();
 
   py::class_<mesh::Mesh>(m, "Mesh");
   py::class_<mesh::MeshPtr>(m, "MeshPtr");
@@ -1175,38 +1179,39 @@ void export_lang(py::module &m) {
   m.def("inverse_relation", mesh::inverse_relation);
 
   m.def(
-    "create_mesh",
-    []() {
-      auto mesh_shared = std::make_shared<mesh::Mesh>();
-      mesh::MeshPtr mesh_ptr = mesh::MeshPtr{ mesh_shared } ;
-      return mesh_ptr;
-    },
-    py::return_value_policy::reference);
-  
+      "create_mesh",
+      []() {
+        auto mesh_shared = std::make_shared<mesh::Mesh>();
+        mesh::MeshPtr mesh_ptr = mesh::MeshPtr{mesh_shared};
+        return mesh_ptr;
+      },
+      py::return_value_policy::reference);
+
   // ad-hoc setters
-  m.def(
-    "set_owned_offset",
-    [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode* snode) {
-      mesh_ptr.ptr->owned_offset.insert(std::pair(type, snode));
-    });
-  m.def(
-    "set_total_offset",
-    [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode* snode) {
-      mesh_ptr.ptr->total_offset.insert(std::pair(type, snode));
-    });
-  m.def(
-    "set_num_patches",
-    [](mesh::MeshPtr &mesh_ptr, uint32_t num_patches) {
-      mesh_ptr.ptr->num_patches = num_patches;
-    });
-  m.def(
-    "add_mesh_attribute",
-    [] (mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode, mesh::MeshElementReorderingType reordering_type) {
-      if (mesh_ptr.ptr->attributes.find(type) == mesh_ptr.ptr->attributes.end()) {
-        mesh_ptr.ptr->attributes.insert(std::pair(type, std::move(std::unordered_set<mesh::MeshAttribute, mesh::MeshAttribute::Hash>())));
-      }
-      mesh_ptr.ptr->attributes.find(type)->second.emplace(type, snode, reordering_type);
-    });
+  m.def("set_owned_offset",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
+          mesh_ptr.ptr->owned_offset.insert(std::pair(type, snode));
+        });
+  m.def("set_total_offset",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
+          mesh_ptr.ptr->total_offset.insert(std::pair(type, snode));
+        });
+  m.def("set_num_patches", [](mesh::MeshPtr &mesh_ptr, uint32_t num_patches) {
+    mesh_ptr.ptr->num_patches = num_patches;
+  });
+  m.def("add_mesh_attribute",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode,
+           mesh::MeshElementReorderingType reordering_type) {
+          if (mesh_ptr.ptr->attributes.find(type) ==
+              mesh_ptr.ptr->attributes.end()) {
+            mesh_ptr.ptr->attributes.insert(std::pair(
+                type,
+                std::move(std::unordered_set<mesh::MeshAttribute,
+                                             mesh::MeshAttribute::Hash>())));
+          }
+          mesh_ptr.ptr->attributes.find(type)->second.emplace(type, snode,
+                                                              reordering_type);
+        });
 }
 
 TI_NAMESPACE_END

@@ -147,20 +147,25 @@ def test_python_function():
     assert a.dec(4) == 3
     assert x[None] == 0
 
+
 @ti.test()
 def test_default_templates():
     @ti.func
     def func1(x: ti.template()):
         x = 1
+
     @ti.func
     def func2(x: ti.template()):
         x += 1
+
     @ti.func
     def func3(x):
         x = 1
+
     @ti.func
     def func4(x):
         x += 1
+
     @ti.kernel
     def run_func():
         a = 0
@@ -175,6 +180,7 @@ def test_default_templates():
         d = 0
         func1(d)
         assert c == 0
+
 
 @ti.test(experimental_real_function=True)
 def test_experimental_templates():

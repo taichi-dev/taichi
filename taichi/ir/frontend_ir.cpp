@@ -64,8 +64,10 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   }
 }
 
-FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var, const mesh::MeshPtr &mesh, const mesh::MeshElementType &element_type) 
-  : mesh_for(true), mesh(mesh.ptr.get()), element_type(element_type) {
+FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
+                                 const mesh::MeshPtr &mesh,
+                                 const mesh::MeshElementType &element_type)
+    : mesh_for(true), mesh(mesh.ptr.get()), element_type(element_type) {
   vectorize = dec.vectorize;
   bit_vectorize = dec.bit_vectorize;
   num_cpu_threads = dec.num_cpu_threads;
@@ -775,7 +777,8 @@ void MeshRelationSizeExpression::flatten(FlattenContext *ctx) {
 void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
   mesh_idx->flatten(ctx);
   neighbor_idx->flatten(ctx);
-  ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx->stmt, to_type, neighbor_idx->stmt);
+  ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx->stmt, to_type,
+                                         neighbor_idx->stmt);
   stmt = ctx->back_stmt();
 }
 

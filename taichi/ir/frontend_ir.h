@@ -147,7 +147,7 @@ class FrontendForStmt : public Stmt {
   int block_dim;
 
   bool mesh_for = false;
-  mesh::Mesh* mesh;
+  mesh::Mesh *mesh;
   mesh::MeshElementType element_type;
 
   bool is_ranged() const {
@@ -160,7 +160,9 @@ class FrontendForStmt : public Stmt {
 
   FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var);
 
-  FrontendForStmt(const ExprGroup &loop_var, const mesh::MeshPtr &mesh, const mesh::MeshElementType &element_type);
+  FrontendForStmt(const ExprGroup &loop_var,
+                  const mesh::MeshPtr &mesh,
+                  const mesh::MeshElementType &element_type);
 
   FrontendForStmt(const Expr &loop_var, const Expr &begin, const Expr &end);
 
@@ -801,14 +803,14 @@ class MeshRelationSizeExpression : public Expression {
   mesh::MeshElementType to_type;
 
   std::string serialize() override {
-    return fmt::format("mesh_relation_size({}, {})",
-                       mesh_idx->serialize(), mesh::element_type_str(to_type));
+    return fmt::format("mesh_relation_size({}, {})", mesh_idx->serialize(),
+                       mesh::element_type_str(to_type));
   }
 
-  MeshRelationSizeExpression(mesh::Mesh *mesh, 
-                             const Expr mesh_idx, 
-                             mesh::MeshElementType to_type) 
-    : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
+  MeshRelationSizeExpression(mesh::Mesh *mesh,
+                             const Expr mesh_idx,
+                             mesh::MeshElementType to_type)
+      : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -822,38 +824,42 @@ class MeshRelationAccessExpression : public Expression {
   Expr neighbor_idx;
 
   std::string serialize() override {
-    return fmt::format("mesh_relation_acess({}, {}[{}])",
-                       mesh_idx->serialize(), mesh::element_type_str(to_type), neighbor_idx->serialize());
+    return fmt::format("mesh_relation_acess({}, {}[{}])", mesh_idx->serialize(),
+                       mesh::element_type_str(to_type),
+                       neighbor_idx->serialize());
   }
 
-  MeshRelationAccessExpression(mesh::Mesh *mesh, 
-                             const Expr mesh_idx, 
-                             mesh::MeshElementType to_type,
-                             const Expr neighbor_idx) 
-    : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type), neighbor_idx(neighbor_idx) {
+  MeshRelationAccessExpression(mesh::Mesh *mesh,
+                               const Expr mesh_idx,
+                               mesh::MeshElementType to_type,
+                               const Expr neighbor_idx)
+      : mesh(mesh),
+        mesh_idx(mesh_idx),
+        to_type(to_type),
+        neighbor_idx(neighbor_idx) {
   }
 
   void flatten(FlattenContext *ctx) override;
 };
 
 class MeshIndexConversionExpression : public Expression {
-  public:
-   mesh::Mesh *mesh;
-   Expr idx;
-   mesh::ConvType conv_type;
+ public:
+  mesh::Mesh *mesh;
+  Expr idx;
+  mesh::ConvType conv_type;
 
-   std::string serialize() override {
+  std::string serialize() override {
     return fmt::format("mesh_index_conversion({}, {})",
-      mesh::conv_type_str(conv_type), idx->serialize());
-   }
-
-   MeshIndexConversionExpression(mesh::Mesh *mesh, 
-                             const Expr idx, 
-                             mesh::ConvType conv_type) 
-    : mesh(mesh), idx(idx), conv_type(conv_type) {
+                       mesh::conv_type_str(conv_type), idx->serialize());
   }
 
-   void flatten(FlattenContext *ctx) override;
+  MeshIndexConversionExpression(mesh::Mesh *mesh,
+                                const Expr idx,
+                                mesh::ConvType conv_type)
+      : mesh(mesh), idx(idx), conv_type(conv_type) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
 };
 
 class ASTBuilder {

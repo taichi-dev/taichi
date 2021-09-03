@@ -1010,8 +1010,8 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
       // Highlight user-defined tasks
       const auto tt = nd->meta->type;
       if (!nd->is_initial_node &&
-          (tt == TaskType::range_for || tt == TaskType::struct_for || tt == TaskType::mesh_for ||
-           tt == TaskType::serial)) {
+          (tt == TaskType::range_for || tt == TaskType::struct_for ||
+           tt == TaskType::mesh_for || tt == TaskType::serial)) {
         // ss << " style=filled fillcolor=lightgray";
       }
       ss << "]\n";

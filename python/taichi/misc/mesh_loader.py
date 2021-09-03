@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class OBJFile:
     def __init__(self, filename, swapyz=False):
         """Loads a Wavefront OBJ file. """
@@ -46,9 +47,10 @@ class OBJFile:
                 self.faces.append(face)
             else:
                 continue
-        
+
         self.vertices = np.asarray(self.vertices, dtype=np.float32)
         self.faces = np.asarray(self.faces, dtype=np.uint32)
+
 
 class TetFile:
     def __init__(self, filename):
@@ -65,7 +67,6 @@ class TetFile:
                 self.vertices.append([x, y, z])
 
             self.vertices = np.asarray(self.vertices, dtype=np.float32)
-
 
         with open(f'{filename}.ele') as f:
             cell_cols, _0 = np.fromfile(f, dtype=int, count=2, sep=" ")

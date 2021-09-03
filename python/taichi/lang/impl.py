@@ -11,12 +11,13 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import MatrixField, _IntermediateMatrix
+from taichi.lang.mesh import (MeshElementField, MeshElementType, MeshInstance,
+                              MeshRelationAccess)
 from taichi.lang.snode import SNode
 from taichi.lang.struct import StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
-from taichi.lang.mesh import MeshRelationAccess, MeshInstance, MeshElementField, MeshElementType
 from taichi.misc.util import deprecated, get_traceback, warning
 from taichi.snode.fields_builder import FieldsBuilder
 from taichi.type.primitive_types import f16, f32, f64, i32, i64, u32, u64
@@ -109,12 +110,14 @@ def wrap_scalar(x):
         return Expr(x)
     return x
 
+
 @taichi_scope
 def mesh_relation_access(mesh, from_index, to_element_type):
     if isinstance(mesh, MeshInstance):
         return MeshRelationAccess(mesh, from_index, to_element_type)
     else:
         raise RuntimeError("Relation access should be with a mesh instance!")
+
 
 @taichi_scope
 def subscript(value, *_indices):
@@ -340,7 +343,6 @@ class PyTaichi:
             if _var.ptr.snode() is None:
                 tb = getattr(_var, 'declaration_tb', str(_var.ptr))
                 not_placed.append(tb)
-    
         '''
         if len(not_placed):
             bar = '=' * 44 + '\n'

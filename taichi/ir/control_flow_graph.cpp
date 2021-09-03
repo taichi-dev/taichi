@@ -413,6 +413,7 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
   }
 }
 
+// TODO: Rename this which deals with both dead store and identical load
 bool CFGNode::dead_store_elimination(bool after_lower_access) {
   bool modified = false;
   std::unordered_set<Stmt *> live_in_this_node;
@@ -436,8 +437,8 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
     if (store_ptrs.size() == 1) {
       // Dead store elimination
       auto store_ptr = store_ptrs.front();
-      if (!after_lower_access ||
-          (store_ptr->is<AllocaStmt>() || store_ptr->is<AdStackAllocaStmt>())) {
+      if ((!after_lower_access ||
+          (store_ptr->is<AllocaStmt>() || store_ptr->is<AdStackAllocaStmt>())) && !store_ptr->is<PtrOffsetStmt>()) {
         // After lower_access, we only analyze local variables and stacks.
         // Do not eliminate AllocaStmt and AdStackAllocaStmt here.
         if (!stmt->is<AllocaStmt>() && !stmt->is<AdStackAllocaStmt>() &&
@@ -501,8 +502,8 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
     if (load_ptrs.size() == 1 && store_ptrs.empty() && stmt->width() == 1) {
       // Identical load elimination
       auto load_ptr = load_ptrs.front();
-      if (!after_lower_access ||
-          (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
+      if ((!after_lower_access ||
+          (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) && !load_ptr->is<PtrOffsetStmt>()) {
         // After lower_access, we only analyze local variables and stacks.
         if (live_load_in_this_node.find(load_ptr) !=
                 live_load_in_this_node.end() &&

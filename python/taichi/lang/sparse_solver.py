@@ -44,3 +44,6 @@ class SparseSolver:
             return self.solver.solve(b)
         else:
             assert False, f"The parameter type: {type(b)} is not supported in linear solvers for now."
+
+    def info(self):
+        return self.solver.info()

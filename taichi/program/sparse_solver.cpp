@@ -27,6 +27,11 @@ Eigen::VectorXf EigenSparseSolver<EigenSolver>::solve(
   return solver_.solve(b);
 }
 
+template <class EigenSolver>
+bool EigenSparseSolver<EigenSolver>::info() {
+  return solver_.info() == Eigen::Success;
+}
+
 std::unique_ptr<SparseSolver> get_sparse_solver(
     const std::string &solver_type) {
   if (solver_type == "LU") {

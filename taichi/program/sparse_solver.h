@@ -12,6 +12,7 @@ class SparseSolver {
   virtual void analyze_pattern(const SparseMatrix &sm) = 0;
   virtual void factorize(const SparseMatrix &sm) = 0;
   virtual Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) = 0;
+  virtual bool info() = 0;
 };
 
 template <class EigenSolver>
@@ -26,6 +27,7 @@ class EigenSparseSolver : public SparseSolver {
   virtual void factorize(const SparseMatrix &sm) override;
   virtual Eigen::VectorXf solve(
       const Eigen::Ref<const Eigen::VectorXf> &b) override;
+  virtual bool info() override;
 };
 
 std::unique_ptr<SparseSolver> get_sparse_solver(const std::string &solver_type);

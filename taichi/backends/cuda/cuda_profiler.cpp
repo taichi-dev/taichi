@@ -22,7 +22,7 @@ bool CUDAProfiler::is_cuda_profiler(KernelProfilerMode profiling_mode) {
   return ret;
 }
 
-bool CUDAProfiler::set_profiler(KernelProfilerMode profiling_mode) {
+bool CUDAProfiler::set_profiler(KernelProfilerMode &profiling_mode) {
   if (!is_cuda_profiler(profiling_mode)) {
     return false;
   }
@@ -37,6 +37,7 @@ bool CUDAProfiler::set_profiler(KernelProfilerMode profiling_mode) {
     profiler_config_.profiling_mode = KernelProfilerMode::enable;
     TI_TRACE("CUDA_KERNEL_PROFILER_EVENT : enable");
     TI_TRACE("profiler_type : {}", profiler_config_.profiler_type);
+    profiling_mode = profiler_config_.profiling_mode;
     return true;
   }
 
@@ -55,6 +56,7 @@ bool CUDAProfiler::set_profiler(KernelProfilerMode profiling_mode) {
 
     TI_TRACE("CUDA_KERNEL_PROFILER_EVENT : enable");
     TI_TRACE("profiler_type : {}", profiler_config_.profiler_type);
+    profiling_mode = profiler_config_.profiling_mode;
     return true;
   }
 #else

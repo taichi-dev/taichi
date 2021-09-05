@@ -54,7 +54,7 @@ class CUDAProfiler {
   static CUDAProfiler &get_instance_without_context();
 
   bool is_cuda_profiler(KernelProfilerMode profiling_mode);
-  bool set_profiler(KernelProfilerMode profiling_mode);
+  bool set_profiler(KernelProfilerMode &profiling_mode);
 
   KernelProfilerMode get_profiling_mode();
   CUDAKernalProfiler get_profiler_type();

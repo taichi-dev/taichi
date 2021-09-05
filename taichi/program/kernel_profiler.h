@@ -103,6 +103,6 @@ class KernelProfilerBase {
 };
 
 std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch,
-                                                  KernelProfilerMode mode);
+                                                  KernelProfilerMode &mode);
 
 TLANG_NAMESPACE_END

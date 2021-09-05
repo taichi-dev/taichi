@@ -190,16 +190,16 @@ class KernelProfilerCUDA : public KernelProfilerBase {
       outstanding_events;
 #endif
 
-  explicit KernelProfilerCUDA(KernelProfilerMode mode) {
-    mode_ = mode;
+  explicit KernelProfilerCUDA(KernelProfilerMode& mode) {
 #if defined(TI_WITH_CUDA)
-    CUDAProfiler::get_instance().set_profiler(mode_);
-    if (CUDAProfiler::get_instance().get_profiler_type() ==
-        CUDA_KERNEL_PROFILER_CUPTI) {
-      CUDAProfiler::get_instance().init_cupti();
-      CUDAProfiler::get_instance().begin_profiling();
-    }
+  CUDAProfiler::get_instance().set_profiler(mode);
+  if (CUDAProfiler::get_instance().get_profiler_type() ==
+      CUDA_KERNEL_PROFILER_CUPTI) {
+    CUDAProfiler::get_instance().init_cupti();
+    CUDAProfiler::get_instance().begin_profiling();
+  }
 #endif
+  mode_ = mode;
   }
 
   TaskHandle start_with_handle(const std::string &kernel_name) override {
@@ -459,7 +459,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
 }  // namespace
 
 std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch,
-                                                  KernelProfilerMode mode) {
+                                                  KernelProfilerMode& mode) {
   if (arch == Arch::cuda) {
     return std::make_unique<KernelProfilerCUDA>(mode);
   } else {

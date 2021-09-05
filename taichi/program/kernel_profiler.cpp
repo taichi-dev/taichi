@@ -460,9 +460,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
  private:
   void *base_event_{nullptr};
   float64 base_time_{0.0};
-  std::unique_ptr<CUDAProfiler> cuda_profiler{nullptr};
 #if defined(TI_WITH_CUDA)
-  
+  std::unique_ptr<CUDAProfiler> cuda_profiler{nullptr};
 #endif
 };
 }  // namespace

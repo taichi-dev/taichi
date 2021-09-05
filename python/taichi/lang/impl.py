@@ -11,8 +11,9 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import MatrixField, _IntermediateMatrix
-from taichi.lang.mesh import (MeshElementField, MeshElementType, MeshInstance,
-                              MeshRelationAccess)
+from taichi.lang.mesh import (MeshElementField, MeshElementFieldProxy,
+                              MeshElementType, MeshInstance,
+                              MeshRelationAccessProxy)
 from taichi.lang.snode import SNode
 from taichi.lang.struct import StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
@@ -114,7 +115,7 @@ def wrap_scalar(x):
 @taichi_scope
 def mesh_relation_access(mesh, from_index, to_element_type):
     if isinstance(mesh, MeshInstance):
-        return MeshRelationAccess(mesh, from_index, to_element_type)
+        return MeshRelationAccessProxy(mesh, from_index, to_element_type)
     else:
         raise RuntimeError("Relation access should be with a mesh instance!")
 

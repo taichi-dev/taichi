@@ -2034,12 +2034,14 @@ void CodeGenLLVM::visit(CallCppStmt *stmt) {
 
   // Convert pointer type from a[n * m] to a[n][m]
   for (int i = 0; i < f_old->getFunctionType()->getNumParams(); ++i) {
-        TI_ASSERT_INFO(f_old->getArg(i)->getType()->getTypeID() ==
+    TI_ASSERT_INFO(f_old->getArg(i)->getType()->getTypeID() ==
                        arg_values[i]->getType()->getTypeID(),
-                   "TypeID {} != {} with {}", (int)f_old->getArg(i)->getType()->getTypeID(),
+                   "TypeID {} != {} with {}",
+                   (int)f_old->getArg(i)->getType()->getTypeID(),
                    (int)arg_values[i]->getType()->getTypeID(), i);
-        auto tmp_value = arg_values[i];
-        arg_values[i] = builder->CreatePointerCast(tmp_value, f_old->getArg(i)->getType());
+    auto tmp_value = arg_values[i];
+    arg_values[i] =
+        builder->CreatePointerCast(tmp_value, f_old->getArg(i)->getType());
   }
 
   // Link external module to the core module and retrieve function again

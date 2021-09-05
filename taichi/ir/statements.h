@@ -440,9 +440,7 @@ class CallCppStmt : public Stmt {
   CallCppStmt(const std::string &filename,
               const std::string &funcname,
               const std::vector<Stmt *> &arg_stmts)
-      : filename(filename),
-        funcname(funcname),
-        arg_stmts(arg_stmts) {
+      : filename(filename), funcname(funcname), arg_stmts(arg_stmts) {
     TI_STMT_REG_FIELDS;
   }
 

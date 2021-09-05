@@ -188,20 +188,19 @@ class KernelProfilerCUDA : public KernelProfilerBase {
       outstanding_events;
 #endif
 
-  explicit KernelProfilerCUDA(KernelProfilerMode& mode){
+  explicit KernelProfilerCUDA(KernelProfilerMode &mode) {
 #if defined(TI_WITH_CUDA)
-  cuda_profiler = std::make_unique<CUDAProfiler>(mode);
-  CUDAContext::get_instance().set_cuda_profiler(cuda_profiler.get());
-  if (cuda_profiler->get_profiler_type() ==
-      CUDA_KERNEL_PROFILER_CUPTI) {
-    cuda_profiler->init_cupti();
-    cuda_profiler->begin_profiling();
-  }
+    cuda_profiler = std::make_unique<CUDAProfiler>(mode);
+    CUDAContext::get_instance().set_cuda_profiler(cuda_profiler.get());
+    if (cuda_profiler->get_profiler_type() == CUDA_KERNEL_PROFILER_CUPTI) {
+      cuda_profiler->init_cupti();
+      cuda_profiler->begin_profiling();
+    }
 #endif
-  mode_ = mode;
+    mode_ = mode;
   }
 
-  void clear_backend(){
+  void clear_backend() {
 #if defined(TI_WITH_CUDA)
     cuda_profiler->clear_traced_records();
 #endif
@@ -259,14 +258,11 @@ class KernelProfilerCUDA : public KernelProfilerBase {
 
   std::string title() const override {
 #if defined(TI_WITH_CUDA)
-    if (cuda_profiler->get_profiling_mode() ==
-        KernelProfilerMode::disable)
+    if (cuda_profiler->get_profiling_mode() == KernelProfilerMode::disable)
       return "Profiler disabled";
-    else if (cuda_profiler->get_profiler_type() ==
-             CUDA_KERNEL_PROFILER_EVENT)
+    else if (cuda_profiler->get_profiler_type() == CUDA_KERNEL_PROFILER_EVENT)
       return "cuEvent Profiler";
-    else if (cuda_profiler->get_profiler_type() ==
-             CUDA_KERNEL_PROFILER_CUPTI) {
+    else if (cuda_profiler->get_profiler_type() == CUDA_KERNEL_PROFILER_CUPTI) {
       std::string mode = cuda_profiler->get_profiling_mode() ==
                                  KernelProfilerMode::cuda_accurate
                              ? "accurate mode"
@@ -280,8 +276,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().stream_synchronize(nullptr);
 
-    if (cuda_profiler->get_profiler_type() ==
-        CUDA_KERNEL_PROFILER_EVENT) {
+    if (cuda_profiler->get_profiler_type() == CUDA_KERNEL_PROFILER_EVENT) {
       auto &timeline = Timeline::get_this_thread_instance();
       for (auto &map_elem : outstanding_events) {
         auto &list = map_elem.second;
@@ -324,8 +319,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
     } else if (cuda_profiler->get_profiler_type() ==
                CUDA_KERNEL_PROFILER_CUPTI) {
       cuda_profiler->calculate_metric_values();
-      cuda_profiler->statistics_on_traced_records(records,
-                                                                total_time_ms);
+      cuda_profiler->statistics_on_traced_records(records, total_time_ms);
       cuda_profiler->end_profiling();
       cuda_profiler->deinit_cupti();
       cuda_profiler->init_cupti();
@@ -339,12 +333,10 @@ class KernelProfilerCUDA : public KernelProfilerBase {
   void print() override {
 #if defined(TI_WITH_CUDA)
     sync();
-    if (cuda_profiler->get_profiling_mode() !=
-        KernelProfilerMode::disable) {
+    if (cuda_profiler->get_profiling_mode() != KernelProfilerMode::disable) {
       fmt::print("{}\n", title());
     }
-    if (cuda_profiler->get_profiling_mode() ==
-        KernelProfilerMode::enable) {
+    if (cuda_profiler->get_profiling_mode() == KernelProfilerMode::enable) {
       fmt::print(
           "===================================================================="
           "===="
@@ -467,7 +459,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
 }  // namespace
 
 std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch,
-                                                  KernelProfilerMode& mode) {
+                                                  KernelProfilerMode &mode) {
   if (arch == Arch::cuda) {
     return std::make_unique<KernelProfilerCUDA>(mode);
   } else {

@@ -28,7 +28,7 @@ class CUDAContext {
   KernelProfilerBase *profiler;
   CUDAProfiler *cuda_kernel_profiler;
   CUDADriver &driver;
-  
+
  public:
   CUDAContext();
 

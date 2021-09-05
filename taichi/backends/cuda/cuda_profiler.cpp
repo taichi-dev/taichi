@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-CUDAProfiler::CUDAProfiler(KernelProfilerMode& mode) {
+CUDAProfiler::CUDAProfiler(KernelProfilerMode &mode) {
   TI_TRACE("CUDAProfiler::CUDAProfiler() ");
   set_profiler(mode);
 }
@@ -61,7 +61,7 @@ bool CUDAProfiler::set_profiler(KernelProfilerMode &profiling_mode) {
     return true;
   }
 #else
-// TODO::CUPTI_PROFILER
+  // TODO::CUPTI_PROFILER
   TI_INFO("TODO::CUPTI_PROFILER");
 #endif
 }

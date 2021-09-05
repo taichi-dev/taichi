@@ -13,8 +13,7 @@
 TLANG_NAMESPACE_BEGIN
 
 CUDAContext::CUDAContext()
-    : profiler(nullptr),
-      driver(CUDADriver::get_instance_without_context()){
+    : profiler(nullptr), driver(CUDADriver::get_instance_without_context()) {
   // CUDA initialization
   dev_count = 0;
   driver.init(0);
@@ -77,8 +76,7 @@ void CUDAContext::launch(void *func,
 
   KernelProfilerBase::TaskHandle task_handle;
   // Kernel launch
-  if (cuda_kernel_profiler->get_profiler_type() ==
-      CUDA_KERNEL_PROFILER_EVENT) {
+  if (cuda_kernel_profiler->get_profiler_type() == CUDA_KERNEL_PROFILER_EVENT) {
     task_handle = profiler->start_with_handle(task_name);
   } else if (cuda_kernel_profiler->get_profiler_type() ==
              CUDA_KERNEL_PROFILER_CUPTI) {
@@ -105,8 +103,7 @@ void CUDAContext::launch(void *func,
                          shared_mem_bytes, nullptr, arg_pointers.data(),
                          nullptr);
   }
-  if (cuda_kernel_profiler->get_profiler_type() ==
-      CUDA_KERNEL_PROFILER_EVENT)
+  if (cuda_kernel_profiler->get_profiler_type() == CUDA_KERNEL_PROFILER_EVENT)
     profiler->stop(task_handle);
 
   if (get_current_program().config.debug) {

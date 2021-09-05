@@ -47,7 +47,7 @@ struct ProfilerRawData {
 
 class CUDAProfiler {
  public:
-  CUDAProfiler(KernelProfilerMode& mode);
+  CUDAProfiler(KernelProfilerMode &mode);
   ~CUDAProfiler();
 
   bool is_cuda_profiler(KernelProfilerMode profiling_mode);

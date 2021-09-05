@@ -4,8 +4,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
-CUDAProfiler::CUDAProfiler() {
+CUDAProfiler::CUDAProfiler(KernelProfilerMode& mode) {
   TI_TRACE("CUDAProfiler::CUDAProfiler() ");
+  set_profiler(mode);
 }
 
 CUDAProfiler::~CUDAProfiler() {
@@ -29,10 +30,10 @@ bool CUDAProfiler::set_profiler(KernelProfilerMode &profiling_mode) {
 
   CUDAKernalProfiler profiler_type =
       (profiling_mode == KernelProfilerMode::enable)
-          ? CUDA_KERNEL_PROFILER_CUPTI
-          : CUDA_KERNEL_PROFILER_EVENT;
+          ? CUDA_KERNEL_PROFILER_EVENT
+          : CUDA_KERNEL_PROFILER_CUPTI;
 
-  if (profiling_mode == KernelProfilerMode::enable) {
+  if (profiler_type == CUDA_KERNEL_PROFILER_EVENT) {
     profiler_config_.profiler_type = CUDA_KERNEL_PROFILER_EVENT;
     profiler_config_.profiling_mode = KernelProfilerMode::enable;
     TI_TRACE("CUDA_KERNEL_PROFILER_EVENT : enable");
@@ -61,6 +62,7 @@ bool CUDAProfiler::set_profiler(KernelProfilerMode &profiling_mode) {
   }
 #else
 // TODO::CUPTI_PROFILER
+  TI_INFO("TODO::CUPTI_PROFILER");
 #endif
 }
 
@@ -119,16 +121,6 @@ bool CUDAProfiler::statistics_on_traced_records(
 
 void CUDAProfiler::clear_traced_records() {
   traced_records_.clear();
-}
-
-CUDAProfiler &CUDAProfiler::get_instance_without_context() {
-  static CUDAProfiler *instance = new CUDAProfiler();
-  return *instance;
-}
-
-CUDAProfiler &CUDAProfiler::get_instance() {
-  CUDAContext::get_instance();
-  return get_instance_without_context();
 }
 
 #if defined(TI_WITH_TOOLKIT_CUDA)

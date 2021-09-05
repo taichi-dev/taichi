@@ -10,11 +10,11 @@
 
 TLANG_NAMESPACE_BEGIN
 
-typedef enum CUDA_KERNEL_PROFILER {
+typedef enum CUDAKernalProfiler {
   CUDA_KERNEL_PROFILER_UNDEF = 0,
   CUDA_KERNEL_PROFILER_EVENT = 1,
   CUDA_KERNEL_PROFILER_CUPTI = 2
-} CUDAKernalProfiler;
+};
 
 struct ProfilerConfig {
   CUDAKernalProfiler profiler_type = CUDA_KERNEL_PROFILER_UNDEF;
@@ -47,11 +47,8 @@ struct ProfilerRawData {
 
 class CUDAProfiler {
  public:
-  CUDAProfiler();
+  CUDAProfiler(KernelProfilerMode& mode);
   ~CUDAProfiler();
-
-  static CUDAProfiler &get_instance();
-  static CUDAProfiler &get_instance_without_context();
 
   bool is_cuda_profiler(KernelProfilerMode profiling_mode);
   bool set_profiler(KernelProfilerMode &profiling_mode);

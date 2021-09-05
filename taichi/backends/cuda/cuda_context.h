@@ -26,9 +26,9 @@ class CUDAContext {
   std::string mcpu;
   std::mutex lock;
   KernelProfilerBase *profiler;
+  CUDAProfiler *cuda_kernel_profiler;
   CUDADriver &driver;
-  CUDAProfiler &cuda_kernel_profiler;
-
+  
  public:
   CUDAContext();
 
@@ -55,6 +55,10 @@ class CUDAContext {
 
   void set_profiler(KernelProfilerBase *profiler) {
     this->profiler = profiler;
+  }
+
+  void set_cuda_profiler(CUDAProfiler *profiler) {
+    this->cuda_kernel_profiler = profiler;
   }
 
   std::string get_mcpu() const {

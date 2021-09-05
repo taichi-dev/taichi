@@ -64,6 +64,7 @@ class KernelProfilerBase {
   using TaskHandle = void *;
 
   virtual void clear();
+  virtual void clear_backend(){};
 
   virtual void sync() = 0;
 

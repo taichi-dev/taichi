@@ -12,11 +12,13 @@ from taichi.lang.kernel_arguments import template
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Matrix, MatrixField
 from taichi.lang.snode import SNode
-from taichi.lang.struct import Struct
+from taichi.lang.struct import Struct, StructField
 from taichi.lang.types import CompoundType
 from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
                               python_scope, taichi_scope, to_pytorch_type)
 from taichi.misc.mesh_loader import *
+
+import taichi as ti
 
 MeshTopology = _ti_core.MeshTopology
 MeshElementType = _ti_core.MeshElementType
@@ -41,7 +43,7 @@ class MeshAttrType:
 class MeshElementField:
     def __init__(self, type, attr_dict, field_dict):
         self.type = type
-        self.attr_dist = attr_dict
+        self.attr_dict = attr_dict
         self.field_dict = field_dict
 
         self.register_fields()
@@ -243,14 +245,19 @@ class MeshType:
 
     def build(self, size: tuple):
         instance = MeshInstance(self)
+        instance.fields = {}
         if size[0] > 0:
             instance.verts = self.verts.build(size[0])
+            instance.fields[MeshElementType.Vertex] = instance.verts
         if size[1] > 0:
             instance.edges = self.edges.build(size[1])
+            instance.fields[MeshElementType.Edge] = instance.edges
         if size[2] > 0:
             instance.faces = self.faces.build(size[2])
+            instance.fields[MeshElementType.Face] = instance.faces
         if self.topology == MeshTopology.Tetrahedron and size[3] > 0:
             instance.cells = self.cells.build(size[3])
+            instance.fields[MeshElementType.Cell] = instance.cells
         return instance
 
 
@@ -292,7 +299,46 @@ def TetMesh():
     return Mesh.Tet()
 
 
-class MeshRelationAccess:
+class MeshElementFieldProxy:
+    def __init__(self, mesh: MeshInstance, element_type: MeshElementType,
+                 entry_expr: impl.Expr):
+        self.mesh = mesh
+        self.element_type = element_type
+        self.entry_expr = entry_expr
+
+        element_field = self.mesh.fields[self.element_type]
+        for key, attr in element_field.field_dict.items():
+            global_entry_expr = impl.Expr(
+                _ti_core.get_index_conversion(
+                    self.mesh.mesh_ptr, entry_expr,
+                    ConvType.l2g if element_field.attr_dict[key].reordering
+                    == MeshElementReorderingType.NonReordering else
+                    ConvType.l2r))  # transform index space
+            global_entry_expr_group = impl.make_expr_group(
+                *tuple([global_entry_expr]))
+            if isinstance(attr, MatrixField):
+                setattr(
+                    self, key,
+                    Matrix.with_entries(attr.n, attr.m, [
+                        impl.Expr(
+                            _ti_core.subscript(e.ptr, global_entry_expr_group))
+                        for e in attr.get_field_members()
+                    ]))
+            elif isinstance(attr, StructField):
+                raise RuntimeError('ti.Mesh has not support StructField yet')
+            else:  # isinstance(attr, Field)
+                var = attr.get_field_members()[0].ptr
+                setattr(
+                    self, key,
+                    impl.Expr(_ti_core.subscript(var,
+                                                 global_entry_expr_group)))
+
+    @property
+    def ptr(self):
+        return self.entry_expr
+
+
+class MeshRelationAccessProxy:
     def __init__(self, mesh: MeshInstance, from_index: impl.Expr,
                  to_element_type: MeshElementType):
         self.mesh = mesh
@@ -306,3 +352,12 @@ class MeshRelationAccess:
         return impl.Expr(
             _ti_core.get_relation_size(self.mesh.mesh_ptr, self.from_index.ptr,
                                        self.to_element_type))
+
+    def subscript(self, *indices):
+        assert (len(indices) == 1)
+        entry_expr = _ti_core.get_relation_access(self.mesh.mesh_ptr,
+                                                  self.from_index.ptr,
+                                                  self.to_element_type,
+                                                  impl.Expr(indices[0]).ptr)
+        return MeshElementFieldProxy(self.mesh, self.to_element_type,
+                                     entry_expr)

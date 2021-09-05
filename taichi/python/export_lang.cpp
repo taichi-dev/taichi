@@ -1122,7 +1122,7 @@ void export_lang(py::module &m) {
 
   m.def("make_sparse_solver", &make_sparse_solver);
   m.def("get_sparse_solver", &get_sparse_solver);
-  
+
   // Mesh Class
   // Mesh related.
   py::enum_<mesh::MeshTopology>(m, "MeshTopology", py::arithmetic())

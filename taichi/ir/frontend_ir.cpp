@@ -207,17 +207,13 @@ void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
 }
 
 void CallCppExpression::flatten(FlattenContext *ctx) {
-  std::vector<Stmt *> arg_statements, output_statements;
+  std::vector<Stmt *> arg_statements;
   for (auto &s : args) {
-    s.set(load_if_ptr(s));
-    s->flatten(ctx);
-    arg_statements.push_back(s->stmt);
-  }
-  for (auto &s : outputs) {
-    output_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
+    TI_ASSERT_INFO(s.is<IdExpression>(), "call_cpp must pass in local variables.")
+    arg_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
   }
   ctx->push_back(std::make_unique<CallCppStmt>(
-      filename, funcname, arg_statements, output_statements));
+      filename, funcname, arg_statements));
   stmt = ctx->back_stmt();
 }
 

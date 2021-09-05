@@ -405,25 +405,17 @@ class CallCppExpression : public Expression {
   std::string filename;
   std::string funcname;
   std::vector<Expr> args;
-  std::vector<Expr> outputs;
 
   CallCppExpression(const std::string &filename,
                     const std::string &funcname,
-                    const std::vector<Expr> &args,
-                    const std::vector<Expr> &outputs)
-      : filename(filename), funcname(funcname), args(args), outputs(outputs) {
+                    const std::vector<Expr> &args)
+      : filename(filename), funcname(funcname), args(args) {
   }
 
   std::string serialize() override {
-    std::string io = "inputs=";
+    std::string io = "args=";
 
     for (auto &s : args) {
-      io += s.serialize();
-    }
-
-    io += ", outputs=";
-
-    for (auto &s : outputs) {
       io += s.serialize();
     }
 

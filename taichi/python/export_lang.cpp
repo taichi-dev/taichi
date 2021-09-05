@@ -518,9 +518,8 @@ void export_lang(py::module &m) {
         });
 
   m.def("insert_call_cpp", [](std::string filename, std::string funcname,
-                              const ExprGroup &args, const ExprGroup &outputs) {
-    auto expr = Expr::make<CallCppExpression>(filename, funcname, args.exprs,
-                                              outputs.exprs);
+                              const ExprGroup &args) {
+    auto expr = Expr::make<CallCppExpression>(filename, funcname, args.exprs);
 
     current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
   });

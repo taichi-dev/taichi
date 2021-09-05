@@ -2021,35 +2021,17 @@ void CodeGenLLVM::visit(LoopUniqueStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(CallCppStmt *stmt) {
-  std::vector<llvm::Type *> arg_types;
   std::vector<llvm::Value *> arg_values;
-
   for (auto s : stmt->arg_stmts)
-    if (s->ret_type->is<TensorType>()) {
-      arg_values.push_back(llvm_val[s]);
-    } else {
-      TI_ASSERT(s->width() == 1);
-      arg_types.push_back(tlctx->get_data_type(s->ret_type));
-      arg_values.push_back(llvm_val[s]);
-    }
+    arg_values.push_back(llvm_val[s]);
 
-  for (auto s : stmt->output_stmts)
-    if (s->ret_type->is<TensorType>()) {
-      arg_values.push_back(llvm_val[s]);
-    } else {
-      TI_ASSERT(s->width() == 1);
-      auto t = tlctx->get_data_type(s->ret_type);
-      auto ptr = llvm::PointerType::get(t, 0);
-      arg_types.push_back(ptr);
-      arg_values.push_back(llvm_val[s]);
-    }
-
+  // Extract function from external module
   std::unique_ptr<llvm::Module> cpp_module =
       module_from_bitcode_file(fmt::format("{}", stmt->filename), llvm_context);
-
   auto *f_old = cpp_module->getFunction(stmt->funcname);
   TI_ASSERT_INFO(f_old != nullptr, "{} is not founded in {}.", stmt->funcname,
                  stmt->filename);
+
   // Convert pointer type from a[n * m] to a[n][m]
   for (int i = 0; i < f_old->getFunctionType()->getNumParams(); ++i) {
         TI_ASSERT_INFO(f_old->getArg(i)->getType()->getTypeID() ==
@@ -2060,6 +2042,7 @@ void CodeGenLLVM::visit(CallCppStmt *stmt) {
         arg_values[i] = builder->CreatePointerCast(tmp_value, f_old->getArg(i)->getType());
   }
 
+  // Link external module to the core module and retrieve function again
   auto link_error = llvm::Linker::linkModules(*module, std::move(cpp_module));
   TI_ASSERT(!link_error);
   auto *f_new = module->getFunction(stmt->funcname);

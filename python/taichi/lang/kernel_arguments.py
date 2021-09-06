@@ -70,7 +70,10 @@ class ArgAnyArray:
         shape = tuple(x.shape)
         if len(shape) < element_dim:
             raise ValueError("Invalid argument passed to ti.any_arr()")
-        element_shape = () if element_dim == 0 else shape[:element_dim] if layout == Layout.SOA else shape[-element_dim:]
+        element_shape = (
+        ) if element_dim == 0 else shape[:
+                                         element_dim] if layout == Layout.SOA else shape[
+                                             -element_dim:]
         return to_taichi_type(x.dtype), len(shape), element_shape, layout
 
 

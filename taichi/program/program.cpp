@@ -259,7 +259,8 @@ void Program::synchronize() {
     if (profiler) {
       profiler->sync();
     }
-    if (arch_uses_llvm(config.arch) || config.arch == Arch::metal) {
+    if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
+        config.arch == Arch::vulkan) {
       program_impl_->synchronize();
     }
     sync = true;

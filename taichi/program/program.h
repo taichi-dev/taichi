@@ -13,7 +13,6 @@
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_program.h"
 #include "taichi/backends/metal/metal_program.h"
-#include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/aot_module_builder.h"

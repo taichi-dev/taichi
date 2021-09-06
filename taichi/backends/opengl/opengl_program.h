@@ -1,7 +1,8 @@
 #pragma once
-#include "taichi/backends/vulkan/codegen_vulkan.h"
-#include "taichi/backends/vulkan/runtime.h"
-#include "taichi/backends/vulkan/snode_struct_compiler.h"
+
+#include "taichi/backends/opengl/opengl_kernel_launcher.h"
+#include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/backends/opengl/codegen_opengl.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"
 #include "taichi/struct/snode_tree.h"
@@ -40,7 +41,7 @@ class OpenglProgramImpl : public ProgramImpl {
   }
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
-    // TODO: implement vk aot
+    // TODO: implement opengl aot
     return nullptr;
   }
 

@@ -225,8 +225,24 @@ class MeshInstance:
         _ti_core.set_total_offset(self.mesh_ptr, element_type,
                                   total_offset.vars[0].ptr.snode())
 
+    def set_l2g(self, element_type: MeshElementType,
+                total_offset: ScalarField):
+        _ti_core.set_l2g(self.mesh_ptr, element_type,
+                         total_offset.vars[0].ptr.snode())
+
     def set_num_patches(self, num_patches: int):
         _ti_core.set_num_patches(self.mesh_ptr, num_patches)
+
+    def set_relation_fixed(self, rel_type: MeshRelationType,
+                           value: ScalarField):
+        _ti_core.set_relation_fixed(self.mesh_ptr, rel_type,
+                                    value.vars[0].ptr.snode())
+
+    def set_relation_dynamic(self, rel_type: MeshRelationType,
+                             value: ScalarField, offset: ScalarField):
+        _ti_core.set_relation_dynamic(self.mesh_ptr, rel_type,
+                                      value.vars[0].ptr.snode(),
+                                      offset.vars[0].ptr.snode())
 
     def add_mesh_attribute(self, element_type, snode, reordering_type):
         _ti_core.add_mesh_attribute(self.mesh_ptr, element_type, snode,

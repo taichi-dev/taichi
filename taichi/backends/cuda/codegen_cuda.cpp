@@ -592,13 +592,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         s->accept(this);
       }
 
-      auto bound_0 =
-          llvm_val[stmt->mesh->owned_offset_local.find(stmt->major_from_type)
-                       ->second];
-      auto bound_1 = builder->CreateAdd(
-          bound_0,
+      auto bound_1 =
           llvm_val[stmt->mesh->owned_num_local.find(stmt->major_from_type)
-                       ->second]);
+                       ->second];
 
       auto loop_test_bb = BasicBlock::Create(*llvm_context, "loop_test", func);
       auto loop_body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
@@ -609,7 +605,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
       llvm::Value *block_dim = builder->CreateIntrinsic(
           Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
-      builder->CreateStore(builder->CreateAdd(thread_idx, bound_0), loop_index);
+      builder->CreateStore(thread_idx, loop_index);
       builder->CreateBr(loop_test_bb);
 
       {
@@ -871,23 +867,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   // Mesh related.
-
-  void visit(MeshRelationSizeStmt *stmt) override {
-    if (auto idx = stmt->mesh_idx->cast<LoopIndexStmt>()) {
-      if (mesh::element_order(idx->mesh_index_type()) >
-          mesh::element_order(stmt->to_type)) {  // high-to-low
-        llvm_val[stmt] = tlctx->get_constant(
-            idx->mesh_index_type() == mesh::MeshElementType::Cell &&
-                    stmt->to_type == mesh::MeshElementType::Edge
-                ? /*Cell-Edge=*/6
-                : (mesh::element_order(idx->mesh_index_type()) + 1));
-      } else {
-        TI_NOT_IMPLEMENTED;  // TODO(changyu): wait for low-to-high loop
-      }
-    } else {               // Mesh Relation Access statement
-      TI_NOT_IMPLEMENTED;  // TODO(changyu): wait for new statement
-    }
-  }
 
   void visit(MeshPatchIndexStmt *stmt) override {
     llvm_val[stmt] = get_arg(2);

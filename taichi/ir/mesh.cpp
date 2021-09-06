@@ -40,11 +40,11 @@ int to_end_element_order(MeshRelationType rel) {
   return int(rel) & 0x4;
 }
 
-int relation_by_orders(int from_order, int to_order) {
-  return ((from_order << 2) | to_order);
+MeshRelationType relation_by_orders(int from_order, int to_order) {
+  return MeshRelationType((from_order << 2) | to_order);
 }
 
-int inverse_relation(MeshRelationType rel) {
+MeshRelationType inverse_relation(MeshRelationType rel) {
   return relation_by_orders(to_end_element_order(rel),
                             from_end_element_order(rel));
 }

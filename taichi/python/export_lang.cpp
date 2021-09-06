@@ -1199,6 +1199,25 @@ void export_lang(py::module &m) {
   m.def("set_num_patches", [](mesh::MeshPtr &mesh_ptr, uint32_t num_patches) {
     mesh_ptr.ptr->num_patches = num_patches;
   });
+
+  m.def("set_l2g",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
+          mesh_ptr.ptr->l2g_map.insert(std::pair(type, snode));
+        });
+
+  m.def("set_relation_fixed",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value) {
+          mesh_ptr.ptr->relations.insert(
+              std::pair(type, mesh::MeshLocalRelation(value)));
+        });
+
+  m.def("set_relation_dynamic",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value,
+           SNode *offset) {
+          mesh_ptr.ptr->relations.insert(
+              std::pair(type, mesh::MeshLocalRelation(value, offset)));
+        });
+
   m.def("add_mesh_attribute",
         [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode,
            mesh::MeshElementReorderingType reordering_type) {

@@ -237,3 +237,45 @@ def test_compiled_functions():
     v = ti.Vector.ndarray(10, ti.i32, 5, layout=ti.Layout.SOA)
     func(v)
     assert ti.get_runtime().get_num_compiled_functions() == 3
+
+
+# annotation compatibility
+
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(arch=ti.get_host_arch_list())
+def test_arg_not_match():
+    @ti.kernel
+    def func1(a: ti.any_arr(element_dim=1)):
+        pass
+
+    x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7))
+    with pytest.raises(ValueError,
+                       match=r'Invalid argument into ti\.any_arr\(\) - required element_dim=1, but .* is provided'):
+        func1(x)
+
+    @ti.kernel
+    def func2(a: ti.any_arr(element_dim=2)):
+        pass
+
+    x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
+    with pytest.raises(ValueError,
+                       match=r'Invalid argument into ti\.any_arr\(\) - required element_dim=2, but .* is provided'):
+        func2(x)
+
+    @ti.kernel
+    def func3(a: ti.any_arr(layout=ti.Layout.AOS)):
+        pass
+
+    x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7), layout=ti.Layout.SOA)
+    with pytest.raises(ValueError,
+                       match=r'Invalid argument into ti\.any_arr\(\) - required layout=Layout\.AOS, but .* is provided'):
+        func3(x)
+
+    @ti.kernel
+    def func4(a: ti.any_arr(layout=ti.Layout.SOA)):
+        pass
+
+    x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
+    with pytest.raises(ValueError,
+                       match=r'Invalid argument into ti\.any_arr\(\) - required layout=Layout\.SOA, but .* is provided'):
+        func4(x)

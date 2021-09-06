@@ -49,29 +49,32 @@ class ArgAnyArray:
         from taichi.lang.matrix import MatrixNdarray, VectorNdarray
         from taichi.lang.ndarray import ScalarNdarray
         if isinstance(x, ScalarNdarray):
-            if self.element_dim is not None and self.element_dim != 0:
-                raise ValueError("Invalid argument passed to ti.any_arr()")
+            self.check_element_dim(x, 0)
             return x.dtype, len(x.shape), (), Layout.AOS
         if isinstance(x, VectorNdarray):
-            if self.element_dim is not None and self.element_dim != 1:
-                raise ValueError("Invalid argument passed to ti.any_arr()")
-            if self.layout is not None and self.layout != x.layout:
-                raise ValueError("Invalid argument passed to ti.any_arr()")
+            self.check_element_dim(x, 1)
+            self.check_layout(x)
             return x.dtype, len(x.shape) + 1, (x.n, ), x.layout
         if isinstance(x, MatrixNdarray):
-            if self.element_dim is not None and self.element_dim != 2:
-                raise ValueError("Invalid argument passed to ti.any_arr()")
-            if self.layout is not None and self.layout != x.layout:
-                raise ValueError("Invalid argument passed to ti.any_arr()")
+            self.check_element_dim(x, 2)
+            self.check_layout(x)
             return x.dtype, len(x.shape) + 2, (x.n, x.m), x.layout
         # external arrays
         element_dim = 0 if self.element_dim is None else self.element_dim
         layout = Layout.AOS if self.layout is None else self.layout
         shape = tuple(x.shape)
         if len(shape) < element_dim:
-            raise ValueError("Invalid argument passed to ti.any_arr()")
+            raise ValueError(f"Invalid argument into ti.any_arr() - required element_dim={element_dim}, but the argument has only {len(shape)} dimensions")
         element_shape = () if element_dim == 0 else shape[:element_dim] if layout == Layout.SOA else shape[-element_dim:]
         return to_taichi_type(x.dtype), len(shape), element_shape, layout
+
+    def check_element_dim(self, arg, arg_dim):
+        if self.element_dim is not None and self.element_dim != arg_dim:
+            raise ValueError(f"Invalid argument into ti.any_arr() - required element_dim={self.element_dim}, but {arg} is provided")
+
+    def check_layout(self, arg):
+        if self.layout is not None and self.layout != arg.layout:
+            raise ValueError(f"Invalid argument into ti.any_arr() - required layout={self.layout}, but {arg} is provided")
 
 
 any_arr = ArgAnyArray

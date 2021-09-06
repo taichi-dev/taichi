@@ -299,7 +299,7 @@ class Program {
    * JIT compiles the @param tree to backend-specific data types.
    */
   void materialize_snode_tree(SNodeTree *tree);
-  
+
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;

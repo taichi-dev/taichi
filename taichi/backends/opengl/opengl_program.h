@@ -1,8 +1,11 @@
 #pragma once
 
+#include "taichi/backends/opengl/struct_opengl.h"
+
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/opengl/opengl_api.h"
 #include "taichi/backends/opengl/codegen_opengl.h"
+
 #include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"
 #include "taichi/struct/snode_tree.h"
@@ -37,7 +40,6 @@ class OpenglProgramImpl : public ProgramImpl {
       uint64 *result_buffer) override;
 
   void synchronize() override {
-    vulkan_runtime_->synchronize();
   }
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {

@@ -495,7 +495,8 @@ void Program::print_memory_profiler_info() {
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
-  TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::metal);
+  TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
+            config.arch == Arch::vulkan);
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
 }
@@ -506,7 +507,8 @@ Program::~Program() {
 }
 
 std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
-  if (arch == Arch::metal) {
+  if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
+      config.arch == Arch::vulkan) {
     return program_impl_->make_aot_module_builder();
   } else if (arch == Arch::wasm) {
     return std::make_unique<wasm::AotModuleBuilderImpl>();

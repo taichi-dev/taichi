@@ -23,10 +23,11 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 
 void VulkanProgramImpl::materialize_snode_tree(
     SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-    std::unordered_map<int, SNode *> &snodes,
-    SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
+    std::vector<std::unique_ptr<SNodeTree>> &,
+    std::unordered_map<int, SNode *> &,
+    SNodeGlobalVarExprMap &,
     uint64 *result_buffer) {
+  // TODO: support materializing multiple snode trees
   auto *const root = tree->root();
   vulkan_compiled_structs_ = vulkan::compile_snode_structs(*root);
   vulkan::VkRuntime::Params params;

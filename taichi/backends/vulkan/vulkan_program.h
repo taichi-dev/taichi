@@ -28,12 +28,11 @@ class VulkanProgramImpl : public ProgramImpl {
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
 
-  void materialize_snode_tree(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      std::unordered_map<int, SNode *> &snodes,
-      SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
-      uint64 *result_buffer) override;
+  void materialize_snode_tree(SNodeTree *tree,
+                              std::vector<std::unique_ptr<SNodeTree>> &,
+                              std::unordered_map<int, SNode *> &,
+                              SNodeGlobalVarExprMap &,
+                              uint64 *result_buffer) override;
 
   void synchronize() override {
     vulkan_runtime_->synchronize();

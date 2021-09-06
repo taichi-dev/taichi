@@ -35,16 +35,12 @@ heat_field = ti.field(dtype=ti.f32, shape=(width_wok, height_wok))
 
 - Sparse fields are initially inactive.
 
-- See [Scalar fields](../../api/scalar_field.md) for more details.
-
 ## Vector fields
 We are all live in a gravitational field which is a vector field. At each position of the 3D space, there is a gravity force vector. The gravitational field could be represent with:
 ```python
 gravitational_field = ti.Vector.field(n = 3,dtype=ti.f32,shape=(x,y,z))
 ```
 `x,y,z` are the sizes of each dimension of the 3D space respectively.  `n` is the number of elements of the gravity force vector.
-
-- See [Vector](../../api/vector.md) for more details.
 
 ## Matrix fields
 
@@ -69,7 +65,6 @@ a `3 x 2` matrix. To allocate a `128 x 64` matrix field which has a
   when you load a matrix element from a global matrix field: the
   first is for field indexing, the second for matrix indexing.
 - `ti.Vector` is simply an alias of `ti.Matrix`.
-- See [Matrices](../../api/matrix.md) for more on matrices.
 
 ### Matrix size
 
@@ -116,4 +111,3 @@ particle_field[0].pos = ti.Vector([0.0, 0.0, 0.0])
 particle_field.mass # global ti.Vector.field
 particle_field.mass.fill(1.0)
 ```
-- See [Structs](../../api/struct.md) for more on structs.

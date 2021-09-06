@@ -4,10 +4,11 @@ from types import FunctionType, MethodType
 
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
+from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.ext_array import AnyArray, AnyArrayAccess, ExtArray
 from taichi.lang.field import Field, ScalarField
+from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import MatrixField
 from taichi.lang.ndarray import ScalarNdarray
 from taichi.lang.snode import SNode
@@ -83,8 +84,10 @@ def expr_init_func(
 
 
 def begin_frontend_struct_for(group, loop_range):
-    if not isinstance(loop_range, (Field, SNode, _Root)):
-        raise TypeError('Can only iterate through Taichi fields')
+    if not isinstance(loop_range, (AnyArray, Field, SNode, _Root)):
+        raise TypeError(
+            'Can only iterate through Taichi fields/snodes (via template) or dense arrays (via any_arr)'
+        )
     if group.size() != len(loop_range.shape):
         raise IndexError(
             'Number of struct-for indices does not match loop variable dimensionality '
@@ -137,6 +140,8 @@ def subscript(value, *indices):
 
     if is_taichi_class(value):
         return value.subscript(*indices)
+    elif isinstance(value, SparseMatrixProxy):
+        return value.subscript(*indices)
     elif isinstance(value, Field):
         var = value.get_field_members()[0].ptr
         if var.snode() is None:
@@ -182,12 +187,9 @@ def subscript(value, *indices):
         ])
         ret.any_array_access = any_array_access
         return ret
-    elif isinstance(value, (ExtArray, SNode)):
-        if isinstance(value, ExtArray):
-            field_dim = int(value.ptr.get_attribute("dim"))
-        else:
-            # When reading bit structure we only support the 0-D case for now.
-            field_dim = 0
+    elif isinstance(value, SNode):
+        # When reading bit structure we only support the 0-D case for now.
+        field_dim = 0
         if field_dim != index_dim:
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
@@ -602,7 +604,7 @@ def ndarray(dtype, shape):
     """Defines a Taichi ndarray with scalar elements.
 
     Args:
-        dtype (DataType): Data type of the ndarray.
+        dtype (DataType): Data type of each value.
         shape (Union[int, tuple[int]]): Shape of the ndarray.
 
     Example:
@@ -610,6 +612,8 @@ def ndarray(dtype, shape):
 
             >>> x = ti.ndarray(ti.f32, shape=(16, 8))
     """
+    if isinstance(shape, numbers.Number):
+        shape = (shape, )
     return ScalarNdarray(dtype, shape)
 
 
@@ -820,7 +824,7 @@ def static(x, *xs):
                   (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
                    ti.GroupedNDRange, zip, filter, map)) or x is None:
         return x
-    elif isinstance(x, ExtArray):
+    elif isinstance(x, AnyArray):
         return x
     elif isinstance(x, Field):
         return x

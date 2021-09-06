@@ -54,7 +54,9 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
     auto stream = device.get_graphics_stream();
     std::unique_ptr<CommandList> cmd_list = stream->new_command_list();
     VkCommandBuffer command_buffer =
-        static_cast<VulkanCommandList *>(cmd_list.get())->vk_command_buffer();
+        static_cast<VulkanCommandList *>(cmd_list.get())
+            ->vk_command_buffer()
+            ->buffer;
 
     ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
 
@@ -167,7 +169,7 @@ void Gui::draw(taichi::lang::CommandList *cmd_list) {
   ImDrawData *draw_data = ImGui::GetDrawData();
 
   VkCommandBuffer buffer =
-      static_cast<VulkanCommandList *>(cmd_list)->vk_command_buffer();
+      static_cast<VulkanCommandList *>(cmd_list)->vk_command_buffer()->buffer;
 
   ImGui_ImplVulkan_RenderDrawData(draw_data, buffer);
 }

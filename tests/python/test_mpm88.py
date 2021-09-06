@@ -127,7 +127,7 @@ def test_mpm88_async():
 
 
 @ti.test()
-def test_mpm88_numpy():
+def test_mpm88_numpy_and_ndarray():
     import numpy as np
 
     dim = 2
@@ -142,20 +142,11 @@ def test_mpm88_numpy():
     p_mass = p_vol * p_rho
     E = 400
 
-    x = np.zeros((n_particles, dim), dtype=np.float32)
-    v = np.zeros((n_particles, dim), dtype=np.float32)
-    C = np.zeros((n_particles, dim, dim), dtype=np.float32)
-    J = np.zeros(n_particles, dtype=np.float32)
-    grid_v = np.zeros((n_grid, n_grid, dim), dtype=np.float32)
-    grid_m = np.zeros((n_grid, n_grid), dtype=np.float32)
-
     @ti.kernel
-    def substep(x: ti.any_arr(element_shape=(dim, )),
-                v: ti.any_arr(element_shape=(dim, )),
-                C: ti.any_arr(element_shape=(dim, dim)), J: ti.any_arr(),
-                grid_v: ti.any_arr(element_shape=(dim, )),
-                grid_m: ti.any_arr()):
-        for p in range(n_particles):
+    def substep(x: ti.any_arr(element_dim=1), v: ti.any_arr(element_dim=1),
+                C: ti.any_arr(element_dim=2), J: ti.any_arr(),
+                grid_v: ti.any_arr(element_dim=1), grid_m: ti.any_arr()):
+        for p in x:
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
             w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
@@ -164,14 +155,14 @@ def test_mpm88_numpy():
                                dt=ti.f32) + p_mass * C[p]
             for i in ti.static(range(3)):
                 for j in ti.static(range(3)):
-                    offset = ti.Vector([i, j], dt=ti.i32)
+                    offset = ti.Vector([i, j])
                     dpos = (offset.cast(float) - fx) * dx
                     weight = w[i][0] * w[j][1]
                     grid_v[base + offset].atomic_add(
                         weight * (p_mass * v[p] + affine @ dpos))
                     grid_m[base + offset].atomic_add(weight * p_mass)
 
-        for i, j in ti.ndrange(n_grid, n_grid):
+        for i, j in grid_m:
             if grid_m[i, j] > 0:
                 bound = 3
                 inv_m = 1 / grid_m[i, j]
@@ -186,7 +177,7 @@ def test_mpm88_numpy():
                 if j > n_grid - bound and grid_v[i, j][1] > 0:
                     grid_v[i, j][1] = 0
 
-        for p in range(n_particles):
+        for p in x:
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
             w = [
@@ -196,8 +187,8 @@ def test_mpm88_numpy():
             new_C = ti.Matrix.zero(ti.f32, 2, 2)
             for i in ti.static(range(3)):
                 for j in ti.static(range(3)):
-                    dpos = ti.Vector([i, j], dt=ti.i32).cast(float) - fx
-                    g_v = grid_v[base + ti.Vector([i, j], dt=ti.i32)]
+                    dpos = ti.Vector([i, j]).cast(float) - fx
+                    g_v = grid_v[base + ti.Vector([i, j])]
                     weight = w[i][0] * w[j][1]
                     new_v += weight * g_v
                     new_C += 4 * weight * g_v.outer_product(dpos) * inv_dx
@@ -206,24 +197,46 @@ def test_mpm88_numpy():
             J[p] *= 1 + dt * new_C.trace()
             C[p] = new_C
 
-    for i in range(n_particles):
-        x[i] = [i % N / N * 0.4 + 0.2, i / N / N * 0.4 + 0.05]
-        v[i] = [0, -3]
-        J[i] = 1
+    def run_test(x, v, C, J, grid_v, grid_m):
+        for i in range(n_particles):
+            x[i] = [i % N / N * 0.4 + 0.2, i / N / N * 0.4 + 0.05]
+            v[i] = [0, -3]
+            J[i] = 1
 
-    for frame in range(10):
-        for s in range(50):
-            grid_v.fill(0)
-            grid_m.fill(0)
-            substep(x, v, C, J, grid_v, grid_m)
+        for frame in range(10):
+            for s in range(50):
+                grid_v.fill(0)
+                grid_m.fill(0)
+                substep(x, v, C, J, grid_v, grid_m)
 
-    pos = x
-    pos[:, 1] *= 2
-    regression = [
-        0.31722742,
-        0.15826741,
-        0.10224003,
-        0.07810827,
-    ]
-    for i in range(4):
-        assert (pos**(i + 1)).mean() == approx(regression[i], rel=1e-2)
+        pos = x if isinstance(x, np.ndarray) else x.to_numpy()
+        pos[:, 1] *= 2
+        regression = [
+            0.31722742,
+            0.15826741,
+            0.10224003,
+            0.07810827,
+        ]
+        for i in range(4):
+            assert (pos**(i + 1)).mean() == approx(regression[i], rel=1e-2)
+
+    def test_numpy():
+        x = np.zeros((n_particles, dim), dtype=np.float32)
+        v = np.zeros((n_particles, dim), dtype=np.float32)
+        C = np.zeros((n_particles, dim, dim), dtype=np.float32)
+        J = np.zeros(n_particles, dtype=np.float32)
+        grid_v = np.zeros((n_grid, n_grid, dim), dtype=np.float32)
+        grid_m = np.zeros((n_grid, n_grid), dtype=np.float32)
+        run_test(x, v, C, J, grid_v, grid_m)
+
+    def test_ndarray():
+        x = ti.Vector.ndarray(dim, ti.f32, n_particles)
+        v = ti.Vector.ndarray(dim, ti.f32, n_particles)
+        C = ti.Matrix.ndarray(dim, dim, ti.f32, n_particles)
+        J = ti.ndarray(ti.f32, n_particles)
+        grid_v = ti.Vector.ndarray(dim, ti.f32, (n_grid, n_grid))
+        grid_m = ti.ndarray(ti.f32, (n_grid, n_grid))
+        run_test(x, v, C, J, grid_v, grid_m)
+
+    test_numpy()
+    test_ndarray()

@@ -16,6 +16,7 @@ struct alignas(16) PointLight {
 struct MeshInfo {
   RenderableInfo renderable_info;
   glm::vec3 color;
+  bool two_sided{false};
 };
 
 struct ParticlesInfo {

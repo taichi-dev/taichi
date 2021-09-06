@@ -1553,15 +1553,4 @@ void StateFlowGraph::populate_latest_state_owner(std::size_t id) {
   }
 }
 
-void async_print_sfg() {
-  get_current_program().async_engine->sfg->print();
-}
-
-std::string async_dump_dot(std::optional<std::string> rankdir,
-                           int embed_states_threshold) {
-  // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
-  return get_current_program().async_engine->sfg->dump_dot(
-      rankdir, embed_states_threshold);
-}
-
 TLANG_NAMESPACE_END

@@ -4,14 +4,12 @@
 
 #include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
-#include "taichi/backends/opengl/opengl_api.h"
-#include "taichi/backends/opengl/codegen_opengl.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/wasm/aot_module_builder_impl.h"
-#include "taichi/backends/opengl/struct_opengl.h"
+#include "taichi/backends/opengl/opengl_program.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/timeline.h"
@@ -30,8 +28,8 @@
 #include "taichi/backends/cc/codegen_cc.h"
 #endif
 #ifdef TI_WITH_VULKAN
-#include "taichi/backends/vulkan/snode_struct_compiler.h"
-#include "taichi/backends/vulkan/codegen_vulkan.h"
+#include "taichi/backends/vulkan/vulkan_program.h"
+#include "taichi/backends/vulkan/runtime.h"
 #endif
 
 #if defined(TI_ARCH_x64)
@@ -71,21 +69,33 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
     config.check_out_of_bound = true;
 
   profiler = make_profiler(config.arch, config.kernel_profiler);
-  llvm_program_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
-
-  if (config.arch == Arch::metal) {
+  if (arch_uses_llvm(config.arch)) {
+    program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
+  } else if (config.arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {
       TI_WARN("No Metal API detected.");
       config.arch = host_arch();
     } else {
-      metal_program_ = std::make_unique<MetalProgramImpl>(config);
+      program_impl_ = std::make_unique<MetalProgramImpl>(config);
     }
   }
+#ifdef TI_WITH_VULKAN
+  else if (config.arch == Arch::vulkan) {
+    if (!vulkan::is_vulkan_api_available()) {
+      TI_WARN("No Vulkan API detected.");
+      config.arch = host_arch();
+    } else {
+      program_impl_ = std::make_unique<VulkanProgramImpl>(config);
+    }
+  }
+#endif
 
   if (config.arch == Arch::opengl) {
     if (!opengl::is_opengl_api_available()) {
       TI_WARN("No OpenGL API detected.");
       config.arch = host_arch();
+    } else {
+      program_impl_ = std::make_unique<OpenglProgramImpl>(config);
     }
   }
 
@@ -110,8 +120,9 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   SNode::counter = 0;
   TI_ASSERT(current_program == nullptr);
   current_program = this;
-
-  llvm_program_->initialize_host();
+  if (arch_uses_llvm(config.arch)) {
+    static_cast<LlvmProgramImpl *>(program_impl_.get())->initialize_host();
+  }
 
   result_buffer = nullptr;
   current_callable = nullptr;
@@ -162,24 +173,13 @@ FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
-  if (arch_uses_llvm(config.arch)) {
-    return llvm_program_->compile(&kernel, offloaded);
-  } else if (kernel.arch == Arch::metal) {
-    return metal_program_->compile(&kernel, offloaded);
-  } else if (kernel.arch == Arch::opengl) {
-    opengl::OpenglCodeGen codegen(kernel.name, &opengl_struct_compiled_.value(),
-                                  opengl_kernel_launcher_.get());
-    ret = codegen.compile(kernel);
+  if (arch_uses_llvm(config.arch) || kernel.arch == Arch::metal ||
+      kernel.arch == Arch::vulkan || kernel.arch == Arch::opengl) {
+    return program_impl_->compile(&kernel, offloaded);
 #ifdef TI_WITH_CC
   } else if (kernel.arch == Arch::cc) {
     ret = cccp::compile_kernel(&kernel);
 #endif
-#ifdef TI_WITH_VULKAN
-  } else if (kernel.arch == Arch::vulkan) {
-    vulkan::lower(&kernel);
-    ret = vulkan::compile_to_executable(
-        &kernel, &vulkan_compiled_structs_.value(), vulkan_runtime_.get());
-#endif  // TI_WITH_VULKAN
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -189,15 +189,17 @@ FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
 }
 
 void Program::materialize_runtime() {
-  if (arch_uses_llvm(config.arch)) {
-    llvm_program_->materialize_runtime(memory_pool.get(), profiler.get(),
+  if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
+      config.arch == Arch::vulkan || config.arch == Arch::opengl) {
+    program_impl_->materialize_runtime(memory_pool.get(), profiler.get(),
                                        &result_buffer);
   }
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
   TI_ASSERT(arch_uses_llvm(config.arch));
-  llvm_program_->destroy_snode_tree(snode_tree);
+  static_cast<LlvmProgramImpl *>(program_impl_.get())
+      ->destroy_snode_tree(snode_tree);
 }
 
 SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {
@@ -215,23 +217,11 @@ SNode *Program::get_snode_root(int tree_id) {
 
 void Program::materialize_snode_tree(SNodeTree *tree) {
   auto *const root = tree->root();
-  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
-    llvm_program_->materialize_snode_tree(
+  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda ||
+      config.arch == Arch::metal || config.arch == Arch::vulkan ||
+      config.arch == Arch::opengl) {
+    program_impl_->materialize_snode_tree(
         tree, snode_trees_, snodes, snode_to_glb_var_exprs_, result_buffer);
-  } else if (config.arch == Arch::metal) {
-    metal_program_->materialize_snode_tree(tree, &result_buffer,
-                                           memory_pool.get(), profiler.get());
-  } else if (config.arch == Arch::opengl) {
-    TI_ASSERT(result_buffer == nullptr);
-    result_buffer = (uint64 *)memory_pool->allocate(
-        sizeof(uint64) * taichi_result_buffer_entries, 8);
-    opengl::OpenglStructCompiler scomp;
-    opengl_struct_compiled_ = scomp.run(*root);
-    TI_TRACE("OpenGL root buffer size: {} B",
-             opengl_struct_compiled_->root_size);
-    opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(
-        opengl_struct_compiled_->root_size);
-    opengl_kernel_launcher_->result_buffer = result_buffer;
 #ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
     TI_ASSERT(result_buffer == nullptr);
@@ -239,22 +229,13 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
         sizeof(uint64) * taichi_result_buffer_entries, 8);
     cc_program->compile_layout(root);
 #endif
-  } else if (config.arch == Arch::vulkan) {
-#ifdef TI_WITH_VULKAN
-    result_buffer = (uint64 *)memory_pool->allocate(
-        sizeof(uint64) * taichi_result_buffer_entries, 8);
-    vulkan_compiled_structs_ = vulkan::compile_snode_structs(*root);
-    vulkan::VkRuntime::Params params;
-    params.snode_descriptors = &(vulkan_compiled_structs_->snode_descriptors);
-    params.host_result_buffer = result_buffer;
-    vulkan_runtime_ = std::make_unique<vulkan::VkRuntime>(std::move(params));
-#endif
   }
 }
 
 void Program::check_runtime_error() {
   TI_ASSERT(arch_uses_llvm(config.arch));
-  llvm_program_->check_runtime_error(result_buffer);
+  static_cast<LlvmProgramImpl *>(program_impl_.get())
+      ->check_runtime_error(result_buffer);
 }
 
 void Program::synchronize() {
@@ -265,12 +246,9 @@ void Program::synchronize() {
     if (profiler) {
       profiler->sync();
     }
-    if (arch_uses_llvm(config.arch)) {
-      llvm_program_->synchronize();
-    } else if (config.arch == Arch::metal) {
-      metal_program_->synchronize();
-    } else if (config.arch == Arch::vulkan) {
-      vulkan_runtime_->synchronize();
+    if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
+        config.arch == Arch::vulkan) {
+      program_impl_->synchronize();
     }
     sync = true;
   }
@@ -431,7 +409,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 
 uint64 Program::fetch_result_uint64(int i) {
   if (arch_uses_llvm(config.arch)) {
-    return llvm_program_->fetch_result<uint64>(i, result_buffer);
+    return static_cast<LlvmProgramImpl *>(program_impl_.get())
+        ->fetch_result<uint64>(i, result_buffer);
   }
   return result_buffer[i];
 }
@@ -481,7 +460,7 @@ void Program::finalize() {
   memory_pool->terminate();
 
   if (arch_uses_llvm(config.arch)) {
-    llvm_program_->finalize();
+    static_cast<LlvmProgramImpl *>(program_impl_.get())->finalize();
   }
 
   finalized_ = true;
@@ -499,14 +478,14 @@ int Program::default_block_dim(const CompileConfig &config) {
 
 void Program::print_memory_profiler_info() {
   TI_ASSERT(arch_uses_llvm(config.arch));
-  llvm_program_->print_memory_profiler_info(snode_trees_, result_buffer);
+  static_cast<LlvmProgramImpl *>(program_impl_.get())
+      ->print_memory_profiler_info(snode_trees_, result_buffer);
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
-  if (config.arch == Arch::metal) {
-    return metal_program_->get_snode_num_dynamically_allocated(snode);
-  }
-  return llvm_program_->get_snode_num_dynamically_allocated(snode,
+  TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
+            config.arch == Arch::vulkan || config.arch == Arch::opengl);
+  return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
 }
 
@@ -516,8 +495,9 @@ Program::~Program() {
 }
 
 std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
-  if (arch == Arch::metal) {
-    return metal_program_->make_aot_module_builder();
+  if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
+      config.arch == Arch::vulkan || config.arch == Arch::opengl) {
+    return program_impl_->make_aot_module_builder();
   } else if (arch == Arch::wasm) {
     return std::make_unique<wasm::AotModuleBuilderImpl>();
   }

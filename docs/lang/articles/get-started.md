@@ -161,7 +161,7 @@ allocator to allocate memory adaptively.
 ### Fields
 
 Taichi is a **data**-oriented programming language where dense or
-spatially-sparse fields are the first-class citizens. See [Scalar fields](../api/scalar_field.md) for more details on fields.
+spatially-sparse fields are the first-class citizens.
 
 In the code above, `pixels = ti.field(dtype=float, shape=(n * 2, n))`
 allocates a 2D dense field named `pixels` of size `(640, 320)` and

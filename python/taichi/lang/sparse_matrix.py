@@ -39,9 +39,22 @@ class SparseMatrix:
         return SparseMatrix(sm=sm)
 
     def __matmul__(self, other):
-        assert self.m == other.n, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
-        sm = self.matrix.matmul(other.matrix)
-        return SparseMatrix(sm=sm)
+        import numpy as np
+        from taichi.lang import Field
+        if isinstance(other, SparseMatrix):
+            assert self.m == other.n, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
+            sm = self.matrix.matmul(other.matrix)
+            return SparseMatrix(sm=sm)
+        elif isinstance(other, Field):
+            assert self.m == other.shape[
+                0], f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
+            return self.matrix.mat_vec_mul(other.to_numpy())
+        elif isinstance(other, np.ndarray):
+            assert self.m == other.shape[
+                0], f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
+            return self.matrix.mat_vec_mul(other)
+        else:
+            assert False, f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now. Supported types are SparseMatrix, ti.field, and numpy.ndarray."
 
     def __getitem__(self, indices):
         return self.matrix.get_element(indices[0], indices[1])

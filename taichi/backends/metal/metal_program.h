@@ -8,36 +8,46 @@
 #include "taichi/backends/metal/data_types.h"
 #include "taichi/backends/metal/aot_module_builder_impl.h"
 #include "taichi/backends/metal/struct_metal.h"
+#include "taichi/program/program_impl.h"
 
 namespace taichi {
 namespace lang {
-class MetalProgramImpl {
+class MetalProgramImpl : public ProgramImpl {
  public:
-  CompileConfig config;
   MetalProgramImpl(CompileConfig &config);
-  FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded);
-  // TODO: materialize_runtime
+  FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
-  std::size_t get_snode_num_dynamically_allocated(SNode *snode);
+  std::size_t get_snode_num_dynamically_allocated(
+      SNode *snode,
+      uint64 *result_buffer) override;
 
-  void materialize_snode_tree(SNodeTree *tree,
-                              uint64 **result_buffer_ptr,
-                              MemoryPool *memory_pool,
-                              KernelProfilerBase *profiler);
+  void materialize_runtime(MemoryPool *memory_pool,
+                           KernelProfilerBase *profiler,
+                           uint64 **result_buffer_ptr) override;
 
-  void synchronize() {
+  void materialize_snode_tree(
+      SNodeTree *tree,
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+      std::unordered_map<int, SNode *> &snodes,
+      SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
+      uint64 *result_buffer) override;
+
+  void synchronize() override {
     metal_kernel_mgr_->synchronize();
   }
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() {
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
     return std::make_unique<metal::AotModuleBuilderImpl>(
         &(metal_compiled_structs_.value()),
         metal_kernel_mgr_->get_buffer_meta_data());
+  }
+  ~MetalProgramImpl() {
   }
 
  private:
   std::optional<metal::CompiledStructs> metal_compiled_structs_;
   std::unique_ptr<metal::KernelManager> metal_kernel_mgr_;
+  metal::KernelManager::Params params_;
 };
 }  // namespace lang
 }  // namespace taichi

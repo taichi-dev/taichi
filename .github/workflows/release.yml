@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix_osx: ${{ steps.set-matrix.outputs.matrix_osx }}
     steps:
       - id: set-matrix
         run: |
@@ -20,6 +21,10 @@ jobs:
           # For production release, we run on four python versions.
           [ -z "${{ github.event.action }}" ] || matrix="[{\"name\":\"taichi\",\"python\":\"3.6\"},{\"name\":\"taichi\",\"python\":\"3.7\"},{\"name\":\"taichi\",\"python\":\"3.8\"},{\"name\":\"taichi\",\"python\":\"3.9\"}]"
           echo ::set-output name=matrix::{\"include\":$(echo $matrix)}\"
+          # M1 only supports py38 and py39(conda), so change matrix.
+          [ -z "${{ github.event.action }}" ] && matrix_osx="[{\"name\":\"taichi-nightly\",\"python\":\"3.8\"}]"
+          [ -z "${{ github.event.action }}" ] || matrix_osx="[{\"name\":\"taichi\",\"python\":\"3.8\"},{\"name\":\"taichi\",\"python\":\"3.9\"}]"
+          echo ::set-output name=matrix_osx::{\"include\":$(echo $matrix_osx)}\"
 
   build_and_upload_mac:
     name: Build and Upload (macOS only)
@@ -54,7 +59,6 @@ jobs:
           cd python
           git fetch origin master
           export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
-          export COMMIT_SHA=$(git rev-parse --short "$GITHUB_SHA")
           python build.py build --project_name $PROJECT_NAME
           cd ..
           NUM_WHL=`ls dist/*.whl | wc -l`
@@ -80,6 +84,54 @@ jobs:
           cd python
           if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
           elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python build.py upload --skip_build; fi
+
+  build_and_upload_m1:
+    name: Build and Upload (Apple M1)
+    needs: matrix_prep
+    strategy:
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix_osx) }}
+    runs-on: [self-hosted, m1]
+    defaults:
+      run:
+        shell: "/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}"
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Build
+        run: |
+          # We hacked here because conda activate in CI won't update python PATH
+          # automatically. So we don't activate and use desired python version
+          # directly.
+          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
+          python3 -m pip uninstall taichi -y
+          git --version
+          export CXX=clang++
+          python3 -m pip install -r requirements_dev.txt
+          cd python
+          git fetch origin master
+          export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
+          python3 build.py build --project_name $PROJECT_NAME
+          cd ..
+          export NUM_WHL=`ls dist/*.whl | wc -l`
+          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
+          python3 -m pip install dist/*.whl
+        env:
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_TESTS:BOOL=ON
+          PROJECT_NAME: ${{ matrix.name }}
+          PYTHON: ${{ matrix.python }}
+
+      - name: Upload PyPI
+        env:
+          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
+          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
+          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
+          PROJECT_NAME: ${{ matrix.name }}
+        run: |
+          cd python
+          if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
+          elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
 
   build_and_upload_windows:
     name: Build and Upload (Windows only)
@@ -120,7 +172,6 @@ jobs:
           cd python
           git fetch origin master
           $env:TAICHI_CMAKE_ARGS = $env:CI_SETUP_CMAKE_ARGS
-          $env:COMMIT_SHA = $(git rev-parse --short $env:GITHUB_SHA)
           python build.py build --project_name $env:PROJECT_NAME
           cd ..\dist
           $env:WHL = $(dir *.whl)

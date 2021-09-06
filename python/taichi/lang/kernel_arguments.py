@@ -1,75 +1,89 @@
 from taichi.core.primitive_types import u64
 from taichi.core.util import ti_core as _ti_core
+from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
-from taichi.lang.ext_array import AnyArray, ExtArray
 from taichi.lang.snode import SNode
 from taichi.lang.sparse_matrix import SparseMatrixBuilder
 from taichi.lang.util import cook_dtype, to_taichi_type
 
 
-class ArgExtArray:
+def ext_arr():
     """Type annotation for external arrays.
 
-    External array is formally defined as the data from other Python frameworks.
+    External arrays are formally defined as the data from other Python frameworks.
     For now, Taichi supports numpy and pytorch.
 
-    Args:
-        dim (int, optional): must be 1.
+    Example::
+
+        >>> @ti.kernel
+        >>> def to_numpy(arr: ti.ext_arr()):
+        >>>     for i in x:
+        >>>         arr[i] = x[i]
+        >>>
+        >>> arr = numpy.zeros(...)
+        >>> to_numpy(arr)  # `arr` will be filled with `x`'s data.
     """
-    def __init__(self, dim=1):
-        assert dim == 1
-
-    def extract(self, x):
-        return to_taichi_type(x.dtype), len(x.shape)
-
-
-ext_arr = ArgExtArray
-"""Alias for :class:`~taichi.lang.kernel_arguments.ArgExtArray`.
-
-Example::
-
-    >>> @ti.kernel
-    >>> def to_numpy(arr: ti.ext_arr()):
-    >>>     for i in x:
-    >>>         arr[i] = x[i]
-    >>>
-    >>> arr = numpy.zeros(...)
-    >>> to_numpy(arr)  # `arr` will be filled with `x`'s data.
-"""
+    return ArgAnyArray()
 
 
 class ArgAnyArray:
     """Type annotation for arbitrary arrays, including external arrays and Taichi ndarrays.
 
-    For external arrays, we can treat it as a Taichi field with Vector or Matrix elements by specifying element shape and layout.
+    For external arrays, we can treat it as a Taichi field with Vector or Matrix elements by specifying element dim and layout.
+    For Taichi vector/matrix ndarrays, we will automatically identify element dim and layout. If they are explicitly specified, we will check compatibility between the actual arguments and the annotation.
 
     Args:
-        element_shape (Tuple[Int], optional): () if scalar elements (default), (n) if vector elements, and (n, m) if matrix elements.
-        layout (Layout, optional): Memory layout, AOS by default.
+        element_dim (Union[Int, NoneType], optional): None if not specified (will be treated as 0 for external arrays), 0 if scalar elements, 1 if vector elements, and 2 if matrix elements.
+        layout (Union[Layout, NoneType], optional): None if not specified (will be treated as Layout.AOS for external arrays), Layout.AOS or Layout.SOA.
     """
-    def __init__(self, element_shape=(), layout=Layout.AOS):
-        if len(element_shape) > 2:
+    def __init__(self, element_dim=None, layout=None):
+        if element_dim is not None and (element_dim < 0 or element_dim > 2):
             raise ValueError(
                 "Only scalars, vectors, and matrices are allowed as elements of ti.any_arr()"
             )
-        self.element_shape = element_shape
+        self.element_dim = element_dim
         self.layout = layout
 
     def extract(self, x):
+        from taichi.lang.matrix import MatrixNdarray, VectorNdarray
+        from taichi.lang.ndarray import ScalarNdarray
+        if isinstance(x, ScalarNdarray):
+            self.check_element_dim(x, 0)
+            return x.dtype, len(x.shape), (), Layout.AOS
+        if isinstance(x, VectorNdarray):
+            self.check_element_dim(x, 1)
+            self.check_layout(x)
+            return x.dtype, len(x.shape) + 1, (x.n, ), x.layout
+        if isinstance(x, MatrixNdarray):
+            self.check_element_dim(x, 2)
+            self.check_layout(x)
+            return x.dtype, len(x.shape) + 2, (x.n, x.m), x.layout
+        # external arrays
+        element_dim = 0 if self.element_dim is None else self.element_dim
+        layout = Layout.AOS if self.layout is None else self.layout
         shape = tuple(x.shape)
-        element_dim = len(self.element_shape)
         if len(shape) < element_dim:
-            raise ValueError("Invalid argument passed to ti.any_arr()")
-        if element_dim > 0:
-            if self.layout == Layout.SOA:
-                if shape[:element_dim] != self.element_shape:
-                    raise ValueError("Invalid argument passed to ti.any_arr()")
-            else:
-                if shape[-element_dim:] != self.element_shape:
-                    raise ValueError("Invalid argument passed to ti.any_arr()")
-        return to_taichi_type(
-            x.dtype), len(shape), self.element_shape, self.layout
+            raise ValueError(
+                f"Invalid argument into ti.any_arr() - required element_dim={element_dim}, but the argument has only {len(shape)} dimensions"
+            )
+        element_shape = (
+        ) if element_dim == 0 else shape[:
+                                         element_dim] if layout == Layout.SOA else shape[
+                                             -element_dim:]
+        return to_taichi_type(x.dtype), len(shape), element_shape, layout
+
+    def check_element_dim(self, arg, arg_dim):
+        if self.element_dim is not None and self.element_dim != arg_dim:
+            raise ValueError(
+                f"Invalid argument into ti.any_arr() - required element_dim={self.element_dim}, but {arg} is provided"
+            )
+
+    def check_layout(self, arg):
+        if self.layout is not None and self.layout != arg.layout:
+            raise ValueError(
+                f"Invalid argument into ti.any_arr() - required layout={self.layout}, but {arg} is provided"
+            )
 
 
 any_arr = ArgAnyArray
@@ -138,8 +152,6 @@ class SparseMatrixEntry:
 
 
 class SparseMatrixProxy:
-    is_taichi_class = True
-
     def __init__(self, ptr):
         self.ptr = ptr
 
@@ -158,12 +170,6 @@ def decl_scalar_arg(dtype):
     return Expr(_ti_core.make_arg_load_expr(arg_id, dtype))
 
 
-def decl_ext_arr_arg(dtype, dim):
-    dtype = cook_dtype(dtype)
-    arg_id = _ti_core.decl_arg(dtype, True)
-    return ExtArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id))
-
-
 def decl_sparse_matrix():
     ptr_type = cook_dtype(u64)
     # Treat the sparse matrix argument as a scalar since we only need to pass in the base pointer
@@ -174,8 +180,12 @@ def decl_sparse_matrix():
 def decl_any_arr_arg(dtype, dim, element_shape, layout):
     dtype = cook_dtype(dtype)
     arg_id = _ti_core.decl_arg(dtype, True)
-    return AnyArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id),
-                    element_shape, layout)
+    element_dim = len(element_shape)
+    if layout == Layout.AOS:
+        element_dim = -element_dim
+    return AnyArray(
+        _ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim),
+        element_shape, layout)
 
 
 def decl_scalar_ret(dtype):

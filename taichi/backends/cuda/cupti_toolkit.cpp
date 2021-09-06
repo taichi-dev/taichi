@@ -45,12 +45,12 @@ bool CUPTIToolkit::statistics_on_traced_records(
     total_time_ms += traced_records_[resultIndex].kernel_elapsed_time_in_ms;
 
 #if defined(TI_WITH_TOOLKIT_CUDA)
-    if (cupti_config_.profiling_mode == KernelProfilingMode::cuda_accurate) {
+    if (cupti_config_.profiling_mode == KernelProfilingMode::cupti_onepass) {
       it->cuda_mem_access(
           traced_records_[resultIndex].kernel_gloabl_load_byets,
           traced_records_[resultIndex].kernel_gloabl_store_byets);
     }
-    if (cupti_config_.profiling_mode == KernelProfilingMode::cuda_detailed) {
+    if (cupti_config_.profiling_mode == KernelProfilingMode::cupti_detailed) {
       it->cuda_mem_access(
           traced_records_[resultIndex].kernel_gloabl_load_byets,
           traced_records_[resultIndex].kernel_gloabl_store_byets);

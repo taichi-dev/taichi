@@ -7,8 +7,8 @@ TLANG_NAMESPACE_BEGIN
 
 bool KernelProfilerCUDA::is_cuda_profiler(KernelProfilingMode profiling_mode) {
   bool ret = profiling_mode == KernelProfilingMode::enable |
-             profiling_mode == KernelProfilingMode::cuda_accurate |
-             profiling_mode == KernelProfilingMode::cuda_detailed;
+             profiling_mode == KernelProfilingMode::cupti_onepass |
+             profiling_mode == KernelProfilingMode::cupti_detailed;
   return ret;
 }
 
@@ -138,7 +138,7 @@ std::string KernelProfilerCUDA::title() const {
   if (tool_ == KernelProfilingTool::cuevent)
     return "cuEvent Profiler";
   else if (tool_ == KernelProfilingTool::cupti) {
-    std::string mode_string = mode_ == KernelProfilingMode::cuda_accurate
+    std::string mode_string = mode_ == KernelProfilingMode::cupti_onepass
                                   ? "accurate mode"
                                   : "detailed mode";
     return "nvCUPTI Profiler :: " + mode_string;
@@ -238,7 +238,7 @@ void KernelProfilerCUDA::print() {
         "===================================================================="
         "===="
         "=\n");
-  } else if (mode_ == KernelProfilingMode::cuda_accurate) {
+  } else if (mode_ == KernelProfilingMode::cupti_onepass) {
     fmt::print(
         "===================================================================="
         "=============================="
@@ -272,7 +272,7 @@ void KernelProfilerCUDA::print() {
         "===================================================================="
         "=============================="
         "=\n");
-  } else if (mode_ == KernelProfilingMode::cuda_detailed) {
+  } else if (mode_ == KernelProfilingMode::cupti_detailed) {
     fmt::print(
         "===================================================================="
         "========================================================"

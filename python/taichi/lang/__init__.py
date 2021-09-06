@@ -27,6 +27,8 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
 from taichi.misc.util import deprecated
 from taichi.snode.fields_builder import FieldsBuilder
 
+from taichi.profiler import profiler
+
 import taichi as ti
 
 # TODO(#2223): Remove
@@ -368,7 +370,7 @@ def init(arch=None,
         return spec_cfg
 
     # kernel profiler configurations:
-    ti.cfg.kernel_profiler = get_kernel_profiler_mode(kernel_profiler)
+    ti.cfg.kernel_profiler = profiler(kernel_profiler).mode_
 
     # create a new program:
     impl.get_runtime().create_program()
@@ -1130,18 +1132,6 @@ def complex_kernel_grad(primal):
 
     return decorator
 
-
-def get_kernel_profiler_mode(kernel_profiler=None):
-    if kernel_profiler is None:
-        return ti.core.KernelProfilingMode.disable
-    if kernel_profiler is False:
-        return ti.core.KernelProfilingMode.disable
-    elif kernel_profiler is True:
-        return ti.core.KernelProfilingMode.enable
-    elif type(kernel_profiler) == ti.core.KernelProfilingMode:
-        return kernel_profiler
-    else:
-        _ti_core.warn(f'kernel_profiler mode error : {type(kernel_profiler)}')
 
 
 __all__ = [s for s in dir() if not s.startswith('_')]

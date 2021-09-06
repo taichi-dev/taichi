@@ -125,22 +125,20 @@ def test_init_arch(arch):
         assert ti.cfg.arch == arch
 
 
-@pytest.mark.parametrize('kernel_profiler', ti.kernel_profiler_modes)
+@pytest.mark.parametrize('kernel_profiler', ti.profiler.kernel_profiler_modes)
 def test_init_kernel_profiler(kernel_profiler):
     with patch_os_environ_helper({}, excludes=['TI_KERNEL_PROFILER']):
         ti.init(kernel_profiler=kernel_profiler)
-        assert ti.cfg.kernel_profiler == ti.get_kernel_profiler_mode(
-            kernel_profiler)
+        assert ti.cfg.kernel_profiler == ti.profiler(kernel_profiler).mode_
     with patch_os_environ_helper(
         {
             'TI_KERNEL_PROFILER':
             ti.core.kernel_profiler_name(
-                ti.get_kernel_profiler_mode(kernel_profiler))
+                ti.profiler(kernel_profiler).mode_)
         },
             excludes=['TI_KERNEL_PROFILER']):
         ti.init(kernel_profiler=kernel_profiler)
-        assert ti.cfg.kernel_profiler == ti.get_kernel_profiler_mode(
-            kernel_profiler)
+        assert ti.cfg.kernel_profiler == ti.profiler(kernel_profiler).mode_
 
 
 def test_init_bad_arg():

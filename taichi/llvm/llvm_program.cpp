@@ -87,7 +87,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
   }
 #if defined(TI_WITH_CUDA)
   if (config_.arch == Arch::cuda) {
-    if (config.kernel_profiler != KernelProfilingMode::disable) {
+    if (config_.kernel_profiler != KernelProfilingMode::disable) {
       CUDAContext::get_instance().set_profiler(profiler);
     } else {
       CUDAContext::get_instance().set_profiler(nullptr);

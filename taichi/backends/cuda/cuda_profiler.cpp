@@ -63,8 +63,9 @@ KernelProfilerCUDA::KernelProfilerCUDA(KernelProfilingMode &mode) {
     cupti_toolkit_->init_cupti();
     cupti_toolkit_->begin_profiling();
   }
+#else
+  TI_NOT_IMPLEMENTED;
 #endif
-  mode_ = mode;
 }
 
 void KernelProfilerCUDA::record(KernelProfilerBase::TaskHandle &task_handle,

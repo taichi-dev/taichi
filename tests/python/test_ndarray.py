@@ -145,7 +145,7 @@ def test_matrix_ndarray_python_scope(layout):
 @ti.test(exclude=ti.opengl)
 def test_matrix_ndarray_taichi_scope(layout):
     @ti.kernel
-    def func(a: ti.any_arr(element_shape=(2, 2), layout=layout)):
+    def func(a: ti.any_arr()):
         for i in range(5):
             for j, k in ti.ndrange(2, 2):
                 a[i][j, k] = j * j + k * k
@@ -164,7 +164,7 @@ def test_matrix_ndarray_taichi_scope(layout):
 @ti.test(exclude=ti.opengl)
 def test_matrix_ndarray_taichi_scope_struct_for(layout):
     @ti.kernel
-    def func(a: ti.any_arr(element_shape=(2, 2), layout=layout)):
+    def func(a: ti.any_arr()):
         for i in a:
             for j, k in ti.ndrange(2, 2):
                 a[i][j, k] = j * j + k * k
@@ -198,7 +198,7 @@ def test_vector_ndarray_python_scope(layout):
 @ti.test(exclude=ti.opengl)
 def test_vector_ndarray_taichi_scope(layout):
     @ti.kernel
-    def func(a: ti.any_arr(element_shape=(10, ), layout=layout)):
+    def func(a: ti.any_arr()):
         for i in range(5):
             for j in range(4):
                 a[i][j * j] = j * j
@@ -219,7 +219,7 @@ def test_vector_ndarray_taichi_scope(layout):
 @ti.test(exclude=ti.opengl)
 def test_compiled_functions():
     @ti.kernel
-    def func(a: ti.any_arr(element_shape=(10, ))):
+    def func(a: ti.any_arr(element_dim=1)):
         for i in range(5):
             for j in range(4):
                 a[i][j * j] = j * j
@@ -231,6 +231,9 @@ def test_compiled_functions():
     func(v)
     assert ti.get_runtime().get_num_compiled_functions() == 1
     import torch
-    v = torch.zeros((7, 10), dtype=torch.int32)
+    v = torch.zeros((6, 11), dtype=torch.int32)
     func(v)
-    assert ti.get_runtime().get_num_compiled_functions() == 1
+    assert ti.get_runtime().get_num_compiled_functions() == 2
+    v = ti.Vector.ndarray(10, ti.i32, 5, layout=ti.Layout.SOA)
+    func(v)
+    assert ti.get_runtime().get_num_compiled_functions() == 3

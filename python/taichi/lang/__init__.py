@@ -1133,12 +1133,12 @@ def complex_kernel_grad(primal):
 
 def get_kernel_profiler_mode(kernel_profiler=None):
     if kernel_profiler is None:
-        return ti.core.KernelProfilerMode.disable
+        return ti.core.KernelProfilingMode.disable
     if kernel_profiler is False:
-        return ti.core.KernelProfilerMode.disable
+        return ti.core.KernelProfilingMode.disable
     elif kernel_profiler is True:
-        return ti.core.KernelProfilerMode.enable
-    elif type(kernel_profiler) == ti.core.KernelProfilerMode:
+        return ti.core.KernelProfilingMode.enable
+    elif type(kernel_profiler) == ti.core.KernelProfilingMode:
         return kernel_profiler
     else:
         _ti_core.warn(f'kernel_profiler mode error : {type(kernel_profiler)}')

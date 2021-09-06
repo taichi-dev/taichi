@@ -75,7 +75,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 
 #if defined(TI_WITH_CUDA)
   if (config.arch == Arch::cuda) {
-    if (config.kernel_profiler != KernelProfilerMode::disable) {
+    if (config.kernel_profiler != KernelProfilingMode::disable) {
       CUDAContext::get_instance().set_profiler(profiler.get());
     } else {
       CUDAContext::get_instance().set_profiler(nullptr);

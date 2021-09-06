@@ -12,16 +12,32 @@
 
 TLANG_NAMESPACE_BEGIN
 
-enum class KernelProfilerMode : int {
+enum class KernelProfilingMode : int {
 #define PER_MODE(x) x,
-#include "taichi/inc/kernel_profiler_mode.inc.h"
-
+#include "taichi/inc/kernel_profiling_mode.inc.h"
 #undef PER_MODE
 };
 
-std::string kernel_profiler_name(KernelProfilerMode mode);
+enum class KernelProfilingTool : int {
+#define PER_TOOL(x) x,
+#include "taichi/inc/kernel_profiling_tool.inc.h"
+#undef PER_TOOL
+};
 
-KernelProfilerMode kernel_profiler_from_name(const std::string &mode);
+std::string kernel_profiler_name(KernelProfilingMode mode);
+
+KernelProfilingMode kernel_profiler_from_name(const std::string &mode);
+
+struct KernelProfileTracedRecord {
+  std::string kernel_name;
+  float kernel_elapsed_time_in_ms{0.0};
+#if defined(TI_WITH_TOOLKIT_CUDA)
+  float kernel_gloabl_load_byets{0.0};
+  float kernel_gloabl_store_byets{0.0};
+  float utilization_ratio_sm{0.0};
+  float utilization_ratio_mem{0.0};
+#endif
+};
 
 struct KernelProfileRecord {
   std::string name;
@@ -57,14 +73,18 @@ class KernelProfilerBase {
  protected:
   std::vector<KernelProfileRecord> records;
   double total_time_ms;
-  KernelProfilerMode mode_ = KernelProfilerMode::disable;
+  KernelProfilingMode mode_ = KernelProfilingMode::disable;
+  KernelProfilingTool tool_ = KernelProfilingTool::undef;
 
  public:
   // Needed for the CUDA backend since we need to know which task to "stop"
   using TaskHandle = void *;
 
+
   virtual void clear();
-  virtual void clear_backend(){};
+  virtual void record(KernelProfilerBase::TaskHandle &task_handle, 
+                      const std::string &task_name){};
+  virtual void clear_toolkit(){};
 
   virtual void sync() = 0;
 
@@ -95,15 +115,14 @@ class KernelProfilerBase {
 
   double get_total_time() const;
 
-  KernelProfilerMode get_mode() {
-    return mode_;
-  }
+  KernelProfilingTool get_profiling_tool(){return tool_;}
+  KernelProfilingMode get_profiling_mode(){return mode_;}
 
   virtual ~KernelProfilerBase() {
   }
 };
 
 std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch,
-                                                  KernelProfilerMode &mode);
+                                                  KernelProfilingMode &mode);
 
 TLANG_NAMESPACE_END

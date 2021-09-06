@@ -29,7 +29,7 @@ struct CompileConfig {
   bool advanced_optimization;
   bool use_llvm;
   bool verbose_kernel_launches;
-  KernelProfilerMode kernel_profiler;
+  KernelProfilingMode kernel_profiler;
   bool timeline{false};
   bool verbose;
   bool fast_math;

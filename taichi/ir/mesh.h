@@ -53,8 +53,8 @@ const char *conv_type_str(ConvType type);
 int element_order(MeshElementType type);
 int from_end_element_order(MeshRelationType rel);
 int to_end_element_order(MeshRelationType rel);
-int relation_by_orders(int from_order, int to_order);
-int inverse_relation(MeshRelationType rel);
+MeshRelationType relation_by_orders(int from_order, int to_order);
+MeshRelationType inverse_relation(MeshRelationType rel);
 
 struct MeshAttribute {
   MeshAttribute(MeshElementType type_,
@@ -81,8 +81,18 @@ struct MeshAttribute {
 };
 
 struct MeshLocalRelation {
-  MeshLocalRelation() {
+  MeshLocalRelation(SNode *value_, SNode *offset_)
+      : value(value_), offset(offset_) {
+    fixed = false;
   }
+
+  MeshLocalRelation(SNode *value_) : value(value_) {
+    fixed = true;
+  }
+
+  bool fixed;
+  SNode *value;
+  SNode *offset;
 };
 
 class Mesh {
@@ -98,6 +108,7 @@ class Mesh {
   MeshMapping<SNode *> owned_offset{};  // prefix of owned element
   MeshMapping<SNode *> total_offset{};  // prefix of total element
   MeshMapping<SNode *> l2g_map{};       // local to global index mapping
+  MeshMapping<SNode *> l2r_map{};       // local to reordered index mapping
 
   std::unordered_map<mesh::MeshElementType, Stmt *>
       owned_offset_local;  // |owned_offset[idx]|

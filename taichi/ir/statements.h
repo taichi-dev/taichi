@@ -1566,7 +1566,7 @@ class MeshRelationSizeStmt : public Stmt {
                        Stmt *mesh_idx,
                        mesh::MeshElementType to_type)
       : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
-    this->ret_type = PrimitiveType::i32;
+    this->ret_type = PrimitiveType::u32;
     TI_STMT_REG_FIELDS;
   }
 
@@ -1596,7 +1596,7 @@ class MeshRelationAccessStmt : public Stmt {
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(neighbor_idx) {
-    this->ret_type = PrimitiveType::i32;
+    this->ret_type = PrimitiveType::u32;
     TI_STMT_REG_FIELDS;
   }
 
@@ -1620,7 +1620,7 @@ class MeshIndexConversionStmt : public Stmt {
 
   MeshIndexConversionStmt(mesh::Mesh *mesh, Stmt *idx, mesh::ConvType conv_type)
       : mesh(mesh), idx(idx), conv_type(conv_type) {
-    this->ret_type = PrimitiveType::i32;
+    this->ret_type = PrimitiveType::u32;
     TI_STMT_REG_FIELDS;
   }
 

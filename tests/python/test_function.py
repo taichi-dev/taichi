@@ -179,7 +179,7 @@ def test_default_templates():
         assert c == 0
         d = 0
         func1(d)
-        assert c == 0
+        assert d == 0
 
 
 @ti.test(experimental_real_function=True)

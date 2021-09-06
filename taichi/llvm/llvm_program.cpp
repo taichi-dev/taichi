@@ -95,7 +95,6 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     CUDAContext::get_instance().set_debug(config->debug);
   }
 #endif
-
 }
 
 void LlvmProgramImpl::initialize_host() {

@@ -73,16 +73,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   profiler = make_profiler(config.arch, config.kernel_profiler);
   llvm_program_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
 
-#if defined(TI_WITH_CUDA)
-  if (config.arch == Arch::cuda) {
-    if (config.kernel_profiler != KernelProfilingMode::disable) {
-      CUDAContext::get_instance().set_profiler(profiler.get());
-    } else {
-      CUDAContext::get_instance().set_profiler(nullptr);
-    }
-  }
-#endif
-
   if (config.arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {
       TI_WARN("No Metal API detected.");

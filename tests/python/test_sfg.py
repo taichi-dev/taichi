@@ -4,9 +4,7 @@ import pytest
 import taichi as ti
 
 
-# TODO: #2847
 @ti.test(require=[ti.extension.async_mode, ti.extension.sparse],
-         exclude=[ti.cuda],
          async_mode=True)
 def test_remove_clear_list_from_fused_serial():
     x = ti.field(ti.i32)

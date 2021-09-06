@@ -300,10 +300,7 @@ class Program {
    * JIT compiles the @param tree to backend-specific data types.
    */
   void materialize_snode_tree(SNodeTree *tree);
-
-  // OpenGL related data structures
-  std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
-  std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
+  
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;

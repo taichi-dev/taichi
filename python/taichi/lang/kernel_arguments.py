@@ -64,17 +64,26 @@ class ArgAnyArray:
         layout = Layout.AOS if self.layout is None else self.layout
         shape = tuple(x.shape)
         if len(shape) < element_dim:
-            raise ValueError(f"Invalid argument into ti.any_arr() - required element_dim={element_dim}, but the argument has only {len(shape)} dimensions")
-        element_shape = () if element_dim == 0 else shape[:element_dim] if layout == Layout.SOA else shape[-element_dim:]
+            raise ValueError(
+                f"Invalid argument into ti.any_arr() - required element_dim={element_dim}, but the argument has only {len(shape)} dimensions"
+            )
+        element_shape = (
+        ) if element_dim == 0 else shape[:
+                                         element_dim] if layout == Layout.SOA else shape[
+                                             -element_dim:]
         return to_taichi_type(x.dtype), len(shape), element_shape, layout
 
     def check_element_dim(self, arg, arg_dim):
         if self.element_dim is not None and self.element_dim != arg_dim:
-            raise ValueError(f"Invalid argument into ti.any_arr() - required element_dim={self.element_dim}, but {arg} is provided")
+            raise ValueError(
+                f"Invalid argument into ti.any_arr() - required element_dim={self.element_dim}, but {arg} is provided"
+            )
 
     def check_layout(self, arg):
         if self.layout is not None and self.layout != arg.layout:
-            raise ValueError(f"Invalid argument into ti.any_arr() - required layout={self.layout}, but {arg} is provided")
+            raise ValueError(
+                f"Invalid argument into ti.any_arr() - required layout={self.layout}, but {arg} is provided"
+            )
 
 
 any_arr = ArgAnyArray

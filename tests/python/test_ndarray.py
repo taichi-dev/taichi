@@ -241,6 +241,7 @@ def test_compiled_functions():
 
 # annotation compatibility
 
+
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=ti.get_host_arch_list())
 def test_arg_not_match():
@@ -249,8 +250,11 @@ def test_arg_not_match():
         pass
 
     x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7))
-    with pytest.raises(ValueError,
-                       match=r'Invalid argument into ti\.any_arr\(\) - required element_dim=1, but .* is provided'):
+    with pytest.raises(
+            ValueError,
+            match=
+            r'Invalid argument into ti\.any_arr\(\) - required element_dim=1, but .* is provided'
+    ):
         func1(x)
 
     @ti.kernel
@@ -258,8 +262,11 @@ def test_arg_not_match():
         pass
 
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
-    with pytest.raises(ValueError,
-                       match=r'Invalid argument into ti\.any_arr\(\) - required element_dim=2, but .* is provided'):
+    with pytest.raises(
+            ValueError,
+            match=
+            r'Invalid argument into ti\.any_arr\(\) - required element_dim=2, but .* is provided'
+    ):
         func2(x)
 
     @ti.kernel
@@ -267,8 +274,11 @@ def test_arg_not_match():
         pass
 
     x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7), layout=ti.Layout.SOA)
-    with pytest.raises(ValueError,
-                       match=r'Invalid argument into ti\.any_arr\(\) - required layout=Layout\.AOS, but .* is provided'):
+    with pytest.raises(
+            ValueError,
+            match=
+            r'Invalid argument into ti\.any_arr\(\) - required layout=Layout\.AOS, but .* is provided'
+    ):
         func3(x)
 
     @ti.kernel
@@ -276,6 +286,9 @@ def test_arg_not_match():
         pass
 
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
-    with pytest.raises(ValueError,
-                       match=r'Invalid argument into ti\.any_arr\(\) - required layout=Layout\.SOA, but .* is provided'):
+    with pytest.raises(
+            ValueError,
+            match=
+            r'Invalid argument into ti\.any_arr\(\) - required layout=Layout\.SOA, but .* is provided'
+    ):
         func4(x)

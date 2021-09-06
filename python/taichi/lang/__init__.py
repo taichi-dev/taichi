@@ -25,9 +25,8 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
 from taichi.misc.util import deprecated
-from taichi.snode.fields_builder import FieldsBuilder
-
 from taichi.profiler import profiler
+from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
 
@@ -1131,7 +1130,6 @@ def complex_kernel_grad(primal):
         return decorated
 
     return decorator
-
 
 
 __all__ = [s for s in dir() if not s.startswith('_')]

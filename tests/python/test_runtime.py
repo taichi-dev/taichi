@@ -133,8 +133,7 @@ def test_init_kernel_profiler(kernel_profiler):
     with patch_os_environ_helper(
         {
             'TI_KERNEL_PROFILER':
-            ti.core.kernel_profiler_name(
-                ti.profiler(kernel_profiler).mode_)
+            ti.core.kernel_profiler_name(ti.profiler(kernel_profiler).mode_)
         },
             excludes=['TI_KERNEL_PROFILER']):
         ti.init(kernel_profiler=kernel_profiler)

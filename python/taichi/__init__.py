@@ -4,6 +4,7 @@ from taichi.core import *
 from taichi.lang import *  # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.main import main
 from taichi.misc import *
+from taichi.profiler import profiler
 from taichi.testing import *
 from taichi.tools import *
 from taichi.torch_io import from_torch, to_torch
@@ -12,7 +13,6 @@ from taichi.torch_io import from_torch, to_torch
 from taichi import aot  # isort:skip
 
 from taichi.ui import *  # isort:skip
-from taichi.profiler import profiler
 
 deprecated_names = {'SOA': 'Layout.SOA', 'AOS': 'Layout.AOS'}
 if sys.version_info.minor < 7:
@@ -31,7 +31,9 @@ else:
         raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")
 
 
-__all__ = ['core', 'misc', 'lang', 'tools', 'main', 'torch_io', 'ui', 'profiler']
+__all__ = [
+    'core', 'misc', 'lang', 'tools', 'main', 'torch_io', 'ui', 'profiler'
+]
 
 __version__ = (core.get_version_major(), core.get_version_minor(),
                core.get_version_patch())

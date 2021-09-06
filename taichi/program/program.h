@@ -13,7 +13,6 @@
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_program.h"
 #include "taichi/backends/metal/metal_program.h"
-#include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/aot_module_builder.h"
@@ -301,9 +300,6 @@ class Program {
    */
   void materialize_snode_tree(SNodeTree *tree);
 
-  // OpenGL related data structures
-  std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
-  std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;

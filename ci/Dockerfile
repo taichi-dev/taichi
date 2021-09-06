@@ -62,6 +62,7 @@ RUN $PYTHON -m pip install --user -r requirements_dev.txt
 RUN git submodule update --init --recursive --depth=1
 WORKDIR /taichi-dev/taichi
 WORKDIR python/
+ENV TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN:BOOL=ON"
 RUN $PYTHON build.py build $TEST_OPTION
 WORKDIR ../
 RUN $PYTHON -m pip install dist/*.whl

@@ -14,16 +14,15 @@ namespace taichi {
 namespace lang {
 class VulkanProgramImpl : public ProgramImpl {
  public:
-  VulkanProgramImpl(CompileConfig &config):ProgramImpl(config) {
-
+  VulkanProgramImpl(CompileConfig &config) : ProgramImpl(config) {
   }
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
-      uint64 *result_buffer) override{
-      return 0; // TODO: support dynamic snode alloc in vulkan
-    }
+      uint64 *result_buffer) override {
+    return 0;  // TODO: support dynamic snode alloc in vulkan
+  }
 
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
@@ -36,24 +35,21 @@ class VulkanProgramImpl : public ProgramImpl {
       SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
       uint64 *result_buffer) override;
 
-  void synchronize() override{
-      vulkan_runtime_->synchronize();
+  void synchronize() override {
+    vulkan_runtime_->synchronize();
   }
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
-    //TODO: implement vk aot
+    // TODO: implement vk aot
     return nullptr;
   }
-
 
   ~VulkanProgramImpl() {
   }
 
  private:
-  
   std::optional<vulkan::CompiledSNodeStructs> vulkan_compiled_structs_;
   std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
-  
 };
 }  // namespace lang
 }  // namespace taichi

@@ -55,30 +55,26 @@ bool KernelProfilerCUDA::init_profiler(KernelProfilingMode &profiling_mode) {
 #endif
 }
 
-
-  KernelProfilerCUDA::KernelProfilerCUDA(KernelProfilingMode &mode) {
+KernelProfilerCUDA::KernelProfilerCUDA(KernelProfilingMode &mode) {
 #if defined(TI_WITH_CUDA)
-    this->init_profiler(mode);
-    if (tool_ == KernelProfilingTool::cupti) {
-      cupti_toolkit_ = std::make_unique<CUPTIToolkit>(mode);
-      cupti_toolkit_->init_cupti();
-      cupti_toolkit_->begin_profiling();
-    }
-#endif
-    mode_ = mode;
+  this->init_profiler(mode);
+  if (tool_ == KernelProfilingTool::cupti) {
+    cupti_toolkit_ = std::make_unique<CUPTIToolkit>(mode);
+    cupti_toolkit_->init_cupti();
+    cupti_toolkit_->begin_profiling();
   }
+#endif
+  mode_ = mode;
+}
 
-
-void KernelProfilerCUDA::record(KernelProfilerBase::TaskHandle &task_handle, 
+void KernelProfilerCUDA::record(KernelProfilerBase::TaskHandle &task_handle,
                                 const std::string &task_name) {
   if (tool_ == KernelProfilingTool::cuevent) {
     task_handle = this->start_with_handle(task_name);
-  } 
-  else if (tool_ == KernelProfilingTool::cupti) {
+  } else if (tool_ == KernelProfilingTool::cupti) {
     cupti_toolkit_->record_launched_kernel(task_name);
   }
 }
-
 
 void KernelProfilerCUDA::clear_toolkit() {
   if (tool_ == KernelProfilingTool::cupti) {
@@ -86,7 +82,8 @@ void KernelProfilerCUDA::clear_toolkit() {
   }
 }
 
-KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(const std::string &kernel_name) {
+KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
+    const std::string &kernel_name) {
 #if defined(TI_WITH_CUDA)
   void *start, *stop;
   CUDADriver::get_instance().event_create(&start, CU_EVENT_DEFAULT);
@@ -136,15 +133,14 @@ void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {
 #endif
 }
 
-std::string KernelProfilerCUDA::title() const{
+std::string KernelProfilerCUDA::title() const {
 #if defined(TI_WITH_CUDA)
   if (tool_ == KernelProfilingTool::cuevent)
     return "cuEvent Profiler";
   else if (tool_ == KernelProfilingTool::cupti) {
-    std::string mode_string = mode_ ==
-                                KernelProfilingMode::cuda_accurate
-                            ? "accurate mode"
-                            : "detailed mode";
+    std::string mode_string = mode_ == KernelProfilingMode::cuda_accurate
+                                  ? "accurate mode"
+                                  : "detailed mode";
     return "nvCUPTI Profiler :: " + mode_string;
   }
 #endif
@@ -169,11 +165,10 @@ void KernelProfilerCUDA::sync() {
           CUDADriver::get_instance().event_elapsed_time(&time_since_base,
                                                         base_event_, start);
           timeline.insert_event({map_elem.first, true,
-                                  base_time_ + time_since_base * 1e-3,
-                                  "cuda"});
+                                 base_time_ + time_since_base * 1e-3, "cuda"});
           timeline.insert_event(
               {map_elem.first, false,
-                base_time_ + (time_since_base + kernel_time) * 1e-3, "cuda"});
+               base_time_ + (time_since_base + kernel_time) * 1e-3, "cuda"});
         }
 
         auto it = std::find_if(
@@ -225,10 +220,9 @@ void KernelProfilerCUDA::print() {
     std::sort(records.begin(), records.end());
     for (auto &rec : records) {
       auto fraction = rec.total / total_time_ms * 100.0f;
-      fmt::print(
-          "[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms] {}\n",
-          fraction, rec.total / 1000.0f, rec.counter, rec.min,
-          rec.total / rec.counter, rec.max, rec.name);
+      fmt::print("[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms] {}\n",
+                 fraction, rec.total / 1000.0f, rec.counter, rec.min,
+                 rec.total / rec.counter, rec.max, rec.name);
     }
     fmt::print(
         "--------------------------------------------------------------------"
@@ -297,8 +291,8 @@ void KernelProfilerCUDA::print() {
           rec.total / rec.counter, rec.max,
           rec.mem_load_in_bytes / rec.counter / 1024 / 1024,
           rec.mem_store_in_bytes / rec.counter / 1024 / 1024,
-          rec.utilization_core / rec.counter,
-          rec.utilization_mem / rec.counter, rec.name);
+          rec.utilization_core / rec.counter, rec.utilization_mem / rec.counter,
+          rec.name);
     }
     fmt::print(
         "--------------------------------------------------------------------"
@@ -317,6 +311,5 @@ void KernelProfilerCUDA::print() {
   }
 #endif
 }
-
 
 TLANG_NAMESPACE_END

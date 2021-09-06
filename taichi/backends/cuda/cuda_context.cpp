@@ -76,7 +76,7 @@ void CUDAContext::launch(void *func,
 
   KernelProfilerBase::TaskHandle task_handle;
   // Kernel launch
-  if(profiler){
+  if (profiler) {
     profiler->record(task_handle, task_name);
   }
   auto context_guard = CUDAContext::get_instance().get_guard();

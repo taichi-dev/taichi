@@ -9,9 +9,9 @@ TLANG_NAMESPACE_BEGIN
 
 std::string kernel_profiler_name(KernelProfilingMode mode) {
   switch (mode) {
-#define PER_MODE(x)           \
+#define PER_MODE(x)            \
   case KernelProfilingMode::x: \
-    return #x;                \
+    return #x;                 \
     break;
 #include "taichi/inc/kernel_profiling_mode.inc.h"
 
@@ -22,8 +22,8 @@ std::string kernel_profiler_name(KernelProfilingMode mode) {
 }
 
 KernelProfilingMode kernel_profiler_from_name(const std::string &mode) {
-#define PER_MODE(x)               \
-  else if (mode == #x) {          \
+#define PER_MODE(x)                \
+  else if (mode == #x) {           \
     return KernelProfilingMode::x; \
   }
 

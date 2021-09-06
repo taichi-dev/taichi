@@ -80,9 +80,8 @@ class KernelProfilerBase {
   // Needed for the CUDA backend since we need to know which task to "stop"
   using TaskHandle = void *;
 
-
   virtual void clear();
-  virtual void record(KernelProfilerBase::TaskHandle &task_handle, 
+  virtual void record(KernelProfilerBase::TaskHandle &task_handle,
                       const std::string &task_name){};
   virtual void clear_toolkit(){};
 
@@ -115,8 +114,12 @@ class KernelProfilerBase {
 
   double get_total_time() const;
 
-  KernelProfilingTool get_profiling_tool(){return tool_;}
-  KernelProfilingMode get_profiling_mode(){return mode_;}
+  KernelProfilingTool get_profiling_tool() {
+    return tool_;
+  }
+  KernelProfilingMode get_profiling_mode() {
+    return mode_;
+  }
 
   virtual ~KernelProfilerBase() {
   }

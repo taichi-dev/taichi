@@ -3,8 +3,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void CUPTIToolkit::set_mode(KernelProfilingMode mode){
-    cupti_config_.profiling_mode = mode;
+void CUPTIToolkit::set_mode(KernelProfilingMode mode) {
+  cupti_config_.profiling_mode = mode;
 }
 
 CUPTIToolkit::CUPTIToolkit(KernelProfilingMode mode) {

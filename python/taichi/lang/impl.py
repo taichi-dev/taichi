@@ -8,6 +8,7 @@ from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
+from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import MatrixField
 from taichi.lang.ndarray import ScalarNdarray
 from taichi.lang.snode import SNode
@@ -138,6 +139,8 @@ def subscript(value, *indices):
     index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
+        return value.subscript(*indices)
+    elif isinstance(value, SparseMatrixProxy):
         return value.subscript(*indices)
     elif isinstance(value, Field):
         var = value.get_field_members()[0].ptr

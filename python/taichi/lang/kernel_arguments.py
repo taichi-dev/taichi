@@ -144,8 +144,6 @@ class SparseMatrixEntry:
 
 
 class SparseMatrixProxy:
-    is_taichi_class = True
-
     def __init__(self, ptr):
         self.ptr = ptr
 

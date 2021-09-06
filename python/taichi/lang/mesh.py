@@ -353,6 +353,13 @@ class MeshElementFieldProxy:
     def ptr(self):
         return self.entry_expr
 
+    @property
+    def id(self):  # return the global non-reordered index
+        l2g_expr = impl.Expr(
+            _ti_core.get_index_conversion(self.mesh.mesh_ptr, self.entry_expr,
+                                          ConvType.l2g))
+        return l2g_expr
+
 
 class MeshRelationAccessProxy:
     def __init__(self, mesh: MeshInstance, from_index: impl.Expr,

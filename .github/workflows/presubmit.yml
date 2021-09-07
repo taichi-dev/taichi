@@ -242,6 +242,10 @@ jobs:
         shell: powershell
         run: choco install vulkan-sdk
 
+      - name: Refresh Env
+        shell: powershell
+        run: refreshenv
+
 
       - name: Install 7Zip PowerShell
         shell: powershell

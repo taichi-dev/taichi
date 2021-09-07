@@ -282,21 +282,10 @@ class Mesh:
     def __init__(self):
         pass
 
-    @property
-    def non_reordering():
-        return MeshElementReorderingType.NonReordering
-
-    @property
-    def reordering():
-        return MeshElementReorderingType.Reordering
-
-    @property
-    def surface_first():
-        return MeshElementReorderingType.SurfaceFirst
-
-    @property
-    def cell_first():
-        return MeshElementReorderingType.CellFirst
+    non_reordering = MeshElementReorderingType.NonReordering
+    reordering = MeshElementReorderingType.Reordering
+    surface_first = MeshElementReorderingType.SurfaceFirst
+    cell_first = MeshElementReorderingType.CellFirst
 
     @staticmethod
     def Tet():

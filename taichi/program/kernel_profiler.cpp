@@ -185,7 +185,11 @@ class DefaultProfiler : public KernelProfilerBase {
 std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch,
                                                   KernelProfilingMode &mode) {
   if (arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
     return std::make_unique<KernelProfilerCUDA>(mode);
+#else
+    TI_NOT_IMPLEMENTED;
+#endif
   } else {
     return std::make_unique<DefaultProfiler>(arch);
   }

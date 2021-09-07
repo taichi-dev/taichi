@@ -20,14 +20,7 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
 
   std::pair</* owned= */ std::unordered_set<mesh::MeshElementType>,
             /* total= */ std::unordered_set<mesh::MeshElementType>>
-      accessed;
-
-  // TODO(changyu): An analyzer to gather each mesh element's
-  // owned_elements_offset and total_elements_offset
-  // is needed or not, now make it with a hack
-
-  accessed.first.insert(mesh::MeshElementType::Cell);  // FIXME: a hack.
-  accessed.second.insert(mesh::MeshElementType::Vertex);
+      accessed = analysis::gather_mesh_thread_local(offload);
 
   std::size_t tls_offset = offload->tls_size;
 

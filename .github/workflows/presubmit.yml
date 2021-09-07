@@ -239,6 +239,7 @@ jobs:
             Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe" -OutFile VulkanSDK.exe
             $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
             $installer.WaitForExit();
+            refreshenv
 
 
       - name: Install 7Zip PowerShell

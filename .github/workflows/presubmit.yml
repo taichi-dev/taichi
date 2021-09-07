@@ -234,17 +234,11 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
-      - name: Install Choco
-        shell: powershell
-        run: Install-Module -Name ChocolateyGet -Force -Verbose
-
-      - name: Install Vulkan SDK
-        shell: powershell
-        run: choco install vulkan-sdk
-
-      - name: Refresh Env
-        shell: powershell
-        run: refreshenv
+      - name: Setup Vulkan
+        run: |
+            Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe" -OutFile VulkanSDK.exe
+            $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
+            $installer.WaitForExit();
 
 
       - name: Install 7Zip PowerShell

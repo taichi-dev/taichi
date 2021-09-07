@@ -144,14 +144,6 @@ jobs:
         shell: powershell
         run: Install-Module 7Zip4PowerShell -Force -Verbose
 
-      - name: Install Choco
-        shell: powershell
-        run: Install-Module -Name ChocolateyGet -Force -Verbose
-
-      - name: Install Vulkan SDK
-        shell: powershell
-        run: choco install vulkan-sdk
-
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
@@ -166,6 +158,11 @@ jobs:
       - name: Build Python Wheel
         shell: powershell
         run: |
+          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe" -OutFile VulkanSDK.exe
+          $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
+          $installer.WaitForExit();
+          $env:VULKAN_SDK = "C:/VulkanSDK/1.2.189.0"
+          $env:Path += ";C:/VulkanSDK/1.2.189.0/Bin"
           cd C:\
           Remove-item alias:curl
           curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO

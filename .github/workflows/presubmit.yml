@@ -235,7 +235,6 @@ jobs:
     timeout-minutes: 60
     steps:
      
-
       - name: Install 7Zip PowerShell
         shell: powershell
         run: Install-Module 7Zip4PowerShell -Force -Verbose
@@ -251,15 +250,15 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
 
+
       - name: Build
         shell: powershell
         run: |
           Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe" -OutFile VulkanSDK.exe
           $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
           $installer.WaitForExit();
-          $Env:VULKAN_SDK = "C:/VulkanSDK/1.2.189.0"
-          $Env:Path += ";C:/VulkanSDK/1.2.189.0/Bin"
-          refreshenv 
+          $env:VULKAN_SDK = "C:/VulkanSDK/1.2.189.0"
+          $env:Path += ";C:/VulkanSDK/1.2.189.0/Bin"
           cd C:\
           Remove-item alias:curl
           curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO

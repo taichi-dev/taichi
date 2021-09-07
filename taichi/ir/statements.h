@@ -1112,6 +1112,15 @@ class OffloadedStmt : public Stmt {
   std::unordered_set<mesh::MeshElementType> major_to_types;
   std::unordered_set<mesh::MeshRelationType> minor_relation_types;
 
+  std::unordered_map<mesh::MeshElementType, Stmt *>
+      owned_offset_local;  // |owned_offset[idx]|
+  std::unordered_map<mesh::MeshElementType, Stmt *>
+      total_offset_local;  // |total_offset[idx]|
+  std::unordered_map<mesh::MeshElementType, Stmt *>
+      owned_num_local;  // |owned_offset[idx+1] - owned_offset[idx]|
+  std::unordered_map<mesh::MeshElementType, Stmt *>
+      total_num_local;  // |total_offset[idx+1] - total_offset[idx]|
+
   std::vector<int> index_offsets;
 
   std::unique_ptr<Block> tls_prologue;

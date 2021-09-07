@@ -592,10 +592,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         s->accept(this);
       }
 
-      auto bound_1 =
-          llvm_val[stmt->mesh->owned_num_local.find(stmt->major_from_type)
-                       ->second];
-
       auto loop_test_bb = BasicBlock::Create(*llvm_context, "loop_test", func);
       auto loop_body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
       auto func_exit = BasicBlock::Create(*llvm_context, "func_exit", func);
@@ -610,9 +606,10 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
       {
         builder->SetInsertPoint(loop_test_bb);
-        auto cond =
-            builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                                builder->CreateLoad(loop_index), bound_1);
+        auto cond = builder->CreateICmp(
+            llvm::CmpInst::Predicate::ICMP_SLT, builder->CreateLoad(loop_index),
+            llvm_val[stmt->owned_num_local.find(stmt->major_from_type)
+                         ->second]);
         builder->CreateCondBr(cond, loop_body_bb, func_exit);
       }
 

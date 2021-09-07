@@ -49,6 +49,10 @@ def expr_init(rhs):
         return rhs
     if isinstance(rhs, ti.ndrange):
         return rhs
+    if isinstance(rhs, MeshElementFieldProxy):
+        return rhs
+    if isinstance(rhs, MeshRelationAccessProxy):
+        return rhs
     if hasattr(rhs, '_data_oriented'):
         return rhs
     return Expr(_ti_core.expr_var(Expr(rhs).ptr))
@@ -145,6 +149,10 @@ def subscript(value, *_indices):
     index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
+        return value.subscript(*_indices)
+    if isinstance(value, MeshElementFieldProxy):
+        return value.subscript(*_indices)
+    if isinstance(value, MeshRelationAccessProxy):
         return value.subscript(*_indices)
     if isinstance(value, SparseMatrixProxy):
         return value.subscript(*_indices)

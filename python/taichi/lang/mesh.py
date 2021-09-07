@@ -357,8 +357,6 @@ class MeshRelationAccessProxy:
         self.from_index = from_index
         self.to_element_type = to_element_type
 
-        self.is_taichi_class = True
-
     @property
     def size(self):
         return impl.Expr(

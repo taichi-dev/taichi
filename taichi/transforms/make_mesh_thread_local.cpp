@@ -117,14 +117,14 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
 
   for (auto element_type : accessed.first) {
     make_thread_local_store(element_type, offload->mesh->owned_offset,
-                            offload->mesh->owned_offset_local,
-                            offload->mesh->owned_num_local);
+                            offload->owned_offset_local,
+                            offload->owned_num_local);
   }
 
   for (auto element_type : accessed.second) {
     make_thread_local_store(element_type, offload->mesh->total_offset,
-                            offload->mesh->total_offset_local,
-                            offload->mesh->total_num_local);
+                            offload->total_offset_local,
+                            offload->total_num_local);
   }
   offload->tls_size = std::max(std::size_t(1), tls_offset);
 }

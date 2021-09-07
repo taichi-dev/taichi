@@ -91,8 +91,8 @@ struct MeshLocalRelation {
   }
 
   bool fixed;
-  SNode *value;
-  SNode *offset;
+  SNode *value{nullptr};
+  SNode *offset{nullptr};
 };
 
 class Mesh {
@@ -109,15 +109,6 @@ class Mesh {
   MeshMapping<SNode *> total_offset{};  // prefix of total element
   MeshMapping<SNode *> l2g_map{};       // local to global index mapping
   MeshMapping<SNode *> l2r_map{};       // local to reordered index mapping
-
-  std::unordered_map<mesh::MeshElementType, Stmt *>
-      owned_offset_local;  // |owned_offset[idx]|
-  std::unordered_map<mesh::MeshElementType, Stmt *>
-      total_offset_local;  // |total_offset[idx]|
-  std::unordered_map<mesh::MeshElementType, Stmt *>
-      owned_num_local;  // |owned_offset[idx+1] - owned_offset[idx]|
-  std::unordered_map<mesh::MeshElementType, Stmt *>
-      total_num_local;  // |total_offset[idx+1] - total_offset[idx]|
 
   MeshMapping<std::unordered_set<MeshAttribute, MeshAttribute::Hash>>
       attributes;

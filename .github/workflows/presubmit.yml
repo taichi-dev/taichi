@@ -194,6 +194,14 @@ jobs:
         with:
           submodules: 'recursive'
 
+      - name: Install Vulkan SDK
+        run: |
+          wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.182-focal.list https://packages.lunarg.com/vulkan/1.2.182/lunarg-vulkan-1.2.182-focal.list
+          sudo apt update
+          sudo apt install vulkan-sdk
+
+
       - name: Build
         run: |
           git --version
@@ -234,6 +242,15 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
+      - name: Install Choco
+        shell: powershell
+        run: Install-Module -Name ChocolateyGet -Force -Verbose
+
+      - name: Install Vulkan SDK
+        shell: powershell
+        run: choco install vulkan-sdk
+
+
       - name: Install 7Zip PowerShell
         shell: powershell
         run: Install-Module 7Zip4PowerShell -Force -Verbose

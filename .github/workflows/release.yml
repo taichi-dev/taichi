@@ -144,6 +144,14 @@ jobs:
         shell: powershell
         run: Install-Module 7Zip4PowerShell -Force -Verbose
 
+      - name: Install Choco
+        shell: powershell
+        run: Install-Module -Name ChocolateyGet -Force -Verbose
+
+      - name: Install Vulkan SDK
+        shell: powershell
+        run: choco install vulkan-sdk
+
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'

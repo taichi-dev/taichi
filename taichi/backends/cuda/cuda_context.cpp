@@ -76,7 +76,7 @@ void CUDAContext::launch(void *func,
 
   KernelProfilerBase::TaskHandle task_handle;
   // Kernel launch
-  if (profiler!=nullptr) {
+  if (profiler != nullptr) {
     profiler->record(task_handle, task_name);
   }
 
@@ -102,7 +102,7 @@ void CUDAContext::launch(void *func,
                          nullptr);
   }
 
-  if(profiler!=nullptr){
+  if (profiler != nullptr) {
     if (profiler->get_profiling_tool() == KernelProfilingTool::cuevent)
       profiler->stop(task_handle);
   }

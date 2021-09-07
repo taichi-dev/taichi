@@ -807,8 +807,8 @@ class MeshForStmt : public Stmt {
   std::unique_ptr<Block> body;
   int block_dim;
   mesh::MeshElementType major_from_type;
-  std::vector<mesh::MeshElementType> major_to_types{};
-  std::vector<mesh::MeshRelationType> minor_relation_types{};
+  std::unordered_set<mesh::MeshElementType> major_to_types{};
+  std::unordered_set<mesh::MeshRelationType> minor_relation_types{};
 
   MeshForStmt(mesh::Mesh *mesh,
               mesh::MeshElementType element_type,
@@ -1109,8 +1109,8 @@ class OffloadedStmt : public Stmt {
 
   mesh::Mesh *mesh{nullptr};
   mesh::MeshElementType major_from_type;
-  std::vector<mesh::MeshElementType> major_to_types;
-  std::vector<mesh::MeshRelationType> minor_relation_types;
+  std::unordered_set<mesh::MeshElementType> major_to_types;
+  std::unordered_set<mesh::MeshRelationType> minor_relation_types;
 
   std::vector<int> index_offsets;
 
@@ -1176,6 +1176,8 @@ class LoopIndexStmt : public Stmt {
   bool is_mesh_index() const {
     if (auto offload = loop->cast<OffloadedStmt>()) {
       return offload->task_type == OffloadedTaskType::mesh_for;
+    } else if (loop->cast<MeshForStmt>()) {
+      return true;
     } else {
       return false;
     }
@@ -1183,7 +1185,13 @@ class LoopIndexStmt : public Stmt {
 
   mesh::MeshElementType mesh_index_type() const {
     TI_ASSERT(is_mesh_index());
-    return loop->cast<OffloadedStmt>()->major_from_type;
+    if (auto offload = loop->cast<OffloadedStmt>()) {
+      return offload->major_from_type;
+    } else if (auto mesh_for = loop->cast<MeshForStmt>()) {
+      return mesh_for->major_from_type;
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
   }
 
   bool has_global_side_effect() const override {

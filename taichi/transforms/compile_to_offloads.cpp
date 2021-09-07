@@ -96,6 +96,9 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  // TODO(changyu): if (is_extension_supported(config.arch, Extension::mesh))
+  irpass::analysis::gather_meshfor_relation_types(ir);
+
   if (grad) {
     // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir, config);

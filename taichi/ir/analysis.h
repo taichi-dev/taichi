@@ -234,6 +234,9 @@ std::unordered_set<Stmt *> constexpr_prop(
 
 void verify(IRNode *root);
 
+// Mesh Related.
+void gather_meshfor_relation_types(IRNode *node);
+
 }  // namespace analysis
 }  // namespace irpass
 }  // namespace lang

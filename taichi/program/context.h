@@ -14,8 +14,8 @@ struct LLVMRuntime;
 // to the LLVMRuntime struct, kernel arguments, and the thread id (if on CPU).
 struct Context {
   LLVMRuntime *runtime;
-  uint64 args[taichi_max_num_args];
-  int32 extra_args[taichi_max_num_args][taichi_max_num_indices];
+  uint64 args[taichi_max_num_args_total];
+  int32 extra_args[taichi_max_num_args_extra][taichi_max_num_indices];
   int32 cpu_thread_id;
 
   static constexpr size_t extra_args_size = sizeof(extra_args);

@@ -76,9 +76,10 @@ void CUDAContext::launch(void *func,
 
   KernelProfilerBase::TaskHandle task_handle;
   // Kernel launch
-  if (profiler) {
+  if (profiler!=nullptr) {
     profiler->record(task_handle, task_name);
   }
+
   auto context_guard = CUDAContext::get_instance().get_guard();
 
   // TODO: remove usages of get_current_program here.
@@ -100,8 +101,11 @@ void CUDAContext::launch(void *func,
                          shared_mem_bytes, nullptr, arg_pointers.data(),
                          nullptr);
   }
-  if (profiler->get_profiling_tool() == KernelProfilingTool::cuevent)
-    profiler->stop(task_handle);
+
+  if(profiler!=nullptr){
+    if (profiler->get_profiling_tool() == KernelProfilingTool::cuevent)
+      profiler->stop(task_handle);
+  }
 
   if (debug) {
     driver.stream_synchronize(nullptr);

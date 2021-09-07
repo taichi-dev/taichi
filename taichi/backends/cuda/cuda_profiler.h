@@ -18,7 +18,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
       outstanding_events;
 #endif
 
-  explicit KernelProfilerCUDA(KernelProfilingMode &mode);
+  KernelProfilerCUDA(KernelProfilingMode &mode);
 
   bool is_cuda_profiler(KernelProfilingMode profiling_mode);
   bool init_profiler(KernelProfilingMode &profiling_mode);

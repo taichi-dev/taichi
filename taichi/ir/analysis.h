@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/mesh.h"
 #include "taichi/ir/pass.h"
 #include "taichi/analysis/gather_uniquely_accessed_pointers.h"
 #include <atomic>
@@ -236,6 +237,9 @@ void verify(IRNode *root);
 
 // Mesh Related.
 void gather_meshfor_relation_types(IRNode *node);
+std::pair</* owned= */ std::unordered_set<mesh::MeshElementType>,
+          /* total= */ std::unordered_set<mesh::MeshElementType>>
+gather_mesh_thread_local(OffloadedStmt *offload);
 
 }  // namespace analysis
 }  // namespace irpass

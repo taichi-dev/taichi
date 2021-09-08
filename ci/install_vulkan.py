@@ -1,9 +1,11 @@
-
 import os
+
+
 def main():
-    with open('/etc/lsb-release','r') as f:
+    with open('/etc/lsb-release', 'r') as f:
         lines = f.readlines()
-    distrib_release = lines[1].strip() #either 'DISTRIB_RELEASE=20.04' or 'DISTRIB_RELEASE=18.04'
+    distrib_release = lines[1].strip(
+    )  #either 'DISTRIB_RELEASE=20.04' or 'DISTRIB_RELEASE=18.04'
     version = distrib_release.split('=')[1]
     print(f"Installing Vulkan for ubuntu {version}")
     if version == '20.04':
@@ -24,6 +26,7 @@ def main():
         os.system(cmd)
     else:
         raise Exception(f"unrecognized ubuntu version: {version}")
+
 
 if __name__ == "__main__":
     main()

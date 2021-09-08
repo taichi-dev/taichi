@@ -207,7 +207,7 @@ void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
     }
     ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
         (so_func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT
-                             : ExternalFuncCallStmt::ASM,
+                             : ExternalFuncCallStmt::ASSEMBLY,
         so_func, asm_source, "", "", arg_statements, output_statements));
     stmt = ctx->back_stmt();
   } else {

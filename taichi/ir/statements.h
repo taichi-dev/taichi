@@ -408,7 +408,7 @@ class AssertStmt : public Stmt {
  */
 class ExternalFuncCallStmt : public Stmt {
  public:
-  enum Type { SHARED_OBJECT = 0, ASM = 1, BITCODE = 2 };
+  enum Type { SHARED_OBJECT = 0, ASSEMBLY = 1, BITCODE = 2 };
 
   Type type;
   void *so_func;            // SHARED_OBJECT

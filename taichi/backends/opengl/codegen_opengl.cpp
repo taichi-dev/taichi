@@ -770,7 +770,7 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(ExternalFuncCallStmt *stmt) override {
-    TI_ASSERT(stmt->type == ExternalFuncCallStmt::ASM);
+    TI_ASSERT(stmt->type == ExternalFuncCallStmt::ASSEMBLY);
     auto format = stmt->asm_source;
     std::string source;
 

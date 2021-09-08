@@ -75,7 +75,7 @@ class Struct(TaichiOperations):
         if isinstance(self.entries[key], SNodeHostAccess):
             self.entries[key].accessor.setter(value, *self.entries[key].key)
         else:
-            if in_python_scope():
+            if in_python_scope() and (isinstance(self.entries[key], Struct) or isinstance(self.entries[key], Matrix)):
                 self.entries[key].set_entries(value)
             else:
                 self.entries[key] = value

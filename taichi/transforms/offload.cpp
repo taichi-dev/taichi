@@ -557,7 +557,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     if (local_to_global_offset.find(op) == local_to_global_offset.end()) {
       TI_ASSERT_INFO(op->is<ConstStmt>() || op->is<PtrOffsetStmt>() ||
                          op->is<GlobalTemporaryStmt>() ||
-                         op->is<ArgLoadStmt>() || op->is<ExternalPtrStmt>(),
+                         op->is<ExternalPtrStmt>() || (op->is<ArgLoadStmt>() && op->as<ArgLoadStmt>()->is_ptr),
                      "{} is not allowed here.", op->type());
       // For cases like ConstStmt
       auto copy = op->clone();

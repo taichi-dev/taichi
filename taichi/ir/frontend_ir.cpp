@@ -192,7 +192,9 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
 }
 
 void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
-  TI_ASSERT((int)(func != nullptr) + (int)(!source.empty()) + (int)(!filename.empty()) == 1)
+  TI_ASSERT((int)(func != nullptr) + (int)(!source.empty()) +
+                (int)(!filename.empty()) ==
+            1)
   std::vector<Stmt *> arg_statements, output_statements;
   if (func != nullptr || !source.empty()) {
     for (auto &s : args) {
@@ -204,19 +206,20 @@ void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
       output_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
     }
     ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
-        (func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT : ExternalFuncCallStmt::ASM,
+        (func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT
+                          : ExternalFuncCallStmt::ASM,
         func, source, "", "", arg_statements, output_statements));
     stmt = ctx->back_stmt();
-  }
-  else if (!filename.empty()) {
+  } else if (!filename.empty()) {
     for (auto &s : args) {
-      TI_ASSERT_INFO(s.is<IdExpression>(),
-                     "external func call via bitcode must pass in local variables.")
+      TI_ASSERT_INFO(
+          s.is<IdExpression>(),
+          "external func call via bitcode must pass in local variables.")
       arg_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
     }
     ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
-        ExternalFuncCallStmt::BITCODE,
-        nullptr, "", filename, funcname, arg_statements, output_statements));
+        ExternalFuncCallStmt::BITCODE, nullptr, "", filename, funcname,
+        arg_statements, output_statements));
     stmt = ctx->back_stmt();
   }
 }

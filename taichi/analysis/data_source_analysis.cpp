@@ -67,7 +67,8 @@ std::vector<Stmt *> get_store_destination(Stmt *store_stmt) {
   } else if (auto atomic = store_stmt->cast<AtomicOpStmt>()) {
     return std::vector<Stmt *>(1, atomic->dest);
   } else if (auto external_func = store_stmt->cast<ExternalFuncCallStmt>()) {
-    if (store_stmt->cast<ExternalFuncCallStmt>()->type == ExternalFuncCallStmt::BITCODE) {
+    if (store_stmt->cast<ExternalFuncCallStmt>()->type ==
+        ExternalFuncCallStmt::BITCODE) {
       return external_func->arg_stmts;
     } else {
       return external_func->output_stmts;

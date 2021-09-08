@@ -408,19 +408,15 @@ class AssertStmt : public Stmt {
  */
 class ExternalFuncCallStmt : public Stmt {
  public:
-  enum Type {
-    SHARED_OBJECT = 0,
-    ASM = 1,
-    BITCODE = 2
-  };
+  enum Type { SHARED_OBJECT = 0, ASM = 1, BITCODE = 2 };
 
   Type type;
-  void *func; // SHARED_OBJECT
-  std::string source; // ASM
-  std::string filename; // BITCODE
-  std::string funcname; // BITCODE
+  void *func;            // SHARED_OBJECT
+  std::string source;    // ASM
+  std::string filename;  // BITCODE
+  std::string funcname;  // BITCODE
   std::vector<Stmt *> arg_stmts;
-  std::vector<Stmt *> output_stmts; // BITCODE doesn't use this
+  std::vector<Stmt *> output_stmts;  // BITCODE doesn't use this
 
   ExternalFuncCallStmt(Type type,
                        void *func,
@@ -439,7 +435,13 @@ class ExternalFuncCallStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(type, func, source, filename, funcname, arg_stmts, output_stmts);
+  TI_STMT_DEF_FIELDS(type,
+                     func,
+                     source,
+                     filename,
+                     funcname,
+                     arg_stmts,
+                     output_stmts);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

@@ -376,7 +376,12 @@ class ExternalFuncCallExpression : public Expression {
                              const std::string &funcname,
                              const std::vector<Expr> &args,
                              const std::vector<Expr> &outputs)
-      : func(func), source(source), filename(filename), funcname(funcname), args(args), outputs(outputs) {
+      : func(func),
+        source(source),
+        filename(filename),
+        funcname(funcname),
+        args(args),
+        outputs(outputs) {
   }
 
   void serialize(std::ostream &ss) override {

@@ -134,11 +134,9 @@ class IRPrinter : public IRVisitor {
     std::string extras;
     if (stmt->func != nullptr) {
       extras += fmt::format("so {:x} ", (uint64)stmt->func);
-    }
-    else if (!stmt->source.empty()) {
+    } else if (!stmt->source.empty()) {
       extras += fmt::format("asm \"{}\" ", stmt->source);
-    }
-    else {
+    } else {
       extras += fmt::format("bc {}:{} ", stmt->filename, stmt->funcname);
     }
     extras += "inputs=";

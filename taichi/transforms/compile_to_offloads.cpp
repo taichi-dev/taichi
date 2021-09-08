@@ -187,16 +187,18 @@ void offload_to_executable(IRNode *ir,
     print("Make thread local");
   }
 
+  // TODO(changyu): if (is_extension_supported(config.arch, Extension::mesh))
   irpass::make_mesh_thread_local(ir, config, {kernel->get_name()});
   print("Make mesh thread local");
 
   if (make_block_local) {
     irpass::make_block_local(ir, config, {kernel->get_name()});
     print("Make block local");
-
-    irpass::make_mesh_attribute_local(ir, config, {kernel->get_name()});
-    print("Make mesh attribute local");
   }
+
+  // TODO(changyu): if (is_extension_supported(config.arch, Extension::mesh))
+  irpass::demote_mesh_statements(ir, config, {kernel->get_name()});
+  print("Demote mesh statements");
 
   irpass::demote_atomics(ir, config);
   print("Atomics demoted II");

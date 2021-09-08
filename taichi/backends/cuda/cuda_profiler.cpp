@@ -50,8 +50,8 @@ bool KernelProfilerCUDA::init_profiler(KernelProfilingMode &profiling_mode) {
     return true;
   }
 #else
-  // TODO::CUPTI_PROFILER
-  TI_INFO("TODO::CUPTI_PROFILER");
+  // TODO : CUPTI_PROFILER
+  TI_INFO("TODO : CUPTI_PROFILER");
 #endif
 }
 

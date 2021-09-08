@@ -69,13 +69,28 @@ void CUPTIToolkit::clear_traced_records() {
 }
 
 #if defined(TI_WITH_TOOLKIT_CUDA)
-// TODO::CUPTI_PROFILER
+// TODO : CUPTI_PROFILER
 #else
-bool CUPTIToolkit::init_cupti(){};  // TODO TI_WARN
-bool CUPTIToolkit::begin_profiling(){};
-bool CUPTIToolkit::end_profiling(){};
-bool CUPTIToolkit::deinit_cupti(){};
-bool CUPTIToolkit::calculate_metric_values(){};
+bool CUPTIToolkit::init_cupti(){
+  TI_NOT_IMPLEMENTED;
+  return false;
+}
+bool CUPTIToolkit::begin_profiling(){
+  TI_NOT_IMPLEMENTED;
+  return false;
+}
+bool CUPTIToolkit::end_profiling(){
+  TI_NOT_IMPLEMENTED;
+  return false;
+}
+bool CUPTIToolkit::deinit_cupti(){
+  TI_NOT_IMPLEMENTED;
+  return false;
+}
+bool CUPTIToolkit::calculate_metric_values(){
+  TI_NOT_IMPLEMENTED;
+  return false;
+}
 #endif
 
 TLANG_NAMESPACE_END

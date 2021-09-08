@@ -205,8 +205,7 @@ void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
     }
     ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
         (func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT : ExternalFuncCallStmt::ASM,
-        "", "",
-        func, source, arg_statements, output_statements));
+        func, source, "", "", arg_statements, output_statements));
     stmt = ctx->back_stmt();
   }
   else if (!filename.empty()) {
@@ -217,8 +216,7 @@ void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
     }
     ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
         ExternalFuncCallStmt::BITCODE,
-        filename, funcname,
-        nullptr, "", arg_statements, output_statements));
+        nullptr, "", filename, funcname, arg_statements, output_statements));
     stmt = ctx->back_stmt();
   }
 }

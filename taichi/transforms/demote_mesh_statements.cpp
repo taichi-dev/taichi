@@ -2,13 +2,13 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
-#include "taichi/transforms/make_mesh_attribute_local.h"
+#include "taichi/transforms/demote_mesh_statements.h"
 #include "taichi/ir/visitors.h"
 
 namespace taichi {
 namespace lang {
 
-const PassID MakeMeshAttributeLocal::id = "MakeMeshAttributeLocal";
+const PassID DemoteMeshStatements::id = "DemoteMeshStatements";
 
 namespace irpass {
 
@@ -168,9 +168,9 @@ class ReplaceIndexConversion : public BasicStmtVisitor {
   OffloadedStmt *offload;
 };
 
-void make_mesh_attribute_local_offload(OffloadedStmt *offload,
-                                       const CompileConfig &config,
-                                       const std::string &kernel_name) {
+void demote_mesh_statements_offload(OffloadedStmt *offload,
+                                    const CompileConfig &config,
+                                    const std::string &kernel_name) {
   if (offload->task_type != OffloadedStmt::TaskType::mesh_for) {
     return;
   }
@@ -180,19 +180,19 @@ void make_mesh_attribute_local_offload(OffloadedStmt *offload,
 }
 
 // This pass should happen after offloading but before lower_access
-void make_mesh_attribute_local(IRNode *root,
-                               const CompileConfig &config,
-                               const MakeBlockLocalPass::Args &args) {
+void demote_mesh_statements(IRNode *root,
+                            const CompileConfig &config,
+                            const DemoteMeshStatements::Args &args) {
   TI_AUTO_PROF;
 
   if (auto root_block = root->cast<Block>()) {
     for (auto &offload : root_block->statements) {
-      make_mesh_attribute_local_offload(offload->cast<OffloadedStmt>(), config,
-                                        args.kernel_name);
+      demote_mesh_statements_offload(offload->cast<OffloadedStmt>(), config,
+                                     args.kernel_name);
     }
   } else {
-    make_mesh_attribute_local_offload(root->as<OffloadedStmt>(), config,
-                                      args.kernel_name);
+    demote_mesh_statements_offload(root->as<OffloadedStmt>(), config,
+                                   args.kernel_name);
   }
   type_check(root, config);
 }

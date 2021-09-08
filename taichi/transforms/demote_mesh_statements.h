@@ -5,7 +5,7 @@
 namespace taichi {
 namespace lang {
 
-class MakeMeshAttributeLocal : public Pass {
+class DemoteMeshStatements : public Pass {
  public:
   static const PassID id;
 

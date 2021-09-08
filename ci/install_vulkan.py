@@ -10,7 +10,7 @@ def main():
         wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | apt-key add -
         wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.182-focal.list https://packages.lunarg.com/vulkan/1.2.182/lunarg-vulkan-1.2.182-focal.list
         apt-get update
-        apt-get install vulkan-sdk -y
+        apt-get install -y vulkan-sdk
         '''
         os.system(cmd)
     elif version == '18.04':
@@ -18,7 +18,7 @@ def main():
         wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | apt-key add -
         wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.182-bionic.list https://packages.lunarg.com/vulkan/1.2.182/lunarg-vulkan-1.2.182-bionic.list
         apt-get update
-        apt-get install vulkan-sdk -y
+        apt-get install -y vulkan-sdk
         '''
     else:
         raise Exception(f"unrecognized ubuntu version: {version}")

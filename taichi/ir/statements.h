@@ -408,43 +408,42 @@ class AssertStmt : public Stmt {
  */
 class ExternalFuncCallStmt : public Stmt {
  public:
+  enum Type {
+    SHARED_OBJECT = 0,
+    ASM = 1,
+    BITCODE = 2
+  };
+
+  Type type;
+
+  // BITCODE
+  std::string filename;
+  std::string funcname;
+
+  // SHARED_OBJECT or ASM
   void *func;
   std::string source;
-  std::vector<Stmt *> arg_stmts;
+  std::vector<Stmt *> arg_stmts; // Reused for BITCODE
   std::vector<Stmt *> output_stmts;
 
-  ExternalFuncCallStmt(void *func,
-                       const std::string &source,
+  ExternalFuncCallStmt(Type type,
+                       std::string filename,
+                       std::string funcname,
+                       void *func,
+                       std::string source,
                        const std::vector<Stmt *> &arg_stmts,
                        const std::vector<Stmt *> &output_stmts)
-      : func(func),
+      : type(type),
+        filename(filename),
+        funcname(funcname),
+        func(func),
         source(source),
         arg_stmts(arg_stmts),
         output_stmts(output_stmts) {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(func, arg_stmts, output_stmts);
-  TI_DEFINE_ACCEPT_AND_CLONE
-};
-
-/**
- * Call an external (C++) function.
- */
-class CallCppStmt : public Stmt {
- public:
-  std::string filename;
-  std::string funcname;
-  std::vector<Stmt *> arg_stmts;
-
-  CallCppStmt(const std::string &filename,
-              const std::string &funcname,
-              const std::vector<Stmt *> &arg_stmts)
-      : filename(filename), funcname(funcname), arg_stmts(arg_stmts) {
-    TI_STMT_REG_FIELDS;
-  }
-
-  TI_STMT_DEF_FIELDS(filename, funcname, arg_stmts);
+  TI_STMT_DEF_FIELDS(type, filename, funcname, func, source, arg_stmts, output_stmts);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

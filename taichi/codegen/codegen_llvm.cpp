@@ -2020,7 +2020,8 @@ void CodeGenLLVM::visit(LoopUniqueStmt *stmt) {
   llvm_val[stmt] = llvm_val[stmt->input];
 }
 
-void CodeGenLLVM::visit(CallCppStmt *stmt) {
+void CodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
+  TI_ASSERT(stmt->type == ExternalFuncCallStmt::BITCODE);
   std::vector<llvm::Value *> arg_values;
   for (auto s : stmt->arg_stmts)
     arg_values.push_back(llvm_val[s]);

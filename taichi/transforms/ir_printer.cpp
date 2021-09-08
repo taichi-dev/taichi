@@ -145,16 +145,6 @@ class IRPrinter : public IRVisitor {
           extras);
   }
 
-  void visit(CallCppStmt *stmt) override {
-    std::string extras = "args=";
-    for (auto &arg : stmt->arg_stmts) {
-      extras += ", ";
-      extras += arg->name();
-    }
-    print("{} : call_cpp {}:{}, {}", stmt->name(), stmt->filename,
-          stmt->funcname, extras);
-  }
-
   void visit(FrontendSNodeOpStmt *stmt) override {
     std::string extras = "[";
     for (int i = 0; i < (int)stmt->indices.size(); i++) {

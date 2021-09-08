@@ -365,14 +365,18 @@ class ExternalFuncCallExpression : public Expression {
  public:
   void *func;
   std::string source;
+  std::string filename;
+  std::string funcname;
   std::vector<Expr> args;
   std::vector<Expr> outputs;
 
   ExternalFuncCallExpression(void *func,
-                             std::string const &source,
+                             const std::string &source,
+                             const std::string &filename,
+                             const std::string &funcname,
                              const std::vector<Expr> &args,
                              const std::vector<Expr> &outputs)
-      : func(func), source(source), args(args), outputs(outputs) {
+      : func(func), source(source), filename(filename), funcname(funcname), args(args), outputs(outputs) {
   }
 
   void serialize(std::ostream &ss) override {
@@ -395,31 +399,6 @@ class ExternalFuncCallExpression : public Expression {
     }
 
     ss << ')';
-  }
-
-  void flatten(FlattenContext *ctx) override;
-};
-
-class CallCppExpression : public Expression {
- public:
-  std::string filename;
-  std::string funcname;
-  std::vector<Expr> args;
-
-  CallCppExpression(const std::string &filename,
-                    const std::string &funcname,
-                    const std::vector<Expr> &args)
-      : filename(filename), funcname(funcname), args(args) {
-  }
-
-  std::string serialize() override {
-    std::string io = "args=";
-
-    for (auto &s : args) {
-      io += s.serialize();
-    }
-
-    return fmt::format("call_cpp {}:{} ({})", filename, funcname, io);
   }
 
   void flatten(FlattenContext *ctx) override;

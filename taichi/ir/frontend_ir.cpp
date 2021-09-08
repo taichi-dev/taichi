@@ -192,30 +192,35 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
 }
 
 void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
+  TI_ASSERT((int)(func != nullptr) + (int)(!source.empty()) + (int)(!filename.empty()) == 1)
   std::vector<Stmt *> arg_statements, output_statements;
-  for (auto &s : args) {
-    s.set(load_if_ptr(s));
-    s->flatten(ctx);
-    arg_statements.push_back(s->stmt);
+  if (func != nullptr || !source.empty()) {
+    for (auto &s : args) {
+      s.set(load_if_ptr(s));
+      s->flatten(ctx);
+      arg_statements.push_back(s->stmt);
+    }
+    for (auto &s : outputs) {
+      output_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
+    }
+    ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
+        (func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT : ExternalFuncCallStmt::ASM,
+        "", "",
+        func, source, arg_statements, output_statements));
+    stmt = ctx->back_stmt();
   }
-  for (auto &s : outputs) {
-    output_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
+  else if (!filename.empty()) {
+    for (auto &s : args) {
+      TI_ASSERT_INFO(s.is<IdExpression>(),
+                     "external func call via bitcode must pass in local variables.")
+      arg_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
+    }
+    ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
+        ExternalFuncCallStmt::BITCODE,
+        filename, funcname,
+        nullptr, "", arg_statements, output_statements));
+    stmt = ctx->back_stmt();
   }
-  ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
-      func, source, arg_statements, output_statements));
-  stmt = ctx->back_stmt();
-}
-
-void CallCppExpression::flatten(FlattenContext *ctx) {
-  std::vector<Stmt *> arg_statements;
-  for (auto &s : args) {
-    TI_ASSERT_INFO(s.is<IdExpression>(),
-                   "call_cpp must pass in local variables.")
-    arg_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
-  }
-  ctx->push_back(
-      std::make_unique<CallCppStmt>(filename, funcname, arg_statements));
-  stmt = ctx->back_stmt();
 }
 
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {

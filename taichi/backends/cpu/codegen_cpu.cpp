@@ -93,6 +93,11 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
   }
 
   void visit(ExternalFuncCallStmt *stmt) override {
+    if (stmt->type == ExternalFuncCallStmt::BITCODE) {
+      CodeGenLLVM::visit(stmt);
+      return;
+    }
+    TI_ASSERT(stmt->type == ExternalFuncCallStmt::SHARED_OBJECT);
     std::vector<llvm::Type *> arg_types;
     std::vector<llvm::Value *> arg_values;
 

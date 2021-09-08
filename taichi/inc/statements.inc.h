@@ -46,7 +46,6 @@ PER_STATEMENT(RangeAssumptionStmt)
 PER_STATEMENT(LoopUniqueStmt)
 PER_STATEMENT(AssertStmt)
 PER_STATEMENT(ExternalFuncCallStmt)
-PER_STATEMENT(CallCppStmt)
 PER_STATEMENT(ExternalTensorShapeAlongAxisStmt)
 
 // Locals with reverse-mode autodiff

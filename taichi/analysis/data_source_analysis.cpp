@@ -35,8 +35,6 @@ std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
     return std::vector<Stmt *>(1, stack_pop->stack);
   } else if (auto external_func = load_stmt->cast<ExternalFuncCallStmt>()) {
     return external_func->arg_stmts;
-  } else if (auto cpp_func = load_stmt->cast<CallCppStmt>()) {
-    return cpp_func->arg_stmts;
   } else {
     return std::vector<Stmt *>();
   }
@@ -69,9 +67,11 @@ std::vector<Stmt *> get_store_destination(Stmt *store_stmt) {
   } else if (auto atomic = store_stmt->cast<AtomicOpStmt>()) {
     return std::vector<Stmt *>(1, atomic->dest);
   } else if (auto external_func = store_stmt->cast<ExternalFuncCallStmt>()) {
-    return external_func->output_stmts;
-  } else if (auto cpp_func = store_stmt->cast<CallCppStmt>()) {
-    return cpp_func->arg_stmts;
+    if (store_stmt->cast<ExternalFuncCallStmt>()->type == ExternalFuncCallStmt::BITCODE) {
+      return external_func->arg_stmts;
+    } else {
+      return external_func->output_stmts;
+    }
   } else {
     return std::vector<Stmt *>();
   }

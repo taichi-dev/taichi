@@ -24,7 +24,7 @@ def call_ext():
     b = 0
     a = ti.Vector([[0, 0], [0, 0]], ti.i32)
     print(a, b)
-    ti.call_cpp("a.bc", "foo", b, a)
+    ti.bitcode_func_call("a.bc", "foo", b, a)
     print(a, b)
 
 

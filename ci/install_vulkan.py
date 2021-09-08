@@ -21,6 +21,7 @@ def main():
         apt-get update
         apt-get install -y vulkan-sdk
         '''
+        os.system(cmd)
     else:
         raise Exception(f"unrecognized ubuntu version: {version}")
 

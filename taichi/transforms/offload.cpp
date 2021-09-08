@@ -333,7 +333,7 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
       return;
     auto top_level_ptr = SquashPtrOffset::run(stmt);
     // We don't support storing a pointer for now.
-    if (top_level_ptr->is<GlobalPtrStmt>())
+    if (top_level_ptr->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() || (stmt->is<ArgLoadStmt>() && stmt->as<ArgLoadStmt>()->is_ptr))
       return;
     // Not yet allocated
     if (local_to_global.find(top_level_ptr) == local_to_global.end()) {
@@ -555,7 +555,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
 
     if (local_to_global_offset.find(op) == local_to_global_offset.end()) {
       TI_ASSERT_INFO(op->is<ConstStmt>() || op->is<PtrOffsetStmt>() ||
-                         op->is<GlobalTemporaryStmt>(),
+                         op->is<GlobalTemporaryStmt>() || op->is<ArgLoadStmt>() || op->is<ExternalPtrStmt>(),
                      "{} is not allowed here.", op->type());
       // For cases like ConstStmt
       auto copy = op->clone();

@@ -2028,10 +2028,10 @@ void CodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
 
   // Extract function from external module
   std::unique_ptr<llvm::Module> cpp_module =
-      module_from_bitcode_file(fmt::format("{}", stmt->filename), llvm_context);
-  auto *f_old = cpp_module->getFunction(stmt->funcname);
-  TI_ASSERT_INFO(f_old != nullptr, "{} is not founded in {}.", stmt->funcname,
-                 stmt->filename);
+      module_from_bitcode_file(fmt::format("{}", stmt->bc_filename), llvm_context);
+  auto *f_old = cpp_module->getFunction(stmt->bc_funcname);
+  TI_ASSERT_INFO(f_old != nullptr, "{} is not founded in {}.", stmt->bc_funcname,
+                 stmt->bc_filename);
 
   // Convert pointer type from a[n * m] to a[n][m]
   for (int i = 0; i < f_old->getFunctionType()->getNumParams(); ++i) {
@@ -2048,7 +2048,7 @@ void CodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
   // Link external module to the core module and retrieve function again
   auto link_error = llvm::Linker::linkModules(*module, std::move(cpp_module));
   TI_ASSERT(!link_error);
-  auto *f_new = module->getFunction(stmt->funcname);
+  auto *f_new = module->getFunction(stmt->bc_funcname);
   builder->CreateCall(f_new, arg_values);
 }
 

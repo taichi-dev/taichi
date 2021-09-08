@@ -192,11 +192,11 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
 }
 
 void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
-  TI_ASSERT((int)(func != nullptr) + (int)(!source.empty()) +
-                (int)(!filename.empty()) ==
+  TI_ASSERT((int)(so_func != nullptr) + (int)(!asm_source.empty()) +
+                (int)(!bc_filename.empty()) ==
             1)
   std::vector<Stmt *> arg_statements, output_statements;
-  if (func != nullptr || !source.empty()) {
+  if (so_func != nullptr || !asm_source.empty()) {
     for (auto &s : args) {
       s.set(load_if_ptr(s));
       s->flatten(ctx);
@@ -206,11 +206,11 @@ void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
       output_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
     }
     ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
-        (func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT
-                          : ExternalFuncCallStmt::ASM,
-        func, source, "", "", arg_statements, output_statements));
+        (so_func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT
+                             : ExternalFuncCallStmt::ASM,
+        so_func, asm_source, "", "", arg_statements, output_statements));
     stmt = ctx->back_stmt();
-  } else if (!filename.empty()) {
+  } else {
     for (auto &s : args) {
       TI_ASSERT_INFO(
           s.is<IdExpression>(),
@@ -218,7 +218,7 @@ void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
       arg_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
     }
     ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
-        ExternalFuncCallStmt::BITCODE, nullptr, "", filename, funcname,
+        ExternalFuncCallStmt::BITCODE, nullptr, "", bc_filename, bc_funcname,
         arg_statements, output_statements));
     stmt = ctx->back_stmt();
   }

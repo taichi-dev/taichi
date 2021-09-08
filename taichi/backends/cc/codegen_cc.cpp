@@ -223,7 +223,7 @@ class CCTransformer : public IRVisitor {
 
   void visit(ExternalFuncCallStmt *stmt) override {
     TI_ASSERT(stmt->type == ExternalFuncCallStmt::ASM);
-    auto format = stmt->source;
+    auto format = stmt->asm_source;
     std::string source;
 
     for (int i = 0; i < format.size(); i++) {

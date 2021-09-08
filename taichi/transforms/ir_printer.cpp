@@ -132,12 +132,12 @@ class IRPrinter : public IRVisitor {
 
   void visit(ExternalFuncCallStmt *stmt) override {
     std::string extras;
-    if (stmt->func != nullptr) {
-      extras += fmt::format("so {:x} ", (uint64)stmt->func);
-    } else if (!stmt->source.empty()) {
-      extras += fmt::format("asm \"{}\" ", stmt->source);
+    if (stmt->so_func != nullptr) {
+      extras += fmt::format("so {:x} ", (uint64)stmt->so_func);
+    } else if (!stmt->asm_source.empty()) {
+      extras += fmt::format("asm \"{}\" ", stmt->asm_source);
     } else {
-      extras += fmt::format("bc {}:{} ", stmt->filename, stmt->funcname);
+      extras += fmt::format("bc {}:{} ", stmt->bc_filename, stmt->bc_funcname);
     }
     extras += "inputs=";
     for (auto &arg : stmt->arg_stmts) {

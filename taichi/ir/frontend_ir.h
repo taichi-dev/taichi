@@ -363,23 +363,23 @@ class InternalFuncCallExpression : public Expression {
 
 class ExternalFuncCallExpression : public Expression {
  public:
-  void *func;
-  std::string source;
-  std::string filename;
-  std::string funcname;
+  void *so_func;
+  std::string asm_source;
+  std::string bc_filename;
+  std::string bc_funcname;
   std::vector<Expr> args;
   std::vector<Expr> outputs;
 
-  ExternalFuncCallExpression(void *func,
-                             const std::string &source,
-                             const std::string &filename,
-                             const std::string &funcname,
+  ExternalFuncCallExpression(void *so_func,
+                             const std::string &asm_source,
+                             const std::string &bc_filename,
+                             const std::string &bc_funcname,
                              const std::vector<Expr> &args,
                              const std::vector<Expr> &outputs)
-      : func(func),
-        source(source),
-        filename(filename),
-        funcname(funcname),
+      : so_func(so_func),
+        asm_source(asm_source),
+        bc_filename(bc_filename),
+        bc_funcname(bc_funcname),
         args(args),
         outputs(outputs) {
   }

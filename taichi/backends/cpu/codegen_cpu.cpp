@@ -119,7 +119,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
         llvm::Type::getVoidTy(*llvm_context), arg_types, false);
     auto func_ptr_type = llvm::PointerType::get(func_type, 0);
 
-    auto addr = tlctx->get_constant((std::size_t)stmt->func);
+    auto addr = tlctx->get_constant((std::size_t)stmt->so_func);
     auto func = builder->CreateIntToPtr(addr, func_ptr_type);
     builder->CreateCall(func, arg_values);
   }

@@ -5,6 +5,7 @@ def main():
         lines = f.readlines()
     distrib_release = lines[1].strip() #either 'DISTRIB_RELEASE=20.04' or 'DISTRIB_RELEASE=18.04'
     version = distrib_release.split('=')[1]
+    print(f"Installing Vulkan for ubuntu {version}")
     if version == '20.04':
         cmd = '''
         wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | apt-key add -

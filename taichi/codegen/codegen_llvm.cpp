@@ -2027,11 +2027,11 @@ void CodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
     arg_values.push_back(llvm_val[s]);
 
   // Extract function from external module
-  std::unique_ptr<llvm::Module> cpp_module =
-      module_from_bitcode_file(fmt::format("{}", stmt->bc_filename), llvm_context);
+  std::unique_ptr<llvm::Module> cpp_module = module_from_bitcode_file(
+      fmt::format("{}", stmt->bc_filename), llvm_context);
   auto *f_old = cpp_module->getFunction(stmt->bc_funcname);
-  TI_ASSERT_INFO(f_old != nullptr, "{} is not founded in {}.", stmt->bc_funcname,
-                 stmt->bc_filename);
+  TI_ASSERT_INFO(f_old != nullptr, "{} is not founded in {}.",
+                 stmt->bc_funcname, stmt->bc_filename);
 
   // Convert pointer type from a[n * m] to a[n][m]
   for (int i = 0; i < f_old->getFunctionType()->getNumParams(); ++i) {

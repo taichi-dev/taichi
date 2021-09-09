@@ -1,5 +1,11 @@
 #pragma once
 
+#if defined(TI_WITH_CUDA_TOOLKIT)
+
+#include <cuda.h>
+
+#else
+
 using CUexternalMemory = void *;
 using CUexternalSemaphore = void *;
 using CUsurfObject = uint64_t;
@@ -412,3 +418,5 @@ typedef struct CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st {
  * in an external graphics API
  */
 #define CUDA_ARRAY3D_COLOR_ATTACHMENT 0x20
+
+#endif

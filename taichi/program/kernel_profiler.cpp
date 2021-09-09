@@ -103,7 +103,7 @@ class DefaultProfiler : public KernelProfilerBase {
   void sync() override {
   }
 
-  void clear() override{
+  void clear() override {
     sync();
     total_time_ms = 0;
     records.clear();

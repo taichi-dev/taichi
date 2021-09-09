@@ -12,8 +12,7 @@ std::string KernelProfilerCUDA::title() const {
 }
 
 KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
-  const std::string &kernel_name) {
-  
+    const std::string &kernel_name) {
   void *start, *stop;
   CUDADriver::get_instance().event_create(&start, CU_EVENT_DEFAULT);
   CUDADriver::get_instance().event_create(&stop, CU_EVENT_DEFAULT);
@@ -68,18 +67,17 @@ void KernelProfilerCUDA::sync() {
     for (auto &item : list) {
       auto start = item.first, stop = item.second;
       float kernel_time;
-      CUDADriver::get_instance().event_elapsed_time(&kernel_time, start,
-                                                    stop);
+      CUDADriver::get_instance().event_elapsed_time(&kernel_time, start, stop);
 
       if (Timelines::get_instance().get_enabled()) {
         float time_since_base;
         CUDADriver::get_instance().event_elapsed_time(&time_since_base,
                                                       base_event_, start);
         timeline.insert_event({map_elem.first, true,
-                                base_time_ + time_since_base * 1e-3, "cuda"});
+                               base_time_ + time_since_base * 1e-3, "cuda"});
         timeline.insert_event(
             {map_elem.first, false,
-              base_time_ + (time_since_base + kernel_time) * 1e-3, "cuda"});
+             base_time_ + (time_since_base + kernel_time) * 1e-3, "cuda"});
       }
 
       auto it = std::find_if(
@@ -101,7 +99,6 @@ void KernelProfilerCUDA::sync() {
   }
   outstanding_events_.clear();
 }
-
 
 void KernelProfilerCUDA::print() {
   sync();
@@ -132,7 +129,7 @@ void KernelProfilerCUDA::print() {
       "=\n");
 }
 
-void KernelProfilerCUDA::clear(){
+void KernelProfilerCUDA::clear() {
   sync();
   total_time_ms = 0;
   records.clear();
@@ -143,23 +140,24 @@ void KernelProfilerCUDA::clear(){
 std::string KernelProfilerCUDA::title() const {
   TI_NOT_IMPLEMENTED;
 }
-KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(const std::string &kernel_name){
+KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
+    const std::string &kernel_name) {
   TI_NOT_IMPLEMENTED;
 }
 void KernelProfilerCUDA::record(KernelProfilerBase::TaskHandle &task_handle,
-            const std::string &task_name) {
+                                const std::string &task_name) {
   TI_NOT_IMPLEMENTED;
 }
 void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {
   TI_NOT_IMPLEMENTED;
 }
-void KernelProfilerCUDA::sync(){
+void KernelProfilerCUDA::sync() {
   TI_NOT_IMPLEMENTED;
 }
-void KernelProfilerCUDA::clear(){
+void KernelProfilerCUDA::clear() {
   TI_NOT_IMPLEMENTED;
 }
 
 #endif
-  
+
 TLANG_NAMESPACE_END

@@ -1,7 +1,7 @@
 # How to update the env:
 #
 # conda activate taichi-dev
-# conda env update --file conda-env.yaml --prune
+# conda env update --file conda_env.yaml --prune
 # https://stackoverflow.com/a/43873901/12003165
 
 name: taichi-dev

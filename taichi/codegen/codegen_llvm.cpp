@@ -1990,8 +1990,10 @@ void CodeGenLLVM::visit(GlobalThreadIndexStmt *stmt) {
 
 void CodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
-      stmt->loop->as<OffloadedStmt>()->task_type ==
-          OffloadedStmt::TaskType::struct_for) {
+      (stmt->loop->as<OffloadedStmt>()->task_type ==
+           OffloadedStmt::TaskType::struct_for ||
+       stmt->loop->as<OffloadedStmt>()->task_type ==
+           OffloadedStmt::TaskType::mesh_for)) {
     llvm_val[stmt] = create_call("thread_idx");
   } else {
     TI_NOT_IMPLEMENTED;

@@ -1124,8 +1124,8 @@ class OffloadedStmt : public Stmt {
   std::vector<int> index_offsets;
 
   std::unique_ptr<Block> tls_prologue;
+  std::unique_ptr<Block> mesh_prologue;  // mesh-for only block
   std::unique_ptr<Block> bls_prologue;
-  std::unique_ptr<Block> body_prologue;  // mesh-for only block
   std::unique_ptr<Block> body;
   std::unique_ptr<Block> bls_epilogue;
   std::unique_ptr<Block> tls_epilogue;
@@ -1149,7 +1149,7 @@ class OffloadedStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  void all_blocks_accept(IRVisitor *visitor, bool skip_body_prologue = false);
+  void all_blocks_accept(IRVisitor *visitor, bool skip_mesh_prologue = false);
 
   TI_STMT_DEF_FIELDS(ret_type /*inherited from Stmt*/,
                      task_type,

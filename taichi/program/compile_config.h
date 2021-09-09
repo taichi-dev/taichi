@@ -91,6 +91,16 @@ struct CompileConfig {
   bool quant_opt_store_fusion{true};
   bool quant_opt_atomic_demotion{true};
 
+  // Mesh related.
+  // MeshTaichi options
+  bool make_mesh_index_mapping_local{true};
+  bool mesh_localize_from_end_mapping{false};
+
+  // helpers
+  bool is_cuda_no_unified_memory() {
+    return arch == Arch::cuda && !use_unified_memory;
+  }
+
   CompileConfig();
 };
 

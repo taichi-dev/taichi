@@ -13,6 +13,7 @@
 #include "taichi/transforms/inlining.h"
 #include "taichi/transforms/lower_access.h"
 #include "taichi/transforms/make_block_local.h"
+#include "taichi/transforms/make_mesh_index_mapping_local.h"
 #include "taichi/transforms/demote_mesh_statements.h"
 #include "taichi/transforms/simplify.h"
 #include "taichi/common/trait.h"
@@ -68,6 +69,9 @@ void make_block_local(IRNode *root,
 void make_mesh_thread_local(IRNode *root,
                             const CompileConfig &config,
                             const MakeBlockLocalPass::Args &args);
+void make_mesh_index_mapping_local(IRNode *root,
+                                   const CompileConfig &config,
+                                   const MakeMeshIndexMappingLocal::Args &args);
 void demote_mesh_statements(IRNode *root,
                             const CompileConfig &config,
                             const DemoteMeshStatements::Args &args);

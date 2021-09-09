@@ -379,6 +379,19 @@ class VkRuntime ::Impl {
     compiled_snode_structs_.push_back(compiled_structs);
   }
 
+  void destroy_snode_tree(SNodeTree *snode_tree){
+    int root_id = -1;
+    for(int i = 0;i<compiled_snode_structs_.size();++i){
+      if(compiled_snode_structs_[i].root == snode_tree->root()){
+        root_id = i;
+      }
+    }
+    if(root_id==-1){
+      TI_ERROR("the tree to be destroyed cannot be found");
+    }
+    root_buffers_[root_id].reset();
+  }
+
   const std::vector<CompiledSNodeStructs>& get_compiled_structs() const{
     return compiled_snode_structs_;
   }
@@ -521,6 +534,10 @@ class VkRuntime::Impl {
   const std::vector<CompiledSNodeStructs>& get_compiled_structs() const{
     TI_ERROR("Vulkan disabled");
   }
+
+  void destroy_snode_tree(SNodeTree *snode_tree){
+    TI_ERROR("Vulkan disabled");
+  }
 };
 
 #endif  // TI_WITH_VULKAN
@@ -551,6 +568,10 @@ void VkRuntime::materialize_snode_tree(SNodeTree *tree){
 
 const std::vector<CompiledSNodeStructs>&  VkRuntime::get_compiled_structs() const{
   return impl_->get_compiled_structs();
+}
+
+void VkRuntime::destroy_snode_tree(SNodeTree *snode_tree){
+  return impl_->destroy_snode_tree(snode_tree);
 }
 
 

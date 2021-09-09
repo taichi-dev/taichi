@@ -44,6 +44,8 @@ class VkRuntime {
 
   void materialize_snode_tree(SNodeTree *tree);
 
+  void destroy_snode_tree(SNodeTree *snode_tree);
+
   void synchronize();
 
   Device *get_ti_device() const;

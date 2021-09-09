@@ -21,7 +21,7 @@ class VulkanProgramImpl : public ProgramImpl {
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
       uint64 *result_buffer) override {
-    return 0;  // TODO: support dynamic snode alloc in vulkan
+    return 0;  // TODO: support sparse in vulkan
   }
 
   void materialize_runtime(MemoryPool *memory_pool,
@@ -44,7 +44,7 @@ class VulkanProgramImpl : public ProgramImpl {
   }
 
   virtual void destroy_snode_tree(SNodeTree *snode_tree) override {
-    TI_NOT_IMPLEMENTED
+    vulkan_runtime_->destroy_snode_tree(snode_tree);
   }
 
   ~VulkanProgramImpl() {

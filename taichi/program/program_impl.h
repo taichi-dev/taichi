@@ -40,6 +40,8 @@ class ProgramImpl {
       SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
       uint64 *result_buffer_ptr) = 0;
 
+  virtual void destroy_snode_tree(SNodeTree *snode_tree) = 0;
+
   virtual std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
       uint64 *result_buffer) = 0;

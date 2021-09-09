@@ -43,6 +43,10 @@ class VulkanProgramImpl : public ProgramImpl {
     return nullptr;
   }
 
+  virtual void destroy_snode_tree(SNodeTree *snode_tree) override {
+    TI_NOT_IMPLEMENTED
+  }
+
   ~VulkanProgramImpl() {
   }
 

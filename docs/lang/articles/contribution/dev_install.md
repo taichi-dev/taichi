@@ -113,7 +113,7 @@ If you're working on Windows, please also set the environment variable `VULKAN_S
 
 When building Taichi, if Vulkan is detected, `TI_WITH_VULKAN` will automatically be set to `ON`.
 You can also explicitly disable Vulkan by manually setting `TI_WITH_VULKAN` to `OFF`,
-or by adding environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=OFF`.
+or by adding an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=OFF`.
 
 ### Setting up Taichi for development
 

@@ -96,8 +96,9 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  // TODO(changyu): if (is_extension_supported(config.arch, Extension::mesh))
-  irpass::analysis::gather_meshfor_relation_types(ir);
+  if (is_extension_supported(config.arch, Extension::mesh)) {
+    irpass::analysis::gather_meshfor_relation_types(ir);
+  }
 
   if (grad) {
     // Remove local atomics here so that we don't have to handle their gradients
@@ -187,18 +188,20 @@ void offload_to_executable(IRNode *ir,
     print("Make thread local");
   }
 
-  // TODO(changyu): if (is_extension_supported(config.arch, Extension::mesh))
-  irpass::make_mesh_thread_local(ir, config, {kernel->get_name()});
-  print("Make mesh thread local");
+  if (is_extension_supported(config.arch, Extension::mesh)) {
+    irpass::make_mesh_thread_local(ir, config, {kernel->get_name()});
+    print("Make mesh thread local");
+  }
 
   if (make_block_local) {
     irpass::make_block_local(ir, config, {kernel->get_name()});
     print("Make block local");
   }
 
-  // TODO(changyu): if (is_extension_supported(config.arch, Extension::mesh))
-  irpass::demote_mesh_statements(ir, config, {kernel->get_name()});
-  print("Demote mesh statements");
+  if (is_extension_supported(config.arch, Extension::mesh)) {
+    irpass::demote_mesh_statements(ir, config, {kernel->get_name()});
+    print("Demote mesh statements");
+  }
 
   irpass::demote_atomics(ir, config);
   print("Atomics demoted II");

@@ -252,6 +252,10 @@ class MeshInstance:
 # Define the Mesh Type, stores the field type info
 class MeshType:
     def __init__(self, topology):
+        if not ti.is_extension_supported(ti.cfg.arch, ti.extension.mesh):
+            raise Exception('Backend ' + str(ti.cfg.arch) +
+                            ' doesn\'t support MeshTaichi extension')
+
         self.topology = topology
         self.verts = MeshElement(MeshElementType.Vertex)
         self.edges = MeshElement(MeshElementType.Edge)

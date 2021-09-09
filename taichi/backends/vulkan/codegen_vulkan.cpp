@@ -53,7 +53,7 @@ class TaskCodegen : public IRVisitor {
   struct Params {
     OffloadedStmt *task_ir;
     Device *device;
-    const CompiledSNodeStructs *compiled_structs;
+    std::vector<CompiledSNodeStructs> compiled_structs;
     const KernelContextAttributes *ctx_attribs;
     std::string ti_kernel_name;
     int task_id_in_kernel;
@@ -208,10 +208,7 @@ class TaskCodegen : public IRVisitor {
 
   void visit(GetChStmt *stmt) override {
     // TODO: GetChStmt -> GetComponentStmt ?
-    const auto &snode_descs = compiled_structs_->snode_descriptors;
     auto *out_snode = stmt->output_snode;
-    TI_ASSERT(snode_descs.at(stmt->input_snode->id).get_child(stmt->chid) ==
-              out_snode);
 
     spirv::Value input_ptr_val = ir_->query_value(stmt->input_ptr->raw_name());
     spirv::Value offset =
@@ -239,11 +236,12 @@ class TaskCodegen : public IRVisitor {
   void visit(SNodeLookupStmt *stmt) override {
     // TODO: SNodeLookupStmt -> GetSNodeCellStmt ?
     bool is_root{false};  // Eliminate first root snode access
+    int root_id{-1};
     std::string parent;
     spirv::SType snode_struct;
     if (stmt->input_snode) {
       parent = stmt->input_snode->raw_name();
-      if (stmt->snode->id == compiled_structs_->root->id) {
+      if (stmt->snode->id == compiled_structs_[0].root->id) {
         snode_struct = spirv_snode_.root_stype;
         is_root = true;
       } else {
@@ -1206,7 +1204,7 @@ class TaskCodegen : public IRVisitor {
     spirv::Value buffer_value;
     if (buffer == BuffersEnum::Root) {
       spirv_snode_ = compile_spirv_snode_structs(
-          ir_.get(), compiled_structs_);  // Support native SNode structure
+          ir_.get(), &compiled_structs_[0]);  // Support native SNode structure
       buffer_value = ir_->buffer_argument(spirv_snode_.root_stype, 0,
                                           buffer_binding_map_[buffer]);
     } else {
@@ -1272,7 +1270,7 @@ class TaskCodegen : public IRVisitor {
   spirv::CompiledSpirvSNode spirv_snode_;
 
   OffloadedStmt *const task_ir_;                        // not owned
-  const CompiledSNodeStructs *const compiled_structs_;  // not owned
+  std::vector<CompiledSNodeStructs> compiled_structs_;  // not owned
   const KernelContextAttributes *const ctx_attribs_;    // not owned
   const std::string task_name_;
   std::vector<spirv::Label> continue_label_stack_;
@@ -1308,7 +1306,7 @@ class KernelCodegen {
   struct Params {
     std::string ti_kernel_name;
     Kernel *kernel;
-    const CompiledSNodeStructs *compiled_structs;
+    std::vector<CompiledSNodeStructs> compiled_structs;
     Device *device;
   };
 
@@ -1415,8 +1413,7 @@ void lower(Kernel *kernel) {
                                 /*make_thread_local=*/false);
 }
 
-FunctionType compile_to_executable(Kernel *kernel,
-                                   const CompiledSNodeStructs *compiled_structs,
+FunctionType compile_to_executable(Kernel *kernel, 
                                    VkRuntime *runtime) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
@@ -1424,7 +1421,7 @@ FunctionType compile_to_executable(Kernel *kernel,
   KernelCodegen::Params params;
   params.ti_kernel_name = taichi_kernel_name;
   params.kernel = kernel;
-  params.compiled_structs = compiled_structs;
+  params.compiled_structs = runtime -> get_compiled_structs();
   params.device = runtime->get_ti_device();
   KernelCodegen codegen(params);
   auto res = codegen.run();

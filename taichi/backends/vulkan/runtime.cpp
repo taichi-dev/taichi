@@ -239,7 +239,7 @@ class CompiledTaichiKernel {
   struct Params {
     const TaichiKernelAttributes *ti_kernel_attribs{nullptr};
     std::vector<std::vector<uint32_t>> spirv_bins;
-    const SNodeDescriptorsMap *snode_descriptors{nullptr};
+    std::vector<CompiledSNodeStructs> compiled_structs;
 
     VulkanDevice *device{nullptr};
     DeviceAllocation *root_buffer{nullptr};
@@ -347,9 +347,7 @@ class CompiledTaichiKernel {
 class VkRuntime ::Impl {
  public:
   explicit Impl(const Params &params)
-      : snode_descriptors_(params.snode_descriptors),
-        host_result_buffer_(params.host_result_buffer) {
-    TI_ASSERT(snode_descriptors_ != nullptr);
+      :  host_result_buffer_(params.host_result_buffer) {
     TI_ASSERT(host_result_buffer_ != nullptr);
     EmbeddedVulkanDevice::Params evd_params;
     evd_params.api_version = VulkanEnvSettings::kApiVersion();
@@ -368,10 +366,20 @@ class VkRuntime ::Impl {
     root_buffer_.reset();
   }
 
+  void materialize_snode_tree(SNodeTree *tree){
+    auto *const root = tree->root();
+    CompiledSNodeStructs compiled_structs = vulkan::compile_snode_structs(*root);
+    compiled_snode_structs_.push_back(compiled_structs);
+  }
+
+  const std::vector<CompiledSNodeStructs>& get_compiled_structs() const{
+    return compiled_snode_structs_;
+  }
+
   KernelHandle register_taichi_kernel(RegisterParams reg_params) {
     CompiledTaichiKernel::Params params;
     params.ti_kernel_attribs = &(reg_params.kernel_attribs);
-    params.snode_descriptors = snode_descriptors_;
+    params.compiled_structs = get_compiled_structs();
     params.device = embedded_device_->device();
     params.root_buffer = root_buffer_.get();
     params.global_tmps_buffer = global_tmps_buffer_.get();
@@ -449,7 +457,7 @@ class VkRuntime ::Impl {
     stream->submit_synced(cmdlist.get());
   }
 
-  const SNodeDescriptorsMap *const snode_descriptors_;
+
   uint64_t *const host_result_buffer_;
 
   std::unique_ptr<EmbeddedVulkanDevice> embedded_device_{nullptr};
@@ -462,6 +470,8 @@ class VkRuntime ::Impl {
   std::unique_ptr<CommandList> current_cmdlist_{nullptr};
 
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;
+
+  std::vector<CompiledSNodeStructs> compiled_snode_structs_;
 };
 
 #else
@@ -482,6 +492,14 @@ class VkRuntime::Impl {
   }
 
   void synchronize() {
+    TI_ERROR("Vulkan disabled");
+  }
+
+  void materialize_snode_tree(SNodeTree *tree){
+    TI_ERROR("Vulkan disabled");
+  }
+
+  const std::vector<CompiledSNodeStructs>& get_compiled_structs() const{
     TI_ERROR("Vulkan disabled");
   }
 };
@@ -507,6 +525,15 @@ void VkRuntime::launch_kernel(KernelHandle handle, Context *host_ctx) {
 void VkRuntime::synchronize() {
   impl_->synchronize();
 }
+
+void VkRuntime::materialize_snode_tree(SNodeTree *tree){
+  impl_->materialize_snode_tree(tree);
+}
+
+const std::vector<CompiledSNodeStructs>&  VkRuntime::get_compiled_structs() const{
+  return impl_->get_compiled_structs();
+}
+
 
 Device *VkRuntime::get_ti_device() const {
 #ifdef TI_WITH_VULKAN

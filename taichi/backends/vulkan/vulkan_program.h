@@ -51,7 +51,6 @@ class VulkanProgramImpl : public ProgramImpl {
   }
 
  private:
-  std::optional<vulkan::CompiledSNodeStructs> vulkan_compiled_structs_;
   std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
 };
 }  // namespace lang

@@ -36,6 +36,9 @@ class MetalProgramImpl : public ProgramImpl {
     metal_kernel_mgr_->synchronize();
   }
 
+  virtual void destroy_snode_tree(SNodeTree *snode_tree) override{
+      TI_NOT_IMPLEMENTED}
+
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
     return std::make_unique<metal::AotModuleBuilderImpl>(
         &(metal_compiled_structs_.value()),

@@ -73,7 +73,7 @@ class LlvmProgramImpl : public ProgramImpl {
       SNode *snode,
       uint64 *result_buffer) override;
 
-  void destroy_snode_tree(SNodeTree *snode_tree) {
+  virtual void destroy_snode_tree(SNodeTree *snode_tree) override {
     snode_tree_buffer_manager->destroy(snode_tree);
   }
 

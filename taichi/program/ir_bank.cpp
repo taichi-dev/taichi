@@ -95,7 +95,7 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
             !task_a->tls_epilogue && !task_a->tls_epilogue &&
             !task_b->tls_prologue && !task_b->bls_prologue &&
             !task_b->tls_epilogue && !task_b->tls_epilogue &&
-            !task_a->body_prologue && !task_b->body_prologue);
+            !task_a->mesh_prologue && !task_b->mesh_prologue);
   // TODO: in certain cases this optimization can be wrong!
   // Fuse task b into task_a
   for (int j = 0; j < (int)task_b->body->size(); j++) {

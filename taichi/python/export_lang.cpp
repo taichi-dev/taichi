@@ -209,7 +209,11 @@ void export_lang(py::module &m) {
       .def_readwrite("quant_opt_atomic_demotion",
                      &CompileConfig::quant_opt_atomic_demotion)
       .def_readwrite("allow_nv_shader_extension",
-                     &CompileConfig::allow_nv_shader_extension);
+                     &CompileConfig::allow_nv_shader_extension)
+      .def_readwrite("make_mesh_index_mapping_local",
+                     &CompileConfig::make_mesh_index_mapping_local)
+      .def_readwrite("mesh_localize_from_end_mapping",
+                     &CompileConfig::mesh_localize_from_end_mapping);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -1199,6 +1203,13 @@ void export_lang(py::module &m) {
   m.def("set_num_patches", [](mesh::MeshPtr &mesh_ptr, uint32_t num_patches) {
     mesh_ptr.ptr->num_patches = num_patches;
   });
+
+  m.def("set_patch_max_element_num",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type,
+           uint32_t max_element_num) {
+          mesh_ptr.ptr->patch_max_element_num.insert(
+              std::pair(type, max_element_num));
+        });
 
   m.def("set_l2g",
         [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {

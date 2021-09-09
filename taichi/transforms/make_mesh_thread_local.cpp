@@ -32,9 +32,9 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
     offload->tls_prologue->parent_stmt = offload;
   }
 
-  if (offload->body_prologue == nullptr) {
-    offload->body_prologue = std::make_unique<Block>();
-    offload->body_prologue->parent_stmt = offload;
+  if (offload->mesh_prologue == nullptr) {
+    offload->mesh_prologue = std::make_unique<Block>();
+    offload->mesh_prologue->parent_stmt = offload;
   }
 
   auto patch_idx = offload->tls_prologue->insert(
@@ -96,19 +96,19 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
         }
 
         // Step 2:
-        // Store TLS body_prologue ptr to the offloaded statement
+        // Store TLS mesh_prologue ptr to the offloaded statement
         {
           auto offset_ptr =
-              offload->body_prologue->push_back<ThreadLocalPtrStmt>(
+              offload->mesh_prologue->push_back<ThreadLocalPtrStmt>(
                   offset_tls_offset, TypeFactory::create_vector_or_scalar_type(
                                          1, data_type, true));
           auto offset_val =
-              offload->body_prologue->push_back<GlobalLoadStmt>(offset_ptr);
-          auto num_ptr = offload->body_prologue->push_back<ThreadLocalPtrStmt>(
+              offload->mesh_prologue->push_back<GlobalLoadStmt>(offset_ptr);
+          auto num_ptr = offload->mesh_prologue->push_back<ThreadLocalPtrStmt>(
               num_tls_offset,
               TypeFactory::create_vector_or_scalar_type(1, data_type, true));
           auto num_val =
-              offload->body_prologue->push_back<GlobalLoadStmt>(num_ptr);
+              offload->mesh_prologue->push_back<GlobalLoadStmt>(num_ptr);
 
           offset_local.insert(std::pair(element_type, offset_val));
           num_local.insert(std::pair(element_type, num_val));

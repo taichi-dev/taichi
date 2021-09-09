@@ -191,6 +191,10 @@ void offload_to_executable(IRNode *ir,
   if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::make_mesh_thread_local(ir, config, {kernel->get_name()});
     print("Make mesh thread local");
+    if (config.make_mesh_index_mapping_local) {
+      irpass::make_mesh_index_mapping_local(ir, config, {kernel->get_name()});
+      print("Make mesh index mapping local");
+    }
   }
 
   if (make_block_local) {

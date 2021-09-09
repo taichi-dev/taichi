@@ -587,9 +587,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           {llvm::PointerType::get(get_runtime_type("Context"), 0),
            get_tls_buffer_type(), tlctx->get_data_type<int>()});
 
-      for (int i = 0; i < stmt->body_prologue->size(); i++) {
-        auto &s = stmt->body_prologue->statements[i];
+      for (int i = 0; i < stmt->mesh_prologue->size(); i++) {
+        auto &s = stmt->mesh_prologue->statements[i];
         s->accept(this);
+      }
+
+      if (stmt->bls_prologue) {
+        call("block_barrier");  // "__syncthreads()"
+        stmt->bls_prologue->accept(this);
+        call("block_barrier");  // "__syncthreads()"
       }
 
       auto loop_test_bb = BasicBlock::Create(*llvm_context, "loop_test", func);
@@ -625,6 +631,12 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             loop_index);
         builder->CreateBr(loop_test_bb);
         builder->SetInsertPoint(func_exit);
+      }
+
+      if (stmt->bls_epilogue) {
+        call("block_barrier");  // "__syncthreads()"
+        stmt->bls_epilogue->accept(this);
+        call("block_barrier");  // "__syncthreads()"
       }
 
       body = guard.body;

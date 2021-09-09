@@ -233,6 +233,11 @@ class MeshInstance:
     def set_num_patches(self, num_patches: int):
         _ti_core.set_num_patches(self.mesh_ptr, num_patches)
 
+    def set_patch_max_element_num(self, element_type: MeshElementType,
+                                  max_element_num: int):
+        _ti_core.set_patch_max_element_num(self.mesh_ptr, element_type,
+                                           max_element_num)
+
     def set_relation_fixed(self, rel_type: MeshRelationType,
                            value: ScalarField):
         _ti_core.set_relation_fixed(self.mesh_ptr, rel_type,

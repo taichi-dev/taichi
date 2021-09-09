@@ -582,15 +582,15 @@ class IRPrinter : public IRVisitor {
         stmt->tls_prologue->accept(this);
         print("}}");
       }
+      if (stmt->mesh_prologue) {
+        TI_ASSERT(stmt->task_type == OffloadedTaskType::mesh_for);
+        print("body prologue {{");
+        stmt->mesh_prologue->accept(this);
+        print("}}");
+      }
       if (stmt->bls_prologue) {
         print("bls prologue {{");
         stmt->bls_prologue->accept(this);
-        print("}}");
-      }
-      if (stmt->body_prologue) {
-        TI_ASSERT(stmt->task_type == OffloadedTaskType::mesh_for);
-        print("body prologue {{");
-        stmt->body_prologue->accept(this);
         print("}}");
       }
       TI_ASSERT(stmt->body);

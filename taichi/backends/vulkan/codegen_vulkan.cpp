@@ -1375,11 +1375,15 @@ class KernelCodegen {
                task_res.spirv_code.size(), optimized_spv.size());
 
       // Enable to dump SPIR-V assembly of kernels
-#if 0
-      std::string spirv_asm;
-      spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
-      TI_TRACE("SPIR-V Assembly dump:\n{}\n\n", spirv_asm);
-#endif
+#if 1
+       std::string spirv_asm;
+       spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
+      TI_WARN("SPIR-V Assembly dump:\n{}\n\n", spirv_asm);
+
+      std::ofstream fout((task_name).c_str(), std::ios::binary | std::ios::out);
+      fout.write(reinterpret_cast<const char*>(spirv_src.data()), spirv_src.size() * sizeof(uint32_t));
+      fout.close();
+ #endif
 
       kernel_attribs.tasks_attribs.push_back(std::move(task_res.task_attribs));
       res.task_spirv_source_codes.push_back(std::move(optimized_spv));

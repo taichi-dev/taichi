@@ -75,8 +75,10 @@ void CUDAContext::launch(void *func,
 
   KernelProfilerBase::TaskHandle task_handle;
   // Kernel launch
-  if (profiler)
-    task_handle = profiler->start_with_handle(task_name);
+  if (profiler){
+    profiler->record(task_handle,task_name);
+  }
+    
   auto context_guard = CUDAContext::get_instance().get_guard();
 
   // TODO: remove usages of get_current_program here.

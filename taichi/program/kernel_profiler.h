@@ -37,11 +37,7 @@ class KernelProfilerBase {
   // Needed for the CUDA backend since we need to know which task to "stop"
   using TaskHandle = void *;
 
-  void clear() {
-    sync();
-    total_time_ms = 0;
-    records.clear();
-  }
+  virtual void clear() = 0;
 
   virtual void sync() = 0;
 
@@ -62,7 +58,11 @@ class KernelProfilerBase {
 
   static void profiler_stop(KernelProfilerBase *profiler);
 
-  void print();
+  virtual void print();
+
+  virtual void record(KernelProfilerBase::TaskHandle &task_handle,
+              const std::string &task_name){
+                TI_NOT_IMPLEMENTED};
 
   void query(const std::string &kernel_name,
              int &counter,

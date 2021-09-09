@@ -2071,8 +2071,8 @@ void CodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {
     arg_values.push_back(llvm_val[s]);
   }
 
-  auto func_type = llvm::FunctionType::get(
-      llvm::Type::getVoidTy(*llvm_context), arg_types, false);
+  auto func_type = llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
+                                           arg_types, false);
   auto func_ptr_type = llvm::PointerType::get(func_type, 0);
 
   auto addr = tlctx->get_constant((std::size_t)stmt->so_func);

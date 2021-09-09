@@ -558,8 +558,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   void visit(ExternalFuncCallStmt *stmt) override {
     if (stmt->type == ExternalFuncCallStmt::BITCODE) {
       CodeGenLLVM::visit_call_bitcode(stmt);
-    }
-    else {
+    } else {
       TI_NOT_IMPLEMENTED
     }
   }

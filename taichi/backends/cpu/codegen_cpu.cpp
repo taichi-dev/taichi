@@ -95,11 +95,9 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
   void visit(ExternalFuncCallStmt *stmt) override {
     if (stmt->type == ExternalFuncCallStmt::BITCODE) {
       CodeGenLLVM::visit_call_bitcode(stmt);
-    }
-    else if (stmt->type == ExternalFuncCallStmt::SHARED_OBJECT) {
+    } else if (stmt->type == ExternalFuncCallStmt::SHARED_OBJECT) {
       CodeGenLLVM::visit_call_shared_object(stmt);
-    }
-    else {
+    } else {
       TI_NOT_IMPLEMENTED
     }
   }

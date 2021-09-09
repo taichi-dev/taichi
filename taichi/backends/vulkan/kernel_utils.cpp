@@ -13,16 +13,17 @@ namespace lang {
 namespace vulkan {
 
 // static
-std::string TaskAttributes::buffers_name(Buffers b) {
-#define REGISTER_NAME(x) \
-  { Buffers::x, #x }
-  const static std::unordered_map<Buffers, std::string> m = {
-      REGISTER_NAME(Root),
-      REGISTER_NAME(GlobalTmps),
-      REGISTER_NAME(Context),
-  };
-#undef REGISTER_NAME
-  return m.find(b)->second;
+std::string TaskAttributes::buffers_name(BufferInfo b) {
+  if(b.type == BufferType::Context){
+    return "Context";
+  }
+  if(b.type == BufferType::GlobalTmps){
+    return "GlobalTmps";
+  }
+  if(b.type == BufferType::Root){
+    return std::string("Root: ")+std::to_string(b.root_id);
+  }
+  TI_ERROR("unrecognized buffer type");
 }
 
 std::string TaskAttributes::debug_string() const {
@@ -32,7 +33,7 @@ std::string TaskAttributes::debug_string() const {
       "task_type={} buffers=[ ",
       name, advisory_total_num_threads, offloaded_task_type_name(task_type));
   for (auto b : buffer_binds) {
-    result += buffers_name(b.type) + " ";
+    result += buffers_name(b.buffer) + " ";
   }
   result += "]";  // closes |buffers|
   // TODO(k-ye): show range_for
@@ -41,7 +42,7 @@ std::string TaskAttributes::debug_string() const {
 }
 
 std::string TaskAttributes::BufferBind::debug_string() const {
-  return fmt::format("<type={} binding={}>", TaskAttributes::buffers_name(type),
+  return fmt::format("<type={} binding={}>", TaskAttributes::buffers_name(buffer),
                      binding);
 }
 

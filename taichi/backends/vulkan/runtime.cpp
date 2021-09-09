@@ -52,11 +52,15 @@ class StopWatch {
   std::chrono::time_point<std::chrono::system_clock> begin_;
 };
 
-using BufferEnum = TaskAttributes::Buffers;
+using BufferType = TaskAttributes::BufferType;
+using BufferInfo = TaskAttributes::BufferInfo;
+using BufferBind = TaskAttributes::BufferBind;
+using BufferInfoHasher = TaskAttributes::BufferInfoHasher;
+
 
 // TODO: In the future this isn't necessarily a pointer, since DeviceAllocation
 // is already a pretty cheap handle>
-using InputBuffersMap = std::unordered_map<BufferEnum, DeviceAllocation *>;
+using InputBuffersMap = std::unordered_map<BufferInfo, DeviceAllocation *,BufferInfoHasher>;
 
 class HostDeviceContextBlitter {
  public:
@@ -248,11 +252,13 @@ class CompiledTaichiKernel {
 
   CompiledTaichiKernel(const Params &ti_params)
       : ti_kernel_attribs_(*ti_params.ti_kernel_attribs),
-        device_(ti_params.device) {
-    input_buffers_ = {
-        {BufferEnum::Root, ti_params.root_buffer},
-        {BufferEnum::GlobalTmps, ti_params.global_tmps_buffer},
-    };
+        device_(ti_params.device)
+    {
+    input_buffers_[BufferType::GlobalTmps] = ti_params.global_tmps_buffer;
+    for(int root = 0;root < ti_params.compiled_structs.size();++root){
+      BufferInfo buffer = {BufferType::Root,root};
+      input_buffers_[buffer] = ti_params.root_buffer;
+    }
     const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
     if (!ti_kernel_attribs_.ctx_attribs.empty()) {
       Device::AllocParams params;
@@ -264,7 +270,7 @@ class CompiledTaichiKernel {
           {size_t(ctx_sz),
            /*host_write=*/false, /*host_read=*/true,
            /*export_sharing=*/false, AllocUsage::Storage});
-      input_buffers_[BufferEnum::Context] = ctx_buffer_.get();
+      input_buffers_[BufferType::Context] = ctx_buffer_.get();
     }
 
     const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
@@ -307,9 +313,10 @@ class CompiledTaichiKernel {
                            attribs.advisory_num_threads_per_group - 1) /
                           attribs.advisory_num_threads_per_group;
       ResourceBinder *binder = vp->resource_binder();
-      for (auto &pair : input_buffers_) {
-        binder->rw_buffer(0, uint32_t(pair.first), *pair.second);
+      for(auto& bind:attribs.buffer_binds){
+        binder->rw_buffer(0, bind.binding , *input_buffers_.at(bind.buffer));
       }
+ 
       cmdlist->bind_pipeline(vp);
       cmdlist->bind_resources(binder);
       cmdlist->dispatch(group_x);

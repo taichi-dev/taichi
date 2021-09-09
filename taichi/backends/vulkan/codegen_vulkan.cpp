@@ -29,17 +29,22 @@ constexpr char kContextBufferName[] = "context_buffer";
 
 constexpr int kMaxNumThreadsGridStrideLoop = 65536;
 
-using BuffersEnum = TaskAttributes::Buffers;
+using BufferType = TaskAttributes::BufferType;
+using BufferInfo = TaskAttributes::BufferInfo;
 using BufferBind = TaskAttributes::BufferBind;
+using BufferInfoHasher = TaskAttributes::BufferInfoHasher;
 
-std::string buffer_instance_name(BuffersEnum b) {
+
+
+
+std::string buffer_instance_name(BufferInfo b) {
   // https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Syntax
-  switch (b) {
-    case BuffersEnum::Root:
-      return kRootBufferName;
-    case BuffersEnum::GlobalTmps:
+  switch (b.type) {
+    case BufferType::Root:
+      return std::string(kRootBufferName)+"_"+std::to_string(b.root_id);
+    case BufferType::GlobalTmps:
       return kGlobalTmpsBufferName;
-    case BuffersEnum::Context:
+    case BufferType::Context:
       return kContextBufferName;
     default:
       TI_NOT_IMPLEMENTED;
@@ -70,7 +75,17 @@ class TaskCodegen : public IRVisitor {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
 
+    fill_node_to_root();
     ir_ = std::make_shared<spirv::IRBuilder>(params.device);
+  }
+
+
+  void fill_node_to_root(){
+    for(int root = 0;root<compiled_structs_.size();++root){
+      for(auto [node_id,node]: compiled_structs_[root].snode_descriptors){
+        node_to_root_[node_id] = root;
+      }
+    }
   }
 
   struct Result {
@@ -196,19 +211,25 @@ class TaskCodegen : public IRVisitor {
 
   void visit(GetRootStmt *stmt) override {
     // Should we assert |root_stmt_| is assigned only once?
+    int root_id = node_to_root_[stmt->root()->id];
     root_stmt_ = stmt;
-    get_buffer_value(BuffersEnum::Root);
+    get_buffer_value({BufferType::Root,root_id});
     spirv::SType root_ptr = ir_->get_pointer_type(
         spirv_snode_.root_stype, spv::StorageClassStorageBuffer);
     spirv::Value root_val = ir_->make_value(
-        spv::OpAccessChain, root_ptr, get_buffer_value(BuffersEnum::Root),
+        spv::OpAccessChain, root_ptr, get_buffer_value({BufferType::Root,root_id}),
         ir_->const_i32_zero_, ir_->const_i32_zero_);
     ir_->register_value(stmt->raw_name(), root_val);
   }
 
   void visit(GetChStmt *stmt) override {
     // TODO: GetChStmt -> GetComponentStmt ?
+    int root = node_to_root_[stmt->input_snode->id];
+
+    const auto &snode_descs = compiled_structs_[root].snode_descriptors;
     auto *out_snode = stmt->output_snode;
+    TI_ASSERT(snode_descs.at(stmt->input_snode->id).get_child(stmt->chid) ==
+              out_snode);
 
     spirv::Value input_ptr_val = ir_->query_value(stmt->input_ptr->raw_name());
     spirv::Value offset =
@@ -216,7 +237,7 @@ class TaskCodegen : public IRVisitor {
     spirv::Value val;
     if (out_snode->is_place()) {
       TI_ASSERT(ptr_to_buffers_.count(stmt) == 0);
-      ptr_to_buffers_[stmt] = BuffersEnum::Root;
+      ptr_to_buffers_[stmt] = BufferInfo(BufferType::Root,root);
 
       spirv::SType dt_ptr = ir_->get_pointer_type(
           ir_->get_primitive_buffer_type(true, out_snode->dt),
@@ -241,10 +262,13 @@ class TaskCodegen : public IRVisitor {
     spirv::SType snode_struct;
     if (stmt->input_snode) {
       parent = stmt->input_snode->raw_name();
-      if (stmt->snode->id == compiled_structs_[0].root->id) {
-        snode_struct = spirv_snode_.root_stype;
-        is_root = true;
-      } else {
+      for(int root = 0;root < compiled_structs_.size();++root){
+        if (stmt->snode->id == compiled_structs_[root].root->id) {
+          snode_struct = spirv_snode_.root_stype;
+          is_root = true;
+        }
+      }
+      if(!is_root){
         snode_struct = spirv_snode_.query_snode_struct_stype(stmt->snode->id);
       }
     } else {
@@ -276,7 +300,7 @@ class TaskCodegen : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     spirv::Value val;
-    spirv::Value global_tmp = get_buffer_value(BuffersEnum::GlobalTmps);
+    spirv::Value global_tmp = get_buffer_value(BufferType::GlobalTmps);
     if (stmt->element_type()->is_primitive(PrimitiveTypeID::i32)) {
       val = ir_->rand_i32(global_tmp);
     } else if (stmt->element_type()->is_primitive(PrimitiveTypeID::u32)) {
@@ -345,7 +369,7 @@ class TaskCodegen : public IRVisitor {
     bool struct_compiled = false;
     spirv::Value buffer_ptr;
     spirv::Value val = ir_->query_value(stmt->val->raw_name());
-    if (ptr_to_buffers_.at(stmt->dest) == BuffersEnum::Root) {
+    if (ptr_to_buffers_.at(stmt->dest).type == BufferType::Root) {
       buffer_ptr = ir_->query_value(stmt->dest->raw_name());
       buffer_ptr.flag =
           spirv::ValueKind::kVariablePtr;  // make this value could store/load
@@ -372,7 +396,7 @@ class TaskCodegen : public IRVisitor {
     bool struct_compiled = false;
     spirv::Value buffer_ptr;
     spirv::Value val;
-    if (ptr_to_buffers_.at(stmt->src) == BuffersEnum::Root) {
+    if (ptr_to_buffers_.at(stmt->src).type == BufferType::Root) {
       buffer_ptr = ir_->query_value(stmt->src->raw_name());
       buffer_ptr.flag =
           spirv::ValueKind::kVariablePtr;  // make this value could store/load
@@ -409,7 +433,7 @@ class TaskCodegen : public IRVisitor {
       spirv::Value idx_val = ir_->int_immediate_number(
           ir_->i32_type(), (offset_in_mem / sizeof(int32_t)));
       spirv::Value buffer_val = ir_->struct_array_access(
-          ir_->i32_type(), get_buffer_value(BuffersEnum::Context), idx_val);
+          ir_->i32_type(), get_buffer_value(BufferType::Context), idx_val);
       spirv::Value val =
           ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(dt),
                           ir_->load_variable(buffer_val, ir_->i32_type()));
@@ -424,7 +448,7 @@ class TaskCodegen : public IRVisitor {
     spirv::Value idx_val =
         ir_->int_immediate_number(ir_->i32_type(), index_in_buffer);
     spirv::Value buffer_val = ir_->struct_array_access(
-        ir_->i32_type(), get_buffer_value(BuffersEnum::Context), idx_val);
+        ir_->i32_type(), get_buffer_value(BufferType::Context), idx_val);
     spirv::Value val = ir_->query_value(stmt->value->raw_name());
     ir_->store_variable(buffer_val,
                         ir_->make_value(spv::OpBitcast, ir_->i32_type(), val));
@@ -435,7 +459,7 @@ class TaskCodegen : public IRVisitor {
     spirv::Value val = ir_->int_immediate_number(ir_->i32_type(), stmt->offset,
                                                  false);  // Named Constant
     ir_->register_value(stmt->raw_name(), val);
-    ptr_to_buffers_[stmt] = BuffersEnum::GlobalTmps;
+    ptr_to_buffers_[stmt] = BufferType::GlobalTmps;
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
@@ -449,7 +473,7 @@ class TaskCodegen : public IRVisitor {
         ir_->i32_type(),
         extra_args_index_base + arg_id * taichi_max_num_indices + axis);
     spirv::Value var_ptr = ir_->struct_array_access(
-        ir_->i32_type(), get_buffer_value(BuffersEnum::Context), index);
+        ir_->i32_type(), get_buffer_value(BufferType::Context), index);
     spirv::Value var = ir_->load_variable(var_ptr, ir_->i32_type());
     ir_->register_value(name, var);
   }
@@ -474,7 +498,7 @@ class TaskCodegen : public IRVisitor {
         const auto extra_arg_linear_index =
             extra_args_index_base + extra_arg_linear_index_offset;
         spirv::Value var_ptr = ir_->struct_array_access(
-            ir_->i32_type(), get_buffer_value(BuffersEnum::Context),
+            ir_->i32_type(), get_buffer_value(BufferType::Context),
             ir_->int_immediate_number(ir_->i32_type(), extra_arg_linear_index));
         spirv::Value var = ir_->load_variable(var_ptr, ir_->i32_type());
         ir_->register_value(var_name, var);
@@ -495,7 +519,7 @@ class TaskCodegen : public IRVisitor {
         ir_->query_value(stmt->base_ptrs[0]->raw_name()), linear_offset);
     ir_->register_value(stmt->raw_name(), val);
 
-    ptr_to_buffers_[stmt] = BuffersEnum::Context;
+    ptr_to_buffers_[stmt] = BufferType::Context;
   }
 
   void visit(UnaryOpStmt *stmt) override {
@@ -795,7 +819,7 @@ class TaskCodegen : public IRVisitor {
 
     spirv::Value addr_ptr;
     bool is_compiled_struct = false;
-    if (ptr_to_buffers_.at(stmt->dest) == BuffersEnum::Root) {
+    if (ptr_to_buffers_.at(stmt->dest).type == BufferType::Root) {
       addr_ptr = ir_->query_value(stmt->dest->raw_name());
       addr_ptr.flag =
           spirv::ValueKind::kVariablePtr;  // make this value could store/load
@@ -1010,14 +1034,16 @@ class TaskCodegen : public IRVisitor {
 
  private:
   void emit_headers() {
-    get_buffer_value(BuffersEnum::Root);
+    for(int root = 0;root < compiled_structs_.size();++root){
+      get_buffer_value({BufferType::Root,root});
+    }
     std::array<int, 3> group_size = {
         task_attribs_.advisory_num_threads_per_group, 1, 1};
     ir_->set_work_group_size(group_size);
     std::vector<spirv::Value> buffers;
     if (device_->get_cap(DeviceCapability::vk_spirv_version) > 0x10300) {
       for (const auto &bb : task_attribs_.buffer_binds) {
-        const auto it = buffer_value_map_.find(bb.type);
+        const auto it = buffer_value_map_.find(bb.buffer);
         if (it != buffer_value_map_.end()) {
           buffers.push_back(it->second);
         }
@@ -1092,7 +1118,7 @@ class TaskCodegen : public IRVisitor {
             ir_->int_immediate_number(ir_->i32_type(), 2));
         begin_expr_value = ir_->load_variable(
             ir_->struct_array_access(ir_->i32_type(),
-                                     get_buffer_value(BuffersEnum::GlobalTmps),
+                                     get_buffer_value(BufferType::GlobalTmps),
                                      begin_idx),
             ir_->i32_type());
       } else {
@@ -1107,7 +1133,7 @@ class TaskCodegen : public IRVisitor {
             ir_->int_immediate_number(ir_->i32_type(), 2));
         end_expr_value = ir_->load_variable(
             ir_->struct_array_access(ir_->i32_type(),
-                                     get_buffer_value(BuffersEnum::GlobalTmps),
+                                     get_buffer_value(BufferType::GlobalTmps),
                                      end_idx),
             ir_->i32_type());
       } else {
@@ -1190,19 +1216,19 @@ class TaskCodegen : public IRVisitor {
                         ir_->int_immediate_number(ir_->i32_type(), 2));
     spirv::Value ret = ir_->struct_array_access(
         ir_->get_primitive_buffer_type(
-            ptr_to_buffers_.at(ptr) == BuffersEnum::Root, dt),
+            ptr_to_buffers_.at(ptr).type == BufferType::Root, dt),
         buffer, idx_val);
     return ret;
   }
 
-  spirv::Value get_buffer_value(TaskAttributes::Buffers buffer) {
+  spirv::Value get_buffer_value(BufferInfo buffer) {
     const auto it = buffer_value_map_.find(buffer);
     if (it != buffer_value_map_.end()) {
       return it->second;
     }
 
     spirv::Value buffer_value;
-    if (buffer == BuffersEnum::Root) {
+    if (buffer.type == BufferType::Root) {
       spirv_snode_ = compile_spirv_snode_structs(
           ir_.get(), &compiled_structs_[0]);  // Support native SNode structure
       buffer_value = ir_->buffer_argument(spirv_snode_.root_stype, 0,
@@ -1222,16 +1248,19 @@ class TaskCodegen : public IRVisitor {
     std::vector<BufferBind> result;
     int binding = 0;
 
-    auto bind_buffer = [&](TaskAttributes::Buffers buffer) {
+    auto bind_buffer = [&](BufferInfo buffer) {
       result.push_back({buffer, binding});
       buffer_binding_map_[buffer] = binding++;
     };
 
-    bind_buffer(BuffersEnum::Root);
-    bind_buffer(BuffersEnum::GlobalTmps);
+    for(int root = 0;root < compiled_structs_.size();++root){
+      bind_buffer({BufferType::Root,root});
+    }
+
+    bind_buffer(BufferType::GlobalTmps);
 
     if (!ctx_attribs_->empty()) {
-      bind_buffer(BuffersEnum::Context);
+      bind_buffer(BufferType::Context);
     }
     return result;
   }
@@ -1262,15 +1291,16 @@ class TaskCodegen : public IRVisitor {
   Device *device_;
 
   std::shared_ptr<spirv::IRBuilder> ir_;  // spirv binary code builder
-  std::unordered_map<TaskAttributes::Buffers, spirv::Value> buffer_value_map_;
-  std::unordered_map<TaskAttributes::Buffers, uint32_t> buffer_binding_map_;
+  std::unordered_map<BufferInfo, spirv::Value,BufferInfoHasher> buffer_value_map_;
+  std::unordered_map<BufferInfo, uint32_t,BufferInfoHasher> buffer_binding_map_;
   spirv::Value kernel_function_;
   spirv::Label kernel_return_label_;
   bool gen_label_{false};
   spirv::CompiledSpirvSNode spirv_snode_;
 
   OffloadedStmt *const task_ir_;                        // not owned
-  std::vector<CompiledSNodeStructs> compiled_structs_;  // not owned
+  std::vector<CompiledSNodeStructs> compiled_structs_;
+  std::unordered_map<int,int> node_to_root_;
   const KernelContextAttributes *const ctx_attribs_;    // not owned
   const std::string task_name_;
   std::vector<spirv::Label> continue_label_stack_;
@@ -1278,7 +1308,7 @@ class TaskCodegen : public IRVisitor {
 
   TaskAttributes task_attribs_;
   GetRootStmt *root_stmt_{nullptr};
-  std::unordered_map<const Stmt *, BuffersEnum> ptr_to_buffers_;
+  std::unordered_map<const Stmt *, BufferInfo> ptr_to_buffers_;
 };
 
 static void spriv_message_consumer(spv_message_level_t level,

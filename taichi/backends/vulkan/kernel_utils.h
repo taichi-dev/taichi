@@ -19,14 +19,54 @@ namespace vulkan {
  * Per offloaded task attributes.
  */
 struct TaskAttributes {
-  enum class Buffers {
+  enum class BufferType {
     Root,
     GlobalTmps,
     Context,
   };
 
+  struct BufferInfo{
+    BufferType type;
+    int root_id{-1}; // only used if type==Root
+
+    BufferInfo() = default;
+
+    BufferInfo(BufferType buffer_type):type(buffer_type) {
+
+    }
+
+    BufferInfo(BufferType buffer_type,int root_buffer_id):type(buffer_type),root_id(root_buffer_id) {
+
+    }
+
+
+    bool operator==(const BufferInfo &other) const
+    { 
+      if(type != other.type){
+        return false;
+      }
+      if(type == BufferType::Root){
+        return root_id == other.root_id;
+      }
+      return true;
+    }
+  };
+
+  struct BufferInfoHasher
+  {
+    std::size_t operator()(const BufferInfo& buf) const
+    {
+      using std::size_t;
+      using std::hash;
+      using std::string;
+
+      return hash<BufferType>()(buf.type);
+    }
+  };
+
+
   struct BufferBind {
-    Buffers type;
+    BufferInfo buffer;
     int binding{0};
 
     std::string debug_string() const;
@@ -60,7 +100,7 @@ struct TaskAttributes {
   // Only valid when |task_type| is range_for.
   std::optional<RangeForAttributes> range_for_attribs;
 
-  static std::string buffers_name(Buffers b);
+  static std::string buffers_name(BufferInfo b);
 
   std::string debug_string() const;
 };

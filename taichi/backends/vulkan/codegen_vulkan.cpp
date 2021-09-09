@@ -34,14 +34,11 @@ using BufferInfo = TaskAttributes::BufferInfo;
 using BufferBind = TaskAttributes::BufferBind;
 using BufferInfoHasher = TaskAttributes::BufferInfoHasher;
 
-
-
-
 std::string buffer_instance_name(BufferInfo b) {
   // https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Syntax
   switch (b.type) {
     case BufferType::Root:
-      return std::string(kRootBufferName)+"_"+std::to_string(b.root_id);
+      return std::string(kRootBufferName) + "_" + std::to_string(b.root_id);
     case BufferType::GlobalTmps:
       return kGlobalTmpsBufferName;
     case BufferType::Context:
@@ -79,10 +76,9 @@ class TaskCodegen : public IRVisitor {
     ir_ = std::make_shared<spirv::IRBuilder>(params.device);
   }
 
-
-  void fill_node_to_root(){
-    for(int root = 0;root<compiled_structs_.size();++root){
-      for(auto [node_id,node]: compiled_structs_[root].snode_descriptors){
+  void fill_node_to_root() {
+    for (int root = 0; root < compiled_structs_.size(); ++root) {
+      for (auto [node_id, node] : compiled_structs_[root].snode_descriptors) {
         node_to_root_[node_id] = root;
       }
     }
@@ -212,13 +208,14 @@ class TaskCodegen : public IRVisitor {
   void visit(GetRootStmt *stmt) override {
     // Should we assert |root_stmt_| is assigned only once?
     int root_id = node_to_root_[stmt->root()->id];
-    root_stmt_ = stmt;
-    get_buffer_value({BufferType::Root,root_id});
+    root_stmts_[root_id] = stmt;
+    get_buffer_value({BufferType::Root, root_id});
     spirv::SType root_ptr = ir_->get_pointer_type(
         spirv_snodes_.at(root_id).root_stype, spv::StorageClassStorageBuffer);
-    spirv::Value root_val = ir_->make_value(
-        spv::OpAccessChain, root_ptr, get_buffer_value({BufferType::Root,root_id}),
-        ir_->const_i32_zero_, ir_->const_i32_zero_);
+    spirv::Value root_val =
+        ir_->make_value(spv::OpAccessChain, root_ptr,
+                        get_buffer_value({BufferType::Root, root_id}),
+                        ir_->const_i32_zero_, ir_->const_i32_zero_);
     ir_->register_value(stmt->raw_name(), root_val);
   }
 
@@ -237,7 +234,7 @@ class TaskCodegen : public IRVisitor {
     spirv::Value val;
     if (out_snode->is_place()) {
       TI_ASSERT(ptr_to_buffers_.count(stmt) == 0);
-      ptr_to_buffers_[stmt] = BufferInfo(BufferType::Root,root);
+      ptr_to_buffers_[stmt] = BufferInfo(BufferType::Root, root);
 
       spirv::SType dt_ptr = ir_->get_pointer_type(
           ir_->get_primitive_buffer_type(true, out_snode->dt),
@@ -265,13 +262,13 @@ class TaskCodegen : public IRVisitor {
       if (stmt->snode->id == compiled_structs_[root_id].root->id) {
         is_root = true;
         snode_struct = spirv_snodes_.at(root_id).root_stype;
-      }
-      else if (!is_root){
-        snode_struct = spirv_snodes_.at(root_id).query_snode_struct_stype(stmt->snode->id);
+      } else if (!is_root) {
+        snode_struct =
+            spirv_snodes_.at(root_id).query_snode_struct_stype(stmt->snode->id);
       }
     } else {
-      TI_ASSERT(root_stmt_ != nullptr);
-      parent = root_stmt_->raw_name();
+      TI_ASSERT(root_stmts_.at(root_id) != nullptr);
+      parent = root_stmts_.at(root_id)->raw_name();
       snode_struct = spirv_snodes_.at(root_id).root_stype;
       is_root = true;
     }
@@ -1032,8 +1029,8 @@ class TaskCodegen : public IRVisitor {
 
  private:
   void emit_headers() {
-    for(int root = 0;root < compiled_structs_.size();++root){
-      get_buffer_value({BufferType::Root,root});
+    for (int root = 0; root < compiled_structs_.size(); ++root) {
+      get_buffer_value({BufferType::Root, root});
     }
     std::array<int, 3> group_size = {
         task_attribs_.advisory_num_threads_per_group, 1, 1};
@@ -1228,9 +1225,11 @@ class TaskCodegen : public IRVisitor {
     spirv::Value buffer_value;
     if (buffer.type == BufferType::Root) {
       spirv_snodes_[buffer.root_id] = compile_spirv_snode_structs(
-          ir_.get(), &compiled_structs_[buffer.root_id]);  // Support native SNode structure
-      buffer_value = ir_->buffer_argument(spirv_snodes_.at(buffer.root_id).root_stype, 0,
-                                          buffer_binding_map_[buffer]);
+          ir_.get(), &compiled_structs_[buffer.root_id]);  // Support native
+                                                           // SNode structure
+      buffer_value =
+          ir_->buffer_argument(spirv_snodes_.at(buffer.root_id).root_stype, 0,
+                               buffer_binding_map_[buffer]);
     } else {
       buffer_value =
           ir_->buffer_argument(ir_->i32_type(), 0, buffer_binding_map_[buffer]);
@@ -1251,8 +1250,8 @@ class TaskCodegen : public IRVisitor {
       buffer_binding_map_[buffer] = binding++;
     };
 
-    for(int root = 0;root < compiled_structs_.size();++root){
-      bind_buffer({BufferType::Root,root});
+    for (int root = 0; root < compiled_structs_.size(); ++root) {
+      bind_buffer({BufferType::Root, root});
     }
 
     bind_buffer(BufferType::GlobalTmps);
@@ -1289,23 +1288,27 @@ class TaskCodegen : public IRVisitor {
   Device *device_;
 
   std::shared_ptr<spirv::IRBuilder> ir_;  // spirv binary code builder
-  std::unordered_map<BufferInfo, spirv::Value,BufferInfoHasher> buffer_value_map_;
-  std::unordered_map<BufferInfo, uint32_t,BufferInfoHasher> buffer_binding_map_;
+  std::unordered_map<BufferInfo, spirv::Value, BufferInfoHasher>
+      buffer_value_map_;
+  std::unordered_map<BufferInfo, uint32_t, BufferInfoHasher>
+      buffer_binding_map_;
   spirv::Value kernel_function_;
   spirv::Label kernel_return_label_;
   bool gen_label_{false};
-  std::unordered_map<int,spirv::CompiledSpirvSNode> spirv_snodes_;
+  std::unordered_map<int, spirv::CompiledSpirvSNode>
+      spirv_snodes_;  // maps root id to spirv snode
 
-  OffloadedStmt *const task_ir_;                        // not owned
+  OffloadedStmt *const task_ir_;  // not owned
   std::vector<CompiledSNodeStructs> compiled_structs_;
-  std::unordered_map<int,int> node_to_root_;
-  const KernelContextAttributes *const ctx_attribs_;    // not owned
+  std::unordered_map<int, int> node_to_root_;
+  const KernelContextAttributes *const ctx_attribs_;  // not owned
   const std::string task_name_;
   std::vector<spirv::Label> continue_label_stack_;
   std::vector<spirv::Label> merge_label_stack_;
 
   TaskAttributes task_attribs_;
-  GetRootStmt *root_stmt_{nullptr};
+  std::unordered_map<int, GetRootStmt *>
+      root_stmts_;  // maps root id to get root stmt
   std::unordered_map<const Stmt *, BufferInfo> ptr_to_buffers_;
 };
 
@@ -1409,7 +1412,7 @@ class KernelCodegen {
       std::ofstream fout((params_.ti_kernel_name).c_str(), std::ios::binary | std::ios::out);
       fout.write(reinterpret_cast<const char*>(task_res.spirv_code.data()), task_res.spirv_code.size() * sizeof(uint32_t));
       fout.close();
- #endif
+#endif
 
       kernel_attribs.tasks_attribs.push_back(std::move(task_res.task_attribs));
       res.task_spirv_source_codes.push_back(std::move(optimized_spv));
@@ -1441,15 +1444,14 @@ void lower(Kernel *kernel) {
                                 /*make_thread_local=*/false);
 }
 
-FunctionType compile_to_executable(Kernel *kernel, 
-                                   VkRuntime *runtime) {
+FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
   TI_TRACE("VK codegen for Taichi kernel={}", taichi_kernel_name);
   KernelCodegen::Params params;
   params.ti_kernel_name = taichi_kernel_name;
   params.kernel = kernel;
-  params.compiled_structs = runtime -> get_compiled_structs();
+  params.compiled_structs = runtime->get_compiled_structs();
   params.device = runtime->get_ti_device();
   KernelCodegen codegen(params);
   auto res = codegen.run();

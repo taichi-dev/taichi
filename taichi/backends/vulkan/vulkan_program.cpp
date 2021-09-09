@@ -7,8 +7,7 @@ namespace lang {
 FunctionType VulkanProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
   vulkan::lower(kernel);
-  return vulkan::compile_to_executable(
-      kernel, vulkan_runtime_.get());
+  return vulkan::compile_to_executable(kernel, vulkan_runtime_.get());
 }
 
 void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -30,7 +29,6 @@ void VulkanProgramImpl::materialize_snode_tree(
     uint64 *result_buffer) {
   // TODO: support materializing multiple snode trees
   vulkan_runtime_->materialize_snode_tree(tree);
-  
 }
 
 }  // namespace lang

@@ -14,14 +14,14 @@ namespace vulkan {
 
 // static
 std::string TaskAttributes::buffers_name(BufferInfo b) {
-  if(b.type == BufferType::Context){
+  if (b.type == BufferType::Context) {
     return "Context";
   }
-  if(b.type == BufferType::GlobalTmps){
+  if (b.type == BufferType::GlobalTmps) {
     return "GlobalTmps";
   }
-  if(b.type == BufferType::Root){
-    return std::string("Root: ")+std::to_string(b.root_id);
+  if (b.type == BufferType::Root) {
+    return std::string("Root: ") + std::to_string(b.root_id);
   }
   TI_ERROR("unrecognized buffer type");
 }
@@ -42,8 +42,8 @@ std::string TaskAttributes::debug_string() const {
 }
 
 std::string TaskAttributes::BufferBind::debug_string() const {
-  return fmt::format("<type={} binding={}>", TaskAttributes::buffers_name(buffer),
-                     binding);
+  return fmt::format("<type={} binding={}>",
+                     TaskAttributes::buffers_name(buffer), binding);
 }
 
 KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)

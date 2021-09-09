@@ -25,45 +25,39 @@ struct TaskAttributes {
     Context,
   };
 
-  struct BufferInfo{
+  struct BufferInfo {
     BufferType type;
-    int root_id{-1}; // only used if type==Root
+    int root_id{-1};  // only used if type==Root
 
     BufferInfo() = default;
 
-    BufferInfo(BufferType buffer_type):type(buffer_type) {
-
+    BufferInfo(BufferType buffer_type) : type(buffer_type) {
     }
 
-    BufferInfo(BufferType buffer_type,int root_buffer_id):type(buffer_type),root_id(root_buffer_id) {
-
+    BufferInfo(BufferType buffer_type, int root_buffer_id)
+        : type(buffer_type), root_id(root_buffer_id) {
     }
 
-
-    bool operator==(const BufferInfo &other) const
-    { 
-      if(type != other.type){
+    bool operator==(const BufferInfo &other) const {
+      if (type != other.type) {
         return false;
       }
-      if(type == BufferType::Root){
+      if (type == BufferType::Root) {
         return root_id == other.root_id;
       }
       return true;
     }
   };
 
-  struct BufferInfoHasher
-  {
-    std::size_t operator()(const BufferInfo& buf) const
-    {
-      using std::size_t;
+  struct BufferInfoHasher {
+    std::size_t operator()(const BufferInfo &buf) const {
       using std::hash;
+      using std::size_t;
       using std::string;
 
       return hash<BufferType>()(buf.type);
     }
   };
-
 
   struct BufferBind {
     BufferInfo buffer;

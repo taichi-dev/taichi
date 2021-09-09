@@ -57,10 +57,10 @@ using BufferInfo = TaskAttributes::BufferInfo;
 using BufferBind = TaskAttributes::BufferBind;
 using BufferInfoHasher = TaskAttributes::BufferInfoHasher;
 
-
 // TODO: In the future this isn't necessarily a pointer, since DeviceAllocation
 // is already a pretty cheap handle>
-using InputBuffersMap = std::unordered_map<BufferInfo, DeviceAllocation *,BufferInfoHasher>;
+using InputBuffersMap =
+    std::unordered_map<BufferInfo, DeviceAllocation *, BufferInfoHasher>;
 
 class HostDeviceContextBlitter {
  public:
@@ -252,11 +252,10 @@ class CompiledTaichiKernel {
 
   CompiledTaichiKernel(const Params &ti_params)
       : ti_kernel_attribs_(*ti_params.ti_kernel_attribs),
-        device_(ti_params.device)
-    {
+        device_(ti_params.device) {
     input_buffers_[BufferType::GlobalTmps] = ti_params.global_tmps_buffer;
-    for(int root = 0;root < ti_params.compiled_structs.size();++root){
-      BufferInfo buffer = {BufferType::Root,root};
+    for (int root = 0; root < ti_params.compiled_structs.size(); ++root) {
+      BufferInfo buffer = {BufferType::Root, root};
       input_buffers_[buffer] = ti_params.root_buffers[root];
     }
     const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
@@ -313,10 +312,10 @@ class CompiledTaichiKernel {
                            attribs.advisory_num_threads_per_group - 1) /
                           attribs.advisory_num_threads_per_group;
       ResourceBinder *binder = vp->resource_binder();
-      for(auto& bind:attribs.buffer_binds){
-        binder->rw_buffer(0, bind.binding , *input_buffers_.at(bind.buffer));
+      for (auto &bind : attribs.buffer_binds) {
+        binder->rw_buffer(0, bind.binding, *input_buffers_.at(bind.buffer));
       }
- 
+
       cmdlist->bind_pipeline(vp);
       cmdlist->bind_resources(binder);
       cmdlist->dispatch(group_x);
@@ -354,7 +353,7 @@ class CompiledTaichiKernel {
 class VkRuntime ::Impl {
  public:
   explicit Impl(const Params &params)
-      :  host_result_buffer_(params.host_result_buffer) {
+      : host_result_buffer_(params.host_result_buffer) {
     TI_ASSERT(host_result_buffer_ != nullptr);
     EmbeddedVulkanDevice::Params evd_params;
     evd_params.api_version = VulkanEnvSettings::kApiVersion();
@@ -372,27 +371,28 @@ class VkRuntime ::Impl {
     global_tmps_buffer_.reset();
   }
 
-  void materialize_snode_tree(SNodeTree *tree){
+  void materialize_snode_tree(SNodeTree *tree) {
     add_root_buffer();
     auto *const root = tree->root();
-    CompiledSNodeStructs compiled_structs = vulkan::compile_snode_structs(*root);
+    CompiledSNodeStructs compiled_structs =
+        vulkan::compile_snode_structs(*root);
     compiled_snode_structs_.push_back(compiled_structs);
   }
 
-  void destroy_snode_tree(SNodeTree *snode_tree){
+  void destroy_snode_tree(SNodeTree *snode_tree) {
     int root_id = -1;
-    for(int i = 0;i<compiled_snode_structs_.size();++i){
-      if(compiled_snode_structs_[i].root == snode_tree->root()){
+    for (int i = 0; i < compiled_snode_structs_.size(); ++i) {
+      if (compiled_snode_structs_[i].root == snode_tree->root()) {
         root_id = i;
       }
     }
-    if(root_id==-1){
+    if (root_id == -1) {
       TI_ERROR("the tree to be destroyed cannot be found");
     }
     root_buffers_[root_id].reset();
   }
 
-  const std::vector<CompiledSNodeStructs>& get_compiled_structs() const{
+  const std::vector<CompiledSNodeStructs> &get_compiled_structs() const {
     return compiled_snode_structs_;
   }
 
@@ -402,7 +402,7 @@ class VkRuntime ::Impl {
     params.compiled_structs = get_compiled_structs();
     params.device = embedded_device_->device();
     params.root_buffers = {};
-    for(int root = 0;root<root_buffers_.size();++root){
+    for (int root = 0; root < root_buffers_.size(); ++root) {
       params.root_buffers.push_back(root_buffers_[root].get());
     }
     params.global_tmps_buffer = global_tmps_buffer_.get();
@@ -457,9 +457,7 @@ class VkRuntime ::Impl {
 
  private:
   void init_buffers() {
-
     size_t gtmp_buffer_size = 1024 * 1024;
-
 
     global_tmps_buffer_ = device_->allocate_memory_unique(
         {gtmp_buffer_size,
@@ -469,26 +467,26 @@ class VkRuntime ::Impl {
     // Need to zero fill the buffers, otherwise there could be NaN.
     Stream *stream = device_->get_compute_stream();
     auto cmdlist = stream->new_command_list();
- 
+
     cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), gtmp_buffer_size,
                          /*data=*/0);
     stream->submit_synced(cmdlist.get());
   }
 
-  void add_root_buffer(){
+  void add_root_buffer() {
 #pragma message("Vulkan buffers size hardcoded")
     size_t root_buffer_size = 64 * 1024 * 1024;
-    std::unique_ptr<DeviceAllocationGuard> new_buffer = device_->allocate_memory_unique(
-      {root_buffer_size,
-        /*host_write=*/false, /*host_read=*/false,
-        /*export_sharing=*/false, AllocUsage::Storage});
+    std::unique_ptr<DeviceAllocationGuard> new_buffer =
+        device_->allocate_memory_unique(
+            {root_buffer_size,
+             /*host_write=*/false, /*host_read=*/false,
+             /*export_sharing=*/false, AllocUsage::Storage});
     Stream *stream = device_->get_compute_stream();
     auto cmdlist = stream->new_command_list();
-    cmdlist->buffer_fill(new_buffer->get_ptr(0), root_buffer_size,/*data=*/0);
+    cmdlist->buffer_fill(new_buffer->get_ptr(0), root_buffer_size, /*data=*/0);
     stream->submit_synced(cmdlist.get());
     root_buffers_.push_back(std::move(new_buffer));
   }
-
 
   uint64_t *const host_result_buffer_;
 
@@ -527,15 +525,15 @@ class VkRuntime::Impl {
     TI_ERROR("Vulkan disabled");
   }
 
-  void materialize_snode_tree(SNodeTree *tree){
+  void materialize_snode_tree(SNodeTree *tree) {
     TI_ERROR("Vulkan disabled");
   }
 
-  const std::vector<CompiledSNodeStructs>& get_compiled_structs() const{
+  const std::vector<CompiledSNodeStructs> &get_compiled_structs() const {
     TI_ERROR("Vulkan disabled");
   }
 
-  void destroy_snode_tree(SNodeTree *snode_tree){
+  void destroy_snode_tree(SNodeTree *snode_tree) {
     TI_ERROR("Vulkan disabled");
   }
 };
@@ -562,18 +560,18 @@ void VkRuntime::synchronize() {
   impl_->synchronize();
 }
 
-void VkRuntime::materialize_snode_tree(SNodeTree *tree){
+void VkRuntime::materialize_snode_tree(SNodeTree *tree) {
   impl_->materialize_snode_tree(tree);
 }
 
-const std::vector<CompiledSNodeStructs>&  VkRuntime::get_compiled_structs() const{
+const std::vector<CompiledSNodeStructs> &VkRuntime::get_compiled_structs()
+    const {
   return impl_->get_compiled_structs();
 }
 
-void VkRuntime::destroy_snode_tree(SNodeTree *snode_tree){
+void VkRuntime::destroy_snode_tree(SNodeTree *snode_tree) {
   return impl_->destroy_snode_tree(snode_tree);
 }
-
 
 Device *VkRuntime::get_ti_device() const {
 #ifdef TI_WITH_VULKAN

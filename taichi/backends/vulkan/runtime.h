@@ -50,7 +50,7 @@ class VkRuntime {
 
   Device *get_ti_device() const;
 
-  const std::vector<CompiledSNodeStructs>& get_compiled_structs() const;
+  const std::vector<CompiledSNodeStructs> &get_compiled_structs() const;
 
  private:
   std::unique_ptr<Impl> impl_;

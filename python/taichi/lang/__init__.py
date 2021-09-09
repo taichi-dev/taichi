@@ -34,6 +34,7 @@ from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
 from taichi.type.annotations import any_arr, ext_arr, template
+from taichi.lang.source_builder import SourceBuilder
 
 import taichi as ti
 

@@ -1380,8 +1380,8 @@ class KernelCodegen {
        spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
       TI_WARN("SPIR-V Assembly dump:\n{}\n\n", spirv_asm);
 
-      std::ofstream fout((task_name).c_str(), std::ios::binary | std::ios::out);
-      fout.write(reinterpret_cast<const char*>(spirv_src.data()), spirv_src.size() * sizeof(uint32_t));
+      std::ofstream fout((params_.ti_kernel_name).c_str(), std::ios::binary | std::ios::out);
+      fout.write(reinterpret_cast<const char*>(task_res.spirv_code.data()), task_res.spirv_code.size() * sizeof(uint32_t));
       fout.close();
  #endif
 

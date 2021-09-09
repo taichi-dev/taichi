@@ -1403,7 +1403,7 @@ class KernelCodegen {
                task_res.spirv_code.size(), optimized_spv.size());
 
       // Enable to dump SPIR-V assembly of kernels
-#if 1
+#if 0
        std::string spirv_asm;
        spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
       TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n",params_.ti_kernel_name, spirv_asm);

@@ -555,6 +555,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 #endif
   }
 
+  void visit(ExternalFuncCallStmt *stmt) override {
+    if (stmt->type == ExternalFuncCallStmt::BITCODE) {
+      CodeGenLLVM::visit_call_bitcode(stmt);
+    }
+    else {
+      TI_NOT_IMPLEMENTED
+    }
+  }
+
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
     const auto arg_id = stmt->arg_id;
     const auto axis = stmt->axis;

@@ -344,6 +344,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(LoopUniqueStmt *stmt) override;
 
+  void visit_call_bitcode(ExternalFuncCallStmt *stmt);
+
+  void visit_call_shared_object(ExternalFuncCallStmt *stmt);
+
   void visit(ExternalFuncCallStmt *stmt) override;
 
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);

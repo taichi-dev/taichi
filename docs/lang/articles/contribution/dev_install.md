@@ -102,6 +102,15 @@ installer.
   without downloading the installer manually.
 
 
+
+### Setting up Vulkan (optional)
+
+If you wish to build taichi with Vulkan. You will need to install the Vulkan SDK.
+Please visit [this website](https://vulkan.lunarg.com/sdk/home) and follow the instructions for your OS.
+If you're working on Windows, please also set the environment variable `VULKAN_SDK` to `C:/VulkanSDK/${YOUR_VULKAN_VERSION}`.
+(as an example, for vulkan 1.2.189.0, set `VULKAN_SDK` to `C:/VulkanSDK/1.2.189.0`).
+Finally, please add an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON` to enable building vulkan with taichi.
+
 ### Setting up Taichi for development
 
 1. Clone the Taichi repo **recursively**, and build:

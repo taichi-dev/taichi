@@ -215,7 +215,7 @@ class TaskCodegen : public IRVisitor {
     root_stmt_ = stmt;
     get_buffer_value({BufferType::Root,root_id});
     spirv::SType root_ptr = ir_->get_pointer_type(
-        spirv_snode_.root_stype, spv::StorageClassStorageBuffer);
+        spirv_snodes_.at(root_id).root_stype, spv::StorageClassStorageBuffer);
     spirv::Value root_val = ir_->make_value(
         spv::OpAccessChain, root_ptr, get_buffer_value({BufferType::Root,root_id}),
         ir_->const_i32_zero_, ir_->const_i32_zero_);
@@ -224,7 +224,7 @@ class TaskCodegen : public IRVisitor {
 
   void visit(GetChStmt *stmt) override {
     // TODO: GetChStmt -> GetComponentStmt ?
-    int root = node_to_root_[stmt->input_snode->id];
+    int root = node_to_root_.at(stmt->input_snode->id);
 
     const auto &snode_descs = compiled_structs_[root].snode_descriptors;
     auto *out_snode = stmt->output_snode;
@@ -245,7 +245,7 @@ class TaskCodegen : public IRVisitor {
       val = ir_->make_value(spv::OpAccessChain, dt_ptr, input_ptr_val, offset);
     } else {
       spirv::SType snode_array =
-          spirv_snode_.query_snode_array_stype(out_snode->id);
+          spirv_snodes_[root].query_snode_array_stype(out_snode->id);
       spirv::SType snode_array_ptr =
           ir_->get_pointer_type(snode_array, spv::StorageClassStorageBuffer);
       val = ir_->make_value(spv::OpAccessChain, snode_array_ptr, input_ptr_val,
@@ -257,24 +257,22 @@ class TaskCodegen : public IRVisitor {
   void visit(SNodeLookupStmt *stmt) override {
     // TODO: SNodeLookupStmt -> GetSNodeCellStmt ?
     bool is_root{false};  // Eliminate first root snode access
-    int root_id{-1};
+    int root_id = node_to_root_.at(stmt->snode->id);
     std::string parent;
     spirv::SType snode_struct;
     if (stmt->input_snode) {
       parent = stmt->input_snode->raw_name();
-      for(int root = 0;root < compiled_structs_.size();++root){
-        if (stmt->snode->id == compiled_structs_[root].root->id) {
-          snode_struct = spirv_snode_.root_stype;
-          is_root = true;
-        }
+      if (stmt->snode->id == compiled_structs_[root_id].root->id) {
+        is_root = true;
+        snode_struct = spirv_snodes_.at(root_id).root_stype;
       }
-      if(!is_root){
-        snode_struct = spirv_snode_.query_snode_struct_stype(stmt->snode->id);
+      else if (!is_root){
+        snode_struct = spirv_snodes_.at(root_id).query_snode_struct_stype(stmt->snode->id);
       }
     } else {
       TI_ASSERT(root_stmt_ != nullptr);
       parent = root_stmt_->raw_name();
-      snode_struct = spirv_snode_.root_stype;
+      snode_struct = spirv_snodes_.at(root_id).root_stype;
       is_root = true;
     }
     const auto *sn = stmt->snode;
@@ -1229,9 +1227,9 @@ class TaskCodegen : public IRVisitor {
 
     spirv::Value buffer_value;
     if (buffer.type == BufferType::Root) {
-      spirv_snode_ = compile_spirv_snode_structs(
-          ir_.get(), &compiled_structs_[0]);  // Support native SNode structure
-      buffer_value = ir_->buffer_argument(spirv_snode_.root_stype, 0,
+      spirv_snodes_[buffer.root_id] = compile_spirv_snode_structs(
+          ir_.get(), &compiled_structs_[buffer.root_id]);  // Support native SNode structure
+      buffer_value = ir_->buffer_argument(spirv_snodes_.at(buffer.root_id).root_stype, 0,
                                           buffer_binding_map_[buffer]);
     } else {
       buffer_value =
@@ -1296,7 +1294,7 @@ class TaskCodegen : public IRVisitor {
   spirv::Value kernel_function_;
   spirv::Label kernel_return_label_;
   bool gen_label_{false};
-  spirv::CompiledSpirvSNode spirv_snode_;
+  std::unordered_map<int,spirv::CompiledSpirvSNode> spirv_snodes_;
 
   OffloadedStmt *const task_ir_;                        // not owned
   std::vector<CompiledSNodeStructs> compiled_structs_;

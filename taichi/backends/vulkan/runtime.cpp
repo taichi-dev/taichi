@@ -246,7 +246,7 @@ class CompiledTaichiKernel {
     std::vector<CompiledSNodeStructs> compiled_structs;
 
     VulkanDevice *device{nullptr};
-    DeviceAllocation *root_buffer{nullptr};
+    std::vector<DeviceAllocation *> root_buffers;
     DeviceAllocation *global_tmps_buffer{nullptr};
   };
 
@@ -257,7 +257,7 @@ class CompiledTaichiKernel {
     input_buffers_[BufferType::GlobalTmps] = ti_params.global_tmps_buffer;
     for(int root = 0;root < ti_params.compiled_structs.size();++root){
       BufferInfo buffer = {BufferType::Root,root};
-      input_buffers_[buffer] = ti_params.root_buffer;
+      input_buffers_[buffer] = ti_params.root_buffers[root];
     }
     const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
     if (!ti_kernel_attribs_.ctx_attribs.empty()) {
@@ -370,10 +370,10 @@ class VkRuntime ::Impl {
       tmp.swap(ti_kernels_);
     }
     global_tmps_buffer_.reset();
-    root_buffer_.reset();
   }
 
   void materialize_snode_tree(SNodeTree *tree){
+    add_root_buffer();
     auto *const root = tree->root();
     CompiledSNodeStructs compiled_structs = vulkan::compile_snode_structs(*root);
     compiled_snode_structs_.push_back(compiled_structs);
@@ -388,7 +388,10 @@ class VkRuntime ::Impl {
     params.ti_kernel_attribs = &(reg_params.kernel_attribs);
     params.compiled_structs = get_compiled_structs();
     params.device = embedded_device_->device();
-    params.root_buffer = root_buffer_.get();
+    params.root_buffers = {};
+    for(int root = 0;root<root_buffers_.size();++root){
+      params.root_buffers.push_back(root_buffers_[root].get());
+    }
     params.global_tmps_buffer = global_tmps_buffer_.get();
 
     for (int i = 0; i < reg_params.task_spirv_source_codes.size(); ++i) {
@@ -441,14 +444,10 @@ class VkRuntime ::Impl {
 
  private:
   void init_buffers() {
-#pragma message("Vulkan buffers size hardcoded")
-    size_t root_buffer_size = 64 * 1024 * 1024;
+
     size_t gtmp_buffer_size = 1024 * 1024;
 
-    root_buffer_ = device_->allocate_memory_unique(
-        {root_buffer_size,
-         /*host_write=*/false, /*host_read=*/false,
-         /*export_sharing=*/false, AllocUsage::Storage});
+
     global_tmps_buffer_ = device_->allocate_memory_unique(
         {gtmp_buffer_size,
          /*host_write=*/false, /*host_read=*/false,
@@ -457,11 +456,24 @@ class VkRuntime ::Impl {
     // Need to zero fill the buffers, otherwise there could be NaN.
     Stream *stream = device_->get_compute_stream();
     auto cmdlist = stream->new_command_list();
-    cmdlist->buffer_fill(root_buffer_->get_ptr(0), root_buffer_size,
-                         /*data=*/0);
+ 
     cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), gtmp_buffer_size,
                          /*data=*/0);
     stream->submit_synced(cmdlist.get());
+  }
+
+  void add_root_buffer(){
+#pragma message("Vulkan buffers size hardcoded")
+    size_t root_buffer_size = 64 * 1024 * 1024;
+    std::unique_ptr<DeviceAllocationGuard> new_buffer = device_->allocate_memory_unique(
+      {root_buffer_size,
+        /*host_write=*/false, /*host_read=*/false,
+        /*export_sharing=*/false, AllocUsage::Storage});
+    Stream *stream = device_->get_compute_stream();
+    auto cmdlist = stream->new_command_list();
+    cmdlist->buffer_fill(new_buffer->get_ptr(0), root_buffer_size,/*data=*/0);
+    stream->submit_synced(cmdlist.get());
+    root_buffers_.push_back(std::move(new_buffer));
   }
 
 
@@ -469,7 +481,7 @@ class VkRuntime ::Impl {
 
   std::unique_ptr<EmbeddedVulkanDevice> embedded_device_{nullptr};
 
-  std::unique_ptr<DeviceAllocationGuard> root_buffer_;
+  std::vector<std::unique_ptr<DeviceAllocationGuard>> root_buffers_;
   std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_;
 
   Device *device_;

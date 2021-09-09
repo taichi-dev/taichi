@@ -109,11 +109,7 @@ If you wish to build taichi with Vulkan. You will need to install the Vulkan SDK
 Please visit [this website](https://vulkan.lunarg.com/sdk/home) and follow the instructions for your OS.
 If you're working on Windows, please also set the environment variable `VULKAN_SDK` to `C:/VulkanSDK/${YOUR_VULKAN_VERSION}`.
 (as an example, for vulkan 1.2.189.0, set `VULKAN_SDK` to `C:/VulkanSDK/1.2.189.0`).
-
-
-When building Taichi, if Vulkan is detected, `TI_WITH_VULKAN` will automatically be set to `ON`.
-You can also explicitly disable Vulkan by manually setting `TI_WITH_VULKAN` to `OFF`,
-or by adding an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=OFF`.
+Finally, please add an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON` to enable building vulkan with taichi.
 
 ### Setting up Taichi for development
 

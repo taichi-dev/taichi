@@ -4,18 +4,6 @@ option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
 
-find_package(Vulkan)
-
-if(TI_WITH_VULKAN AND NOT Vulkan_FOUND)
-    message(FATAL_ERROR "TI_WITH_VULKAN is ON but Vulkan could not be found")
-endif()
-
-if(Vulkan_FOUND)
-    set(TI_WITH_VULKAN ON)
-    message(STATUS "Building With Vulkan")
-endif()
-
-
 if(UNIX AND NOT APPLE)
     # Handy helper for Linux
     # https://stackoverflow.com/a/32259072/12003165
@@ -244,6 +232,11 @@ if (TI_WITH_VULKAN)
     # Vulkan libs
     # https://cmake.org/cmake/help/latest/module/FindVulkan.html
     # https://github.com/PacktPublishing/Learning-Vulkan/blob/master/Chapter%2003/HandShake/CMakeLists.txt
+    find_package(Vulkan REQUIRED)
+
+    if(NOT Vulkan_FOUND)
+        message(FATAL_ERROR "TI_WITH_VULKAN is ON but Vulkan could not be found")
+    endif()
 
     message(STATUS "Vulkan_INCLUDE_DIR=${Vulkan_INCLUDE_DIR}")
     message(STATUS "Vulkan_LIBRARY=${Vulkan_LIBRARY}")

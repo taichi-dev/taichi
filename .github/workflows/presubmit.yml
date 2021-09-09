@@ -281,7 +281,7 @@ jobs:
           python -m pip install $env:WHL
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
-          CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm
+          CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm -DTI_WITH_VULKAN:BOOL=ON
           VULKAN_SDK: C:/VulkanSDK/1.2.189.0
 
       - name: Test

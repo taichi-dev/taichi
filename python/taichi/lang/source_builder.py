@@ -12,18 +12,22 @@ class SourceBuilder():
         self.mode = mode
         if self.mode == 'bc':
             self.td = tempfile.mkdtemp()
-            with open(self.td + '/source.cpp', 'w') as f:
+            self.source_file = os.path.join(self.td, 'source.cpp')
+            self.compiled_file = os.path.join(self.td, 'source.bc')
+            with open(self.source_file, 'w') as f:
                 f.write(source)
-            os.system('clang++-11 -flto -c ' + self.td + '/source.cpp' +
-                      ' -o ' + self.td + '/source.bc')
-            self.bc = self.td + '/source.bc'
+            os.system('clang++-11 -flto -c ' + self.source_file +
+                      ' -o ' + self.compiled_file)
+            self.bc = self.compiled_file
         elif self.mode == 'so':
             self.td = tempfile.mkdtemp()
-            with open(self.td + '/source.cpp', 'w') as f:
+            self.source_file = os.path.join(self.td, 'source.cpp')
+            self.compiled_file = os.path.join(self.td, 'source.so')
+            with open(self.source_file, 'w') as f:
                 f.write(source)
-            os.system('g++ ' + self.td + '/source.cpp -o ' + self.td +
-                      '/source.so' + ' -fPIC -shared')
-            self.so = ctypes.CDLL(self.td + '/source.so')
+            os.system('g++ ' + self.source_file + ' -o ' +
+                      self.compiled_file + ' -fPIC -shared')
+            self.so = ctypes.CDLL(self.compiled_file)
         elif self.mode == 'asm':
             self.asm = source
         else:
@@ -31,12 +35,12 @@ class SourceBuilder():
 
         def cleanup():
             if self.mode == 'bc':
-                os.remove(self.td + '/source.cpp')
-                os.remove(self.td + '/source.bc')
+                os.remove(self.source_file)
+                os.remove(self.compiled_file)
                 os.removedirs(self.td)
             if self.mode == 'so':
-                os.remove(self.td + '/source.cpp')
-                os.remove(self.td + '/source.so')
+                os.remove(self.source_file)
+                os.remove(self.compiled_file)
                 os.removedirs(self.td)
 
         atexit.register(cleanup)

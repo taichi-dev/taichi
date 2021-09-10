@@ -5,6 +5,7 @@ on:
     types: [published]
   schedule:
     - cron: "0 0 * * *"
+  workflow_dispatch:
 
 jobs:
   # This job set environment matrix with respect to production release and nightly release.

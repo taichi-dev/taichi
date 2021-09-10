@@ -12,6 +12,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.snode import SNode
 from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
+from taichi.misc.util import deprecated
 
 unary_ops = []
 
@@ -885,12 +886,14 @@ def append(l, indices, val):
     return a
 
 
+@deprecated('bitcode_func_call()', 'ti.SourceBuilder(source, \'bc\')')
 def bitcode_func_call(filename, funcname, *args):
     _ti_core.insert_external_func_call(0, '', filename, funcname,
                                        make_expr_group(args),
                                        make_expr_group([]))
 
 
+@deprecated('external_func_call()', 'ti.SourceBuilder(source, \'so\')')
 def external_func_call(func, args=[], outputs=[]):
     func_addr = ctypes.cast(func, ctypes.c_void_p).value
     _ti_core.insert_external_func_call(func_addr, '', '', '',
@@ -898,6 +901,7 @@ def external_func_call(func, args=[], outputs=[]):
                                        make_expr_group(outputs))
 
 
+@deprecated('asm()', 'ti.SourceBuilder(source, \'asm\')')
 def asm(source, inputs=[], outputs=[]):
     _ti_core.insert_external_func_call(0, source, '', '',
                                        make_expr_group(inputs),

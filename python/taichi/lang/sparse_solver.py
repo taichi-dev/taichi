@@ -10,7 +10,7 @@ class SparseSolver:
             from taichi.lang.impl import get_runtime
             taichi_arch = get_runtime().prog.config.arch
             assert taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64, "SparseSolver only supports CPU for now."
-            self.solver = _ti_core.get_sparse_solver(solver_type, ordering)
+            self.solver = _ti_core.make_sparse_solver(solver_type, ordering)
         else:
             assert False, f"The solver type {solver_type} with {ordering} is not supported for now. Only {solver_type_list} with {solver_ordering} are supported."
 

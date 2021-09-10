@@ -230,6 +230,11 @@ class MeshInstance:
         _ti_core.set_l2g(self.mesh_ptr, element_type,
                          total_offset.vars[0].ptr.snode())
 
+    def set_l2r(self, element_type: MeshElementType,
+                total_offset: ScalarField):
+        _ti_core.set_l2r(self.mesh_ptr, element_type,
+                         total_offset.vars[0].ptr.snode())
+
     def set_num_patches(self, num_patches: int):
         _ti_core.set_num_patches(self.mesh_ptr, num_patches)
 

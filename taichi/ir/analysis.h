@@ -239,7 +239,7 @@ void verify(IRNode *root);
 void gather_meshfor_relation_types(IRNode *node);
 std::pair</* owned= */ std::unordered_set<mesh::MeshElementType>,
           /* total= */ std::unordered_set<mesh::MeshElementType>>
-gather_mesh_thread_local(OffloadedStmt *offload);
+gather_mesh_thread_local(OffloadedStmt *offload, const CompileConfig &config);
 
 }  // namespace analysis
 }  // namespace irpass

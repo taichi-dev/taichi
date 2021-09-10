@@ -15,20 +15,24 @@ class GatherMeshThreadLocal : public BasicStmtVisitor {
 
   GatherMeshThreadLocal(OffloadedStmt *offload_,
                         MeshElementTypeSet *owned_ptr_,
-                        MeshElementTypeSet *total_ptr_) {
+                        MeshElementTypeSet *total_ptr_,
+                        bool optimize_mesh_reordered_mapping_) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
 
     this->offload = offload_;
     this->owned_ptr = owned_ptr_;
     this->total_ptr = total_ptr_;
+    this->optimize_mesh_reordered_mapping = optimize_mesh_reordered_mapping_;
   }
 
   static void run(OffloadedStmt *offload,
                   MeshElementTypeSet *owned_ptr,
-                  MeshElementTypeSet *total_ptr) {
+                  MeshElementTypeSet *total_ptr,
+                  const CompileConfig &config) {
     TI_ASSERT(offload->task_type == OffloadedStmt::TaskType::mesh_for);
-    GatherMeshThreadLocal analyser(offload, owned_ptr, total_ptr);
+    GatherMeshThreadLocal analyser(offload, owned_ptr, total_ptr,
+                                   config.optimize_mesh_reordered_mapping);
     offload->accept(&analyser);
   }
 
@@ -48,22 +52,27 @@ class GatherMeshThreadLocal : public BasicStmtVisitor {
 
   void visit(MeshIndexConversionStmt *stmt) override {
     this->total_ptr->insert(stmt->from_type());
+    if (optimize_mesh_reordered_mapping &&
+        stmt->conv_type == mesh::ConvType::l2r) {
+      this->owned_ptr->insert(stmt->from_type());
+    }
   }
 
-  OffloadedStmt *offload;
-  MeshElementTypeSet *owned_ptr;
-  MeshElementTypeSet *total_ptr;
+  OffloadedStmt *offload{nullptr};
+  MeshElementTypeSet *owned_ptr{nullptr};
+  MeshElementTypeSet *total_ptr{nullptr};
+  bool optimize_mesh_reordered_mapping{false};
 };
 
 namespace irpass::analysis {
 
 std::pair</* owned= */ MeshElementTypeSet,
           /* total= */ MeshElementTypeSet>
-gather_mesh_thread_local(OffloadedStmt *offload) {
+gather_mesh_thread_local(OffloadedStmt *offload, const CompileConfig &config) {
   MeshElementTypeSet local_owned{};
   MeshElementTypeSet local_total{};
 
-  GatherMeshThreadLocal::run(offload, &local_owned, &local_total);
+  GatherMeshThreadLocal::run(offload, &local_owned, &local_total, config);
   return std::make_pair(local_owned, local_total);
 }
 

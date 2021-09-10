@@ -23,7 +23,7 @@ void make_mesh_index_mapping_local_offload(OffloadedStmt *offload,
 
   // TODO(changyu): A analyzer to determinte which mapping should be localized
   mappings.insert(std::make_pair(mesh::MeshElementType::Vertex,
-                                 mesh::ConvType::l2g));  // FIXME: A hack
+                                 mesh::ConvType::l2r));  // FIXME: A hack
 
   std::size_t bls_offset_in_bytes = 0;
   auto &block = offload->bls_prologue;
@@ -51,60 +51,104 @@ void make_mesh_index_mapping_local_offload(OffloadedStmt *offload,
       block->parent_stmt = offload;
     }
 
-    // int i = threadIdx.x;
-    // while (x < total_{}_num) {
-    //  mapping_shared[i] = mapping[i + total_{}_offset];
-    //  x += blockDim.x;
-    // }
-
     // Step 1:
     // Fetch mapping to BLS
-
-    // TODO(changyu): if the target index space is reordered, we can do more
-    // optimization
     {
+      auto bls_mapping_loop = [&](Stmt *start_val, Stmt *end_val,
+                                  std::function<Stmt *(Block *, Stmt *)>
+                                      global_val) {
+        Stmt *idx = block->push_back<AllocaStmt>(data_type);
+        [[maybe_unused]] Stmt *init_val =
+            block->push_back<LocalStoreStmt>(idx, start_val);
+        Stmt *bls_element_offset_bytes = block->push_back<ConstStmt>(
+            LaneAttribute<TypedConstant>{(int32)bls_offset_in_bytes});
+        Stmt *block_dim_val = block->push_back<ConstStmt>(
+            LaneAttribute<TypedConstant>{offload->block_dim});
+
+        std::unique_ptr<Block> body = std::make_unique<Block>();
+        {
+          Stmt *idx_val = body->push_back<LocalLoadStmt>(LocalAddress{idx, 0});
+          Stmt *cond = body->push_back<BinaryOpStmt>(BinaryOpType::cmp_lt,
+                                                     idx_val, end_val);
+          { body->push_back<WhileControlStmt>(nullptr, cond); }
+          Stmt *idx_val_byte = body->push_back<BinaryOpStmt>(
+              BinaryOpType::mul, idx_val,
+              body->push_back<ConstStmt>(TypedConstant(dtype_size)));
+          Stmt *offset = body->push_back<BinaryOpStmt>(
+              BinaryOpType::add, bls_element_offset_bytes, idx_val_byte);
+          Stmt *bls_ptr = body->push_back<BlockLocalPtrStmt>(
+              offset,
+              TypeFactory::create_vector_or_scalar_type(1, data_type, true));
+          [[maybe_unused]] Stmt *bls_store = body->push_back<GlobalStoreStmt>(
+              bls_ptr, global_val(body.get(), idx_val));
+
+          Stmt *idx_val_ = body->push_back<BinaryOpStmt>(
+              BinaryOpType::add, idx_val, block_dim_val);
+          [[maybe_unused]] Stmt *idx_store =
+              body->push_back<LocalStoreStmt>(idx, idx_val_);
+        }
+        block->push_back<WhileStmt>(std::move(body));
+        Stmt *idx_val = block->push_back<LocalLoadStmt>(LocalAddress{idx, 0});
+        return idx_val;
+      };
+
       Stmt *thread_idx_stmt = block->push_back<LoopLinearIndexStmt>(
           offload);  // Equivalent to CUDA threadIdx
-      Stmt *idx = block->push_back<AllocaStmt>(data_type);
-      [[maybe_unused]] Stmt *init_val =
-          block->push_back<LocalStoreStmt>(idx, thread_idx_stmt);
-      Stmt *bls_element_offset_bytes = block->push_back<ConstStmt>(
-          LaneAttribute<TypedConstant>{(int32)bls_offset_in_bytes});
-      Stmt *block_dim_val = block->push_back<ConstStmt>(
-          LaneAttribute<TypedConstant>{offload->block_dim});
       Stmt *total_element_num =
           offload->total_num_local.find(element_type)->second;
       Stmt *total_element_offset =
           offload->total_offset_local.find(element_type)->second;
 
-      std::unique_ptr<Block> body = std::make_unique<Block>();
-      {
-        Stmt *idx_val = body->push_back<LocalLoadStmt>(LocalAddress{idx, 0});
-        Stmt *cond = body->push_back<BinaryOpStmt>(BinaryOpType::cmp_lt,
-                                                   idx_val, total_element_num);
-        { body->push_back<WhileControlStmt>(nullptr, cond); }
-        Stmt *idx_val_byte = body->push_back<BinaryOpStmt>(
-            BinaryOpType::mul, idx_val,
-            body->push_back<ConstStmt>(TypedConstant(dtype_size)));
-        Stmt *offset = body->push_back<BinaryOpStmt>(
-            BinaryOpType::add, bls_element_offset_bytes, idx_val_byte);
-        Stmt *bls_ptr = body->push_back<BlockLocalPtrStmt>(
-            offset,
-            TypeFactory::create_vector_or_scalar_type(1, data_type, true));
-        Stmt *global_offset = body->push_back<BinaryOpStmt>(
-            BinaryOpType::add, total_element_offset, idx_val);
-        Stmt *global_ptr = body->push_back<GlobalPtrStmt>(
-            LaneAttribute<SNode *>{snode}, std::vector<Stmt *>{global_offset});
-        Stmt *global_load = body->push_back<GlobalLoadStmt>(global_ptr);
-        [[maybe_unused]] Stmt *bls_store =
-            body->push_back<GlobalStoreStmt>(bls_ptr, global_load);
-
-        Stmt *idx_val_ = body->push_back<BinaryOpStmt>(BinaryOpType::add,
-                                                       idx_val, block_dim_val);
-        [[maybe_unused]] Stmt *idx_store =
-            body->push_back<LocalStoreStmt>(idx, idx_val_);
+      if (config.optimize_mesh_reordered_mapping &&
+          conv_type == mesh::ConvType::l2r) {
+        // int i = threadIdx.x;
+        // while (i < owned_{}_num) {
+        //  mapping_shared[i] = i + owned_{}_offset;
+        //  i += blockDim.x;
+        // }
+        // while (i < total_{}_num) {
+        //  mapping_shared[i] = mapping[i + total_{}_offset];
+        //  i += blockDim.x;
+        // }
+        Stmt *owned_element_num =
+            offload->owned_num_local.find(element_type)->second;
+        Stmt *owned_element_offset =
+            offload->owned_offset_local.find(element_type)->second;
+        Stmt *pre_idx_val = bls_mapping_loop(
+            thread_idx_stmt, owned_element_num,
+            [&](Block *body, Stmt *idx_val) {
+              Stmt *global_index = body->push_back<BinaryOpStmt>(
+                  BinaryOpType::add, idx_val, owned_element_offset);
+              return global_index;
+            });
+        bls_mapping_loop(
+            pre_idx_val, total_element_num, [&](Block *body, Stmt *idx_val) {
+              Stmt *global_offset = body->push_back<BinaryOpStmt>(
+                  BinaryOpType::add, total_element_offset, idx_val);
+              Stmt *global_ptr = body->push_back<GlobalPtrStmt>(
+                  LaneAttribute<SNode *>{snode},
+                  std::vector<Stmt *>{global_offset});
+              Stmt *global_load = body->push_back<GlobalLoadStmt>(global_ptr);
+              return global_load;
+            });
+      } else {
+        // int i = threadIdx.x;
+        // while (i < total_{}_num) {
+        //  mapping_shared[i] = mapping[i + total_{}_offset];
+        //  i += blockDim.x;
+        // }
+        bls_mapping_loop(
+            thread_idx_stmt, total_element_num,
+            [&](Block *body, Stmt *idx_val) {
+              Stmt *global_offset = body->push_back<BinaryOpStmt>(
+                  BinaryOpType::add, total_element_offset, idx_val);
+              Stmt *global_ptr = body->push_back<GlobalPtrStmt>(
+                  LaneAttribute<SNode *>{snode},
+                  std::vector<Stmt *>{global_offset});
+              Stmt *global_load = body->push_back<GlobalLoadStmt>(global_ptr);
+              return global_load;
+            });
       }
-      block->push_back<WhileStmt>(std::move(body));
     }
 
     // Step 2:

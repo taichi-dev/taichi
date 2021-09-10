@@ -3,6 +3,8 @@ on:
   release:
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#release
     types: [published]
+  # When triggered by schedule and workflow_dispatch, github.event.action is an empty string.  
+  # We use this to distinguish which taichi to release.
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:

@@ -291,7 +291,6 @@ def test_local_struct_assign():
         x.idx = 0
         x.line = y
 
-
     def run_python_scope():
         y = line3f(0)
         x = mystruct(0)
@@ -300,4 +299,3 @@ def test_local_struct_assign():
 
     run_taichi_scope()
     run_python_scope()
-

@@ -2025,31 +2025,31 @@ void CodeGenLLVM::visit_call_bitcode(ExternalFuncCallStmt *stmt) {
   std::vector<llvm::Value *> arg_values;
   for (auto s : stmt->arg_stmts)
     arg_values.push_back(llvm_val[s]);
-
-  // Extract function from external module
-  std::unique_ptr<llvm::Module> cpp_module = module_from_bitcode_file(
-      fmt::format("{}", stmt->bc_filename), llvm_context);
-  auto *f_old = cpp_module->getFunction(stmt->bc_funcname);
-  TI_ASSERT_INFO(f_old != nullptr, "{} is not founded in {}.",
-                 stmt->bc_funcname, stmt->bc_filename);
-
+  // Link external module to the core module
+  if (linked_modules.find(stmt->bc_filename) == linked_modules.end()) {
+    linked_modules.insert(stmt->bc_filename);
+    std::unique_ptr<llvm::Module> cpp_module = module_from_bitcode_file(
+        stmt->bc_filename, llvm_context);
+    auto *func_ptr = cpp_module->getFunction(stmt->bc_funcname);
+    TI_ASSERT_INFO(func_ptr != nullptr, "{} is not founded in {}.",
+                   stmt->bc_funcname, stmt->bc_filename);
+    auto link_error = llvm::Linker::linkModules(*module, std::move(cpp_module));
+    TI_ASSERT(!link_error);
+  }
+  // Retrieve function again. Do it here to detect name conflicting.
+  auto *func_ptr = module->getFunction(stmt->bc_funcname);
   // Convert pointer type from a[n * m] to a[n][m]
-  for (int i = 0; i < f_old->getFunctionType()->getNumParams(); ++i) {
-    TI_ASSERT_INFO(f_old->getArg(i)->getType()->getTypeID() ==
+  for (int i = 0; i < func_ptr->getFunctionType()->getNumParams(); ++i) {
+    TI_ASSERT_INFO(func_ptr->getArg(i)->getType()->getTypeID() ==
                        arg_values[i]->getType()->getTypeID(),
                    "TypeID {} != {} with {}",
-                   (int)f_old->getArg(i)->getType()->getTypeID(),
+                   (int)func_ptr->getArg(i)->getType()->getTypeID(),
                    (int)arg_values[i]->getType()->getTypeID(), i);
     auto tmp_value = arg_values[i];
     arg_values[i] =
-        builder->CreatePointerCast(tmp_value, f_old->getArg(i)->getType());
+        builder->CreatePointerCast(tmp_value, func_ptr->getArg(i)->getType());
   }
-
-  // Link external module to the core module and retrieve function again
-  auto link_error = llvm::Linker::linkModules(*module, std::move(cpp_module));
-  TI_ASSERT(!link_error);
-  auto *f_new = module->getFunction(stmt->bc_funcname);
-  builder->CreateCall(f_new, arg_values);
+  builder->CreateCall(func_ptr, arg_values);
 }
 
 void CodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {

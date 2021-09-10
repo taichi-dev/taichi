@@ -3,8 +3,11 @@ on:
   release:
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#release
     types: [published]
+  # When triggered by schedule and workflow_dispatch, github.event.action is an empty string.  
+  # We use this to distinguish which taichi to release.
   schedule:
     - cron: "0 0 * * *"
+  workflow_dispatch:
 
 jobs:
   # This job set environment matrix with respect to production release and nightly release.
@@ -25,6 +28,70 @@ jobs:
           [ -z "${{ github.event.action }}" ] && matrix_osx="[{\"name\":\"taichi-nightly\",\"python\":\"3.8\"}]"
           [ -z "${{ github.event.action }}" ] || matrix_osx="[{\"name\":\"taichi\",\"python\":\"3.8\"},{\"name\":\"taichi\",\"python\":\"3.9\"}]"
           echo ::set-output name=matrix_osx::{\"include\":$(echo $matrix_osx)}\"
+
+  build_and_upload_linux:
+    name: Build and Upload (linux only)
+    needs: matrix_prep
+    strategy:
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    runs-on: [self-hosted, cuda, vulkan, cn]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Create Python Wheel
+        run: |
+          # We hacked here because conda activate in CI won't update python PATH
+          # automatically. So we don't activate and use desired python version
+          # directly.
+          export PATH=/home/buildbot/miniconda3/envs/$PYTHON/bin:$PATH
+          TAICHI_REPO_DIR=`pwd`
+          export PATH=$LLVM_LIB_ROOT_DIR/bin:/usr/local/cuda/bin:$PATH
+          export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
+          export CXX=clang++-8
+          python3 -m pip install --user -r requirements_dev.txt
+          python3 -m pip install --user twine
+          cd python
+          git fetch origin master
+          export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
+          python3 build.py build --project_name $PROJECT_NAME
+          cd ..
+          NUM_WHL=`ls dist/*.whl | wc -l`
+          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
+          python3 -m pip install dist/*.whl
+        env:
+          LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
+          BUILD_NUM_THREADS: 8
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          PROJECT_NAME: ${{ matrix.name }}
+          PYTHON: ${{ matrix.python }}
+
+      - name: Test
+        run: |
+          export PATH=/home/buildbot/miniconda3/envs/$PYTHON/bin:$PATH
+          python3 examples/algorithm/laplace.py
+          export DISPLAY=:1
+          hash -r
+          glewinfo
+          ti diagnose
+          ti changelog
+          ti test -vr2 -t2
+        env:
+          PYTHON: ${{ matrix.python }}
+
+      - name: Upload PyPI
+        env:
+          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
+          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
+          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
+          PROJECT_NAME: ${{ matrix.name }}
+          PYTHON: ${{ matrix.python }}
+        run: |
+          export PATH=/home/buildbot/miniconda3/envs/$PYTHON/bin:$PATH
+          cd python
+          if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
+          elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
 
   build_and_upload_mac:
     name: Build and Upload (macOS only)
@@ -128,7 +195,9 @@ jobs:
           PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
+          PYTHON: ${{ matrix.python }}
         run: |
+          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           cd python
           if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
           elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi

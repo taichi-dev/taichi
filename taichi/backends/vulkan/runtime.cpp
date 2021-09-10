@@ -52,11 +52,15 @@ class StopWatch {
   std::chrono::time_point<std::chrono::system_clock> begin_;
 };
 
-using BufferEnum = TaskAttributes::Buffers;
+using BufferType = TaskAttributes::BufferType;
+using BufferInfo = TaskAttributes::BufferInfo;
+using BufferBind = TaskAttributes::BufferBind;
+using BufferInfoHasher = TaskAttributes::BufferInfoHasher;
 
 // TODO: In the future this isn't necessarily a pointer, since DeviceAllocation
 // is already a pretty cheap handle>
-using InputBuffersMap = std::unordered_map<BufferEnum, DeviceAllocation *>;
+using InputBuffersMap =
+    std::unordered_map<BufferInfo, DeviceAllocation *, BufferInfoHasher>;
 
 class HostDeviceContextBlitter {
  public:
@@ -239,20 +243,21 @@ class CompiledTaichiKernel {
   struct Params {
     const TaichiKernelAttributes *ti_kernel_attribs{nullptr};
     std::vector<std::vector<uint32_t>> spirv_bins;
-    const SNodeDescriptorsMap *snode_descriptors{nullptr};
+    std::vector<CompiledSNodeStructs> compiled_structs;
 
     VulkanDevice *device{nullptr};
-    DeviceAllocation *root_buffer{nullptr};
+    std::vector<DeviceAllocation *> root_buffers;
     DeviceAllocation *global_tmps_buffer{nullptr};
   };
 
   CompiledTaichiKernel(const Params &ti_params)
       : ti_kernel_attribs_(*ti_params.ti_kernel_attribs),
         device_(ti_params.device) {
-    input_buffers_ = {
-        {BufferEnum::Root, ti_params.root_buffer},
-        {BufferEnum::GlobalTmps, ti_params.global_tmps_buffer},
-    };
+    input_buffers_[BufferType::GlobalTmps] = ti_params.global_tmps_buffer;
+    for (int root = 0; root < ti_params.compiled_structs.size(); ++root) {
+      BufferInfo buffer = {BufferType::Root, root};
+      input_buffers_[buffer] = ti_params.root_buffers[root];
+    }
     const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
     if (!ti_kernel_attribs_.ctx_attribs.empty()) {
       Device::AllocParams params;
@@ -264,7 +269,7 @@ class CompiledTaichiKernel {
           {size_t(ctx_sz),
            /*host_write=*/false, /*host_read=*/true,
            /*export_sharing=*/false, AllocUsage::Storage});
-      input_buffers_[BufferEnum::Context] = ctx_buffer_.get();
+      input_buffers_[BufferType::Context] = ctx_buffer_.get();
     }
 
     const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
@@ -307,9 +312,10 @@ class CompiledTaichiKernel {
                            attribs.advisory_num_threads_per_group - 1) /
                           attribs.advisory_num_threads_per_group;
       ResourceBinder *binder = vp->resource_binder();
-      for (auto &pair : input_buffers_) {
-        binder->rw_buffer(0, uint32_t(pair.first), *pair.second);
+      for (auto &bind : attribs.buffer_binds) {
+        binder->rw_buffer(0, bind.binding, *input_buffers_.at(bind.buffer));
       }
+
       cmdlist->bind_pipeline(vp);
       cmdlist->bind_resources(binder);
       cmdlist->dispatch(group_x);
@@ -347,9 +353,7 @@ class CompiledTaichiKernel {
 class VkRuntime ::Impl {
  public:
   explicit Impl(const Params &params)
-      : snode_descriptors_(params.snode_descriptors),
-        host_result_buffer_(params.host_result_buffer) {
-    TI_ASSERT(snode_descriptors_ != nullptr);
+      : host_result_buffer_(params.host_result_buffer) {
     TI_ASSERT(host_result_buffer_ != nullptr);
     EmbeddedVulkanDevice::Params evd_params;
     evd_params.api_version = VulkanEnvSettings::kApiVersion();
@@ -365,15 +369,42 @@ class VkRuntime ::Impl {
       tmp.swap(ti_kernels_);
     }
     global_tmps_buffer_.reset();
-    root_buffer_.reset();
+  }
+
+  void materialize_snode_tree(SNodeTree *tree) {
+    auto *const root = tree->root();
+    CompiledSNodeStructs compiled_structs =
+        vulkan::compile_snode_structs(*root);
+    add_root_buffer(compiled_structs.root_size);
+    compiled_snode_structs_.push_back(compiled_structs);
+  }
+
+  void destroy_snode_tree(SNodeTree *snode_tree) {
+    int root_id = -1;
+    for (int i = 0; i < compiled_snode_structs_.size(); ++i) {
+      if (compiled_snode_structs_[i].root == snode_tree->root()) {
+        root_id = i;
+      }
+    }
+    if (root_id == -1) {
+      TI_ERROR("the tree to be destroyed cannot be found");
+    }
+    root_buffers_[root_id].reset();
+  }
+
+  const std::vector<CompiledSNodeStructs> &get_compiled_structs() const {
+    return compiled_snode_structs_;
   }
 
   KernelHandle register_taichi_kernel(RegisterParams reg_params) {
     CompiledTaichiKernel::Params params;
     params.ti_kernel_attribs = &(reg_params.kernel_attribs);
-    params.snode_descriptors = snode_descriptors_;
+    params.compiled_structs = get_compiled_structs();
     params.device = embedded_device_->device();
-    params.root_buffer = root_buffer_.get();
+    params.root_buffers = {};
+    for (int root = 0; root < root_buffers_.size(); ++root) {
+      params.root_buffers.push_back(root_buffers_[root].get());
+    }
     params.global_tmps_buffer = global_tmps_buffer_.get();
 
     for (int i = 0; i < reg_params.task_spirv_source_codes.size(); ++i) {
@@ -426,14 +457,8 @@ class VkRuntime ::Impl {
 
  private:
   void init_buffers() {
-#pragma message("Vulkan buffers size hardcoded")
-    size_t root_buffer_size = 64 * 1024 * 1024;
     size_t gtmp_buffer_size = 1024 * 1024;
 
-    root_buffer_ = device_->allocate_memory_unique(
-        {root_buffer_size,
-         /*host_write=*/false, /*host_read=*/false,
-         /*export_sharing=*/false, AllocUsage::Storage});
     global_tmps_buffer_ = device_->allocate_memory_unique(
         {gtmp_buffer_size,
          /*host_write=*/false, /*host_read=*/false,
@@ -442,19 +467,33 @@ class VkRuntime ::Impl {
     // Need to zero fill the buffers, otherwise there could be NaN.
     Stream *stream = device_->get_compute_stream();
     auto cmdlist = stream->new_command_list();
-    cmdlist->buffer_fill(root_buffer_->get_ptr(0), root_buffer_size,
-                         /*data=*/0);
+
     cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), gtmp_buffer_size,
                          /*data=*/0);
     stream->submit_synced(cmdlist.get());
   }
 
-  const SNodeDescriptorsMap *const snode_descriptors_;
+  void add_root_buffer(size_t root_buffer_size) {
+    if (root_buffer_size == 0) {
+      root_buffer_size = 4;  // there might be empty roots
+    }
+    std::unique_ptr<DeviceAllocationGuard> new_buffer =
+        device_->allocate_memory_unique(
+            {root_buffer_size,
+             /*host_write=*/false, /*host_read=*/false,
+             /*export_sharing=*/false, AllocUsage::Storage});
+    Stream *stream = device_->get_compute_stream();
+    auto cmdlist = stream->new_command_list();
+    cmdlist->buffer_fill(new_buffer->get_ptr(0), root_buffer_size, /*data=*/0);
+    stream->submit_synced(cmdlist.get());
+    root_buffers_.push_back(std::move(new_buffer));
+  }
+
   uint64_t *const host_result_buffer_;
 
   std::unique_ptr<EmbeddedVulkanDevice> embedded_device_{nullptr};
 
-  std::unique_ptr<DeviceAllocationGuard> root_buffer_;
+  std::vector<std::unique_ptr<DeviceAllocationGuard>> root_buffers_;
   std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_;
 
   Device *device_;
@@ -462,6 +501,8 @@ class VkRuntime ::Impl {
   std::unique_ptr<CommandList> current_cmdlist_{nullptr};
 
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;
+
+  std::vector<CompiledSNodeStructs> compiled_snode_structs_;
 };
 
 #else
@@ -482,6 +523,18 @@ class VkRuntime::Impl {
   }
 
   void synchronize() {
+    TI_ERROR("Vulkan disabled");
+  }
+
+  void materialize_snode_tree(SNodeTree *tree) {
+    TI_ERROR("Vulkan disabled");
+  }
+
+  const std::vector<CompiledSNodeStructs> &get_compiled_structs() const {
+    TI_ERROR("Vulkan disabled");
+  }
+
+  void destroy_snode_tree(SNodeTree *snode_tree) {
     TI_ERROR("Vulkan disabled");
   }
 };
@@ -506,6 +559,19 @@ void VkRuntime::launch_kernel(KernelHandle handle, Context *host_ctx) {
 
 void VkRuntime::synchronize() {
   impl_->synchronize();
+}
+
+void VkRuntime::materialize_snode_tree(SNodeTree *tree) {
+  impl_->materialize_snode_tree(tree);
+}
+
+const std::vector<CompiledSNodeStructs> &VkRuntime::get_compiled_structs()
+    const {
+  return impl_->get_compiled_structs();
+}
+
+void VkRuntime::destroy_snode_tree(SNodeTree *snode_tree) {
+  return impl_->destroy_snode_tree(snode_tree);
 }
 
 Device *VkRuntime::get_ti_device() const {

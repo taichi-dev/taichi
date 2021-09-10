@@ -7,6 +7,8 @@
 #include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/backends/vulkan/kernel_utils.h"
 #include "taichi/program/compile_config.h"
+#include "taichi/struct/snode_tree.h"
+#include "taichi/program/snode_expr_utils.h"
 
 namespace taichi {
 namespace lang {
@@ -18,10 +20,7 @@ class VkRuntime {
 
  public:
   struct Params {
-    // CompiledSNodeStructs compiled_snode_structs;
     uint64_t *host_result_buffer = nullptr;
-    // int root_id;
-    const SNodeDescriptorsMap *snode_descriptors = nullptr;
   };
 
   explicit VkRuntime(const Params &params);
@@ -43,9 +42,15 @@ class VkRuntime {
 
   void launch_kernel(KernelHandle handle, Context *host_ctx);
 
+  void materialize_snode_tree(SNodeTree *tree);
+
+  void destroy_snode_tree(SNodeTree *snode_tree);
+
   void synchronize();
 
   Device *get_ti_device() const;
+
+  const std::vector<CompiledSNodeStructs> &get_compiled_structs() const;
 
  private:
   std::unique_ptr<Impl> impl_;

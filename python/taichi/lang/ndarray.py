@@ -64,6 +64,41 @@ class Ndarray:
         """
         raise NotImplementedError()
 
+    @python_scope
+    def fill(self, val):
+        """Fills ndarray with a specific scalar value.
+
+        Args:
+            val (Union[int, float]): Value to fill.
+        """
+        self.arr.fill_(val)
+
+    @python_scope
+    def to_numpy(self):
+        """Converts ndarray to a numpy array.
+
+        Returns:
+            numpy.ndarray: The result numpy array.
+        """
+        return self.arr.cpu().numpy()
+
+    @python_scope
+    def from_numpy(self, arr):
+        """Loads all values from a numpy array.
+
+        Args:
+            arr (numpy.ndarray): The source numpy array.
+        """
+        import numpy as np
+        if not isinstance(arr, np.ndarray):
+            raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
+        if tuple(self.arr.shape) != tuple(arr.shape):
+            raise ValueError(
+                f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
+            )
+        import torch
+        self.arr = torch.from_numpy(arr).to(self.arr.dtype)
+
 
 class ScalarNdarray(Ndarray):
     """Taichi ndarray with scalar elements implemented with a torch tensor.

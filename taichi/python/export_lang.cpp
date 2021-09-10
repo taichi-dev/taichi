@@ -7,6 +7,8 @@
 
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/eigen.h"
+#include "pybind11/numpy.h"
 
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/frontend_ir.h"
@@ -24,19 +26,18 @@
 #include "taichi/system/timeline.h"
 #include "taichi/python/snode_registry.h"
 #include "taichi/program/sparse_matrix.h"
+#include "taichi/program/sparse_solver.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
 #endif
 
 TI_NAMESPACE_BEGIN
-
 bool test_threading();
 
 TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
-
 void async_print_sfg();
 
 std::string async_dump_dot(std::optional<std::string> rankdir,
@@ -912,9 +913,16 @@ void export_lang(py::module &m) {
     }
   });
 
-  m.def("print_sfg", async_print_sfg);
-  m.def("dump_dot", async_dump_dot, py::arg("rankdir").none(true),
-        py::arg("embed_states_threshold"));
+  m.def("print_sfg",
+        []() { return get_current_program().async_engine->sfg->print(); });
+  m.def(
+      "dump_dot",
+      [](std::optional<std::string> rankdir, int embed_states_threshold) {
+        // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
+        return get_current_program().async_engine->sfg->dump_dot(
+            rankdir, embed_states_threshold);
+      },
+      py::arg("rankdir").none(true), py::arg("embed_states_threshold"));
 
   // Type system
 
@@ -968,6 +976,7 @@ void export_lang(py::module &m) {
       .def(py::self * py::self, py::return_value_policy::reference_internal)
       .def("matmul", &SparseMatrix::matmul,
            py::return_value_policy::reference_internal)
+      .def("mat_vec_mul", &SparseMatrix::mat_vec_mul)
       .def("transpose", &SparseMatrix::transpose,
            py::return_value_policy::reference_internal)
       .def("get_element", &SparseMatrix::get_element)
@@ -979,6 +988,15 @@ void export_lang(py::module &m) {
                 "SparseMatrix only supports CPU for now.");
     return SparseMatrix(n, m);
   });
+
+  py::class_<SparseSolver>(m, "SparseSolver")
+      .def("compute", &SparseSolver::compute)
+      .def("analyze_pattern", &SparseSolver::analyze_pattern)
+      .def("factorize", &SparseSolver::factorize)
+      .def("solve", &SparseSolver::solve)
+      .def("info", &SparseSolver::info);
+
+  m.def("get_sparse_solver", &get_sparse_solver);
 }
 
 TI_NAMESPACE_END

@@ -1,5 +1,6 @@
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
+option(TI_WITH_CUDA_TOOLKIT "Build with the CUDA toolkit" OFF)
 option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
@@ -228,11 +229,30 @@ if (TI_WITH_CUDA)
     target_link_libraries(${LIBRARY_NAME} ${llvm_ptx_libs})
 endif()
 
+if (TI_WITH_CUDA_TOOLKIT)
+    if("$ENV{CUDA_TOOLKIT_ROOT_DIR}" STREQUAL "")
+        message(FATAL_ERROR "TI_WITH_CUDA_TOOLKIT is ON but CUDA_TOOLKIT_ROOT_DIR not found")
+    else()
+        message(STATUS "TI_WITH_CUDA_TOOLKIT = ON")
+        message(STATUS "CUDA_TOOLKIT_ROOT_DIR=$ENV{CUDA_TOOLKIT_ROOT_DIR}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA_TOOLKIT")
+        include_directories($ENV{CUDA_TOOLKIT_ROOT_DIR}/include)
+        link_directories($ENV{CUDA_TOOLKIT_ROOT_DIR}/lib64)
+    endif()
+else()
+    message(STATUS "TI_WITH_CUDA_TOOLKIT = OFF")
+endif()
+
 if (TI_WITH_VULKAN)
     # Vulkan libs
     # https://cmake.org/cmake/help/latest/module/FindVulkan.html
     # https://github.com/PacktPublishing/Learning-Vulkan/blob/master/Chapter%2003/HandShake/CMakeLists.txt
     find_package(Vulkan REQUIRED)
+
+    if(NOT Vulkan_FOUND)
+        message(FATAL_ERROR "TI_WITH_VULKAN is ON but Vulkan could not be found")
+    endif()
+
     message(STATUS "Vulkan_INCLUDE_DIR=${Vulkan_INCLUDE_DIR}")
     message(STATUS "Vulkan_LIBRARY=${Vulkan_LIBRARY}")
     include_directories(${Vulkan_INCLUDE_DIR})

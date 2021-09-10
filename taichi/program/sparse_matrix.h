@@ -39,6 +39,7 @@ class SparseMatrix {
   const int num_cols() const;
   const std::string to_string() const;
   Eigen::SparseMatrix<float32> &get_matrix();
+  const Eigen::SparseMatrix<float32> &get_matrix() const;
   float32 get_element(int row, int col);
 
   friend SparseMatrix operator+(const SparseMatrix &sm1,
@@ -50,11 +51,12 @@ class SparseMatrix {
   friend SparseMatrix operator*(const SparseMatrix &sm1,
                                 const SparseMatrix &sm2);
   SparseMatrix matmul(const SparseMatrix &sm);
+  Eigen::VectorXf mat_vec_mul(const Eigen::Ref<const Eigen::VectorXf> &b);
+
   SparseMatrix transpose();
 
  private:
   Eigen::SparseMatrix<float32> matrix_;
 };
-
 }  // namespace lang
 }  // namespace taichi

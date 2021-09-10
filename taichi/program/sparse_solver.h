@@ -30,7 +30,7 @@ class EigenSparseSolver : public SparseSolver {
   virtual bool info() override;
 };
 
-std::unique_ptr<SparseSolver> get_sparse_solver(const std::string &solver_type);
+std::unique_ptr<SparseSolver> get_sparse_solver(const std::string &solver_type, const std::string &ordering);
 
 }  // namespace lang
 }  // namespace taichi

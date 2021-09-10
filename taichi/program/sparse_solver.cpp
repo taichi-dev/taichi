@@ -33,15 +33,15 @@ bool EigenSparseSolver<EigenSolver>::info() {
 }
 
 std::unique_ptr<SparseSolver> get_sparse_solver(
-    const std::string &solver_type) {
+    const std::string &solver_type, const std::string &ordering) {
   if (solver_type == "LU") {
     using LU = Eigen::SparseLU<Eigen::SparseMatrix<float32>>;
     return std::make_unique<EigenSparseSolver<LU>>();
   } else if (solver_type == "LDLT") {
-    using LDLT = Eigen::SimplicialLDLT<Eigen::SparseMatrix<float32>>;
+    using LDLT = Eigen::SimplicialLDLT<Eigen::SparseMatrix<float32>, Eigen::Lower, Eigen::AMDOrdering<int>>;
     return std::make_unique<EigenSparseSolver<LDLT>>();
   } else if (solver_type == "LLT") {
-    using LLT = Eigen::SimplicialLLT<Eigen::SparseMatrix<float32>>;
+    using LLT = Eigen::SimplicialLLT<Eigen::SparseMatrix<float32>,Eigen::Lower, Eigen::AMDOrdering<int>>;
     return std::make_unique<EigenSparseSolver<LLT>>();
   } else
     TI_ERROR("Not supported sparse solver type: {}", solver_type);

@@ -68,7 +68,6 @@ jobs:
           export DISPLAY=:1
           hash -r
           glewinfo
-          $PYTHON examples/algorithm/laplace.py
           ti diagnose
           ti changelog
           ti test -vr2 -t2

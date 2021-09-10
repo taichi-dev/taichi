@@ -53,7 +53,7 @@ static std::map<key_type, func_type> solver_factory = {
     MAKE_SOLVER(LDLT, COLAMD),
 };
 
-std::unique_ptr<SparseSolver> get_sparse_solver(const std::string &solver_type,
+std::unique_ptr<SparseSolver> make_sparse_solver(const std::string &solver_type,
                                                 const std::string &ordering) {
   std::pair<std::string, std::string> solver_key =
       std::make_pair(solver_type, ordering);

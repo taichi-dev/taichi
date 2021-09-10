@@ -73,5 +73,13 @@ call_parallel()
 for i in range(N):
     assert z[i] == i**3
 
+@ti.kernel
+def call_asm(x: ti.f32, y: ti.f32) -> ti.f32:
+    z = 0.0
+    ti.asm('$0 = %0 * %1', inputs=[x, y], outputs=[z])
+    return z
+
+assert call_asm(99, 101) == 9999
+
 os.remove('a.cpp')
 os.remove('a.so')

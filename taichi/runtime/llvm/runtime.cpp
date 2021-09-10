@@ -1750,28 +1750,31 @@ void wasm_set_print_buffer(Context *context, Ptr buffer) {
 
 void wasm_print_i32(Context *context, i32 value) {
   Ptr buffer = context->runtime->wasm_print_buffer;
-  if (buffer == nullptr) return;
+  if (buffer == nullptr)
+    return;
   i32 total_cnt = ((i32 *)buffer)[0]++;
   i32 print_pos = total_cnt % (1024 * 1024);
-  ((i32 *)buffer)[print_pos * 2 + 1] = 0; // 0 for i32
+  ((i32 *)buffer)[print_pos * 2 + 1] = 0;  // 0 for i32
   ((i32 *)buffer)[print_pos * 2 + 2] = value;
 }
 
 void wasm_print_f32(Context *context, f32 value) {
   Ptr buffer = context->runtime->wasm_print_buffer;
-  if (buffer == nullptr) return;
+  if (buffer == nullptr)
+    return;
   i32 total_cnt = ((i32 *)buffer)[0]++;
   i32 print_pos = total_cnt % (1024 * 1024);
-  ((i32 *)buffer)[print_pos * 2 + 1] = 1; // 1 for f32
+  ((i32 *)buffer)[print_pos * 2 + 1] = 1;  // 1 for f32
   ((f32 *)buffer)[print_pos * 2 + 2] = value;
 }
 
 void wasm_print_char(Context *context, i32 value) {
   Ptr buffer = context->runtime->wasm_print_buffer;
-  if (buffer == nullptr) return;
+  if (buffer == nullptr)
+    return;
   i32 total_cnt = ((i32 *)buffer)[0]++;
   i32 print_pos = total_cnt % (1024 * 1024);
-  ((i32 *)buffer)[print_pos * 2 + 1] = 2; // 2 for char
+  ((i32 *)buffer)[print_pos * 2 + 1] = 2;  // 2 for char
   ((i32 *)buffer)[print_pos * 2 + 2] = value;
 }
 

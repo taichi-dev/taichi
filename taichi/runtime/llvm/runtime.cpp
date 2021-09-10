@@ -558,6 +558,8 @@ struct LLVMRuntime {
 
   i64 total_requested_memory;
 
+  Ptr wasm_print_buffer = nullptr;
+
   template <typename T>
   void set_result(std::size_t i, T t) {
     static_assert(sizeof(T) <= sizeof(uint64));
@@ -1722,10 +1724,11 @@ f64 rounding_prepare_f64(f64 f) {
 extern "C" {
 // The input means starting address of Context, which should be set to
 // '__heap_base' to avoid conflicts with C++ stack data which is stored in
-// memory. The function returns starting address of root buffer. Here is
-// an illustration for proper memory layout in WASM:
+// memory. The function returns starting address of root buffer. The print
+// buffer locates just before Context (8MB). Here is an illustration for
+// proper memory layout in WASM:
 // ━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━
-//   ...  ┃▄ Context ┃  ▄ Runtime ▄  ┃ RandState[0] ┃ Root Buffer ...
+//  Print ┃▄ Context ┃  ▄ Runtime ▄  ┃ RandState[0] ┃ Root Buffer ...
 // ━━━━━━━┻│━━━━━━━━━▲━━│━━━━━━━━━│━━▲━━━━━━━━━━━━━━▲━━━━━━━━━━━━━━━━━━━
 //         └─────────┘  │         └──┘              │
 //                      └───────────────────────────┘
@@ -1739,6 +1742,37 @@ i32 wasm_materialize(Context *context) {
   context->runtime->roots[0] =
       (Ptr)((size_t)context->runtime->rand_states + sizeof(RandState));
   return (i32)(size_t)context->runtime->roots[0];
+}
+
+void wasm_set_print_buffer(Context *context, Ptr buffer) {
+  context->runtime->wasm_print_buffer = buffer;
+}
+
+void wasm_print_i32(Context *context, i32 value) {
+  Ptr buffer = context->runtime->wasm_print_buffer;
+  if (buffer == nullptr) return;
+  i32 total_cnt = ((i32 *)buffer)[0]++;
+  i32 print_pos = total_cnt % (1024 * 1024);
+  ((i32 *)buffer)[print_pos * 2 + 1] = 0; // 0 for i32
+  ((i32 *)buffer)[print_pos * 2 + 2] = value;
+}
+
+void wasm_print_f32(Context *context, f32 value) {
+  Ptr buffer = context->runtime->wasm_print_buffer;
+  if (buffer == nullptr) return;
+  i32 total_cnt = ((i32 *)buffer)[0]++;
+  i32 print_pos = total_cnt % (1024 * 1024);
+  ((i32 *)buffer)[print_pos * 2 + 1] = 1; // 1 for f32
+  ((f32 *)buffer)[print_pos * 2 + 2] = value;
+}
+
+void wasm_print_char(Context *context, i32 value) {
+  Ptr buffer = context->runtime->wasm_print_buffer;
+  if (buffer == nullptr) return;
+  i32 total_cnt = ((i32 *)buffer)[0]++;
+  i32 print_pos = total_cnt % (1024 * 1024);
+  ((i32 *)buffer)[print_pos * 2 + 1] = 2; // 2 for char
+  ((i32 *)buffer)[print_pos * 2 + 2] = value;
 }
 
 void wasm_set_kernel_parameter_i32(Context *context, int index, i32 value) {

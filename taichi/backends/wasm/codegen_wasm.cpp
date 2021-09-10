@@ -14,9 +14,10 @@ namespace taichi {
 namespace lang {
 
 namespace {
-constexpr std::array<const char *, 3> kPreloadedFuncNames = {
+constexpr std::array<const char *, 5> kPreloadedFuncNames = {
     "wasm_materialize", "wasm_set_kernel_parameter_i32",
-    "wasm_set_kernel_parameter_f32"};
+    "wasm_set_kernel_parameter_f32", "wasm_set_print_buffer",
+    "wasm_print"};
 }
 
 class CodeGenLLVMWASM : public CodeGenLLVM {
@@ -105,6 +106,33 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
       TI_NOT_IMPLEMENTED
     }
     current_offload = nullptr;
+  }
+
+  void visit(PrintStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    std::vector<llvm::Value *> args;
+    for (auto const &content : stmt->contents) {
+      if (std::holds_alternative<Stmt *>(content)) {
+        auto arg_stmt = std::get<Stmt *>(content);
+        auto value = llvm_val[arg_stmt];
+        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::i32)) {
+          auto func = get_runtime_function("wasm_print_i32");
+          builder->CreateCall(func, std::vector<llvm::Value *> {get_context(), value});
+        } else if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+          auto func = get_runtime_function("wasm_print_f32");
+          builder->CreateCall(func, std::vector<llvm::Value *> {get_context(), value});
+        } else {
+          TI_NOT_IMPLEMENTED
+        }
+      } else {
+          auto arg_str = std::get<std::string>(content);
+          for (int i = 0; i < (int)arg_str.size(); ++i) {
+            auto value = tlctx->get_constant((int32)arg_str[i]);
+            auto func = get_runtime_function("wasm_print_char");
+            builder->CreateCall(func, std::vector<llvm::Value *> {get_context(), value});
+          }
+      }
+    }
   }
 
   /**

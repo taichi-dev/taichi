@@ -56,7 +56,7 @@ std::unique_ptr<SparseSolver> make_sparse_solver(const std::string &solver_type,
                                                  const std::string &ordering) {
   using key_type = std::pair<std::string, std::string>;
   using func_type = std::unique_ptr<SparseSolver> (*)();
-  static std::unordered_map<key_type, func_type, pair_hash> solver_factory = {
+  static const std::unordered_map<key_type, func_type, pair_hash> solver_factory = {
       MAKE_SOLVER(LLT, AMD),
       MAKE_SOLVER(LLT, COLAMD),
       MAKE_SOLVER(LDLT, AMD),

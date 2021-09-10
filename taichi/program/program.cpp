@@ -196,9 +196,8 @@ void Program::materialize_runtime() {
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
-  TI_ASSERT(arch_uses_llvm(config.arch));
-  static_cast<LlvmProgramImpl *>(program_impl_.get())
-      ->destroy_snode_tree(snode_tree);
+  TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::vulkan);
+  program_impl_->destroy_snode_tree(snode_tree);
 }
 
 SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {

@@ -35,14 +35,7 @@ class ReplaceRelationAccess : public BasicStmtVisitor {
   OffloadedStmt *offload;
 
   void visit(MeshRelationAccessStmt *stmt) override {
-    mesh::MeshElementType from_type;
-    if (auto idx = stmt->mesh_idx->cast<LoopIndexStmt>()) {
-      from_type = idx->mesh_index_type();
-    } else if (auto idx = stmt->mesh_idx->cast<MeshRelationAccessStmt>()) {
-      from_type = idx->to_type;
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
+    mesh::MeshElementType from_type = stmt->from_type();
 
     auto from_order = mesh::element_order(from_type);
     auto to_order = mesh::element_order(stmt->to_type);
@@ -85,14 +78,8 @@ class ReplaceRelationAccess : public BasicStmtVisitor {
   }
 
   void visit(MeshRelationSizeStmt *stmt) override {
-    mesh::MeshElementType from_type;
-    if (auto idx = stmt->mesh_idx->cast<LoopIndexStmt>()) {
-      from_type = idx->mesh_index_type();
-    } else if (auto idx = stmt->mesh_idx->cast<MeshRelationAccessStmt>()) {
-      from_type = idx->to_type;
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
+    mesh::MeshElementType from_type = stmt->from_type();
+
     auto from_order = mesh::element_order(from_type);
     auto to_order = mesh::element_order(stmt->to_type);
     auto rel_type = mesh::relation_by_orders(from_order, to_order);

@@ -39,33 +39,15 @@ class GatherMeshThreadLocal : public BasicStmtVisitor {
   }
 
   void visit(MeshRelationAccessStmt *stmt) override {
-    if (auto idx = stmt->mesh_idx->cast<LoopIndexStmt>()) {
-      this->owned_ptr->insert(idx->mesh_index_type());
-    } else if (auto idx = stmt->mesh_idx->cast<MeshRelationAccessStmt>()) {
-      this->owned_ptr->insert(idx->to_type);
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
+    this->owned_ptr->insert(stmt->from_type());
   }
 
   void visit(MeshRelationSizeStmt *stmt) override {
-    if (auto idx = stmt->mesh_idx->cast<LoopIndexStmt>()) {
-      this->owned_ptr->insert(idx->mesh_index_type());
-    } else if (auto idx = stmt->mesh_idx->cast<MeshRelationAccessStmt>()) {
-      this->owned_ptr->insert(idx->to_type);
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
+    this->owned_ptr->insert(stmt->from_type());
   }
 
   void visit(MeshIndexConversionStmt *stmt) override {
-    if (auto idx = stmt->idx->cast<LoopIndexStmt>()) {
-      this->total_ptr->insert(idx->mesh_index_type());
-    } else if (auto idx = stmt->idx->cast<MeshRelationAccessStmt>()) {
-      this->total_ptr->insert(idx->to_type);
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
+    this->total_ptr->insert(stmt->from_type());
   }
 
   OffloadedStmt *offload;

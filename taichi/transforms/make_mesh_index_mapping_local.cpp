@@ -118,19 +118,9 @@ void make_mesh_index_mapping_local_offload(OffloadedStmt *offload,
       irpass::analysis::gather_statements(offload->body.get(), [&](Stmt *stmt) {
         if (auto idx_conv = stmt->cast<MeshIndexConversionStmt>()) {
           if (idx_conv->mesh == offload->mesh &&
-              idx_conv->conv_type == conv_type) {
-            mesh::MeshElementType from_type;
-            if (auto idx = idx_conv->idx->cast<LoopIndexStmt>()) {
-              from_type = idx->mesh_index_type();
-            } else if (auto idx =
-                           idx_conv->idx->cast<MeshRelationAccessStmt>()) {
-              from_type = idx->to_type;
-            } else {
-              TI_NOT_IMPLEMENTED;
-            }
-            if (from_type == element_type) {
-              idx_conv_stmts.push_back(idx_conv);
-            }
+              idx_conv->conv_type == conv_type &&
+              idx_conv->from_type() == element_type) {
+            idx_conv_stmts.push_back(idx_conv);
           }
         }
         return false;

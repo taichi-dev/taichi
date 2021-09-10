@@ -1569,6 +1569,7 @@ class BitStructStoreStmt : public Stmt {
 };
 
 // Mesh related.
+mesh::MeshElementType get_mesh_element_type(Stmt *stmt);
 
 /**
  * The number of neighbours (length of relation) of a mesh idx
@@ -1585,6 +1586,10 @@ class MeshRelationSizeStmt : public Stmt {
       : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
     this->ret_type = PrimitiveType::u32;
     TI_STMT_REG_FIELDS;
+  }
+
+  mesh::MeshElementType from_type() const {
+    return get_mesh_element_type(mesh_idx);
   }
 
   bool has_global_side_effect() const override {
@@ -1621,6 +1626,10 @@ class MeshRelationAccessStmt : public Stmt {
     return false;
   }
 
+  mesh::MeshElementType from_type() const {
+    return get_mesh_element_type(mesh_idx);
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, mesh, mesh_idx, to_type, neighbor_idx);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -1643,6 +1652,10 @@ class MeshIndexConversionStmt : public Stmt {
 
   bool has_global_side_effect() const override {
     return false;
+  }
+
+  mesh::MeshElementType from_type() const {
+    return get_mesh_element_type(idx);
   }
 
   TI_STMT_DEF_FIELDS(ret_type, mesh, idx, conv_type);

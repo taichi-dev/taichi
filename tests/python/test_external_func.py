@@ -1,6 +1,7 @@
-import pytest
 import ctypes
 import os
+
+import pytest
 
 import taichi as ti
 
@@ -23,6 +24,7 @@ def test_source_builder_so():
     }
     '''
     sb_so = ti.SourceBuilder(source_so, 'so')
+
     @ti.kernel
     def func_so() -> ti.i32:
         a = 2.0
@@ -34,6 +36,7 @@ def test_source_builder_so():
         p = 0
         sb_so.pow_int(args=(int(c + d), e), outputs=(p, ))
         return p
+
     assert func_so() == 11**8
 
 
@@ -55,6 +58,7 @@ def test_source_builder_bc():
     }
     '''
     sb_bc = ti.SourceBuilder(source_bc, 'bc')
+
     @ti.kernel
     def func_bc() -> ti.i32:
         a = 2.0
@@ -67,6 +71,7 @@ def test_source_builder_bc():
         c_plus_d = int(c + d)
         sb_bc.pow_int(c_plus_d, e, p)
         return p
+
     assert func_bc() == 11**8
 
 
@@ -74,6 +79,7 @@ def test_source_builder_bc():
 @ti.test(exclude=ti.cpu, require=ti.extension.extfunc)
 def test_source_builder_asm(x, y):
     sb = ti.SourceBuilder('$0 = %0 * %1', mode='asm')
+
     @ti.kernel
     def another_func(x: ti.f32, y: ti.f32) -> ti.f32:
         z = 0.0

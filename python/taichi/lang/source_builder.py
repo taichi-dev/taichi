@@ -16,8 +16,8 @@ class SourceBuilder():
             self.compiled_file = os.path.join(self.td, 'source.bc')
             with open(self.source_file, 'w') as f:
                 f.write(source)
-            os.system('clang++-11 -flto -c ' + self.source_file +
-                      ' -o ' + self.compiled_file)
+            os.system('clang++-11 -flto -c ' + self.source_file + ' -o ' +
+                      self.compiled_file)
             self.bc = self.compiled_file
         elif self.mode == 'so':
             self.td = tempfile.mkdtemp()
@@ -25,8 +25,8 @@ class SourceBuilder():
             self.compiled_file = os.path.join(self.td, 'source.so')
             with open(self.source_file, 'w') as f:
                 f.write(source)
-            os.system('g++ ' + self.source_file + ' -o ' +
-                      self.compiled_file + ' -fPIC -shared')
+            os.system('g++ ' + self.source_file + ' -o ' + self.compiled_file +
+                      ' -fPIC -shared')
             self.so = ctypes.CDLL(self.compiled_file)
         elif self.mode == 'asm':
             self.asm = source

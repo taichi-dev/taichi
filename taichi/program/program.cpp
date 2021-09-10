@@ -493,11 +493,16 @@ Program::~Program() {
 }
 
 std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
+  // FIXME: This couples the runtime backend with the target AOT backend. E.g.
+  // If we want to build a Metal AOT module, we have to be on the macOS
+  // platform. Consider decoupling this part
+  if (arch == Arch::wasm) {
+    // Have to check WASM first, or it dispatches to the LlvmProgramImpl.
+    return std::make_unique<wasm::AotModuleBuilderImpl>();
+  }
   if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
       config.arch == Arch::vulkan || config.arch == Arch::opengl) {
     return program_impl_->make_aot_module_builder();
-  } else if (arch == Arch::wasm) {
-    return std::make_unique<wasm::AotModuleBuilderImpl>();
   }
   return nullptr;
 }

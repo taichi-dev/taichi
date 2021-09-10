@@ -213,7 +213,9 @@ void export_lang(py::module &m) {
       .def_readwrite("make_mesh_index_mapping_local",
                      &CompileConfig::make_mesh_index_mapping_local)
       .def_readwrite("mesh_localize_from_end_mapping",
-                     &CompileConfig::mesh_localize_from_end_mapping);
+                     &CompileConfig::mesh_localize_from_end_mapping)
+      .def_readwrite("optimize_mesh_reordered_mapping",
+                     &CompileConfig::optimize_mesh_reordered_mapping);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -1214,6 +1216,11 @@ void export_lang(py::module &m) {
   m.def("set_l2g",
         [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
           mesh_ptr.ptr->l2g_map.insert(std::pair(type, snode));
+        });
+
+  m.def("set_l2r",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
+          mesh_ptr.ptr->l2r_map.insert(std::pair(type, snode));
         });
 
   m.def("set_relation_fixed",

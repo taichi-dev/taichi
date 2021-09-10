@@ -20,7 +20,7 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
 
   std::pair</* owned= */ std::unordered_set<mesh::MeshElementType>,
             /* total= */ std::unordered_set<mesh::MeshElementType>>
-      accessed = analysis::gather_mesh_thread_local(offload);
+      accessed = analysis::gather_mesh_thread_local(offload, config);
 
   std::size_t tls_offset = offload->tls_size;
 

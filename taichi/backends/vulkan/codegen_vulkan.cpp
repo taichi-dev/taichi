@@ -72,14 +72,14 @@ class TaskCodegen : public IRVisitor {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
 
-    fill_node_to_root();
+    fill_snode_to_root();
     ir_ = std::make_shared<spirv::IRBuilder>(params.device);
   }
 
-  void fill_node_to_root() {
+  void fill_snode_to_root() {
     for (int root = 0; root < compiled_structs_.size(); ++root) {
       for (auto [node_id, node] : compiled_structs_[root].snode_descriptors) {
-        node_to_root_[node_id] = root;
+        snode_to_root_[node_id] = root;
       }
     }
   }
@@ -207,7 +207,7 @@ class TaskCodegen : public IRVisitor {
 
   void visit(GetRootStmt *stmt) override {
     // Should we assert |root_stmt_| is assigned only once?
-    int root_id = node_to_root_[stmt->root()->id];
+    const int root_id = snode_to_root_.at(stmt->root()->id);
     root_stmts_[root_id] = stmt;
     get_buffer_value({BufferType::Root, root_id});
     spirv::SType root_ptr = ir_->get_pointer_type(
@@ -221,7 +221,7 @@ class TaskCodegen : public IRVisitor {
 
   void visit(GetChStmt *stmt) override {
     // TODO: GetChStmt -> GetComponentStmt ?
-    int root = node_to_root_.at(stmt->input_snode->id);
+    const int root = snode_to_root_.at(stmt->input_snode->id);
 
     const auto &snode_descs = compiled_structs_[root].snode_descriptors;
     auto *out_snode = stmt->output_snode;
@@ -254,7 +254,7 @@ class TaskCodegen : public IRVisitor {
   void visit(SNodeLookupStmt *stmt) override {
     // TODO: SNodeLookupStmt -> GetSNodeCellStmt ?
     bool is_root{false};  // Eliminate first root snode access
-    int root_id = node_to_root_.at(stmt->snode->id);
+    const int root_id = snode_to_root_.at(stmt->snode->id);
     std::string parent;
     spirv::SType snode_struct;
     if (stmt->input_snode) {
@@ -1300,7 +1300,7 @@ class TaskCodegen : public IRVisitor {
 
   OffloadedStmt *const task_ir_;  // not owned
   std::vector<CompiledSNodeStructs> compiled_structs_;
-  std::unordered_map<int, int> node_to_root_;
+  std::unordered_map<int, int> snode_to_root_;
   const KernelContextAttributes *const ctx_attribs_;  // not owned
   const std::string task_name_;
   std::vector<spirv::Label> continue_label_stack_;

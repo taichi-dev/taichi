@@ -65,8 +65,14 @@ jobs:
         run: |
           export PATH=/home/buildbot/miniconda3/envs/$PYTHON/bin:$PATH
           python3 examples/algorithm/laplace.py
+          export DISPLAY=:1
+          hash -r
+          glewinfo
+          $PYTHON examples/algorithm/laplace.py
           ti diagnose
-          ti test -v -t8
+          ti changelog
+          ti test -vr2 -t2 -k "not ndarray"
+          ti test -vr2 -t1 -k "ndarray"
         env:
           PYTHON: ${{ matrix.python }}
 

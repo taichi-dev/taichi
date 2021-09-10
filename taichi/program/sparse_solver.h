@@ -7,7 +7,7 @@ namespace lang {
 
 class SparseSolver {
  public:
-  virtual ~SparseSolver(){};
+  virtual ~SparseSolver() = default;
   virtual bool compute(const SparseMatrix &sm) = 0;
   virtual void analyze_pattern(const SparseMatrix &sm) = 0;
   virtual void factorize(const SparseMatrix &sm) = 0;
@@ -21,7 +21,7 @@ class EigenSparseSolver : public SparseSolver {
   EigenSolver solver_;
 
  public:
-  virtual ~EigenSparseSolver(){};
+  virtual ~EigenSparseSolver() = default;
   virtual bool compute(const SparseMatrix &sm) override;
   virtual void analyze_pattern(const SparseMatrix &sm) override;
   virtual void factorize(const SparseMatrix &sm) override;
@@ -30,7 +30,8 @@ class EigenSparseSolver : public SparseSolver {
   virtual bool info() override;
 };
 
-std::unique_ptr<SparseSolver> get_sparse_solver(const std::string &solver_type, const std::string &ordering);
+std::unique_ptr<SparseSolver> get_sparse_solver(const std::string &solver_type,
+                                                const std::string &ordering);
 
 }  // namespace lang
 }  // namespace taichi

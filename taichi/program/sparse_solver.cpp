@@ -32,17 +32,37 @@ bool EigenSparseSolver<EigenSolver>::info() {
   return solver_.info() == Eigen::Success;
 }
 
-std::unique_ptr<SparseSolver> get_sparse_solver(
-    const std::string &solver_type, const std::string &ordering) {
-  if (solver_type == "LU") {
+#include <map>
+using key_type = std::pair<std::string, std::string>;
+using func_type = std::unique_ptr<SparseSolver> (*)();
+
+#define MAKE_SOLVER(type, order)                                              \
+  {                                                                           \
+    {#type, #order}, []() -> std::unique_ptr<SparseSolver> {                  \
+      using T =                                                               \
+          Eigen::Simplicial##type<Eigen::SparseMatrix<float32>, Eigen::Lower, \
+                                  Eigen::order##Ordering<int>>;               \
+      return std::make_unique<EigenSparseSolver<T>>();                        \
+    }                                                                         \
+  }
+
+static std::map<key_type, func_type> solver_factory = {
+    MAKE_SOLVER(LLT, AMD),
+    MAKE_SOLVER(LLT, COLAMD),
+    MAKE_SOLVER(LDLT, AMD),
+    MAKE_SOLVER(LDLT, COLAMD),
+};
+
+std::unique_ptr<SparseSolver> get_sparse_solver(const std::string &solver_type,
+                                                const std::string &ordering) {
+  std::pair<std::string, std::string> solver_key =
+      std::make_pair(solver_type, ordering);
+  if (solver_factory.find(solver_key) != solver_factory.end()) {
+    auto solver_func = solver_factory.at(solver_key);
+    return solver_func();
+  } else if (solver_type == "LU") {
     using LU = Eigen::SparseLU<Eigen::SparseMatrix<float32>>;
     return std::make_unique<EigenSparseSolver<LU>>();
-  } else if (solver_type == "LDLT") {
-    using LDLT = Eigen::SimplicialLDLT<Eigen::SparseMatrix<float32>, Eigen::Lower, Eigen::AMDOrdering<int>>;
-    return std::make_unique<EigenSparseSolver<LDLT>>();
-  } else if (solver_type == "LLT") {
-    using LLT = Eigen::SimplicialLLT<Eigen::SparseMatrix<float32>,Eigen::Lower, Eigen::AMDOrdering<int>>;
-    return std::make_unique<EigenSparseSolver<LLT>>();
   } else
     TI_ERROR("Not supported sparse solver type: {}", solver_type);
 }

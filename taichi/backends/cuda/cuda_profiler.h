@@ -33,8 +33,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
  private:
   void *base_event_{nullptr};
   float64 base_time_{0.0};
-  //for cuEvent profiling, clear after sync()
-  std::vector<CUDAEventRecord> event_records_; 
+  // for cuEvent profiling, clear after sync()
+  std::vector<CUDAEventRecord> event_records_;
 };
 
 TLANG_NAMESPACE_END

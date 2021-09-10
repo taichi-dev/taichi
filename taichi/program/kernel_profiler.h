@@ -15,7 +15,7 @@ TLANG_NAMESPACE_BEGIN
 struct KernelProfileTracedRecord {
   std::string name;
   float kernel_elapsed_time_in_ms{0.0};
-  float time_since_base{0.0}; //for Timeline
+  float time_since_base{0.0};  // for Timeline
 };
 
 struct KernelProfileStatisticalResult {
@@ -29,7 +29,8 @@ struct KernelProfileStatisticalResult {
       : name(name), counter(0), min(0), max(0), total(0) {
   }
 
-  void insert_record(double t); //TODO replace `double time` with `KernelProfileTracedRecord record`
+  void insert_record(double t);  // TODO replace `double time` with
+                                 // `KernelProfileTracedRecord record`
 
   bool operator<(const KernelProfileStatisticalResult &o) const;
 };

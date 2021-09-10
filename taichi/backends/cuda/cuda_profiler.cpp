@@ -13,12 +13,13 @@ std::string KernelProfilerCUDA::title() const {
 
 KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
     const std::string &kernel_name) {
-  
   CUDAEventRecord record;
   record.name = kernel_name;
-  
-  CUDADriver::get_instance().event_create(&(record.start_event), CU_EVENT_DEFAULT);
-  CUDADriver::get_instance().event_create(&(record.stop_event), CU_EVENT_DEFAULT);
+
+  CUDADriver::get_instance().event_create(&(record.start_event),
+                                          CU_EVENT_DEFAULT);
+  CUDADriver::get_instance().event_create(&(record.stop_event),
+                                          CU_EVENT_DEFAULT);
   CUDADriver::get_instance().event_record((record.start_event), 0);
   event_records_.push_back(record);
 
@@ -63,17 +64,17 @@ void KernelProfilerCUDA::record(KernelProfilerBase::TaskHandle &task_handle,
 }
 
 void KernelProfilerCUDA::sync() {
-  
-  //sync
+  // sync
   CUDADriver::get_instance().stream_synchronize(nullptr);
-  
-  //cuEvent : get traced kernel_elapsed_time
+
+  // cuEvent : get traced kernel_elapsed_time
   for (auto &record : event_records_) {
-    CUDADriver::get_instance().event_elapsed_time(&record.kernel_elapsed_time_in_ms, 
-                                                  record.start_event, record.stop_event); 
-    CUDADriver::get_instance().event_elapsed_time(&record.time_since_base, 
-                                                  base_event_, record.start_event);
-    
+    CUDADriver::get_instance().event_elapsed_time(
+        &record.kernel_elapsed_time_in_ms, record.start_event,
+        record.stop_event);
+    CUDADriver::get_instance().event_elapsed_time(
+        &record.time_since_base, base_event_, record.start_event);
+
     // TODO: the following two lines seem to increases profiler overhead a
     // little bit. Is there a way to avoid the overhead while not creating
     // too many events?
@@ -87,11 +88,13 @@ void KernelProfilerCUDA::sync() {
     traced_records_.push_back(traced_record);
   }
 
-  //statistics on traced_records_
-  for (auto &record : traced_records_){
-    auto it = std::find_if(
-        statistical_results_.begin(), statistical_results_.end(),
-        [&](KernelProfileStatisticalResult &result) {return result.name == record.name;});
+  // statistics on traced_records_
+  for (auto &record : traced_records_) {
+    auto it =
+        std::find_if(statistical_results_.begin(), statistical_results_.end(),
+                     [&](KernelProfileStatisticalResult &result) {
+                       return result.name == record.name;
+                     });
     if (it == statistical_results_.end()) {
       statistical_results_.emplace_back(record.name);
       it = std::prev(statistical_results_.end());
@@ -100,14 +103,18 @@ void KernelProfilerCUDA::sync() {
     total_time_ms_ += record.kernel_elapsed_time_in_ms;
   }
 
-  //timeline
+  // timeline
   if (Timelines::get_instance().get_enabled()) {
     auto &timeline = Timeline::get_this_thread_instance();
-    for (auto &record : traced_records_){
+    for (auto &record : traced_records_) {
       timeline.insert_event({record.name, true,
-                              base_time_ + record.time_since_base * 1e-3, "cuda"});
+                             base_time_ + record.time_since_base * 1e-3,
+                             "cuda"});
       timeline.insert_event({record.name, false,
-                             base_time_ + (record.time_since_base + record.kernel_elapsed_time_in_ms) * 1e-3, "cuda"});
+                             base_time_ + (record.time_since_base +
+                                           record.kernel_elapsed_time_in_ms) *
+                                              1e-3,
+                             "cuda"});
     }
   }
 

@@ -18,7 +18,8 @@ void KernelProfileStatisticalResult::insert_record(double t) {
   total += t;
 }
 
-bool KernelProfileStatisticalResult::operator<(const KernelProfileStatisticalResult &o) const {
+bool KernelProfileStatisticalResult::operator<(
+    const KernelProfileStatisticalResult &o) const {
   return total > o.total;
 }
 
@@ -122,9 +123,11 @@ class DefaultProfiler : public KernelProfilerBase {
   void stop() override {
     auto t = Time::get_time() - start_t_;
     auto ms = t * 1000.0;
-    auto it = std::find_if(
-        statistical_results_.begin(), statistical_results_.end(),
-        [&](KernelProfileStatisticalResult &r) { return r.name == event_name_; });
+    auto it =
+        std::find_if(statistical_results_.begin(), statistical_results_.end(),
+                     [&](KernelProfileStatisticalResult &r) {
+                       return r.name == event_name_;
+                     });
     if (it == statistical_results_.end()) {
       statistical_results_.emplace_back(event_name_);
       it = std::prev(statistical_results_.end());

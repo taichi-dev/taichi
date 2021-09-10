@@ -39,6 +39,9 @@ jobs:
 
       - name: Create Python Wheel
         run: |
+          # We hacked here because conda activate in CI won't update python PATH
+          # automatically. So we don't activate and use desired python version
+          # directly.
           export PATH=/home/buildbot/miniconda3/envs/$PYTHON/bin:$PATH
           TAICHI_REPO_DIR=`pwd`
           export PATH=$LLVM_LIB_ROOT_DIR/bin:/usr/local/cuda/bin:$PATH
@@ -80,6 +83,7 @@ jobs:
           PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
+          PYTHON: ${{ matrix.python }}
         run: |
           export PATH=/home/buildbot/miniconda3/envs/$PYTHON/bin:$PATH
           cd python
@@ -188,7 +192,9 @@ jobs:
           PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
+          PYTHON: ${{ matrix.python }}
         run: |
+          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           cd python
           if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
           elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi

@@ -495,8 +495,8 @@ Program::~Program() {
 
 std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
   // FIXME: This couples the runtime backend with the target AOT backend. E.g.
-  // If we want to build a Metal AOT module, we have to be on the macOS platform.
-  // Consider decoupling this part
+  // If we want to build a Metal AOT module, we have to be on the macOS
+  // platform. Consider decoupling this part
   if (arch == Arch::wasm) {
     // Have to check WASM first, or it dispatches to the LlvmProgramImpl.
     return std::make_unique<wasm::AotModuleBuilderImpl>();

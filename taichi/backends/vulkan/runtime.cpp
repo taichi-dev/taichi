@@ -372,10 +372,10 @@ class VkRuntime ::Impl {
   }
 
   void materialize_snode_tree(SNodeTree *tree) {
-    add_root_buffer();
     auto *const root = tree->root();
     CompiledSNodeStructs compiled_structs =
         vulkan::compile_snode_structs(*root);
+    add_root_buffer(compiled_structs.root_size);
     compiled_snode_structs_.push_back(compiled_structs);
   }
 
@@ -473,9 +473,10 @@ class VkRuntime ::Impl {
     stream->submit_synced(cmdlist.get());
   }
 
-  void add_root_buffer() {
-#pragma message("Vulkan buffers size hardcoded")
-    size_t root_buffer_size = 64 * 1024 * 1024;
+  void add_root_buffer(size_t root_buffer_size) {
+    if (root_buffer_size == 0) {
+      root_buffer_size = 4;  // there might be empty roots
+    }
     std::unique_ptr<DeviceAllocationGuard> new_buffer =
         device_->allocate_memory_unique(
             {root_buffer_size,

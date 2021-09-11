@@ -9,54 +9,13 @@ namespace lang {
 
 const PassID MakeMeshIndexMappingLocal::id = "MakeMeshIndexMappingLocal";
 
-namespace irpass {
-
-void make_mesh_index_mapping_local_offload(OffloadedStmt *offload,
-                                           const CompileConfig &config,
-                                           const std::string &kernel_name) {
-  if (offload->task_type != OffloadedStmt::TaskType::mesh_for) {
-    return;
-  }
-
-  // mesh_for should skip make_block_local pass
-  std::set<std::pair<mesh::MeshElementType, mesh::ConvType>> mappings;
-
-  // TODO(changyu): A analyzer to determinte which mapping should be localized
-  mappings.insert(std::make_pair(mesh::MeshElementType::Vertex,
-                                 mesh::ConvType::l2r));  // FIXME: A hack
-
-  std::size_t bls_offset_in_bytes = 0;
+void MakeMeshIndexMappingLocal::fetch_mapping_to_bls(
+    mesh::MeshElementType element_type,
+    mesh::ConvType conv_type) {
   auto &block = offload->bls_prologue;
-
-  for (auto [element_type, conv_type] : mappings) {
-    // There is not corresponding mesh element attribute read/write,
-    // It's useless to localize this mapping
-    if (offload->total_offset_local.find(element_type) ==
-        offload->total_offset_local.end()) {
-      continue;
-    }
-
-    SNode *snode = conv_type == mesh::ConvType::l2g
-                       ? offload->mesh->l2g_map.find(element_type)->second
-                       : offload->mesh->l2r_map.find(element_type)->second;
-    auto data_type = snode->dt.ptr_removed();
-    auto dtype_size = data_type_size(data_type);
-
-    // Ensure BLS alignment
-    bls_offset_in_bytes +=
-        (dtype_size - bls_offset_in_bytes % dtype_size) % dtype_size;
-
-    if (block == nullptr) {
-      block = std::make_unique<Block>();
-      block->parent_stmt = offload;
-    }
-
-    // Step 1:
-    // Fetch mapping to BLS
-    {
-      auto bls_mapping_loop = [&](Stmt *start_val, Stmt *end_val,
-                                  std::function<Stmt *(Block *, Stmt *)>
-                                      global_val) {
+  auto bls_mapping_loop =
+      [&](Stmt *start_val, Stmt *end_val,
+          std::function<Stmt *(Block *, Stmt *)> global_val) {
         Stmt *idx = block->push_back<AllocaStmt>(data_type);
         [[maybe_unused]] Stmt *init_val =
             block->push_back<LocalStoreStmt>(idx, start_val);
@@ -92,101 +51,137 @@ void make_mesh_index_mapping_local_offload(OffloadedStmt *offload,
         return idx_val;
       };
 
-      Stmt *thread_idx_stmt = block->push_back<LoopLinearIndexStmt>(
-          offload);  // Equivalent to CUDA threadIdx
-      Stmt *total_element_num =
-          offload->total_num_local.find(element_type)->second;
-      Stmt *total_element_offset =
-          offload->total_offset_local.find(element_type)->second;
+  Stmt *thread_idx_stmt = block->push_back<LoopLinearIndexStmt>(
+      offload);  // Equivalent to CUDA threadIdx
+  Stmt *total_element_num = offload->total_num_local.find(element_type)->second;
+  Stmt *total_element_offset =
+      offload->total_offset_local.find(element_type)->second;
 
-      if (config.optimize_mesh_reordered_mapping &&
-          conv_type == mesh::ConvType::l2r) {
-        // int i = threadIdx.x;
-        // while (i < owned_{}_num) {
-        //  mapping_shared[i] = i + owned_{}_offset;
-        //  i += blockDim.x;
-        // }
-        // while (i < total_{}_num) {
-        //  mapping_shared[i] = mapping[i + total_{}_offset];
-        //  i += blockDim.x;
-        // }
-        Stmt *owned_element_num =
-            offload->owned_num_local.find(element_type)->second;
-        Stmt *owned_element_offset =
-            offload->owned_offset_local.find(element_type)->second;
-        Stmt *pre_idx_val = bls_mapping_loop(
-            thread_idx_stmt, owned_element_num,
-            [&](Block *body, Stmt *idx_val) {
-              Stmt *global_index = body->push_back<BinaryOpStmt>(
-                  BinaryOpType::add, idx_val, owned_element_offset);
-              return global_index;
-            });
-        bls_mapping_loop(
-            pre_idx_val, total_element_num, [&](Block *body, Stmt *idx_val) {
-              Stmt *global_offset = body->push_back<BinaryOpStmt>(
-                  BinaryOpType::add, total_element_offset, idx_val);
-              Stmt *global_ptr = body->push_back<GlobalPtrStmt>(
-                  LaneAttribute<SNode *>{snode},
-                  std::vector<Stmt *>{global_offset});
-              Stmt *global_load = body->push_back<GlobalLoadStmt>(global_ptr);
-              return global_load;
-            });
-      } else {
-        // int i = threadIdx.x;
-        // while (i < total_{}_num) {
-        //  mapping_shared[i] = mapping[i + total_{}_offset];
-        //  i += blockDim.x;
-        // }
-        bls_mapping_loop(
-            thread_idx_stmt, total_element_num,
-            [&](Block *body, Stmt *idx_val) {
-              Stmt *global_offset = body->push_back<BinaryOpStmt>(
-                  BinaryOpType::add, total_element_offset, idx_val);
-              Stmt *global_ptr = body->push_back<GlobalPtrStmt>(
-                  LaneAttribute<SNode *>{snode},
-                  std::vector<Stmt *>{global_offset});
-              Stmt *global_load = body->push_back<GlobalLoadStmt>(global_ptr);
-              return global_load;
-            });
+  if (config.optimize_mesh_reordered_mapping &&
+      conv_type == mesh::ConvType::l2r) {
+    // int i = threadIdx.x;
+    // while (i < owned_{}_num) {
+    //  mapping_shared[i] = i + owned_{}_offset;
+    //  i += blockDim.x;
+    // }
+    // while (i < total_{}_num) {
+    //  mapping_shared[i] = mapping[i + total_{}_offset];
+    //  i += blockDim.x;
+    // }
+    Stmt *owned_element_num =
+        offload->owned_num_local.find(element_type)->second;
+    Stmt *owned_element_offset =
+        offload->owned_offset_local.find(element_type)->second;
+    Stmt *pre_idx_val = bls_mapping_loop(
+        thread_idx_stmt, owned_element_num, [&](Block *body, Stmt *idx_val) {
+          Stmt *global_index = body->push_back<BinaryOpStmt>(
+              BinaryOpType::add, idx_val, owned_element_offset);
+          return global_index;
+        });
+    bls_mapping_loop(
+        pre_idx_val, total_element_num, [&](Block *body, Stmt *idx_val) {
+          Stmt *global_offset = body->push_back<BinaryOpStmt>(
+              BinaryOpType::add, total_element_offset, idx_val);
+          Stmt *global_ptr = body->push_back<GlobalPtrStmt>(
+              LaneAttribute<SNode *>{snode},
+              std::vector<Stmt *>{global_offset});
+          Stmt *global_load = body->push_back<GlobalLoadStmt>(global_ptr);
+          return global_load;
+        });
+  } else {
+    // int i = threadIdx.x;
+    // while (i < total_{}_num) {
+    //  mapping_shared[i] = mapping[i + total_{}_offset];
+    //  i += blockDim.x;
+    // }
+    bls_mapping_loop(
+        thread_idx_stmt, total_element_num, [&](Block *body, Stmt *idx_val) {
+          Stmt *global_offset = body->push_back<BinaryOpStmt>(
+              BinaryOpType::add, total_element_offset, idx_val);
+          Stmt *global_ptr = body->push_back<GlobalPtrStmt>(
+              LaneAttribute<SNode *>{snode},
+              std::vector<Stmt *>{global_offset});
+          Stmt *global_load = body->push_back<GlobalLoadStmt>(global_ptr);
+          return global_load;
+        });
+  }
+}
+
+void MakeMeshIndexMappingLocal::replace_conv_statements(
+    mesh::MeshElementType element_type,
+    mesh::ConvType conv_type) {
+  std::vector<MeshIndexConversionStmt *> idx_conv_stmts;
+
+  irpass::analysis::gather_statements(offload->body.get(), [&](Stmt *stmt) {
+    if (auto idx_conv = stmt->cast<MeshIndexConversionStmt>()) {
+      if (idx_conv->mesh == offload->mesh && idx_conv->conv_type == conv_type &&
+          idx_conv->from_type() == element_type) {
+        idx_conv_stmts.push_back(idx_conv);
       }
     }
+    return false;
+  });
+
+  for (auto stmt : idx_conv_stmts) {
+    VecStatement bls;
+    Stmt *bls_element_offset_bytes = bls.push_back<ConstStmt>(
+        LaneAttribute<TypedConstant>{(int32)bls_offset_in_bytes});
+    Stmt *idx_byte = bls.push_back<BinaryOpStmt>(
+        BinaryOpType::mul, stmt->idx,
+        bls.push_back<ConstStmt>(TypedConstant(dtype_size)));
+    Stmt *offset = bls.push_back<BinaryOpStmt>(
+        BinaryOpType::add, bls_element_offset_bytes, idx_byte);
+    Stmt *bls_ptr = bls.push_back<BlockLocalPtrStmt>(
+        offset, TypeFactory::create_vector_or_scalar_type(1, data_type, true));
+    [[maybe_unused]] Stmt *bls_load = bls.push_back<GlobalLoadStmt>(bls_ptr);
+    stmt->replace_with(std::move(bls));
+  }
+}
+
+MakeMeshIndexMappingLocal::MakeMeshIndexMappingLocal(
+    OffloadedStmt *offload,
+    const CompileConfig &config)
+    : offload(offload), config(config) {
+  // TODO(changyu): A analyzer to determinte which mapping should be localized
+  mappings.insert(std::make_pair(mesh::MeshElementType::Vertex,
+                                 mesh::ConvType::l2r));  // FIXME: A hack
+
+  bls_offset_in_bytes = offload->bls_size;
+  auto &block = offload->bls_prologue;
+
+  for (auto [element_type, conv_type] : mappings) {
+    // There is not corresponding mesh element attribute read/write,
+    // It's useless to localize this mapping
+    if (offload->total_offset_local.find(element_type) ==
+        offload->total_offset_local.end()) {
+      continue;
+    }
+
+    snode = conv_type == mesh::ConvType::l2g
+                ? offload->mesh->l2g_map.find(element_type)->second
+                : offload->mesh->l2r_map.find(element_type)->second;
+    data_type = snode->dt.ptr_removed();
+    dtype_size = data_type_size(data_type);
+
+    // Ensure BLS alignment
+    bls_offset_in_bytes +=
+        (dtype_size - bls_offset_in_bytes % dtype_size) % dtype_size;
+
+    if (block == nullptr) {
+      block = std::make_unique<Block>();
+      block->parent_stmt = offload;
+    }
+
+    // Step 1:
+    // Fetch index mapping to the BLS block first
+    fetch_mapping_to_bls(element_type, conv_type);
 
     // Step 2:
     // Make mesh index mapping load from BLS instead of global fields
 
     // TODO(changyu): before this step, if a mesh attribute field needs to be
     // localized, We should simply remove the `MeshIndexConversionStmt`
-    {
-      std::vector<MeshIndexConversionStmt *> idx_conv_stmts;
-
-      irpass::analysis::gather_statements(offload->body.get(), [&](Stmt *stmt) {
-        if (auto idx_conv = stmt->cast<MeshIndexConversionStmt>()) {
-          if (idx_conv->mesh == offload->mesh &&
-              idx_conv->conv_type == conv_type &&
-              idx_conv->from_type() == element_type) {
-            idx_conv_stmts.push_back(idx_conv);
-          }
-        }
-        return false;
-      });
-
-      for (auto stmt : idx_conv_stmts) {
-        VecStatement bls;
-        Stmt *bls_element_offset_bytes = bls.push_back<ConstStmt>(
-            LaneAttribute<TypedConstant>{(int32)bls_offset_in_bytes});
-        Stmt *idx_byte = bls.push_back<BinaryOpStmt>(
-            BinaryOpType::mul, stmt->idx,
-            bls.push_back<ConstStmt>(TypedConstant(dtype_size)));
-        Stmt *offset = bls.push_back<BinaryOpStmt>(
-            BinaryOpType::add, bls_element_offset_bytes, idx_byte);
-        Stmt *bls_ptr = bls.push_back<BlockLocalPtrStmt>(
-            offset,
-            TypeFactory::create_vector_or_scalar_type(1, data_type, true));
-        [[maybe_unused]] Stmt *bls_load =
-            bls.push_back<GlobalLoadStmt>(bls_ptr);
-        stmt->replace_with(std::move(bls));
-      }
-    }
+    replace_conv_statements(element_type, conv_type);
 
     // allocate storage for the BLS variable
     bls_offset_in_bytes +=
@@ -196,6 +191,18 @@ void make_mesh_index_mapping_local_offload(OffloadedStmt *offload,
 
   offload->bls_size = std::max(std::size_t(1), bls_offset_in_bytes);
 }
+
+void MakeMeshIndexMappingLocal::run(OffloadedStmt *offload,
+                                    const CompileConfig &config,
+                                    const std::string &kernel_name) {
+  if (offload->task_type != OffloadedStmt::TaskType::mesh_for) {
+    return;
+  }
+
+  MakeMeshIndexMappingLocal instance(offload, config);
+}
+
+namespace irpass {
 
 // This pass should happen after offloading but before lower_access
 void make_mesh_index_mapping_local(
@@ -214,12 +221,12 @@ void make_mesh_index_mapping_local(
 
   if (auto root_block = root->cast<Block>()) {
     for (auto &offload : root_block->statements) {
-      make_mesh_index_mapping_local_offload(offload->cast<OffloadedStmt>(),
-                                            config, args.kernel_name);
+      MakeMeshIndexMappingLocal::run(offload->cast<OffloadedStmt>(), config,
+                                     args.kernel_name);
     }
   } else {
-    make_mesh_index_mapping_local_offload(root->as<OffloadedStmt>(), config,
-                                          args.kernel_name);
+    MakeMeshIndexMappingLocal::run(root->as<OffloadedStmt>(), config,
+                                   args.kernel_name);
   }
 
   type_check(root, config);

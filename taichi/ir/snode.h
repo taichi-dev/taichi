@@ -114,7 +114,11 @@ class SNode {
   int depth{0};
 
   std::string name;
-  int64 n{1};  // Product of shape at all activated indices
+  // Product of the |shape| of all the activated axes identified by
+  // |extractors|.
+  // See https://docs.taichi.graphics/docs/lang/articles/misc/internal for terms
+  // like cell and container.
+  int64 num_cells_per_container{1};
   int total_num_bits{0};
   int total_bit_start{0};
   int chunk_size{0};
@@ -152,7 +156,7 @@ class SNode {
 
   std::string node_type_name;
   SNodeType type;
-  bool _morton{};
+  bool _morton{false};
 
   std::string get_node_type_name() const;
 
@@ -299,7 +303,7 @@ class SNode {
   }
 
   int64 max_num_elements() const {
-    return n;
+    return num_cells_per_container;
   }
 
   int64 get_total_num_elements_towards_root() const {

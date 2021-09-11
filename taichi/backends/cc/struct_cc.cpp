@@ -29,7 +29,7 @@ void CCLayoutGen::generate_types(SNode *snode) {
   } else if (snode->type == SNodeType::dense) {
     emit("struct {} {{", struct_name);
     generate_children(snode);
-    emit("}} {}[{}];", node_name, snode->n);
+    emit("}} {}[{}];", node_name, snode->num_cells_per_container);
 
   } else {
     TI_ERROR("SNodeType={} not supported on C backend",

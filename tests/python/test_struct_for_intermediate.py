@@ -20,7 +20,6 @@ def _test_nested():
             assert x[i * n, j * m] == 1, (i, j)
 
 
-# TODO: remove excluding of ti.metal.
 @ti.test(require=ti.extension.sparse,
          demote_dense_struct_fors=False,
          packed=False)

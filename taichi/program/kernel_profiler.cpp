@@ -7,7 +7,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void KernelProfileRecord::insert_sample(double t) {
+void KernelProfileStatisticalResult::insert_record(double t) {
   if (counter == 0) {
     min = t;
     max = t;
@@ -18,7 +18,8 @@ void KernelProfileRecord::insert_sample(double t) {
   total += t;
 }
 
-bool KernelProfileRecord::operator<(const KernelProfileRecord &o) const {
+bool KernelProfileStatisticalResult::operator<(
+    const KernelProfileStatisticalResult &o) const {
   return total > o.total;
 }
 
@@ -42,9 +43,9 @@ void KernelProfilerBase::print() {
   fmt::print(
       "[      %     total   count |      min       avg       max   ] Kernel "
       "name\n");
-  std::sort(records.begin(), records.end());
-  for (auto &rec : records) {
-    auto fraction = rec.total / total_time_ms * 100.0f;
+  std::sort(statistical_results_.begin(), statistical_results_.end());
+  for (auto &rec : statistical_results_) {
+    auto fraction = rec.total / total_time_ms_ * 100.0f;
     fmt::print("[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms] {}\n",
                fraction, rec.total / 1000.0f, rec.counter, rec.min,
                rec.total / rec.counter, rec.max, rec.name);
@@ -55,7 +56,7 @@ void KernelProfilerBase::print() {
   fmt::print(
       "[100.00%] Total kernel execution time: {:7.3f} s   number of records: "
       "{}\n",
-      get_total_time(), records.size());
+      get_total_time(), statistical_results_.size());
 
   fmt::print(
       "========================================================================"
@@ -69,7 +70,7 @@ void KernelProfilerBase::query(const std::string &kernel_name,
                                double &avg) {
   sync();
   std::regex name_regex(kernel_name + "(.*)");
-  for (auto &rec : records) {
+  for (auto &rec : statistical_results_) {
     if (std::regex_match(rec.name, name_regex)) {
       if (counter == 0) {
         counter = rec.counter;
@@ -89,7 +90,7 @@ void KernelProfilerBase::query(const std::string &kernel_name,
 }
 
 double KernelProfilerBase::get_total_time() const {
-  return total_time_ms / 1000.0;
+  return total_time_ms_ / 1000.0;
 }
 
 namespace {
@@ -105,8 +106,9 @@ class DefaultProfiler : public KernelProfilerBase {
 
   void clear() override {
     sync();
-    total_time_ms = 0;
-    records.clear();
+    total_time_ms_ = 0;
+    traced_records_.clear();
+    statistical_results_.clear();
   }
 
   std::string title() const override {
@@ -121,15 +123,17 @@ class DefaultProfiler : public KernelProfilerBase {
   void stop() override {
     auto t = Time::get_time() - start_t_;
     auto ms = t * 1000.0;
-    auto it = std::find_if(
-        records.begin(), records.end(),
-        [&](KernelProfileRecord &r) { return r.name == event_name_; });
-    if (it == records.end()) {
-      records.emplace_back(event_name_);
-      it = std::prev(records.end());
+    auto it =
+        std::find_if(statistical_results_.begin(), statistical_results_.end(),
+                     [&](KernelProfileStatisticalResult &r) {
+                       return r.name == event_name_;
+                     });
+    if (it == statistical_results_.end()) {
+      statistical_results_.emplace_back(event_name_);
+      it = std::prev(statistical_results_.end());
     }
-    it->insert_sample(ms);
-    total_time_ms += ms;
+    it->insert_record(ms);
+    total_time_ms_ += ms;
   }
 
  private:

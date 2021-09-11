@@ -48,7 +48,7 @@ inline size_t bitmasks_stride(int n) {
 
 inline int get_n(const SNode &sn) {
   // For root, sn.n is 0.
-  return sn.type == SNodeType::root ? 1 : sn.n;
+  return sn.type == SNodeType::root ? 1 : sn.num_cells_per_container;
 }
 
 class StructCompiler {

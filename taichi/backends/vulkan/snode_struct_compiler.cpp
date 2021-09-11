@@ -79,7 +79,7 @@ int SNodeDescriptor::cells_per_container_pot() const {
   if (ty == SNodeType::root || ty == SNodeType::place) {
     return 1;
   }
-  return snode->n;
+  return snode->num_cells_per_container;
 }
 
 CompiledSNodeStructs compile_snode_structs(const SNode &root) {

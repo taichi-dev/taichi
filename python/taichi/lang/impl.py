@@ -1,6 +1,7 @@
 import numbers
 import warnings
 from types import FunctionType, MethodType
+from typing import Iterable
 
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
@@ -443,7 +444,7 @@ def inside_kernel():
 
 
 def index_nd(dim):
-    return indices(*range(dim))
+    return axes(*range(dim))
 
 
 class _UninitializedRootFieldsBuilder:
@@ -763,11 +764,21 @@ def one(x):
     return zero(x) + 1
 
 
-def indices(*x):
+def axes(*x: Iterable[int]):
+    """Defines a list of axes to be used by a field.
+
+    Args:
+        *x: A list of axes to be activated
+
+    Note that Taichi has already provided a set of commonly used axes. For example,
+    `ti.ij` is just `axes(0, 1)` under the hood.
+    """
     return [_ti_core.Axis(i) for i in x]
 
 
-def axes(*x):
+@deprecated("ti.indices", "ti.axes")
+def indices(*x):
+    """Same as :func:`~taichi.lang.impl.axes`."""
     return [_ti_core.Axis(i) for i in x]
 
 

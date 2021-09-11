@@ -81,7 +81,7 @@ void KernelProfilerCUDA::sync() {
     CUDADriver::get_instance().event_destroy(record.start_event);
     CUDADriver::get_instance().event_destroy(record.stop_event);
 
-    //copy to traced_records_ then clear event_records_
+    // copy to traced_records_ then clear event_records_
     KernelProfileTracedRecord traced_record;
     traced_record.name = record.name;
     traced_record.kernel_elapsed_time_in_ms = record.kernel_elapsed_time_in_ms;
@@ -108,12 +108,12 @@ void KernelProfilerCUDA::sync() {
   if (Timelines::get_instance().get_enabled()) {
     auto &timeline = Timeline::get_this_thread_instance();
     for (auto &record : traced_records_) {
-      //param of insert_event() : 
-      //struct TimelineEvent @ taichi/taichi/system/timeline.h 
-      timeline.insert_event({record.name, /*param_name=begin*/true,
+      // param of insert_event() :
+      // struct TimelineEvent @ taichi/taichi/system/timeline.h
+      timeline.insert_event({record.name, /*param_name=begin*/ true,
                              base_time_ + record.time_since_base * 1e-3,
                              "cuda"});
-      timeline.insert_event({record.name, /*param_name=begin*/false,
+      timeline.insert_event({record.name, /*param_name=begin*/ false,
                              base_time_ + (record.time_since_base +
                                            record.kernel_elapsed_time_in_ms) *
                                               1e-3,

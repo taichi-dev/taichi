@@ -88,7 +88,7 @@ void KernelProfilerCUDA::sync() {
     cupti_toolkit_->calculate_metric_values();
     statistics_on_traced_records();
     cupti_toolkit_->end_profiling();
-    cupti_toolkit_->deinit_cupti();  
+    cupti_toolkit_->deinit_cupti();
     // reinit is necessary to get accurate  result
     cupti_toolkit_->init_cupti();  // data image will be cleared
     cupti_toolkit_->begin_profiling();

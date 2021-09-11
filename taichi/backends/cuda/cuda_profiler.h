@@ -11,9 +11,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
-enum class ProfilingToolkit : int{
-    event,
-    cupti,
+enum class ProfilingToolkit : int {
+  event,
+  cupti,
 };
 
 class EventToolkit;
@@ -22,12 +22,12 @@ class EventToolkit;
 class KernelProfilerCUDA : public KernelProfilerBase {
  public:
   KernelProfilerCUDA();
-  std::string title() const override{
+  std::string title() const override {
     return "CUDA Profiler";
   }
-  
+
   void trace(KernelProfilerBase::TaskHandle &task_handle,
-              const std::string &task_name) override;
+             const std::string &task_name) override;
   void sync() override;
   void print() override;
   void clear() override;
@@ -36,7 +36,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
   bool statistics_on_traced_records();
 
   KernelProfilerBase::TaskHandle start_with_handle(
-    const std::string &kernel_name) override;
+      const std::string &kernel_name) override;
 
  private:
   ProfilingToolkit tool_ = ProfilingToolkit::event;
@@ -44,18 +44,18 @@ class KernelProfilerCUDA : public KernelProfilerBase {
   std::unique_ptr<CuptiToolkit> cupti_toolkit_{nullptr};
 };
 
-
-//default profiling toolkit
-class EventToolkit{
-public:
-
+// default profiling toolkit
+class EventToolkit {
+ public:
   void update_record(std::vector<KernelProfileTracedRecord> &traced_records);
   KernelProfilerBase::TaskHandle start_with_handle(
       const std::string &kernel_name);
   void update_timeline(std::vector<KernelProfileTracedRecord> &traced_records);
-  void clear(){event_records_.clear();}
+  void clear() {
+    event_records_.clear();
+  }
 
-private:
+ private:
   struct EventRecord {
     std::string name;
     float kernel_elapsed_time_in_ms{0.0};
@@ -68,6 +68,5 @@ private:
   // for cuEvent profiling, clear after sync()
   std::vector<EventRecord> event_records_;
 };
-
 
 TLANG_NAMESPACE_END

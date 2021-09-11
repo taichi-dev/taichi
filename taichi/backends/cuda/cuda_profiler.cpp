@@ -6,53 +6,53 @@ TLANG_NAMESPACE_BEGIN
 
 #if defined(TI_WITH_CUDA)
 
-bool check_device_capability(){
+bool check_device_capability() {
   void *device;
   int cc_major;
   CUDADriver::get_instance().device_get(&device, 0);
   CUDADriver::get_instance().device_get_attribute(
       &cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device);
-  if(cc_major<7){
-    TI_WARN("CUPTI profiler APIs unsupported on Device with compute capability < 7.0 , fallback to default kernel profiler");
+  if (cc_major < 7) {
+    TI_WARN(
+        "CUPTI profiler APIs unsupported on Device with compute capability < "
+        "7.0 , fallback to default kernel profiler");
     return false;
   }
   return true;
 }
 
-KernelProfilerCUDA::KernelProfilerCUDA(){
-
+KernelProfilerCUDA::KernelProfilerCUDA() {
 // if Taichi was compiled with CUDA toolit, then use CUPTI
 // TODO : add set_mode() to select toolkit by user
 #if defined(TI_WITH_CUDA_TOOLKIT)
-  if(check_device_capability())
+  if (check_device_capability())
     tool_ = ProfilingToolkit::cupti;
 #endif
 
-  if(tool_ == ProfilingToolkit::event){
+  if (tool_ == ProfilingToolkit::event) {
     event_toolkit_ = std::make_unique<EventToolkit>();
-  }
-  else if(tool_ == ProfilingToolkit::cupti){
+  } else if (tool_ == ProfilingToolkit::cupti) {
     cupti_toolkit_ = std::make_unique<CuptiToolkit>();
   }
 }
 
-//deprecated, move to trace()
+// deprecated, move to trace()
 KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
     const std::string &kernel_name) {
   TI_NOT_IMPLEMENTED;
 }
 
 void KernelProfilerCUDA::trace(KernelProfilerBase::TaskHandle &task_handle,
-                                const std::string &task_name) {
-  if(tool_ == ProfilingToolkit::event)
+                               const std::string &task_name) {
+  if (tool_ == ProfilingToolkit::event)
     task_handle = event_toolkit_->start_with_handle(task_name);
-  else if(tool_ == ProfilingToolkit::cupti){
+  else if (tool_ == ProfilingToolkit::cupti) {
     TI_NOT_IMPLEMENTED;
   }
 }
 
 void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {
-  if(tool_ == ProfilingToolkit::event)
+  if (tool_ == ProfilingToolkit::event)
     CUDADriver::get_instance().event_record(handle, 0);
 }
 
@@ -78,19 +78,19 @@ void KernelProfilerCUDA::sync() {
   // sync
   CUDADriver::get_instance().stream_synchronize(nullptr);
 
-  //update
-  if(tool_ == ProfilingToolkit::event){
-     event_toolkit_->update_record(traced_records_);
-     event_toolkit_->update_timeline(traced_records_);
-     statistics_on_traced_records();
-     event_toolkit_->clear();
-  }
-  else if(tool_ == ProfilingToolkit::cupti){
+  // update
+  if (tool_ == ProfilingToolkit::event) {
+    event_toolkit_->update_record(traced_records_);
+    event_toolkit_->update_timeline(traced_records_);
+    statistics_on_traced_records();
+    event_toolkit_->clear();
+  } else if (tool_ == ProfilingToolkit::cupti) {
     cupti_toolkit_->calculate_metric_values();
     statistics_on_traced_records();
     cupti_toolkit_->end_profiling();
-    cupti_toolkit_->deinit_cupti();//reinit is nessasary to get accurate  result
-    cupti_toolkit_->init_cupti();//data image will be cleared
+    cupti_toolkit_
+        ->deinit_cupti();  // reinit is nessasary to get accurate  result
+    cupti_toolkit_->init_cupti();  // data image will be cleared
     cupti_toolkit_->begin_profiling();
   }
 }
@@ -133,7 +133,7 @@ void KernelProfilerCUDA::clear() {
 
 #else
 
-KernelProfilerCUDA::KernelProfilerCUDA(){
+KernelProfilerCUDA::KernelProfilerCUDA() {
   TI_NOT_IMPLEMENTED;
 }
 KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
@@ -141,7 +141,7 @@ KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
   TI_NOT_IMPLEMENTED;
 }
 void KernelProfilerCUDA::trace(KernelProfilerBase::TaskHandle &task_handle,
-                                const std::string &task_name) {
+                               const std::string &task_name) {
   TI_NOT_IMPLEMENTED;
 }
 void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {
@@ -156,8 +156,8 @@ void KernelProfilerCUDA::clear() {
 
 #endif
 
-//default profiling toolkit : cuEvent
-//for now put it together with KernelProfilerCUDA
+// default profiling toolkit : cuEvent
+// for now put it together with KernelProfilerCUDA
 #if defined(TI_WITH_CUDA)
 KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
     const std::string &kernel_name) {
@@ -202,14 +202,15 @@ KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
   return record.stop_event;
 }
 
-void EventToolkit::update_record(std::vector<KernelProfileTracedRecord> &traced_records){
+void EventToolkit::update_record(
+    std::vector<KernelProfileTracedRecord> &traced_records) {
   // cuEvent : get kernel_elapsed_time
   for (auto &record : event_records_) {
     CUDADriver::get_instance().event_elapsed_time(
-      &record.kernel_elapsed_time_in_ms, record.start_event,
-      record.stop_event);
+        &record.kernel_elapsed_time_in_ms, record.start_event,
+        record.stop_event);
     CUDADriver::get_instance().event_elapsed_time(
-      &record.time_since_base, base_event_, record.start_event);
+        &record.time_since_base, base_event_, record.start_event);
 
     // TODO: the following two lines seem to increases profiler overhead a
     // little bit. Is there a way to avoid the overhead while not creating
@@ -226,20 +227,21 @@ void EventToolkit::update_record(std::vector<KernelProfileTracedRecord> &traced_
   }
 }
 
-void EventToolkit::update_timeline(std::vector<KernelProfileTracedRecord> &traced_records){
-  if(Timelines::get_instance().get_enabled()){
+void EventToolkit::update_timeline(
+    std::vector<KernelProfileTracedRecord> &traced_records) {
+  if (Timelines::get_instance().get_enabled()) {
     auto &timeline = Timeline::get_this_thread_instance();
     for (auto &record : traced_records) {
       // param of insert_event() :
       // struct TimelineEvent @ taichi/taichi/system/timeline.h
       timeline.insert_event({record.name, /*param_name=begin*/ true,
-                            base_time_ + record.time_since_base * 1e-3,
-                            "cuda"});
+                             base_time_ + record.time_since_base * 1e-3,
+                             "cuda"});
       timeline.insert_event({record.name, /*param_name=begin*/ false,
-                            base_time_ + (record.time_since_base +
-                                          record.kernel_elapsed_time_in_ms) *
+                             base_time_ + (record.time_since_base +
+                                           record.kernel_elapsed_time_in_ms) *
                                               1e-3,
-                            "cuda"});
+                             "cuda"});
     }
   }
 }
@@ -249,10 +251,12 @@ KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
     const std::string &kernel_name) {
   TI_NOT_IMPLEMENTED;
 }
-void EventToolkit::update_record(std::vector<KernelProfileTracedRecord> &traced_records){
+void EventToolkit::update_record(
+    std::vector<KernelProfileTracedRecord> &traced_records) {
   TI_NOT_IMPLEMENTED;
 }
-void EventToolkit::update_timeline(std::vector<KernelProfileTracedRecord> &traced_records){
+void EventToolkit::update_timeline(
+    std::vector<KernelProfileTracedRecord> &traced_records) {
   TI_NOT_IMPLEMENTED;
 }
 #endif

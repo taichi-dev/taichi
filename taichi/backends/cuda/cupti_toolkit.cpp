@@ -15,7 +15,7 @@ CuptiToolkit::~CuptiToolkit() {
   deinit_cupti();
 }
 
-//TODO Next PR
+// TODO Next PR
 bool CuptiToolkit::init_cupti() {
   return false;
 }
@@ -31,6 +31,5 @@ bool CuptiToolkit::deinit_cupti() {
 bool CuptiToolkit::calculate_metric_values() {
   return false;
 }
-
 
 TLANG_NAMESPACE_END

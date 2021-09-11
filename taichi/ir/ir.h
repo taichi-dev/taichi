@@ -11,6 +11,7 @@
 #include "taichi/common/core.h"
 #include "taichi/ir/ir_modified.h"
 #include "taichi/ir/snode.h"
+#include "taichi/ir/mesh.h"
 #include "taichi/ir/type_factory.h"
 #include "taichi/util/short_name.h"
 
@@ -27,7 +28,7 @@ class SNode;
 class Kernel;
 struct CompileConfig;
 
-enum class SNodeAccessFlag : int { block_local, read_only };
+enum class SNodeAccessFlag : int { block_local, read_only, mesh_local };
 std::string snode_access_flag_name(SNodeAccessFlag type);
 
 class MemoryAccessOptions {
@@ -66,6 +67,38 @@ class MemoryAccessOptions {
   std::unordered_map<SNode *, std::unordered_set<SNodeAccessFlag>> options_;
 };
 
+class MeshAttributeSet {
+ public:
+  void add_attr(SNode *snode,
+                mesh::Mesh *mesh,
+                mesh::MeshElementType element_type) {
+    TI_ASSERT(mapping_.find(snode) == mapping_.end());
+    mapping_.insert(std::pair(snode, std::make_pair(mesh, element_type)));
+  }
+
+  bool is_mesh_attr(SNode *snode) const {
+    return mapping_.find(snode) != mapping_.end();
+  }
+
+  const std::pair<mesh::Mesh *, mesh::MeshElementType> mesh_info(
+      SNode *snode) const {
+    return mapping_.find(snode)->second;
+  }
+
+  void clear() {
+    mapping_.clear();
+  }
+
+  std::unordered_map<SNode *, std::pair<mesh::Mesh *, mesh::MeshElementType>>
+  get_all() const {
+    return mapping_;
+  }
+
+ private:
+  std::unordered_map<SNode *, std::pair<mesh::Mesh *, mesh::MeshElementType>>
+      mapping_;
+};
+
 #define PER_STATEMENT(x) class x;
 #include "taichi/inc/statements.inc.h"
 #undef PER_STATEMENT
@@ -77,6 +110,7 @@ class DecoratorRecorder {
   int num_cpu_threads;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
+  MeshAttributeSet mesh_attr;
   int block_dim;
   bool uniform;
 

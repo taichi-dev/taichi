@@ -127,6 +127,8 @@ class Offloader {
         offloaded->major_from_type = std::move(st->major_from_type);
         offloaded->major_to_types = std::move(st->major_to_types);
         offloaded->minor_relation_types = std::move(st->minor_relation_types);
+        offloaded->mem_access_opt = st->mem_access_opt;
+        offloaded->mesh_attr = st->mesh_attr;
         root_block->insert(std::move(offloaded));
       } else {
         pending_serial_statements->body->insert(std::move(stmt));

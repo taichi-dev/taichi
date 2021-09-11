@@ -303,6 +303,8 @@ std::unique_ptr<Stmt> MeshForStmt::clone() const {
                                                 body->clone(), block_dim);
   new_stmt->major_to_types = major_to_types;
   new_stmt->minor_relation_types = minor_relation_types;
+  new_stmt->mem_access_opt = mem_access_opt;
+  new_stmt->mesh_attr = mesh_attr;
   return new_stmt;
 }
 
@@ -429,6 +431,7 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->tls_size = tls_size;
   new_stmt->bls_size = bls_size;
   new_stmt->mem_access_opt = mem_access_opt;
+  new_stmt->mesh_attr = mesh_attr;
   return new_stmt;
 }
 

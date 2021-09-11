@@ -365,11 +365,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(MeshForStmt *for_stmt) override {
-    print("{} : mesh for ({} -> {}) {{", for_stmt->name(),
+    print("{} : mesh for ({} -> {}) {}{{", for_stmt->name(),
           mesh::element_type_str(for_stmt->major_from_type),
           for_stmt->major_to_types.size() == 0
               ? "Unknown"
-              : mesh::element_type_str(*for_stmt->major_to_types.begin()));
+              : mesh::element_type_str(*for_stmt->major_to_types.begin()),
+          scratch_pad_info(for_stmt->mem_access_opt));
     for_stmt->body->accept(this);
     print("}}");
   }
@@ -561,12 +562,13 @@ class IRPrinter : public IRVisitor {
                       stmt->block_dim, scratch_pad_info(stmt->mem_access_opt));
     } else if (stmt->task_type == OffloadedTaskType::mesh_for) {
       details = fmt::format(
-          "mesh_for({} -> {}) num_patches={} grid_dim={} block_dim={}",
+          "mesh_for({} -> {}) num_patches={} grid_dim={} block_dim={} bls={}",
           mesh::element_type_str(stmt->major_from_type),
           stmt->major_to_types.size() == 0
               ? "Unknown"
               : mesh::element_type_str(*stmt->major_to_types.begin()),
-          stmt->mesh->num_patches, stmt->grid_dim, stmt->block_dim);
+          stmt->mesh->num_patches, stmt->grid_dim, stmt->block_dim,
+          scratch_pad_info(stmt->mem_access_opt));
     }
     if (stmt->task_type == OffloadedTaskType::listgen) {
       print("{} = offloaded listgen {}->{}", stmt->name(),

@@ -946,9 +946,11 @@ void export_lang(py::module &m) {
   py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())
       .value("block_local", SNodeAccessFlag::block_local)
       .value("read_only", SNodeAccessFlag::read_only)
+      .value("mesh_local", SNodeAccessFlag::mesh_local)
       .export_values();
 
   m.def("insert_snode_access_flag", insert_snode_access_flag);
+  m.def("insert_mesh_attribute", insert_mesh_attribute);
   m.def("reset_snode_access_flag", reset_snode_access_flag);
   m.def("no_activate", [](SNode *snode) {
     // TODO(#2193): Also apply to @ti.func?

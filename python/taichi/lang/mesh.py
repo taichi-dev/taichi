@@ -41,7 +41,8 @@ class MeshAttrType:
 
 
 class MeshElementField:
-    def __init__(self, type, attr_dict, field_dict):
+    def __init__(self, mesh_instance, type, attr_dict, field_dict):
+        self.mesh = mesh_instance
         self.type = type
         self.attr_dict = attr_dict
         self.field_dict = field_dict
@@ -79,6 +80,10 @@ class MeshElementField:
         return setter
 
     def register_fields(self):
+        for v in self.get_field_members():
+            _ti_core.insert_mesh_attribute(self.mesh.mesh_ptr, self.type,
+                                           v.ptr)
+
         for k in self.keys:
             setattr(
                 MeshElementField, k,
@@ -181,7 +186,7 @@ class MeshElement:
             self.attr_dict[key] = MeshAttrType(key, dtype, reordering,
                                                needs_grad)
 
-    def build(self, size):
+    def build(self, mesh_instance, size):
         field_dict = {}
 
         for key, attr in self.attr_dict.items():
@@ -206,7 +211,8 @@ class MeshElement:
                 if self.attr_dict[key].needs_gard: grads.append(field.grad)
             impl.root.dense(impl.indices(0), size).place(*grads)
 
-        return MeshElementField(self.type, self.attr_dict, field_dict)
+        return MeshElementField(mesh_instance, self.type, self.attr_dict,
+                                field_dict)
 
 
 # Define the instance of the Mesh Type, stores the field (type and data) info
@@ -277,16 +283,16 @@ class MeshType:
         instance = MeshInstance(self)
         instance.fields = {}
         if size[0] > 0:
-            instance.verts = self.verts.build(size[0])
+            instance.verts = self.verts.build(instance, size[0])
             instance.fields[MeshElementType.Vertex] = instance.verts
         if size[1] > 0:
-            instance.edges = self.edges.build(size[1])
+            instance.edges = self.edges.build(instance, size[1])
             instance.fields[MeshElementType.Edge] = instance.edges
         if size[2] > 0:
-            instance.faces = self.faces.build(size[2])
+            instance.faces = self.faces.build(instance, size[2])
             instance.fields[MeshElementType.Face] = instance.faces
         if self.topology == MeshTopology.Tetrahedron and size[3] > 0:
-            instance.cells = self.cells.build(size[3])
+            instance.cells = self.cells.build(instance, size[3])
             instance.fields[MeshElementType.Cell] = instance.cells
         return instance
 

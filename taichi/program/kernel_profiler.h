@@ -39,7 +39,7 @@ class KernelProfilerBase {
  protected:
   std::vector<KernelProfileTracedRecord> traced_records_;
   std::vector<KernelProfileStatisticalResult> statistical_results_;
-  double total_time_ms_;
+  double total_time_ms_{0};
 
  public:
   // Needed for the CUDA backend since we need to know which task to "stop"

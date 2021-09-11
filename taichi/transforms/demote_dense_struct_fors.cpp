@@ -68,8 +68,9 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
   if (packed) {  // no dependence on POT
     for (int i = 0; i < (int)snodes.size(); i++) {
       auto snode = snodes[i];
-      auto extracted = generate_mod_x_div_y(&body_header, main_loop_var,
-                                            total_n, total_n / snode->num_cells_per_container);
+      auto extracted =
+          generate_mod_x_div_y(&body_header, main_loop_var, total_n,
+                               total_n / snode->num_cells_per_container);
       total_n /= snode->num_cells_per_container;
       for (int j = 0; j < (int)physical_indices.size(); j++) {
         auto p = physical_indices[j];

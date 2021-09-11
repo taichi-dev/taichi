@@ -68,7 +68,7 @@ class KernelProfilerBase {
 
   virtual void print();
 
-  virtual void record(KernelProfilerBase::TaskHandle &task_handle,
+  virtual void trace(KernelProfilerBase::TaskHandle &task_handle,
                       const std::string &task_name){TI_NOT_IMPLEMENTED};
 
   void query(const std::string &kernel_name,

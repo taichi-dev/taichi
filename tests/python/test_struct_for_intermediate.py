@@ -22,7 +22,6 @@ def _test_nested():
 
 # TODO: remove excluding of ti.metal.
 @ti.test(require=ti.extension.sparse,
-         exclude=[ti.metal],
          demote_dense_struct_fors=False,
          packed=False)
 def test_nested():

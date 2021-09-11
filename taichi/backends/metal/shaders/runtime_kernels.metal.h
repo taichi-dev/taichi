@@ -55,10 +55,10 @@ STR(
       const int child_stride = parent_meta.element_stride;
       const int num_slots = parent_meta.num_slots;
       const SNodeMeta child_meta = runtime->snode_metas[child_snode_id];
-      // |max_num_elems| is NOT padded to power-of-two, while |num_slots| is.
-      // So we need to cap the loop precisely at child's |max_num_elems|.
-      const int max_num_elems = args[2];
-      for (int ii = utid_; ii < max_num_elems; ii += grid_size) {
+      // No need to put an upperbound here (same for listgen and struct-for).
+      // Say the number of valid elements per child container is 5, which then
+      // gets padded to 8 (POT). is_active() knows how to properly skip those.
+      for (int ii = utid_;; ii += grid_size) {
         const int parent_idx = (ii / num_slots);
         if (parent_idx >= parent_list.num_active()) {
           // Since |parent_idx| increases monotonically, we can return directly

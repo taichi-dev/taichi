@@ -83,6 +83,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
       num_cpu_threads = std::thread::hardware_concurrency();
   }
   mem_access_opt = dec.mem_access_opt;
+  mesh_attr = dec.mesh_attr;
   dec.reset();
   if (vectorize == -1)
     vectorize = 1;

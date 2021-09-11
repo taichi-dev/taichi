@@ -118,6 +118,15 @@ def wrap_scalar(x):
 
 @taichi_scope
 def mesh_relation_access(mesh, from_index, to_element_type):
+    # to support ti.mesh_local and access mesh attribute as field
+    if isinstance(from_index, MeshInstance):
+        inv_map = {
+            MeshElementType.Vertex: "verts",
+            MeshElementType.Edge: "edges",
+            MeshElementType.Face: "faces",
+            MeshElementType.Cell: "cells"
+        }
+        return getattr(from_index, inv_map[to_element_type])
     if isinstance(mesh, MeshInstance):
         return MeshRelationAccessProxy(mesh, from_index, to_element_type)
     else:

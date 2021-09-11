@@ -144,7 +144,7 @@ MakeMeshIndexMappingLocal::MakeMeshIndexMappingLocal(
     : offload(offload), config(config) {
   // TODO(changyu): A analyzer to determinte which mapping should be localized
   mappings.insert(std::make_pair(mesh::MeshElementType::Vertex,
-                                 mesh::ConvType::l2r));  // FIXME: A hack
+                                 mesh::ConvType::l2g));  // FIXME: A hack
 
   bls_offset_in_bytes = offload->bls_size;
   auto &block = offload->bls_prologue;

@@ -144,6 +144,7 @@ class FrontendForStmt : public Stmt {
   int num_cpu_threads;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
+  MeshAttributeSet mesh_attr;
   int block_dim;
 
   bool mesh_for = false;

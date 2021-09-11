@@ -53,7 +53,9 @@ class DemoteAtomics : public BasicStmtVisitor {
             break;
           }
           if (current_offloaded->mem_access_opt.has_flag(
-                  snode, SNodeAccessFlag::block_local)) {
+                  snode, SNodeAccessFlag::block_local) ||
+              current_offloaded->mem_access_opt.has_flag(
+                  snode, SNodeAccessFlag::mesh_local)) {
             // BLS does not support write access yet so we keep atomic_adds.
             demote = false;
             break;

@@ -809,6 +809,8 @@ class MeshForStmt : public Stmt {
   mesh::MeshElementType major_from_type;
   std::unordered_set<mesh::MeshElementType> major_to_types{};
   std::unordered_set<mesh::MeshRelationType> minor_relation_types{};
+  MemoryAccessOptions mem_access_opt;
+  MeshAttributeSet mesh_attr;
 
   MeshForStmt(mesh::Mesh *mesh,
               mesh::MeshElementType element_type,
@@ -821,7 +823,13 @@ class MeshForStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  TI_STMT_DEF_FIELDS(mesh, major_from_type, block_dim);
+  TI_STMT_DEF_FIELDS(mesh,
+                     major_from_type,
+                     block_dim,
+                     major_from_type,
+                     major_to_types,
+                     minor_relation_types,
+                     mem_access_opt);
   TI_DEFINE_ACCEPT
 };
 
@@ -1132,6 +1140,7 @@ class OffloadedStmt : public Stmt {
   std::size_t tls_size{1};  // avoid allocating dynamic memory with 0 byte
   std::size_t bls_size{0};
   MemoryAccessOptions mem_access_opt;
+  MeshAttributeSet mesh_attr;
 
   OffloadedStmt(TaskType task_type, Arch arch);
 

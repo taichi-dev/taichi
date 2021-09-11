@@ -46,11 +46,6 @@ inline size_t bitmasks_stride(int n) {
   return iroundup(bytes_needed, kAlignment);
 }
 
-inline int get_n(const SNode &sn) {
-  // For root, sn.n is 0.
-  return sn.type == SNodeType::root ? 1 : sn.num_cells_per_container;
-}
-
 class StructCompiler {
  public:
   CompiledStructs run(SNode &root) {
@@ -266,7 +261,7 @@ class StructCompiler {
       emit("struct {} {{", node_name);
       const auto snty_name = snode_type_name(snty);
       emit("  // {}", snty_name);
-      const int n = get_n(snode);
+      const int n = snode.num_cells_per_container;
       emit("  constant static constexpr int n = {};", n);
       emit_snode_stride(snty, ch_name, n);
       emit_snode_constructor(snode);
@@ -299,7 +294,7 @@ class StructCompiler {
       // special handling the bit_* SNode containers.
       return 0;
     }
-    const int n = get_n(*sn);
+    const int n = sn->num_cells_per_container;
     size_t ch_size = 0;
     if (sn->type == SNodeType::bit_struct) {
       // The host side should have inferred all the necessary info of |sn|.

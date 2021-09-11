@@ -1,0 +1,7 @@
+[build]
+  command = "git clone https://github.com/taichi-dev/docs.taichi.graphics.git ; rm -rf docs.taichi.graphics/website/docs/lang ; cp -rf docs/lang docs.taichi.graphics/website/docs/lang ; cd docs.taichi.graphics/website ; npm install --global yarn@1.22 ; yarn install ; yarn build"
+
+  publish = "docs.taichi.graphics/website/build"
+
+  ignore = "git branch; git rev-parse master; git diff --quiet $COMMIT_REF master -- docs/"
+

@@ -1181,7 +1181,8 @@ class KernelCodegenImpl : public IRVisitor {
     emit("const int child_num_slots = parent_meta.num_slots;");
     // Grid-stride loops:
     // Each thread begins at thread_index, and incremets by grid_size
-    emit("for (int ii = {};; ii += {}) {{", kKernelThreadIdName, kKernelGridSizeName);
+    emit("for (int ii = {};; ii += {}) {{", kKernelThreadIdName,
+         kKernelGridSizeName);
     {
       ScopedIndent s2(current_appender());
       emit("const int parent_idx_ = (ii / child_num_slots);");

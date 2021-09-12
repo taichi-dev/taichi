@@ -200,16 +200,16 @@ class MeshElement:
 
         if self.layout == Layout.SOA:
             for key, field in field_dict.items():
-                impl.root.dense(impl.indices(0), size).place(field)
+                impl.root.dense(impl.axes(0), size).place(field)
                 if self.attr_dict[key].needs_grad:
-                    impl.root.dense(impl.indices(0), size).place(field.grad)
+                    impl.root.dense(impl.axes(0), size).place(field.grad)
         else:
-            impl.root.dense(impl.indices(0),
+            impl.root.dense(impl.axes(0),
                             size).place(*tuple(field_dict.values()))
             grads = []
             for key, field in field_dict.items():
                 if self.attr_dict[key].needs_gard: grads.append(field.grad)
-            impl.root.dense(impl.indices(0), size).place(*grads)
+            impl.root.dense(impl.axes(0), size).place(*grads)
 
         return MeshElementField(mesh_instance, self.type, self.attr_dict,
                                 field_dict)

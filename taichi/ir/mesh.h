@@ -18,7 +18,7 @@ enum class MeshTopology { Triangle = 3, Tetrahedron = 4 };
 
 enum class MeshElementType { Vertex = 0, Edge = 1, Face = 2, Cell = 3 };
 
-const char *element_type_str(MeshElementType type);
+std::string element_type_name(MeshElementType type);
 
 enum class MeshRelationType {
   VV = 0,
@@ -39,16 +39,18 @@ enum class MeshRelationType {
   CC = 15,
 };
 
+std::string relation_type_name(MeshRelationType type);
+
 enum class MeshElementReorderingType {
-  NonReordering = 0,
-  Reordering = 1,
-  SurfaceFirst = 2,
-  CellFirst = 3
+  NonReordering,
+  Reordering,
+  SurfaceFirst,
+  CellFirst
 };
 
 enum class ConvType { l2g, l2r };
 
-const char *conv_type_str(ConvType type);
+std::string conv_type_name(ConvType type);
 
 int element_order(MeshElementType type);
 int from_end_element_order(MeshRelationType rel);

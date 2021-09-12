@@ -805,7 +805,7 @@ class MeshRelationSizeExpression : public Expression {
 
   std::string serialize() override {
     return fmt::format("mesh_relation_size({}, {})", mesh_idx->serialize(),
-                       mesh::element_type_str(to_type));
+                       mesh::element_type_name(to_type));
   }
 
   MeshRelationSizeExpression(mesh::Mesh *mesh,
@@ -826,7 +826,7 @@ class MeshRelationAccessExpression : public Expression {
 
   std::string serialize() override {
     return fmt::format("mesh_relation_acess({}, {}[{}])", mesh_idx->serialize(),
-                       mesh::element_type_str(to_type),
+                       mesh::element_type_name(to_type),
                        neighbor_idx->serialize());
   }
 
@@ -851,7 +851,7 @@ class MeshIndexConversionExpression : public Expression {
 
   std::string serialize() override {
     return fmt::format("mesh_index_conversion({}, {})",
-                       mesh::conv_type_str(conv_type), idx->serialize());
+                       mesh::conv_type_name(conv_type), idx->serialize());
   }
 
   MeshIndexConversionExpression(mesh::Mesh *mesh,

@@ -4,7 +4,7 @@ namespace taichi {
 namespace lang {
 namespace mesh {
 
-const char *element_type_str(MeshElementType type) {
+std::string element_type_name(MeshElementType type) {
   if (type == MeshElementType::Vertex)
     return "Vertex";
   else if (type == MeshElementType::Edge)
@@ -18,7 +18,12 @@ const char *element_type_str(MeshElementType type) {
   }
 }
 
-const char *conv_type_str(ConvType type) {
+std::string relation_type_name(MeshRelationType type) {
+  return element_type_name(MeshElementType(from_end_element_order(type))) +
+         "-" + element_type_name(MeshElementType(to_end_element_order(type)));
+}
+
+std::string conv_type_name(ConvType type) {
   if (type == mesh::ConvType::l2g)
     return "local to global";
   else if (type == mesh::ConvType::l2r)

@@ -27,7 +27,7 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               to_taichi_type)
 from taichi.misc.util import deprecated
 from taichi.snode.fields_builder import FieldsBuilder
-
+from taichi.profiler import profiler
 import taichi as ti
 
 # TODO(#2223): Remove
@@ -146,6 +146,12 @@ def query_kernel_profile_info(name):
     """
     return impl.get_runtime().prog.query_kernel_profile_info(name)
 
+
+def kernel_profile_record_len():
+    return impl.get_runtime().prog.kernel_profile_record_len()
+
+def get_kernel_profile_record(index):
+    return impl.get_runtime().prog.get_kernel_profile_record(index)
 
 @deprecated('kernel_profiler_clear()', 'clear_kernel_profile_info()')
 def kernel_profiler_clear():
@@ -271,6 +277,7 @@ def prepare_sandbox():
 def init(arch=None,
          default_fp=None,
          default_ip=None,
+        #  kernel_profiler=None,
          _test_mode=False,
          **kwargs):
 
@@ -330,7 +337,7 @@ def init(arch=None,
 
     # compiler configurations (ti.cfg):
     for key in dir(ti.cfg):
-        if key in ['arch', 'default_fp', 'default_ip']:
+        if key in ['arch', 'default_fp', 'default_ip']:#, 'kernel_profiler']:
             continue
         cast = type(getattr(ti.cfg, key))
         if cast is bool:
@@ -366,6 +373,9 @@ def init(arch=None,
 
     if _test_mode:
         return spec_cfg
+
+    # set before create_program()
+    profiler.set_kernel_profiler_mode(ti.cfg.kernel_profiler)
 
     # create a new program:
     impl.get_runtime().create_program()

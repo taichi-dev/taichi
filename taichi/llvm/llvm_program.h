@@ -53,7 +53,6 @@ class LlvmProgramImpl : public ProgramImpl {
       SNodeTree *tree,
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       std::unordered_map<int, SNode *> &snodes,
-      SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
       uint64 *result_buffer) override;
 
   template <typename T>
@@ -98,12 +97,6 @@ class LlvmProgramImpl : public ProgramImpl {
   void initialize_llvm_runtime_snodes(const SNodeTree *tree,
                                       StructCompiler *scomp,
                                       uint64 *result_buffer);
-
-  /**
-   * Sets the attributes of the Exprs that are backed by SNodes.
-   */
-  void materialize_snode_expr_attributes(
-      SNodeGlobalVarExprMap &snode_to_glb_var_exprs_);
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer);
 

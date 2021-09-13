@@ -206,6 +206,7 @@ SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {
   tree->root()->set_snode_tree_id(id);
   materialize_snode_tree(tree.get());
   snode_trees_.push_back(std::move(tree));
+
   return snode_trees_[id].get();
 }
 
@@ -218,8 +219,8 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
   if (arch_is_cpu(config.arch) || config.arch == Arch::cuda ||
       config.arch == Arch::metal || config.arch == Arch::vulkan ||
       config.arch == Arch::opengl) {
-    program_impl_->materialize_snode_tree(
-        tree, snode_trees_, snodes, snode_to_glb_var_exprs_, result_buffer);
+    program_impl_->materialize_snode_tree(tree, snode_trees_, snodes,
+                                          result_buffer);
 #ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
     TI_ASSERT(result_buffer == nullptr);

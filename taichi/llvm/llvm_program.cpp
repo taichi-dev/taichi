@@ -193,7 +193,6 @@ void LlvmProgramImpl::materialize_snode_tree(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
     std::unordered_map<int, SNode *> &snodes,
-    SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
     uint64 *result_buffer) {
   auto *const root = tree->root();
   auto host_module = clone_struct_compiler_initial_context(
@@ -201,7 +200,6 @@ void LlvmProgramImpl::materialize_snode_tree(
   std::unique_ptr<StructCompiler> scomp = std::make_unique<StructCompilerLLVM>(
       host_arch(), this, std::move(host_module));
   scomp->run(*root);
-  materialize_snode_expr_attributes(snode_to_glb_var_exprs_);
 
   for (auto snode : scomp->snodes) {
     snodes[snode->id] = snode;
@@ -221,12 +219,6 @@ void LlvmProgramImpl::materialize_snode_tree(
   }
 }
 
-void LlvmProgramImpl::materialize_snode_expr_attributes(
-    SNodeGlobalVarExprMap &snode_to_glb_var_exprs_) {
-  for (auto &[snode, glb_var] : snode_to_glb_var_exprs_) {
-    glb_var->set_attribute("dim", std::to_string(snode->num_active_indices));
-  }
-}
 uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
   // TODO: We are likely doing more synchronization than necessary. Simplify the
   // sync logic when we fetch the result.

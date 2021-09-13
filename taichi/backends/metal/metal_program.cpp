@@ -39,7 +39,6 @@ void MetalProgramImpl::materialize_snode_tree(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &,
     std::unordered_map<int, SNode *> &,
-    SNodeGlobalVarExprMap &,
     uint64 *result_buffer) {
   // TODO: support materializing multiple snode trees
   TI_ASSERT_INFO(config->use_llvm,

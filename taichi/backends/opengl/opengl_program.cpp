@@ -25,7 +25,6 @@ void OpenglProgramImpl::materialize_snode_tree(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &,
     std::unordered_map<int, SNode *> &,
-    SNodeGlobalVarExprMap &,
     uint64 *result_buffer) {
   // TODO: support materializing multiple snode trees
   auto *const root = tree->root();

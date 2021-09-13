@@ -197,7 +197,6 @@ enum class BufferFormat : uint32_t {
   depth32f
 };
 
-// TODO: Implement this
 class Pipeline {
  public:
   virtual ~Pipeline() {
@@ -239,7 +238,6 @@ struct BufferImageCopyParams {
   uint32_t image_layer_count{1};
 };
 
-// TODO: Implement this
 class CommandList {
  public:
   virtual ~CommandList() {

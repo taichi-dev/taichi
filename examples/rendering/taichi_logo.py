@@ -1,9 +1,9 @@
 import taichi as ti
 
-ti.init(arch=ti.cpu)
+ti.init()
 
 n = 512
-x = ti.field(ti.f32, shape=(n, n))
+x = ti.field(dtype=ti.f32, shape=(n, n))
 
 
 @ti.kernel

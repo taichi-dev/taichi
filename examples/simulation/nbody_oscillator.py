@@ -11,8 +11,8 @@ steps = 160
 eps = 1e-3
 G = -1e1
 
-pos = ti.Vector.var(2, ti.f32, N)
-vel = ti.Vector.var(2, ti.f32, N)
+pos = ti.Vector.field(2, ti.f32, N)
+vel = ti.Vector.field(2, ti.f32, N)
 
 
 @ti.kernel
@@ -44,7 +44,7 @@ def substep():
         pos[i] += vel[i] * dt
 
 
-gui = ti.GUI('N-body Star')
+gui = ti.GUI('N-body Oscillator')
 
 initialize()
 while gui.running and not gui.get_event(ti.GUI.ESCAPE):

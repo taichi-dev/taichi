@@ -1,4 +1,5 @@
 # A mgpcg + reflection enhanced version for https://github.com/taichi-dev/taichi/blob/master/examples/simulation/stable_fluid.py
+# By @Mingrui Zhang @Dunfan Lu
 
 import numpy as np
 import taichi as ti
@@ -13,6 +14,7 @@ class TexPair:
         self.cur, self.nxt = self.nxt, self.cur
 
 
+# Visualization control
 @ti.data_oriented
 class Dye:
     def __init__(self, res, advect_kernel) -> None:
@@ -457,7 +459,7 @@ res = (512, 512)
 res = resolution_checker(res, block_size)
 
 dt = 0.03
-p_jacobi_iters = 500  # 40 for a quicker but less accurate result
+p_jacobi_iters = 500
 p_mgpcg_iters = 5
 
 debug = False
@@ -469,7 +471,7 @@ use_interactive = True
 
 frame_id = 0
 
-ti.init(arch=ti.gpu, kernel_profiler=True, async_mode=False)
+ti.init(arch=ti.gpu, kernel_profiler=True)
 
 _velocities = ti.Vector.field(2, float, shape=res)
 _new_velocities = ti.Vector.field(2, float, shape=res)
@@ -654,6 +656,7 @@ def step(control_data):
     arts.finalize_step(velocities_pair.cur)
     frame_id += 1
 
+
 def reset():
     velocities_pair.cur.fill(0)
     pressures_pair.cur.fill(0)
@@ -665,7 +668,10 @@ canvas = None
 press_token = None
 escape_token = None
 md_gen = MouseDataGen(res)
-use_ggui = True
+
+# GGUI requiares vulkan installed
+use_ggui = False
+
 if use_ggui:
     gui_window = ti.ui.Window('Stable Fluid', res, vsync=True)
     canvas = gui_window.get_canvas()
@@ -702,7 +708,7 @@ while gui_window.running:
         elif e.key == 'd':
             debug = not debug
         elif e.key == 'h':
-            # Reflection for higher quality curl
+            # Reflection for higher quality vorticity
             if not use_reflection:
                 use_reflection = True
             else:

@@ -769,17 +769,16 @@ void FuncCallExpression::serialize(std::ostream &ss) {
 }
 
 // Mesh related.
-void MeshRelationSizeExpression::flatten(FlattenContext *ctx) {
-  mesh_idx->flatten(ctx);
-  ctx->push_back<MeshRelationSizeStmt>(mesh, mesh_idx->stmt, to_type);
-  stmt = ctx->back_stmt();
-}
 
 void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
   mesh_idx->flatten(ctx);
-  neighbor_idx->flatten(ctx);
-  ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx->stmt, to_type,
-                                         neighbor_idx->stmt);
+  if (neighbor_idx) {
+    neighbor_idx->flatten(ctx);
+    ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx->stmt, to_type,
+                                           neighbor_idx->stmt);
+  } else {
+    ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx->stmt, to_type);
+  }
   stmt = ctx->back_stmt();
 }
 

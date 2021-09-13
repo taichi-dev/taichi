@@ -854,8 +854,8 @@ void export_lang(py::module &m) {
   // Mesh related.
   m.def("get_relation_size", [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
                                 mesh::MeshElementType to_type) {
-    return Expr::make<MeshRelationSizeExpression>(mesh_ptr.ptr.get(), mesh_idx,
-                                                  to_type);
+    return Expr::make<MeshRelationAccessExpression>(mesh_ptr.ptr.get(),
+                                                    mesh_idx, to_type);
   });
 
   m.def(

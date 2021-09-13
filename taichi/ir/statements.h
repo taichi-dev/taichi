@@ -6,6 +6,8 @@
 #include "taichi/program/arch.h"
 #include "taichi/ir/mesh.h"
 
+#include <optional>
+
 namespace taichi {
 namespace lang {
 
@@ -1581,36 +1583,9 @@ class BitStructStoreStmt : public Stmt {
 mesh::MeshElementType get_mesh_element_type(Stmt *stmt);
 
 /**
- * The number of neighbours (length of relation) of a mesh idx
- */
-class MeshRelationSizeStmt : public Stmt {
- public:
-  mesh::Mesh *mesh;
-  Stmt *mesh_idx;
-  mesh::MeshElementType to_type;
-
-  MeshRelationSizeStmt(mesh::Mesh *mesh,
-                       Stmt *mesh_idx,
-                       mesh::MeshElementType to_type)
-      : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
-    this->ret_type = PrimitiveType::u32;
-    TI_STMT_REG_FIELDS;
-  }
-
-  mesh::MeshElementType from_type() const {
-    return get_mesh_element_type(mesh_idx);
-  }
-
-  bool has_global_side_effect() const override {
-    return false;
-  }
-
-  TI_STMT_DEF_FIELDS(ret_type, mesh, mesh_idx, to_type);
-  TI_DEFINE_ACCEPT_AND_CLONE
-};
-
-/**
  * The relation access, mesh_idx -> to_type[neighbor_idx]
+ * If neibhor_idex has no value, it returns the number of neighbors (length of
+ * relation) of a mesh idx
  */
 class MeshRelationAccessStmt : public Stmt {
  public:
@@ -1629,6 +1604,21 @@ class MeshRelationAccessStmt : public Stmt {
         neighbor_idx(neighbor_idx) {
     this->ret_type = PrimitiveType::u32;
     TI_STMT_REG_FIELDS;
+  }
+
+  MeshRelationAccessStmt(mesh::Mesh *mesh,
+                         Stmt *mesh_idx,
+                         mesh::MeshElementType to_type)
+      : mesh(mesh),
+        mesh_idx(mesh_idx),
+        to_type(to_type),
+        neighbor_idx(nullptr) {
+    this->ret_type = PrimitiveType::u32;
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool is_size() const {
+    return neighbor_idx == nullptr;
   }
 
   bool has_global_side_effect() const override {

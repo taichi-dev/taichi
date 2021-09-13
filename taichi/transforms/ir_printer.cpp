@@ -720,15 +720,16 @@ class IRPrinter : public IRVisitor {
   }
 
   // Mesh related.
-  void visit(MeshRelationSizeStmt *stmt) override {
-    print("{}{} = {} idx relation [{}] size", stmt->type_hint(), stmt->name(),
-          stmt->mesh_idx->name(), mesh::element_type_name(stmt->to_type));
-  }
 
   void visit(MeshRelationAccessStmt *stmt) override {
-    print("{}{} = {} idx access relation {}[{}]", stmt->type_hint(),
-          stmt->name(), stmt->mesh_idx->name(),
-          mesh::element_type_name(stmt->to_type), stmt->neighbor_idx->name());
+    if (stmt->is_size()) {
+      print("{}{} = {} idx relation {} size", stmt->type_hint(), stmt->name(),
+            stmt->mesh_idx->name(), mesh::element_type_name(stmt->to_type));
+    } else {
+      print("{}{} = {} idx relation {}[{}]", stmt->type_hint(), stmt->name(),
+            stmt->mesh_idx->name(), mesh::element_type_name(stmt->to_type),
+            stmt->neighbor_idx->name());
+    }
   }
 
   void visit(MeshIndexConversionStmt *stmt) override {

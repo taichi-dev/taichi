@@ -262,9 +262,9 @@ class IRBuilder {
   void ad_stack_accumulate_adjoint(AdStackAllocaStmt *stack, Stmt *val);
 
   // Mesh related.
-  MeshRelationSizeStmt *get_relation_size(mesh::Mesh *mesh,
-                                          Stmt *mesh_idx,
-                                          mesh::MeshElementType to_type);
+  MeshRelationAccessStmt *get_relation_size(mesh::Mesh *mesh,
+                                            Stmt *mesh_idx,
+                                            mesh::MeshElementType to_type);
   MeshRelationAccessStmt *get_relation_access(mesh::Mesh *mesh,
                                               Stmt *mesh_idx,
                                               mesh::MeshElementType to_type,

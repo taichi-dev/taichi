@@ -797,26 +797,6 @@ class FuncCallExpression : public Expression {
 
 // Mesh related.
 
-class MeshRelationSizeExpression : public Expression {
- public:
-  mesh::Mesh *mesh;
-  Expr mesh_idx;
-  mesh::MeshElementType to_type;
-
-  std::string serialize() override {
-    return fmt::format("mesh_relation_size({}, {})", mesh_idx->serialize(),
-                       mesh::element_type_name(to_type));
-  }
-
-  MeshRelationSizeExpression(mesh::Mesh *mesh,
-                             const Expr mesh_idx,
-                             mesh::MeshElementType to_type)
-      : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
-  }
-
-  void flatten(FlattenContext *ctx) override;
-};
-
 class MeshRelationAccessExpression : public Expression {
  public:
   mesh::Mesh *mesh;
@@ -825,9 +805,20 @@ class MeshRelationAccessExpression : public Expression {
   Expr neighbor_idx;
 
   std::string serialize() override {
-    return fmt::format("mesh_relation_acess({}, {}[{}])", mesh_idx->serialize(),
-                       mesh::element_type_name(to_type),
-                       neighbor_idx->serialize());
+    if (neighbor_idx) {
+      return fmt::format(
+          "mesh_relation_access({}, {}[{}])", mesh_idx->serialize(),
+          mesh::element_type_name(to_type), neighbor_idx->serialize());
+    } else {
+      return fmt::format("mesh_relation_size({}, {})", mesh_idx->serialize(),
+                         mesh::element_type_name(to_type));
+    }
+  }
+
+  MeshRelationAccessExpression(mesh::Mesh *mesh,
+                               const Expr mesh_idx,
+                               mesh::MeshElementType to_type)
+      : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
   }
 
   MeshRelationAccessExpression(mesh::Mesh *mesh,

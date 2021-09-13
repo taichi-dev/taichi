@@ -40,11 +40,11 @@ class KernelProfilerCUDA : public KernelProfilerBase {
 
  private:
   ProfilingToolkit tool_ = ProfilingToolkit::event;
-  std::unique_ptr<EventToolkit> event_toolkit_{nullptr}; 
-  //if(tool_ == ProfilingToolkit::cupti) event_toolkit_ = nullptr
-  std::unique_ptr<CuptiToolkit> cupti_toolkit_{nullptr}; 
-  //if(tool_ == ProfilingToolkit::event) cupti_toolkit_ = nullptr
-  //TODO : switch profiling toolkit at runtime
+  std::unique_ptr<EventToolkit> event_toolkit_{nullptr};
+  // if(tool_ == ProfilingToolkit::cupti) event_toolkit_ = nullptr
+  std::unique_ptr<CuptiToolkit> cupti_toolkit_{nullptr};
+  // if(tool_ == ProfilingToolkit::event) cupti_toolkit_ = nullptr
+  // TODO : switch profiling toolkit at runtime
 };
 
 // default profiling toolkit

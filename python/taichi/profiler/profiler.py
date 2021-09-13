@@ -2,27 +2,27 @@ from taichi.core import ti_core as _ti_core
 from taichi.lang import impl
 
 class StatisticalResult:
-    def __init__(self, name):
-        self.name     = name
-        self.counter  = 0
-        self.min_time = 0.0
-        self.max_time = 0.0
-        self.total_time = 0.0
+        def __init__(self, name):
+            self.name     = name
+            self.counter  = 0
+            self.min_time = 0.0
+            self.max_time = 0.0
+            self.total_time = 0.0
 
-    def __lt__(self, other):
-        if(self.total_time<other.total_time):
-            return True
-        else:
-            return False
-    
-    def insert_record(self,time):
-        if self.counter == 0:
-            self.min_time = time
-            self.max_time = time
-        self.counter += 1
-        self.total_time += time
-        self.min_time = min(self.min_time, time)
-        self.max_time = max(self.max_time, time)
+        def __lt__(self, other):
+            if(self.total_time<other.total_time):
+                return True
+            else:
+                return False
+
+        def insert_record(self,time):
+            if self.counter == 0:
+                self.min_time = time
+                self.max_time = time
+            self.counter += 1
+            self.total_time += time
+            self.min_time = min(self.min_time, time)
+            self.max_time = max(self.max_time, time)
 
 class Profiler:
 
@@ -38,7 +38,7 @@ class Profiler:
     statistical_results_ = {}
 
     def __init__(self):
-        _ti_core.info(f'Profiler')
+        _ti_core.trace(f'Profiler')
 
     def set_kernel_profiler_mode(self, kernel_profiler=None):
         if kernel_profiler is None:
@@ -62,10 +62,10 @@ class Profiler:
     def print_info(self):
         impl.get_runtime().prog.print_kernel_profile_info()
     
-    # TODO : refector : from backend.KernelProfilerQueryResult to self.StatisticalResult
     def query_info(self, name):
         self.update_records() # traced records
         self.count_results()  # statistical results
+        # TODO : query self.StatisticalResult in python scope 
         return impl.get_runtime().prog.query_kernel_profile_info(name)
 
     def clear_info(self):
@@ -129,7 +129,7 @@ class Profiler:
                 self.total_time_ms_, len(self.statistical_results_)))
             print("=========================================================================")
 
-        #trace mode : print the record of launched kernel 
+        #trace mode : print traces record of launched kernel 
         if mode == self.trace:
             print("====================================")
             print("trace records")

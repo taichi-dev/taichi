@@ -101,7 +101,7 @@ def print_kernel_profile_info():
         [1] Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
     """
-    profiler.print_records()
+    profiler.print_info()
     # impl.get_runtime().prog.print_kernel_profile_info()
 
 

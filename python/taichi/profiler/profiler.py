@@ -1,5 +1,6 @@
 from taichi.core import ti_core as _ti_core
 from taichi.lang import impl
+import taichi as ti
 
 class StatisticalResult:
         def __init__(self, name):
@@ -58,9 +59,6 @@ class Profiler:
         self.update_records() # traced records
         self.count_results()  # statistical results : total_time_ms_ is counted here
         return self.total_time_ms_
-
-    def print_info(self):
-        impl.get_runtime().prog.print_kernel_profile_info()
     
     def query_info(self, name):
         self.update_records() # traced records
@@ -103,14 +101,13 @@ class Profiler:
                 key=lambda item: item[1], 
                 reverse = True)}
             
-    def print_records(self,mode=count):
+    def print_info(self,mode=count):
         self.update_records() # trace records
         self.count_results()  # statistical results 
-
         #count mode (default) : print statistical results of all kernel
         if mode == self.count:
             print("=========================================================================")
-            print("count results")
+            print(_ti_core.arch_name(ti.cfg.arch).upper() + " Profiler(count)")
             print("=========================================================================")
             print("[      %     total   count |      min       avg       max   ] Kernel name")
             for key in self.statistical_results_:
@@ -132,7 +129,7 @@ class Profiler:
         #trace mode : print traces record of launched kernel 
         if mode == self.trace:
             print("====================================")
-            print("trace records")
+            print(_ti_core.arch_name(ti.cfg.arch).upper() + " Profiler(trace)")
             print("====================================")
             print("[      % |     time    ] Kernel name")
             for record in self.traced_records_:

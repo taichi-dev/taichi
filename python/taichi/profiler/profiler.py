@@ -126,7 +126,7 @@ class Profiler:
                 self.total_time_ms_, len(self.statistical_results_)))
             print("=========================================================================")
 
-        #trace mode : print traces record of launched kernel 
+        #trace mode : print records of launched kernel 
         if mode == self.trace:
             print("====================================")
             print(_ti_core.arch_name(ti.cfg.arch).upper() + " Profiler(trace)")

@@ -68,6 +68,12 @@ jobs:
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
 
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.name }}-py${{ matrix.python }}-linux.whl
+          path: dist/*.whl
+
       - name: Test
         run: |
           export PATH=/home/buildbot/miniconda3/envs/$PYTHON/bin:$PATH
@@ -136,6 +142,12 @@ jobs:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
           PROJECT_NAME: ${{ matrix.name }}
 
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.name }}-py${{ matrix.python }}-macOS.whl
+          path: dist/*.whl
+
       - name: Test
         run: |
           python examples/algorithm/laplace.py
@@ -189,6 +201,12 @@ jobs:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
+
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.name }}-py${{ matrix.python }}-macM1.whl
+          path: dist/*.whl
 
       - name: Upload PyPI
         env:
@@ -258,6 +276,12 @@ jobs:
           CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm -DTI_WITH_VULKAN:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
           VULKAN_SDK: C:/VulkanSDK/1.2.189.0
+
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.name }}-py${{ matrix.python }}-windows.whl
+          path: dist/*.whl
 
       - name: Test
         shell: powershell

@@ -57,6 +57,10 @@ class CUDAContext {
     return mcpu;
   }
 
+  void* get_context() {
+    return context;
+  }
+
   void make_current() {
     driver.context_set_current(context);
   }

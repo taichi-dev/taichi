@@ -6,35 +6,25 @@ TLANG_NAMESPACE_BEGIN
 
 #if defined(TI_WITH_CUDA)
 
-bool check_device_capability() {
-  void *device;
-  int cc_major;
-  CUDADriver::get_instance().device_get(&device, 0);
-  CUDADriver::get_instance().device_get_attribute(
-      &cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device);
-  if (cc_major < 7) {
-    TI_WARN(
-        "CUPTI profiler APIs unsupported on Device with compute capability < "
-        "7.0 , fallback to default kernel profiler");
-    return false;
-  }
-  return true;
-}
-
 // The init logic here is temporarily set up for test CUPTI
 // will not affect default toolkit (cuEvent)
-KernelProfilerCUDA::KernelProfilerCUDA() {
+KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
+  if(enable){
+    tool_ = ProfilingToolkit::event;
+#if defined(TI_WITH_CUDA_TOOLKIT)
 // if Taichi was compiled with CUDA toolit, then use CUPTI
 // TODO : add set_mode() to select toolkit by user
-#if defined(TI_WITH_CUDA_TOOLKIT)
-  if (check_device_capability())
+  if (check_device_capability()&&
+      check_cupti_privileges())
     tool_ = ProfilingToolkit::cupti;
 #endif
-
+  }
   if (tool_ == ProfilingToolkit::event) {
     event_toolkit_ = std::make_unique<EventToolkit>();
   } else if (tool_ == ProfilingToolkit::cupti) {
     cupti_toolkit_ = std::make_unique<CuptiToolkit>();
+    cupti_toolkit_->init_cupti();
+    cupti_toolkit_->begin_profiling();
   }
 }
 
@@ -49,7 +39,9 @@ void KernelProfilerCUDA::trace(KernelProfilerBase::TaskHandle &task_handle,
   if (tool_ == ProfilingToolkit::event)
     task_handle = event_toolkit_->start_with_handle(task_name);
   else if (tool_ == ProfilingToolkit::cupti) {
-    TI_NOT_IMPLEMENTED;
+    KernelProfileTracedRecord record;
+    record.name = task_name;
+    traced_records_.push_back(record);
   }
 }
 
@@ -87,7 +79,7 @@ void KernelProfilerCUDA::sync() {
     statistics_on_traced_records();
     event_toolkit_->clear();
   } else if (tool_ == ProfilingToolkit::cupti) {
-    cupti_toolkit_->calculate_metric_values();
+    cupti_toolkit_->update_record(traced_records_);
     statistics_on_traced_records();
     cupti_toolkit_->end_profiling();
     cupti_toolkit_->deinit_cupti();
@@ -135,7 +127,7 @@ void KernelProfilerCUDA::clear() {
 
 #else
 
-KernelProfilerCUDA::KernelProfilerCUDA() {
+KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
   TI_NOT_IMPLEMENTED;
 }
 KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(

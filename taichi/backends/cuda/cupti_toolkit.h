@@ -1,20 +1,32 @@
 #pragma once
 
-// #include "taichi/backends/cuda/cuda_profiler.h"
-#include "taichi/common/core.h"
-
-#include <string>
-#include <stdint.h>
+#include "taichi/program/kernel_profiler.h"
+#include "taichi/backends/cuda/cupti_toolkit_functions.h"
 
 TLANG_NAMESPACE_BEGIN
 
+//make sure these metrics can be captured in one pass (no kernal replay)
+typedef enum CuptiMetricsDefault {
+  CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS = 0,
+  CUPTI_METRIC_CORE_FREQUENCY_HZS      = 1,
+  CUPTI_METRIC_GLOBAL_LOAD_BYTES       = 2,
+  CUPTI_METRIC_GLOBAL_STORE_BYTES      = 3,
+  CUPTI_METRIC_DEFAULT_TOTAL           = 4
+};
+
+const std::vector<std::string> MetricListDeafult = {
+  "smsp__cycles_elapsed.avg",               //CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS
+  "smsp__cycles_elapsed.avg.per_second",    //CUPTI_METRIC_CORE_FREQUENCY_HZS
+  "dram__bytes_read.sum",                   //CUPTI_METRIC_GLOBAL_LOAD_BYTES
+  "dram__bytes_write.sum"                   //CUPTI_METRIC_GLOBAL_STORE_BYTES
+};
+
 struct CuptiConfig {
-  bool enable = false;
 #if defined(TI_WITH_CUDA_TOOLKIT)
   uint32_t num_ranges = 16384;  // max number of kernels traced by CUPTI
   std::vector<std::string> metric_list;
-  // CUpti_ProfilerRange profiler_range = CUPTI_AutoRange;
-  // CUpti_ProfilerReplayMode profiler_replay_mode = CUPTI_KernelReplay;
+  CUpti_ProfilerRange profiler_range = CUPTI_AutoRange;
+  CUpti_ProfilerReplayMode profiler_replay_mode = CUPTI_KernelReplay;
 #endif
 };
 
@@ -27,18 +39,19 @@ struct CuptiImage {
   std::vector<uint8_t> counter_data_image;
 };
 
+bool check_device_capability();
+bool check_cupti_privileges();
+
 class CuptiToolkit {
  public:
   CuptiToolkit();
   ~CuptiToolkit();
 
-  void set_enable();
-
   bool init_cupti();
   bool deinit_cupti();
   bool begin_profiling();
   bool end_profiling();
-  bool calculate_metric_values();
+  bool update_record(std::vector<KernelProfileTracedRecord> &traced_records);
 
  private:
   CuptiConfig cupti_config_;

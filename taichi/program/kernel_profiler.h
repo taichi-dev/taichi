@@ -83,6 +83,6 @@ class KernelProfilerBase {
   }
 };
 
-std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch);
+std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable);
 
 TLANG_NAMESPACE_END

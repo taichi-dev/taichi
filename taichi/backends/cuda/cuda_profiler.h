@@ -9,6 +9,14 @@
 
 TLANG_NAMESPACE_BEGIN
 
+struct CUDAEventRecord {
+  std::string name;
+  float kernel_elapsed_time_in_ms{0.0};
+  float time_since_base{0.0};
+  void *start_event{nullptr};
+  void *stop_event{nullptr};
+};
+
 // A CUDA kernel profiler that uses CUDA timing events
 class KernelProfilerCUDA : public KernelProfilerBase {
  public:
@@ -25,8 +33,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
  private:
   void *base_event_{nullptr};
   float64 base_time_{0.0};
-  std::map<std::string, std::vector<std::pair<void *, void *>>>
-      outstanding_events_;
+  // for cuEvent profiling, clear after sync()
+  std::vector<CUDAEventRecord> event_records_;
 };
 
 TLANG_NAMESPACE_END

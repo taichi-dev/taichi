@@ -5,8 +5,8 @@ ti.init()
 N = 8
 dt = 1e-5
 
-x = ti.Vector.field(2, float, N, needs_grad=True)  # position of particles
-v = ti.Vector.field(2, float, N)  # velocity of particles
+x = ti.Vector.field(2, float, N, needs_grad=True)  # particle positions
+v = ti.Vector.field(2, float, N)  # particle velocities
 U = ti.field(float, (), needs_grad=True)  # potential energy
 
 
@@ -47,6 +47,5 @@ gui = ti.GUI('Autodiff gravity')
 while gui.running:
     for i in range(50):
         substep()
-    print('U = ', U[None])
     gui.circles(x.to_numpy(), radius=3)
     gui.show()

@@ -9,14 +9,13 @@ TLANG_NAMESPACE_BEGIN
 // The init logic here is temporarily set up for test CUPTI
 // will not affect default toolkit (cuEvent)
 KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
-  if(enable){
+  if (enable) {
     tool_ = ProfilingToolkit::event;
 #if defined(TI_WITH_CUDA_TOOLKIT)
-// if Taichi was compiled with CUDA toolit, then use CUPTI
-// TODO : add set_mode() to select toolkit by user
-  if (check_device_capability()&&
-      check_cupti_privileges())
-    tool_ = ProfilingToolkit::cupti;
+    // if Taichi was compiled with CUDA toolit, then use CUPTI
+    // TODO : add set_mode() to select toolkit by user
+    if (check_device_capability() && check_cupti_privileges())
+      tool_ = ProfilingToolkit::cupti;
 #endif
   }
   if (tool_ == ProfilingToolkit::event) {

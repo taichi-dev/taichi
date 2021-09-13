@@ -5,20 +5,20 @@
 
 TLANG_NAMESPACE_BEGIN
 
-//make sure these metrics can be captured in one pass (no kernal replay)
+// make sure these metrics can be captured in one pass (no kernal replay)
 typedef enum CuptiMetricsDefault {
   CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS = 0,
-  CUPTI_METRIC_CORE_FREQUENCY_HZS      = 1,
-  CUPTI_METRIC_GLOBAL_LOAD_BYTES       = 2,
-  CUPTI_METRIC_GLOBAL_STORE_BYTES      = 3,
-  CUPTI_METRIC_DEFAULT_TOTAL           = 4
+  CUPTI_METRIC_CORE_FREQUENCY_HZS = 1,
+  CUPTI_METRIC_GLOBAL_LOAD_BYTES = 2,
+  CUPTI_METRIC_GLOBAL_STORE_BYTES = 3,
+  CUPTI_METRIC_DEFAULT_TOTAL = 4
 };
 
 const std::vector<std::string> MetricListDeafult = {
-  "smsp__cycles_elapsed.avg",               //CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS
-  "smsp__cycles_elapsed.avg.per_second",    //CUPTI_METRIC_CORE_FREQUENCY_HZS
-  "dram__bytes_read.sum",                   //CUPTI_METRIC_GLOBAL_LOAD_BYTES
-  "dram__bytes_write.sum"                   //CUPTI_METRIC_GLOBAL_STORE_BYTES
+    "smsp__cycles_elapsed.avg",  // CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS
+    "smsp__cycles_elapsed.avg.per_second",  // CUPTI_METRIC_CORE_FREQUENCY_HZS
+    "dram__bytes_read.sum",                 // CUPTI_METRIC_GLOBAL_LOAD_BYTES
+    "dram__bytes_write.sum"                 // CUPTI_METRIC_GLOBAL_STORE_BYTES
 };
 
 struct CuptiConfig {

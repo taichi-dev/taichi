@@ -57,7 +57,7 @@ class CUDAContext {
     return mcpu;
   }
 
-  void* get_context() {
+  void *get_context() {
     return context;
   }
 

@@ -1,6 +1,7 @@
 # Authored by Tiantian Liu, Taichi Graphics.
-import taichi as ti
 import math
+
+import taichi as ti
 
 ti.init(arch=ti.cpu)
 

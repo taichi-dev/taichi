@@ -102,7 +102,6 @@ def print_kernel_profile_info():
         backend due to its lack of support for `ti.sync()`.
     """
     profiler.print_info()
-    # impl.get_runtime().prog.print_kernel_profile_info()
 
 
 def query_kernel_profile_info(name):
@@ -146,7 +145,6 @@ def query_kernel_profile_info(name):
         backend due to its lack of support for `ti.sync()`.
     """
     return profiler.query_info(name)
-    # return impl.get_runtime().prog.query_kernel_profile_info(name)
 
 
 @deprecated('kernel_profiler_clear()', 'clear_kernel_profile_info()')
@@ -159,7 +157,6 @@ def clear_kernel_profile_info():
     Clear all KernelProfiler records.
     """
     profiler.clear_info()
-    # impl.get_runtime().prog.clear_kernel_profile_info()
 
 
 def kernel_profiler_total_time():
@@ -170,7 +167,6 @@ def kernel_profiler_total_time():
         time (double): total time in second
     """
     return profiler.get_total_time()
-    # return impl.get_runtime().prog.kernel_profiler_total_time()
 
 
 @deprecated('memory_profiler_print()', 'print_memory_profile_info()')

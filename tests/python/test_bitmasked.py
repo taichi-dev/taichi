@@ -256,3 +256,31 @@ def test_bitmasked_offset_child():
 
     func()
     assert s[None] == 7
+
+
+@ti.test(require=ti.extension.sparse)
+def test_bitmasked_2d_power_of_two():
+    some_val = ti.field(dtype=float)
+    width, height = 10, 10
+    total = width * height
+    ptr = ti.root.bitmasked(ti.ij, (width, height))
+    ptr.place(some_val)
+    num_active = ti.field(dtype=int, shape=())
+
+    @ti.kernel
+    def init():
+        num_active[None] = 0
+        for x, y in ti.ndrange(width, height):
+            some_val[x, y] = 5
+            num_active[None] += 1
+
+    @ti.kernel
+    def run():
+        num_active[None] = 0
+        for x, y in some_val:
+            num_active[None] += 1
+
+    init()
+    assert num_active[None] == total
+    run()
+    assert num_active[None] == total

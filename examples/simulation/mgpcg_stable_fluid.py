@@ -38,7 +38,8 @@ class Dye:
 
     @ti.kernel
     def apply_impulse(self, vf: ti.template(), dyef: ti.template(),
-                      imp_data: ti.ext_arr(), dt: ti.template(), mean_res: float):
+                      imp_data: ti.ext_arr(), dt: ti.template(),
+                      mean_res: float):
 
         for i, j in vf:
             dir = ti.Vector([imp_data[0], imp_data[1]])
@@ -57,9 +58,10 @@ class Dye:
             max_dye = 1
             dye_color = dyef[i, j]
             if dir.norm() > 0.5:
-                dye_color += ti.exp(-distance_sqr * (4 / (mean_res / 15) ** 2)) * dir_norm / (
-                            mean_res / 15.0) * ti.Vector(
-                    [imp_data[4], imp_data[5], imp_data[6]])
+                dye_color += ti.exp(
+                    -distance_sqr * (4 / (mean_res / 15)**2)) * dir_norm / (
+                        mean_res / 15.0) * ti.Vector(
+                            [imp_data[4], imp_data[5], imp_data[6]])
                 dye_color[0] = min(dye_color[0], max_dye)
                 dye_color[1] = min(dye_color[1], max_dye)
                 dye_color[2] = min(dye_color[2], max_dye)
@@ -75,7 +77,8 @@ class Dye:
         self.has_dye[None] = 0
         for i, j in dye:
             threshold = 0.01
-            if dye[i, j][0] > threshold or dye[i, j][1] > threshold or dye[i, j][2] > threshold:
+            if dye[i, j][0] > threshold or dye[i, j][1] > threshold or dye[
+                    i, j][2] > threshold:
                 self.has_dye[None] = 1
 
     def apply_control(self, control_data, velocity_feild, dt):
@@ -83,10 +86,12 @@ class Dye:
             source_id = data[4]
             if source_id not in self.source_colors:
                 self.source_colors[source_id] = (np.random.rand(3) * 0.7) + 0.3
-                self.source_colors[source_id] = np.array(self.source_colors[source_id], dtype=np.float32)
+                self.source_colors[source_id] = np.array(
+                    self.source_colors[source_id], dtype=np.float32)
             impulse_data = data[:4]
             color = self.source_colors[source_id]
-            self.apply_impulse(velocity_feild, self.dyes_pair.cur, np.concatenate([impulse_data, color]), dt,
+            self.apply_impulse(velocity_feild, self.dyes_pair.cur,
+                               np.concatenate([impulse_data, color]), dt,
                                np.mean(self.res))
         ids_to_remove = []
         for source_id in self.source_colors:
@@ -100,7 +105,8 @@ class Dye:
             del self.source_colors[id]
 
     def step(self, velocity_feild, dt):
-        self.advect_kernel(velocity_feild, self.dyes_pair.cur, self.dyes_pair.nxt, dt)
+        self.advect_kernel(velocity_feild, self.dyes_pair.cur,
+                           self.dyes_pair.nxt, dt)
         self.dyes_pair.swap()
         self.apply_dye_decay(self.dyes_pair.cur)
 
@@ -162,7 +168,9 @@ class MGPCG:
 
         for l in range(self.n_mg_levels):
             self.N_multigrid.append(coarsened_grid_size)
-            sparse_grid_size = [dim_size + block_size * 2 for dim_size in coarsened_grid_size]
+            sparse_grid_size = [
+                dim_size + block_size * 2 for dim_size in coarsened_grid_size
+            ]
             sparse_grid_offset = [o - block_size for o in coarsened_offset]
             print(f'Level {l}')
             print(f'  coarsened_grid_size {coarsened_grid_size}')
@@ -170,9 +178,13 @@ class MGPCG:
 
             grid = None
             if sparse:
-                grid = ti.root.pointer(indices, [dim_size // block_size for dim_size in sparse_grid_size])
+                grid = ti.root.pointer(
+                    indices,
+                    [dim_size // block_size for dim_size in sparse_grid_size])
             else:
-                grid = ti.root.dense(indices, [dim_size // block_size for dim_size in coarsened_grid_size])
+                grid = ti.root.dense(indices, [
+                    dim_size // block_size for dim_size in coarsened_grid_size
+                ])
 
             fields = []
 
@@ -183,8 +195,7 @@ class MGPCG:
 
             if sparse:
                 for f in fields:
-                    grid.dense(indices,
-                               block_size).place(f)
+                    grid.dense(indices, block_size).place(f)
             else:
                 for f in fields:
                     grid.dense(indices, block_size).place(f)
@@ -421,7 +432,8 @@ class MouseDataGen(object):
             # ^
             # |
             # |-------> x
-            mxy = np.array(gui.get_cursor_pos(), dtype=np.float32) * np.array(self.res)
+            mxy = np.array(gui.get_cursor_pos(), dtype=np.float32) * np.array(
+                self.res)
             if self.prev_mouse is None:
                 self.prev_mouse = mxy
                 self.prev_id += 1
@@ -488,8 +500,7 @@ mg_sovler = MGPCG(dim=2,
                   block_size=block_size,
                   n_mg_levels=3,
                   use_multigrid=use_mg,
-                  sparse=False
-                  )
+                  sparse=False)
 
 velocities_pair = TexPair(_velocities, _new_velocities)
 pressures_pair = TexPair(_pressures, _new_pressures)
@@ -542,14 +553,16 @@ def init_pressure_solver(v: ti.template()):
 
 
 @ti.func
-def semi_lagrance(vf: ti.template(), qf: ti.template(), x: ti.template(), dt: ti.template()):
+def semi_lagrance(vf: ti.template(), qf: ti.template(), x: ti.template(),
+                  dt: ti.template()):
     old_x = backtrace(vf, x, dt)
     q = bilerp(qf, old_x)
     return q
 
 
 @ti.func
-def maccormack(vf: ti.template(), qf: ti.template(), x: ti.template(), dt: ti.template()):
+def maccormack(vf: ti.template(), qf: ti.template(), x: ti.template(),
+               dt: ti.template()):
     q = bilerp(qf, x)
 
     old_x = backtrace(vf, x, dt)
@@ -564,7 +577,8 @@ def maccormack(vf: ti.template(), qf: ti.template(), x: ti.template(), dt: ti.te
 
 
 @ti.kernel
-def advect(vf: ti.template(), qf: ti.template(), new_qf: ti.template(), dt: ti.template()):
+def advect(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
+           dt: ti.template()):
     for I in ti.grouped(qf):
         new_qf[I] = maccormack(vf, qf, I + 0.5, dt)
 
@@ -685,7 +699,6 @@ else:
 control_data_gen = MouseDataGen(res=res)
 visualize_d = True  #visualize dye (default)
 visualize_v = False  #visualize velocity
-
 
 while gui_window.running:
     if gui_window.get_event(press_token):

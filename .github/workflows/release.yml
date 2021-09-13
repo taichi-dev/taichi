@@ -3,7 +3,7 @@ on:
   release:
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#release
     types: [published]
-  # When triggered by schedule and workflow_dispatch, github.event.action is an empty string.  
+  # When triggered by schedule and workflow_dispatch, github.event.action is an empty string.
   # We use this to distinguish which taichi to release.
   schedule:
     - cron: "0 0 * * *"
@@ -80,6 +80,11 @@ jobs:
           ti test -vr2 -t2
         env:
           PYTHON: ${{ matrix.python }}
+
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 180
 
       - name: Upload PyPI
         env:
@@ -217,7 +222,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-          
+
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}

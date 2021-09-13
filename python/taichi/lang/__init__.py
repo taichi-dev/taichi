@@ -101,7 +101,8 @@ def print_kernel_profile_info():
         [1] Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
     """
-    impl.get_runtime().prog.print_kernel_profile_info()
+    profiler.print_records()
+    # impl.get_runtime().prog.print_kernel_profile_info()
 
 
 def query_kernel_profile_info(name):
@@ -144,14 +145,9 @@ def query_kernel_profile_info(name):
         [2] Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
     """
-    return impl.get_runtime().prog.query_kernel_profile_info(name)
+    return profiler.query_info(name)
+    # return impl.get_runtime().prog.query_kernel_profile_info(name)
 
-
-def kernel_profile_record_len():
-    return impl.get_runtime().prog.kernel_profile_record_len()
-
-def get_kernel_profile_record(index):
-    return impl.get_runtime().prog.get_kernel_profile_record(index)
 
 @deprecated('kernel_profiler_clear()', 'clear_kernel_profile_info()')
 def kernel_profiler_clear():
@@ -162,7 +158,8 @@ def clear_kernel_profile_info():
     """
     Clear all KernelProfiler records.
     """
-    impl.get_runtime().prog.clear_kernel_profile_info()
+    profiler.clear_info()
+    # impl.get_runtime().prog.clear_kernel_profile_info()
 
 
 def kernel_profiler_total_time():
@@ -172,7 +169,8 @@ def kernel_profiler_total_time():
     Returns:
         time (double): total time in second
     """
-    return impl.get_runtime().prog.kernel_profiler_total_time()
+    return profiler.get_total_time()
+    # return impl.get_runtime().prog.kernel_profiler_total_time()
 
 
 @deprecated('memory_profiler_print()', 'print_memory_profile_info()')

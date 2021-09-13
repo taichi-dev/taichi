@@ -32,7 +32,7 @@ class CuptiToolkit {
   CuptiToolkit();
   ~CuptiToolkit();
 
-  void set_enbale();
+  void set_enable();
 
   bool init_cupti();
   bool deinit_cupti();

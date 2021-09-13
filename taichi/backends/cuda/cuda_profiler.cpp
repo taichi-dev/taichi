@@ -21,6 +21,8 @@ bool check_device_capability() {
   return true;
 }
 
+//The init logic here is temporarily set up for test CUPTI
+//will not affect default toolkit (cuEvent)
 KernelProfilerCUDA::KernelProfilerCUDA() {
 // if Taichi was compiled with CUDA toolit, then use CUPTI
 // TODO : add set_mode() to select toolkit by user

@@ -2,7 +2,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void CuptiToolkit::set_enbale() {
+void CuptiToolkit::set_enable() {
   cupti_config_.enable = true;
 }
 

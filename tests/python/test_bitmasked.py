@@ -271,7 +271,6 @@ def test_bitmasked_2d_power_of_two():
     def init():
         num_active[None] = 0
         for x, y in ti.ndrange(width, height):
-            ti.activate(ptr, [x, y])
             some_val[x, y] = 5
             num_active[None] += 1
 

@@ -76,12 +76,12 @@ class KernelProfilerBase {
              double &min,
              double &max,
              double &avg);
-  
-  size_t record_len(){
+
+  size_t record_len() {
     return traced_records_.size();
   }
 
-  KernelProfileTracedRecord get_record(size_t index){
+  KernelProfileTracedRecord get_record(size_t index) {
     return traced_records_[index];
   }
 

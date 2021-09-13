@@ -213,11 +213,12 @@ void export_lang(py::module &m) {
       .def_readwrite("min", &Program::KernelProfilerQueryResult::min)
       .def_readwrite("max", &Program::KernelProfilerQueryResult::max)
       .def_readwrite("avg", &Program::KernelProfilerQueryResult::avg);
-  
+
   py::class_<KernelProfileTracedRecord>(m, "KernelProfileTracedRecord")
-    .def_readwrite("name", &KernelProfileTracedRecord::name)
-    .def_readwrite("kernel_time", &KernelProfileTracedRecord::kernel_elapsed_time_in_ms)
-    .def_readwrite("base_time", &KernelProfileTracedRecord::time_since_base);
+      .def_readwrite("name", &KernelProfileTracedRecord::name)
+      .def_readwrite("kernel_time",
+                     &KernelProfileTracedRecord::kernel_elapsed_time_in_ms)
+      .def_readwrite("base_time", &KernelProfileTracedRecord::time_since_base);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -228,9 +229,7 @@ void export_lang(py::module &m) {
              return program->query_kernel_profile_info(name);
            })
       .def("kernel_profile_record_len",
-           [](Program *program) {
-             return program->profiler->record_len();
-           }) 
+           [](Program *program) { return program->profiler->record_len(); })
       .def("get_kernel_profile_record",
            [](Program *program, const std::size_t index) {
              return program->profiler->get_record(index);

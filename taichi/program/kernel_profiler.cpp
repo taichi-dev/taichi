@@ -123,12 +123,12 @@ class DefaultProfiler : public KernelProfilerBase {
   void stop() override {
     auto t = Time::get_time() - start_t_;
     auto ms = t * 1000.0;
-    //trace record
+    // trace record
     KernelProfileTracedRecord record;
     record.name = event_name_;
     record.kernel_elapsed_time_in_ms = ms;
     traced_records_.push_back(record);
-    //count record
+    // count record
     auto it =
         std::find_if(statistical_results_.begin(), statistical_results_.end(),
                      [&](KernelProfileStatisticalResult &r) {

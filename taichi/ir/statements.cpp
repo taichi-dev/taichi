@@ -508,6 +508,7 @@ mesh::MeshElementType get_mesh_element_type(Stmt *stmt) {
       TI_NOT_IMPLEMENTED;
     }
   } else if (auto idx = stmt->cast<MeshRelationAccessStmt>()) {
+    TI_ASSERT(!idx->is_size());
     return idx->to_type;
   } else {
     TI_NOT_IMPLEMENTED;

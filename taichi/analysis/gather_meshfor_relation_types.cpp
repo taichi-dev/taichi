@@ -43,26 +43,7 @@ class GatherMeshforRelationTypes : public BasicStmtVisitor {
     } else if (auto from_stmt =
                    stmt->mesh_idx
                        ->cast<MeshRelationAccessStmt>()) {  // minor relation
-      auto from_order = mesh::element_order(from_stmt->to_type);
-      auto to_order = mesh::element_order(stmt->to_type);
-      TI_ASSERT_INFO(from_order > to_order,
-                     "Cannot access an indeterminate relation (E.g, Vert-Vert) "
-                     "in a nested neighbor access");
-      mesh_for->minor_relation_types.insert(
-          mesh::relation_by_orders(from_order, to_order));
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
-  }
-
-  void visit(MeshRelationSizeStmt *stmt) override {
-    if (auto from_stmt =
-            stmt->mesh_idx->cast<LoopIndexStmt>()) {  // major relation
-      TI_ASSERT(from_stmt->mesh_index_type() == mesh_for->major_from_type);
-      mesh_for->major_to_types.insert(stmt->to_type);
-    } else if (auto from_stmt =
-                   stmt->mesh_idx
-                       ->cast<MeshRelationAccessStmt>()) {  // minor relation
+      TI_ASSERT(!from_stmt->is_size());
       auto from_order = mesh::element_order(from_stmt->to_type);
       auto to_order = mesh::element_order(stmt->to_type);
       TI_ASSERT_INFO(from_order > to_order,

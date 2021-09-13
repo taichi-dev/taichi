@@ -72,7 +72,6 @@ PER_STATEMENT(ElementShuffleStmt)
 
 // Offloaded
 PER_STATEMENT(OffloadedStmt)
-PER_STATEMENT(MeshRelationSizeStmt)
 PER_STATEMENT(MeshRelationAccessStmt)
 PER_STATEMENT(MeshIndexConversionStmt)
 PER_STATEMENT(MeshPatchIndexStmt)

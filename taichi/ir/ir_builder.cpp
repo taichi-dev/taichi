@@ -454,12 +454,12 @@ void IRBuilder::ad_stack_accumulate_adjoint(AdStackAllocaStmt *stack,
 
 // Mesh related.
 
-MeshRelationSizeStmt *IRBuilder::get_relation_size(
+MeshRelationAccessStmt *IRBuilder::get_relation_size(
     mesh::Mesh *mesh,
     Stmt *mesh_idx,
     mesh::MeshElementType to_type) {
   return insert(
-      Stmt::make_typed<MeshRelationSizeStmt>(mesh, mesh_idx, to_type));
+      Stmt::make_typed<MeshRelationAccessStmt>(mesh, mesh_idx, to_type));
 }
 
 MeshRelationAccessStmt *IRBuilder::get_relation_access(

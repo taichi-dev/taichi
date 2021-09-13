@@ -46,10 +46,6 @@ class GatherMeshThreadLocal : public BasicStmtVisitor {
     this->owned_ptr->insert(stmt->from_type());
   }
 
-  void visit(MeshRelationSizeStmt *stmt) override {
-    this->owned_ptr->insert(stmt->from_type());
-  }
-
   void visit(MeshIndexConversionStmt *stmt) override {
     this->total_ptr->insert(stmt->from_type());
     if (optimize_mesh_reordered_mapping &&

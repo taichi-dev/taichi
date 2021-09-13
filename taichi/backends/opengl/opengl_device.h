@@ -13,12 +13,14 @@ class GLResourceBinder : public ResourceBinder {
  public:
   ~GLResourceBinder() override;
 
-  struct Bindings {
+  struct Bindings : public ResourceBinder::Bindings {
     // OpenGL has no sets, default set = 0
     uint32_t binding{0};
     GLuint buffer{0};
     GLuint image{0};
   };
+
+  std::unique_ptr<ResourceBinder::Bindings> materialize() override;
 
   // In Vulkan this is called Storage Buffer (shader can store)
   void rw_buffer(uint32_t set,
@@ -48,6 +50,13 @@ class GLResourceBinder : public ResourceBinder {
   // index_width = 4 -> uint32 index
   // index_width = 2 -> uint16 index
   void index_buffer(DevicePtr ptr, size_t index_width) override;
+
+  const std::unordered_map<uint32_t, GLuint> &binding_map() {
+    return binding_map_;
+  }
+
+ private:
+  std::unordered_map<uint32_t, GLuint> binding_map_;
 };
 
 class GLPipeline : public Pipeline {
@@ -57,8 +66,13 @@ class GLPipeline : public Pipeline {
 
   ResourceBinder *resource_binder() override;
 
+  GLuint get_program() {
+    return program_id_;
+  }
+
  private:
   GLuint program_id_;
+  GLResourceBinder binder_;
 };
 
 class GLCommandList : public CommandList {
@@ -105,6 +119,51 @@ class GLCommandList : public CommandList {
                        DeviceAllocation src_img,
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
+
+  // GL only stuff
+  void run_commands();
+
+ private:
+  struct Cmd {
+    virtual void execute() {
+    }
+  };
+
+  struct CmdBindPipeline : public Cmd {
+    GLuint program;
+    void execute() override;
+  };
+
+  struct CmdBindBufferToIndex : public Cmd {
+    GLuint buffer;
+    GLuint index;
+    void execute() override;
+  };
+
+  struct CmdBufferBarrier : public Cmd {
+    void execute() override;
+  };
+
+  struct CmdBufferCopy : public Cmd {
+    GLuint src, dst;
+    size_t src_offset, dst_offset;
+    size_t size;
+    void execute() override;
+  };
+
+  struct CmdBufferFill : public Cmd {
+    GLuint buffer;
+    size_t size;
+    uint32_t data;
+    void execute() override;
+  };
+
+  struct CmdDispatch : public Cmd {
+    uint32_t x, y, z;
+    void execute() override;
+  };
+
+  std::vector<std::unique_ptr<Cmd>> recorded_commands_;
 };
 
 class GLStream : public Stream {
@@ -166,6 +225,9 @@ class GLDevice : public GraphicsDevice {
                        DeviceAllocation src_img,
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
+
+ private:
+  GLStream stream_;
 };
 
 class GLSurface : public Surface {

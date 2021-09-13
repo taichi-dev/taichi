@@ -11,22 +11,30 @@ void GLResourceBinder::rw_buffer(uint32_t set,
                                  uint32_t binding,
                                  DevicePtr ptr,
                                  size_t size) {
+  // FIXME: Implement ranged bind
+  TI_NOT_IMPLEMENTED;
 }
 
 void GLResourceBinder::rw_buffer(uint32_t set,
                                  uint32_t binding,
                                  DeviceAllocation alloc) {
+  TI_ASSERT_INFO(set == 0, "OpenGL only supports set = 0, requested set = {}",
+                 set);
+  binding_map_[binding] = alloc.alloc_id;
 }
 
 void GLResourceBinder::buffer(uint32_t set,
                               uint32_t binding,
                               DevicePtr ptr,
                               size_t size) {
+  // FIXME: Implement ranged bind
+  TI_NOT_IMPLEMENTED;
 }
 
 void GLResourceBinder::buffer(uint32_t set,
                               uint32_t binding,
                               DeviceAllocation alloc) {
+  rw_buffer(set, binding, alloc);
 }
 
 void GLResourceBinder::image(uint32_t set,
@@ -42,6 +50,11 @@ void GLResourceBinder::vertex_buffer(DevicePtr ptr, uint32_t binding) {
 
 void GLResourceBinder::index_buffer(DevicePtr ptr, size_t index_width) {
   TI_NOT_IMPLEMENTED;
+}
+
+std::unique_ptr<ResourceBinder::Bindings> GLResourceBinder::materialize() {
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
 }
 
 GLPipeline::GLPipeline(const PipelineSourceDesc &desc, std::string name) {
@@ -86,38 +99,75 @@ GLPipeline::~GLPipeline() {
 }
 
 ResourceBinder *GLPipeline::resource_binder() {
-  return nullptr;
+  return &binder_;
 }
 
 GLCommandList::~GLCommandList() {
 }
 
 void GLCommandList::bind_pipeline(Pipeline *p) {
+  GLPipeline *pipeline = static_cast<GLPipeline *>(p);
+  auto cmd = std::make_unique<CmdBindPipeline>();
+  cmd->program = pipeline->get_program();
+  recorded_commands_.push_back(std::move(cmd));
 }
 
-void GLCommandList::bind_resources(ResourceBinder *binder) {
+void GLCommandList::bind_resources(ResourceBinder *_binder) {
+  GLResourceBinder *binder = static_cast<GLResourceBinder *>(_binder);
+  for (auto &[binding, buffer] : binder->binding_map()) {
+    auto cmd = std::make_unique<CmdBindBufferToIndex>();
+    cmd->buffer = buffer;
+    cmd->index = binding;
+    recorded_commands_.push_back(std::move(cmd));
+  }
 }
 
 void GLCommandList::bind_resources(ResourceBinder *binder,
                                    ResourceBinder::Bindings *bindings) {
+  TI_NOT_IMPLEMENTED;
+}
+
+template <typename T>
+std::initializer_list<T> make_init_list(std::initializer_list<T> &&l) {
+  return l;
 }
 
 void GLCommandList::buffer_barrier(DevicePtr ptr, size_t size) {
+  recorded_commands_.push_back(std::make_unique<CmdBufferBarrier>());
 }
 
 void GLCommandList::buffer_barrier(DeviceAllocation alloc) {
+  recorded_commands_.push_back(std::make_unique<CmdBufferBarrier>());
 }
 
 void GLCommandList::memory_barrier() {
+  recorded_commands_.push_back(std::make_unique<CmdBufferBarrier>());
 }
 
 void GLCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
+  auto cmd = std::make_unique<CmdBufferCopy>();
+  cmd->src = src.alloc_id;
+  cmd->dst = dst.alloc_id;
+  cmd->src_offset = src.offset;
+  cmd->dst_offset = dst.offset;
+  cmd->size = size;
+  recorded_commands_.push_back(std::move(cmd));
 }
 
 void GLCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
+  auto cmd = std::make_unique<CmdBufferFill>();
+  cmd->buffer = ptr.alloc_id;
+  cmd->size = size;
+  cmd->data = data;
+  recorded_commands_.push_back(std::move(cmd));
 }
 
 void GLCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
+  auto cmd = std::make_unique<CmdDispatch>();
+  cmd->x = x;
+  cmd->y = y;
+  cmd->z = z;
+  recorded_commands_.push_back(std::move(cmd));
 }
 
 void GLCommandList::begin_renderpass(int x0,
@@ -175,19 +225,30 @@ void GLCommandList::image_to_buffer(DevicePtr dst_buf,
   TI_NOT_IMPLEMENTED;
 }
 
+void GLCommandList::run_commands() {
+  for (auto &cmd : recorded_commands_) {
+    cmd->execute();
+  }
+}
+
 GLStream::~GLStream() {
 }
 
 std::unique_ptr<CommandList> GLStream::new_command_list() {
-  return std::unique_ptr<CommandList>();
+  return std::make_unique<GLCommandList>();
 }
 
-void GLStream::submit(CommandList *cmdlist) {
+void GLStream::submit(CommandList *_cmdlist) {
+  GLCommandList *cmdlist = static_cast<GLCommandList *>(_cmdlist);
+  cmdlist->run_commands();
 }
 
 void GLStream::submit_synced(CommandList *cmdlist) {
+  submit(cmdlist);
+  glFinish();
 }
 void GLStream::command_sync() {
+  glFinish();
 }
 
 GLDevice::~GLDevice() {
@@ -196,6 +257,8 @@ GLDevice::~GLDevice() {
 DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   GLuint buffer;
   glCreateBuffers(1, &buffer);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, params.size, nullptr, GL_DYNAMIC_READ);
 
   DeviceAllocation alloc;
   alloc.device = this;
@@ -239,13 +302,15 @@ void GLDevice::unmap(DeviceAllocation alloc) {
 void GLDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
   glBindBuffer(GL_COPY_WRITE_BUFFER, dst.alloc_id);
   glBindBuffer(GL_COPY_READ_BUFFER, src.alloc_id);
-  glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, src.offset, dst.offset, size);
+  glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, src.offset,
+                      dst.offset, size);
+  glFinish();
 }
 
 Stream *GLDevice::get_compute_stream() {
   // Fixme: should we make the GL backend support multi-threading?
   // Or should we ASSERT that we are on the main thread
-  return nullptr;
+  return &stream_;
 }
 
 std::unique_ptr<Pipeline> GLDevice::create_raster_pipeline(
@@ -322,6 +387,35 @@ BufferFormat GLSurface::image_format() {
 
 void GLSurface::resize(uint32_t width, uint32_t height) {
   TI_NOT_IMPLEMENTED;
+}
+
+void GLCommandList::CmdBindPipeline::execute() {
+  glUseProgram(program);
+}
+
+void GLCommandList::CmdBindBufferToIndex::execute() {
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, buffer);
+}
+
+void GLCommandList::CmdBufferBarrier::execute() {
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+}
+
+void GLCommandList::CmdBufferCopy::execute() {
+  glBindBuffer(GL_COPY_READ_BUFFER, src);
+  glBindBuffer(GL_COPY_WRITE_BUFFER, dst);
+  glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, src_offset,
+                      dst_offset, size);
+}
+
+void GLCommandList::CmdBufferFill::execute() {
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
+  glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_UNSIGNED_INT, 0, size,
+                       GL_UNSIGNED_INT, GL_RED_INTEGER, &data);
+}
+
+void GLCommandList::CmdDispatch::execute() {
+  glDispatchCompute(x, y, z);
 }
 
 }  // namespace opengl

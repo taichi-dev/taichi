@@ -19,7 +19,7 @@ class MakeMeshIndexMappingLocal : public Pass {
   MakeMeshIndexMappingLocal(OffloadedStmt *offload,
                             const CompileConfig &config);
   void simplify_nested_conversion();
-
+  void gather_candidate_mapping();
   void fetch_mapping_to_bls(mesh::MeshElementType element_type,
                             mesh::ConvType conv_type);
   void replace_conv_statements(mesh::MeshElementType element_type,

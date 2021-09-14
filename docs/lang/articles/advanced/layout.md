@@ -237,11 +237,12 @@ A = ti.field(ti.f32)
 ti.root.dense(ti.ij, (256, 256)).place(A)
 ```
 
-2D matrix, column-major
+<!--- ti.ji is same as ti.ij now --->
 
+2D matrix, column-major
 ```python
 A = ti.field(ti.f32)
-ti.root.dense(ti.ji, (256, 256)).place(A) # Note ti.ji instead of ti.ij
+ti.root.dense(ti.j, 256).dense(ti.i, 256).place(A)
 ```
 
 _8x8_ blocked 2D array of size _1024x1024_

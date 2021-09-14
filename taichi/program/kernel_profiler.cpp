@@ -34,6 +34,7 @@ void KernelProfilerBase::profiler_stop(KernelProfilerBase *profiler) {
   profiler->stop();
 }
 
+// TODO : deprecated
 void KernelProfilerBase::print() {
   sync();
   fmt::print("{}\n", title());

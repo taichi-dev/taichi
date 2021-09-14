@@ -26,7 +26,7 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
 from taichi.misc.util import deprecated
-from taichi.profiler import profiler_impl
+from taichi.profiler import get_default_profiler
 from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
@@ -35,7 +35,7 @@ import taichi as ti
 core = _ti_core
 
 runtime = impl.get_runtime()
-profiler = profiler_impl.get_default_profiler()
+profiler = get_default_profiler()
 
 i = indices(0)
 j = indices(1)

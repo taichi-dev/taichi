@@ -11,11 +11,11 @@
 
 ## Overview
 
-**Taichi** (太极) is a programming language designed for *high-performance computer graphics*. It is deeply embedded in **Python**, and its **just-in-time compiler** offloads compute-intensive tasks to multi-core CPUs and massively parallel GPUs.
+**Taichi** (太极) is a parallel programming language for high-performance numerical computations. It is embedded in **Python**, and its **just-in-time compiler** offloads compute-intensive tasks to multi-core CPUs and massively parallel GPUs.
 
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/simulation/fractal.py#L1-L31"> <img src="https://github.com/taichi-dev/public_files/raw/master/taichi/fractal_code.png" height="270px"></a>  <img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fractal_small.gif" height="270px">
 
-Advanced features of Taichi include [spatially sparse computing](https://docs.taichi.graphics/docs/lang/articles/advanced/sparse) and [differentiable programming](https://docs.taichi.graphics/docs/lang/articles/advanced/differentiable_programming) [[examples]](https://github.com/yuanming-hu/difftaichi).
+Advanced features of Taichi include [spatially sparse computing](https://docs.taichi.graphics/docs/lang/articles/advanced/sparse), [differentiable programming](https://docs.taichi.graphics/docs/lang/articles/advanced/differentiable_programming) [[examples]](https://github.com/yuanming-hu/difftaichi), and [quantized computation](https://github.com/taichi-dev/quantaichi).
 
 **Please check out our SIGGRAPH 2020 course on Taichi basics:** [YouTube](https://youtu.be/Y0-76n3aZFA), [Bilibili](https://www.bilibili.com/video/BV1kA411n7jk/), [slides (pdf)](https://yuanming.taichi.graphics/publication/2020-taichi-tutorial/taichi-tutorial.pdf).
 
@@ -24,9 +24,12 @@ Advanced features of Taichi include [spatially sparse computing](https://docs.ta
 ## Examples ([More...](misc/examples.md))
 
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/simulation/mpm128.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/mpm128.gif" height="192px"></a>
-<a href="https://github.com/taichi-dev/taichi/blob/master/examples/simulation/stable_fluid.py"> <img src="https://github.com/taichi-dev/public_files/raw/master/taichi/stable_fluids.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/quantaichi"> <img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/smoke_3d.gif" height="192px"></a>
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/rendering/sdf_renderer.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/sdf_renderer.jpg" height="192px"></a>
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/simulation/euler.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/euler.gif" height="192px"></a>
+
+<a href="https://github.com/taichi-dev/quantaichi"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/elastic_letters.gif" height="224px"></a>
+<a href="https://github.com/taichi-dev/quantaichi"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fluid_with_bunnies.gif" height="224px"></a>
 
 ## Installation [![Downloads](https://pepy.tech/badge/taichi)](https://pepy.tech/project/taichi)
 
@@ -34,7 +37,7 @@ Advanced features of Taichi include [spatially sparse computing](https://docs.ta
 python3 -m pip install taichi
 ```
 
-**Supported OS**: Windows, Linux, Mac OS X; **Python**: 3.6/3.7/3.8 (64-bit only)/3.9 (64-bit only); **Backends**: x64 CPUs, CUDA, Apple Metal, OpenGL Compute Shaders.
+**Supported OS**: Windows, Linux, Mac OS X; **Python**: 3.6-3.9 (64-bit only); **Backends**: x64 CPUs, CUDA, Apple Metal, OpenGL Compute Shaders.
 
 Please build from source for other configurations (e.g., your CPU is ARM, or you want to try out our experimental C backend).
 
@@ -67,14 +70,14 @@ If you use Taichi in your research, please cite our papers:
 - [**(ICLR 2020) DiffTaichi: Differentiable Programming for Physical Simulation**](https://arxiv.org/abs/1910.00935) [[Video]](https://www.youtube.com/watch?v=Z1xvAZve9aE) [[BibTex]](https://raw.githubusercontent.com/taichi-dev/taichi/master/misc/difftaichi_bibtex.txt) [[Code]](https://github.com/yuanming-hu/difftaichi)
 
 ## Links
-- [Taichi Conference](https://github.com/taichi-dev/taichicon): Taichi developer conferences.
+- [TaichiCon](https://github.com/taichi-dev/taichicon): Taichi developer conferences.
 - [GAMES 201 Lectures](https://github.com/taichi-dev/games201): (Chinese) A hands-on course on building advanced physics engines, based on Taichi.
 - [TaichiZoo](https://zoo.taichi.graphics): Running Taichi code in your browser <sup>[1](#zoo-disclaimer)</sup>.
 - [More...](misc/links.md)
 
 ## Security
 
-Please disclose security issues responsibly by contacting contact@taichi.graphics.
+Please disclose security issues responsibly to contact@taichi.graphics.
 
 ---
 

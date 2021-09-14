@@ -127,11 +127,17 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
         }
       } else {
         auto arg_str = std::get<std::string>(content);
-        for (int i = 0; i < (int)arg_str.size(); ++i) {
-          auto value = tlctx->get_constant((int32)arg_str[i]);
+        for (int i = 0; i < (int)arg_str.size(); i += 4) {
+          llvm::Value* values[4];
+          for (int j = 0; j < 4; ++j)
+            if (i + j < (int)arg_str.size()) {
+              values[j] = llvm::ConstantInt::get(*llvm_context, llvm::APInt(8, (uint64)arg_str[i + j], true));
+            } else {
+              values[j] = llvm::ConstantInt::get(*llvm_context, llvm::APInt(8, (uint64)0, true));
+            }
           auto func = get_runtime_function("wasm_print_char");
           builder->CreateCall(func,
-                              std::vector<llvm::Value *>{get_context(), value});
+                              std::vector<llvm::Value *>{get_context(), values[0], values[1], values[2], values[3]});
         }
       }
     }

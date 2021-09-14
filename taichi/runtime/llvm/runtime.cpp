@@ -1782,14 +1782,17 @@ void wasm_print_f32(Context *context, f32 value) {
   ((f32 *)buffer)[print_pos * 2 + 2] = value;
 }
 
-void wasm_print_char(Context *context, i32 value) {
+void wasm_print_char(Context *context, i8 value0, i8 value1, i8 value2, i8 value3) {
   Ptr buffer = context->runtime->wasm_print_buffer;
   if (buffer == nullptr)
     return;
   i32 total_cnt = ((i32 *)buffer)[0]++;
   i32 print_pos = total_cnt % kWasmPrintBufferSize;
   ((i32 *)buffer)[print_pos * 2 + 1] = 2;  // 2 for char
-  ((i32 *)buffer)[print_pos * 2 + 2] = value;
+  ((i8 *)buffer)[print_pos * 8 + 8] = value0;
+  ((i8 *)buffer)[print_pos * 8 + 9] = value1;
+  ((i8 *)buffer)[print_pos * 8 + 10] = value2;
+  ((i8 *)buffer)[print_pos * 8 + 11] = value3;
 }
 
 void wasm_set_kernel_parameter_i32(Context *context, int index, i32 value) {

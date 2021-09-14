@@ -46,8 +46,8 @@ class Profiler:
         if type(kernel_profiler) is bool:
             self._profiling_mode = kernel_profiler
         else:
-            raise TypeError(f'Arg kernel_profiler must be of type boolean. ' 
-                            f'Type {type(kernel_profiler)} ' 
+            raise TypeError(f'Arg kernel_profiler must be of type boolean. '
+                            f'Type {type(kernel_profiler)} '
                             f'is not supported')
 
     def get_kernel_profiler_mode(self):
@@ -60,7 +60,7 @@ class Profiler:
 
     def get_total_time(self):
         self.update_records()  # traced records
-        self.count_results() # _total_time_ms is counted here
+        self.count_results()  # _total_time_ms is counted here
         return self._total_time_ms
 
     def query_info(self, name):
@@ -78,8 +78,8 @@ class Profiler:
     def update_records(self):
         impl.get_runtime().sync()
         self.clear_fronted()
-        print(type(impl.get_runtime().prog.get_kernel_profiler_records()))
-        self._traced_records = impl.get_runtime().prog.get_kernel_profiler_records()
+        self._traced_records = impl.get_runtime(
+        ).prog.get_kernel_profiler_records()
 
     def count_results(self):
         """count statistical results
@@ -158,7 +158,9 @@ class Profiler:
             print(f"====================================="
                   f"====================================")
 
+
 _ti_profiler = Profiler()
+
 
 def get_default_profiler():
     return _ti_profiler

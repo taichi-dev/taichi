@@ -81,7 +81,7 @@ def kernel_profiler_print():
     return print_kernel_profile_info()
 
 
-def print_kernel_profile_info(mode = profiler.count):
+def print_kernel_profile_info(mode=profiler.count):
     """ `count` mode : print the statistical results (min,max,avg time) of Taichi kernels on devices.
     `trace` mode : print records of launched Taichi kernels
     Default print mode is `count` mode
@@ -100,13 +100,13 @@ def print_kernel_profile_info(mode = profiler.count):
 
         >>> compute()
         >>> ti.print_kernel_profile_info() #[1]
-        >>> # equivalent calls : 
+        >>> # equivalent calls :
         >>> # ti.print_kernel_profile_info('count')
         >>> # ti.print_kernel_profile_info(ti.profiler.count)
         >>> # ti.profiler.print_info('count')
-        
+
         >>> ti.print_kernel_profile_info('trace')
-        >>> # equivalent calls : 
+        >>> # equivalent calls :
         >>> # ti.print_kernel_profile_info(ti.profiler.trace)
         >>> # ti.profiler.print_info('trace')
 

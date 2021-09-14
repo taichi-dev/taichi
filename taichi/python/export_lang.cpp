@@ -228,11 +228,9 @@ void export_lang(py::module &m) {
            [](Program *program, const std::string &name) {
              return program->query_kernel_profile_info(name);
            })
-      .def("kernel_profile_record_len",
-           [](Program *program) { return program->profiler->record_len(); })
-      .def("get_kernel_profile_record",
-           [](Program *program, const std::size_t index) {
-             return program->profiler->get_record(index);
+      .def("get_kernel_profiler_records",
+           [](Program *program) {
+             return program->profiler->get_traced_records();
            })
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })

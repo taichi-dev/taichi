@@ -26,7 +26,7 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
 from taichi.misc.util import deprecated
-from taichi.profiler import profiler
+from taichi.profiler import profiler_impl
 from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
@@ -35,6 +35,7 @@ import taichi as ti
 core = _ti_core
 
 runtime = impl.get_runtime()
+profiler = profiler_impl.get_default_profiler()
 
 i = indices(0)
 j = indices(1)
@@ -80,8 +81,10 @@ def kernel_profiler_print():
     return print_kernel_profile_info()
 
 
-def print_kernel_profile_info():
-    """Print the elapsed time(min,max,avg) of Taichi kernels on devices.
+def print_kernel_profile_info(mode = profiler.count):
+    """ `count` mode : print the statistical results (min,max,avg time) of Taichi kernels on devices.
+    `trace` mode : print records of launched Taichi kernels
+    Default print mode is `count` mode
     To enable this profiler, set `kernel_profiler=True` in `ti.init`.
 
     Example::
@@ -97,12 +100,21 @@ def print_kernel_profile_info():
 
         >>> compute()
         >>> ti.print_kernel_profile_info() #[1]
+        >>> # equivalent calls : 
+        >>> # ti.print_kernel_profile_info('count')
+        >>> # ti.print_kernel_profile_info(ti.profiler.count)
+        >>> # ti.profiler.print_info('count')
+        
+        >>> ti.print_kernel_profile_info('trace')
+        >>> # equivalent calls : 
+        >>> # ti.print_kernel_profile_info(ti.profiler.trace)
+        >>> # ti.profiler.print_info('trace')
 
     Note:
         [1] Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
     """
-    profiler.print_info()
+    profiler.print_info(mode)
 
 
 def query_kernel_profile_info(name):

@@ -77,12 +77,8 @@ class KernelProfilerBase {
              double &max,
              double &avg);
 
-  size_t record_len() {
-    return traced_records_.size();
-  }
-
-  KernelProfileTracedRecord get_record(size_t index) {
-    return traced_records_[index];
+  std::vector<KernelProfileTracedRecord> get_traced_records() {
+    return traced_records_;
   }
 
   double get_total_time() const;

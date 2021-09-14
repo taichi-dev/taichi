@@ -205,7 +205,7 @@ jobs:
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-macM1.whl
+          name: ${{ matrix.name }}-py${{ matrix.python }}-macos-m1.whl
           path: dist/*.whl
 
       - name: Upload PyPI

@@ -5,7 +5,7 @@ import tempfile
 
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.ops import asm, bitcode_func_call, external_func_call
-from taichi.lang.util import has_clangpp, get_clangpp
+from taichi.lang.util import get_clangpp, has_clangpp
 
 
 class SourceBuilder():
@@ -18,8 +18,8 @@ class SourceBuilder():
             with open(self.source_file, 'w') as f:
                 f.write(source)
             assert has_clangpp()
-            os.system(get_clangpp() + ' -flto -c ' + self.source_file + ' -o ' +
-                      self.compiled_file)
+            os.system(get_clangpp() + ' -flto -c ' + self.source_file +
+                      ' -o ' + self.compiled_file)
             self.bc = self.compiled_file
         elif self.mode == 'so':
             self.td = tempfile.mkdtemp()

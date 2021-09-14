@@ -25,9 +25,9 @@ from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.struct import Struct
 from taichi.lang.type_factory_impl import type_factory
-from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
-                              taichi_scope, to_numpy_type, to_pytorch_type,
-                              to_taichi_type, has_clangpp)
+from taichi.lang.util import (has_clangpp, has_pytorch, is_taichi_class,
+                              python_scope, taichi_scope, to_numpy_type,
+                              to_pytorch_type, to_taichi_type)
 from taichi.misc.util import deprecated
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,

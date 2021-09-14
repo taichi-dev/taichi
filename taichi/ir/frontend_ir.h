@@ -837,18 +837,21 @@ class MeshRelationAccessExpression : public Expression {
 class MeshIndexConversionExpression : public Expression {
  public:
   mesh::Mesh *mesh;
+  mesh::MeshElementType idx_type;
   Expr idx;
   mesh::ConvType conv_type;
 
   std::string serialize() override {
-    return fmt::format("mesh_index_conversion({}, {})",
-                       mesh::conv_type_name(conv_type), idx->serialize());
+    return fmt::format("mesh_index_conversion({}, {}, {})",
+                       mesh::conv_type_name(conv_type),
+                       mesh::element_type_name(idx_type), idx->serialize());
   }
 
   MeshIndexConversionExpression(mesh::Mesh *mesh,
+                                mesh::MeshElementType idx_type,
                                 const Expr idx,
                                 mesh::ConvType conv_type)
-      : mesh(mesh), idx(idx), conv_type(conv_type) {
+      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
   }
 
   void flatten(FlattenContext *ctx) override;

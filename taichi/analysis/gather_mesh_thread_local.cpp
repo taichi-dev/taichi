@@ -47,10 +47,10 @@ class GatherMeshThreadLocal : public BasicStmtVisitor {
   }
 
   void visit(MeshIndexConversionStmt *stmt) override {
-    this->total_ptr->insert(stmt->from_type());
+    this->total_ptr->insert(stmt->idx_type);
     if (optimize_mesh_reordered_mapping &&
         stmt->conv_type == mesh::ConvType::l2r) {
-      this->owned_ptr->insert(stmt->from_type());
+      this->owned_ptr->insert(stmt->idx_type);
     }
   }
 

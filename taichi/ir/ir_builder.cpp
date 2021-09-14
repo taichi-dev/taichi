@@ -473,10 +473,11 @@ MeshRelationAccessStmt *IRBuilder::get_relation_access(
 
 MeshIndexConversionStmt *IRBuilder::get_index_conversion(
     mesh::Mesh *mesh,
+    mesh::MeshElementType idx_type,
     Stmt *idx,
     mesh::ConvType conv_type) {
-  return insert(
-      Stmt::make_typed<MeshIndexConversionStmt>(mesh, idx, conv_type));
+  return insert(Stmt::make_typed<MeshIndexConversionStmt>(mesh, idx_type, idx,
+                                                          conv_type));
 }
 
 MeshPatchIndexStmt *IRBuilder::get_patch_index(OffloadedStmt *loop) {

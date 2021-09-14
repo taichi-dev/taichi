@@ -733,8 +733,9 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(MeshIndexConversionStmt *stmt) override {
-    print("{}{} = {} {}", stmt->type_hint(), stmt->name(),
-          mesh::conv_type_name(stmt->conv_type), stmt->idx->name());
+    print("{}{} = {} {} {}", stmt->type_hint(), stmt->name(),
+          mesh::conv_type_name(stmt->conv_type),
+          mesh::element_type_name(stmt->idx_type), stmt->idx->name());
   }
 
   void visit(MeshPatchIndexStmt *stmt) override {

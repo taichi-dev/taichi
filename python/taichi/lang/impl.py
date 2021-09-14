@@ -11,9 +11,11 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import MatrixField, _IntermediateMatrix
-from taichi.lang.mesh import (MeshElementField, MeshElementFieldProxy,
-                              MeshElementType, MeshInstance,
-                              MeshRelationAccessProxy)
+from taichi.lang.mesh import (ConvType, MeshElementField,
+                              MeshElementFieldProxy, MeshElementType,
+                              MeshInstance, MeshRelationAccessProxy,
+                              MeshReorderedMatrixFieldProxy,
+                              MeshReorderedScalarFieldProxy)
 from taichi.lang.snode import SNode
 from taichi.lang.struct import StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
@@ -163,6 +165,20 @@ def subscript(value, *_indices):
         return value.subscript(*_indices)
     if isinstance(value, MeshRelationAccessProxy):
         return value.subscript(*_indices)
+    if isinstance(
+            value,
+        (MeshReorderedScalarFieldProxy, MeshReorderedMatrixFieldProxy)):
+        assert index_dim == 1
+        reordered_index = tuple([
+            Expr(
+                _ti_core.get_index_conversion(value.mesh_ptr,
+                                              value.element_type,
+                                              Expr(_indices[0]).ptr,
+                                              ConvType.g2r))
+        ])
+        value.__class__ = ScalarField if isinstance(
+            value, MeshReorderedScalarFieldProxy) else MatrixField
+        return subscript(value, *reordered_index)
     if isinstance(value, SparseMatrixProxy):
         return value.subscript(*_indices)
     if isinstance(value, Field):

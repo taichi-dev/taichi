@@ -500,19 +500,4 @@ SNode *BitStructStoreStmt::get_bit_struct_snode() const {
   return ptr->as<SNodeLookupStmt>()->snode;
 }
 
-mesh::MeshElementType get_mesh_element_type(Stmt *stmt) {
-  if (auto idx = stmt->cast<LoopIndexStmt>()) {
-    if (idx->is_mesh_index()) {
-      return idx->mesh_index_type();
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
-  } else if (auto idx = stmt->cast<MeshRelationAccessStmt>()) {
-    TI_ASSERT(!idx->is_size());
-    return idx->to_type;
-  } else {
-    TI_NOT_IMPLEMENTED;
-  }
-}
-
 TLANG_NAMESPACE_END

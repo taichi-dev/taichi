@@ -270,6 +270,7 @@ class IRBuilder {
                                               mesh::MeshElementType to_type,
                                               Stmt *neighbor_idx);
   MeshIndexConversionStmt *get_index_conversion(mesh::Mesh *mesh,
+                                                mesh::MeshElementType idx_type,
                                                 Stmt *idx,
                                                 mesh::ConvType conv_type);
   MeshPatchIndexStmt *get_patch_index(OffloadedStmt *loop);

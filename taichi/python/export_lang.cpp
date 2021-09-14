@@ -874,9 +874,10 @@ void export_lang(py::module &m) {
   });
 
   m.def("get_index_conversion",
-        [](mesh::MeshPtr mesh_ptr, const Expr &idx, mesh::ConvType &conv_type) {
-          return Expr::make<MeshIndexConversionExpression>(mesh_ptr.ptr.get(),
-                                                           idx, conv_type);
+        [](mesh::MeshPtr mesh_ptr, mesh::MeshElementType idx_type,
+           const Expr &idx, mesh::ConvType &conv_type) {
+          return Expr::make<MeshIndexConversionExpression>(
+              mesh_ptr.ptr.get(), idx_type, idx, conv_type);
         });
 
   m.def("create_kernel",
@@ -1175,6 +1176,7 @@ void export_lang(py::module &m) {
   py::enum_<mesh::ConvType>(m, "ConvType", py::arithmetic())
       .value("l2g", mesh::ConvType::l2g)
       .value("l2r", mesh::ConvType::l2r)
+      .value("g2r", mesh::ConvType::g2r)
       .export_values();
 
   py::class_<mesh::Mesh>(m, "Mesh");
@@ -1215,14 +1217,11 @@ void export_lang(py::module &m) {
               std::pair(type, max_element_num));
         });
 
-  m.def("set_l2g",
-        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
-          mesh_ptr.ptr->l2g_map.insert(std::pair(type, snode));
-        });
-
-  m.def("set_l2r",
-        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
-          mesh_ptr.ptr->l2r_map.insert(std::pair(type, snode));
+  m.def("set_index_mapping",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType element_type,
+           mesh::ConvType conv_type, SNode *snode) {
+          mesh_ptr.ptr->index_mapping.insert(
+              std::make_pair(std::make_pair(element_type, conv_type), snode));
         });
 
   m.def("set_relation_fixed",
@@ -1236,6 +1235,13 @@ void export_lang(py::module &m) {
            SNode *offset) {
           mesh_ptr.ptr->relations.insert(
               std::pair(type, mesh::MeshLocalRelation(value, offset)));
+        });
+
+  m.def("get_global_to_reordered_mapping",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType element_type) {
+          return mesh_ptr.ptr->index_mapping
+              .find(std::make_pair(element_type, mesh::ConvType::g2r))
+              ->second;
         });
 
   m.def("add_mesh_attribute",

@@ -1626,7 +1626,15 @@ class MeshRelationAccessStmt : public Stmt {
   }
 
   mesh::MeshElementType from_type() const {
-    return get_mesh_element_type(mesh_idx);
+    if (auto idx = mesh_idx->cast<LoopIndexStmt>()) {
+      TI_ASSERT(idx->is_mesh_index());
+      return idx->mesh_index_type();
+    } else if (auto idx = mesh_idx->cast<MeshRelationAccessStmt>()) {
+      TI_ASSERT(!idx->is_size());
+      return idx->to_type;
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
   }
 
   TI_STMT_DEF_FIELDS(ret_type, mesh, mesh_idx, to_type, neighbor_idx);
@@ -1639,12 +1647,16 @@ class MeshRelationAccessStmt : public Stmt {
 class MeshIndexConversionStmt : public Stmt {
  public:
   mesh::Mesh *mesh;
+  mesh::MeshElementType idx_type;
   Stmt *idx;
 
   mesh::ConvType conv_type;
 
-  MeshIndexConversionStmt(mesh::Mesh *mesh, Stmt *idx, mesh::ConvType conv_type)
-      : mesh(mesh), idx(idx), conv_type(conv_type) {
+  MeshIndexConversionStmt(mesh::Mesh *mesh,
+                          mesh::MeshElementType idx_type,
+                          Stmt *idx,
+                          mesh::ConvType conv_type)
+      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
     this->ret_type = PrimitiveType::u32;
     TI_STMT_REG_FIELDS;
   }
@@ -1653,11 +1665,7 @@ class MeshIndexConversionStmt : public Stmt {
     return false;
   }
 
-  mesh::MeshElementType from_type() const {
-    return get_mesh_element_type(idx);
-  }
-
-  TI_STMT_DEF_FIELDS(ret_type, mesh, idx, conv_type);
+  TI_STMT_DEF_FIELDS(ret_type, mesh, idx_type, idx, conv_type);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

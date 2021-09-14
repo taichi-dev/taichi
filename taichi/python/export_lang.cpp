@@ -951,7 +951,6 @@ void export_lang(py::module &m) {
       .export_values();
 
   m.def("insert_snode_access_flag", insert_snode_access_flag);
-  m.def("insert_mesh_attribute", insert_mesh_attribute);
   m.def("reset_snode_access_flag", reset_snode_access_flag);
   m.def("no_activate", [](SNode *snode) {
     // TODO(#2193): Also apply to @ti.func?

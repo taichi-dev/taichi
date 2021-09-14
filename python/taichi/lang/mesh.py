@@ -135,10 +135,6 @@ class MeshElementField:
         return getter
 
     def register_fields(self):
-        for v in self.get_field_members():
-            _ti_core.insert_mesh_attribute(self.mesh.mesh_ptr, self.type,
-                                           v.ptr)
-
         for k in self.keys:
             setattr(MeshElementField, k,
                     property(fget=MeshElementField.make_getter(k)))

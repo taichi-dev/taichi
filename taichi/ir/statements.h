@@ -812,7 +812,6 @@ class MeshForStmt : public Stmt {
   std::unordered_set<mesh::MeshElementType> major_to_types{};
   std::unordered_set<mesh::MeshRelationType> minor_relation_types{};
   MemoryAccessOptions mem_access_opt;
-  MeshAttributeSet mesh_attr;
 
   MeshForStmt(mesh::Mesh *mesh,
               mesh::MeshElementType element_type,
@@ -1142,7 +1141,6 @@ class OffloadedStmt : public Stmt {
   std::size_t tls_size{1};  // avoid allocating dynamic memory with 0 byte
   std::size_t bls_size{0};
   MemoryAccessOptions mem_access_opt;
-  MeshAttributeSet mesh_attr;
 
   OffloadedStmt(TaskType task_type, Arch arch);
 

@@ -37,7 +37,6 @@ class ProgramImpl {
       SNodeTree *tree,
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       std::unordered_map<int, SNode *> &snodes,
-      SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
       uint64 *result_buffer_ptr) = 0;
 
   virtual void destroy_snode_tree(SNodeTree *snode_tree) = 0;

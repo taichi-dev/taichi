@@ -35,6 +35,32 @@ void MakeMeshIndexMappingLocal::simplify_nested_conversion() {
   }
 }
 
+void MakeMeshIndexMappingLocal::gather_candidate_mapping() {
+  irpass::analysis::gather_statements(offload->body.get(), [&](Stmt *stmt) {
+    if (auto conv = stmt->cast<MeshIndexConversionStmt>()) {
+      if (conv->conv_type != mesh::ConvType::g2r) {
+        bool is_from_end = (conv->idx_type == offload->major_from_type);
+        bool is_to_end = false;
+        for (auto type : offload->major_to_types) {
+          is_to_end |= (conv->idx_type == type);
+        }
+        for (auto rel : offload->minor_relation_types) {
+          auto from_type =
+              mesh::MeshElementType(mesh::from_end_element_order(rel));
+          auto to_type = mesh::MeshElementType(mesh::to_end_element_order(rel));
+          is_from_end |= (conv->idx_type == from_type);
+          is_to_end |= (conv->idx_type == to_type);
+        }
+        if (is_to_end ||
+            (is_from_end && config.mesh_localize_from_end_mapping)) {
+          mappings.insert(std::make_pair(conv->idx_type, conv->conv_type));
+        }
+      }
+    }
+    return false;
+  });
+}
+
 void MakeMeshIndexMappingLocal::fetch_mapping_to_bls(
     mesh::MeshElementType element_type,
     mesh::ConvType conv_type) {
@@ -168,11 +194,12 @@ MakeMeshIndexMappingLocal::MakeMeshIndexMappingLocal(
     OffloadedStmt *offload,
     const CompileConfig &config)
     : offload(offload), config(config) {
+  // Step 0: simplify l2g + g2r -> l2r
   simplify_nested_conversion();
 
-  // TODO(changyu): A analyzer to determinte which mapping should be localized
-  mappings.insert(std::make_pair(mesh::MeshElementType::Vertex,
-                                 mesh::ConvType::l2g));  // FIXME: A hack
+  // A analyzer to determine which mapping should be localized
+  mappings.clear();
+  gather_candidate_mapping();
 
   bls_offset_in_bytes = offload->bls_size;
   auto &block = offload->bls_prologue;

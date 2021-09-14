@@ -1722,7 +1722,7 @@ f64 rounding_prepare_f64(f64 f) {
 }
 
 namespace {
-  i32 kWasmPrintBufferSize = 1024 * 1024;
+i32 kWasmPrintBufferSize = 1024 * 1024;
 }
 
 extern "C" {

@@ -276,7 +276,6 @@ class LowerAST : public IRVisitor {
       new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
           new_for->body->statements[0].get();
       new_for->mem_access_opt = stmt->mem_access_opt;
-      new_for->mesh_attr = stmt->mesh_attr;
       new_for->fields_registered = true;
       fctx.push_back(std::move(new_for));
     } else if (stmt->global_var.is<GlobalVariableExpression>()) {

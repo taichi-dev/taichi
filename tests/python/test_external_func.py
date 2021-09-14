@@ -40,6 +40,7 @@ def test_source_builder_so():
     assert func_so() == 11**8
 
 
+@pytest.mark.skipif(not ti.has_clangpp(), reason='Clang not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_source_builder_bc():
     source_bc = '''

@@ -5,6 +5,7 @@ import tempfile
 
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.ops import asm, bitcode_func_call, external_func_call
+from taichi.lang.util import has_clangpp, get_clangpp
 
 
 class SourceBuilder():
@@ -16,7 +17,8 @@ class SourceBuilder():
             self.compiled_file = os.path.join(self.td, 'source.bc')
             with open(self.source_file, 'w') as f:
                 f.write(source)
-            os.system('clang++-11 -flto -c ' + self.source_file + ' -o ' +
+            assert has_clangpp()
+            os.system(get_clangpp() + ' -flto -c ' + self.source_file + ' -o ' +
                       self.compiled_file)
             self.bc = self.compiled_file
         elif self.mode == 'so':

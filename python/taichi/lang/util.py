@@ -28,6 +28,18 @@ def has_pytorch():
     return _has_pytorch
 
 
+from distutils.spawn import find_executable
+_clangpp_candidates = ['clang++-8', 'clang++-10', 'clang++-11', 'clang++-12', 'clang++']
+_clangpp_presence = None
+for c in _clangpp_candidates:
+    if find_executable(c) is not None:
+        _clangpp_presence = find_executable(c)
+def has_clangpp():
+    return _clangpp_presence is not None
+def get_clangpp():
+    return _clangpp_presence
+
+
 def is_taichi_class(rhs):
     taichi_class = False
     try:

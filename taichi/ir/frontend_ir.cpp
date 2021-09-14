@@ -784,7 +784,7 @@ void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
 
 void MeshIndexConversionExpression::flatten(FlattenContext *ctx) {
   idx->flatten(ctx);
-  ctx->push_back<MeshIndexConversionStmt>(mesh, idx->stmt, conv_type);
+  ctx->push_back<MeshIndexConversionStmt>(mesh, idx_type, idx->stmt, conv_type);
   stmt = ctx->back_stmt();
 }
 

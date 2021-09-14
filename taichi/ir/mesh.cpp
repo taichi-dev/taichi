@@ -28,7 +28,9 @@ std::string conv_type_name(ConvType type) {
     return "local to global";
   else if (type == mesh::ConvType::l2r)
     return "local to reordered";
-  else {
+  else if (type == mesh::ConvType::g2r) {
+    return "global to reordered";
+  } else {
     TI_NOT_IMPLEMENTED;
   }
 }

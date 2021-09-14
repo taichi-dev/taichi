@@ -48,7 +48,7 @@ enum class MeshElementReorderingType {
   CellFirst
 };
 
-enum class ConvType { l2g, l2r };
+enum class ConvType { l2g, l2r, g2r };
 
 std::string conv_type_name(ConvType type);
 
@@ -111,8 +111,8 @@ class Mesh {
 
   MeshMapping<SNode *> owned_offset{};  // prefix of owned element
   MeshMapping<SNode *> total_offset{};  // prefix of total element
-  MeshMapping<SNode *> l2g_map{};       // local to global index mapping
-  MeshMapping<SNode *> l2r_map{};       // local to reordered index mapping
+  std::map<std::pair<MeshElementType, ConvType>, SNode *>
+      index_mapping{};  // mapping from one index space to another index space
 
   MeshMapping<std::unordered_set<MeshAttribute, MeshAttribute::Hash>>
       attributes;

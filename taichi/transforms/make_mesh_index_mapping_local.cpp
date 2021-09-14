@@ -9,6 +9,32 @@ namespace lang {
 
 const PassID MakeMeshIndexMappingLocal::id = "MakeMeshIndexMappingLocal";
 
+void MakeMeshIndexMappingLocal::simplify_nested_conversion() {
+  std::vector<MeshIndexConversionStmt *> stmts;
+  std::vector<Stmt *> ori_indices;
+
+  irpass::analysis::gather_statements(offload->body.get(), [&](Stmt *stmt) {
+    if (auto conv1 = stmt->cast<MeshIndexConversionStmt>()) {
+      if (auto conv2 = conv1->idx->cast<MeshIndexConversionStmt>()) {
+        if (conv1->conv_type == mesh::ConvType::g2r &&
+            conv2->conv_type == mesh::ConvType::l2g &&
+            conv1->mesh == conv2->mesh &&
+            conv1->idx_type == conv2->idx_type) {  // nested
+          stmts.push_back(conv1);
+          ori_indices.push_back(conv2->idx);
+        }
+      }
+    }
+    return false;
+  });
+
+  for (size_t i = 0; i < stmts.size(); ++i) {
+    stmts[i]->replace_with(Stmt::make<MeshIndexConversionStmt>(
+        stmts[i]->mesh, stmts[i]->idx_type, ori_indices[i],
+        mesh::ConvType::l2r));
+  }
+}
+
 void MakeMeshIndexMappingLocal::fetch_mapping_to_bls(
     mesh::MeshElementType element_type,
     mesh::ConvType conv_type) {
@@ -115,7 +141,7 @@ void MakeMeshIndexMappingLocal::replace_conv_statements(
   irpass::analysis::gather_statements(offload->body.get(), [&](Stmt *stmt) {
     if (auto idx_conv = stmt->cast<MeshIndexConversionStmt>()) {
       if (idx_conv->mesh == offload->mesh && idx_conv->conv_type == conv_type &&
-          idx_conv->from_type() == element_type) {
+          idx_conv->idx_type == element_type) {
         idx_conv_stmts.push_back(idx_conv);
       }
     }
@@ -142,6 +168,8 @@ MakeMeshIndexMappingLocal::MakeMeshIndexMappingLocal(
     OffloadedStmt *offload,
     const CompileConfig &config)
     : offload(offload), config(config) {
+  simplify_nested_conversion();
+
   // TODO(changyu): A analyzer to determinte which mapping should be localized
   mappings.insert(std::make_pair(mesh::MeshElementType::Vertex,
                                  mesh::ConvType::l2g));  // FIXME: A hack
@@ -157,9 +185,10 @@ MakeMeshIndexMappingLocal::MakeMeshIndexMappingLocal(
       continue;
     }
 
-    snode = conv_type == mesh::ConvType::l2g
-                ? offload->mesh->l2g_map.find(element_type)->second
-                : offload->mesh->l2r_map.find(element_type)->second;
+    TI_ASSERT(conv_type != mesh::ConvType::g2r);  // g2r will not be cached.
+    snode = (offload->mesh->index_mapping
+                 .find(std::make_pair(element_type, conv_type))
+                 ->second);
     data_type = snode->dt.ptr_removed();
     dtype_size = data_type_size(data_type);
 

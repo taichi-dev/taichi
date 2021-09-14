@@ -108,31 +108,21 @@ class ReplaceIndexConversion : public BasicStmtVisitor {
   }
 
   void visit(MeshIndexConversionStmt *stmt) override {
-    SNode *mapping = nullptr;
-    mesh::MeshElementType element_type;
-
-    if (auto idx = stmt->idx->cast<LoopIndexStmt>()) {
-      element_type = idx->mesh_index_type();
-    } else if (auto idx = stmt->idx->cast<MeshRelationAccessStmt>()) {
-      element_type = idx->to_type;
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
-
-    if (stmt->conv_type == mesh::ConvType::l2g) {
-      mapping = stmt->mesh->l2g_map.find(element_type)->second;
-    } else if (stmt->conv_type == mesh::ConvType::l2r) {
-      mapping = stmt->mesh->l2r_map.find(element_type)->second;
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
+    SNode *mapping = (stmt->mesh->index_mapping
+                          .find(std::make_pair(stmt->idx_type, stmt->conv_type))
+                          ->second);
 
     VecStatement block;
-    // E.g, v_global = v_l2g[v_local + total_vertices_offset]
-    Stmt *offset = offload->total_offset_local.find(element_type)->second;
-    Stmt *index =
-        block.push_back<BinaryOpStmt>(BinaryOpType::add, stmt->idx, offset);
-    [[maybe_unused]] Stmt *val = get_load(mapping, index, block);
+    if (stmt->conv_type == mesh::ConvType::g2r) {
+      // E.g, v_reordered = v_g2r[v_global]
+      Stmt *val = get_load(mapping, stmt->idx, block);
+    } else {
+      // E.g, v_global = v_l2g[v_local + total_vertices_offset]
+      Stmt *offset = offload->total_offset_local.find(stmt->idx_type)->second;
+      Stmt *index =
+          block.push_back<BinaryOpStmt>(BinaryOpType::add, stmt->idx, offset);
+      [[maybe_unused]] Stmt *val = get_load(mapping, index, block);
+    }
     stmt->replace_with(std::move(block));
   }
 
@@ -142,11 +132,13 @@ class ReplaceIndexConversion : public BasicStmtVisitor {
 void demote_mesh_statements_offload(OffloadedStmt *offload,
                                     const CompileConfig &config,
                                     const std::string &kernel_name) {
+  ReplaceIndexConversion rep1(
+      offload);  // This demote should work for any offloaed statement
+
   if (offload->task_type != OffloadedStmt::TaskType::mesh_for) {
     return;
   }
 
-  ReplaceIndexConversion rep1(offload);
   ReplaceRelationAccess rep2(offload);
 }
 

@@ -1721,6 +1721,10 @@ f64 rounding_prepare_f64(f64 f) {
 }
 }
 
+namespace {
+  i32 kWasmPrintBufferSize = 1024 * 1024;
+}
+
 extern "C" {
 // The input means starting address of Context, which should be set to
 // '__heap_base' to avoid conflicts with C++ stack data which is stored in
@@ -1753,7 +1757,7 @@ void wasm_print_i32(Context *context, i32 value) {
   if (buffer == nullptr)
     return;
   i32 total_cnt = ((i32 *)buffer)[0]++;
-  i32 print_pos = total_cnt % (1024 * 1024);
+  i32 print_pos = total_cnt % kWasmPrintBufferSize;
   ((i32 *)buffer)[print_pos * 2 + 1] = 0;  // 0 for i32
   ((i32 *)buffer)[print_pos * 2 + 2] = value;
 }
@@ -1763,7 +1767,7 @@ void wasm_print_f32(Context *context, f32 value) {
   if (buffer == nullptr)
     return;
   i32 total_cnt = ((i32 *)buffer)[0]++;
-  i32 print_pos = total_cnt % (1024 * 1024);
+  i32 print_pos = total_cnt % kWasmPrintBufferSize;
   ((i32 *)buffer)[print_pos * 2 + 1] = 1;  // 1 for f32
   ((f32 *)buffer)[print_pos * 2 + 2] = value;
 }
@@ -1773,7 +1777,7 @@ void wasm_print_char(Context *context, i32 value) {
   if (buffer == nullptr)
     return;
   i32 total_cnt = ((i32 *)buffer)[0]++;
-  i32 print_pos = total_cnt % (1024 * 1024);
+  i32 print_pos = total_cnt % kWasmPrintBufferSize;
   ((i32 *)buffer)[print_pos * 2 + 1] = 2;  // 2 for char
   ((i32 *)buffer)[print_pos * 2 + 2] = value;
 }

@@ -164,7 +164,6 @@ class Func:
             _ti_core.make_func_call_expr(
                 self.taichi_functions[key.instance_id], non_template_args))
 
-    # TODO: Rename this to show only compiling func not kernel
     def do_compile(self, key, args):
         src = _remove_indent(oinspect.getsource(self.func))
         tree = ast.parse(src)

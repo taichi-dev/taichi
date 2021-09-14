@@ -1751,11 +1751,11 @@ i32 wasm_materialize(Context *context) {
 // Memory layout for Print section:
 // i32 total_print_character_num;
 // struct {
-//    int type;  // 0 for i32, 1 for f32, 2 for char
+//    int type;  // 0 for i32, 1 for f32, 2 for char (i8)
 //    union {
 //      i32 i;
 //      f32 f;
-//      char c;
+//      char c[4];
 //    } data;
 //} wasm_buffer_buffer[kWasmPrintBufferSize];
 void wasm_set_print_buffer(Context *context, Ptr buffer) {

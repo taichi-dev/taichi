@@ -145,7 +145,7 @@ jobs:
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.name }}-py${{ matrix.python }}-macOS.whl
+          name: ${{ matrix.name }}-py${{ matrix.python }}-macos.whl
           path: dist/*.whl
 
       - name: Test

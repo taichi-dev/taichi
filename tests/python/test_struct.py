@@ -62,7 +62,7 @@ def test_linear_nested_aos():
         assert y[i] == i + 123
 
 
-@ti.test()
+@ti.test(exclude=[ti.vulkan])
 def test_2d_nested():
     x = ti.field(ti.i32)
 

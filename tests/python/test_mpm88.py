@@ -126,7 +126,7 @@ def test_mpm88_async():
     run_mpm88_test()
 
 
-@ti.test()
+@ti.test(exclude=[ti.vulkan])
 def test_mpm88_numpy_and_ndarray():
     import numpy as np
 

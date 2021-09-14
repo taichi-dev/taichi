@@ -11,7 +11,7 @@ def _c_mod(a, b):
 
 @pytest.mark.parametrize('lhs_is_mat,rhs_is_mat', [(True, True), (True, False),
                                                    (False, True)])
-@ti.test(fast_math=False)
+@ti.test(fast_math=False, exclude=[ti.vulkan])
 def test_binary_f(lhs_is_mat, rhs_is_mat):
     x = ti.Matrix.field(3, 2, ti.f32, 16)
     if lhs_is_mat:
@@ -242,7 +242,7 @@ def test_writeback_binary_i(rhs_is_mat):
     assert allclose(x[11], np.maximum(y, z))
 
 
-@ti.test()
+@ti.test(exclude=[ti.vulkan])
 def test_unary():
     xi = ti.Matrix.field(3, 2, ti.i32, 4)
     yi = ti.Matrix.field(3, 2, ti.i32, ())

@@ -49,6 +49,9 @@ Please build from source for other configurations (e.g., your CPU is ARM, or you
 |**Build**|[![Build Status](http://f11.csail.mit.edu:8080/job/taichi/badge/icon)](http://f11.csail.mit.edu:8080/job/taichi/)| [![Build Status](https://travis-ci.com/taichi-dev/taichi.svg?branch=master)](https://travis-ci.com/taichi-dev/taichi) | [![Build status](https://ci.appveyor.com/api/projects/status/yxm0uniin8xty4j7/branch/master?svg=true)](https://ci.appveyor.com/project/yuanming-hu/taichi/branch/master)| [![Netlify Status](https://api.netlify.com/api/v1/badges/6825e411-c5f7-4148-ab43-023663f41b6a/deploy-status)](https://app.netlify.com/sites/docs-taichi-graphics/deploys)|
 |**PyPI**|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build Status](https://travis-ci.com/yuanming-hu/taichi-wheels-test.svg?branch=master)](https://travis-ci.com/yuanming-hu/taichi-wheels-test)|[![Build status](https://ci.appveyor.com/api/projects/status/39ar9wa8yd49je7o?svg=true)](https://ci.appveyor.com/project/yuanming-hu/taichi-wheels-test) |
 
+## Developer Installation
+
+Please follow [this doc](https://docs.taichi.graphics/docs/lang/articles/contribution/dev_install) to learn how to build Taichi from source. Note that Taichi requires LLVM-10.0.0, and it is recommneded to use [our prebuilt LLVM libraries](https://docs.taichi.graphics/docs/lang/articles/contribution/dev_install#installing-dependencies) for each platform.
 
 ## Contributors
 
@@ -66,8 +69,13 @@ If you use Taichi in your research, please cite our papers:
 ## Links
 - [Taichi Conference](https://github.com/taichi-dev/taichicon): Taichi developer conferences.
 - [GAMES 201 Lectures](https://github.com/taichi-dev/games201): (Chinese) A hands-on course on building advanced physics engines, based on Taichi.
+- [TaichiZoo](https://zoo.taichi.graphics): Running Taichi code in your browser <sup>[1](#zoo-disclaimer)</sup>.
 - [More...](misc/links.md)
 
 ## Security
 
 Please disclose security issues responsibly by contacting contact@taichi.graphics.
+
+---
+
+<a name="zoo-disclaimer">1</a>. TaichiZoo is still in its Beta version. If you've encountered any issue, please do not hesitate to [file a bug](https://github.com/taichi-dev/taichi-zoo-issue-tracker/issues/new/choose).

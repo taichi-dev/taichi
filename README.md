@@ -56,7 +56,7 @@ Please build from source for other configurations (e.g., your CPU is ARM, or you
 
 -------------------------------
 
-We welcome feedback and comments. If you would like to contribute to Taichi, please check out our [Contributor Guidelines](https://taichi.readthedocs.io/en/latest/contributor_guide.html).
+We welcome feedback and comments. If you would like to contribute to Taichi, please check out our [Contributor Guidelines](https://docs.taichi.graphics/docs/lang/articles/contribution/contributor_guide).
 
 If you use Taichi in your research, please cite our papers:
 

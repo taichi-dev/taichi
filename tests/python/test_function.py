@@ -148,7 +148,7 @@ def test_python_function():
     assert x[None] == 0
 
 
-@ti.test()
+@ti.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_default_templates():
     @ti.func
     def func1(x: ti.template()):
@@ -182,7 +182,7 @@ def test_default_templates():
     def func4_field(x):
         x[None] += 1
 
-    v = ti.Vector.field(3, dtype=ti.i32, shape=())
+    v = ti.field(dtype=ti.i32, shape=())
 
     @ti.kernel
     def run_func():
@@ -190,13 +190,13 @@ def test_default_templates():
         func1(a)
         assert a == 1
         b = 0
-        func1(b)
+        func2(b)
         assert b == 1
         c = 0
-        func1(c)
+        func3(c)
         assert c == 0
         d = 0
-        func1(d)
+        func4(d)
         assert d == 0
 
         v[None] = 0
@@ -211,6 +211,8 @@ def test_default_templates():
         v[None] = 0
         func4_field(v)
         assert v[None] == 1
+
+    run_func()
 
 
 @ti.test(experimental_real_function=True)

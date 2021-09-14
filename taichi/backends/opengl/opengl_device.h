@@ -128,13 +128,13 @@ class GLCommandList : public CommandList {
   };
 
   struct CmdBindPipeline : public Cmd {
-    GLuint program;
+    GLuint program{0};
     void execute() override;
   };
 
   struct CmdBindBufferToIndex : public Cmd {
-    GLuint buffer;
-    GLuint index;
+    GLuint buffer{0};
+    GLuint index{0};
     void execute() override;
   };
 
@@ -143,21 +143,21 @@ class GLCommandList : public CommandList {
   };
 
   struct CmdBufferCopy : public Cmd {
-    GLuint src, dst;
-    size_t src_offset, dst_offset;
-    size_t size;
+    GLuint src{0}, dst{0};
+    size_t src_offset{0}, dst_offset{0};
+    size_t size{0};
     void execute() override;
   };
 
   struct CmdBufferFill : public Cmd {
-    GLuint buffer;
-    size_t size;
-    uint32_t data;
+    GLuint buffer{0};
+    size_t size{0};
+    uint32_t data{0};
     void execute() override;
   };
 
   struct CmdDispatch : public Cmd {
-    uint32_t x, y, z;
+    uint32_t x{0}, y{0}, z{0};
     void execute() override;
   };
 

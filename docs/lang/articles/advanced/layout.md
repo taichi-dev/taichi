@@ -237,7 +237,7 @@ A = ti.field(ti.f32)
 ti.root.dense(ti.ij, (256, 256)).place(A)
 ```
 
-<!--- TODO: ti.ji is same as ti.ij now --->
+<!--- ti.ji is same as ti.ij now --->
 
 2D matrix, column-major
 ```python

@@ -1748,6 +1748,16 @@ i32 wasm_materialize(Context *context) {
   return (i32)(size_t)context->runtime->roots[0];
 }
 
+// Memory layout for Print section:
+// i32 total_print_character_num;
+// struct {
+//    int type;  // 0 for i32, 1 for f32, 2 for char
+//    union {
+//      i32 i;
+//      f32 f;
+//      char c;
+//    } data;
+//} wasm_buffer_buffer[kWasmPrintBufferSize];
 void wasm_set_print_buffer(Context *context, Ptr buffer) {
   context->runtime->wasm_print_buffer = buffer;
 }

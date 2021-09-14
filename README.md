@@ -69,8 +69,13 @@ If you use Taichi in your research, please cite our papers:
 ## Links
 - [Taichi Conference](https://github.com/taichi-dev/taichicon): Taichi developer conferences.
 - [GAMES 201 Lectures](https://github.com/taichi-dev/games201): (Chinese) A hands-on course on building advanced physics engines, based on Taichi.
+- [TaichiZoo](https://zoo.taichi.graphics): Running Taichi code in your browser <sup>[1](#zoo-disclaimer)</sup>.
 - [More...](misc/links.md)
 
 ## Security
 
 Please disclose security issues responsibly by contacting contact@taichi.graphics.
+
+---
+
+<a name="zoo-disclaimer">1</a>. TaichiZoo is still in its Beta version. If you've encountered any issue, please do not hesitate to [file a bug](https://github.com/taichi-dev/taichi-zoo-issue-tracker/issues/new/choose).

@@ -166,6 +166,24 @@ def test_default_templates():
     def func4(x):
         x += 1
 
+    @ti.func
+    def func1_field(x: ti.template()):
+        x[None] = 1
+
+    @ti.func
+    def func2_field(x: ti.template()):
+        x[None] += 1
+
+    @ti.func
+    def func3_field(x):
+        x[None] = 1
+
+    @ti.func
+    def func4_field(x):
+        x[None] += 1
+
+    v = ti.Vector.field(3, dtype=ti.i32, shape=())
+
     @ti.kernel
     def run_func():
         a = 0
@@ -180,6 +198,19 @@ def test_default_templates():
         d = 0
         func1(d)
         assert d == 0
+
+        v[None] = 0
+        func1_field(v)
+        assert v[None] == 1
+        v[None] = 0
+        func2_field(v)
+        assert v[None] == 1
+        v[None] = 0
+        func3_field(v)
+        assert v[None] == 1
+        v[None] = 0
+        func4_field(v)
+        assert v[None] == 1
 
 
 @ti.test(experimental_real_function=True)

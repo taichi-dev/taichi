@@ -9,8 +9,9 @@
 #include <nvperf_cuda_host.h>
 #include <nvperf_target.h>
 
-template <typename T>
+// some of macros are copied from CUPTI/samples/extensions/
 
+template <typename T>
 class ScopeExit {
  public:
   ScopeExit(T t) : t(t) {
@@ -62,99 +63,56 @@ ScopeExit<T> MoveScopeExit(T t) {
     NVPA_Status status = actual;                             \
     if (NVPA_STATUS_SUCCESS != status) {                     \
       fprintf(stderr, "FAILED: %s with error %s\n", #actual, \
-              GetNVPWResultString(status));                  \
+              get_nvpw_result_string(status));               \
       return retval;                                         \
     }                                                        \
   } while (0)
 
-static const char *GetNVPWResultString(NVPA_Status status) {
-  const char *errorMsg = NULL;
+#define NVPW_STATUS_RESULT(error_msg, status) \
+  case status:                                \
+    error_msg = #status;                      \
+    break;
+
+static const char *get_nvpw_result_string(NVPA_Status status) {
+  const char *error_msg = NULL;
   switch (status) {
-    case NVPA_STATUS_ERROR:
-      errorMsg = "NVPA_STATUS_ERROR";
-      break;
-    case NVPA_STATUS_INTERNAL_ERROR:
-      errorMsg = "NVPA_STATUS_INTERNAL_ERROR";
-      break;
-    case NVPA_STATUS_NOT_INITIALIZED:
-      errorMsg = "NVPA_STATUS_NOT_INITIALIZED";
-      break;
-    case NVPA_STATUS_NOT_LOADED:
-      errorMsg = "NVPA_STATUS_NOT_LOADED";
-      break;
-    case NVPA_STATUS_FUNCTION_NOT_FOUND:
-      errorMsg = "NVPA_STATUS_FUNCTION_NOT_FOUND";
-      break;
-    case NVPA_STATUS_NOT_SUPPORTED:
-      errorMsg = "NVPA_STATUS_NOT_SUPPORTED";
-      break;
-    case NVPA_STATUS_NOT_IMPLEMENTED:
-      errorMsg = "NVPA_STATUS_NOT_IMPLEMENTED";
-      break;
-    case NVPA_STATUS_INVALID_ARGUMENT:
-      errorMsg = "NVPA_STATUS_INVALID_ARGUMENT";
-      break;
-    case NVPA_STATUS_INVALID_METRIC_ID:
-      errorMsg = "NVPA_STATUS_INVALID_METRIC_ID";
-      break;
-    case NVPA_STATUS_DRIVER_NOT_LOADED:
-      errorMsg = "NVPA_STATUS_DRIVER_NOT_LOADED";
-      break;
-    case NVPA_STATUS_OUT_OF_MEMORY:
-      errorMsg = "NVPA_STATUS_OUT_OF_MEMORY";
-      break;
-    case NVPA_STATUS_INVALID_THREAD_STATE:
-      errorMsg = "NVPA_STATUS_INVALID_THREAD_STATE";
-      break;
-    case NVPA_STATUS_FAILED_CONTEXT_ALLOC:
-      errorMsg = "NVPA_STATUS_FAILED_CONTEXT_ALLOC";
-      break;
-    case NVPA_STATUS_UNSUPPORTED_GPU:
-      errorMsg = "NVPA_STATUS_UNSUPPORTED_GPU";
-      break;
-    case NVPA_STATUS_INSUFFICIENT_DRIVER_VERSION:
-      errorMsg = "NVPA_STATUS_INSUFFICIENT_DRIVER_VERSION";
-      break;
-    case NVPA_STATUS_OBJECT_NOT_REGISTERED:
-      errorMsg = "NVPA_STATUS_OBJECT_NOT_REGISTERED";
-      break;
-    case NVPA_STATUS_INSUFFICIENT_PRIVILEGE:
-      errorMsg = "NVPA_STATUS_INSUFFICIENT_PRIVILEGE";
-      break;
-    case NVPA_STATUS_INVALID_CONTEXT_STATE:
-      errorMsg = "NVPA_STATUS_INVALID_CONTEXT_STATE";
-      break;
-    case NVPA_STATUS_INVALID_OBJECT_STATE:
-      errorMsg = "NVPA_STATUS_INVALID_OBJECT_STATE";
-      break;
-    case NVPA_STATUS_RESOURCE_UNAVAILABLE:
-      errorMsg = "NVPA_STATUS_RESOURCE_UNAVAILABLE";
-      break;
-    case NVPA_STATUS_DRIVER_LOADED_TOO_LATE:
-      errorMsg = "NVPA_STATUS_DRIVER_LOADED_TOO_LATE";
-      break;
-    case NVPA_STATUS_INSUFFICIENT_SPACE:
-      errorMsg = "NVPA_STATUS_INSUFFICIENT_SPACE";
-      break;
-    case NVPA_STATUS_OBJECT_MISMATCH:
-      errorMsg = "NVPA_STATUS_OBJECT_MISMATCH";
-      break;
-    case NVPA_STATUS_VIRTUALIZED_DEVICE_NOT_SUPPORTED:
-      errorMsg = "NVPA_STATUS_VIRTUALIZED_DEVICE_NOT_SUPPORTED";
-      break;
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_ERROR)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INTERNAL_ERROR)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_NOT_INITIALIZED)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_NOT_LOADED)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_FUNCTION_NOT_FOUND)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_NOT_SUPPORTED)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_NOT_IMPLEMENTED)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INVALID_ARGUMENT)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INVALID_METRIC_ID)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_DRIVER_NOT_LOADED)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_OUT_OF_MEMORY)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INVALID_THREAD_STATE)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_FAILED_CONTEXT_ALLOC)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_UNSUPPORTED_GPU)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INSUFFICIENT_DRIVER_VERSION)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_OBJECT_NOT_REGISTERED)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INSUFFICIENT_PRIVILEGE)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INVALID_CONTEXT_STATE)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INVALID_OBJECT_STATE)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_RESOURCE_UNAVAILABLE)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_DRIVER_LOADED_TOO_LATE)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INSUFFICIENT_SPACE)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_OBJECT_MISMATCH)
+    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_VIRTUALIZED_DEVICE_NOT_SUPPORTED)
     default:
       break;
   }
-
-  return errorMsg;
+  return error_msg;
 }
 
-inline bool ParseMetricNameString(const std::string &metricName,
-                                  std::string *reqName,
-                                  bool *isolated,
-                                  bool *keepInstances) {
-  std::string &name = *reqName;
-  name = metricName;
+// copy from CUPTI/samples/extensions/include/profilerhost_util/Parser.h
+inline bool parse_metric_name_string(const std::string &metric_name,
+                                     std::string *req_name,
+                                     bool *isolated,
+                                     bool *keep_instances) {
+  std::string &name = *req_name;
+  name = metric_name;
   if (name.empty()) {
     return false;
   }
@@ -174,9 +132,9 @@ inline bool ParseMetricNameString(const std::string &metricName,
     }
   }
 
-  *keepInstances = false;
+  *keep_instances = false;
   if (name.back() == '+') {
-    *keepInstances = true;
+    *keep_instances = true;
     name.pop_back();
     if (name.empty()) {
       return false;

@@ -20,9 +20,9 @@ bool check_device_capability() {
 
 bool check_cupti_privileges() {
 #if defined(TI_WITH_CUDA_TOOLKIT)
-  CUpti_Profiler_Initialize_Params profilerInitializeParams = {
+  CUpti_Profiler_Initialize_Params init_param = {
       CUpti_Profiler_Initialize_Params_STRUCT_SIZE};
-  CUptiResult status = cuptiProfilerInitialize(&profilerInitializeParams);
+  CUptiResult status = cuptiProfilerInitialize(&init_param);
   if (status == CUPTI_ERROR_INSUFFICIENT_PRIVILEGES) {
     TI_WARN(
         "function cuptiProfilerInitialize failed with error : "
@@ -37,7 +37,7 @@ bool check_cupti_privileges() {
     TI_WARN("( Probably needs to run `update-initramfs -u`  before `reboot` )");
     TI_WARN(
         "=================================================================");
-    // TODO add [doc] and [web link]
+    // TODO : doc and web
     return false;
   }
   // if there are other errors , CuptiToolkit::init_cupti() will send error
@@ -64,382 +64,394 @@ CuptiToolkit::~CuptiToolkit() {
 }
 
 // copy from : CUPTI/samples/extensions/src/profilerhost_util/Metric.cpp
-bool GetRawMetricRequests(NVPA_MetricsContext *pMetricsContext,
-                          std::vector<std::string> metricNames,
-                          std::vector<NVPA_RawMetricRequest> &rawMetricRequests,
-                          std::vector<std::string> &temp) {
-  std::string reqName;
+bool get_raw_metric_requests(
+    NVPA_MetricsContext *metrics_context,
+    std::vector<std::string> metric_names,
+    std::vector<NVPA_RawMetricRequest> &raw_metric_requests,
+    std::vector<std::string> &temp) {
+  std::string req_name;
   bool isolated = true;
-  bool keepInstances = true;
+  bool keep_instances = true;
 
-  for (auto &metricName : metricNames) {
-    ParseMetricNameString(metricName, &reqName, &isolated, &keepInstances);
+  for (auto &metric_name : metric_names) {
+    parse_metric_name_string(metric_name, &req_name, &isolated,
+                             &keep_instances);
     /* Bug in collection with collection of metrics without instances, keep it
      * to true*/
-    keepInstances = true;
+    keep_instances = true;
     NVPW_MetricsContext_GetMetricProperties_Begin_Params
-        getMetricPropertiesBeginParams = {
+        get_metric_properties_begin_params = {
             NVPW_MetricsContext_GetMetricProperties_Begin_Params_STRUCT_SIZE};
-    getMetricPropertiesBeginParams.pMetricsContext = pMetricsContext;
-    getMetricPropertiesBeginParams.pMetricName = reqName.c_str();
+    get_metric_properties_begin_params.pMetricsContext = metrics_context;
+    get_metric_properties_begin_params.pMetricName = req_name.c_str();
 
     RETURN_IF_NVPW_ERROR(false, NVPW_MetricsContext_GetMetricProperties_Begin(
-                                    &getMetricPropertiesBeginParams));
+                                    &get_metric_properties_begin_params));
 
-    for (const char **ppMetricDependencies =
-             getMetricPropertiesBeginParams.ppRawMetricDependencies;
-         *ppMetricDependencies; ++ppMetricDependencies) {
-      temp.push_back(*ppMetricDependencies);
+    for (const char **pp_metric_dependencies =
+             get_metric_properties_begin_params.ppRawMetricDependencies;
+         *pp_metric_dependencies; ++pp_metric_dependencies) {
+      temp.push_back(*pp_metric_dependencies);
     }
     NVPW_MetricsContext_GetMetricProperties_End_Params
-        getMetricPropertiesEndParams = {
+        get_metric_properties_end_params = {
             NVPW_MetricsContext_GetMetricProperties_End_Params_STRUCT_SIZE};
-    getMetricPropertiesEndParams.pMetricsContext = pMetricsContext;
+    get_metric_properties_end_params.pMetricsContext = metrics_context;
     RETURN_IF_NVPW_ERROR(false, NVPW_MetricsContext_GetMetricProperties_End(
-                                    &getMetricPropertiesEndParams));
+                                    &get_metric_properties_end_params));
   }
 
-  for (auto &rawMetricName : temp) {
-    NVPA_RawMetricRequest metricRequest = {NVPA_RAW_METRIC_REQUEST_STRUCT_SIZE};
-    metricRequest.pMetricName = rawMetricName.c_str();
-    metricRequest.isolated = isolated;
-    metricRequest.keepInstances = keepInstances;
-    rawMetricRequests.push_back(metricRequest);
+  for (auto &raw_metric_name : temp) {
+    NVPA_RawMetricRequest metric_request = {
+        NVPA_RAW_METRIC_REQUEST_STRUCT_SIZE};
+    metric_request.pMetricName = raw_metric_name.c_str();
+    metric_request.isolated = isolated;
+    metric_request.keepInstances = keep_instances;
+    raw_metric_requests.push_back(metric_request);
   }
 
   return true;
 }
 
 // copy from : CUPTI/samples/extensions/src/profilerhost_util/Metric.cpp
-bool GetConfigImage(std::string chipName,
-                    std::vector<std::string> metricNames,
-                    std::vector<uint8_t> &configImage,
-                    const uint8_t *pCounterAvailabilityImage) {
-  NVPW_CUDA_MetricsContext_Create_Params metricsContextCreateParams = {
+bool get_config_image(std::string chip_name,
+                      std::vector<std::string> metric_names,
+                      std::vector<uint8_t> &config_image,
+                      const uint8_t *p_pounter_availability_image) {
+  NVPW_CUDA_MetricsContext_Create_Params metrics_context_create_params = {
       NVPW_CUDA_MetricsContext_Create_Params_STRUCT_SIZE};
-  metricsContextCreateParams.pChipName = chipName.c_str();
+  metrics_context_create_params.pChipName = chip_name.c_str();
   RETURN_IF_NVPW_ERROR(
-      false, NVPW_CUDA_MetricsContext_Create(&metricsContextCreateParams));
+      false, NVPW_CUDA_MetricsContext_Create(&metrics_context_create_params));
 
-  NVPW_MetricsContext_Destroy_Params metricsContextDestroyParams = {
+  NVPW_MetricsContext_Destroy_Params metrics_context_destroy_params = {
       NVPW_MetricsContext_Destroy_Params_STRUCT_SIZE};
-  metricsContextDestroyParams.pMetricsContext =
-      metricsContextCreateParams.pMetricsContext;
+  metrics_context_destroy_params.pMetricsContext =
+      metrics_context_create_params.pMetricsContext;
   SCOPE_EXIT([&]() {
     NVPW_MetricsContext_Destroy(
-        (NVPW_MetricsContext_Destroy_Params *)&metricsContextDestroyParams);
+        (NVPW_MetricsContext_Destroy_Params *)&metrics_context_destroy_params);
   });
 
-  std::vector<NVPA_RawMetricRequest> rawMetricRequests;
+  std::vector<NVPA_RawMetricRequest> raw_metric_requests;
   std::vector<std::string> temp;
-  GetRawMetricRequests(metricsContextCreateParams.pMetricsContext, metricNames,
-                       rawMetricRequests, temp);
+  get_raw_metric_requests(metrics_context_create_params.pMetricsContext,
+                          metric_names, raw_metric_requests, temp);
 
-  NVPA_RawMetricsConfigOptions metricsConfigOptions = {
+  NVPA_RawMetricsConfigOptions metrics_config_options = {
       NVPA_RAW_METRICS_CONFIG_OPTIONS_STRUCT_SIZE};
-  metricsConfigOptions.activityKind = NVPA_ACTIVITY_KIND_PROFILER;
-  metricsConfigOptions.pChipName = chipName.c_str();
-  NVPA_RawMetricsConfig *pRawMetricsConfig;
-  RETURN_IF_NVPW_ERROR(false, NVPA_RawMetricsConfig_Create(
-                                  &metricsConfigOptions, &pRawMetricsConfig));
+  metrics_config_options.activityKind = NVPA_ACTIVITY_KIND_PROFILER;
+  metrics_config_options.pChipName = chip_name.c_str();
+  NVPA_RawMetricsConfig *p_raw_metrics_config;
+  RETURN_IF_NVPW_ERROR(false,
+                       NVPA_RawMetricsConfig_Create(&metrics_config_options,
+                                                    &p_raw_metrics_config));
 
-  if (pCounterAvailabilityImage) {
+  if (p_pounter_availability_image) {
     NVPW_RawMetricsConfig_SetCounterAvailability_Params
-        setCounterAvailabilityParams = {
+        set_counter_availability_params = {
             NVPW_RawMetricsConfig_SetCounterAvailability_Params_STRUCT_SIZE};
-    setCounterAvailabilityParams.pRawMetricsConfig = pRawMetricsConfig;
-    setCounterAvailabilityParams.pCounterAvailabilityImage =
-        pCounterAvailabilityImage;
+    set_counter_availability_params.pRawMetricsConfig = p_raw_metrics_config;
+    set_counter_availability_params.pCounterAvailabilityImage =
+        p_pounter_availability_image;
     RETURN_IF_NVPW_ERROR(false, NVPW_RawMetricsConfig_SetCounterAvailability(
-                                    &setCounterAvailabilityParams));
+                                    &set_counter_availability_params));
   }
 
-  NVPW_RawMetricsConfig_Destroy_Params rawMetricsConfigDestroyParams = {
+  NVPW_RawMetricsConfig_Destroy_Params raw_metrics_config_destroy_params = {
       NVPW_RawMetricsConfig_Destroy_Params_STRUCT_SIZE};
-  rawMetricsConfigDestroyParams.pRawMetricsConfig = pRawMetricsConfig;
+  raw_metrics_config_destroy_params.pRawMetricsConfig = p_raw_metrics_config;
   SCOPE_EXIT([&]() {
-    NVPW_RawMetricsConfig_Destroy(
-        (NVPW_RawMetricsConfig_Destroy_Params *)&rawMetricsConfigDestroyParams);
+    NVPW_RawMetricsConfig_Destroy((NVPW_RawMetricsConfig_Destroy_Params
+                                       *)&raw_metrics_config_destroy_params);
   });
 
-  NVPW_RawMetricsConfig_BeginPassGroup_Params beginPassGroupParams = {
+  NVPW_RawMetricsConfig_BeginPassGroup_Params begin_pass_group_params = {
       NVPW_RawMetricsConfig_BeginPassGroup_Params_STRUCT_SIZE};
-  beginPassGroupParams.pRawMetricsConfig = pRawMetricsConfig;
+  begin_pass_group_params.pRawMetricsConfig = p_raw_metrics_config;
   RETURN_IF_NVPW_ERROR(
-      false, NVPW_RawMetricsConfig_BeginPassGroup(&beginPassGroupParams));
+      false, NVPW_RawMetricsConfig_BeginPassGroup(&begin_pass_group_params));
 
-  NVPW_RawMetricsConfig_AddMetrics_Params addMetricsParams = {
+  NVPW_RawMetricsConfig_AddMetrics_Params add_metrics_params = {
       NVPW_RawMetricsConfig_AddMetrics_Params_STRUCT_SIZE};
-  addMetricsParams.pRawMetricsConfig = pRawMetricsConfig;
-  addMetricsParams.pRawMetricRequests = &rawMetricRequests[0];
-  addMetricsParams.numMetricRequests = rawMetricRequests.size();
+  add_metrics_params.pRawMetricsConfig = p_raw_metrics_config;
+  add_metrics_params.pRawMetricRequests = &raw_metric_requests[0];
+  add_metrics_params.numMetricRequests = raw_metric_requests.size();
   RETURN_IF_NVPW_ERROR(false,
-                       NVPW_RawMetricsConfig_AddMetrics(&addMetricsParams));
+                       NVPW_RawMetricsConfig_AddMetrics(&add_metrics_params));
 
-  NVPW_RawMetricsConfig_EndPassGroup_Params endPassGroupParams = {
+  NVPW_RawMetricsConfig_EndPassGroup_Params end_pass_group_params = {
       NVPW_RawMetricsConfig_EndPassGroup_Params_STRUCT_SIZE};
-  endPassGroupParams.pRawMetricsConfig = pRawMetricsConfig;
-  RETURN_IF_NVPW_ERROR(false,
-                       NVPW_RawMetricsConfig_EndPassGroup(&endPassGroupParams));
+  end_pass_group_params.pRawMetricsConfig = p_raw_metrics_config;
+  RETURN_IF_NVPW_ERROR(
+      false, NVPW_RawMetricsConfig_EndPassGroup(&end_pass_group_params));
 
-  NVPW_RawMetricsConfig_GenerateConfigImage_Params generateConfigImageParams = {
-      NVPW_RawMetricsConfig_GenerateConfigImage_Params_STRUCT_SIZE};
-  generateConfigImageParams.pRawMetricsConfig = pRawMetricsConfig;
+  NVPW_RawMetricsConfig_GenerateConfigImage_Params
+      generate_config_image_params = {
+          NVPW_RawMetricsConfig_GenerateConfigImage_Params_STRUCT_SIZE};
+  generate_config_image_params.pRawMetricsConfig = p_raw_metrics_config;
   RETURN_IF_NVPW_ERROR(false, NVPW_RawMetricsConfig_GenerateConfigImage(
-                                  &generateConfigImageParams));
+                                  &generate_config_image_params));
 
-  NVPW_RawMetricsConfig_GetConfigImage_Params getConfigImageParams = {
+  NVPW_RawMetricsConfig_GetConfigImage_Params get_config_image_params = {
       NVPW_RawMetricsConfig_GetConfigImage_Params_STRUCT_SIZE};
-  getConfigImageParams.pRawMetricsConfig = pRawMetricsConfig;
-  getConfigImageParams.bytesAllocated = 0;
-  getConfigImageParams.pBuffer = NULL;
+  get_config_image_params.pRawMetricsConfig = p_raw_metrics_config;
+  get_config_image_params.bytesAllocated = 0;
+  get_config_image_params.pBuffer = NULL;
   RETURN_IF_NVPW_ERROR(
-      false, NVPW_RawMetricsConfig_GetConfigImage(&getConfigImageParams));
+      false, NVPW_RawMetricsConfig_GetConfigImage(&get_config_image_params));
 
-  configImage.resize(getConfigImageParams.bytesCopied);
+  config_image.resize(get_config_image_params.bytesCopied);
 
-  getConfigImageParams.bytesAllocated = configImage.size();
-  getConfigImageParams.pBuffer = &configImage[0];
+  get_config_image_params.bytesAllocated = config_image.size();
+  get_config_image_params.pBuffer = &config_image[0];
   RETURN_IF_NVPW_ERROR(
-      false, NVPW_RawMetricsConfig_GetConfigImage(&getConfigImageParams));
+      false, NVPW_RawMetricsConfig_GetConfigImage(&get_config_image_params));
 
   return true;
 }
 
 // copy from : CUPTI/samples/extensions/src/profilerhost_util/Metric.cpp
-bool GetCounterDataPrefixImage(std::string chipName,
-                               std::vector<std::string> metricNames,
-                               std::vector<uint8_t> &counterDataImagePrefix) {
-  NVPW_CUDA_MetricsContext_Create_Params metricsContextCreateParams = {
+bool get_counter_data_prefix_image(
+    std::string chip_name,
+    std::vector<std::string> metric_names,
+    std::vector<uint8_t> &counter_data_image_prefix) {
+  NVPW_CUDA_MetricsContext_Create_Params metrics_context_create_params = {
       NVPW_CUDA_MetricsContext_Create_Params_STRUCT_SIZE};
-  metricsContextCreateParams.pChipName = chipName.c_str();
+  metrics_context_create_params.pChipName = chip_name.c_str();
   RETURN_IF_NVPW_ERROR(
-      false, NVPW_CUDA_MetricsContext_Create(&metricsContextCreateParams));
+      false, NVPW_CUDA_MetricsContext_Create(&metrics_context_create_params));
 
-  NVPW_MetricsContext_Destroy_Params metricsContextDestroyParams = {
+  NVPW_MetricsContext_Destroy_Params metrics_context_destroy_params = {
       NVPW_MetricsContext_Destroy_Params_STRUCT_SIZE};
-  metricsContextDestroyParams.pMetricsContext =
-      metricsContextCreateParams.pMetricsContext;
+  metrics_context_destroy_params.pMetricsContext =
+      metrics_context_create_params.pMetricsContext;
   SCOPE_EXIT([&]() {
     NVPW_MetricsContext_Destroy(
-        (NVPW_MetricsContext_Destroy_Params *)&metricsContextDestroyParams);
+        (NVPW_MetricsContext_Destroy_Params *)&metrics_context_destroy_params);
   });
 
-  std::vector<NVPA_RawMetricRequest> rawMetricRequests;
+  std::vector<NVPA_RawMetricRequest> raw_metric_requests;
   std::vector<std::string> temp;
-  GetRawMetricRequests(metricsContextCreateParams.pMetricsContext, metricNames,
-                       rawMetricRequests, temp);
+  get_raw_metric_requests(metrics_context_create_params.pMetricsContext,
+                          metric_names, raw_metric_requests, temp);
 
-  NVPW_CounterDataBuilder_Create_Params counterDataBuilderCreateParams = {
+  NVPW_CounterDataBuilder_Create_Params counter_data_builder_create_params = {
       NVPW_CounterDataBuilder_Create_Params_STRUCT_SIZE};
-  counterDataBuilderCreateParams.pChipName = chipName.c_str();
-  RETURN_IF_NVPW_ERROR(
-      false, NVPW_CounterDataBuilder_Create(&counterDataBuilderCreateParams));
+  counter_data_builder_create_params.pChipName = chip_name.c_str();
+  RETURN_IF_NVPW_ERROR(false, NVPW_CounterDataBuilder_Create(
+                                  &counter_data_builder_create_params));
 
-  NVPW_CounterDataBuilder_Destroy_Params counterDataBuilderDestroyParams = {
+  NVPW_CounterDataBuilder_Destroy_Params counter_data_builder_destroy_params = {
       NVPW_CounterDataBuilder_Destroy_Params_STRUCT_SIZE};
-  counterDataBuilderDestroyParams.pCounterDataBuilder =
-      counterDataBuilderCreateParams.pCounterDataBuilder;
+  counter_data_builder_destroy_params.pCounterDataBuilder =
+      counter_data_builder_create_params.pCounterDataBuilder;
   SCOPE_EXIT([&]() {
-    NVPW_CounterDataBuilder_Destroy((NVPW_CounterDataBuilder_Destroy_Params
-                                         *)&counterDataBuilderDestroyParams);
+    NVPW_CounterDataBuilder_Destroy(
+        (NVPW_CounterDataBuilder_Destroy_Params
+             *)&counter_data_builder_destroy_params);
   });
 
-  NVPW_CounterDataBuilder_AddMetrics_Params addMetricsParams = {
+  NVPW_CounterDataBuilder_AddMetrics_Params add_metrics_params = {
       NVPW_CounterDataBuilder_AddMetrics_Params_STRUCT_SIZE};
-  addMetricsParams.pCounterDataBuilder =
-      counterDataBuilderCreateParams.pCounterDataBuilder;
-  addMetricsParams.pRawMetricRequests = &rawMetricRequests[0];
-  addMetricsParams.numMetricRequests = rawMetricRequests.size();
+  add_metrics_params.pCounterDataBuilder =
+      counter_data_builder_create_params.pCounterDataBuilder;
+  add_metrics_params.pRawMetricRequests = &raw_metric_requests[0];
+  add_metrics_params.numMetricRequests = raw_metric_requests.size();
   RETURN_IF_NVPW_ERROR(false,
-                       NVPW_CounterDataBuilder_AddMetrics(&addMetricsParams));
+                       NVPW_CounterDataBuilder_AddMetrics(&add_metrics_params));
 
   size_t counterDataPrefixSize = 0;
   NVPW_CounterDataBuilder_GetCounterDataPrefix_Params
-      getCounterDataPrefixParams = {
+      get_counter_data_prefix_params = {
           NVPW_CounterDataBuilder_GetCounterDataPrefix_Params_STRUCT_SIZE};
-  getCounterDataPrefixParams.pCounterDataBuilder =
-      counterDataBuilderCreateParams.pCounterDataBuilder;
-  getCounterDataPrefixParams.bytesAllocated = 0;
-  getCounterDataPrefixParams.pBuffer = NULL;
+  get_counter_data_prefix_params.pCounterDataBuilder =
+      counter_data_builder_create_params.pCounterDataBuilder;
+  get_counter_data_prefix_params.bytesAllocated = 0;
+  get_counter_data_prefix_params.pBuffer = NULL;
   RETURN_IF_NVPW_ERROR(false, NVPW_CounterDataBuilder_GetCounterDataPrefix(
-                                  &getCounterDataPrefixParams));
+                                  &get_counter_data_prefix_params));
 
-  counterDataImagePrefix.resize(getCounterDataPrefixParams.bytesCopied);
+  counter_data_image_prefix.resize(get_counter_data_prefix_params.bytesCopied);
 
-  getCounterDataPrefixParams.bytesAllocated = counterDataImagePrefix.size();
-  getCounterDataPrefixParams.pBuffer = &counterDataImagePrefix[0];
+  get_counter_data_prefix_params.bytesAllocated =
+      counter_data_image_prefix.size();
+  get_counter_data_prefix_params.pBuffer = &counter_data_image_prefix[0];
   RETURN_IF_NVPW_ERROR(false, NVPW_CounterDataBuilder_GetCounterDataPrefix(
-                                  &getCounterDataPrefixParams));
+                                  &get_counter_data_prefix_params));
 
   return true;
 }
 
 // copy from CUPTI/samples/autorange_profiling/simplecuda.cu
-bool CreateCounterDataImage(uint32_t numRanges,
-                            std::vector<uint8_t> &counterDataImage,
-                            std::vector<uint8_t> &counterDataScratchBuffer,
-                            std::vector<uint8_t> &counterDataImagePrefix) {
-  CUpti_Profiler_CounterDataImageOptions counterDataImageOptions;
-  counterDataImageOptions.pCounterDataPrefix = &counterDataImagePrefix[0];
-  counterDataImageOptions.counterDataPrefixSize = counterDataImagePrefix.size();
-  counterDataImageOptions.maxNumRanges = numRanges;
-  counterDataImageOptions.maxNumRangeTreeNodes = numRanges;
-  counterDataImageOptions.maxRangeNameLength = 64;
+bool create_counter_data_image(
+    uint32_t num_ranges,
+    std::vector<uint8_t> &counter_data_image,
+    std::vector<uint8_t> &counter_data_scratch_buffer,
+    std::vector<uint8_t> &counter_data_image_prefix) {
+  CUpti_Profiler_CounterDataImageOptions counter_data_image_options;
+  counter_data_image_options.pCounterDataPrefix = &counter_data_image_prefix[0];
+  counter_data_image_options.counterDataPrefixSize =
+      counter_data_image_prefix.size();
+  counter_data_image_options.maxNumRanges = num_ranges;
+  counter_data_image_options.maxNumRangeTreeNodes = num_ranges;
+  counter_data_image_options.maxRangeNameLength = 64;
 
-  CUpti_Profiler_CounterDataImage_CalculateSize_Params calculateSizeParams = {
+  CUpti_Profiler_CounterDataImage_CalculateSize_Params calculate_size_params = {
       CUpti_Profiler_CounterDataImage_CalculateSize_Params_STRUCT_SIZE};
 
-  calculateSizeParams.pOptions = &counterDataImageOptions;
-  calculateSizeParams.sizeofCounterDataImageOptions =
+  calculate_size_params.pOptions = &counter_data_image_options;
+  calculate_size_params.sizeofCounterDataImageOptions =
       CUpti_Profiler_CounterDataImageOptions_STRUCT_SIZE;
 
   CUPTI_API_CALL(
-      cuptiProfilerCounterDataImageCalculateSize(&calculateSizeParams));
+      cuptiProfilerCounterDataImageCalculateSize(&calculate_size_params));
 
-  CUpti_Profiler_CounterDataImage_Initialize_Params initializeParams = {
+  CUpti_Profiler_CounterDataImage_Initialize_Params initialize_params = {
       CUpti_Profiler_CounterDataImage_Initialize_Params_STRUCT_SIZE};
-  initializeParams.sizeofCounterDataImageOptions =
+  initialize_params.sizeofCounterDataImageOptions =
       CUpti_Profiler_CounterDataImageOptions_STRUCT_SIZE;
-  initializeParams.pOptions = &counterDataImageOptions;
-  initializeParams.counterDataImageSize =
-      calculateSizeParams.counterDataImageSize;
+  initialize_params.pOptions = &counter_data_image_options;
+  initialize_params.counterDataImageSize =
+      calculate_size_params.counterDataImageSize;
 
-  counterDataImage.resize(calculateSizeParams.counterDataImageSize);
-  initializeParams.pCounterDataImage = &counterDataImage[0];
-  CUPTI_API_CALL(cuptiProfilerCounterDataImageInitialize(&initializeParams));
+  counter_data_image.resize(calculate_size_params.counterDataImageSize);
+  initialize_params.pCounterDataImage = &counter_data_image[0];
+  CUPTI_API_CALL(cuptiProfilerCounterDataImageInitialize(&initialize_params));
 
   CUpti_Profiler_CounterDataImage_CalculateScratchBufferSize_Params
-      scratchBufferSizeParams = {
+      scratch_buffer_size_params = {
           CUpti_Profiler_CounterDataImage_CalculateScratchBufferSize_Params_STRUCT_SIZE};
-  scratchBufferSizeParams.counterDataImageSize =
-      calculateSizeParams.counterDataImageSize;
-  scratchBufferSizeParams.pCounterDataImage =
-      initializeParams.pCounterDataImage;
+  scratch_buffer_size_params.counterDataImageSize =
+      calculate_size_params.counterDataImageSize;
+  scratch_buffer_size_params.pCounterDataImage =
+      initialize_params.pCounterDataImage;
   CUPTI_API_CALL(cuptiProfilerCounterDataImageCalculateScratchBufferSize(
-      &scratchBufferSizeParams));
+      &scratch_buffer_size_params));
 
-  counterDataScratchBuffer.resize(
-      scratchBufferSizeParams.counterDataScratchBufferSize);
+  counter_data_scratch_buffer.resize(
+      scratch_buffer_size_params.counterDataScratchBufferSize);
 
   CUpti_Profiler_CounterDataImage_InitializeScratchBuffer_Params
-      initScratchBufferParams = {
+      init_scratch_buffer_params = {
           CUpti_Profiler_CounterDataImage_InitializeScratchBuffer_Params_STRUCT_SIZE};
-  initScratchBufferParams.counterDataImageSize =
-      calculateSizeParams.counterDataImageSize;
+  init_scratch_buffer_params.counterDataImageSize =
+      calculate_size_params.counterDataImageSize;
 
-  initScratchBufferParams.pCounterDataImage =
-      initializeParams.pCounterDataImage;
-  initScratchBufferParams.counterDataScratchBufferSize =
-      scratchBufferSizeParams.counterDataScratchBufferSize;
-  initScratchBufferParams.pCounterDataScratchBuffer =
-      &counterDataScratchBuffer[0];
+  init_scratch_buffer_params.pCounterDataImage =
+      initialize_params.pCounterDataImage;
+  init_scratch_buffer_params.counterDataScratchBufferSize =
+      scratch_buffer_size_params.counterDataScratchBufferSize;
+  init_scratch_buffer_params.pCounterDataScratchBuffer =
+      &counter_data_scratch_buffer[0];
 
   CUPTI_API_CALL(cuptiProfilerCounterDataImageInitializeScratchBuffer(
-      &initScratchBufferParams));
+      &init_scratch_buffer_params));
 
   return true;
 }
 
 bool CuptiToolkit::init_cupti() {
   // copy from CUPTI/samples/autorange_profiling/simplecuda.cu
-  CUpti_Profiler_Initialize_Params profilerInitializeParams = {
+  CUpti_Profiler_Initialize_Params profiler_initialize_params = {
       CUpti_Profiler_Initialize_Params_STRUCT_SIZE};
-  CUPTI_API_CALL(cuptiProfilerInitialize(&profilerInitializeParams));
+  CUPTI_API_CALL(cuptiProfilerInitialize(&profiler_initialize_params));
   TI_TRACE("cuptiProfilerInitialized");
 
-  int deviceNum = 0;  // TODO
+  int device_num = 0;  // TODO
   // CUDADriver::get_instance_without_context().init(0);
-  CUpti_Device_GetChipName_Params getChipNameParams = {
+  CUpti_Device_GetChipName_Params get_chip_name_params = {
       CUpti_Device_GetChipName_Params_STRUCT_SIZE};
-  getChipNameParams.deviceIndex = deviceNum;
-  CUPTI_API_CALL(cuptiDeviceGetChipName(&getChipNameParams));
-  cupti_image_.chip_name = getChipNameParams.pChipName;
+  get_chip_name_params.deviceIndex = device_num;
+  CUPTI_API_CALL(cuptiDeviceGetChipName(&get_chip_name_params));
+  cupti_image_.chip_name = get_chip_name_params.pChipName;
   TI_TRACE("cuptiDeviceGetChipName : {}", cupti_image_.chip_name);
 
-  CUpti_Profiler_GetCounterAvailability_Params getCounterAvailabilityParams = {
-      CUpti_Profiler_GetCounterAvailability_Params_STRUCT_SIZE};
-  getCounterAvailabilityParams.ctx =
+  CUpti_Profiler_GetCounterAvailability_Params get_counter_availability_params =
+      {CUpti_Profiler_GetCounterAvailability_Params_STRUCT_SIZE};
+  get_counter_availability_params.ctx =
       (CUcontext)(CUDAContext::get_instance().get_context());
   CUPTI_API_CALL(
-      cuptiProfilerGetCounterAvailability(&getCounterAvailabilityParams));
+      cuptiProfilerGetCounterAvailability(&get_counter_availability_params));
 
-  TI_TRACE("counterAvailabilityImageSize : {}",
-           getCounterAvailabilityParams.counterAvailabilityImageSize);  // 2192
+  TI_TRACE(
+      "counterAvailabilityImageSize : {}",
+      get_counter_availability_params.counterAvailabilityImageSize);  // 2192
   cupti_image_.counter_availability_image.clear();
   cupti_image_.counter_availability_image.resize(
-      getCounterAvailabilityParams.counterAvailabilityImageSize);
-  getCounterAvailabilityParams.pCounterAvailabilityImage =
+      get_counter_availability_params.counterAvailabilityImageSize);
+  get_counter_availability_params.pCounterAvailabilityImage =
       cupti_image_.counter_availability_image.data();
   CUPTI_API_CALL(
-      cuptiProfilerGetCounterAvailability(&getCounterAvailabilityParams));
+      cuptiProfilerGetCounterAvailability(&get_counter_availability_params));
 
   /* Generate configuration for metrics, this can also be done offline*/
-  NVPW_InitializeHost_Params initializeHostParams = {
+  NVPW_InitializeHost_Params initialize_host_params = {
       NVPW_InitializeHost_Params_STRUCT_SIZE};
-  NVPW_API_CALL(NVPW_InitializeHost(&initializeHostParams));
+  NVPW_API_CALL(NVPW_InitializeHost(&initialize_host_params));
   TI_TRACE("NVPW_InitializeHost");
 
   bool state = 0;
-  state = GetConfigImage(cupti_image_.chip_name, cupti_config_.metric_list,
-                         cupti_image_.config_image,
-                         cupti_image_.counter_availability_image.data());
+  state = get_config_image(cupti_image_.chip_name, cupti_config_.metric_list,
+                           cupti_image_.config_image,
+                           cupti_image_.counter_availability_image.data());
   if (!state) {
-    TI_ERROR("Failed to create configImage");
+    TI_ERROR("Failed to create config_image");
   }
-  TI_TRACE("GetConfigImage");
+  TI_TRACE("get_config_image");
 
-  state = GetCounterDataPrefixImage(cupti_image_.chip_name,
-                                    cupti_config_.metric_list,
+  state = get_counter_data_prefix_image(cupti_image_.chip_name,
+                                        cupti_config_.metric_list,
+                                        cupti_image_.counter_data_image_prefix);
+  if (!state) {
+    TI_ERROR("Failed to create counter_data_image_prefix");
+  }
+  TI_TRACE("get_counter_data_prefix_image");
+
+  state = create_counter_data_image(cupti_config_.num_ranges,
+                                    cupti_image_.counter_data_image,
+                                    cupti_image_.counter_data_scratch_buffer,
                                     cupti_image_.counter_data_image_prefix);
-  if (!state) {
-    TI_ERROR("Failed to create counterDataImagePrefix");
-  }
-  TI_TRACE("GetCounterDataPrefixImage");
-
-  state = CreateCounterDataImage(cupti_config_.num_ranges,
-                                 cupti_image_.counter_data_image,
-                                 cupti_image_.counter_data_scratch_buffer,
-                                 cupti_image_.counter_data_image_prefix);
   if (!state) {
     TI_ERROR("Failed to create counterDataImage");
   }
-  TI_TRACE("CreateCounterDataImage");
+  TI_TRACE("create_counter_data_image");
 
   return true;
 }
 
 bool CuptiToolkit::begin_profiling() {
   // copy from CUPTI/samples/autorange_profiling/simplecuda.cu
-  CUpti_Profiler_BeginSession_Params beginSessionParams = {
+  CUpti_Profiler_BeginSession_Params begin_session_params = {
       CUpti_Profiler_BeginSession_Params_STRUCT_SIZE};
-  CUpti_Profiler_SetConfig_Params setConfigParams = {
+  CUpti_Profiler_SetConfig_Params set_config_params = {
       CUpti_Profiler_SetConfig_Params_STRUCT_SIZE};
-  CUpti_Profiler_EnableProfiling_Params enableProfilingParams = {
+  CUpti_Profiler_EnableProfiling_Params enable_profiling_params = {
       CUpti_Profiler_EnableProfiling_Params_STRUCT_SIZE};
 
-  beginSessionParams.ctx = NULL;
-  beginSessionParams.counterDataImageSize =
+  begin_session_params.ctx = NULL;
+  begin_session_params.counterDataImageSize =
       cupti_image_.counter_data_image.size();
-  beginSessionParams.pCounterDataImage = &(cupti_image_.counter_data_image[0]);
-  beginSessionParams.counterDataScratchBufferSize =
+  begin_session_params.pCounterDataImage =
+      &(cupti_image_.counter_data_image[0]);
+  begin_session_params.counterDataScratchBufferSize =
       cupti_image_.counter_data_scratch_buffer.size();
-  beginSessionParams.pCounterDataScratchBuffer =
+  begin_session_params.pCounterDataScratchBuffer =
       &(cupti_image_.counter_data_scratch_buffer[0]);
-  beginSessionParams.range = cupti_config_.profiler_range;
-  beginSessionParams.replayMode = cupti_config_.profiler_replay_mode;
-  beginSessionParams.maxRangesPerPass = cupti_config_.num_ranges;
-  beginSessionParams.maxLaunchesPerPass = cupti_config_.num_ranges;
+  begin_session_params.range = cupti_config_.profiler_range;
+  begin_session_params.replayMode = cupti_config_.profiler_replay_mode;
+  begin_session_params.maxRangesPerPass = cupti_config_.num_ranges;
+  begin_session_params.maxLaunchesPerPass = cupti_config_.num_ranges;
 
-  CUPTI_API_CALL(cuptiProfilerBeginSession(&beginSessionParams));
+  CUPTI_API_CALL(cuptiProfilerBeginSession(&begin_session_params));
 
-  setConfigParams.pConfig = &(cupti_image_.config_image[0]);
-  setConfigParams.configSize = cupti_image_.config_image.size();
+  set_config_params.pConfig = &(cupti_image_.config_image[0]);
+  set_config_params.configSize = cupti_image_.config_image.size();
 
   if (cupti_config_.profiler_replay_mode == CUPTI_KernelReplay) {
-    setConfigParams.passIndex = 0;
-    CUPTI_API_CALL(cuptiProfilerSetConfig(&setConfigParams));
-    CUPTI_API_CALL(cuptiProfilerEnableProfiling(&enableProfilingParams));
+    set_config_params.passIndex = 0;
+    CUPTI_API_CALL(cuptiProfilerSetConfig(&set_config_params));
+    CUPTI_API_CALL(cuptiProfilerEnableProfiling(&enable_profiling_params));
   } else {
     TI_ERROR("profiler_replay_mode != CUPTI_KernelReplay");
   }
@@ -447,22 +459,22 @@ bool CuptiToolkit::begin_profiling() {
 }
 
 bool CuptiToolkit::end_profiling() {
-  CUpti_Profiler_DisableProfiling_Params disableProfilingParams = {
+  CUpti_Profiler_DisableProfiling_Params disable_profiling_params = {
       CUpti_Profiler_DisableProfiling_Params_STRUCT_SIZE};
-  CUPTI_API_CALL(cuptiProfilerDisableProfiling(&disableProfilingParams));
-  CUpti_Profiler_UnsetConfig_Params unsetConfigParams = {
+  CUPTI_API_CALL(cuptiProfilerDisableProfiling(&disable_profiling_params));
+  CUpti_Profiler_UnsetConfig_Params unset_config_params = {
       CUpti_Profiler_UnsetConfig_Params_STRUCT_SIZE};
-  CUPTI_API_CALL(cuptiProfilerUnsetConfig(&unsetConfigParams));
-  CUpti_Profiler_EndSession_Params endSessionParams = {
+  CUPTI_API_CALL(cuptiProfilerUnsetConfig(&unset_config_params));
+  CUpti_Profiler_EndSession_Params end_session_params = {
       CUpti_Profiler_EndSession_Params_STRUCT_SIZE};
-  CUPTI_API_CALL(cuptiProfilerEndSession(&endSessionParams));
+  CUPTI_API_CALL(cuptiProfilerEndSession(&end_session_params));
   return true;
 }
 
 bool CuptiToolkit::deinit_cupti() {
-  CUpti_Profiler_DeInitialize_Params profilerDeInitializeParams = {
+  CUpti_Profiler_DeInitialize_Params profiler_deinitialize_params = {
       CUpti_Profiler_DeInitialize_Params_STRUCT_SIZE};
-  CUPTI_API_CALL(cuptiProfilerDeInitialize(&profilerDeInitializeParams));
+  CUPTI_API_CALL(cuptiProfilerDeInitialize(&profiler_deinitialize_params));
   return true;
 }
 
@@ -474,104 +486,107 @@ bool CuptiToolkit::update_record(
   }
 
   // copy from CUPTI/samples/autorange_profiling/simplecuda.cu
-  NVPW_CUDA_MetricsContext_Create_Params metricsContextCreateParams = {
+  NVPW_CUDA_MetricsContext_Create_Params metrics_context_create_params = {
       NVPW_CUDA_MetricsContext_Create_Params_STRUCT_SIZE};
-  metricsContextCreateParams.pChipName = cupti_image_.chip_name.c_str();
+  metrics_context_create_params.pChipName = cupti_image_.chip_name.c_str();
   RETURN_IF_NVPW_ERROR(
-      false, NVPW_CUDA_MetricsContext_Create(&metricsContextCreateParams));
+      false, NVPW_CUDA_MetricsContext_Create(&metrics_context_create_params));
 
-  NVPW_MetricsContext_Destroy_Params metricsContextDestroyParams = {
+  NVPW_MetricsContext_Destroy_Params metrics_context_destroy_params = {
       NVPW_MetricsContext_Destroy_Params_STRUCT_SIZE};
-  metricsContextDestroyParams.pMetricsContext =
-      metricsContextCreateParams.pMetricsContext;
+  metrics_context_destroy_params.pMetricsContext =
+      metrics_context_create_params.pMetricsContext;
   SCOPE_EXIT([&]() {
     NVPW_MetricsContext_Destroy(
-        (NVPW_MetricsContext_Destroy_Params *)&metricsContextDestroyParams);
+        (NVPW_MetricsContext_Destroy_Params *)&metrics_context_destroy_params);
   });
 
-  NVPW_CounterData_GetNumRanges_Params getNumRangesParams = {
+  NVPW_CounterData_GetNumRanges_Params get_num_ranges_params = {
       NVPW_CounterData_GetNumRanges_Params_STRUCT_SIZE};
-  getNumRangesParams.pCounterDataImage = &(cupti_image_.counter_data_image[0]);
+  get_num_ranges_params.pCounterDataImage =
+      &(cupti_image_.counter_data_image[0]);
   RETURN_IF_NVPW_ERROR(false,
-                       NVPW_CounterData_GetNumRanges(&getNumRangesParams));
+                       NVPW_CounterData_GetNumRanges(&get_num_ranges_params));
 
-  std::vector<std::string> reqName;
-  reqName.resize(cupti_config_.metric_list.size());
+  std::vector<std::string> req_name;
+  req_name.resize(cupti_config_.metric_list.size());
   bool isolated = true;
-  bool keepInstances = true;
-  std::vector<const char *> metricNamePtrs;
-  for (size_t metricIndex = 0; metricIndex < cupti_config_.metric_list.size();
-       ++metricIndex) {
-    bool status =
-        ParseMetricNameString(cupti_config_.metric_list[metricIndex],
-                              &reqName[metricIndex], &isolated, &keepInstances);
+  bool keep_instances = true;
+  std::vector<const char *> metric_name_ptrs;
+  for (size_t metric_index = 0; metric_index < cupti_config_.metric_list.size();
+       ++metric_index) {
+    bool status = parse_metric_name_string(
+        cupti_config_.metric_list[metric_index], &req_name[metric_index],
+        &isolated, &keep_instances);
     if (!status) {
-      TI_ERROR("ParseMetricNameString error !");
+      TI_ERROR("parse_metric_name_string error !");
       return false;
     }
-    metricNamePtrs.push_back(reqName[metricIndex].c_str());
+    metric_name_ptrs.push_back(req_name[metric_index].c_str());
   }
 
-  TI_TRACE("getNumRangesParams.numRanges = {}", getNumRangesParams.numRanges);
-  for (size_t rangeIndex = 0; rangeIndex < getNumRangesParams.numRanges;
-       ++rangeIndex) {
-    std::vector<const char *> descriptionPtrs;
+  TI_TRACE("get_num_ranges_params.numRanges = {}",
+           get_num_ranges_params.numRanges);
+  for (size_t range_index = 0; range_index < get_num_ranges_params.numRanges;
+       ++range_index) {
+    std::vector<const char *> description_ptrs;
 
-    NVPW_Profiler_CounterData_GetRangeDescriptions_Params getRangeDescParams = {
-        NVPW_Profiler_CounterData_GetRangeDescriptions_Params_STRUCT_SIZE};
-    getRangeDescParams.pCounterDataImage =
+    NVPW_Profiler_CounterData_GetRangeDescriptions_Params
+        get_range_desc_params = {
+            NVPW_Profiler_CounterData_GetRangeDescriptions_Params_STRUCT_SIZE};
+    get_range_desc_params.pCounterDataImage =
         &(cupti_image_.counter_data_image[0]);
-    getRangeDescParams.rangeIndex = rangeIndex;
+    get_range_desc_params.rangeIndex = range_index;
     RETURN_IF_NVPW_ERROR(false, NVPW_Profiler_CounterData_GetRangeDescriptions(
-                                    &getRangeDescParams));
+                                    &get_range_desc_params));
 
-    descriptionPtrs.resize(getRangeDescParams.numDescriptions);
-    getRangeDescParams.ppDescriptions = &descriptionPtrs[0];
+    description_ptrs.resize(get_range_desc_params.numDescriptions);
+    get_range_desc_params.ppDescriptions = &description_ptrs[0];
     RETURN_IF_NVPW_ERROR(false, NVPW_Profiler_CounterData_GetRangeDescriptions(
-                                    &getRangeDescParams));
+                                    &get_range_desc_params));
 
-    std::string rangeName;
-    for (size_t descriptionIndex = 0;
-         descriptionIndex < getRangeDescParams.numDescriptions;
-         ++descriptionIndex) {
-      if (descriptionIndex) {
-        rangeName += "/";
+    std::string range_name;
+    for (size_t description_index = 0;
+         description_index < get_range_desc_params.numDescriptions;
+         ++description_index) {
+      if (description_index) {
+        range_name += "/";
       }
-      rangeName += descriptionPtrs[descriptionIndex];
+      range_name += description_ptrs[description_index];
     }
 
     const bool isolated = true;
-    std::vector<double> gpuValues;
-    gpuValues.resize(cupti_config_.metric_list.size());
+    std::vector<double> gpu_values;
+    gpu_values.resize(cupti_config_.metric_list.size());
 
-    NVPW_MetricsContext_SetCounterData_Params setCounterDataParams = {
+    NVPW_MetricsContext_SetCounterData_Params set_counter_data_params = {
         NVPW_MetricsContext_SetCounterData_Params_STRUCT_SIZE};
-    setCounterDataParams.pMetricsContext =
-        metricsContextCreateParams.pMetricsContext;
-    setCounterDataParams.pCounterDataImage =
+    set_counter_data_params.pMetricsContext =
+        metrics_context_create_params.pMetricsContext;
+    set_counter_data_params.pCounterDataImage =
         &(cupti_image_.counter_data_image[0]);
-    setCounterDataParams.isolated = true;
-    setCounterDataParams.rangeIndex = rangeIndex;
+    set_counter_data_params.isolated = true;
+    set_counter_data_params.rangeIndex = range_index;
     RETURN_IF_NVPW_ERROR(
-        false, NVPW_MetricsContext_SetCounterData(&setCounterDataParams));
+        false, NVPW_MetricsContext_SetCounterData(&set_counter_data_params));
 
-    NVPW_MetricsContext_EvaluateToGpuValues_Params evalToGpuParams = {
+    NVPW_MetricsContext_EvaluateToGpuValues_Params eval_to_gpu_params = {
         NVPW_MetricsContext_EvaluateToGpuValues_Params_STRUCT_SIZE};
-    evalToGpuParams.pMetricsContext =
-        metricsContextCreateParams.pMetricsContext;
-    evalToGpuParams.numMetrics = metricNamePtrs.size();
-    evalToGpuParams.ppMetricNames = &metricNamePtrs[0];
-    evalToGpuParams.pMetricValues = &gpuValues[0];
+    eval_to_gpu_params.pMetricsContext =
+        metrics_context_create_params.pMetricsContext;
+    eval_to_gpu_params.numMetrics = metric_name_ptrs.size();
+    eval_to_gpu_params.ppMetricNames = &metric_name_ptrs[0];
+    eval_to_gpu_params.pMetricValues = &gpu_values[0];
     RETURN_IF_NVPW_ERROR(
-        false, NVPW_MetricsContext_EvaluateToGpuValues(&evalToGpuParams));
+        false, NVPW_MetricsContext_EvaluateToGpuValues(&eval_to_gpu_params));
 
-    traced_records[rangeIndex].kernel_elapsed_time_in_ms =
-        gpuValues[CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS] /
-        gpuValues[CUPTI_METRIC_CORE_FREQUENCY_HZS] * 1000;  // from s to ms
-    // traced_records[rangeIndex].memory_load_byets  =
-    // gpuValues[CUPTI_METRIC_GLOBAL_LOAD_BYTES];
-    // traced_records[rangeIndex].memory_store_byets =
-    // gpuValues[CUPTI_METRIC_GLOBAL_STORE_BYTES];
+    traced_records[range_index].kernel_elapsed_time_in_ms =
+        gpu_values[CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS] /
+        gpu_values[CUPTI_METRIC_CORE_FREQUENCY_HZS] * 1000;  // from s to ms
+    // traced_records[range_index].memory_load_byets  =
+    // gpu_values[CUPTI_METRIC_GLOBAL_LOAD_BYTES];
+    // traced_records[range_index].memory_store_byets =
+    // gpu_values[CUPTI_METRIC_GLOBAL_STORE_BYTES];
     // TODO add these metrics value to record(backend and frontend)
   }
   return true;

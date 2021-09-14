@@ -9,17 +9,18 @@
 #include <nvperf_cuda_host.h>
 #include <nvperf_target.h>
 
-// some of macros are copied from CUPTI/samples/extensions/
+// Some of the codes are copied from CUPTI/samples/extensions/
+// and modified to match Taichi's naming convensions
 
 template <typename T>
 class ScopeExit {
  public:
-  ScopeExit(T t) : t(t) {
+  ScopeExit(T t) : t_(t) {
   }
   ~ScopeExit() {
-    t();
+    t_();
   }
-  T t;
+  T t_;
 };
 
 template <typename T>
@@ -27,24 +28,24 @@ ScopeExit<T> MoveScopeExit(T t) {
   return ScopeExit<T>(t);
 };
 
-#define CUPTI_API_CALL(apiFuncCall)                                        \
+#define CUPTI_API_CALL(api_func_call)                                      \
   do {                                                                     \
-    CUptiResult _status = apiFuncCall;                                     \
-    if (_status != CUPTI_SUCCESS) {                                        \
+    CUptiResult status = api_func_call;                                    \
+    if (status != CUPTI_SUCCESS) {                                         \
       const char *errstr;                                                  \
-      cuptiGetResultString(_status, &errstr);                              \
+      cuptiGetResultString(status, &errstr);                               \
       fprintf(stderr, "%s:%d: error: function %s failed with error %s.\n", \
-              __FILE__, __LINE__, #apiFuncCall, errstr);                   \
+              __FILE__, __LINE__, #api_func_call, errstr);                 \
       exit(-1);                                                            \
     }                                                                      \
   } while (0)
 
-#define NVPW_API_CALL(apiFuncCall)                                         \
+#define NVPW_API_CALL(api_func_call)                                       \
   do {                                                                     \
-    NVPA_Status _status = apiFuncCall;                                     \
-    if (_status != NVPA_STATUS_SUCCESS) {                                  \
+    NVPA_Status status = api_func_call;                                    \
+    if (status != NVPA_STATUS_SUCCESS) {                                   \
       fprintf(stderr, "%s:%d: error: function %s failed with error %d.\n", \
-              __FILE__, __LINE__, #apiFuncCall, _status);                  \
+              __FILE__, __LINE__, #api_func_call, status);                 \
       exit(-1);                                                            \
     }                                                                      \
   } while (0)
@@ -68,38 +69,38 @@ ScopeExit<T> MoveScopeExit(T t) {
     }                                                        \
   } while (0)
 
-#define NVPW_STATUS_RESULT(error_msg, status) \
-  case status:                                \
-    error_msg = #status;                      \
+#define NVPW_STATUS_RESULT(status) \
+  case status:                     \
+    error_msg = #status;           \
     break;
 
 static const char *get_nvpw_result_string(NVPA_Status status) {
   const char *error_msg = NULL;
   switch (status) {
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_ERROR)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INTERNAL_ERROR)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_NOT_INITIALIZED)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_NOT_LOADED)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_FUNCTION_NOT_FOUND)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_NOT_SUPPORTED)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_NOT_IMPLEMENTED)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INVALID_ARGUMENT)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INVALID_METRIC_ID)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_DRIVER_NOT_LOADED)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_OUT_OF_MEMORY)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INVALID_THREAD_STATE)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_FAILED_CONTEXT_ALLOC)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_UNSUPPORTED_GPU)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INSUFFICIENT_DRIVER_VERSION)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_OBJECT_NOT_REGISTERED)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INSUFFICIENT_PRIVILEGE)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INVALID_CONTEXT_STATE)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INVALID_OBJECT_STATE)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_RESOURCE_UNAVAILABLE)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_DRIVER_LOADED_TOO_LATE)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_INSUFFICIENT_SPACE)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_OBJECT_MISMATCH)
-    NVPW_STATUS_RESULT(error_msg, NVPA_STATUS_VIRTUALIZED_DEVICE_NOT_SUPPORTED)
+    NVPW_STATUS_RESULT(NVPA_STATUS_ERROR)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INTERNAL_ERROR)
+    NVPW_STATUS_RESULT(NVPA_STATUS_NOT_INITIALIZED)
+    NVPW_STATUS_RESULT(NVPA_STATUS_NOT_LOADED)
+    NVPW_STATUS_RESULT(NVPA_STATUS_FUNCTION_NOT_FOUND)
+    NVPW_STATUS_RESULT(NVPA_STATUS_NOT_SUPPORTED)
+    NVPW_STATUS_RESULT(NVPA_STATUS_NOT_IMPLEMENTED)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INVALID_ARGUMENT)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INVALID_METRIC_ID)
+    NVPW_STATUS_RESULT(NVPA_STATUS_DRIVER_NOT_LOADED)
+    NVPW_STATUS_RESULT(NVPA_STATUS_OUT_OF_MEMORY)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INVALID_THREAD_STATE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_FAILED_CONTEXT_ALLOC)
+    NVPW_STATUS_RESULT(NVPA_STATUS_UNSUPPORTED_GPU)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INSUFFICIENT_DRIVER_VERSION)
+    NVPW_STATUS_RESULT(NVPA_STATUS_OBJECT_NOT_REGISTERED)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INSUFFICIENT_PRIVILEGE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INVALID_CONTEXT_STATE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INVALID_OBJECT_STATE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_RESOURCE_UNAVAILABLE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_DRIVER_LOADED_TOO_LATE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INSUFFICIENT_SPACE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_OBJECT_MISMATCH)
+    NVPW_STATUS_RESULT(NVPA_STATUS_VIRTUALIZED_DEVICE_NOT_SUPPORTED)
     default:
       break;
   }

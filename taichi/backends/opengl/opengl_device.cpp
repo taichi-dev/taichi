@@ -57,7 +57,8 @@ std::unique_ptr<ResourceBinder::Bindings> GLResourceBinder::materialize() {
   return nullptr;
 }
 
-GLPipeline::GLPipeline(const PipelineSourceDesc &desc, std::string name) {
+GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
+                       const std::string &name) {
   TI_ASSERT(desc.type == PipelineSourceType::glsl_src);
 
   GLuint shader_id;
@@ -271,8 +272,9 @@ void GLDevice::dealloc_memory(DeviceAllocation handle) {
   glDeleteBuffers(1, &handle.alloc_id);
 }
 
-std::unique_ptr<Pipeline> GLDevice::create_pipeline(PipelineSourceDesc &src,
-                                                    std::string name) {
+std::unique_ptr<Pipeline> GLDevice::create_pipeline(
+    const PipelineSourceDesc &src,
+    std::string name) {
   return std::make_unique<GLPipeline>(src, name);
 }
 

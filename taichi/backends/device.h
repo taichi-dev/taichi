@@ -361,7 +361,7 @@ class Device {
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
-      PipelineSourceDesc &src,
+      const PipelineSourceDesc &src,
       std::string name = "Pipeline") = 0;
 
   std::unique_ptr<DeviceAllocationGuard> allocate_memory_unique(

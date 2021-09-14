@@ -22,7 +22,6 @@ class GLResourceBinder : public ResourceBinder {
 
   std::unique_ptr<ResourceBinder::Bindings> materialize() override;
 
-  // In Vulkan this is called Storage Buffer (shader can store)
   void rw_buffer(uint32_t set,
                  uint32_t binding,
                  DevicePtr ptr,
@@ -31,7 +30,6 @@ class GLResourceBinder : public ResourceBinder {
                  uint32_t binding,
                  DeviceAllocation alloc) override;
 
-  // In Vulkan this is called Uniform Buffer (shader can only load)
   void buffer(uint32_t set,
               uint32_t binding,
               DevicePtr ptr,
@@ -61,7 +59,7 @@ class GLResourceBinder : public ResourceBinder {
 
 class GLPipeline : public Pipeline {
  public:
-  GLPipeline(const PipelineSourceDesc &desc, std::string name);
+  GLPipeline(const PipelineSourceDesc &desc, const std::string &name);
   ~GLPipeline() override;
 
   ResourceBinder *resource_binder() override;
@@ -185,7 +183,7 @@ class GLDevice : public GraphicsDevice {
   void dealloc_memory(DeviceAllocation handle) override;
 
   std::unique_ptr<Pipeline> create_pipeline(
-      PipelineSourceDesc &src,
+      const PipelineSourceDesc &src,
       std::string name = "Pipeline") override;
 
   // Mapping can fail and will return nullptr

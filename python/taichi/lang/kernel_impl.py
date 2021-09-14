@@ -325,9 +325,9 @@ class Kernel:
     def reset(self):
         self.runtime = impl.get_runtime()
         if self.is_grad:
-            self.compiled_functions = self.runtime.compiled_functions
-        else:
             self.compiled_functions = self.runtime.compiled_grad_functions
+        else:
+            self.compiled_functions = self.runtime.compiled_functions
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)

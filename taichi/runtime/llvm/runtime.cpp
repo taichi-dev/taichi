@@ -1782,7 +1782,11 @@ void wasm_print_f32(Context *context, f32 value) {
   ((f32 *)buffer)[print_pos * 2 + 2] = value;
 }
 
-void wasm_print_char(Context *context, i8 value0, i8 value1, i8 value2, i8 value3) {
+void wasm_print_char(Context *context,
+                     i8 value0,
+                     i8 value1,
+                     i8 value2,
+                     i8 value3) {
   Ptr buffer = context->runtime->wasm_print_buffer;
   if (buffer == nullptr)
     return;

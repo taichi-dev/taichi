@@ -28,6 +28,8 @@ ScopeExit<T> MoveScopeExit(T t) {
   return ScopeExit<T>(t);
 };
 
+// The fellowing macros will be #undef in ./cupti_toolkit.cpp
+
 #define CUPTI_API_CALL(api_func_call)                                      \
   do {                                                                     \
     CUptiResult status = api_func_call;                                    \

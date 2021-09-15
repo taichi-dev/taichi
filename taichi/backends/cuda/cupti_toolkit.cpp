@@ -592,6 +592,15 @@ bool CuptiToolkit::update_record(
   return true;
 }
 
+// undef macros defined in ./cupti_toolkit_functions.h
+#undef CUPTI_API_CALL
+#undef NVPW_API_CALL
+#undef NV_ANONYMOUS_VARIABLE_DIRECT
+#undef NV_ANONYMOUS_VARIABLE_INDIRECT
+#undef SCOPE_EXIT
+#undef RETURN_IF_NVPW_ERROR
+#undef NVPW_STATUS_RESULT
+
 #else
 
 CuptiToolkit::CuptiToolkit() {

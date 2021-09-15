@@ -424,15 +424,6 @@ void export_lang(py::module &m) {
       .def("serialize", &ExprGroup::serialize);
 
   py::class_<Stmt>(m, "Stmt");
-  py::class_<Program::KernelProxy>(m, "KernelProxy")
-      .def(
-          "define",
-          [](Program::KernelProxy *ker,
-             const std::function<void()> &func) -> Kernel * {
-            py::gil_scoped_release release;
-            return ker->def(func);
-          },
-          py::return_value_policy::reference);
 
   m.def("insert_deactivate", [](SNode *snode, const ExprGroup &indices) {
     return Deactivate(snode, indices);
@@ -772,10 +763,13 @@ void export_lang(py::module &m) {
   m.def("get_external_tensor_shape_along_axis",
         Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
 
-  m.def("create_kernel",
-        [&](std::string name, bool grad) -> Program::KernelProxy {
-          return get_current_program().kernel(name, grad);
-        });
+  m.def(
+      "create_kernel",
+      [&](const std::function<void()> &body, const std::string &name,
+          bool grad) -> Kernel * {
+        return &get_current_program().kernel(body, name, grad);
+      },
+      py::return_value_policy::reference);
 
   m.def(
       "create_function",

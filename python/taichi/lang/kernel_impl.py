@@ -434,8 +434,6 @@ class Kernel:
                     mode='exec'), global_vars, local_vars)
         compiled = local_vars[self.func.__name__]
 
-        taichi_kernel = _ti_core.create_kernel(kernel_name, self.is_grad)
-
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
         def taichi_ast_generator():
@@ -452,7 +450,9 @@ class Kernel:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None
 
-        taichi_kernel = taichi_kernel.define(taichi_ast_generator)
+        taichi_kernel = _ti_core.create_kernel(taichi_ast_generator,
+                                               kernel_name, self.is_grad)
+
         self.kernel_cpp = taichi_kernel
 
         assert key not in self.compiled_functions

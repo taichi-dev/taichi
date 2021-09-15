@@ -296,6 +296,14 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   alloc.device = this;
   alloc.alloc_id = buffer;
 
+  if (params.host_read && params.host_write) {
+    buffer_to_access_[buffer] = GL_READ_WRITE;
+  } else if (params.host_read) {
+    buffer_to_access_[buffer] = GL_READ_ONLY;
+  } else if (params.host_write) {
+    buffer_to_access_[buffer] = GL_WRITE_ONLY;
+  }
+
   return alloc;
 }
 
@@ -311,20 +319,25 @@ std::unique_ptr<Pipeline> GLDevice::create_pipeline(
 }
 
 void *GLDevice::map_range(DevicePtr ptr, uint64_t size) {
+  TI_ASSERT_INFO(
+      buffer_to_access_.find(ptr.alloc_id) != buffer_to_access_.end(),
+      "Buffer not created with host_read or write");
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ptr.alloc_id);
   check_opengl_error("glBindBuffer");
-  // Fixme: record the access hint during creation and reflect it here
   void *mapped = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, ptr.offset, size,
-                          GL_READ_WRITE);
+                                  buffer_to_access_.at(ptr.alloc_id));
   check_opengl_error("glMapBufferRange");
   return mapped;
 }
 
 void *GLDevice::map(DeviceAllocation alloc) {
+  TI_ASSERT_INFO(
+      buffer_to_access_.find(alloc.alloc_id) != buffer_to_access_.end(),
+      "Buffer not created with host_read or write");
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, alloc.alloc_id);
   check_opengl_error("glBindBuffer");
-  // Fixme: record the access hint during creation and reflect it here
-  void *mapped = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_WRITE);
+  void *mapped = glMapBuffer(GL_SHADER_STORAGE_BUFFER,
+                             buffer_to_access_.at(alloc.alloc_id));
   check_opengl_error("glMapBuffer");
   return mapped;
 }
@@ -465,8 +478,8 @@ void GLCommandList::CmdBufferCopy::execute() {
 void GLCommandList::CmdBufferFill::execute() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
   check_opengl_error("glBindBuffer");
-  glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 0, size,
-                       GL_RED, GL_UNSIGNED_INT, &data);
+  glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 0, size, GL_RED,
+                       GL_UNSIGNED_INT, &data);
   check_opengl_error("glClearBufferSubData");
 }
 

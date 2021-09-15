@@ -226,6 +226,7 @@ class GLDevice : public GraphicsDevice {
 
  private:
   GLStream stream_;
+  std::unordered_map<GLuint, GLbitfield> buffer_to_access_;
 };
 
 class GLSurface : public Surface {

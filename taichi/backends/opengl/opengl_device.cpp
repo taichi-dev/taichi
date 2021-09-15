@@ -4,6 +4,32 @@ namespace taichi {
 namespace lang {
 namespace opengl {
 
+std::string get_opengl_error_string(GLenum err) {
+  switch (err) {
+#define PER_GL_ERR(x) \
+  case x:             \
+    return #x;
+    PER_GL_ERR(GL_NO_ERROR)
+    PER_GL_ERR(GL_INVALID_ENUM)
+    PER_GL_ERR(GL_INVALID_VALUE)
+    PER_GL_ERR(GL_INVALID_OPERATION)
+    PER_GL_ERR(GL_INVALID_FRAMEBUFFER_OPERATION)
+    PER_GL_ERR(GL_OUT_OF_MEMORY)
+    PER_GL_ERR(GL_STACK_UNDERFLOW)
+    PER_GL_ERR(GL_STACK_OVERFLOW)
+    default:
+      return fmt::format("GL_ERROR={}", err);
+  }
+}
+
+void check_opengl_error(const std::string &msg = "OpenGL") {
+  auto err = glGetError();
+  if (err != GL_NO_ERROR) {
+    auto estr = get_opengl_error_string(err);
+    TI_ERROR("{}: {}", msg, estr);
+  }
+}
+
 GLResourceBinder::~GLResourceBinder() {
 }
 
@@ -78,6 +104,7 @@ GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
     log[logLength] = 0;
     TI_ERROR("[glsl] error while compiling shader:\n{}", log.data());
   }
+  check_opengl_error();
 
   program_id_ = glCreateProgram();
   glAttachShader(program_id_, shader_id);
@@ -91,6 +118,7 @@ GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
     log[logLength] = 0;
     TI_ERROR("[glsl] error while linking program:\n{}", log.data());
   }
+  check_opengl_error();
 
   glDeleteShader(shader_id);
 }
@@ -258,8 +286,11 @@ GLDevice::~GLDevice() {
 DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   GLuint buffer;
   glCreateBuffers(1, &buffer);
+  check_opengl_error("glCreateBuffers");
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
+  check_opengl_error("glBindBuffer");
   glBufferData(GL_SHADER_STORAGE_BUFFER, params.size, nullptr, GL_DYNAMIC_READ);
+  check_opengl_error("glBufferData");
 
   DeviceAllocation alloc;
   alloc.device = this;
@@ -270,6 +301,7 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
 
 void GLDevice::dealloc_memory(DeviceAllocation handle) {
   glDeleteBuffers(1, &handle.alloc_id);
+  check_opengl_error("glDeleteBuffers");
 }
 
 std::unique_ptr<Pipeline> GLDevice::create_pipeline(
@@ -280,33 +312,46 @@ std::unique_ptr<Pipeline> GLDevice::create_pipeline(
 
 void *GLDevice::map_range(DevicePtr ptr, uint64_t size) {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ptr.alloc_id);
+  check_opengl_error("glBindBuffer");
   // Fixme: record the access hint during creation and reflect it here
-  return glMapBufferRange(GL_SHADER_STORAGE_BUFFER, ptr.offset, size,
+  void *mapped = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, ptr.offset, size,
                           GL_READ_WRITE);
+  check_opengl_error("glMapBufferRange");
+  return mapped;
 }
 
 void *GLDevice::map(DeviceAllocation alloc) {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, alloc.alloc_id);
+  check_opengl_error("glBindBuffer");
   // Fixme: record the access hint during creation and reflect it here
-  return glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_WRITE);
+  void *mapped = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_WRITE);
+  check_opengl_error("glMapBuffer");
+  return mapped;
 }
 
 void GLDevice::unmap(DevicePtr ptr) {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ptr.alloc_id);
+  check_opengl_error("glBindBuffer");
   glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+  check_opengl_error("glUnmapBuffer");
 }
 
 void GLDevice::unmap(DeviceAllocation alloc) {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, alloc.alloc_id);
+  check_opengl_error("glBindBuffer");
   glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+  check_opengl_error("glUnmapBuffer");
 }
 
 void GLDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
   TI_ASSERT(dst.device == src.device);
   glBindBuffer(GL_COPY_WRITE_BUFFER, dst.alloc_id);
+  check_opengl_error("glBindBuffer");
   glBindBuffer(GL_COPY_READ_BUFFER, src.alloc_id);
+  check_opengl_error("glBindBuffer");
   glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, src.offset,
                       dst.offset, size);
+  check_opengl_error("glCopyBufferSubData");
   glFinish();
 }
 
@@ -394,27 +439,35 @@ void GLSurface::resize(uint32_t width, uint32_t height) {
 
 void GLCommandList::CmdBindPipeline::execute() {
   glUseProgram(program);
+  check_opengl_error("glUseProgram");
 }
 
 void GLCommandList::CmdBindBufferToIndex::execute() {
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, buffer);
+  check_opengl_error("glBindBufferBase");
 }
 
 void GLCommandList::CmdBufferBarrier::execute() {
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+  check_opengl_error("glMemoryBarrier");
 }
 
 void GLCommandList::CmdBufferCopy::execute() {
   glBindBuffer(GL_COPY_READ_BUFFER, src);
+  check_opengl_error("glBindBuffer");
   glBindBuffer(GL_COPY_WRITE_BUFFER, dst);
+  check_opengl_error("glBindBuffer");
   glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, src_offset,
                       dst_offset, size);
+  check_opengl_error("glCopyBufferSubData");
 }
 
 void GLCommandList::CmdBufferFill::execute() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
-  glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_UNSIGNED_INT, 0, size,
-                       GL_UNSIGNED_INT, GL_RED_INTEGER, &data);
+  check_opengl_error("glBindBuffer");
+  glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 0, size,
+                       GL_RED, GL_UNSIGNED_INT, &data);
+  check_opengl_error("glClearBufferSubData");
 }
 
 void GLCommandList::CmdDispatch::execute() {

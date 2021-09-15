@@ -302,6 +302,7 @@ void GLDevice::unmap(DeviceAllocation alloc) {
 }
 
 void GLDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
+  TI_ASSERT(dst.device == src.device);
   glBindBuffer(GL_COPY_WRITE_BUFFER, dst.alloc_id);
   glBindBuffer(GL_COPY_READ_BUFFER, src.alloc_id);
   glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, src.offset,

@@ -65,13 +65,13 @@ class KernelGen : public IRVisitor {
  public:
   KernelGen(Kernel *kernel,
             std::string kernel_name,
-            StructCompiledResult *struct_compiled)
+            StructCompiledResult *struct_compiled,
+            Device *device)
       : kernel(kernel),
         struct_compiled_(struct_compiled),
         kernel_name_(kernel_name),
         glsl_kernel_prefix_(kernel_name),
-        compiled_program_(std::make_unique<CompiledProgram>(kernel)),
-        ps(std::make_unique<ParallelSize>()) {
+        compiled_program_(std::make_unique<CompiledProgram>(kernel, device)) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -94,12 +94,13 @@ class KernelGen : public IRVisitor {
   LineAppender line_appender_;
   LineAppender line_appender_header_;
   std::string glsl_kernel_name_;
-  std::unique_ptr<ParallelSize> ps;
+  int num_workgroups{1};
+  int workgroup_size{1};
   bool used_tls;  // TODO: move into UsedFeature?
   std::unordered_map<int, irpass::ExternalPtrAccess> extptr_access;
 
   template <typename... Args>
-  void emit(std::string f, Args &&... args) {
+  void emit(std::string f, Args &&...args) {
     line_appender_.append(std::move(f), std::move(args)...);
   }
 
@@ -244,7 +245,8 @@ class KernelGen : public IRVisitor {
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
     compiled_program_->add(std::move(glsl_kernel_name_), kernel_src_code,
-                           std::move(ps), &this->extptr_access);
+                           num_workgroups, workgroup_size,
+                           &this->extptr_access);
     auto &config = kernel->program->config;
     if (config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer("shader{:04d}.comp",
@@ -253,7 +255,8 @@ class KernelGen : public IRVisitor {
     }
     line_appender_header_.clear_all();
     line_appender_.clear_all();
-    ps = std::make_unique<ParallelSize>();
+    num_workgroups = 0;
+    num_workgroups = 0;
   }
 
   void visit(Block *stmt) override {
@@ -852,30 +855,27 @@ class KernelGen : public IRVisitor {
                 iterations, "int(gl_WorkGroupSize.x * gl_NumWorkGroups.x)");
       s = std::make_unique<ScopedIndent>(gen->line_appender_);
 
-      TI_ASSERT(gen->ps);
-      if (gen->ps->grid_dim == 0) {
+      if (gen->num_workgroups == 0) {
         // if not specified, guess an optimal grid_dim for different situations
         // Refs:
         // https://stackoverflow.com/questions/36374652/compute-shaders-optimal-data-division-on-invocations-threads-and-workgroups
         if (const_iterations > 0) {
           if (gen->used_tls) {
             // const range with TLS reduction
-            gen->ps->grid_dim =
-                std::max((size_t)const_iterations /
-                             std::max(gen->ps->block_dim, (size_t)1) / 32,
-                         (size_t)1);
-            gen->ps->block_dim = std::max(gen->ps->block_dim / 4, (size_t)1);
+            gen->num_workgroups = std::max(
+                const_iterations / std::max(gen->workgroup_size, 1) / 32, 1);
+            gen->workgroup_size = std::max(gen->workgroup_size / 4, 1);
           } else {
             // const range
-            gen->ps->grid_dim =
-                std::max(((size_t)const_iterations + gen->ps->block_dim - 1) /
-                             gen->ps->block_dim,
-                         (size_t)1);
+            gen->num_workgroups =
+                std::max((const_iterations + gen->workgroup_size - 1) /
+                             gen->workgroup_size,
+                         1);
           }
         } else {
           // dynamic range
           // TODO(archibate): think for a better value for SM utilization:
-          gen->ps->grid_dim = 256;
+          gen->num_workgroups = 256;
         }
       }
     }
@@ -919,7 +919,8 @@ class KernelGen : public IRVisitor {
       auto end_value = stmt->end_value;
       if (end_value < begin_value)
         end_value = begin_value;
-      ps = std::make_unique<ParallelSize>(stmt->block_dim, stmt->grid_dim);
+      workgroup_size = stmt->block_dim;
+      num_workgroups = stmt->grid_dim;
       ScopedGridStrideLoop _gsl(this, end_value - begin_value);
       emit("int _itv = {} + _sid;", begin_value);
       stmt->body->accept(this);
@@ -932,7 +933,8 @@ class KernelGen : public IRVisitor {
       auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
                                       : fmt::format("_gtmp_i32_[{} >> 2]",
                                                     stmt->end_offset);
-      ps = std::make_unique<ParallelSize>(stmt->block_dim, stmt->grid_dim);
+      workgroup_size = stmt->block_dim;
+      num_workgroups = stmt->grid_dim;
       emit("int _beg = {}, _end = {};", begin_expr, end_expr);
       ScopedGridStrideLoop _gsl(this, "_end - _beg");
       emit("int _itv = _beg + _sid;");
@@ -959,7 +961,8 @@ class KernelGen : public IRVisitor {
     emit("{{ // struct for {}", stmt->snode->node_type_name);
     {
       ScopedIndent _s(line_appender_);
-      ps = std::make_unique<ParallelSize>(stmt->block_dim, stmt->grid_dim);
+      workgroup_size = stmt->block_dim;
+      num_workgroups = stmt->grid_dim;
       ScopedGridStrideLoop _gsl(this, "_list_len_");
       emit("int _itv = _list_[_sid];");
       stmt->body->accept(this);
@@ -1170,7 +1173,8 @@ class KernelGen : public IRVisitor {
 
 FunctionType OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
-  KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
+  KernelGen codegen(kernel_, kernel_name_, struct_compiled_,
+                    kernel_launcher_->device.get());
   codegen.run();
   auto compiled = codegen.get_compiled_program();
   auto *ptr = compiled.get();

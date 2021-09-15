@@ -602,6 +602,7 @@ if 1:
                     # such as class instances ("self"), fields, SNodes, etc.
                     if isinstance(ctx.func.argument_annotations[i],
                                   ti.template):
+                        ctx.create_variable(ctx.func.argument_names[i])
                         continue
                     # Create a copy for non-template arguments,
                     # so that they are passed by value.

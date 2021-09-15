@@ -148,8 +148,75 @@ def test_python_function():
     assert x[None] == 0
 
 
+@ti.test(arch=[ti.cpu, ti.cuda], debug=True)
+def test_default_templates():
+    @ti.func
+    def func1(x: ti.template()):
+        x = 1
+
+    @ti.func
+    def func2(x: ti.template()):
+        x += 1
+
+    @ti.func
+    def func3(x):
+        x = 1
+
+    @ti.func
+    def func4(x):
+        x += 1
+
+    @ti.func
+    def func1_field(x: ti.template()):
+        x[None] = 1
+
+    @ti.func
+    def func2_field(x: ti.template()):
+        x[None] += 1
+
+    @ti.func
+    def func3_field(x):
+        x[None] = 1
+
+    @ti.func
+    def func4_field(x):
+        x[None] += 1
+
+    v = ti.field(dtype=ti.i32, shape=())
+
+    @ti.kernel
+    def run_func():
+        a = 0
+        func1(a)
+        assert a == 1
+        b = 0
+        func2(b)
+        assert b == 1
+        c = 0
+        func3(c)
+        assert c == 0
+        d = 0
+        func4(d)
+        assert d == 0
+
+        v[None] = 0
+        func1_field(v)
+        assert v[None] == 1
+        v[None] = 0
+        func2_field(v)
+        assert v[None] == 1
+        v[None] = 0
+        func3_field(v)
+        assert v[None] == 1
+        v[None] = 0
+        func4_field(v)
+        assert v[None] == 1
+
+    run_func()
+
+
 @ti.test(experimental_real_function=True)
-def test_templates():
+def test_experimental_templates():
     x = ti.field(ti.i32, shape=())
     y = ti.field(ti.i32, shape=())
     answer = ti.field(ti.i32, shape=8)

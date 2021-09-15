@@ -990,7 +990,7 @@ void export_lang(py::module &m) {
       .def("solve", &SparseSolver::solve)
       .def("info", &SparseSolver::info);
 
-  m.def("get_sparse_solver", &get_sparse_solver);
+  m.def("make_sparse_solver", &make_sparse_solver);
 }
 
 TI_NAMESPACE_END

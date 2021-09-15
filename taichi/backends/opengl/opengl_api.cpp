@@ -248,7 +248,8 @@ struct CompiledProgram::Impl {
            int workgroup_size,
            std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
     kernels.push_back(std::make_unique<CompiledKernel>(
-        kernel_name, kernel_source_code, device, workgroup_size, num_workgrpus));
+        kernel_name, kernel_source_code, device, workgroup_size,
+        num_workgrpus));
     if (ext_ptr_access) {
       for (auto pair : *ext_ptr_access) {
         if (ext_arr_access.find(pair.first) != ext_arr_access.end()) {
@@ -478,28 +479,17 @@ bool is_opengl_api_available() {
 struct GLProgram {};
 struct GLSLLauncherImpl {};
 
-struct CompiledKernel::Impl {
-  Impl(const std::string &kernel_name_,
-       const std::string &kernel_source_code,
-       std::unique_ptr<ParallelSize> ps_) {
-    TI_NOT_IMPLEMENTED;
-  }
-
-  void dispatch_compute(GLSLLauncher *launcher) const {
-    TI_NOT_IMPLEMENTED;
-  }
-};
-
 struct CompiledProgram::Impl {
   UsedFeature used;
 
-  Impl(Kernel *kernel) {
+  Impl(Kernel *kernel, Device *device) {
     TI_NOT_IMPLEMENTED;
   }
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           std::unique_ptr<ParallelSize> ps,
+           int num_workgrpus,
+           int workgroup_size,
            std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
     TI_NOT_IMPLEMENTED;
   }

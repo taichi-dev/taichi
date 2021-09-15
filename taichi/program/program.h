@@ -179,24 +179,6 @@ class Program {
 
   void visualize_layout(const std::string &fn);
 
-  struct KernelProxy {
-    std::string name;
-    Program *prog;
-    bool grad;
-
-    Kernel *def(const std::function<void()> &func) {
-      return &(prog->kernel(func, name, grad));
-    }
-  };
-
-  KernelProxy kernel(const std::string &name, bool grad = false) {
-    KernelProxy proxy;
-    proxy.prog = this;
-    proxy.name = name;
-    proxy.grad = grad;
-    return proxy;
-  }
-
   Kernel &kernel(const std::function<void()> &body,
                  const std::string &name = "",
                  bool grad = false) {

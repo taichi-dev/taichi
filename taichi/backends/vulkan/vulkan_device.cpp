@@ -1081,8 +1081,9 @@ VulkanDevice::~VulkanDevice() {
   vmaDestroyAllocator(allocator_);
 }
 
-std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(PipelineSourceDesc &src,
-                                                        std::string name) {
+std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(
+    const PipelineSourceDesc &src,
+    std::string name) {
   TI_ASSERT(src.type == PipelineSourceType::spirv_binary &&
             src.stage == PipelineStageType::compute);
 

@@ -28,8 +28,8 @@ Advanced features of Taichi include [spatially sparse computing](https://docs.ta
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/rendering/sdf_renderer.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/sdf_renderer.jpg" height="192px"></a>
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/simulation/euler.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/euler.gif" height="192px"></a>
 
-<a href="https://github.com/taichi-dev/quantaichi"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/elastic_letters.gif" height="224px"></a>
-<a href="https://github.com/taichi-dev/quantaichi"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fluid_with_bunnies.gif" height="224px"></a>
+<a href="https://github.com/taichi-dev/quantaichi"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/elastic_letters.gif" height="213px"></a>
+<a href="https://github.com/taichi-dev/quantaichi"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fluid_with_bunnies.gif" height="213px"></a>
 
 ## Installation [![Downloads](https://pepy.tech/badge/taichi)](https://pepy.tech/project/taichi)
 
@@ -60,19 +60,24 @@ Please follow [this doc](https://docs.taichi.graphics/docs/lang/articles/contrib
 
 <a href="https://github.com/taichi-dev/taichi/graphs/contributors"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/contributors_taichi-dev_taichi_12.png" width="800px"></a>
 
+*Note: contributor avatars above are randomly shuffled.*
+
 -------------------------------
 
 We welcome feedback and comments. If you would like to contribute to Taichi, please check out our [Contributor Guidelines](https://docs.taichi.graphics/docs/lang/articles/contribution/contributor_guide).
 
-If you use Taichi in your research, please cite our papers:
+If you use Taichi in your research, please cite related papers:
 
 - [**(SIGGRAPH Asia 2019) Taichi: High-Performance Computation on Sparse Data Structures**](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[BibTex]](https://raw.githubusercontent.com/taichi-dev/taichi/master/misc/taichi_bibtex.txt) [[Code]](https://github.com/taichi-dev/taichi)
 - [**(ICLR 2020) DiffTaichi: Differentiable Programming for Physical Simulation**](https://arxiv.org/abs/1910.00935) [[Video]](https://www.youtube.com/watch?v=Z1xvAZve9aE) [[BibTex]](https://raw.githubusercontent.com/taichi-dev/taichi/master/misc/difftaichi_bibtex.txt) [[Code]](https://github.com/yuanming-hu/difftaichi)
+- [**(SIGGRAPH 2021) QuanTaichi: A Compiler for Quantized Simulations**](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf) [[Video]](https://www.youtube.com/watch?v=0jdrAQOxJlY) [[BibTex]](https://raw.githubusercontent.com/taichi-dev/taichi/master/misc/quantaichi_bibtex.txt) [[Code]](https://github.com/taichi-dev/quantaichi)
 
 ## Links
 - [TaichiCon](https://github.com/taichi-dev/taichicon): Taichi developer conferences.
 - [GAMES 201 Lectures](https://github.com/taichi-dev/games201): (Chinese) A hands-on course on building advanced physics engines, based on Taichi.
 - [TaichiZoo](https://zoo.taichi.graphics): Running Taichi code in your browser <sup>[1](#zoo-disclaimer)</sup>.
+- [加入太极图形](https://app.mokahr.com/apply/taichi/41024#/).
+- [太极图形课](https://github.com/taichiCourse01).
 - [More...](misc/links.md)
 
 ## Security

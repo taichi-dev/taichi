@@ -20,6 +20,7 @@ std::string get_opengl_error_string(GLenum err) {
     default:
       return fmt::format("GL_ERROR={}", err);
   }
+#undef PER_GL_ERR
 }
 
 void check_opengl_error(const std::string &msg) {

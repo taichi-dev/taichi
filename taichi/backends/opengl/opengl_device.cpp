@@ -22,7 +22,7 @@ std::string get_opengl_error_string(GLenum err) {
   }
 }
 
-void check_opengl_error(const std::string &msg = "OpenGL") {
+void check_opengl_error(const std::string &msg) {
   auto err = glGetError();
   if (err != GL_NO_ERROR) {
     auto estr = get_opengl_error_string(err);

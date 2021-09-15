@@ -9,6 +9,8 @@ namespace taichi {
 namespace lang {
 namespace opengl {
 
+void check_opengl_error(const std::string &msg = "OpenGL");
+
 class GLResourceBinder : public ResourceBinder {
  public:
   ~GLResourceBinder() override;

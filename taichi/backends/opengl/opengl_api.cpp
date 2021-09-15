@@ -13,6 +13,7 @@
 #ifdef TI_WITH_OPENGL
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
+#include "taichi/backends/opengl/opengl_device.h"
 #endif
 
 #include <list>
@@ -30,32 +31,6 @@ int opengl_max_block_dim = 1024;
 int opengl_max_grid_dim = 1024;
 
 #ifdef TI_WITH_OPENGL
-
-std::string get_opengl_error_string(GLenum err) {
-  switch (err) {
-#define PER_GL_ERR(x) \
-  case x:             \
-    return #x;
-    PER_GL_ERR(GL_NO_ERROR)
-    PER_GL_ERR(GL_INVALID_ENUM)
-    PER_GL_ERR(GL_INVALID_VALUE)
-    PER_GL_ERR(GL_INVALID_OPERATION)
-    PER_GL_ERR(GL_INVALID_FRAMEBUFFER_OPERATION)
-    PER_GL_ERR(GL_OUT_OF_MEMORY)
-    PER_GL_ERR(GL_STACK_UNDERFLOW)
-    PER_GL_ERR(GL_STACK_OVERFLOW)
-    default:
-      return fmt::format("GL_ERROR={}", err);
-  }
-}
-
-void check_opengl_error(const std::string &msg = "OpenGL") {
-  auto err = glGetError();
-  if (err != GL_NO_ERROR) {
-    auto estr = get_opengl_error_string(err);
-    TI_ERROR("{}: {}", msg, estr);
-  }
-}
 
 static std::string add_line_markers(std::string x) {
   std::string marker;

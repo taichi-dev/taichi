@@ -444,7 +444,8 @@ GLSLLauncher::GLSLLauncher(size_t root_size) {
   impl = std::make_unique<GLSLLauncherImpl>();
 
   impl->runtime = std::make_unique<GLSLRuntime>();
-  impl->core_bufs.runtime = device->allocate_memory({sizeof(GLSLRuntime)});
+  impl->core_bufs.runtime = device->allocate_memory(
+      {sizeof(GLSLRuntime), /*host_write=*/false, /*host_read=*/true});
 
   impl->listman = std::make_unique<GLSLListman>();
   impl->core_bufs.listman = device->allocate_memory({sizeof(GLSLListman)});

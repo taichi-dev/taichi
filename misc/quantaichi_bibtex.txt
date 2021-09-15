@@ -1,0 +1,9 @@
+@article{hu2021quantaichi,
+  title={QuanTaichi: A Compiler for Quantized Simulations},
+  author={Hu, Yuanming and Liu, Jiafeng and Yang, Xuanda and Xu, Mingkuan and Kuang, Ye and Xu, Weiwei and Dai, Qiang and Freeman, William T. and Durand, Frédo},
+  journal={ACM Transactions on Graphics (TOG)},
+  volume={40},
+  number={4},
+  year={2021},
+  publisher={ACM}
+}

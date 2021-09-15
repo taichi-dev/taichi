@@ -6,6 +6,7 @@ from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
 from taichi.lang.ops import atomic_add, get_addr
+from taichi.core.primitive_types import f32
 
 from .camera import Camera
 from .utils import get_field_info
@@ -16,8 +17,8 @@ normals_field_cache = {}
 def get_normals_field(vertices):
     if vertices not in normals_field_cache:
         N = vertices.shape[0]
-        normals = Vector.field(3, float, shape=(N, ))
-        normal_weights = field(float, shape=(N, ))
+        normals = Vector.field(3,f32 , shape=(N, ))
+        normal_weights = field(f32, shape=(N, ))
         normals_field_cache[vertices] = (normals, normal_weights)
         return (normals, normal_weights)
     else:

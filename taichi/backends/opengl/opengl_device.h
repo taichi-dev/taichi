@@ -9,6 +9,8 @@ namespace taichi {
 namespace lang {
 namespace opengl {
 
+void check_opengl_error(const std::string &msg = "OpenGL");
+
 class GLResourceBinder : public ResourceBinder {
  public:
   ~GLResourceBinder() override;
@@ -226,6 +228,7 @@ class GLDevice : public GraphicsDevice {
 
  private:
   GLStream stream_;
+  std::unordered_map<GLuint, GLbitfield> buffer_to_access_;
 };
 
 class GLSurface : public Surface {

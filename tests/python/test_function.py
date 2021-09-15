@@ -1,3 +1,5 @@
+import pytest
+
 import taichi as ti
 
 
@@ -192,3 +194,28 @@ def test_templates():
     run_kernel()
     run_func()
     verify()
+
+
+@ti.test(experimental_real_function=True)
+def test_missing_arg_annotation():
+    with pytest.raises(ti.KernelDefError, match='must be type annotated'):
+
+        @ti.func
+        def add(a, b: ti.i32) -> ti.i32:
+            return a + b
+
+
+@ti.test(experimental_real_function=True)
+def test_missing_return_annotation():
+    with pytest.raises(ti.TaichiSyntaxError,
+                       match='return value must be annotated'):
+
+        @ti.func
+        def add(a: ti.i32, b: ti.i32):
+            return a + b
+
+        @ti.kernel
+        def run():
+            add(30, 2)
+
+        run()

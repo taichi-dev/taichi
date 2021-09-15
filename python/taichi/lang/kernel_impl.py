@@ -226,6 +226,13 @@ class Func:
             if annotation is inspect.Parameter.empty:
                 if i == 0 and self.classfunc:
                     annotation = template()
+                # TODO: pyfunc also need type annotation check when real function is enabled,
+                #       but that has to happen at runtime when we know which scope it's called from.
+                elif not self.pyfunc and impl.get_runtime(
+                ).experimental_real_function:
+                    raise KernelDefError(
+                        f'Taichi function `{self.func.__name__}` parameter `{arg_name}` must be type annotated'
+                    )
             else:
                 if not id(annotation
                           ) in primitive_types.type_ids and not isinstance(

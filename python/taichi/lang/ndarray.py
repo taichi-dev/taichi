@@ -42,6 +42,15 @@ class Ndarray:
         """
         return to_taichi_type(self.arr.dtype)
 
+    @property
+    def data_ptr(self):
+        """Gets the pointer to underlying data.
+
+        Returns:
+            int: The pointer to underlying data.
+        """
+        return self.arr.data_ptr()
+
     @python_scope
     def __setitem__(self, key, value):
         """Sets ndarray element in Python scope.

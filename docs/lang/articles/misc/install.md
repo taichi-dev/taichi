@@ -158,7 +158,7 @@ sidebar_position: 0
     than OpenGL. This disables the OpenGL backend detection to avoid
     incompatibilities.
 
-### Installation interrupted 
+### Installation interrupted
 During the installation, the downloading process is interrupted because of `HTTPSConnection` error. You may install Taichi with a mirror source.
 
 ```

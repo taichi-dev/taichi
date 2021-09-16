@@ -29,25 +29,19 @@ class StatisticalResult:
 
 
 class Profiler:
-    '''_profiling_mode now is boolean value
-    `trace` and `count` are two modes for `print_info(mode)`
-    '''
-
-    trace = 'trace'
-    count = 'count'
 
     def __init__(self):
-        self._profiling_mode = False
+        self._profiling_mode = False # _profiling_mode is boolean value
         self._total_time_ms = 0.0
         self._traced_records = []
         self._statistical_results = {}
 
-    def set_kernel_profiler_mode(self, kernel_profiler=False):
-        if type(kernel_profiler) is bool:
-            self._profiling_mode = kernel_profiler
+    def set_kernel_profiler_mode(self, mode=False):
+        if type(mode) is bool:
+            self._profiling_mode = mode
         else:
-            raise TypeError(f'Arg kernel_profiler must be of type boolean. '
-                            f'Type {type(kernel_profiler)} '
+            raise TypeError(f'Arg `mode` must be of type boolean. '
+                            f'Type {type(mode)} '
                             f'is not supported')
 
     def get_kernel_profiler_mode(self):
@@ -61,7 +55,7 @@ class Profiler:
     def get_total_time(self):
         self.update_records()  # traced records
         self.count_results()  # _total_time_ms is counted here
-        return self._total_time_ms
+        return self._total_time_ms/1000  # ms to s
 
     def query_info(self, name):
         self.update_records()  # traced records
@@ -82,7 +76,7 @@ class Profiler:
         ).prog.get_kernel_profiler_records()
 
     def count_results(self):
-        """count statistical results
+        """Counts the statistical results.
         kernels with the same name will be counted in a StatisticalResult
         """
         for record in self._traced_records:
@@ -99,23 +93,33 @@ class Profiler:
                                reverse=True)
         }
 
-    def print_info(self, mode=count):
-        '''`count` mode : print the statistical results (min,max,avg time) of Taichi kernels on devices.
-        `trace` mode : print records of launched Taichi kernels
-        Default print mode is `count` mode
-        '''
+    def get_print_mode(self):
+        return ['count','trace']
+
+    def print_info(self, mode='count'):
+        """Print the profiler results of Taichi kernels on devices.
+        Default print mode is `count`.
+        To enable this profiler, set `kernel_profiler=True` in `ti.init`.
+
+        Args:
+            mode (str): print mode
+                'count' : print the statistical results (min,max,avg time) of Taichi kernels.
+                'trace' : print the records of launched Taichi kernels.
+        """
+
+        def patition_line(character,num):
+          return character*num + '\n'
+
         self.update_records()  # trace records
         self.count_results()  # statistical results
         #count mode (default) : print statistical results of all kernel
-        if mode == self.count:
-            print(f"====================================="
-                  f"====================================")
-            print(f"{_ti_core.arch_name(ti.cfg.arch).upper()} Profiler(count)")
-            print(f"====================================="
-                  f"====================================")
-            print(f"[      %     total   count |"
-                  f"      min       avg       max   ]"
-                  f" Kernel name")
+        if mode == 'count':
+            print(f"{patition_line('=',73)}"\
+                  f"{_ti_core.arch_name(ti.cfg.arch).upper()} Profiler(count)\n"\
+                  f"{patition_line('=',73)}")
+            print(f"[      %     total   count |"\
+                  f"      min       avg       max   ]"\
+                  f" Kernel name\n")
             for key in self._statistical_results:
                 result = self._statistical_results[key]
                 fraction = result.total_time / self._total_time_ms * 100.0
@@ -127,22 +131,18 @@ class Profiler:
                       f"{result.total_time / result.counter:9.3f} "
                       f"{result.max_time:9.3f} ms] "
                       f"{result.name}")
-            print(f"-------------------------------------"
-                  f"------------------------------------")
+            print(f"{patition_line('-',73)}")
             print(f"[100.00%] Total kernel execution time: "
-                  f"{self._total_time_ms:7.3f} s   "
+                  f"{self._total_time_ms/1000:7.3f} s   "
                   f"number of records:  "
                   f"{len(self._statistical_results)}")
-            print(f"====================================="
-                  f"====================================")
+            print(f"{patition_line('=',73)}")
 
         #trace mode : print records of launched kernel
-        if mode == self.trace:
-            print(f"====================================="
-                  f"====================================")
-            print(f"{_ti_core.arch_name(ti.cfg.arch).upper()} Profiler(trace)")
-            print(f"====================================="
-                  f"====================================")
+        if mode == 'trace':
+            print(f"{patition_line('=',73)}\n"\
+                  f"{_ti_core.arch_name(ti.cfg.arch).upper()} Profiler(trace)\n"\
+                  f"{patition_line('=',73)}\n")
             print(f"[      % |     time    ] Kernel name")
             for record in self._traced_records:
                 fraction = record.kernel_time / self._total_time_ms * 100.0
@@ -150,17 +150,15 @@ class Profiler:
                       f"{fraction:6.2f}% |"
                       f"{record.kernel_time:9.3f}  ms] "
                       f"{record.name}")
-            print(f"-------------------------------------"
-                  f"------------------------------------")
+            print(f"{patition_line('-',73)}")
             print(f"[100.00%] Total kernel execution time: "
-                  f"{self._total_time_ms:7.3f} s   "
+                  f"{self._total_time_ms/1000:7.3f} s   "
                   f"number of records:  {len(self._traced_records)}")
-            print(f"====================================="
-                  f"====================================")
+            print(f"{patition_line('=',73)}")
 
 
-_ti_profiler = Profiler()
+_ti_kernel_profiler = Profiler()
 
-
-def get_default_profiler():
-    return _ti_profiler
+# we have only on Profiler instance now
+def get_default_kernel_profiler():
+    return _ti_kernel_profiler

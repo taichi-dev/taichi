@@ -26,7 +26,7 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
 from taichi.misc.util import deprecated
-from taichi.profiler import get_default_profiler
+from taichi.profiler import get_default_kernel_profiler
 from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
@@ -35,7 +35,7 @@ import taichi as ti
 core = _ti_core
 
 runtime = impl.get_runtime()
-profiler = get_default_profiler()
+kernel_profiler = get_default_kernel_profiler()
 
 i = indices(0)
 j = indices(1)
@@ -81,11 +81,15 @@ def kernel_profiler_print():
     return print_kernel_profile_info()
 
 
-def print_kernel_profile_info(mode=profiler.count):
-    """ `count` mode : print the statistical results (min,max,avg time) of Taichi kernels on devices.
-    `trace` mode : print records of launched Taichi kernels
+def print_kernel_profile_info(mode='count'):
+    """ Print the profiling results of Taichi kernels.
     Default print mode is `count` mode
     To enable this profiler, set `kernel_profiler=True` in `ti.init`.
+
+    Args:
+        mode (str): print mode.
+            'count' : print the statistical results (min,max,avg time) of launched Taichi kernels
+            'trace' : print the records of launched Taichi kernels
 
     Example::
 
@@ -102,19 +106,17 @@ def print_kernel_profile_info(mode=profiler.count):
         >>> ti.print_kernel_profile_info() #[1]
         >>> # equivalent calls :
         >>> # ti.print_kernel_profile_info('count')
-        >>> # ti.print_kernel_profile_info(ti.profiler.count)
-        >>> # ti.profiler.print_info('count')
+        >>> # ti.kernel_profiler.print_info('count')
 
         >>> ti.print_kernel_profile_info('trace')
         >>> # equivalent calls :
-        >>> # ti.print_kernel_profile_info(ti.profiler.trace)
-        >>> # ti.profiler.print_info('trace')
+        >>> # ti.kernel_profiler.print_info('trace')
 
     Note:
         [1] Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
     """
-    profiler.print_info(mode)
+    kernel_profiler.print_info(mode)
 
 
 def query_kernel_profile_info(name):
@@ -157,7 +159,7 @@ def query_kernel_profile_info(name):
         [2] Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
     """
-    return profiler.query_info(name)
+    return kernel_profiler.query_info(name)
 
 
 @deprecated('kernel_profiler_clear()', 'clear_kernel_profile_info()')
@@ -169,17 +171,17 @@ def clear_kernel_profile_info():
     """
     Clear all KernelProfiler records.
     """
-    profiler.clear_info()
+    kernel_profiler.clear_info()
 
 
 def kernel_profiler_total_time():
     """
-    Get elapsed time of all kernels recorded in KernelProfiler.
+    Get elapsed time of all kernels recorded in Kernelkernel_profiler.
 
     Returns:
         time (double): total time in second
     """
-    return profiler.get_total_time()
+    return kernel_profiler.get_total_time()
 
 
 @deprecated('memory_profiler_print()', 'print_memory_profile_info()')
@@ -380,7 +382,7 @@ def init(arch=None,
     if _test_mode:
         return spec_cfg
 
-    profiler.set_kernel_profiler_mode(ti.cfg.kernel_profiler)
+    kernel_profiler.set_kernel_profiler_mode(ti.cfg.kernel_profiler)
 
     # create a new program:
     impl.get_runtime().create_program()

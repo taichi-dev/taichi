@@ -1,1 +1,1 @@
-from .profiler_impl import get_default_profiler
+from .profiler_impl import get_default_kernel_profiler

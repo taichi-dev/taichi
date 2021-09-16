@@ -30,8 +30,9 @@ def has_pytorch():
 
 from distutils.spawn import find_executable
 
+# Taichi itself uses llvm-10.0.0 to compile.
 _clangpp_candidates = [
-    'clang++-8', 'clang++-10', 'clang++-11', 'clang++-12', 'clang++'
+    'clang++-10'
 ]
 _clangpp_presence = None
 for c in _clangpp_candidates:

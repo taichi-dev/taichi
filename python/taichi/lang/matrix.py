@@ -140,23 +140,7 @@ class Matrix(TaichiOperations):
                 self.n = n
                 self.m = m
             else:
-                # construct global matrix (deprecated)
-                warning(
-                    "Declaring global matrices using `ti.Matrix(n, m, dt, shape)` is deprecated, "
-                    "use `ti.Matrix.field(n, m, dtype, shape)` instead",
-                    DeprecationWarning,
-                    stacklevel=2)
-                mat = Matrix.field(n=n,
-                                   m=m,
-                                   dtype=dt,
-                                   shape=shape,
-                                   offset=offset,
-                                   needs_grad=needs_grad,
-                                   layout=layout)
-                self.n = mat.n
-                self.m = mat.m
-                self.entries = mat.entries
-                self.grad = mat.grad
+                raise ValueError("Declaring matrix fields using `ti.Matrix(n, m, dt, shape)` is no longer supported. Use `ti.Matrix.field(n, m, dtype, shape)` instead.")
 
         if self.n * self.m > 32:
             warning(

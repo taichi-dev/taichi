@@ -30,17 +30,12 @@ class Matrix(TaichiOperations):
         dt (DataType): the elmement data type.
         shape ( Union[int, tuple of int], optional): the shape of a matrix field.
         offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
-        empty (Bool, deprecated): True if the matrix is empty, False otherwise.
         layout (Layout, optional): The filed layout (Layout.AOS or Layout.SOA).
         needs_grad (Bool, optional): True if used in auto diff, False otherwise.
         keep_raw (Bool, optional): Keep the contents in `n` as is.
-        rows (List, deprecated): construct matrix rows.
-        cols (List, deprecated): construct matrix columns.
     """
     is_taichi_class = True
 
-    # TODO(archibate): move the last two line to **kwargs,
-    # since they're not commonly used as positional args.
     def __init__(self,
                  n=1,
                  m=1,
@@ -50,30 +45,12 @@ class Matrix(TaichiOperations):
                  layout=Layout.AOS,
                  needs_grad=False,
                  keep_raw=False,
-                 disable_local_tensor=False,
-                 rows=None,
-                 cols=None):
+                 disable_local_tensor=False):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
 
-        # construct from rows or cols (deprecated)
-        if rows is not None or cols is not None:
-            warning(
-                f"ti.Matrix(rows=[...]) or ti.Matrix(cols=[...]) is deprecated, use ti.Matrix.rows([...]) or ti.Matrix.cols([...]) instead.",
-                DeprecationWarning,
-                stacklevel=2)
-            if rows is not None and cols is not None:
-                raise Exception("cannot specify both rows and columns")
-            self.dt = dt
-            mat = Matrix.cols(cols) if cols is not None else Matrix.rows(rows)
-            self.n = mat.n
-            self.m = mat.m
-            self.entries = mat.entries
-            return
-
-
-        elif isinstance(n, (list, tuple, np.ndarray)):
+        if isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
                 mat = []
             elif isinstance(n[0], Matrix):

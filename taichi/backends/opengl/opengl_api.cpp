@@ -164,14 +164,6 @@ struct CompiledKernel {
             workgroup_size) +
         kernel_source_code.substr(layout_pos);
 
-    bool is_accessor =
-        taichi::starts_with(kernel_name, "snode_") ||
-        taichi::starts_with(kernel_name, "tensor_to_") ||
-        taichi::starts_with(kernel_name, "matrix_to_") ||
-        taichi::starts_with(kernel_name, "ext_arr_to_") ||
-        taichi::starts_with(kernel_name, "indirect_evaluator_") ||
-        taichi::starts_with(kernel_name, "jit_evaluator_");
-
     TI_TRACE("[glsl]\ncompiling kernel {}<<<{}, {}>>>:\n{}", kernel_name,
              num_groups, workgroup_size, kernel_source_code);
 

@@ -94,8 +94,8 @@ class KernelGen : public IRVisitor {
   LineAppender line_appender_;
   LineAppender line_appender_header_;
   std::string glsl_kernel_name_;
-  int num_workgroups{1};
-  int workgroup_size{1};
+  int num_workgroups_{1};
+  int workgroup_size_{1};
   bool used_tls;  // TODO: move into UsedFeature?
   std::unordered_map<int, irpass::ExternalPtrAccess> extptr_access;
 
@@ -245,7 +245,7 @@ class KernelGen : public IRVisitor {
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
     compiled_program_->add(std::move(glsl_kernel_name_), kernel_src_code,
-                           num_workgroups, workgroup_size,
+                           num_workgroups_, workgroup_size_,
                            &this->extptr_access);
     auto &config = kernel->program->config;
     if (config.print_kernel_llvm_ir) {
@@ -255,8 +255,8 @@ class KernelGen : public IRVisitor {
     }
     line_appender_header_.clear_all();
     line_appender_.clear_all();
-    num_workgroups = 1;
-    num_workgroups = 1;
+    num_workgroups_ = 1;
+    num_workgroups_ = 1;
   }
 
   void visit(Block *stmt) override {
@@ -855,27 +855,27 @@ class KernelGen : public IRVisitor {
                 iterations, "int(gl_WorkGroupSize.x * gl_NumWorkGroups.x)");
       s = std::make_unique<ScopedIndent>(gen->line_appender_);
 
-      if (gen->num_workgroups == 0) {
+      if (gen->num_workgroups_ == 0) {
         // if not specified, guess an optimal grid_dim for different situations
         // Refs:
         // https://stackoverflow.com/questions/36374652/compute-shaders-optimal-data-division-on-invocations-threads-and-workgroups
         if (const_iterations > 0) {
           if (gen->used_tls) {
             // const range with TLS reduction
-            gen->num_workgroups = std::max(
-                const_iterations / std::max(gen->workgroup_size, 1) / 32, 1);
-            gen->workgroup_size = std::max(gen->workgroup_size / 4, 1);
+            gen->num_workgroups_ = std::max(
+                const_iterations / std::max(gen->workgroup_size_, 1) / 32, 1);
+            gen->workgroup_size_ = std::max(gen->workgroup_size_ / 4, 1);
           } else {
             // const range
-            gen->num_workgroups =
-                std::max((const_iterations + gen->workgroup_size - 1) /
-                             gen->workgroup_size,
+            gen->num_workgroups_ =
+                std::max((const_iterations + gen->workgroup_size_ - 1) /
+                             gen->workgroup_size_,
                          1);
           }
         } else {
           // dynamic range
           // TODO(archibate): think for a better value for SM utilization:
-          gen->num_workgroups = 256;
+          gen->num_workgroups_ = 256;
         }
       }
     }
@@ -919,8 +919,8 @@ class KernelGen : public IRVisitor {
       auto end_value = stmt->end_value;
       if (end_value < begin_value)
         end_value = begin_value;
-      workgroup_size = stmt->block_dim;
-      num_workgroups = stmt->grid_dim;
+      workgroup_size_ = stmt->block_dim;
+      num_workgroups_ = stmt->grid_dim;
       ScopedGridStrideLoop _gsl(this, end_value - begin_value);
       emit("int _itv = {} + _sid;", begin_value);
       stmt->body->accept(this);
@@ -933,8 +933,8 @@ class KernelGen : public IRVisitor {
       auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
                                       : fmt::format("_gtmp_i32_[{} >> 2]",
                                                     stmt->end_offset);
-      workgroup_size = stmt->block_dim;
-      num_workgroups = stmt->grid_dim;
+      workgroup_size_ = stmt->block_dim;
+      num_workgroups_ = stmt->grid_dim;
       emit("int _beg = {}, _end = {};", begin_expr, end_expr);
       ScopedGridStrideLoop _gsl(this, "_end - _beg");
       emit("int _itv = _beg + _sid;");
@@ -961,8 +961,8 @@ class KernelGen : public IRVisitor {
     emit("{{ // struct for {}", stmt->snode->node_type_name);
     {
       ScopedIndent _s(line_appender_);
-      workgroup_size = stmt->block_dim;
-      num_workgroups = stmt->grid_dim;
+      workgroup_size_ = stmt->block_dim;
+      num_workgroups_ = stmt->grid_dim;
       ScopedGridStrideLoop _gsl(this, "_list_len_");
       emit("int _itv = _list_[_sid];");
       stmt->body->accept(this);

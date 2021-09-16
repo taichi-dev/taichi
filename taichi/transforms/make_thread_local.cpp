@@ -15,7 +15,8 @@ TLANG_NAMESPACE_BEGIN
 namespace {
 
 bool is_atomic_op_linear(AtomicOpType op_type) {
-  return op_type == AtomicOpType::add || op_type == AtomicOpType::sub;
+  return op_type == AtomicOpType::add || op_type == AtomicOpType::sub ||
+         op_type == AtomicOpType::min || op_type == AtomicOpType::max;
 }
 
 // Find the destinations of global atomic reductions that can be demoted into

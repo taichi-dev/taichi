@@ -28,10 +28,6 @@ class Matrix(TaichiOperations):
         n (int): the first dimension of a matrix.
         m (int): the second dimension of a matrix.
         dt (DataType): the elmement data type.
-        shape ( Union[int, tuple of int], optional): the shape of a matrix field.
-        offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
-        layout (Layout, optional): The filed layout (Layout.AOS or Layout.SOA).
-        needs_grad (Bool, optional): True if used in auto diff, False otherwise.
         keep_raw (Bool, optional): Keep the contents in `n` as is.
     """
     is_taichi_class = True
@@ -1197,21 +1193,18 @@ class Matrix(TaichiOperations):
         return ret
 
 
-# TODO: deprecate ad-hoc use ti.Matrix() as global (#1500:2.2/2)
-def Vector(n, dt=None, shape=None, offset=None, **kwargs):
+def Vector(n, dt=None, **kwargs):
     """Construct a `Vector` instance i.e. 1-D Matrix.
 
     Args:
         n (int): The desired number of entries of the Vector.
         dt (DataType, optional): The desired data type of the Vector.
-        shape ( Union[int, tuple of int], optional): The shape of the Vector.
-        offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
 
     Returns:
         :class:`~taichi.lang.matrix.Matrix`: A Vector instance (1-D :class:`~taichi.lang.matrix.Matrix`).
 
     """
-    return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
+    return Matrix(n, 1, dt=dt, **kwargs)
 
 
 Vector.var = Matrix._Vector_var

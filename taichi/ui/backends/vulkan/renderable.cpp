@@ -57,6 +57,45 @@ void Renderable::init_buffers() {
   }
 }
 
+void Renderable::update_data_2(const RenderableInfo &info) {
+  int num_vertices = info.vbo.shape[0];
+  int num_indices;
+  if (info.indices.valid) {
+    num_indices = info.indices.shape[0];
+    if (info.indices.dtype != PrimitiveType::i32 &&
+        info.indices.dtype != PrimitiveType::u32) {
+      throw std::runtime_error("dtype needs to be 32-bit ints for indices");
+    }
+  } else {
+    num_indices = 1;
+  }
+  if (num_vertices > config_.vertices_count ||
+      num_indices > config_.indices_count) {
+    free_buffers();
+    config_.vertices_count = num_vertices;
+    config_.indices_count = num_indices;
+    init_buffers();
+  }
+
+  if (info.vbo.field_source == FieldSource::TaichiCuda) {
+    cuda_launcher_->memcpy(vertex_buffer_device_ptr_, (void*)info.vbo.data, sizeof(Vertex)*num_vertices);
+  }
+  else if (info.vbo.field_source == FieldSource::TaichiX64) {
+    float *mapped_vbo =
+          (float *)app_context_->device().map(staging_vertex_buffer_);
+    memcpy(mapped_vbo, (void*)info.vbo.data, sizeof(Vertex)*num_vertices);
+    app_context_->device().unmap(staging_vertex_buffer_);
+
+    auto stream = app_context_->device().get_graphics_stream();
+    auto cmd_list = stream->new_command_list();
+    cmd_list->buffer_copy(vertex_buffer_.get_ptr(0),
+                          staging_vertex_buffer_.get_ptr(0),
+                          config_.vertices_count * sizeof(Vertex));
+    stream->submit_synced(cmd_list.get());
+  }
+  
+}
+
 void Renderable::update_data(const RenderableInfo &info) {
   int num_vertices = info.vertices.shape[0];
   int num_indices;

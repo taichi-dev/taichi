@@ -213,13 +213,13 @@ struct PyCanvas {
     return canvas->lines(info);
   }
 
-  void circles(FieldInfo vertices,
-               FieldInfo per_vertex_color,
+  void circles(FieldInfo vbo,
+               bool has_per_vertex_color,
                py::tuple color_,
                float radius) {
     RenderableInfo renderable_info;
-    renderable_info.vertices = vertices;
-    renderable_info.per_vertex_color = per_vertex_color;
+    renderable_info.vbo = vbo;
+    renderable_info.has_per_vertex_color = has_per_vertex_color;
 
     CirclesInfo info;
     info.renderable_info = renderable_info;

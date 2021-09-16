@@ -5,6 +5,8 @@ from taichi.lang.kernel_impl import kernel
 from taichi.lang.ops import get_addr
 
 from .utils import *
+from .staging_buffer import get_vbo_field,copy_vertices_to_vbo,copy_colors_to_vbo
+
 
 
 class Canvas:
@@ -45,9 +47,13 @@ class Canvas:
                 radius,
                 color=(0.5, 0.5, 0.5),
                 per_vertex_color=None):
-        vertices_info = get_field_info(vertices)
-        colors_info = get_field_info(per_vertex_color)
-        self.canvas.circles(vertices_info, colors_info, color, radius)
+        vbo = get_vbo_field(vertices)
+        copy_vertices_to_vbo(vbo,vertices)
+        has_per_vertex_color = per_vertex_color is not None
+        if has_per_vertex_color:
+            copy_colors_to_vbo(vbo,per_vertex_color)
+        vbo_info = get_field_info(vbo)
+        self.canvas.circles(vbo_info, has_per_vertex_color, color, radius)
 
     def scene(self, scene):
         self.canvas.scene(scene)

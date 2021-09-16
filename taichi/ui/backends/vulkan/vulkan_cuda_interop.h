@@ -82,6 +82,8 @@ class InteropCUDALauncher {
 
   void update_renderables_indices(int *ibo, int *indices, int num_indices);
 
+  void memcpy(void* dst, void* src, size_t size);
+
   template <typename T>
   void copy_to_texture_buffer(T *src,
                               unsigned char *dest,
@@ -115,6 +117,7 @@ void copy_to_texture_buffer_x64(T *src,
                                 int actual_width,
                                 int actual_height,
                                 int channels);
+
 
 }  // namespace vulkan
 

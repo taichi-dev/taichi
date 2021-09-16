@@ -38,6 +38,8 @@ class Renderable {
  public:
   void update_data(const RenderableInfo &info);
 
+  void update_data_2(const RenderableInfo &info);
+
   virtual void record_this_frame_commands(
       taichi::lang::CommandList *command_list);
 

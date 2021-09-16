@@ -420,6 +420,12 @@ void InteropCUDALauncher::update_renderables_indices(int *ibo,
                                                      num_indices * sizeof(int));
 }
 
+void InteropCUDALauncher::memcpy(void* dst, void* src, size_t size){
+  CUDADriver::get_instance().memcpy_device_to_device(dst,src,
+                                                     size);
+}
+
+
 template <>
 void InteropCUDALauncher::copy_to_texture_buffer<unsigned char>(
     unsigned char *src,

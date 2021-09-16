@@ -11,12 +11,8 @@ using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
 void Circles::update_data(const CirclesInfo &info) {
-  if (info.renderable_info.vertices.matrix_rows != 2 ||
-      info.renderable_info.vertices.matrix_cols != 1) {
-    throw std::runtime_error("Circles vertices requres 2-d vector fields");
-  }
 
-  Renderable::update_data(info.renderable_info);
+  Renderable::update_data_2(info.renderable_info);
 
   update_ubo(info.color, info.renderable_info.per_vertex_color.valid,
              info.radius);

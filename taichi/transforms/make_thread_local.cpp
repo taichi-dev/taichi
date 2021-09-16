@@ -14,6 +14,7 @@ TLANG_NAMESPACE_BEGIN
 
 namespace {
 
+// TODO : bit_and, bit_or, bit_xor
 bool is_atomic_op_linear(AtomicOpType op_type) {
   return op_type == AtomicOpType::add || op_type == AtomicOpType::sub ||
          op_type == AtomicOpType::min || op_type == AtomicOpType::max;

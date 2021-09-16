@@ -47,7 +47,6 @@ class Matrix(TaichiOperations):
                  dt=None,
                  shape=None,
                  offset=None,
-                 empty=False,
                  layout=Layout.AOS,
                  needs_grad=False,
                  keep_raw=False,
@@ -73,14 +72,6 @@ class Matrix(TaichiOperations):
             self.entries = mat.entries
             return
 
-        elif empty == True:
-            warning(
-                f"ti.Matrix(n, m, empty=True) is deprecated, use ti.Matrix.empty(n, m) instead",
-                DeprecationWarning,
-                stacklevel=2)
-            self.dt = dt
-            self.entries = [[None] * m for _ in range(n)]
-            return
 
         elif isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:

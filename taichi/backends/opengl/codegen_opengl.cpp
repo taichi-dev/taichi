@@ -255,8 +255,8 @@ class KernelGen : public IRVisitor {
     }
     line_appender_header_.clear_all();
     line_appender_.clear_all();
-    num_workgroups = 0;
-    num_workgroups = 0;
+    num_workgroups = 1;
+    num_workgroups = 1;
   }
 
   void visit(Block *stmt) override {

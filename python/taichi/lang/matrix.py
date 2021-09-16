@@ -40,10 +40,6 @@ class Matrix(TaichiOperations):
                  n=1,
                  m=1,
                  dt=None,
-                 shape=None,
-                 offset=None,
-                 layout=Layout.AOS,
-                 needs_grad=False,
                  keep_raw=False,
                  disable_local_tensor=False):
         self.local_tensor_proxy = None

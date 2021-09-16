@@ -128,11 +128,11 @@ bool initialize_opengl(bool error_tolerance) {
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
   }
 
-  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &opengl_max_block_dim);
-  check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
-  TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS: {}", opengl_max_block_dim);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &opengl_max_block_dim);
+  check_opengl_error("glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT)");
+  TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_COUNT: {}", opengl_max_block_dim);
   glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &opengl_max_grid_dim);
-  check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_SIZE)");
+  check_opengl_error("glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE)");
   TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_SIZE: {}", opengl_max_grid_dim);
 
   supported = std::make_optional<bool>(true);
@@ -382,9 +382,9 @@ struct CompiledProgram::Impl {
     if (used.print) {
       // TODO(archibate): use result_buffer for print results
       auto runtime_buf = launcher->impl->core_bufs.runtime;
-      auto mapped = (GLSLRuntime *)device->map(args_buf);
+      auto mapped = (GLSLRuntime *)device->map(runtime_buf);
       mapped->msg_count = 0;
-      device->unmap(args_buf);
+      device->unmap(runtime_buf);
     }
 
     auto cmdlist = device->get_compute_stream()->new_command_list();

@@ -1,6 +1,7 @@
 import pathlib
 
 from taichi.core import ti_core as _ti_core
+from taichi.core.primitive_types import f32
 from taichi.lang.impl import default_cfg, field
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import kernel
@@ -16,8 +17,8 @@ normals_field_cache = {}
 def get_normals_field(vertices):
     if vertices not in normals_field_cache:
         N = vertices.shape[0]
-        normals = Vector.field(3, float, shape=(N, ))
-        normal_weights = field(float, shape=(N, ))
+        normals = Vector.field(3, f32, shape=(N, ))
+        normal_weights = field(f32, shape=(N, ))
         normals_field_cache[vertices] = (normals, normal_weights)
         return (normals, normal_weights)
     else:

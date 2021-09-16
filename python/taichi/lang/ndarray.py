@@ -43,7 +43,7 @@ class Ndarray:
         return to_taichi_type(self.arr.dtype)
 
     @property
-    def data_ptr(self):
+    def data_handle(self):
         """Gets the pointer to underlying data.
 
         Returns:

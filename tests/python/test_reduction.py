@@ -127,3 +127,17 @@ def test_reduction_different_scale():
     # 1024 and 100000 since OpenGL max threads per group ~= 1792
     for n in [1, 10, 60, 1024, 100000]:
         assert n == func(n)
+
+
+@ti.test()
+def test_reduction_any_arr():
+    @ti.kernel
+    def reduce(a: ti.any_arr()) -> ti.i32:
+        s = 0
+        for i in a:
+            ti.atomic_add(s, a[i])
+        return s
+
+    n = 1024
+    x = np.ones(n, dtype=np.int32)
+    assert reduce(x) == n

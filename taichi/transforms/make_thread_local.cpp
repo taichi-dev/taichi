@@ -14,33 +14,39 @@ TLANG_NAMESPACE_BEGIN
 
 namespace {
 
-bool is_atomic_op_linear(AtomicOpType op_type) {
-  return op_type == AtomicOpType::add || op_type == AtomicOpType::sub;
+bool is_atomic_op_supported(AtomicOpType op_type) {
+  return op_type == AtomicOpType::add || op_type == AtomicOpType::sub || op_type == AtomicOpType::max || op_type == AtomicOpType::min;
+}
+
+AtomicOpType atomic_op_genre(AtomicOpType op_type) {
+  return op_type == AtomicOpType::sub ? AtomicOpType::add : op_type;
+}
+
+bool does_atomic_op_belong_to_genre(AtomicOpType op_type, AtomicOpType genre) {
+  return op_type == AtomicOpType::sub && genre == AtomicOpType::add || op_type == genre;
 }
 
 // Find the destinations of global atomic reductions that can be demoted into
 // TLS buffer.
 template <typename T>
-std::vector<T *> find_global_reduction_destinations(
+std::vector<std::pair<T *, AtomicOpType>> find_global_reduction_destinations(
     OffloadedStmt *offload,
     const std::function<bool(T *)> &dest_checker) {
   static_assert(std::is_same_v<T, GlobalPtrStmt> ||
                 std::is_same_v<T, GlobalTemporaryStmt>);
   // Gather all atomic adds/subs destinations
   // We use std::vector instead of std::set to keep an deterministic order here.
-  std::vector<T *> atomic_destinations;
+  std::map<T *, AtomicOpType> atomic_destinations;
   // TODO: this is again an abuse since it gathers nothing. Need to design a IR
   // map/reduce system
   auto linear_atomics =
       irpass::analysis::gather_statements(offload, [&](Stmt *stmt) {
         if (auto atomic_op = stmt->cast<AtomicOpStmt>()) {
-          if (is_atomic_op_linear(atomic_op->op_type)) {
+          if (is_atomic_op_supported(atomic_op->op_type)) {
             // Local or global tmp atomics does not count
             if (auto dest = atomic_op->dest->cast<T>()) {
-              if (std::find(atomic_destinations.begin(),
-                            atomic_destinations.end(),
-                            dest) == atomic_destinations.end()) {
-                atomic_destinations.push_back(dest);
+              if (atomic_destinations.find(dest) == atomic_destinations.end()) {
+                atomic_destinations[dest] = atomic_op_genre(atomic_op->op_type);
               }
             }
           }
@@ -48,29 +54,29 @@ std::vector<T *> find_global_reduction_destinations(
         return false;
       });
 
-  std::vector<T *> valid_reduction_values;
+  std::vector<std::pair<T *, AtomicOpType>> valid_reduction_values;
   for (auto dest : atomic_destinations) {
     // check if there is any other global load/store/atomic operations
     auto related_global_mem_ops =
         irpass::analysis::gather_statements(offload, [&](Stmt *stmt) {
           if (auto load = stmt->cast<GlobalLoadStmt>()) {
-            if (irpass::analysis::maybe_same_address(load->src, dest)) {
+            if (irpass::analysis::maybe_same_address(load->src, dest.first)) {
               return true;
             }
           } else if (auto store = stmt->cast<GlobalStoreStmt>()) {
-            if (irpass::analysis::maybe_same_address(store->dest, dest)) {
+            if (irpass::analysis::maybe_same_address(store->dest, dest.first)) {
               return true;
             }
           } else if (auto atomic = stmt->cast<AtomicOpStmt>()) {
-            if (irpass::analysis::maybe_same_address(atomic->dest, dest)) {
-              return !is_atomic_op_linear(atomic->op_type);
+            if (irpass::analysis::maybe_same_address(atomic->dest, dest.first)) {
+              return !does_atomic_op_belong_to_genre(atomic->op_type, dest.second);
             }
           }
           for (auto &op : stmt->get_operands()) {
             // Make sure the values of related atomic add operation are not
             // used.
             if (auto atomic = op->cast<AtomicOpStmt>()) {
-              if (irpass::analysis::maybe_same_address(atomic->dest, dest)) {
+              if (irpass::analysis::maybe_same_address(atomic->dest, dest.first)) {
                 return true;
               }
             }
@@ -78,8 +84,8 @@ std::vector<T *> find_global_reduction_destinations(
           return false;  // Now we are sure the statement is not related to the
                          // destination
         });
-    TI_ASSERT(dest->width() == 1);
-    if (related_global_mem_ops.empty() && dest_checker(dest)) {
+    TI_ASSERT(dest.first->width() == 1);
+    if (related_global_mem_ops.empty() && dest_checker(dest.first)) {
       valid_reduction_values.push_back(dest);
     }
   }
@@ -91,7 +97,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       offload->task_type != OffloadedTaskType::struct_for)
     return;
 
-  std::vector<Stmt *> valid_reduction_values;
+  std::vector<std::pair<Stmt *, AtomicOpType>> valid_reduction_values;
   {
     auto valid_global_ptrs = find_global_reduction_destinations<GlobalPtrStmt>(
         offload, [](GlobalPtrStmt *dest) {
@@ -116,7 +122,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
   // TODO: sort thread local storage variables according to dtype_size to
   // reduce buffer fragmentation.
   for (auto dest : valid_reduction_values) {
-    auto data_type = dest->ret_type.ptr_removed();
+    auto data_type = dest.first->ret_type.ptr_removed();
     auto dtype_size = data_type_size(data_type);
     // Step 1:
     // Create thread local storage
@@ -148,7 +154,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
               tls_offset,
               TypeFactory::create_vector_or_scalar_type(1, data_type, true)),
           0);
-      dest->replace_with(tls_ptr);
+      dest.first->replace_with(tls_ptr);
     }
 
     // Step 3:
@@ -165,10 +171,10 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       auto tls_load = offload->tls_epilogue->push_back<GlobalLoadStmt>(tls_ptr);
       auto global_ptr = offload->tls_epilogue->insert(
           std::unique_ptr<Stmt>(
-              (Stmt *)irpass::analysis::clone(dest).release()),
+              (Stmt *)irpass::analysis::clone(dest.first).release()),
           -1);
       offload->tls_epilogue->insert(
-          AtomicOpStmt::make_for_reduction(AtomicOpType::add, global_ptr,
+          AtomicOpStmt::make_for_reduction(dest.second, global_ptr,
                                            tls_load),
           -1);
     }

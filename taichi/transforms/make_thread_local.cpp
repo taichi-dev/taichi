@@ -15,7 +15,8 @@ TLANG_NAMESPACE_BEGIN
 namespace {
 
 bool is_atomic_op_supported(AtomicOpType op_type) {
-  return op_type == AtomicOpType::add || op_type == AtomicOpType::sub || op_type == AtomicOpType::max || op_type == AtomicOpType::min;
+  return op_type == AtomicOpType::add || op_type == AtomicOpType::sub ||
+         op_type == AtomicOpType::max || op_type == AtomicOpType::min;
 }
 
 AtomicOpType atomic_op_genre(AtomicOpType op_type) {
@@ -23,7 +24,8 @@ AtomicOpType atomic_op_genre(AtomicOpType op_type) {
 }
 
 bool does_atomic_op_belong_to_genre(AtomicOpType op_type, AtomicOpType genre) {
-  return op_type == AtomicOpType::sub && genre == AtomicOpType::add || op_type == genre;
+  return op_type == AtomicOpType::sub && genre == AtomicOpType::add ||
+         op_type == genre;
 }
 
 // Find the destinations of global atomic reductions that can be demoted into
@@ -68,15 +70,18 @@ std::vector<std::pair<T *, AtomicOpType>> find_global_reduction_destinations(
               return true;
             }
           } else if (auto atomic = stmt->cast<AtomicOpStmt>()) {
-            if (irpass::analysis::maybe_same_address(atomic->dest, dest.first)) {
-              return !does_atomic_op_belong_to_genre(atomic->op_type, dest.second);
+            if (irpass::analysis::maybe_same_address(atomic->dest,
+                                                     dest.first)) {
+              return !does_atomic_op_belong_to_genre(atomic->op_type,
+                                                     dest.second);
             }
           }
           for (auto &op : stmt->get_operands()) {
             // Make sure the values of related atomic add operation are not
             // used.
             if (auto atomic = op->cast<AtomicOpStmt>()) {
-              if (irpass::analysis::maybe_same_address(atomic->dest, dest.first)) {
+              if (irpass::analysis::maybe_same_address(atomic->dest,
+                                                       dest.first)) {
                 return true;
               }
             }
@@ -174,8 +179,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
               (Stmt *)irpass::analysis::clone(dest.first).release()),
           -1);
       offload->tls_epilogue->insert(
-          AtomicOpStmt::make_for_reduction(dest.second, global_ptr,
-                                           tls_load),
+          AtomicOpStmt::make_for_reduction(dest.second, global_ptr, tls_load),
           -1);
     }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/lang_util.h"
+#include "taichi/backends/device.h"
 
 #include <vector>
 
@@ -15,6 +16,7 @@ class GLBuffer;
 
 struct GLSLLauncher {
   std::unique_ptr<GLSLLauncherImpl> impl;
+  std::unique_ptr<Device> device{nullptr};
   GLSLLauncher(size_t size);
   ~GLSLLauncher();
   void keep(std::unique_ptr<CompiledProgram> program);

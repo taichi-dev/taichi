@@ -880,10 +880,13 @@ void export_lang(py::module &m) {
               mesh_ptr.ptr.get(), idx_type, idx, conv_type);
         });
 
-  m.def("create_kernel",
-        [&](std::string name, bool grad) -> Program::KernelProxy {
-          return get_current_program().kernel(name, grad);
-        });
+  m.def(
+      "create_kernel",
+      [&](const std::function<void()> &body, const std::string &name,
+          bool grad) -> Kernel * {
+        return &get_current_program().kernel(body, name, grad);
+      },
+      py::return_value_policy::reference);
 
   m.def(
       "create_function",
@@ -1129,7 +1132,6 @@ void export_lang(py::module &m) {
       .def("info", &SparseSolver::info);
 
   m.def("make_sparse_solver", &make_sparse_solver);
-  m.def("get_sparse_solver", &get_sparse_solver);
 
   // Mesh Class
   // Mesh related.

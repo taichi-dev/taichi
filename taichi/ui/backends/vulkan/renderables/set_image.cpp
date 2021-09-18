@@ -10,22 +10,20 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-int SetImage::get_correct_dimension(int dimension){
-  if(app_context_->config.is_packed_mode){
+int SetImage::get_correct_dimension(int dimension) {
+  if (app_context_->config.is_packed_mode) {
     return dimension;
-  }
-  else{
+  } else {
     return next_power_of_2(dimension);
   }
 }
 
-void SetImage::update_ubo(float x_factor, float y_factor){
-  UniformBufferObject ubo = {x_factor,y_factor};
+void SetImage::update_ubo(float x_factor, float y_factor) {
+  UniformBufferObject ubo = {x_factor, y_factor};
   void *mapped = app_context_->device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
 }
-
 
 void SetImage::update_data(const SetImageInfo &info) {
   const FieldInfo &img = info.img;
@@ -39,7 +37,7 @@ void SetImage::update_data(const SetImageInfo &info) {
     init_set_image(app_context_, new_width, new_height);
   }
 
-  update_ubo(img.shape[0]/(float)new_width, img.shape[1]/(float)new_height);
+  update_ubo(img.shape[0] / (float)new_width, img.shape[1] / (float)new_height);
 
   int pixels = width * height;
 
@@ -54,7 +52,7 @@ void SetImage::update_data(const SetImageInfo &info) {
   if (img.field_source == FieldSource::TaichiCuda) {
     unsigned char *mapped = device_ptr_;
 
-    cuda_memcpy(mapped,(unsigned char *)img.data,pixels * 4);
+    cuda_memcpy(mapped, (unsigned char *)img.data, pixels * 4);
 
     auto stream = app_context_->device().get_graphics_stream();
     auto cmd_list = stream->new_command_list();
@@ -69,7 +67,7 @@ void SetImage::update_data(const SetImageInfo &info) {
     unsigned char *mapped =
         (unsigned char *)app_context_->device().map(cpu_staging_buffer_);
 
-    memcpy(mapped,(unsigned char *)img.data,pixels * 4);
+    memcpy(mapped, (unsigned char *)img.data, pixels * 4);
 
     app_context_->device().unmap(cpu_staging_buffer_);
 

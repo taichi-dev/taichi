@@ -280,8 +280,8 @@ CUexternalSemaphore cuda_vk_import_semaphore(VkSemaphore semaphore,
   return result;
 }
 
-void cuda_memcpy(void* dst,void* src,size_t size){
-  CUDADriver::get_instance().memcpy_device_to_device(dst,src,size);
+void cuda_memcpy(void *dst, void *src, size_t size) {
+  CUDADriver::get_instance().memcpy_device_to_device(dst, src, size);
 }
 
 }  // namespace vulkan

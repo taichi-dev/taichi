@@ -46,8 +46,8 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
 
   Renderable::update_data(info.renderable_info);
 
-  update_ubo(info.color, info.renderable_info.has_per_vertex_color,
-             info.radius, scene);
+  update_ubo(info.color, info.renderable_info.has_per_vertex_color, info.radius,
+             scene);
 }
 
 void Particles::init_particles(AppContext *app_context, int vertices_count) {

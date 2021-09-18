@@ -4,9 +4,9 @@ from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.ops import get_addr
 
+from .staging_buffer import (copy_colors_to_vbo, copy_vertices_to_vbo,
+                             get_vbo_field, to_u8_rgba)
 from .utils import *
-from .staging_buffer import get_vbo_field,copy_vertices_to_vbo,copy_colors_to_vbo,to_u8_rgba
-
 
 
 class Canvas:
@@ -27,13 +27,14 @@ class Canvas:
                   indices=None,
                   per_vertex_color=None):
         vbo = get_vbo_field(vertices)
-        copy_vertices_to_vbo(vbo,vertices)
+        copy_vertices_to_vbo(vbo, vertices)
         has_per_vertex_color = per_vertex_color is not None
         if has_per_vertex_color:
-            copy_colors_to_vbo(vbo,per_vertex_color)
+            copy_colors_to_vbo(vbo, per_vertex_color)
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
-        self.canvas.triangles(vbo_info, indices_info, has_per_vertex_color, color)
+        self.canvas.triangles(vbo_info, indices_info, has_per_vertex_color,
+                              color)
 
     def lines(self,
               vertices,
@@ -42,14 +43,14 @@ class Canvas:
               color=(0.5, 0.5, 0.5),
               per_vertex_color=None):
         vbo = get_vbo_field(vertices)
-        copy_vertices_to_vbo(vbo,vertices)
+        copy_vertices_to_vbo(vbo, vertices)
         has_per_vertex_color = per_vertex_color is not None
         if has_per_vertex_color:
-            copy_colors_to_vbo(vbo,per_vertex_color)
+            copy_colors_to_vbo(vbo, per_vertex_color)
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
-        self.canvas.lines(vbo_info, indices_info, has_per_vertex_color, color, width)
-
+        self.canvas.lines(vbo_info, indices_info, has_per_vertex_color, color,
+                          width)
 
     def circles(self,
                 vertices,
@@ -57,10 +58,10 @@ class Canvas:
                 color=(0.5, 0.5, 0.5),
                 per_vertex_color=None):
         vbo = get_vbo_field(vertices)
-        copy_vertices_to_vbo(vbo,vertices)
+        copy_vertices_to_vbo(vbo, vertices)
         has_per_vertex_color = per_vertex_color is not None
         if has_per_vertex_color:
-            copy_colors_to_vbo(vbo,per_vertex_color)
+            copy_colors_to_vbo(vbo, per_vertex_color)
         vbo_info = get_field_info(vbo)
         self.canvas.circles(vbo_info, has_per_vertex_color, color, radius)
 

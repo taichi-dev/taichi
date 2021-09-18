@@ -31,7 +31,7 @@ class SetImage final : public Renderable {
   int width, height;
 
   struct UniformBufferObject {
-    // in non_packed_mode, 
+    // in non_packed_mode,
     // the actual image is only a corner of the whole image
     float x_factor{1.0};
     float y_factor{1.0};

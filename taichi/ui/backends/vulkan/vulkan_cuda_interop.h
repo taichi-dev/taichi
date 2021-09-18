@@ -61,8 +61,7 @@ void cuda_vk_semaphore_signal(CUexternalSemaphore ext_smaphore,
 void cuda_vk_semaphore_wait(CUexternalSemaphore ext_smaphore,
                             CUstream stream = 0);
 
-void cuda_memcpy(void* dst,void* src,size_t size);
-
+void cuda_memcpy(void *dst, void *src, size_t size);
 
 }  // namespace vulkan
 

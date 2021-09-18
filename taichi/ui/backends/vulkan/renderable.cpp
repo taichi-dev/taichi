@@ -77,26 +77,24 @@ void Renderable::update_data(const RenderableInfo &info) {
   }
 
   if (info.vbo.field_source == FieldSource::TaichiCuda) {
-
-    cuda_memcpy(vertex_buffer_device_ptr_, (void*)info.vbo.data, sizeof(Vertex)*num_vertices);
+    cuda_memcpy(vertex_buffer_device_ptr_, (void *)info.vbo.data,
+                sizeof(Vertex) * num_vertices);
 
     if (info.indices.valid) {
       indexed_ = true;
-      cuda_memcpy(index_buffer_device_ptr_, (int *)info.indices.data, num_indices * sizeof(int));
+      cuda_memcpy(index_buffer_device_ptr_, (int *)info.indices.data,
+                  num_indices * sizeof(int));
 
     } else {
       indexed_ = false;
     }
-  }
-  else if (info.vbo.field_source == FieldSource::TaichiX64) {
+  } else if (info.vbo.field_source == FieldSource::TaichiX64) {
     float *mapped_vbo =
-          (float *)app_context_->device().map(staging_vertex_buffer_);
-    memcpy(mapped_vbo, (void*)info.vbo.data, sizeof(Vertex)*num_vertices);
+        (float *)app_context_->device().map(staging_vertex_buffer_);
+    memcpy(mapped_vbo, (void *)info.vbo.data, sizeof(Vertex) * num_vertices);
     app_context_->device().unmap(staging_vertex_buffer_);
 
-
-    int *mapped_ibo =
-          (int *)app_context_->device().map(staging_index_buffer_);
+    int *mapped_ibo = (int *)app_context_->device().map(staging_index_buffer_);
     if (info.indices.valid) {
       indexed_ = true;
       memcpy(mapped_ibo, (int *)info.indices.data, num_indices * sizeof(int));
@@ -115,7 +113,6 @@ void Renderable::update_data(const RenderableInfo &info) {
                           config_.indices_count * sizeof(int));
     stream->submit_synced(cmd_list.get());
   }
-  
 }
 
 Pipeline &Renderable::pipeline() {

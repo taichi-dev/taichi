@@ -5,13 +5,8 @@
 TI_UI_NAMESPACE_BEGIN
 
 struct RenderableInfo {
-  FieldInfo vertices;
-  FieldInfo normals;
-  FieldInfo tex_coords;
-  FieldInfo per_vertex_color;
-  FieldInfo indices;
-
   FieldInfo vbo;
+  FieldInfo indices;
   bool has_per_vertex_color;
 };
 

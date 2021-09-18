@@ -12,7 +12,7 @@ using namespace taichi::lang::vulkan;
 
 void Circles::update_data(const CirclesInfo &info) {
 
-  Renderable::update_data_2(info.renderable_info);
+  Renderable::update_data(info.renderable_info);
 
   update_ubo(info.color, info.renderable_info.has_per_vertex_color,
              info.radius);

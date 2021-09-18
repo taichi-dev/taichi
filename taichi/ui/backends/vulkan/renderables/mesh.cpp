@@ -39,7 +39,7 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
     app_context_->device().unmap(storage_buffer_);
   }
 
-  Renderable::update_data_2(info.renderable_info);
+  Renderable::update_data(info.renderable_info);
 
   update_ubo(info, scene);
 }

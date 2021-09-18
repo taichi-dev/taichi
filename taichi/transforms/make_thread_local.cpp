@@ -14,20 +14,6 @@ TLANG_NAMESPACE_BEGIN
 
 namespace {
 
-bool is_atomic_op_supported(AtomicOpType op_type) {
-  return op_type == AtomicOpType::add || op_type == AtomicOpType::sub ||
-         op_type == AtomicOpType::max || op_type == AtomicOpType::min;
-}
-
-AtomicOpType atomic_op_genre(AtomicOpType op_type) {
-  return op_type == AtomicOpType::sub ? AtomicOpType::add : op_type;
-}
-
-bool does_atomic_op_belong_to_genre(AtomicOpType op_type, AtomicOpType genre) {
-  return op_type == AtomicOpType::sub && genre == AtomicOpType::add ||
-         op_type == genre;
-}
-
 // Find the destinations of global atomic reductions that can be demoted into
 // TLS buffer.
 template <typename T>
@@ -44,11 +30,16 @@ std::vector<std::pair<T *, AtomicOpType>> find_global_reduction_destinations(
   auto linear_atomics =
       irpass::analysis::gather_statements(offload, [&](Stmt *stmt) {
         if (auto atomic_op = stmt->cast<AtomicOpStmt>()) {
-          if (is_atomic_op_supported(atomic_op->op_type)) {
+          if (atomic_op->op_type == AtomicOpType::add ||
+              atomic_op->op_type == AtomicOpType::sub ||
+              atomic_op->op_type == AtomicOpType::max ||
+              atomic_op->op_type == AtomicOpType::min) {
             // Local or global tmp atomics does not count
             if (auto dest = atomic_op->dest->cast<T>()) {
               if (atomic_destinations.find(dest) == atomic_destinations.end()) {
-                atomic_destinations[dest] = atomic_op_genre(atomic_op->op_type);
+                // As we will be calculating delta, add/sub can be mixed together
+                // However, max/min needs to be handled independently
+                atomic_destinations[dest] = atomic_op->op_type == AtomicOpType::sub ? AtomicOpType::add : atomic_op->op_type;
               }
             }
           }
@@ -72,8 +63,7 @@ std::vector<std::pair<T *, AtomicOpType>> find_global_reduction_destinations(
           } else if (auto atomic = stmt->cast<AtomicOpStmt>()) {
             if (irpass::analysis::maybe_same_address(atomic->dest,
                                                      dest.first)) {
-              return !does_atomic_op_belong_to_genre(atomic->op_type,
-                                                     dest.second);
+              return !((atomic->op_type == AtomicOpType::sub && dest.second == AtomicOpType::add) || atomic->op_type == dest.second);
             }
           }
           for (auto &op : stmt->get_operands()) {

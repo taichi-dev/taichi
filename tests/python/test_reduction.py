@@ -62,13 +62,13 @@ def _test_reduction_single(dtype, criterion, op):
 
     @ti.kernel
     def reduce_tmp() -> dtype:
-        s = ti.zero(tot[None]) if op == OP_ADD else a[0]
+        s = ti.zero(tot[None]) if op == OP_ADD or op == OP_XOR else a[0]
         for i in a:
             ti_op(s, a[i])
         return s
 
     fill()
-    tot[None] = 0 if op == OP_ADD else a[0]
+    tot[None] = 0 if op in [OP_ADD, OP_XOR] else a[0]
     reduce()
     tot2 = reduce_tmp()
 

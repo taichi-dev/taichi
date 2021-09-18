@@ -124,5 +124,57 @@ inline bool needs_grad(DataType dt) {
   return is_real(dt);
 }
 
+inline TypedConstant get_max_value(DataType dt) {
+  if (dt->is_primitive(PrimitiveTypeID::i8)) {
+    return {dt, std::numeric_limits<int8>::max()};
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
+    return {dt, std::numeric_limits<int16>::max()};
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
+    return {dt, std::numeric_limits<int32>::max()};
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
+    return {dt, std::numeric_limits<int64>::max()};
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+    return {dt, std::numeric_limits<uint8>::max()};
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+    return {dt, std::numeric_limits<uint16>::max()};
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
+    return {dt, std::numeric_limits<uint32>::max()};
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
+    return {dt, std::numeric_limits<uint64>::max()};
+  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
+    return {dt, std::numeric_limits<float32>::max()};
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+    return {dt, std::numeric_limits<float64>::max()};
+  } else {
+    TI_NOT_IMPLEMENTED;
+  }
+}
+
+inline TypedConstant get_min_value(DataType dt) {
+  if (dt->is_primitive(PrimitiveTypeID::i8)) {
+    return {dt, std::numeric_limits<int8>::min()};
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
+    return {dt, std::numeric_limits<int16>::min()};
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
+    return {dt, std::numeric_limits<int32>::min()};
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
+    return {dt, std::numeric_limits<int64>::min()};
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+    return {dt, std::numeric_limits<uint8>::min()};
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+    return {dt, std::numeric_limits<uint16>::min()};
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
+    return {dt, std::numeric_limits<uint32>::min()};
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
+    return {dt, std::numeric_limits<uint64>::min()};
+  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
+    return {dt, std::numeric_limits<float32>::min()};
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+    return {dt, std::numeric_limits<float64>::min()};
+  } else {
+    TI_NOT_IMPLEMENTED;
+  }
+}
+
 }  // namespace lang
 }  // namespace taichi

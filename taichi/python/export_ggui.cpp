@@ -179,14 +179,14 @@ struct PyCanvas {
     canvas->scene(scene.scene);
   }
 
-  void triangles(FieldInfo vertices,
+  void triangles(FieldInfo vbo,
                  FieldInfo indices,
-                 FieldInfo per_vertex_color,
+                 bool has_per_vertex_color,
                  py::tuple color_) {
     RenderableInfo renderable_info;
-    renderable_info.vertices = vertices;
+    renderable_info.vbo = vbo;
     renderable_info.indices = indices;
-    renderable_info.per_vertex_color = per_vertex_color;
+    renderable_info.has_per_vertex_color = has_per_vertex_color;
 
     TrianglesInfo info;
     info.renderable_info = renderable_info;

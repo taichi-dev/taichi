@@ -16,7 +16,7 @@ void Lines::update_data(const LinesInfo &info) {
 
   Renderable::update_data_2(info.renderable_info);
 
-  update_ubo(info.color, info.renderable_info.per_vertex_color.valid);
+  update_ubo(info.color, info.renderable_info.has_per_vertex_color);
 
   curr_width_ = info.width;
 }

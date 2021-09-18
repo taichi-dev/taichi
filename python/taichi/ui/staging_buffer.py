@@ -71,4 +71,4 @@ def copy_colors_to_vbo(vbo,colors):
     validate_input_field(colors,"colors")
     if colors.n != 3:
         raise Exception(f'colors can only be 3D vector fields')
-    copy_to_vbo(vbo,colors,6,colors.n)
+    copy_to_vbo(vbo,colors,8,colors.n)

@@ -25,10 +25,14 @@ class Canvas:
                   color=(0.5, 0.5, 0.5),
                   indices=None,
                   per_vertex_color=None):
-        vertices_info = get_field_info(vertices)
+        vbo = get_vbo_field(vertices)
+        copy_vertices_to_vbo(vbo,vertices)
+        has_per_vertex_color = per_vertex_color is not None
+        if has_per_vertex_color:
+            copy_colors_to_vbo(vbo,per_vertex_color)
+        vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
-        colors_info = get_field_info(per_vertex_color)
-        self.canvas.triangles(vertices_info, indices_info, colors_info, color)
+        self.canvas.triangles(vbo_info, indices_info, has_per_vertex_color, color)
 
     def lines(self,
               vertices,

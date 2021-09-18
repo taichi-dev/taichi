@@ -33,11 +33,6 @@ void Particles::update_ubo(glm::vec3 color,
 }
 
 void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
-  if (info.renderable_info.vertices.matrix_rows != 3 ||
-      info.renderable_info.vertices.matrix_cols != 1) {
-    throw std::runtime_error("Particles vertices requres 3-d vector fields");
-  }
-
   size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
   if (config_.ssbo_size != correct_ssbo_size) {
     resize_storage_buffers(correct_ssbo_size);
@@ -49,9 +44,9 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
     app_context_->device().unmap(storage_buffer_);
   }
 
-  Renderable::update_data(info.renderable_info);
+  Renderable::update_data_2(info.renderable_info);
 
-  update_ubo(info.color, info.renderable_info.per_vertex_color.valid,
+  update_ubo(info.color, info.renderable_info.has_per_vertex_color,
              info.radius, scene);
 }
 

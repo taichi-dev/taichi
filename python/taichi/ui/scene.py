@@ -11,8 +11,10 @@ from taichi.lang.ops import atomic_add, get_addr
 from .camera import Camera
 from .utils import get_field_info
 
-normals_field_cache = {}
+from .staging_buffer import get_vbo_field,copy_vertices_to_vbo,copy_colors_to_vbo
 
+
+normals_field_cache = {}
 
 def get_normals_field(vertices):
     if vertices not in normals_field_cache:
@@ -94,19 +96,21 @@ class Scene(_ti_core.PyScene):
         normals_info = get_field_info(normals)
         indices_info = get_field_info(indices)
         colors_info = get_field_info(per_vertex_color)
-        super().mesh(vertices_info, normals_info, colors_info, indices_info,
-                     color, two_sided)
-
+        super().mesh(vertices_info, normals_info, colors_info, indices_info, color, two_sided)
+                     
     def particles(
             self,
             vertices,
             radius,
             color=(0.5, 0.5, 0.5),
-            per_vertex_color=None,
-    ):
-        vertices_info = get_field_info(vertices)
-        colors_info = get_field_info(per_vertex_color)
-        super().particles(vertices_info, colors_info, color, radius)
+            per_vertex_color=None):
+        vbo = get_vbo_field(vertices)
+        copy_vertices_to_vbo(vbo,vertices)
+        has_per_vertex_color = per_vertex_color is not None
+        if has_per_vertex_color:
+            copy_colors_to_vbo(vbo,per_vertex_color)
+        vbo_info = get_field_info(vbo)
+        super().particles(vbo_info, has_per_vertex_color, color, radius)
 
     def point_light(self, pos, color):
         super().point_light(pos, color)

@@ -280,15 +280,12 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     fast_reductions[PrimitiveTypeID::i32][AtomicOpType::bit_xor] =
         "reduce_xor_i32";
 
-
     AtomicOpType op = stmt->op_type;
-    TI_INFO("op:  {}",(int)op);
     if (fast_reductions.find(prim_type) == fast_reductions.end()) {
       return nullptr;
     }
     TI_ASSERT(fast_reductions.at(prim_type).find(op) !=
               fast_reductions.at(prim_type).end());
-    TI_INFO("found {}",fast_reductions.at(prim_type).at(op));
     return create_call(fast_reductions.at(prim_type).at(op),
                        {llvm_val[stmt->dest], llvm_val[stmt->val]});
   }

@@ -5,7 +5,7 @@ from taichi.lang.kernel_impl import kernel
 from taichi.lang.ops import get_addr
 
 from .utils import *
-from .staging_buffer import get_vbo_field,copy_vertices_to_vbo,copy_colors_to_vbo
+from .staging_buffer import get_vbo_field,copy_vertices_to_vbo,copy_colors_to_vbo,to_u8_rgba
 
 
 
@@ -17,7 +17,8 @@ class Canvas:
         self.canvas.set_background_color(color)
 
     def set_image(self, img):
-        info = get_field_info(img)
+        staging_img = to_u8_rgba(img)
+        info = get_field_info(staging_img)
         self.canvas.set_image(info)
 
     def triangles(self,

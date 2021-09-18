@@ -79,6 +79,14 @@ void Renderable::update_data_2(const RenderableInfo &info) {
 
   if (info.vbo.field_source == FieldSource::TaichiCuda) {
     cuda_launcher_->memcpy(vertex_buffer_device_ptr_, (void*)info.vbo.data, sizeof(Vertex)*num_vertices);
+
+    if (info.indices.valid) {
+      indexed_ = true;
+      cuda_launcher_->update_renderables_indices(
+          index_buffer_device_ptr_, (int *)info.indices.data, num_indices);
+    } else {
+      indexed_ = false;
+    }
   }
   else if (info.vbo.field_source == FieldSource::TaichiX64) {
     float *mapped_vbo =
@@ -86,11 +94,26 @@ void Renderable::update_data_2(const RenderableInfo &info) {
     memcpy(mapped_vbo, (void*)info.vbo.data, sizeof(Vertex)*num_vertices);
     app_context_->device().unmap(staging_vertex_buffer_);
 
+
+    int *mapped_ibo =
+          (int *)app_context_->device().map(staging_index_buffer_);
+    if (info.indices.valid) {
+      indexed_ = true;
+      update_renderables_indices_x64(mapped_ibo, (int *)info.indices.data,
+                                      num_indices);
+    } else {
+      indexed_ = false;
+    }
+    app_context_->device().unmap(staging_index_buffer_);
+
     auto stream = app_context_->device().get_graphics_stream();
     auto cmd_list = stream->new_command_list();
     cmd_list->buffer_copy(vertex_buffer_.get_ptr(0),
                           staging_vertex_buffer_.get_ptr(0),
                           config_.vertices_count * sizeof(Vertex));
+    cmd_list->buffer_copy(index_buffer_.get_ptr(0),
+                          staging_index_buffer_.get_ptr(0),
+                          config_.indices_count * sizeof(int));
     stream->submit_synced(cmd_list.get());
   }
   

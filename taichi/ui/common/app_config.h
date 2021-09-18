@@ -13,6 +13,7 @@ struct AppConfig {
   bool vsync{false};
   std::string package_path;
   taichi::lang::Arch ti_arch;
+  bool is_packed_mode{false};
 };
 
 TI_UI_NAMESPACE_END

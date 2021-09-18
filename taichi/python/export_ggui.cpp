@@ -235,9 +235,10 @@ struct PyWindow {
            py::tuple res,
            bool vsync,
            std::string package_path,
-           Arch ti_arch) {
+           Arch ti_arch,
+           bool is_packed_mode) {
     AppConfig config = {name,  res[0].cast<int>(), res[1].cast<int>(),
-                        vsync, package_path,       ti_arch};
+                        vsync, package_path,       ti_arch,is_packed_mode};
     // todo: support other ggui backends
     window = new vulkan::Window(config);
   }
@@ -300,7 +301,7 @@ void export_ggui(py::module &m) {
   m.attr("GGUI_AVAILABLE") = py::bool_(true);
 
   py::class_<PyWindow>(m, "PyWindow")
-      .def(py::init<std::string, py::tuple, bool, std::string, Arch>())
+      .def(py::init<std::string, py::tuple, bool, std::string, Arch,bool>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
       .def("is_pressed", &PyWindow::is_pressed)

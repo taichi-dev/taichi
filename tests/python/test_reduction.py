@@ -51,7 +51,7 @@ def _test_reduction_single(dtype, criterion, op):
         @ti.kernel
         def fill():
             for i in a:
-                a[i] = i
+                a[i] = i + 1
 
     ti_op = ti_ops[op]
 
@@ -62,16 +62,17 @@ def _test_reduction_single(dtype, criterion, op):
 
     @ti.kernel
     def reduce_tmp() -> dtype:
-        s = ti.zero(tot[None])
+        s = ti.zero(tot[None]) if op == OP_ADD else a[0]
         for i in a:
             ti_op(s, a[i])
         return s
 
     fill()
+    tot[None] = 0 if op == OP_ADD else a[0]
     reduce()
     tot2 = reduce_tmp()
 
-    np_arr = np.append(a.to_numpy(), [0])
+    np_arr = a.to_numpy()
     ground_truth = np_ops[op](np_arr)
 
     assert criterion(tot[None], ground_truth)
@@ -136,8 +137,9 @@ def test_reduction_any_arr():
         s = 0
         for i in a:
             ti.atomic_add(s, a[i])
+            ti.atomic_sub(s, 2)
         return s
 
     n = 1024
     x = np.ones(n, dtype=np.int32)
-    assert reduce(x) == n
+    assert reduce(x) == -n

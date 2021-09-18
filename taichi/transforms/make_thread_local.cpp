@@ -37,9 +37,12 @@ std::vector<std::pair<T *, AtomicOpType>> find_global_reduction_destinations(
             // Local or global tmp atomics does not count
             if (auto dest = atomic_op->dest->cast<T>()) {
               if (atomic_destinations.find(dest) == atomic_destinations.end()) {
-                // As we will be calculating delta, add/sub can be mixed together
-                // However, max/min needs to be handled independently
-                atomic_destinations[dest] = atomic_op->op_type == AtomicOpType::sub ? AtomicOpType::add : atomic_op->op_type;
+                // As we will be calculating delta, add/sub can be mixed
+                // together However, max/min needs to be handled independently
+                atomic_destinations[dest] =
+                    atomic_op->op_type == AtomicOpType::sub
+                        ? AtomicOpType::add
+                        : atomic_op->op_type;
               }
             }
           }
@@ -63,7 +66,9 @@ std::vector<std::pair<T *, AtomicOpType>> find_global_reduction_destinations(
           } else if (auto atomic = stmt->cast<AtomicOpStmt>()) {
             if (irpass::analysis::maybe_same_address(atomic->dest,
                                                      dest.first)) {
-              return !((atomic->op_type == AtomicOpType::sub && dest.second == AtomicOpType::add) || atomic->op_type == dest.second);
+              return !((atomic->op_type == AtomicOpType::sub &&
+                        dest.second == AtomicOpType::add) ||
+                       atomic->op_type == dest.second);
             }
           }
           for (auto &op : stmt->get_operands()) {
@@ -135,7 +140,12 @@ void make_thread_local_offload(OffloadedStmt *offload) {
           TypeFactory::create_vector_or_scalar_type(1, data_type, true));
 
       auto zero = offload->tls_prologue->insert(
-          std::make_unique<ConstStmt>(dest.second == AtomicOpType::max ? get_min_value(data_type) : dest.second == AtomicOpType::min ? get_max_value(data_type) : TypedConstant(data_type, 0)), -1);
+          std::make_unique<ConstStmt>(dest.second == AtomicOpType::max
+                                          ? get_min_value(data_type)
+                                          : dest.second == AtomicOpType::min
+                                                ? get_max_value(data_type)
+                                                : TypedConstant(data_type, 0)),
+          -1);
       // Zero-fill
       // TODO: do not use GlobalStore for TLS ptr.
       offload->tls_prologue->push_back<GlobalStoreStmt>(tls_ptr, zero);

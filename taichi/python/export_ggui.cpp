@@ -111,16 +111,14 @@ struct PyScene {
     scene->set_camera(camera.camera);
   }
 
-  void mesh(FieldInfo vertices,
-            FieldInfo normals,
-            FieldInfo per_vertex_color,
+  void mesh(FieldInfo vbo,
+            bool has_per_vertex_color,
             FieldInfo indices,
             py::tuple color,
             bool two_sided) {
     RenderableInfo renderable_info;
-    renderable_info.vertices = vertices;
-    renderable_info.normals = normals;
-    renderable_info.per_vertex_color = per_vertex_color;
+    renderable_info.vbo = vbo;
+    renderable_info.has_per_vertex_color = has_per_vertex_color;
     renderable_info.indices = indices;
 
     MeshInfo info;

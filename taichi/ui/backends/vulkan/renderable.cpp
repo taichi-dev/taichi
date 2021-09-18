@@ -13,7 +13,6 @@ using namespace taichi::lang::vulkan;
 void Renderable::init(const RenderableConfig &config, AppContext *app_context) {
   config_ = config;
   app_context_ = app_context;
-  cuda_launcher_ = &InteropCUDALauncher::instance();
 }
 
 void Renderable::init_render_resources() {
@@ -78,12 +77,13 @@ void Renderable::update_data(const RenderableInfo &info) {
   }
 
   if (info.vbo.field_source == FieldSource::TaichiCuda) {
-    cuda_launcher_->memcpy(vertex_buffer_device_ptr_, (void*)info.vbo.data, sizeof(Vertex)*num_vertices);
+
+    cuda_memcpy(vertex_buffer_device_ptr_, (void*)info.vbo.data, sizeof(Vertex)*num_vertices);
 
     if (info.indices.valid) {
       indexed_ = true;
-      cuda_launcher_->update_renderables_indices(
-          index_buffer_device_ptr_, (int *)info.indices.data, num_indices);
+      cuda_memcpy(index_buffer_device_ptr_, (int *)info.indices.data, num_indices * sizeof(int));
+
     } else {
       indexed_ = false;
     }
@@ -99,8 +99,7 @@ void Renderable::update_data(const RenderableInfo &info) {
           (int *)app_context_->device().map(staging_index_buffer_);
     if (info.indices.valid) {
       indexed_ = true;
-      update_renderables_indices_x64(mapped_ibo, (int *)info.indices.data,
-                                      num_indices);
+      memcpy(mapped_ibo, (int *)info.indices.data, num_indices * sizeof(int));
     } else {
       indexed_ = false;
     }

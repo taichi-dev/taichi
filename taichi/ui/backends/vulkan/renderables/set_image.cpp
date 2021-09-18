@@ -54,7 +54,7 @@ void SetImage::update_data(const SetImageInfo &info) {
   if (img.field_source == FieldSource::TaichiCuda) {
     unsigned char *mapped = device_ptr_;
 
-    cuda_launcher_->memcpy(mapped,(unsigned char *)img.data,pixels * 4);
+    cuda_memcpy(mapped,(unsigned char *)img.data,pixels * 4);
 
     auto stream = app_context_->device().get_graphics_stream();
     auto cmd_list = stream->new_command_list();

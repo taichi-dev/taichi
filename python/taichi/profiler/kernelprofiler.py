@@ -5,6 +5,12 @@ import taichi as ti
 
 
 class StatisticalResult:
+    """
+    Statistical result of records.   
+    Profiling records with the same kernel name will be counted in a ``StatisticalResult`` instance via ``insert_record(time)``.   
+    Currently, only the time is counted, 
+    other statistics related to the kernel will be added in the feature.
+    """
     def __init__(self, name):
         self.name = name
         self.counter = 0
@@ -13,6 +19,7 @@ class StatisticalResult:
         self.total_time = 0.0
 
     def __lt__(self, other):
+        """For sorted()"""
         if (self.total_time < other.total_time):
             return True
         else:
@@ -28,8 +35,11 @@ class StatisticalResult:
         self.max_time = max(self.max_time, time)
 
 
-class Profiler:
-
+class KernelProfiler:
+    """Acquires kernel profiling records from a backend,
+    counts records in python scope,
+    and outputs results with member function : `~taichi.profiler.kernelprofiler.KernelProfiler.print_info`.
+    """
     def __init__(self):
         self._profiling_mode = False # _profiling_mode is boolean value
         self._total_time_ms = 0.0
@@ -70,14 +80,17 @@ class Profiler:
         self.clear_fronted()
 
     def update_records(self):
+        """Acquires profiling records from a backend.
+        """
         impl.get_runtime().sync()
         self.clear_fronted()
         self._traced_records = impl.get_runtime(
         ).prog.get_kernel_profiler_records()
 
     def count_results(self):
-        """Counts the statistical results.
-        kernels with the same name will be counted in a StatisticalResult
+        """Counts the statistical results.   
+        Profiling records with the same kernel name will be counted in a instance of class:`~taichi.profiler.kernelprofiler.StatisticalResult`.   
+        Presenting kernel profiling results in a statistical perspactive.
         """
         for record in self._traced_records:
             if self._statistical_results.get(record.name) == None:
@@ -93,29 +106,31 @@ class Profiler:
                                reverse=True)
         }
 
-    def get_print_mode(self):
-        return ['count','trace']
+    # print info mode
+    COUNT = 'count' # print the statistical results (min,max,avg time) of Taichi kernels.
+    TRACE = 'trace' # print the records of launched Taichi kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
 
-    def print_info(self, mode='count'):
-        """Print the profiler results of Taichi kernels on devices.
-        Default print mode is `count`.
-        To enable this profiler, set `kernel_profiler=True` in `ti.init`.
+    def print_info(self, mode=COUNT):
+        """Print the profiling results of Taichi kernels.   
+        To enable this profiler, set ``kernel_profiler=True`` in ``ti.init()``.   
+        Default print mode is ``'count'``.   
+        ``'count'`` mode: print the statistical results (min,max,avg time) of Taichi kernels.   
+        ``'trace'`` mode: print the records of launched Taichi kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
 
         Args:
-            mode (str): print mode
-                'count' : print the statistical results (min,max,avg time) of Taichi kernels.
-                'trace' : print the records of launched Taichi kernels.
+            mode (str): mode of print
         """
 
         def patition_line(character,num):
-          return character*num + '\n'
+          return character*num
 
         self.update_records()  # trace records
         self.count_results()  # statistical results
+        
         #count mode (default) : print statistical results of all kernel
-        if mode == 'count':
+        if mode == self.COUNT:
             print(f"{patition_line('=',73)}"\
-                  f"{_ti_core.arch_name(ti.cfg.arch).upper()} Profiler(count)\n"\
+                  f"\n{_ti_core.arch_name(ti.cfg.arch).upper()} Profiler(count)\n"\
                   f"{patition_line('=',73)}")
             print(f"[      %     total   count |"\
                   f"      min       avg       max   ]"\
@@ -139,7 +154,7 @@ class Profiler:
             print(f"{patition_line('=',73)}")
 
         #trace mode : print records of launched kernel
-        if mode == 'trace':
+        if mode == self.TRACE:
             print(f"{patition_line('=',73)}\n"\
                   f"{_ti_core.arch_name(ti.cfg.arch).upper()} Profiler(trace)\n"\
                   f"{patition_line('=',73)}\n")
@@ -157,8 +172,16 @@ class Profiler:
             print(f"{patition_line('=',73)}")
 
 
-_ti_kernel_profiler = Profiler()
+_ti_kernel_profiler = KernelProfiler()
 
-# we have only on Profiler instance now
 def get_default_kernel_profiler():
+    """
+    We have only one `KernelProfiler` instance now :   
+    For `KernelProfiler` using `CuptiToolkit`, GPU devices can only work in a certain configuration,
+    profiling mode and metrics are configured by the host(CPU) via CUPTI APIs, and device(GPU) will use
+    its counter registers to collect specific metrics.   
+    So if there are multiple instances of `KernelProfiler`,the device will work in the last configuration mode,
+    the configuration of other instance will also be changed as a result.   
+    For data retention purposes, support for multiple instances may be considered in the future.
+    """
     return _ti_kernel_profiler

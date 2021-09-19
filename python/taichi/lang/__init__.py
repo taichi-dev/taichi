@@ -26,7 +26,7 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
 from taichi.misc.util import deprecated
-from taichi.profiler import get_default_kernel_profiler
+from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
@@ -82,14 +82,14 @@ def kernel_profiler_print():
 
 
 def print_kernel_profile_info(mode='count'):
-    """ Print the profiling results of Taichi kernels.
-    Default print mode is `count` mode
-    To enable this profiler, set `kernel_profiler=True` in `ti.init`.
+    """Print the profiling results of Taichi kernels.
+    To enable this profiler, set ``kernel_profiler=True`` in ``ti.init()``.
+    Default print mode is ``'count'``.
+    ``'count'`` mode: print the statistical results (min,max,avg time) of Taichi kernels.
+    ``'trace'`` mode: print the records of launched Taichi kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
 
     Args:
-        mode (str): print mode.
-            'count' : print the statistical results (min,max,avg time) of launched Taichi kernels
-            'trace' : print the records of launched Taichi kernels
+        mode (str): mode of print
 
     Example::
 

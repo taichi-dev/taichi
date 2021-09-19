@@ -9,6 +9,8 @@ from taichi.lang.matrix import Vector
 from taichi.lang.ops import atomic_add, get_addr
 
 from .camera import Camera
+from .staging_buffer import (copy_colors_to_vbo, copy_normals_to_vbo,
+                             copy_vertices_to_vbo, get_vbo_field)
 from .utils import get_field_info
 
 normals_field_cache = {}
@@ -88,25 +90,32 @@ class Scene(_ti_core.PyScene):
              color=(0.5, 0.5, 0.5),
              per_vertex_color=None,
              two_sided=False):
-        vertices_info = get_field_info(vertices)
+        vbo = get_vbo_field(vertices)
+        copy_vertices_to_vbo(vbo, vertices)
+        has_per_vertex_color = per_vertex_color is not None
+        if has_per_vertex_color:
+            copy_colors_to_vbo(vbo, per_vertex_color)
         if normals is None:
             normals = gen_normals(vertices, indices)
-        normals_info = get_field_info(normals)
+        copy_normals_to_vbo(vbo, normals)
+        vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
-        colors_info = get_field_info(per_vertex_color)
-        super().mesh(vertices_info, normals_info, colors_info, indices_info,
-                     color, two_sided)
 
-    def particles(
-            self,
-            vertices,
-            radius,
-            color=(0.5, 0.5, 0.5),
-            per_vertex_color=None,
-    ):
-        vertices_info = get_field_info(vertices)
-        colors_info = get_field_info(per_vertex_color)
-        super().particles(vertices_info, colors_info, color, radius)
+        super().mesh(vbo_info, has_per_vertex_color, indices_info, color,
+                     two_sided)
+
+    def particles(self,
+                  vertices,
+                  radius,
+                  color=(0.5, 0.5, 0.5),
+                  per_vertex_color=None):
+        vbo = get_vbo_field(vertices)
+        copy_vertices_to_vbo(vbo, vertices)
+        has_per_vertex_color = per_vertex_color is not None
+        if has_per_vertex_color:
+            copy_colors_to_vbo(vbo, per_vertex_color)
+        vbo_info = get_field_info(vbo)
+        super().particles(vbo_info, has_per_vertex_color, color, radius)
 
     def point_light(self, pos, color):
         super().point_light(pos, color)

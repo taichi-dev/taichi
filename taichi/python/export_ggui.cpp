@@ -111,16 +111,14 @@ struct PyScene {
     scene->set_camera(camera.camera);
   }
 
-  void mesh(FieldInfo vertices,
-            FieldInfo normals,
-            FieldInfo per_vertex_color,
+  void mesh(FieldInfo vbo,
+            bool has_per_vertex_color,
             FieldInfo indices,
             py::tuple color,
             bool two_sided) {
     RenderableInfo renderable_info;
-    renderable_info.vertices = vertices;
-    renderable_info.normals = normals;
-    renderable_info.per_vertex_color = per_vertex_color;
+    renderable_info.vbo = vbo;
+    renderable_info.has_per_vertex_color = has_per_vertex_color;
     renderable_info.indices = indices;
 
     MeshInfo info;
@@ -131,13 +129,13 @@ struct PyScene {
     scene->mesh(info);
   }
 
-  void particles(FieldInfo vertices,
-                 FieldInfo per_vertex_color,
+  void particles(FieldInfo vbo,
+                 bool has_per_vertex_color,
                  py::tuple color_,
                  float radius) {
     RenderableInfo renderable_info;
-    renderable_info.vertices = vertices;
-    renderable_info.per_vertex_color = per_vertex_color;
+    renderable_info.vbo = vbo;
+    renderable_info.has_per_vertex_color = has_per_vertex_color;
 
     ParticlesInfo info;
     info.renderable_info = renderable_info;
@@ -179,14 +177,14 @@ struct PyCanvas {
     canvas->scene(scene.scene);
   }
 
-  void triangles(FieldInfo vertices,
+  void triangles(FieldInfo vbo,
                  FieldInfo indices,
-                 FieldInfo per_vertex_color,
+                 bool has_per_vertex_color,
                  py::tuple color_) {
     RenderableInfo renderable_info;
-    renderable_info.vertices = vertices;
+    renderable_info.vbo = vbo;
     renderable_info.indices = indices;
-    renderable_info.per_vertex_color = per_vertex_color;
+    renderable_info.has_per_vertex_color = has_per_vertex_color;
 
     TrianglesInfo info;
     info.renderable_info = renderable_info;
@@ -195,15 +193,15 @@ struct PyCanvas {
     return canvas->triangles(info);
   }
 
-  void lines(FieldInfo vertices,
+  void lines(FieldInfo vbo,
              FieldInfo indices,
-             FieldInfo per_vertex_color,
+             bool has_per_vertex_color,
              py::tuple color_,
              float width) {
     RenderableInfo renderable_info;
-    renderable_info.vertices = vertices;
+    renderable_info.vbo = vbo;
     renderable_info.indices = indices;
-    renderable_info.per_vertex_color = per_vertex_color;
+    renderable_info.has_per_vertex_color = has_per_vertex_color;
 
     LinesInfo info;
     info.renderable_info = renderable_info;
@@ -213,13 +211,13 @@ struct PyCanvas {
     return canvas->lines(info);
   }
 
-  void circles(FieldInfo vertices,
-               FieldInfo per_vertex_color,
+  void circles(FieldInfo vbo,
+               bool has_per_vertex_color,
                py::tuple color_,
                float radius) {
     RenderableInfo renderable_info;
-    renderable_info.vertices = vertices;
-    renderable_info.per_vertex_color = per_vertex_color;
+    renderable_info.vbo = vbo;
+    renderable_info.has_per_vertex_color = has_per_vertex_color;
 
     CirclesInfo info;
     info.renderable_info = renderable_info;
@@ -237,9 +235,11 @@ struct PyWindow {
            py::tuple res,
            bool vsync,
            std::string package_path,
-           Arch ti_arch) {
-    AppConfig config = {name,  res[0].cast<int>(), res[1].cast<int>(),
-                        vsync, package_path,       ti_arch};
+           Arch ti_arch,
+           bool is_packed_mode) {
+    AppConfig config = {name,          res[0].cast<int>(), res[1].cast<int>(),
+                        vsync,         package_path,       ti_arch,
+                        is_packed_mode};
     // todo: support other ggui backends
     window = new vulkan::Window(config);
   }
@@ -302,7 +302,7 @@ void export_ggui(py::module &m) {
   m.attr("GGUI_AVAILABLE") = py::bool_(true);
 
   py::class_<PyWindow>(m, "PyWindow")
-      .def(py::init<std::string, py::tuple, bool, std::string, Arch>())
+      .def(py::init<std::string, py::tuple, bool, std::string, Arch, bool>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
       .def("is_pressed", &PyWindow::is_pressed)

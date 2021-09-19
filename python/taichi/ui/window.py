@@ -17,7 +17,8 @@ class Window(_ti_core.PyWindow):
         package_path = str(pathlib.Path(__file__).parent.parent)
 
         ti_arch = default_cfg().arch
-        super().__init__(name, res, vsync, package_path, ti_arch)
+        is_packed = default_cfg().packed
+        super().__init__(name, res, vsync, package_path, ti_arch, is_packed)
 
     @property
     def running(self):

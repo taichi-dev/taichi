@@ -59,30 +59,6 @@ int to_end_element_order(MeshRelationType rel);
 MeshRelationType relation_by_orders(int from_order, int to_order);
 MeshRelationType inverse_relation(MeshRelationType rel);
 
-struct MeshAttribute {
-  MeshAttribute(MeshElementType type_,
-                SNode *snode_,
-                MeshElementReorderingType reordering_type_)
-      : type(type_), snode(snode_), reordering_type(reordering_type_) {
-  }
-
-  bool operator==(const MeshAttribute &rhs) const {
-    return type == rhs.type && snode == rhs.snode &&
-           reordering_type == rhs.reordering_type;
-  }
-
-  struct Hash {
-    size_t operator()(const MeshAttribute &attr) const {
-      uintptr_t ad = (uintptr_t)attr.snode;
-      return (size_t)((13 * ad) ^ (ad >> 15));
-    }
-  };
-
-  MeshElementType type;
-  SNode *snode;
-  MeshElementReorderingType reordering_type;
-};
-
 struct MeshLocalRelation {
   MeshLocalRelation(SNode *value_, SNode *offset_)
       : value(value_), offset(offset_) {
@@ -100,8 +76,7 @@ struct MeshLocalRelation {
 
 class Mesh {
  public:
-  Mesh() {
-  }
+  Mesh() = default;
 
   template <typename T>
   using MeshMapping = std::unordered_map<MeshElementType, T>;
@@ -115,8 +90,6 @@ class Mesh {
   std::map<std::pair<MeshElementType, ConvType>, SNode *>
       index_mapping{};  // mapping from one index space to another index space
 
-  MeshMapping<std::unordered_set<MeshAttribute, MeshAttribute::Hash>>
-      attributes;
   std::map<MeshRelationType, MeshLocalRelation> relations;
 };
 

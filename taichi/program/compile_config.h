@@ -93,7 +93,7 @@ struct CompileConfig {
 
   // Mesh related.
   // MeshTaichi options
-  bool make_mesh_index_mapping_local{true};
+  bool make_mesh_block_local{true};
   bool optimize_mesh_reordered_mapping{true};
   bool mesh_localize_from_end_mapping{false};
 

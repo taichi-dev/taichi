@@ -4,6 +4,7 @@
 
 #include "taichi/ir/type.h"
 #include "taichi/ir/snode.h"
+#include "taichi/ir/scratch_pad.h"
 
 #include <unordered_set>
 

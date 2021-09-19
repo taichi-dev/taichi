@@ -210,8 +210,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::quant_opt_atomic_demotion)
       .def_readwrite("allow_nv_shader_extension",
                      &CompileConfig::allow_nv_shader_extension)
-      .def_readwrite("make_mesh_index_mapping_local",
-                     &CompileConfig::make_mesh_index_mapping_local)
+      .def_readwrite("make_mesh_block_local",
+                     &CompileConfig::make_mesh_block_local)
       .def_readwrite("mesh_localize_from_end_mapping",
                      &CompileConfig::mesh_localize_from_end_mapping)
       .def_readwrite("optimize_mesh_reordered_mapping",

@@ -4,6 +4,7 @@
 #include "taichi/ir/mesh.h"
 #include "taichi/ir/pass.h"
 #include "taichi/analysis/gather_uniquely_accessed_pointers.h"
+#include "taichi/analysis/mesh_bls_analyzer.h"
 #include <atomic>
 #include <optional>
 #include <unordered_set>
@@ -240,6 +241,8 @@ void gather_meshfor_relation_types(IRNode *node);
 std::pair</* owned= */ std::unordered_set<mesh::MeshElementType>,
           /* total= */ std::unordered_set<mesh::MeshElementType>>
 gather_mesh_thread_local(OffloadedStmt *offload, const CompileConfig &config);
+std::unique_ptr<MeshBLSCaches> initialize_mesh_local_attribute(
+    OffloadedStmt *offload);
 
 }  // namespace analysis
 }  // namespace irpass

@@ -212,10 +212,14 @@ void export_lang(py::module &m) {
                      &CompileConfig::allow_nv_shader_extension)
       .def_readwrite("make_mesh_block_local",
                      &CompileConfig::make_mesh_block_local)
+      .def_readwrite("mesh_localize_to_end_mapping",
+                     &CompileConfig::mesh_localize_to_end_mapping)
       .def_readwrite("mesh_localize_from_end_mapping",
                      &CompileConfig::mesh_localize_from_end_mapping)
       .def_readwrite("optimize_mesh_reordered_mapping",
-                     &CompileConfig::optimize_mesh_reordered_mapping);
+                     &CompileConfig::optimize_mesh_reordered_mapping)
+      .def_readwrite("mesh_localize_all_attr_mappings",
+                     &CompileConfig::mesh_localize_all_attr_mappings);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

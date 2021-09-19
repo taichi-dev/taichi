@@ -1244,20 +1244,6 @@ void export_lang(py::module &m) {
               .find(std::make_pair(element_type, mesh::ConvType::g2r))
               ->second;
         });
-
-  m.def("add_mesh_attribute",
-        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode,
-           mesh::MeshElementReorderingType reordering_type) {
-          if (mesh_ptr.ptr->attributes.find(type) ==
-              mesh_ptr.ptr->attributes.end()) {
-            mesh_ptr.ptr->attributes.insert(std::pair(
-                type,
-                std::move(std::unordered_set<mesh::MeshAttribute,
-                                             mesh::MeshAttribute::Hash>())));
-          }
-          mesh_ptr.ptr->attributes.find(type)->second.emplace(type, snode,
-                                                              reordering_type);
-        });
 }
 
 TI_NAMESPACE_END

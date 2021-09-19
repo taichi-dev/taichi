@@ -95,7 +95,9 @@ struct CompileConfig {
   // MeshTaichi options
   bool make_mesh_block_local{true};
   bool optimize_mesh_reordered_mapping{true};
+  bool mesh_localize_to_end_mapping{true};
   bool mesh_localize_from_end_mapping{false};
+  bool mesh_localize_all_attr_mappings{false};
 
   // helpers
   bool is_cuda_no_unified_memory() {

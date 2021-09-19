@@ -51,7 +51,7 @@ void MakeMeshBlockLocal::gather_candidate_mapping() {
           is_from_end |= (conv->idx_type == from_type);
           is_to_end |= (conv->idx_type == to_type);
         }
-        if (is_to_end ||
+        if ((is_to_end && config.mesh_localize_to_end_mapping) ||
             (is_from_end && config.mesh_localize_from_end_mapping)) {
           mappings.insert(std::make_pair(conv->idx_type, conv->conv_type));
         }
@@ -376,6 +376,14 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
   // Step 2: A analyzer to determine which mapping should be localized
   mappings.clear();
   gather_candidate_mapping();
+  // If a mesh attribute is in bls, the config makes its index mapping must also be in bls
+  if (config.mesh_localize_all_attr_mappings) {
+    for (auto [mapping, attr_set] : rec) {
+      if (mappings.find(mapping) == mappings.end()) {
+        mappings.insert(mapping);
+      }
+    }
+  }
 
   auto has_acc = [&](mesh::MeshElementType element_type,
                      mesh::ConvType conv_type) {

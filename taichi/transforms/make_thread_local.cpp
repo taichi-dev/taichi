@@ -30,30 +30,29 @@ std::vector<std::pair<T *, AtomicOpType>> find_global_reduction_destinations(
   std::vector<std::pair<T *, AtomicOpType>> atomic_destinations;
   // TODO: this is again an abuse since it gathers nothing. Need to design a IR
   // map/reduce system
-  auto atomics =
-      irpass::analysis::gather_statements(offload, [&](Stmt *stmt) {
-        if (auto atomic_op = stmt->cast<AtomicOpStmt>()) {
-          if (atomic_op->op_type == AtomicOpType::add ||
-              atomic_op->op_type == AtomicOpType::sub ||
-              atomic_op->op_type == AtomicOpType::max ||
-              atomic_op->op_type == AtomicOpType::min) {
-            // Local atomics do not count.
-            if (auto dest = atomic_op->dest->cast<T>()) {
-              if (std::find_if(atomic_destinations.begin(),
-                               atomic_destinations.end(),
-                               [&](const std::pair<T *, AtomicOpType> &elem) {
-                                 return elem.first == dest;
-                               }) == atomic_destinations.end()) {
-                atomic_destinations.push_back(
-                    {dest, atomic_op->op_type == AtomicOpType::sub
-                               ? AtomicOpType::add
-                               : atomic_op->op_type});
-              }
-            }
+  auto atomics = irpass::analysis::gather_statements(offload, [&](Stmt *stmt) {
+    if (auto atomic_op = stmt->cast<AtomicOpStmt>()) {
+      if (atomic_op->op_type == AtomicOpType::add ||
+          atomic_op->op_type == AtomicOpType::sub ||
+          atomic_op->op_type == AtomicOpType::max ||
+          atomic_op->op_type == AtomicOpType::min) {
+        // Local atomics do not count.
+        if (auto dest = atomic_op->dest->cast<T>()) {
+          if (std::find_if(atomic_destinations.begin(),
+                           atomic_destinations.end(),
+                           [&](const std::pair<T *, AtomicOpType> &elem) {
+                             return elem.first == dest;
+                           }) == atomic_destinations.end()) {
+            atomic_destinations.push_back(
+                {dest, atomic_op->op_type == AtomicOpType::sub
+                           ? AtomicOpType::add
+                           : atomic_op->op_type});
           }
         }
-        return false;
-      });
+      }
+    }
+    return false;
+  });
 
   std::vector<std::pair<T *, AtomicOpType>> valid_reduction_values;
   for (auto dest : atomic_destinations) {

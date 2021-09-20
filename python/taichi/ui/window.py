@@ -16,8 +16,8 @@ class Window(_ti_core.PyWindow):
     """The window class.
 
     Args:
-        name (str): name of the window. 
-        res (Tuple[Int]): resolution (width, height) of the window, in pixels. 
+        name (str): name of the window.
+        res (Tuple[Int]): resolution (width, height) of the window, in pixels.
         layout (vsync): whether or not vertical sync should be enabled.
     """
     def __init__(self, name, res, vsync=False):

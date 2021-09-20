@@ -19,10 +19,10 @@ class Gui:
         All widget function calls (e.g. `text`, `button`) after the `begin` and before the next `end` will describe the widgets within this subwindow.
 
         Args:
-            x (float): The x-coordinate (between 0 and 1) of the top-left corner of the subwindow, relative to the full window. 
-            y (float): The y-coordinate (between 0 and 1) of the top-left corner of the subwindow, relative to the full window. 
-            width (float): The width of the subwindow relative to the full window. 
-            height (float): The height of the subwindow relative to the full window. 
+            x (float): The x-coordinate (between 0 and 1) of the top-left corner of the subwindow, relative to the full window.
+            y (float): The y-coordinate (between 0 and 1) of the top-left corner of the subwindow, relative to the full window.
+            width (float): The width of the subwindow relative to the full window.
+            height (float): The height of the subwindow relative to the full window.
         """
         self.gui.begin(name, x, y, width, height)
 
@@ -57,7 +57,7 @@ class Gui:
         return self.gui.slider_float(text, old_value, minimum, maximum)
 
     def color_edit_3(self, text, old_value):
-        """Declares a color edit palate. 
+        """Declares a color edit palate.
 
         Args:
             text (str): a line of text to be shown next to the palate

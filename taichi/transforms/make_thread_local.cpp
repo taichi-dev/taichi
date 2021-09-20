@@ -22,27 +22,32 @@ std::vector<std::pair<T *, AtomicOpType>> find_global_reduction_destinations(
     const std::function<bool(T *)> &dest_checker) {
   static_assert(std::is_same_v<T, GlobalPtrStmt> ||
                 std::is_same_v<T, GlobalTemporaryStmt>);
-  // Gather all atomic adds/subs destinations
-  // We use std::vector instead of std::set to keep an deterministic order here.
-  std::map<T *, AtomicOpType> atomic_destinations;
+  // Gather all atomic add/sub/max/min destinations and record corresponding op
+  // type on the first appearance of a destination.
+  // Only one op type will be allowed on one destination (add/sub is an
+  // exception because add/sub can be mixed together in delta calculation).
+  // We use std::vector instead of std::map to keep a deterministic order here.
+  std::vector<std::pair<T *, AtomicOpType>> atomic_destinations;
   // TODO: this is again an abuse since it gathers nothing. Need to design a IR
   // map/reduce system
-  auto linear_atomics =
+  auto atomics =
       irpass::analysis::gather_statements(offload, [&](Stmt *stmt) {
         if (auto atomic_op = stmt->cast<AtomicOpStmt>()) {
           if (atomic_op->op_type == AtomicOpType::add ||
               atomic_op->op_type == AtomicOpType::sub ||
               atomic_op->op_type == AtomicOpType::max ||
               atomic_op->op_type == AtomicOpType::min) {
-            // Local or global tmp atomics does not count
+            // Local atomics do not count.
             if (auto dest = atomic_op->dest->cast<T>()) {
-              if (atomic_destinations.find(dest) == atomic_destinations.end()) {
-                // As we will be calculating delta, add/sub can be mixed
-                // together However, max/min needs to be handled independently
-                atomic_destinations[dest] =
-                    atomic_op->op_type == AtomicOpType::sub
-                        ? AtomicOpType::add
-                        : atomic_op->op_type;
+              if (std::find_if(atomic_destinations.begin(),
+                               atomic_destinations.end(),
+                               [&](const std::pair<T *, AtomicOpType> &elem) {
+                                 return elem.first == dest;
+                               }) == atomic_destinations.end()) {
+                atomic_destinations.push_back(
+                    {dest, atomic_op->op_type == AtomicOpType::sub
+                               ? AtomicOpType::add
+                               : atomic_op->op_type});
               }
             }
           }
@@ -72,8 +77,7 @@ std::vector<std::pair<T *, AtomicOpType>> find_global_reduction_destinations(
             }
           }
           for (auto &op : stmt->get_operands()) {
-            // Make sure the values of related atomic add operation are not
-            // used.
+            // Make sure the values of related atomic operations are not used.
             if (auto atomic = op->cast<AtomicOpStmt>()) {
               if (irpass::analysis::maybe_same_address(atomic->dest,
                                                        dest.first)) {

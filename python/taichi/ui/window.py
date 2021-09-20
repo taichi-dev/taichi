@@ -13,6 +13,13 @@ from .utils import get_field_info
 
 
 class Window(_ti_core.PyWindow):
+    """The window class.
+
+    Args:
+        name (str): name of the window. 
+        res (Tuple[Int]): resolution (width, height) of the window, in pixels. 
+        layout (vsync): whether or not vertical sync should be enabled.
+    """
     def __init__(self, name, res, vsync=False):
         package_path = str(pathlib.Path(__file__).parent.parent)
 
@@ -29,6 +36,11 @@ class Window(_ti_core.PyWindow):
         self.set_is_running(value)
 
     def get_events(self, tag=None):
+        """ Obtain a list of unprocessed events.
+
+        Args:
+            tag (str): A tag used for filtering events. If it is None, then all events are returned.
+        """
         if tag == None:
             return super().get_events(_ti_core.EventType.Any)
         elif tag == PRESS:
@@ -38,6 +50,11 @@ class Window(_ti_core.PyWindow):
         raise Exception("unrecognized event tag")
 
     def get_event(self, tag=None):
+        """ Returns whether or not a event that matches tag has occurred.
+
+        If tag is None, then no filters are applied. If this function returns `True`, the `event` property of the window will be set to the corresponding event.
+
+        """
         if tag == None:
             return super().get_event(_ti_core.EventType.Any)
         elif tag == PRESS:
@@ -53,8 +70,10 @@ class Window(_ti_core.PyWindow):
         return False
 
     def get_canvas(self):
+        """Returns a canvas handle. See :class`~taichi.ui.canvas.Canvas` """
         return Canvas(super().get_canvas())
 
     @property
     def GUI(self):
+        """Returns a IMGUI handle. See :class`~taichi.ui.ui.Gui` """
         return Gui(super().GUI())

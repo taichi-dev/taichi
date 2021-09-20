@@ -1,9 +1,11 @@
 #include "taichi/backends/cuda/cupti_toolkit.h"
 #include "taichi/backends/cuda/cuda_context.h"
 
+#include <cstdlib>
+
 TLANG_NAMESPACE_BEGIN
 
-bool check_device_capability() {
+bool check_cupti_availability() {
   void *device;
   int cc_major;
   CUDADriver::get_instance().device_get(&device, 0);
@@ -61,6 +63,149 @@ CuptiToolkit::CuptiToolkit() {
 CuptiToolkit::~CuptiToolkit() {
   end_profiling();
   deinit_cupti();
+}
+
+// Some of the codes are copied from CUPTI/samples/extensions/
+// and modified to match Taichi's naming convensions
+
+template <typename T>
+class ScopeExit {
+ public:
+  ScopeExit(T t) : t_(t) {
+  }
+  ~ScopeExit() {
+    t_();
+  }
+ private:
+  T t_;
+};
+
+template <typename T>
+ScopeExit<T> MoveScopeExit(T t) {
+  return ScopeExit<T>(t);
+};
+
+#define NV_ANONYMOUS_VARIABLE_DIRECT(name, line) name##line
+#define NV_ANONYMOUS_VARIABLE_INDIRECT(name, line) \
+  NV_ANONYMOUS_VARIABLE_DIRECT(name, line)
+#define SCOPE_EXIT(func)                                      \
+  const auto NV_ANONYMOUS_VARIABLE_INDIRECT(EXIT, __LINE__) = \
+      MoveScopeExit([=]() { func; })
+#undef NV_ANONYMOUS_VARIABLE_DIRECT
+#undef NV_ANONYMOUS_VARIABLE_INDIRECT
+
+#define CUPTI_API_CALL(api_func_call)                                      \
+  do {                                                                     \
+    CUptiResult status = api_func_call;                                    \
+    if (status != CUPTI_SUCCESS) {                                         \
+      const char *errstr;                                                  \
+      cuptiGetResultString(status, &errstr);                               \
+      fprintf(stderr, "%s:%d: error: function %s failed with error %s.\n", \
+              __FILE__, __LINE__, #api_func_call, errstr);                 \
+      exit(-1);                                                            \
+    }                                                                      \
+  } while (0)
+
+#define RETURN_IF_NVPW_ERROR(retval, actual)                 \
+  do {                                                       \
+    NVPA_Status status = actual;                             \
+    if (NVPA_STATUS_SUCCESS != status) {                     \
+      fprintf(stderr, "FAILED: %s with error %s\n", #actual, \
+              get_nvpw_result_string(status));               \
+      return retval;                                         \
+    }                                                        \
+  } while (0)
+
+static const char *get_nvpw_result_string(NVPA_Status status) {
+
+#define NVPW_STATUS_RESULT(status) \
+  case status:                     \
+    error_msg = #status;           \
+    break;
+
+  const char *error_msg = NULL;
+  switch (status) {
+    NVPW_STATUS_RESULT(NVPA_STATUS_ERROR)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INTERNAL_ERROR)
+    NVPW_STATUS_RESULT(NVPA_STATUS_NOT_INITIALIZED)
+    NVPW_STATUS_RESULT(NVPA_STATUS_NOT_LOADED)
+    NVPW_STATUS_RESULT(NVPA_STATUS_FUNCTION_NOT_FOUND)
+    NVPW_STATUS_RESULT(NVPA_STATUS_NOT_SUPPORTED)
+    NVPW_STATUS_RESULT(NVPA_STATUS_NOT_IMPLEMENTED)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INVALID_ARGUMENT)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INVALID_METRIC_ID)
+    NVPW_STATUS_RESULT(NVPA_STATUS_DRIVER_NOT_LOADED)
+    NVPW_STATUS_RESULT(NVPA_STATUS_OUT_OF_MEMORY)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INVALID_THREAD_STATE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_FAILED_CONTEXT_ALLOC)
+    NVPW_STATUS_RESULT(NVPA_STATUS_UNSUPPORTED_GPU)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INSUFFICIENT_DRIVER_VERSION)
+    NVPW_STATUS_RESULT(NVPA_STATUS_OBJECT_NOT_REGISTERED)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INSUFFICIENT_PRIVILEGE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INVALID_CONTEXT_STATE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INVALID_OBJECT_STATE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_RESOURCE_UNAVAILABLE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_DRIVER_LOADED_TOO_LATE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_INSUFFICIENT_SPACE)
+    NVPW_STATUS_RESULT(NVPA_STATUS_OBJECT_MISMATCH)
+    NVPW_STATUS_RESULT(NVPA_STATUS_VIRTUALIZED_DEVICE_NOT_SUPPORTED)
+    default:
+      break;
+  }
+#undef NVPW_STATUS_RESULT
+  return error_msg;
+}
+
+// copy from CUPTI/samples/extensions/include/profilerhost_util/Parser.h
+inline bool parse_metric_name_string(const std::string &metric_name,
+                                     std::string *req_name,
+                                     bool *isolated,
+                                     bool *keep_instances) {
+  std::string &name = *req_name;
+  name = metric_name;
+  if (name.empty()) {
+    return false;
+  }
+
+  // boost program_options sometimes inserts a \n between the metric name and a
+  // '&' at the end
+  size_t pos = name.find('\n');
+  if (pos != std::string::npos) {
+    name.erase(pos, 1);
+  }
+
+  // trim whitespace
+  while (name.back() == ' ') {
+    name.pop_back();
+    if (name.empty()) {
+      return false;
+    }
+  }
+
+  *keep_instances = false;
+  if (name.back() == '+') {
+    *keep_instances = true;
+    name.pop_back();
+    if (name.empty()) {
+      return false;
+    }
+  }
+
+  *isolated = true;
+  if (name.back() == '$') {
+    name.pop_back();
+    if (name.empty()) {
+      return false;
+    }
+  } else if (name.back() == '&') {
+    *isolated = false;
+    name.pop_back();
+    if (name.empty()) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 // copy from : CUPTI/samples/extensions/src/profilerhost_util/Metric.cpp
@@ -385,11 +530,23 @@ bool CuptiToolkit::init_cupti() {
   CUPTI_API_CALL(
       cuptiProfilerGetCounterAvailability(&get_counter_availability_params));
 
+#define NVPW_API_CALL(api_func_call)                                       \
+  do {                                                                     \
+    NVPA_Status status = api_func_call;                                    \
+    if (status != NVPA_STATUS_SUCCESS) {                                   \
+      fprintf(stderr, "%s:%d: error: function %s failed with error %d.\n", \
+              __FILE__, __LINE__, #api_func_call, status);                 \
+      exit(-1);                                                            \
+    }                                                                      \
+  } while (0)
+
   /* Generate configuration for metrics, this can also be done offline*/
   NVPW_InitializeHost_Params initialize_host_params = {
       NVPW_InitializeHost_Params_STRUCT_SIZE};
   NVPW_API_CALL(NVPW_InitializeHost(&initialize_host_params));
   TI_TRACE("NVPW_InitializeHost");
+
+#undef NVPW_API_CALL
 
   bool state = 0;
   state = get_config_image(cupti_image_.chip_name, cupti_config_.metric_list,
@@ -477,6 +634,8 @@ bool CuptiToolkit::deinit_cupti() {
   CUPTI_API_CALL(cuptiProfilerDeInitialize(&profiler_deinitialize_params));
   return true;
 }
+
+
 
 bool CuptiToolkit::update_record(
     std::vector<KernelProfileTracedRecord> &traced_records) {
@@ -593,13 +752,10 @@ bool CuptiToolkit::update_record(
 }
 
 // undef macros defined in ./cupti_toolkit_functions.h
+
 #undef CUPTI_API_CALL
-#undef NVPW_API_CALL
-#undef NV_ANONYMOUS_VARIABLE_DIRECT
-#undef NV_ANONYMOUS_VARIABLE_INDIRECT
 #undef SCOPE_EXIT
 #undef RETURN_IF_NVPW_ERROR
-#undef NVPW_STATUS_RESULT
 
 #else
 

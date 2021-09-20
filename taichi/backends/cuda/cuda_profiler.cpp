@@ -14,7 +14,7 @@ KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
 #if defined(TI_WITH_CUDA_TOOLKIT)
     // if Taichi was compiled with CUDA toolit, then use CUPTI
     // TODO : add set_mode() to select toolkit by user
-    if (check_device_capability() && check_cupti_privileges())
+    if (check_cupti_availability() && check_cupti_privileges())
       tool_ = ProfilingToolkit::cupti;
 #endif
   }

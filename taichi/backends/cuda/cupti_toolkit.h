@@ -1,7 +1,16 @@
 #pragma once
 
 #include "taichi/program/kernel_profiler.h"
-#include "taichi/backends/cuda/cupti_toolkit_functions.h"
+
+#if defined(TI_WITH_CUDA_TOOLKIT)
+#include <cupti_target.h>
+#include <cupti_result.h>
+#include <cupti_profiler_target.h>
+#include <nvperf_host.h>
+#include <nvperf_cuda_host.h>
+#include <nvperf_target.h>
+#endif
+
 
 TLANG_NAMESPACE_BEGIN
 
@@ -39,7 +48,7 @@ struct CuptiImage {
   std::vector<uint8_t> counter_data_image;
 };
 
-bool check_device_capability();
+bool check_cupti_availability();
 bool check_cupti_privileges();
 
 class CuptiToolkit {

@@ -47,7 +47,7 @@ static std::string add_line_markers(std::string x) {
   return x;
 }
 
-struct OpenGLRuntimeImpl {
+struct OpenGlRuntimeImpl {
   struct {
     DeviceAllocation runtime = kDeviceNullAllocation;
     DeviceAllocation listman = kDeviceNullAllocation;
@@ -55,7 +55,7 @@ struct OpenGLRuntimeImpl {
     DeviceAllocation gtmp = kDeviceNullAllocation;
   } core_bufs;
 
-  OpenGLRuntimeImpl() {
+  OpenGlRuntimeImpl() {
   }
 
   std::unique_ptr<GLSLRuntime> runtime;
@@ -262,7 +262,7 @@ struct CompiledProgram::Impl {
     return i;
   }
 
-  void dump_message_buffer(OpenGLRuntime *runtime) const {
+  void dump_message_buffer(OpenGlRuntime *runtime) const {
     auto rt_buf = (GLSLRuntime *)device->map(runtime->impl->core_bufs.runtime);
 
     auto msg_count = rt_buf->msg_count;
@@ -332,7 +332,7 @@ struct CompiledProgram::Impl {
     return access;
   }
 
-  void launch(Context &ctx, OpenGLRuntime *launcher) const {
+  void launch(Context &ctx, OpenGlRuntime *launcher) const {
     std::array<void *, taichi_max_num_args> ext_arr_host_ptrs;
 
     uint8_t *args_buf_mapped = nullptr;
@@ -425,12 +425,12 @@ struct CompiledProgram::Impl {
   }
 };
 
-OpenGLRuntime::OpenGLRuntime() {
+OpenGlRuntime::OpenGlRuntime() {
   initialize_opengl();
 
   device = std::make_unique<GLDevice>();
 
-  impl = std::make_unique<OpenGLRuntimeImpl>();
+  impl = std::make_unique<OpenGlRuntimeImpl>();
 
   impl->runtime = std::make_unique<GLSLRuntime>();
   impl->core_bufs.runtime = device->allocate_memory(
@@ -452,11 +452,11 @@ OpenGLRuntime::OpenGLRuntime() {
   device->get_compute_stream()->submit_synced(cmdlist.get());
 }
 
-void OpenGLRuntime::keep(std::unique_ptr<CompiledProgram> program) {
+void OpenGlRuntime::keep(std::unique_ptr<CompiledProgram> program) {
   impl->programs.push_back(std::move(program));
 }
 
-void OpenGLRuntime::add_snode_tree(size_t size) {
+void OpenGlRuntime::add_snode_tree(size_t size) {
   impl->core_bufs.root = device->allocate_memory({size});
 
   auto cmdlist = device->get_compute_stream()->new_command_list();
@@ -472,7 +472,7 @@ bool is_opengl_api_available() {
 
 #else
 struct GLProgram {};
-struct OpenGLRuntimeImpl {};
+struct OpenGlRuntimeImpl {};
 
 struct CompiledProgram::Impl {
   UsedFeature used;
@@ -493,20 +493,20 @@ struct CompiledProgram::Impl {
     TI_NOT_IMPLEMENTED;
   }
 
-  void launch(Context &ctx, OpenGLRuntime *launcher) const {
+  void launch(Context &ctx, OpenGlRuntime *launcher) const {
     TI_NOT_IMPLEMENTED;
   }
 };
 
-OpenGLRuntime::OpenGLRuntime() {
+OpenGlRuntime::OpenGlRuntime() {
   TI_NOT_IMPLEMENTED;
 }
 
-void OpenGLRuntime::keep(std::unique_ptr<CompiledProgram>) {
+void OpenGlRuntime::keep(std::unique_ptr<CompiledProgram>) {
   TI_NOT_IMPLEMENTED;
 }
 
-void OpenGLRuntime::add_snode_tree(size_t size) {
+void OpenGlRuntime::add_snode_tree(size_t size) {
   TI_NOT_IMPLEMENTED;
 }
 
@@ -544,11 +544,11 @@ int CompiledProgram::lookup_or_add_string(const std::string &str) {
   return impl->lookup_or_add_string(str);
 }
 
-void CompiledProgram::launch(Context &ctx, OpenGLRuntime *launcher) const {
+void CompiledProgram::launch(Context &ctx, OpenGlRuntime *launcher) const {
   impl->launch(ctx, launcher);
 }
 
-OpenGLRuntime::~OpenGLRuntime() = default;
+OpenGlRuntime::~OpenGlRuntime() = default;
 
 }  // namespace opengl
 TLANG_NAMESPACE_END

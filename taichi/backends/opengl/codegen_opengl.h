@@ -18,7 +18,7 @@ class OpenglCodeGen {
  public:
   OpenglCodeGen(const std::string &kernel_name,
                 StructCompiledResult *struct_compiled,
-                OpenGLRuntime *launcher)
+                OpenGlRuntime *launcher)
       : kernel_name_(kernel_name),
         struct_compiled_(struct_compiled),
         runtime_(launcher) {
@@ -34,7 +34,7 @@ class OpenglCodeGen {
 
   Kernel *kernel_;
   [[maybe_unused]] StructCompiledResult *struct_compiled_;
-  [[maybe_unused]] OpenGLRuntime *runtime_;
+  [[maybe_unused]] OpenGlRuntime *runtime_;
 };
 
 }  // namespace opengl

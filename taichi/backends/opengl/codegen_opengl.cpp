@@ -150,7 +150,7 @@ class KernelGen : public IRVisitor {
 
     // clang-format off
     if (used.print)  // the runtime buffer is only used for print now..
-      line_appender_header_.append_raw(shaders::kOpenGLRuntimeSourceCode);
+      line_appender_header_.append_raw(shaders::kOpenGlRuntimeSourceCode);
     if (used.listman)
       line_appender_header_.append_raw(shaders::kOpenGLListmanSourceCode);
 

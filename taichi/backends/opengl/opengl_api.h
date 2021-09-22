@@ -60,7 +60,7 @@ struct CompiledProgram {
                nullptr);
   void set_used(const UsedFeature &used);
   int lookup_or_add_string(const std::string &str);
-  void launch(Context &ctx, OpenGLRuntime *launcher) const;
+  void launch(Context &ctx, OpenGlRuntime *launcher) const;
 };
 
 }  // namespace opengl

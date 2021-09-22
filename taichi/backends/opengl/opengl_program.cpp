@@ -16,7 +16,7 @@ void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                             uint64 **result_buffer_ptr) {
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
-  opengl_runtime_ = std::make_unique<opengl::OpenGLRuntime>();
+  opengl_runtime_ = std::make_unique<opengl::OpenGlRuntime>();
 }
 
 void OpenglProgramImpl::materialize_snode_tree(

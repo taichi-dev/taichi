@@ -306,11 +306,12 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     TI_TRACE("Allocating device memory {:.2f} GB",
              1.0 * prealloc_size / (1UL << 30));
 
-
     Device::AllocParams preallocated_device_buffer_alloc_params;
     preallocated_device_buffer_alloc_params.size = prealloc_size;
-    preallocated_device_buffer_alloc = cuda_device()->allocate_memory(preallocated_device_buffer_alloc_params);
-    cuda::CudaDevice::AllocInfo preallocated_device_buffer_alloc_info = cuda_device()->get_alloc_info(preallocated_device_buffer_alloc);
+    preallocated_device_buffer_alloc =
+        cuda_device()->allocate_memory(preallocated_device_buffer_alloc_params);
+    cuda::CudaDevice::AllocInfo preallocated_device_buffer_alloc_info =
+        cuda_device()->get_alloc_info(preallocated_device_buffer_alloc);
     preallocated_device_buffer = preallocated_device_buffer_alloc_info.ptr;
 
     CUDADriver::get_instance().memset(preallocated_device_buffer, 0,
@@ -440,7 +441,7 @@ void LlvmProgramImpl::finalize() {
   if (runtime_mem_info)
     runtime_mem_info->set_profiler(nullptr);
 #if defined(TI_WITH_CUDA)
-  if (preallocated_device_buffer != nullptr){
+  if (preallocated_device_buffer != nullptr) {
     cuda_device()->dealloc_memory(preallocated_device_buffer_alloc);
   }
 #endif

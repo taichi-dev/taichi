@@ -27,7 +27,7 @@ class MemoryPool {
   MemRequestQueue *queue;
   void *cuda_stream{nullptr};
 
-  MemoryPool(Arch arch, Device* device);
+  MemoryPool(Arch arch, Device *device);
 
   template <typename T>
   T fetch(volatile void *ptr);
@@ -48,7 +48,7 @@ class MemoryPool {
  private:
   static constexpr bool use_cuda_stream = false;
   Arch arch_;
-  Device* device_;
+  Device *device_;
 };
 
 TLANG_NAMESPACE_END

@@ -14,32 +14,32 @@ namespace cuda{
 
 class CudaResourceBinder:public ResourceBinder {
  public:
-  virtual ~CudaResourceBinder() override {
+  ~CudaResourceBinder() override {
   }
 
-  virtual std::unique_ptr<Bindings> materialize() override {
+  std::unique_ptr<Bindings> materialize() override {
       TI_NOT_IMPLEMENTED
   };
 
-  virtual void rw_buffer(uint32_t set,
+  void rw_buffer(uint32_t set,
                          uint32_t binding,
                          DevicePtr ptr,
                          size_t size) override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void rw_buffer(uint32_t set,
+  void rw_buffer(uint32_t set,
                          uint32_t binding,
                          DeviceAllocation alloc) override {
       TI_NOT_IMPLEMENTED
   };
 
-  virtual void buffer(uint32_t set,
+  void buffer(uint32_t set,
                       uint32_t binding,
                       DevicePtr ptr,
                       size_t size) override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void buffer(uint32_t set,
+  void buffer(uint32_t set,
                       uint32_t binding,
                       DeviceAllocation alloc) override {
       TI_NOT_IMPLEMENTED
@@ -51,10 +51,10 @@ class CudaResourceBinder:public ResourceBinder {
 
 class CudaPipeline:public Pipeline {
  public:
-  virtual ~CudaPipeline() override {
+  ~CudaPipeline() override {
   }
 
-  virtual ResourceBinder *resource_binder() override {
+  ResourceBinder *resource_binder() override {
       TI_NOT_IMPLEMENTED
   };
 };
@@ -62,35 +62,35 @@ class CudaPipeline:public Pipeline {
 
 class CudaCommandList:public CommandList {
  public:
-  virtual ~CudaCommandList() override {
+  ~CudaCommandList() override {
   }
 
-  virtual void bind_pipeline(Pipeline *p) override {
+  void bind_pipeline(Pipeline *p) override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void bind_resources(ResourceBinder *binder) override {
+  void bind_resources(ResourceBinder *binder) override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void bind_resources(ResourceBinder *binder,
+  void bind_resources(ResourceBinder *binder,
                               ResourceBinder::Bindings *bindings) override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void buffer_barrier(DevicePtr ptr, size_t size) override {
+  void buffer_barrier(DevicePtr ptr, size_t size) override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void buffer_barrier(DeviceAllocation alloc) override {
+  void buffer_barrier(DeviceAllocation alloc) override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void memory_barrier() override {
+  void memory_barrier() override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override {
+  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override {
+  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override {
+  void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override {
       TI_NOT_IMPLEMENTED
   };
 
@@ -99,19 +99,19 @@ class CudaCommandList:public CommandList {
 
 class CudaStream :public Stream{
  public:
-  virtual ~CudaStream() override{};
+  ~CudaStream() override{};
 
-  virtual std::unique_ptr<CommandList> new_command_list() override {
+  std::unique_ptr<CommandList> new_command_list() override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void submit(CommandList *cmdlist) override {
+  void submit(CommandList *cmdlist) override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void submit_synced(CommandList *cmdlist) override {
+  void submit_synced(CommandList *cmdlist) override {
       TI_NOT_IMPLEMENTED
   };
 
-  virtual void command_sync() override {
+  void command_sync() override {
       TI_NOT_IMPLEMENTED
   };
 };
@@ -127,36 +127,36 @@ class CudaDevice :public Device{
   AllocInfo get_alloc_info(DeviceAllocation handle);
 
 
-  virtual ~CudaDevice() override {};
+  ~CudaDevice() override {};
 
-  virtual DeviceAllocation allocate_memory(const AllocParams &params) ;
-  virtual void dealloc_memory(DeviceAllocation handle) ;
+  DeviceAllocation allocate_memory(const AllocParams &params) ;
+  void dealloc_memory(DeviceAllocation handle) ;
 
-  virtual std::unique_ptr<Pipeline> create_pipeline(
+  std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") override {
       TI_NOT_IMPLEMENTED
   };
 
-  virtual void *map_range(DevicePtr ptr, uint64_t size) override {
+  void *map_range(DevicePtr ptr, uint64_t size) override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void *map(DeviceAllocation alloc) override {
+  void *map(DeviceAllocation alloc) override {
       TI_NOT_IMPLEMENTED
   };
 
-  virtual void unmap(DevicePtr ptr) override {
+  void unmap(DevicePtr ptr) override {
       TI_NOT_IMPLEMENTED
   };
-  virtual void unmap(DeviceAllocation alloc) override {
+  void unmap(DeviceAllocation alloc) override {
       TI_NOT_IMPLEMENTED
   };
   
-  virtual void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override {
+  void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override {
       TI_NOT_IMPLEMENTED
   };
 
-  virtual Stream *get_compute_stream() override {
+  Stream *get_compute_stream() override {
       TI_NOT_IMPLEMENTED
   };
 private:

@@ -482,6 +482,10 @@ void DelayedIRModifier::replace_with(Stmt *stmt,
   to_replace_with.emplace_back(stmt, std::move(new_statements), replace_usages);
 }
 
+void DelayedIRModifier::extract_to_block_front(Stmt *stmt, Block *blk) {
+  to_extract_to_block_front.emplace_back(stmt, blk);
+}
+
 bool DelayedIRModifier::modify_ir() {
   bool force_modified = modified_;
   modified_ = false;
@@ -504,6 +508,11 @@ bool DelayedIRModifier::modify_ir() {
     std::get<0>(i)->replace_with(std::move(std::get<1>(i)), std::get<2>(i));
   }
   to_replace_with.clear();
+  for (auto &i : to_extract_to_block_front) {
+    auto extracted = i.first->parent->extract(i.first);
+    i.second->insert(std::move(extracted), 0);
+  }
+  to_extract_to_block_front.clear();
   return true;
 }
 

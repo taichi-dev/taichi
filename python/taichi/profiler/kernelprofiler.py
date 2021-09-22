@@ -45,8 +45,8 @@ class KernelProfiler:
 
         ``_profiling_mode`` is a boolean value, turned ON/OFF by : `~taichi.profiler.kernelprofiler.KernelProfiler.set_kernel_profiler_mode`.
         ``_total_time_ms`` is a float value, get the value in seconds with : `~taichi.profiler.kernelprofiler.KernelProfiler.get_total_time`.
-        ``_traced_records`` is a ``list`` of profiling records, acquired from backend by : `~taichi.profiler.kernelprofiler.KernelProfiler.update_records`.
-        ``_statistical_results`` is a ``dict`` of statistical profiling results,  statistics via : `~taichi.profiler.kernelprofiler.KernelProfiler.count_results`.
+        ``_traced_records`` is a list of profiling records, acquired from backend by : `~taichi.profiler.kernelprofiler.KernelProfiler.update_records`.
+        ``_statistical_results`` is a dict of statistical profiling results,  statistics via : `~taichi.profiler.kernelprofiler.KernelProfiler.count_results`.
         """
         self._profiling_mode = False
         self._total_time_ms = 0.0
@@ -187,7 +187,7 @@ def get_default_kernel_profiler():
     For ``KernelProfiler`` using ``CuptiToolkit``, GPU devices can only work in a certain configuration,
     profiling mode and metrics are configured by the host(CPU) via CUPTI APIs, and device(GPU) will use
     its counter registers to collect specific metrics.
-    So if there are multiple instances of `1KernelProfiler1`,the device will work in the last configuration mode,
+    So if there are multiple instances of ``KernelProfiler``,the device will work in the last configuration mode,
     the configuration of other instance will also be changed as a result.
     For data retention purposes, support for multiple instances may be considered in the future.
     """

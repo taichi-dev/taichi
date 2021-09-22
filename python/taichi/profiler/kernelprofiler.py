@@ -1,8 +1,10 @@
+import inspect
+
 from taichi.core import ti_core as _ti_core
 from taichi.lang import impl
 
 import taichi as ti
-import inspect
+
 
 class StatisticalResult:
     """Statistical result of records.

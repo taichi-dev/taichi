@@ -81,12 +81,12 @@ def kernel_profiler_print():
     return print_kernel_profile_info()
 
 
-def print_kernel_profile_info(mode='count'):
+def print_kernel_profile_info(mode=kernel_profiler.COUNT):
     """Print the profiling results of Taichi kernels.
 
     To enable this profiler, set ``kernel_profiler=True`` in ``ti.init()``.
-    The default print mode is ``'count'`` mode: print the statistical results (min,max,avg time) of Taichi kernels,
-    another mode ``'trace'``: print the records of launched Taichi kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
+    The default print mode is ``COUNT`` mode: print the statistical results (min,max,avg time) of Taichi kernels,
+    another mode ``TRACE``: print the records of launched Taichi kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
 
     Args:
         mode (str): the way to print profiling results

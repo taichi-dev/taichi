@@ -5,6 +5,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// In the future we wish to move the MemoryPool inside each Device
+// so that the memory allocated from each Device can be used as-is.
 MemoryPool::MemoryPool(Arch arch, Device *device)
     : arch_(arch), device_(device) {
   TI_TRACE("Memory pool created. Default buffer size per allocator = {} MB",

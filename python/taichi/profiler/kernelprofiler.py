@@ -43,7 +43,7 @@ class KernelProfiler:
     def __init__(self):
         """Constructor of class KernelProfiler.
 
-        ``_profiling_mode`` is a boolean value, turned ON/OFF by : `~taichi.profiler.kernelprofiler.KernelProfiler.set_kernel_profiler_mode`.
+        ``_profiling_mode`` is a boolean value, turned ON/OFF by : :func:`~taichi.profiler.kernelprofiler.KernelProfiler.set_kernel_profiler_mode`.
         ``_total_time_ms`` is a float value, get the value in seconds with : `~taichi.profiler.kernelprofiler.KernelProfiler.get_total_time`.
         ``_traced_records`` is a list of profiling records, acquired from backend by : `~taichi.profiler.kernelprofiler.KernelProfiler.update_records`.
         ``_statistical_results`` is a dict of statistical profiling results,  statistics via : `~taichi.profiler.kernelprofiler.KernelProfiler.count_results`.
@@ -64,7 +64,7 @@ class KernelProfiler:
     def get_kernel_profiler_mode(self):
         return self._profiling_mode
 
-    def clear_fronted(self):
+    def clear_frontend(self):
         self._total_time_ms = 0.0
         self._traced_records.clear()
         self._statistical_results.clear()
@@ -121,7 +121,7 @@ class KernelProfiler:
         """Print the profiling results of Taichi kernels.
 
         To enable this profiler, set ``kernel_profiler=True`` in ``ti.init()``.
-        The default print mode is ``'count'`` mode: print the statistical results (min,max,avg time) of Taichi kernels,
+        The default print mode is ``COUNT`` mode: print the statistical results (min,max,avg time) of Taichi kernels,
         another mode ``'trace'``: print the records of launched Taichi kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
 
         Args:

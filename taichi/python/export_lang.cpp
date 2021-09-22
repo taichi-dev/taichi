@@ -767,6 +767,7 @@ void export_lang(py::module &m) {
       "create_kernel",
       [&](const std::function<void()> &body, const std::string &name,
           bool grad) -> Kernel * {
+        py::gil_scoped_release release;
         return &get_current_program().kernel(body, name, grad);
       },
       py::return_value_policy::reference);

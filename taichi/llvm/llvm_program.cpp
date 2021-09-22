@@ -92,7 +92,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
       CUDAContext::get_instance().set_profiler(nullptr);
     }
     CUDAContext::get_instance().set_debug(config->debug);
-    device_ = std::unique_ptr<Device>(new cuda::CudaDevice());
+    device_ = std::make_unique<cuda::CudaDevice>();
   }
 #endif
 }

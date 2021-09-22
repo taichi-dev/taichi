@@ -27,6 +27,8 @@ class MemoryPool {
   MemRequestQueue *queue;
   void *cuda_stream{nullptr};
 
+  // In the future we wish to move the MemoryPool inside each Device
+  // so that the memory allocated from each Device can be used as-is.
   MemoryPool(Arch arch, Device *device);
 
   template <typename T>

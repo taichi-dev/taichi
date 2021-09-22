@@ -1,7 +1,16 @@
 #include "taichi/backends/cuda/cupti_toolkit.h"
 #include "taichi/backends/cuda/cuda_context.h"
 
-#include <cstdlib>
+// move from cupti_toolkit.h
+// avoid exposing these headers
+#if defined(TI_WITH_CUDA_TOOLKIT)
+#include <cupti_target.h>
+#include <cupti_result.h>
+#include <cupti_profiler_target.h>
+#include <nvperf_host.h>
+#include <nvperf_cuda_host.h>
+#include <nvperf_target.h>
+#endif
 
 TLANG_NAMESPACE_BEGIN
 
@@ -39,11 +48,10 @@ bool check_cupti_privileges() {
     TI_WARN("( Probably needs to run `update-initramfs -u`  before `reboot` )");
     TI_WARN(
         "=================================================================");
-    // TODO : doc and web
+    // TODO : doc and https link
     return false;
   }
-  // if there are other errors , CuptiToolkit::init_cupti() will send error
-  // message
+  // For other errors , CuptiToolkit::init_cupti() will send error message.
   return true;
 #else
   return false;
@@ -52,22 +60,8 @@ bool check_cupti_privileges() {
 
 #if defined(TI_WITH_CUDA_TOOLKIT)
 
-CuptiToolkit::CuptiToolkit() {
-  TI_TRACE("CuptiToolkit::CuptiToolkit() ");
-  cupti_config_.metric_list.clear();
-  for (uint32_t idx = 0; idx < CuptiMetricsDefault::CUPTI_METRIC_DEFAULT_TOTAL;
-       idx++)
-    cupti_config_.metric_list.push_back(MetricListDeafult[idx]);
-}
-
-CuptiToolkit::~CuptiToolkit() {
-  end_profiling();
-  deinit_cupti();
-}
-
 // Some of the codes are copied from CUPTI/samples/extensions/
 // and modified to match Taichi's naming convensions
-
 template <typename T>
 class ScopeExit {
  public:
@@ -76,6 +70,7 @@ class ScopeExit {
   ~ScopeExit() {
     t_();
   }
+
  private:
   T t_;
 };
@@ -86,13 +81,13 @@ ScopeExit<T> MoveScopeExit(T t) {
 };
 
 #define NV_ANONYMOUS_VARIABLE_DIRECT(name, line) name##line
+
 #define NV_ANONYMOUS_VARIABLE_INDIRECT(name, line) \
   NV_ANONYMOUS_VARIABLE_DIRECT(name, line)
+
 #define SCOPE_EXIT(func)                                      \
   const auto NV_ANONYMOUS_VARIABLE_INDIRECT(EXIT, __LINE__) = \
       MoveScopeExit([=]() { func; })
-#undef NV_ANONYMOUS_VARIABLE_DIRECT
-#undef NV_ANONYMOUS_VARIABLE_INDIRECT
 
 #define CUPTI_API_CALL(api_func_call)                                      \
   do {                                                                     \
@@ -117,7 +112,6 @@ ScopeExit<T> MoveScopeExit(T t) {
   } while (0)
 
 static const char *get_nvpw_result_string(NVPA_Status status) {
-
 #define NVPW_STATUS_RESULT(status) \
   case status:                     \
     error_msg = #status;           \
@@ -496,6 +490,19 @@ bool create_counter_data_image(
   return true;
 }
 
+CuptiToolkit::CuptiToolkit() {
+  TI_TRACE("CuptiToolkit::CuptiToolkit() ");
+  cupti_config_.metric_list.clear();
+  for (uint32_t idx = 0; idx < CuptiMetricsDefault::CUPTI_METRIC_DEFAULT_TOTAL;
+       idx++)
+    cupti_config_.metric_list.push_back(MetricListDeafult[idx]);
+}
+
+CuptiToolkit::~CuptiToolkit() {
+  end_profiling();
+  deinit_cupti();
+}
+
 bool CuptiToolkit::init_cupti() {
   // copy from CUPTI/samples/autorange_profiling/simplecuda.cu
   CUpti_Profiler_Initialize_Params profiler_initialize_params = {
@@ -595,8 +602,8 @@ bool CuptiToolkit::begin_profiling() {
       cupti_image_.counter_data_scratch_buffer.size();
   begin_session_params.pCounterDataScratchBuffer =
       &(cupti_image_.counter_data_scratch_buffer[0]);
-  begin_session_params.range = cupti_config_.profiler_range;
-  begin_session_params.replayMode = cupti_config_.profiler_replay_mode;
+  begin_session_params.range = CUPTI_AutoRange;          // hardcode
+  begin_session_params.replayMode = CUPTI_KernelReplay;  // hardcode
   begin_session_params.maxRangesPerPass = cupti_config_.num_ranges;
   begin_session_params.maxLaunchesPerPass = cupti_config_.num_ranges;
 
@@ -605,12 +612,12 @@ bool CuptiToolkit::begin_profiling() {
   set_config_params.pConfig = &(cupti_image_.config_image[0]);
   set_config_params.configSize = cupti_image_.config_image.size();
 
-  if (cupti_config_.profiler_replay_mode == CUPTI_KernelReplay) {
+  if (begin_session_params.replayMode == CUPTI_KernelReplay) {
     set_config_params.passIndex = 0;
     CUPTI_API_CALL(cuptiProfilerSetConfig(&set_config_params));
     CUPTI_API_CALL(cuptiProfilerEnableProfiling(&enable_profiling_params));
   } else {
-    TI_ERROR("profiler_replay_mode != CUPTI_KernelReplay");
+    TI_ERROR("begin_session_params.replayMode != CUPTI_KernelReplay");
   }
   return true;
 }
@@ -634,8 +641,6 @@ bool CuptiToolkit::deinit_cupti() {
   CUPTI_API_CALL(cuptiProfilerDeInitialize(&profiler_deinitialize_params));
   return true;
 }
-
-
 
 bool CuptiToolkit::update_record(
     std::vector<KernelProfileTracedRecord> &traced_records) {
@@ -751,8 +756,9 @@ bool CuptiToolkit::update_record(
   return true;
 }
 
-// undef macros defined in ./cupti_toolkit_functions.h
-
+// undef macros
+#undef NV_ANONYMOUS_VARIABLE_DIRECT
+#undef NV_ANONYMOUS_VARIABLE_INDIRECT
 #undef CUPTI_API_CALL
 #undef SCOPE_EXIT
 #undef RETURN_IF_NVPW_ERROR

@@ -7,8 +7,8 @@
 #include "taichi/backends/cuda/cuda_context.h"
 #include "taichi/backends/device.h"
 
-TLANG_NAMESPACE_BEGIN
-
+namespace taichi {
+namespace lang {
 namespace cuda {
 
 class CudaResourceBinder : public ResourceBinder {
@@ -114,4 +114,6 @@ class CudaDevice : public Device {
 
 }  // namespace cuda
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+
+}  // namespace taichi

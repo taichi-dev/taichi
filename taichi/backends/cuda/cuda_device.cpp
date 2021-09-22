@@ -1,6 +1,7 @@
 #include "taichi/backends/cuda/cuda_device.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 namespace cuda {
 
@@ -40,4 +41,6 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
 }
 
 }  // namespace cuda
-TLANG_NAMESPACE_END
+}  // namespace lang
+
+}  // namespace taichi

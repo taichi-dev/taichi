@@ -14,7 +14,7 @@ This site supports inserting code blocks with highlighted lines, for examples, t
 ```python {1-2,4,6} title=snippet.py
 @ti.kernel
 def paint(t: float):
-    for i, j in pixels:  # Parallized over all pixels
+    for i, j in pixels:  # Parallelized over all pixels
         c = ti.Vector([-0.8, ti.cos(t) * 0.2])
         z = ti.Vector([i / n - 1, j / n - 0.5]) * 2
         iterations = 0
@@ -30,7 +30,7 @@ will result in a code block like:
 ```python {1-2,4,6} title=snippet.py
 @ti.kernel
 def paint(t: float):
-    for i, j in pixels:  # Parallized over all pixels
+    for i, j in pixels:  # Parallelized over all pixels
         c = ti.Vector([-0.8, ti.cos(t) * 0.2])
         z = ti.Vector([i / n - 1, j / n - 0.5]) * 2
         iterations = 0

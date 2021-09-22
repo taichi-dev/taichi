@@ -4,6 +4,12 @@ using namespace taichi::lang::cccp;
 
 TLANG_NAMESPACE_BEGIN
 
+CCProgramImpl::CCProgramImpl(CompileConfig &config) : ProgramImpl(config) {
+    program_config = config;
+    init_runtime();
+    context = std::make_unique<cccp::CCContext>();
+}
+
 FunctionType CCProgramImpl::compile(Kernel *kernel, OffloadedStmt *offloaded) {
     CCKernelGen codegen(kernel);
     auto ker = codegen.compile();
@@ -28,25 +34,49 @@ void CCProgramImpl::add_kernel(std::unique_ptr<cccp::CCKernel> kernel) {
   need_relink = true;
 }
 
-namespace cccp {
+void CCProgramImpl::init_runtime() {
+  runtime = std::make_unique<CCRuntime>(
+#include "runtime/base.h"
+                                                  "\n",
+#include "runtime/base.c"
+                                                  "\n");
+  runtime->compile();
+}
 
 void CCKernel::compile() {
-  if (!kernel->is_evaluator)
-    ActionRecorder::get_instance().record(
-        "compile_kernel", {
-                              ActionArg("kernel_name", name),
-                              ActionArg("kernel_source", source),
-                          });
+    if (!kernel->is_evaluator)
+        ActionRecorder::get_instance().record(
+                "compile_kernel", {
+                        ActionArg("kernel_name", name),
+                        ActionArg("kernel_source", source),
+                });
 
-  obj_path = fmt::format("{}/{}.o", runtime_tmp_dir, name);
-  src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
+    obj_path = fmt::format("{}/{}.o", runtime_tmp_dir, name);
+    src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
 
-  std::ofstream(src_path) << program->get_runtime()->header << "\n"
-                          << program->get_layout()->source << "\n"
-                          << source;
-  TI_DEBUG("[cc] compiling [{}] -> [{}]:\n{}\n", name, obj_path, source);
-  execute(program->program->config.cc_compile_cmd, obj_path, src_path);
+    std::ofstream(src_path) << program->get_runtime()->header << "\n"
+                            << program->get_layout()->source << "\n"
+                            << source;
+    TI_DEBUG("[cc] compiling [{}] -> [{}]:\n{}\n", name, obj_path, source);
+    execute(CCProgramImpl::program_config.cc_compile_cmd, obj_path, src_path);
 }
+
+void CCRuntime::compile() {
+    ActionRecorder::get_instance().record("compile_runtime",
+                                          {
+                                                  ActionArg("runtime_header", header),
+                                                  ActionArg("runtime_source", source),
+                                          });
+
+    obj_path = fmt::format("{}/_rti_runtime.o", runtime_tmp_dir);
+    src_path = fmt::format("{}/_rti_runtime.c", runtime_tmp_dir);
+
+    std::ofstream(src_path) << header << "\n" << source;
+    TI_DEBUG("[cc] compiling runtime -> [{}]:\n{}\n", obj_path, source);
+    execute(CCProgramImpl::program_config.cc_compile_cmd, obj_path, src_path);
+}
+
+namespace cccp {
 
 void CCKernel::launch(Context *ctx) {
   if (!kernel->is_evaluator)
@@ -97,21 +127,6 @@ size_t CCLayout::compile() {
       dll.load_function("Ti_get_root_size"));
   TI_ASSERT(get_root_size);
   return (*get_root_size)();
-}
-
-void CCRuntime::compile() {
-  ActionRecorder::get_instance().record("compile_runtime",
-                                        {
-                                            ActionArg("runtime_header", header),
-                                            ActionArg("runtime_source", source),
-                                        });
-
-  obj_path = fmt::format("{}/_rti_runtime.o", runtime_tmp_dir);
-  src_path = fmt::format("{}/_rti_runtime.c", runtime_tmp_dir);
-
-  std::ofstream(src_path) << header << "\n" << source;
-  TI_DEBUG("[cc] compiling runtime -> [{}]:\n{}\n", obj_path, source);
-  execute(program->program->config.cc_compile_cmd, obj_path, src_path);
 }
 
 void CCProgram::relink() {
@@ -169,14 +184,14 @@ void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
   need_relink = true;
 }
 
-void CCProgram::init_runtime() {
-  runtime = std::make_unique<CCRuntime>(this,
-#include "runtime/base.h"
-                                        "\n",
-#include "runtime/base.c"
-                                        "\n");
-  runtime->compile();
-}
+//void CCProgram::init_runtime() {
+//  runtime = std::make_unique<CCRuntime>(
+//#include "runtime/base.h"
+//                                        "\n",
+//#include "runtime/base.c"
+//                                        "\n");
+//  runtime->compile();
+//}
 
 CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
   return reinterpret_cast<CCFuncEntryType *>(dll->load_function("Tk_" + name));

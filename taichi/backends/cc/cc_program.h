@@ -23,12 +23,10 @@ TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
 
-class CCKernel;
-
 class CCProgramImpl : public ProgramImpl {
 public:
-    CCProgramImpl(CompileConfig &config) : ProgramImpl(config) {
-    }
+    explicit CCProgramImpl(CompileConfig &config);
+
     FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
     std::size_t get_snode_num_dynamically_allocated(
@@ -61,10 +59,15 @@ public:
     ~CCProgramImpl() {
     }
 
+    static CompileConfig program_config;
+
 private:
   void add_kernel(std::unique_ptr<cccp::CCKernel> kernel);
+  void init_runtime();
 
   std::vector<std::unique_ptr<cccp::CCKernel>> kernels;
+  std::unique_ptr<cccp::CCContext> context;
+  std::unique_ptr<cccp::CCRuntime> runtime;
   bool need_relink{true};
 
 };

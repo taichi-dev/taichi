@@ -284,3 +284,28 @@ def test_bitmasked_2d_power_of_two():
     assert num_active[None] == total
     run()
     assert num_active[None] == total
+
+@ti.test(require=ti.extension.sparse)
+def test_root_deactivate():
+    a = ti.field(ti.i32)
+    a_a = ti.root.bitmasked(ti.i, 4)
+    a_b = a_a.dense(ti.i, 4)
+    a_b.place(a)
+    c = ti.field(ti.i32)
+    ti.root.place(c)
+
+    @ti.kernel
+    def run():
+        a[0] = 123
+
+    @ti.kernel
+    def is_active():
+        c[None] = ti.is_active(a_a, [0])
+
+    run()
+    is_active()
+    assert c[None] == 1
+
+    ti.root.deactivate_all()
+    is_active()
+    assert c[None] == 0

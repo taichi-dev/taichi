@@ -77,10 +77,7 @@ class FieldsBuilder:
             self._root.deactivate_all()
         else:
             warning(
-                """'deactivate_all()' would do nothing if FieldsBuilder is not finalized.
-    Due to 'ti.root' is implemented by 'ti.FieldsBuilder' implicitly, if you are
-    calling 'ti.root.deactivate_all()', please using 'ti.deactivate_all_snodes()'
-    instead.""")
+                """'deactivate_all()' would do nothing if FieldsBuilder is not finalized""")
 
     def dense(self, indices: Union[Sequence[_Axis], _Axis],
               dimensions: Union[Sequence[int], int]):

@@ -484,6 +484,10 @@ class _Root:
         """Same as :func:`taichi.SNode.get_children`"""
         return _root_fb.root.get_children()
 
+    def deactivate_all(self):
+        warning("""'ti.root.deactivate_all()' would deactivate all finalized snodes.""")
+        ti.deactivate_all_snodes()
+
     @property
     def shape(self):
         """Same as :func:`taichi.SNode.shape`"""

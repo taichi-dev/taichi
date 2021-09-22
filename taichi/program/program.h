@@ -103,7 +103,7 @@ class Program {
   Callable *current_callable{nullptr};
   CompileConfig config;
   bool sync{false};  // device/host synchronized?
-  
+
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
 
   std::unordered_map<int, SNode *>

@@ -485,7 +485,9 @@ class _Root:
         return _root_fb.root.get_children()
 
     def deactivate_all(self):
-        warning("""'ti.root.deactivate_all()' would deactivate all finalized snodes.""")
+        warning(
+            """'ti.root.deactivate_all()' would deactivate all finalized snodes."""
+        )
         ti.deactivate_all_snodes()
 
     @property

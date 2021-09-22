@@ -77,7 +77,8 @@ class FieldsBuilder:
             self._root.deactivate_all()
         else:
             warning(
-                """'deactivate_all()' would do nothing if FieldsBuilder is not finalized""")
+                """'deactivate_all()' would do nothing if FieldsBuilder is not finalized"""
+            )
 
     def dense(self, indices: Union[Sequence[_Axis], _Axis],
               dimensions: Union[Sequence[int], int]):

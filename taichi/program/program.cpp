@@ -21,6 +21,7 @@
 #include "taichi/math/arithmetic.h"
 
 #if defined(TI_WITH_CC)
+#include "taichi/backends/cc/cc_program.h"
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"
 #include "taichi/backends/cc/codegen_cc.h"
@@ -100,7 +101,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 
   if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
-    cc_program = std::make_unique<cccp::CCProgram>(this);
+    program_impl_ = std::make_unique<CCProgramImpl>(config);
 #else
     TI_WARN("No C backend detected.");
     config.arch = host_arch();
@@ -173,12 +174,13 @@ FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
   if (arch_uses_llvm(config.arch) || kernel.arch == Arch::metal ||
-      kernel.arch == Arch::vulkan || kernel.arch == Arch::opengl) {
+      kernel.arch == Arch::vulkan || kernel.arch == Arch::opengl ||
+      kernel.arch == Arch::cc) {
     return program_impl_->compile(&kernel, offloaded);
-#ifdef TI_WITH_CC
-  } else if (kernel.arch == Arch::cc) {
-    ret = cccp::compile_kernel(&kernel);
-#endif
+//#ifdef TI_WITH_CC
+//  } else if (kernel.arch == Arch::cc) {
+//    ret = cccp::compile_kernel(&kernel);
+//#endif
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -226,7 +228,7 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
     TI_ASSERT(result_buffer == nullptr);
     result_buffer = (uint64 *)memory_pool->allocate(
         sizeof(uint64) * taichi_result_buffer_entries, 8);
-    cc_program->compile_layout(root);
+    // cc_program->compile_layout(root);
 #endif
   }
 }

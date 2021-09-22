@@ -600,26 +600,26 @@ class CCTransformer : public IRVisitor {
   }
 };  // namespace cccp
 
-std::unique_ptr<CCKernel> CCKernelGen::compile() {
-  auto program = kernel->program->cc_program.get();
-  auto layout = program->get_layout();
-  CCTransformer tran(kernel, layout);
+//std::unique_ptr<CCKernel> CCKernelGen::compile() {
+//  auto program = kernel->program->cc_program.get();
+//  auto layout = program->get_layout();
+//  CCTransformer tran(kernel, layout);
+//
+//  tran.run();
+//  auto source = tran.get_source();
+//  auto ker = std::make_unique<CCKernel>(program, kernel, source, kernel->name);
+//  ker->compile();
+//  return ker;
+//}
 
-  tran.run();
-  auto source = tran.get_source();
-  auto ker = std::make_unique<CCKernel>(program, kernel, source, kernel->name);
-  ker->compile();
-  return ker;
-}
-
-FunctionType compile_kernel(Kernel *kernel) {
-  CCKernelGen codegen(kernel);
-  auto ker = codegen.compile();
-  auto ker_ptr = ker.get();
-  auto program = kernel->program->cc_program.get();
-  program->add_kernel(std::move(ker));
-  return [ker_ptr](Context &ctx) { return ker_ptr->launch(&ctx); };
-}
+//FunctionType compile_kernel(Kernel *kernel) {
+//  CCKernelGen codegen(kernel);
+//  auto ker = codegen.compile();
+//  auto ker_ptr = ker.get();
+//  auto program = kernel->program->cc_program.get();
+//  program->add_kernel(std::move(ker));
+//  return [ker_ptr](Context &ctx) { return ker_ptr->launch(&ctx); };
+//}
 
 }  // namespace cccp
 TLANG_NAMESPACE_END

@@ -299,7 +299,7 @@ class Program {
  public:
 #ifdef TI_WITH_CC
   // C backend related data structures
-  std::unique_ptr<cccp::CCProgram> cc_program;
+  // std::unique_ptr<cccp::CCProgram> cc_program;
 #endif
 };
 

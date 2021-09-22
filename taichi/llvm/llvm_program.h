@@ -126,8 +126,8 @@ class LlvmProgramImpl : public ProgramImpl {
     TI_NOT_IMPLEMENTED;
   }
 
-  virtual Device* get_compute_device() override{
-      return device_.get();
+  virtual Device *get_compute_device() override {
+    return device_.get();
   }
 
  private:
@@ -142,13 +142,12 @@ class LlvmProgramImpl : public ProgramImpl {
   DeviceAllocation preallocated_device_buffer_alloc{kDeviceNullAllocation};
 
   std::unique_ptr<Device> device_;
-  cuda::CudaDevice* cuda_device(){
-    if(config->arch != Arch::cuda){
+  cuda::CudaDevice *cuda_device() {
+    if (config->arch != Arch::cuda) {
       TI_ERROR("arch is not cuda");
     }
-    return static_cast<cuda::CudaDevice*>(device_.get());
+    return static_cast<cuda::CudaDevice *>(device_.get());
   }
-
 };
 }  // namespace lang
 }  // namespace taichi

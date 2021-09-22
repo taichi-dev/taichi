@@ -30,7 +30,7 @@ class UnifiedAllocator {
   std::mutex lock;
 
  public:
-  UnifiedAllocator(std::size_t size, Arch arch, Device* device);
+  UnifiedAllocator(std::size_t size, Arch arch, Device *device);
 
   ~UnifiedAllocator();
 
@@ -59,8 +59,8 @@ class UnifiedAllocator {
 
   UnifiedAllocator operator=(const UnifiedAllocator &) = delete;
 
-  private:
-  Device* device_;
+ private:
+  Device *device_;
 };
 
 TLANG_NAMESPACE_END

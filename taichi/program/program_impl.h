@@ -7,7 +7,6 @@
 #include "taichi/program/aot_module_builder.h"
 #include "taichi/backends/device.h"
 
-
 namespace taichi {
 namespace lang {
 class ProgramImpl {
@@ -57,12 +56,12 @@ class ProgramImpl {
    */
   virtual std::unique_ptr<AotModuleBuilder> make_aot_module_builder() = 0;
 
-  virtual Device* get_compute_device(){
-      return nullptr;
+  virtual Device *get_compute_device() {
+    return nullptr;
   }
 
-  virtual Device* get_graphics_device(){
-      return nullptr;
+  virtual Device *get_graphics_device() {
+    return nullptr;
   }
 
   virtual ~ProgramImpl() {

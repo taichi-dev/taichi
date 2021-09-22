@@ -14,8 +14,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
-UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch,Device* device)
-    : size(size), arch_(arch),device_(device) {
+UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
+    : size(size), arch_(arch), device_(device) {
   auto t = Time::get_time();
   if (arch_ == Arch::cuda) {
     // CUDA gets stuck when
@@ -32,16 +32,16 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch,Device* device)
     // This could be run on a host worker thread, so we have to set the context
     // before using any of the CUDA driver function call.
     auto _ = CUDAContext::get_instance().get_guard();
-    
+
     Device::AllocParams alloc_params;
     alloc_params.size = size;
     alloc_params.host_read = true;
     alloc_params.host_write = true;
 
-    cuda::CudaDevice *cuda_device = static_cast<cuda::CudaDevice*>(device);
+    cuda::CudaDevice *cuda_device = static_cast<cuda::CudaDevice *>(device);
     cuda_alloc = cuda_device->allocate_memory(alloc_params);
     _cuda_data = cuda_device->get_alloc_info(cuda_alloc).ptr;
-    
+
     if (_cuda_data == nullptr) {
       TI_ERROR("CUDA memory allocation failed.");
     }
@@ -83,7 +83,7 @@ taichi::lang::UnifiedAllocator::~UnifiedAllocator() {
   }
   if (arch_ == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    cuda::CudaDevice *cuda_device = static_cast<cuda::CudaDevice*>(device_);
+    cuda::CudaDevice *cuda_device = static_cast<cuda::CudaDevice *>(device_);
     cuda_device->dealloc_memory(cuda_alloc);
 #else
     TI_ERROR("No CUDA support");

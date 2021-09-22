@@ -5,7 +5,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
-MemoryPool::MemoryPool(Arch arch,Device* device) : arch_(arch),device_(device) {
+MemoryPool::MemoryPool(Arch arch, Device *device)
+    : arch_(arch), device_(device) {
   TI_TRACE("Memory pool created. Default buffer size per allocator = {} MB",
            default_allocator_size / 1024 / 1024);
   terminating = false;
@@ -40,7 +41,7 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
     // allocation have failed
     auto new_buffer_size = std::max(size, default_allocator_size);
     allocators.emplace_back(
-        std::make_unique<UnifiedAllocator>(new_buffer_size, arch_,device_));
+        std::make_unique<UnifiedAllocator>(new_buffer_size, arch_, device_));
     ret = allocators.back()->allocate(size, alignment);
   }
   TI_ASSERT(ret);

@@ -72,6 +72,7 @@ class FieldsBuilder:
         return self._finalized
 
     def deactivate_all(self):
+        """Same as :func:`taichi.lang.snode.SNode.deactivate_all`"""
         if self._finalized:
             self._root.deactivate_all()
         else:

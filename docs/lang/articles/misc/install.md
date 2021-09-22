@@ -159,7 +159,7 @@ sidebar_position: 0
     incompatibilities.
 
 ### Installation interrupted
-During the installation, the downloading process is interrupted because of `HTTPSConnection` error. You may install Taichi with a mirror source.
+During the installation, the downloading process is interrupted because of `HTTPSConnection` error. You can try installing Taichi from a mirror source.
 
 ```
 pip install taichi -i https://pypi.douban.com/simple

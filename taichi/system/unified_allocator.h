@@ -60,7 +60,7 @@ class UnifiedAllocator {
   UnifiedAllocator operator=(const UnifiedAllocator &) = delete;
 
  private:
-  Device *device_;
+  Device *device_{nullptr};
 };
 
 TLANG_NAMESPACE_END

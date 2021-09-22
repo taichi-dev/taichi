@@ -76,7 +76,8 @@ class FieldsBuilder:
         if self._finalized:
             self._root.deactivate_all()
         else:
-            warning("""'deactivate_all()' would do nothing if FieldsBuilder is not finalized.
+            warning(
+                """'deactivate_all()' would do nothing if FieldsBuilder is not finalized.
     Due to 'ti.root' is implemented by 'ti.FieldsBuilder' implicitly, if you are
     calling 'ti.root.deactivate_all()', please using 'ti.deactivate_all_snodes()'
     instead.""")

@@ -103,7 +103,7 @@ class Program {
   Callable *current_callable{nullptr};
   CompileConfig config;
   bool sync{false};  // device/host synchronized?
-  std::unique_ptr<MemoryPool> memory_pool{nullptr};
+  
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
 
   std::unordered_map<int, SNode *>
@@ -295,6 +295,8 @@ class Program {
   float64 total_compilation_time_{0.0};
   static std::atomic<int> num_instances_;
   bool finalized_{false};
+
+  std::unique_ptr<MemoryPool> memory_pool{nullptr};
 
  public:
 #ifdef TI_WITH_CC

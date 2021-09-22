@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "taichi/program/arch.h"
-#include "taichi/backends/cuda/cuda_device.h"
+#include "taichi/backends/device.h"
 
 namespace taichi {
 class VirtualMemoryAllocator;

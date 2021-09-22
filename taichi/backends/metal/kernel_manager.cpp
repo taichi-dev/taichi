@@ -279,7 +279,6 @@ class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
     auto *mem = reinterpret_cast<int32_t *>(args_mem_->ptr());
     mem[0] = parent_snode_id;
     mem[1] = child_snode_id;
-    const auto &sn_descs = *params.snode_descriptors;
     TI_DEBUG(
         "Registered ListgenOpMtlKernel: name={} num_threads={} "
         "parent_snode={} "

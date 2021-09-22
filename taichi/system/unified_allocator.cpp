@@ -3,6 +3,8 @@
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_context.h"
+#include "taichi/backends/cuda/cuda_device.h"
+
 #endif
 #include "taichi/lang_util.h"
 #include "taichi/system/unified_allocator.h"
@@ -12,8 +14,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
-UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
-    : size(size), arch_(arch) {
+UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch,Device* device)
+    : size(size), arch_(arch),device_(device) {
   auto t = Time::get_time();
   if (arch_ == Arch::cuda) {
     // CUDA gets stuck when
@@ -30,8 +32,16 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     // This could be run on a host worker thread, so we have to set the context
     // before using any of the CUDA driver function call.
     auto _ = CUDAContext::get_instance().get_guard();
-    CUDADriver::get_instance().malloc_managed(&_cuda_data, size,
-                                              CU_MEM_ATTACH_GLOBAL);
+    
+    Device::AllocParams alloc_params;
+    alloc_params.size = size;
+    alloc_params.host_read = true;
+    alloc_params.host_write = true;
+
+    cuda::CudaDevice *cuda_device = static_cast<cuda::CudaDevice*>(device);
+    cuda_alloc = cuda_device->allocate_memory(alloc_params);
+    _cuda_data = cuda_device->get_alloc_info(cuda_alloc).ptr;
+    
     if (_cuda_data == nullptr) {
       TI_ERROR("CUDA memory allocation failed.");
     }
@@ -73,7 +83,8 @@ taichi::lang::UnifiedAllocator::~UnifiedAllocator() {
   }
   if (arch_ == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().mem_free(_cuda_data);
+    cuda::CudaDevice *cuda_device = static_cast<cuda::CudaDevice*>(device_);
+    cuda_device->dealloc_memory(cuda_alloc);
 #else
     TI_ERROR("No CUDA support");
 #endif

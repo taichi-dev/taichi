@@ -13,8 +13,15 @@ CudaDevice::AllocInfo  CudaDevice::get_alloc_info(DeviceAllocation handle){
 
 DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
   AllocInfo info;
-  //TODO: unified memory for host read/write? Need to query CUDA capabilities.
-  CUDADriver::get_instance().malloc(&info.ptr, params.size);
+
+  if(params.host_read || params.host_write){
+    CUDADriver::get_instance().malloc_managed(&info.ptr, params.size,
+                                              CU_MEM_ATTACH_GLOBAL);
+  }
+  else{
+    CUDADriver::get_instance().malloc(&info.ptr, params.size);
+  }
+  
   info.size = params.size;
   
   DeviceAllocation alloc;

@@ -148,14 +148,14 @@ class KernelProfiler:
                 result = self._statistical_results[key]
                 fraction = result.total_time / self._total_time_ms * 100.0
                 #message in one line
-                print(f"["
-                      f"{fraction:6.2f}% "
-                      f"{result.total_time / 1000.0:7.3f} s "
-                      f"{result.counter:6d}x |"
-                      f"{result.min_time:9.3f} "
-                      f"{result.total_time / result.counter:9.3f} "
-                      f"{result.max_time:9.3f} ms] "
-                      f"{result.name}")
+                print("[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms] {}".format(
+                    fraction,
+                    result.total_time / 1000.0,
+                    result.counter,
+                    result.min_time,
+                    result.total_time / result.counter, # avg_time
+                    result.max_time,
+                    result.name))
             print(f"{patition_line('-',73)}")
             #one-line summary
             print(f"[100.00%] Total kernel execution time: "
@@ -179,10 +179,10 @@ class KernelProfiler:
             for record in self._traced_records:
                 fraction = record.kernel_time / self._total_time_ms * 100.0
                 #message in one line
-                print(f"["
-                      f"{fraction:6.2f}% |"
-                      f"{record.kernel_time:9.3f}  ms] "
-                      f"{record.name}")
+                print("[{:6.2f}% |{:9.3f}  ms] {}".format(
+                    fraction,
+                    record.kernel_time,
+                    record.name))
             print(f"{patition_line('-',73)}")
             #one-line summary
             print(f"[100.00%] Total kernel execution time: "

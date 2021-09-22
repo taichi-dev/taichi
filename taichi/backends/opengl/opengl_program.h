@@ -55,7 +55,7 @@ class OpenglProgramImpl : public ProgramImpl {
 
  private:
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
-  std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
+  std::unique_ptr<opengl::OpenGLRuntime> opengl_runtime_;
 };
 }  // namespace lang
 }  // namespace taichi

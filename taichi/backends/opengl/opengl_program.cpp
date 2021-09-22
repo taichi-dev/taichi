@@ -7,7 +7,7 @@ namespace lang {
 FunctionType OpenglProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
   opengl::OpenglCodeGen codegen(kernel->name, &opengl_struct_compiled_.value(),
-                                opengl_kernel_launcher_.get());
+                                opengl_runtime_.get());
   return codegen.compile(*kernel);
 }
 
@@ -16,9 +16,7 @@ void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                             uint64 **result_buffer_ptr) {
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
-  // doesn't do anything other than alloc result buffer. runtime is materialized
-  // together with snode tree.
-  // TODO: separate runtime materialization and tree materialization.
+  opengl_runtime_ = std::make_unique<opengl::OpenGLRuntime>();
 }
 
 void OpenglProgramImpl::materialize_snode_tree(
@@ -31,9 +29,8 @@ void OpenglProgramImpl::materialize_snode_tree(
   opengl::OpenglStructCompiler scomp;
   opengl_struct_compiled_ = scomp.run(*root);
   TI_TRACE("OpenGL root buffer size: {} B", opengl_struct_compiled_->root_size);
-  opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(
-      opengl_struct_compiled_->root_size);
-  opengl_kernel_launcher_->result_buffer = result_buffer;
+  opengl_runtime_->add_snode_tree(opengl_struct_compiled_->root_size);
+  opengl_runtime_->result_buffer = result_buffer;
 }
 
 }  // namespace lang

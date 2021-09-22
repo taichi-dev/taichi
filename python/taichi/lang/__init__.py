@@ -83,13 +83,13 @@ def kernel_profiler_print():
 
 def print_kernel_profile_info(mode='count'):
     """Print the profiling results of Taichi kernels.
+
     To enable this profiler, set ``kernel_profiler=True`` in ``ti.init()``.
-    Default print mode is ``'count'``.
-    ``'count'`` mode: print the statistical results (min,max,avg time) of Taichi kernels.
-    ``'trace'`` mode: print the records of launched Taichi kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
+    The default print mode is ``'count'`` mode: print the statistical results (min,max,avg time) of Taichi kernels,
+    another mode ``'trace'``: print the records of launched Taichi kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
 
     Args:
-        mode (str): mode of print
+        mode (str): the way to print profiling results
 
     Example::
 
@@ -121,6 +121,7 @@ def print_kernel_profile_info(mode='count'):
 
 def query_kernel_profile_info(name):
     """Query kernel elapsed time(min,avg,max) on devices using the kernel name.
+
     To enable this profiler, set `kernel_profiler=True` in `ti.init`.
 
     Args:
@@ -168,15 +169,12 @@ def kernel_profiler_clear():
 
 
 def clear_kernel_profile_info():
-    """
-    Clear all KernelProfiler records.
-    """
+    """Clear all KernelProfiler records."""
     kernel_profiler.clear_info()
 
 
 def kernel_profiler_total_time():
-    """
-    Get elapsed time of all kernels recorded in Kernelkernel_profiler.
+    """Get elapsed time of all kernels recorded in KernelProfiler.
 
     Returns:
         time (double): total time in second
@@ -191,6 +189,7 @@ def memory_profiler_print():
 
 def print_memory_profile_info():
     """Memory profiling tool for LLVM backends with full sparse support.
+
     This profiler is automatically on.
     """
     impl.get_runtime().materialize()

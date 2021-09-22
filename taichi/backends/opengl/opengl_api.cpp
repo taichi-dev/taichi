@@ -498,7 +498,7 @@ struct CompiledProgram::Impl {
   }
 };
 
-OpenGLRuntime::OpenGLRuntime(size_t size) {
+OpenGLRuntime::OpenGLRuntime() {
   TI_NOT_IMPLEMENTED;
 }
 

@@ -2,7 +2,7 @@ from taichi.core import ti_core as _ti_core
 from taichi.lang import impl
 
 import taichi as ti
-
+import inspect
 
 class StatisticalResult:
     """Statistical result of records.
@@ -132,15 +132,20 @@ class KernelProfiler:
 
         #count mode (default) : print statistical results of all kernel
         if mode == self.COUNT:
-            print(f"{patition_line('=',73)}\n"\
-                  f"{_ti_core.arch_name(ti.cfg.arch).upper()} Profiler(count)\n"\
-                  f"{patition_line('=',73)}")
-            print(f"[      %     total   count |"\
-                  f"      min       avg       max   ]"\
-                  f" Kernel name")
+            table_header = f"""
+                {patition_line('=',73)}
+                {_ti_core.arch_name(ti.cfg.arch).upper()} Profiler(count)
+                {patition_line('=',73)}
+            """
+            items_header = f"""
+                [      %     total   count |      min       avg       max   ] Kernel name
+            """
+            print(inspect.cleandoc(table_header))
+            print(inspect.cleandoc(items_header))
             for key in self._statistical_results:
                 result = self._statistical_results[key]
                 fraction = result.total_time / self._total_time_ms * 100.0
+                #message in one line
                 print(f"["
                       f"{fraction:6.2f}% "
                       f"{result.total_time / 1000.0:7.3f} s "
@@ -150,6 +155,7 @@ class KernelProfiler:
                       f"{result.max_time:9.3f} ms] "
                       f"{result.name}")
             print(f"{patition_line('-',73)}")
+            #one-line summary
             print(f"[100.00%] Total kernel execution time: "
                   f"{self._total_time_ms/1000:7.3f} s   "
                   f"number of records:  "
@@ -158,17 +164,25 @@ class KernelProfiler:
 
         #trace mode : print records of launched kernel
         if mode == self.TRACE:
-            print(f"{patition_line('=',73)}\n"\
-                  f"{_ti_core.arch_name(ti.cfg.arch).upper()} Profiler(trace)\n"\
-                  f"{patition_line('=',73)}")
-            print(f"[      % |     time    ] Kernel name")
+            table_header = f"""
+                {patition_line('=',73)}
+                {_ti_core.arch_name(ti.cfg.arch).upper()} Profiler(trace)
+                {patition_line('=',73)}
+            """
+            items_header = f"""
+                [      % |     time    ] Kernel name
+            """
+            print(inspect.cleandoc(table_header))
+            print(inspect.cleandoc(items_header))
             for record in self._traced_records:
                 fraction = record.kernel_time / self._total_time_ms * 100.0
+                #message in one line
                 print(f"["
                       f"{fraction:6.2f}% |"
                       f"{record.kernel_time:9.3f}  ms] "
                       f"{record.name}")
             print(f"{patition_line('-',73)}")
+            #one-line summary
             print(f"[100.00%] Total kernel execution time: "
                   f"{self._total_time_ms/1000:7.3f} s   "
                   f"number of records:  {len(self._traced_records)}")

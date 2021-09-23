@@ -12,7 +12,7 @@ class CCRuntime {
   CCRuntime(CCProgramImpl *cc_program_impl,
             std::string const &header,
             std::string const &source)
-      : header(header), source(source), cc_program_impl(cc_program_impl) {
+      : header(header), source(source), cc_program_impl_(cc_program_impl) {
   }
 
   std::string get_object() {
@@ -25,7 +25,7 @@ class CCRuntime {
   std::string source;
 
  private:
-  CCProgramImpl *cc_program_impl;
+  CCProgramImpl *cc_program_impl_;
   std::string src_path;
   std::string obj_path;
 };

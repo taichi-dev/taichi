@@ -601,13 +601,13 @@ class CCTransformer : public IRVisitor {
 };  // namespace cccp
 
 std::unique_ptr<CCKernel> CCKernelGen::compile() {
-  auto layout = cc_program_impl->get_layout();
+  auto layout = cc_program_impl_->get_layout();
   CCTransformer tran(kernel, layout);
 
   tran.run();
   auto source = tran.get_source();
   auto ker =
-      std::make_unique<CCKernel>(cc_program_impl, kernel, source, kernel->name);
+      std::make_unique<CCKernel>(cc_program_impl_, kernel, source, kernel->name);
   ker->compile();
   return ker;
 }

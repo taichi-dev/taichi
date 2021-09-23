@@ -17,7 +17,7 @@ class CCKernel {
            Kernel *kernel,
            std::string const &source,
            std::string const &name)
-      : cc_program_impl(cc_program_impl),
+      : cc_program_impl_(cc_program_impl),
         kernel(kernel),
         name(name),
         source(source) {
@@ -30,7 +30,7 @@ class CCKernel {
   }
 
  private:
-  CCProgramImpl *cc_program_impl;
+  CCProgramImpl *cc_program_impl_;
   Kernel *kernel;
 
   std::string name;

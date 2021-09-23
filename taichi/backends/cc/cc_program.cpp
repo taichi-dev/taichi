@@ -61,11 +61,11 @@ void CCKernel::compile() {
   obj_path = fmt::format("{}/{}.o", runtime_tmp_dir, name);
   src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
 
-  std::ofstream(src_path) << cc_program_impl->get_runtime()->header << "\n"
-                          << cc_program_impl->get_layout()->source << "\n"
+  std::ofstream(src_path) << cc_program_impl_->get_runtime()->header << "\n"
+                          << cc_program_impl_->get_layout()->source << "\n"
                           << source;
   TI_DEBUG("[cc] compiling [{}] -> [{}]:\n{}\n", name, obj_path, source);
-  execute(cc_program_impl->config->cc_compile_cmd, obj_path, src_path);
+  execute(cc_program_impl_->config->cc_compile_cmd, obj_path, src_path);
 }
 
 void CCRuntime::compile() {
@@ -80,7 +80,7 @@ void CCRuntime::compile() {
 
   std::ofstream(src_path) << header << "\n" << source;
   TI_DEBUG("[cc] compiling runtime -> [{}]:\n{}\n", obj_path, source);
-  execute(cc_program_impl->config->cc_compile_cmd, obj_path, src_path);
+  execute(cc_program_impl_->config->cc_compile_cmd, obj_path, src_path);
 }
 
 void CCKernel::launch(Context *ctx) {
@@ -90,13 +90,13 @@ void CCKernel::launch(Context *ctx) {
                                               ActionArg("kernel_name", name),
                                           });
 
-  cc_program_impl->relink();
+  cc_program_impl_->relink();
   TI_TRACE("[cc] entering kernel [{}]", name);
-  auto entry = cc_program_impl->load_kernel(name);
+  auto entry = cc_program_impl_->load_kernel(name);
   TI_ASSERT(entry);
-  auto *context = cc_program_impl->update_context(ctx);
+  auto *context = cc_program_impl_->update_context(ctx);
   (*entry)(context);
-  cc_program_impl->context_to_result_buffer();
+  cc_program_impl_->context_to_result_buffer();
   TI_TRACE("[cc] leaving kernel [{}]", name);
 }
 
@@ -110,17 +110,17 @@ size_t CCLayout::compile() {
   src_path = fmt::format("{}/_rti_root.c", runtime_tmp_dir);
   auto dll_path = fmt::format("{}/libti_roottest.so", runtime_tmp_dir);
 
-  std::ofstream(src_path) << cc_program_impl->get_runtime()->header << "\n"
+  std::ofstream(src_path) << cc_program_impl_->get_runtime()->header << "\n"
                           << source << "\n"
                           << "void *Ti_get_root_size(void) { \n"
                           << "  return (void *) sizeof(struct Ti_S0root);\n"
                           << "}\n";
 
   TI_DEBUG("[cc] compiling root struct -> [{}]:\n{}\n", obj_path, source);
-  execute(cc_program_impl->config->cc_compile_cmd, obj_path, src_path);
+  execute(cc_program_impl_->config->cc_compile_cmd, obj_path, src_path);
 
   TI_DEBUG("[cc] linking root struct object [{}] -> [{}]", obj_path, dll_path);
-  execute(cc_program_impl->config->cc_link_cmd, dll_path, obj_path);
+  execute(cc_program_impl_->config->cc_link_cmd, dll_path, obj_path);
 
   TI_DEBUG("[cc] loading root struct object: {}", dll_path);
   DynamicLoader dll(dll_path);

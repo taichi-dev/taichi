@@ -295,12 +295,6 @@ class Program {
   float64 total_compilation_time_{0.0};
   static std::atomic<int> num_instances_;
   bool finalized_{false};
-
- public:
-#ifdef TI_WITH_CC
-  // C backend related data structures
-  // std::unique_ptr<cccp::CCProgram> cc_program;
-#endif
 };
 
 }  // namespace lang

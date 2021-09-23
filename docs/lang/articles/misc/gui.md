@@ -49,7 +49,8 @@ Taichi's GUI supports painting simple geometrix objects, such as lines, triangle
 
 :::note
 
-The position parameter `pos` expects an input of a 2-element tuple, whose values are the relative position of the object. (0.0, 0.0) stands for the lower left corner of the window, and (1.0, 1.0) stands for the upper right corner.
+The position parameter `pos` expects input of 2-element tuples, whose values are the relative position of the object.
+(0.0, 0.0) stands for the lower left corner of the window, and (1.0, 1.0) stands for the upper right corner.
 
 :::
 
@@ -66,8 +67,7 @@ If the window size is `(x, y)`, then `img` must be one of:
 
 - `ti.field(shape=(x, y, 2))`, where `2` is for `(r, g)` channels
 
-- `ti.Vector.field(3, shape=(x, y))` `(r, g, b)` channels on each
-  component
+- `ti.Vector.field(3, shape=(x, y))` `(r, g, b)` channels on each component
 
 - `ti.Vector.field(2, shape=(x, y))` `(r, g)` channels on each component
 
@@ -101,26 +101,77 @@ gets the 4-channel (RGBA) image shown in the current GUI system.
 [`gui.circles(pos)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=circles#taichi.misc.gui.GUI.circles)
 draws solid circles.
 
+The color and radius of circles can be further specified with additional parameters. For unified color, use color to parameter.
+For multiple colors, use palette and palette_indices instead.
+
+For examples:
+```python
+gui.circles(pos, radius=1.5, color=0x068587)
+```
+draws circles all with radius of 1.5 and blue color positioned at pos array.
+```python
+gui.circles(pos, radius=1.5, palette=[0x068587, 0xED553B, 0xEEEEF0], palette_indices=material)
+```
+draws circles with radius of 1.5 and three different colors differed by the indices array material.
+
 [`gui.lines(begin, end)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=line#taichi.misc.gui.GUI.lines)
 draws lines.
+
+The color and radius of lines can be further specified with additional parameters.
+
+For example:
+```python
+gui.lines(begin=X, end=Y, radius=2, color=0x444444)
+```
+draws line segments from X positions to Y positions with width of 2 and color of 0x444444.
 
 [`gui.triangles(a, b, c)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=triangles#taichi.misc.gui.GUI.triangles)
 draws solid triangles.
 
+The color of triangles can be further specified with additional parameter.
+
+For example:
+```python
+gui.triangles(a=X, b=Y, c=Z, color=0x000000)
+```
+draws triangles with color of 0x000000 and three points positioned at X, Y, and Z.
+
 [`gui.rect(topleft, bottomright)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=rect#taichi.misc.gui.GUI.rect)
-draws a rectangle.
+draws a hollowed rectangle.
+
+The color and radius of the stroke of rectangle can be further specified with additional parameters.
+
+For example:
+```python
+gui.rect([0, 0], [0.5, 0.5], radius=1, color=0xFFFFFF)
+```
+draws a rectangle of topleft corner at [0, 0] and bottomright corner at [0.5, 0.5], with stroke of radius of 1 and color of 0xFFFFFF.
 
 [`gui.arrows(origin, direction)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=arrows#taichi.misc.gui.GUI.arrows)
 draws arrows.
 
+The color and radius of arrows can be further specified with additional parameters.
+
+For example:
+```python
+gui.arrows([0, 0], [0.5, 0.5], radius=1, color=0xFFFFFF)
+```
+draws an arrow originated at [0, 0] and pointing to [0.5, 0.5], with radius of 1 and color of 0xFFFFFF.
+
 [`gui.arrow_field(direction)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=arrow_field#taichi.misc.gui.GUI.arrow_field)
 draws a field of arrows.
+
+The color and bound of arrow field can be further specified with additional parameters.
 
 [`gui.point_field(radius)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=point_field#taichi.misc.gui.GUI.point_field)
 draws a field of points.
 
+The color and bound of point field can be further specified with additional parameters.
+
 [`gui.text(content, pos)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=text#taichi.misc.gui.GUI.text)
 draws a line of text on screen.
+
+The font size and color of text can be further specified with additional parameters.
 
 ## RGB & Hex conversion.
 

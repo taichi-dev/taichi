@@ -36,8 +36,8 @@ classifiers = [
 
 project_name = os.getenv('PROJECT_NAME', 'taichi')
 TI_VERSION_MAJOR = 0
-TI_VERSION_MINOR = 7
-TI_VERSION_PATCH = 32
+TI_VERSION_MINOR = 8
+TI_VERSION_PATCH = 0
 version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 
 data_files = glob.glob('python/lib/*')

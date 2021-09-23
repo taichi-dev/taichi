@@ -484,7 +484,6 @@ class _Root:
         """Same as :func:`taichi.SNode.get_children`"""
         return _root_fb.root.get_children()
 
-
     # TODO: Record all of the SNodeTrees that finalized under 'ti.root'
     def deactivate_all(self):
         warning(

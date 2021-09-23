@@ -487,7 +487,9 @@ class _Root:
 
     # TODO: Record all of the SNodeTrees that finalized under 'ti.root'
     def deactivate_all(self):
-        warning("""'ti.root.deactivate_all()' would deactivate all finalized snodes.""")
+        warning(
+            """'ti.root.deactivate_all()' would deactivate all finalized snodes."""
+        )
         ti.deactivate_all_snodes()
 
     @property

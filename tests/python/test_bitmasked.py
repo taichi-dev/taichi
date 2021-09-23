@@ -285,6 +285,7 @@ def test_bitmasked_2d_power_of_two():
     run()
     assert num_active[None] == total
 
+
 @ti.test(require=ti.extension.sparse)
 def test_root_deactivate():
     a = ti.field(ti.i32)

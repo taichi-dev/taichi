@@ -22,9 +22,6 @@
 
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/cc_program.h"
-#include "taichi/backends/cc/struct_cc.h"
-#include "taichi/backends/cc/cc_layout.h"
-#include "taichi/backends/cc/codegen_cc.h"
 #endif
 #ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/vulkan_program.h"
@@ -191,7 +188,7 @@ FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
 
 void Program::materialize_runtime() {
   if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
-      config.arch == Arch::vulkan || config.arch == Arch::opengl) {
+      config.arch == Arch::vulkan || config.arch == Arch::opengl || config.arch == Arch::cc) {
     program_impl_->materialize_runtime(memory_pool.get(), profiler.get(),
                                        &result_buffer);
   }
@@ -217,20 +214,19 @@ SNode *Program::get_snode_root(int tree_id) {
 }
 
 void Program::materialize_snode_tree(SNodeTree *tree) {
-  auto *const root = tree->root();
   if (arch_is_cpu(config.arch) || config.arch == Arch::cuda ||
       config.arch == Arch::metal || config.arch == Arch::vulkan ||
-      config.arch == Arch::opengl) {
+      config.arch == Arch::opengl || config.arch == Arch::cc) {
     program_impl_->materialize_snode_tree(tree, snode_trees_, snodes,
                                           result_buffer);
-#ifdef TI_WITH_CC
-  } else if (config.arch == Arch::cc) {
-    TI_ASSERT(result_buffer == nullptr);
-    result_buffer = (uint64 *)memory_pool->allocate(
-        sizeof(uint64) * taichi_result_buffer_entries, 8);
-    // cc_program->compile_layout(root);
-#endif
   }
+//#ifdef TI_WITH_CC
+   //else if (config.arch == Arch::cc) {
+   // TI_ASSERT(result_buffer == nullptr);
+   // result_buffer = (uint64 *)memory_pool->allocate(
+   //     sizeof(uint64) * taichi_result_buffer_entries, 8);
+    // cc_program->compile_layout(root);
+//#endif
 }
 
 void Program::check_runtime_error() {

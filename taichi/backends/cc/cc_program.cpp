@@ -5,9 +5,9 @@ using namespace taichi::lang::cccp;
 TLANG_NAMESPACE_BEGIN
 
 CCProgramImpl::CCProgramImpl(CompileConfig &config) : ProgramImpl(config) {
-    program_config = config;
-    init_runtime();
-    context = std::make_unique<cccp::CCContext>();
+    this->config = &config;
+    this->init_runtime();
+    context = std::make_unique<CCContext>();
 }
 
 FunctionType CCProgramImpl::compile(Kernel *kernel, OffloadedStmt *offloaded) {
@@ -21,21 +21,24 @@ FunctionType CCProgramImpl::compile(Kernel *kernel, OffloadedStmt *offloaded) {
 void CCProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                         KernelProfilerBase *profiler,
                                         uint64 **result_buffer_ptr) {
-    //TODO: Implement this.
+    TI_ASSERT(*result_buffer_ptr == nullptr);
+    *result_buffer_ptr = (uint64 *)memory_pool->allocate(sizeof(uint64) * taichi_result_buffer_entries, 8);
+    result_buffer = *result_buffer_ptr;
 }
 
 void CCProgramImpl::materialize_snode_tree(SNodeTree *tree, std::vector<std::unique_ptr<SNodeTree>> &,
                                            std::unordered_map<int, SNode *> &, uint64 *result_buffer) {
-    //TODO: Implement this.
+    auto *const root = tree->root();
+    this->compile_layout(root);
 }
 
-void CCProgramImpl::add_kernel(std::unique_ptr<cccp::CCKernel> kernel) {
+void CCProgramImpl::add_kernel(std::unique_ptr<CCKernel> kernel) {
   kernels.push_back(std::move(kernel));
   need_relink = true;
 }
 
 void CCProgramImpl::init_runtime() {
-  runtime = std::make_unique<CCRuntime>(
+  runtime = std::make_unique<CCRuntime>(this,
 #include "runtime/base.h"
                                                   "\n",
 #include "runtime/base.c"
@@ -54,11 +57,11 @@ void CCKernel::compile() {
     obj_path = fmt::format("{}/{}.o", runtime_tmp_dir, name);
     src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
 
-    std::ofstream(src_path) << program->get_runtime()->header << "\n"
-                            << program->get_layout()->source << "\n"
+    std::ofstream(src_path) << cc_program_impl->get_runtime()->header << "\n"
+                            << cc_program_impl->get_layout()->source << "\n"
                             << source;
     TI_DEBUG("[cc] compiling [{}] -> [{}]:\n{}\n", name, obj_path, source);
-    execute(CCProgramImpl::program_config.cc_compile_cmd, obj_path, src_path);
+    execute(cc_program_impl->config->cc_compile_cmd, obj_path, src_path);
 }
 
 void CCRuntime::compile() {
@@ -73,10 +76,8 @@ void CCRuntime::compile() {
 
     std::ofstream(src_path) << header << "\n" << source;
     TI_DEBUG("[cc] compiling runtime -> [{}]:\n{}\n", obj_path, source);
-    execute(CCProgramImpl::program_config.cc_compile_cmd, obj_path, src_path);
+    execute(cc_program_impl->config->cc_compile_cmd, obj_path, src_path);
 }
-
-namespace cccp {
 
 void CCKernel::launch(Context *ctx) {
   if (!kernel->is_evaluator)
@@ -85,13 +86,13 @@ void CCKernel::launch(Context *ctx) {
                                               ActionArg("kernel_name", name),
                                           });
 
-  program->relink();
+  cc_program_impl->relink();
   TI_TRACE("[cc] entering kernel [{}]", name);
-  auto entry = program->load_kernel(name);
+  auto entry = cc_program_impl->load_kernel(name);
   TI_ASSERT(entry);
-  auto *context = program->update_context(ctx);
+  auto *context = cc_program_impl->update_context(ctx);
   (*entry)(context);
-  program->context_to_result_buffer();
+  cc_program_impl->context_to_result_buffer();
   TI_TRACE("[cc] leaving kernel [{}]", name);
 }
 
@@ -105,17 +106,17 @@ size_t CCLayout::compile() {
   src_path = fmt::format("{}/_rti_root.c", runtime_tmp_dir);
   auto dll_path = fmt::format("{}/libti_roottest.so", runtime_tmp_dir);
 
-  std::ofstream(src_path) << program->get_runtime()->header << "\n"
+  std::ofstream(src_path) << cc_program_impl->get_runtime()->header << "\n"
                           << source << "\n"
                           << "void *Ti_get_root_size(void) { \n"
                           << "  return (void *) sizeof(struct Ti_S0root);\n"
                           << "}\n";
 
   TI_DEBUG("[cc] compiling root struct -> [{}]:\n{}\n", obj_path, source);
-  execute(program->program->config.cc_compile_cmd, obj_path, src_path);
+  execute(cc_program_impl->config->cc_compile_cmd, obj_path, src_path);
 
   TI_DEBUG("[cc] linking root struct object [{}] -> [{}]", obj_path, dll_path);
-  execute(program->program->config.cc_link_cmd, dll_path, obj_path);
+  execute(cc_program_impl->config->cc_link_cmd, dll_path, obj_path);
 
   TI_DEBUG("[cc] loading root struct object: {}", dll_path);
   DynamicLoader dll(dll_path);
@@ -129,7 +130,7 @@ size_t CCLayout::compile() {
   return (*get_root_size)();
 }
 
-void CCProgram::relink() {
+void CCProgramImpl::relink() {
   if (!need_relink)
     return;
 
@@ -143,7 +144,7 @@ void CCProgram::relink() {
 
   TI_DEBUG("[cc] linking shared object [{}] with [{}]", dll_path,
            fmt::join(objects, "] ["));
-  execute(program->config.cc_link_cmd, dll_path, fmt::join(objects, "' '"));
+  execute(this->config->cc_link_cmd, dll_path, fmt::join(objects, "' '"));
 
   dll = nullptr;
   TI_DEBUG("[cc] loading shared object: {}", dll_path);
@@ -154,7 +155,7 @@ void CCProgram::relink() {
   need_relink = false;
 }
 
-void CCProgram::compile_layout(SNode *root) {
+void CCProgramImpl::compile_layout(SNode *root) {
   CCLayoutGen gen(this, root);
   layout = gen.compile();
   size_t root_size = layout->compile();
@@ -179,50 +180,28 @@ void CCProgram::compile_layout(SNode *root) {
   context->earg = nullptr;
 }
 
-void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
-  kernels.push_back(std::move(kernel));
-  need_relink = true;
-}
-
-//void CCProgram::init_runtime() {
-//  runtime = std::make_unique<CCRuntime>(
-//#include "runtime/base.h"
-//                                        "\n",
-//#include "runtime/base.c"
-//                                        "\n");
-//  runtime->compile();
-//}
-
-CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
+CCFuncEntryType *CCProgramImpl::load_kernel(std::string const &name) {
   return reinterpret_cast<CCFuncEntryType *>(dll->load_function("Tk_" + name));
 }
 
-CCProgram::CCProgram(Program *program) : program(program) {
-  init_runtime();
-
-  context = std::make_unique<CCContext>();
-}
-
-CCContext *CCProgram::update_context(Context *ctx) {
+CCContext *CCProgramImpl::update_context(Context *ctx) {
   // TODO(k-ye): Do you have other zero-copy ideas for arg buf?
   std::memcpy(context->args, ctx->args, taichi_max_num_args * sizeof(uint64));
   context->earg = (int *)ctx->extra_args;
   return context.get();
 }
 
-void CCProgram::context_to_result_buffer() {
-  TI_ASSERT(program->result_buffer);
-  std::memcpy(program->result_buffer, context->args,
+void CCProgramImpl::context_to_result_buffer() {
+  TI_ASSERT(result_buffer);
+  std::memcpy(result_buffer, context->args,
               sizeof(uint64));  // XXX: assumed 1 return
   context->earg = nullptr;
 }
 
-CCProgram::~CCProgram() {
-}
+namespace cccp{
+    bool is_c_backend_available() {
+        return true;
+    }
+};
 
-bool is_c_backend_available() {
-  return true;
-}
-
-}  // namespace cccp
 TLANG_NAMESPACE_END

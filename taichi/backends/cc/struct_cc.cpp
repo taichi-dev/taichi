@@ -41,7 +41,7 @@ std::unique_ptr<CCLayout> CCLayoutGen::compile() {
   TI_ASSERT(root->type == SNodeType::root);
   generate_types(root);
 
-  auto lay = std::make_unique<CCLayout>(program);
+  auto lay = std::make_unique<CCLayout>(cc_program_impl);
   lay->source = line_appender.lines();
   return lay;
 }

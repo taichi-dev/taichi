@@ -7,17 +7,17 @@ TLANG_NAMESPACE_BEGIN
 
 class Kernel;
 
-namespace cccp {
+class CCProgramImpl;
 
-class CCProgram;
+namespace cccp {
 
 class CCKernel {
  public:
-  CCKernel(CCProgram *program,
+  CCKernel(CCProgramImpl *cc_program_impl,
            Kernel *kernel,
            std::string const &source,
            std::string const &name)
-      : program(program), kernel(kernel), name(name), source(source) {
+      : cc_program_impl(cc_program_impl), kernel(kernel), name(name), source(source) {
   }
 
   void compile();
@@ -27,7 +27,7 @@ class CCKernel {
   }
 
  private:
-  CCProgram *program;
+  CCProgramImpl *cc_program_impl;
   Kernel *kernel;
 
   std::string name;

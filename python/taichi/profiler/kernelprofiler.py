@@ -96,7 +96,7 @@ class KernelProfiler:
         """Counts the statistical results.
 
         Profiling records with the same kernel name will be counted in a instance of :class:`~taichi.profiler.kernelprofiler.StatisticalResult`.
-        Presenting kernel profiling results in a statistical perspactive.
+        Presenting kernel profiling results in a statistical perspective.
         """
         for record in self._traced_records:
             if self._statistical_results.get(record.name) == None:
@@ -126,7 +126,7 @@ class KernelProfiler:
         Args:
             mode (str): the way to print profiling results
         """
-        def patition_line(character, num):
+        def partition_line(character, num):
             return character * num
 
         self.update_records()  # trace records
@@ -135,9 +135,9 @@ class KernelProfiler:
         #count mode (default) : print statistical results of all kernel
         if mode == self.COUNT:
             table_header = f"""
-                {patition_line('=',73)}
+                {partition_line('=',73)}
                 {_ti_core.arch_name(ti.cfg.arch).upper()} Profiler(count)
-                {patition_line('=',73)}
+                {partition_line('=',73)}
             """
             items_header = f"""
                 [      %     total   count |      min       avg       max   ] Kernel name
@@ -158,20 +158,20 @@ class KernelProfiler:
                         result.total_time / result.counter,  # avg_time
                         result.max_time,
                         result.name))
-            print(f"{patition_line('-',73)}")
+            print(f"{partition_line('-',73)}")
             #one-line summary
             print(f"[100.00%] Total kernel execution time: "
                   f"{self._total_time_ms/1000:7.3f} s   "
                   f"number of records:  "
                   f"{len(self._statistical_results)}")
-            print(f"{patition_line('=',73)}")
+            print(f"{partition_line('=',73)}")
 
         #trace mode : print records of launched kernel
         if mode == self.TRACE:
             table_header = f"""
-                {patition_line('=',73)}
+                {partition_line('=',73)}
                 {_ti_core.arch_name(ti.cfg.arch).upper()} Profiler(trace)
-                {patition_line('=',73)}
+                {partition_line('=',73)}
             """
             items_header = f"""
                 [      % |     time    ] Kernel name
@@ -183,12 +183,12 @@ class KernelProfiler:
                 #message in one line
                 print("[{:6.2f}% |{:9.3f}  ms] {}".format(
                     fraction, record.kernel_time, record.name))
-            print(f"{patition_line('-',73)}")
+            print(f"{partition_line('-',73)}")
             #one-line summary
             print(f"[100.00%] Total kernel execution time: "
                   f"{self._total_time_ms/1000:7.3f} s   "
                   f"number of records:  {len(self._traced_records)}")
-            print(f"{patition_line('=',73)}")
+            print(f"{partition_line('=',73)}")
 
 
 _ti_kernel_profiler = KernelProfiler()

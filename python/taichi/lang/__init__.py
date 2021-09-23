@@ -604,6 +604,12 @@ def clear_all_gradients():
         visit(root_fb)
 
 
+def deactivate_all_snodes():
+    """Recursively deactivate all SNodes."""
+    for root_fb in FieldsBuilder.finalized_roots():
+        root_fb.deactivate_all()
+
+
 def benchmark(func, repeat=300, args=()):
     import time
 

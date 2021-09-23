@@ -184,7 +184,8 @@ FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
 
 void Program::materialize_runtime() {
   if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
-      config.arch == Arch::vulkan || config.arch == Arch::opengl || config.arch == Arch::cc) {
+      config.arch == Arch::vulkan || config.arch == Arch::opengl ||
+      config.arch == Arch::cc) {
     program_impl_->materialize_runtime(memory_pool.get(), profiler.get(),
                                        &result_buffer);
   }

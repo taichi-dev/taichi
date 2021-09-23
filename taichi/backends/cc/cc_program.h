@@ -27,58 +27,58 @@ using namespace taichi::lang::cccp;
 using CCFuncEntryType = void(cccp::CCContext *);
 
 class CCProgramImpl : public ProgramImpl {
-public:
-    explicit CCProgramImpl(CompileConfig &config);
+ public:
+  explicit CCProgramImpl(CompileConfig &config);
 
-    FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
+  FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
-    std::size_t get_snode_num_dynamically_allocated(
-            SNode *snode,
-            uint64 *result_buffer) override {
-        return 0;  // TODO: support sparse in cc.
-    }
+  std::size_t get_snode_num_dynamically_allocated(
+      SNode *snode,
+      uint64 *result_buffer) override {
+    return 0;  // TODO: support sparse in cc.
+  }
 
-    void materialize_runtime(MemoryPool *memory_pool,
-                             KernelProfilerBase *profiler,
-                             uint64 **result_buffer_ptr) override;
+  void materialize_runtime(MemoryPool *memory_pool,
+                           KernelProfilerBase *profiler,
+                           uint64 **result_buffer_ptr) override;
 
-    void materialize_snode_tree(SNodeTree *tree,
-                                std::vector<std::unique_ptr<SNodeTree>> &,
-                                std::unordered_map<int, SNode *> &,
-                                uint64 *result_buffer) override;
+  void materialize_snode_tree(SNodeTree *tree,
+                              std::vector<std::unique_ptr<SNodeTree>> &,
+                              std::unordered_map<int, SNode *> &,
+                              uint64 *result_buffer) override;
 
-    void synchronize() override {
-        // Not implemented yet.
-    }
+  void synchronize() override {
+    // Not implemented yet.
+  }
 
-    std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
-        // Not implemented yet.
-        return nullptr;
-    }
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
+    // Not implemented yet.
+    return nullptr;
+  }
 
-    void destroy_snode_tree(SNodeTree *snode_tree) override {
-        // Not implemented yet.
-    }
+  void destroy_snode_tree(SNodeTree *snode_tree) override {
+    // Not implemented yet.
+  }
 
-    CCLayout *get_layout() {
-        return layout.get();
-    }
+  CCLayout *get_layout() {
+    return layout.get();
+  }
 
-    CCRuntime *get_runtime() {
-        return runtime.get();
-    }
+  CCRuntime *get_runtime() {
+    return runtime.get();
+  }
 
-    ~CCProgramImpl() {
-    }
+  ~CCProgramImpl() {
+  }
 
-    CCFuncEntryType *load_kernel(std::string const &name);
-    void compile_layout(SNode *root);
-    void relink();
+  CCFuncEntryType *load_kernel(std::string const &name);
+  void compile_layout(SNode *root);
+  void relink();
 
-    CCContext *update_context(Context *ctx);
-    void context_to_result_buffer();
+  CCContext *update_context(Context *ctx);
+  void context_to_result_buffer();
 
-private:
+ private:
   void add_kernel(std::unique_ptr<CCKernel> kernel);
   void init_runtime();
 

@@ -5,31 +5,35 @@ using namespace taichi::lang::cccp;
 TLANG_NAMESPACE_BEGIN
 
 CCProgramImpl::CCProgramImpl(CompileConfig &config) : ProgramImpl(config) {
-    this->config = &config;
-    this->init_runtime();
-    context = std::make_unique<CCContext>();
+  this->config = &config;
+  this->init_runtime();
+  context = std::make_unique<CCContext>();
 }
 
 FunctionType CCProgramImpl::compile(Kernel *kernel, OffloadedStmt *offloaded) {
-    CCKernelGen codegen(kernel);
-    auto ker = codegen.compile();
-    auto ker_ptr = ker.get();
-    this->add_kernel(std::move(ker));
-    return [ker_ptr](Context &ctx) { return ker_ptr->launch(&ctx); };
+  CCKernelGen codegen(kernel);
+  auto ker = codegen.compile();
+  auto ker_ptr = ker.get();
+  this->add_kernel(std::move(ker));
+  return [ker_ptr](Context &ctx) { return ker_ptr->launch(&ctx); };
 }
 
 void CCProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                         KernelProfilerBase *profiler,
                                         uint64 **result_buffer_ptr) {
-    TI_ASSERT(*result_buffer_ptr == nullptr);
-    *result_buffer_ptr = (uint64 *)memory_pool->allocate(sizeof(uint64) * taichi_result_buffer_entries, 8);
-    result_buffer = *result_buffer_ptr;
+  TI_ASSERT(*result_buffer_ptr == nullptr);
+  *result_buffer_ptr = (uint64 *)memory_pool->allocate(
+      sizeof(uint64) * taichi_result_buffer_entries, 8);
+  result_buffer = *result_buffer_ptr;
 }
 
-void CCProgramImpl::materialize_snode_tree(SNodeTree *tree, std::vector<std::unique_ptr<SNodeTree>> &,
-                                           std::unordered_map<int, SNode *> &, uint64 *result_buffer) {
-    auto *const root = tree->root();
-    this->compile_layout(root);
+void CCProgramImpl::materialize_snode_tree(
+    SNodeTree *tree,
+    std::vector<std::unique_ptr<SNodeTree>> &,
+    std::unordered_map<int, SNode *> &,
+    uint64 *result_buffer) {
+  auto *const root = tree->root();
+  this->compile_layout(root);
 }
 
 void CCProgramImpl::add_kernel(std::unique_ptr<CCKernel> kernel) {
@@ -40,43 +44,43 @@ void CCProgramImpl::add_kernel(std::unique_ptr<CCKernel> kernel) {
 void CCProgramImpl::init_runtime() {
   runtime = std::make_unique<CCRuntime>(this,
 #include "runtime/base.h"
-                                                  "\n",
+                                        "\n",
 #include "runtime/base.c"
-                                                  "\n");
+                                        "\n");
   runtime->compile();
 }
 
 void CCKernel::compile() {
-    if (!kernel->is_evaluator)
-        ActionRecorder::get_instance().record(
-                "compile_kernel", {
-                        ActionArg("kernel_name", name),
-                        ActionArg("kernel_source", source),
-                });
+  if (!kernel->is_evaluator)
+    ActionRecorder::get_instance().record(
+        "compile_kernel", {
+                              ActionArg("kernel_name", name),
+                              ActionArg("kernel_source", source),
+                          });
 
-    obj_path = fmt::format("{}/{}.o", runtime_tmp_dir, name);
-    src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
+  obj_path = fmt::format("{}/{}.o", runtime_tmp_dir, name);
+  src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
 
-    std::ofstream(src_path) << cc_program_impl->get_runtime()->header << "\n"
-                            << cc_program_impl->get_layout()->source << "\n"
-                            << source;
-    TI_DEBUG("[cc] compiling [{}] -> [{}]:\n{}\n", name, obj_path, source);
-    execute(cc_program_impl->config->cc_compile_cmd, obj_path, src_path);
+  std::ofstream(src_path) << cc_program_impl->get_runtime()->header << "\n"
+                          << cc_program_impl->get_layout()->source << "\n"
+                          << source;
+  TI_DEBUG("[cc] compiling [{}] -> [{}]:\n{}\n", name, obj_path, source);
+  execute(cc_program_impl->config->cc_compile_cmd, obj_path, src_path);
 }
 
 void CCRuntime::compile() {
-    ActionRecorder::get_instance().record("compile_runtime",
-                                          {
-                                                  ActionArg("runtime_header", header),
-                                                  ActionArg("runtime_source", source),
-                                          });
+  ActionRecorder::get_instance().record("compile_runtime",
+                                        {
+                                            ActionArg("runtime_header", header),
+                                            ActionArg("runtime_source", source),
+                                        });
 
-    obj_path = fmt::format("{}/_rti_runtime.o", runtime_tmp_dir);
-    src_path = fmt::format("{}/_rti_runtime.c", runtime_tmp_dir);
+  obj_path = fmt::format("{}/_rti_runtime.o", runtime_tmp_dir);
+  src_path = fmt::format("{}/_rti_runtime.c", runtime_tmp_dir);
 
-    std::ofstream(src_path) << header << "\n" << source;
-    TI_DEBUG("[cc] compiling runtime -> [{}]:\n{}\n", obj_path, source);
-    execute(cc_program_impl->config->cc_compile_cmd, obj_path, src_path);
+  std::ofstream(src_path) << header << "\n" << source;
+  TI_DEBUG("[cc] compiling runtime -> [{}]:\n{}\n", obj_path, source);
+  execute(cc_program_impl->config->cc_compile_cmd, obj_path, src_path);
 }
 
 void CCKernel::launch(Context *ctx) {
@@ -198,10 +202,10 @@ void CCProgramImpl::context_to_result_buffer() {
   context->earg = nullptr;
 }
 
-namespace cccp{
-    bool is_c_backend_available() {
-        return true;
-    }
-};
+namespace cccp {
+bool is_c_backend_available() {
+  return true;
+}
+};  // namespace cccp
 
 TLANG_NAMESPACE_END

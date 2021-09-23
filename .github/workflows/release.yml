@@ -50,9 +50,9 @@ jobs:
           export PATH=$LLVM_LIB_ROOT_DIR/bin:/usr/local/cuda/bin:$PATH
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
           export CXX=clang++-8
-          python3 -m pip uninstall taichi -y
-          python3 -m pip install --user -r requirements_dev.txt
-          python3 -m pip install --user twine
+          python3 -m pip uninstall taichi taichi-nightly -y
+          python3 -m pip install -r requirements_dev.txt
+          python3 -m pip install twine
           cd python
           git fetch origin master
           export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
@@ -83,14 +83,12 @@ jobs:
           glewinfo
           ti diagnose
           ti changelog
-          ti test -vr2 -t2
+          ti test -vr2 -t2 -k "not ndarray"
+          # ndarray test might OOM if run with -t2.
+          # FIXME: unify this with presubmit.yml to avoid further divergence
+          ti test -vr2 -t1 -k "ndarray"
         env:
           PYTHON: ${{ matrix.python }}
-
-      - name: Setup tmate session
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 180
 
       - name: Upload PyPI
         env:

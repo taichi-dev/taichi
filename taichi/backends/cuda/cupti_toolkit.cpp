@@ -44,7 +44,7 @@ bool check_cupti_privileges() {
     TI_WARN("Run your commands with `sudo` to get administrative privileges");
     TI_WARN("Add option: `nvidia NVreg_RestrictProfilingToAdminUsers=0` ");
     TI_WARN("to  /etc/modprobe.d/nvidia-kernel-common.conf");
-    TI_WARN("then `reboot` should resolve the permision issue.");
+    TI_WARN("then `reboot` should resolve the permission issue.");
     TI_WARN("( Probably needs to run `update-initramfs -u`  before `reboot` )");
     TI_WARN(
         "=================================================================");
@@ -61,7 +61,7 @@ bool check_cupti_privileges() {
 #if defined(TI_WITH_CUDA_TOOLKIT)
 
 // Some of the codes are copied from CUPTI/samples/extensions/
-// and modified to match Taichi's naming convensions
+// and modified to match Taichi's naming conventions
 template <typename T>
 class ScopeExit {
  public:
@@ -256,7 +256,7 @@ bool get_raw_metric_requests(
 bool get_config_image(std::string chip_name,
                       std::vector<std::string> metric_names,
                       std::vector<uint8_t> &config_image,
-                      const uint8_t *p_pounter_availability_image) {
+                      const uint8_t *p_counter_availability_image) {
   NVPW_CUDA_MetricsContext_Create_Params metrics_context_create_params = {
       NVPW_CUDA_MetricsContext_Create_Params_STRUCT_SIZE};
   metrics_context_create_params.pChipName = chip_name.c_str();
@@ -286,13 +286,13 @@ bool get_config_image(std::string chip_name,
                        NVPA_RawMetricsConfig_Create(&metrics_config_options,
                                                     &p_raw_metrics_config));
 
-  if (p_pounter_availability_image) {
+  if (p_counter_availability_image) {
     NVPW_RawMetricsConfig_SetCounterAvailability_Params
         set_counter_availability_params = {
             NVPW_RawMetricsConfig_SetCounterAvailability_Params_STRUCT_SIZE};
     set_counter_availability_params.pRawMetricsConfig = p_raw_metrics_config;
     set_counter_availability_params.pCounterAvailabilityImage =
-        p_pounter_availability_image;
+        p_counter_availability_image;
     RETURN_IF_NVPW_ERROR(false, NVPW_RawMetricsConfig_SetCounterAvailability(
                                     &set_counter_availability_params));
   }
@@ -747,9 +747,9 @@ bool CuptiToolkit::update_record(
     traced_records[range_index].kernel_elapsed_time_in_ms =
         gpu_values[CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS] /
         gpu_values[CUPTI_METRIC_CORE_FREQUENCY_HZS] * 1000;  // from s to ms
-    // traced_records[range_index].memory_load_byets  =
+    // traced_records[range_index].memory_load_bytes  =
     // gpu_values[CUPTI_METRIC_GLOBAL_LOAD_BYTES];
-    // traced_records[range_index].memory_store_byets =
+    // traced_records[range_index].memory_store_bytes =
     // gpu_values[CUPTI_METRIC_GLOBAL_STORE_BYTES];
     // TODO add these metrics value to record(backend and frontend)
   }

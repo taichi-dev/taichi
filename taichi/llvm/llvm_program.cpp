@@ -79,6 +79,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
   if (arch_is_cpu(config->arch)) {
     config_.max_block_dim = 1024;
+    device_ = std::make_unique<cuda::CudaDevice>();
   }
 
   if (config->kernel_profiler && runtime_mem_info) {

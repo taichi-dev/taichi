@@ -41,6 +41,7 @@ class FieldsBuilder:
         self._finalized = False
         self._empty = True
 
+    # TODO: move this into SNodeTree
     @classmethod
     def finalized_roots(cls):
         """Gets all the roots of the finalized SNodeTree.
@@ -71,6 +72,7 @@ class FieldsBuilder:
     def finalized(self):
         return self._finalized
 
+    # TODO: move this to SNodeTree class.
     def deactivate_all(self):
         """Same as :func:`taichi.lang.snode.SNode.deactivate_all`"""
         if self._finalized:

@@ -53,7 +53,7 @@ The position parameter `pos` expects an input of a 2-element tuple, whose values
 
 :::
 
-[`gui.set_image(pixels)`](TODO: Link here)
+[`gui.set_image(pixels)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=set_image#taichi.misc.gui.GUI.set_image)
 sets an image to display on the window.
 
 The image pixels are set from the values of `img[i, j]`, where `i` indicates the horizontal coordinates (from left to right) and `j` the vertical coordinates (from bottom to top).
@@ -95,27 +95,27 @@ When using `float32` or `float64` as the data type, `img` entries will be clippe
 
 :::
 
-[`gui.get_image()`](TODO)
+[`gui.get_image()`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=get_image#taichi.misc.gui.GUI.get_image)
 gets the 4-channel (RGBA) image shown in the current GUI system.
 
-[`gui.circles(pos)`](TODO)
+[`gui.circles(pos)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=circles#taichi.misc.gui.GUI.circles)
 draws solid circles.
 
-[`gui.lines(begin, end)`](TODO)
+[`gui.lines(begin, end)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=line#taichi.misc.gui.GUI.lines)
 draws lines.
 
-[`gui.triangles(a, b, c)`](TODO)
+[`gui.triangles(a, b, c)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=triangles#taichi.misc.gui.GUI.triangles)
 draws solid triangles.
 
-[`gui.rect(topleft, bottomright)`](TODO)
+[`gui.rect(topleft, bottomright)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=rect#taichi.misc.gui.GUI.rect)
 draws a rectangle.
 
-[`gui.text(content, pos)`](TODO)
+[`gui.text(content, pos)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=text#taichi.misc.gui.GUI.text)
 draws a line of text on screen.
 
 ## Convert RGB to Hex
 
-[`ti.rgb_to_hex(rgb)`](TODO)
+[`ti.rgb_to_hex(rgb)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=rgb#taichi.misc.gui.rgb_to_hex)
 can convert a (R, G, B) tuple of floats into a single integer value, e.g.,
 
 ```python
@@ -169,7 +169,7 @@ gui.get_event(ti.GUI.PRESS)
 gui.get_event((ti.GUI.PRESS, ti.GUI.ESCAPE), (ti.GUI.RELEASE, ti.GUI.SPACE))
 ```
 
-[`gui.running`](TODO)
+[`gui.running`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=running#taichi.misc.gui.GUI.running)
 can help check the state of the window. `ti.GUI.EXIT` occurs when you click on the close (X) button of a window.
  `gui.running` will obtain `False` when the GUI is being closed.
 
@@ -190,7 +190,7 @@ You can also close the window by manually setting `gui.running` to`False`:
         gui.set_image(pixels)
         gui.show()
 
-[`gui.get_event(a, ...)`](TODO)
+[`gui.get_event(a, ...)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=get_event#taichi.misc.gui.GUI.get_event)
 tries to pop an event from the queue, and stores it into `gui.event`.
 
 For example:
@@ -205,7 +205,7 @@ For example, loop until ESC is pressed:
         gui.set_image(img)
         gui.show()
 
-[`gui.get_events(a, ...)`](TODO)
+[`gui.get_events(a, ...)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=get_event#taichi.misc.gui.GUI.get_events)
 is basically the same as `gui.get_event`, except that it returns a generator of events instead of storing into `gui.event`:
 
     for e in gui.get_events():
@@ -216,7 +216,7 @@ is basically the same as `gui.get_event`, except that it returns a generator of 
         elif e.key in ['a', ti.GUI.LEFT]:
             ...
 
-[`gui.is_pressed(key, ...)`](TODO)
+[`gui.is_pressed(key, ...)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=is_pressed#taichi.misc.gui.GUI.is_pressed)
 can detect the keys you pressed. It must be used together with `gui.get_event`, or it won't be updated! For
 example:
 
@@ -244,12 +244,12 @@ while True:
 
 :::
 
-[`gui.get_cursor_pos()`](TODO)
+[`gui.get_cursor_pos()`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=get_cursor#taichi.misc.gui.GUI.get_cursor_pos)
 can return current cursor position within the window. For example:
 
     mouse_x, mouse_y = gui.get_cursor_pos()
 
-[`gui.fps_limit`](TODO)
+[`gui.fps_limit`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=fps#taichi.misc.gui.GUI.fps_limit)
 sets the FPS limit for a window. For example, to cap FPS at 24, simply use `gui.fps_limit = 24`. This helps reduce the overload on your hardware especially when you're using OpenGL on your integrated GPU which could make desktop slow to response.
 
 
@@ -258,13 +258,13 @@ sets the FPS limit for a window. For example, to cap FPS at 24, simply use `gui.
 
 Sometimes it's more intuitive to use widgets like slider or button to control the program variables instead of using chaotic keyboard bindings. Taichi GUI provides a set of widgets for that reason:
 
-[`gui.slider(text, min, max)`](TODO)
+[`gui.slider(text, min, max)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=slider#taichi.misc.gui.GUI.slider)
 creates a slider following the text `{text}: {value:.3f}`.
 
-[`gui.label(text)`](TODO)
+[`gui.label(text)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=label#taichi.misc.gui.GUI.label)
 displays the label as: `{text}: {value:.3f}`.
 
-[`gui.button(text)`](TODO)
+[`gui.button(text)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=button#taichi.misc.gui.GUI.button)
 creates a button with text on it.
 
 For example:
@@ -283,7 +283,7 @@ while gui.running:
 
 ## Image I/O
 
-[`ti.imwrite(img, filename)`](TODO)
+[`ti.imwrite(img, filename)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=imwrite#taichi.misc.image.imwrite)
 can export a `np.ndarray` or Taichi field (`ti.Matrix.field`,  `ti.Vector.field`, or `ti.field`) to a specified location `filename`.
 
 Same as `ti.GUI.show(filename)`, the format of the exported image is determined by **the suffix of** `filename` as well. Now `ti.imwrite` supports exporting images to `png`, `img` and `jpg` and we recommend using `png`.
@@ -339,14 +339,14 @@ draw()
 ti.imwrite(pixels, f"export_f32.png")
 ```
 
-[`ti.imread(filename)`](TODO)
+[`ti.imread(filename)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=imread#taichi.misc.image.imread)
 loads an image from the target filename and returns it as a `np.ndarray(dtype=np.uint8)`.
 Each value in this returned field is an integer in [0, 255].
 
-[`ti.imshow(img, windname)`](TODO)
+[`ti.imshow(img, windname)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=imshow#taichi.misc.image.imshow)
 creates an instance of ti.GUI and show the input image on the screen. It has the same logic as `ti.imwrite` for different datatypes.
 
-[`ti.imresize(img, w)`](TODO)
+[`ti.imresize(img, w)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=imresize#taichi.misc.image.imresize)
 resizes the img specified.
 
 ### Zero-copying frame buffer

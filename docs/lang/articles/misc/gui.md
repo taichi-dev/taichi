@@ -34,7 +34,7 @@ while gui.running:
 
 ## Display a window
 
-[`gui.show(filename)`](TODO: Link here)
+[`gui.show(filename)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=show#taichi.misc.gui.GUI.show)
 helps display a window. If `filename` is specified, a screenshot will be saved to the file specified by the name. For example, the following saves frames of the window to `.png`s:
 
     for frame in range(10000):
@@ -110,10 +110,22 @@ draws solid triangles.
 [`gui.rect(topleft, bottomright)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=rect#taichi.misc.gui.GUI.rect)
 draws a rectangle.
 
+[`gui.arrows(origin, direction)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=arrows#taichi.misc.gui.GUI.arrows)
+draws arrows.
+
+[`gui.arrow_field(direction)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=arrow_field#taichi.misc.gui.GUI.arrow_field)
+draws a field of arrows.
+
+[`gui.point_field(radius)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=point_field#taichi.misc.gui.GUI.point_field)
+draws a field of points.
+
 [`gui.text(content, pos)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=text#taichi.misc.gui.GUI.text)
 draws a line of text on screen.
 
-## Convert RGB to Hex
+## RGB & Hex conversion.
+
+[`ti.hex_to_rgb(hex)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=hex_to_rgb#taichi.misc.gui.hex_to_rgb)
+can convert a single integer value to a (R, G, B) tuple of floats.
 
 [`ti.rgb_to_hex(rgb)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=rgb#taichi.misc.gui.rgb_to_hex)
 can convert a (R, G, B) tuple of floats into a single integer value, e.g.,
@@ -127,7 +139,6 @@ hex = ti.rgb_to_hex(rgb)  # np.array([0x66ccff, 0x007fff])
 ```
 
 The return values can be used in GUI drawing APIs.
-
 
 
 ## Event processing
@@ -349,7 +360,7 @@ creates an instance of ti.GUI and show the input image on the screen. It has the
 [`ti.imresize(img, w)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=imresize#taichi.misc.image.imresize)
 resizes the img specified.
 
-### Zero-copying frame buffer
+## Zero-copying frame buffer
 When the GUI resolution (window size) is large, it sometimes becomes difficult to achieve 60 FPS even without any kernel
 invocations between two frames.
 
@@ -361,7 +372,9 @@ Fortunately, sometimes your program only needs `gui.set_image` alone. In such ca
 for better performance. This mode allows Taichi GUI to directly write the image data to the frame buffer without additional
 copying, resulting in a much better FPS.
 
-`gui = ti.GUI(res, title, fast_gui=True)`
+```python
+gui = ti.GUI(res, title, fast_gui=True)
+```
 
 :::note
 

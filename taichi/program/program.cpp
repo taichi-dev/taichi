@@ -174,10 +174,6 @@ FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
       kernel.arch == Arch::vulkan || kernel.arch == Arch::opengl ||
       kernel.arch == Arch::cc) {
     return program_impl_->compile(&kernel, offloaded);
-//#ifdef TI_WITH_CC
-//  } else if (kernel.arch == Arch::cc) {
-//    ret = cccp::compile_kernel(&kernel);
-//#endif
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -220,13 +216,6 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
     program_impl_->materialize_snode_tree(tree, snode_trees_, snodes,
                                           result_buffer);
   }
-//#ifdef TI_WITH_CC
-   //else if (config.arch == Arch::cc) {
-   // TI_ASSERT(result_buffer == nullptr);
-   // result_buffer = (uint64 *)memory_pool->allocate(
-   //     sizeof(uint64) * taichi_result_buffer_entries, 8);
-    // cc_program->compile_layout(root);
-//#endif
 }
 
 void Program::check_runtime_error() {

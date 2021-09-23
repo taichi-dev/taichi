@@ -106,7 +106,7 @@ array_dict.keys() # dict_keys(['a', 'b'])
 array_dict['a'].shape # (233, 666)
 array_dict['b'].shape # (233, 666, 3)
 
-field.from_numpy(array_dict) # the input array must have the same keys as the field=
+field.from_numpy(array_dict) # the input array must have the same keys as the field
 ```
 
 ## Using external arrays as Taichi kernel arguments

@@ -36,21 +36,21 @@ heat_field = ti.field(dtype=ti.f32, shape=(width_wok, height_wok))
 - Sparse fields are initially inactive.
 
 ## Vector fields
-We are all live in a gravitational field which is a vector field. At each position of the 3D space, there is a gravity force vector. The gravitational field could be represent with:
+We are all live in a gravitational field which is a vector field. At each position of the 3D space, there is a gravity force vector. The gravitational field could be represented with:
 ```python
-gravitational_field = ti.Vector.field(n = 3,dtype=ti.f32,shape=(x,y,z))
+gravitational_field = ti.Vector.field(n=3, dtype=ti.f32, shape=(x, y, z))
 ```
-`x,y,z` are the sizes of each dimension of the 3D space respectively.  `n` is the number of elements of the gravity force vector.
+`x, y, z` are the sizes of each dimension of the 3D space respectively. `n` is the number of elements of the gravity force vector.
 
 ## Matrix fields
 
 Field elements can also be matrices. In continuum mechanics, each
 infinitesimal point in a material exists a strain and a stress tensor. The strain and stress tensor is a 3 by 3 matrix in the 3D space. To represent this tensor field we could use:
 ```python
-strain_tensor_field = ti.Matrix.field(n = 3,m = 3, dtype=ti.f32, shape=(x,y,z))
+strain_tensor_field = ti.Matrix.field(n=3, m=3, dtype=ti.f32, shape=(x, y, z))
 ```
 
-`x,y,z` are the sizes of each dimension of the 3D material respectively. `n, m` are the dimensions of the strain tensor.
+`x, y, z` are the sizes of each dimension of the 3D material respectively. `n, m` are the dimensions of the strain tensor.
 
 In general case, suppose you have a `128 x 64` field called `A`, and each element contains
 a `3 x 2` matrix. To allocate a `128 x 64` matrix field which has a

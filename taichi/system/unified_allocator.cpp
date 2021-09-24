@@ -64,7 +64,9 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
 #else
     TI_NOT_IMPLEMENTED
 #endif
-  } 
+  }
+  // This is an intermediate state.
+  // We will use memory pools to implement `Device::allocate_memory` soon.
   else if (arch_ == Arch::x64 && false) {
     Device::AllocParams alloc_params;
     alloc_params.size = size;
@@ -73,9 +75,8 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
 
     cpu::CpuDevice *cpu_device = static_cast<cpu::CpuDevice *>(device);
     alloc = cpu_device->allocate_memory(alloc_params);
-    data = (uint8*)cpu_device->get_alloc_info(alloc).ptr;
-  }
-  else {
+    data = (uint8 *)cpu_device->get_alloc_info(alloc).ptr;
+  } else {
     TI_TRACE("Allocating virtual address space of size {} MB",
              size / 1024 / 1024);
     cpu_vm = std::make_unique<VirtualMemoryAllocator>(size);
@@ -100,8 +101,7 @@ taichi::lang::UnifiedAllocator::~UnifiedAllocator() {
 #else
     TI_ERROR("No CUDA support");
 #endif
-  }
-  else if (arch_ == Arch::x64 && false) {
+  } else if (arch_ == Arch::x64 && false) {
     cpu::CpuDevice *cpu_device = static_cast<cpu::CpuDevice *>(device_);
     cpu_device->dealloc_memory(alloc);
   }

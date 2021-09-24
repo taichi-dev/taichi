@@ -376,7 +376,8 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
   // Step 2: A analyzer to determine which mapping should be localized
   mappings.clear();
   gather_candidate_mapping();
-  // If a mesh attribute is in bls, the config makes its index mapping must also be in bls
+  // If a mesh attribute is in bls, the config makes its index mapping must also
+  // be in bls
   if (config.mesh_localize_all_attr_mappings) {
     for (auto [mapping, attr_set] : rec) {
       if (mappings.find(mapping) == mappings.end()) {
@@ -453,7 +454,11 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
           fetch_attr_to_bls(body, idx_val, mapping_val);
         });
 
-    // Step 3-3
+    // Step 3-3:
+    // Make mesh index mapping load from BLS instead of global fields
+    replace_conv_statements();
+
+    // Step 3-4
     // Atomic-add BLS contribution to its global version if necessary
     if (!has_acc(element_type, conv_type)) {
       continue;
@@ -483,10 +488,6 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
             this->push_attr_to_global(body, idx_val, global_val);
           });
     }
-
-    // Step 3-4:
-    // Make mesh index mapping load from BLS instead of global fields
-    replace_conv_statements();
   }
 
   // Cache mesh attribute only

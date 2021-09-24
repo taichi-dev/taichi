@@ -30,7 +30,7 @@ class CCProgramImpl : public ProgramImpl {
  public:
   explicit CCProgramImpl(CompileConfig &config);
 
-  FunctionType compile(Kernel *kernel, OffloadedStmt*) override;
+  FunctionType compile(Kernel *kernel, OffloadedStmt *) override;
 
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
@@ -39,7 +39,7 @@ class CCProgramImpl : public ProgramImpl {
   }
 
   void materialize_runtime(MemoryPool *memory_pool,
-                           KernelProfilerBase*,
+                           KernelProfilerBase *,
                            uint64 **result_buffer_ptr) override;
 
   void materialize_snode_tree(SNodeTree *tree,

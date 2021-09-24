@@ -108,6 +108,11 @@ When using `float32` or `float64` as the data type, `img` entries will be clippe
 [`gui.get_image()`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=get_image#taichi.misc.gui.GUI.get_image)
 gets the 4-channel (RGBA) image shown in the current GUI system.
 
+[`gui.circle(pos)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=circle#taichi.misc.gui.GUI.circle)
+draws one solid circle.
+
+The color and radius of circles can be further specified with additional parameters.
+
 [`gui.circles(pos)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=circles#taichi.misc.gui.GUI.circles)
 draws solid circles.
 
@@ -128,6 +133,11 @@ draws circles with radius of 1.5 and three different colors differed by the indi
 
 ![circles](../static/asset/colored_circles.png)
 
+[`gui.line(begin, end)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=line#taichi.misc.gui.GUI.line)
+draws one line.
+
+The color and radius of lines can be further specified with additional parameters.
+
 [`gui.lines(begin, end)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=line#taichi.misc.gui.GUI.lines)
 draws lines.
 
@@ -141,9 +151,14 @@ For example:
 ```python
 gui.lines(begin=X, end=Y, radius=2, color=0x068587)
 ```
-draws line segments from X positions to Y positions with width of 2 and color of 0x444444.
+draws line segments from X positions to Y positions with width of 2 and color of light blue.
 
 ![lines](../static/asset/lines.png)
+
+[`gui.triangle(a, b, c)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=triangle#taichi.misc.gui.GUI.triangle)
+draws one triangle.
+
+The color of triangles can be further specified with additional parameter.
 
 [`gui.triangles(a, b, c)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=triangles#taichi.misc.gui.GUI.triangles)
 draws solid triangles.
@@ -169,7 +184,7 @@ For example:
 ```python
 gui.rect([0, 0], [0.5, 0.5], radius=1, color=0xED553B)
 ```
-draws a rectangle of topleft corner at [0, 0] and bottomright corner at [0.5, 0.5], with stroke of radius of 1 and color of 0xFFFFFF.
+draws a rectangle of topleft corner at [0, 0] and bottomright corner at [0.5, 0.5], with stroke of radius of 1 and color of red.
 
 ![rect](../static/asset/rect.png)
 

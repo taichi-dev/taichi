@@ -132,7 +132,7 @@ This is a tip without title!
 :::
 
 ```md
-:::tip
+:::TITLE
 This is a tip with a title!
 :::
 ```
@@ -230,14 +230,14 @@ This sentence has a footnote[^1]. (See footnote at the bottom of this guide.)
 We could also write in-line footnotes, which is much easier to write without counting back and forth:
 
 ```md
-This sentence has another footnote ^[I'm another footnote] (See footnote at the bottom of this page.)
+This sentence has another footnote^[I'm another footnote].
 ```
 
 which has the same effect:
 
 ---
 
-This sentence has another footnote ^[I'm another footnote] (See footnote at the bottom of this page.)
+This sentence has another footnote^[I'm another footnote].
 
 ---
 

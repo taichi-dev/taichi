@@ -295,6 +295,8 @@ class Program {
   float64 total_compilation_time_{0.0};
   static std::atomic<int> num_instances_;
   bool finalized_{false};
+
+  std::unique_ptr<MemoryPool> memory_pool{nullptr};
 };
 
 }  // namespace lang

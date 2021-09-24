@@ -187,6 +187,8 @@ class Field:
     def __str__(self):
         if impl.inside_kernel():
             return self.__repr__()  # make pybind11 happy, see Matrix.__str__
+        if self.snode.ptr is None:
+            return '<Field: Definition of this field is incomplete>'
         else:
             return str(self.to_numpy())
 

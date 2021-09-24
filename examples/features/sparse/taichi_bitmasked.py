@@ -35,7 +35,7 @@ def paint_all_pixels(color: ti.f32):
         x[i, j] = color
 
 
-ti.root.deactivate_all()
+ti.deactivate_all_snodes()
 activate()
 
 gui = ti.GUI('bitmasked', (n, n))

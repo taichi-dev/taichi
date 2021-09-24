@@ -8,9 +8,9 @@ sidebar_position: 3
 End users should use [the pip packages](/docs/lang/get-started.md) instead of building from source.
 :::
 
-This section documents how to configure the Taichi devolopment environment and build Taichi from source for the compiler developers. The installation instructions might vary between different operationg systems. We also provide a Dockerfile which may help setup a containerized Taichi development environment with CUDA support based on the Ubuntu base docker image.
+This section documents how to configure the Taichi devolopment environment and build Taichi from source for compiler developers. The installation instructions might vary among different operationg systems. We also provide a Dockerfile which may help setup a containerized Taichi development environment with CUDA support based on the Ubuntu base docker image.
 
-### Installing Dependencies
+### Installing dependencies
 1. Make sure you are using Python 3.6/3.7/3.8/3.9.
   - If you are on an Apple M1 machine, you might want to install `conda` from [Miniforge](https://github.com/conda-forge/miniforge/#download).
 
@@ -157,7 +157,7 @@ Linux)](https://www.docker.com/products/docker-desktop) installed and
 set up properly.
 :::
 
-### Build the Docker Image
+### Build the Docker image
 
 From within the root directory of the taichi Git repository, execute
 `docker build -t taichi:latest .` to build a Docker image based off the
@@ -187,7 +187,7 @@ container as a volume](https://docs.docker.com/storage/volumes/) and set
 the Python path to the mounted directory.
 :::
 
-### Use Docker Image on macOS (cpu only)
+### Use Docker image on macOS (cpu only)
 
 1.  Make sure `XQuartz` and `socat` are installed:
 
@@ -205,7 +205,7 @@ brew install socat
 6.  \[To keep your xhost safe\] Re-enable the xhost access-control:
     `xhost -`
 
-### Use Docker Image on Ubuntu (with CUDA support)
+### Use Docker image on Ubuntu (with CUDA support)
 
 1.  Make sure your host machine has CUDA properly installed and
     configured. Usually you could verify it by running `nvidia-smi`
@@ -233,7 +233,7 @@ sudo systemctl restart docker
     `xhost -`
 
 
-## Troubleshooting Developer Installation
+## Troubleshooting developer installation
 
 - If `python3 setup.py develop`(or `python3 setup.py install`) gives `permission denied` error, it means you're
   installing into system python without write permission. You can work around this by:

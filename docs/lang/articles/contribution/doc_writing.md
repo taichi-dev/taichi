@@ -212,20 +212,20 @@ import TabItem from '@theme/TabItem';
 To add footnotes, use:
 
 ```md
-This sentence[^1] has two footnotes[^paper94]. (See the footnotes at the bottom of this guide.)
+This sentence[^1] has two footnotes[^2]. (See the footnotes at the bottom of this guide.)
 
 [^1]: I'm a footnote!
-[^paper94]: I'm also a footnote!
+[^2]: I'm also a footnote!
 ```
 
 which results in:
 
 ---
 
-This sentence[^1] has two footnotes[^paper94]. (See the footnotes at the bottom of this guide.)
+This sentence[^1] has two footnotes[^2]. (See the footnotes at the bottom of this guide.)
 
 [^1]: I'm a footnote!
-[^paper94]: I'm also a footnote!
+[^2]: I'm also a footnote!
 
 ---
 

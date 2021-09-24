@@ -45,7 +45,7 @@ for x in title.split(']')[1:]:
     if x[1] == ' ':
         exit(f'Extra space before: {x[2:]}')
 
-had_upper = False
+upper_tag_list = []
 for x in title.split('] ')[:-1]:
     if x[0] != '[':
         exit(f'No starting [ for tag: {x}]')
@@ -54,9 +54,10 @@ for x in title.split('] ')[:-1]:
     # 'Misc'.islower() -> False, 'Misc'.isupper() -> False
     # 'misc'.islower() -> True, 'misc'.isupper() -> False
     if not x[1:].islower():
-        if had_upper:
-            exit(f'At most 1 uppercase tag expected, got: [{x[1:]}]')
-        had_upper = True
+        upper_tag_list.append(x[1:])
+
+if len(upper_tag_list) > 1:
+    exit(f'At most 1 uppercase tag expected, got {len(upper_tag_list)}: {" ".join(upper_tag_list)}')
 
 is_release = False
 for x in title.split('] ')[:-1]:

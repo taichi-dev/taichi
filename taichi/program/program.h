@@ -297,12 +297,6 @@ class Program {
   bool finalized_{false};
 
   std::unique_ptr<MemoryPool> memory_pool{nullptr};
-
- public:
-#ifdef TI_WITH_CC
-  // C backend related data structures
-  std::unique_ptr<cccp::CCProgram> cc_program;
-#endif
 };
 
 }  // namespace lang

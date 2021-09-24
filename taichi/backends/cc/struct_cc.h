@@ -5,15 +5,16 @@
 #include "taichi/ir/snode.h"
 
 TLANG_NAMESPACE_BEGIN
+class CCProgramImpl;
 namespace cccp {
 
 class CCLayout;
-class CCProgram;
 
 class CCLayoutGen {
   // Generate corresponding C Source Code for Taichi Structures
  public:
-  CCLayoutGen(CCProgram *program, SNode *root) : program(program), root(root) {
+  CCLayoutGen(CCProgramImpl *cc_program_impl, SNode *root)
+      : cc_program_impl_(cc_program_impl), root(root) {
   }
 
   std::unique_ptr<CCLayout> compile();
@@ -27,7 +28,7 @@ class CCLayoutGen {
     line_appender.append(std::move(f), std::move(args)...);
   }
 
-  CCProgram *program;
+  CCProgramImpl *cc_program_impl_;
 
   SNode *root;
   std::vector<SNode *> snodes;

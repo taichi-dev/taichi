@@ -10,7 +10,7 @@ CCProgramImpl::CCProgramImpl(CompileConfig &config) : ProgramImpl(config) {
   context = std::make_unique<CCContext>();
 }
 
-FunctionType CCProgramImpl::compile(Kernel *kernel, OffloadedStmt *offloaded) {
+FunctionType CCProgramImpl::compile(Kernel *kernel, OffloadedStmt*) {
   CCKernelGen codegen(kernel, this);
   auto ker = codegen.compile();
   auto ker_ptr = ker.get();
@@ -19,7 +19,7 @@ FunctionType CCProgramImpl::compile(Kernel *kernel, OffloadedStmt *offloaded) {
 }
 
 void CCProgramImpl::materialize_runtime(MemoryPool *memory_pool,
-                                        KernelProfilerBase *profiler,
+                                        KernelProfilerBase*,
                                         uint64 **result_buffer_ptr) {
   TI_ASSERT(*result_buffer_ptr == nullptr);
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(

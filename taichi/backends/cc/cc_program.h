@@ -61,18 +61,17 @@ class CCProgramImpl : public ProgramImpl {
   }
 
   CCLayout *get_layout() {
-    return layout.get();
+    return layout_.get();
   }
 
   CCRuntime *get_runtime() {
-    return runtime.get();
+    return runtime_.get();
   }
 
   ~CCProgramImpl() {
   }
 
   CCFuncEntryType *load_kernel(std::string const &name);
-  void compile_layout(SNode *root);
   void relink();
 
   CCContext *update_context(Context *ctx);
@@ -80,18 +79,17 @@ class CCProgramImpl : public ProgramImpl {
 
  private:
   void add_kernel(std::unique_ptr<CCKernel> kernel);
-  void init_runtime();
 
-  std::vector<std::unique_ptr<CCKernel>> kernels;
-  std::unique_ptr<CCContext> context;
-  std::unique_ptr<CCRuntime> runtime;
-  std::unique_ptr<CCLayout> layout;
-  std::unique_ptr<DynamicLoader> dll;
-  std::string dll_path;
-  std::vector<char> args_buf;
-  std::vector<char> root_buf;
-  std::vector<char> gtmp_buf;
-  uint64 *result_buffer;
-  bool need_relink{true};
+  std::vector<std::unique_ptr<CCKernel>> kernels_;
+  std::unique_ptr<CCContext> context_;
+  std::unique_ptr<CCRuntime> runtime_;
+  std::unique_ptr<CCLayout> layout_;
+  std::unique_ptr<DynamicLoader> dll_;
+  std::string dll_path_;
+  std::vector<char> args_buf_;
+  std::vector<char> root_buf_;
+  std::vector<char> gtmp_buf_;
+  uint64 *result_buffer_{nullptr};
+  bool need_relink_{true};
 };
 TLANG_NAMESPACE_END

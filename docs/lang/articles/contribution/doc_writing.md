@@ -1,10 +1,10 @@
 ---
-sidebar_position: 6
+sidebar_position: 9
 ---
 
 # Documentation writing guide
 
-This article briefly introduces syntax that will help you write documentation on this website. Note that the documentation is written in an extended version of [Markdown](https://daringfireball.net/projects/markdown/syntax), so most of the time, you don't need special syntax besides the basic Markdown syntax.
+This article briefly introduces syntax that will help you write documentation on this website. Note that the documentation is written in an extended version of [Markdown](https://daringfireball.net/projects/markdown/syntax), so most of the time you don't need special syntax besides the basic Markdown syntax.
 
 ## 1. Code blocks
 
@@ -209,35 +209,23 @@ import TabItem from '@theme/TabItem';
 
 ## 8. Footnotes
 
-It is important to cite references. To do so, use the footnote syntax of `markdown-it`:
+To add footnotes, use:
 
 ```md
-This sentence has a footnote[^1]. (See the footnote at the bottom of this guide.)
+This sentence[^1] has two footnotes[^paper94]. (See the footnotes at the bottom of this guide.)
 
 [^1]: I'm a footnote!
+[^paper94]: I'm also a footnote!
 ```
 
 which results in:
 
 ---
 
-This sentence has a footnote[^1]. (See the footnote at the bottom of this guide.)
+This sentence[^1] has two footnotes[^paper94]. (See the footnotes at the bottom of this guide.)
 
 [^1]: I'm a footnote!
-
----
-
-You could also write in-line footnotes, which is much easier to write without counting back and forth:
-
-```md
-This sentence has another footnote[^I'm another footnote]. (See the footnote at the bottom of this page.)
-```
-
-which has the same effect:
-
----
-
-This sentence has another footnote[^I'm another footnote]. (See the footnote at the bottom of this page.)
+[^paper94]: I'm also a footnote!
 
 ---
 
@@ -251,7 +239,7 @@ Inserting images is as straight-forward as using the ordinary Markdown syntax:
 
 ![kernel](./life_of_kernel_lowres.jpg)
 
-## 10. Table of Contents (ToC)
+## 10. In-line Table of Contents (ToC)
 
 You could use:
 

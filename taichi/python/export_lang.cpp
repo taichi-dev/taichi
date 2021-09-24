@@ -870,12 +870,12 @@ void export_lang(py::module &m) {
         return &get_current_program().kernel(body, name, grad);
       },
       py::return_value_policy::reference);
-  m.def("get_relation_access", [](mesh::MeshPtr mesh_ptr, 
-                                const Expr &mesh_idx, 
-                                mesh::MeshElementType to_type,
-                                const Expr &neighbor_idx) {
-    return Expr::make<MeshRelationAccessExpression>(mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
-  });
+  m.def("get_relation_access",
+        [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
+           mesh::MeshElementType to_type, const Expr &neighbor_idx) {
+          return Expr::make<MeshRelationAccessExpression>(
+              mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
+        });
 
   m.def("get_index_conversion",
         [](mesh::MeshPtr mesh_ptr, mesh::MeshElementType idx_type,

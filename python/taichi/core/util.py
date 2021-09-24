@@ -124,12 +124,6 @@ def get_unique_task_id():
 
 
 sys.path.append(os.path.join(package_root(), 'lib'))
-if settings.get_os_name() != 'win':
-    link_src = os.path.join(package_root(), 'lib', 'taichi_core.so')
-    link_dst = os.path.join(package_root(), 'lib', 'libtaichi_core.so')
-    # For llvm jit to find the runtime symbols
-    if not os.path.exists(link_dst):
-        os.symlink(link_src, link_dst)
 import_ti_core()
 
 ti_core.set_python_package_dir(package_root())

@@ -41,6 +41,7 @@ class FieldsBuilder:
         self._finalized = False
         self._empty = True
 
+    # TODO: move this into SNodeTree
     @classmethod
     def finalized_roots(cls):
         """Gets all the roots of the finalized SNodeTree.
@@ -71,49 +72,59 @@ class FieldsBuilder:
     def finalized(self):
         return self._finalized
 
+    # TODO: move this to SNodeTree class.
+    def deactivate_all(self):
+        """Same as :func:`taichi.lang.snode.SNode.deactivate_all`"""
+        if self._finalized:
+            self._root.deactivate_all()
+        else:
+            warning(
+                """'deactivate_all()' would do nothing if FieldsBuilder is not finalized"""
+            )
+
     def dense(self, indices: Union[Sequence[_Axis], _Axis],
               dimensions: Union[Sequence[int], int]):
-        """Same as :func:`taichi.lang.SNode.dense`"""
+        """Same as :func:`taichi.lang.snode.SNode.dense`"""
         self._check_not_finalized()
         self._empty = False
         return self._root.dense(indices, dimensions)
 
     def pointer(self, indices: Union[Sequence[_Axis], _Axis],
                 dimensions: Union[Sequence[int], int]):
-        """Same as :func:`taichi.lang.SNode.pointer`"""
+        """Same as :func:`taichi.lang.snode.SNode.pointer`"""
         self._check_not_finalized()
         self._empty = False
         return self._root.pointer(indices, dimensions)
 
     def hash(self, indices, dimensions):
-        """Same as :func:`taichi.lang.SNode.hash`"""
+        """Same as :func:`taichi.lang.snode.SNode.hash`"""
         raise NotImplementedError()
 
     def dynamic(self,
                 index: Union[Sequence[_Axis], _Axis],
                 dimension: Union[Sequence[int], int],
                 chunk_size: Optional[int] = None):
-        """Same as :func:`taichi.lang.SNode.dynamic`"""
+        """Same as :func:`taichi.lang.snode.SNode.dynamic`"""
         self._check_not_finalized()
         self._empty = False
         return self._root.dynamic(index, dimension, chunk_size)
 
     def bitmasked(self, indices: Union[Sequence[_Axis], _Axis],
                   dimensions: Union[Sequence[int], int]):
-        """Same as :func:`taichi.lang.SNode.bitmasked`"""
+        """Same as :func:`taichi.lang.snode.SNode.bitmasked`"""
         self._check_not_finalized()
         self._empty = False
         return self._root.bitmasked(indices, dimensions)
 
     def bit_struct(self, num_bits: int):
-        """Same as :func:`taichi.lang.SNode.bit_struct`"""
+        """Same as :func:`taichi.lang.snode.SNode.bit_struct`"""
         self._check_not_finalized()
         self._empty = False
         return self._root.bit_struct(num_bits)
 
     def bit_array(self, indices: Union[Sequence[_Axis], _Axis],
                   dimensions: Union[Sequence[int], int], num_bits: int):
-        """Same as :func:`taichi.lang.SNode.bit_array`"""
+        """Same as :func:`taichi.lang.snode.SNode.bit_array`"""
         self._check_not_finalized()
         self._empty = False
         return self._root.bit_array(indices, dimensions, num_bits)
@@ -122,13 +133,13 @@ class FieldsBuilder:
               *args: Any,
               offset: Optional[Union[Sequence[int], int]] = None,
               shared_exponent: bool = False):
-        """Same as :func:`taichi.lang.SNode.place`"""
+        """Same as :func:`taichi.lang.snode.SNode.place`"""
         self._check_not_finalized()
         self._empty = False
         self._root.place(*args, offset=offset, shared_exponent=shared_exponent)
 
     def lazy_grad(self):
-        """Same as :func:`taichi.lang.SNode.lazy_grad`"""
+        """Same as :func:`taichi.lang.snode.SNode.lazy_grad`"""
         # TODO: This complicates the implementation. Figure out why we need this
         self._check_not_finalized()
         self._empty = False

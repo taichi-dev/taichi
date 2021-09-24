@@ -109,8 +109,12 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
     TI_WARN("Falling back to {}", arch_name(config.arch));
   }
 
+  Device *compute_device = nullptr;
+  if (program_impl_.get()) {
+    compute_device = program_impl_->get_compute_device();
+  }
   // Must have handled all the arch fallback logic by this point.
-  memory_pool = std::make_unique<MemoryPool>(config.arch);
+  memory_pool = std::make_unique<MemoryPool>(config.arch, compute_device);
   TI_ASSERT_INFO(num_instances_ == 0, "Only one instance at a time");
   total_compilation_time_ = 0;
   num_instances_ += 1;

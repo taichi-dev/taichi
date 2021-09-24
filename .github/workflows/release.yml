@@ -34,6 +34,7 @@ jobs:
     needs: matrix_prep
     strategy:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    fail-fast: false
     runs-on: [self-hosted, cuda, vulkan, cn, release]
     steps:
       - uses: actions/checkout@v2
@@ -108,6 +109,7 @@ jobs:
     needs: matrix_prep
     strategy:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    fail-fast: false
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
@@ -173,6 +175,7 @@ jobs:
     needs: matrix_prep
     strategy:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix_osx) }}
+    fail-fast: false
     runs-on: [self-hosted, m1]
     defaults:
       run:
@@ -229,6 +232,7 @@ jobs:
     needs: matrix_prep
     strategy:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    fail-fast: false
     runs-on: windows-latest
     steps:
       - name: Install 7Zip PowerShell

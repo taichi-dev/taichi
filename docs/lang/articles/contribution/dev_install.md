@@ -10,7 +10,7 @@ End users should use [the pip packages](/docs/lang/get-started.md) instead of bu
 
 This section documents how to configure the Taichi devolopment environment and build Taichi from source for compiler developers. The installation instructions might vary among different operationg systems. We also provide a Dockerfile which may help setup a containerized Taichi development environment with CUDA support based on the Ubuntu base docker image.
 
-### Installing dependencies
+## Installing dependencies
 1. Make sure you are using Python 3.6/3.7/3.8/3.9.
   - If you are on an Apple M1 machine, you might want to install `conda` from [Miniforge](https://github.com/conda-forge/miniforge/#download).
 

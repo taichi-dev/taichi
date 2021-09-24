@@ -52,6 +52,16 @@ Taichi's GUI supports painting simple geometrix objects, such as lines, triangle
 The position parameter `pos` expects input of 2-element tuples, whose values are the relative position of the object.
 (0.0, 0.0) stands for the lower left corner of the window, and (1.0, 1.0) stands for the upper right corner.
 
+Acceptable input for positions are taichi fields or numpy arrays. Primitive arrays in python are NOT acceptable.
+
+For simplicity, we use numpy arrays in the examples below.
+
+:::
+
+:::tip
+
+For detailed API description, please click on the API code.
+
 :::
 
 [`gui.set_image(pixels)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=set_image#taichi.misc.gui.GUI.set_image)
@@ -106,27 +116,39 @@ For multiple colors, use palette and palette_indices instead.
 
 For examples:
 ```python
-gui.circles(pos, radius=1.5, color=0x068587)
+gui.circles(pos, radius=3, color=0x068587)
 ```
 draws circles all with radius of 1.5 and blue color positioned at pos array.
+
+![circles](../static/asset/circles.png)
 ```python
-gui.circles(pos, radius=1.5, palette=[0x068587, 0xED553B, 0xEEEEF0], palette_indices=material)
+gui.circles(pos, radius=3, palette=[0x068587, 0xED553B, 0xEEEEF0], palette_indices=material)
 ```
 draws circles with radius of 1.5 and three different colors differed by the indices array material.
 
+![circles](../static/asset/colored_circles.png)
+
 [`gui.lines(begin, end)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=line#taichi.misc.gui.GUI.lines)
 draws lines.
+
+:::note
+
+`being` and `end` both require input of positions.
 
 The color and radius of lines can be further specified with additional parameters.
 
 For example:
 ```python
-gui.lines(begin=X, end=Y, radius=2, color=0x444444)
+gui.lines(begin=X, end=Y, radius=2, color=0x068587)
 ```
 draws line segments from X positions to Y positions with width of 2 and color of 0x444444.
 
+![lines](../static/asset/lines.png)
+
 [`gui.triangles(a, b, c)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=triangles#taichi.misc.gui.GUI.triangles)
 draws solid triangles.
+
+Three vertices of triangles all require input of positions.
 
 The color of triangles can be further specified with additional parameter.
 
@@ -136,6 +158,8 @@ gui.triangles(a=X, b=Y, c=Z, color=0x000000)
 ```
 draws triangles with color of 0x000000 and three points positioned at X, Y, and Z.
 
+![triangles](../static/asset/triangles.png)
+
 [`gui.rect(topleft, bottomright)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=rect#taichi.misc.gui.GUI.rect)
 draws a hollowed rectangle.
 
@@ -143,30 +167,62 @@ The color and radius of the stroke of rectangle can be further specified with ad
 
 For example:
 ```python
-gui.rect([0, 0], [0.5, 0.5], radius=1, color=0xFFFFFF)
+gui.rect([0, 0], [0.5, 0.5], radius=1, color=0xED553B)
 ```
 draws a rectangle of topleft corner at [0, 0] and bottomright corner at [0.5, 0.5], with stroke of radius of 1 and color of 0xFFFFFF.
 
+![rect](../static/asset/rect.png)
+
 [`gui.arrows(origin, direction)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=arrows#taichi.misc.gui.GUI.arrows)
 draws arrows.
+
+`origin` and `direction` both require input of positions. `origin` refers to the positions of arrows' origins, `direction`
+refers to the directions where the arrows point to relative to their origins.
 
 The color and radius of arrows can be further specified with additional parameters.
 
 For example:
 ```python
-gui.arrows([0, 0], [0.5, 0.5], radius=1, color=0xFFFFFF)
+x = nunpy.array([[0.1, 0.1], [0.9, 0.1]])
+y = nunpy.array([[0.3, 0.3], [-0.3, 0.3]])
+gui.arrows(x, y, radius=1, color=0xFFFFFF)
 ```
-draws an arrow originated at [0, 0] and pointing to [0.5, 0.5], with radius of 1 and color of 0xFFFFFF.
+draws two arrow originated at [0.1, 0.1], [0.9, 0.1] and pointing to [0.3, 0.3], [-0.3, 0.3] with radius of 1 and color of 0xFFFFFF.
+
+![arrows](../static/asset/arrows.png)
 
 [`gui.arrow_field(direction)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=arrow_field#taichi.misc.gui.GUI.arrow_field)
 draws a field of arrows.
 
+The `direction` requires a field of `shape=(x, y, 2)` where `x` refers to the number of columns of arrow field and `y`
+refers to the number of rows of arrow field.
+
 The color and bound of arrow field can be further specified with additional parameters.
+
+For example:
+```python
+gui.arrow_field(x, bound=0.5, color=0xFFFFFF) # x is a field of shape=(5, 5, 2)
+```
+draws a 5 by 5 arrows pointing to random directions.
+
+![arrow_field](../static/asset/arrow_field.png)
 
 [`gui.point_field(radius)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=point_field#taichi.misc.gui.GUI.point_field)
 draws a field of points.
 
+The `radius` requires a field of `shape=(x, y)` where `x` refers to the number of columns of arrow field and `y`
+refers to the number of rows of arrow field.
+
 The color and bound of point field can be further specified with additional parameters.
+
+For example:
+```python
+x = numpy.array([[3, 5, 7, 9], [9, 7, 5, 3], [6, 6, 6, 6]])
+gui.point_field(radius=x, bound=0.5, color=0xED553B)
+```
+draws a 3 by 4 point field of radius stored in the array.
+
+![point_field](../static/asset/point_field.png)
 
 [`gui.text(content, pos)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=text#taichi.misc.gui.GUI.text)
 draws a line of text on screen.

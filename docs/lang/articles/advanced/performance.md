@@ -109,9 +109,13 @@ Currently, Taichi supports TLS optimization for these reduction operators: add, 
 
 ## Block Local Storage (BLS)
 
-Context: For a sparse field with a hierarchical layout matching `ti.root.(sparse SNode)+.dense`, Taichi will assign one CUDA thread block to each `dense` block. BLS optimization works specificially for such kinds of fields.
+Context: For a sparse field with a hierarchical layout matching `ti.root.(sparse SNode)+.dense`, Taichi will assign
+one CUDA thread block to each `dense` block. BLS optimization works specificially for such kinds of fields.
 
-BLS aims to accelerate the stencil computation patterns by leveraging the CUDA shared memory. Roughly speaking, BLS optimization attempts to figure out the range of the access w.r.t the `dense` block at compile time. At runtime, the generated code fetches all the data in range into a *block local* buffer (CUDA shared memory), and then reads the data from this block local buffer, instead of the global memory.
+BLS aims to accelerate the stencil computation patterns by leveraging the CUDA shared memory. Roughly speaking, the BLS
+optimization attempts to figure out the accessing range w.r.t the `dense` block at compile time. At runtime, the
+generated code fetches all the data in range into a *block local* buffer (CUDA shared memory), and then reads the data
+from this block local buffer instead of the global memory.
 
 ```python
 a = ti.field(ti.f32)
@@ -125,3 +129,5 @@ def foo():
   for i, j in a:
     print(a[i - 1, j], a[i, j + 2])
 ```
+
+For a `dense` block in `a`, `i, j` has determined its range, i.e., `[N, N + 4) x [N, N + 4)`. 

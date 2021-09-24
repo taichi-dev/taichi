@@ -67,7 +67,7 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
   }
   // This is an intermediate state.
   // We will use memory pools to implement `Device::allocate_memory` soon.
-  else if (arch_ == Arch::x64 && false) {
+  else if (arch_ == Arch::x64) {
     Device::AllocParams alloc_params;
     alloc_params.size = size;
     alloc_params.host_read = true;
@@ -101,7 +101,7 @@ taichi::lang::UnifiedAllocator::~UnifiedAllocator() {
 #else
     TI_ERROR("No CUDA support");
 #endif
-  } else if (arch_ == Arch::x64 && false) {
+  } else if (arch_ == Arch::x64) {
     cpu::CpuDevice *cpu_device = static_cast<cpu::CpuDevice *>(device_);
     cpu_device->dealloc_memory(alloc);
   }

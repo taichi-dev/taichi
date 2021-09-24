@@ -10,6 +10,7 @@
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/virtual_memory.h"
 #include "taichi/system/timer.h"
+#include "taichi/backends/cpu/cpu_device.h"
 #include <string>
 
 TLANG_NAMESPACE_BEGIN
@@ -63,6 +64,18 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
 #else
     TI_NOT_IMPLEMENTED
 #endif
+  }
+  // This is an intermediate state.
+  // We will use memory pools to implement `Device::allocate_memory` soon.
+  else if (arch_ == Arch::x64) {
+    Device::AllocParams alloc_params;
+    alloc_params.size = size;
+    alloc_params.host_read = true;
+    alloc_params.host_write = true;
+
+    cpu::CpuDevice *cpu_device = static_cast<cpu::CpuDevice *>(device);
+    alloc = cpu_device->allocate_memory(alloc_params);
+    data = (uint8 *)cpu_device->get_alloc_info(alloc).ptr;
   } else {
     TI_TRACE("Allocating virtual address space of size {} MB",
              size / 1024 / 1024);
@@ -88,6 +101,9 @@ taichi::lang::UnifiedAllocator::~UnifiedAllocator() {
 #else
     TI_ERROR("No CUDA support");
 #endif
+  } else if (arch_ == Arch::x64) {
+    cpu::CpuDevice *cpu_device = static_cast<cpu::CpuDevice *>(device_);
+    cpu_device->dealloc_memory(alloc);
   }
 }
 

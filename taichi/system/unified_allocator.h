@@ -25,6 +25,7 @@ class UnifiedAllocator {
   // put these two on the unified memory so that GPU can have access
  public:
   uint8 *data;
+  DeviceAllocation alloc{kDeviceNullAllocation};
   uint8 *head;
   uint8 *tail;
   std::mutex lock;

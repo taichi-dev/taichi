@@ -8,6 +8,8 @@
 #include "taichi/util/str.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/ir/statements.h"
+#include "taichi/backends/cpu/cpu_device.h"
+
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/codegen_cuda.h"
@@ -79,6 +81,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
   if (arch_is_cpu(config->arch)) {
     config_.max_block_dim = 1024;
+    device_ = std::make_unique<cpu::CpuDevice>();
   }
 
   if (config->kernel_profiler && runtime_mem_info) {

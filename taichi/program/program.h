@@ -296,7 +296,7 @@ class Program {
   static std::atomic<int> num_instances_;
   bool finalized_{false};
 
-  std::unique_ptr<MemoryPool> memory_pool{nullptr};
+  std::unique_ptr<MemoryPool> memory_pool_{nullptr};
 };
 
 }  // namespace lang

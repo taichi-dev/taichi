@@ -14,7 +14,7 @@ class CCLayoutGen {
   // Generate corresponding C Source Code for Taichi Structures
  public:
   CCLayoutGen(CCProgramImpl *cc_program_impl, SNode *root)
-      : cc_program_impl_(cc_program_impl), root(root) {
+      : cc_program_impl_(cc_program_impl), root_(root) {
   }
 
   std::unique_ptr<CCLayout> compile();
@@ -25,14 +25,14 @@ class CCLayoutGen {
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
-    line_appender.append(std::move(f), std::move(args)...);
+    line_appender_.append(std::move(f), std::move(args)...);
   }
 
-  CCProgramImpl *cc_program_impl_;
+  CCProgramImpl *cc_program_impl_{nullptr};
 
-  SNode *root;
-  std::vector<SNode *> snodes;
-  LineAppender line_appender;
+  SNode *root_;
+  std::vector<SNode *> snodes_;
+  LineAppender line_appender_;
 };
 
 }  // namespace cccp

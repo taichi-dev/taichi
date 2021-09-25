@@ -18,16 +18,17 @@ applications. For example, specifying a suitable `ti.block_dim` could yield an a
 For performance profiling utilities, see [**Profiler** section of the Contribution Guide](../misc/profiler.md).
 :::
 
-### Thread hierarchy of GPUs
+### Background: Thread hierarchy of GPUs
 
-GPUs have a **thread hierarchy**.
+To better undersatnd how the mentioned for-loop is parallelized, we briefly
+introduce the **thread hierarchy** on modern GPU architectures.
 
-From small to large, the computation units are: **iteration** \<
-**thread** \< **block** \< **grid**.
+From a fine-grained to a coarse-grained level, the computation units can be 
+defined as: **iteration** \< **thread** \< **block** \< **grid**.
 
 - **iteration**: Iteration is the **body of a for-loop**. Each
   iteration corresponding to a specific `i` value in for-loop.
-- **thread**: Iterations are grouped into threads. Threads are the
+- **thread**: Iterations are grouped into threads. Thread is the
   minimal unit that is parallelized. All iterations within a thread
   are executed in **serial**. We usually use 1 iteration per thread
   for maximizing parallel performance.
@@ -41,9 +42,9 @@ From small to large, the computation units are: **iteration** \<
 
 For more details, please see [the CUDA C programming
 guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#thread-hierarchy).
-The OpenGL and Metal backends follow a similar thread hierarchy.
+Note that we employ the CUDA terminology here, other backends such as OpenGL and Metal follow a similar thread hierarchy.
 
-### API reference
+### Example: Tuning the block-level parallelism of a for-loop
 
 Programmers may **prepend** some decorator(s) to tweak the property of a
 for-loop, e.g.:

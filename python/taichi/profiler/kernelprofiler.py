@@ -197,11 +197,11 @@ _ti_kernel_profiler = KernelProfiler()
 def get_default_kernel_profiler():
     """We have only one :class:`~taichi.profiler.kernelprofiler.KernelProfiler` instance(i.e. ``_ti_kernel_profiler``) now.
 
-    For ``KernelProfiler`` using ``CuptiToolkit``, GPU devices can only work in a certain configuration,
-    profiling mode and metrics are configured by the host(CPU) via CUPTI APIs, and device(GPU) will use
+    For ``KernelProfiler`` using ``CuptiToolkit``, GPU devices can only work in a certain configuration.
+    Profiling mode and metrics are configured by the host(CPU) via CUPTI APIs, and device(GPU) will use
     its counter registers to collect specific metrics.
-    So if there are multiple instances of ``KernelProfiler``,the device will work in the last configuration mode,
-    the configuration of other instance will also be changed as a result.
-    For data retention purposes, support for multiple instances may be considered in the future.
+    So if there are multiple instances of ``KernelProfiler``,the device will work in the latest configuration,
+    the profiling configuration of other instances will be changed as a result.
+    For data retention purposes, multiple instances will be considered in the future.
     """
     return _ti_kernel_profiler

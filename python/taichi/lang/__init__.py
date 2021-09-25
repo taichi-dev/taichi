@@ -35,7 +35,6 @@ import taichi as ti
 core = _ti_core
 
 runtime = impl.get_runtime()
-kernel_profiler = get_default_kernel_profiler()
 
 i = indices(0)
 j = indices(1)
@@ -81,7 +80,7 @@ def kernel_profiler_print():
     return print_kernel_profile_info()
 
 
-def print_kernel_profile_info(mode=kernel_profiler.COUNT):
+def print_kernel_profile_info(mode='count'):
     """Print the profiling results of Taichi kernels.
 
     To enable this profiler, set ``kernel_profiler=True`` in ``ti.init()``.
@@ -106,17 +105,14 @@ def print_kernel_profile_info(mode=kernel_profiler.COUNT):
         >>> ti.print_kernel_profile_info() #[1]
         >>> # equivalent calls :
         >>> # ti.print_kernel_profile_info('count')
-        >>> # ti.kernel_profiler.print_info('count')
 
         >>> ti.print_kernel_profile_info('trace')
-        >>> # equivalent calls :
-        >>> # ti.kernel_profiler.print_info('trace')
 
     Note:
         [1] Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
     """
-    kernel_profiler.print_info(mode)
+    get_default_kernel_profiler().print_info(mode)
 
 
 def query_kernel_profile_info(name):
@@ -160,7 +156,7 @@ def query_kernel_profile_info(name):
         [2] Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
     """
-    return kernel_profiler.query_info(name)
+    return get_default_kernel_profiler().query_info(name)
 
 
 @deprecated('kernel_profiler_clear()', 'clear_kernel_profile_info()')
@@ -170,7 +166,7 @@ def kernel_profiler_clear():
 
 def clear_kernel_profile_info():
     """Clear all KernelProfiler records."""
-    kernel_profiler.clear_info()
+    get_default_kernel_profiler().clear_info()
 
 
 def kernel_profiler_total_time():
@@ -179,7 +175,7 @@ def kernel_profiler_total_time():
     Returns:
         time (double): total time in second
     """
-    return kernel_profiler.get_total_time()
+    return get_default_kernel_profiler().get_total_time()
 
 
 @deprecated('memory_profiler_print()', 'print_memory_profile_info()')
@@ -381,7 +377,8 @@ def init(arch=None,
     if _test_mode:
         return spec_cfg
 
-    kernel_profiler.set_kernel_profiler_mode(ti.cfg.kernel_profiler)
+    get_default_kernel_profiler().set_kernel_profiler_mode(
+        ti.cfg.kernel_profiler)
 
     # create a new program:
     impl.get_runtime().create_program()

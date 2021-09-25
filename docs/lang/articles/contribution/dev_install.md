@@ -5,7 +5,7 @@ sidebar_position: 3
 # Developer installation
 
 :::note
-End users should use [the pip packages](/docs/lang/get-started) instead of building from source.
+End users should use [the pip packages](/docs/lang/articles/get-started) instead of building from source.
 :::
 
 This section documents how to configure the Taichi devolopment environment and build Taichi from source for compiler developers. The installation instructions might vary among different operationg systems. We also provide a Dockerfile which helps setup a containerized development environment for Taichi with CUDA support based on the Ubuntu docker image.

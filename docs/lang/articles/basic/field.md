@@ -5,7 +5,7 @@ sidebar_position: 3
 # Fields
 
 Fields are **global** variables provided by Taichi. **Global** indicated that fields could be read/written from both the Python scope and the Taichi scope. The field contains a multi-dimensional array of elements. Similar to NumPy `ndarray` objects, Fields have a data type and a shape. But fields can be either sparse or dense.  An element of a field can be either a scalar, a vector/matrix, or a struct. This term (Field) is borrowed from mathematics and physics. If you
-have already known [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (e.g., heat field), vector field (e.g., [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)) in mathematics and physics, it would be straightforward to understand the fields in Taichi. 
+have already known [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (e.g., heat field), vector field (e.g., [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)) in mathematics and physics, it would be straightforward to understand the fields in Taichi.
 
 To be noticed:
 * Fields are always accessed by indices.
@@ -35,7 +35,7 @@ heat_field = ti.field(dtype=ti.f32, shape=(width_wok, height_wok))
 - When accessing 0-D field `x`, use `x[None] = 0` instead of `x = 0`. A 0-D field looks like `energy = ti.field(dtype=ti.f32, shape=())`.
 
 :::caution
-Please **always** use indexing to access entries in fields. 
+Please **always** use indexing to access entries in fields.
 :::
 
 ## Vector fields
@@ -75,7 +75,7 @@ a `3 x 2` matrix. To allocate a `128 x 64` matrix field which has a
 - To get the element on the first row and second column of that
   matrix, use `mat[0, 1]` or `A[i, j][0, 1]`.
 - The 0-D matrix fields `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape=())` should be accessed by `x[None][p, q]`, (`0<= p < n, 0<= q < m`).
-  
+
 :::notice
 - As you may have noticed, there are **two** indexing operators `[]`
   when you load a matrix element from a global matrix field: the

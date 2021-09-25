@@ -41,7 +41,7 @@ def import_ti_core():
             if settings.get_os_name() == 'win':
                 e.msg += '\nConsider installing Microsoft Visual C++ Redistributable: https://aka.ms/vs/16/release/vc_redist.x64.exe'
             elif settings.get_os_name() == 'linux':
-                e.msg += '\nConsider installing libtinfo5: sudo apt-get install libtinfo5'
+                e.msg += '\nConsider installing libtinfo5 and libz3-dev: sudo apt-get install libtinfo5 libz3-dev'
         raise e from None
     ti_core = core
     if settings.get_os_name() != 'win':

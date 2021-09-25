@@ -21,7 +21,7 @@ First of all, thank you for contributing! We welcome all kinds of contributions,
 
 :::tip reminder
 Please take some time to familiarize yourself with this contribution guide before participating in our GitHub community.
-Then read the [development guide](./development_guide) for more details regarding development of the Taichi compiler.
+For more details regarding development of the Taichi compiler, read the [development tips](./development_tips).
 :::
 
 ## Where to find contribution opportunities
@@ -179,12 +179,12 @@ branch, therefore it is important to keep PR titles readable.
 - Please always prepend **at least one tag** such as `[Lang]` to PR
   titles:
   - When using multiple tags, make sure there is exactly one
-    space between tags.
+    space between tags;
   - For example, `[Lang][refactor]` (no space) should be replaced
     by `[Lang] [refactor]`.
 - The first letter of the PR title body should be capitalized:
   - For example, `[Doc] improve documentation` should be replaced by
-    `[Doc] Improve documentation`.
+    `[Doc] Improve documentation`;
   - `[Lang] "ti.sqr(x)" is now deprecated` is fine because `"`
     is a symbol.
 - Please do not include back quotes ("`") in PR titles.
@@ -216,9 +216,8 @@ Frequently used tags:
 - `[Bug]`: bug fixes.
 
 Check out more tags in
-  [misc/prtags.json](https://github.com/taichi-dev/taichi/blob/master/misc/prtags.json).
-- When introducing a new tag, please update the list in
-  `misc/prtags.json` in the first PR with that tag, so that people can
+ [misc/prtags.json](https://github.com/taichi-dev/taichi/blob/master/misc/prtags.json). When introducing a new tag, please update
+ [misc/prtags.json](https://github.com/taichi-dev/taichi/blob/master/misc/prtags.json) in the first PR with that tag, so that people can
   follow.
 
 :::note
@@ -232,7 +231,7 @@ tags**:
 - PRs with visible or notable features to the users should be marked
   with tags starting with **the first letter capitalized**, e.g.,
   `[Metal]`, `[Vulkan]`, `[IR]`, `[Lang]`, `[CLI]`. When releasing a new
-  version, a script (`misc/make_changelog.py`) will
+  version, a script ([misc/make_changelog.py](https://github.com/taichi-dev/taichi/blob/master/misc/make_changelog.py)) will
   generate a changelog with these changes (PR title) highlighted.
   Therefore it is **important** to make sure the end-users can
   understand what your PR does, **based on your PR title**.
@@ -249,35 +248,38 @@ tags**:
 
 ## Testing
 
-Tests should be added to `tests/`.
+Tests should be added to [tests/](https://github.com/taichi-dev/taichi/blob/master/tests/). We
+have both Python tests and C++ tests.
 
-### Command-line tools
+### Python tests
 
 - Use `ti test` to run all the tests.
 - Use `ti test -v` for verbose outputs.
-- Use `ti test -C` to run tests and record code coverage, see
-  [Code coverage](./utilities.md#coverage) for more information.
-- Use `ti test -a <arch(s)>` for testing against specified backend(s).
-  e.g. `ti test -a cuda,metal`.
-- Use `ti test -na <arch(s)>` for testing all architectures excluding
-  some of them. e.g. `ti test -na opengl,x64`.
-- Use `ti test <filename(s)>` to run specific tests in filenames. e.g.
-  `ti test numpy_io` will run all tests in
-  `tests/python/test_numpy_io.py`.
-- Use `ti test -c` to run only the C++ tests. e.g.
-  `ti test -c alg_simp` will run `tests/cpp/test_alg_simp.cpp`.
-- Use `ti test -k <key>` to run tests that match the specified key.
-  e.g. `ti test linalg -k "cross or diag"` will run the `test_cross`
-  and `test_diag` in `tests/python/test_linalg.py`.
+- Use `ti test -s` for original output from the tests.
+- Use `ti test -a <arch(s)>` to test only specified backends, e.g.,
+  `ti test -a cuda,metal`.
+- Use `ti test -na <arch(s)>` to test all backends excluding specified ones,
+  e.g., `ti test -na opengl,x64`.
+- Use `ti test <filename(s)>` to run tests in specified files. For example,
+  `ti test numpy_io` will run all tests in [tests/python/test_numpy_io.py](https://github.com/taichi-dev/taichi/blob/master/tests/python/test_numpy_io.py).
+- Use `ti test -k <key>` to run tests that match the specified key. For
+  example, `ti test linalg -k "cross or diag"` will run `test_cross`
+  and `test_diag` in [tests/python/test_linalg.py](https://github.com/taichi-dev/taichi/blob/master/tests/python/test_linalg.py).
+- Use `ti test -t <threads>` to set custom number of threads for parallel testing.
 
 For more options, see `ti test -h`.
 
-For more details on how to write a test case, see
-[Workflow for writing a Python test](./write_test.md).
+For more details on how to write a Python test case, see
+[Workflow for writing a Python test](./write_test).
+
+### C++ tests
+
+For more details on C++ tests, see
+[Workflow for writing a CPP test](./writing_cpp_tests).
 
 ## Documentation
 
-Documentation source files are under the `docs/` folder of [**the main Taichi repo**](https://github.com/taichi-dev/taichi).
+Documentation source files are under [docs/](https://github.com/taichi-dev/taichi/blob/master/docs/) of [**the main Taichi repo**](https://github.com/taichi-dev/taichi).
 An automatic service syncs the updated content with our [documentation repo](https://github.com/taichi-dev/docs.taichi.graphics) and deploys the documentation at [the Taichi documentation site](https://docs.taichi.graphics).
 
 We use [Markdown](https://www.markdownguide.org/getting-started/) (.md) to write documentation.

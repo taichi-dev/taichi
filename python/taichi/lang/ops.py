@@ -914,7 +914,7 @@ def length(l, indices):
 
 
 def rescale_index(a, b, I):
-    """Rescales the index 'I' of field(snode) 'a' the match the shape of field(snode) 'b'
+    """Rescales the index 'I' of field (or SNode) 'a' to match the shape of SNode 'b'
 
     Parameters
     ----------
@@ -932,9 +932,8 @@ def rescale_index(a, b, I):
 
     """
     assert isinstance(a, Field) or isinstance(
-        a, SNode), f"first argument must be a field or an SNode"
-    assert isinstance(b, Field) or isinstance(
-        b, SNode), f"second argument must be a field or an SNode"
+        a, SNode), "The first argument must be a field or an SNode"
+    assert isinstance(b, SNode), "The second argument must be an SNode"
     assert isinstance(I,
                       matrix.Matrix), f"third argument must be a grouped index"
     Ib = I.copy()

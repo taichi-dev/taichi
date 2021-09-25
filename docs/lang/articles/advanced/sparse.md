@@ -4,13 +4,17 @@ sidebar_position: 3
 
 # Sparse computation
 
+![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/sparse_grids.gif)
+
+(Figure: A swinging Taichi pattern represented )
+
 ## Motivation
 
 High-resolution 2D/3D grids are often needed in large-scale spatial computation, especially physical simulation.
-However, they tend to take a huge amount of memory space and computation.
+However, these grids tend to take a huge amount of memory space and computation.
 
-While a programmer may allocate large dense grids to store spatial data (especially physical quantities such as a density field),
-oftentimes he or she only cares about a small fraction of this dense grid, the rest being ambient space (air).
+While a programmer may allocate large dense grids to store spatial data (especially physical quantities such as a density or velocity field),
+oftentimes they only care about a small fraction of this dense grid, since the rest may be empty space (air).
 
 In short, the regions of interest may only occupy a small fraction of the bounding volume.
 If we can leverage such "spatial sparsity" and focus computation on the regions we care about,
@@ -40,31 +44,127 @@ Other backends offer no or limited support of sparse computation.
 Sparse matrices are usually **not** implemented in Taichi via (spatially-) sparse data structures.
 :::
 
-## Sparse data structures in Taichi
+## Defining sparse data structures in Taichi
+
+When a pixel, voxel, or grid cell is allocated and involved in the computation, we say it is *active*. The rest of the grid may be simply `inactive`.
+Ideally, it would be nice to have a sparse voxel data structure that consumes space or computation only when the voxels are active.
+Practically, Taichi programmers use hierarchical data structures to organize sparse voxel data.
 
 ### Data structure hierarchy
 
 To concentrate computation on sparse regions of interest, multilevel sparse voxel data structures are studied extensively. 
+These data structure are essentially trees. Traditionally,
+[Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and [Octrees](https://en.wikipedia.org/wiki/Octree) (3D) are often adopted.
+Since dereferencing pointers is relatively costly on modern computer architectures,
+it is performance-friendly to use trees with larger branching factors.
+[OpenVDB](https://www.openvdb.org/) and [SPGrid](http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf) are such examples.
 
-## Activation on write
+TODO: add an image here.
 
-When writing to an inactive cell on a sparse data structre, Taichi automatically populates the data structure.
+While a null pointer can effectively represent an empty sub-tree, at the leaf level using 64 bits to represent the activity
+of a single voxel can consume too much space.
+For example, if each voxel contains a single `f32` value (4 bytes), the 64-bit pointer pointing to the value itself would take 8 bytes.
+In this case, storage costs of pointers triples the space to store the values, which goes against our goal to use sparse data structures to save space.
 
-![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/sparse_grids.gif)
+To amortize the storage cost of pointers, programmers usually organize voxels in a *blocked* manner,
+and let the pointers directly point to the blocks (instead of voxels).
 
-## Sparse struct-fors
+One caveat of such design is that voxels in the same `dense` block can no longer change its activity flexibly.
+Instead, they share a single activity flag. To address this issue,
+the `bitmasked` SNode additionally allocates 1-bit per voxel data to represent the voxel activity.
 
-Efficiently looping over sparse grid cells that are irregular can be a challenge. Fortunately, in Taichi, *struct-for's*
-natively support sparse data structures and only loops over voxels that are currently active.
+### A typical sparse data structure
+
+```python
+x = ti.field(dtype=ti.i32)
+
+block = ti.root.pointer(ti.ij, (4, 4))
+pixel = block.dense(ti.ij, (2, 2))
+pixel.place(x)
+```
+
+## Computation on sparse data structures
+
+### Activation on write
+
+When writing to an inactive cell on a sparse data structure, Taichi automatically populates the data structure.
+
+For example, when executing `x[4, 13] = 123` on the aforementioned sparse grid `x`,
+Taichi automatically activates `block[1, 3]` so that `pixel[4, 13]` is allocated.
+
+TODO: add image.
+
+:::note
+Reading an inactive voxel returns zero.
+:::
+
+### Sparse struct-fors
+
+Efficiently looping over sparse grid cells that are irregular can be a challenge, especially on parallel devices such as GPUs.
+Fortunately, in Taichi, *struct-for's* natively support sparse data structures and only loops over voxels that are currently active.
+
+```python
+import taichi as ti
+
+use_bitmask = True
+
+ti.init()
+
+x = ti.field(dtype=ti.i32)
+block = ti.root.pointer(ti.ij, (4, 4))
+if use_bitmask:
+    pixel = block.bitmasked(ti.ij, (2, 2))
+else:
+    pixel = block.dense(ti.ij, (2, 2))
+pixel.place(x)
+
+@ti.kernel
+def sparse_struct_for():
+    x[2, 3] = 2
+    x[5, 6] = 3
+
+    for i, j in x:
+        print('x[{}, {}] = {}'.format(i, j, x[i, j]))
+
+print('use_bitmask = {}'.format(use_bitmask))
+sparse_struct_for()
+```
 
 ## Explicitly manipulating and querying sparsity
 
-- `ti.is_active(...)`
-- `ti.activate(...)`
-- `SNode.deactivate_all()`
-- `ti.deactivate_all_snodes()`
+- Use `ti.is_active(snode, [i, j, ...])` to query if `snode[i, j, ...]` is active or not.
+- `ti.activate/deactivate(snode, [i, j, ...])` to explicitly activate or deactivate a cell of `snode[i, j, ...]`. (TODO: example. Also note that `ti.activate` may have a different behavior...)
+- Use `snode.deactivate_all()` to deactivate all cells of SNode `snode`.
+- Use `ti.deactivate_all_snodes()` to deactivate all cells of all SNodes with sparsity.
+  
+:::note
+For performance reasons, `ti.deactivate` ...
+- does **not** recursively deactivate all the sub-cells of a cell.
+- does **not** trigger a garbage of its parent cell, if all the children of the parent cell are deactivated.
+- does **not** recursively deactivate its children cells.
+:::
 
-### Automatic garbage collection
+:::note
+When deactivation happens, the Taichi runtime automatically recycles and zero-fills memory of the cells that are deactivated via `ti.deactivate`.
+:::
+
+
+### Finding parent cell indices
+
+It is often helpful to compute the index of of a parent SNode cell given a child SNode cell.
+While it is possible to directly use `[i // 2, j // 2]` to compute the `block` index given `pixel` index,
+doing so couples computation code with the internal configuration of data structures (in this case, the size of `block` cells).
+
+You can use `ti.rescale_index(TODO)`.
+
+### Creating lists with the `dynamic` SNode
+
+In particle simulations
+
+- `ti.append(...)`
+- `ti.length(...)`
+
+How to clear a list?
 
 ## Further reading
 

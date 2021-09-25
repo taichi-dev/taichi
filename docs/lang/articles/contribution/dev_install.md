@@ -103,6 +103,7 @@ If you wish to build taichi with Vulkan. You will need to install the Vulkan SDK
 - Make sure you have a Vulkan driver from a GPU vendor installed. On Ubuntu, you
   can verify there is a JSON file in one of these two locations: `/etc/vulkan/icd.d/` or `/usr/share/vulkan/icd.d`. 
 - You can verify the installation of the Vulkan SDK by running `vkvia`, `vulkaninfo`, and/or `vkcube`.
+
 After Vulkan is successfully installed. You can build Taichi with Vulkan by adding an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON`.
 
 ### Setting up Taichi for development
@@ -116,13 +117,16 @@ After Vulkan is successfully installed. You can build Taichi with Vulkan by addi
   # export CXX=/path/to/clang  # Uncomment if clang is not system default compiler.
   python3 setup.py develop --user  # Optionally add DEBUG=1 to keep debug information.
   ```
-  - We use MSBUILD.exe to build the generated project on Windows. Please note that Windows
-    could have multiple instances of MSBUILD.exe shipped with different
-    products. Please make sure you add the path for MSBUILD.exe within your
-    MSVS directory and make it a higher priority (for instance than the one
-    shipped with .NET).
 
-2. Check out `examples` for runnable examples. Run them with commands
+:::note
+We use `MSBUILD.exe` to build the generated project on Windows. Please note that Windows
+could have multiple instances of `MSBUILD.exe` shipped with different
+products. Please make sure you add the path for `MSBUILD.exe` within your
+MSVS directory and make it a higher priority (for instance than the one
+shipped with .NET).
+:::
+
+2. Check out the `examples` folder for runnable examples. Run them with commands
   like `python3 examples/simulation/mpm128.py`.
 
 3. Execute `python3 -m taichi test` to run all the tests. It may take
@@ -134,9 +138,11 @@ To avoid directly installing Taichi's dependencies into your existing
 Python environment, we have provided a pre-defined `conda` environment.
 You can find the instructions [here](https://github.com/taichi-dev/taichi/blob/master/conda/README.md).
 
-Note that this step only helps you setup the development environment,
+:::note
+This step only helps you setup the development environment,
 you would still need to run `python3 setup.py develop` to re-build
 Taichi.
+:::
 
 ## Docker
 

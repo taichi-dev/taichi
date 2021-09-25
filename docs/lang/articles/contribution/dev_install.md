@@ -196,19 +196,19 @@ brew cask install xquartz
 brew install socat
 ```
 
-2.  Temporally disable the xhost access-control: `xhost +`
+2.  Temporally disable the xhost access-control: `xhost +`.
 3.  Start the Docker container with
-    `docker run -it -e DISPLAY=$(ipconfig getifaddr en0):0 taichidev/taichi:v0.6.17`
+    `docker run -it -e DISPLAY=$(ipconfig getifaddr en0):0 taichidev/taichi:v0.6.17`.
 4.  Do whatever you want within the container, e.g. you could run tests
-    or an example, try: `ti test` or `ti example mpm88`
-5.  Exit from the container with `exit` or `ctrl+D`
+    or an example, try: `ti test` or `ti example mpm88`.
+5.  Exit from the container with `exit` or `ctrl+D`.
 6.  \[To keep your xhost safe\] Re-enable the xhost access-control:
-    `xhost -`
+    `xhost -`.
 
 ### Use Docker image on Ubuntu (with CUDA support)
 
 1.  Make sure your host machine has CUDA properly installed and
-    configured. Usually you could verify it by running `nvidia-smi`
+    configured. Usually you could verify it by running `nvidia-smi`.
 2.  Make sure [NVIDIA Container
     Toolkit](https://github.com/NVIDIA/nvidia-docker) is properly
     installed:
@@ -222,22 +222,22 @@ sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
 sudo systemctl restart docker
 ```
 
-3.  Make sure `xorg` is installed: `sudo apt-get install xorg`
-4.  Temporally disable the xhost access-control: `xhost +`
+3.  Make sure `xorg` is installed: `sudo apt-get install xorg`.
+4.  Temporally disable the xhost access-control: `xhost +`.
 5.  Start the Docker container with
-    `sudo docker run -it --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix taichidev/taichi:v0.6.17`
+    `sudo docker run -it --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix taichidev/taichi:v0.6.17`.
 6.  Do whatever you want within the container, e.g. you could run tests
-    or an example, try: `ti test` or `ti example mpm88`
-7.  Exit from the container with `exit` or `ctrl+D`
+    or an example, try: `ti test` or `ti example mpm88`.
+7.  Exit from the container with `exit` or `ctrl+D`.
 8.  **[To keep your xhost safe]** Re-enable the xhost access-control:
-    `xhost -`
+    `xhost -`.
 
 
 ## Troubleshooting developer installation
 
 - If `python3 setup.py develop`(or `python3 setup.py install`) gives `permission denied` error, it means you're
   installing into system python without write permission. You can work around this by:
-  - `python3 setup.py develop --user` or `python3 setup.py install --user`
+  - `python3 setup.py develop --user` or `python3 setup.py install --user`.
   - Install conda and use python from conda enviroments.
 
 - If `make` fails to compile and reports

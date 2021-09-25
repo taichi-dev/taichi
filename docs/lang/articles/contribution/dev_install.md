@@ -11,76 +11,69 @@ End users should use the pip packages instead of building from source.
 This section documents how to configure the Taichi devolopment environment and build Taichi from source for compiler developers. The installation instructions might vary among different operationg systems. We also provide a Dockerfile which helps setup a containerized development environment for Taichi with CUDA support based on the Ubuntu docker image.
 
 ## Installing dependencies
-1. Currently, Python 3.6/3.7/3.8/3.9 are supported.
-  - If you are on an Apple M1 machine, you might want to install `conda` from [Miniforge](https://github.com/conda-forge/miniforge/#download).
+1. Python: Currently, 3.6/3.7/3.8/3.9 are supported.
+   - If you are on an Apple M1 machine, you might want to install `conda` from [Miniforge](https://github.com/conda-forge/miniforge/#download).
 
-2.  Make sure you have `clang` with version \>= 7 on Linux or download clang-10 on Windows:
+2. Clang: Make sure you have `clang-8` (or later) on Linux, or download `clang-10` on Windows:
+   - On OSX: Normally, you don’t need to do anything.
+   - On Ubuntu: Execute `sudo apt install libtinfo-dev clang-8`.
+   - On Arch Linux: Execute `sudo pacman -S clang`. (This is `clang-10`).
+   - On other Linux distributions, please search [this site](https://pkgs.org) for clang version \>= 8.
+   - On Windows: Please download [clang-10](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip). Make sure you add the `bin` folder containing `clang.exe` to the `PATH` environment variable.
 
-  - On OSX: you don’t need to do anything.
-  - On Ubuntu, execute `sudo apt install libtinfo-dev clang-8`.
-  - On Arch Linux, execute `sudo pacman -S clang`. (This is
-    `clang-10`).
-  - On other Linux distributions, please search [this
-    site](https://pkgs.org) for clang version \>= 7.
-  - On Windows please download [clang-10](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip). Make sure you add the `bin` folder containing `clang.exe` to the `PATH` environment variable.
-
-
-:::note
-Note that on Linux, `clang` is the **only** supported compiler for compiling the Taichi package.
-:::
-
-
-3. Make sure you have LLVM 10.0.0. Note that Taichi uses a **customized
-  LLVM** so the pre-built binaries from the LLVM official website or
-  other sources probably won't work. Here we provide LLVM binaries
-  customized for Taichi, which may or may not work depending on your
-  system environment:
-  - [LLVM 10.0.0 for Linux](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-linux.zip)
-  - [LLVM 10.0.0 for macOS](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip)
-  - [LLVM 10.0.0 for Windows MSVC 2019](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip)
 
   :::note
-  If you use the pre-built LLVM for Taichi, please add `$LLVM_FOLDER/bin` to `PATH`, e.g. `export PATH=<path_to_llvm_folder>/bin:$PATH` on Linux.
+  On Linux, `clang` is the **only** supported compiler for compiling the Taichi package.
   :::
 
-- If the downloaded LLVM does not work, please build from source:
-  - For Linux & Mac OSX:
 
-    ```bash
-    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/llvm-10.0.0.src.tar.xz
-    tar xvJf llvm-10.0.0.src.tar.xz
-    cd llvm-10.0.0.src
-    mkdir build
-    cd build
-    cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_TERMINFO=OFF
-    # If you are building on Apple M1, use -DLLVM_TARGETS_TO_BUILD="AArch64".
-    # If you are building on NVIDIA Jetson TX2, use -DLLVM_TARGETS_TO_BUILD="ARM;NVPTX"
-    # If you are building for a PyPI release, add -DLLVM_ENABLE_Z3_SOLVER=OFF to reduce the library dependency.
-    make -j 8
-    sudo make install
-    # Check your LLVM installation
-    llvm-config --version  # You should get 10.0.0
-    ```
+3. LLVM: Make sure you have version 10.0.0 installed. Taichi uses a **customized LLVM**, which we provided as binaries depending on your system environment. Note that the pre-built binaries from the LLVM official website or other sources may not work. 
+   - [LLVM 10.0.0 for Linux](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-linux.zip)
+   - [LLVM 10.0.0 for macOS](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip)
+   - [LLVM 10.0.0 for Windows MSVC 2019](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip)
 
-  - For Windows:
+  :::note
+  When using the above pre-built LLVM for Taichi, please add `$LLVM_FOLDER/bin` to `PATH`, e.g. `export PATH=<path_to_llvm_folder>/bin:$PATH` on Linux.
+  :::
 
-    ```bash
-    # For Windows
-    # LLVM 10.0.0 + MSVC 2019
-    cmake .. -G"Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF   -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64   -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
-    ```
+   - If the previous LLVM binaries do not work, please build from source:
+     - For Linux & Mac OSX:
 
-    - Then open `LLVM.sln` and use Visual Studio 2017+ to build.
-    - Please make sure you are using the `Release` configuration.
-      After building the `INSTALL` project (under folder
-      `CMakePredefinedTargets` in the Solution Explorer window).
-    - If you use MSVC 2019, **make sure you use C++17** for the
-      `INSTALL` project.
-    - After the build is complete, find your LLVM binaries and
-      headers in `build/installed`.
-    - Please add `build/installed/bin` to `PATH`. Later, when you
-    build Taichi please use
-    `cmake -DLLVM_DIR=<path_to_build>/build/installed/lib/cmake/llvm`.
+       ```bash
+       wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/llvm-10.0.0.src.tar.xz
+       tar xvJf llvm-10.0.0.src.tar.xz
+       cd llvm-10.0.0.src
+       mkdir build
+       cd build
+       cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_TERMINFO=OFF
+       # If you are building on Apple M1, use -DLLVM_TARGETS_TO_BUILD="AArch64".
+       # If you are building on NVIDIA Jetson TX2, use -DLLVM_TARGETS_TO_BUILD="ARM;NVPTX"
+       # If you are building for a PyPI release, add -DLLVM_ENABLE_Z3_SOLVER=OFF to reduce the library dependency.
+       make -j 8
+       sudo make install
+       # Check your LLVM installation
+       llvm-config --version  # You should get 10.0.0
+       ```
+
+     - For Windows:
+
+       ```bash
+       # For Windows
+       # LLVM 10.0.0 + MSVC 2019
+       cmake .. -G "Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF   -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64   -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
+       ```
+
+       - Then open `LLVM.sln` and use Visual Studio 2017+ to build.
+       - Please make sure you are using the `Release` configuration.
+         After building the `INSTALL` project (under folder
+         `CMakePredefinedTargets` in the Solution Explorer window).
+       - If you use MSVC 2019, **make sure you use C++17** for the
+         `INSTALL` project.
+       - After the build is complete, find your LLVM binaries and
+         headers in `build/installed`.
+       - Please add `build/installed/bin` to `PATH`. Later, when you
+       build Taichi please use
+       `cmake -DLLVM_DIR=<path_to_build>/build/installed/lib/cmake/llvm`.
 
 
 ### Setting up CUDA (optional)

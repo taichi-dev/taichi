@@ -6,16 +6,11 @@ sidebar_position: 5
 
 ## For-loop decorators
 
-In Taichi kernels, for-loops in the outermost scope is automatically
-parallelized.
-
-However, there are some implementation details about **how it is
-parallelized**.
-
-Taichi provides some API to modify these parameters. This allows
-advanced users to manually fine-tune the performance.
-
-For example, specifying a suitable `ti.block_dim` could yield an almost
+In Taichi kernels, for-loop in the outermost scope is automatically
+parallelized. Our compiler automatically tunes the parameters to best explore 
+the target architecture. Nevertheless, for Ninjas who strive for the last few %
+of performance, we also provide some APIs to allow developers fine-tune their
+applications. For example, specifying a suitable `ti.block_dim` could yield an almost
 3x performance boost in
 [examples/mpm3d.py](https://github.com/taichi-dev/taichi/blob/master/examples/mpm3d.py).
 

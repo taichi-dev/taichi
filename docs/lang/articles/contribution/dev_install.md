@@ -22,9 +22,9 @@ This section documents how to configure the Taichi devolopment environment and b
    - On Windows: Please download [clang-10](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip). Make sure you add the `bin` folder containing `clang.exe` to the `PATH` environment variable.
 
 
-  :::note
-  On Linux, `clang` is the **only** supported compiler for compiling the Taichi package.
-  :::
+:::note
+On Linux, `clang` is the **only** supported compiler for compiling the Taichi package.
+:::
 
 
 3. LLVM: Make sure you have version 10.0.0 installed. Taichi uses a **customized LLVM**, which we provided as binaries depending on your system environment. Note that the pre-built binaries from the LLVM official website or other sources may not work.
@@ -33,9 +33,9 @@ This section documents how to configure the Taichi devolopment environment and b
    - [LLVM 10.0.0 for Windows MSVC 2019](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip)
 
 
-  :::note
-  When using the above pre-built LLVM for Taichi, please add `$LLVM_FOLDER/bin` to `PATH`, e.g., `export PATH=<path_to_llvm_folder>/bin:$PATH` on Linux.
-  :::
+:::note
+When using the above pre-built LLVM for Taichi, please add `$LLVM_FOLDER/bin` to `PATH`, e.g., `export PATH=<path_to_llvm_folder>/bin:$PATH` on Linux.
+:::
 
 
    - If the previous LLVM binaries do not work, please build from source:

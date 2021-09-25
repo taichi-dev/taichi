@@ -7,7 +7,7 @@ sidebar_position: 5
 ## For-loop decorators
 
 In Taichi kernels, for-loop in the outermost scope is automatically
-parallelized. Our compiler automatically tunes the parameters to best explore 
+parallelized. Our compiler automatically tunes the parameters to best explore
 the target architecture. Nevertheless, for Ninjas who strive for the last few %
 of performance, we also provide some APIs to allow developers fine-tune their
 applications. For example, specifying a suitable `ti.block_dim` could yield an almost
@@ -23,7 +23,7 @@ For **performance profiling** utilities, please see [Profiler section of the Con
 To better understand how the mentioned for-loop is parallelized, we briefly
 introduce the **thread hierarchy** on modern GPU architectures.
 
-From a fine-grained to a coarse-grained level, the computation units can be 
+From a fine-grained to a coarse-grained level, the computation units can be
 defined as: **iteration** \< **thread** \< **block** \< **grid**.
 
 - **iteration**: Iteration is the **body of a for-loop**. Each

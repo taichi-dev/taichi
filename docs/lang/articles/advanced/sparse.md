@@ -9,12 +9,12 @@ sidebar_position: 3
 High-resolution 2D/3D grids are often needed in large-scale spatial computation, especially physical simulation.
 However, they tend to take a huge amount of memory space and computation.
 
-While a programmer may allocate large huge dense grids to store spatial data (especially physical quantities such as a density field),
+While a programmer may allocate large dense grids to store spatial data (especially physical quantities such as a density field),
 oftentimes he or she only cares about a small fraction of this dense grid, the rest being ambient space (air).
 
 In short, the regions of interest may only occupy a small fraction of the bounding volume.
 If we can leverage such "spatial sparsity" and focus computation on the regions we care about,
-we significantly save storage and computing power.
+we will significantly save storage and computing power.
 
 :::note
 The key to leverage spatial sparsity is to replace dense grids with sparse grids.
@@ -48,14 +48,14 @@ To concentrate computation on sparse regions of interest, multilevel sparse voxe
 
 ## Activation on write
 
-When writing to an inactive cell on a sparse data structre, Taichi automatically populate the data structure.
+When writing to an inactive cell on a sparse data structre, Taichi automatically populates the data structure.
 
 ![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/sparse_grids.gif)
 
 ## Sparse struct-fors
 
 Efficiently looping over sparse grid cells that are irregular can be a challenge. Fortunately, in Taichi, *struct-for's*
-natively support sparse data structures, and only loops over voxels that are currently active.
+natively support sparse data structures and only loops over voxels that are currently active.
 
 ## Explicitly manipulating and querying sparsity
 

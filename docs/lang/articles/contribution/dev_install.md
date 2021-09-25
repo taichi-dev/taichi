@@ -101,7 +101,7 @@ If you wish to build taichi with Vulkan. You will need to install the Vulkan SDK
 - If you're working on Windows, please also set the environment variable `VULKAN_SDK` to `C:/VulkanSDK/${YOUR_VULKAN_VERSION}`. (as an example, for vulkan 1.2.189.0, set `VULKAN_SDK` to `C:/VulkanSDK/1.2.189.0`).
 - On Linux, also make sure the environment variable `VULKAN_SDK` `PATH` `LD_LIBRARY_PATH` and `VK_LAYER_PATH` are updated. On Ubuntu, the downloaded SDK provides a `setup-env.sh` that can be sourced.
 - Make sure you have a Vulkan driver from a GPU vendor installed. On Ubuntu, you
-  can verify there is a JSON file in one of these two locations: `/etc/vulkan/icd.d/` or `/usr/share/vulkan/icd.d`. 
+  can verify there is a JSON file in one of these two locations: `/etc/vulkan/icd.d/` or `/usr/share/vulkan/icd.d`.
 - You can verify the installation of the Vulkan SDK by running `vkvia`, `vulkaninfo`, and/or `vkcube`.
 
 After Vulkan is successfully installed. You can build Taichi with Vulkan by adding an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON`.

@@ -15,12 +15,12 @@ applications. For example, specifying a suitable `ti.block_dim` could yield an a
 [examples/mpm3d.py](https://github.com/taichi-dev/taichi/blob/master/examples/mpm3d.py).
 
 :::note
-For performance profiling utilities, see [**Profiler** section of the Contribution Guide](../misc/profiler.md).
+For **performance profiling** utilities, please see [Profiler section of the Contribution Guide](../misc/profiler.md).
 :::
 
 ### Background: Thread hierarchy of GPUs
 
-To better undersatnd how the mentioned for-loop is parallelized, we briefly
+To better understand how the mentioned for-loop is parallelized, we briefly
 introduce the **thread hierarchy** on modern GPU architectures.
 
 From a fine-grained to a coarse-grained level, the computation units can be 

@@ -8,7 +8,7 @@ sidebar_position: 3
 End users should use the pip packages instead of building from source.
 :::
 
-This section documents how to configure the Taichi devolopment environment and build Taichi from source for compiler developers. The installation instructions might vary among different operationg systems. We also provide a Dockerfile which helps setup a containerized development environment for Taichi with CUDA support based on the Ubuntu docker image.
+This section documents how to configure the Taichi devolopment environment and build Taichi from source for compiler developers. The installation instructions might vary among different operationg systems. We also provide a Dockerfile which helps setup a containerized development environment with CUDA support based on the Ubuntu docker image.
 
 ## Installing dependencies
 1. Python: Currently, 3.6/3.7/3.8/3.9 are supported.
@@ -32,9 +32,11 @@ This section documents how to configure the Taichi devolopment environment and b
    - [LLVM 10.0.0 for macOS](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip)
    - [LLVM 10.0.0 for Windows MSVC 2019](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip)
 
+
   :::note
-  When using the above pre-built LLVM for Taichi, please add `$LLVM_FOLDER/bin` to `PATH`, e.g. `export PATH=<path_to_llvm_folder>/bin:$PATH` on Linux.
+  When using the above pre-built LLVM for Taichi, please add `$LLVM_FOLDER/bin` to `PATH`, e.g., `export PATH=<path_to_llvm_folder>/bin:$PATH` on Linux.
   :::
+
 
    - If the previous LLVM binaries do not work, please build from source:
      - For Linux & Mac OSX:
@@ -71,9 +73,7 @@ This section documents how to configure the Taichi devolopment environment and b
          `INSTALL` project.
        - After the build is complete, find your LLVM binaries and
          headers in `build/installed`.
-       - Please add `build/installed/bin` to `PATH`. Later, when you
-       build Taichi please use
-       `cmake -DLLVM_DIR=<path_to_build>/build/installed/lib/cmake/llvm`.
+       - Please add `build/installed/bin` to `PATH`. Later, when you build Taichi, please use `cmake -DLLVM_DIR=<path_to_build>/build/installed/lib/cmake/llvm`.
 
 
 ### Setting up CUDA (optional)

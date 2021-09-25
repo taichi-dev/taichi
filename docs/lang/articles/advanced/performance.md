@@ -70,7 +70,8 @@ def func():
 # Local Storage Optimizations
 
 Taichi comes with a few optimizations that leverages the *fast memory* (e.g. CUDA shared memory, L1 cache) for performance optimization.
-The idea is straightforward: Where possible, Taichi substitues the accesses to the global memroy (slow) with that to the local one (fast), and writes the data in the local memory back to the global memory in the end. Such transformations preserves the semantics of the original program (will be explained later).
+The idea is straightforward: Where possible, Taichi substitues the accesses to the global memroy (slow) with that to the local one (fast),
+and writes the data in the local memory back to the global memory in the end. Such transformations preserves the semantics of the original program (will be explained later).
 
 ## Thread Local Storage (TLS)
 
@@ -102,10 +103,16 @@ buffer upon entering the thread, accumulates (*non-atomically*) the value of `x`
 result of the buffer back to `s[None]` atomically before exitting the thread. Assuming each
 thread handles `N` items in `x`, the number of atomic adds is reduced to one-N-th its original size.
 
-In addition, the last atomic add from the thread-local buffer to the global memory `s[None]` can be optimized
-by using CUDA's warp-level intrinsics, further reducing the number of required atomic adds.
+Additionally, the last atomic add to the global memory `s[None]` is optimized using CUDA's warp-level intrinsics,
+further reducing the number of required atomic adds.
 
-Currently, Taichi supports TLS optimization for these reduction operators: add, sub, min and max.
+Currently, Taichi supports TLS optimization for these reduction operators: add, sub, min and max. [Here](https://github.com/taichi-dev/taichi/pull/2956)
+is a benchmark comparison when running a global max reduction on a 1-D Taichi field of 8M floats on an Nvidia GeForce RTX 3090:
+
+* TLS disabled: 5.2 x 1e3 us
+* TLS enabled: 5.7 x 1e1 us
+
+TLS has led to an approximately 100x speedup.
 
 ## Block Local Storage (BLS)
 

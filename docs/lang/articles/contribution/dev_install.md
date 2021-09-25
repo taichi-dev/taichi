@@ -8,7 +8,7 @@ sidebar_position: 3
 End users should use the [pip packages](../get-started.md) instead of building from source.
 :::
 
-This section documents how to configure the Taichi devolopment environment and build Taichi from source for compiler developers. The installation instructions might vary among different operationg systems. We also provide a Dockerfile which helps setup a containerized development environment with CUDA support based on the Ubuntu docker image.
+This section documents how to configure the Taichi development environment and build Taichi from source for compiler developers. The installation instructions might vary among different operating systems. We also provide a Dockerfile which helps setup a containerized development environment with CUDA support based on the Ubuntu docker image.
 
 ## Installing dependencies
 1. Python: Currently, 3.6/3.7/3.8/3.9 are supported.

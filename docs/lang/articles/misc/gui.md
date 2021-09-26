@@ -125,13 +125,13 @@ gui.circles(pos, radius=3, color=0x068587)
 ```
 draws circles all with radius of 1.5 and blue color positioned at pos array.
 
-![circles](../static/asset/circles.png)
+![circles](../static/assets/circles.png)
 ```python
 gui.circles(pos, radius=3, palette=[0x068587, 0xED553B, 0xEEEEF0], palette_indices=material)
 ```
 draws circles with radius of 1.5 and three different colors differed by the indices array material.
 
-![circles](../static/asset/colored_circles.png)
+![circles](../static/assets/colored_circles.png)
 
 [`gui.line(begin, end)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=line#taichi.misc.gui.GUI.line)
 draws one line.
@@ -153,7 +153,7 @@ gui.lines(begin=X, end=Y, radius=2, color=0x068587)
 ```
 draws line segments from X positions to Y positions with width of 2 and color of light blue.
 
-![lines](../static/asset/lines.png)
+![lines](../static/assets/lines.png)
 
 [`gui.triangle(a, b, c)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=triangle#taichi.misc.gui.GUI.triangle)
 draws one triangle.
@@ -173,7 +173,7 @@ gui.triangles(a=X, b=Y, c=Z, color=0x000000)
 ```
 draws triangles with color of 0x000000 and three points positioned at X, Y, and Z.
 
-![triangles](../static/asset/triangles.png)
+![triangles](../static/assets/triangles.png)
 
 [`gui.rect(topleft, bottomright)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=rect#taichi.misc.gui.GUI.rect)
 draws a hollowed rectangle.
@@ -186,7 +186,7 @@ gui.rect([0, 0], [0.5, 0.5], radius=1, color=0xED553B)
 ```
 draws a rectangle of topleft corner at [0, 0] and bottomright corner at [0.5, 0.5], with stroke of radius of 1 and color of red.
 
-![rect](../static/asset/rect.png)
+![rect](../static/assets/rect.png)
 
 [`gui.arrows(origin, direction)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=arrows#taichi.misc.gui.GUI.arrows)
 draws arrows.
@@ -204,7 +204,7 @@ gui.arrows(x, y, radius=1, color=0xFFFFFF)
 ```
 draws two arrow originated at [0.1, 0.1], [0.9, 0.1] and pointing to [0.3, 0.3], [-0.3, 0.3] with radius of 1 and color of 0xFFFFFF.
 
-![arrows](../static/asset/arrows.png)
+![arrows](../static/assets/arrows.png)
 
 [`gui.arrow_field(direction)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=arrow_field#taichi.misc.gui.GUI.arrow_field)
 draws a field of arrows.
@@ -220,7 +220,7 @@ gui.arrow_field(x, bound=0.5, color=0xFFFFFF) # x is a field of shape=(5, 5, 2)
 ```
 draws a 5 by 5 arrows pointing to random directions.
 
-![arrow_field](../static/asset/arrow_field.png)
+![arrow_field](../static/assets/arrow_field.png)
 
 [`gui.point_field(radius)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=point_field#taichi.misc.gui.GUI.point_field)
 draws a field of points.
@@ -237,7 +237,7 @@ gui.point_field(radius=x, bound=0.5, color=0xED553B)
 ```
 draws a 3 by 4 point field of radius stored in the array.
 
-![point_field](../static/asset/point_field.png)
+![point_field](../static/assets/point_field.png)
 
 [`gui.text(content, pos)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=text#taichi.misc.gui.GUI.text)
 draws a line of text on screen.

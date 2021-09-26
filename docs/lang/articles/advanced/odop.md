@@ -16,12 +16,12 @@ For convenience, let's call the hybrid scheme **objective data-oriented
 programming** (ODOP).
 
 
-## Data oriented class
+## Data-oriented class
 
 If you need to define a **Taichi kernel** as a property inside a python class, it's needed to decorate the class with a `@ti.data_oriented` decorator. Then, you could define `ti.kernel` and `ti.func` in your data-oriented class in pleasure!
 
 :::note
-**Taichi kernel**'s grammar is same as the python function. Which means the first argument of the function would be the class instance.
+**Taichi kernel**'s grammar is the same as the python function. This means the first argument of the function would be the class instance.
 :::
 
 A brief example:
@@ -30,26 +30,20 @@ A brief example:
 @ti.data_oriented
 class TiArray:
     def __init__(self, n):
-        self.x = ti.field(ti.f32, shape=n)
+        self.x = ti.field(ti.i32, shape=n)
 
     @ti.kernel
     def inc(self):
         for i in self.x:
             self.x[i] += 1
 
-a = TiArray(42)
+a = TiArray(32)
 a.inc()
 ```
 
-**Taichi kernel**'s grammar is same as the python function. Which means the common decorator of a class function could apply to a **Taichi kernel** too.
-<!---
-Kernels should be called from **Python-scope**.
+**Taichi kernel**'s grammar is same as the python function. Which means the common decorator of a class function, such as `@staticmethod`, could apply to `ti.kernel` and `ti.func` too.
 
-:::note
-For people from CUDA, Taichi kernels = `__global__` functions.
-:::
-
-A brief example:
+A much longer example:
 
 ```python
 import taichi as ti
@@ -118,4 +112,3 @@ for i in range(arr.n):
   for j in range(arr.m):
     assert arr.val.grad[i, j] == 8
 ```
--->

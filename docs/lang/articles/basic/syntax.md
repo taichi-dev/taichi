@@ -58,12 +58,12 @@ my_kernel(24, 3.2)  # prints: 27.2
 :::note
 
 For now, Taichi supports scalars as kernel arguments. Specifying `ti.Matrix` or
-`ti.Vector` as argument is not supported. For example:
+`ti.Vector` as argument is not supported:
 
 ```python {2,6}
 @ti.kernel
 def error_kernel(v: ti.Vector): # Error
-    ... 
+    ...
 
 @ti.kernel
 def valid_kernel(vx: ti.f32, vy: ti.f32):
@@ -75,7 +75,7 @@ def valid_kernel(vx: ti.f32, vy: ti.f32):
 
 ### Return value
 
-It is optional for a kernel to have a return value. If specified, it must be a type hinted **scalar** value, e.g.,
+It is optional for a kernel to have a return value. If specified, it must be a type hinted **scalar** value:
 
 ```python {2}
 @ti.kernel
@@ -85,7 +85,7 @@ def my_kernel() -> ti.f32:
 print(my_kernel())  # 128.32
 ```
 
-In addition, the return value will be automatically cast into the hinted type, e.g.,
+In addition, the return value will be automatically cast into the hinted type:
 
 ```python {2-3,5}
 @ti.kernel
@@ -98,7 +98,7 @@ print(my_kernel())  # 128, casted into ti.i32
 :::note
 
 For now, a kernel can only have one scalar return value. Returning
-`ti.Matrix`, `ti.Vector` or Python-style tuple is not supported, e.g.,
+`ti.Matrix`, `ti.Vector` or Python-style tuple is not supported:
 
 ```python {3,9}
 
@@ -174,7 +174,7 @@ allowed.
 ### Arguments and return values
 
 Functions can have multiple arguments and return values. Unlike kernels,
-arguments in functions are not required to be type-hinted, e.g.,
+arguments in functions are not required to be type-hinted:
 
 ```python
 @ti.func
@@ -191,7 +191,7 @@ def my_kernel():
 ```
 
 Function arguments are passed by value. So changes made inside function
-scope won't affect the original value in the caller, e.g.,
+scope won't affect the original value in the caller:
 
 ```python {3,9,11}
 @ti.func
@@ -251,7 +251,7 @@ def render(d_x: ti.f32, d_y: ti.f32):  # Kernels do not support vector/matrix ar
 :::caution
 
 Functions with multiple `return` statements are not supported for now.
-It is recommended to use a **local** variable to store the results, so that only one `return` statement is needed, e.g.,
+It is recommended to use a **local** variable to store the results, so that only one `return` statement is needed:
 
 ```python {1,5,7,9,17}
 # Error function - two return statements

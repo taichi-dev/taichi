@@ -9,6 +9,7 @@ We strongly recommend each developer to write CPP unit tests when sending a PR.
 - We use [googletest](https://github.com/google/googletest) as the CPP
   test infrastructure.
 - CPP tests should be added to the `tests/cpp/` directory.
+- Make sure your CPP test source file is covered by [this CMake glob](https://github.com/taichi-dev/taichi/blob/fb4741421ca79e971852464ffdf0ff066e667c92/cmake/TaichiTests.cmake#L13-L23).
 
 ## Build and run Taichi CPP tests
 

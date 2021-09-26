@@ -39,10 +39,10 @@ def inside_taichi_scope():
     v = ti.Vector([3, 4])
     print('v =', v)
     #=> v = [3, 4]
-    
+
     ray = ti.Struct({
     	"ori": ti.Vector([0.0, 0.0, 0.0]),
-    	"dir": ti.Vector([0.0, 0.0, 1.0]), 
+    	"dir": ti.Vector([0.0, 0.0, 1.0]),
     	"len": 1.0
 		})
     # print(ray)

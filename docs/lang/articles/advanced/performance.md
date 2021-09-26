@@ -107,7 +107,7 @@ Additionally, the last atomic add to the global memory `s[None]` is optimized us
 further reducing the number of required atomic adds.
 
 Currently, Taichi supports TLS optimization for these reduction operators: add, sub, min and max. [Here](https://github.com/taichi-dev/taichi/pull/2956)
-is a benchmark comparison when running a global max reduction on a 1-D Taichi field of 8M floats on an Nvidia GeForce RTX 3090:
+is a benchmark comparison when running a global max reduction on a 1-D Taichi field of 8M floats on an Nvidia GeForce RTX 3090 card:
 
 * TLS disabled: 5.2 x 1e3 us
 * TLS enabled: 5.7 x 1e1 us
@@ -116,25 +116,49 @@ TLS has led to an approximately 100x speedup.
 
 ## Block Local Storage (BLS)
 
-Context: For a sparse field with a hierarchical layout matching `ti.root.(sparse SNode)+.dense`, Taichi will assign
-one CUDA thread block to each `dense` block. BLS optimization works specificially for such kinds of fields.
+Context: For a sparse field whose last layer is a `dense` SNode (i.e., its layer hierarchy matches `ti.root.(sparse SNode)+.dense`),
+Taichi will assign one CUDA thread block to each `dense` container (or `dense` block). BLS optimization works specificially for such kinds of fields.
 
-BLS aims to accelerate the stencil computation patterns by leveraging the CUDA shared memory. Roughly speaking, the BLS
-optimization attempts to figure out the accessing range w.r.t the `dense` block at compile time. At runtime, the
-generated code fetches all the data in range into a *block local* buffer (CUDA shared memory), and then reads the data
-from this block local buffer instead of the global memory.
+BLS aims to accelerate the stencil computation patterns by leveraging the CUDA shared memory. This optimization starts
+with the users annotating the set of fields they would like to cache via `ti.block_local`. Taichi then attempts to
+figure out the accessing range w.r.t the `dense` block of these annotated fields at *compile time*. If succeeded,
+Taichi generates code that first fetches all the accessed data in range into a *block local* buffer (CUDA's shared memory),
+then substitutes all the accesses to the corresponding slots into this buffer.
+
+Here is an example illustrating the usage of BLS. `a` is a sparse field with a block size of `4x4`.
 
 ```python
 a = ti.field(ti.f32)
-# a's block size is 4x4
+b = ti.field(ti.f32)
+# `a` has a block size of 4x4
 ti.root.pointer(ti.ij, 32).dense(ti.ij, 4).place(a)
 
 @ti.kernel
 def foo():
-  # taichi will try to buffer `a` in CUDA shared memory
+  # Taichi will try to buffer `a` in CUDA shared memory
   ti.block_local(a)
   for i, j in a:
     print(a[i - 1, j], a[i, j + 2])
 ```
 
-For a `dense` block in `a`, `i, j` has determined its range, i.e., `[N, N + 4) x [N, N + 4)`. 
+Each loop iteration accesses items with an offset `[-1, 0]` and `[0, 2]` to its coordinate, respectively.
+Therefore, for an entire block spanning from `[M, N]` (inclusive) to `[M + 4, N + 4]` (exclusive), the accessed range w.r.t
+this block is `[M - 1, M + 4) x [N, N + 6)` (derived from `[M + (-1), M + 4) x [N, N + 4 + 2)`). The mapping between the global coordinates `i, j` and the local indices
+into the buffer is shown below:
+
+![](../static/assets/bls_indices_mapping.png)
+
+From a user's perspective, you do not need to worry about these underlying details. Taichi does all the inference and the global/block-local mapping
+automatically. That is, Taichi will pre-allocate a CUDA shared memory buffer of size `5x6`, pre-load `a`'s data into this buffer, and
+replace all the accesses to `a` (in the global memory) with the buffer in the loop body. While this simple example does not
+modify `a`, if a block-cached field does get written, Taichi would also generate code that writes the buffer back to the global
+memory.
+
+:::note
+BLS is not without its cost. Remember that BLS is designed for the stencil computation, where there is a large amount of
+overlapped access to the global memory. If this is not the case, the pre-loading/post-storing could actually hurt the performance.
+On top of that, recent generations of Nvidia's GPU cards have been closing the gap on the read-only access between the global memory
+and the shared memory. Currently, we found BLS to be more effective for caching the destinations of the atomic operations. 
+
+As a rule of thumb, run benchmarks to decide whether to enable BLS or not.
+:::

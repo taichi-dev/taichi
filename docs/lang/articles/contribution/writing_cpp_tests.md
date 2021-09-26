@@ -19,12 +19,15 @@ cmake .. -DTI_BUILD_TESTS=ON # ... other regular Taichi cmake args
 make
 
 # run the CPP test
-./taichi_cpp_tests
+TI_LIB_DIR=$TAICHI_INSTALL_DIR/lib ./taichi_cpp_tests
 ```
 
 :::note
-On Windows, `taichi_cpp_tests.exe` will be placed inside the `%TAICHI_REPO_DIR%\bin` directory,
-so you can directly run it after adding the directory to `PATH` in [Setting up Taichi for development](dev_install.md#setting-up-taichi-for-development-3).
+In order to run the CPP tests, please setup the environment variable, `$TI_LIB_DIR$`, to point to `$TAICHI_INSTALL_DIR/lib`. `$TAICHI_INSTALL_DIR` can be retrieved from `taichi.__path__` in python.
+:::
+
+:::note
+On Windows, `taichi_cpp_tests.exe` will be placed inside the `%TAICHI_REPO_DIR%\bin` directory.
 :::
 
 :::note

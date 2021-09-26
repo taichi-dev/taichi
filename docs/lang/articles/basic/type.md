@@ -225,14 +225,14 @@ my_ray3f = ti.types.struct(ro=my_vec3f, rd=my_vec3f, l=ti.f32)
 Fields of a given compound type can be created with the `.field()` method of a Compound Type:
 
 ```python
-vec1 = my_vec2i.field(shape=(24, 32))
+vec1 = my_vec2i.field(shape=(128, 128, 128))
 mat2 = my_mat2f.field(shape=(24, 32))
-ray3 = my_ray3f.field(shape=(24, 32))
+ray3 = my_ray3f.field(shape=(1024, 768))
 
 # is equivalent to:
-vec1 = ti.Vector.field(2, dtype=ti.i32, shape=(24, 32))
+vec1 = ti.Vector.field(2, dtype=ti.i32, shape=(128, 128, 128))
 mat2 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=(24, 32))
-ray3 = ti.Struct.field({'ro': my_vec3f, 'rd': my_vec3f, 'l': ti.f32}, shape=(24, 32))
+ray3 = ti.Struct.field({'ro': my_vec3f, 'rd': my_vec3f, 'l': ti.f32}, shape=(1024, 768))
 ```
 
 ### Creating local variables

@@ -6,17 +6,39 @@ sidebar_position: 3
 
 ![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/sparse_grids.gif)
 
-(Figure: A swinging Taichi pattern represented )
+Figure: A swinging Taichi pattern represented with a 512x512 sparse grid. The sparse grid has a *tree* structure.
+White stands for inactive tree nodes, and active tree nodes are darker.
+
+The sparse grid has the following structure:
+- The grid is divided into 8x8 `block1` cells.
+- Each `block1` cell has 4x4 `block2` sub-cells.
+- Each `block2` cell has 4x4 `block3` sub-cells.
+- Each `block3` cell has 4x4 sub-cells (pixels), each directly containing a `f32` value `x[i, j]`. 
+
+Taichi allows you to effortlessly define such data structure:
+
+```python
+x = ti.field(dtype=ti.i32)
+
+block1 = ti.root.pointer(ti.ij, 8)
+block2 = block1.pointer(ti.ij, 4)
+block3 = block2.pointer(ti.ij, 4)
+block3.dense(ti.ij, 4).place(x)
+```
+[[Full source code of this animation]](https://github.com/taichi-dev/taichi/blob/master/examples/features/sparse/taichi_sparse.py)
+
+Intuitively, a sparse grid in Taichi allows you to use space more wisely, since only tree nodes involved in computation are allocated.
+Let's take a step back and think about why we need sparse grid, how to define them in Taichi, and how to compute on these data structures.
 
 ## Motivation
 
 High-resolution 2D/3D grids are often needed in large-scale spatial computation, especially physical simulation.
-However, these grids tend to take a huge amount of memory space and computation.
+However, these grids tend to consume a huge amount of memory space and computation.
 
 While a programmer may allocate large dense grids to store spatial data (especially physical quantities such as a density or velocity field),
 oftentimes they only care about a small fraction of this dense grid, since the rest may be empty space (air).
 
-In short, the regions of interest may only occupy a small fraction of the bounding volume.
+In short, the regions of interest in sparse grids may only occupy a small fraction of the bounding volume.
 If we can leverage such "spatial sparsity" and focus computation on the regions we care about,
 we will significantly save storage and computing power.
 
@@ -24,16 +46,18 @@ we will significantly save storage and computing power.
 The key to leverage spatial sparsity is to replace dense grids with sparse grids.
 :::
 
-Here is a simple example. The 2D multi-physics (material point method) simulation below has 256x256 grid cells.
+Here is a simple example. The 2D multi-physics simulation (material point method) below has 256x256 grid cells.
 Since the simulated objects do not fully occupy the whole domain, we would like to *adaptively* allocate the underlying simulation grid.
 We subdivide the whole simulation domain into 16x16 *blocks*,
 and each block has 16x16 *grid cells*.
 Memory allocation can then happen at *block* granularity,
 and we only consume memory space of blocks that are actually in the simulation.
 
+<p align="center">
 ![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi_elements/sparse_mpm_active_blocks.gif)
+</p>
 
-(Note the changing distribution of blocks throughout the simulation.)
+(Note the changing distribution of active blocks throughout the simulation.)
 
 :::note
 **Backend compatibility**: The LLVM backends (CPU/CUDA) and the Metal backend offer the full functionality of sparse computation.
@@ -41,14 +65,15 @@ Other backends offer no or limited support of sparse computation.
 :::
 
 :::note
-Sparse matrices are usually **not** implemented in Taichi via (spatially-) sparse data structures.
+Sparse matrices are usually **not** implemented in Taichi via (spatially-) sparse data structures. Use `ti.SparseMatrixBuilder` instead.
 :::
 
 ## Defining sparse data structures in Taichi
 
-When a pixel, voxel, or grid cell is allocated and involved in the computation, we say it is *active*. The rest of the grid may be simply `inactive`.
+We say a pixel, voxel, or grid cell is *active*, if it is allocated and involved in computation. The rest of the grid cells are simply `inactive`.
+
 Ideally, it would be nice to have a sparse voxel data structure that consumes space or computation only when the voxels are active.
-Practically, Taichi programmers use hierarchical data structures to organize sparse voxel data.
+Practically, Taichi programmers use hierarchical data structures (trees) to organize sparse voxel data.
 
 ### Data structure hierarchy
 
@@ -130,7 +155,7 @@ print('use_bitmask = {}'.format(use_bitmask))
 sparse_struct_for()
 ```
 
-## Explicitly manipulating and querying sparsity
+### Explicitly manipulating and querying sparsity
 
 - Use `ti.is_active(snode, [i, j, ...])` to query if `snode[i, j, ...]` is active or not.
 - `ti.activate/deactivate(snode, [i, j, ...])` to explicitly activate or deactivate a cell of `snode[i, j, ...]`. (TODO: example. Also note that `ti.activate` may have a different behavior...)

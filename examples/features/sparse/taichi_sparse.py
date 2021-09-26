@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cpu)
+ti.init(arch=ti.cuda)
 
 n = 512
 x = ti.field(dtype=ti.i32)

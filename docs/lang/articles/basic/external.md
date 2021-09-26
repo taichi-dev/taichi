@@ -9,7 +9,8 @@ efficiently manipulating Taichi field data in Python-scope could also be
 helpful.
 
 We provide various interfaces to copy the data between Taichi fields and
-external arrays. The most typical case maybe copying between Tachi
+external arrays. External arrays refer to NumPy arrays or PyTorch tensors. 
+The most typical case may be copying between Tachi
 fields and Numpy arrays. Let's take a look at two examples below.
 
 **Export data in Taichi fields to a NumPy array** via `to_numpy()`. This
@@ -41,13 +42,6 @@ print(x[2])  # 3
 print(x[3])  # 5
 ```
 
-## API reference
-
-We provide interfaces to copy data between Taichi field and **external
-arrays**. External arrays refers to NumPy arrays or PyTorch tensors.
-
-We suggest common users to start with NumPy arrays.
-
 ## External array shapes
 
 Shapes of Taichi fields and those of corresponding NumPy arrays are closely
@@ -67,7 +61,7 @@ field.from_numpy(array)  # the input array must be of shape (233, 666)
 ```
 
 - For vector fields, if the vector is `n`-D, then **the shape of NumPy
-  array should be** `(*field_shape, vector_n)`:
+  array should be** `(field_shape, vector_n)`:
 
 ```python
 field = ti.Vector.field(3, ti.i32, shape=(233, 666))
@@ -80,8 +74,8 @@ array.shape  # (233, 666, 3)
 field.from_numpy(array)  # the input array must be of shape (233, 666, 3)
 ```
 
-- For matrix fields, if the matrix is `n*m`, then **the shape of NumPy
-array should be** `(*field_shape, matrix_n, matrix_m)`:
+- For matrix fields, if the matrix is `n`-by-`m` (`n x m`), then **the shape of NumPy
+array should be** `(field_shape, matrix_n, matrix_m)`:
 
 ```python
 field = ti.Matrix.field(3, 4, ti.i32, shape=(233, 666))

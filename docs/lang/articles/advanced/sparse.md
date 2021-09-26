@@ -16,14 +16,14 @@ The sparse grid above has the following structure:
 - Each `block1` container has 4x4 `block2` cells;
 - Each `block2` container has 4x4 `block3` cells;
 - Each `block3` container has 4x4 pixel cells;
-- Each pixel contains a `i32` value `x[i, j]`.
+- Each pixel contains an `i32` value `x[i, j]`.
 
 :::note
 For more information about *cells* and *containers*, see [**Data structure organization**](../misc/internal.md#data-structure-organization).
 In this article, you can assume *containers* and *cells* are the same.
 :::
 
-Taichi allows you to effortlessly define sparse data structures. For example, the grid above can be defined as
+Taichi allows you to define sparse data structures effortlessly. For example, you can define the grid above as
 
 ```python
 x = ti.field(dtype=ti.i32)
@@ -43,7 +43,7 @@ Now, let's take a step back and think about *why we need sparse grids, how to de
 High-resolution 2D/3D grids are often needed in large-scale spatial computation, such as physical simulation, rendering, and 3D reconstruction.
 However, these grids tend to consume a huge amount of memory space and computation.
 While a programmer may allocate large dense grids to store spatial data (especially physical quantities such as a density or velocity field),
-oftentimes they only care about a small fraction of this dense grid, since the rest may be empty space (vacuum or air).
+oftentimes, they only care about a small fraction of this dense grid since the rest may be empty space (vacuum or air).
 
 In short, the regions of interest in sparse grids may only occupy a small fraction of the whole bounding box.
 If we can leverage such "spatial sparsity" and focus computation on the regions we care about,
@@ -71,7 +71,7 @@ and we only consume memory space of blocks that are actually in the simulation.
 
 :::note
 **Backend compatibility**: The LLVM backends (CPU/CUDA) and the Metal backend offer the full functionality of sparse computation.
-Other backends offer no or limited support of sparse computation.
+Other backends provide no or limited support of sparse computation.
 :::
 
 :::note
@@ -107,14 +107,14 @@ goes against our goal to use sparse data structures to save space.
 To amortize the storage cost of pointers, programmers usually organize voxels in a *blocked* manner,
 and let the pointers directly point to the blocks (instead of voxels).
 
-One caveat of such design is that voxels in the same `dense` block can no longer change their activity flexibly.
+One caveat of this design is that voxels in the same `dense` block can no longer change their activity flexibly.
 Instead, they share a single activity flag. To address this issue,
 the `bitmasked` SNode additionally allocates 1-bit per voxel data to represent the voxel activity.
 
 ### A typical sparse data structure
 
 Sparse data structures in Taichi are usually composed of `pointer`, `dense`, and `bitmasked` SNodes.
-The code sinppet below creates a 8x8 sparse grid, with the top level being 4x4 pointer arrays,
+The code snippet below creates an 8x8 sparse grid, with the top level being 4x4 pointer arrays,
 and each pointer points to a 2x2 dense block.
 
 ```python
@@ -142,8 +142,8 @@ Reading an inactive voxel returns zero.
 
 ### Sparse struct-fors
 
-Efficiently looping over sparse grid cells that distribute irregularly can be a challenge, especially on parallel devices such as GPUs.
-In Taichi, *struct-for's* natively support sparse data structures and only loops over voxels that are currently active.
+Efficiently looping over sparse grid cells that distribute irregularly can be challenging, especially on parallel devices such as GPUs.
+In Taichi, *struct-for's* natively support sparse data structures and only loops over currently active voxels.
 The Taichi system ensures efficient parallelization.
 You can loop over different levels of the tree.
 The code below demonstrates the creation and manipulation of a sparse grid:
@@ -178,7 +178,7 @@ print('use_bitmask = {}'.format(use_bitmask))
 sparse_struct_for()
 ```
 
-When `bitmask = True`, the program above generates
+When `bitmask = True`, the program above outputs
 ```
 field x[2, 3] = 2
 field x[5, 6] = 3
@@ -206,11 +206,13 @@ Without a bitmask, these pixels in the same `block` share the same activity.
 
 ### Explicitly manipulating and querying sparsity
 
+Taichi also provides APIs that explicitly manipulates data structure sparsity.
+
 - Use `ti.is_active(snode, [i, j, ...])` to query if `snode[i, j, ...]` is active or not.
-- `ti.activate/deactivate(snode, [i, j, ...])` to explicitly activate or deactivate a cell of `snode[i, j, ...]`. (TODO: example. Also note that `ti.activate` may have a different behavior...)
-- Use `snode.deactivate_all()` to deactivate all cells of SNode `snode`.
+- `ti.activate/deactivate(snode, [i, j, ...])` to explicitly activate or deactivate a cell of `snode[i, j, ...]`.
+- Use `snode.deactivate_all()` to deactivate all cells of SNode `snode`. This operation also recursively deactivates all its children.
 - Use `ti.deactivate_all_snodes()` to deactivate all cells of all SNodes with sparsity.
-- Use `ti.rescale_index(child_snode or field, ancestor_snode, [i, j, ...])` to automatically compute the ancestor indices.
+- Use `ti.rescale_index(descendant_snode/field, ancestor_snode, index)` to automatically compute the ancestor index given a descendant index.
 
 Below is an example of these APIs:
 
@@ -278,25 +280,26 @@ ti.deactivate_all_snodes()
 check_activity(block1, 0, 1) # output = 0
 ```
 
+
 :::note
-To ensure correctness, `ti.activate` activates all the parent cells of the SNode being activated.
+For performance reasons, `ti.activate(snode, index)` only activates `snode[index]`.
+The programmer must ensure all ancestor containers of `snode[index]` are already active.
+Otherwise, this operation results in undefined behavior.
+
+Similarly, `ti.deactivate` ...
+- does **not** recursively deactivate all the descendants of a cell.
+- does **not** trigger an deactivation of its parent container, even if all the children of the parent container are deactivated.
 :::
 
 :::note
-For performance reasons, `ti.deactivate` ...
-- does **not** recursively deactivate all the subtree of a cell.
-- does **not** trigger a garbage of its parent container, even if all the children of the parent container are deactivated.
-:::
-
-:::note
-When deactivation happens, the Taichi runtime automatically recycles and zero-fills memory of the containers that are deactivated via `ti.deactivate`.
+When deactivation happens, the Taichi runtime automatically recycles and zero-fills memory of the deactivated containers.
 :::
 
 :::note
 While it is possible to directly use `[i // 2, j // 2]` to compute the `block` index given `pixel` index,
 doing so couples computation code with the internal configuration of data structures (in this case, the size of `block` containers).o
 
-Use `ti.rescale_index` to avoid hard-coding data structure internal information.
+Use `ti.rescale_index` to avoid hard-coding internal information of data structures.
 :::
 
 ## Further reading

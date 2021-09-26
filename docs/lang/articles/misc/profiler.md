@@ -12,10 +12,10 @@ The fellows are profiling tools Taichi provides now:
 - `KernelProfiler` can be used to analyze the performance of Taichi kernels. #TODO
 
 ## ScopedProfiler
+`ScopedProfiler` measures time spent on the **host tasks**.
 
-2. This profiler is automatically on. 
-1. `ScopedProfiler` measures time spent on the **host tasks**.
-3. call `ti.print_profile_info()`. To show its hierarchical formatted results. 
+1. This profiler is automatically on. 
+2. call `ti.print_profile_info()`. To show its hierarchical formatted results. 
 
 For example:
 
@@ -44,12 +44,10 @@ ti.print_profile_info()
 `KernelProfiler` acquires kernel profiling records from backend, counts them in python-scope, and outputs results by printing.
 
 1. To enable this profiler, set `kernel_profiler=True` in `ti.init`.
-2. Call `ti.print_kernel_profile_info()` to show the kernel profiling result, there are 2 mode of printing:
-    - In 'count' mode (default), trace records with the same kernel name are counted as a profiling result, 
-      and then presented in a statistical perspective.
-    - The 'trace' mode shows you a table of kernels that launched on hardware (e.g. CPU,GPU) during the profiling period. 
-      This mode provides more hardware performance information for each kernel.
-3. Use `ti.clear_kernel_profile_info()` to clear all .... 
+2. Call `ti.print_kernel_profile_info()` to show the kernel profiling result, there are two modes to print:
+    - In `'count'` mode (default mode), records with the same kernel name are counted as a profiling result, and then presented in a statistical perspective.
+    - The `'trace'` mode shows you a table of kernels that launched on hardware (e.g. CPU,GPU) during the profiling period. This mode provides more hardware performance information for each kernel.
+3. Use `ti.clear_kernel_profile_info()` to clear records in this profiler.
 
 For example:
 ```python {3,13}
@@ -103,12 +101,11 @@ X64 Profiler(count)
 ```
 
 :::note
-Currently the result of `KernelProfiler` could be incorrect on OpenGL
-backend due to its lack of support for `ti.sync()`.
+Currently the result of `KernelProfiler` could be incorrect on OpenGL backend due to its lack of support for `ti.sync()`.
 :::
 
 ### Advanced 
-For CUDA backend, `KernelProfiler` has a experimental GPU profiling toolkit, Nvidia CUPTI APIs, and is able to capture
+For CUDA backend, `KernelProfiler` has a experimental GPU profiling toolkit, Nvidia CUPTI APIs, and is able to capture ...
 
 Prerequisites to use CUPTI:
 1. Install CUDA Toolkit

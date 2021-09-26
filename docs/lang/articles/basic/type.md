@@ -136,7 +136,7 @@ and no warning will be raised:
 ```python {3}
 @ti.kernel
 def foo():
-    a = 1.7
+    a = 3.14
     a = 1
     print(a)  # 1.0
 ```
@@ -149,8 +149,8 @@ will raise a warning:
 @ti.kernel
 def foo():
     a = 1
-    a = 1.7
-    print(a)  # 1
+    a = 3.14
+    print(a)  # 3
 ```
 
 ### Explicit casts
@@ -161,9 +161,9 @@ types:
 ```python {2-3}
 @ti.kernel
 def foo():
-    a = 1.7
-    b = ti.cast(a, ti.i32)  # 1
-    c = ti.cast(b, ti.f32)  # 1.0
+    a = 3.14
+    b = ti.cast(a, ti.i32)  # 3
+    c = ti.cast(b, ti.f32)  # 3.0
 ```
 
 Equivalently, use `int()` and `float()` to convert values to float-point
@@ -172,9 +172,9 @@ or integer types of default precisions:
 ```python {2-3}
 @ti.kernel
 def foo():
-    a = 1.7
-    b = int(a)    # 1
-    c = float(b)  # 1.0
+    a = 3.14
+    b = int(a)    # 3
+    c = float(b)  # 3.0
 ```
 
 ### Casting vectors and matrices

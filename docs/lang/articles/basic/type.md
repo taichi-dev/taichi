@@ -222,6 +222,6 @@ Compound types can be directly called to create matrix or struct instances. Vect
 ```python
 ray = my_ray3f(0.0) # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
 ro = my_vec3f(0.0) # ti.Vector([0.0, 0.0, 0.0])
-rd = my_vec3f(vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
+rd = my_vec3f(my_vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
 ray2 = my_ray3f(ro=ro, rd=rd, l=1.0)
 ```

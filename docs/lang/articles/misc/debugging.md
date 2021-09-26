@@ -41,9 +41,9 @@ def inside_taichi_scope():
     #=> v = [3, 4]
     
     ray = ti.Struct({
-    "ori": ti.Vector([0.0, 0.0, 0.0]),
-    "dir": ti.Vector([0.0, 0.0, 1.0]), 
-    "len": 1.0
+    	"ori": ti.Vector([0.0, 0.0, 0.0]),
+    	"dir": ti.Vector([0.0, 0.0, 1.0]), 
+    	"len": 1.0
 		})
     # print(ray)
     # Print a struct directly in Taichi-scope has not been supported yet

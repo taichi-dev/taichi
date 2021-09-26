@@ -4,6 +4,9 @@ sidebar_position: 4
 
 # Profiler
 
+import TOCInline from '@theme/TOCInline';
+<TOCInline toc={toc} />
+
 ## Overview
 High-performance numerical computation is one of the design priorities of Taichi. We provide a series of profilers to quantify the performance of Taichi programs, help analyze where the bottleneck occurs, and thus facilitate users optimizing their code. These profilers collect both hardware and Taichi-related information and can also be used as performance debugging tools for developers.
 
@@ -14,8 +17,8 @@ The fellows are profiling tools Taichi provides now:
 ## ScopedProfiler
 `ScopedProfiler` measures time spent on the **host tasks**.
 
-1. This profiler is automatically on. 
-2. call `ti.print_profile_info()`. To show its hierarchical formatted results. 
+1. This profiler is automatically on.
+2. call `ti.print_profile_info()`. To show its hierarchical formatted results.
 
 For example:
 
@@ -104,15 +107,16 @@ X64 Profiler(count)
 Currently the result of `KernelProfiler` could be incorrect on OpenGL backend due to its lack of support for `ti.sync()`.
 :::
 
-### Advanced 
-For CUDA backend, `KernelProfiler` has a experimental GPU profiling toolkit, Nvidia CUPTI APIs, and is able to capture ...
+### Advanced
+For the CUDA backend, `KernelProfiler` has an experimental GPU profiling toolkit, Nvidia CUPTI APIs, which provides low and deterministic profiling overhead and is able to capture more than 6000 hardware metrics.
+
 
 Prerequisites to use CUPTI:
 1. Install CUDA Toolkit
 2. Add environment variables :
     - `export CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda` to your shell configuration files such as `~/.bashrc` and `~/.zshrc`.
-3. Build Taichi from source with CUDA toolkit: 
+3. Build Taichi from source with CUDA toolkit:
     - `TAICHI_CMAKE_ARGS="-DTI_WITH_CUDA_TOOLKIT:BOOL=ON" python3 setup.py develop --user`.
-4. Resolve privileges issue of Nvidia profiling module (Ubuntu 20.04): 
-    - Add `options nvidia NVreg_RestrictProfilingToAdminUsers=0` to `/etc/modprobe.d/nvidia-kernel-common.conf`, 
+4. Resolve privileges issue of Nvidia profiling module (Ubuntu 20.04):
+    - Add `options nvidia NVreg_RestrictProfilingToAdminUsers=0` to `/etc/modprobe.d/nvidia-kernel-common.conf`,
     - then `reboot` should resolve the permision issue (Probably needs running `update-initramfs -u` before `reboot`).

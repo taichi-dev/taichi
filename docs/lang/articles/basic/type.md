@@ -134,9 +134,11 @@ variable, it will be implicitly promoted to the _high-precision_ type
 and no warning will be raised:
 
 ```python {3}
-a = 1.7
-a = 1
-print(a)  # 1.0
+@ti.kernel
+def foo():
+    a = 1.7
+    a = 1
+    print(a)  # 1.0
 ```
 
 When a _high-precision_ variable is assigned to a _low-precision_ type,
@@ -144,9 +146,11 @@ it will be implicitly down-cast into the _low-precision_ type and Taichi
 will raise a warning:
 
 ```python {3}
-a = 1
-a = 1.7
-print(a)  # 1
+@ti.kernel
+def foo():
+    a = 1
+    a = 1.7
+    print(a)  # 1
 ```
 
 ### Explicit casts
@@ -155,18 +159,22 @@ You may use `ti.cast` to explicitly cast scalar values between different
 types:
 
 ```python {2-3}
-a = 1.7
-b = ti.cast(a, ti.i32)  # 1
-c = ti.cast(b, ti.f32)  # 1.0
+@ti.kernel
+def foo():
+    a = 1.7
+    b = ti.cast(a, ti.i32)  # 1
+    c = ti.cast(b, ti.f32)  # 1.0
 ```
 
 Equivalently, use `int()` and `float()` to convert values to float-point
 or integer types of default precisions:
 
 ```python {2-3}
-a = 1.7
-b = int(a)    # 1
-c = float(a)  # 1.0
+@ti.kernel
+def foo():
+    a = 1.7
+    b = int(a)    # 1
+    c = float(a)  # 1.0
 ```
 
 ### Casting vectors and matrices
@@ -174,10 +182,12 @@ c = float(a)  # 1.0
 Type casts applied to vectors/matrices are element-wise:
 
 ```python {2,4}
-u = ti.Vector([2.3, 4.7])
-v = int(u)              # ti.Vector([2, 4])
-# If you are using ti.i32 as default_ip, this is equivalent to:
-v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
+@ti.kernel
+def foo():
+    u = ti.Vector([2.3, 4.7])
+    v = int(u)              # ti.Vector([2, 4])
+    # If you are using ti.i32 as default_ip, this is equivalent to:
+    v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
 ```
 
 ### Bit casting

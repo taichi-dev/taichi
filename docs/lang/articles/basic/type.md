@@ -174,7 +174,7 @@ or integer types of default precisions:
 def foo():
     a = 1.7
     b = int(a)    # 1
-    c = float(a)  # 1.0
+    c = float(b)  # 1.0
 ```
 
 ### Casting vectors and matrices

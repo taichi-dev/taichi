@@ -4,16 +4,18 @@ sidebar_position: 3
 
 # Sparse computation
 
+Compiler-level support for spatially sparse computation is a unique feature of Taichi.
+
 ![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/sparse_grids.gif)
 
-Figure: A swinging Taichi pattern represented with a 512x512 sparse grid. The sparse grid has a *tree* structure.
+Figure: A swinging Taichi pattern represented with a 512x512 sparse grid. The sparse grid has a multi-level *tree* structure.
 White stands for inactive tree nodes, and active tree nodes are darker.
 
-The sparse grid has the following structure:
+The sparse grid above has the following structure:
 - The grid is divided into 8x8 `block1` cells.
 - Each `block1` cell has 4x4 `block2` sub-cells.
 - Each `block2` cell has 4x4 `block3` sub-cells.
-- Each `block3` cell has 4x4 sub-cells (pixels), each directly containing a `f32` value `x[i, j]`. 
+- Each `block3` cell has 4x4 sub-cells (pixels), each directly containing a `f32` value `x[i, j]`.
 
 Taichi allows you to effortlessly define such data structure:
 
@@ -27,24 +29,27 @@ block3.dense(ti.ij, 4).place(x)
 ```
 [[Full source code of this animation]](https://github.com/taichi-dev/taichi/blob/master/examples/features/sparse/taichi_sparse.py)
 
-Intuitively, a sparse grid in Taichi allows you to use space more wisely, since only tree nodes involved in computation are allocated.
-Let's take a step back and think about why we need sparse grid, how to define them in Taichi, and how to compute on these data structures.
+Intuitively, a sparse grid in Taichi allows you to use memory space more wisely, since only tree nodes involved in computation are allocated.
+Now, let's take a step back and think about *why we need sparse grids, how to define them in Taichi, and how to compute on these data structures*.
 
 ## Motivation
 
-High-resolution 2D/3D grids are often needed in large-scale spatial computation, especially physical simulation.
+High-resolution 2D/3D grids are often needed in large-scale spatial computation, such as physical simulation, rendering, and 3D reconstruction.
 However, these grids tend to consume a huge amount of memory space and computation.
-
 While a programmer may allocate large dense grids to store spatial data (especially physical quantities such as a density or velocity field),
-oftentimes they only care about a small fraction of this dense grid, since the rest may be empty space (air).
+oftentimes they only care about a small fraction of this dense grid, since the rest may be empty space (vacuum or air).
 
-In short, the regions of interest in sparse grids may only occupy a small fraction of the bounding volume.
+In short, the regions of interest in sparse grids may only occupy a small fraction of the whole bounding box.
 If we can leverage such "spatial sparsity" and focus computation on the regions we care about,
 we will significantly save storage and computing power.
 
 :::note
-The key to leverage spatial sparsity is to replace dense grids with sparse grids.
+The key to leverage spatial sparsity is to replace *dense* grids with *sparse* grids.
 :::
+
+On a sparse data structure, we say a pixel, voxel, or grid cell is *active*, if it is allocated and involved in computation.
+The rest of the grid cells are simply *inactive*.
+The *activity* of a leaf or intermediate cell is a boolean value. The activity value of a cell is `True` if and only if the cell is *active*.
 
 Here is a simple example. The 2D multi-physics simulation (material point method) below has 256x256 grid cells.
 Since the simulated objects do not fully occupy the whole domain, we would like to *adaptively* allocate the underlying simulation grid.
@@ -53,9 +58,7 @@ and each block has 16x16 *grid cells*.
 Memory allocation can then happen at *block* granularity,
 and we only consume memory space of blocks that are actually in the simulation.
 
-<p align="center">
 ![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi_elements/sparse_mpm_active_blocks.gif)
-</p>
 
 (Note the changing distribution of active blocks throughout the simulation.)
 
@@ -70,21 +73,24 @@ Sparse matrices are usually **not** implemented in Taichi via (spatially-) spars
 
 ## Defining sparse data structures in Taichi
 
-We say a pixel, voxel, or grid cell is *active*, if it is allocated and involved in computation. The rest of the grid cells are simply `inactive`.
-
 Ideally, it would be nice to have a sparse voxel data structure that consumes space or computation only when the voxels are active.
 Practically, Taichi programmers use hierarchical data structures (trees) to organize sparse voxel data.
+To concentrate computation on sparse regions of interest, multi-level sparse voxel data structures are studied extensively.
+These data structure are essentially trees.
 
 ### Data structure hierarchy
 
-To concentrate computation on sparse regions of interest, multilevel sparse voxel data structures are studied extensively. 
-These data structure are essentially trees. Traditionally,
-[Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and [Octrees](https://en.wikipedia.org/wiki/Octree) (3D) are often adopted.
+Traditionally, [Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and
+[Octrees](https://en.wikipedia.org/wiki/Octree) (3D) are often adopted.
 Since dereferencing pointers is relatively costly on modern computer architectures,
-it is performance-friendly to use trees with larger branching factors.
-[OpenVDB](https://www.openvdb.org/) and [SPGrid](http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf) are such examples.
+compared to quadtrees and octrees, it is more performance-friendly to use trees with larger branching factors and
+shallower structures.
+[VDB](https://www.openvdb.org/) and [SPGrid](http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf) are such examples.
+In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes.
 
 TODO: add an image here.
+
+#### Blocked leaf cells and bitmasks
 
 While a null pointer can effectively represent an empty sub-tree, at the leaf level using 64 bits to represent the activity
 of a single voxel can consume too much space.
@@ -107,7 +113,6 @@ block = ti.root.pointer(ti.ij, (4, 4))
 pixel = block.dense(ti.ij, (2, 2))
 pixel.place(x)
 ```
-
 ## Computation on sparse data structures
 
 ### Activation on write
@@ -125,8 +130,9 @@ Reading an inactive voxel returns zero.
 
 ### Sparse struct-fors
 
-Efficiently looping over sparse grid cells that are irregular can be a challenge, especially on parallel devices such as GPUs.
-Fortunately, in Taichi, *struct-for's* natively support sparse data structures and only loops over voxels that are currently active.
+Efficiently looping over sparse grid cells that distribute irregularly can be a challenge, especially on parallel devices such as GPUs.
+In Taichi, *struct-for's* natively support sparse data structures and only loops over voxels that are currently active.
+The Taichi system ensures efficient parallelization.
 
 ```python
 import taichi as ti
@@ -149,11 +155,39 @@ def sparse_struct_for():
     x[5, 6] = 3
 
     for i, j in x:
-        print('x[{}, {}] = {}'.format(i, j, x[i, j]))
+        print('field x[{}, {}] = {}'.format(i, j, x[i, j]))
+
+    for i, j in block:
+        print('Active block: [{}, {}]'.format(i, j))
 
 print('use_bitmask = {}'.format(use_bitmask))
 sparse_struct_for()
 ```
+
+You can loop over different levels of the cells. When `bitmask = True`, the program above generates
+```
+field x[2, 3] = 2
+field x[5, 6] = 3
+Active block: [1, 1]
+Active block: [2, 3]
+```
+
+When `bitmask = False`, we get
+```
+field x[2, 2] = 0
+field x[2, 3] = 2
+field x[3, 2] = 0
+field x[3, 3] = 0
+field x[4, 6] = 0
+field x[4, 7] = 0
+field x[5, 6] = 3
+field x[5, 7] = 0
+Active block: [1, 1]
+Active block: [2, 3]
+```
+
+Note that activating `x[2, 3]` also implicitly activates other pixels in `block[1, 1]`, e.g., `x[2, 2]`, `x[3, 2]`, and `x[3, 3]`.
+Without a bitmask, these pixels in the same `block` share the same activity.
 
 ### Explicitly manipulating and querying sparsity
 
@@ -161,7 +195,7 @@ sparse_struct_for()
 - `ti.activate/deactivate(snode, [i, j, ...])` to explicitly activate or deactivate a cell of `snode[i, j, ...]`. (TODO: example. Also note that `ti.activate` may have a different behavior...)
 - Use `snode.deactivate_all()` to deactivate all cells of SNode `snode`.
 - Use `ti.deactivate_all_snodes()` to deactivate all cells of all SNodes with sparsity.
-  
+
 :::note
 For performance reasons, `ti.deactivate` ...
 - does **not** recursively deactivate all the sub-cells of a cell.

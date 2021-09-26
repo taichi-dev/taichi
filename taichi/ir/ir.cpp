@@ -448,6 +448,7 @@ DelayedIRModifier::~DelayedIRModifier() {
   TI_ASSERT(to_insert_after.empty());
   TI_ASSERT(to_erase.empty());
   TI_ASSERT(to_replace_with.empty());
+  TI_ASSERT(to_extract_to_block_front.empty());
 }
 
 void DelayedIRModifier::erase(Stmt *stmt) {
@@ -490,7 +491,7 @@ bool DelayedIRModifier::modify_ir() {
   bool force_modified = modified_;
   modified_ = false;
   if (to_insert_before.empty() && to_insert_after.empty() && to_erase.empty() &&
-      to_replace_with.empty())
+      to_replace_with.empty() && to_extract_to_block_front.empty())
     return force_modified;
   for (auto &i : to_insert_before) {
     i.first->parent->insert_before(i.first, std::move(i.second));

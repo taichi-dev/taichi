@@ -15,8 +15,8 @@ e.g., `i32` and `f64`.
 The _category_ can be one of:
 
 - `i` for signed integers, e.g. 24, -32
-- `u` for unsigned integers, e.g. 24, 32
-- `f` for floating point numbers, e.g. 24.32, 1.0, 1e-4
+- `u` for unsigned integers, e.g. 128, 256
+- `f` for floating point numbers, e.g. 3.14, 1.0, 1e-4
 
 The _digital number_ can be one of:
 
@@ -238,9 +238,9 @@ ray3 = ti.Struct.field({'ro': my_vec3f, 'rd': my_vec3f, 'l': ti.f32}, shape=(102
 ### Creating local variables
 Compound types can be directly called to create vectorm, matrix or struct instances. Vectors, matrices and structs can be created using GLSL-like broadcast syntax since the their shapes are already known:
 ```python
-ray1 = my_ray3f(0.0) # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
-vec1 = my_vec3f(0.0) # ti.Vector([0.0, 0.0, 0.0])
-mat1 = my_mat2f(1.0) # ti.Matrix([[1.0, 1.0], [1.0, 1.0]])
+ray1 = my_ray3f(0.0)            # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
+vec1 = my_vec3f(0.0)            # ti.Vector([0.0, 0.0, 0.0])
+mat1 = my_mat2f(1.0)            # ti.Matrix([[1.0, 1.0], [1.0, 1.0]])
 vec2 = my_vec3f(my_vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
 ray2 = my_ray3f(ro=vec1, rd=vec2, l=1.0)
 ```

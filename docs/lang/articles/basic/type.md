@@ -190,7 +190,7 @@ def foo():
     v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
 ```
 
-### Bit casting
+### Bit casts
 
 Use `ti.bit_cast` to bit-cast a value into another data type. The
 underlying bits will be preserved in this cast. The new type must have

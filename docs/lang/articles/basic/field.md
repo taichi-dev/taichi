@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # Fields
 
-Fields are **global** variables provided by Taichi. **Global** indicated that fields could be read/written from both the Python scope and the Taichi scope. The field contains a multi-dimensional array of elements. Similar to NumPy `ndarray` objects, Fields have a data type and a shape. But fields can be either sparse or dense.  An element of a field can be either a scalar, a vector/matrix, or a struct. This term (Field) is borrowed from mathematics and physics. If you
+Fields are **global** variables provided by Taichi. **Global** indicates that fields could be read/written from both the Python scope and the Taichi scope. The field contains a multi-dimensional array of elements. Similar to NumPy `ndarray` objects, Fields have a data type and a shape. But fields can be either sparse or dense.  An element of a field can be either a scalar, a vector/matrix, or a struct. This term (Field) is borrowed from mathematics and physics. If you
 have already known [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (e.g., heat field), vector field (e.g., [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)) in mathematics and physics, it would be straightforward to understand the fields in Taichi.
 
 To be noticed:
@@ -50,7 +50,7 @@ gravitational_field = ti.Vector.field(n=3, dtype=ti.f32, shape=(x, y, z))
 - The `p`-th element of the gravity force vector could be accessed by `gravitational_field[i,j,k][p]`, (`0<= p < n`).
 - The 0-D vector fields `x = ti.Vector.field(n=3, dtype=ti.f32, shape=())` should be accessed by `x[None][p]`, (`0<= p < n`).
 
-:::notice
+:::note
 As you may have noticed, there are **two** indexing operators `[]` when you load a vector element from a global vector field: the first is for field indexing, the second for vector indexing.
 :::
 
@@ -76,7 +76,7 @@ a `3 x 2` matrix. To allocate a `128 x 64` matrix field which has a
   matrix, use `mat[0, 1]` or `A[i, j][0, 1]`.
 - The 0-D matrix fields `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape=())` should be accessed by `x[None][p, q]`, (`0<= p < n, 0<= q < m`).
 
-:::notice
+:::note
 - As you may have noticed, there are **two** indexing operators `[]`
   when you load a matrix element from a global matrix field: the
   first is for field indexing, the second for matrix indexing.

@@ -211,7 +211,7 @@ For people from C++, `ti.bit_cast` is equivalent to `reinterpret_cast`.
 
 ## Compound types
 
-User-defined compound types are created using the `ti.types` module. Supported compound types include vectors, matrices, and structs:
+User-defined compound types can be created using the `ti.types` module. Supported compound types include vectors, matrices, and structs:
 
 ```python
 my_vec2i = ti.types.vector(2, ti.i32)
@@ -222,7 +222,7 @@ my_ray3f = ti.types.struct(ro=my_vec3f, rd=my_vec3f, l=ti.f32)
 
 ### Creating fields
 
-Fields of a given compound type can be created with the `.field()` method of a Compound Type:
+Fields of a user-defined compound type can be created with the `.field()` method of a Compound Type:
 
 ```python
 vec1 = my_vec2i.field(shape=(128, 128, 128))

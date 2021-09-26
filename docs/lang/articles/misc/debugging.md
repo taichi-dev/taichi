@@ -7,7 +7,7 @@ sidebar_position: 2
 Debugging a parallel program is not easy, so Taichi provides built-in
 utilities that could hopefully help you debug your Taichi program.
 
-## Runtime `print` in kernels
+## Runtime `print` in Taichi-scope
 
 ```python
 print(arg1, ..., sep='', end='\n')
@@ -168,7 +168,7 @@ ti.init(arch=ti.cpu, cpu_max_num_threads=1)
 If your program works well in serial but not in parallel, check
 parallelization-related issues such as data races.
 
-## Runtime `assert` in kernel
+## Runtime `assert` in Taichi-scope
 
 Programmers may use `assert` statements in Taichi-scope. When the
 assertion condition fails, a `RuntimeError` will be raised to indicate

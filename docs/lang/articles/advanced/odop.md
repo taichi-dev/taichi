@@ -18,16 +18,31 @@ programming** (ODOP).
 
 ## Data oriented class
 
-If define at least one  **Taichi kernel**:
+If you need to define a **Taichi kernel** as a property inside a python class, it's needed to decorate the class with a `@ti.data_oriented` decorator. Then, you could define `ti.kernel` and `ti.func` in your data-oriented class in pleasure!
+
+:::note
+**Taichi kernel**'s grammar is same as the python function. Which means the first argument of the function would be the class instance.
+:::
+
+A brief example:
 
 ```python {1}
 @ti.data_oriented
-class MyClass:
-    ...
+class TiArray:
+    def __init__(self, n):
+        self.x = ti.field(ti.f32, shape=n)
 
-instance = MyClass()
+    @ti.kernel
+    def inc(self):
+        for i in self.x:
+            self.x[i] += 1
+
+a = TiArray(42)
+a.inc()
 ```
 
+**Taichi kernel**'s grammar is same as the python function. Which means the common decorator of a class function could apply to a **Taichi kernel** too.
+<!---
 Kernels should be called from **Python-scope**.
 
 :::note
@@ -103,3 +118,4 @@ for i in range(arr.n):
   for j in range(arr.m):
     assert arr.val.grad[i, j] == 8
 ```
+-->

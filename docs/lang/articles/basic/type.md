@@ -14,9 +14,9 @@ e.g., `i32` and `f64`.
 
 The _category_ can be one of:
 
-- `i` for signed integers, e.g. 233, -666
-- `u` for unsigned integers, e.g. 233, 666
-- `f` for floating point numbers, e.g. 2.33, 1e-4
+- `i` for signed integers, e.g. 24, -32
+- `u` for unsigned integers, e.g. 24, 32
+- `f` for floating point numbers, e.g. 24.32, 1.0, 1e-4
 
 The _digital number_ can be one of:
 
@@ -121,6 +121,8 @@ def func(a: ti.f32) -> ti.i64:
 
 ## Type casts
 
+All data types are static in the **Taichi scope**. Therefore, casts are needed when you want to assign a certain type of data to another one.
+
 ### Implicit casts
 
 :::caution
@@ -194,10 +196,10 @@ For people from C++, `ti.bit_cast` is equivalent to `reinterpret_cast`.
 User-defined compound types are created using the `ti.types` module. Supported compound types include vectors, matrices, and structs:
 
 ```python
-vec2i = ti.types.vector(2, ti.i32)
-vec3f = ti.types.vector(3, float)
-mat2f = ti.types.matrix(2, 2, float)
-ray = ti.types.struct(ro=vec3f, rd=vec3f, l=ti.f32)
+my_vec2i = ti.types.vector(2, ti.i32)
+my_vec3f = ti.types.vector(3, float)
+my_mat2f = ti.types.matrix(2, 2, float)
+my_ray3f = ti.types.struct(ro=vec3f, rd=vec3f, l=ti.f32)
 ```
 
 ### Creating fields
@@ -205,21 +207,21 @@ ray = ti.types.struct(ro=vec3f, rd=vec3f, l=ti.f32)
 Fields of a given compound type can be created with the `.field()` method of a Compound Type:
 
 ```python
-# ti.Vector.field(2, dtype=ti.i32, shape=(233, 666))
-x = vec2i.field(shape=(233, 666))
+# ti.Vector.field(2, dtype=ti.i32, shape=(24, 32))
+x = my_vec2i.field(shape=(24, 32))
 
-# ti.Matrix.field(2, 2, dtype=ti.i32, shape=(233, 666))
-x = mat2f.field(shape=(233, 666))
+# ti.Matrix.field(2, 2, dtype=ti.i32, shape=(23, 32))
+x = my_mat2f.field(shape=(23, 32))
 
-# ti.Struct.field({'ro': vec3f, 'rd': vec3f, 'l': ti.f32}, shape=(233, 666))
-x = ray.field(shape=(233, 666))
+# ti.Struct.field({'ro': vec3f, 'rd': vec3f, 'l': ti.f32}, shape=(23, 32))
+x = my_ray3f.field(shape=(23, 32))
 ```
 
 ### Creating local variables
 Compound types can be directly called to create matrix or struct instances. Vectors and matrices can be created using GLSL-like broadcast syntax since the shape of the vector or matrix is already known:
 ```python
-ray = ray3f(0.0) # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
-ro = vec3f(0.0) # ti.Vector([0.0, 0.0, 0.0])
-rd = vec3f(vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
-ray2 = ray3f(ro=ro, rd=rd, l=1.0)
+ray = my_ray3f(0.0) # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
+ro = my_vec3f(0.0) # ti.Vector([0.0, 0.0, 0.0])
+rd = my_vec3f(vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
+ray2 = my_ray3f(ro=ro, rd=rd, l=1.0)
 ```

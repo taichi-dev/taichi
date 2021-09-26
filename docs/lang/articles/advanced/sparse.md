@@ -212,7 +212,7 @@ Taichi also provides APIs that explicitly manipulates data structure sparsity.
 - `ti.activate/deactivate(snode, [i, j, ...])` to explicitly activate or deactivate a cell of `snode[i, j, ...]`.
 - Use `snode.deactivate_all()` to deactivate all cells of SNode `snode`. This operation also recursively deactivates all its children.
 - Use `ti.deactivate_all_snodes()` to deactivate all cells of all SNodes with sparsity.
-- Use `ti.rescale_index(descendant_snode/field, ancestor_snode, index)` to automatically compute the ancestor index given a descendant index.
+- Use `ti.rescale_index(descendant_snode/field, ancestor_snode, index)` to compute the ancestor index given a descendant index.
 
 Below is an example of these APIs:
 

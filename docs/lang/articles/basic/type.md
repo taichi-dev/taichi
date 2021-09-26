@@ -197,6 +197,14 @@ underlying bits will be preserved in this cast. The new type must have
 the same width as the the old type. For example, bit-casting `i32` to
 `f64` is not allowed. Use this operation with caution.
 
+```python
+@ti.kernel
+def foo():
+    a = 3.14
+    b = ti.bit_cast(a, ti.i32) # 1078523331
+    c = ti.bit_cast(b, ti.f32) # 3.14
+```
+
 :::note
 For people from C++, `ti.bit_cast` is equivalent to `reinterpret_cast`.
 :::

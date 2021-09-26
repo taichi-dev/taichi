@@ -102,8 +102,8 @@ two ways:
 To specify which layout to use (default layout is row-major):
 
 ```python
-ti.root.dense(ti.i, 3).dense(ti.j, 2).place(x)    # row-major
-ti.root.dense(ti.j, 2).dense(ti.i, 3).place(y)    # column-major
+ti.root.dense(ti.i, 3).dense(ti.j, 2).place(x)   # row-major
+ti.root.dense(ti.j, 2).dense(ti.i, 3).place(y)   # column-major
 ```
 
 Both `x` and `y` have shape `(3, 2)`, and they can be accessed in the same

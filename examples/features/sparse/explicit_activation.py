@@ -8,6 +8,7 @@ block2 = block1.pointer(ti.ij, (2, 2))
 pixel = block2.dense(ti.ij, (2, 2))
 pixel.place(x)
 
+
 @ti.kernel
 def sparse_api_demo():
     ti.activate(block1, [0, 1])
@@ -30,7 +31,8 @@ def sparse_api_demo():
     # output: Active block1: [0, 1]
 
     for j in range(4):
-        print('Activity of block2[2, {}] = {}'.format(j, ti.is_active(block2, [1, j])))
+        print('Activity of block2[2, {}] = {}'.format(
+            j, ti.is_active(block2, [1, j])))
 
     ti.deactivate(block2, [1, 2])
 
@@ -47,15 +49,18 @@ def sparse_api_demo():
 
     ti.activate(block2, [1, 2])
 
+
 sparse_api_demo()
+
 
 @ti.kernel
 def check_activity(snode: ti.template(), i: ti.i32, j: ti.i32):
     print(ti.is_active(snode, [i, j]))
 
-check_activity(block2, 1, 2) # output = 1
+
+check_activity(block2, 1, 2)  # output = 1
 block2.deactivate_all()
-check_activity(block2, 1, 2) # output = 0
-check_activity(block1, 0, 1) # output = 1
+check_activity(block2, 1, 2)  # output = 0
+check_activity(block1, 0, 1)  # output = 1
 ti.deactivate_all_snodes()
-check_activity(block1, 0, 1) # output = 0
+check_activity(block1, 0, 1)  # output = 0

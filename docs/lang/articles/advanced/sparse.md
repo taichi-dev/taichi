@@ -146,7 +146,7 @@ Efficiently looping over sparse grid cells that distribute irregularly can be a 
 In Taichi, *struct-for's* natively support sparse data structures and only loops over voxels that are currently active.
 The Taichi system ensures efficient parallelization.
 You can loop over different levels of the tree.
-The code below demonstrates the creation and manipulation of a sparse grid: 
+The code below demonstrates the creation and manipulation of a sparse grid:
 
 ```python
 import taichi as ti
@@ -209,7 +209,7 @@ Without a bitmask, these pixels in the same `block` share the same activity.
 - Use `ti.is_active(snode, [i, j, ...])` to query if `snode[i, j, ...]` is active or not.
 - `ti.activate/deactivate(snode, [i, j, ...])` to explicitly activate or deactivate a cell of `snode[i, j, ...]`. (TODO: example. Also note that `ti.activate` may have a different behavior...)
 - Use `snode.deactivate_all()` to deactivate all cells of SNode `snode`.
-- Use `ti.deactivate_all_snodes()` to deactivate all cells of all SNodes with sparsity. 
+- Use `ti.deactivate_all_snodes()` to deactivate all cells of all SNodes with sparsity.
 - Use `ti.rescale_index(child_snode or field, ancestor_snode, [i, j, ...])` to automatically compute the ancestor indices.
 
 Below is an example of these APIs:

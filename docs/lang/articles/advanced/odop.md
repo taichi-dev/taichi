@@ -15,8 +15,23 @@ object-oriented programming (OOP).
 For convenience, let's call the hybrid scheme **objective data-oriented
 programming** (ODOP).
 
+
+## Data oriented class
+
+If define at least one  **Taichi kernel**:
+
+```python {1}
+@ti.data_oriented
+class MyClass:
+    ...
+
+instance = MyClass()
+```
+
+Kernels should be called from **Python-scope**.
+
 :::note
-More documentation on this topic is on the way ...
+For people from CUDA, Taichi kernels = `__global__` functions.
 :::
 
 A brief example:

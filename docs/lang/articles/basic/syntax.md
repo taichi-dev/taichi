@@ -63,7 +63,7 @@ For now, Taichi supports scalars as kernel arguments. Specifying `ti.Matrix` or
 ```python {2,6}
 @ti.kernel
 def error_kernel(v: ti.Vector): # Error
-    ... 
+    ...
 
 @ti.kernel
 def valid_kernel(vx: ti.f32, vy: ti.f32):

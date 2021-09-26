@@ -15,7 +15,7 @@ The fellows are profiling tools Taichi provides now:
 `ScopedProfiler` tracks the time spent on **host tasks** such as JIT compilation.
 
 1. This profiler is automatically on.
-2. Call `ti.print_profile_info()` to display its results in a hierarchical format.
+2. Call `ti.print_profile_info()` to display results in a hierarchical format.
 
 For example:
 
@@ -41,12 +41,12 @@ ti.print_profile_info()
 
 ## KernelProfiler
 
-`KernelProfiler` acquires kernel profiling records from the backend, counts them in python-scope, and displays the results by printing them.
+`KernelProfiler` acquires kernel profiling records from the backend, counts them in Python-scope, and displays the results by printing them.
 
 1. To enable this profiler, set `kernel_profiler=True` in `ti.init`.
-2. To display the kernel profiling results, call `ti.print_kernel_profile_info()`. There are two modes of printing:
+2. To display the profiling results, call `ti.print_kernel_profile_info()`. There are two modes of printing:
     - In `'count'` mode (default mode), records with the same kernel name are counted as a profiling result, and then presented in a statistical perspective.
-    - The `'trace'` mode shows you a table of kernels that were launched on hardware during the profiling period. This mode provides more detailed performance information and runtime hardware metrics for each kernel.
+    - In `'trace'` mode, the profiler shows you a list of kernels that were launched on hardware during the profiling period. This mode provides more detailed performance information and runtime hardware metrics for each kernel.
 3. Call `ti.clear_kernel_profile_info()` to clear records in this profiler.
 
 For example:
@@ -105,7 +105,7 @@ Currently the result of `KernelProfiler` could be incorrect on OpenGL backend du
 :::
 
 ### Advanced mode
-For the CUDA backend, `KernelProfiler` has an experimental GPU profiling toolkit, Nvidia CUPTI APIs, which provides low and deterministic profiling overhead and is able to capture more than 6000 hardware metrics.
+For the CUDA backend, `KernelProfiler` has an experimental GPU profiling toolkit, Nvidia CUPTI, which provides low and deterministic profiling overhead and is able to capture more than 6000 hardware metrics.
 
 Prerequisites to use CUPTI:
 1. Install CUDA Toolkit

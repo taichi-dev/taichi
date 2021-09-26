@@ -217,7 +217,7 @@ User-defined compound types are created using the `ti.types` module. Supported c
 my_vec2i = ti.types.vector(2, ti.i32)
 my_vec3f = ti.types.vector(3, float)
 my_mat2f = ti.types.matrix(2, 2, float)
-my_ray3f = ti.types.struct(ro=vec3f, rd=vec3f, l=ti.f32)
+my_ray3f = ti.types.struct(ro=my_vec3f, rd=my_vec3f, l=ti.f32)
 ```
 
 ### Creating fields
@@ -232,7 +232,7 @@ ray3 = my_ray3f.field(shape=(24, 32))
 # is equivalent to:
 vec1 = ti.Vector.field(2, dtype=ti.i32, shape=(24, 32))
 mat2 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=(24, 32))
-ray3 = ti.Struct.field({'ro': vec3f, 'rd': vec3f, 'l': ti.f32}, shape=(24, 32))
+ray3 = ti.Struct.field({'ro': my_vec3f, 'rd': my_vec3f, 'l': ti.f32}, shape=(24, 32))
 ```
 
 ### Creating local variables

@@ -88,7 +88,7 @@ shallower structures.
 [VDB](https://www.openvdb.org/) and [SPGrid](http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf) are such examples.
 In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes.
 
-TODO: add an image here.
+![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/sparse_grids_3d.jpg)
 
 #### Blocked leaf cells and bitmasks
 
@@ -113,6 +113,9 @@ block = ti.root.pointer(ti.ij, (4, 4))
 pixel = block.dense(ti.ij, (2, 2))
 pixel.place(x)
 ```
+
+![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/sparse_grids_2d.png)
+
 ## Computation on sparse data structures
 
 ### Activation on write
@@ -216,15 +219,6 @@ doing so couples computation code with the internal configuration of data struct
 
 You can use `ti.rescale_index(TODO)`.
 
-### Creating lists with the `dynamic` SNode
-
-In particle simulations
-
-- `ti.append(...)`
-- `ti.length(...)`
-
-How to clear a list?
-
 ## Further reading
 
 Please read our [paper](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf),
@@ -233,4 +227,4 @@ the SIGGRAPH Asia 2019 [slides](https://yuanming.taichi.graphics/publication/201
 for more details on sparse computation.
 
 [Taichi elements](https://github.com/taichi-dev/taichi_elements) implement a high-performance
-MLS-MPM solver on Taichi's sparse grids.
+MLS-MPM solver on Taichi sparse grids.

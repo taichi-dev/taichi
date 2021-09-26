@@ -5,61 +5,13 @@ sidebar_position: 4
 # Profiler
 
 ## Overview
-High-performance numerical computations is one of the design priorities of Taichi. We provide a series of profilers to quantify the performance of Taichi programs, help analyze where the bottleneck occurs, thus facilitate users optimize their code. These profilers are also designed as performance debugging tools for developers. 
+High-performance numerical computation is one of the design priorities of Taichi. We provide a series of profilers to quantify the performance of Taichi programs, help analyze where the bottleneck occurs, and thus facilitate users optimizing their code. These profilers collect both hardware and Taichi-related information and can also be used as performance debugging tools for developers.
 
-The fellowing are profiling tools Taichi provides now:
+The fellows are profiling tools Taichi provides now:
+- `ScopedProfiler` can be used to analyze the performance of the Taichi compiler.
+- `KernelProfiler` can be used to analyze the performance of Taichi kernels. #TODO
 
-    `ScopedProfiler` can be used to analyze the performance of Taichi compiler.
-
-    `KernelProfiler` can be used to analyze the performance of Taichi kernels.
-
-## KernelProfiler
-
-The Trace Viewer shows you a timeline of the different events that occured on the CPU and the GPU during the profiling period.
-To understand where the performance bottleneck occurs in the input pipeline
-Time moves from left to right
-
-For people from CUDA, Taichi kernels are similar to `__global__` functions.
-1.  `KernelProfiler` records the costs of Taichi kernels on devices. To
-    enable this profiler, set `kernel_profiler=True` in `ti.init`.
-2.  Call `ti.print_kernel_profile_info()` to show the kernel profiling
-    result. For example:
-
-```python {3,13}
-import taichi as ti
-
-ti.init(ti.cpu, kernel_profiler=True)
-var = ti.field(ti.f32, shape=1)
-
-
-@ti.kernel
-def compute():
-    var[0] = 1.0
-
-
-compute()
-ti.print_kernel_profile_info()
-```
-
-The outputs would be:
-
-```
-[ 22.73%] jit_evaluator_0_kernel_0_serial             min   0.001 ms   avg   0.001 ms   max   0.001 ms   total   0.000 s [      1x]
-[  0.00%] jit_evaluator_1_kernel_1_serial             min   0.000 ms   avg   0.000 ms   max   0.000 ms   total   0.000 s [      1x]
-[ 77.27%] compute_c4_0_kernel_2_serial                min   0.004 ms   avg   0.004 ms   max   0.004 ms   total   0.000 s [      1x]
-```
-
-:::note
-Currently the result of `KernelProfiler` could be incorrect on OpenGL
-backend due to its lack of support for `ti.sync()`.
-:::
-
-
-CUPTI
-In order to recover missed information, users needed to combine multiple tools together or manually add minimum correlation information to make sense of the data
-capture detailed GPU hardware-level information and cannot 
-
-capture GPU kernel events with high fidelity
+---
 
 ## ScopedProfiler
 
@@ -92,3 +44,82 @@ ti.print_profile_info()
 `ScopedProfiler` is a C++ class in the core of Taichi. It is not exposed
 to Python users.
 :::
+
+---
+
+## KernelProfiler
+
+`KernelProfiler` acquires kernel profiling records from backend, counts them in python-scope, and outputs results by printing.
+
+1. To enable this profiler, set `kernel_profiler=True` in `ti.init`.
+2. Call `ti.print_kernel_profile_info()` to show the kernel profiling result, there are 2 mode of printing:
+    - In 'count' mode (default), trace records with the same kernel name are counted as a profiling result, 
+      and then presented in a statistical perspective.
+    - The 'trace' mode shows you a table of kernels that launched on hardware (e.g. CPU,GPU) during the profiling period. 
+      This mode provides more hardware performance information for each kernel.
+3. Use `ti.clear_kernel_profile_info()` to clear all .... 
+
+For example:
+```python {3,13}
+import taichi as ti
+
+ti.init(ti.cpu, kernel_profiler=True)
+x = ti.field(ti.f32, shape=1024*1024)
+
+@ti.kernel
+def fill():
+    for i in x:
+        x[i] = i
+
+for i in range(8):
+    fill()
+ti.print_kernel_profile_info('trace')
+ti.clear_kernel_profile_info() #clear
+
+for i in range(100):
+    fill()
+ti.print_kernel_profile_info() #default mode: 'count'
+```
+
+The outputs would be:
+
+```
+=========================================================================
+X64 Profiler(trace)
+=========================================================================
+[      % |     time    ] Kernel name
+[  0.00% |    0.000  ms] jit_evaluator_0_kernel_0_serial
+[ 60.11% |    2.668  ms] fill_c4_0_kernel_1_range_for
+[  6.06% |    0.269  ms] fill_c4_0_kernel_1_range_for
+[  5.73% |    0.254  ms] fill_c4_0_kernel_1_range_for
+[  5.68% |    0.252  ms] fill_c4_0_kernel_1_range_for
+[  5.61% |    0.249  ms] fill_c4_0_kernel_1_range_for
+[  5.63% |    0.250  ms] fill_c4_0_kernel_1_range_for
+[  5.61% |    0.249  ms] fill_c4_0_kernel_1_range_for
+[  5.59% |    0.248  ms] fill_c4_0_kernel_1_range_for
+-------------------------------------------------------------------------
+[100.00%] Total kernel execution time:   0.004 s   number of records:  9
+=========================================================================
+=========================================================================
+X64 Profiler(count)
+=========================================================================
+[      %     total   count |      min       avg       max   ] Kernel name
+[100.00%   0.033 s    100x |    0.244     0.329     2.970 ms] fill_c4_0_kernel_1_range_for
+-------------------------------------------------------------------------
+[100.00%] Total kernel execution time:   0.033 s   number of records:  1
+=========================================================================
+```
+
+:::note
+Currently the result of `KernelProfiler` could be incorrect on OpenGL
+backend due to its lack of support for `ti.sync()`.
+:::
+
+### Advanced 
+For CUDA backend, `KernelProfiler` has a experimental GPU profiling toolkit, Nvidia CUPTI APIs, and is able to capture
+
+Prerequisites to use CUPTI:
+1. Install CUDA Toolkit
+2. Add environment variables `export CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda` to your shell configuration files such as `~/.bashrc` and `~/.zshrc`.
+3. Build Taichi from source with CUDA toolkit: `TAICHI_CMAKE_ARGS="-DTI_WITH_CUDA_TOOLKIT:BOOL=ON" python3 setup.py develop --user`.
+4. Resolve privileges issue of Nvidia profiling module: Adding options nvidia `NVreg_RestrictProfilingToAdminUsers=0` to `/etc/modprobe.d/nvidia-kernel-common.conf`, then `reboot` should resolve the permision issue. Probably needs running `update-initramfs -u` before `reboot`. [Ubuntu 20.04]

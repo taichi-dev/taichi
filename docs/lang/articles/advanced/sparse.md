@@ -19,7 +19,7 @@ The sparse grid above has the following structure:
 - Each pixel containing a `i32` value `x[i, j]`.
 
 :::note
-For more information about *cells* and *containers*, see [**Data structure organization**](../contribution/internal.md#data-structure-organization).
+For more information about *cells* and *containers*, see [**Data structure organization**](../misc/internal.md#data-structure-organization).
 :::
 
 Taichi allows you to effortlessly define such data structure:

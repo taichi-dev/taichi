@@ -750,8 +750,8 @@ def data_oriented(cls):
         >>>
         >>>     @ti.kernel
         >>>     def inc(self):
-        >>>         for i in x:
-        >>>             x[i] += 1
+        >>>         for i in self.x:
+        >>>             self.x[i] += 1
         >>>
         >>> a = TiArray(42)
         >>> a.inc()

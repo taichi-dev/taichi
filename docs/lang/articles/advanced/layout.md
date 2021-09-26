@@ -2,28 +2,53 @@
 sidebar_position: 2
 ---
 
-# Advanced dense layouts
+# Fields (advanced)
 
-Fields can be _placed_
-in a specific shape and _layout_. Defining a proper layout can be
-critical to performance, especially for memory-bound applications. A
-carefully designed data layout can significantly improve cache/TLB-hit
-rates and cacheline utilization. Although when performance is not the
-first priority, you probably don't have to worry about it.
+This section introduces some advanced features of Taichi fields.
+Make sure you have gone through [Fields](../basic/field).
 
-Taichi decouples algorithms from data layouts, and the Taichi compiler
-automatically optimizes data accesses on a specific data layout. These
-Taichi features allow programmers to quickly experiment with different
-data layouts and figure out the most efficient one on a specific task
-and computer architecture.
+## Packed mode
 
-In Taichi, the layout is defined in a recursive manner.
-We suggest starting with the default layout specification (simply
-by specifying `shape` when creating fields using
-`ti.field/ti.Vector.field/ti.Matrix.field`), and then migrate to more
-advanced layouts using the `ti.root.X` syntax if necessary.
+By default, all non-power-of-two dimensions of a field are automatically
+padded to a power of two. For instance, a field of shape `(18, 65)` will
+have internal shape `(32, 128)`. Although the padding has many benefits
+such as allowing fast and convenient bitwise operations for coordinate
+handling, it will consume potentially much more memory than you originally
+think.
 
-## From `shape` to `ti.root.X`
+If you indeed want smaller memory usage, you could use the optional packed
+mode. In packed mode, no more padding will be applied so a field will not
+have a larger internal shape when some of its dimensions are not power-of-two.
+The downside is that the runtime performance will regress slightly.
+
+A switch named `packed` for `ti.init()` decides whether to use packed mode:
+```python
+ti.init()  # default: packed=False
+a = ti.field(ti.i32, shape=(18, 65))  # padded to (32, 128)
+```
+```python
+ti.init(packed=True)
+a = ti.field(ti.i32, shape=(18, 65))  # no padding
+```
+
+## Advanced data layouts
+
+Besides shape, you can actually specify the data layout of a field. Defining a
+proper layout can be critical to performance, especially for memory-bound
+applications. A carefully designed data layout can significantly improve
+cache/TLB-hit rates and cache line utilization.
+
+After you are comfortable with the default layout specification (simply by specifying
+`shape` when creating fields), and you realize performance is your top
+priority, you can try to migrate to more advanced recursively-defined data
+layouts.
+
+Taichi decouples computation from data structures, and the Taichi compiler
+automatically optimizes data accesses on a specific data layout. This allows
+programmers to quickly experiment with different data layouts and figure out
+the most efficient one on a specific task and computer architecture.
+
+### From `shape` to `ti.root.X`
 
 For example, this declares a 0-D field:
 
@@ -34,7 +59,7 @@ ti.root.place(x)
 x = ti.field(ti.f32, shape=())
 ```
 
-This declares a 1D field of size `3`:
+This declares a 1-D field of size `3`:
 
 ```python {1-2}
 x = ti.field(ti.f32)
@@ -43,7 +68,7 @@ ti.root.dense(ti.i, 3).place(x)
 x = ti.field(ti.f32, shape=3)
 ```
 
-This declares a 2D field of shape `(3, 4)`:
+This declares a 2-D field of shape `(3, 4)`:
 
 ```python {1-2}
 x = ti.field(ti.f32)
@@ -55,7 +80,7 @@ x = ti.field(ti.f32, shape=(3, 4))
 You may wonder, why not simply specify the `shape` of the field? Why
 bother using the more complex version? Good question, let's move forward and figure out why.
 
-## Row-major versus column-major
+### Row-major versus column-major
 
 Let's start with the simplest layout.
 
@@ -108,7 +133,7 @@ for (int i = 0; i < 3; i++) {
 
 :::
 
-## Array of Structures (AoS), Structure of Arrays (SoA)
+### Array of Structures (AoS), Structure of Arrays (SoA)
 
 Fields of same size can be placed together.
 
@@ -174,7 +199,7 @@ ti.root.dense(ti.i, N).place(pos, vel)
 Then `vel[i]` is placed right next to `pos[i]`, this can increase the
 cache-hit rate and therefore increase the performance.
 
-## Flat layouts versus hierarchical layouts
+### Flat layouts versus hierarchical layouts
 
 By default, when allocating a `ti.field`, it follows the simplest data
 layout.
@@ -208,7 +233,7 @@ This organizes `val` in `4x4x4` blocks, so that with high probability
 `val[i, j, k]` and its neighbours are close to each other (i.e., in the
 same cacheline or memory page).
 
-## Struct-fors on advanced dense data layouts
+### Struct-fors on advanced dense data layouts
 
 Struct-fors on nested dense data structures will automatically follow
 their data order in memory. For example, if 2D scalar field `A` is
@@ -228,7 +253,7 @@ maximizes the memory bandwidth utilization in most cases.
 Struct-for loops on sparse fields follow the same philosophy, and will
 be discussed further in [Sparse computation](./sparse.md).
 
-## Examples
+### Examples
 
 2D matrix, row-major
 
@@ -271,4 +296,76 @@ for i in range(3):
     ti.root.dense(ti.i, 1024).place(pos(i))
 for i in range(3):
     ti.root.dense(ti.i, 1024).place(vel(i))
+```
+
+## Dynamic field allocation
+
+Previously in Taichi, we cannot allocate new fields after the kernel's execution. Now we can use a new class `FieldsBuilder` to support dynamic allocation.
+
+`FieldsBuilder` has the same data structure declaration API as the previous `root`, such as `dense()`, `pointer()` etc. After declaration, we need to call the `finalize()` function to compile the `FieldsBuilder` to an `SNodeTree` object.
+
+Example usage for `FieldsBuilder`:
+
+```py
+import taichi as ti
+ti.init()
+
+@ti.kernel
+def func(v: ti.template()):
+    for I in ti.grouped(v):
+        v[I] += 1
+
+fb = ti.FieldsBuilder()
+x = ti.field(dtype = ti.f32)
+fb.dense(ti.ij, (5, 5)).place(x)
+fb_snode_tree = fb.finalize() # Finalizing the FieldsBuilder and returns a SNodeTree
+func(x)
+
+fb2 = ti.FieldsBuilder()
+y = ti.field(dtype = ti.f32)
+fb2.dense(ti.i, 5).place(y)
+fb2_snode_tree = fb2.finalize() # Finalizing the FieldsBuilder and returns a SNodeTree
+func(y)
+```
+
+Additionally, `root` now is implemented by `FieldsBuilder` implicitly, so we can allocate the fields directly under `root`.
+```py
+import taichi as ti
+ti.init() # ti.root = ti.FieldsBuilder()
+
+@ti.kernel
+def func(v: ti.template()):
+    for I in ti.grouped(v):
+        v[I] += 1
+
+x = ti.field(dtype = ti.f32)
+ti.root.dense(ti.ij, (5, 5)).place(x)
+func(x) # automatically called ti.root.finalize()
+# ti.root = new ti.FieldsBuilder()
+
+y = ti.field(dtype = ti.f32)
+ti.root.dense(ti.i, 5).place(y)
+func(y) # automatically called ti.root.finalize()
+```
+
+Furthermore, after we called the `finalize()` of a `FieldsBuilder`, it will return a finalized `SNodeTree` object. If we do not want to use the fields under this `SNodeTree`, we could call `destroy()` manually to recycle the memory into the memory pool.
+
+e.g.:
+```py
+import taichi as ti
+ti.init()
+
+@ti.kernel
+def func(v: ti.template()):
+    for I in ti.grouped(v):
+        v[I] += 1
+
+fb = ti.FieldsBuilder()
+x = ti.field(dtype = ti.f32)
+fb.dense(ti.ij, (5, 5)).place(x)
+fb_snode_tree = fb.finalize() # Finalizing the FieldsBuilder and returns a SNodeTree
+func(x)
+
+fb_snode_tree.destroy()
+# func(x) cannot be used anymore
 ```

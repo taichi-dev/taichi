@@ -45,7 +45,7 @@ helps display a window. If `filename` is specified, a screenshot will be saved t
 
 
 ## Paint on a window
-Taichi's GUI supports painting simple geometrix objects, such as lines, triangles, rectangles, circles, and text.
+Taichi's GUI supports painting simple geometric objects, such as lines, triangles, rectangles, circles, and text.
 
 :::note
 
@@ -169,9 +169,9 @@ The color of triangles can be further specified with additional parameter.
 
 For example:
 ```python
-gui.triangles(a=X, b=Y, c=Z, color=0x000000)
+gui.triangles(a=X, b=Y, c=Z, color=0xED553B)
 ```
-draws triangles with color of 0x000000 and three points positioned at X, Y, and Z.
+draws triangles with color of red and three points positioned at X, Y, and Z.
 
 ![triangles](../static/assets/triangles.png)
 
@@ -184,7 +184,7 @@ For example:
 ```python
 gui.rect([0, 0], [0.5, 0.5], radius=1, color=0xED553B)
 ```
-draws a rectangle of topleft corner at [0, 0] and bottomright corner at [0.5, 0.5], with stroke of radius of 1 and color of red.
+draws a rectangle of top left corner at [0, 0] and bottom right corner at [0.5, 0.5], with stroke of radius of 1 and color of red.
 
 ![rect](../static/assets/rect.png)
 
@@ -202,7 +202,7 @@ x = nunpy.array([[0.1, 0.1], [0.9, 0.1]])
 y = nunpy.array([[0.3, 0.3], [-0.3, 0.3]])
 gui.arrows(x, y, radius=1, color=0xFFFFFF)
 ```
-draws two arrow originated at [0.1, 0.1], [0.9, 0.1] and pointing to [0.3, 0.3], [-0.3, 0.3] with radius of 1 and color of 0xFFFFFF.
+draws two arrow originated at [0.1, 0.1], [0.9, 0.1] and pointing to [0.3, 0.3], [-0.3, 0.3] with radius of 1 and color of white.
 
 ![arrows](../static/assets/arrows.png)
 
@@ -435,7 +435,7 @@ pixels = ti.field(dtype=type, shape=shape)
 @ti.kernel
 def draw():
     for i, j in pixels:
-        pixels[i, j] = ti.random() * 255    # integars between [0, 255] for ti.u8
+        pixels[i, j] = ti.random() * 255    # integers between [0, 255] for ti.u8
 
 draw()
 
@@ -446,8 +446,8 @@ Besides, for RGB or RGBA images, `ti.imwrite` needs to receive a field which has
 
 Generally the value of the pixels on each channel of a `png` image is an integer in \[0, 255\]. For this reason, `ti.imwrite` will **cast fields** which has different data types all **into integers between \[0, 255\]**. As a result, `ti.imwrite` has the following requirements for different data types of input fields:
 
-- For float-type (`ti.f16`, `ti.f32`, etc) input fields, **the value of each pixel should be float between \[0.0, 1.0\]**. Otherwise `ti.imwrite` will first clip them into \[0.0, 1.0\]. Then they are multiplied by 256 and casted to integers ranging from \[0, 255\].
-- For int-type (`ti.u8`, `ti.u16`, etc) input fields, **the value of each pixel can be any valid integer in its own bounds**. These integers in this field will be scaled to \[0, 255\] by being divided over the upper bound of its basic type accordingly.
+- For float-type (`ti.f16`, `ti.f32`, etc.) input fields, **the value of each pixel should be float between \[0.0, 1.0\]**. Otherwise `ti.imwrite` will first clip them into \[0.0, 1.0\]. Then they are multiplied by 256 and cast to integers ranging from \[0, 255\].
+- For int-type (`ti.u8`, `ti.u16`, etc.) input fields, **the value of each pixel can be any valid integer in its own bounds**. These integers in this field will be scaled to \[0, 255\] by being divided over the upper bound of its basic type accordingly.
 
 Here is another example:
 
@@ -477,7 +477,7 @@ loads an image from the target filename and returns it as a `np.ndarray(dtype=np
 Each value in this returned field is an integer in [0, 255].
 
 [`ti.imshow(img, windname)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=imshow#taichi.misc.image.imshow)
-creates an instance of ti.GUI and show the input image on the screen. It has the same logic as `ti.imwrite` for different datatypes.
+creates an instance of ti.GUI and show the input image on the screen. It has the same logic as `ti.imwrite` for different data types.
 
 [`ti.imresize(img, w)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=imresize#taichi.misc.image.imresize)
 resizes the img specified.

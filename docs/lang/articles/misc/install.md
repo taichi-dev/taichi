@@ -60,7 +60,7 @@ sidebar_position: 0
   [E 05/14/20 10:46:49.911] Received signal 7 (Bus error)
   ```
 
-  This might be because that your NVIDIA GPU is pre-Pascal and it
+  This might be because that your NVIDIA GPU is pre-Pascal, and it
   has limited support for [Unified
   Memory](https://www.nextplatform.com/2019/01/24/unified-memory-the-final-piece-of-the-gpu-programming-puzzle/).
 

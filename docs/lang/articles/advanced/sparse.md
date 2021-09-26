@@ -12,10 +12,15 @@ Figure: A swinging Taichi pattern represented with a 512x512 sparse grid. The sp
 White stands for inactive tree nodes, and active tree nodes are darker.
 
 The sparse grid above has the following structure:
-- The grid is divided into 8x8 `block1` cells.
-- Each `block1` cell has 4x4 `block2` sub-cells.
-- Each `block2` cell has 4x4 `block3` sub-cells.
-- Each `block3` cell has 4x4 sub-cells (pixels), each directly containing a `f32` value `x[i, j]`.
+- The grid is divided into 8x8 `block1` containers.
+- Each `block1` container has 4x4 `block2` cells.
+- Each `block2` container has 4x4 `block3` cells.
+- Each `block3` container has 4x4 pixel cells.
+- Each pixel containing a `i32` value `x[i, j]`.
+
+:::note
+For more information about *cells* and *containers*, see [**Data structure organization**](../contribution/internal.md#data-structure-organization).
+:::
 
 Taichi allows you to effortlessly define such data structure:
 
@@ -47,8 +52,8 @@ we will significantly save storage and computing power.
 The key to leverage spatial sparsity is to replace *dense* grids with *sparse* grids.
 :::
 
-On a sparse data structure, we say a pixel, voxel, or grid cell is *active*, if it is allocated and involved in computation.
-The rest of the grid cells are simply *inactive*.
+On a sparse data structure, we say a pixel, voxel, or a grid node is *active*, if it is allocated and involved in computation.
+The rest of the grid is simply *inactive*.
 The *activity* of a leaf or intermediate cell is a boolean value. The activity value of a cell is `True` if and only if the cell is *active*.
 
 Here is a simple example. The 2D multi-physics simulation (material point method) below has 256x256 grid cells.
@@ -122,10 +127,8 @@ pixel.place(x)
 
 When writing to an inactive cell on a sparse data structure, Taichi automatically populates the data structure.
 
-For example, when executing `x[4, 13] = 123` on the aforementioned sparse grid `x`,
-Taichi automatically activates `block[1, 3]` so that `pixel[4, 13]` is allocated.
-
-TODO: add image.
+For example, when executing `x[2, 3] = 2` on the aforementioned sparse grid `x`,
+Taichi automatically activates `block[1, 1]` so that `pixel[2, 3]` is allocated.
 
 :::note
 Reading an inactive voxel returns zero.
@@ -167,7 +170,7 @@ print('use_bitmask = {}'.format(use_bitmask))
 sparse_struct_for()
 ```
 
-You can loop over different levels of the cells. When `bitmask = True`, the program above generates
+You can loop over different levels of the tree. When `bitmask = True`, the program above generates
 ```
 field x[2, 3] = 2
 field x[5, 6] = 3
@@ -201,21 +204,20 @@ Without a bitmask, these pixels in the same `block` share the same activity.
 
 :::note
 For performance reasons, `ti.deactivate` ...
-- does **not** recursively deactivate all the sub-cells of a cell.
-- does **not** trigger a garbage of its parent cell, if all the children of the parent cell are deactivated.
-- does **not** recursively deactivate its children cells.
+- does **not** recursively deactivate all the subtree of a cell.
+- does **not** trigger a garbage of its parent container, even if all the children of the parent container are deactivated.
 :::
 
 :::note
-When deactivation happens, the Taichi runtime automatically recycles and zero-fills memory of the cells that are deactivated via `ti.deactivate`.
+When deactivation happens, the Taichi runtime automatically recycles and zero-fills memory of the containers that are deactivated via `ti.deactivate`.
 :::
 
 
-### Finding parent cell indices
+### Finding parent container indices
 
-It is often helpful to compute the index of of a parent SNode cell given a child SNode cell.
+It is often helpful to compute the index of of a parent SNode container given a child SNode container.
 While it is possible to directly use `[i // 2, j // 2]` to compute the `block` index given `pixel` index,
-doing so couples computation code with the internal configuration of data structures (in this case, the size of `block` cells).
+doing so couples computation code with the internal configuration of data structures (in this case, the size of `block` container).
 
 You can use `ti.rescale_index(TODO)`.
 

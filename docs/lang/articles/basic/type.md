@@ -52,18 +52,18 @@ Currently, supported primitive types in Taichi are
 
 Supported types on each backend:
 
-| type | CPU/CUDA | OpenGL | Metal | C source |
-| ---- | -------- | ------ | ----- | -------- |
-| i8   | > OK     | > N/A  | > OK  | > OK     |
-| i16  | > OK     | > N/A  | > OK  | > OK     |
-| i32  | > OK     | > OK   | > OK  | > OK     |
-| i64  | > OK     | > EXT  | > N/A | > OK     |
-| u8   | > OK     | > N/A  | > OK  | > OK     |
-| u16  | > OK     | > N/A  | > OK  | > OK     |
-| u32  | > OK     | > N/A  | > OK  | > OK     |
-| u64  | > OK     | > N/A  | > N/A | > OK     |
-| f32  | > OK     | > OK   | > OK  | > OK     |
-| f64  | > OK     | > OK   | > N/A | > OK     |
+| type | CPU/CUDA |  OpenGL | Metal |  Vulkan  |
+| ---- | -------- | ------- | ----- | -------- |
+| i8   | > OK     | > N/A   | > OK  | > EXT    |
+| i16  | > OK     | > N/A   | > OK  | > EXT    |
+| i32  | > OK     | > OK    | > OK  | > OK     |
+| i64  | > OK     | > EXT   | > N/A | > EXT    |
+| u8   | > OK     | > N/A   | > OK  | > EXT    |
+| u16  | > OK     | > N/A   | > OK  | > EXT    |
+| u32  | > OK     | > N/A   | > OK  | > OK     |
+| u64  | > OK     | > N/A   | > N/A | > EXT    |
+| f32  | > OK     | > OK    | > OK  | > OK     |
+| f64  | > OK     | > OK    | > N/A | > EXT    |
 
 (OK: supported, EXT: require extension, N/A: not available)
 :::

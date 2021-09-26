@@ -88,7 +88,7 @@ The positions/centers of geometries should be in the world-space coordinates.
 
 If a mesh has `num` triangles, the `indices` should be a scalar field with a shape of `num * 3` instead of a vector field.
 
-`normals` parameter for `scene.mesh` is optional. 
+`normals` parameter for `scene.mesh` is optional.
 :::
 
 
@@ -151,7 +151,7 @@ while window.running:
     if window.is_pressed(ti.ui.RIGHT, 'd'): gravity[None][0] = 1
     if window.is_pressed(ti.ui.UP, 'w'): gravity[None][1] = 1
     if window.is_pressed(ti.ui.DOWN, 's'): gravity[None][1] = -1
-    
+
     # mouse event processing
     mouse = window.get_cursor_pos()
     # ...
@@ -160,4 +160,3 @@ while window.running:
     if window.is_pressed(ti.ui.RMB):
         attractor_strength[None] = -1
 ```
-

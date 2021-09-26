@@ -135,7 +135,7 @@ ti.root.pointer(ti.ij, 32).dense(ti.ij, 4).place(a)
 
 @ti.kernel
 def foo():
-  # Taichi will try to buffer `a` in CUDA shared memory
+  # Taichi will cache `a` into the CUDA shared memory
   ti.block_local(a)
   for i, j in a:
     print(a[i - 1, j], a[i, j + 2])
@@ -157,6 +157,7 @@ memory.
 :::note
 BLS is not without its cost. Remember that BLS is designed for the stencil computation, where there is a large amount of
 overlapped access to the global memory. If this is not the case, the pre-loading/post-storing could actually hurt the performance.
+
 On top of that, recent generations of Nvidia's GPU cards have been closing the gap on the read-only access between the global memory
 and the shared memory. Currently, we found BLS to be more effective for caching the destinations of the atomic operations. 
 

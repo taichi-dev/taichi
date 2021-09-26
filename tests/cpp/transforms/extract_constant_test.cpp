@@ -32,8 +32,32 @@ TEST_F(ExtractConstantTest, ExtractConstant) {
   ASSERT_TRUE(ir->is<Block>());
   auto *ir_block = ir->as<Block>();
   irpass::type_check(ir_block, CompileConfig());
+  // Before:
+  //   kernel {
+  //     <i32> $0 = const [10]
+  //     <i32> $1 = const [0]
+  //     $2 : for in range($1, $0) (vectorize -1) (bit_vectorize -1)
+  //     block_dim=adaptive {
+  //       <i32> $3 = alloca
+  //       $4 = local load [ [$3[0]]]
+  //       <i32> $5 = const [1]
+  //       $6 = add $4 $5
+  //     }
+  //   }
   EXPECT_EQ(ir_block->size(), 3);
   irpass::extract_constant(ir_block, CompileConfig());
+  // After:
+  //   kernel {
+  //     <i32> $0 = const [1]
+  //     <i32> $1 = const [10]
+  //     <i32> $2 = const [0]
+  //     $3 : for in range($2, $1) (vectorize -1) (bit_vectorize -1)
+  //     block_dim=adaptive {
+  //       <i32> $4 = alloca
+  //       <i32> $5 = local load [ [$4[0]]]
+  //       <i32> $6 = add $5 $0
+  //     }
+  //   }
   EXPECT_EQ(ir_block->size(), 4);
 }
 

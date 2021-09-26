@@ -238,8 +238,8 @@ ray3 = ti.Struct.field({'ro': my_vec3f, 'rd': my_vec3f, 'l': ti.f32}, shape=(24,
 ### Creating local variables
 Compound types can be directly called to create matrix or struct instances. Vectors and matrices can be created using GLSL-like broadcast syntax since the shape of the vector or matrix is already known:
 ```python
-ray = my_ray3f(0.0) # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
-ro = my_vec3f(0.0) # ti.Vector([0.0, 0.0, 0.0])
-rd = my_vec3f(my_vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
-ray2 = my_ray3f(ro=ro, rd=rd, l=1.0)
+ray1 = my_ray3f(0.0) # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
+vec1 = my_vec3f(0.0) # ti.Vector([0.0, 0.0, 0.0])
+vec2 = my_vec3f(my_vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
+ray2 = my_ray3f(ro=vec1, rd=vec2, l=1.0)
 ```

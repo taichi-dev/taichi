@@ -17,7 +17,7 @@ Below we highlight some of the most widely used styles.
 - Constant names should use the camel case, with a prefix `k`, e.g. `constexpr int kTaichiMaxNumArgs = 64;`.
 - Macros should start with `TI_`, e.g. `TI_NOT_IMPLEMENTED`.
   - In general, avoid using macros as much as possible.
-  - Stop using `TI_NAMESPACE_BEGIN/END`.
+  - Avoid using `TI_NAMESPACE_BEGIN/END` in the new code.
 
 ## Rule of thumbs
 
@@ -31,3 +31,4 @@ Below we highlight some of the most widely used styles.
   };
   ```
 - Embrace the smart pointers and avoid `new` and `delete`.
+- Avoid virtual function calls in the constructors or destructions ([explanation](https://wiki.sei.cmu.edu/confluence/display/cplusplus/OOP50-CPP.+Do+not+invoke+virtual+functions+from+constructors+or+destructors)).

@@ -97,7 +97,7 @@ For sparse fields, the full domain shape will be returned.
 
 ## Matrix & vector metadata
 
-For matrices, `matrix.m` and `matrix.n` returns the number of columns and rows respectively. 
+For matrices, `matrix.m` and `matrix.n` returns the number of columns and rows respectively.
 For vectors, they are treated as matrices with one column in Taichi, `vector.n` is the number of elements of the vector.
 
 ```python {4-5,7-8}
@@ -149,8 +149,8 @@ def func():
 There are two reasons to use `ti.static` with for loops:
 
 - Loop unrolling for improving runtime performance (see section [Compile-time evaluations](##Compile-time evaluations)).
-- Accessing elements of Taichi matrices/vectors. Indices for accessing Taichi fields can be runtime variables, while indices for Taichi matrices/vectors **must be a compile-time constant**. 
-  
+- Accessing elements of Taichi matrices/vectors. Indices for accessing Taichi fields can be runtime variables, while indices for Taichi matrices/vectors **must be a compile-time constant**.
+
 For example, when accessing a vector field `x` with `x[field_index][vector_component_index]`, the `field_index` can be a runtime variable, while the `vector_component_index` must be a compile-time constant:
 
 ```python {4}

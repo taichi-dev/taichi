@@ -11,14 +11,13 @@ The fellows are profiling tools Taichi provides now:
 - `ScopedProfiler` can be used to analyze the performance of the Taichi compiler.
 - `KernelProfiler` can be used to analyze the performance of Taichi kernels. #TODO
 
----
-
 ## ScopedProfiler
 
-1.  `ScopedProfiler` measures time spent on the **host tasks**
-    hierarchically.
-2.  This profiler is automatically on. To show its results, call
-    `ti.print_profile_info()`. For example:
+2. This profiler is automatically on. 
+1. `ScopedProfiler` measures time spent on the **host tasks**.
+3. call `ti.print_profile_info()`. To show its hierarchical formatted results. 
+
+For example:
 
 ```python
 import taichi as ti
@@ -26,26 +25,19 @@ import taichi as ti
 ti.init(arch=ti.cpu)
 var = ti.field(ti.f32, shape=1)
 
-
-
 @ti.kernel
 def compute():
     var[0] = 1.0
     print("Setting var[0] =", var[0])
 
-
 compute()
 ti.print_profile_info()
 ```
 
-`ti.print_profile_info()` prints profiling results in a hierarchical format.
-
 :::note
-`ScopedProfiler` is a C++ class in the core of Taichi. It is not exposed
-to Python users.
+`ScopedProfiler` is a C++ class in the core of Taichi. It is not exposed to Python users.
 :::
 
----
 
 ## KernelProfiler
 
@@ -120,6 +112,10 @@ For CUDA backend, `KernelProfiler` has a experimental GPU profiling toolkit, Nvi
 
 Prerequisites to use CUPTI:
 1. Install CUDA Toolkit
-2. Add environment variables `export CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda` to your shell configuration files such as `~/.bashrc` and `~/.zshrc`.
-3. Build Taichi from source with CUDA toolkit: `TAICHI_CMAKE_ARGS="-DTI_WITH_CUDA_TOOLKIT:BOOL=ON" python3 setup.py develop --user`.
-4. Resolve privileges issue of Nvidia profiling module: Adding options nvidia `NVreg_RestrictProfilingToAdminUsers=0` to `/etc/modprobe.d/nvidia-kernel-common.conf`, then `reboot` should resolve the permision issue. Probably needs running `update-initramfs -u` before `reboot`. [Ubuntu 20.04]
+2. Add environment variables :
+    - `export CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda` to your shell configuration files such as `~/.bashrc` and `~/.zshrc`.
+3. Build Taichi from source with CUDA toolkit: 
+    - `TAICHI_CMAKE_ARGS="-DTI_WITH_CUDA_TOOLKIT:BOOL=ON" python3 setup.py develop --user`.
+4. Resolve privileges issue of Nvidia profiling module (Ubuntu 20.04): 
+    - Add `options nvidia NVreg_RestrictProfilingToAdminUsers=0` to `/etc/modprobe.d/nvidia-kernel-common.conf`, 
+    - then `reboot` should resolve the permision issue (Probably needs running `update-initramfs -u` before `reboot`).

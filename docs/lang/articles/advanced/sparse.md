@@ -101,10 +101,10 @@ While a null pointer can effectively represent an empty sub-tree, at the leaf le
 of a single voxel can consume too much space.
 For example, if each voxel contains a single `f32` value (4 bytes),
 the 64-bit pointer pointing to the value would take 8 bytes.
-The fact that storage costs of pointers are higher than the space to store the value themselves,
+The fact that storage costs of pointers are higher than the space to store the value themselves
 goes against our goal to use sparse data structures to save space.
 
-To amortize the storage cost of pointers, programmers usually organize voxels in a *blocked* manner,
+To amortize the storage cost of pointers, programmers usually organize voxels in a *blocked* manner
 and let the pointers directly point to the blocks (instead of voxels).
 
 One caveat of this design is that voxels in the same `dense` block can no longer change their activity flexibly.
@@ -297,7 +297,7 @@ When deactivation happens, the Taichi runtime automatically recycles and zero-fi
 
 :::note
 While it is possible to directly use `[i // 2, j // 2]` to compute the `block` index given `pixel` index,
-doing so couples computation code with the internal configuration of data structures (in this case, the size of `block` containers).o
+doing so couples computation code with the internal configuration of data structures (in this case, the size of `block` containers).
 
 Use `ti.rescale_index` to avoid hard-coding internal information of data structures.
 :::

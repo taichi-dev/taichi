@@ -5,7 +5,7 @@ sidebar_position: 1
 
 # A New UI system: GGUI
 
-:::note
+:::caution
 GGUI is currently supported on the x64 and CUDA backends for the system Windows and Linux.
 
 You also need to install the Vulkan environment: [https://vulkan.lunarg.com/sdk/home](https://vulkan.lunarg.com/sdk/home).

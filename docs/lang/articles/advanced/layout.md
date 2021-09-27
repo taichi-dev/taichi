@@ -92,8 +92,7 @@ be treated as 1. Assume the starting address of a field is `base`. Then for 1D
 Taichi fields, the address of the `i`-th element is simply `base + i`.
 
 However, a multi-dimensional field has to be flattened in order to fit into the
-1D address space. For example, to store a 2D field of size `(3, 2)`, there are
-two ways:
+1D address space. For example, there are two ways to store a 2D field of size `(3, 2)`:
 
 - Row-major: let the address of the `(i, j)`-th element be `base + i * 2 + j`;
 - Column-major: let the address of the `(i, j)`-th element be

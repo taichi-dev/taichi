@@ -78,7 +78,7 @@ the semantics of the original program (will be explained later).
 
 ### Thread Local Storage (TLS)
 
-TLS is mostly designed to optimize the parallel reduction. When Taichi identifies
+TLS is mostly designed to optimize parallel reduction. When Taichi identifies
 a global reduction pattern in a `@ti.kernel`, it automatically applies the TLS
 optimizations during code generation, similar to those found in common GPU
 reduction implementations.

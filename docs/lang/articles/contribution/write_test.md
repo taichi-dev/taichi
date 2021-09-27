@@ -30,7 +30,7 @@ def test_log10():
     pass
 ```
 
-Add some tests that makes use of `ti.log10` to ensure it works
+Add some tests that make use of `ti.log10` to ensure it works
 well. Hint: You may pass/return values to/from Taichi-scope using 0-D
 fields, i.e. `r[None]`.
 

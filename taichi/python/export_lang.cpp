@@ -17,6 +17,7 @@
 #include "taichi/program/async_engine.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/snode_rw_accessors_bank.h"
+#include "taichi/program/ndarray.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"
 #include "taichi/gui/gui.h"
@@ -176,6 +177,7 @@ void export_lang(py::module &m) {
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
+      .def_readwrite("use_torch", &CompileConfig::use_torch)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
@@ -352,6 +354,16 @@ void export_lang(py::module &m) {
       .def("destroy_snode_tree", [](SNodeTree *snode_tree, Program *program) {
         program->destroy_snode_tree(snode_tree);
       });
+
+  py::class_<Ndarray>(m, "Ndarray")
+      .def(py::init<Program *, const DataType &, const std::vector<int> &>())
+      .def("__setitem__", &Ndarray::set_item)
+      .def("__getitem__", &Ndarray::get_item)
+      .def("data_ptr", &Ndarray::get_data_ptr_as_int)
+      .def("element_size", &Ndarray::get_element_size)
+      .def("nelement", &Ndarray::get_nelement)
+      .def_readonly("dtype", &Ndarray::dtype)
+      .def_readonly("shape", &Ndarray::shape);
 
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)

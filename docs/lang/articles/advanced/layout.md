@@ -209,12 +209,12 @@ is equivalent to the following in C/C++:
 float val[32][64][128];
 ```
 
-However, at times this data layout can be suboptimal for certain types of
-computation tasks. For example, in texture trilinear interpolation,
+However, at times this data layout may be suboptimal for certain types of
+computation tasks. For example, in trilinear texture interpolation,
 `val[i, j, k]` and `val[i + 1, j, k]` are often accessed together. With the
-above layout, they are very far away (`32 KB`) from each other, and not even
-within the same `4KB` pages. This creates a huge cache/TLB pressure and leads
-to pretty poor performance.
+above layout, they are very far away (32 KB) from each other, and not even
+within the same 4 KB pages. This creates a huge cache/TLB pressure and leads
+to poor performance.
 
 A better layout might be
 

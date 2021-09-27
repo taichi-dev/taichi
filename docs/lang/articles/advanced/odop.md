@@ -18,10 +18,10 @@ programming** (ODOP).
 
 ## Data-oriented class
 
-If you need to define a **Taichi kernel** as a property inside a python class, it's needed to decorate the class with a `@ti.data_oriented` decorator. Then, you could define `ti.kernel` and `ti.func` in your data-oriented class in pleasure!
+If you need to define a **Taichi kernel** as a Python class member function, you need to decorate the class with a `@ti.data_oriented` decorator. Then, you can define `ti.kernel`s and `ti.func`s in your *data-oriented* Python class.
 
 :::note
-**Taichi kernel**'s grammar is the same as the python function. This means the first argument of the function would be the class instance.
+The first argument of the function should be the class instance ("`self`"), unless you are defining a `@staticmethod`.
 :::
 
 A brief example:
@@ -30,7 +30,7 @@ A brief example:
 @ti.data_oriented
 class TiArray:
     def __init__(self, n):
-        self.x = ti.field(ti.i32, shape=n)
+        self.x = ti.field(dtype=ti.i32, shape=n)
 
     @ti.kernel
     def inc(self):
@@ -41,9 +41,9 @@ a = TiArray(32)
 a.inc()
 ```
 
-**Taichi kernel**'s grammar is same as the python function. Which means the common decorator of a class function, such as `@staticmethod`, could apply to `ti.kernel` and `ti.func` too.
+You can apply common class functions decorators, such as `@staticmethod`, to `ti.kernel`s and `ti.func`s.
 
-A much longer example:
+A longer example:
 
 ```python
 import taichi as ti

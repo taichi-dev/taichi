@@ -38,6 +38,7 @@ struct CompileConfig {
   bool make_thread_local;
   bool make_block_local;
   bool detect_read_only;
+  bool use_torch;
   DataType default_fp;
   DataType default_ip;
   std::string extra_flags;

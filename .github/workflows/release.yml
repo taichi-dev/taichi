@@ -33,8 +33,8 @@ jobs:
     name: Build and Upload (linux only)
     needs: matrix_prep
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    fail-fast: false
     runs-on: [self-hosted, cuda, vulkan, cn, release]
     steps:
       - uses: actions/checkout@v2
@@ -108,8 +108,8 @@ jobs:
     name: Build and Upload (macOS only)
     needs: matrix_prep
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    fail-fast: false
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
@@ -174,8 +174,8 @@ jobs:
     name: Build and Upload (Apple M1)
     needs: matrix_prep
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix_osx) }}
-    fail-fast: false
     runs-on: [self-hosted, m1]
     defaults:
       run:
@@ -231,8 +231,8 @@ jobs:
     name: Build and Upload (Windows only)
     needs: matrix_prep
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    fail-fast: false
     runs-on: windows-latest
     steps:
       - name: Install 7Zip PowerShell

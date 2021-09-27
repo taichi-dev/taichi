@@ -10,8 +10,7 @@ helpful.
 
 We provide various interfaces to copy the data between Taichi fields and
 external arrays. External arrays refer to NumPy arrays or PyTorch tensors.
-The most typical case may be copying between Tachi
-fields and Numpy arrays. Let's take a look at two examples below.
+Let's take a look at the most common usage, interacting with NumPy arrays:
 
 **Export data in Taichi fields to a NumPy array** via `to_numpy()`. This
 allows us to export computation results to other Python packages that

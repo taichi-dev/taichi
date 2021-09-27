@@ -67,21 +67,21 @@ def func():
         ...
 ```
 
-# Local Storage Optimizations
+## Local Storage Optimizations
 
-Taichi comes with a few optimizations that leverages the *fast memory* (e.g. CUDA
+Taichi comes with a few optimizations that leverage the *fast memory* (e.g. CUDA
 shared memory, L1 cache) for performance optimization. The idea is straightforward:
-Where possible, Taichi substitutes the access to the global memroy (slow) with that
-to the local one (fast), and writes the data in the local memory back to the global
-memory in the end. Such transformations preserves the semantics of the original
-program (will be explained later).
+Wherever possible, Taichi substitutes the access to the global memroy (slow) with
+that to the local one (fast), and writes the data in the local memory (e.g., CUDA
+shared memory) back to the global memory in the end. Such transformations preserve
+the semantics of the original program (will be explained later).
 
-## Thread Local Storage (TLS)
+### Thread Local Storage (TLS)
 
 TLS is mostly designed to optimize the parallel reduction. When Taichi identifies
 a global reduction pattern in a `@ti.kernel`, it automatically applies the TLS
-optimization to make the generated code match those that are commonly found in
-the optimized GPU reduction implementations.
+optimizations during code generation, similar to those found in common GPU
+reduction implementations.
 
 We will walk through an example using CUDA's terminology.
 
@@ -114,17 +114,17 @@ original size.
 Additionally, the last atomic add to the global memory `s[None]` is optimized using
 CUDA's warp-level intrinsics, further reducing the number of required atomic adds.
 
-Currently, Taichi supports TLS optimization for these reduction operators: add, sub,
-min and max. [Here](https://github.com/taichi-dev/taichi/pull/2956) is a benchmark
-comparison when running a global max reduction on a 1-D Taichi field of 8M floats
-on an Nvidia GeForce RTX 3090 card:
+Currently, Taichi supports TLS optimization for these reduction operators: `add`,
+`sub`, `min` and `max`. [Here](https://github.com/taichi-dev/taichi/pull/2956) is
+a benchmark comparison when running a global max reduction on a 1-D Taichi field
+of 8M floats on an Nvidia GeForce RTX 3090 card:
 
 * TLS disabled: 5.2 x 1e3 us
 * TLS enabled: 5.7 x 1e1 us
 
 TLS has led to an approximately 100x speedup.
 
-## Block Local Storage (BLS)
+### Block Local Storage (BLS)
 
 Context: For a sparse field whose last layer is a `dense` SNode (i.e., its layer
 hierarchy matches `ti.root.(sparse SNode)+.dense`), Taichi will assign one CUDA
@@ -142,7 +142,7 @@ substitutes all the accesses to the corresponding slots into this buffer.
 Here is an example illustrating the usage of BLS. `a` is a sparse field with a
 block size of `4x4`.
 
-```python
+```python {8-9}
 a = ti.field(ti.f32)
 b = ti.field(ti.f32)
 # `a` has a block size of 4x4
@@ -157,7 +157,7 @@ def foo():
 ```
 
 Each loop iteration accesses items with an offset `[-1, 0]` and `[0, 2]` to its
-coordinate, respectively. Therefore, for an entire block spanning from `[M, N]`
+coordinates, respectively. Therefore, for an entire block spanning from `[M, N]`
 (inclusive) to `[M + 4, N + 4]` (exclusive), the accessed range w.r.t this block
 is `[M - 1, M + 4) x [N, N + 6)` (derived from `[M + (-1), M + 4) x [N, N + 4 + 2)`).
 The mapping between the global coordinates `i, j` and the local indices into the
@@ -167,7 +167,7 @@ buffer is shown below:
 
 From a user's perspective, you do not need to worry about these underlying details.
 Taichi does all the inference and the global/block-local mapping automatically.
-That is, Taichi will pre-allocate a CUDA shared memory buffer of size `5x6`,
+That is, Taichi will preallocate a CUDA shared memory buffer of size `5x6`,
 pre-load `a`'s data into this buffer, and replace all the accesses to `a` (in the
 global memory) with the buffer in the loop body. While this simple example does
 not modify `a`, if a block-cached field does get written, Taichi would also generate
@@ -175,7 +175,7 @@ code that writes the buffer back to the global memory.
 
 :::note
 BLS is not without its cost. Remember that BLS is designed for the stencil
-computation, where there is a large amount of overlapped access to the global
+computation, where there are a large amount of overlapped accesses to the global
 memory. If this is not the case, the pre-loading/post-storing could actually
 hurt the performance.
 

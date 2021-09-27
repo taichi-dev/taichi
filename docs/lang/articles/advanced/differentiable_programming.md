@@ -6,10 +6,10 @@ sidebar_position: 4
 
 ## Introduction
 
-Differentiable programming has been proved to be useful in a wide variety of areas
-like scientific computing and artificial intelligence. For instance, using a
-differentiable simulator in controller optimization system can converge one to
-four magnitude faster than model-free reinforcement learning algorithms.[^1][^2]
+Differentiable programming proves to be useful in a wide variety of areas
+such as scientific computing and artificial intelligence. For instance,
+a controller optimization system equipped with differentiable simulators converges one to
+four orders of magnitude faster than those using model-free reinforcement learning algorithms.[^1][^2]
 
 [^1]: [End-to-End Differentiable Physics for Learning and Control
 ](https://papers.nips.cc/paper/2018/file/842424a1d0595b76ec4fa03c46e8d755-Paper.pdf)
@@ -31,9 +31,9 @@ Now if you want to get the derivative of `y` with respect to `x`:
 `dy/dx`, it's straightforward to write out the gradient kernel manually:
 
 ```python {4-6}
-x = ti.field(float, ())
-y = ti.field(float, ())
-dy_dx = ti.field(float, ())
+x = ti.field(dtype=ti.f32, shape=())
+y = ti.field(dtype=ti.f32, shape=())
+dy_dx = ti.field(dtype=ti.f32, shape=())
 
 @ti.kernel
 def compute_dy_dx():
@@ -46,24 +46,23 @@ the kernel becomes larger and gets frequently updated, this manual workflow is
 really error-prone and hard to maintain.
 
 If you run into this situation, Taichi's handy automatic differentiation (autodiff)
-system comes to rescue! Taichi supports obtaining the derivative through
+system comes to rescue! Taichi supports gradient evaluation through
 either `ti.Tape()` or the more flexible `kernel.grad()` syntax.
 
 ## Using `ti.Tape()`
 
-Let's still take the `compute_y` above for explaination.
-Using `ti.Tape()` is the easiest way to obtain a kernel that computes `x` to `dy/dx`:
+Let's still take the `compute_y` kernel above for explanation.
+Using `ti.Tape()` is the easiest way to obtain a kernel that computes `dy/dx`:
 
 1.  Enable `needs_grad=True` option when declaring fields involved in
     the derivative chain.
-2.  Use context manager `with ti.Tape(y):` to embrace the invocation into kernel(s) you
-    want to compute derivative.
+2.  Use context manager `with ti.Tape(y):` to capture the kernel invocations which you want to automatically differentiate.
 3.  Now `dy/dx` value at current `x` is available at `x.grad[None]`.
 
 Here's the full code snippet elaborating the steps above:
 
 ```python
-x = ti.field(float, (), needs_grad=True)
+x = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
 y = ti.field(float, (), needs_grad=True)
 
 @ti.kernel
@@ -80,11 +79,11 @@ print('dy/dx =', x.grad[None], ' at x =', x[None])
 A common problem in physical simulation is that it's usually easy to compute
 energy but hard to compute force on every particle,
 e.g [Bond bending (and torsion) in molecular dynamics](https://github.com/victoriacity/taichimd/blob/5a44841cc8dfe5eb97de51f1d46f1bede1cc9936/taichimd/interaction.py#L190-L220).
-and [FEM with Lagrangian forces](https://github.com/taichi-dev/taichi/blob/master/examples/simulation/fem128.py).
+and [FEM with hyperelastic energy functions](https://github.com/taichi-dev/taichi/blob/master/examples/simulation/fem128.py).
 Recall that we can differentiate
-(negative) potential energy to get forces: `F_i = -dU / dx_i`. So once you've written
-a kernel that is able to compute the potential energy, you may use Taichi's autodiff
-system to obtain the derivative and then `F_i` on each particle.
+(negative) potential energy to get forces: `F_i = -dU / dx_i`. So once you have coded
+a kernel that computes the potential energy, you may use Taichi's autodiff
+system to obtain the derivatives and then `F_i` on each particle.
 
 Take
 [examples/simulation/ad_gravity.py](https://github.com/taichi-dev/taichi/blob/master/examples/simulation/ad_gravity.py)
@@ -97,8 +96,8 @@ ti.init()
 N = 8
 dt = 1e-5
 
-x = ti.Vector.field(2, float, N, needs_grad=True)  # particle positions
-v = ti.Vector.field(2, float, N)  # particle velocities
+x = ti.Vector.field(2, dtype=ti.f32, shape=N, needs_grad=True)  # particle positions
+v = ti.Vector.field(2, dtype=ti.f32, shape=N)  # particle velocities
 U = ti.field(float, (), needs_grad=True)  # potential energy
 
 
@@ -120,8 +119,8 @@ def advance():
 
 
 def substep():
-    with ti.Tape(U):
-        # Kernel invocations in this scope contribute to partial derivatives of
+    with ti.Tape(loss=U):
+        # Kernel invocations in this scope will later contribute to partial derivatives of
         # U with respect to input variables such as x.
         compute_U(
         )  # The tape will automatically compute dU/dx and save the results in x.grad
@@ -223,7 +222,7 @@ rules are enforced when writing differentiable programs in Taichi:
 Currently Taichi's autodiff implementation doesn't save intermediate results of global fields which might be used in the backward pass. Therefore mutation is forbidden once you've read from a global field.
 
 :::note Global Data Access Rule #1
-Once you read an element in global field, it cannot be mutated anymore.
+Once you read an element in a field, the element cannot be mutated anymore.
 :::
 
 ```python
@@ -386,4 +385,3 @@ Check out [the DiffTaichi paper](https://arxiv.org/pdf/1910.00935.pdf)
 and [video](https://www.youtube.com/watch?v=Z1xvAZve9aE) to learn more
 about Taichi differentiable programming.
 :::
-7

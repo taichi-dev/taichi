@@ -54,13 +54,13 @@ class MyClass:
     def func(self, temp: ti.template()):
         for i in ti.grouped(temp):
             temp[i] += 1
-    
+
     def call_func(self):
         self.func(self.temp)
-    
+
     def allocate_temp(self, n):
         self.temp = ti.field(dtype = ti.i32, shape=n)
-    
+
 
 
 a = MyClass()
@@ -94,7 +94,7 @@ class Calc:
 
         for i in range(4):
             self.y[i] = max(temp[i * 2], temp[i * 2 + 1])
-    
+
     def call_func(self):
         fb = ti.FieldsBuilder()
         temp = ti.field(dtype=ti.f32)
@@ -102,7 +102,7 @@ class Calc:
         tree = fb.finalize()
         self.func(temp)
         tree.destroy()
-    
+
 
 
 a = Calc()
@@ -174,7 +174,7 @@ c = BaseClass()
 
 Common decorators that are pre-built in Python, `@staticmethod` and `@classmethod`, could decorate to a **Taichi kernel** in *data-oriented* class.
 
-:::note 
+:::note
 `@property` decorator is not supported now. Would be fixed soon.
 :::
 

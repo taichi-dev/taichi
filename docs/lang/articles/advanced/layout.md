@@ -86,7 +86,8 @@ and see how to change the data layout.
 
 ### Row-major versus column-major
 
-As you may already know, address spaces are linear in modern computers. To
+As you might have learned in a computer architecture course,
+address spaces are linear in modern computers. To
 simplify the discussions, data type size will not be considered and will always
 be treated as 1. Assume the starting address of a field is `base`. Then for 1D
 Taichi fields, the address of the `i`-th element is simply `base + i`.

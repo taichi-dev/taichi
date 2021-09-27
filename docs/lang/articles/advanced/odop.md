@@ -41,6 +41,40 @@ a = TiArray(32)
 a.inc()
 ```
 
+After new feature **Dynamic SNode** released in `v0.8.0`, you could define **Taichi Fields** not only in `__init__` but also **any place** of Python-scope functions, like:
+
+```python
+import taichi as ti
+
+ti.init(arch=ti.cuda)
+
+@ti.data_oriented
+class MyClass:
+    @ti.kernel
+    def func(self, temp: ti.template()):
+        for i in ti.grouped(temp):
+            temp[i] += 1
+    
+    def call_func(self):
+        self.func(self.temp)
+    
+    def allocate_temp(self, n):
+        self.temp = ti.field(dtype = ti.i32, shape=n)
+    
+
+
+a = MyClass()
+# a.call_func()
+# temp has not been allocated now
+a.allocate_temp(4)
+a.call_func()
+a.call_func()
+print(a.temp)
+a.allocate_temp(8)
+a.call_func()
+print(a.temp)
+```
+
 ## Some walkaround about Python
 
 ### Inherit of data-oriented class

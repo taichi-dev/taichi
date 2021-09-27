@@ -1,5 +1,6 @@
 import sys
 
+import taichi.ad as ad
 from taichi.core import *
 from taichi.lang import *  # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.main import main
@@ -31,8 +32,14 @@ else:
 
 
 __all__ = [
-    'core', 'misc', 'lang', 'tools', 'main', 'torch_io', 'ui', 'profiler'
+    'ad', 'core', 'misc', 'lang', 'tools', 'main', 'torch_io', 'ui', 'profiler'
 ]
+
+complex_kernel = deprecated('ti.complex_kernel',
+                            'ti.ad.grad_replaced')(ad.grad_replaced)
+
+complex_kernel_grad = deprecated('ti.complex_kernel_grad',
+                                 'ti.ad.grad_for')(ad.grad_for)
 
 __version__ = (core.get_version_major(), core.get_version_minor(),
                core.get_version_patch())

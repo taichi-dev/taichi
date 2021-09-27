@@ -16,10 +16,12 @@ class Program;
 
 class Ndarray {
  public:
-  explicit Ndarray(Program *prog, const DataType type, const std::vector<int> &shape);
+  explicit Ndarray(Program *prog,
+                   const DataType type,
+                   const std::vector<int> &shape);
 
   DataType dtype;
-	std::vector<int> shape;
+  std::vector<int> shape;
 
   void set_item(std::vector<int> &key, int val);
   int get_item(std::vector<int> &key) const;

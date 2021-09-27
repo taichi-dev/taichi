@@ -22,10 +22,12 @@ class Ndarray:
             else:
                 device = 'cpu'
                 self.arr = torch.zeros(shape,
-                                   dtype=to_pytorch_type(cook_dtype(dtype)),
-                                   device=device)
+                                       dtype=to_pytorch_type(
+                                           cook_dtype(dtype)),
+                                       device=device)
         else:
-            self.arr = _ti_core.Ndarray(impl.get_runtime().prog, cook_dtype(dtype), shape)
+            self.arr = _ti_core.Ndarray(impl.get_runtime().prog,
+                                        cook_dtype(dtype), shape)
 
     @property
     def shape(self):

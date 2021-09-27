@@ -271,7 +271,7 @@ def test_struct_for_pointer_block():
     assert count() == 1
 ```
 
-Now, Taichi is supporting following extensions:
+Now, Taichi supports the following extensions:
 
 | Name          | Extension usage                                               |
 | ------------- | ------------------------------------------------------------- |

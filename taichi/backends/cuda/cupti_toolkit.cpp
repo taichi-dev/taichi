@@ -15,7 +15,7 @@
 TLANG_NAMESPACE_BEGIN
 
 // Make sure these metrics can be captured in one pass (no kernal replay)
-// Metrics for calculating kernel elapsed time are collected by default.
+// Metrics for calculating the kernel elapsed time are collected by default.
 enum class CuptiMetricsDefault : uint {
   CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS = 0,
   CUPTI_METRIC_CORE_FREQUENCY_HZS = 1,
@@ -523,6 +523,18 @@ CuptiToolkit::~CuptiToolkit() {
   deinit_cupti();
 }
 
+void CuptiToolkit::reset_metrics(const std::vector<std::string> metrics) {
+  cupti_config_.metric_list.clear();
+  uint metric_list_size =
+      static_cast<uint>(CuptiMetricsDefault::CUPTI_METRIC_DEFAULT_TOTAL);
+  for (uint idx = 0; idx < metric_list_size; idx++) {
+    cupti_config_.metric_list.push_back(MetricListDeafult[idx]);
+  }
+  // TODO: user defined metrics
+  // for (auto metric : metrics)
+  //   cupti_config_.metric_list.push_back(metric);
+}
+
 bool CuptiToolkit::init_cupti() {
   // copy from CUPTI/samples/autorange_profiling/simplecuda.cu
   CUpti_Profiler_Initialize_Params profiler_initialize_params = {
@@ -764,12 +776,19 @@ bool CuptiToolkit::update_record(
     RETURN_IF_NVPW_ERROR(
         false, NVPW_MetricsContext_EvaluateToGpuValues(&eval_to_gpu_params));
 
+    // default metric : kernel_elapsed_time_in_ms
     double kernel_elapsed_clk_nums = gpu_values[static_cast<uint>(
         CuptiMetricsDefault::CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS)];
     double core_frequency_hzs = gpu_values[static_cast<uint>(
         CuptiMetricsDefault::CUPTI_METRIC_CORE_FREQUENCY_HZS)];
     traced_records[range_index].kernel_elapsed_time_in_ms =
         kernel_elapsed_clk_nums / core_frequency_hzs * 1000;  // from s to ms
+
+    // TODO: user defined metrics
+    // int metric_num = cupti_config_.metric_list.size();
+    // for (int idx = CUPTI_METRIC_DEFAULT_TOTAL; idx < metric_num; idx++) {
+    //   traced_records[range_index].metric_values.push_back(gpu_values[idx]);
+    // }
   }
   return true;
 }

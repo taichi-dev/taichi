@@ -27,6 +27,20 @@ KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
   }
 }
 
+void KernelProfilerCUDA::reinit_with_metrics(
+    const std::vector<std::string> metrics) {
+  TI_TRACE("KernelProfilerCUDA::reinit_with_metrics");
+  if (tool_ == ProfilingToolkit::event) {
+    return;
+  } else if (tool_ == ProfilingToolkit::cupti) {
+    cupti_toolkit_->end_profiling();
+    cupti_toolkit_->deinit_cupti();
+    cupti_toolkit_->reset_metrics(metrics);
+    cupti_toolkit_->init_cupti();
+    cupti_toolkit_->begin_profiling();
+  }
+}
+
 // deprecated, move to trace()
 KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
     const std::string &kernel_name) {

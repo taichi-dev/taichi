@@ -4,25 +4,24 @@ sidebar_position: 1
 
 # Metaprogramming
 
-Taichi provides metaprogramming infrastructures. Metaprogramming can
+Taichi provides metaprogramming infrastructures. There are many benefits of metaprogramming in Taichi:
 
-- Unify the development of dimensionality-dependent code, such as
-  2D/3D physical simulations
-- Improve run-time performance by from run-time costs to compile time
-- Simplify the development of Taichi standard library
+- Enabling the development of dimensionality-independent code, e.g., code which is
+  adaptive for both 2D/3D physical simulations.
+- Improving runtime performance by moving computations from runtime to compile time.
+- Simplifying the development of Taichi standard library.
 
-Taichi kernels are _lazily instantiated_ and a lot of computation can
-happen at _compile-time_. Every kernel in Taichi is a template kernel,
-even if it has no template arguments.
+:::note Taichi kernels are **lazily instantiated** and large amounts of computation can
+be executed at **compile-time**. Every kernel in Taichi is a template kernel,
+even if it has no template arguments. :::
 
 ## Template metaprogramming
 
-You may use `ti.template()` as a type hint to pass a field as an
-argument. For example:
+By using `ti.template()` as a argument type hint, a Taichi field can be passed into a kernel. Template programming also enables the code to be reused for fields with different shapes:
 
 ```python {2}
 @ti.kernel
-def copy(x: ti.template(), y: ti.template()):
+def copy_1D(x: ti.template(), y: ti.template()):
     for i in x:
         y[i] = x[i]
 
@@ -30,66 +29,71 @@ a = ti.field(ti.f32, 4)
 b = ti.field(ti.f32, 4)
 c = ti.field(ti.f32, 12)
 d = ti.field(ti.f32, 12)
-copy(a, b)
-copy(c, d)
+
+# Pass field a and b as arguments of the kernel `copy_1D`:
+copy_1D(a, b)
+
+# Reuse the kernel for field c and d:
+copy_1D(c, d)
 ```
 
-As shown in the example above, template programming may enable us to
-reuse our code and provide more flexibility.
+:::note
+The template parameters are inlined into the generated kernel after compilation.
+:::
 
 ## Dimensionality-independent programming using grouped indices
 
-However, the `copy` template shown above is not perfect. For example, it
-can only be used to copy 1D fields. What if we want to copy 2D fields?
-Do we have to write another kernel?
-
-```python
-@ti.kernel
-def copy2d(x: ti.template(), y: ti.template()):
-    for i, j in x:
-        y[i, j] = x[i, j]
-```
-
-:tada: Not necessary! Taichi provides `ti.grouped` syntax which enables you to
-pack loop indices into a grouped vector to unify kernels of different
-dimensionalities. For example:
+Taichi provides `ti.grouped` syntax which supports grouping loop indices into a `ti.Vector`.
+It enables dimensionality-independent programming, i.e., code are adaptive to scenarios of
+different dimensionalities automatically:
 
 ```python {3-10,15-16}
 @ti.kernel
+def copy_1D(x: ti.template(), y: ti.template()):
+    for i in x:
+        y[i] = x[i]
+
+@ti.kernel
+def copy_2d(x: ti.template(), y: ti.template()):
+    for i, j in x:
+        y[i, j] = x[i, j]
+
+@ti.kernel
+def copy_3d(x: ti.template(), y: ti.template()):
+    for i, j, k in x:
+        y[i, j, k] = x[i, j, k]
+
+# Kernels listed above can be unified into one kernel using `ti.grouped`:
+@ti.kernel
 def copy(x: ti.template(), y: ti.template()):
     for I in ti.grouped(y):
-        # I is a vector with same dimensionality with x and data type i32
-        # If y is 0D, then I = ti.Vector([]), which is equivalent to `None` when used in x[I]
+        # I is a vector with dimensionality same to y
+        # If y is 0D, then I = ti.Vector([]), which is equivalent to `None` used in x[I]
         # If y is 1D, then I = ti.Vector([i])
         # If y is 2D, then I = ti.Vector([i, j])
         # If y is 3D, then I = ti.Vector([i, j, k])
         # ...
         x[I] = y[I]
-
-@ti.kernel
-def array_op(x: ti.template(), y: ti.template()):
-    # if field x is 2D:
-    for I in ti.grouped(x): # I is simply a 2D vector with data type i32
-        y[I + ti.Vector([0, 1])] = I[0] + I[1]
-
-    # then it is equivalent to:
-    for i, j in x:
-        y[i, j + 1] = i + j
 ```
 
 ## Field metadata
 
-Sometimes it is useful to get the data type (`field.dtype`) and shape
-(`field.shape`) of fields. These attributes can be accessed in both
-Taichi- and Python-scopes.
+The two attributes **data type** and **shape** of fields can be accessed by `field.dtype` and  `field.shape`, in both Taichi-scope and Python-scope:
 
 ```python {2-6}
-@ti.func
-def print_field_info(x: ti.template()):
-    print('Field dimensionality is', len(x.shape))
+x = ti.field(dtype=ti.f32, shape=(3, 3))
+
+# Print field metadata in Python-scope
+print("Field dimensionality is ", x.shape)
+print("Field data type is ", x.dtype)
+
+# Print field metadata in Taichi-scope
+@ti.kernel
+def print_field_metadata(x: ti.template()):
+    print("Field dimensionality is ", len(x.shape))
     for i in ti.static(range(len(x.shape))):
-        print('Size along dimension', i, 'is', x.shape[i])
-    ti.static_print('Field data type is', x.dtype)
+        print("Size along dimension ", i, "is", x.shape[i])
+    ti.static_print("Field data type is ", x.dtype)
 ```
 
 :::note
@@ -98,34 +102,27 @@ For sparse fields, the full domain shape will be returned.
 
 ## Matrix & vector metadata
 
-Getting the number of matrix columns and rows will allow you to write
-dimensionality-independent code. For example, this can be used to unify
-2D and 3D physical simulators.
-
-`matrix.m` equals to the number of columns of a matrix, while `matrix.n`
-equals to the number of rows of a matrix. Since vectors are considered
-as matrices with one column, `vector.n` is simply the dimensionality of
-the vector.
+For matrices, `matrix.m` and `matrix.n` returns the number of columns and rows, respectively.
+For vectors, they are treated as matrices with one column in Taichi, where `vector.n` is the number of elements of the vector.
 
 ```python {4-5,7-8}
 @ti.kernel
 def foo():
     matrix = ti.Matrix([[1, 2], [3, 4], [5, 6]])
-    print(matrix.n)  # 3
-    print(matrix.m)  # 2
+    print(matrix.n)  # number of row: 3
+    print(matrix.m)  # number of column: 2
     vector = ti.Vector([7, 8, 9])
-    print(vector.n)  # 3
-    print(vector.m)  # 1
+    print(vector.n)  # number of elements: 3
+    print(vector.m)  # always equals to 1 for a vector
 ```
 
 ## Compile-time evaluations
 
-Using compile-time evaluation will allow certain computations to happen
-when kernels are being instantiated. This saves the overhead of those
-computations at runtime.
+Using compile-time evaluation allows for some computation to be executed when kernels are instantiated. This helps the compiler to conduct optimization and reduce
+computational overhead at runtime:
 
-- Use `ti.static` for compile-time branching (for those who come from
-  C++17, this is [if
+- Use `ti.static` for compile-time branching (for those who are familiar with
+  C++17, this is similar to [if
   constexpr](https://en.cppreference.com/w/cpp/language/if).):
 
 ```python {5}
@@ -137,6 +134,10 @@ def static():
     x[0] = 1
 ```
 
+:::note
+One of the two branches of the `static if` will be discarded after compilation.
+:::
+
 - Use `ti.static` for forced loop unrolling:
 
 ```python {3}
@@ -145,28 +146,29 @@ def func():
   for i in ti.static(range(4)):
       print(i)
 
-  # is equivalent to:
+  # The code snippet above is equivalent to:
   print(0)
   print(1)
   print(2)
   print(3)
 ```
 
-## When to use for loops with `ti.static`
+## When to use `ti.static` with for loops
 
-There are several reasons why `ti.static` for loops should be used.
+There are two reasons to use `ti.static` with for loops:
 
-- Loop unrolling for performance.
-- Loop over vector/matrix elements. Indices into Taichi matrices must be a compile-time constant. Indexing into taichi fields can be run-time variables. For example, if you want to access a vector field `x`, accessed as `x[field_index][vector_component_index]`. The first index can be variable, yet the second must be a constant.
+- Loop unrolling for improving runtime performance (see section [Compile-time evaluations](##Compile-time evaluations)).
+- Accessing elements of Taichi matrices/vectors. Indices for accessing Taichi fields can be runtime variables, while indices for Taichi matrices/vectors **must be a compile-time constant**.
 
-For example, code for resetting this vector fields should be
+For example, when accessing a vector field `x` with `x[field_index][vector_component_index]`, the `field_index` can be a runtime variable, while the `vector_component_index` must be a compile-time constant:
 
 ```python {4}
+# Here we declare a field contains 3 vector. Each vector contains 8 elements.
+x = ti.Vector.field(8, ti.f32, shape=(3))
 @ti.kernel
 def reset():
   for i in x:
     for j in ti.static(range(x.n)):
-      # The inner loop must be unrolled since j is a vector index instead
-      # of a global field index.
+      # The inner loop must be unrolled since j is an index for accessing a vector
       x[i][j] = 0
 ```

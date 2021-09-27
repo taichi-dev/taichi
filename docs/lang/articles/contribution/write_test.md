@@ -285,4 +285,4 @@ Now, Taichi supports the following extensions:
 | assertion     | Run-time asserts in Taichi kernels                            |
 | extfunc       | Support inserting external functions calls or backend source  |
 | packed        | Packed mode: shapes will not be padded to powers of two       |
-| dynamic_index | Dynamic index support for both global and local tensors       |
+| dynamic_index | Dynamic index support for tensors                             |

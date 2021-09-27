@@ -19,6 +19,7 @@ def load_pr_tags():
 
 def main(ver='master', repo_dir='.'):
     g = Repo(repo_dir)
+    commits_with_tags = set([tag.commit for tag in g.tags])
     commits = list(g.iter_commits(ver, max_count=200))
     begin, end = -1, 0
 
@@ -32,7 +33,7 @@ def main(ver='master', repo_dir='.'):
 
     for i, c in enumerate(commits):
         s = format(c)
-        if s.startswith('[release]'):
+        if c in commits_with_tags:
             if i == 0:
                 continue
             else:

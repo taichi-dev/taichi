@@ -118,7 +118,7 @@ they have different memory layouts:
 
 :::note
 
-For those people from C/C++, here's what they look like:
+For those who are familiar with C/C++, here is what they look like in C code:
 
 ```c
 int x[3][2];  // row-major

@@ -35,7 +35,7 @@ a = ti.field(ti.i32, shape=(18, 65))  # no padding
 
 ## Advanced data layouts
 
-Apart from shape and data type, you can actually specify the data layout of a
+Apart from shape and data type, you can also specify the data layout of a
 field in a recursive manner. This may allow you to achieve better performance.
 
 Normally, you don't have to worry about the performance nuances between

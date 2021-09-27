@@ -13,16 +13,19 @@ class Ndarray:
         shape (Tuple[int]): Shape of the torch tensor.
     """
     def __init__(self, dtype, shape):
-        assert has_pytorch(
-        ), "PyTorch must be available if you want to create a Taichi ndarray."
-        import torch
-        if impl.current_cfg().arch == _ti_core.Arch.cuda:
-            device = 'cuda:0'
+        if impl.current_cfg().use_torch:
+            assert has_pytorch(
+            ), "PyTorch must be available if you want to create a Taichi ndarray."
+            import torch
+            if impl.current_cfg().arch == _ti_core.Arch.cuda:
+                device = 'cuda:0'
+            else:
+                device = 'cpu'
+                self.arr = torch.zeros(shape,
+                                   dtype=to_pytorch_type(cook_dtype(dtype)),
+                                   device=device)
         else:
-            device = 'cpu'
-        self.arr = torch.zeros(shape,
-                               dtype=to_pytorch_type(cook_dtype(dtype)),
-                               device=device)
+            self.arr = _ti_core.Ndarray(impl.get_runtime().prog, cook_dtype(dtype), shape)
 
     @property
     def shape(self):

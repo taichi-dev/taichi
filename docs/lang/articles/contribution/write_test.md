@@ -77,7 +77,7 @@ def test_log10():
 
 In this case, Taichi will execute this test case on both `ti.cpu` and `ti.cuda` backends.
 
-And you may test against **all backends** by simply not specifying the
+And you may test against all available backends (depends on your system and building environment) by simply not specifying the
 argument:
 
 ```python
@@ -99,7 +99,7 @@ def test_log10():
 
 ## Using `ti.approx` for comparison with tolerance
 
-Sometimes the precision of math operations could be relatively low on certain backends such as OpenGL,
+Sometimes the precision of math operations could be limited on certain backends such as OpenGL,
 e.g., `ti.log10(100)` may return `2.000001` or `1.999999` in this case.
 
 Adding tolerance with `ti.approx` can be helpful to mitigate
@@ -283,6 +283,6 @@ Now, Taichi supports the following extensions:
 | adstack       | For keeping the history of mutable local variables in autodiff|
 | bls           | Block-local storage                                           |
 | assertion     | Run-time asserts in Taichi kernels                            |
-| extfunc       | Support inserting external functions calls or backend source  |
+| extfunc       | Support inserting external function calls or backend source   |
 | packed        | Packed mode: shapes will not be padded to powers of two       |
 | dynamic_index | Dynamic index support for tensors                             |

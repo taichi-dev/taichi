@@ -42,8 +42,11 @@ For people from CUDA, Taichi kernels are similar to `__global__` functions.
 
 ### Arguments
 
-Kernels can have multiple arguments (For kernels executed on OpenGL and cc backends, the number of arguments is limited to 8.), which support passing values from
-Python-scope to Taichi-scope conveniently.
+Kernels can have multiple arguments, which support passing values from Python-scope to Taichi-scope conveniently.
+
+:::note
+For kernels executed on OpenGL and cc backends, the number of arguments is limited to 8.
+:::
 
 Kernel arguments must be type-hinted:
 

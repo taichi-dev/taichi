@@ -80,7 +80,7 @@ scene.mesh(vertices, indices, normals, color, per_vertex_color)
 scene.particles(vertices, radius, color, per_vertex_color)
 ```
 
-The arguments `vertices`, `indices`, `per_vertex_color`, `image` are all expected to be Taichi fields. If `per_vertex_color` is provided, `color` will be ignored.
+The arguments `vertices`, `indices`, `per_vertex_color`, and `image` are all expected to be Taichi fields. If `per_vertex_color` is provided, `color` will be ignored.
 
 The positions/centers of geometries should be in the world-space coordinates.
 

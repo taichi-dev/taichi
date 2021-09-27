@@ -197,7 +197,7 @@ locality and therefore increase performance.
 
 ### Flat layouts versus hierarchical layouts
 
-As you may already know from the above discussions,
+From the above discussions,
 
 ```python
 val = ti.field(ti.f32, shape=(32, 64, 128))

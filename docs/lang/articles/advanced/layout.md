@@ -12,15 +12,14 @@ Make sure you have gone through [Fields](../basic/field).
 By default, all non-power-of-two dimensions of a field are automatically
 padded to a power of two. For instance, a field of shape `(18, 65)` will
 have an internal shape of `(32, 128)`. Although the padding has many benefits
-such as allowing fast and convenient bitwise operations for accessing coordinates
-of hierarchical data layouts, it will consume potentially much more memory than
-expected.
+such as allowing fast and convenient bitwise operations for coordinate handling,
+it will consume potentially much more memory than expected.
 
 If you would like to reduce memory usage, you can use the optional packed
 mode. In packed mode, no padding is applied such that a field does not have a
 larger internal shape than the defined shape when some of its dimensions
-are not powers of two.
-The downside is that the runtime performance will regress slightly.
+are not powers of two. The downside is that the runtime performance will
+regress slightly.
 
 A switch named `packed` for `ti.init()` decides whether to use packed mode:
 

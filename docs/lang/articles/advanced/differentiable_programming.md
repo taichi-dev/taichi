@@ -27,7 +27,7 @@ def compute_y():
     y[None] = ti.sin(x[None])
 ```
 
-Now if you want to get the derivative of `y` corresponding to `x`:
+Now if you want to get the derivative of `y` with respect to `x`:
 `dy/dx`, it's straightforward to write out the gradient kernel manually:
 
 ```python {4-6}
@@ -78,7 +78,10 @@ print('dy/dx =', x.grad[None], ' at x =', x[None])
 ### Case study: gravity simulation
 
 A common problem in physical simulation is that it's usually easy to compute
-energy but hard to compute force on every particle. Recall that we can differentiate
+energy but hard to compute force on every particle,
+e.g [Bond bending (and torsion) in molecular dynamics](https://github.com/victoriacity/taichimd/blob/5a44841cc8dfe5eb97de51f1d46f1bede1cc9936/taichimd/interaction.py#L190-L220).
+and [FEM with Lagrangian forces](https://github.com/taichi-dev/taichi/blob/master/examples/simulation/fem128.py).
+Recall that we can differentiate
 (negative) potential energy to get forces: `F_i = -dU / dx_i`. So once you've written
 a kernel that is able to compute the potential energy, you may use Taichi's autodiff
 system to obtain the derivative and then `F_i` on each particle.
@@ -164,7 +167,7 @@ for examples on using autodiff for MPM and FEM.
 
 ## Using `kernel.grad()`
 
-As mentioned above, `ti.Tape()` can only track a 0D field as output variable.
+As mentioned above, `ti.Tape()` can only track a 0D field as the output variable.
 If there're multiple output variables that you want to back-propagate
 gradients to inputs, `kernel.grad()` should be used instead of `ti.Tape()`.
 
@@ -198,11 +201,11 @@ for i in range(N):
 :::tip
 It might be tedious to write out `need_grad=True` for every input in a complicated use case.
 Alternatively Taichi provides `ti.root.lazy_grad()` API that can automatically place the
-adjoint fields following the layout of their primal fields.
+gradient fields following the layout of their primal fields.
 :::
 
 :::caution
-When using `kernel.grad()`, it's recommended to always run forward kernel before backward, e.g. `kernel(); kernel.grad()`. If global fields used in the derivative calculation get mutated in the forward, skipping
+When using `kernel.grad()`, it's recommended to always run forward kernel before backward, e.g. `kernel(); kernel.grad()`. If global fields used in the derivative calculation get mutated in the forward run, skipping
 `kernel()` breaks global data access rule #1 below and might produce incorrect gradients.
 :::
 

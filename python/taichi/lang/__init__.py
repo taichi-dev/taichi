@@ -329,10 +329,10 @@ def init(arch=None,
             most frequently used ones. For a complete list, please check out
             https://github.com/taichi-dev/taichi/blob/master/taichi/program/compile_config.h.
 
-            * cpu_max_num_threads (int): Sets the number of threads used by the CPU thread pool.
-            * debug (bool): Enable the debug mode, under which Taichi does a few more things like boundary checks.
-            * print_ir (bool): Print the CHI IR of the Taichi kernels
-            * packed (bool): Enables the packed memory layout. See https://docs.taichi.graphics/docs/lang/articles/advanced/layout
+            * ``cpu_max_num_threads`` (int): Sets the number of threads used by the CPU thread pool.
+            * ``debug`` (bool): Enable the debug mode, under which Taichi does a few more things like boundary checks.
+            * ``print_ir`` (bool): Print the CHI IR of the Taichi kernels
+            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/docs/lang/articles/advanced/layout
     """
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,

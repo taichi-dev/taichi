@@ -280,7 +280,7 @@ Now, Taichi supports the following extensions:
 | quant_basic   | Basic operations in quantization                              |
 | quant         | Full quantization functionalities                             |
 | data64        | 64-bit data and arithmetics                                   |
-| adstack       | For keeping the history of mutable local variables            |
+| adstack       | For keeping the history of mutable local variables in autodiff|
 | bls           | Block-local storage                                           |
 | assertion     | Run-time asserts in Taichi kernels                            |
 | extfunc       | Support inserting external functions calls or backend source  |

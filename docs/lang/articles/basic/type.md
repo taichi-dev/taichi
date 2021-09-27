@@ -126,7 +126,7 @@ All data types are static in the **Taichi scope**. Therefore, casts are needed w
 ### Implicit casts
 
 :::caution
-The type of a variable is **determinated on it's initialization**.
+The type of a variable is **determined on its initialization**.
 :::
 
 When a _low-precision_ variable is assigned to a _high-precision_

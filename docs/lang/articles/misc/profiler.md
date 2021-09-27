@@ -5,7 +5,8 @@ sidebar_position: 4
 # Profiler
 
 ## Overview
-High-performance numerical computation is one of the design key application domains of Taichi.
+
+High-performance numerical computation is one of the key application domains of Taichi.
 We provide a suite of profilers
 to quantify the performance of Taichi programs, help analyze where the bottleneck occurs, and thus facilitate users
 optimizing their code. These profilers collect both hardware and Taichi-related information and can also be used as
@@ -45,7 +46,7 @@ ti.print_profile_info()
 
 ## KernelProfiler
 
-`KernelProfiler` acquires kernel profiling records from the backend, counts them in Python-scope, and displays the results by printing them.
+`KernelProfiler` acquires the kernel profiling records from the backend, counts them in Python-scope, and prints the results to the console.
 
 1. To enable this profiler, set `kernel_profiler=True` in `ti.init`.
 2. To display the profiling results, call `ti.print_kernel_profile_info()`. There are two modes of printing:
@@ -56,6 +57,7 @@ ti.print_profile_info()
 3. To clear records in this profiler, call `ti.clear_kernel_profile_info()`.
 
 For example:
+
 ```python {3,13}
 import taichi as ti
 

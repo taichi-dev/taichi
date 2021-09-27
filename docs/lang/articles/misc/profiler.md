@@ -7,16 +7,16 @@ sidebar_position: 4
 ## Overview
 
 High-performance numerical computation is one of the key application domains of Taichi.
-We provide a suite of profilers
-to quantify the performance of Taichi programs, help analyze where the bottleneck occurs, and thus facilitate users
-optimizing their code. These profilers collect both hardware and Taichi-related information and can also be used as
-performance debugging tools for developers.
+We provide a suite of profilers to quantify the performance of Taichi programs, help analyze where the bottleneck occurs,
+and thus facilitate users optimizing their code. These profilers collect both hardware and Taichi-related information
+and can also be used as performance debugging tools for developers.
 
 The follows are profiling tools Taichi provides now:
 - `ScopedProfiler` is used to analyze the performance of the Taichi JIT compiler (host).
 - `KernelProfiler` shows the performance of Taichi kernels (device), with detailed low-level performance metrics (such as memory bandwidth consumption) in its advanced mode.
 
 ## ScopedProfiler
+
 `ScopedProfiler` tracks the time spent on **host tasks** such as JIT compilation.
 
 1. This profiler is automatically on.
@@ -113,6 +113,7 @@ Currently the result of `KernelProfiler` could be incorrect on OpenGL backend du
 :::
 
 ### Advanced mode
+
 For the CUDA backend, `KernelProfiler` has an experimental GPU profiling toolkit, Nvidia CUPTI, which provides low and
 deterministic profiling overhead and is able to capture more than 6000 hardware metrics.
 

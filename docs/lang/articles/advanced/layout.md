@@ -297,7 +297,7 @@ for i in range(3):
 
 ## Dynamic field allocation and destruction
 
-Use the `FieldsBuilder` class for dynamic field allocation and destruction.
+You can use the `FieldsBuilder` class for dynamic field allocation and destruction.
 `FieldsBuilder` has the same data structure declaration APIs as `ti.root`,
 including `dense()`. After declaration, you need to call the `finalize()`
 method to compile it to an `SNodeTree` object.

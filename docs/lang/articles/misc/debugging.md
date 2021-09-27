@@ -144,9 +144,9 @@ def inside_taichi_scope():
     ti.static_print(x.dtype)
     # => DataType.float32
     for i in range(4):
-    	ti.static_print(i.dtype)
-      # => DataType.int32
-      # will only print once
+        ti.static_print(i.dtype)
+        # => DataType.int32
+        # will only print once
 ```
 
 Unlike `print`, `ti.static_print` will only print the expression once at

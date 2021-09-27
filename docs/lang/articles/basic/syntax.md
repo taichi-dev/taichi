@@ -63,14 +63,14 @@ my_kernel(24, 3.2)  # prints: 27.2
 For now, Taichi supports scalars as kernel arguments. Specifying `ti.Matrix` or
 `ti.Vector` as an argument is not supported yet:
 
-```python {2,6}
-@ti.kernel
-def error_kernel(v: ti.Vector): # Error
-    ...
-
+```python {2,7}
 @ti.kernel
 def valid_kernel(vx: ti.f32, vy: ti.f32):
     v = ti.Vector([vx, vy])
+    ...
+
+@ti.kernel
+def error_kernel(v: ti.Vector): # Error: Invalid type annotation
     ...
 ```
 

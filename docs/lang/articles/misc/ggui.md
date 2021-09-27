@@ -5,6 +5,13 @@ sidebar_position: 1
 
 # A New UI system: GGUI
 
+:::note
+GGUI is currently supported on the x64 and CUDA backends for the system Windows and Linux.
+
+You also need to install the Vulkan environment: [https://vulkan.lunarg.com/sdk/home](https://vulkan.lunarg.com/sdk/home).
+
+:::
+
 A new UI system has been added to Taichi in version `v0.8.0`. The new GUI system uses GPU for rendering, enabling it to be much faster and to render 3d scenes. For these reasons, this new system is sometimes referred to as GGUI. This doc describes the APIs provided.
 
 Apart from this doc, a good way of getting familiarized with GGUI is to look at the examples. Please checkout the examples provided in  [`examples/ggui_examples`](https://github.com/taichi-dev/taichi/tree/master/examples/ggui_examples).
@@ -42,9 +49,9 @@ canvas.lines(vertices, width, indices, color, per_vertex_color)
 canvas.set_image(image)
 ```
 
-The arguments `vertices`, `indices`, `per_vertex_color`, `image` are all expected to be Taichi fields. If `per_vertex_color` is provided, `color` will be ignored.
+The arguments `vertices`, `indices`, `per_vertex_color`, and `image` are all expected to be Taichi fields. If `per_vertex_color` is provided, `color` will be ignored.
 
-The positions/centers of geometries will be represented as floats between 0 and 1, which indicate relative positions on the canvas. For `circles` and `lines`, the `radius` and `width` argument is relative to the height of the window.
+The positions/centers of geometries will be represented as floats between 0 and 1, which indicate relative positions on the canvas. For `circles` and `lines`, the `radius` and `width` arguments are relative to the height of the window.
 
 The canvas will be cleared after every frame. You should call these methods within the render loop.
 

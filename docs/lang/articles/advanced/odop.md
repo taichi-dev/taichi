@@ -75,6 +75,44 @@ a.call_func()
 print(a.temp)
 ```
 
+Another example of automatically recycle memory:
+```python
+import taichi as ti
+
+ti.init(arch=ti.cuda)
+
+@ti.data_oriented
+class Calc:
+    def __init__(self):
+        self.x = ti.field(dtype=ti.f32, shape=16)
+        self.y = ti.field(dtype=ti.f32, shape=4)
+
+    @ti.kernel
+    def func(self, temp: ti.template()):
+        for i in range(8):
+            temp[i] = self.x[i * 2] + self.x[i * 2 + 1]
+
+        for i in range(4):
+            self.y[i] = max(temp[i * 2], temp[i * 2 + 1])
+    
+    def call_func(self):
+        fb = ti.FieldsBuilder()
+        temp = ti.field(dtype=ti.f32)
+        fb.dense(ti.i, 8).place(temp)
+        tree = fb.finalize()
+        self.func(temp)
+        tree.destroy()
+    
+
+
+a = Calc()
+for i in range(16):
+    a.x[i] = i
+a.call_func()
+print(a.y)
+```
+
+
 ## Some walkaround about Python
 
 ### Inherit of data-oriented class
@@ -131,44 +169,6 @@ c = BaseClass()
 # print(c.count())
 # These two lines would cause error...
 ```
-
-Another example of automatically recycle memory:
-```python
-import taichi as ti
-
-ti.init(arch=ti.cuda)
-
-@ti.data_oriented
-class Calc:
-    def __init__(self):
-        self.x = ti.field(dtype=ti.f32, shape=16)
-        self.y = ti.field(dtype=ti.f32, shape=4)
-
-    @ti.kernel
-    def func(self, temp: ti.template()):
-        for i in range(8):
-            temp[i] = self.x[i * 2] + self.x[i * 2 + 1]
-
-        for i in range(4):
-            self.y[i] = max(temp[i * 2], temp[i * 2 + 1])
-    
-    def call_func(self):
-        fb = ti.FieldsBuilder()
-        temp = ti.field(dtype=ti.f32)
-        fb.dense(ti.i, 8).place(temp)
-        tree = fb.finalize()
-        self.func(temp)
-        tree.destroy()
-    
-
-
-a = Calc()
-for i in range(16):
-    a.x[i] = i
-a.call_func()
-print(a.y)
-```
-
 
 ### Python-built-in-decorators
 

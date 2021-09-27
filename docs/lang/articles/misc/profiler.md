@@ -5,14 +5,15 @@ sidebar_position: 4
 # Profiler
 
 ## Overview
-High-performance numerical computation is one of the design priorities of Taichi. We provide a series of profilers
+High-performance numerical computation is one of the design key application domains of Taichi.
+We provide a suite of profilers
 to quantify the performance of Taichi programs, help analyze where the bottleneck occurs, and thus facilitate users
 optimizing their code. These profilers collect both hardware and Taichi-related information and can also be used as
 performance debugging tools for developers.
 
-The fellows are profiling tools Taichi provides now:
-- `ScopedProfiler` is used to analyze the performance of the Taichi compiler.
-- `KernelProfiler` shows the performance of Taichi kernels, and detailed hardware metrics in its advanced mode.
+The follows are profiling tools Taichi provides now:
+- `ScopedProfiler` is used to analyze the performance of the Taichi JIT compiler (host).
+- `KernelProfiler` shows the performance of Taichi kernels (device), with detailed low-level performance metrics (such as memory bandwidth consumption) in its advanced mode.
 
 ## ScopedProfiler
 `ScopedProfiler` tracks the time spent on **host tasks** such as JIT compilation.
@@ -48,7 +49,7 @@ ti.print_profile_info()
 
 1. To enable this profiler, set `kernel_profiler=True` in `ti.init`.
 2. To display the profiling results, call `ti.print_kernel_profile_info()`. There are two modes of printing:
-    - In `'count'` mode (default mode), records with the same kernel name are counted as a profiling result,
+    - In `'count'` mode (default), records with the same kernel name are counted as a profiling result,
     and then presented in a statistical perspective.
     - In `'trace'` mode, the profiler shows you a list of kernels that were launched on hardware during the profiling period.
     This mode provides more detailed performance information and runtime hardware metrics for each kernel.
@@ -113,7 +114,7 @@ Currently the result of `KernelProfiler` could be incorrect on OpenGL backend du
 For the CUDA backend, `KernelProfiler` has an experimental GPU profiling toolkit, Nvidia CUPTI, which provides low and
 deterministic profiling overhead and is able to capture more than 6000 hardware metrics.
 
-Prerequisites to use CUPTI:
+Prerequisites to using CUPTI:
 1. Install CUDA Toolkit.
 2. Add environment variable:
     `export CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda` to your shell configuration files such as `~/.bashrc` and `~/.zshrc`.

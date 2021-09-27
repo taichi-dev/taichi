@@ -26,7 +26,7 @@ introduce the **thread hierarchy** on modern GPU architectures.
 From a fine-grained to a coarse-grained level, the computation units can be
 defined as: **iteration** \< **thread** \< **block** \< **grid**.
 
-- **iteration**: Iteration is the **body of a for-loop**. Each
+- **iteration**: An iteration is the **body of a for-loop**. Each
   iteration corresponding to a specific `i` value in for-loop.
 - **thread**: Iterations are grouped into threads. A thread is the
   minimal unit that is parallelized. All iterations within a thread

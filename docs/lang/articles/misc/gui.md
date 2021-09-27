@@ -10,7 +10,7 @@ Taichi has a built-in GUI system to help users visualize results.
 ## Create a window
 
 [`ti.GUI(name, res)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=gui%20gui#taichi.misc.gui.GUI)
-creates a window. If `res` is scalar, then width will be equal to height.
+creates a window.
 
 The following codes show how to create a window of resolution `640x360`:
 
@@ -35,7 +35,7 @@ while gui.running:
 ## Display a window
 
 [`gui.show(filename)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=show#taichi.misc.gui.GUI.show)
-helps display a window. If `filename` is specified, a screenshot will be saved to the file specified by the name. For example, the following saves frames of the window to `.png`s:
+helps display a window. If `filename` is specified, a screenshot will be saved to the path. For example, the following saves frames of the window to `.png`s:
 
     for frame in range(10000):
         render(img)
@@ -49,7 +49,7 @@ Taichi's GUI supports painting simple geometric objects, such as lines, triangle
 
 :::note
 
-The position parameter `pos` expects input of 2-element tuples, whose values are the relative position of the object.
+The position parameter of every drawing API expects input of 2-element tuples, whose values are the relative position of the object.
 (0.0, 0.0) stands for the lower left corner of the window, and (1.0, 1.0) stands for the upper right corner.
 
 Acceptable input for positions are taichi fields or numpy arrays. Primitive arrays in python are NOT acceptable.
@@ -116,8 +116,8 @@ The color and radius of circles can be further specified with additional paramet
 [`gui.circles(pos)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=circles#taichi.misc.gui.GUI.circles)
 draws solid circles.
 
-The color and radius of circles can be further specified with additional parameters. For unified color, use color to parameter.
-For multiple colors, use palette and palette_indices instead.
+The color and radius of circles can be further specified with additional parameters. For a single color, use the `color` parameter.
+For multiple colors, use `palette` and `palette_indices` instead.
 
 For examples:
 ```python

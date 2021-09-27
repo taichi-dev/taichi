@@ -14,8 +14,8 @@ class GUI:
         name (str, optional): The name of the GUI to be constructed.
             Default is 'Taichi'.
         res (Union[int, List[int]], optional): The resolution of created
-            GUI. Default is 512*512.
-        background_color (int, optional): The background color of creted GUI.
+            GUI. Default is 512*512. If `res` is scalar, then width will be equal to height.
+        background_color (int, optional): The background color of created GUI.
             Default is 0x000000.
         show_gui (bool, optional): Specify whether to render the GUI. Default is True.
         fullscreen (bool, optional): Specify whether to render the GUI in

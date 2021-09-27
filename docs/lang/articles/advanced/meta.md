@@ -115,10 +115,10 @@ def foo():
 
 ## Compile-time evaluations
 
-Using compile-time evaluation will allow certain computations to be executed when kernels are being instantiating. This helps the compiler to conduct optimization and reduce the
-certain computations overhead at runtime:
+Using compile-time evaluation allows for some computation to be executed when kernels are instantiated. This helps the compiler to conduct optimization and reduce
+computational overhead at runtime:
 
-- Use `ti.static` for compile-time branching (for those who come from
+- Use `ti.static` for compile-time branching (for those who are familiar with
   C++17, this is similar to [if
   constexpr](https://en.cppreference.com/w/cpp/language/if).):
 

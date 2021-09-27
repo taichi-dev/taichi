@@ -62,7 +62,7 @@ The line `ti.init(arch=ti.cpu)` in the test above means that it will only test o
 import taichi as ti
 
 # will test against both CPU and CUDA backends
-@ti.test(arch = [ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda])
 def test_log10():
     r = ti.field(ti.f32, ())
 

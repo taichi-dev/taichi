@@ -45,7 +45,7 @@ a.inc()
 
 ### Inherit of data-oriented class
 
-The *data-oriented* property will be automatically carried beyond the Python class inheriting. Which means that, the kernels could be called while any of the ancestor class is decorated by `@ti.data_oriented` decorator.
+The *data-oriented* property will be automatically carried beyond the Python class inheriting. This means the **Taichi Kernel** could be called while any of the ancestor classes are decorated by the `@ti.data_oriented` decorator.
 
 An example:
 ```python
@@ -85,12 +85,12 @@ class DeviatedClass(DataOrientedClass):
 a = DeviatedClass()
 a.add(1)
 a.sub(1)
-print(a.count())
+print(a.count()) # Output: 0
 
 
 b = DataOrientedClass()
 b.add(2)
-print(b.count())
+print(b.count()) # Output: 1
 
 c = BaseClass()
 # c.add(3)

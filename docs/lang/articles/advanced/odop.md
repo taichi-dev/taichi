@@ -41,7 +41,63 @@ a = TiArray(32)
 a.inc()
 ```
 
-## Walkaround
+## Some walkaround about Python
+
+### Inherit of data-oriented class
+
+The *data-oriented* property will be automatically carried beyond the Python class inheriting. Which means that, the kernels could be called while any of the ancestor class is decorated by `@ti.data_oriented` decorator.
+
+An example:
+```python
+import taichi as ti
+
+ti.init(arch=ti.cuda)
+
+class BaseClass:
+    def __init__(self):
+        self.n = 10
+        self.num = ti.field(dtype=ti.i32, shape=(self.n, ))
+
+    @ti.kernel
+    def count(self) -> ti.i32:
+        ret = 0
+        for i in range(self.n):
+            ret += self.num[i]
+        return ret
+
+    @ti.kernel
+    def add(self, d: ti.i32):
+        for i in range(self.n):
+            self.num[i] += d
+
+
+@ti.data_oriented
+class DataOrientedClass(BaseClass):
+    pass
+
+class DeviatedClass(DataOrientedClass):
+    @ti.kernel
+    def sub(self, d: ti.i32):
+        for i in range(self.n):
+            self.num[i] -= d
+
+
+a = DeviatedClass()
+a.add(1)
+a.sub(1)
+print(a.count())
+
+
+b = DataOrientedClass()
+b.add(2)
+print(b.count())
+
+c = BaseClass()
+# c.add(3)
+# print(c.count())
+# These two lines would cause error...
+```
+
 
 ### Python-built-in-decorators
 
@@ -128,7 +184,7 @@ import taichi as ti
 ti.init(arch=ti.cuda)
 
 @ti.data_oriented
-class Counter():
+class Counter:
     num_ = ti.field(dtype=ti.i32, shape=(32, ))
     def __init__(self, data_range):
         self.range = data_range

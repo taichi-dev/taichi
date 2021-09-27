@@ -51,7 +51,7 @@ ti.print_profile_info()
 1. To enable this profiler, set `kernel_profiler=True` in `ti.init`.
 2. To display the profiling results, call `ti.print_kernel_profile_info()`. There are two modes of printing:
     - In `'count'` mode (default), the profiling records with the same kernel name are counted as a profiling result,
-    and then and then the statistics are presented.
+    and then the statistics are presented.
     - In `'trace'` mode, the profiler shows you a list of kernels that were launched on hardware during the profiling period.
     This mode provides more detailed performance information and runtime hardware metrics for each kernel.
 3. To clear records in this profiler, call `ti.clear_kernel_profile_info()`.

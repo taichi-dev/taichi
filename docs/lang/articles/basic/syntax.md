@@ -45,10 +45,10 @@ For people from CUDA, Taichi kernels are similar to `__global__` functions.
 Kernels can have multiple arguments, which support passing values from Python-scope to Taichi-scope conveniently.
 
 :::note
-For kernels executed on OpenGL and cc backends, the number of arguments is limited to 8.
+For kernels executed on OpenGL and CC backends, the number of arguments is limited to 8.
 :::
 
-Kernel arguments must be type-hinted:
+Kernel arguments must be type hinted:
 
 ```python {2}
 @ti.kernel
@@ -135,7 +135,7 @@ type-hints respectively.
 For differentiable programming related features, there are a few more constraints
 on kernel structures. See the [**Kernel Simplicity Rule**](../advanced/differentiable_programming.md#kernel-simplicity-rule).
 
-Also, please do not specify a return value for kernels in differentiable
+Besides, please do not specify a return value for kernels in differentiable
 programming, since the return value will not be tracked by automatic
 differentiation. Instead, it is recommended to store the result into a global variable (e.g.
 `loss[None]`).
@@ -159,7 +159,7 @@ def my_kernel():
 my_kernel()    # call kernels from Python-scope
 ```
 
-Taichi functions can only called from **Taichi-scope**.
+Taichi functions can only be called from **Taichi-scope**.
 
 :::note
 For people from CUDA, Taichi functions are similar to `__device__` functions.
@@ -193,7 +193,7 @@ def my_kernel():
     ...
 ```
 
-Function arguments are passed by value. So changes made inside function
+Function arguments are passed by value. So changes made inside the function
 scope won't affect the original value in the caller:
 
 ```python {3,9,11}

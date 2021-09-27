@@ -61,16 +61,42 @@ normalized = deprecated('ti.normalized(a)',
 
 cfg = default_cfg()
 x86_64 = _ti_core.x64
+"""The X64 CPU backend.
+"""
 x64 = _ti_core.x64
+"""The X64 CPU backend.
+"""
 arm64 = _ti_core.arm64
+"""The ARM CPU backend.
+"""
 cuda = _ti_core.cuda
+"""The CUDA backend.
+"""
 metal = _ti_core.metal
+"""The Apple Metal backend.
+"""
 opengl = _ti_core.opengl
+"""The OpenGL backend. OpenGL 4.3 required.
+"""
+# Skip annotating this one because it is barely maintained.
 cc = _ti_core.cc
 wasm = _ti_core.wasm
+"""The WebAssembly backend.
+"""
 vulkan = _ti_core.vulkan
+"""The Vulkan backend.
+"""
 gpu = [cuda, metal, opengl, vulkan]
+"""A list of GPU backends supported on the current system.
+
+When this is used, Taichi automatically picks the matching GPU backend. If no
+GPU is detected, Taichi falls back to the CPU backend.
+"""
 cpu = _ti_core.host_arch()
+"""A list of CPU backends supported on the current system.
+
+When this is used, Taichi automatically picks the matching CPU backend.
+"""
 timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()
 timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
 
@@ -212,6 +238,10 @@ def is_extension_supported(arch, ext):
 
 
 def reset():
+    """Resets Taichi to its initial state.
+
+    This would destroy all the fields and kernels.
+    """
     _ti_core.reset_snode_access_flag()
     impl.reset()
     global runtime
@@ -286,7 +316,24 @@ def init(arch=None,
          default_ip=None,
          _test_mode=False,
          **kwargs):
+    """Initializes the Taichi runtime.
 
+    This should always be the entry point of your Taichi program. Most
+    importantly, it sets the backend used throughout the program.
+
+    Args:
+        arch: Backend to use. This is usually :const:`~taichi.lang.cpu` or :const:`~taichi.lang.gpu`.
+        default_fp (Optional[type]): Default floating-point type.
+        default_fp (Optional[type]): Default integral type.
+        **kwargs: Taichi provides a large amount of flags for configuration. Below we list a few
+            most frequently used ones. For a complete list, please check out
+            https://github.com/taichi-dev/taichi/blob/master/taichi/program/compile_config.h.
+
+            * cpu_max_num_threads (int): Sets the number of threads used by the CPU thread pool.
+            * debug (bool): Enable the debug mode, under which Taichi does a few more things like boundary checks.
+            * print_ir (bool): Print the CHI IR of the Taichi kernels
+            * packed (bool): Enables the packed memory layout. See https://docs.taichi.graphics/docs/lang/articles/advanced/layout
+    """
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
     # ti.reset() could override the args to their default values.
@@ -398,6 +445,11 @@ def no_activate(*args):
 
 
 def block_local(*args):
+    """Hints Taichi to cache the list of fields into the shared memory.
+
+    Args:
+        *args (List[Taichi field]): A list of sparse Taichi fields.
+    """
     if ti.current_cfg().dynamic_index:
         raise InvalidOperationError(
             'dynamic_index is not allowed when block_local is turned on.')

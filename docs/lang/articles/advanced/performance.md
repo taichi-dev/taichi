@@ -174,7 +174,7 @@ not modify `a`, if a block-cached field does get written, Taichi would also gene
 code that writes the buffer back to the global memory.
 
 :::note
-BLS is not without its cost. Remember that BLS is designed for the stencil
+BLS does not come for free. Remember that BLS is designed for the stencil
 computation, where there are a large amount of overlapped accesses to the global
 memory. If this is not the case, the pre-loading/post-storing could actually
 hurt the performance.

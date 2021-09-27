@@ -501,6 +501,7 @@ class Kernel:
                     if isinstance(v, Ndarray):
                         v = v.arr
                     has_external_arrays = True
+                    use_torch = self.runtime.prog.config.use_torch
                     has_torch = util.has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
@@ -510,8 +511,7 @@ class Kernel:
                         launch_ctx.set_arg_nparray(actual_argument_slot,
                                                    int(tmp.ctypes.data),
                                                    tmp.nbytes)
-                    else:
-
+                    elif use_torch:
                         def get_call_back(u, v):
                             def call_back():
                                 u.copy_(v)
@@ -540,6 +540,12 @@ class Kernel:
                         launch_ctx.set_arg_nparray(
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement())
+                    else:
+                        tmp = v
+                        launch_ctx.set_arg_nparray(
+                            actual_argument_slot, int(tmp.data_ptr()),
+                            tmp.element_size() * tmp.nelement())
+
                     shape = v.shape
                     max_num_indices = _ti_core.get_max_num_indices()
                     assert len(

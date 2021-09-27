@@ -41,9 +41,17 @@ a = TiArray(32)
 a.inc()
 ```
 
-You can apply common class functions decorators, such as `@staticmethod`, to `ti.kernel`s and `ti.func`s.
+## Walkaround
 
-A longer example:
+### Python-built-in-decorators
+
+Common decorators that are pre-built in Python, `@staticmethod` and `@classmethod`, could decorate to a **Taichi kernel** in *data-oriented* class.
+
+:::note 
+`@property` decorator is not supported now. Would be fixed soon.
+:::
+
+`staticmethod` example :
 
 ```python
 import taichi as ti
@@ -111,4 +119,35 @@ with ti.Tape(loss=double_total):
 for i in range(arr.n):
     for j in range(arr.m):
         assert arr.val.grad[i, j] == 8
+```
+
+`classmethod` example:
+```python
+import taichi as ti
+
+ti.init(arch=ti.cuda)
+
+@ti.data_oriented
+class Counter():
+    num_ = ti.field(dtype=ti.i32, shape=(32, ))
+    def __init__(self, data_range):
+        self.range = data_range
+        self.add(data_range[0], data_range[1], 1)
+
+    @classmethod
+    @ti.kernel
+    def add(cls, l: ti.i32, r: ti.i32, d: ti.i32):
+        for i in range(l, r):
+            cls.num_[i] += d
+
+    @ti.kernel
+    def num(self) -> ti.i32:
+        ret = 0
+        for i in range(self.range[0], self.range[1]):
+            ret += self.num_[i]
+        return ret
+
+a = Counter((0, 5))
+b = Counter((4, 10))
+print(b.num())
 ```

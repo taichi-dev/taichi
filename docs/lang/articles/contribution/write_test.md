@@ -100,7 +100,7 @@ def test_log10():
 ## Using `ti.approx` for comparison with tolerance
 
 Sometimes the precision of math operations could be relatively low on certain backends such as OpenGL,
-e.g. `ti.log10(100)` may return `2.000001` or `1.999999` in this case.
+e.g., `ti.log10(100)` may return `2.000001` or `1.999999` in this case.
 
 Adding tolerance with `ti.approx` can be helpful to mitigate
 such errors on different backends, for example `2.001 == ti.approx(2)`

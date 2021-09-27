@@ -42,9 +42,9 @@ Normally, you don't have to worry about the performance nuances between
 different layouts, and you can just use the default one (simply by specifying
 `shape` when creating fields) as a start.
 
-However, when the field gets large, a proper data layout can be critical to
+However, when a field gets large, a proper data layout may be critical to
 performance, especially for memory-bound applications. A carefully designed
-data layout can have much better spacial locality, which will significantly
+data layout has much better spatial locality, which will significantly
 improve cache/TLB-hit rates and cache line utilization.
 
 Taichi decouples computation from data structures, and the Taichi compiler

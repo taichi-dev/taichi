@@ -6,7 +6,7 @@ sidebar_position: 1
 
 Taichi provides metaprogramming infrastructures. There are many benefits of metaprogramming in Taichi:
 
-- Enabling the development of dimensionality-independent codes, e.g., codes which are
+- Enabling the development of dimensionality-independent code, e.g., code which is
   adaptive for both 2D/3D physical simulations.
 - Improving runtime performance by moving computations from runtime to compile time.
 - Simplifying the development of Taichi standard library.
@@ -17,11 +17,11 @@ even if it has no template arguments. :::
 
 ## Template metaprogramming
 
-By using `ti.template()` as a argument type hint, a Taichi field can be passed into a kernel. Template programming also enables the codes to be reused for fields with different shapes:
+By using `ti.template()` as a argument type hint, a Taichi field can be passed into a kernel. Template programming also enables the code to be reused for fields with different shapes:
 
 ```python {2}
 @ti.kernel
-def copy1D(x: ti.template(), y: ti.template()):
+def copy_1D(x: ti.template(), y: ti.template()):
     for i in x:
         y[i] = x[i]
 
@@ -30,33 +30,36 @@ b = ti.field(ti.f32, 4)
 c = ti.field(ti.f32, 12)
 d = ti.field(ti.f32, 12)
 
-# Pass field a and b as arguments of the kernel `copy1D`:
-copy1D(a, b)
+# Pass field a and b as arguments of the kernel `copy_1D`:
+copy_1D(a, b)
 
 # Reuse the kernel for field c and d:
-copy1D(c, d)
+copy_1D(c, d)
 ```
 
+:::note
+The template parameters are inlined into the generated kernel after compilation.
+:::
 
 ## Dimensionality-independent programming using grouped indices
 
 Taichi provides `ti.grouped` syntax which supports grouping loop indices into a `ti.Vector`.
-It enables dimensionality-independent programming, i.e., codes are adaptive to scenarios of
+It enables dimensionality-independent programming, i.e., code are adaptive to scenarios of
 different dimensionalities automatically:
 
 ```python {3-10,15-16}
 @ti.kernel
-def copy1D(x: ti.template(), y: ti.template()):
+def copy_1D(x: ti.template(), y: ti.template()):
     for i in x:
         y[i] = x[i]
 
 @ti.kernel
-def copy2d(x: ti.template(), y: ti.template()):
+def copy_2d(x: ti.template(), y: ti.template()):
     for i, j in x:
         y[i, j] = x[i, j]
 
 @ti.kernel
-def copy3d(x: ti.template(), y: ti.template()):
+def copy_3d(x: ti.template(), y: ti.template()):
     for i, j, k in x:
         y[i, j, k] = x[i, j, k]
 
@@ -130,6 +133,10 @@ def static():
   if ti.static(enable_projection): # No runtime overhead
     x[0] = 1
 ```
+
+:::note
+One of the two branches of the `static if` will be discarded after compilation.
+:::
 
 - Use `ti.static` for forced loop unrolling:
 

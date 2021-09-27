@@ -6,7 +6,7 @@ sidebar_position: 1
 
 ## Taichi-scope vs Python-scope
 
-Codes decorated by `@ti.kernel` or `@ti.func` are in the **Taichi-scope**.
+Code decorated by `@ti.kernel` or `@ti.func` is in the **Taichi-scope**.
 
 They will be compiled by the Taichi compiler and executed on CPU or GPU devices in parallel with high performance.
 
@@ -14,9 +14,9 @@ They will be compiled by the Taichi compiler and executed on CPU or GPU devices 
 For people from CUDA, Taichi-scope = **device** side.
 :::
 
-Codes outside `@ti.kernel` or `@ti.func` are in the **Python-scope**.
+Code outside `@ti.kernel` or `@ti.func` is in the **Python-scope**.
 
-They are native Python codes and will not be compiled by the Taichi compiler.
+It is native Python code and will not be compiled by the Taichi compiler.
 
 :::note
 For people from CUDA, Python-scope = **host** side.

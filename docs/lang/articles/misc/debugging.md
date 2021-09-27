@@ -48,7 +48,7 @@ def inside_taichi_scope():
     # print(ray)
     # Print a struct directly in Taichi-scope has not been supported yet
     # Instead, use:
-    print('ray.ori = ', ray.ori, ', ray.dir = ', ray.dir, ', ray.len = ', ray.len)
+    print('ray.ori =', ray.ori, ', ray.dir =', ray.dir, ', ray.len =', ray.len)
     #=> ray.ori = [0.0, 0.0, 0.0], ray.dir = [0.0, 0.0, 1.0], ray.len = 1.0
 ```
 

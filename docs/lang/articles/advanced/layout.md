@@ -11,7 +11,7 @@ Make sure you have gone through [Fields](../basic/field).
 
 By default, all non-power-of-two dimensions of a field are automatically
 padded to a power of two. For instance, a field of shape `(18, 65)` will
-have internal shape `(32, 128)`. Although the padding has many benefits
+have an internal shape of `(32, 128)`. Although the padding has many benefits
 such as allowing fast and convenient bitwise operations for coordinate
 handling, it will consume potentially much more memory than you originally
 think.

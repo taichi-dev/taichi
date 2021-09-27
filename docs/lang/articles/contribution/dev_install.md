@@ -132,6 +132,11 @@ shipped with .NET).
 3. Execute `python3 -m taichi test` to run all the tests. It may take
   up to 5 minutes to run all tests.
 
+4. Execute `python3 setup.py clean` to clean up the local information of your
+  previous builds. This allows a fresh build without any cache from the previous
+  builds. Note that to uninstall the Taichi package from your Python
+  environment, please use `pip uninstall taichi`.
+
 ## Conda
 
 To avoid directly installing Taichi's dependencies into your existing

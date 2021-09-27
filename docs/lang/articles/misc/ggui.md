@@ -88,7 +88,7 @@ The positions/centers of geometries should be in the world-space coordinates.
 
 If a mesh has `num` triangles, the `indices` should be a scalar field with a shape of `num * 3` instead of a vector field.
 
-`normals` parameter for `scene.mesh` is optional.
+The `normals` parameter for `scene.mesh` is optional.
 :::
 
 

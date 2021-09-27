@@ -193,7 +193,7 @@ ti.root.dense(ti.i, N).place(pos, vel)
 ```
 
 Then `vel[i]` is placed right next to `pos[i]`, which can increase spatial
-locality and therefore increase performance.
+locality and therefore improve performance.
 
 ### Flat layouts versus hierarchical layouts
 

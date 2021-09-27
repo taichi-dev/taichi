@@ -75,7 +75,7 @@ def test_log10():
     assert r[None] == 2
 ```
 
-In this case, python test will execute this function on `ti.cpu` and `ti.cuda` backend separately.
+In this case, Taichi will execute this test case on both `ti.cpu` and `ti.cuda` backends.
 
 And you may test against **all backends** by simply not specifying the
 argument:

@@ -284,5 +284,5 @@ Now, Taichi supports the following extensions:
 | bls           | Block-local storage                                           |
 | assertion     | Run-time asserts in Taichi kernels                            |
 | extfunc       | Support inserting external functions calls or backend source  |
-| packed        | Packed mode, Shape will not be padded to a power of two       |
+| packed        | Packed mode: shapes will not be padded to powers of two       |
 | dynamic_index | Dynamic index support for both global and local tensors       |

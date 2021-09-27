@@ -273,7 +273,7 @@ def test_struct_for_pointer_block():
 
 Now, Taichi supports the following extensions:
 
-| Name          | Extension usage                                               |
+| Name          | Extension details                                             |
 | ------------- | ------------------------------------------------------------- |
 | sparse        | Sparse data structures                                        |
 | async_mode    | Asynchronous execution mode                                   |

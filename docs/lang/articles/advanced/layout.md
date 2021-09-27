@@ -16,9 +16,10 @@ such as allowing fast and convenient bitwise operations for accessing coordinate
 of hierarchical data layouts, it will consume potentially much more memory than
 expected.
 
-If you indeed want smaller memory usage, you could use the optional packed
-mode. In packed mode, no more padding will be applied so a field will not
-have a larger internal shape when some of its dimensions are not power-of-two.
+If you would like to reduce memory usage, you can use the optional packed
+mode. In packed mode, no padding is applied such that a field does not have a
+larger internal shape than the defined shape when some of its dimensions
+are not powers of two.
 The downside is that the runtime performance will regress slightly.
 
 A switch named `packed` for `ti.init()` decides whether to use packed mode:

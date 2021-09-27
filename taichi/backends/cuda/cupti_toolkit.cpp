@@ -808,6 +808,9 @@ CuptiToolkit::CuptiToolkit() {
 CuptiToolkit::~CuptiToolkit() {
   TI_NOT_IMPLEMENTED;
 }
+void reset_metrics(const std::vector<std::string> metrics) {
+  TI_NOT_IMPLEMENTED;
+}
 bool CuptiToolkit::init_cupti() {
   TI_NOT_IMPLEMENTED;
 }

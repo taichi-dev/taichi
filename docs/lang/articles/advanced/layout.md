@@ -39,7 +39,7 @@ Apart from shape and data type, you can also specify the data layout of a
 field in a recursive manner. This may allow you to achieve better performance.
 
 Normally, you don't have to worry about the performance nuances between
-different layouts, and should just use the default one (simply by specifying
+different layouts, and you can just use the default one (simply by specifying
 `shape` when creating fields) as a start.
 
 However, when the field gets large, a proper data layout can be critical to

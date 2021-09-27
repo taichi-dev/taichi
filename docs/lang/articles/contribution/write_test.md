@@ -246,7 +246,7 @@ def test_sparse_field():
 
 ## Requiring extension in tests
 
-If the test is depend on some extensions, you could add argument `require` in `@ti.test` decorator.
+If a test case depends on some extensions, you should add an argument `require` in the `@ti.test` decorator.
 
 ```python {1}
 @ti.test(require=ti.extension.sparse)

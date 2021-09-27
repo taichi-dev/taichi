@@ -181,7 +181,7 @@ hurt the performance.
 
 On top of that, recent generations of Nvidia's GPU cards have been closing the gap
 on the read-only access between the global memory and the shared memory. Currently,
-we found BLS to be more effective for caching the destinations of the atomic operations. 
+we found BLS to be more effective for caching the destinations of the atomic operations.
 
 As a rule of thumb, run benchmarks to decide whether to enable BLS or not.
 :::

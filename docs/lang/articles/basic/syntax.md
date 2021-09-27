@@ -34,7 +34,7 @@ def my_kernel():
 my_kernel()
 ```
 
-Kernels should be called from **Python-scope**, nested kernels are not supported.
+Kernels should be called from **Python-scope**. Nested kernels are not supported.
 
 :::note
 For people from CUDA, Taichi kernels are similar to `__global__` functions.
@@ -58,7 +58,7 @@ my_kernel(24, 3.2)  # prints: 27.2
 :::note
 
 For now, Taichi supports scalars as kernel arguments. Specifying `ti.Matrix` or
-`ti.Vector` as argument is not supported:
+`ti.Vector` as an argument is not supported yet:
 
 ```python {2,6}
 @ti.kernel
@@ -108,13 +108,13 @@ def valid_kernel() -> ti.f32:
 
 @ti.kernel
 def error_kernel() -> ti.Matrix:
-    return ti.Matrix([[1, 0], [0, 1]])  # Error rasied
+    return ti.Matrix([[1, 0], [0, 1]])  # Compilation error
 
 @ti.kernel
 def error_kernel() -> (ti.i32, ti.f32):
     x = 1
     y = 0.5
-    return x, y  # Error rasied
+    return x, y  # Compilation error
 ```
 
 :::
@@ -210,7 +210,7 @@ def my_kernel():
 
 ### Advanced arguments
 
-By using `ti.template()` as type-hint, arguments are forced to be passed by reference:
+By using `ti.template()` as a type hint, arguments are forced to be passed by reference:
 
 ```python {3,9,11}
 @ti.func

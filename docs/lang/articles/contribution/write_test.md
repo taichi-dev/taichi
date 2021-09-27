@@ -283,6 +283,6 @@ Now, Taichi supports the following extensions:
 | adstack       | For keeping the history of mutable local variables            |
 | bls           | Block-local storage                                           |
 | assertion     | Run-time asserts in Taichi kernels                            |
-| extfunc       | Invoke external functions or backend source                   |
+| extfunc       | Support inserting external functions calls or backend source  |
 | packed        | Packed mode, Shape will not be padded to a power of two       |
 | dynamic_index | Dynamic index support for both global and local tensors       |

@@ -523,7 +523,7 @@ CuptiToolkit::~CuptiToolkit() {
   deinit_cupti();
 }
 
-void CuptiToolkit::reset_metrics(const std::vector<std::string> metrics) {
+void CuptiToolkit::reset_metrics(const std::vector<std::string> &metrics) {
   cupti_config_.metric_list.clear();
   uint metric_list_size =
       static_cast<uint>(CuptiMetricsDefault::CUPTI_METRIC_DEFAULT_TOTAL);
@@ -808,7 +808,7 @@ CuptiToolkit::CuptiToolkit() {
 CuptiToolkit::~CuptiToolkit() {
   TI_NOT_IMPLEMENTED;
 }
-void reset_metrics(const std::vector<std::string> metrics) {
+void CuptiToolkit::reset_metrics(const std::vector<std::string> &metrics) {
   TI_NOT_IMPLEMENTED;
 }
 bool CuptiToolkit::init_cupti() {

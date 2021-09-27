@@ -47,7 +47,7 @@ class KernelProfilerBase {
   // Needed for the CUDA backend since we need to know which task to "stop"
   using TaskHandle = void *;
 
-  virtual void reinit_with_metrics(const std::vector<std::string> metrics){
+  virtual void reinit_with_metrics(const std::vector<std::string> &metrics){
       TI_NOT_IMPLEMENTED};
 
   virtual void clear() = 0;

@@ -28,7 +28,7 @@ KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
 }
 
 void KernelProfilerCUDA::reinit_with_metrics(
-    const std::vector<std::string> metrics) {
+    const std::vector<std::string> &metrics) {
   TI_TRACE("KernelProfilerCUDA::reinit_with_metrics");
   if (tool_ == ProfilingToolkit::event) {
     return;
@@ -144,7 +144,7 @@ KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
   TI_NOT_IMPLEMENTED;
 }
 void KernelProfilerCUDA::reinit_with_metrics(
-    const std::vector<std::string> metrics) {
+    const std::vector<std::string> &metrics) {
   TI_NOT_IMPLEMENTED;
 }
 KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(

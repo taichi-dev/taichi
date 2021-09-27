@@ -33,7 +33,7 @@ class CuptiToolkit {
   bool begin_profiling();
   bool end_profiling();
   bool update_record(std::vector<KernelProfileTracedRecord> &traced_records);
-  void reset_metrics(const std::vector<std::string> metrics);
+  void reset_metrics(const std::vector<std::string> &metrics);
 
  private:
   CuptiConfig cupti_config_;

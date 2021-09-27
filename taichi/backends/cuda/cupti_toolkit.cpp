@@ -14,6 +14,19 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// Make sure these metrics can be captured in one pass (no kernal replay)
+// Metrics for calculating kernel elapsed time are collected by default.
+enum class CuptiMetricsDefault : uint {
+  CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS = 0,
+  CUPTI_METRIC_CORE_FREQUENCY_HZS = 1,
+  CUPTI_METRIC_DEFAULT_TOTAL = 2
+};
+
+const char *MetricListDeafult[]{
+    "smsp__cycles_elapsed.avg",  // CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS
+    "smsp__cycles_elapsed.avg.per_second",  // CUPTI_METRIC_CORE_FREQUENCY_HZS
+};
+
 bool check_cupti_availability() {
   void *device;
   int cc_major;
@@ -24,6 +37,9 @@ bool check_cupti_availability() {
     TI_WARN(
         "CUPTI profiler APIs unsupported on Device with compute capability < "
         "7.0 , fallback to default kernel profiler");
+    TI_WARN(
+        "See also: "
+        "https://docs.taichi.graphics/docs/lang/articles/misc/profiler");
     return false;
   }
   return true;
@@ -41,14 +57,16 @@ bool check_cupti_privileges() {
     TI_WARN("fallback to default kernel profiler : cuEvent");
     TI_WARN(
         "=================================================================");
-    TI_WARN("Run your commands with `sudo` to get administrative privileges");
+    TI_WARN("(Run your commands with `sudo` to get administrative privileges)");
     TI_WARN("Add option: `nvidia NVreg_RestrictProfilingToAdminUsers=0` ");
-    TI_WARN("to  /etc/modprobe.d/nvidia-kernel-common.conf");
+    TI_WARN("to /etc/modprobe.d/nvidia-kernel-common.conf");
     TI_WARN("then `reboot` should resolve the permission issue.");
-    TI_WARN("( Probably needs to run `update-initramfs -u`  before `reboot` )");
+    TI_WARN("(Probably needs to run `update-initramfs -u`  before `reboot`)");
     TI_WARN(
         "=================================================================");
-    // TODO : doc and https link
+    TI_WARN(
+        "See also: "
+        "https://docs.taichi.graphics/docs/lang/articles/misc/profiler");
     return false;
   }
   // For other errors , CuptiToolkit::init_cupti() will send error message.
@@ -493,9 +511,11 @@ bool create_counter_data_image(
 CuptiToolkit::CuptiToolkit() {
   TI_TRACE("CuptiToolkit::CuptiToolkit() ");
   cupti_config_.metric_list.clear();
-  for (uint32_t idx = 0; idx < CuptiMetricsDefault::CUPTI_METRIC_DEFAULT_TOTAL;
-       idx++)
+  uint metric_list_size =
+      static_cast<uint>(CuptiMetricsDefault::CUPTI_METRIC_DEFAULT_TOTAL);
+  for (uint idx = 0; idx < metric_list_size; idx++) {
     cupti_config_.metric_list.push_back(MetricListDeafult[idx]);
+  }
 }
 
 CuptiToolkit::~CuptiToolkit() {
@@ -744,14 +764,12 @@ bool CuptiToolkit::update_record(
     RETURN_IF_NVPW_ERROR(
         false, NVPW_MetricsContext_EvaluateToGpuValues(&eval_to_gpu_params));
 
+    double kernel_elapsed_clk_nums = gpu_values[static_cast<uint>(
+        CuptiMetricsDefault::CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS)];
+    double core_frequency_hzs = gpu_values[static_cast<uint>(
+        CuptiMetricsDefault::CUPTI_METRIC_CORE_FREQUENCY_HZS)];
     traced_records[range_index].kernel_elapsed_time_in_ms =
-        gpu_values[CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS] /
-        gpu_values[CUPTI_METRIC_CORE_FREQUENCY_HZS] * 1000;  // from s to ms
-    // traced_records[range_index].memory_load_bytes  =
-    // gpu_values[CUPTI_METRIC_GLOBAL_LOAD_BYTES];
-    // traced_records[range_index].memory_store_bytes =
-    // gpu_values[CUPTI_METRIC_GLOBAL_STORE_BYTES];
-    // TODO add these metrics value to record(backend and frontend)
+        kernel_elapsed_clk_nums / core_frequency_hzs * 1000;  // from s to ms
   }
   return true;
 }

@@ -11,13 +11,13 @@ Taichi provides metaprogramming infrastructures. There are many benefits of meta
 - Improving runtime performance by moving computations from runtime to compile time.
 - Simplifying the development of Taichi standard library.
 
-:::note Taichi kernels are **lazily instantiated** and massive computations can
+:::note Taichi kernels are **lazily instantiated** and large amounts of computation can
 be executed at **compile-time**. Every kernel in Taichi is a template kernel,
 even if it has no template arguments. :::
 
 ## Template metaprogramming
 
-By using `ti.template()` as a argument type hint, a Taichi field can be passed into a kernel. Template programming also enable the codes to be reused for fields with different shape:
+By using `ti.template()` as a argument type hint, a Taichi field can be passed into a kernel. Template programming also enables the codes to be reused for fields with different shapes:
 
 ```python {2}
 @ti.kernel
@@ -40,7 +40,9 @@ copy1D(c, d)
 
 ## Dimensionality-independent programming using grouped indices
 
-Taichi provides `ti.grouped` syntax which supports grouping loop indices into a `ti.Vector`. It enables dimensionality-independent programming, i.e., codes are adaptive to scenarios of different dimensions automatically:
+Taichi provides `ti.grouped` syntax which supports grouping loop indices into a `ti.Vector`.
+It enables dimensionality-independent programming, i.e., codes are adaptive to scenarios of
+different dimensionalities automatically:
 
 ```python {3-10,15-16}
 @ti.kernel
@@ -58,7 +60,7 @@ def copy3d(x: ti.template(), y: ti.template()):
     for i, j, k in x:
         y[i, j, k] = x[i, j, k]
 
-# Kernels listed above can be unified by one kernel using `ti.grouped`:
+# Kernels listed above can be unified into one kernel using `ti.grouped`:
 @ti.kernel
 def copy(x: ti.template(), y: ti.template()):
     for I in ti.grouped(y):
@@ -97,8 +99,8 @@ For sparse fields, the full domain shape will be returned.
 
 ## Matrix & vector metadata
 
-For matrices, `matrix.m` and `matrix.n` returns the number of columns and rows respectively.
-For vectors, they are treated as matrices with one column in Taichi, `vector.n` is the number of elements of the vector.
+For matrices, `matrix.m` and `matrix.n` returns the number of columns and rows, respectively.
+For vectors, they are treated as matrices with one column in Taichi, where `vector.n` is the number of elements of the vector.
 
 ```python {4-5,7-8}
 @ti.kernel

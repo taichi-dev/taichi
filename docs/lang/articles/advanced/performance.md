@@ -28,7 +28,7 @@ defined as: **iteration** \< **thread** \< **block** \< **grid**.
 
 - **iteration**: Iteration is the **body of a for-loop**. Each
   iteration corresponding to a specific `i` value in for-loop.
-- **thread**: Iterations are grouped into threads. Thread is the
+- **thread**: Iterations are grouped into threads. A thread is the
   minimal unit that is parallelized. All iterations within a thread
   are executed in **serial**. We usually use 1 iteration per thread
   for maximizing parallel performance.

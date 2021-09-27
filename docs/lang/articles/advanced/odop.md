@@ -113,7 +113,7 @@ print(a.y)
 ```
 
 
-## Some walkaround about Python
+## Some workaround about Python
 
 ### Inherit of data-oriented class
 

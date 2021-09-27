@@ -167,9 +167,9 @@ Now their memory layout is:
 #           x[0]  x[1]  x[2]  y[0]  y[1]  y[2]
 ```
 
-**To improve spatial locality of memory accesses, it's sometimes helpful to
-place the data elements within relatively close addresses if they are often
-accessed together.** Take a simple 1D wave equation solver as an example:
+**To improve spatial locality of memory accesses, it may be helpful to
+place data elements that are often accessed together within
+relatively close addresses.** Take a simple 1D wave equation solver as an example:
 
 ```python
 N = 200000

@@ -1,5 +1,18 @@
 #pragma once
 
+#include "taichi/common/core.h"
+#include "taichi/program/kernel.h"
+#include "taichi/program/program.h"
+#include "taichi/system/dynamic_loader.h"
+#include "taichi/util/action_recorder.h"
+#include "struct_cc.h"
+#include "cc_program.h"
+#include "cc_runtime.h"
+#include "cc_kernel.h"
+#include "cc_layout.h"
+#include "cc_utils.h"
+#include "codegen_cc.h"
+#include "context.h"
 #include "taichi/lang_util.h"
 #include <vector>
 #include <memory>
@@ -10,55 +23,73 @@ TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
 
-class SNode;
-struct Context;
+using namespace taichi::lang::cccp;
+using CCFuncEntryType = void(cccp::CCContext *);
 
-namespace cccp {
-
-class CCKernel;
-class CCLayout;
-class CCRuntime;
-struct CCContext;
-
-using CCFuncEntryType = void(CCContext *);
-
-class CCProgram {
-  // Launch C compiler to compile generated source code, and run them
+class CCProgramImpl : public ProgramImpl {
  public:
-  CCProgram(Program *program);
-  ~CCProgram();
+  explicit CCProgramImpl(CompileConfig &config);
 
-  void add_kernel(std::unique_ptr<CCKernel> kernel);
-  CCFuncEntryType *load_kernel(std::string const &name);
-  void compile_layout(SNode *root);
-  void init_runtime();
-  void relink();
+  FunctionType compile(Kernel *kernel, OffloadedStmt *) override;
+
+  std::size_t get_snode_num_dynamically_allocated(
+      SNode *snode,
+      uint64 *result_buffer) override {
+    return 0;  // TODO: support sparse in cc.
+  }
+
+  void materialize_runtime(MemoryPool *memory_pool,
+                           KernelProfilerBase *,
+                           uint64 **result_buffer_ptr) override;
+
+  void materialize_snode_tree(SNodeTree *tree,
+                              std::vector<std::unique_ptr<SNodeTree>> &,
+                              std::unordered_map<int, SNode *> &,
+                              uint64 *result_buffer) override;
+
+  void synchronize() override {
+    // Not implemented yet.
+  }
+
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
+    // Not implemented yet.
+    return nullptr;
+  }
+
+  void destroy_snode_tree(SNodeTree *snode_tree) override {
+    // Not implemented yet.
+  }
 
   CCLayout *get_layout() {
-    return layout.get();
+    return layout_.get();
   }
 
   CCRuntime *get_runtime() {
-    return runtime.get();
+    return runtime_.get();
   }
+
+  ~CCProgramImpl() {
+  }
+
+  CCFuncEntryType *load_kernel(std::string const &name);
+  void relink();
 
   CCContext *update_context(Context *ctx);
   void context_to_result_buffer();
 
-  Program *const program;
-
  private:
-  std::vector<char> args_buf;
-  std::vector<char> root_buf;
-  std::vector<char> gtmp_buf;
-  std::vector<std::unique_ptr<CCKernel>> kernels;
-  std::unique_ptr<CCContext> context;
-  std::unique_ptr<CCRuntime> runtime;
-  std::unique_ptr<CCLayout> layout;
-  std::unique_ptr<DynamicLoader> dll;
-  std::string dll_path;
-  bool need_relink{true};
-};
+  void add_kernel(std::unique_ptr<CCKernel> kernel);
 
-}  // namespace cccp
+  std::vector<std::unique_ptr<CCKernel>> kernels_;
+  std::unique_ptr<CCContext> context_;
+  std::unique_ptr<CCRuntime> runtime_;
+  std::unique_ptr<CCLayout> layout_;
+  std::unique_ptr<DynamicLoader> dll_;
+  std::string dll_path_;
+  std::vector<char> args_buf_;
+  std::vector<char> root_buf_;
+  std::vector<char> gtmp_buf_;
+  uint64 *result_buffer_{nullptr};
+  bool need_relink_{true};
+};
 TLANG_NAMESPACE_END

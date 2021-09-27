@@ -2,12 +2,7 @@ import taichi as ti
 
 
 @ti.func
-def _inside(p, c, r):
-    return (p - c).norm_sqr() <= r * r
-
-
-@ti.func
-def taichi_logo(pos, scale=1 / 1.11):
+def taichi_logo(pos: ti.template(), scale: float = 1 / 1.11):
     p = (pos - 0.5) / scale + 0.5
     ret = -1
     if not (p - 0.50).norm_sqr() <= 0.52**2:

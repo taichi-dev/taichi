@@ -676,6 +676,7 @@ class DelayedIRModifier {
   std::vector<std::pair<Stmt *, VecStatement>> to_insert_after;
   std::vector<std::tuple<Stmt *, VecStatement, bool>> to_replace_with;
   std::vector<Stmt *> to_erase;
+  std::vector<std::pair<Stmt *, Block *>> to_extract_to_block_front;
   bool modified_{false};
 
  public:
@@ -688,6 +689,7 @@ class DelayedIRModifier {
   void replace_with(Stmt *stmt,
                     VecStatement &&new_statements,
                     bool replace_usages = true);
+  void extract_to_block_front(Stmt *stmt, Block *blk);
   bool modify_ir();
 
   // Force the next call of modify_ir() to return true.

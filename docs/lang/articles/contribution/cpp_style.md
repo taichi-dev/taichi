@@ -4,54 +4,31 @@ sidebar_position: 4
 
 # C++ style
 
-We generally follow [Google C++ Style
-Guide](https://google.github.io/styleguide/cppguide.html).
+We generally follow [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html). One major exception is the naming convention of functions: Taichi adopts the snake case for function naming, as opposed to the camel case [suggested in Google's style](https://google.github.io/styleguide/cppguide.html#Function_Names), e.g. `this_is_a_taichi_function()`.
 
-## Naming
+Below we highlight some of the most widely used styles.
 
-- Variable names should consist of lowercase words connected by
-  underscores, e.g. `llvm_context`.
+## Naming conventions
 
-- Class and struct names should consist of words with first letters
-  capitalized, e.g. `CodegenLLVM`.
+- Class and struct names should use the camel case, e.g. `CodegenLlvm`.
+  - Prefer capitalizing only the first letter of an acronym/abbreviation ([examples](https://google.github.io/styleguide/jsguide.html#naming-camel-case-defined)).
+- Variable names should use the snake case, e.g. `llvm_context`.
+- Private class member variable names should end with an `_`, e.g. `id_to_snodes_`.
+- Constant names should use the camel case, with a prefix `k`, e.g. `constexpr int kTaichiMaxNumArgs = 64;`.
+- Macros should start with `TI_`, e.g. `TI_NOT_IMPLEMENTED`.
+  - In general, avoid using macros as much as possible.
+  - Avoid using `TI_NAMESPACE_BEGIN/END` in the new code.
 
-- Macros should be capital start with `TI`, such as `TI_INFO`,
-  `TI_IMPLEMENTATION`.
+## Rule of thumbs
 
-  - We do not encourage the use of macro, although there are cases
-    where macros are inevitable.
-
-- Filenames should consist of lowercase words connected by
-  underscores, e.g. `ir_printer.cpp`.
-
-## Dos
-
-- Use `auto` for local variables when appropriate.
-- Mark `override` and `const` when necessary.
-
-## Don'ts
-
-- C language legacies:
-
-  - `printf` (Use `fmtlib::print` instead).
-  - `new` and `free`. (Use smart pointers
-    `std::unique_ptr, std::shared_ptr` instead for ownership
-    management).
-  - `#include <math.h>` (Use `#include <cmath>` instead).
-
-- Exceptions (We are on our way to **remove** all C++ exception usages
-  in Taichi).
-
-- Prefix member functions with `m_` or `_`.
-
-- Virtual function call in constructors/destructors.
-
-- `NULL` (Use `nullptr` instead).
-
-- `using namespace std;` in the global scope.
-
-- `typedef` (Use `using` instead).
-
-## Automatic code formatting
-
-- Please run `ti format`
+- Use `const` as much as possible, e.g. function parameter types, class member functions, etc.
+- Provide default initializers to the class member variables, at least for the POD types.
+  ```cpp
+  class Foo {
+   private:
+    int x_{0};
+    char* buf_{nullptr};
+  };
+  ```
+- Embrace the smart pointers and avoid `new` and `delete`.
+- Avoid virtual function calls in the constructors or destructors ([explanation](https://wiki.sei.cmu.edu/confluence/display/cplusplus/OOP50-CPP.+Do+not+invoke+virtual+functions+from+constructors+or+destructors)).

@@ -13,9 +13,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_program.h"
 #include "taichi/backends/metal/metal_program.h"
-#include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
-#include "taichi/backends/vulkan/runtime.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/aot_module_builder.h"
 #include "taichi/program/function.h"
@@ -26,7 +24,6 @@
 #include "taichi/program/context.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/struct/snode_tree.h"
-#include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
@@ -87,13 +84,26 @@ class StructCompiler;
 
 class AsyncEngine;
 
+/**
+ * Note [Backend-specific ProgramImpl]
+ * We're working in progress to keep Program class minimal and move all backend
+ * specific logic to their corresponding backend ProgramImpls.
+
+ * If you are thinking about exposing/adding attributes/methods to Program
+ class,
+ * please first think about if it's general for all backends:
+ * - If so, please consider adding it to ProgramImpl class first.
+ * - Otherwise please add it to a backend-specific ProgramImpl, e.g.
+ * LlvmProgramImpl, MetalProgramImpl..
+ */
+
 class Program {
  public:
   using Kernel = taichi::lang::Kernel;
   Callable *current_callable{nullptr};
   CompileConfig config;
   bool sync{false};  // device/host synchronized?
-  std::unique_ptr<MemoryPool> memory_pool{nullptr};
+
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
 
   std::unordered_map<int, SNode *>
@@ -168,24 +178,6 @@ class Program {
   int get_snode_tree_size();
 
   void visualize_layout(const std::string &fn);
-
-  struct KernelProxy {
-    std::string name;
-    Program *prog;
-    bool grad;
-
-    Kernel *def(const std::function<void()> &func) {
-      return &(prog->kernel(func, name, grad));
-    }
-  };
-
-  KernelProxy kernel(const std::string &name, bool grad = false) {
-    KernelProxy proxy;
-    proxy.prog = this;
-    proxy.name = name;
-    proxy.grad = grad;
-    return proxy;
-  }
 
   Kernel &kernel(const std::function<void()> &body,
                  const std::string &name = "",
@@ -279,7 +271,7 @@ class Program {
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 
   LlvmProgramImpl *get_llvm_program_impl() {
-    return llvm_program_.get();
+    return static_cast<LlvmProgramImpl *>(program_impl_.get());
   }
 
  private:
@@ -290,31 +282,21 @@ class Program {
    */
   void materialize_snode_tree(SNodeTree *tree);
 
-  // OpenGL related data structures
-  std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
-  std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;
-  // Vulkan related data structures
-  std::optional<vulkan::CompiledSNodeStructs> vulkan_compiled_structs_;
-  std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
 
   std::vector<std::unique_ptr<Function>> functions_;
   std::unordered_map<FunctionKey, Function *> function_map_;
-  std::unique_ptr<LlvmProgramImpl> llvm_program_;
-  std::unique_ptr<MetalProgramImpl> metal_program_;
+
+  std::unique_ptr<ProgramImpl> program_impl_;
   float64 total_compilation_time_{0.0};
   static std::atomic<int> num_instances_;
   bool finalized_{false};
 
- public:
-#ifdef TI_WITH_CC
-  // C backend related data structures
-  std::unique_ptr<cccp::CCProgram> cc_program;
-#endif
+  std::unique_ptr<MemoryPool> memory_pool_{nullptr};
 };
 
 }  // namespace lang

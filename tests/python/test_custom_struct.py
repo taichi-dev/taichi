@@ -275,3 +275,27 @@ def test_compound_type_implicit_cast():
     assert type(float_value) == float and float_value == approx(6.0, rel=1e-4)
     float_value = i2f_python_scope()
     assert type(float_value) == float and float_value == approx(6.0, rel=1e-4)
+
+
+@ti.test()
+def test_local_struct_assign():
+    n = 32
+    vec3f = ti.types.vector(3, float)
+    line3f = ti.types.struct(linedir=vec3f, length=float)
+    mystruct = ti.types.struct(line=line3f, idx=int)
+
+    @ti.kernel
+    def run_taichi_scope():
+        y = line3f(0)
+        x = mystruct(0)
+        x.idx = 0
+        x.line = y
+
+    def run_python_scope():
+        y = line3f(0)
+        x = mystruct(0)
+        x.idx = 0
+        x.line = y
+
+    run_taichi_scope()
+    run_python_scope()

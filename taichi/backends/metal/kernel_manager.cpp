@@ -268,11 +268,10 @@ class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
   };
 
   explicit ListgenOpMtlKernel(Params &params)
-      : SparseRuntimeMtlKernelBase(params, /*args_size=*/sizeof(int32_t) * 3) {
-    // For such Metal kernels, it always takes in an args buffer of 3 int32's:
+      : SparseRuntimeMtlKernelBase(params, /*args_size=*/sizeof(int32_t) * 2) {
+    // For such Metal kernels, it always takes in an args buffer of 2 int32's:
     // args[0] = parent_snode_id
     // args[1] = child_snode_id
-    // args[2] = child_snode.total_num_self_from_root
     // Note that this args buffer has nothing to do with the one passed to
     // Taichi kernel. See taichi/backends/metal/shaders/runtime_kernels.metal.h
     const int parent_snode_id = params.snode()->parent->id;
@@ -280,15 +279,12 @@ class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
     auto *mem = reinterpret_cast<int32_t *>(args_mem_->ptr());
     mem[0] = parent_snode_id;
     mem[1] = child_snode_id;
-    const auto &sn_descs = *params.snode_descriptors;
-    mem[2] = total_num_self_from_root(sn_descs, child_snode_id);
     TI_DEBUG(
         "Registered ListgenOpMtlKernel: name={} num_threads={} "
         "parent_snode={} "
-        "child_snode={} max_num_elems={} ",
+        "child_snode={}",
         params.kernel_attribs->name,
-        params.kernel_attribs->advisory_total_num_threads, mem[0], mem[1],
-        mem[2]);
+        params.kernel_attribs->advisory_total_num_threads, mem[0], mem[1]);
     did_modify_range(args_buffer_.get(), /*location=*/0, args_mem_->size());
   }
 };
@@ -994,11 +990,18 @@ class KernelManager::Impl {
     wait_until_completed(cur_command_buffer_.get());
     create_new_command_buffer();
     profiler_->stop();
+
+    // print_runtime_debug();
   }
 
   void print_runtime_debug() {
     // If debugging is necessary, make sure this is called after
     // blit_buffers_and_sync().
+    int *root_base = reinterpret_cast<int *>(root_mem_->ptr());
+    for (int i = 0; i < 10; ++i) {
+      TI_INFO("root[{}]={}", i, root_base[i]);
+    }
+
     const auto &sn_descs = compiled_structs_.snode_descriptors;
     for (int i = 0; i < compiled_structs_.max_snodes; ++i) {
       auto iter = sn_descs.find(i);

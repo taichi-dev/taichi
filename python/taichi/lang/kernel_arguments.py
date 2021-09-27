@@ -30,52 +30,60 @@ def ext_arr():
 class ArgAnyArray:
     """Type annotation for arbitrary arrays, including external arrays and Taichi ndarrays.
 
-    For external arrays, we can treat it as a Taichi field with Vector or Matrix elements by specifying element shape and layout.
-    For Taichi vector/matrix ndarrays, we need to specify element shape and layout for type checking.
+    For external arrays, we can treat it as a Taichi field with Vector or Matrix elements by specifying element dim and layout.
+    For Taichi vector/matrix ndarrays, we will automatically identify element dim and layout. If they are explicitly specified, we will check compatibility between the actual arguments and the annotation.
 
     Args:
-        element_shape (Tuple[Int], optional): () if scalar elements (default), (n) if vector elements, and (n, m) if matrix elements.
-        layout (Layout, optional): Memory layout, AOS by default.
+        element_dim (Union[Int, NoneType], optional): None if not specified (will be treated as 0 for external arrays), 0 if scalar elements, 1 if vector elements, and 2 if matrix elements.
+        layout (Union[Layout, NoneType], optional): None if not specified (will be treated as Layout.AOS for external arrays), Layout.AOS or Layout.SOA.
     """
-    def __init__(self, element_shape=(), layout=Layout.AOS):
-        if len(element_shape) > 2:
+    def __init__(self, element_dim=None, layout=None):
+        if element_dim is not None and (element_dim < 0 or element_dim > 2):
             raise ValueError(
                 "Only scalars, vectors, and matrices are allowed as elements of ti.any_arr()"
             )
-        self.element_shape = element_shape
+        self.element_dim = element_dim
         self.layout = layout
 
     def extract(self, x):
         from taichi.lang.matrix import MatrixNdarray, VectorNdarray
-        from taichi.lang.ndarray import Ndarray, ScalarNdarray
-        element_dim = len(self.element_shape)
-        if isinstance(x, Ndarray):
-            if isinstance(x, ScalarNdarray) and element_dim != 0:
-                raise ValueError("Invalid argument passed to ti.any_arr()")
-            if isinstance(x, VectorNdarray) and (element_dim != 1 or
-                                                 self.element_shape[0] != x.n
-                                                 or self.layout != x.layout):
-                raise ValueError("Invalid argument passed to ti.any_arr()")
-            if isinstance(x,
-                          MatrixNdarray) and (element_dim != 2
-                                              or self.element_shape[0] != x.n
-                                              or self.element_shape[1] != x.m
-                                              or self.layout != x.layout):
-                raise ValueError("Invalid argument passed to ti.any_arr()")
-            return x.dtype, len(
-                x.shape) + element_dim, self.element_shape, self.layout
+        from taichi.lang.ndarray import ScalarNdarray
+        if isinstance(x, ScalarNdarray):
+            self.check_element_dim(x, 0)
+            return x.dtype, len(x.shape), (), Layout.AOS
+        if isinstance(x, VectorNdarray):
+            self.check_element_dim(x, 1)
+            self.check_layout(x)
+            return x.dtype, len(x.shape) + 1, (x.n, ), x.layout
+        if isinstance(x, MatrixNdarray):
+            self.check_element_dim(x, 2)
+            self.check_layout(x)
+            return x.dtype, len(x.shape) + 2, (x.n, x.m), x.layout
+        # external arrays
+        element_dim = 0 if self.element_dim is None else self.element_dim
+        layout = Layout.AOS if self.layout is None else self.layout
         shape = tuple(x.shape)
         if len(shape) < element_dim:
-            raise ValueError("Invalid argument passed to ti.any_arr()")
-        if element_dim > 0:
-            if self.layout == Layout.SOA:
-                if shape[:element_dim] != self.element_shape:
-                    raise ValueError("Invalid argument passed to ti.any_arr()")
-            else:
-                if shape[-element_dim:] != self.element_shape:
-                    raise ValueError("Invalid argument passed to ti.any_arr()")
-        return to_taichi_type(
-            x.dtype), len(shape), self.element_shape, self.layout
+            raise ValueError(
+                f"Invalid argument into ti.any_arr() - required element_dim={element_dim}, but the argument has only {len(shape)} dimensions"
+            )
+        element_shape = (
+        ) if element_dim == 0 else shape[:
+                                         element_dim] if layout == Layout.SOA else shape[
+                                             -element_dim:]
+        return to_taichi_type(x.dtype), len(shape), element_shape, layout
+
+    def check_element_dim(self, arg, arg_dim):
+        if self.element_dim is not None and self.element_dim != arg_dim:
+            raise ValueError(
+                f"Invalid argument into ti.any_arr() - required element_dim={self.element_dim}, but {arg} is provided"
+            )
+
+    def check_layout(self, arg):
+        if self.layout is not None and self.layout != arg.layout:
+            raise ValueError(
+                f"Invalid argument into ti.any_arr() - required layout={self.layout}, but {arg} is provided"
+            )
 
 
 any_arr = ArgAnyArray
@@ -144,8 +152,6 @@ class SparseMatrixEntry:
 
 
 class SparseMatrixProxy:
-    is_taichi_class = True
-
     def __init__(self, ptr):
         self.ptr = ptr
 
@@ -174,8 +180,12 @@ def decl_sparse_matrix():
 def decl_any_arr_arg(dtype, dim, element_shape, layout):
     dtype = cook_dtype(dtype)
     arg_id = _ti_core.decl_arg(dtype, True)
-    return AnyArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id),
-                    element_shape, layout)
+    element_dim = len(element_shape)
+    if layout == Layout.AOS:
+        element_dim = -element_dim
+    return AnyArray(
+        _ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim),
+        element_shape, layout)
 
 
 def decl_scalar_ret(dtype):

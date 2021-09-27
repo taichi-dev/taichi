@@ -293,7 +293,11 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
       global_offset += tensor_type->get_num_elements() *
                        data_type_size(tensor_type->get_element_type());
     } else {
-      global_offset += data_type_size(type);
+      std::size_t type_size = data_type_size(type);
+      // align global_offset to a multiple of type_size
+      global_offset = ((global_offset + type_size - 1) / type_size) * type_size;
+      ret = global_offset;
+      global_offset += type_size;
     }
     TI_ASSERT(global_offset < taichi_global_tmp_buffer_size);
     return ret;
@@ -329,7 +333,8 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
       return;
     auto top_level_ptr = SquashPtrOffset::run(stmt);
     // We don't support storing a pointer for now.
-    if (top_level_ptr->is<GlobalPtrStmt>())
+    if (top_level_ptr->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
+        (stmt->is<ArgLoadStmt>() && stmt->as<ArgLoadStmt>()->is_ptr))
       return;
     // Not yet allocated
     if (local_to_global.find(top_level_ptr) == local_to_global.end()) {
@@ -550,9 +555,11 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     }
 
     if (local_to_global_offset.find(op) == local_to_global_offset.end()) {
-      TI_ASSERT_INFO(op->is<ConstStmt>() || op->is<PtrOffsetStmt>() ||
-                         op->is<GlobalTemporaryStmt>(),
-                     "{} is not allowed here.", op->type());
+      TI_ASSERT_INFO(
+          op->is<ConstStmt>() || op->is<PtrOffsetStmt>() ||
+              op->is<GlobalTemporaryStmt>() || op->is<ExternalPtrStmt>() ||
+              (op->is<ArgLoadStmt>() && op->as<ArgLoadStmt>()->is_ptr),
+          "{} is not allowed here.", op->type());
       // For cases like ConstStmt
       auto copy = op->clone();
       stmt_to_offloaded[copy.get()] = offloaded;

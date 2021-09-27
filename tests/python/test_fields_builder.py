@@ -4,7 +4,7 @@ from taichi.lang.exception import InvalidOperationError
 import taichi as ti
 
 
-@ti.test(arch=[ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_fields_with_shape():
     n = 5
     x = ti.field(ti.f32, [n])
@@ -40,7 +40,7 @@ def test_fields_with_shape():
         assert x[i] == i
 
 
-@ti.test(arch=[ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_fields_builder_dense():
     n = 5
 
@@ -130,7 +130,7 @@ def test_fields_builder_pointer():
         assert x[i] == i * 3
 
 
-@ti.test(arch=[ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_fields_builder_destroy():
     def A(i):
         n = i * 10**3

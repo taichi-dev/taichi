@@ -113,6 +113,18 @@ def test_ndarray_2d():
             assert b[i, j] == i * j + (i + j + 1) * 2
 
 
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
+def test_ndarray_numpy_io():
+    n = 7
+    m = 4
+    a = ti.ndarray(ti.i32, shape=(n, m))
+    a.fill(2)
+    b = ti.ndarray(ti.i32, shape=(n, m))
+    b.from_numpy(np.ones((n, m), dtype=np.int32) * 2)
+    assert (a.to_numpy() == b.to_numpy()).all()
+
+
 @pytest.mark.parametrize('layout', layouts)
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl)
@@ -133,8 +145,27 @@ def test_matrix_ndarray_python_scope(layout):
 @ti.test(exclude=ti.opengl)
 def test_matrix_ndarray_taichi_scope(layout):
     @ti.kernel
-    def func(a: ti.any_arr(element_shape=(2, 2), layout=layout)):
+    def func(a: ti.any_arr()):
         for i in range(5):
+            for j, k in ti.ndrange(2, 2):
+                a[i][j, k] = j * j + k * k
+
+    m = ti.Matrix.ndarray(2, 2, ti.i32, 5, layout=layout)
+    func(m)
+    assert m[0][0, 0] == 0
+    assert m[1][0, 1] == 1
+    assert m[2][1, 0] == 1
+    assert m[3][1, 1] == 2
+    assert m[4][0, 1] == 1
+
+
+@pytest.mark.parametrize('layout', layouts)
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
+def test_matrix_ndarray_taichi_scope_struct_for(layout):
+    @ti.kernel
+    def func(a: ti.any_arr()):
+        for i in a:
             for j, k in ti.ndrange(2, 2):
                 a[i][j, k] = j * j + k * k
 
@@ -167,7 +198,7 @@ def test_vector_ndarray_python_scope(layout):
 @ti.test(exclude=ti.opengl)
 def test_vector_ndarray_taichi_scope(layout):
     @ti.kernel
-    def func(a: ti.any_arr(element_shape=(10, ), layout=layout)):
+    def func(a: ti.any_arr()):
         for i in range(5):
             for j in range(4):
                 a[i][j * j] = j * j
@@ -188,7 +219,7 @@ def test_vector_ndarray_taichi_scope(layout):
 @ti.test(exclude=ti.opengl)
 def test_compiled_functions():
     @ti.kernel
-    def func(a: ti.any_arr(element_shape=(10, ))):
+    def func(a: ti.any_arr(element_dim=1)):
         for i in range(5):
             for j in range(4):
                 a[i][j * j] = j * j
@@ -200,6 +231,64 @@ def test_compiled_functions():
     func(v)
     assert ti.get_runtime().get_num_compiled_functions() == 1
     import torch
-    v = torch.zeros((7, 10), dtype=torch.int32)
+    v = torch.zeros((6, 11), dtype=torch.int32)
     func(v)
-    assert ti.get_runtime().get_num_compiled_functions() == 1
+    assert ti.get_runtime().get_num_compiled_functions() == 2
+    v = ti.Vector.ndarray(10, ti.i32, 5, layout=ti.Layout.SOA)
+    func(v)
+    assert ti.get_runtime().get_num_compiled_functions() == 3
+
+
+# annotation compatibility
+
+
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(arch=ti.get_host_arch_list())
+def test_arg_not_match():
+    @ti.kernel
+    def func1(a: ti.any_arr(element_dim=1)):
+        pass
+
+    x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7))
+    with pytest.raises(
+            ValueError,
+            match=
+            r'Invalid argument into ti\.any_arr\(\) - required element_dim=1, but .* is provided'
+    ):
+        func1(x)
+
+    @ti.kernel
+    def func2(a: ti.any_arr(element_dim=2)):
+        pass
+
+    x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
+    with pytest.raises(
+            ValueError,
+            match=
+            r'Invalid argument into ti\.any_arr\(\) - required element_dim=2, but .* is provided'
+    ):
+        func2(x)
+
+    @ti.kernel
+    def func3(a: ti.any_arr(layout=ti.Layout.AOS)):
+        pass
+
+    x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7), layout=ti.Layout.SOA)
+    with pytest.raises(
+            ValueError,
+            match=
+            r'Invalid argument into ti\.any_arr\(\) - required layout=Layout\.AOS, but .* is provided'
+    ):
+        func3(x)
+
+    @ti.kernel
+    def func4(a: ti.any_arr(layout=ti.Layout.SOA)):
+        pass
+
+    x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
+    with pytest.raises(
+            ValueError,
+            match=
+            r'Invalid argument into ti\.any_arr\(\) - required layout=Layout\.SOA, but .* is provided'
+    ):
+        func4(x)

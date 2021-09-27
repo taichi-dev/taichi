@@ -3,8 +3,11 @@ on:
   release:
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#release
     types: [published]
+  # When triggered by schedule and workflow_dispatch, github.event.action is an empty string.
+  # We use this to distinguish which taichi to release.
   schedule:
     - cron: "0 0 * * *"
+  workflow_dispatch:
 
 jobs:
   # This job set environment matrix with respect to production release and nightly release.
@@ -26,11 +29,87 @@ jobs:
           [ -z "${{ github.event.action }}" ] || matrix_osx="[{\"name\":\"taichi\",\"python\":\"3.8\"},{\"name\":\"taichi\",\"python\":\"3.9\"}]"
           echo ::set-output name=matrix_osx::{\"include\":$(echo $matrix_osx)}\"
 
+  build_and_upload_linux:
+    name: Build and Upload (linux only)
+    needs: matrix_prep
+    strategy:
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    fail-fast: false
+    runs-on: [self-hosted, cuda, vulkan, cn, release]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Create Python Wheel
+        run: |
+          # We hacked here because conda activate in CI won't update python PATH
+          # automatically. So we don't activate and use desired python version
+          # directly.
+          export PATH=/home/buildbot/miniconda3/envs/$PYTHON/bin:$PATH
+          TAICHI_REPO_DIR=`pwd`
+          export PATH=$LLVM_LIB_ROOT_DIR/bin:/usr/local/cuda/bin:$PATH
+          export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
+          export CXX=clang++-8
+          python3 -m pip uninstall taichi taichi-nightly -y
+          python3 -m pip install -r requirements_dev.txt
+          python3 -m pip install twine
+          cd python
+          git fetch origin master
+          export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
+          python3 build.py build --project_name $PROJECT_NAME
+          cd ..
+          NUM_WHL=`ls dist/*.whl | wc -l`
+          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
+          python3 -m pip install dist/*.whl
+        env:
+          LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
+          BUILD_NUM_THREADS: 8
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          PROJECT_NAME: ${{ matrix.name }}
+          PYTHON: ${{ matrix.python }}
+
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.name }}-py${{ matrix.python }}-linux.whl
+          path: dist/*.whl
+
+      - name: Test
+        run: |
+          export PATH=/home/buildbot/miniconda3/envs/$PYTHON/bin:$PATH
+          python3 examples/algorithm/laplace.py
+          export DISPLAY=:1
+          hash -r
+          glewinfo
+          ti diagnose
+          ti changelog
+          ti test -vr2 -t2 -k "not ndarray"
+          # ndarray test might OOM if run with -t2.
+          # FIXME: unify this with presubmit.yml to avoid further divergence
+          ti test -vr2 -t1 -k "ndarray"
+        env:
+          PYTHON: ${{ matrix.python }}
+
+      - name: Upload PyPI
+        env:
+          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
+          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
+          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
+          PROJECT_NAME: ${{ matrix.name }}
+          PYTHON: ${{ matrix.python }}
+        run: |
+          export PATH=/home/buildbot/miniconda3/envs/$PYTHON/bin:$PATH
+          cd python
+          if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
+          elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
+
   build_and_upload_mac:
     name: Build and Upload (macOS only)
     needs: matrix_prep
     strategy:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    fail-fast: false
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
@@ -65,8 +144,14 @@ jobs:
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           pip install dist/*.whl
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
           PROJECT_NAME: ${{ matrix.name }}
+
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.name }}-py${{ matrix.python }}-macos.whl
+          path: dist/*.whl
 
       - name: Test
         run: |
@@ -90,6 +175,7 @@ jobs:
     needs: matrix_prep
     strategy:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix_osx) }}
+    fail-fast: false
     runs-on: [self-hosted, m1]
     defaults:
       run:
@@ -122,13 +208,21 @@ jobs:
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
 
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.name }}-py${{ matrix.python }}-macos-m1.whl
+          path: dist/*.whl
+
       - name: Upload PyPI
         env:
           # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
           PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
+          PYTHON: ${{ matrix.python }}
         run: |
+          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           cd python
           if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
           elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
@@ -138,6 +232,7 @@ jobs:
     needs: matrix_prep
     strategy:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    fail-fast: false
     runs-on: windows-latest
     steps:
       - name: Install 7Zip PowerShell
@@ -147,7 +242,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-          
+
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
@@ -155,9 +250,17 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
 
+      - name: Download And Install Vulkan
+        shell: powershell
+        run: |
+          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe" -OutFile VulkanSDK.exe
+          $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
+          $installer.WaitForExit();
+
       - name: Build Python Wheel
         shell: powershell
         run: |
+          $env:Path += ";C:/VulkanSDK/1.2.189.0/Bin"
           cd C:\
           Remove-item alias:curl
           curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO
@@ -177,8 +280,15 @@ jobs:
           $env:WHL = $(dir *.whl)
           python -m pip install $env:WHL
         env:
-          CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm
+          CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm -DTI_WITH_VULKAN:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
+          VULKAN_SDK: C:/VulkanSDK/1.2.189.0
+
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.name }}-py${{ matrix.python }}-windows.whl
+          path: dist/*.whl
 
       - name: Test
         shell: powershell

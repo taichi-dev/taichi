@@ -226,6 +226,13 @@ class Func:
             if annotation is inspect.Parameter.empty:
                 if i == 0 and self.classfunc:
                     annotation = template()
+                # TODO: pyfunc also need type annotation check when real function is enabled,
+                #       but that has to happen at runtime when we know which scope it's called from.
+                elif not self.pyfunc and impl.get_runtime(
+                ).experimental_real_function:
+                    raise KernelDefError(
+                        f'Taichi function `{self.func.__name__}` parameter `{arg_name}` must be type annotated'
+                    )
             else:
                 if not id(annotation
                           ) in primitive_types.type_ids and not isinstance(
@@ -283,17 +290,8 @@ class KernelArgError(Exception):
 
 
 def _get_global_vars(func):
-    # Discussions: https://github.com/taichi-dev/taichi/issues/282
-    global_vars = copy.copy(func.__globals__)
-
-    freevar_names = func.__code__.co_freevars
-    closure = func.__closure__
-    if closure:
-        freevar_values = list(map(lambda x: x.cell_contents, closure))
-        for name, value in zip(freevar_names, freevar_values):
-            global_vars[name] = value
-
-    return global_vars
+    closure_vars = inspect.getclosurevars(func)
+    return {**closure_vars.globals, **closure_vars.nonlocals}
 
 
 class Kernel:
@@ -325,9 +323,9 @@ class Kernel:
     def reset(self):
         self.runtime = impl.get_runtime()
         if self.is_grad:
-            self.compiled_functions = self.runtime.compiled_functions
-        else:
             self.compiled_functions = self.runtime.compiled_grad_functions
+        else:
+            self.compiled_functions = self.runtime.compiled_functions
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
@@ -434,8 +432,6 @@ class Kernel:
                     mode='exec'), global_vars, local_vars)
         compiled = local_vars[self.func.__name__]
 
-        taichi_kernel = _ti_core.create_kernel(kernel_name, self.is_grad)
-
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
         def taichi_ast_generator():
@@ -452,7 +448,9 @@ class Kernel:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None
 
-        taichi_kernel = taichi_kernel.define(taichi_ast_generator)
+        taichi_kernel = _ti_core.create_kernel(taichi_ast_generator,
+                                               kernel_name, self.is_grad)
+
         self.kernel_cpp = taichi_kernel
 
         assert key not in self.compiled_functions
@@ -752,10 +750,10 @@ def data_oriented(cls):
         >>>
         >>>     @ti.kernel
         >>>     def inc(self):
-        >>>         for i in x:
-        >>>             x[i] += 1
+        >>>         for i in self.x:
+        >>>             self.x[i] += 1.0
         >>>
-        >>> a = TiArray(42)
+        >>> a = TiArray(32)
         >>> a.inc()
 
     Args:

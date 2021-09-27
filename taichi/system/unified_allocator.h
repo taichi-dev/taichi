@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "taichi/program/arch.h"
+#include "taichi/backends/device.h"
 
 namespace taichi {
 class VirtualMemoryAllocator;
@@ -16,6 +17,7 @@ class UnifiedAllocator {
   std::unique_ptr<VirtualMemoryAllocator> cpu_vm;
 #if defined(TI_WITH_CUDA)
   void *_cuda_data;
+  DeviceAllocation cuda_alloc;
 #endif
   std::size_t size;
   Arch arch_;
@@ -23,12 +25,13 @@ class UnifiedAllocator {
   // put these two on the unified memory so that GPU can have access
  public:
   uint8 *data;
+  DeviceAllocation alloc{kDeviceNullAllocation};
   uint8 *head;
   uint8 *tail;
   std::mutex lock;
 
  public:
-  UnifiedAllocator(std::size_t size, Arch arch);
+  UnifiedAllocator(std::size_t size, Arch arch, Device *device);
 
   ~UnifiedAllocator();
 
@@ -56,6 +59,9 @@ class UnifiedAllocator {
   }
 
   UnifiedAllocator operator=(const UnifiedAllocator &) = delete;
+
+ private:
+  Device *device_{nullptr};
 };
 
 TLANG_NAMESPACE_END

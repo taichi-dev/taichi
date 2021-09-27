@@ -32,6 +32,7 @@ RUN apt-get update && \
                        libz-dev \
                        unzip
 
+
 # Install the latest version of CMAKE v3.20.2 from source
 WORKDIR /
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-x86_64.tar.gz
@@ -62,6 +63,7 @@ RUN $PYTHON -m pip install --user -r requirements_dev.txt
 RUN git submodule update --init --recursive --depth=1
 WORKDIR /taichi-dev/taichi
 WORKDIR python/
+ENV TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN:BOOL=OFF"
 RUN $PYTHON build.py build $TEST_OPTION
 WORKDIR ../
 RUN $PYTHON -m pip install dist/*.whl

@@ -82,7 +82,7 @@ def complex_sqr(z):
 
 @ti.kernel
 def paint(t: float):
-    for i, j in pixels:  # Parallized over all pixels
+    for i, j in pixels:  # Parallelized over all pixels
         c = ti.Vector([-0.8, ti.cos(t) * 0.2])
         z = ti.Vector([i / n - 1, j / n - 0.5]) * 2
         iterations = 0
@@ -161,7 +161,7 @@ allocator to allocate memory adaptively.
 ### Fields
 
 Taichi is a **data**-oriented programming language where dense or
-spatially-sparse fields are the first-class citizens. See [Scalar fields](../api/scalar_field.md) for more details on fields.
+spatially-sparse fields are the first-class citizens.
 
 In the code above, `pixels = ti.field(dtype=float, shape=(n * 2, n))`
 allocates a 2D dense field named `pixels` of size `(640, 320)` and

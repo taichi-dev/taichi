@@ -18,6 +18,7 @@ from taichi.lang.ops import *
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.sparse_matrix import SparseMatrix, SparseMatrixBuilder
+from taichi.lang.sparse_solver import SparseSolver
 from taichi.lang.struct import Struct
 from taichi.lang.transformer import TaichiSyntaxError
 from taichi.lang.type_factory_impl import type_factory
@@ -25,6 +26,7 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
 from taichi.misc.util import deprecated
+from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
@@ -34,18 +36,21 @@ core = _ti_core
 
 runtime = impl.get_runtime()
 
-i = indices(0)
-j = indices(1)
-k = indices(2)
-l = indices(3)
-ij = indices(0, 1)
-ji = indices(1, 0)
-jk = indices(1, 2)
-kj = indices(2, 1)
-ik = indices(0, 2)
-ki = indices(2, 0)
-ijk = indices(0, 1, 2)
-ijkl = indices(0, 1, 2, 3)
+i = axes(0)
+j = axes(1)
+k = axes(2)
+l = axes(3)
+ij = axes(0, 1)
+ik = axes(0, 2)
+il = axes(0, 3)
+jk = axes(1, 2)
+jl = axes(1, 3)
+kl = axes(2, 3)
+ijk = axes(0, 1, 2)
+ijl = axes(0, 1, 3)
+ikl = axes(0, 2, 3)
+jkl = axes(1, 2, 3)
+ijkl = axes(0, 1, 2, 3)
 
 outer_product = deprecated('ti.outer_product(a, b)',
                            'a.outer_product(b)')(Matrix.outer_product)
@@ -78,9 +83,15 @@ def kernel_profiler_print():
     return print_kernel_profile_info()
 
 
-def print_kernel_profile_info():
-    """Print the elapsed time(min,max,avg) of Taichi kernels on devices.
-    To enable this profiler, set `kernel_profiler=True` in `ti.init`.
+def print_kernel_profile_info(mode='count'):
+    """Print the profiling results of Taichi kernels.
+
+    To enable this profiler, set ``kernel_profiler=True`` in ``ti.init()``.
+    The default print mode is ``COUNT`` mode: print the statistical results (min,max,avg time) of Taichi kernels,
+    another mode ``TRACE``: print the records of launched Taichi kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
+
+    Args:
+        mode (str): the way to print profiling results
 
     Example::
 
@@ -95,16 +106,21 @@ def print_kernel_profile_info():
 
         >>> compute()
         >>> ti.print_kernel_profile_info() #[1]
+        >>> # equivalent calls :
+        >>> # ti.print_kernel_profile_info('count')
+
+        >>> ti.print_kernel_profile_info('trace')
 
     Note:
         [1] Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
     """
-    impl.get_runtime().prog.print_kernel_profile_info()
+    get_default_kernel_profiler().print_info(mode)
 
 
 def query_kernel_profile_info(name):
     """Query kernel elapsed time(min,avg,max) on devices using the kernel name.
+
     To enable this profiler, set `kernel_profiler=True` in `ti.init`.
 
     Args:
@@ -143,7 +159,7 @@ def query_kernel_profile_info(name):
         [2] Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
     """
-    return impl.get_runtime().prog.query_kernel_profile_info(name)
+    return get_default_kernel_profiler().query_info(name)
 
 
 @deprecated('kernel_profiler_clear()', 'clear_kernel_profile_info()')
@@ -152,20 +168,17 @@ def kernel_profiler_clear():
 
 
 def clear_kernel_profile_info():
-    """
-    Clear all KernelProfiler records.
-    """
-    impl.get_runtime().prog.clear_kernel_profile_info()
+    """Clear all KernelProfiler records."""
+    get_default_kernel_profiler().clear_info()
 
 
 def kernel_profiler_total_time():
-    """
-    Get elapsed time of all kernels recorded in KernelProfiler.
+    """Get elapsed time of all kernels recorded in KernelProfiler.
 
     Returns:
         time (double): total time in second
     """
-    return impl.get_runtime().prog.kernel_profiler_total_time()
+    return get_default_kernel_profiler().get_total_time()
 
 
 @deprecated('memory_profiler_print()', 'print_memory_profile_info()')
@@ -175,6 +188,7 @@ def memory_profiler_print():
 
 def print_memory_profile_info():
     """Memory profiling tool for LLVM backends with full sparse support.
+
     This profiler is automatically on.
     """
     impl.get_runtime().materialize()
@@ -365,6 +379,9 @@ def init(arch=None,
 
     if _test_mode:
         return spec_cfg
+
+    get_default_kernel_profiler().set_kernel_profiler_mode(
+        ti.cfg.kernel_profiler)
 
     # create a new program:
     impl.get_runtime().create_program()
@@ -598,6 +615,12 @@ def clear_all_gradients():
 
     for root_fb in FieldsBuilder.finalized_roots():
         visit(root_fb)
+
+
+def deactivate_all_snodes():
+    """Recursively deactivate all SNodes."""
+    for root_fb in FieldsBuilder.finalized_roots():
+        root_fb.deactivate_all()
 
 
 def benchmark(func, repeat=300, args=()):

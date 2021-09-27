@@ -1,6 +1,7 @@
 import numbers
 import warnings
 from types import FunctionType, MethodType
+from typing import Iterable
 
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
@@ -8,6 +9,7 @@ from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
+from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import MatrixField
 from taichi.lang.ndarray import ScalarNdarray
 from taichi.lang.snode import SNode
@@ -83,8 +85,10 @@ def expr_init_func(
 
 
 def begin_frontend_struct_for(group, loop_range):
-    if not isinstance(loop_range, (Field, SNode, _Root)):
-        raise TypeError('Can only iterate through Taichi fields')
+    if not isinstance(loop_range, (AnyArray, Field, SNode, _Root)):
+        raise TypeError(
+            'Can only iterate through Taichi fields/snodes (via template) or dense arrays (via any_arr)'
+        )
     if group.size() != len(loop_range.shape):
         raise IndexError(
             'Number of struct-for indices does not match loop variable dimensionality '
@@ -136,6 +140,8 @@ def subscript(value, *indices):
     index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
+        return value.subscript(*indices)
+    elif isinstance(value, SparseMatrixProxy):
         return value.subscript(*indices)
     elif isinstance(value, Field):
         var = value.get_field_members()[0].ptr
@@ -438,7 +444,7 @@ def inside_kernel():
 
 
 def index_nd(dim):
-    return indices(*range(dim))
+    return axes(*range(dim))
 
 
 class _UninitializedRootFieldsBuilder:
@@ -477,6 +483,13 @@ class _Root:
     def get_children(self):
         """Same as :func:`taichi.SNode.get_children`"""
         return _root_fb.root.get_children()
+
+    # TODO: Record all of the SNodeTrees that finalized under 'ti.root'
+    def deactivate_all(self):
+        warning(
+            """'ti.root.deactivate_all()' would deactivate all finalized snodes."""
+        )
+        ti.deactivate_all_snodes()
 
     @property
     def shape(self):
@@ -758,11 +771,21 @@ def one(x):
     return zero(x) + 1
 
 
-def indices(*x):
+def axes(*x: Iterable[int]):
+    """Defines a list of axes to be used by a field.
+
+    Args:
+        *x: A list of axes to be activated
+
+    Note that Taichi has already provided a set of commonly used axes. For example,
+    `ti.ij` is just `axes(0, 1)` under the hood.
+    """
     return [_ti_core.Axis(i) for i in x]
 
 
-def axes(*x):
+@deprecated("ti.indices", "ti.axes")
+def indices(*x):
+    """Same as :func:`~taichi.lang.impl.axes`."""
     return [_ti_core.Axis(i) for i in x]
 
 

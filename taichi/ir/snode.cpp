@@ -79,7 +79,7 @@ SNode &SNode::create_node(std::vector<Axis> axes,
     new_node.extractors[i].acc_shape = acc_shape;
     acc_shape *= new_node.extractors[i].shape;
   }
-  new_node.n = acc_shape;
+  new_node.num_cells_per_container = acc_shape;
   // infer extractors (only for POT)
   int acc_offsets = 0;
   for (int i = taichi_max_num_indices - 1; i >= 0; i--) {

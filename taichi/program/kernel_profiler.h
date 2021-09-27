@@ -12,36 +12,40 @@
 
 TLANG_NAMESPACE_BEGIN
 
-struct KernelProfileRecord {
+struct KernelProfileTracedRecord {
+  std::string name;
+  float kernel_elapsed_time_in_ms{0.0};
+  float time_since_base{0.0};  // for Timeline
+};
+
+struct KernelProfileStatisticalResult {
   std::string name;
   int counter;
   double min;
   double max;
   double total;
 
-  KernelProfileRecord(const std::string &name)
+  KernelProfileStatisticalResult(const std::string &name)
       : name(name), counter(0), min(0), max(0), total(0) {
   }
 
-  void insert_sample(double t);
+  void insert_record(double t);  // TODO replace `double time` with
+                                 // `KernelProfileTracedRecord record`
 
-  bool operator<(const KernelProfileRecord &o) const;
+  bool operator<(const KernelProfileStatisticalResult &o) const;
 };
 
 class KernelProfilerBase {
  protected:
-  std::vector<KernelProfileRecord> records;
-  double total_time_ms;
+  std::vector<KernelProfileTracedRecord> traced_records_;
+  std::vector<KernelProfileStatisticalResult> statistical_results_;
+  double total_time_ms_{0};
 
  public:
   // Needed for the CUDA backend since we need to know which task to "stop"
   using TaskHandle = void *;
 
-  void clear() {
-    sync();
-    total_time_ms = 0;
-    records.clear();
-  }
+  virtual void clear() = 0;
 
   virtual void sync() = 0;
 
@@ -62,13 +66,20 @@ class KernelProfilerBase {
 
   static void profiler_stop(KernelProfilerBase *profiler);
 
-  void print();
+  virtual void print();
+
+  virtual void trace(KernelProfilerBase::TaskHandle &task_handle,
+                     const std::string &task_name){TI_NOT_IMPLEMENTED};
 
   void query(const std::string &kernel_name,
              int &counter,
              double &min,
              double &max,
              double &avg);
+
+  std::vector<KernelProfileTracedRecord> get_traced_records() {
+    return traced_records_;
+  }
 
   double get_total_time() const;
 

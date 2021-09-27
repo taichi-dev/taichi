@@ -18,7 +18,7 @@ void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
   UniformBufferObject ubo;
   ubo.scene = scene.current_ubo_;
   ubo.color = info.color;
-  ubo.use_per_vertex_color = info.renderable_info.per_vertex_color.valid;
+  ubo.use_per_vertex_color = info.renderable_info.has_per_vertex_color;
   ubo.two_sided = info.two_sided;
 
   void *mapped = app_context_->device().map(uniform_buffer_);
@@ -27,11 +27,6 @@ void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
 }
 
 void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
-  if (info.renderable_info.vertices.matrix_rows != 3 ||
-      info.renderable_info.vertices.matrix_cols != 1) {
-    throw std::runtime_error("Mesh vertices requres 3-d vector fields");
-  }
-
   size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
   if (config_.ssbo_size != correct_ssbo_size) {
     resize_storage_buffers(correct_ssbo_size);

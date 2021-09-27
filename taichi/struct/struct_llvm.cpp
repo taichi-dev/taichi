@@ -25,7 +25,7 @@ StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        LlvmProgramImpl *prog,
                                        std::unique_ptr<llvm::Module> &&module)
     : StructCompilerLLVM(arch,
-                         &(prog->config),
+                         prog->config,
                          prog->get_llvm_context(arch),
                          std::move(module)) {
 }
@@ -116,7 +116,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
                   "non-CPU backends.");
     }
     snode.dt = TypeFactory::get_instance().get_bit_array_type(
-        snode.physical_type, ch_type, snode.n);
+        snode.physical_type, ch_type, snode.num_cells_per_container);
 
     DataType container_primitive_type(snode.physical_type);
     body_type = tlctx_->get_data_type(container_primitive_type);

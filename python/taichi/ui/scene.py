@@ -1,6 +1,7 @@
 import pathlib
 
 from taichi.core import ti_core as _ti_core
+from taichi.core.primitive_types import f32
 from taichi.lang.impl import default_cfg, field
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import kernel
@@ -8,6 +9,8 @@ from taichi.lang.matrix import Vector
 from taichi.lang.ops import atomic_add, get_addr
 
 from .camera import Camera
+from .staging_buffer import (copy_colors_to_vbo, copy_normals_to_vbo,
+                             copy_vertices_to_vbo, get_vbo_field)
 from .utils import get_field_info
 
 normals_field_cache = {}
@@ -16,8 +19,8 @@ normals_field_cache = {}
 def get_normals_field(vertices):
     if vertices not in normals_field_cache:
         N = vertices.shape[0]
-        normals = Vector.field(3, float, shape=(N, ))
-        normal_weights = field(float, shape=(N, ))
+        normals = Vector.field(3, f32, shape=(N, ))
+        normal_weights = field(f32, shape=(N, ))
         normals_field_cache[vertices] = (normals, normal_weights)
         return (normals, normal_weights)
     else:
@@ -74,6 +77,8 @@ def gen_normals(vertices, indices):
 
 
 class Scene(_ti_core.PyScene):
+    """A 3D scene, which can contain meshes and particles, and can be rendered on a canvas
+    """
     def __init__(self):
         super().__init__()
 
@@ -87,25 +92,50 @@ class Scene(_ti_core.PyScene):
              color=(0.5, 0.5, 0.5),
              per_vertex_color=None,
              two_sided=False):
-        vertices_info = get_field_info(vertices)
+        """Declare a mesh inside the scene.
+
+        Args:
+            vertices: a taichi 3D Vector field, where each element indicate the 3D location of a vertex.
+            indices: a taichi int field of shape (3 * #triangles), which indicate the vertex indices of the triangles. If this is None, then it is assumed that the vertices are already arranged in triangles order.
+            normals: a taichi 3D Vector field, where each element indicate the normal of a vertex. If this is none, normals will be automatically inferred from vertex positions.
+            color: a global color of the mesh as 3 floats representing RGB values. If `per_vertex_color` is provided, this is ignored.
+            per_vertex_color (Tuple[float]): a taichi 3D vector field, where each element indicate the RGB color of a vertex.
+            two_sided (bool): whether or not the triangles should be able to be seen from both sides.
+        """
+        vbo = get_vbo_field(vertices)
+        copy_vertices_to_vbo(vbo, vertices)
+        has_per_vertex_color = per_vertex_color is not None
+        if has_per_vertex_color:
+            copy_colors_to_vbo(vbo, per_vertex_color)
         if normals is None:
             normals = gen_normals(vertices, indices)
-        normals_info = get_field_info(normals)
+        copy_normals_to_vbo(vbo, normals)
+        vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
-        colors_info = get_field_info(per_vertex_color)
-        super().mesh(vertices_info, normals_info, colors_info, indices_info,
-                     color, two_sided)
 
-    def particles(
-            self,
-            vertices,
-            radius,
-            color=(0.5, 0.5, 0.5),
-            per_vertex_color=None,
-    ):
-        vertices_info = get_field_info(vertices)
-        colors_info = get_field_info(per_vertex_color)
-        super().particles(vertices_info, colors_info, color, radius)
+        super().mesh(vbo_info, has_per_vertex_color, indices_info, color,
+                     two_sided)
+
+    def particles(self,
+                  centers,
+                  radius,
+                  color=(0.5, 0.5, 0.5),
+                  per_vertex_color=None):
+        """Declare a set of particles within the scene.
+
+        Args:
+            centers: a taichi 3D Vector field, where each element indicate the 3D location of the center of a triangle.
+            color: a global color for the particles as 3 floats representing RGB values. If `per_vertex_color` is provided, this is ignored.
+            per_vertex_color (Tuple[float]): a taichi 3D vector field, where each element indicate the RGB color of a particle.
+            two_sided (bool): whether or not the triangles should be able to be seen from both sides.
+        """
+        vbo = get_vbo_field(centers)
+        copy_vertices_to_vbo(vbo, centers)
+        has_per_vertex_color = per_vertex_color is not None
+        if has_per_vertex_color:
+            copy_colors_to_vbo(vbo, per_vertex_color)
+        vbo_info = get_field_info(vbo)
+        super().particles(vbo_info, has_per_vertex_color, color, radius)
 
     def point_light(self, pos, color):
         super().point_light(pos, color)

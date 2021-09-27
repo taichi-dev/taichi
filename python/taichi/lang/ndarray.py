@@ -16,13 +16,9 @@ class Ndarray:
         assert has_pytorch(
         ), "PyTorch must be available if you want to create a Taichi ndarray."
         import torch
+        self.arr = torch.zeros(shape, dtype=to_pytorch_type(cook_dtype(dtype)))
         if impl.current_cfg().arch == _ti_core.Arch.cuda:
-            device = 'cuda:0'
-        else:
-            device = 'cpu'
-        self.arr = torch.zeros(shape,
-                               dtype=to_pytorch_type(cook_dtype(dtype)),
-                               device=device)
+            self.arr = self.arr.cuda()
 
     @property
     def shape(self):
@@ -41,6 +37,15 @@ class Ndarray:
             DataType: Data type of each individual value.
         """
         return to_taichi_type(self.arr.dtype)
+
+    @property
+    def data_handle(self):
+        """Gets the pointer to underlying data.
+
+        Returns:
+            int: The pointer to underlying data.
+        """
+        return self.arr.data_ptr()
 
     @python_scope
     def __setitem__(self, key, value):
@@ -63,6 +68,41 @@ class Ndarray:
             element type: Value retrieved.
         """
         raise NotImplementedError()
+
+    @python_scope
+    def fill(self, val):
+        """Fills ndarray with a specific scalar value.
+
+        Args:
+            val (Union[int, float]): Value to fill.
+        """
+        self.arr.fill_(val)
+
+    @python_scope
+    def to_numpy(self):
+        """Converts ndarray to a numpy array.
+
+        Returns:
+            numpy.ndarray: The result numpy array.
+        """
+        return self.arr.cpu().numpy()
+
+    @python_scope
+    def from_numpy(self, arr):
+        """Loads all values from a numpy array.
+
+        Args:
+            arr (numpy.ndarray): The source numpy array.
+        """
+        import numpy as np
+        if not isinstance(arr, np.ndarray):
+            raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
+        if tuple(self.arr.shape) != tuple(arr.shape):
+            raise ValueError(
+                f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
+            )
+        import torch
+        self.arr = torch.from_numpy(arr).to(self.arr.dtype)
 
 
 class ScalarNdarray(Ndarray):

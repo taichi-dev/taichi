@@ -66,5 +66,3 @@ def func():
     for i in range(8192):  # no decorator, use default settings
         ...
 ```
-
-For details, check [The list of available decorators in API references](../../api/reference/ti.md#block_dim)

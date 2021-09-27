@@ -325,8 +325,10 @@ class IRPrinter : public IRVisitor {
             block_dim_info(for_stmt->block_dim));
     } else {
       print("{} : for {} in {} {}{}{{", for_stmt->name(), vars,
-            for_stmt->global_var.cast<GlobalVariableExpression>()
-                ->snode->get_node_type_name_hinted(),
+            for_stmt->global_var.is<GlobalVariableExpression>()
+                ? for_stmt->global_var.cast<GlobalVariableExpression>()
+                      ->snode->get_node_type_name_hinted()
+                : for_stmt->global_var->serialize(),
             scratch_pad_info(for_stmt->mem_access_opt),
             block_dim_info(for_stmt->block_dim));
     }

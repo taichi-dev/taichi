@@ -71,6 +71,10 @@ Eigen::SparseMatrix<float32> &SparseMatrix::get_matrix() {
   return matrix_;
 }
 
+const Eigen::SparseMatrix<float32> &SparseMatrix::get_matrix() const {
+  return matrix_;
+}
+
 SparseMatrix operator+(const SparseMatrix &sm1, const SparseMatrix &sm2) {
   Eigen::SparseMatrix<float32> res(sm1.matrix_ + sm2.matrix_);
   return SparseMatrix(res);
@@ -98,6 +102,11 @@ SparseMatrix operator*(const SparseMatrix &sm1, const SparseMatrix &sm2) {
 SparseMatrix SparseMatrix::matmul(const SparseMatrix &sm) {
   Eigen::SparseMatrix<float32> res(matrix_ * sm.matrix_);
   return SparseMatrix(res);
+}
+
+Eigen::VectorXf SparseMatrix::mat_vec_mul(
+    const Eigen::Ref<const Eigen::VectorXf> &b) {
+  return matrix_ * b;
 }
 
 SparseMatrix SparseMatrix::transpose() {

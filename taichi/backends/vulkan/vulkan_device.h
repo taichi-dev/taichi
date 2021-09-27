@@ -433,7 +433,7 @@ class VulkanDevice : public GraphicsDevice {
   ~VulkanDevice() override;
 
   std::unique_ptr<Pipeline> create_pipeline(
-      PipelineSourceDesc &src,
+      const PipelineSourceDesc &src,
       std::string name = "Pipeline") override;
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;

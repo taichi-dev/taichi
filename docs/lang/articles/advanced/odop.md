@@ -35,7 +35,7 @@ class TiArray:
     @ti.kernel
     def inc(self):
         for i in self.x:
-            self.x[i] += 1
+            self.x[i] += 1.0
 
 a = TiArray(32)
 a.inc()

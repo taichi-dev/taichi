@@ -244,7 +244,7 @@ order.
 If `A` is hierarchical, it will be iterated level by level. This maximizes the
 memory bandwidth utilization in most cases.
 
-As you may notice, we only cover dense data layouts in this section. For sparse
+As you may notice, only dense data layouts are covered in this section. For sparse
 data layouts, see [Sparse computation](./sparse.md).
 
 ### More examples of advanced dense data layouts

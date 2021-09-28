@@ -931,12 +931,16 @@ def rescale_index(a, b, I):
         rescaled grouped loop index
 
     """
-    assert isinstance(a, (Field, SNode)), "The first argument must be a field or an SNode"
-    assert isinstance(b, (Field, SNode)), "The second argument must be a field or an SNode"
+    assert isinstance(
+        a, (Field, SNode)), "The first argument must be a field or an SNode"
+    assert isinstance(
+        b, (Field, SNode)), "The second argument must be a field or an SNode"
     if isinstance(I, list):
         I = matrix.Vector(I)
     else:
-        assert isinstance(I, matrix.Matrix), f"The third argument must be an index (list or ti.Vector)"
+        assert isinstance(
+            I, matrix.Matrix
+        ), f"The third argument must be an index (list or ti.Vector)"
     Ib = I.copy()
     for n in range(min(I.n, min(len(a.shape), len(b.shape)))):
         if a.shape[n] > b.shape[n]:

@@ -246,5 +246,5 @@ To generate the slimmed version of libdevice based on a full
 `libdevice.X.bc` file from a CUDA installation, use:
 
 ```bash
-ti task make_slim_libdevice [libdevice.X.bc file]
+ti task make_slim_libdevice <path_to_libdevice.X.bc>
 ```

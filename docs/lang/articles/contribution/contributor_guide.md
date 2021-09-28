@@ -20,7 +20,7 @@ First of all, thank you for contributing! We welcome all kinds of contributions,
   make a pull request for minor issues like these)
 
 :::tip reminder
-Please take some time to familiarize yourself with this contribution guide before participating in our GitHub community.
+Please take some time to familiarize yourself with this contribution guide before opening a pull request.
 For more details regarding development of the Taichi compiler, read the [development tips](./development_tips).
 :::
 
@@ -35,7 +35,7 @@ are great chances for starters.
 
 ## How to take over an issue
 
-- Please first leave a note (e.g. _I know how to fix this and would
+- Please first leave a comment (e.g. _I know how to fix this and would
   like to help!_) on the issue, so that people know someone is already
   working on it. This helps prevent redundant work.
 - If no core developer has commented and described a potential
@@ -98,38 +98,43 @@ This design is terrible.
 
 ## Making good pull requests (PRs)
 
-- PRs with **small** changesets are preferred. A PR should ideally
-  address **only one issue**.
-  - It is fine to include off-topic **trivial** refactoring such as
-    typo fixes;
-  - The reviewers reserve the right to ask PR authors to remove
-    off-topic **non-trivial** changes.
-- All commits in a PR will always be **squashed and merged into master
-  as a single commit**. However, PR authors **should not squash commits on their own**.
-- When implementing a complex feature, consider breaking it down into
-  small PRs to keep a more detailed development history and to
-  interact with core developers more frequently.
+- PRs with **small** changesets are preferred.
+  - A PR should ideally address **only one issue**.
+    - It is fine to include off-topic **trivial** refactoring such as
+      typo fixes;
+    - The reviewers reserve the right to ask PR authors to remove
+      off-topic **non-trivial** changes.
+  - When implementing a complex feature, consider breaking it down into
+    small PRs to keep a more detailed development history and to
+    interact with core developers more frequently.
+- PR titles should be short sentences describing the changes and following
+  [certain format](./contributor_guide#pr-title-format-and-tags).
+- In the description of a PR, it will be nice to link relevant GitHub issues
+  (e.g. `fixes #issue_number`) or provide a little context on the motivation.
+  Some important implementation decisions you made in the PR is also helpful.
 - If you want early feedback from core developers,
   - Open a PR in
     [Draft](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
-    state on GitHub so that you can share your progress;
+    state on GitHub to share your progress;
   - Make sure you @ the corresponding developers in the comments or
     request reviews from them.
-- If you are making multiple PRs,
-  - Independent PRs should be based on **different** branches
-    forking from `master`;
-  - PRs with dependencies should be raised only after all
-    prerequisite PRs are merged into `master`.
 - All PRs should ideally come with corresponding **tests**. See [Testing](./contributor_guide#testing).
 - All PRs should come with **documentation updates**, except for
   internal compiler implementations. See [Documentation](./contributor_guide#documentation).
 - All PRs must pass **continuous integration tests** before they get
   merged. See [Using continuous integration](./contributor_guide#using-continuous-integration).
 - All PRs must pass **code format checks**. See [Enforcing code style](./contributor_guide#enforcing-code-style).
-- PR titles should follow [PR tag rules](./contributor_guide#pr-title-format-and-tags).
 - Read a great article from Google on [how to have your PR merged
   quickly](https://testing.googleblog.com/2017/06/code-health-too-many-comments-on-your.html).
   [\[PDF\]](https://github.com/yuanming-hu/public_files/blob/master/graphics/taichi/google_review_comments.pdf)
+- All commits in a PR will always be **squashed and merged into master
+  as a single commit**. However, PR authors **should not squash commits on their own**.
+- If you are making multiple PRs,
+  - Independent PRs should be based on **different** branches
+    forking from `master`;
+  - PRs with dependencies should be raised only after all
+    prerequisite PRs are merged into `master`.
+
 
 ## PR reviewing & merging
 
@@ -169,7 +174,9 @@ This design is terrible.
   leverage GitHub Actions: simply comment `/format` in a PR
   (e.g., [#2481](https://github.com/taichi-dev/taichi/pull/2481#issuecomment-872226701))
   and then [Taichi Gardener](https://github.com/taichi-gardener)
-  will automatically format the code for you.
+  will automatically push a commit to your branch that formats the code.
+  Note if you want to make more changes afterwards, you'll need to
+  `git pull` first.
 
 ## PR title format and tags
 
@@ -230,18 +237,18 @@ tags**:
 
 - PRs with visible or notable features to the users should be marked
   with tags starting with **the first letter capitalized**, e.g.,
-  `[Metal]`, `[Vulkan]`, `[IR]`, `[Lang]`, `[CLI]`. When releasing a new
-  version, a script ([misc/make_changelog.py](https://github.com/taichi-dev/taichi/blob/master/misc/make_changelog.py)) will
-  generate a changelog with these changes (PR title) highlighted.
-  Therefore it is **important** to make sure the end-users can
-  understand what your PR does, **based on your PR title**.
+  `[Metal]`, `[Vulkan]`, `[IR]`, `[Lang]`, `[CLI]`. These PRs will be
+  [highlighted in the release note](https://github.com/taichi-dev/taichi/blob/master/misc/make_changelog.py)
+  for end-users, therefore it is important to make sure your PR title is
+  effective in telling what your PR does.
 - Other PRs (underlying development or intermediate implementation)
   should use tags with **everything in lowercase letters**, e.g.,
   `[metal]`, `[vulkan]`, `[ir]`, `[lang]`, `[cli]`.
 - Because of the way the release changelog is generated, there
   should be **at most one capitalized tag** in a PR title to prevent
   duplicate PR highlights. For example,
-  `[GUI] [Mac] Support modifier keys` ([#1189](https://github.com/taichi-dev/taichi/pull/1189)) is bad, and we
+  `[GUI] [Mac] Support modifier keys` ([#1189](https://github.com/taichi-dev/taichi/pull/1189))
+  is an improper tag choice, and we
   should have used `[gui] [Mac] Support modifier keys in GUI` instead.
   Please capitalize the tag that is the *most* relevant to the PR.
 :::

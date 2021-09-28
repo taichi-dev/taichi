@@ -103,7 +103,7 @@ class Program {
   Callable *current_callable{nullptr};
   CompileConfig config;
   bool sync{false};  // device/host synchronized?
-  std::unique_ptr<MemoryPool> memory_pool{nullptr};
+
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
 
   std::unordered_map<int, SNode *>
@@ -296,11 +296,7 @@ class Program {
   static std::atomic<int> num_instances_;
   bool finalized_{false};
 
- public:
-#ifdef TI_WITH_CC
-  // C backend related data structures
-  std::unique_ptr<cccp::CCProgram> cc_program;
-#endif
+  std::unique_ptr<MemoryPool> memory_pool_{nullptr};
 };
 
 }  // namespace lang

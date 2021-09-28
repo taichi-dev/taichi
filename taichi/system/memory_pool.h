@@ -3,7 +3,7 @@
 #include "taichi/system/unified_allocator.h"
 #define TI_RUNTIME_HOST
 #include "taichi/runtime/llvm/mem_request.h"
-
+#include "taichi/backends/device.h"
 #include <mutex>
 #include <vector>
 #include <memory>
@@ -27,7 +27,9 @@ class MemoryPool {
   MemRequestQueue *queue;
   void *cuda_stream{nullptr};
 
-  MemoryPool(Arch arch);
+  // In the future we wish to move the MemoryPool inside each Device
+  // so that the memory allocated from each Device can be used as-is.
+  MemoryPool(Arch arch, Device *device);
 
   template <typename T>
   T fetch(volatile void *ptr);
@@ -48,6 +50,7 @@ class MemoryPool {
  private:
   static constexpr bool use_cuda_stream = false;
   Arch arch_;
+  Device *device_;
 };
 
 TLANG_NAMESPACE_END

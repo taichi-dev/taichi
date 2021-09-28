@@ -21,9 +21,7 @@
 #include "taichi/math/arithmetic.h"
 
 #if defined(TI_WITH_CC)
-#include "taichi/backends/cc/struct_cc.h"
-#include "taichi/backends/cc/cc_layout.h"
-#include "taichi/backends/cc/codegen_cc.h"
+#include "taichi/backends/cc/cc_program.h"
 #endif
 #ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/vulkan_program.h"
@@ -100,7 +98,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 
   if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
-    cc_program = std::make_unique<cccp::CCProgram>(this);
+    program_impl_ = std::make_unique<CCProgramImpl>(config);
 #else
     TI_WARN("No C backend detected.");
     config.arch = host_arch();
@@ -111,8 +109,12 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
     TI_WARN("Falling back to {}", arch_name(config.arch));
   }
 
+  Device *compute_device = nullptr;
+  if (program_impl_.get()) {
+    compute_device = program_impl_->get_compute_device();
+  }
   // Must have handled all the arch fallback logic by this point.
-  memory_pool = std::make_unique<MemoryPool>(config.arch);
+  memory_pool_ = std::make_unique<MemoryPool>(config.arch, compute_device);
   TI_ASSERT_INFO(num_instances_ == 0, "Only one instance at a time");
   total_compilation_time_ = 0;
   num_instances_ += 1;
@@ -173,12 +175,9 @@ FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
   if (arch_uses_llvm(config.arch) || kernel.arch == Arch::metal ||
-      kernel.arch == Arch::vulkan || kernel.arch == Arch::opengl) {
+      kernel.arch == Arch::vulkan || kernel.arch == Arch::opengl ||
+      kernel.arch == Arch::cc) {
     return program_impl_->compile(&kernel, offloaded);
-#ifdef TI_WITH_CC
-  } else if (kernel.arch == Arch::cc) {
-    ret = cccp::compile_kernel(&kernel);
-#endif
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -189,8 +188,9 @@ FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
 
 void Program::materialize_runtime() {
   if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
-      config.arch == Arch::vulkan || config.arch == Arch::opengl) {
-    program_impl_->materialize_runtime(memory_pool.get(), profiler.get(),
+      config.arch == Arch::vulkan || config.arch == Arch::opengl ||
+      config.arch == Arch::cc) {
+    program_impl_->materialize_runtime(memory_pool_.get(), profiler.get(),
                                        &result_buffer);
   }
 }
@@ -215,19 +215,11 @@ SNode *Program::get_snode_root(int tree_id) {
 }
 
 void Program::materialize_snode_tree(SNodeTree *tree) {
-  auto *const root = tree->root();
   if (arch_is_cpu(config.arch) || config.arch == Arch::cuda ||
       config.arch == Arch::metal || config.arch == Arch::vulkan ||
-      config.arch == Arch::opengl) {
+      config.arch == Arch::opengl || config.arch == Arch::cc) {
     program_impl_->materialize_snode_tree(tree, snode_trees_, snodes,
                                           result_buffer);
-#ifdef TI_WITH_CC
-  } else if (config.arch == Arch::cc) {
-    TI_ASSERT(result_buffer == nullptr);
-    result_buffer = (uint64 *)memory_pool->allocate(
-        sizeof(uint64) * taichi_result_buffer_entries, 8);
-    cc_program->compile_layout(root);
-#endif
   }
 }
 
@@ -456,7 +448,7 @@ void Program::finalize() {
 
   synchronize();
   current_program = nullptr;
-  memory_pool->terminate();
+  memory_pool_->terminate();
 
   if (arch_uses_llvm(config.arch)) {
     static_cast<LlvmProgramImpl *>(program_impl_.get())->finalize();

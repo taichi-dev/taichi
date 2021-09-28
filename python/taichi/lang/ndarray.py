@@ -17,13 +17,9 @@ class Ndarray:
             assert has_pytorch(
             ), "PyTorch must be available if you want to create a Taichi ndarray."
             import torch
+            self.arr = torch.zeros(shape, dtype=to_pytorch_type(cook_dtype(dtype)))
             if impl.current_cfg().arch == _ti_core.Arch.cuda:
-                device = 'cuda:0'
-            else:
-                device = 'cpu'
-                self.arr = torch.zeros(shape,
-                                   dtype=to_pytorch_type(cook_dtype(dtype)),
-                                   device=device)
+                self.arr = self.arr.cuda()
         else:
             self.arr = _ti_core.Ndarray(impl.get_runtime().prog, cook_dtype(dtype), shape)
 

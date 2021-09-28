@@ -8,6 +8,8 @@
 #include "taichi/util/str.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/ir/statements.h"
+#include "taichi/backends/cpu/cpu_device.h"
+
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/codegen_cuda.h"
@@ -79,6 +81,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
   if (arch_is_cpu(config->arch)) {
     config_.max_block_dim = 1024;
+    device_ = std::make_unique<cpu::CpuDevice>();
   }
 
   if (config->kernel_profiler && runtime_mem_info) {
@@ -92,6 +95,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
       CUDAContext::get_instance().set_profiler(nullptr);
     }
     CUDAContext::get_instance().set_debug(config->debug);
+    device_ = std::make_unique<cuda::CudaDevice>();
   }
 #endif
 }
@@ -305,8 +309,14 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     TI_TRACE("Allocating device memory {:.2f} GB",
              1.0 * prealloc_size / (1UL << 30));
 
-    CUDADriver::get_instance().malloc(&preallocated_device_buffer,
-                                      prealloc_size);
+    Device::AllocParams preallocated_device_buffer_alloc_params;
+    preallocated_device_buffer_alloc_params.size = prealloc_size;
+    preallocated_device_buffer_alloc =
+        cuda_device()->allocate_memory(preallocated_device_buffer_alloc_params);
+    cuda::CudaDevice::AllocInfo preallocated_device_buffer_alloc_info =
+        cuda_device()->get_alloc_info(preallocated_device_buffer_alloc);
+    preallocated_device_buffer = preallocated_device_buffer_alloc_info.ptr;
+
     CUDADriver::get_instance().memset(preallocated_device_buffer, 0,
                                       prealloc_size);
     tlctx = llvm_context_device.get();
@@ -434,8 +444,9 @@ void LlvmProgramImpl::finalize() {
   if (runtime_mem_info)
     runtime_mem_info->set_profiler(nullptr);
 #if defined(TI_WITH_CUDA)
-  if (preallocated_device_buffer != nullptr)
-    CUDADriver::get_instance().mem_free(preallocated_device_buffer);
+  if (preallocated_device_buffer != nullptr) {
+    cuda_device()->dealloc_memory(preallocated_device_buffer_alloc);
+  }
 #endif
 }
 

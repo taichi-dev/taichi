@@ -4,10 +4,10 @@ sidebar_position: 2
 
 # Debugging
 
-Debugging a parallel program is not easy, so Taichi provides builtin
+Debugging a parallel program is not easy, so Taichi provides built-in
 utilities that could hopefully help you debug your Taichi program.
 
-## Run-time `print` in kernels
+## Runtime `print` in Taichi-scope
 
 ```python
 print(arg1, ..., sep='', end='\n')
@@ -18,19 +18,19 @@ Debug your program with `print()` in Taichi-scope. For example:
 ```python {1}
 @ti.kernel
 def inside_taichi_scope():
-    x = 233
+    x = 256
     print('hello', x)
-    #=> hello 233
+    #=> hello 256
 
     print('hello', x * 2 + 200)
-    #=> hello 666
+    #=> hello 712
 
     print('hello', x, sep='')
-    #=> hello233
+    #=> hello256
 
     print('hello', x, sep='', end='')
     print('world', x, sep='')
-    #=> hello233world233
+    #=> hello256world256
 
     m = ti.Matrix([[2, 3, 4], [5, 6, 7]])
     print('m =', m)
@@ -39,11 +39,26 @@ def inside_taichi_scope():
     v = ti.Vector([3, 4])
     print('v =', v)
     #=> v = [3, 4]
+
+    ray = ti.Struct({
+    	"ori": ti.Vector([0.0, 0.0, 0.0]),
+    	"dir": ti.Vector([0.0, 0.0, 1.0]),
+    	"len": 1.0
+		})
+    # print(ray)
+    # Print a struct directly in Taichi-scope has not been supported yet
+    # Instead, use:
+    print('ray.ori =', ray.ori, ', ray.dir =', ray.dir, ', ray.len =', ray.len)
+    #=> ray.ori = [0.0, 0.0, 0.0], ray.dir = [0.0, 0.0, 1.0], ray.len = 1.0
 ```
 
 For now, Taichi-scope `print` supports string, scalar, vector, and
 matrix expressions as arguments. `print` in Taichi-scope may be a little
-different from `print` in Python-scope. Please see details below.
+different from `print` in Python-scope. Please see the details below.
+
+:::note
+`print` in Taichi-scope is currently supported on the CPU, CUDA, OpenGL, and Metal backends.
+:::
 
 :::caution
 For the **CPU and CUDA backends**, `print` will not work in Graphical
@@ -129,9 +144,9 @@ def inside_taichi_scope():
     ti.static_print(x.dtype)
     # => DataType.float32
     for i in range(4):
-            ti.static_print(i.dtype)
-            # => DataType.int32
-            # will only print once
+        ti.static_print(i.dtype)
+        # => DataType.int32
+        # will only print once
 ```
 
 Unlike `print`, `ti.static_print` will only print the expression once at
@@ -140,7 +155,7 @@ compile-time, and therefore it has no runtime cost.
 ## Serial execution
 
 The automatic parallelization feature of Taichi may lead to
-nondeterministic behaviors. For debugging purposes, it may be useful to
+non-deterministic behaviors. For debugging purposes, it may be useful to
 serialize program execution to get repeatable results and to diagnose
 data races. When running your Taichi program on CPUs, you can initialize
 Taichi to use a single thread with `cpu_max_num_threads=1`, so that the
@@ -150,20 +165,20 @@ whole program becomes serial and deterministic. For example,
 ti.init(arch=ti.cpu, cpu_max_num_threads=1)
 ```
 
-If you program works well in serial but not in parallel, check
+If your program works well in serial but not in parallel, check
 parallelization-related issues such as data races.
 
-## Runtime `assert` in kernel
+## Runtime `assert` in Taichi-scope
 
 Programmers may use `assert` statements in Taichi-scope. When the
-assertion condition failed, a `RuntimeError` will be raised to indicate
+assertion condition fails, a `RuntimeError` will be raised to indicate
 the error.
 
 :::note
 `assert` is currently supported on the CPU, CUDA, and Metal backends.
 :::
 
-For performance reason, `assert` only works when `debug` mode
+For performance reasons, `assert` only works when `debug` mode
 is on. For example:
 
 ```python
@@ -273,9 +288,9 @@ Traceback (most recent call last):
 AssertionError
 ```
 
-Many of the stack frames are the Taichi compiler implementation details, which
-could be too noisy to read. You could choose to elide them by using
-`ti.init(excepthook=True)`, which _hooks_ on the exception handler, and makes
+Many stack frames are the Taichi compiler implementation details, which
+could be too noisy to read. You could choose to ignore them by using
+`ti.init(excepthook=True)`, which _hooks_ on the exception handler and makes
 the stack traceback from Taichi-scope more intuitive:
 
 ```python {2}
@@ -346,7 +361,7 @@ will be overriden by the Taichi one when `ti.enable_excepthook()` is called.
 
 ## Debugging Tips
 
-Debugging a Taichi program can be hard even with the above builtin tools.
+Debugging a Taichi program can be hard even with the above built-in tools.
 Here we showcase some common bugs that one may encounter in a
 Taichi program.
 
@@ -357,11 +372,11 @@ language for high performance. This means code in Taichi-scope can have
 a different behavior compared with that in Python-scope, especially when
 it comes to types.
 
-The type of a variable is simply **determined at its initialization and
+The type of a variable is **determined at its initialization and
 never changes later**.
 
 Although Taichi's static type system provides better performance, it
-may lead to bugs if programmers used the wrong types. For
+may lead to bugs if programmers use the wrong types. For
 example:
 
 ```python
@@ -375,8 +390,8 @@ def buggy():
 buggy()
 ```
 
-The code above shows a common bug due to misuse of the Taichi's static type system,
-the Taichi compiler should show a warning like:
+The code above shows a common bug due to misuse of Taichi's static type system.
+The Taichi compiler should show a warning like:
 
 ```
 [W 06/27/20 21:43:51.853] [type_check.cpp:visit@66] [$19] Atomic add (float32 to int32) may lose precision.

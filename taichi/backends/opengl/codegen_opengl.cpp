@@ -150,7 +150,7 @@ class KernelGen : public IRVisitor {
 
     // clang-format off
     if (used.print)  // the runtime buffer is only used for print now..
-      line_appender_header_.append_raw(shaders::kOpenGLRuntimeSourceCode);
+      line_appender_header_.append_raw(shaders::kOpenGlRuntimeSourceCode);
     if (used.listman)
       line_appender_header_.append_raw(shaders::kOpenGLListmanSourceCode);
 
@@ -1174,14 +1174,12 @@ class KernelGen : public IRVisitor {
 FunctionType OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_,
-                    kernel_launcher_->device.get());
+                    runtime_->device.get());
   codegen.run();
   auto compiled = codegen.get_compiled_program();
   auto *ptr = compiled.get();
-  kernel_launcher_->keep(std::move(compiled));
-  return [ptr, launcher = kernel_launcher_](Context &ctx) {
-    ptr->launch(ctx, launcher);
-  };
+  runtime_->keep(std::move(compiled));
+  return [ptr, runtime = runtime_](Context &ctx) { ptr->launch(ctx, runtime); };
 #else
   TI_NOT_IMPLEMENTED
 #endif

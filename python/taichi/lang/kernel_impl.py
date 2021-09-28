@@ -290,17 +290,8 @@ class KernelArgError(Exception):
 
 
 def _get_global_vars(func):
-    # Discussions: https://github.com/taichi-dev/taichi/issues/282
-    global_vars = copy.copy(func.__globals__)
-
-    freevar_names = func.__code__.co_freevars
-    closure = func.__closure__
-    if closure:
-        freevar_values = list(map(lambda x: x.cell_contents, closure))
-        for name, value in zip(freevar_names, freevar_values):
-            global_vars[name] = value
-
-    return global_vars
+    closure_vars = inspect.getclosurevars(func)
+    return {**closure_vars.globals, **closure_vars.nonlocals}
 
 
 class Kernel:
@@ -765,10 +756,10 @@ def data_oriented(cls):
         >>>
         >>>     @ti.kernel
         >>>     def inc(self):
-        >>>         for i in x:
-        >>>             x[i] += 1
+        >>>         for i in self.x:
+        >>>             self.x[i] += 1.0
         >>>
-        >>> a = TiArray(42)
+        >>> a = TiArray(32)
         >>> a.inc()
 
     Args:

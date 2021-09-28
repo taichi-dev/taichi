@@ -58,6 +58,9 @@ void Window::resize() {
   renderer_->app_context().config.height = height;
 
   renderer_->swap_chain().resize(width, height);
+
+  config_.width = width;
+  config_.height = height;
 }
 
 void Window::draw_frame() {

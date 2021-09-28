@@ -11,9 +11,10 @@ Taichi provides metaprogramming infrastructures. There are many benefits of meta
 - Improving runtime performance by moving computations from runtime to compile time.
 - Simplifying the development of Taichi standard library.
 
-:::note Taichi kernels are **lazily instantiated** and large amounts of computation can
-be executed at **compile-time**. Every kernel in Taichi is a template kernel,
-even if it has no template arguments. :::
+:::note
+Taichi kernels are **lazily instantiated** and large amounts of computation can be executed at **compile-time**.
+Every kernel in Taichi is a template kernel, even if it has no template arguments.
+:::
 
 ## Template metaprogramming
 
@@ -47,7 +48,7 @@ Taichi provides `ti.grouped` syntax which supports grouping loop indices into a 
 It enables dimensionality-independent programming, i.e., code are adaptive to scenarios of
 different dimensionalities automatically:
 
-```python {3-10,15-16}
+```python {2,7,12,18}
 @ti.kernel
 def copy_1D(x: ti.template(), y: ti.template()):
     for i in x:
@@ -80,7 +81,7 @@ def copy(x: ti.template(), y: ti.template()):
 
 The two attributes **data type** and **shape** of fields can be accessed by `field.dtype` and  `field.shape`, in both Taichi-scope and Python-scope:
 
-```python {2-6}
+```python {3,7}
 x = ti.field(dtype=ti.f32, shape=(3, 3))
 
 # Print field metadata in Python-scope
@@ -162,7 +163,7 @@ There are two reasons to use `ti.static` with for loops:
 
 For example, when accessing a vector field `x` with `x[field_index][vector_component_index]`, the `field_index` can be a runtime variable, while the `vector_component_index` must be a compile-time constant:
 
-```python {4}
+```python {6}
 # Here we declare a field contains 3 vector. Each vector contains 8 elements.
 x = ti.Vector.field(8, ti.f32, shape=(3))
 @ti.kernel

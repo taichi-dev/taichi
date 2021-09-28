@@ -453,7 +453,7 @@ def block_local(*args):
     for how BLS is used.
 
     Args:
-        *args (List[Taichi field]): A list of sparse Taichi fields.
+        *args (List[Field]): A list of sparse Taichi fields.
 
     Raises:
         InvalidOperationError: If the ``dynamic_index`` feature (experimental)

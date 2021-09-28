@@ -1,14 +1,14 @@
 ---
-sidebar_position: 6
+sidebar_position: 9
 ---
 
 # Documentation writing guide
 
-Thank you for your contribution! This article briefly introduces syntax that will help you write documentation on this website. Note, the documentation is written in an extended version of [Markdown](https://daringfireball.net/projects/markdown/syntax), so for most of the time, you don't need special syntax besides the basic markdown syntax.
+This section briefly introduces syntax that will help you write documentation on this website. Note that the documentation is written in an extended version of [Markdown](https://daringfireball.net/projects/markdown/syntax), so most of the time you don't need special syntax besides the basic Markdown syntax.
 
-## 1. Insert code blocks
+## 1. Code blocks
 
-This site supports inserting code blocks with highlighted lines, for examples, the following:
+This website supports inserting code blocks with highlighted lines. For example, the following snippet:
 
 ````md
 ```python {1-2,4,6} title=snippet.py
@@ -40,7 +40,7 @@ def paint(t: float):
         pixels[i, j] = 1 - iterations * 0.02
 ```
 
-## 2. Insert tables
+## 2. Tables
 
 ```md
 | Some Table Col 1 | Some Table Col 2 |
@@ -57,20 +57,20 @@ def paint(t: float):
 |       Val3       |       Val6       |
 
 :::tip TIP
-It's worth mentioning that [Tables Generator](https://www.tablesgenerator.com/markdown_tables) is a great tool for generating and re-formatting markdown tables.
+[Tables Generator](https://www.tablesgenerator.com/markdown_tables) is a great tool for generating and re-formatting Markdown tables.
 :::
 
-## 3. Cross-reference and anchor
+## 3. Cross-references
 
-To link to another section within the same article, you would use `[Return to ## 1. Insert code blocks](#1-insert-code-blocks)`: [Return to ## 1. Insert code blocks](#1-insert-code-blocks).
+To link to another section within the same article, you would use `[Return to ## 1. Code blocks](#1-code-blocks)`: [Return to ## 1. Code blocks](#1-code-blocks).
 
 We follow the best practices suggested by [Docusaurus](https://docusaurus.io/docs/docs-markdown-features#referencing-other-documents) to cross-reference other documents, so to link to sections in other articles, please use the following relative-path based syntax, which
-is docs-versioning and IDE/Github friendly:
+is docs-versioning and IDE/GitHub friendly:
 
 - `[Return to Contribution guidelines](./contributor_guide.md)`: [Return to Contribution guidelines](./contributor_guide.md)
-- `[Return to The Documentation which is at root](/docs/#portability)`: [Return to The Documentation](/docs/#portability)
+- `[Return to Getting Started](/docs/#fields)`: [Return to Getting Started](/docs/#fields)
 
-## 4. Centered text block
+## 4. Centered text blocks
 
 To make a text or image block centered, use:
 
@@ -101,38 +101,38 @@ You **HAVE TO** insert blank lines to make them work:
 
 :::
 
-## 5. Text with color backgorund
+## 5. Text with color backgrounds
 
 You could use the following to highlight your text:
 
-```html
-<span id="inline-blue"> Text with blue background </span>,
-<span id="inline-purple"> Text with purple background </span>,
-<span id="inline-yellow"> Text with yellow background </span>,
-<span id="inline-green"> Text with green background </span>
+```md
+<span id="inline-blue"> Text with a blue background </span>,
+<span id="inline-purple"> Text with a purple background </span>,
+<span id="inline-yellow"> Text with a yellow background </span>,
+<span id="inline-green"> Text with a green background </span>
 ```
 
-<span id="inline-blue"> Text with blue background </span>,
-<span id="inline-purple"> Text with purple background </span>,
-<span id="inline-yellow"> Text with yellow background </span>,
-<span id="inline-green"> Text with green background </span>
+<span id="inline-blue"> Text with a blue background </span>,
+<span id="inline-purple"> Text with a purple background </span>,
+<span id="inline-yellow"> Text with a yellow background </span>,
+<span id="inline-green"> Text with a green background </span>
 
 ## 6. Custom containers
 
-As we already saw in this guide several places, we could add custom containers:
+As you already saw in this guide several times, you could add custom containers:
 
 ```md
 :::tip
-This is a tip without title!
+This is a tip without a title!
 :::
 ```
 
 :::tip
-This is a tip without title!
+This is a tip without a title!
 :::
 
 ```md
-:::tip
+:::tip TITLE
 This is a tip with a title!
 :::
 ```
@@ -151,8 +151,8 @@ This is a note!
 This is a note!
 :::
 
-```md caution
-:::caution
+```md
+:::caution WARNING
 This is a warning!
 :::
 ```
@@ -175,7 +175,7 @@ This is a danger!
 
 You could also insert tab-based code groups:
 
-```markdown
+```md
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
@@ -186,9 +186,9 @@ import TabItem from '@theme/TabItem';
     {label: 'Orange', value: 'orange'},
     {label: 'Banana', value: 'banana'},
   ]}>
-  <TabItem value="apple">This is an apple 🍎</TabItem>
-  <TabItem value="orange">This is an orange 🍊</TabItem>
-  <TabItem value="banana">This is a banana 🍌</TabItem>
+  <TabItem value="apple">This is an apple 🍎.</TabItem>
+  <TabItem value="orange">This is an orange 🍊.</TabItem>
+  <TabItem value="banana">This is a banana 🍌.</TabItem>
 </Tabs>
 ```
 
@@ -202,48 +202,36 @@ import TabItem from '@theme/TabItem';
     {label: 'Orange', value: 'orange'},
     {label: 'Banana', value: 'banana'},
   ]}>
-  <TabItem value="apple">This is an apple 🍎</TabItem>
-  <TabItem value="orange">This is an orange 🍊</TabItem>
-  <TabItem value="banana">This is a banana 🍌</TabItem>
+  <TabItem value="apple">This is an apple 🍎.</TabItem>
+  <TabItem value="orange">This is an orange 🍊.</TabItem>
+  <TabItem value="banana">This is a banana 🍌.</TabItem>
 </Tabs>
 
 ## 8. Footnotes
 
-It is important to cite the references, to do so, use the `markdown-it`'s footnotes syntax:
+To add footnotes, use:
 
 ```md
-This sentence has a footnote[^1]. (See footnote at the bottom of this guide.)
+This sentence[^1] has two footnotes[^2]. (See the footnotes at the bottom of this guide.)
 
 [^1]: I'm a footnote!
-````
+[^2]: I'm also a footnote!
+```
 
 which results in:
 
 ---
 
-This sentence has a footnote[^1]. (See footnote at the bottom of this guide.)
+This sentence[^1] has two footnotes[^2]. (See the footnotes at the bottom of this guide.)
 
 [^1]: I'm a footnote!
+[^2]: I'm also a footnote!
 
 ---
 
-We could also write in-line footnotes, which is much easier to write without counting back and forth:
+## 9. Images
 
-```md
-This sentence has another footnote ^[I'm another footnote] (See footnote at the bottom of this page.)
-```
-
-which has the same effect:
-
----
-
-This sentence has another footnote ^[I'm another footnote] (See footnote at the bottom of this page.)
-
----
-
-## 9. Insert images
-
-Insert images is as straight-forward as using the ordinary markdown syntax:
+Inserting images is as straight-forward as using the ordinary Markdown syntax:
 
 ```md
 ![kernel](./life_of_kernel_lowres.jpg)
@@ -251,7 +239,7 @@ Insert images is as straight-forward as using the ordinary markdown syntax:
 
 ![kernel](./life_of_kernel_lowres.jpg)
 
-## 10. Insert Table of Contents (ToC)
+## 10. In-line Table of Contents (ToC)
 
 You could use:
 
@@ -261,7 +249,7 @@ import TOCInline from '@theme/TOCInline';
 <TOCInline toc={toc} />
 ```
 
-to insert in-line ToC:
+to insert an in-line ToC:
 
 import TOCInline from '@theme/TOCInline';
 

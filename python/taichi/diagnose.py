@@ -46,7 +46,7 @@ def main():
     print('')
     try_print('import', 'ti')
     print('')
-    for arch in ['cc', 'cpu', 'metal', 'opengl', 'cuda']:
+    for arch in ['cc', 'cpu', 'metal', 'opengl', 'cuda', 'vulkan']:
         try_print(arch, f'ti.is_arch_supported(ti.{arch})')
     print('')
 

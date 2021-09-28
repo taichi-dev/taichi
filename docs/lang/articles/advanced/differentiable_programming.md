@@ -41,17 +41,17 @@ def compute_dy_dx():
 ```
 
 However, as you make a change to `compute_y`, you will have to rework the gradient formula
-by hand and update `compute_dy_dx` accordingly. Apparently when
+by hand and update `compute_dy_dx` accordingly. Apparently, when
 the kernel becomes larger and gets frequently updated, this manual workflow is
 really error-prone and hard to maintain.
 
 If you run into this situation, Taichi's handy automatic differentiation (autodiff)
-system comes to rescue! Taichi supports gradient evaluation through
+system comes to the rescue! Taichi supports gradient evaluation through
 either `ti.Tape()` or the more flexible `kernel.grad()` syntax.
 
 ## Using `ti.Tape()`
 
-Let's still take the `compute_y` kernel above for explanation.
+Let's still take the `compute_y` kernel above for an explanation.
 Using `ti.Tape()` is the easiest way to obtain a kernel that computes `dy/dx`:
 
 1.  Enable `needs_grad=True` option when declaring fields involved in
@@ -63,7 +63,7 @@ Here's the full code snippet elaborating the steps above:
 
 ```python
 x = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
-y = ti.field(float, (), needs_grad=True)
+y = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
 
 @ti.kernel
 def compute_y():
@@ -78,7 +78,7 @@ print('dy/dx =', x.grad[None], ' at x =', x[None])
 
 A common problem in physical simulation is that it's usually easy to compute
 energy but hard to compute force on every particle,
-e.g [Bond bending (and torsion) in molecular dynamics](https://github.com/victoriacity/taichimd/blob/5a44841cc8dfe5eb97de51f1d46f1bede1cc9936/taichimd/interaction.py#L190-L220).
+e.g [Bond bending (and torsion) in molecular dynamics](https://github.com/victoriacity/taichimd/blob/5a44841cc8dfe5eb97de51f1d46f1bede1cc9936/taichimd/interaction.py#L190-L220)
 and [FEM with hyperelastic energy functions](https://github.com/taichi-dev/taichi/blob/master/examples/simulation/fem128.py).
 Recall that we can differentiate
 (negative) potential energy to get forces: `F_i = -dU / dx_i`. So once you have coded
@@ -98,7 +98,7 @@ dt = 1e-5
 
 x = ti.Vector.field(2, dtype=ti.f32, shape=N, needs_grad=True)  # particle positions
 v = ti.Vector.field(2, dtype=ti.f32, shape=N)  # particle velocities
-U = ti.field(float, (), needs_grad=True)  # potential energy
+U = ti.field(dtype=ti.f32, shape=(), needs_grad=True)  # potential energy
 
 
 @ti.kernel
@@ -161,7 +161,7 @@ See
 [examples/simulation/mpm_lagrangian_forces.py](https://github.com/taichi-dev/taichi/blob/master/examples/simulation/mpm_lagrangian_forces.py)
 and
 [examples/simulation/fem99.py](https://github.com/taichi-dev/taichi/blob/master/examples/simulation/fem99.py)
-for examples on using autodiff for MPM and FEM.
+for examples on using autodiff-based force evaluation MPM and FEM.
 :::
 
 ## Using `kernel.grad()`
@@ -199,7 +199,7 @@ for i in range(N):
 
 :::tip
 It might be tedious to write out `need_grad=True` for every input in a complicated use case.
-Alternatively Taichi provides `ti.root.lazy_grad()` API that can automatically place the
+Alternatively, Taichi provides an API `ti.root.lazy_grad()` that automatically places the
 gradient fields following the layout of their primal fields.
 :::
 
@@ -261,7 +261,7 @@ assert x.grad[1] == 10.0
 ```
 
 :::note Global Data Access Rule #2
-If a global field element is written more than once, then starting from the second write, the write **must** come in the form of an atomic add ("accumulation\", using `ti.atomic_add` or simply `+=`). Although `+=` violates rule #1 above, it's the only special case of "read before mutation" that Taichi allows in the autodiff system.
+If a global field element is written more than once, then starting from the second write, the write **must** come in the form of an atomic add ("accumulation", using `ti.atomic_add` or simply `+=`). Although `+=` violates rule #1 above since it reads the old value before computing the sum, it is the only special case of "read before mutation" that Taichi allows in the autodiff system.
 :::
 
 ```python
@@ -330,7 +330,7 @@ def differentiable_task3():
 
 @ti.kernel
 def differentiable_task4():
-    # Bad: mixed use of for-loop and statements without for-loops.
+    # Bad: mixed usage of for-loop and a statement without looping. Please split them into two kernels.
     loss[None] += x[0]
     for i in range(10):
         ...

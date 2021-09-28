@@ -453,26 +453,21 @@ class Kernel:
 
         if self.is_grad:
             KernelSimplicityASTChecker(self.func).visit(tree)
-
-        visitor = ASTTransformerTotal(
-            excluded_parameters=self.template_slot_locations,
-            func=self,
-            arg_features=arg_features)
-
-        visitor.visit(tree)
-
-        ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
-
         # inject template parameters into globals
         for i in self.template_slot_locations:
             template_var_name = self.argument_names[i]
             global_vars[template_var_name] = args[i]
 
-        exec(
-            compile(tree,
-                    filename=oinspect.getsourcefile(self.func),
-                    mode='exec'), global_vars, local_vars)
-        compiled = local_vars[self.func.__name__]
+        global_vars["ti"] = ti
+        visitor = ASTTransformerTotal(
+            excluded_parameters=self.template_slot_locations,
+            func=self,
+            arg_features=arg_features,
+            globals=global_vars)
+
+
+        ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
+
 
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
@@ -485,7 +480,7 @@ class Kernel:
             self.runtime.inside_kernel = True
             self.runtime.current_kernel = self
             try:
-                compiled()
+                visitor.visit(tree)
             finally:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None

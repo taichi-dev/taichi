@@ -16,12 +16,14 @@ class ASTTransformerTotal(object):
                  func=None,
                  excluded_parameters=(),
                  is_kernel=True,
-                 arg_features=None):
+                 arg_features=None,
+                 globals=None):
         self.func = func
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
         self.arg_features = arg_features
         self.pass_Checks = ASTTransformerChecks(func=func)
+        self.globals = globals
 
     @staticmethod
     def print_ast(tree, title=None):
@@ -32,15 +34,16 @@ class ASTTransformerTotal(object):
         print(astor.to_source(tree.body[0], indent_with='    '), flush=True)
 
     def visit(self, tree):
-        self.print_ast(tree, 'Initial AST')
-        ctx = BuilderContext(func=self.func,
-                             excluded_parameters=self.excluded_parameters,
-                             is_kernel=self.is_kernel,
-                             arg_features=self.arg_features)
+        from taichi.lang.ast_builder_utils import IRBuilderContext
+        from taichi.lang.ir_builder import build_ir
+        ctx = IRBuilderContext(func=self.func,
+                               excluded_parameters=self.excluded_parameters,
+                               is_kernel=self.is_kernel,
+                               arg_features=self.arg_features,
+                               globals=self.globals)
         # Convert Python AST to Python code that generates Taichi C++ AST.
-        tree = build_stmt(ctx, tree)
+        tree = build_ir(ctx, tree)
         ast.fix_missing_locations(tree)
-        self.print_ast(tree, 'Preprocessed')
         self.pass_Checks.visit(tree)  # does not modify the AST
 
 

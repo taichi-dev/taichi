@@ -324,9 +324,11 @@ def init(arch=None,
     Args:
         arch: Backend to use. This is usually :const:`~taichi.lang.cpu` or :const:`~taichi.lang.gpu`.
         default_fp (Optional[type]): Default floating-point type.
-        default_ip (Optional[type]): Default integral type.
-        **kwargs: Taichi provides a large number of flags for configuration. Below we list a few
-            most frequently used ones. For a complete list, please check out
+        default_fp (Optional[type]): Default integral type.
+        **kwargs: Taichi provides highly customizable compilation through
+            ``kwargs``, which allows for fine grained control of Taichi compiler
+            behavior. Below we list some of the most frequently used ones.For a
+            complete list, please check out
             https://github.com/taichi-dev/taichi/blob/master/taichi/program/compile_config.h.
 
             * ``cpu_max_num_threads`` (int): Sets the number of threads used by the CPU thread pool.
@@ -445,10 +447,17 @@ def no_activate(*args):
 
 
 def block_local(*args):
-    """Hints Taichi to cache the list of fields into the shared memory.
+    """Hints Taichi to cache the fields and to enable the BLS optimization.
+
+    Please visit https://docs.taichi.graphics/docs/lang/articles/advanced/performance
+    for how BLS is used.
 
     Args:
         *args (List[Taichi field]): A list of sparse Taichi fields.
+
+    Raises:
+        InvalidOperationError: If the ``dynamic_index`` feature (experimental)
+            is enabled.
     """
     if ti.current_cfg().dynamic_index:
         raise InvalidOperationError(

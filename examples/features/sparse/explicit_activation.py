@@ -47,6 +47,10 @@ def sparse_api_demo():
     print(ti.rescale_index(x, block1, ti.Vector([9, 17])))
     # output = [2, 4]
 
+    # Note: ti.Vector is optional in ti.rescale_index.
+    print(ti.rescale_index(x, block1, [9, 17]))
+    # output = [2, 4]
+
     ti.activate(block2, [1, 2])
 
 

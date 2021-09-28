@@ -62,3 +62,12 @@ def func():
     for i in range(8192):  # no decorator, use default settings
         ...
 ```
+
+## Data layouts
+
+You might have been familiar with [Fields](../basic/field.md) in Taichi. Since
+Taichi decouples data structure from computation, developers have the
+flexibility to play with different data layouts. Like in other programming
+languages, selecting an efficient layout can drastically improve performance.
+For more information on advanced data layouts in Taichi, please
+see the [Fields (advanced)](layout.md) section.

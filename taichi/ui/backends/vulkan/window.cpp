@@ -59,6 +59,8 @@ void Window::resize() {
 
   renderer_->swap_chain().resize(width, height);
 
+  // config_.width and config_.height are used for computing relative mouse
+  // positions, so they need to be updated once the window is resized.
   config_.width = width;
   config_.height = height;
 }

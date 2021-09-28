@@ -10,7 +10,7 @@ helpful.
 
 We provide various interfaces to copy the data between Taichi fields and
 external arrays. External arrays refer to NumPy arrays or PyTorch tensors.
-Let's take a look at the most common usage, interacting with NumPy arrays:
+Let's take a look at the most common usage: interacting with NumPy arrays.
 
 **Export data in Taichi fields to NumPy arrays** via `to_numpy()`. This
 allows us to export computation results to other Python packages that
@@ -60,7 +60,7 @@ field.from_numpy(array)  # the input array must be of shape (233, 666)
 ```
 
 - For vector fields, if the vector is `n`-D, then **the shape of NumPy
-  array should be** `(field_shape, vector_n)`:
+  array should be** `(*field_shape, vector_n)`:
 
 ```python
 field = ti.Vector.field(3, ti.i32, shape=(233, 666))

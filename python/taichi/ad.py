@@ -3,7 +3,7 @@ def grad_replaced(func):
     system, e.g. `ti.Tape()` and `kernel.grad()`.
     This decorator forces Taichi's autodiff system to use a user-defined gradient
     function for the decorated function. Its customized gradient must be decorated
-    by :func:`~taichi.lang.grad_for`.
+    by :func:`~taichi.ad.grad_for`.
 
     Args:
         fn (Callable): The python function to be decorated.
@@ -50,7 +50,7 @@ def grad_for(primal):
     See :func:`~taichi.lang.grad_replaced` for examples.
 
     Args:
-        primal (Callable): The primal function, must be decorated by :func:`~taichi.lang.grad_replaced`.
+        primal (Callable): The primal function, must be decorated by :func:`~taichi.ad.grad_replaced`.
 
     Returns:
         Callable: The decorator used to decorate customized gradient function."""

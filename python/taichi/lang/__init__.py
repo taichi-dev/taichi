@@ -553,13 +553,13 @@ def Tape(loss, clear_gradients=True):
     """Return a context manager of :class:`~taichi.lang.tape.TapeImpl`. The
     context manager would catching all of the callings of functions that
     decorated by :func:`~taichi.lang.kernel_impl.kernel` or
-    :func:`~taichi.lang.grad_replaced` under `with` statement, and calculate
+    :func:`~taichi.ad.grad_replaced` under `with` statement, and calculate
     all the partial gradients of a given loss variable by calling all of the
     gradient function of the callings caught in reverse order while `with`
     statement ended.
 
     See also :func:`~taichi.lang.kernel_impl.kernel` and
-    :func:`~taichi.lang.grad_replaced` for gradient functions.
+    :func:`~taichi.ad.grad_replaced` for gradient functions.
 
     Args:
         loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().

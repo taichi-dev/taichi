@@ -841,8 +841,8 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
 }
 
 void runtime_memory_allocate_aligned(LLVMRuntime *runtime,
-                                         std::size_t size,
-                                         std::size_t alignment) {
+                                     std::size_t size,
+                                     std::size_t alignment) {
   runtime->set_result(taichi_result_buffer_runtime_query_id,
                       runtime->allocate_aligned(size, alignment));
 }

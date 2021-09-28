@@ -14,9 +14,9 @@ e.g., `i32` and `f64`.
 
 The _category_ can be one of:
 
-- `i` for signed integers, e.g. 233, -666
-- `u` for unsigned integers, e.g. 233, 666
-- `f` for floating point numbers, e.g. 2.33, 1e-4
+- `i` for signed integers, e.g. 24, -32
+- `u` for unsigned integers, e.g. 128, 256
+- `f` for floating point numbers, e.g. 3.14, 1.0, 1e-4
 
 The _digital number_ can be one of:
 
@@ -31,7 +31,7 @@ the bit number, the higher the precision is.
 For example, the two most commonly used types:
 
 - `i32` represents a 32-bit signed integer.
-- `f32` represents a 32-bit floating pointer number.
+- `f32` represents a 32-bit floating point number.
 
 ## Supported primitive types
 
@@ -52,18 +52,18 @@ Currently, supported primitive types in Taichi are
 
 Supported types on each backend:
 
-| type | CPU/CUDA | OpenGL | Metal | C source |
-| ---- | -------- | ------ | ----- | -------- |
-| i8   | > OK     | > N/A  | > OK  | > OK     |
-| i16  | > OK     | > N/A  | > OK  | > OK     |
-| i32  | > OK     | > OK   | > OK  | > OK     |
-| i64  | > OK     | > EXT  | > N/A | > OK     |
-| u8   | > OK     | > N/A  | > OK  | > OK     |
-| u16  | > OK     | > N/A  | > OK  | > OK     |
-| u32  | > OK     | > N/A  | > OK  | > OK     |
-| u64  | > OK     | > N/A  | > N/A | > OK     |
-| f32  | > OK     | > OK   | > OK  | > OK     |
-| f64  | > OK     | > OK   | > N/A | > OK     |
+| type | CPU/CUDA |  OpenGL | Metal |  Vulkan  |
+| ---- | -------- | ------- | ----- | -------- |
+| i8   | > OK     | > N/A   | > OK  | > EXT    |
+| i16  | > OK     | > N/A   | > OK  | > EXT    |
+| i32  | > OK     | > OK    | > OK  | > OK     |
+| i64  | > OK     | > EXT   | > N/A | > EXT    |
+| u8   | > OK     | > N/A   | > OK  | > EXT    |
+| u16  | > OK     | > N/A   | > OK  | > EXT    |
+| u32  | > OK     | > N/A   | > OK  | > OK     |
+| u64  | > OK     | > N/A   | > N/A | > EXT    |
+| f32  | > OK     | > OK    | > OK  | > OK     |
+| f64  | > OK     | > OK    | > N/A | > EXT    |
 
 (OK: supported, EXT: require extension, N/A: not available)
 :::
@@ -121,10 +121,12 @@ def func(a: ti.f32) -> ti.i64:
 
 ## Type casts
 
+All data types are static in the **Taichi scope**. Therefore, casts are needed when you want to assign a certain type of data to another one.
+
 ### Implicit casts
 
 :::caution
-The type of a variable is **determinated on it's initialization**.
+The type of a variable is **determined on its initialization**.
 :::
 
 When a _low-precision_ variable is assigned to a _high-precision_
@@ -132,9 +134,11 @@ variable, it will be implicitly promoted to the _high-precision_ type
 and no warning will be raised:
 
 ```python {3}
-a = 1.7
-a = 1
-print(a)  # 1.0
+@ti.kernel
+def foo():
+    a = 3.14
+    a = 1
+    print(a)  # 1.0
 ```
 
 When a _high-precision_ variable is assigned to a _low-precision_ type,
@@ -142,9 +146,11 @@ it will be implicitly down-cast into the _low-precision_ type and Taichi
 will raise a warning:
 
 ```python {3}
-a = 1
-a = 1.7
-print(a)  # 1
+@ti.kernel
+def foo():
+    a = 1
+    a = 3.14
+    print(a)  # 3
 ```
 
 ### Explicit casts
@@ -153,18 +159,22 @@ You may use `ti.cast` to explicitly cast scalar values between different
 types:
 
 ```python {2-3}
-a = 1.7
-b = ti.cast(a, ti.i32)  # 1
-c = ti.cast(b, ti.f32)  # 1.0
+@ti.kernel
+def foo():
+    a = 3.14
+    b = ti.cast(a, ti.i32)  # 3
+    c = ti.cast(b, ti.f32)  # 3.0
 ```
 
 Equivalently, use `int()` and `float()` to convert values to float-point
 or integer types of default precisions:
 
 ```python {2-3}
-a = 1.7
-b = int(a)    # 1
-c = float(a)  # 1.0
+@ti.kernel
+def foo():
+    a = 3.14
+    b = int(a)    # 3
+    c = float(b)  # 3.0
 ```
 
 ### Casting vectors and matrices
@@ -172,18 +182,28 @@ c = float(a)  # 1.0
 Type casts applied to vectors/matrices are element-wise:
 
 ```python {2,4}
-u = ti.Vector([2.3, 4.7])
-v = int(u)              # ti.Vector([2, 4])
-# If you are using ti.i32 as default_ip, this is equivalent to:
-v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
+@ti.kernel
+def foo():
+    u = ti.Vector([2.3, 4.7])
+    v = int(u)              # ti.Vector([2, 4])
+    # If you are using ti.i32 as default_ip, this is equivalent to:
+    v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
 ```
 
-### Bit casting
+### Bit-casts
 
 Use `ti.bit_cast` to bit-cast a value into another data type. The
 underlying bits will be preserved in this cast. The new type must have
 the same width as the the old type. For example, bit-casting `i32` to
 `f64` is not allowed. Use this operation with caution.
+
+```python
+@ti.kernel
+def foo():
+    a = 3.14
+    b = ti.bit_cast(a, ti.i32) # 1078523331
+    c = ti.bit_cast(b, ti.f32) # 3.14
+```
 
 :::note
 For people from C++, `ti.bit_cast` is equivalent to `reinterpret_cast`.
@@ -191,35 +211,36 @@ For people from C++, `ti.bit_cast` is equivalent to `reinterpret_cast`.
 
 ## Compound types
 
-User-defined compound types are created using the `ti.types` module. Supported compound types include vectors, matrices, and structs:
+User-defined compound types can be created using the `ti.types` module. Supported compound types include vectors, matrices, and structs:
 
 ```python
-vec2i = ti.types.vector(2, ti.i32)
-vec3f = ti.types.vector(3, float)
-mat2f = ti.types.matrix(2, 2, float)
-ray3f = ti.types.struct(ro=vec3f, rd=vec3f, l=ti.f32)
+my_vec2i = ti.types.vector(2, ti.i32)
+my_vec3f = ti.types.vector(3, float)
+my_mat2f = ti.types.matrix(2, 2, float)
+my_ray3f = ti.types.struct(ro=my_vec3f, rd=my_vec3f, l=ti.f32)
 ```
 
 ### Creating fields
 
-Fields of a given compound type can be created with the `.field()` method of a Compound Type:
+Fields of a user-defined compound type can be created with the `.field()` method of a Compound Type:
 
 ```python
-# ti.Vector.field(2, dtype=ti.i32, shape=(233, 666))
-x = vec2i.field(shape=(233, 666))
+vec1 = my_vec2i.field(shape=(128, 128, 128))
+mat2 = my_mat2f.field(shape=(24, 32))
+ray3 = my_ray3f.field(shape=(1024, 768))
 
-# ti.Matrix.field(2, 2, dtype=ti.i32, shape=(233, 666))
-x = mat2f.field(shape=(233, 666))
-
-# ti.Struct.field({'ro': vec3f, 'rd': vec3f, 'l': ti.f32}, shape=(233, 666))
-x = ray3f.field(shape=(233, 666))
+# is equivalent to:
+vec1 = ti.Vector.field(2, dtype=ti.i32, shape=(128, 128, 128))
+mat2 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=(24, 32))
+ray3 = ti.Struct.field({'ro': my_vec3f, 'rd': my_vec3f, 'l': ti.f32}, shape=(1024, 768))
 ```
 
 ### Creating local variables
-Compound types can be directly called to create matrix or struct instances. Vectors and matrices can be created using GLSL-like broadcast syntax since the shape of the vector or matrix is already known:
+Compound types can be directly called to create vector, matrix or struct instances. Vectors, matrices and structs can be created using GLSL-like broadcast syntax since their shapes are already known:
 ```python
-ray = ray3f(0.0) # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
-ro = vec3f(0.0) # ti.Vector([0.0, 0.0, 0.0])
-rd = vec3f(vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
-ray2 = ray3f(ro=ro, rd=rd, l=1.0)
+ray1 = my_ray3f(0.0)            # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
+vec1 = my_vec3f(0.0)            # ti.Vector([0.0, 0.0, 0.0])
+mat1 = my_mat2f(1.0)            # ti.Matrix([[1.0, 1.0], [1.0, 1.0]])
+vec2 = my_vec3f(my_vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
+ray2 = my_ray3f(ro=vec1, rd=vec2, l=1.0)
 ```

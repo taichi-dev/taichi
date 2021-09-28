@@ -4,8 +4,10 @@ sidebar_position: 3
 
 # Fields
 
-Fields are **global** variables provided by Taichi. **Global** indicates that fields could be read/written from both the Python scope and the Taichi scope. The field contains a multi-dimensional array of elements. Similar to NumPy `ndarray` objects, Fields have a data type and a shape. But fields can be either sparse or dense.  An element of a field can be either a scalar, a vector/matrix, or a struct. This term (Field) is borrowed from mathematics and physics. If you
-have already known [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (e.g., heat field), vector field (e.g., [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)) in mathematics and physics, it would be straightforward to understand the fields in Taichi.
+Fields are **global** variables provided by Taichi. **Global** indicates that fields can be read/written from both the Python scope and the Taichi scope. A field can be considered as a multi-dimensional array of elements, and it can be either **dense** or **sparse**. Similar to a NumPy `ndarray` object, a field has a data type and a shape. Moreover, an element of a field can be a scalar, a **vector**, a **matrix**, or a **struct**.
+
+The term **field** is borrowed from mathematics and physics. If you
+have already known [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (e.g., heat field) or vector field (e.g., [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)) in mathematics and physics, it will be straightforward to understand the fields in Taichi.
 
 To be noticed:
 * Fields are always accessed by indices.
@@ -18,7 +20,7 @@ the element is a matrix.
 :::
 
 :::tip
-We cannot allocate new fields after the kernel's execution according to this document. However, we can use a new class `FieldsBuilder` to support dynamic allocation. For more information, please see [Advanced dense layouts](/docs/lang/articles/advanced/layout).
+In earlier versions of Taichi, you could not allocate new fields after executing the first kernel. Since Taichi v0.8.0, you can use a new class `FieldsBuilder` for dynamic field allocation and destruction. For more details, please see [Field (advanced)](/docs/lang/articles/advanced/layout).
 :::
 
 ## Scalar fields
@@ -30,8 +32,8 @@ heat field on the wok:
 heat_field = ti.field(dtype=ti.f32, shape=(width_wok, height_wok))
 ```
 
-### Access scalar fields elements
-- If `x` is a 3D scalar field (`ti.field(dtype=ti.f32, shape=(10,20,30)`), access its element with `x[i,j,k]` (`0=<i<10, 0=<j<20, 0=<k<30`).
+### Access elements of scalar fields
+- If `x` is a 3D scalar field (`ti.field(dtype=ti.f32, shape=(10, 20, 30)`), access its element with `x[i, j, k]` (`0 <= i < 10, 0 <= j < 20, 0 <= k < 30`).
 - When accessing 0-D field `x`, use `x[None] = 0` instead of `x = 0`. A 0-D field looks like `energy = ti.field(dtype=ti.f32, shape=())`.
 
 :::caution
@@ -45,13 +47,13 @@ gravitational_field = ti.Vector.field(n=3, dtype=ti.f32, shape=(x, y, z))
 ```
 `x, y, z` are the sizes of each dimension of the 3D space respectively. `n` is the number of elements of the gravity force vector.
 
-### Access vector fields elements
-- The gravity force vector could be accessed by `gravitational_field[i,j,k]`, (`0=< i < x, 0<= j < y, 0<= k < z`).
-- The `p`-th element of the gravity force vector could be accessed by `gravitational_field[i,j,k][p]`, (`0<= p < n`).
-- The 0-D vector fields `x = ti.Vector.field(n=3, dtype=ti.f32, shape=())` should be accessed by `x[None][p]`, (`0<= p < n`).
+### Access elements of vector fields
+- The gravity force vector could be accessed by `gravitational_field[i, j, k]` (`0 <= i < x, 0 <= j < y, 0 <= k < z`).
+- The `p`-th member of the gravity force vector could be accessed by `gravitational_field[i, j, k][p]` (`0 <= p < n`).
+- The 0-D vector field `x = ti.Vector.field(n=3, dtype=ti.f32, shape=())` should be accessed by `x[None][p]` (`0 <= p < n`).
 
 :::note
-As you may have noticed, there are **two** indexing operators `[]` when you load a vector element from a global vector field: the first is for field indexing, the second for vector indexing.
+As you may have noticed, there are **two** indexing operators `[]` when you access a member of a vector from a vector field: the first is for field indexing, and the second is for vector indexing.
 :::
 
 ## Matrix fields
@@ -69,17 +71,17 @@ a `3 x 2` matrix. To allocate a `128 x 64` matrix field which has a
 `3 x 2` matrix for each of its entry, use the statement
 `A = ti.Matrix.field(3, 2, dtype=ti.f32, shape=(128, 64))`.
 
-### Access matrix field elements
+### Access elements of matrix fields
 - If you want to get the matrix of grid node `i, j`, please use
   `mat = A[i, j]`. `mat` is simply a `3 x 2` matrix.
 - To get the element on the first row and second column of that
   matrix, use `mat[0, 1]` or `A[i, j][0, 1]`.
-- The 0-D matrix fields `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape=())` should be accessed by `x[None][p, q]`, (`0<= p < n, 0<= q < m`).
+- The 0-D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape=())` should be accessed by `x[None][p, q]` (`0 <= p < n, 0 <= q < m`).
 
 :::note
 - As you may have noticed, there are **two** indexing operators `[]`
-  when you load a matrix element from a global matrix field: the
-  first is for field indexing, the second for matrix indexing.
+  when you access a member of a matrix from a matrix field: the
+  first is for field indexing, and the second is for matrix indexing.
 - `ti.Vector` is simply an alias of `ti.Matrix`.
 :::
 

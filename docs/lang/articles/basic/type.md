@@ -31,7 +31,7 @@ the bit number, the higher the precision is.
 For example, the two most commonly used types:
 
 - `i32` represents a 32-bit signed integer.
-- `f32` represents a 32-bit floating pointer number.
+- `f32` represents a 32-bit floating point number.
 
 ## Supported primitive types
 

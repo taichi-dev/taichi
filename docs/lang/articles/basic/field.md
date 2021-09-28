@@ -14,11 +14,6 @@ To be noticed:
 * Field values are initially zero.
 * Sparse fields are initially inactive.
 
-:::note
-Matrices can be used as field elements, so you can have fields with each
-the element is a matrix.
-:::
-
 :::tip
 In earlier versions of Taichi, you could not allocate new fields after executing the first kernel. Since Taichi v0.8.0, you can use a new class `FieldsBuilder` for dynamic field allocation and destruction. For more details, please see [Field (advanced)](/docs/lang/articles/advanced/layout).
 :::
@@ -66,10 +61,8 @@ strain_tensor_field = ti.Matrix.field(n=3, m=3, dtype=ti.f32, shape=(x, y, z))
 
 `x, y, z` are the sizes of each dimension of the 3D material respectively. `n, m` are the dimensions of the strain tensor.
 
-In general case, suppose you have a `128 x 64` field called `A`, and each element contains
-a `3 x 2` matrix. To allocate a `128 x 64` matrix field which has a
-`3 x 2` matrix for each of its entry, use the statement
-`A = ti.Matrix.field(3, 2, dtype=ti.f32, shape=(128, 64))`.
+In a general case, suppose you have a `128 x 64` field called `A`, and each element is
+a `3 x 2` matrix, you can define it with `A = ti.Matrix.field(3, 2, dtype=ti.f32, shape=(128, 64))`.
 
 ### Access elements of matrix fields
 - If you want to get the matrix of grid node `i, j`, please use
@@ -125,7 +118,9 @@ Members of a struct field can be accessed either locally (i.e., member of a stru
 # set the position of the first particle to origin
 particle_field[0] # local ti.Struct
 particle_field[0].pos = ti.Vector([0.0, 0.0, 0.0])
-particle_field[0].pos[0] = 1.0
+
+# set the first member of the second position to 1.0
+particle_field[1].pos[0] = 1.0
 
 # make the mass of all particles be 1
 particle_field.mass # global ti.Vector.field

@@ -79,20 +79,11 @@ jobs:
           CI_PLATFORM: ${{ matrix.os }}
 
       - name: Build & Install
-        run: |
-          TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export CXX=clang++
-          python -m pip install -r requirements_dev.txt
-          cd python
-          git fetch origin master
-          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python build.py build
-          cd ..
-          export NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          pip install dist/*.whl
+        run: sh .github/workflows/scripts/linux_build.sh
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          PATH: `pwd`/taichi-llvm/bin/:$PATH
+          CXX: clang++
 
       - name: Test
         run: |
@@ -148,20 +139,11 @@ jobs:
           CI_PLATFORM: ${{ matrix.os }}
 
       - name: Build & Install
-        run: |
-          TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export CXX=clang++
-          python -m pip install -r requirements_dev.txt
-          cd python
-          git fetch origin master
-          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python build.py build
-          cd ..
-          NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          pip install dist/*.whl
+        run: sh .github/workflows/scripts/linux_build.sh
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          PATH: `pwd`/taichi-llvm/bin/:$PATH
+          CXX: clang++
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
@@ -195,25 +177,14 @@ jobs:
           submodules: 'recursive'
 
       - name: Build
-        run: |
-          git --version
-          export PATH=$LLVM_LIB_ROOT_DIR/bin:/usr/local/cuda/bin:$PATH
-          export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
-          export CXX=clang++-8
-          export PYTHON=/usr/bin/python3
-          $PYTHON -m pip uninstall taichi -y
-          $PYTHON -m pip install -r requirements_dev.txt
-          cd python
-          git fetch origin master
-          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS $PYTHON build.py build
-          cd ..
-          export NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          $PYTHON -m pip install dist/*.whl
+        run: sh .github/workflows/scripts/linux_build.sh
         env:
           LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON
           BUILD_NUM_THREADS: 8
+          PATH: /usr/bin/python3:/opt/taichi-llvm-10.0.0/bin:/usr/local/cuda/bin:$PATH
+          LLVM_DIR: /opt/taichi-llvm-10.0.0/lib/cmake/llvm
+          CXX: clang++-8
 
       - name: Test
         run: |

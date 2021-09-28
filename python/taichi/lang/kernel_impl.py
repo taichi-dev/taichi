@@ -503,6 +503,7 @@ class Kernel:
                                                    int(tmp.ctypes.data),
                                                    tmp.nbytes)
                     elif use_torch:
+
                         def get_call_back(u, v):
                             def call_back():
                                 u.copy_(v)

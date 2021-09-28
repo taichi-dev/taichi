@@ -21,7 +21,8 @@ class Ndarray:
             if impl.current_cfg().arch == _ti_core.Arch.cuda:
                 self.arr = self.arr.cuda()
         else:
-            self.arr = _ti_core.Ndarray(impl.get_runtime().prog, cook_dtype(dtype), shape)
+            self.arr = _ti_core.Ndarray(impl.get_runtime().prog,
+                                        cook_dtype(dtype), shape)
 
     @property
     def shape(self):

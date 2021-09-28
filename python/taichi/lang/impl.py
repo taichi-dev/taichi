@@ -289,7 +289,7 @@ class PyTaichi:
         self.default_fp = ti.f32
         self.default_ip = ti.i32
         self.target_tape = None
-        self.inside_complex_kernel = False
+        self.grad_replaced = False
         self.kernels = kernels or []
 
     def get_num_compiled_functions(self):

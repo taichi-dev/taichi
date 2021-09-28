@@ -548,7 +548,7 @@ class Kernel:
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the
             # gradient. For class kernels, args[0] is always the kernel owner.
-            if not self.is_grad and self.runtime.target_tape and not self.runtime.inside_complex_kernel:
+            if not self.is_grad and self.runtime.target_tape and not self.runtime.grad_replaced:
                 self.runtime.target_tape.insert(self, args)
 
             t_kernel(launch_ctx)

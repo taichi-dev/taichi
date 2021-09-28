@@ -12,6 +12,7 @@
 TLANG_NAMESPACE_BEGIN
 
 enum class ProfilingToolkit : int {
+  undef,
   event,
   cupti,
 };
@@ -21,11 +22,13 @@ class EventToolkit;
 // A CUDA kernel profiler
 class KernelProfilerCUDA : public KernelProfilerBase {
  public:
-  KernelProfilerCUDA();
+  KernelProfilerCUDA(bool enable);
+
   std::string title() const override {
     return "CUDA Profiler";
   }
 
+  void reinit_with_metrics(const std::vector<std::string> &metrics) override;
   void trace(KernelProfilerBase::TaskHandle &task_handle,
              const std::string &task_name) override;
   void sync() override;
@@ -39,7 +42,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
       const std::string &kernel_name) override;
 
  private:
-  ProfilingToolkit tool_ = ProfilingToolkit::event;
+  ProfilingToolkit tool_ = ProfilingToolkit::undef;
   std::unique_ptr<EventToolkit> event_toolkit_{nullptr};
   // if(tool_ == ProfilingToolkit::cupti) event_toolkit_ = nullptr
   std::unique_ptr<CuptiToolkit> cupti_toolkit_{nullptr};

@@ -61,7 +61,7 @@ normalized = deprecated('ti.normalized(a)',
 
 cfg = default_cfg()
 x86_64 = _ti_core.x64
-"""The X64 CPU backend.
+"""The x64 CPU backend.
 """
 x64 = _ti_core.x64
 """The X64 CPU backend.

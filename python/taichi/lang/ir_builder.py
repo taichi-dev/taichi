@@ -163,6 +163,22 @@ class IRBuilder(Builder):
         node.ptr = getattr(node.value.ptr, node.attr)
         return node
 
+    @staticmethod
+    def build_BinOp(ctx, node):
+        node.left = build_ir(ctx, node.left)
+        node.right = build_ir(ctx, node.right)
+        op = {
+            ast.Add: lambda l, r: l + r,
+            ast.Sub: lambda l, r: l - r,
+            ast.Mult: lambda l, r: l * r,
+            ast.Div: lambda l, r: l / r,
+            ast.FloorDiv: lambda l, r: l // r,
+            ast.Mod: lambda l, r: l % r,
+        }.get(type(node.op))
+        node.ptr = op(node.left.ptr, node.right.ptr)
+        return node
+
+
 
 build_ir = IRBuilder()
 

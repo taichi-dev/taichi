@@ -178,6 +178,8 @@ This design is terrible.
   Note if you want to make more changes afterwards, you'll need to
   `git pull` first.
 
+- For your C++ code, please also follow [C++ style](./cpp_style).
+
 ## PR title format and tags
 
 PR titles will be part of the commit history reflected in the `master`

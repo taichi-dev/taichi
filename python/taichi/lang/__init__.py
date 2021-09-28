@@ -327,7 +327,7 @@ def init(arch=None,
         default_fp (Optional[type]): Default integral type.
         **kwargs: Taichi provides highly customizable compilation through
             ``kwargs``, which allows for fine grained control of Taichi compiler
-            behavior. Below we list some of the most frequently used ones.For a
+            behavior. Below we list some of the most frequently used ones. For a
             complete list, please check out
             https://github.com/taichi-dev/taichi/blob/master/taichi/program/compile_config.h.
 

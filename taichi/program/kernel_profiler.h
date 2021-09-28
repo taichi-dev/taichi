@@ -77,6 +77,10 @@ class KernelProfilerBase {
              double &max,
              double &avg);
 
+  std::vector<KernelProfileTracedRecord> get_traced_records() {
+    return traced_records_;
+  }
+
   double get_total_time() const;
 
   virtual ~KernelProfilerBase() {

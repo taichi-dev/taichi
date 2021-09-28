@@ -25,7 +25,7 @@ std::string runtime_lib_dir() {
     TI_ERROR_IF(!ti_lib_dir,
                 "If you are running the taichi_cpp_tests please set TI_LIB_DIR "
                 "to $TAICHI_INSTALL_DIR/lib where TAICHI_INSTALL_DIR can be "
-                "retrieved from taichi.__path__ in python");
+                "retrieved from taichi.__path__[0] in python");
     folder = std::string(ti_lib_dir);
   }
   return folder;

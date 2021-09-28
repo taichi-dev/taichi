@@ -16,7 +16,7 @@ class CCRuntime {
   }
 
   std::string get_object() {
-    return obj_path;
+    return obj_path_;
   }
 
   void compile();
@@ -25,9 +25,9 @@ class CCRuntime {
   std::string source;
 
  private:
-  CCProgramImpl *cc_program_impl_;
-  std::string src_path;
-  std::string obj_path;
+  CCProgramImpl *cc_program_impl_{nullptr};
+  std::string src_path_;
+  std::string obj_path_;
 };
 
 }  // namespace cccp

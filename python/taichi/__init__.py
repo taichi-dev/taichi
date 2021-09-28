@@ -30,7 +30,9 @@ else:
         raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")
 
 
-__all__ = ['core', 'misc', 'lang', 'tools', 'main', 'torch_io', 'ui']
+__all__ = [
+    'core', 'misc', 'lang', 'tools', 'main', 'torch_io', 'ui', 'profiler'
+]
 
 __version__ = (core.get_version_major(), core.get_version_minor(),
                core.get_version_patch())

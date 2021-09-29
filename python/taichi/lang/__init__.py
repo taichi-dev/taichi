@@ -27,6 +27,7 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               to_taichi_type)
 from taichi.misc.util import deprecated
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
+from taichi.profiler.kernelmetrics import *
 from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
@@ -107,6 +108,10 @@ type_factory_ = _ti_core.get_type_factory_instance()
 @deprecated('kernel_profiler_print()', 'print_kernel_profile_info()')
 def kernel_profiler_print():
     return print_kernel_profile_info()
+
+
+def set_kernel_profile_metrics(metric_list=default_metric_list):
+    get_default_kernel_profiler().set_metrics(metric_list)
 
 
 def print_kernel_profile_info(mode='count'):

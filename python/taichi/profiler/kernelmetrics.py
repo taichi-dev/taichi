@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from taichi.core import ti_core as _ti_core
+
 
 @dataclass
 class CuptiMetric:
@@ -152,7 +154,7 @@ cache_hit_rate = [
 ]
 
 # metric suite: device throughput
-utilization_metrics = [
+device_utilization = [
     sm_throughput,
     dram_throughput,
     shared_utilization,
@@ -160,14 +162,25 @@ utilization_metrics = [
     l2_throughput,
 ]
 
-# Predefined metrics suite list
-predefined_cupti_metrics = [
-    global_access,
-    shared_access,
-    atomic_access,
-    cache_hit_rate,
-    utilization_metrics,
-]
+# Predefined metrics suites
+predefined_cupti_metrics = {
+    'global_access': global_access,
+    'shared_access': shared_access,
+    'atomic_access': atomic_access,
+    'cache_hit_rate': cache_hit_rate,
+    'device_utilization': device_utilization,
+}
+
+
+def get_predefined_cupti_metrics(name=''):
+    if name not in predefined_cupti_metrics:
+        _ti_core.warn("Valid Taichi predefined metrics list (str):")
+        for key in predefined_cupti_metrics:
+            _ti_core.warn(f"    '{key}'")
+        return None
+    else:
+        return predefined_cupti_metrics[name]
+
 
 # Default metrics list
 default_cupti_metrics = [dram_bytes_sum]

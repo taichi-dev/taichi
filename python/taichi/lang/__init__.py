@@ -27,8 +27,8 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               to_taichi_type)
 from taichi.misc.util import deprecated
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
-from taichi.profiler.kernelmetrics import (default_cupti_metrics,
-                                           predefined_cupti_metrics)
+from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
+                                           get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti

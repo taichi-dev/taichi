@@ -35,35 +35,6 @@ void KernelProfilerBase::profiler_stop(KernelProfilerBase *profiler) {
 }
 
 // TODO : deprecated
-void KernelProfilerBase::print() {
-  sync();
-  fmt::print("{}\n", title());
-  fmt::print(
-      "========================================================================"
-      "=\n");
-  fmt::print(
-      "[      %     total   count |      min       avg       max   ] Kernel "
-      "name\n");
-  std::sort(statistical_results_.begin(), statistical_results_.end());
-  for (auto &rec : statistical_results_) {
-    auto fraction = rec.total / total_time_ms_ * 100.0f;
-    fmt::print("[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms] {}\n",
-               fraction, rec.total / 1000.0f, rec.counter, rec.min,
-               rec.total / rec.counter, rec.max, rec.name);
-  }
-  fmt::print(
-      "------------------------------------------------------------------------"
-      "-\n");
-  fmt::print(
-      "[100.00%] Total kernel execution time: {:7.3f} s   number of records: "
-      "{}\n",
-      get_total_time(), statistical_results_.size());
-
-  fmt::print(
-      "========================================================================"
-      "=\n");
-}
-
 void KernelProfilerBase::query(const std::string &kernel_name,
                                int &counter,
                                double &min,
@@ -98,10 +69,6 @@ namespace {
 // A simple profiler that uses Time::get_time()
 class DefaultProfiler : public KernelProfilerBase {
  public:
-  explicit DefaultProfiler(Arch arch)
-      : title_(fmt::format("{} Profiler", arch_name(arch))) {
-  }
-
   void sync() override {
   }
 
@@ -110,10 +77,6 @@ class DefaultProfiler : public KernelProfilerBase {
     total_time_ms_ = 0;
     traced_records_.clear();
     statistical_results_.clear();
-  }
-
-  std::string title() const override {
-    return title_;
   }
 
   void start(const std::string &kernel_name) override {
@@ -146,7 +109,6 @@ class DefaultProfiler : public KernelProfilerBase {
  private:
   double start_t_;
   std::string event_name_;
-  std::string title_;
 };
 
 }  // namespace
@@ -159,7 +121,7 @@ std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable) {
     TI_NOT_IMPLEMENTED;
 #endif
   } else {
-    return std::make_unique<DefaultProfiler>(arch);
+    return std::make_unique<DefaultProfiler>();
   }
 }
 

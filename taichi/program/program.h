@@ -130,10 +130,6 @@ class Program {
 
   ~Program();
 
-  void print_kernel_profile_info() {
-    profiler->print();
-  }
-
   struct KernelProfilerQueryResult {
     int counter{0};
     double min{0.0};

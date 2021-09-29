@@ -133,7 +133,7 @@ When a _low-precision_ variable is assigned to a _high-precision_
 variable, it will be implicitly promoted to the _high-precision_ type
 and no warning will be raised:
 
-```python {5}
+```python {4}
 @ti.kernel
 def foo():
     a = 3.14
@@ -145,7 +145,7 @@ When a _high-precision_ variable is assigned to a _low-precision_ type,
 it will be implicitly down-cast into the _low-precision_ type and Taichi
 will raise a warning:
 
-```python {5}
+```python {4}
 @ti.kernel
 def foo():
     a = 1

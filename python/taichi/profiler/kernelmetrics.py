@@ -1,17 +1,16 @@
+from dataclasses import dataclass
+
+
+@dataclass
 class CuptiMetric:
-    """
-    """
-    def __init__(self, name='', header='', format='', scale=1.0):
-        #cupti metric
-        self.name = name  #(str): metric name for init CuptiToolkit
-        #formating
-        self.header = header  #(str): header for formatted printing
-        self.format = format  #(str): format for print metric value and unit
-        self.scale = scale  #(double): scale for metric value
+    """TODO: class docstring"""
+    name: str = ''  #(str): metric name for init CuptiToolkit
+    header: str = ''  #(str): header for formatted printing
+    format: str = ''  #(str): format for print metric value and unit
+    scale: float = 1.0  #(float): scale for metric value
 
 
-########################## Global Memory Metrics ##########################
-
+# Global Memory Metrics
 dram_utilization = CuptiMetric(
     name='dram__throughput.avg.pct_of_peak_sustained_elapsed',
     header=' global.uti ',
@@ -47,8 +46,7 @@ dram_write_throughput = CuptiMetric(name='dram__bytes_write.sum.per_second',
                                     format='{:8.3f} GB/s ',
                                     scale=1.0 / 1024 / 1024 / 1024)
 
-########################## Shared Memory Metrics ##########################
-
+# Shared Memory Metrics
 shared_utilization = CuptiMetric(
     name=
     'l1tex__data_pipe_lsu_wavefronts_mem_shared.avg.pct_of_peak_sustained_elapsed',
@@ -75,8 +73,7 @@ shared_bank_conflicts_load = CuptiMetric(
     header=' bank.conflict.r ',
     format='      {:10.0f} ')
 
-########################## Atomic Metrics ##########################
-
+# Atomic Metrics
 global_op_atom = CuptiMetric(
     name='l1tex__t_set_accesses_pipe_lsu_mem_global_op_atom.sum',
     header=' global.atom ',
@@ -87,8 +84,7 @@ global_op_reduction = CuptiMetric(
     header=' global.red ',
     format='   {:8.0f} ')
 
-################# Hardware Utilization Metrics #####################
-
+# Hardware Utilization Metrics
 sm_throughput = CuptiMetric(
     name='sm__throughput.avg.pct_of_peak_sustained_elapsed',
     header=' core.uti ',
@@ -109,8 +105,7 @@ l2_throughput = CuptiMetric(
     header='   L2.uti ',
     format=' {:6.2f} % ')
 
-########################## Misc Metrics ##########################
-
+# Misc Metrics
 l1_hit_rate = CuptiMetric(name='l1tex__t_sector_hit_rate.pct',
                           header='   L1.hit ',
                           format=' {:6.2f} % ')
@@ -124,8 +119,8 @@ achieved_occupancy = CuptiMetric(
     header=' occupancy',
     format='   {:6.0f} ')
 
-####  global load & store ####
-global_access_metrics = [
+# metric suite: global load & store
+global_access = [
     dram_utilization,
     dram_bytes_sum,
     dram_bytes_throughput,
@@ -135,8 +130,8 @@ global_access_metrics = [
     dram_write_throughput,
 ]
 
-#### shared load & store ####
-shared_access_metrics = [
+# metric suite: shared load & store
+shared_access = [
     shared_utilization,
     shared_transactions_load,
     shared_transactions_store,
@@ -144,20 +139,20 @@ shared_access_metrics = [
     shared_bank_conflicts_load,
 ]
 
-#### atomic access ####
-atomic_access_metrics = [
+# metric suite: atomic access
+atomic_access = [
     global_op_atom,
     global_op_reduction,
 ]
 
-#### cache hit ####
-cache_hit_metrics = [
+# metric suite: cache hit rate
+cache_hit_rate = [
     l1_hit_rate,
     l2_hit_rate,
 ]
 
-#### device throughput ####
-device_utilization_metrics = [
+# metric suite: device throughput
+utilization_metrics = [
     sm_throughput,
     dram_throughput,
     shared_utilization,
@@ -165,5 +160,14 @@ device_utilization_metrics = [
     l2_throughput,
 ]
 
+# Predefined metrics suite list
+predefined_cupti_metrics = [
+    global_access,
+    shared_access,
+    atomic_access,
+    cache_hit_rate,
+    utilization_metrics,
+]
+
 # Default metrics list
-default_metric_list = [dram_bytes_sum]
+default_cupti_metrics = [dram_bytes_sum]

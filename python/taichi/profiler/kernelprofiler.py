@@ -2,7 +2,7 @@ from contextlib import contextmanager
 
 from taichi.core import ti_core as _ti_core
 from taichi.lang import impl
-from taichi.profiler.kernelmetrics import default_metric_list
+from taichi.profiler.kernelmetrics import default_cupti_metrics
 
 import taichi as ti
 
@@ -90,7 +90,7 @@ class KernelProfiler:
         # TODO : query self.StatisticalResult in python scope
         return impl.get_runtime().prog.query_kernel_profile_info(name)
 
-    def set_metrics(self, metric_list=default_metric_list):
+    def set_metrics(self, metric_list=default_cupti_metrics):
         """TODO: API docstring"""
         self._metric_list = metric_list
         metric_name_list = [metric.name for metric in metric_list]
@@ -99,7 +99,8 @@ class KernelProfiler:
             metric_name_list)
 
     @contextmanager
-    def collect_metrics_within_context(self, metric_list=default_metric_list):
+    def collect_metrics_within_context(self,
+                                       metric_list=default_cupti_metrics):
         """TODO: API docstring
         Example::
         """

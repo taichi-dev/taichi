@@ -54,7 +54,7 @@ class KernelProfiler:
         self._traced_records = []
         self._statistical_results = {}
 
-    # public methods 
+    # public methods
 
     def set_kernel_profiler_mode(self, mode=False):
         """TODO: API docstring"""

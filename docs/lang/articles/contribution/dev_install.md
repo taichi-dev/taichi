@@ -18,7 +18,11 @@ This section documents how to configure the Taichi devolopment environment and b
 
   - On OSX: you don’t need to do anything.
   - On Ubuntu, execute `sudo apt install libtinfo-dev clang-8`.
-  - On Arch Linux, download `llvm == 10.0.0` prebuild from [here](https://releases.llvm.org/download.html#10.0.1), choose prebuild for `ubuntu 18.04`. Please export `TAICHI_CMAKE_ARGS` environment variable with the value `-DCMAKE_CXX_COMPILER=<path_to_llvm_folder>/bin/clang++`, and add `$LLVM_FOLDER/bin` to `PATH`, e.g. `export PATH=<path_to_llvm_folder>/bin:$PATH`.
+  - On Arch Linux, download `llvm == 10.0.0` prebuilt binary for `ubuntu 18.04` from [here](https://releases.llvm.org/download.html#10.0.1). Then update environment variables `TAICHI_CMAKE_ARGS` and  `PATH`:
+    ```
+    export TAICHI_CMAKE_ARGS="-DCMAKE_CXX_COMPILER=<path_to_llvm_folder>/bin/clang++:$TAICHI_CMAKE_ARGS"
+    export PATH=<path_to_llvm_folder>/bin:$PATH
+    ```
   - On other Linux distributions, please search [this
     site](https://pkgs.org) for clang version \>= 7.
   - On Windows please download [clang-10](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip). Make sure you add the `bin` folder containing `clang.exe` to the `PATH` environment variable.

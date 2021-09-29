@@ -196,10 +196,8 @@ def subscript(value, *indices):
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
-    else:
-        raise TypeError(
-            'Subscription (e.g., "a[i, j]") only works on fields or external arrays.'
-        )
+    else:  # Directly evaluate in Python for non-Taichi types
+        return value.__getitem__(*indices)
 
 
 @taichi_scope
@@ -289,7 +287,7 @@ class PyTaichi:
         self.default_fp = ti.f32
         self.default_ip = ti.i32
         self.target_tape = None
-        self.inside_complex_kernel = False
+        self.grad_replaced = False
         self.kernels = kernels or []
 
     def get_num_compiled_functions(self):

@@ -3,9 +3,9 @@ import taichi as ti
 ti.init(arch=ti.cuda)
 
 n = 512
-x = ti.field(ti.f32)
+x = ti.field(dtype=ti.i32)
 res = n + n // 4 + n // 16 + n // 64
-img = ti.field(ti.f32, shape=(res, res))
+img = ti.field(dtype=ti.f32, shape=(res, res))
 
 block1 = ti.root.pointer(ti.ij, n // 64)
 block2 = block1.pointer(ti.ij, 4)
@@ -32,9 +32,12 @@ def scatter(i):
 def paint():
     for i, j in ti.ndrange(n, n):
         t = x[i, j]
-        t += ti.is_active(block1, ti.Vector([i, j]) // 64)
-        t += ti.is_active(block2, ti.Vector([i, j]) // 16)
-        t += ti.is_active(block3, ti.Vector([i, j]) // 4)
+        block1_index = ti.rescale_index(x, block1, [i, j])
+        block2_index = ti.rescale_index(x, block2, [i, j])
+        block3_index = ti.rescale_index(x, block3, [i, j])
+        t += ti.is_active(block1, block1_index)
+        t += ti.is_active(block2, block2_index)
+        t += ti.is_active(block3, block3_index)
         img[scatter(i), scatter(j)] = 1 - t / 4
 
 

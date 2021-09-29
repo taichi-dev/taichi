@@ -85,8 +85,8 @@ class CudaDevice : public Device {
 
   ~CudaDevice() override{};
 
-  DeviceAllocation allocate_memory(const AllocParams &params);
-  void dealloc_memory(DeviceAllocation handle);
+  DeviceAllocation allocate_memory(const AllocParams &params) override;
+  void dealloc_memory(DeviceAllocation handle) override;
 
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,

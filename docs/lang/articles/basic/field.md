@@ -4,14 +4,18 @@ sidebar_position: 3
 
 # Fields
 
-Fields are global variables provided by Taichi. Currently, it can only be defined before launching any Taichi kernel. Fields can be either
-sparse or dense.  An element of a field can be either a scalar or a
-vector/matrix. This term is borrowed from mathematics and physics. If you
-have already known [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (e.g., heat field), vector field (e.g., [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)) in mathematics and physics, it would be straightforward to understand the fields in Taichi.
+Fields are **global** variables provided by Taichi. **Global** indicates that fields can be read/written from both the Python scope and the Taichi scope. A field can be considered as a multi-dimensional array of elements, and it can be either **dense** or **sparse**. Similar to a NumPy `ndarray` object, a field has a data type and a shape. Moreover, an element of a field can be a scalar, a **vector**, a **matrix**, or a **struct**.
 
-:::note
-Matrices can be used as field elements, so you can have fields with each
-element being a matrix.
+The term **field** is borrowed from mathematics and physics. If you
+have already known [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (e.g., heat field) or vector field (e.g., [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)) in mathematics and physics, it will be straightforward to understand the fields in Taichi.
+
+To be noticed:
+* Fields are always accessed by indices.
+* Field values are initially zero.
+* Sparse fields are initially inactive.
+
+:::tip
+In earlier versions of Taichi, you could not allocate new fields after executing the first kernel. Since Taichi v0.8.0, you can use a new class `FieldsBuilder` for dynamic field allocation and destruction. For more details, please see [Field (advanced)](/docs/lang/articles/advanced/layout).
 :::
 
 ## Scalar fields
@@ -23,17 +27,13 @@ heat field on the wok:
 heat_field = ti.field(dtype=ti.f32, shape=(width_wok, height_wok))
 ```
 
-- Every global variable is an N-dimensional field.
+### Access elements of scalar fields
+- If `x` is a 3D scalar field (`ti.field(dtype=ti.f32, shape=(10, 20, 30)`), access its element with `x[i, j, k]` (`0 <= i < 10, 0 <= j < 20, 0 <= k < 30`).
+- When accessing 0-D field `x`, use `x[None] = 0` instead of `x = 0`. A 0-D field looks like `energy = ti.field(dtype=ti.f32, shape=())`.
 
-  - Global `scalars` are treated as 0-D scalar fields.
-
-- Fields are always accessed by indices
-
-  - E.g. `x[i, j, k]` if `x` is a 3D scalar field.
-  - Even when accessing 0-D field `x`, use `x[None] = 0` instead of `x = 0`. Please **always** use indexing to access entries in fields. A 0-D field looks like `energy = ti.field(dtype=ti.f32, shape=())`.
-- Field values are initially zero.
-
-- Sparse fields are initially inactive.
+:::caution
+Please **always** use indexing to access entries in fields.
+:::
 
 ## Vector fields
 We are all live in a gravitational field which is a vector field. At each position of the 3D space, there is a gravity force vector. The gravitational field could be represented with:
@@ -41,6 +41,15 @@ We are all live in a gravitational field which is a vector field. At each positi
 gravitational_field = ti.Vector.field(n=3, dtype=ti.f32, shape=(x, y, z))
 ```
 `x, y, z` are the sizes of each dimension of the 3D space respectively. `n` is the number of elements of the gravity force vector.
+
+### Access elements of vector fields
+- The gravity force vector could be accessed by `gravitational_field[i, j, k]` (`0 <= i < x, 0 <= j < y, 0 <= k < z`).
+- The `p`-th member of the gravity force vector could be accessed by `gravitational_field[i, j, k][p]` (`0 <= p < n`).
+- The 0-D vector field `x = ti.Vector.field(n=3, dtype=ti.f32, shape=())` should be accessed by `x[None][p]` (`0 <= p < n`).
+
+:::note
+As you may have noticed, there are **two** indexing operators `[]` when you access a member of a vector from a vector field: the first is for field indexing, and the second is for vector indexing.
+:::
 
 ## Matrix fields
 
@@ -52,19 +61,22 @@ strain_tensor_field = ti.Matrix.field(n=3, m=3, dtype=ti.f32, shape=(x, y, z))
 
 `x, y, z` are the sizes of each dimension of the 3D material respectively. `n, m` are the dimensions of the strain tensor.
 
-In general case, suppose you have a `128 x 64` field called `A`, and each element contains
-a `3 x 2` matrix. To allocate a `128 x 64` matrix field which has a
-`3 x 2` matrix for each of its entry, use the statement
-`A = ti.Matrix.field(3, 2, dtype=ti.f32, shape=(128, 64))`.
+In a general case, suppose you have a `128 x 64` field called `A`, and each element is
+a `3 x 2` matrix, you can define it with `A = ti.Matrix.field(3, 2, dtype=ti.f32, shape=(128, 64))`.
 
+### Access elements of matrix fields
 - If you want to get the matrix of grid node `i, j`, please use
   `mat = A[i, j]`. `mat` is simply a `3 x 2` matrix.
 - To get the element on the first row and second column of that
   matrix, use `mat[0, 1]` or `A[i, j][0, 1]`.
+- The 0-D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape=())` should be accessed by `x[None][p, q]` (`0 <= p < n, 0 <= q < m`).
+
+:::note
 - As you may have noticed, there are **two** indexing operators `[]`
-  when you load a matrix element from a global matrix field: the
-  first is for field indexing, the second for matrix indexing.
+  when you access a member of a matrix from a matrix field: the
+  first is for field indexing, and the second is for matrix indexing.
 - `ti.Vector` is simply an alias of `ti.Matrix`.
+:::
 
 ### Matrix size
 
@@ -84,7 +96,7 @@ declare a field of size `64`. E.g., instead of declaring
 dimensions to fields instead of matrices.
 
 ## Struct fields
-In addition to vectors and matrices, field elements can be user-defined structs. A struct variable may contain scalars, vectors/matrices, or other structs as its members. A struct field is created by providing a dictionary of name and data type of each member. For example, a 1D field of particles with position, velocity, acceleration, and mass for each particle can be represented as:
+In addition to vectors and matrices, field elements can be user-defined structs. A struct variable may contain scalars, vectors/matrices, or other structs as its members. A struct field is created by providing a dictionary of the name and data type of each member. For example, a 1D field of particles with position, velocity, acceleration, and mass for each particle can be represented as:
 ```python
 particle_field = ti.Struct.field({
     "pos": ti.types.vector(3, ti.f32),
@@ -106,6 +118,9 @@ Members of a struct field can be accessed either locally (i.e., member of a stru
 # set the position of the first particle to origin
 particle_field[0] # local ti.Struct
 particle_field[0].pos = ti.Vector([0.0, 0.0, 0.0])
+
+# set the first member of the second position to 1.0
+particle_field[1].pos[0] = 1.0
 
 # make the mass of all particles be 1
 particle_field.mass # global ti.Vector.field

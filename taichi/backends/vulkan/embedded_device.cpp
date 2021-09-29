@@ -17,7 +17,11 @@ namespace vulkan {
 
 namespace {
 
+#ifdef NDEBUG
+constexpr bool kEnableValidationLayers = false;
+#else
 constexpr bool kEnableValidationLayers = true;
+#endif
 const std::vector<const char *> kValidationLayers = {
     "VK_LAYER_KHRONOS_validation",
 };

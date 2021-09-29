@@ -232,3 +232,19 @@ struct Particle {
 
 // TI_IO_DEF_VIRT();
 ```
+
+## Upgrading CUDA
+
+Right now we are targeting CUDA 10. Since we use run-time loaded
+[CUDA driver APIs](https://docs.nvidia.com/cuda/cuda-driver-api/index.html)
+which are relatively stable across CUDA versions, a compiled Taichi binary
+should work for all CUDA versions >= 10. When upgrading CUDA version, the
+file `external/cuda_libdevice/slim_libdevice.10.bc` should also be
+replaced with a newer version.
+
+To generate the slimmed version of libdevice based on a full
+`libdevice.X.bc` file from a CUDA installation, use:
+
+```bash
+ti task make_slim_libdevice <path_to_libdevice.X.bc>
+```

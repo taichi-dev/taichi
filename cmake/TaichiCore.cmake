@@ -245,6 +245,8 @@ if (TI_WITH_CUDA_TOOLKIT)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA_TOOLKIT")
         include_directories($ENV{CUDA_TOOLKIT_ROOT_DIR}/include)
         link_directories($ENV{CUDA_TOOLKIT_ROOT_DIR}/lib64)
+        #libraries for cuda kernel profiler CuptiToolkit
+        target_link_libraries(${CORE_LIBRARY_NAME} cupti nvperf_host)
     endif()
 else()
     message(STATUS "TI_WITH_CUDA_TOOLKIT = OFF")

@@ -64,7 +64,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   if (config.debug)
     config.check_out_of_bound = true;
 
-  profiler = make_profiler(config.arch);
+  profiler = make_profiler(config.arch, config.kernel_profiler);
   if (arch_uses_llvm(config.arch)) {
     program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
 

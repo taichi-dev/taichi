@@ -6,33 +6,29 @@ sidebar_position: 5
 
 ## For-loop decorators
 
-In Taichi kernels, for-loops in the outermost scope is automatically
-parallelized.
-
-However, there are some implementation details about **how it is
-parallelized**.
-
-Taichi provides some API to modify these parameters. This allows
-advanced users to manually fine-tune the performance.
-
-For example, specifying a suitable `ti.block_dim` could yield an almost
+In Taichi kernels, for-loop in the outermost scope is automatically
+parallelized. Our compiler automatically tunes the parameters to best explore
+the target architecture. Nevertheless, for Ninjas who strive for the last few %
+of performance, we also provide some APIs to allow developers fine-tune their
+applications. For example, specifying a suitable `ti.block_dim` could yield an almost
 3x performance boost in
 [examples/mpm3d.py](https://github.com/taichi-dev/taichi/blob/master/examples/mpm3d.py).
 
 :::note
-For performance profiling utilities, see [**Profiler** section of the Contribution Guide](../misc/profiler.md).
+For **performance profiling** utilities, please see [Profiler section of the Contribution Guide](../misc/profiler.md).
 :::
 
-### Thread hierarchy of GPUs
+### Background: Thread hierarchy of GPUs
 
-GPUs have a **thread hierarchy**.
+To better understand how the mentioned for-loop is parallelized, we briefly
+introduce the **thread hierarchy** on modern GPU architectures.
 
-From small to large, the computation units are: **iteration** \<
-**thread** \< **block** \< **grid**.
+From a fine-grained to a coarse-grained level, the computation units can be
+defined as: **iteration** \< **thread** \< **block** \< **grid**.
 
-- **iteration**: Iteration is the **body of a for-loop**. Each
+- **iteration**: An iteration is the **body of a for-loop**. Each
   iteration corresponding to a specific `i` value in for-loop.
-- **thread**: Iterations are grouped into threads. Threads are the
+- **thread**: Iterations are grouped into threads. A thread is the
   minimal unit that is parallelized. All iterations within a thread
   are executed in **serial**. We usually use 1 iteration per thread
   for maximizing parallel performance.
@@ -46,9 +42,9 @@ From small to large, the computation units are: **iteration** \<
 
 For more details, please see [the CUDA C programming
 guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#thread-hierarchy).
-The OpenGL and Metal backends follow a similar thread hierarchy.
+Note that we employ the CUDA terminology here, other backends such as OpenGL and Metal follow a similar thread hierarchy.
 
-### API reference
+### Example: Tuning the block-level parallelism of a for-loop
 
 Programmers may **prepend** some decorator(s) to tweak the property of a
 for-loop, e.g.:
@@ -66,6 +62,15 @@ def func():
     for i in range(8192):  # no decorator, use default settings
         ...
 ```
+
+## Data layouts
+
+You might have been familiar with [Fields](../basic/field.md) in Taichi. Since
+Taichi decouples data structure from computation, developers have the
+flexibility to play with different data layouts. Like in other programming
+languages, selecting an efficient layout can drastically improve performance.
+For more information on advanced data layouts in Taichi, please
+see the [Fields (advanced)](layout.md) section.
 
 ## Local Storage Optimizations
 

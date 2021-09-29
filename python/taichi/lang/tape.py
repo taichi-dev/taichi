@@ -21,7 +21,7 @@ class TapeImpl:
         self.calls.append((func, args))
 
     def grad(self):
-        assert self.entered == True, "Before evaluating gradiends tape must be entered."
+        assert self.entered == True, "Before evaluating gradients tape must be entered."
         assert self.gradient_evaluated == False, "Gradients of grad can be evaluated only once."
         for func, args in reversed(self.calls):
             func.grad(*args)

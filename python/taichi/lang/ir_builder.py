@@ -41,7 +41,6 @@ class IRBuilder(Builder):
         assert args.kwarg is None
 
         arg_decls = []
-        print(ctx.globals)
 
         def transform_as_kernel():
             # Treat return type
@@ -50,47 +49,45 @@ class IRBuilder(Builder):
                 ti.lang.kernel_arguments.decl_scalar_ret(node.returns.ptr)
                 ctx.returns = node.returns.ptr
 
-            # for i, arg in enumerate(args.args):
-            #     # Directly pass in template arguments,
-            #     # such as class instances ("self"), fields, SNodes, etc.
-            #     if isinstance(ctx.func.argument_annotations[i], ti.template):
-            #         continue
-            #     if isinstance(ctx.func.argument_annotations[i],
-            #                   ti.sparse_matrix_builder):
-            #         arg_init = parse_stmt(
-            #             'x = ti.lang.kernel_arguments.decl_sparse_matrix()')
-            #         arg_init.targets[0].id = arg.arg
-            #         ctx.create_variable(arg.arg)
-            #         arg_decls.append(arg_init)
-            #     elif isinstance(ctx.func.argument_annotations[i], ti.any_arr):
-            #         arg_init = parse_stmt(
-            #             'x = ti.lang.kernel_arguments.decl_any_arr_arg(0, 0, 0, 0)'
-            #         )
-            #         arg_init.targets[0].id = arg.arg
-            #         ctx.create_variable(arg.arg)
-            #         array_dt = ctx.arg_features[i][0]
-            #         array_dim = ctx.arg_features[i][1]
-            #         array_element_shape = ctx.arg_features[i][2]
-            #         array_layout = ctx.arg_features[i][3]
-            #         array_dt = to_taichi_type(array_dt)
-            #         dt_expr = 'ti.' + ti.core.data_type_name(array_dt)
-            #         dt = parse_expr(dt_expr)
-            #         arg_init.value.args[0] = dt
-            #         arg_init.value.args[1] = parse_expr("{}".format(array_dim))
-            #         arg_init.value.args[2] = parse_expr(
-            #             "{}".format(array_element_shape))
-            #         arg_init.value.args[3] = parse_expr(
-            #             "ti.{}".format(array_layout))
-            #         arg_decls.append(arg_init)
-            #     else:
-            #         arg_init = parse_stmt(
-            #             'x = ti.lang.kernel_arguments.decl_scalar_arg(0)')
-            #         arg_init.targets[0].id = arg.arg
-            #         dt = arg.annotation
-            #         arg_init.value.args[0] = dt
-            #         arg_decls.append(arg_init)
-            # # remove original args
-            # node.args.args = []
+            for i, arg in enumerate(args.args):
+                # Directly pass in template arguments,
+                # such as class instances ("self"), fields, SNodes, etc.
+                # if isinstance(ctx.func.argument_annotations[i], ti.template):
+                #     continue
+                # if isinstance(ctx.func.argument_annotations[i],
+                #               ti.sparse_matrix_builder):
+                #     arg_init = parse_stmt(
+                #         'x = ti.lang.kernel_arguments.decl_sparse_matrix()')
+                #     arg_init.targets[0].id = arg.arg
+                #     ctx.create_variable(arg.arg)
+                #     arg_decls.append(arg_init)
+                # elif isinstance(ctx.func.argument_annotations[i], ti.any_arr):
+                #     arg_init = parse_stmt(
+                #         'x = ti.lang.kernel_arguments.decl_any_arr_arg(0, 0, 0, 0)'
+                #     )
+                #     arg_init.targets[0].id = arg.arg
+                #     ctx.create_variable(arg.arg)
+                #     array_dt = ctx.arg_features[i][0]
+                #     array_dim = ctx.arg_features[i][1]
+                #     array_element_shape = ctx.arg_features[i][2]
+                #     array_layout = ctx.arg_features[i][3]
+                #     array_dt = to_taichi_type(array_dt)
+                #     dt_expr = 'ti.' + ti.core.data_type_name(array_dt)
+                #     dt = parse_expr(dt_expr)
+                #     arg_init.value.args[0] = dt
+                #     arg_init.value.args[1] = parse_expr("{}".format(array_dim))
+                #     arg_init.value.args[2] = parse_expr(
+                #         "{}".format(array_element_shape))
+                #     arg_init.value.args[3] = parse_expr(
+                #         "ti.{}".format(array_layout))
+                #     arg_decls.append(arg_init)
+                if False:
+                    pass
+                else:
+                    arg.annotation = build_ir(ctx, arg.annotation)
+                    ctx.create_variable(arg.arg, ti.lang.kernel_arguments.decl_scalar_arg(arg.annotation.ptr))
+            # remove original args
+            node.args.args = []
 
         if ctx.is_kernel:  # ti.kernel
             for decorator in node.decorator_list:

@@ -1,7 +1,7 @@
 TAICHI_REPO_DIR=`pwd`
-TI_LIB_DIR=`python -c "import taichi;print(taichi.__path__[0])" | tail -1`
+TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
 TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
-export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:PATH
+export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
 hash -r
 python3 examples/algorithm/laplace.py
 ti diagnose

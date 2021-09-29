@@ -1,0 +1,42 @@
+#include "taichi/backends/cpu/cpu_device.h"
+
+namespace taichi {
+namespace lang {
+
+namespace cpu {
+
+CpuDevice::AllocInfo CpuDevice::get_alloc_info(DeviceAllocation handle) {
+  validate_device_alloc(handle);
+  return allocations_[handle.alloc_id];
+}
+
+DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
+  AllocInfo info;
+
+  auto vm = std::make_unique<VirtualMemoryAllocator>(params.size);
+  info.ptr = vm->ptr;
+  info.size = vm->size;
+
+  DeviceAllocation alloc;
+  alloc.alloc_id = allocations_.size();
+  alloc.device = this;
+
+  allocations_.push_back(info);
+  virtual_memories_.push_back(std::move(vm));
+  return alloc;
+}
+
+void CpuDevice::dealloc_memory(DeviceAllocation handle) {
+  validate_device_alloc(handle);
+  AllocInfo &info = allocations_[handle.alloc_id];
+  if (info.ptr == nullptr) {
+    TI_ERROR("the DeviceAllocation is already deallocated");
+  }
+  virtual_memories_[handle.alloc_id].reset();
+  info.ptr = nullptr;
+}
+
+}  // namespace cpu
+}  // namespace lang
+
+}  // namespace taichi

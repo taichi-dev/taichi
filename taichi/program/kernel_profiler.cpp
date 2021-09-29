@@ -34,6 +34,7 @@ void KernelProfilerBase::profiler_stop(KernelProfilerBase *profiler) {
   profiler->stop();
 }
 
+// TODO : deprecated
 void KernelProfilerBase::print() {
   sync();
   fmt::print("{}\n", title());
@@ -123,6 +124,12 @@ class DefaultProfiler : public KernelProfilerBase {
   void stop() override {
     auto t = Time::get_time() - start_t_;
     auto ms = t * 1000.0;
+    // trace record
+    KernelProfileTracedRecord record;
+    record.name = event_name_;
+    record.kernel_elapsed_time_in_ms = ms;
+    traced_records_.push_back(record);
+    // count record
     auto it =
         std::find_if(statistical_results_.begin(), statistical_results_.end(),
                      [&](KernelProfileStatisticalResult &r) {
@@ -144,10 +151,10 @@ class DefaultProfiler : public KernelProfilerBase {
 
 }  // namespace
 
-std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch) {
+std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable) {
   if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    return std::make_unique<KernelProfilerCUDA>();
+    return std::make_unique<KernelProfilerCUDA>(enable);
 #else
     TI_NOT_IMPLEMENTED;
 #endif

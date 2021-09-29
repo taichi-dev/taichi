@@ -40,32 +40,6 @@ extern int opengl_threads_per_block;
 
 struct CompiledKernel;
 
-class ParallelSize {
- public:
-  size_t block_dim;
-  size_t grid_dim;
-  ParallelSize(size_t block_dim = 1, size_t grid_dim = 1)
-      : block_dim(block_dim), grid_dim(grid_dim) {
-  }
-};
-
-struct CompiledKernel {
-  struct Impl;
-  std::unique_ptr<Impl> impl;
-
-  // disscussion:
-  // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
-  CompiledKernel(CompiledKernel &&) = default;
-  CompiledKernel &operator=(CompiledKernel &&) = default;
-
-  CompiledKernel(const std::string &kernel_name_,
-                 const std::string &kernel_source_code,
-                 std::unique_ptr<ParallelSize> ps_);
-  ~CompiledKernel();
-
-  void dispatch_compute(GLSLLauncher *launcher) const;
-};
-
 struct CompiledProgram {
   struct Impl;
   std::unique_ptr<Impl> impl;
@@ -75,17 +49,18 @@ struct CompiledProgram {
   CompiledProgram(CompiledProgram &&) = default;
   CompiledProgram &operator=(CompiledProgram &&) = default;
 
-  CompiledProgram(Kernel *kernel);
+  CompiledProgram(Kernel *kernel, Device *device);
   ~CompiledProgram();
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           std::unique_ptr<ParallelSize> ps,
+           int num_workgrous,
+           int workgroup_size,
            std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access =
                nullptr);
   void set_used(const UsedFeature &used);
   int lookup_or_add_string(const std::string &str);
-  void launch(Context &ctx, GLSLLauncher *launcher) const;
+  void launch(Context &ctx, OpenGlRuntime *launcher) const;
 };
 
 }  // namespace opengl

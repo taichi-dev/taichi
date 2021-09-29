@@ -358,7 +358,7 @@ TI_EXPORT void print_traceback() {
   fmt::print(
       fg(fmt::color::orange),
       "\nInternal error occurred. Check out this page for possible solutions:\n"
-      "https://taichi.readthedocs.io/en/stable/install.html#troubleshooting\n");
+      "https://docs.taichi.graphics/docs/lang/articles/misc/install\n");
 }
 
 TI_NAMESPACE_END

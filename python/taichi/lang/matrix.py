@@ -28,61 +28,21 @@ class Matrix(TaichiOperations):
         n (int): the first dimension of a matrix.
         m (int): the second dimension of a matrix.
         dt (DataType): the elmement data type.
-        shape ( Union[int, tuple of int], optional): the shape of a matrix field.
-        offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
-        empty (Bool, deprecated): True if the matrix is empty, False otherwise.
-        layout (Layout, optional): The filed layout (Layout.AOS or Layout.SOA).
-        needs_grad (Bool, optional): True if used in auto diff, False otherwise.
         keep_raw (Bool, optional): Keep the contents in `n` as is.
-        rows (List, deprecated): construct matrix rows.
-        cols (List, deprecated): construct matrix columns.
     """
     is_taichi_class = True
 
-    # TODO(archibate): move the last two line to **kwargs,
-    # since they're not commonly used as positional args.
     def __init__(self,
                  n=1,
                  m=1,
                  dt=None,
-                 shape=None,
-                 offset=None,
-                 empty=False,
-                 layout=Layout.AOS,
-                 needs_grad=False,
                  keep_raw=False,
-                 disable_local_tensor=False,
-                 rows=None,
-                 cols=None):
+                 disable_local_tensor=False):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
 
-        # construct from rows or cols (deprecated)
-        if rows is not None or cols is not None:
-            warning(
-                f"ti.Matrix(rows=[...]) or ti.Matrix(cols=[...]) is deprecated, use ti.Matrix.rows([...]) or ti.Matrix.cols([...]) instead.",
-                DeprecationWarning,
-                stacklevel=2)
-            if rows is not None and cols is not None:
-                raise Exception("cannot specify both rows and columns")
-            self.dt = dt
-            mat = Matrix.cols(cols) if cols is not None else Matrix.rows(rows)
-            self.n = mat.n
-            self.m = mat.m
-            self.entries = mat.entries
-            return
-
-        elif empty == True:
-            warning(
-                f"ti.Matrix(n, m, empty=True) is deprecated, use ti.Matrix.empty(n, m) instead",
-                DeprecationWarning,
-                stacklevel=2)
-            self.dt = dt
-            self.entries = [[None] * m for _ in range(n)]
-            return
-
-        elif isinstance(n, (list, tuple, np.ndarray)):
+        if isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
                 mat = []
             elif isinstance(n[0], Matrix):
@@ -172,23 +132,9 @@ class Matrix(TaichiOperations):
                 self.n = n
                 self.m = m
             else:
-                # construct global matrix (deprecated)
-                warning(
-                    "Declaring global matrices using `ti.Matrix(n, m, dt, shape)` is deprecated, "
-                    "use `ti.Matrix.field(n, m, dtype, shape)` instead",
-                    DeprecationWarning,
-                    stacklevel=2)
-                mat = Matrix.field(n=n,
-                                   m=m,
-                                   dtype=dt,
-                                   shape=shape,
-                                   offset=offset,
-                                   needs_grad=needs_grad,
-                                   layout=layout)
-                self.n = mat.n
-                self.m = mat.m
-                self.entries = mat.entries
-                self.grad = mat.grad
+                raise ValueError(
+                    "Declaring matrix fields using `ti.Matrix(n, m, dt, shape)` is no longer supported. Use `ti.Matrix.field(n, m, dtype, shape)` instead."
+                )
 
         if self.n * self.m > 32:
             warning(
@@ -197,7 +143,7 @@ class Matrix(TaichiOperations):
                 ' So the compilation time could be extremely long if the matrix size is too big.'
                 ' You may use a field to store a large matrix like this, e.g.:\n'
                 f'    x = ti.field(ti.f32, ({self.n}, {self.m})).\n'
-                ' See https://taichi.readthedocs.io/en/stable/tensor_matrix.html#matrix-size'
+                ' See https://docs.taichi.graphics/docs/lang/articles/basic/field#matrix-size'
                 ' for more details.',
                 UserWarning,
                 stacklevel=2)
@@ -303,7 +249,7 @@ class Matrix(TaichiOperations):
                     'If you want to *iterate through matrix elements*, use a static range:\n'
                     '  for i in ti.static(range(3)):\n'
                     '    print(i, "-th component is", vec[i])\n'
-                    'See https://taichi.readthedocs.io/en/stable/meta.html#when-to-use-for-loops-with-ti-static for more details.'
+                    'See https://docs.taichi.graphics/docs/lang/articles/advanced/meta#when-to-use-for-loops-with-tistatic for more details.'
                 )
         assert 0 <= args[0] < self.n, \
                 f"The 0-th matrix index is out of range: 0 <= {args[0]} < {self.n}"
@@ -1247,21 +1193,18 @@ class Matrix(TaichiOperations):
         return ret
 
 
-# TODO: deprecate ad-hoc use ti.Matrix() as global (#1500:2.2/2)
-def Vector(n, dt=None, shape=None, offset=None, **kwargs):
+def Vector(n, dt=None, **kwargs):
     """Construct a `Vector` instance i.e. 1-D Matrix.
 
     Args:
         n (int): The desired number of entries of the Vector.
         dt (DataType, optional): The desired data type of the Vector.
-        shape ( Union[int, tuple of int], optional): The shape of the Vector.
-        offset (Union[int, tuple of int], optional): The coordinate offset of all elements in a field.
 
     Returns:
         :class:`~taichi.lang.matrix.Matrix`: A Vector instance (1-D :class:`~taichi.lang.matrix.Matrix`).
 
     """
-    return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
+    return Matrix(n, 1, dt=dt, **kwargs)
 
 
 Vector.var = Matrix._Vector_var

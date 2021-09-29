@@ -28,6 +28,8 @@
 #include "taichi/program/sparse_matrix.h"
 #include "taichi/program/sparse_solver.h"
 
+#include "taichi/program/kernel_profiler.h"
+
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
 #endif
@@ -212,6 +214,12 @@ void export_lang(py::module &m) {
       .def_readwrite("max", &Program::KernelProfilerQueryResult::max)
       .def_readwrite("avg", &Program::KernelProfilerQueryResult::avg);
 
+  py::class_<KernelProfileTracedRecord>(m, "KernelProfileTracedRecord")
+      .def_readwrite("name", &KernelProfileTracedRecord::name)
+      .def_readwrite("kernel_time",
+                     &KernelProfileTracedRecord::kernel_elapsed_time_in_ms)
+      .def_readwrite("base_time", &KernelProfileTracedRecord::time_since_base);
+
   py::class_<Program>(m, "Program")
       .def(py::init<>())
       .def_readonly("config", &Program::config)
@@ -219,6 +227,10 @@ void export_lang(py::module &m) {
       .def("query_kernel_profile_info",
            [](Program *program, const std::string &name) {
              return program->query_kernel_profile_info(name);
+           })
+      .def("get_kernel_profiler_records",
+           [](Program *program) {
+             return program->profiler->get_traced_records();
            })
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })
@@ -424,15 +436,6 @@ void export_lang(py::module &m) {
       .def("serialize", &ExprGroup::serialize);
 
   py::class_<Stmt>(m, "Stmt");
-  py::class_<Program::KernelProxy>(m, "KernelProxy")
-      .def(
-          "define",
-          [](Program::KernelProxy *ker,
-             const std::function<void()> &func) -> Kernel * {
-            py::gil_scoped_release release;
-            return ker->def(func);
-          },
-          py::return_value_policy::reference);
 
   m.def("insert_deactivate", [](SNode *snode, const ExprGroup &indices) {
     return Deactivate(snode, indices);
@@ -772,10 +775,14 @@ void export_lang(py::module &m) {
   m.def("get_external_tensor_shape_along_axis",
         Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
 
-  m.def("create_kernel",
-        [&](std::string name, bool grad) -> Program::KernelProxy {
-          return get_current_program().kernel(name, grad);
-        });
+  m.def(
+      "create_kernel",
+      [&](const std::function<void()> &body, const std::string &name,
+          bool grad) -> Kernel * {
+        py::gil_scoped_release release;
+        return &get_current_program().kernel(body, name, grad);
+      },
+      py::return_value_policy::reference);
 
   m.def(
       "create_function",
@@ -996,7 +1003,7 @@ void export_lang(py::module &m) {
       .def("solve", &SparseSolver::solve)
       .def("info", &SparseSolver::info);
 
-  m.def("get_sparse_solver", &get_sparse_solver);
+  m.def("make_sparse_solver", &make_sparse_solver);
 }
 
 TI_NAMESPACE_END

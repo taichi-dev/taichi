@@ -65,8 +65,6 @@ class Renderable {
   taichi::lang::DeviceAllocation uniform_buffer_;
   taichi::lang::DeviceAllocation storage_buffer_;
 
-  InteropCUDALauncher *cuda_launcher_{nullptr};
-
   float *vertex_buffer_device_ptr_;
   int *index_buffer_device_ptr_;
 

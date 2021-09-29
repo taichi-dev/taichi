@@ -13,7 +13,6 @@ using namespace taichi::lang::vulkan;
 void Renderable::init(const RenderableConfig &config, AppContext *app_context) {
   config_ = config;
   app_context_ = app_context;
-  cuda_launcher_ = &InteropCUDALauncher::instance();
 }
 
 void Renderable::init_render_resources() {
@@ -58,7 +57,7 @@ void Renderable::init_buffers() {
 }
 
 void Renderable::update_data(const RenderableInfo &info) {
-  int num_vertices = info.vertices.shape[0];
+  int num_vertices = info.vbo.shape[0];
   int num_indices;
   if (info.indices.valid) {
     num_indices = info.indices.shape[0];
@@ -67,7 +66,7 @@ void Renderable::update_data(const RenderableInfo &info) {
       throw std::runtime_error("dtype needs to be 32-bit ints for indices");
     }
   } else {
-    num_indices = num_vertices;
+    num_indices = 1;
   }
   if (num_vertices > config_.vertices_count ||
       num_indices > config_.indices_count) {
@@ -77,92 +76,33 @@ void Renderable::update_data(const RenderableInfo &info) {
     init_buffers();
   }
 
-  if (info.vertices.dtype != PrimitiveType::f32) {
-    throw std::runtime_error("dtype needs to be f32 for vertices");
-  }
-
-  int num_components = info.vertices.matrix_rows;
-
-  if (info.vertices.field_source == FieldSource::TaichiCuda) {
-    cuda_launcher_->update_renderables_vertices(
-        vertex_buffer_device_ptr_, sizeof(Vertex) / sizeof(float),
-        (float *)info.vertices.data, num_vertices, num_components,
-        offsetof(Vertex, pos));
-
-    if (info.per_vertex_color.valid) {
-      if (info.per_vertex_color.shape[0] != num_vertices) {
-        throw std::runtime_error(
-            "shape of per_vertex_color should be the same as vertices");
-      }
-      cuda_launcher_->update_renderables_vertices(
-          vertex_buffer_device_ptr_, sizeof(Vertex) / sizeof(float),
-          (float *)info.per_vertex_color.data, num_vertices, 3,
-          offsetof(Vertex, color));
-    }
-
-    if (info.normals.valid) {
-      if (info.normals.shape[0] != num_vertices) {
-        throw std::runtime_error(
-            "shape of normals should be the same as vertices");
-      }
-      cuda_launcher_->update_renderables_vertices(
-          vertex_buffer_device_ptr_, sizeof(Vertex) / sizeof(float),
-          (float *)info.normals.data, num_vertices, 3,
-          offsetof(Vertex, normal));
-    }
+  if (info.vbo.field_source == FieldSource::TaichiCuda) {
+    cuda_memcpy(vertex_buffer_device_ptr_, (void *)info.vbo.data,
+                sizeof(Vertex) * num_vertices);
 
     if (info.indices.valid) {
       indexed_ = true;
-      cuda_launcher_->update_renderables_indices(
-          index_buffer_device_ptr_, (int *)info.indices.data, num_indices);
+      cuda_memcpy(index_buffer_device_ptr_, (int *)info.indices.data,
+                  num_indices * sizeof(int));
+
     } else {
       indexed_ = false;
     }
+  } else if (info.vbo.field_source == FieldSource::TaichiX64) {
+    float *mapped_vbo =
+        (float *)app_context_->device().map(staging_vertex_buffer_);
+    memcpy(mapped_vbo, (void *)info.vbo.data, sizeof(Vertex) * num_vertices);
+    app_context_->device().unmap(staging_vertex_buffer_);
 
-  } else if (info.vertices.field_source == FieldSource::TaichiX64) {
-    {
-      // TODO: Support for FieldSource::Numpy, investigate how
-      // packed-mode/powe4-of-2 fields/multiple level dense layouts affect this.
-      float *mapped_vbo =
-          (float *)app_context_->device().map(staging_vertex_buffer_);
-
-      update_renderables_vertices_x64(mapped_vbo,
-                                      sizeof(Vertex) / sizeof(float),
-                                      (float *)info.vertices.data, num_vertices,
-                                      num_components, offsetof(Vertex, pos));
-      if (info.per_vertex_color.valid) {
-        if (info.per_vertex_color.shape[0] != num_vertices) {
-          throw std::runtime_error(
-              "shape of per_vertex_color should be the same as vertices");
-        }
-        update_renderables_vertices_x64(
-            mapped_vbo, sizeof(Vertex) / sizeof(float),
-            (float *)info.per_vertex_color.data, num_vertices, 3,
-            offsetof(Vertex, color));
-      }
-      if (info.normals.valid) {
-        if (info.normals.shape[0] != num_vertices) {
-          throw std::runtime_error(
-              "shape of normals should be the same as vertices");
-        }
-        update_renderables_vertices_x64(
-            mapped_vbo, sizeof(Vertex) / sizeof(float),
-            (float *)info.normals.data, num_vertices, 3,
-            offsetof(Vertex, normal));
-      }
-      app_context_->device().unmap(staging_vertex_buffer_);
-
-      int *mapped_ibo =
-          (int *)app_context_->device().map(staging_index_buffer_);
-      if (info.indices.valid) {
-        indexed_ = true;
-        update_renderables_indices_x64(mapped_ibo, (int *)info.indices.data,
-                                       num_indices);
-      } else {
-        indexed_ = false;
-      }
-      app_context_->device().unmap(staging_index_buffer_);
+    int *mapped_ibo = (int *)app_context_->device().map(staging_index_buffer_);
+    if (info.indices.valid) {
+      indexed_ = true;
+      memcpy(mapped_ibo, (int *)info.indices.data, num_indices * sizeof(int));
+    } else {
+      indexed_ = false;
     }
+    app_context_->device().unmap(staging_index_buffer_);
+
     auto stream = app_context_->device().get_graphics_stream();
     auto cmd_list = stream->new_command_list();
     cmd_list->buffer_copy(vertex_buffer_.get_ptr(0),
@@ -172,8 +112,6 @@ void Renderable::update_data(const RenderableInfo &info) {
                           staging_index_buffer_.get_ptr(0),
                           config_.indices_count * sizeof(int));
     stream->submit_synced(cmd_list.get());
-  } else {
-    throw std::runtime_error("unsupported field source");
   }
 }
 

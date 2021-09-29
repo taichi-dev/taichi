@@ -82,6 +82,12 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
                : AliasResult::uncertain;
   }
 
+  if (var1->is<ExternalPtrStmt>() || var2->is<ExternalPtrStmt>()) {
+    if (!var1->is<ExternalPtrStmt>() || !var2->is<ExternalPtrStmt>())
+      return AliasResult::different;
+    return AliasResult::uncertain;
+  }
+
   // If both statements are GlobalPtrStmts or GetChStmts, we can check by
   // SNode::id.
   TI_ASSERT(var1->width() == 1);

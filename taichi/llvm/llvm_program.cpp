@@ -8,6 +8,8 @@
 #include "taichi/util/str.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/ir/statements.h"
+#include "taichi/backends/cpu/cpu_device.h"
+
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/codegen_cuda.h"
@@ -79,6 +81,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
   if (arch_is_cpu(config->arch)) {
     config_.max_block_dim = 1024;
+    device_ = std::make_unique<cpu::CpuDevice>();
   }
 
   if (config->kernel_profiler && runtime_mem_info) {
@@ -92,6 +95,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
       CUDAContext::get_instance().set_profiler(nullptr);
     }
     CUDAContext::get_instance().set_debug(config->debug);
+    device_ = std::make_unique<cuda::CudaDevice>();
   }
 #endif
 }
@@ -193,7 +197,6 @@ void LlvmProgramImpl::materialize_snode_tree(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
     std::unordered_map<int, SNode *> &snodes,
-    SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
     uint64 *result_buffer) {
   auto *const root = tree->root();
   auto host_module = clone_struct_compiler_initial_context(
@@ -201,7 +204,6 @@ void LlvmProgramImpl::materialize_snode_tree(
   std::unique_ptr<StructCompiler> scomp = std::make_unique<StructCompilerLLVM>(
       host_arch(), this, std::move(host_module));
   scomp->run(*root);
-  materialize_snode_expr_attributes(snode_to_glb_var_exprs_);
 
   for (auto snode : scomp->snodes) {
     snodes[snode->id] = snode;
@@ -221,12 +223,6 @@ void LlvmProgramImpl::materialize_snode_tree(
   }
 }
 
-void LlvmProgramImpl::materialize_snode_expr_attributes(
-    SNodeGlobalVarExprMap &snode_to_glb_var_exprs_) {
-  for (auto &[snode, glb_var] : snode_to_glb_var_exprs_) {
-    glb_var->set_attribute("dim", std::to_string(snode->num_active_indices));
-  }
-}
 uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
   // TODO: We are likely doing more synchronization than necessary. Simplify the
   // sync logic when we fetch the result.
@@ -313,8 +309,14 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     TI_TRACE("Allocating device memory {:.2f} GB",
              1.0 * prealloc_size / (1UL << 30));
 
-    CUDADriver::get_instance().malloc(&preallocated_device_buffer,
-                                      prealloc_size);
+    Device::AllocParams preallocated_device_buffer_alloc_params;
+    preallocated_device_buffer_alloc_params.size = prealloc_size;
+    preallocated_device_buffer_alloc =
+        cuda_device()->allocate_memory(preallocated_device_buffer_alloc_params);
+    cuda::CudaDevice::AllocInfo preallocated_device_buffer_alloc_info =
+        cuda_device()->get_alloc_info(preallocated_device_buffer_alloc);
+    preallocated_device_buffer = preallocated_device_buffer_alloc_info.ptr;
+
     CUDADriver::get_instance().memset(preallocated_device_buffer, 0,
                                       prealloc_size);
     tlctx = llvm_context_device.get();
@@ -442,8 +444,9 @@ void LlvmProgramImpl::finalize() {
   if (runtime_mem_info)
     runtime_mem_info->set_profiler(nullptr);
 #if defined(TI_WITH_CUDA)
-  if (preallocated_device_buffer != nullptr)
-    CUDADriver::get_instance().mem_free(preallocated_device_buffer);
+  if (preallocated_device_buffer != nullptr) {
+    cuda_device()->dealloc_memory(preallocated_device_buffer_alloc);
+  }
 #endif
 }
 

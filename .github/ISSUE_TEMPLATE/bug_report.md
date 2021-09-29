@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-<!-- We've collected some common issue solutions in https://taichi.readthedocs.io/en/stable/install.html#troubleshooting. Make sure you've check them out first. Hopefully they could address your problem. -->
+<!-- We've collected some common issue solutions in https://docs.taichi.graphics/docs/lang/articles/misc/install. Make sure you've check them out first. Hopefully they could address your problem. -->
 
 **Describe the bug**
 A clear and concise description of what the bug is, ideally within 20 words.

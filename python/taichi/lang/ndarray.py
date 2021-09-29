@@ -16,13 +16,9 @@ class Ndarray:
         assert has_pytorch(
         ), "PyTorch must be available if you want to create a Taichi ndarray."
         import torch
+        self.arr = torch.zeros(shape, dtype=to_pytorch_type(cook_dtype(dtype)))
         if impl.current_cfg().arch == _ti_core.Arch.cuda:
-            device = 'cuda:0'
-        else:
-            device = 'cpu'
-        self.arr = torch.zeros(shape,
-                               dtype=to_pytorch_type(cook_dtype(dtype)),
-                               device=device)
+            self.arr = self.arr.cuda()
 
     @property
     def shape(self):
@@ -41,6 +37,15 @@ class Ndarray:
             DataType: Data type of each individual value.
         """
         return to_taichi_type(self.arr.dtype)
+
+    @property
+    def data_handle(self):
+        """Gets the pointer to underlying data.
+
+        Returns:
+            int: The pointer to underlying data.
+        """
+        return self.arr.data_ptr()
 
     @python_scope
     def __setitem__(self, key, value):

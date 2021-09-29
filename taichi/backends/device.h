@@ -197,7 +197,6 @@ enum class BufferFormat : uint32_t {
   depth32f
 };
 
-// TODO: Implement this
 class Pipeline {
  public:
   virtual ~Pipeline() {
@@ -239,7 +238,6 @@ struct BufferImageCopyParams {
   uint32_t image_layer_count{1};
 };
 
-// TODO: Implement this
 class CommandList {
  public:
   virtual ~CommandList() {
@@ -363,7 +361,7 @@ class Device {
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
-      PipelineSourceDesc &src,
+      const PipelineSourceDesc &src,
       std::string name = "Pipeline") = 0;
 
   std::unique_ptr<DeviceAllocationGuard> allocate_memory_unique(

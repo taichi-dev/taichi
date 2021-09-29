@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/lang_util.h"
+#include "taichi/backends/device.h"
 
 #include <vector>
 
@@ -9,15 +10,18 @@ TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
 struct CompiledProgram;
-struct GLSLLauncherImpl;
-struct GLSLLauncher;
+struct OpenGlRuntimeImpl;
+struct OpenGlRuntime;
 class GLBuffer;
 
-struct GLSLLauncher {
-  std::unique_ptr<GLSLLauncherImpl> impl;
-  GLSLLauncher(size_t size);
-  ~GLSLLauncher();
+struct OpenGlRuntime {
+  std::unique_ptr<OpenGlRuntimeImpl> impl;
+  std::unique_ptr<Device> device{nullptr};
+  OpenGlRuntime();
+  ~OpenGlRuntime();
   void keep(std::unique_ptr<CompiledProgram> program);
+  // FIXME: Currently GLSL codegen only supports single root
+  void add_snode_tree(size_t size);
 
   void *result_buffer;
 };

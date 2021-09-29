@@ -76,7 +76,16 @@ class Struct(TaichiOperations):
             self.entries[key].accessor.setter(value, *self.entries[key].key)
         else:
             if in_python_scope():
-                self.entries[key].set_entries(value)
+                if isinstance(self.entries[key], Struct) or isinstance(
+                        self.entries[key], Matrix):
+                    self.entries[key].set_entries(value)
+                else:
+                    if isinstance(value, numbers.Number):
+                        self.entries[key] = value
+                    else:
+                        raise TypeError(
+                            "A number is expected when assigning struct members"
+                        )
             else:
                 self.entries[key] = value
 

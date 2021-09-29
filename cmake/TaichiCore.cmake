@@ -77,13 +77,19 @@ if(TI_WITH_GGUI)
 endif()
 
 # These files are compiled into .bc and loaded as LLVM module dynamically. They should not be compiled into libtaichi. So they're removed here
-file(GLOB BYTECODE_SOURCE "taichi/runtime/llvm/runtime.cpp" "taichi/runtime/llvm/ui_kernels.cpp")
+file(GLOB BYTECODE_SOURCE "taichi/runtime/llvm/runtime.cpp")
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${BYTECODE_SOURCE})
 
 
 # These are required, regardless of whether Vulkan is enabled or not
 # TODO(#2298): Clean up the Vulkan code structure, all Vulkan API related things should be
 # guarded by TI_WITH_VULKAN macro at the source code level.
+file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
+  "taichi/backends/opengl/opengl_program.*"
+  "taichi/backends/opengl/opengl_api.*"
+  "taichi/backends/opengl/codegen_opengl.*"
+  "taichi/backends/opengl/struct_opengl.*"
+)
 file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE "taichi/backends/vulkan/runtime.h" "taichi/backends/vulkan/runtime.cpp")
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
@@ -102,7 +108,6 @@ endif()
 
 # TODO(#529) include Metal source only on Apple MacOS, and OpenGL only when TI_WITH_OPENGL is ON
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_METAL_SOURCE})
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_SOURCE})
 
 if (TI_WITH_OPENGL)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
@@ -110,7 +115,9 @@ if (TI_WITH_OPENGL)
   # A: To ensure glad submodule exists when TI_WITH_OPENGL is ON.
   file(GLOB TAICHI_GLAD_SOURCE "external/glad/src/glad.c")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GLAD_SOURCE})
+  list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_SOURCE})
 endif()
+list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_REQUIRED_SOURCE})
 
 if (TI_WITH_CC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CC")
@@ -238,6 +245,8 @@ if (TI_WITH_CUDA_TOOLKIT)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA_TOOLKIT")
         include_directories($ENV{CUDA_TOOLKIT_ROOT_DIR}/include)
         link_directories($ENV{CUDA_TOOLKIT_ROOT_DIR}/lib64)
+        #libraries for cuda kernel profiler CuptiToolkit
+        target_link_libraries(${CORE_LIBRARY_NAME} cupti nvperf_host)
     endif()
 else()
     message(STATUS "TI_WITH_CUDA_TOOLKIT = OFF")

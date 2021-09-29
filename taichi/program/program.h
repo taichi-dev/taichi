@@ -103,7 +103,7 @@ class Program {
   Callable *current_callable{nullptr};
   CompileConfig config;
   bool sync{false};  // device/host synchronized?
-  std::unique_ptr<MemoryPool> memory_pool{nullptr};
+
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
 
   std::unordered_map<int, SNode *>
@@ -178,24 +178,6 @@ class Program {
   int get_snode_tree_size();
 
   void visualize_layout(const std::string &fn);
-
-  struct KernelProxy {
-    std::string name;
-    Program *prog;
-    bool grad;
-
-    Kernel *def(const std::function<void()> &func) {
-      return &(prog->kernel(func, name, grad));
-    }
-  };
-
-  KernelProxy kernel(const std::string &name, bool grad = false) {
-    KernelProxy proxy;
-    proxy.prog = this;
-    proxy.name = name;
-    proxy.grad = grad;
-    return proxy;
-  }
 
   Kernel &kernel(const std::function<void()> &body,
                  const std::string &name = "",
@@ -314,11 +296,7 @@ class Program {
   static std::atomic<int> num_instances_;
   bool finalized_{false};
 
- public:
-#ifdef TI_WITH_CC
-  // C backend related data structures
-  std::unique_ptr<cccp::CCProgram> cc_program;
-#endif
+  std::unique_ptr<MemoryPool> memory_pool_{nullptr};
 };
 
 }  // namespace lang

@@ -10,20 +10,26 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
+int SetImage::get_correct_dimension(int dimension) {
+  if (app_context_->config.is_packed_mode) {
+    return dimension;
+  } else {
+    return next_power_of_2(dimension);
+  }
+}
+
+void SetImage::update_ubo(float x_factor, float y_factor) {
+  UniformBufferObject ubo = {x_factor, y_factor};
+  void *mapped = app_context_->device().map(uniform_buffer_);
+  memcpy(mapped, &ubo, sizeof(ubo));
+  app_context_->device().unmap(uniform_buffer_);
+}
+
 void SetImage::update_data(const SetImageInfo &info) {
   const FieldInfo &img = info.img;
-  if (img.shape.size() != 2) {
-    throw std::runtime_error(
-        "for set image, the image should have exactly two axis. e,g, "
-        "ti.Vector.field(3,ti.u8,(1920,1080) ");
-  }
-  if ((img.matrix_rows != 3 && img.matrix_rows != 4) || img.matrix_cols != 1) {
-    throw std::runtime_error(
-        "for set image, the image should either a 3-D vector field (RGB) or a "
-        "4D vector field (RGBA) ");
-  }
-  int new_width = img.shape[0];
-  int new_height = img.shape[1];
+
+  int new_width = get_correct_dimension(img.shape[0]);
+  int new_height = get_correct_dimension(img.shape[1]);
 
   if (new_width != width || new_height != height) {
     destroy_texture();
@@ -31,8 +37,7 @@ void SetImage::update_data(const SetImageInfo &info) {
     init_set_image(app_context_, new_width, new_height);
   }
 
-  int actual_width = next_power_of_2(width);
-  int actual_height = next_power_of_2(height);
+  update_ubo(img.shape[0] / (float)new_width, img.shape[1] / (float)new_height);
 
   int pixels = width * height;
 
@@ -40,23 +45,14 @@ void SetImage::update_data(const SetImageInfo &info) {
                                           ImageLayout::transfer_dst);
 
   BufferImageCopyParams copy_params;
-  copy_params.image_extent.x = width;
-  copy_params.image_extent.y = height;
+  // these are flipped because taichi is y-major and vulkan is x-major
+  copy_params.image_extent.x = height;
+  copy_params.image_extent.y = width;
 
   if (img.field_source == FieldSource::TaichiCuda) {
     unsigned char *mapped = device_ptr_;
 
-    if (img.dtype == PrimitiveType::u8) {
-      cuda_launcher_->copy_to_texture_buffer((unsigned char *)img.data, mapped,
-                                             width, height, actual_width,
-                                             actual_height, img.matrix_rows);
-    } else if (img.dtype == PrimitiveType::f32) {
-      cuda_launcher_->copy_to_texture_buffer((float *)img.data, mapped, width,
-                                             height, actual_width,
-                                             actual_height, img.matrix_rows);
-    } else {
-      throw std::runtime_error("for set image, dtype must be u8 or f32");
-    }
+    cuda_memcpy(mapped, (unsigned char *)img.data, pixels * 4);
 
     auto stream = app_context_->device().get_graphics_stream();
     auto cmd_list = stream->new_command_list();
@@ -71,16 +67,7 @@ void SetImage::update_data(const SetImageInfo &info) {
     unsigned char *mapped =
         (unsigned char *)app_context_->device().map(cpu_staging_buffer_);
 
-    if (img.dtype == PrimitiveType::u8) {
-      copy_to_texture_buffer_x64((unsigned char *)img.data, mapped, width,
-                                 height, actual_width, actual_height,
-                                 img.matrix_rows);
-    } else if (img.dtype == PrimitiveType::f32) {
-      copy_to_texture_buffer_x64((float *)img.data, mapped, width, height,
-                                 actual_width, actual_height, img.matrix_rows);
-    } else {
-      throw std::runtime_error("for set image, dtype must be u8 or f32");
-    }
+    memcpy(mapped, (unsigned char *)img.data, pixels * 4);
 
     app_context_->device().unmap(cpu_staging_buffer_);
 
@@ -108,7 +95,7 @@ void SetImage::init_set_image(AppContext *app_context,
   RenderableConfig config = {
       6,
       6,
-      0,
+      sizeof(UniformBufferObject),
       0,
       app_context->config.package_path + "/shaders/SetImage_vk_vert.spv",
       app_context->config.package_path + "/shaders/SetImage_vk_frag.spv",
@@ -135,8 +122,9 @@ void SetImage::create_texture() {
   params.dimension = ImageDimension::d2D;
   params.format = BufferFormat::rgba8;
   params.initial_layout = ImageLayout::shader_read;
-  params.x = width;
-  params.y = height;
+  // these are flipped because taichi is y-major and vulkan is x-major
+  params.x = height;
+  params.y = width;
   params.z = 1;
   params.export_sharing = true;
 
@@ -216,6 +204,7 @@ void SetImage::create_bindings() {
   Renderable::create_bindings();
   ResourceBinder *binder = pipeline_->resource_binder();
   binder->image(0, 0, texture_, {});
+  binder->buffer(0, 1, uniform_buffer_);
 }
 
 void SetImage::cleanup() {

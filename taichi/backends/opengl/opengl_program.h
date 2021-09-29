@@ -36,7 +36,6 @@ class OpenglProgramImpl : public ProgramImpl {
       SNodeTree *tree,
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       std::unordered_map<int, SNode *> &snodes,
-      SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
       uint64 *result_buffer) override;
 
   void synchronize() override {
@@ -56,7 +55,7 @@ class OpenglProgramImpl : public ProgramImpl {
 
  private:
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
-  std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
+  std::unique_ptr<opengl::OpenGlRuntime> opengl_runtime_;
 };
 }  // namespace lang
 }  // namespace taichi

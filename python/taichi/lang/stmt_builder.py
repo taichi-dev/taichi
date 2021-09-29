@@ -595,13 +595,15 @@ if 1:
             if impl.get_runtime().experimental_real_function:
                 transform_as_kernel()
             else:
-                # Transform as func (all parameters passed by value)
+                # Transform as force-inlined func
                 arg_decls = []
                 for i, arg in enumerate(args.args):
-                    # Directly pass in template arguments,
-                    # such as class instances ("self"), fields, SNodes, etc.
+                    # Remove annotations because they are not used.
+                    args.args[i].annotation = None
+                    # Template arguments are passed by reference.
                     if isinstance(ctx.func.argument_annotations[i],
                                   ti.template):
+                        ctx.create_variable(ctx.func.argument_names[i])
                         continue
                     # Create a copy for non-template arguments,
                     # so that they are passed by value.

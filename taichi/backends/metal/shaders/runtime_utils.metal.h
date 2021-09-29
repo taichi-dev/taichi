@@ -538,7 +538,7 @@ STR(
         const auto elem_idx = recycled_list.get<ElemIndex>(ii);
         device char *ptr = nm.get(elem_idx);
         device const char *ptr_end = ptr + data_list.lm_data->element_stride;
-        const int ptr_mod = ((int64_t)(ptr) % kInt32Stride);
+        const int ptr_mod = ((intptr_t)(ptr) % kInt32Stride);
         if (ptr_mod) {
           device char *new_ptr = ptr + kInt32Stride - ptr_mod;
           if (thparams.thread_position_in_threadgroup == 0) {

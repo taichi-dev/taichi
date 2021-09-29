@@ -76,6 +76,7 @@ def test_poly():
 
 
 @if_has_autograd
+@ti.test(exclude=[ti.vulkan])
 def test_trigonometric():
     grad_test(lambda x: ti.tanh(x), lambda x: np.tanh(x))
     grad_test(lambda x: ti.sin(x), lambda x: np.sin(x))

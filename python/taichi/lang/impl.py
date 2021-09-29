@@ -289,7 +289,7 @@ class PyTaichi:
         self.default_fp = ti.f32
         self.default_ip = ti.i32
         self.target_tape = None
-        self.inside_complex_kernel = False
+        self.grad_replaced = False
         self.kernels = kernels or []
 
     def get_num_compiled_functions(self):
@@ -483,6 +483,13 @@ class _Root:
     def get_children(self):
         """Same as :func:`taichi.SNode.get_children`"""
         return _root_fb.root.get_children()
+
+    # TODO: Record all of the SNodeTrees that finalized under 'ti.root'
+    def deactivate_all(self):
+        warning(
+            """'ti.root.deactivate_all()' would deactivate all finalized snodes."""
+        )
+        ti.deactivate_all_snodes()
 
     @property
     def shape(self):

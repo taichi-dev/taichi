@@ -56,7 +56,7 @@ class SparseMatrix {
   SparseMatrix transpose();
 
  private:
-  Eigen::SparseMatrix<float32> matrix_;
+  Eigen::SparseMatrix<float32, Eigen::ColMajor> matrix_;
 };
 }  // namespace lang
 }  // namespace taichi

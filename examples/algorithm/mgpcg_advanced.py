@@ -1,8 +1,6 @@
 import math
 import time
 
-import numpy as np
-
 import taichi as ti
 
 
@@ -10,8 +8,6 @@ import taichi as ti
 class MGPCG:
     '''
 Grid-based MGPCG solver for the possion equation.
-
-See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/examples/stable_fluid.py>`_ for a usage example.
 
 .. note::
 
@@ -260,7 +256,7 @@ class MGPCG_Example(MGPCG):
         for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
             r_I = 5.0
             for k in ti.static(range(self.dim)):
-                r_I *= ti.cos(5 * np.pi * I[k] / self.N)
+                r_I *= ti.cos(5 * math.pi * I[k] / self.N)
             self.init_r(I, r_I)
 
     @ti.kernel

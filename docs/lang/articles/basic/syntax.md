@@ -95,7 +95,7 @@ In addition, the return value will be automatically cast into the hinted type:
 def my_kernel() -> ti.i32:  # int32
     return 128.32
 
-print(my_kernel())  # 128, casted into ti.i32
+print(my_kernel())  # 128, cast into ti.i32
 ```
 
 :::note

@@ -12,7 +12,7 @@ Taichi has a built-in GUI system to help users visualize results.
 [`ti.GUI(name, res)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=gui%20gui#taichi.misc.gui.GUI)
 creates a window.
 
-The following codes show how to create a window of resolution `640x360`:
+The following code show how to create a window of resolution `640x360`:
 
 ```python
 gui = ti.GUI('Window Title', (640, 360))
@@ -49,7 +49,8 @@ Taichi's GUI supports painting simple geometric objects, such as lines, triangle
 
 :::note
 
-The position parameter of every drawing API expects input of 2-element tuples, whose values are the relative position of the object.
+The position parameter of every drawing API expects input of 2-element tuples,
+whose values are the relative position of the object range from 0.0 to 1.0.
 (0.0, 0.0) stands for the lower left corner of the window, and (1.0, 1.0) stands for the upper right corner.
 
 Acceptable input for positions are taichi fields or numpy arrays. Primitive arrays in python are NOT acceptable.
@@ -60,7 +61,8 @@ For simplicity, we use numpy arrays in the examples below.
 
 :::tip
 
-For detailed API description, please click on the API code.
+For detailed API description, please click on the API code. For instance, click on
+`gui.get_image()` to see the description to get a GUI images.
 
 :::
 
@@ -119,6 +121,12 @@ draws solid circles.
 The color and radius of circles can be further specified with additional parameters. For a single color, use the `color` parameter.
 For multiple colors, use `palette` and `palette_indices` instead.
 
+:::note
+
+The unit of raduis in GUI APIs is number of pixels.
+
+:::
+
 For examples:
 ```python
 gui.circles(pos, radius=3, color=0x068587)
@@ -129,7 +137,9 @@ draws circles all with radius of 1.5 and blue color positioned at pos array.
 ```python
 gui.circles(pos, radius=3, palette=[0x068587, 0xED553B, 0xEEEEF0], palette_indices=material)
 ```
-draws circles with radius of 1.5 and three different colors differed by the indices array material.
+draws circles with radius of 1.5 and three different colors differed by `material`, an integer array with the same size as
+`pos`. Each integer in `material` indicates which color the associated circle use (i.e. array [0, 1, 2] indicates these three
+circles are colored separately by the first, second, and third color in `palette`.
 
 ![circles](../static/assets/colored_circles.png)
 
@@ -141,9 +151,7 @@ The color and radius of lines can be further specified with additional parameter
 [`gui.lines(begin, end)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=line#taichi.misc.gui.GUI.lines)
 draws lines.
 
-:::note
-
-`being` and `end` both require input of positions.
+`begin` and `end` both require input of positions.
 
 The color and radius of lines can be further specified with additional parameters.
 
@@ -151,32 +159,30 @@ For example:
 ```python
 gui.lines(begin=X, end=Y, radius=2, color=0x068587)
 ```
-draws line segments from X positions to Y positions with width of 2 and color of light blue.
+draws line segments from X positions to Y positions with width of 2 and color in light blue.
 
 ![lines](../static/assets/lines.png)
 
 [`gui.triangle(a, b, c)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=triangle#taichi.misc.gui.GUI.triangle)
-draws one triangle.
+draws one solid triangle.
 
-The color of triangles can be further specified with additional parameter.
+The color of triangles can be further specified with additional parameters.
 
 [`gui.triangles(a, b, c)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=triangles#taichi.misc.gui.GUI.triangles)
 draws solid triangles.
 
-Three vertices of triangles all require input of positions.
-
-The color of triangles can be further specified with additional parameter.
+The color of triangles can be further specified with additional parameters.
 
 For example:
 ```python
 gui.triangles(a=X, b=Y, c=Z, color=0xED553B)
 ```
-draws triangles with color of red and three points positioned at X, Y, and Z.
+draws triangles with color in red and three points positioned at X, Y, and Z.
 
 ![triangles](../static/assets/triangles.png)
 
 [`gui.rect(topleft, bottomright)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=rect#taichi.misc.gui.GUI.rect)
-draws a hollowed rectangle.
+draws a hollow rectangle.
 
 The color and radius of the stroke of rectangle can be further specified with additional parameters.
 
@@ -184,7 +190,7 @@ For example:
 ```python
 gui.rect([0, 0], [0.5, 0.5], radius=1, color=0xED553B)
 ```
-draws a rectangle of top left corner at [0, 0] and bottom right corner at [0.5, 0.5], with stroke of radius of 1 and color of red.
+draws a rectangle of top left corner at [0, 0] and bottom right corner at [0.5, 0.5], with stroke of radius of 1 and color in red.
 
 ![rect](../static/assets/rect.png)
 
@@ -202,14 +208,14 @@ x = nunpy.array([[0.1, 0.1], [0.9, 0.1]])
 y = nunpy.array([[0.3, 0.3], [-0.3, 0.3]])
 gui.arrows(x, y, radius=1, color=0xFFFFFF)
 ```
-draws two arrow originated at [0.1, 0.1], [0.9, 0.1] and pointing to [0.3, 0.3], [-0.3, 0.3] with radius of 1 and color of white.
+draws two arrow originated at [0.1, 0.1], [0.9, 0.1] and pointing to [0.3, 0.3], [-0.3, 0.3] with radius of 1 and color in white.
 
 ![arrows](../static/assets/arrows.png)
 
 [`gui.arrow_field(direction)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=arrow_field#taichi.misc.gui.GUI.arrow_field)
 draws a field of arrows.
 
-The `direction` requires a field of `shape=(x, y, 2)` where `x` refers to the number of columns of arrow field and `y`
+The `direction` requires a field of `shape=(col, row, 2)` where `col` refers to the number of columns of arrow field and `row`
 refers to the number of rows of arrow field.
 
 The color and bound of arrow field can be further specified with additional parameters.
@@ -225,7 +231,7 @@ draws a 5 by 5 arrows pointing to random directions.
 [`gui.point_field(radius)`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=point_field#taichi.misc.gui.GUI.point_field)
 draws a field of points.
 
-The `radius` requires a field of `shape=(x, y)` where `x` refers to the number of columns of arrow field and `y`
+The `radius` requires a field of `shape=(col, row)` where `col` refers to the number of columns of arrow field and `row`
 refers to the number of rows of arrow field.
 
 The color and bound of point field can be further specified with additional parameters.
@@ -362,7 +368,9 @@ example:
 
 :::caution
 
-Must be used together with `gui.get_event`, or it won't be updated!
+`gui.is_pressed()` must be used together with `gui.get_event()`, or it won't be updated!
+
+:::
 
 For example:
 
@@ -374,8 +382,6 @@ while True:
     elif gui.is_pressed('d', ti.GUI.RIGHT):
         print('Go right!')
 ```
-
-:::
 
 [`gui.get_cursor_pos()`](https://api-docs.taichi.graphics/src/taichi.misc.html?highlight=get_cursor#taichi.misc.gui.GUI.get_cursor_pos)
 can return current cursor position within the window. For example:
@@ -487,7 +493,7 @@ When the GUI resolution (window size) is large, it sometimes becomes difficult t
 invocations between two frames.
 
 This is mainly due to the copy overhead, where Taichi GUI needs to copy the image buffer from one place to another.
-This copying is necessary for the 2D drawing functions, such as `gui.circles`, to work. The larger the image shape is,
+This process is necessary for the 2D drawing functions, such as `gui.circles`, to work. The larger the image shape is,
 the larger the overhead.
 
 Fortunately, sometimes your program only needs `gui.set_image` alone. In such cases, you can enable the `fast_gui` option

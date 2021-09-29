@@ -31,4 +31,5 @@ Below we highlight some of the most widely used styles.
   };
   ```
 - Embrace the smart pointers and avoid `new` and `delete`.
+- Mark the constructor `explicit` to prevent the compiler from doing any implicit conversion.
 - Avoid virtual function calls in the constructors or destructors ([explanation](https://wiki.sei.cmu.edu/confluence/display/cplusplus/OOP50-CPP.+Do+not+invoke+virtual+functions+from+constructors+or+destructors)).

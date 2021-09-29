@@ -79,6 +79,11 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #define TI_CPP14
 #endif
 
+// Do not disable assert...
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+
 #ifdef _WIN64
 #pragma warning(push)
 #pragma warning(disable : 4005)

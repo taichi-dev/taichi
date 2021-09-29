@@ -21,7 +21,7 @@ Ndarray::Ndarray(Program *prog,
   element_size = data_type_size(dtype);
   auto *const runtime_jit = tlctx->runtime_jit_module;
   runtime_jit->call<void *, std::size_t, std::size_t>(
-      "runtime_snode_tree_allocate_aligned", prog_->get_llvm_runtime(),
+      "runtime_memory_allocate_aligned", prog_->get_llvm_runtime(),
       nelement * element_size, 1);
 
   data_ptr = prog_->fetch_result<int *>(taichi_result_buffer_runtime_query_id,

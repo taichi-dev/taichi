@@ -9,6 +9,7 @@ import taichi as ti
 
 class StatisticalResult:
     """Statistical result of records.
+
     Profiling records with the same kernel name will be counted in a ``StatisticalResult`` instance via ``insert_record(time)``.
     Currently, only the kernel elapsed time is counted, other statistics related to the kernel will be added in the feature.
     """
@@ -24,7 +25,7 @@ class StatisticalResult:
         return self.total_time < other.total_time
 
     def insert_record(self, time):
-        """API TODO docstring"""
+        """TODO: API docstring"""
         if self.counter == 0:
             self.min_time = time
             self.max_time = time
@@ -36,6 +37,7 @@ class StatisticalResult:
 
 class KernelProfiler:
     """Kernel profiler of Taichi.
+
     Kernel profiler acquires kernel profiling records from backend, counts records in Python scope,
     and prints the results to the console: :func:`~taichi.profiler.kernelprofiler.KernelProfiler.print_info`.
     """
@@ -52,10 +54,10 @@ class KernelProfiler:
         self._traced_records = []
         self._statistical_results = {}
 
-    # ======================== public methods ============================
+    # public methods 
 
     def set_kernel_profiler_mode(self, mode=False):
-        """API TODO docstring"""
+        """TODO: API docstring"""
         if type(mode) is bool:
             self._profiling_mode = mode
         else:
@@ -64,17 +66,17 @@ class KernelProfiler:
                             f'is not supported')
 
     def get_kernel_profiler_mode(self):
-        """API TODO docstring"""
+        """TODO: API docstring"""
         return self._profiling_mode
 
     def get_total_time(self):
-        """API TODO docstring"""
+        """TODO: API docstring"""
         self.update_records()  # kernel records
         self.count_statistics()  # _total_time_ms is counted here
         return self._total_time_ms / 1000  # ms to s
 
     def clear_info(self):
-        """API TODO docstring"""
+        """TODO: API docstring"""
         #sync first
         impl.get_runtime().sync()
         #then clear backend & frontend info
@@ -82,14 +84,14 @@ class KernelProfiler:
         self.clear_frontend()
 
     def query_info(self, name):
-        """API TODO docstring"""
+        """TODO: API docstring"""
         self.update_records()  # kernel records
         self.count_statistics()  # statistics results
         # TODO : query self.StatisticalResult in python scope
         return impl.get_runtime().prog.query_kernel_profile_info(name)
 
     def set_metrics(self, metric_list=default_metric_list):
-        """API TODO docstring"""
+        """TODO: API docstring"""
         self._metric_list = metric_list
         metric_name_list = [metric.name for metric in metric_list]
         self.clear_info()
@@ -98,7 +100,7 @@ class KernelProfiler:
 
     @contextmanager
     def collect_metrics_within_context(self, metric_list=default_metric_list):
-        """API TODO docstring
+        """TODO: API docstring
         Example::
         """
         self.set_metrics(metric_list)
@@ -111,6 +113,7 @@ class KernelProfiler:
 
     def print_info(self, mode=COUNT):
         """Print the profiling results of Taichi kernels.
+
         To enable this profiler, set ``kernel_profiler=True`` in ``ti.init()``.
         The default print mode is ``COUNT`` mode: print the statistical results (min,max,avg time) of Taichi kernels,
         another mode ``TRACE``: print the records of launched Taichi kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
@@ -143,7 +146,7 @@ class KernelProfiler:
         self._traced_records = impl.get_runtime(
         ).prog.get_kernel_profiler_records()
 
-    def count_statistics(self):
+    def _count_statistics(self):
         # Counts the statistics results.
         # The profiling records with the same kernel name are counted as a profiling result.
         for record in self._traced_records:
@@ -259,6 +262,7 @@ _ti_kernel_profiler = KernelProfiler()
 
 def get_default_kernel_profiler():
     """We have only one :class:`~taichi.profiler.kernelprofiler.KernelProfiler` instance(i.e. ``_ti_kernel_profiler``) now.
+
     For ``KernelProfiler`` using ``CuptiToolkit``, GPU devices can only work in a certain configuration.
     Profiling mode and metrics are configured by the host(CPU) via CUPTI APIs, and device(GPU) will use
     its counter registers to collect specific metrics.

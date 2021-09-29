@@ -45,8 +45,8 @@ class KernelProfiler:
         """Constructor of class KernelProfiler.
         ``_profiling_mode`` is a boolean value, turn ON/OFF profiler by :func:`~taichi.profiler.kernelprofiler.KernelProfiler.set_kernel_profiler_mode`.
         ``_total_time_ms`` is a float value, get the value in seconds with :func:`~taichi.profiler.kernelprofiler.KernelProfiler.get_total_time`.
-        ``_traced_records`` is a list of profiling records, acquired from backend by :func:`~taichi.profiler.kernelprofiler.KernelProfiler.update_records`.
-        ``_statistical_results`` is a dict of statistical profiling results, statistics via :func:`~taichi.profiler.kernelprofiler.KernelProfiler.count_statistics`.
+        ``_traced_records`` is a list of profiling records, acquired from backend by :func:`~taichi.profiler.kernelprofiler.KernelProfiler._update_records`.
+        ``_statistical_results`` is a dict of statistical profiling results, statistics via :func:`~taichi.profiler.kernelprofiler.KernelProfiler._count_statistics`.
         """
         self._profiling_mode = False
         self._metric_list = []
@@ -71,8 +71,8 @@ class KernelProfiler:
 
     def get_total_time(self):
         """TODO: API docstring"""
-        self.update_records()  # kernel records
-        self.count_statistics()  # _total_time_ms is counted here
+        self._update_records()  # kernel records
+        self._count_statistics()  # _total_time_ms is counted here
         return self._total_time_ms / 1000  # ms to s
 
     def clear_info(self):
@@ -81,12 +81,12 @@ class KernelProfiler:
         impl.get_runtime().sync()
         #then clear backend & frontend info
         impl.get_runtime().prog.clear_kernel_profile_info()
-        self.clear_frontend()
+        self._clear_frontend()
 
     def query_info(self, name):
         """TODO: API docstring"""
-        self.update_records()  # kernel records
-        self.count_statistics()  # statistics results
+        self._update_records()  # kernel records
+        self._count_statistics()  # statistics results
         # TODO : query self.StatisticalResult in python scope
         return impl.get_runtime().prog.query_kernel_profile_info(name)
 
@@ -121,28 +121,28 @@ class KernelProfiler:
             mode (str): the way to print profiling results
         """
 
-        self.update_records()  # kernel records
-        self.count_statistics()  # statistics results
+        self._update_records()  # kernel records
+        self._count_statistics()  # statistics results
 
         #COUNT mode (default) : print statistics of all kernel
         if mode == self.COUNT:
-            self.count_info()
+            self._print_statistics_info()
 
         #TRACE mode : print records of launched kernel
         if mode == self.TRACE:
-            self.trace_info()
+            self._print_kernel_info()
 
-    # ======================= private methods ==========================
+    # private methods
 
-    def clear_frontend(self):
+    def _clear_frontend(self):
         self._total_time_ms = 0.0
         self._traced_records.clear()
         self._statistical_results.clear()
 
-    def update_records(self):
+    def _update_records(self):
         # Acquires kernel records from a backend
         impl.get_runtime().sync()
-        self.clear_frontend()
+        self._clear_frontend()
         self._traced_records = impl.get_runtime(
         ).prog.get_kernel_profiler_records()
 
@@ -163,7 +163,7 @@ class KernelProfiler:
                                reverse=True)
         }
 
-    def count_info(self):
+    def _print_statistics_info(self):
         # In ``COUNT`` mode (default), the profiling records with the same kernel name are counted as a profiling result,
         # and then the statistics are presented.
 
@@ -210,7 +210,7 @@ class KernelProfiler:
         print(summary_line)
         print(outer_partition_line)
 
-    def trace_info(self):
+    def _print_kernel_info(self):
         # In ``TRACE``` mode, the profiler shows you a list of kernels that were launched on hardware during the profiling period.
         # This mode provides more detailed performance information and runtime hardware metrics for each kernel.
 

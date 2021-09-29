@@ -79,11 +79,6 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #define TI_CPP14
 #endif
 
-// Do not disable assert...
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
 #ifdef _WIN64
 #pragma warning(push)
 #pragma warning(disable : 4005)
@@ -100,7 +95,6 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #define sprintf_s sprintf
 #endif
 
-#undef assert
 #ifdef _WIN64
 #ifndef TI_PASS_EXCEPTION_TO_PYTHON
 // For Visual Studio debugging...

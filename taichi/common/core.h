@@ -95,6 +95,7 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #define sprintf_s sprintf
 #endif
 
+#undef assert
 #ifdef _WIN64
 #ifndef TI_PASS_EXCEPTION_TO_PYTHON
 // For Visual Studio debugging...

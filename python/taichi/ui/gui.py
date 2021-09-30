@@ -19,8 +19,13 @@ class Gui:
         """Creating a context manager for subwindow
 
         Note::
+            All args of this method should align with `begin`.
 
-        All args of this method should align with `begin`.
+        Args::
+            x (float): The x-coordinate (between 0 and 1) of the top-left corner of the subwindow, relative to the full window.
+            y (float): The y-coordinate (between 0 and 1) of the top-left corner of the subwindow, relative to the full window.
+            width (float): The width of the subwindow relative to the full window.
+            height (float): The height of the subwindow relative to the full window.
 
         Usage::
 

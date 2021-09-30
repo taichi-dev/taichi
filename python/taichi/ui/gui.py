@@ -16,7 +16,11 @@ class Gui:
 
     @contextmanager
     def sub_window(self, name, x, y, width, height):
-        """Creating a context manager for subwindow, all args are the same with `begin`.
+        """Creating a context manager for subwindow
+
+        Note::
+
+        All args of this method should align with `begin`.
 
         Usage::
 

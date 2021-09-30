@@ -16,6 +16,7 @@ class Field:
     Args:
         vars (List[Expr]): Field members.
     """
+
     def __init__(self, vars):
         self.vars = vars
         self.host_accessors = None
@@ -218,6 +219,7 @@ class ScalarField(Field):
     Args:
         var (Expr): Field member.
     """
+
     def __init__(self, var):
         super().__init__([var])
 
@@ -251,6 +253,9 @@ class ScalarField(Field):
     @python_scope
     def from_numpy(self, arr):
         assert len(self.shape) == len(arr.shape)
+        if self.shape != arr.shape:
+            raise ValueError(
+                "ti.field shape {} does not equal to the numpy array shape {}".format(self.shape, arr.shape))
         for i in range(len(self.shape)):
             assert self.shape[i] == arr.shape[i]
         if hasattr(arr, 'contiguous'):

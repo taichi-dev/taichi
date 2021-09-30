@@ -1,5 +1,6 @@
 import functools
 import os
+from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 
 from taichi.core.util import locale_encode
@@ -111,94 +112,6 @@ def kernel_profiler_print():
     return print_kernel_profile_info()
 
 
-def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
-    """Set metrics that are collected by the CUPTI toolkit.
-
-    The configuration of the ``metric_list`` will be retained.
-    For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
-    For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html.
-    For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
-
-    Args:
-        metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances.
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(kernel_profiler=True, arch=ti.cuda)
-        >>> num_elements = 128*1024*1024
-
-        >>> x = ti.field(ti.f32, shape=num_elements)
-        >>> y = ti.field(ti.f32, shape=())
-        >>> y[None] = 0
-
-        >>> @ti.kernel
-        >>> def reduction():
-        >>>     for i in x:
-        >>>         y[None] += x[i]
-
-        >>> global_op_atom = CuptiMetric(
-        >>>     name='l1tex__t_set_accesses_pipe_lsu_mem_global_op_atom.sum',
-        >>>     header=' global.atom ',
-        >>>     format='    {:8.0f} ')
-        >>> profiling_metrics = ti.get_predefined_cupti_metrics('shared_access') + [global_op_atom]
-        >>>                   # Taichi pre-defined metrics                       + user defined metrics
-
-        >>> # metrics setting will be retained
-        >>> ti.set_kernel_profile_metrics(profiler_metrics)
-        >>> for i in range(16):
-        >>>     reduction()
-        >>> ti.print_kernel_profile_info('trace')
-    """
-    get_default_kernel_profiler().set_metrics(metric_list)
-
-
-def collect_kernel_profile_metrics_in_context(
-        metric_list=default_cupti_metrics):
-    """Set temporary metrics that will be collected by the CUPTI toolkit within this context.
-
-    The configuration of the ``metric_list`` will be clear when exit from this context.
-    For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
-    For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html.
-    For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
-
-    Args:
-        metric_list (list): a list of ti.CuptiMetric()
-
-    Example::
-
-        >>> import taichi as ti
-
-        >>> ti.init(kernel_profiler=True, arch=ti.cuda)
-        >>> num_elements = 128*1024*1024
-
-        >>> x = ti.field(ti.f32, shape=num_elements)
-        >>> y = ti.field(ti.f32, shape=())
-        >>> y[None] = 0
-
-        >>> @ti.kernel
-        >>> def reduction():
-        >>>     for i in x:
-        >>>         y[None] += x[i]
-
-        >>> global_op_atom = CuptiMetric(
-        >>>     name='l1tex__t_set_accesses_pipe_lsu_mem_global_op_atom.sum',
-        >>>     header=' global.atom ',
-        >>>     format='    {:8.0f} ')
-        >>> profiling_metrics = ti.get_predefined_cupti_metrics('device_utilization') # Taichi pre-defined metrics
-        >>>                   + [global_op_atom] # user defined metrics
-
-        >>> # metrics setting is temporary
-        >>> with ti.collect_kernel_profile_metrics_in_context(profiling_metrics):
-        >>>     for i in range(16):
-        >>>         reduction()
-        >>>     ti.print_kernel_profile_info('trace')
-
-    """
-    get_default_kernel_profiler().collect_metrics_in_context(metric_list)
-
-
 def print_kernel_profile_info(mode='count'):
     """Print the profiling results of Taichi kernels.
 
@@ -295,6 +208,111 @@ def kernel_profiler_total_time():
         time (float): total time in second.
     """
     return get_default_kernel_profiler().get_total_time()
+
+
+def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
+    """Set metrics that will be collected by the CUPTI toolkit.
+
+    The configuration of the ``metric_list`` will be retained.
+    For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
+    For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html.
+    For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
+
+    Args:
+        metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances, default value: :data:`~taichi.lang.default_cupti_metrics`.
+
+    Example::
+
+        >>> import taichi as ti
+
+        >>> ti.init(kernel_profiler=True, arch=ti.cuda)
+        >>> num_elements = 128*1024*1024
+
+        >>> x = ti.field(ti.f32, shape=num_elements)
+        >>> y = ti.field(ti.f32, shape=())
+        >>> y[None] = 0
+
+        >>> @ti.kernel
+        >>> def reduction():
+        >>>     for i in x:
+        >>>         y[None] += x[i]
+
+        >>> # In the case of not pramater, Taichi will print its pre-defined metrics list
+        >>> ti.get_predefined_cupti_metrics()
+        >>> # get Taichi pre-defined metrics
+        >>> profiling_metrics = ti.get_predefined_cupti_metrics('shared_access')
+
+        >>> global_op_atom = ti.CuptiMetric(
+        >>>     name='l1tex__t_set_accesses_pipe_lsu_mem_global_op_atom.sum',
+        >>>     header=' global.atom ',
+        >>>     format='    {:8.0f} ')
+        >>> # add user defined metrics
+        >>> profiling_metrics += [global_op_atom]
+
+        >>> # metrics setting will be retained until the next configuration
+        >>> ti.set_kernel_profile_metrics(profiling_metrics)
+        >>> for i in range(16):
+        >>>     reduction()
+        >>> ti.print_kernel_profile_info('trace')
+
+    Note:
+        Metrics setting will be retained until the next configuration.
+    """
+    get_default_kernel_profiler().set_metrics(metric_list)
+
+
+@contextmanager
+def collect_kernel_profile_metrics_in_context(
+        metric_list=default_cupti_metrics):
+    """Set temporary metrics that will be collected by the CUPTI toolkit within this context.
+
+    For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
+    For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html.
+    For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
+
+    Args:
+        metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances, default value: :data:`~taichi.lang.default_cupti_metrics`.
+
+    Example::
+
+        >>> import taichi as ti
+
+        >>> ti.init(kernel_profiler=True, arch=ti.cuda)
+        >>> num_elements = 128*1024*1024
+
+        >>> x = ti.field(ti.f32, shape=num_elements)
+        >>> y = ti.field(ti.f32, shape=())
+        >>> y[None] = 0
+
+        >>> @ti.kernel
+        >>> def reduction():
+        >>>     for i in x:
+        >>>         y[None] += x[i]
+
+        >>> # In the case of not pramater, Taichi will print its pre-defined metrics list
+        >>> ti.get_predefined_cupti_metrics()
+        >>> # get Taichi pre-defined metrics
+        >>> profiling_metrics = ti.get_predefined_cupti_metrics('device_utilization')
+
+        >>> global_op_atom = ti.CuptiMetric(
+        >>>     name='l1tex__t_set_accesses_pipe_lsu_mem_global_op_atom.sum',
+        >>>     header=' global.atom ',
+        >>>     format='    {:8.0f} ')
+        >>> # add user defined metrics
+        >>> profiling_metrics += [global_op_atom]
+
+        >>> # metrics setting is temporary, and will be clear when exit from this context.
+        >>> with ti.collect_kernel_profile_metrics_in_context(profiling_metrics):
+        >>>     for i in range(16):
+        >>>         reduction()
+        >>>     ti.print_kernel_profile_info('trace')
+
+    Note:
+        The configuration of the ``metric_list`` will be clear when exit from this context.
+    """
+    get_default_kernel_profiler().set_metrics(metric_list)
+    yield get_default_kernel_profiler()
+    get_default_kernel_profiler().set_metrics()
 
 
 @deprecated('memory_profiler_print()', 'print_memory_profile_info()')

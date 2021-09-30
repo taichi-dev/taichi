@@ -10,7 +10,7 @@ import taichi as ti
 class StatisticalResult:
     """Statistical result of records.
 
-    Profiling records with the same kernel name will be counted in a ``StatisticalResult`` instance via ``insert_record(time)``.
+    Profiling records with the same kernel name will be counted in a ``StatisticalResult`` instance via function ``insert_record(time)``.
     Currently, only the kernel elapsed time is counted, other statistics related to the kernel will be added in the feature.
     """
     def __init__(self, name):
@@ -42,7 +42,7 @@ class KernelProfiler:
     """Kernel profiler of Taichi.
 
     Kernel profiler acquires kernel profiling records from backend, counts records in Python scope,
-    and prints the results to the console: :func:`~taichi.profiler.kernelprofiler.KernelProfiler.print_info`.
+    and prints the results to the console by :func:`~taichi.profiler.kernelprofiler.KernelProfiler.print_info`.
     """
     def __init__(self):
         """Constructor of class KernelProfiler.
@@ -114,7 +114,7 @@ class KernelProfiler:
         return impl.get_runtime().prog.query_kernel_profile_info(name)
 
     def set_metrics(self, metric_list=default_cupti_metrics):
-        """Set metrics that are collected by the CUPTI toolkit.
+        """Set metrics that will be collected by the CUPTI toolkit.
 
         The configuration of the ``metric_list`` will be retained.
         For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
@@ -122,7 +122,10 @@ class KernelProfiler:
         For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
 
         Args:
-            metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances.
+            metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances, default value: :data:`~taichi.lang.default_cupti_metrics`.
+
+        Note:
+            Metrics setting will be retained until the next configuration.
         """
         self._metric_list = metric_list
         metric_name_list = [metric.name for metric in metric_list]
@@ -134,13 +137,15 @@ class KernelProfiler:
     def collect_metrics_in_context(self, metric_list=default_cupti_metrics):
         """Set temporary metrics that will be collected by the CUPTI toolkit within this context.
 
-        The configuration of the ``metric_list`` will be clear when exit from this context.
         For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
         For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html.
         For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
 
         Args:
-            metric_list (list): a list of ti.CuptiMetric()
+            metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances, default value: :data:`~taichi.lang.default_cupti_metrics`.
+
+        Note:
+            The configuration of the ``metric_list`` will be clear when exit from this context.
         """
         self.set_metrics(metric_list)
         yield self

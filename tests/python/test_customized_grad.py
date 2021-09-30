@@ -168,8 +168,8 @@ def test_customized_kernels_oop2():
     assert a.x.grad[0] == 4
 
 
-@ti.must_throw(RuntimeError)
 @ti.test()
+@ti.must_throw(RuntimeError)
 def test_decorated_primal_is_taichi_kernel():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)
@@ -193,8 +193,8 @@ def test_decorated_primal_is_taichi_kernel():
         func(4)
 
 
-@ti.must_throw(RuntimeError)
 @ti.test()
+@ti.must_throw(RuntimeError)
 def test_decorated_primal_missing_decorator():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)

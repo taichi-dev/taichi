@@ -919,7 +919,8 @@ def supported_archs():
     Returns:
         List[taichi_core.Arch]: All supported archs on the machine.
     """
-    archs = [cpu, cuda, metal, vulkan, opengl, cc]
+    archs = set([cpu, cuda, metal, vulkan, opengl, cc])
+    archs = set(filter(lambda x: is_arch_supported(x), archs))
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')
@@ -927,19 +928,23 @@ def supported_archs():
         wanted_archs = wanted_archs[1:]
     wanted_archs = wanted_archs.split(',')
     # Note, ''.split(',') gives you [''], which is not an empty array.
-    wanted_archs = list(filter(lambda x: x != '', wanted_archs))
-    if len(wanted_archs):
-        archs, old_archs = [], archs
-        for arch in old_archs:
-            if want_exclude == (_ti_core.arch_name(arch) not in wanted_archs):
-                archs.append(arch)
-
-    archs, old_archs = [], archs
-    for arch in old_archs:
-        if is_arch_supported(arch):
-            archs.append(arch)
-
-    return archs
+    expanded_wanted_archs = set([])
+    for arch in wanted_archs:
+        if arch == '':
+            continue
+        if arch == 'cpu':
+            expanded_wanted_archs.add(cpu)
+        elif arch == 'gpu':
+            expanded_wanted_archs.update(gpu)
+        else:
+            expanded_wanted_archs.add(_ti_core.arch_from_name(arch))
+    if len(expanded_wanted_archs) == 0:
+        return list(archs)
+    if want_exclude:
+        supported = archs - expanded_wanted_archs
+    else:
+        supported = archs & expanded_wanted_archs
+    return list(supported)
 
 
 def adaptive_arch_select(arch):

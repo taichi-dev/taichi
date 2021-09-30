@@ -56,7 +56,7 @@ CompileConfig::CompileConfig() {
   // CUDA backend options:
   use_unified_memory = false;
 
-  device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory
+  device_memory_GB = 0.5;  // by default, preallocate 1 GB GPU memory
   device_memory_fraction = 0.0;
 
   // C backend options:

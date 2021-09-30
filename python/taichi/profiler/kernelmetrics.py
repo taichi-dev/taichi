@@ -5,18 +5,20 @@ from taichi.core import ti_core as _ti_core
 
 @dataclass
 class CuptiMetric:
-    """A data class to add CUPTI metric for KernelProfiler.
+    """A data class to add CUPTI metric for :class:`~taichi.lang.KernelProfiler`.
 
-    This class can be used to add user selected CUPTI metrics.
-    Details about CUPTI and its metircs: link
-
-    For examples, see :func:`~taichi.lang.set_kernel_profile_metrics` and :func:`~taichi.lang.collect_metrics_with_context`
+    This data class is designed to add user selected CUPTI metrics.
+    Only available for the CUDA backend now, i.e. you need ``ti.init(kernel_profiler=True, arch=ti.cuda)``.
+    For usage of this class, see examples in func :func:`~taichi.lang.set_kernel_profile_metrics` and :func:`~taichi.lang.collect_kernel_profile_metrics_in_context`.
+    For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
+    For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html.
+    For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
 
     Args:
-        name (str): name of the metric collected by CuptiToolkit.
-        header (str): column header of this metric.
-        format (str): format for print metric value (and unit of this value).
-        scale (float): scale of metric value.
+        name (str): name of metric that collected by CUPTI toolkit. used by :func:`~taichi.lang.set_kernel_profile_metrics` and :func:`~taichi.lang.collect_kernel_profile_metrics_in_context`.
+        header (str): column header of this metric, used by :func:`~taichi.lang.print_kernel_profile_info`.
+        format (str): format for print metric value (and unit of this value), used by :func:`~taichi.lang.print_kernel_profile_info`.
+        scale (float): scale of metric value, used by :func:`~taichi.lang.print_kernel_profile_info`.
     """
     name: str = ''
     header: str = ''
@@ -31,32 +33,32 @@ dram_utilization = CuptiMetric(
     format='   {:6.2f} % ')
 
 dram_bytes_sum = CuptiMetric(name='dram__bytes.sum',
-                             header='  global.r&w ',
+                             header='  global.R&W ',
                              format='{:9.3f} MB ',
                              scale=1.0 / 1024 / 1024)
 
 dram_bytes_throughput = CuptiMetric(name='dram__bytes.sum.per_second',
-                                    header=' global.r&w/s ',
+                                    header=' global.R&W/s ',
                                     format='{:8.3f} GB/s ',
                                     scale=1.0 / 1024 / 1024 / 1024)
 
 dram_bytes_read = CuptiMetric(name='dram__bytes_read.sum',
-                              header='   global.r ',
+                              header='   global.R ',
                               format='{:8.3f} MB ',
                               scale=1.0 / 1024 / 1024)
 
 dram_read_throughput = CuptiMetric(name='dram__bytes_read.sum.per_second',
-                                   header='   global.r/s ',
+                                   header='   global.R/s ',
                                    format='{:8.3f} GB/s ',
                                    scale=1.0 / 1024 / 1024 / 1024)
 
 dram_bytes_write = CuptiMetric(name='dram__bytes_write.sum',
-                               header='   global.w ',
+                               header='   global.W ',
                                format='{:8.3f} MB ',
                                scale=1.0 / 1024 / 1024)
 
 dram_write_throughput = CuptiMetric(name='dram__bytes_write.sum.per_second',
-                                    header='   global.w/s ',
+                                    header='   global.W/s ',
                                     format='{:8.3f} GB/s ',
                                     scale=1.0 / 1024 / 1024 / 1024)
 
@@ -69,22 +71,22 @@ shared_utilization = CuptiMetric(
 
 shared_transactions_load = CuptiMetric(
     name='l1tex__data_pipe_lsu_wavefronts_mem_shared_op_ld.sum',
-    header=' shared.trans.w ',
+    header=' shared.trans.W ',
     format='     {:10.0f} ')
 
 shared_transactions_store = CuptiMetric(
     name='l1tex__data_pipe_lsu_wavefronts_mem_shared_op_st.sum',
-    header=' shared.trans.r ',
+    header=' shared.trans.R ',
     format='     {:10.0f} ')
 
 shared_bank_conflicts_store = CuptiMetric(
     name='l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_st.sum',
-    header=' bank.conflict.w ',
+    header=' bank.conflict.W ',
     format='      {:10.0f} ')
 
 shared_bank_conflicts_load = CuptiMetric(
     name='l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_ld.sum',
-    header=' bank.conflict.r ',
+    header=' bank.conflict.R ',
     format='      {:10.0f} ')
 
 # Atomic Metrics

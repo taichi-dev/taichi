@@ -25,7 +25,10 @@ class StatisticalResult:
         return self.total_time < other.total_time
 
     def insert_record(self, time):
-        """TODO: API docstring"""
+        """Insert records with the same kernel name.
+
+        Currently, only the kernel elapsed time is counted.
+        """
         if self.counter == 0:
             self.min_time = time
             self.max_time = time
@@ -58,7 +61,7 @@ class KernelProfiler:
     # public methods
 
     def set_kernel_profiler_mode(self, mode=False):
-        """TODO: API docstring"""
+        """Turn on or off :class:`~taichi.profiler.kernelprofiler.KernelProfiler`."""
         if type(mode) is bool:
             self._profiling_mode = mode
         else:
@@ -67,17 +70,27 @@ class KernelProfiler:
                             f'is not supported')
 
     def get_kernel_profiler_mode(self):
-        """TODO: API docstring"""
+        """Get status of :class:`~taichi.profiler.kernelprofiler.KernelProfiler`."""
         return self._profiling_mode
 
     def get_total_time(self):
-        """TODO: API docstring"""
+        """Get elapsed time of all kernels recorded in KernelProfiler.
+
+        Returns:
+            time (float): total time in second.
+        """
         self._update_records()  # kernel records
         self._count_statistics()  # _total_time_ms is counted here
         return self._total_time_ms / 1000  # ms to s
 
     def clear_info(self):
-        """TODO: API docstring"""
+        """Clear all records both in front-end :class:`~taichi.profiler.kernelprofiler.KernelProfiler` and back-end instance ``KernelProfilerBase``.
+
+        Note:
+        The values of ``self._profiling_mode`` and ``self._metric_list`` will not be cleared.
+        Set ``self._profiling_mode`` via :func:`~taichi.profiler.kernelprofiler.KernelProfiler.set_kernel_profiler_mode`.
+        Set ``self._metric_list`` via :func:`~taichi.profiler.kernelprofiler.KernelProfiler.set_metrics`.
+        """
         #sync first
         impl.get_runtime().sync()
         #then clear backend & frontend info
@@ -85,14 +98,32 @@ class KernelProfiler:
         self._clear_frontend()
 
     def query_info(self, name):
+        """Query kernel elapsed time(min,avg,max) on devices using the kernel name.
 
+        To enable this profiler, set `kernel_profiler=True` in `ti.init`.
+
+        Args:
+            name (str): kernel name.
+
+        Returns:
+            KernelProfilerQueryResult (class): with member variables(counter, min, max, avg)
+        """
         self._update_records()  # kernel records
         self._count_statistics()  # statistics results
         # TODO : query self.StatisticalResult in python scope
         return impl.get_runtime().prog.query_kernel_profile_info(name)
 
     def set_metrics(self, metric_list=default_cupti_metrics):
+        """Set metrics that are collected by the CUPTI toolkit.
 
+        The configuration of the ``metric_list`` will be retained.
+        For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
+        For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html.
+        For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
+
+        Args:
+            metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances.
+        """
         self._metric_list = metric_list
         metric_name_list = [metric.name for metric in metric_list]
         self.clear_info()
@@ -100,18 +131,35 @@ class KernelProfiler:
         #     metric_name_list)
 
     @contextmanager
-    def collect_metrics_with_context(self, metric_list=default_cupti_metrics):
-        """API docstring"""
+    def collect_metrics_in_context(self, metric_list=default_cupti_metrics):
+        """Set temporary metrics that will be collected by the CUPTI toolkit within this context.
+
+        The configuration of the ``metric_list`` will be clear when exit from this context.
+        For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
+        For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html.
+        For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
+
+        Args:
+            metric_list (list): a list of ti.CuptiMetric()
+        """
         self.set_metrics(metric_list)
         yield self
         self.set_metrics()  #back to default metric list
 
-    # print info mode
+    # mode of print_info
     COUNT = 'count'  # print the statistical results (min,max,avg time) of Taichi kernels.
     TRACE = 'trace'  # print the records of launched Taichi kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
 
     def print_info(self, mode=COUNT):
+        """Print the profiling results of Taichi kernels.
 
+        To enable this profiler, set ``kernel_profiler=True`` in ``ti.init()``.
+        The default print mode is ``COUNT`` mode: print the statistics (min,max,avg time) of launched kernels,
+        another mode ``TRACE``: print the records of launched kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
+
+        Args:
+            mode (str): the way to print profiling results.
+        """
         self._update_records()  # kernel records
         self._count_statistics()  # statistics results
 
@@ -126,9 +174,12 @@ class KernelProfiler:
     # private methods
 
     def _clear_frontend(self):
-        """Clear member variables in ``KernelProfiler``(Python scope).
+        """Clear member variables in :class:`~taichi.profiler.kernelprofiler.KernelProfiler`.
 
-        The values of ``self._profiling_mode`` and ``self._metric_list`` will not be
+        Note:
+            The values of ``self._profiling_mode`` and ``self._metric_list`` will not be cleared.
+            Set ``self._profiling_mode`` via :func:`~taichi.profiler.kernelprofiler.KernelProfiler.set_kernel_profiler_mode`.
+            Set ``self._metric_list`` via :func:`~taichi.profiler.kernelprofiler.KernelProfiler.set_metrics`.
         """
         self._total_time_ms = 0.0
         self._traced_records.clear()
@@ -142,7 +193,7 @@ class KernelProfiler:
         ).prog.get_kernel_profiler_records()
 
     def _count_statistics(self):
-        """Counts the statistics results.
+        """Counts the statistics of launched kernels during the profiling period.
 
         The profiling records with the same kernel name are counted as a profiling result.
         """
@@ -161,7 +212,7 @@ class KernelProfiler:
         }
 
     def _print_statistics_info(self):
-        """Print statistics results."""
+        """Print statistics of launched kernels during the profiling period."""
 
         # headers
         table_header = f'Kernel Profiler(count) @ {_ti_core.arch_name(ti.cfg.arch).upper()}'
@@ -207,9 +258,12 @@ class KernelProfiler:
         print(outer_partition_line)
 
     def _print_kernel_info(self):
-        """Print a list of kernels that were launched on hardware during the profiling period.
+        """Print a list of launched kernels during the profiling period.
 
         In Advanced mode(CUDA backend, CUPTI toolkit), detailed hardware metrics will be printed for each kernel.
+        For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
+        For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html .
+        For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``
         """
         metric_list = self._metric_list
         values_num = 0  #len(self._traced_records[0].metric_values)

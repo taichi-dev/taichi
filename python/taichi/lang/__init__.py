@@ -112,8 +112,12 @@ def kernel_profiler_print():
 
 
 def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
-    """Set metrics that collected by CUPTI toolkit.
-    metrics setting will be retained
+    """Set metrics that are collected by the CUPTI toolkit.
+
+    The configuration of the ``metric_list`` will be retained.
+    For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
+    For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html.
+    For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
 
     Args:
         metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances.
@@ -150,9 +154,14 @@ def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
     get_default_kernel_profiler().set_metrics(metric_list)
 
 
-def collect_metrics_with_context(metric_list=default_cupti_metrics):
-    """Set metrics that collected by CUPTI toolkit.
-    metrics setting is temporary
+def collect_kernel_profile_metrics_in_context(
+        metric_list=default_cupti_metrics):
+    """Set temporary metrics that will be collected by the CUPTI toolkit within this context.
+
+    The configuration of the ``metric_list`` will be clear when exit from this context.
+    For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
+    For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html.
+    For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
 
     Args:
         metric_list (list): a list of ti.CuptiMetric()
@@ -181,21 +190,21 @@ def collect_metrics_with_context(metric_list=default_cupti_metrics):
         >>>                   + [global_op_atom] # user defined metrics
 
         >>> # metrics setting is temporary
-        >>> with ti.collect_metrics_with_context(profiling_metrics):
+        >>> with ti.collect_kernel_profile_metrics_in_context(profiling_metrics):
         >>>     for i in range(16):
         >>>         reduction()
         >>>     ti.print_kernel_profile_info('trace')
 
     """
-    get_default_kernel_profiler().collect_metrics_with_context(metric_list)
+    get_default_kernel_profiler().collect_metrics_in_context(metric_list)
 
 
 def print_kernel_profile_info(mode='count'):
     """Print the profiling results of Taichi kernels.
 
     To enable this profiler, set ``kernel_profiler=True`` in ``ti.init()``.
-    The default print mode is ``COUNT`` mode: print the statistical results (min,max,avg time) of Taichi kernels,
-    another mode ``TRACE``: print the records of launched Taichi kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
+    The default print mode is ``COUNT`` mode: print the statistics (min,max,avg time) of launched kernels,
+    another mode ``TRACE``: print the records of launched kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
 
     Args:
         mode (str): the way to print profiling results
@@ -283,7 +292,7 @@ def kernel_profiler_total_time():
     """Get elapsed time of all kernels recorded in KernelProfiler.
 
     Returns:
-        time (double): total time in second
+        time (float): total time in second.
     """
     return get_default_kernel_profiler().get_total_time()
 

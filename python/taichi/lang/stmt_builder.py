@@ -134,8 +134,8 @@ class StmtBuilder(Builder):
                         # Create, no AST resolution needed
                         init = ast.Attribute(value=ast.Name(id='ti',
                                                             ctx=ast.Load()),
-                                            attr='expr_init',
-                                            ctx=ast.Load())
+                                             attr='expr_init',
+                                             ctx=ast.Load())
                         rhs = ast.Call(
                             func=init,
                             args=[tuple_indexed(i)],
@@ -144,14 +144,14 @@ class StmtBuilder(Builder):
                         ctx.create_variable(var_name)
                         stmts.append(
                             ast.Assign(targets=[target],
-                                    value=rhs,
-                                    type_comment=None))
+                                       value=rhs,
+                                       type_comment=None))
                     else:
                         # Assign
                         target.ctx = ast.Load()
                         func = ast.Attribute(value=target,
-                                            attr='assign',
-                                            ctx=ast.Load())
+                                             attr='assign',
+                                             ctx=ast.Load())
                         call = ast.Call(func=func,
                                         args=[tuple_indexed(i)],
                                         keywords=[])
@@ -166,28 +166,30 @@ class StmtBuilder(Builder):
                 if is_local and ctx.is_creation(node_target.id):
                     var_name = node_target.id
                     # Create, no AST resolution needed
-                    init = ast.Attribute(value=ast.Name(id='ti', ctx=ast.Load()),
-                                        attr='expr_init',
-                                        ctx=ast.Load())
+                    init = ast.Attribute(value=ast.Name(id='ti',
+                                                        ctx=ast.Load()),
+                                         attr='expr_init',
+                                         ctx=ast.Load())
                     rhs = ast.Call(
                         func=init,
                         args=[node.value],
                         keywords=[],
                     )
                     ctx.create_variable(var_name)
-                    assign_stmts.append(ast.copy_location(
-                        ast.Assign(targets=node.targets,
-                                value=rhs,
-                                type_comment=None), node)
-                    )
+                    assign_stmts.append(
+                        ast.copy_location(
+                            ast.Assign(targets=node.targets,
+                                       value=rhs,
+                                       type_comment=None), node))
                 else:
                     # Assign
                     node_target.ctx = ast.Load()
                     func = ast.Attribute(value=node_target,
-                                        attr='assign',
-                                        ctx=ast.Load())
+                                         attr='assign',
+                                         ctx=ast.Load())
                     call = ast.Call(func=func, args=[node.value], keywords=[])
-                    assign_stmts.append(ast.copy_location(ast.Expr(value=call), node))
+                    assign_stmts.append(
+                        ast.copy_location(ast.Expr(value=call), node))
         return StmtBuilder.make_single_statement(assign_stmts)
 
     @staticmethod

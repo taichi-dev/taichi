@@ -133,7 +133,7 @@ When a _low-precision_ variable is assigned to a _high-precision_
 variable, it will be implicitly promoted to the _high-precision_ type
 and no warning will be raised:
 
-```python {3}
+```python {4}
 @ti.kernel
 def foo():
     a = 3.14
@@ -145,7 +145,7 @@ When a _high-precision_ variable is assigned to a _low-precision_ type,
 it will be implicitly down-cast into the _low-precision_ type and Taichi
 will raise a warning:
 
-```python {3}
+```python {4}
 @ti.kernel
 def foo():
     a = 1
@@ -158,7 +158,7 @@ def foo():
 You may use `ti.cast` to explicitly cast scalar values between different
 types:
 
-```python {2-3}
+```python {4-5}
 @ti.kernel
 def foo():
     a = 3.14
@@ -169,7 +169,7 @@ def foo():
 Equivalently, use `int()` and `float()` to convert values to float-point
 or integer types of default precisions:
 
-```python {2-3}
+```python {4-5}
 @ti.kernel
 def foo():
     a = 3.14
@@ -181,7 +181,7 @@ def foo():
 
 Type casts applied to vectors/matrices are element-wise:
 
-```python {2,4}
+```python {4,6}
 @ti.kernel
 def foo():
     u = ti.Vector([2.3, 4.7])
@@ -197,7 +197,7 @@ underlying bits will be preserved in this cast. The new type must have
 the same width as the the old type. For example, bit-casting `i32` to
 `f64` is not allowed. Use this operation with caution.
 
-```python
+```python {4-5}
 @ti.kernel
 def foo():
     a = 3.14

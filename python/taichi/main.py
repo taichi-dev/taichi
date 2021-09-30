@@ -659,7 +659,7 @@ class TaichiMain:
             threads = 2
 
         if not os.environ.get('TI_DEVICE_MEMORY_GB'):
-            os.environ['TI_DEVICE_MEMORY_GB'] = '2'
+            os.environ['TI_DEVICE_MEMORY_GB'] = '3'
 
         env_threads = os.environ.get('TI_TEST_THREADS', '')
         threads = args.threads or env_threads or threads

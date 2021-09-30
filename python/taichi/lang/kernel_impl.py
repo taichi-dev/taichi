@@ -5,19 +5,18 @@ import inspect
 import re
 
 import numpy as np
+import taichi as ti
 from taichi.core import primitive_types
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
 from taichi.lang.ast.checkers import KernelSimplicityASTChecker
+from taichi.lang.ast.transformer import ASTTransformerTotal
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.kernel_arguments import (any_arr, sparse_matrix_builder,
                                           template)
 from taichi.lang.ndarray import Ndarray
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.transformer import ASTTransformerTotal
 from taichi.misc.util import obsolete
-
-import taichi as ti
 
 
 def _remove_indent(lines):

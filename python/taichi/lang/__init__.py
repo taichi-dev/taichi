@@ -2,9 +2,11 @@ import functools
 import os
 from copy import deepcopy as _deepcopy
 
+import taichi as ti
 from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, types
+from taichi.lang.ast.transformer import TaichiSyntaxError
 from taichi.lang.enums import Layout
 from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *
@@ -20,7 +22,6 @@ from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.sparse_matrix import SparseMatrix, SparseMatrixBuilder
 from taichi.lang.sparse_solver import SparseSolver
 from taichi.lang.struct import Struct
-from taichi.lang.transformer import TaichiSyntaxError
 from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
@@ -28,8 +29,6 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
 from taichi.misc.util import deprecated
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.snode.fields_builder import FieldsBuilder
-
-import taichi as ti
 
 # TODO(#2223): Remove
 core = _ti_core

@@ -2,9 +2,6 @@ name: Presubmit Checks
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  push:
-    branches:
-      - master
 
 jobs:
   title_format:
@@ -152,12 +149,14 @@ jobs:
           submodules: 'recursive'
 
       - name: Build
-        run: .github/workflows/scripts/unix_build.sh
+        run: |
+          export PATH=$PATH:/usr/local/cuda/bin
+          .github/workflows/scripts/unix_build.sh
         env:
           LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON
           BUILD_NUM_THREADS: 8
-          LLVM_PATH: /opt/taichi-llvm-10.0.0/bin:/usr/local/cuda/bin
+          LLVM_PATH: /opt/taichi-llvm-10.0.0/bin
           LLVM_DIR: /opt/taichi-llvm-10.0.0/lib/cmake/llvm
           CXX: clang++-8
 

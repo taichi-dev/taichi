@@ -13,6 +13,16 @@ class Gui:
     def __init__(self, gui) -> None:
         self.gui = gui  #reference to a PyGui
 
+    def __enter__(self, name, x, y, width, height):
+        """Creating a context manager for subwindows, all args are the same with `begin`.
+        """
+        return self.begin(name, x, y, width, height)
+
+    def __exit__(self):
+        """Exiting a context manager for subwindows.
+        """
+        self.end()
+
     def begin(self, name, x, y, width, height):
         """Creates a subwindow that holds imgui widgets.
 

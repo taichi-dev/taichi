@@ -2,7 +2,6 @@ import functools
 import os
 from copy import deepcopy as _deepcopy
 
-import taichi as ti
 from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, types
@@ -29,6 +28,8 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
 from taichi.misc.util import deprecated
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.snode.fields_builder import FieldsBuilder
+
+import taichi as ti
 
 # TODO(#2223): Remove
 core = _ti_core

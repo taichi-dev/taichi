@@ -15,13 +15,13 @@ class Gui:
         self.gui = gui  #reference to a PyGui
 
     @contextmanager
-    def subwindow(self, name, x, y, width, height):
+    def sub_window(self, name, x, y, width, height):
         """Creating a context manager for subwindow, all args are the same with `begin`.
 
-        Usage:
+        Usage::
 
-        with gui.subwindow(name, x, y, width, height) as g:
-            g.text("Hello, World!")
+            >>> with gui.sub_window(name, x, y, width, height) as g:
+            >>>     g.text("Hello, World!")
         """
         self.begin(name, x, y, width, height)
         try:

@@ -18,10 +18,10 @@ class Gui:
     def sub_window(self, name, x, y, width, height):
         """Creating a context manager for subwindow
 
-        Note::
+        Note:
             All args of this method should align with `begin`.
 
-        Args::
+        Args:
             x (float): The x-coordinate (between 0 and 1) of the top-left corner of the subwindow, relative to the full window.
             y (float): The y-coordinate (between 0 and 1) of the top-left corner of the subwindow, relative to the full window.
             width (float): The width of the subwindow relative to the full window.

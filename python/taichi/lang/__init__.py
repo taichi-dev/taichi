@@ -112,8 +112,82 @@ def kernel_profiler_print():
 
 
 def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
-    """Set user selected or defined metrics."""
+    """Set metrics that collected by CUPTI toolkit.
+    metrics setting will be retained
+
+    Args:
+        metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances.
+
+    Example::
+
+        >>> import taichi as ti
+
+        >>> ti.init(kernel_profiler=True, arch=ti.cuda)
+        >>> num_elements = 128*1024*1024
+
+        >>> x = ti.field(ti.f32, shape=num_elements)
+        >>> y = ti.field(ti.f32, shape=())
+        >>> y[None] = 0
+
+        >>> @ti.kernel
+        >>> def reduction():
+        >>>     for i in x:
+        >>>         y[None] += x[i]
+
+        >>> global_op_atom = CuptiMetric(
+        >>>     name='l1tex__t_set_accesses_pipe_lsu_mem_global_op_atom.sum',
+        >>>     header=' global.atom ',
+        >>>     format='    {:8.0f} ')
+        >>> profiling_metrics = ti.get_predefined_cupti_metrics('shared_access') + [global_op_atom]
+        >>>                   # Taichi pre-defined metrics                       + user defined metrics
+
+        >>> # metrics setting will be retained
+        >>> ti.set_kernel_profile_metrics(profiler_metrics)
+        >>> for i in range(16):
+        >>>     reduction()
+        >>> ti.print_kernel_profile_info('trace')
+    """
     get_default_kernel_profiler().set_metrics(metric_list)
+
+
+def collect_metrics_with_context(metric_list=default_cupti_metrics):
+    """Set metrics that collected by CUPTI toolkit.
+    metrics setting is temporary
+
+    Args:
+        metric_list (list): a list of ti.CuptiMetric()
+
+    Example::
+
+        >>> import taichi as ti
+
+        >>> ti.init(kernel_profiler=True, arch=ti.cuda)
+        >>> num_elements = 128*1024*1024
+
+        >>> x = ti.field(ti.f32, shape=num_elements)
+        >>> y = ti.field(ti.f32, shape=())
+        >>> y[None] = 0
+
+        >>> @ti.kernel
+        >>> def reduction():
+        >>>     for i in x:
+        >>>         y[None] += x[i]
+
+        >>> global_op_atom = CuptiMetric(
+        >>>     name='l1tex__t_set_accesses_pipe_lsu_mem_global_op_atom.sum',
+        >>>     header=' global.atom ',
+        >>>     format='    {:8.0f} ')
+        >>> profiling_metrics = ti.get_predefined_cupti_metrics('device_utilization') # Taichi pre-defined metrics
+        >>>                   + [global_op_atom] # user defined metrics
+
+        >>> # metrics setting is temporary
+        >>> with ti.collect_metrics_with_context(profiling_metrics):
+        >>>     for i in range(16):
+        >>>         reduction()
+        >>>     ti.print_kernel_profile_info('trace')
+
+    """
+    get_default_kernel_profiler().collect_metrics_with_context(metric_list)
 
 
 def print_kernel_profile_info(mode='count'):
@@ -160,7 +234,7 @@ def query_kernel_profile_info(name):
         name (str): kernel name.
 
     Returns:
-        struct KernelProfilerQueryResult with member varaibles(counter, min, max, avg)
+        KernelProfilerQueryResult (class): with member variables(counter, min, max, avg)
 
     Example::
 

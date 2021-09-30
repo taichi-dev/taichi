@@ -5,11 +5,23 @@ from taichi.core import ti_core as _ti_core
 
 @dataclass
 class CuptiMetric:
-    """TODO: class docstring"""
-    name: str = ''  #(str): metric name for init CuptiToolkit
-    header: str = ''  #(str): header for formatted printing
-    format: str = ''  #(str): format for print metric value and unit
-    scale: float = 1.0  #(float): scale for metric value
+    """A data class to add CUPTI metric for KernelProfiler.
+
+    This class can be used to add user selected CUPTI metrics.
+    Details about CUPTI and its metircs: link
+
+    For examples, see :func:`~taichi.lang.set_kernel_profile_metrics` and :func:`~taichi.lang.collect_metrics_with_context`
+
+    Args:
+        name (str): name of the metric collected by CuptiToolkit.
+        header (str): column header of this metric.
+        format (str): format for print metric value (and unit of this value).
+        scale (float): scale of metric value.
+    """
+    name: str = ''
+    header: str = ''
+    format: str = ''
+    scale: float = 1.0
 
 
 # Global Memory Metrics

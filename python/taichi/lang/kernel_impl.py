@@ -762,9 +762,14 @@ def data_oriented(cls):
     Returns:
         The decorated class.
     """
-    def getattr(self, item):
+    def _getattr(self, item):
         _taichi_skip_traceback = 1
-        x = super(cls, self).__getattribute__(item)
+        method = getattr(cls, item, None)
+        is_property = method.__class__ == property
+        if is_property:
+            x = method.fget
+        else:
+            x = super(cls, self).__getattribute__(item)
         if hasattr(x, '_is_wrapped_kernel'):
             if inspect.ismethod(x):
                 wrapped = x.__func__
@@ -774,10 +779,14 @@ def data_oriented(cls):
             if wrapped._is_classkernel:
                 ret = _BoundedDifferentiableMethod(self, wrapped)
                 ret.__name__ = wrapped.__name__
+                if is_property:
+                    return ret()
                 return ret
+        if is_property:
+            return x(self)
         return x
 
-    cls.__getattribute__ = getattr
+    cls.__getattribute__ = _getattr
     cls._data_oriented = True
 
     return cls

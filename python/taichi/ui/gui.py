@@ -1,4 +1,5 @@
 import pathlib
+from contextlib import contextmanager
 
 from taichi.core import ti_core as _ti_core
 from taichi.lang.impl import default_cfg
@@ -13,15 +14,20 @@ class Gui:
     def __init__(self, gui) -> None:
         self.gui = gui  #reference to a PyGui
 
-    def __enter__(self, name, x, y, width, height):
-        """Creating a context manager for subwindows, all args are the same with `begin`.
-        """
-        return self.begin(name, x, y, width, height)
+    @contextmanager
+    def subwindow(self, name, x, y, width, height):
+        """Creating a context manager for subwindow, all args are the same with `begin`.
 
-    def __exit__(self, *args):
-        """Exiting a context manager for subwindows.
+        Usage:
+
+        with gui.subwindow(name, x, y, width, height) as g:
+            g.text("Hello, World!")
         """
-        self.end()
+        self.begin(name, x, y, width, height)
+        try:
+            yield self
+        finally:
+            self.end()
 
     def begin(self, name, x, y, width, height):
         """Creates a subwindow that holds imgui widgets.

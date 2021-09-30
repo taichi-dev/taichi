@@ -120,7 +120,7 @@ def print_kernel_profile_info(mode='count'):
     another mode ``TRACE``: print the records of launched kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
 
     Args:
-        mode (str): the way to print profiling results
+        mode (str): the way to print profiling results.
 
     Example::
 
@@ -213,11 +213,6 @@ def kernel_profiler_total_time():
 def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
     """Set metrics that will be collected by the CUPTI toolkit.
 
-    The configuration of the ``metric_list`` will be retained.
-    For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
-    For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html.
-    For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
-
     Args:
         metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances, default value: :data:`~taichi.lang.default_cupti_metrics`.
 
@@ -265,10 +260,6 @@ def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
 def collect_kernel_profile_metrics_in_context(
         metric_list=default_cupti_metrics):
     """Set temporary metrics that will be collected by the CUPTI toolkit within this context.
-
-    For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
-    For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html.
-    For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
 
     Args:
         metric_list (list): a list of :class:`~taichi.lang.CuptiMetric()` instances, default value: :data:`~taichi.lang.default_cupti_metrics`.

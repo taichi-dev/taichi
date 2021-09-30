@@ -10,15 +10,15 @@ class CuptiMetric:
     This data class is designed to add user selected CUPTI metrics.
     Only available for the CUDA backend now, i.e. you need ``ti.init(kernel_profiler=True, arch=ti.cuda)``.
     For usage of this class, see examples in func :func:`~taichi.lang.set_kernel_profile_metrics` and :func:`~taichi.lang.collect_kernel_profile_metrics_in_context`.
-    For prerequisites to using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
-    For details about CUPTI, please visit https://docs.nvidia.com/cupti/Cupti/index.html.
-    For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``.
 
     Args:
         name (str): name of metric that collected by CUPTI toolkit. used by :func:`~taichi.lang.set_kernel_profile_metrics` and :func:`~taichi.lang.collect_kernel_profile_metrics_in_context`.
         header (str): column header of this metric, used by :func:`~taichi.lang.print_kernel_profile_info`.
         format (str): format for print metric value (and unit of this value), used by :func:`~taichi.lang.print_kernel_profile_info`.
         scale (float): scale of metric value, used by :func:`~taichi.lang.print_kernel_profile_info`.
+
+    Note:
+        For details about using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
     """
     name: str = ''
     header: str = ''

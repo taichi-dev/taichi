@@ -97,7 +97,6 @@ class StmtBuilder(Builder):
 
     @staticmethod
     def build_Assign(ctx, node):
-        assert (len(node.targets) == 1)
         node.value = build_expr(ctx, node.value)
         node.targets = build_exprs(ctx, node.targets)
 
@@ -107,85 +106,89 @@ class StmtBuilder(Builder):
         if is_static_assign:
             return node
 
-        if isinstance(node.targets[0], ast.Tuple):
-            targets = node.targets[0].elts
+        assign_stmts = []
+        for node_target in node.targets:
+            if isinstance(node_target, ast.Tuple):
+                targets = node_target.elts
 
-            # Create
-            stmts = []
+                # Create
+                stmts = []
 
-            holder = parse_stmt('__tmp_tuple = ti.expr_init_list(0, '
-                                f'{len(targets)})')
-            holder.value.args[0] = node.value
+                holder = parse_stmt('__tmp_tuple = ti.expr_init_list(0, '
+                                    f'{len(targets)})')
+                holder.value.args[0] = node.value
 
-            stmts.append(holder)
+                stmts.append(holder)
 
-            def tuple_indexed(i):
-                indexing = parse_stmt('__tmp_tuple[0]')
-                StmtBuilder.set_subscript_index(indexing.value,
-                                                parse_expr("{}".format(i)))
-                return indexing.value
+                def tuple_indexed(i):
+                    indexing = parse_stmt('__tmp_tuple[0]')
+                    StmtBuilder.set_subscript_index(indexing.value,
+                                                    parse_expr("{}".format(i)))
+                    return indexing.value
 
-            for i, target in enumerate(targets):
-                is_local = isinstance(target, ast.Name)
-                if is_local and ctx.is_creation(target.id):
-                    var_name = target.id
-                    target.ctx = ast.Store()
+                for i, target in enumerate(targets):
+                    is_local = isinstance(target, ast.Name)
+                    if is_local and ctx.is_creation(target.id):
+                        var_name = target.id
+                        target.ctx = ast.Store()
+                        # Create, no AST resolution needed
+                        init = ast.Attribute(value=ast.Name(id='ti',
+                                                            ctx=ast.Load()),
+                                            attr='expr_init',
+                                            ctx=ast.Load())
+                        rhs = ast.Call(
+                            func=init,
+                            args=[tuple_indexed(i)],
+                            keywords=[],
+                        )
+                        ctx.create_variable(var_name)
+                        stmts.append(
+                            ast.Assign(targets=[target],
+                                    value=rhs,
+                                    type_comment=None))
+                    else:
+                        # Assign
+                        target.ctx = ast.Load()
+                        func = ast.Attribute(value=target,
+                                            attr='assign',
+                                            ctx=ast.Load())
+                        call = ast.Call(func=func,
+                                        args=[tuple_indexed(i)],
+                                        keywords=[])
+                        stmts.append(ast.Expr(value=call))
+
+                for stmt in stmts:
+                    ast.copy_location(stmt, node)
+                stmts.append(parse_stmt('del __tmp_tuple'))
+                assign_stmts.append(StmtBuilder.make_single_statement(stmts))
+            else:
+                is_local = isinstance(node_target, ast.Name)
+                if is_local and ctx.is_creation(node_target.id):
+                    var_name = node_target.id
                     # Create, no AST resolution needed
-                    init = ast.Attribute(value=ast.Name(id='ti',
-                                                        ctx=ast.Load()),
-                                         attr='expr_init',
-                                         ctx=ast.Load())
+                    init = ast.Attribute(value=ast.Name(id='ti', ctx=ast.Load()),
+                                        attr='expr_init',
+                                        ctx=ast.Load())
                     rhs = ast.Call(
                         func=init,
-                        args=[tuple_indexed(i)],
+                        args=[node.value],
                         keywords=[],
                     )
                     ctx.create_variable(var_name)
-                    stmts.append(
-                        ast.Assign(targets=[target],
-                                   value=rhs,
-                                   type_comment=None))
+                    assign_stmts.append(ast.copy_location(
+                        ast.Assign(targets=node.targets,
+                                value=rhs,
+                                type_comment=None), node)
+                    )
                 else:
                     # Assign
-                    target.ctx = ast.Load()
-                    func = ast.Attribute(value=target,
-                                         attr='assign',
-                                         ctx=ast.Load())
-                    call = ast.Call(func=func,
-                                    args=[tuple_indexed(i)],
-                                    keywords=[])
-                    stmts.append(ast.Expr(value=call))
-
-            for stmt in stmts:
-                ast.copy_location(stmt, node)
-            stmts.append(parse_stmt('del __tmp_tuple'))
-            return StmtBuilder.make_single_statement(stmts)
-        else:
-            is_local = isinstance(node.targets[0], ast.Name)
-            if is_local and ctx.is_creation(node.targets[0].id):
-                var_name = node.targets[0].id
-                # Create, no AST resolution needed
-                init = ast.Attribute(value=ast.Name(id='ti', ctx=ast.Load()),
-                                     attr='expr_init',
-                                     ctx=ast.Load())
-                rhs = ast.Call(
-                    func=init,
-                    args=[node.value],
-                    keywords=[],
-                )
-                ctx.create_variable(var_name)
-                return ast.copy_location(
-                    ast.Assign(targets=node.targets,
-                               value=rhs,
-                               type_comment=None), node)
-            else:
-                # Assign
-                node.targets[0].ctx = ast.Load()
-                func = ast.Attribute(value=node.targets[0],
-                                     attr='assign',
-                                     ctx=ast.Load())
-                call = ast.Call(func=func, args=[node.value], keywords=[])
-                return ast.copy_location(ast.Expr(value=call), node)
+                    node_target.ctx = ast.Load()
+                    func = ast.Attribute(value=node_target,
+                                        attr='assign',
+                                        ctx=ast.Load())
+                    call = ast.Call(func=func, args=[node.value], keywords=[])
+                    assign_stmts.append(ast.copy_location(ast.Expr(value=call), node))
+        return StmtBuilder.make_single_statement(assign_stmts)
 
     @staticmethod
     def build_Try(ctx, node):

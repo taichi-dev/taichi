@@ -130,8 +130,8 @@ class KernelProfiler:
         self._metric_list = metric_list
         metric_name_list = [metric.name for metric in metric_list]
         self.clear_info()
-        # impl.get_runtime().prog.reinit_kernel_profiler_with_metrics(
-        #     metric_name_list)
+        impl.get_runtime().prog.reinit_kernel_profiler_with_metrics(
+            metric_name_list)
 
     @contextmanager
     def collect_metrics_in_context(self, metric_list=default_cupti_metrics):
@@ -271,7 +271,7 @@ class KernelProfiler:
         For properties of your GPU metrics, build and run the sample in path ``/usr/local/cuda/extras/CUPTI/samples/cupti_metric_properties``
         """
         metric_list = self._metric_list
-        values_num = 0  #len(self._traced_records[0].metric_values)
+        values_num = len(self._traced_records[0].metric_values)
 
         # headers
         table_header = f"Kernel Profiler(trace) @ {_ti_core.arch_name(ti.cfg.arch).upper()}"
@@ -293,7 +293,7 @@ class KernelProfiler:
             values = [fake_timestamp, record.kernel_time]  #default
             for idx in range(values_num):
                 formatted_str += metric_list[idx].format + '|'
-                # values += [record.metric_values[idx] * metric_list[idx].scale]
+                values += [record.metric_values[idx] * metric_list[idx].scale]
             formatted_str = (formatted_str + '] ' + record.name)
             string_list.append(formatted_str.replace("|]", "]"))
             values_list.append(values)

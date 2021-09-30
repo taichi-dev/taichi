@@ -18,7 +18,7 @@ class Gui:
         """
         return self.begin(name, x, y, width, height)
 
-    def __exit__(self):
+    def __exit__(self, *args):
         """Exiting a context manager for subwindows.
         """
         self.end()

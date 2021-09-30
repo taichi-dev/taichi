@@ -654,12 +654,12 @@ class TaichiMain:
 
         try:
             from multiprocessing import cpu_count
-            threads = min(2, cpu_count())  # To prevent running out of memory
+            threads = min(1, cpu_count())  # To prevent running out of memory
         except NotImplementedError:
-            threads = 2
+            threads = 1
 
         if not os.environ.get('TI_DEVICE_MEMORY_GB'):
-            os.environ['TI_DEVICE_MEMORY_GB'] = '2'
+            os.environ['TI_DEVICE_MEMORY_GB'] = '4'
 
         env_threads = os.environ.get('TI_TEST_THREADS', '')
         threads = args.threads or env_threads or threads

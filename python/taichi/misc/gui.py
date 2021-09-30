@@ -63,12 +63,9 @@ class GUI:
                  show_gui=True,
                  fullscreen=False,
                  fast_gui=False):
-        if 'TI_GUI_SHOW' in os.environ:
-            show_gui = bool(int(os.environ['TI_GUI_SHOW']))
-        if 'TI_GUI_FULLSCREEN' in os.environ:
-            fullscreen = bool(int(os.environ['TI_GUI_FULLSCREEN']))
-        if 'TI_GUI_FAST' in os.environ:
-            fast_gui = bool(int(os.environ['TI_GUI_FAST']))
+        show_gui = self.get_bool_environ('TI_GUI_SHOW', show_gui)
+        fullscreen = self.get_bool_environ('TI_GUI_FULLSCREEN', fullscreen)
+        fast_gui = self.get_bool_environ('TI_GUI_FAST', fast_gui)
 
         self.name = name
         if isinstance(res, numbers.Number):
@@ -119,6 +116,18 @@ class GUI:
         @value.setter
         def value(self, value):
             self.gui.core.set_widget_value(self.wid, value)
+
+    def get_bool_environ(self, key, default):
+        """Get an environment variable and cast to bool,
+            return default if it doesn't exist.
+        Args:
+            key (str): The environment variable key.
+            default (bool): The default value.
+        Return: bool
+        """
+        if key not in os.environ:
+            return default
+        return bool(int(os.environ[key]))
 
     def slider(self, text, minimum, maximum, step=1):
         """Create a slider object on canvas to be manipulated with.

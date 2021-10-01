@@ -1,4 +1,3 @@
-from taichi.core.settings import get_os_name
 from taichi.core.util import *
 # TODO: move this to taichi/__init__.py.
 #       This is blocked since we currently require import this before taichi.lang

@@ -1,10 +1,10 @@
 import ctypes
 import os
+import platform
 import shutil
 import sys
 
 from colorama import Back, Fore, Style
-from taichi.core import settings
 
 if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
     raise RuntimeError(
@@ -21,9 +21,22 @@ def in_docker():
         return True
 
 
+def get_os_name():
+    name = platform.platform()
+    # in python 3.8, platform.platform() uses mac_ver() on macOS
+    # it will return 'macOS-XXXX' instead of 'Darwin-XXXX'
+    if name.lower().startswith('darwin') or name.lower().startswith('macos'):
+        return 'osx'
+    elif name.lower().startswith('windows'):
+        return 'win'
+    elif name.lower().startswith('linux'):
+        return 'linux'
+    assert False, "Unknown platform name %s" % name
+
+
 def import_ti_core():
     global ti_core
-    if settings.get_os_name() != 'win':
+    if get_os_name() != 'win':
         old_flags = sys.getdlopenflags()
         sys.setdlopenflags(2 | 8)  # RTLD_NOW | RTLD_DEEPBIND
     else:
@@ -38,13 +51,13 @@ def import_ti_core():
                 "check this page for possible solutions:\n"
                 "https://docs.taichi.graphics/docs/lang/articles/misc/install"
                 + Fore.RESET)
-            if settings.get_os_name() == 'win':
+            if get_os_name() == 'win':
                 e.msg += '\nConsider installing Microsoft Visual C++ Redistributable: https://aka.ms/vs/16/release/vc_redist.x64.exe'
-            elif settings.get_os_name() == 'linux':
+            elif get_os_name() == 'linux':
                 e.msg += '\nConsider installing libtinfo5: sudo apt-get install libtinfo5'
         raise e from None
     ti_core = core
-    if settings.get_os_name() != 'win':
+    if get_os_name() != 'win':
         sys.setdlopenflags(old_flags)
     lib_dir = os.path.join(package_root(), 'lib')
     core.set_lib_dir(locale_encode(lib_dir))
@@ -110,14 +123,14 @@ if log_level:
 
 
 def get_dll_name(name):
-    if settings.get_os_name() == 'linux':
+    if get_os_name() == 'linux':
         return 'libtaichi_%s.so' % name
-    elif settings.get_os_name() == 'osx':
+    elif get_os_name() == 'osx':
         return 'libtaichi_%s.dylib' % name
-    elif settings.get_os_name() == 'win':
+    elif get_os_name() == 'win':
         return 'taichi_%s.dll' % name
     else:
-        raise Exception(f"Unknown OS: {settings.get_os_name()}")
+        raise Exception(f"Unknown OS: {get_os_name()}")
 
 
 def at_startup():
@@ -182,7 +195,7 @@ def _print_taichi_header():
     commit_hash = commit_hash[:8]
     header += f'commit {commit_hash}, '
 
-    header += f'{settings.get_os_name()}, '
+    header += f'{get_os_name()}, '
 
     py_ver = '.'.join(str(x) for x in sys.version_info[:3])
     header += f'python {py_ver}'
@@ -194,6 +207,7 @@ _print_taichi_header()
 
 __all__ = [
     'ti_core',
+    'get_os_name',
     'start_memory_monitoring',
     'package_root',
     'require_version',

@@ -20,6 +20,12 @@ DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
     CUDADriver::get_instance().malloc(&info.ptr, params.size);
   }
 
+  curr_mem += info.size;
+  if (curr_mem > max_mem) {
+    max_mem = curr_mem;
+    TI_INFO("Total CUDA memory allocation: {}", max_mem);
+  }
+
   info.size = params.size;
 
   DeviceAllocation alloc;
@@ -37,6 +43,7 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }
   CUDADriver::get_instance().mem_free(info.ptr);
+  curr_mem -= info.size;
   info.ptr = nullptr;
 }
 

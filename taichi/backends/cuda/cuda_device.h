@@ -81,6 +81,9 @@ class CudaDevice : public Device {
     size_t size{0};
   };
 
+  size_t curr_mem{0};
+  size_t max_mem{0};
+
   AllocInfo get_alloc_info(DeviceAllocation handle);
 
   ~CudaDevice() override{};

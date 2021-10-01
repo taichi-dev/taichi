@@ -29,7 +29,6 @@ DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
     std::cerr << "Max CUDA memory allocation: " << max_mem << std::endl;
   }
 
-
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();
   alloc.device = this;

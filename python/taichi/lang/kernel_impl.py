@@ -15,7 +15,7 @@ from taichi.lang.ndarray import Ndarray
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.transformer import ASTTransformerTotal
 from taichi.misc.util import obsolete
-from taichi.types import primitive_types
+from taichi.type import primitive_types
 
 import taichi as ti
 

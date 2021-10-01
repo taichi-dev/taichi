@@ -5,7 +5,7 @@ from taichi.lang.expr import Expr
 from taichi.lang.snode import SNode
 from taichi.lang.sparse_matrix import SparseMatrixBuilder
 from taichi.lang.util import cook_dtype, to_taichi_type
-from taichi.types.primitive_types import u64
+from taichi.type.primitive_types import u64
 
 
 def ext_arr():

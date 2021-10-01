@@ -25,7 +25,7 @@ class ASTTransformerTotal(object):
         if not impl.get_runtime().print_preprocessed:
             return
         if title is not None:
-            print(f'{title}:')
+            ti.info(f'{title}:')
         import astor
         print(astor.to_source(tree.body[0], indent_with='    '))
 

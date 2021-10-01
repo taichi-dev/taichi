@@ -106,6 +106,9 @@ class StmtBuilder(Builder):
         if is_static_assign:
             return node
 
+        # Keep all generated assign statements and compose single one at last.
+        # The variable is introduced to support chained assignments.
+        # Ref https://github.com/taichi-dev/taichi/issues/2659.
         assign_stmts = []
         for node_target in node.targets:
             if isinstance(node_target, ast.Tuple):
@@ -126,6 +129,7 @@ class StmtBuilder(Builder):
                                                     parse_expr("{}".format(i)))
                     return indexing.value
 
+                # Generate assign statements for every target, then merge them into one.
                 for i, target in enumerate(targets):
                     is_local = isinstance(target, ast.Name)
                     if is_local and ctx.is_creation(target.id):

@@ -5,7 +5,4 @@ from taichi.core.util import *
 #       but yapf refuse to give up formatting there.
 from taichi.types import *
 
-ti_core.build = build
-ti_core.load_module = load_module
-
 __all__ = [s for s in dir() if not s.startswith('_')]

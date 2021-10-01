@@ -84,31 +84,6 @@ def print_red_bold(*args, **kwargs):
     print(Style.RESET_ALL, end='')
 
 
-def build():
-    tmp_cwd = os.getcwd()
-    bin_dir = settings.get_build_directory()
-
-    try:
-        os.mkdir(bin_dir)
-    except:
-        pass
-    os.chdir(bin_dir)
-
-    import multiprocessing
-    print('Building taichi...')
-    num_make_threads = min(20, multiprocessing.cpu_count())
-    if settings.get_os_name() == 'win':
-        make_ret = os.system(
-            "msbuild /p:Configuration=Release /p:Platform=x64 /m taichi.sln")
-    else:
-        make_ret = os.system('make -j {}'.format(num_make_threads))
-    if make_ret != 0:
-        print('  Error: Build failed.')
-        exit(-1)
-
-    os.chdir(tmp_cwd)
-
-
 def check_exists(src):
     if not os.path.exists(src):
         raise FileNotFoundError(
@@ -143,26 +118,6 @@ def get_dll_name(name):
         return 'taichi_%s.dll' % name
     else:
         raise Exception(f"Unknown OS: {settings.get_os_name()}")
-
-
-def load_module(name, verbose=True):
-    if verbose:
-        print('Loading module', name)
-    try:
-        if settings.get_os_name() == 'osx':
-            mode = ctypes.RTLD_LOCAL
-        else:
-            mode = ctypes.RTLD_GLOBAL
-        if '.so' in name:
-            ctypes.PyDLL(name, mode=mode)
-        else:
-            ctypes.PyDLL(os.path.join(settings.get_repo_directory(), 'build',
-                                      get_dll_name(name)),
-                         mode=mode)
-    except Exception as e:
-        print(Fore.YELLOW +
-              "Warning: module [{}] loading failed: {}".format(name, e) +
-              Style.RESET_ALL)
 
 
 def at_startup():
@@ -239,8 +194,6 @@ _print_taichi_header()
 
 __all__ = [
     'ti_core',
-    'build',
-    'load_module',
     'start_memory_monitoring',
     'package_root',
     'require_version',

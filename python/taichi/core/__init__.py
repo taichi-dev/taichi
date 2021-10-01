@@ -3,7 +3,7 @@ from taichi.core.util import *
 # TODO: move this to taichi/__init__.py.
 #       This is blocked since we currently require import this before taichi.lang
 #       but yapf refuse to give up formatting there.
-from taichi.types import *
+from taichi.type import *
 
 ti_core.build = build
 ti_core.load_module = load_module

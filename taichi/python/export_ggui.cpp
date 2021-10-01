@@ -30,7 +30,8 @@ glm::vec3 tuple_to_vec3(pybind11::tuple t) {
 }
 
 glm::vec4 tuple_to_vec4(py::tuple t) {
-  return glm::vec4(t[0].cast<float>(), t[1].cast<float>(), t[2].cast<float>(), t[3].cast<float>());
+  return glm::vec4(t[0].cast<float>(), t[1].cast<float>(), t[2].cast<float>(),
+                   t[3].cast<float>());
 }
 
 pybind11::tuple vec3_to_tuple(glm::vec3 v) {

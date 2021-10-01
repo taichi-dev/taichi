@@ -20,6 +20,7 @@ class GuiBase {
                              float maximum) = 0;
   virtual glm::vec3 color_edit_3(std::string name, glm::vec3 old_value) = 0;
   virtual bool button(std::string text) = 0;
+  virtual void text_colored(glm::vec4 color, std::string text) = 0;
   virtual ~GuiBase() = default;
 };
 

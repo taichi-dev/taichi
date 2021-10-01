@@ -42,6 +42,8 @@ class Gui final : public GuiBase {
                                  glm::vec3 old_value) override;
   virtual bool button(std::string text) override;
 
+  virtual void text_colored(glm::vec4 color, std::string text) override;
+
   void draw(taichi::lang::CommandList *cmd_list);
 
   void prepare_for_next_frame();

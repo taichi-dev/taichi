@@ -29,6 +29,10 @@ glm::vec3 tuple_to_vec3(pybind11::tuple t) {
   return glm::vec3(t[0].cast<float>(), t[1].cast<float>(), t[2].cast<float>());
 }
 
+glm::vec4 tuple_to_vec4(py::tuple t) {
+  return glm::vec4(t[0].cast<float>(), t[1].cast<float>(), t[2].cast<float>(), t[3].cast<float>());
+}
+
 pybind11::tuple vec3_to_tuple(glm::vec3 v) {
   return pybind11::make_tuple(v.x, v.y, v.z);
 }
@@ -60,6 +64,10 @@ struct PyGui {
   }
   bool button(std::string name) {
     return gui->button(name);
+  }
+  void text_colored(py::tuple color, std::string text) {
+    glm::vec4 glm_color = tuple_to_vec4(color);
+    gui->text_colored(glm_color, text);
   }
 };
 
@@ -341,7 +349,8 @@ void export_ggui(py::module &m) {
       .def("checkbox", &PyGui::checkbox)
       .def("slider_float", &PyGui::slider_float)
       .def("color_edit_3", &PyGui::color_edit_3)
-      .def("button", &PyGui::button);
+      .def("button", &PyGui::button)
+      .def("text_colored", &PyGui::text_colored);
 
   py::class_<PyScene>(m, "PyScene")
       .def(py::init<>())

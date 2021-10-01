@@ -173,6 +173,12 @@ bool Gui::button(std::string text) {
   }
   return ImGui::Button(text.c_str());
 }
+void Gui::text_colored(glm::vec4 color, std::string text) {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::TextColored(ImVec4(color[0], color[1], color[2], color[3]), text.c_str());
+}
 
 void Gui::draw(taichi::lang::CommandList *cmd_list) {
   // Rendering

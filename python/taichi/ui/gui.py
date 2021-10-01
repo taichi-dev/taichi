@@ -88,3 +88,11 @@ class Gui:
             text (str): a line of text to be shown next to the button
         """
         return self.gui.button(text)
+
+    def text_colored(self, color, text):
+        """Declares a line of colored text.
+
+        Args:
+            TODO
+        """
+        return self.gui.text_colored(color, text)

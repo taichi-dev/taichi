@@ -5,7 +5,7 @@ from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
 from taichi.lang.ndrange import ndrange
 from taichi.lang.ops import atomic_add, get_addr
-from taichi.types.primitive_types import f32, u8
+from taichi.type.primitive_types import f32, u8
 
 import taichi as ti
 

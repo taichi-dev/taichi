@@ -118,12 +118,12 @@ class GUI:
             self.gui.core.set_widget_value(self.wid, value)
 
     def get_bool_environ(self, key, default):
-        """Get an environment variable and cast to bool,
-            return default if it doesn't exist.
+        """Get an environment variable and cast to bool.
         Args:
             key (str): The environment variable key.
             default (bool): The default value.
-        Return: bool
+        Return:
+            The environment variable value cast to bool. If the value is not found, directly return argument 'default'.
         """
         if key not in os.environ:
             return default

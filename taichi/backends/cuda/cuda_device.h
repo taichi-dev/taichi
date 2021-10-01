@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <vector>
 #include <set>
 
@@ -86,8 +87,9 @@ class CudaDevice : public Device {
 
   AllocInfo get_alloc_info(DeviceAllocation handle);
 
-  ~CudaDevice() override{
-
+  ~CudaDevice() override {
+    std::cerr << "Max CUDA memory allocation: " << max_mem << std::endl;
+    std::cout << "Max CUDA memory allocation: " << max_mem << std::endl;
   };
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;

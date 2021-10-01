@@ -298,4 +298,3 @@ sudo systemctl restart docker
   issue on
   GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md).
   We are willing to help!
-

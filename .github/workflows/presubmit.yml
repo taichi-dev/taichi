@@ -232,9 +232,9 @@ jobs:
     name: Build and Test (Windows)
     needs: check_code_format
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
-     
+
       - name: Install 7Zip PowerShell
         shell: powershell
         run: Install-Module 7Zip4PowerShell -Force -Verbose

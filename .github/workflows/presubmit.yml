@@ -225,8 +225,8 @@ jobs:
           $PYTHON examples/algorithm/laplace.py
           ti diagnose
           ti changelog
-          ti test -vr2 -t2 -k "not ndarray"
-          ti test -vr2 -t1 -k "ndarray"
+          ti test -vr2 -t2 -k "not ndarray and not torch"
+          ti test -vr2 -t1 -k "ndarray or torch"
 
   build_and_test_windows:
     name: Build and Test (Windows)

@@ -104,7 +104,7 @@ If you are using a machine with an earlier CUDA version and/or old generation GP
 ### Setting up Vulkan (optional)
 
 If you wish to build taichi with Vulkan. You will need to install the Vulkan SDK. Please visit [this website](https://vulkan.lunarg.com/sdk/home) and follow the instructions for your OS.
-- If you're working on Windows, please set the environment variable `VULKAN_SDK` to `C:/VulkanSDK/${YOUR_VULKAN_VERSION}`. (as an example, for vulkan 1.2.189.0, set `VULKAN_SDK` to `C:/VulkanSDK/1.2.189.0`).
+- If you are working on Windows, please set the environment variable `VULKAN_SDK` to `C:/VulkanSDK/${YOUR_VULKAN_VERSION}`. (For example, when using Vulkan 1.2.189.0, set `VULKAN_SDK` to `C:/VulkanSDK/1.2.189.0`).
 - On Linux, also make sure the environment variable `VULKAN_SDK` `PATH` `LD_LIBRARY_PATH` and `VK_LAYER_PATH` are updated. On Ubuntu, the downloaded SDK provides a `setup-env.sh` that can be sourced.
 - Make sure you have a Vulkan driver from a GPU vendor installed. On Ubuntu, you
   can verify there is a JSON file in one of these two locations: `/etc/vulkan/icd.d/` or `/usr/share/vulkan/icd.d`.

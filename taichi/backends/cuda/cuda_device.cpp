@@ -21,13 +21,14 @@ DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
     CUDADriver::get_instance().malloc(&info.ptr, params.size);
   }
 
+  info.size = params.size;
+
   curr_mem += info.size;
   if (curr_mem > max_mem) {
     max_mem = curr_mem;
     std::cerr << "Max CUDA memory allocation: " << max_mem << std::endl;
   }
 
-  info.size = params.size;
 
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();

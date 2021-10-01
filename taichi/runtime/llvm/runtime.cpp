@@ -797,10 +797,9 @@ Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
     }
   });
   if (!success) {
-    taichi_printf(
-        this,
-        "OOM! preallocated {head=%lld tail=%lld} size=%lld\n",
-        (intptr_t)preallocated_head, (intptr_t)preallocated_tail, size);
+    taichi_printf(this, "OOM! preallocated {head=%lld tail=%lld} size=%lld\n",
+                  (intptr_t)preallocated_head, (intptr_t)preallocated_tail,
+                  size);
 #if ARCH_cuda
     // Here unfortunately we have to rely on a native CUDA assert failure to
     // halt the whole grid. Using a taichi_assert_runtime will not finish the

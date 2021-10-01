@@ -98,13 +98,13 @@ If you don't have CUDA, go to [this website](https://developer.nvidia.com/cuda-d
   without downloading the installer manually.
 
 :::note
-If you are using a machine with an earlier CUDA version and/or old generation GPUs. We suggest to consult the [Compatibility Document](https://docs.nvidia.com/deploy/cuda-compatibility/) and and [CUDA Installation Guide](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) first.
+If you are using a machine with an earlier CUDA version and/or old generation GPUs. We suggest to consult the [Compatibility Document](https://docs.nvidia.com/deploy/cuda-compatibility/) and the [CUDA Installation Guide](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) first.
 :::
 
 ### Setting up Vulkan (optional)
 
 If you wish to build taichi with Vulkan. You will need to install the Vulkan SDK. Please visit [this website](https://vulkan.lunarg.com/sdk/home) and follow the instructions for your OS.
-- If you're working on Windows, please also set the environment variable `VULKAN_SDK` to `C:/VulkanSDK/${YOUR_VULKAN_VERSION}`. (as an example, for vulkan 1.2.189.0, set `VULKAN_SDK` to `C:/VulkanSDK/1.2.189.0`).
+- If you are working on Windows, please set the environment variable `VULKAN_SDK` to `C:/VulkanSDK/${YOUR_VULKAN_VERSION}`. (For example, when using Vulkan 1.2.189.0, set `VULKAN_SDK` to `C:/VulkanSDK/1.2.189.0`).
 - On Linux, also make sure the environment variable `VULKAN_SDK` `PATH` `LD_LIBRARY_PATH` and `VK_LAYER_PATH` are updated. On Ubuntu, the downloaded SDK provides a `setup-env.sh` that can be sourced.
 - Make sure you have a Vulkan driver from a GPU vendor installed. On Ubuntu, you
   can verify there is a JSON file in one of these two locations: `/etc/vulkan/icd.d/` or `/usr/share/vulkan/icd.d`.
@@ -163,7 +163,7 @@ on Ubuntu docker image.
 
 :::note
 In order to follow the instructions in this section, please make sure
-you have the [Docker DeskTop (or Engine for
+you have the [Docker Desktop (or Engine for
 Linux)](https://www.docker.com/products/docker-desktop) installed and
 set up properly.
 :::
@@ -181,8 +181,7 @@ cached Docker image layers.
 In order to save the time on building Docker images, you could always
 visit our [Docker Hub
 repository](https://hub.docker.com/r/taichidev/taichi) and pull the
-versions of pre-built images you would like to use. Currently the builds
-are triggered per taichi Github release.
+versions of pre-built images you would like to use.
 
 For example, to pull a image built from release v0.6.17, run
 `docker pull taichidev/taichi:v0.6.17`
@@ -198,7 +197,7 @@ container as a volume](https://docs.docker.com/storage/volumes/) and set
 the Python path to the mounted directory.
 :::
 
-### Use Docker image on macOS (cpu only)
+### Use Docker image on macOS (CPU only)
 
 1.  Make sure `XQuartz` and `socat` are installed:
 
@@ -213,15 +212,14 @@ brew install socat
 4.  Do whatever you want within the container, e.g. you could run tests
     or an example, try: `ti test` or `ti example mpm88`.
 5.  Exit from the container with `exit` or `ctrl+D`.
-6.  \[To keep your xhost safe\] Re-enable the xhost access-control:
+6.  **[To keep your xhost safe]** Re-enable the xhost access-control:
     `xhost -`.
 
 ### Use Docker image on Ubuntu (with CUDA support)
 
 1.  Make sure your host machine has CUDA properly installed and
     configured. Usually you could verify it by running `nvidia-smi`.
-2.  Make sure [NVIDIA Container
-    Toolkit](https://github.com/NVIDIA/nvidia-docker) is properly
+2.  Make sure [NVIDIA Container Toolkit](https://github.com/NVIDIA/nvidia-docker) is properly
     installed:
 
 ```bash
@@ -293,10 +291,10 @@ sudo systemctl restart docker
   conda init
   ```
 
+- See also [Installation Troubleshooting](../misc/install.md) for issues
+  that may share with end-user installation.
+
 - If you encounter other issues, feel free to report (please include the details) by [opening an
   issue on
   GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md).
   We are willing to help!
-
-- See also [Installation Troubleshooting](../misc/install.md) for issues
-  that may share with end-user installation.

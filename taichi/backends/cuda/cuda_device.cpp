@@ -1,4 +1,5 @@
 #include "taichi/backends/cuda/cuda_device.h"
+#include <iostream>
 
 namespace taichi {
 namespace lang {
@@ -23,6 +24,7 @@ DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
   curr_mem += info.size;
   if (curr_mem > max_mem) {
     max_mem = curr_mem;
+    std::cout << "Max CUDA memory allocation: " << max_mem << std::endl;
   }
 
   info.size = params.size;

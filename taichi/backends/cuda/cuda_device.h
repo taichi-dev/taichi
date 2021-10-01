@@ -86,8 +86,8 @@ class CudaDevice : public Device {
 
   AllocInfo get_alloc_info(DeviceAllocation handle);
 
-  ~CudaDevice() override {
-    printf("Max CUDA memory allocation: %lld\n", max_mem);
+  ~CudaDevice() override{
+
   };
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;

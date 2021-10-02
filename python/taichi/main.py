@@ -467,19 +467,6 @@ class TaichiMain:
         )
 
     @register
-    def update(self, arguments: list = sys.argv[2:]):
-        """Update the Taichi codebase"""
-        # TODO: Test if this still works, fix if it doesn't
-        parser = argparse.ArgumentParser(prog='ti update',
-                                         description=f"{self.update.__doc__}")
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode: return args
-        _ti_core.update(True)
-        _ti_core.build()
-
-    @register
     def format(self, arguments: list = sys.argv[2:]):
         """Reformat modified source files"""
         parser = argparse.ArgumentParser(prog='ti format',
@@ -509,17 +496,6 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
         main(all=True)
-
-    @register
-    def build(self, arguments: list = sys.argv[2:]):
-        """Build C++ files"""
-        parser = argparse.ArgumentParser(prog='ti build',
-                                         description=f"{self.build.__doc__}")
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode: return args
-        _ti_core.build()
 
     @staticmethod
     def _display_benchmark_regression(xd, yd, args):

@@ -2,12 +2,12 @@ import pathlib
 from math import acos, asin, cos, pi, sin
 
 from taichi.core import ti_core as _ti_core
-from taichi.core.primitive_types import u64
 from taichi.lang.impl import default_cfg
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
 from taichi.lang.ops import get_addr
+from taichi.type.primitive_types import u64
 
 
 @kernel

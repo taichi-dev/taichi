@@ -129,7 +129,7 @@ def advect(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):
 @ti.kernel
 def apply_impulse(vf: ti.template(), dyef: ti.template(),
                   imp_data: ti.ext_arr()):
-    # g_dir = -ti.Vector([0, 9.8]) * 300
+    g_dir = -ti.Vector([0, 9.8]) * 300
     for i, j in vf:
         omx, omy = imp_data[2], imp_data[3]
         mdir = ti.Vector([imp_data[0], imp_data[1]])
@@ -141,7 +141,7 @@ def apply_impulse(vf: ti.template(), dyef: ti.template(),
         dc = dyef[i, j]
         a = dc.norm()
 
-        momentum = (mdir * f_strength * factor ) * dt
+        momentum = (mdir * f_strength * factor + g_dir * a / (1 + a)) * dt
 
         v = vf[i, j]
         vf[i, j] = v + momentum
@@ -251,6 +251,9 @@ def step(mouse_data):
         enhance_vorticity(velocities_pair.cur, velocity_curls)
 
     solve_pressure()
+    for _ in range(p_jacobi_iters):
+        pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
+    pressures_pair.swap()
     subtract_gradient(velocities_pair.cur, pressures_pair.cur)
 
     if debug:

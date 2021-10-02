@@ -49,8 +49,8 @@ class CUDAContext {
     this->profiler = profiler;
   }
 
-  void set_debug(bool debug_) {
-    debug = debug_;
+  void set_debug(bool debug) {
+    this->debug = debug;
   }
 
   std::string get_mcpu() const {

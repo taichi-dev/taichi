@@ -6,7 +6,7 @@ from .fuse_test_template import (template_fuse_dense_x2y2z,
 
 @ti.test(require=ti.extension.async_mode, async_mode=True)
 def test_fuse_dense_x2y2z():
-    template_fuse_dense_x2y2z(size=100 * 1024**2)
+    template_fuse_dense_x2y2z(size=16 * 1024**2)
 
 
 @ti.test(require=ti.extension.async_mode, async_mode=True)

@@ -1,7 +1,7 @@
 import ast
 
 from taichi.lang import impl
-from taichi.lang.ast_resolver import ASTResolver
+from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 
 import taichi as ti

@@ -300,9 +300,10 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     const auto total_mem = runtime_mem_info->get_total_memory();
     // if (config->device_memory_fraction == 0) {
     //   TI_ASSERT(config->device_memory_GB > 0);
-      prealloc_size = std::size_t(2 * (1UL << 30));
+    prealloc_size = std::size_t(2 * (1UL << 30));
     // } else {
-    //   prealloc_size = std::size_t(config->device_memory_fraction * total_mem);
+    //   prealloc_size = std::size_t(config->device_memory_fraction *
+    //   total_mem);
     // }
     TI_ASSERT(prealloc_size <= total_mem);
 

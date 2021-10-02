@@ -46,11 +46,11 @@ class SNodeTree {
 
 /**
  * Returns the mapping from each SNode under @param root to itself.
- * 
+ *
  * @param root Root SNode
  * @returns The ID mapping
  */
-std::unordered_map<int, int> get_snodes_to_root_id(const SNode& root);
+std::unordered_map<int, int> get_snodes_to_root_id(const SNode &root);
 
 }  // namespace lang
 }  // namespace taichi

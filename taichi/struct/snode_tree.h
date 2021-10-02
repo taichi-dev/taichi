@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 
 #include "taichi/ir/snode.h"
 
@@ -42,6 +43,14 @@ class SNodeTree {
 
   void check_tree_validity(SNode &node);
 };
+
+/**
+ * Returns the mapping from each SNode under @param root to itself.
+ *
+ * @param root Root SNode
+ * @returns The ID mapping
+ */
+std::unordered_map<int, int> get_snodes_to_root_id(const SNode &root);
 
 }  // namespace lang
 }  // namespace taichi

@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.start_recording('record.yml')
+ti.aot.start_recording('record.yml')
 ti.init(arch=ti.cc)
 
 loss = ti.field(float, (), needs_grad=True)
@@ -19,7 +19,7 @@ def do_some_works():
         x[i] -= x.grad[i]
 
 
-with ti.RecordKernelGroup('my_substep'):
+with ti.aot.RecordKernelGroup('my_substep'):
     x.fill(0)
     with ti.Tape(loss):
         compute_loss()

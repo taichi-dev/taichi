@@ -53,7 +53,7 @@ include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
 include(cmake/TaichiMain.cmake)
 
-option(TI_BUILD_TESTS "Build the CPP tests" OFF)
+option(TI_BUILD_TESTS "Build the CPP tests" ON)
 
 if (TI_BUILD_TESTS)
   add_subdirectory(external/googletest EXCLUDE_FROM_ALL)

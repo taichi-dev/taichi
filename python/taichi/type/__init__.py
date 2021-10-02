@@ -1,1 +1,1 @@
-from .primitive_types import *
+from taichi.type.primitive_types import *

@@ -11,7 +11,6 @@ from functools import wraps
 from pathlib import Path
 
 from colorama import Back, Fore, Style
-from taichi.core import settings
 from taichi.core import ti_core as _ti_core
 from taichi.tools import video
 
@@ -229,35 +228,7 @@ class TaichiMain:
     @register
     def release(self, arguments: list = sys.argv[2:]):
         """Make source code release"""
-        parser = argparse.ArgumentParser(prog='ti release',
-                                         description=f"{self.release.__doc__}")
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode: return args
-
-        import hashlib
-        import zipfile
-
-        from git import Git
-        g = Git(settings.get_repo_directory())
-        g.init()
-        with zipfile.ZipFile('release.zip', 'w') as zip:
-            files = g.ls_files().split('\n')
-            os.chdir(settings.get_repo_directory())
-            for f in files:
-                if not os.path.isdir(f):
-                    zip.write(f)
-        ver = ti.__version__
-        md5 = hashlib.md5()
-        with open('release.zip', "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                md5.update(chunk)
-        md5 = md5.hexdigest()
-        commit = _ti_core.get_commit_hash()[:8]
-        fn = f'taichi-src-v{ver[0]}-{ver[1]}-{ver[2]}-{commit}-{md5}.zip'
-        import shutil
-        shutil.move('release.zip', fn)
+        raise RuntimeError('TBD')
 
     @staticmethod
     def _mp4_file(name: str) -> str:
@@ -456,28 +427,7 @@ class TaichiMain:
     @register
     def doc(self, arguments: list = sys.argv[2:]):
         """Build documentation"""
-        parser = argparse.ArgumentParser(prog='ti doc',
-                                         description=f"{self.doc.__doc__}")
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode: return args
-        os.system(
-            f'cd {settings.get_repo_directory()}/docs && sphinx-build -b html . build'
-        )
-
-    @register
-    def update(self, arguments: list = sys.argv[2:]):
-        """Update the Taichi codebase"""
-        # TODO: Test if this still works, fix if it doesn't
-        parser = argparse.ArgumentParser(prog='ti update',
-                                         description=f"{self.update.__doc__}")
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode: return args
-        _ti_core.update(True)
-        _ti_core.build()
+        raise RuntimeError('TBD')
 
     @register
     def format(self, arguments: list = sys.argv[2:]):
@@ -509,17 +459,6 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
         main(all=True)
-
-    @register
-    def build(self, arguments: list = sys.argv[2:]):
-        """Build C++ files"""
-        parser = argparse.ArgumentParser(prog='ti build',
-                                         description=f"{self.build.__doc__}")
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode: return args
-        _ti_core.build()
 
     @staticmethod
     def _display_benchmark_regression(xd, yd, args):

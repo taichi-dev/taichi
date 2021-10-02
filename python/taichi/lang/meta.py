@@ -1,4 +1,4 @@
-from taichi.core import settings
+from taichi.core import get_os_name
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
@@ -35,7 +35,7 @@ def vector_to_fast_image(img: template(), out: ext_arr()):
             r, g, b = color
         idx = j * img.shape[0] + i
         # We use i32 for |out| since OpenGL and Metal doesn't support u8 types
-        if ti.static(settings.get_os_name() != 'osx'):
+        if ti.static(get_os_name() != 'osx'):
             out[idx] = (r << 16) + (g << 8) + b
         else:
             # What's -16777216?

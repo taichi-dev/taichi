@@ -5,6 +5,7 @@ from copy import deepcopy as _deepcopy
 from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, types
+from taichi.lang.ast.transformer import TaichiSyntaxError
 from taichi.lang.enums import Layout
 from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *
@@ -20,7 +21,6 @@ from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.sparse_matrix import SparseMatrix, SparseMatrixBuilder
 from taichi.lang.sparse_solver import SparseSolver
 from taichi.lang.struct import Struct
-from taichi.lang.transformer import TaichiSyntaxError
 from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
@@ -61,16 +61,42 @@ normalized = deprecated('ti.normalized(a)',
 
 cfg = default_cfg()
 x86_64 = _ti_core.x64
+"""The x64 CPU backend.
+"""
 x64 = _ti_core.x64
+"""The X64 CPU backend.
+"""
 arm64 = _ti_core.arm64
+"""The ARM CPU backend.
+"""
 cuda = _ti_core.cuda
+"""The CUDA backend.
+"""
 metal = _ti_core.metal
+"""The Apple Metal backend.
+"""
 opengl = _ti_core.opengl
+"""The OpenGL backend. OpenGL 4.3 required.
+"""
+# Skip annotating this one because it is barely maintained.
 cc = _ti_core.cc
 wasm = _ti_core.wasm
+"""The WebAssembly backend.
+"""
 vulkan = _ti_core.vulkan
+"""The Vulkan backend.
+"""
 gpu = [cuda, metal, opengl, vulkan]
+"""A list of GPU backends supported on the current system.
+
+When this is used, Taichi automatically picks the matching GPU backend. If no
+GPU is detected, Taichi falls back to the CPU backend.
+"""
 cpu = _ti_core.host_arch()
+"""A list of CPU backends supported on the current system.
+
+When this is used, Taichi automatically picks the matching CPU backend.
+"""
 timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()
 timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
 
@@ -212,6 +238,10 @@ def is_extension_supported(arch, ext):
 
 
 def reset():
+    """Resets Taichi to its initial state.
+
+    This would destroy all the fields and kernels.
+    """
     _ti_core.reset_snode_access_flag()
     impl.reset()
     global runtime
@@ -286,7 +316,26 @@ def init(arch=None,
          default_ip=None,
          _test_mode=False,
          **kwargs):
+    """Initializes the Taichi runtime.
 
+    This should always be the entry point of your Taichi program. Most
+    importantly, it sets the backend used throughout the program.
+
+    Args:
+        arch: Backend to use. This is usually :const:`~taichi.lang.cpu` or :const:`~taichi.lang.gpu`.
+        default_fp (Optional[type]): Default floating-point type.
+        default_fp (Optional[type]): Default integral type.
+        **kwargs: Taichi provides highly customizable compilation through
+            ``kwargs``, which allows for fine grained control of Taichi compiler
+            behavior. Below we list some of the most frequently used ones. For a
+            complete list, please check out
+            https://github.com/taichi-dev/taichi/blob/master/taichi/program/compile_config.h.
+
+            * ``cpu_max_num_threads`` (int): Sets the number of threads used by the CPU thread pool.
+            * ``debug`` (bool): Enables the debug mode, under which Taichi does a few more things like boundary checks.
+            * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
+            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/docs/lang/articles/advanced/layout.
+    """
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
     # ti.reset() could override the args to their default values.
@@ -398,6 +447,18 @@ def no_activate(*args):
 
 
 def block_local(*args):
+    """Hints Taichi to cache the fields and to enable the BLS optimization.
+
+    Please visit https://docs.taichi.graphics/docs/lang/articles/advanced/performance
+    for how BLS is used.
+
+    Args:
+        *args (List[Field]): A list of sparse Taichi fields.
+
+    Raises:
+        InvalidOperationError: If the ``dynamic_index`` feature (experimental)
+            is enabled.
+    """
     if ti.current_cfg().dynamic_index:
         raise InvalidOperationError(
             'dynamic_index is not allowed when block_local is turned on.')
@@ -858,7 +919,8 @@ def supported_archs():
     Returns:
         List[taichi_core.Arch]: All supported archs on the machine.
     """
-    archs = [cpu, cuda, metal, vulkan, opengl, cc]
+    archs = set([cpu, cuda, metal, vulkan, opengl, cc])
+    archs = set(filter(lambda x: is_arch_supported(x), archs))
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')
@@ -866,19 +928,23 @@ def supported_archs():
         wanted_archs = wanted_archs[1:]
     wanted_archs = wanted_archs.split(',')
     # Note, ''.split(',') gives you [''], which is not an empty array.
-    wanted_archs = list(filter(lambda x: x != '', wanted_archs))
-    if len(wanted_archs):
-        archs, old_archs = [], archs
-        for arch in old_archs:
-            if want_exclude == (_ti_core.arch_name(arch) not in wanted_archs):
-                archs.append(arch)
-
-    archs, old_archs = [], archs
-    for arch in old_archs:
-        if is_arch_supported(arch):
-            archs.append(arch)
-
-    return archs
+    expanded_wanted_archs = set([])
+    for arch in wanted_archs:
+        if arch == '':
+            continue
+        if arch == 'cpu':
+            expanded_wanted_archs.add(cpu)
+        elif arch == 'gpu':
+            expanded_wanted_archs.update(gpu)
+        else:
+            expanded_wanted_archs.add(_ti_core.arch_from_name(arch))
+    if len(expanded_wanted_archs) == 0:
+        return list(archs)
+    if want_exclude:
+        supported = archs - expanded_wanted_archs
+    else:
+        supported = archs & expanded_wanted_archs
+    return list(supported)
 
 
 def adaptive_arch_select(arch):

@@ -1,6 +1,7 @@
 import sys
 
 import taichi.ad as ad
+from taichi._logging import *
 from taichi.core import *
 from taichi.lang import *  # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.main import main

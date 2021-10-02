@@ -338,6 +338,13 @@ def differentiable_task4():
 
 Taichi programs that violate this rule will result in an error.
 
+:::danger DANGER
+Violation of rules above might result in incorrect gradient result without a proper error.
+We're actively working on improving the error reporting mechanism for it. Please feel free
+to open a [github issue](https://github.com/taichi-dev/taichi/issues/new?assignees=&labels=potential+bug&template=bug_report.md&title=)
+if you see any silent wrong results.
+:::
+
 ### Workaround kernel simplicity rule
 
 :::tip
@@ -359,13 +366,59 @@ def differentiable_task3():
             ...
 ```
 
+## Extending Taichi Autodiff system
 
-:::danger DANGER
-Violation of rules above might result in incorrect gradient result without a proper error.
-We're actively working on improving the error reporting mechanism for it. Please feel free
-to open a [github issue](https://github.com/taichi-dev/taichi/issues/new?assignees=&labels=potential+bug&template=bug_report.md&title=)
-if you see any silent wrong results.
-:::
+
+Sometimes user may want to override the gradients provided by the Taichi autodiff system. For example, when differentiating a 3D singular value decomposition (SVD) used in an iterative
+solver, it is preferred to use a manually engineered SVD derivative subroutine for better numerical stability.
+Taichi provides two decorators `ti.ad.grad_replaced` and `ti.ad.grad_for` to overwrite the default
+automatic differentiation behavior.
+
+
+Here's a simple example to use customized gradient function in autodiff:
+
+```
+import taichi as ti
+ti.init()
+
+x = ti.field(ti.f32)
+total = ti.field(ti.f32)
+n = 128
+ti.root.dense(ti.i, n).place(x)
+ti.root.place(total)
+ti.root.lazy_grad()
+
+@ti.kernel
+def func(mul: ti.f32):
+    for i in range(n):
+        ti.atomic_add(total[None], x[i] * mul)
+
+@ti.ad.grad_replaced
+def forward(mul):
+    func(mul)
+    func(mul)
+
+@ti.ad.grad_for(forward)
+def backward(mul):
+    func.grad(mul)
+
+with ti.Tape(loss=total):
+    forward(4)
+
+assert x.grad[0] == 4
+```
+
+Customized gradient function works with both `ti.Tape()` and `kernel.grad()`. More examples can be found at `test_customized_grad.py`.
+
+### Checkpointing
+
+Another use case of customized gradient function is checkpointing. We can use recomputation to save memory space through
+a user-defined gradient function.
+[diffmpm.py](https://github.com/yuanming-hu/difftaichi/blob/master/examples/diffmpm.py#L226-L244)
+demonstrates that by defining a customized gradient function that recomputes the grid states during backward,
+we can reuse the grid states and allocate only one copy compared to `O(n)` copies in a native implementation
+without customized gradient function.
+
 ## DiffTaichi
 
 The [DiffTaichi repo](https://github.com/yuanming-hu/difftaichi)

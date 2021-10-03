@@ -236,8 +236,8 @@ def test_oop_with_portery_decorator():
         @property
         def raw_proterty(self):
             return 3
- 
+
     a = TestPortery()
     assert a.kernel_property == 42
 
-    assert a.raw_proterty == 3 
+    assert a.raw_proterty == 3

@@ -35,8 +35,8 @@ CUDADriver::CUDADriver() {
     loader_->load_function("cuGetErrorString", get_error_string);
 
 #define PER_CUDA_FUNCTION(name, symbol_name, ...) \
-  name.set(loader_->load_function(#symbol_name));  \
-  name.set_lock(&lock_);                           \
+  name.set(loader_->load_function(#symbol_name)); \
+  name.set_lock(&lock_);                          \
   name.set_names(#name, #symbol_name);
 #include "taichi/backends/cuda/cuda_driver_functions.inc.h"
 #undef PER_CUDA_FUNCTION

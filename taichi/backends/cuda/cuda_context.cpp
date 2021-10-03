@@ -97,8 +97,8 @@ void CUDAContext::launch(void *func,
   if (grid_dim > 0) {
     std::lock_guard<std::mutex> _(lock_);
     driver_.launch_kernel(func, grid_dim, 1, 1, block_dim, 1, 1,
-                         shared_mem_bytes, nullptr, arg_pointers.data(),
-                         nullptr);
+                          shared_mem_bytes, nullptr, arg_pointers.data(),
+                          nullptr);
   }
   if (profiler_)
     profiler_->stop(task_handle);

@@ -18,25 +18,25 @@ std::string get_cuda_error_message(uint32 err) {
 bool CUDADriver::detected() {
   if (get_environ_config("TI_ENABLE_CUDA", 1) == 0)
     return false;
-  return loader->loaded();
+  return loader_->loaded();
 }
 
 CUDADriver::CUDADriver() {
 #if defined(TI_PLATFORM_LINUX)
-  loader = std::make_unique<DynamicLoader>("libcuda.so");
+  loader_ = std::make_unique<DynamicLoader>("libcuda.so");
 #elif defined(TI_PLATFORM_WINDOWS)
-  loader = std::make_unique<DynamicLoader>("nvcuda.dll");
+  loader_ = std::make_unique<DynamicLoader>("nvcuda.dll");
 #else
   static_assert(false, "Taichi CUDA driver supports only Windows and Linux.");
 #endif
 
   if (detected()) {
-    loader->load_function("cuGetErrorName", get_error_name);
-    loader->load_function("cuGetErrorString", get_error_string);
+    loader_->load_function("cuGetErrorName", get_error_name);
+    loader_->load_function("cuGetErrorString", get_error_string);
 
 #define PER_CUDA_FUNCTION(name, symbol_name, ...) \
-  name.set(loader->load_function(#symbol_name));  \
-  name.set_lock(&lock);                           \
+  name.set(loader_->load_function(#symbol_name));  \
+  name.set_lock(&lock_);                           \
   name.set_names(#name, #symbol_name);
 #include "taichi/backends/cuda/cuda_driver_functions.inc.h"
 #undef PER_CUDA_FUNCTION

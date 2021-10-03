@@ -262,22 +262,20 @@ class CCTransformer : public IRVisitor {
     emit("{} = {};", var, axis_size);
   }
 
-  static std::string _get_libc_function_name(std::string name, DataType dt) {
+  static std::string get_libc_function_name(std::string name, DataType dt) {
+    std::string ret;
     if (dt->is_primitive(PrimitiveTypeID::i32))
-      return name;
+      ret = name;
     else if (dt->is_primitive(PrimitiveTypeID::i64))
-      return "ll" + name;
+      ret = "ll" + name;
     else if (dt->is_primitive(PrimitiveTypeID::f32))
-      return name + "f";
+      ret = name + "f";
     else if (dt->is_primitive(PrimitiveTypeID::f64))
-      return name;
+      ret = name;
     else
       TI_ERROR("Unsupported function \"{}\" for DataType={} on C backend", name,
                data_type_name(dt));
-  }
 
-  static std::string get_libc_function_name(std::string name, DataType dt) {
-    auto ret = _get_libc_function_name(name, dt);
     if (name == "rsqrt") {
       ret = "Ti_" + ret;
     } else if (name == "sgn") {

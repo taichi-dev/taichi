@@ -10,6 +10,8 @@
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/wasm/aot_module_builder_impl.h"
 #include "taichi/backends/opengl/opengl_program.h"
+#include "taichi/backends/metal/metal_program.h"
+#include "taichi/backends/cc/cc_program.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/timeline.h"
@@ -19,6 +21,7 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
+#include "taichi/llvm/llvm_program.h"
 
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/cc_program.h"
@@ -498,6 +501,10 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
     return program_impl_->make_aot_module_builder();
   }
   return nullptr;
+}
+
+LlvmProgramImpl *Program::get_llvm_program_impl() {
+  return static_cast<LlvmProgramImpl *>(program_impl_.get());
 }
 
 }  // namespace lang

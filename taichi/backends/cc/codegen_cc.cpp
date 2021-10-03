@@ -1,11 +1,13 @@
 #include "codegen_cc.h"
 #include "cc_kernel.h"
 #include "cc_layout.h"
+#include "cc_program.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/util/line_appender.h"
 #include "taichi/util/str.h"
+#include "taichi/llvm/llvm_program.h"
 #include "cc_utils.h"
 
 #define C90_COMPAT 0

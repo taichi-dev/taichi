@@ -10,6 +10,7 @@
 #include "taichi/program/program.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/util/statistics.h"
+#include "taichi/llvm/llvm_program.h"
 
 TLANG_NAMESPACE_BEGIN
 

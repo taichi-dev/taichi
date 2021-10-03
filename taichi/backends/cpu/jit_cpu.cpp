@@ -37,6 +37,7 @@
 #include "taichi/program/program.h"
 #include "taichi/jit/jit_session.h"
 #include "taichi/util/file_sequence_writer.h"
+#include "taichi/llvm/llvm_program.h"
 
 TLANG_NAMESPACE_BEGIN
 

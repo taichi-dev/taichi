@@ -251,9 +251,9 @@ def step(mouse_data):
         enhance_vorticity(velocities_pair.cur, velocity_curls)
 
     solve_pressure()
-    for _ in range(p_jacobi_iters):
-        pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
-    pressures_pair.swap()
+    # for _ in range(p_jacobi_iters):
+    #     pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
+    # pressures_pair.swap()
     subtract_gradient(velocities_pair.cur, pressures_pair.cur)
 
     if debug:

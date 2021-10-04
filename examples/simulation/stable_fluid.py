@@ -20,8 +20,13 @@ force_radius = res / 2.0
 gravity = True
 debug = False
 paused = False
+# sparse_matrix = True
+sparse_matrix = False
 
-ti.init(arch=ti.gpu)
+if sparse_matrix:
+    ti.init(arch=ti.x64)
+else:
+    ti.init(arch=ti.gpu)
 
 _velocities = ti.Vector.field(2, float, shape=(res, res))
 _new_velocities = ti.Vector.field(2, float, shape=(res, res))
@@ -31,6 +36,37 @@ _pressures = ti.field(float, shape=(res, res))
 _new_pressures = ti.field(float, shape=(res, res))
 _dye_buffer = ti.Vector.field(3, float, shape=(res, res))
 _new_dye_buffer = ti.Vector.field(3, float, shape=(res, res))
+
+if sparse_matrix:
+
+    N = res * res
+    K = ti.SparseMatrixBuilder(N, N, max_num_triplets=N*6)
+    b = ti.field(ti.f32, shape=N)
+
+    @ti.kernel
+    def fill_laplacian_matrix(A: ti.sparse_matrix_builder()):
+        for i, j in ti.ndrange(res, res):
+            row = i * res + j
+            center = 0.0
+            if j != 0:
+                A[row, row - 1] += -1.0
+                center += 1.0
+            if j != res - 1:
+                A[row, row + 1] += -1.0
+                center += 1.0
+            if i != 0:
+                A[row, row - res] += -1.0
+                center += 1.0
+            if i != res-1:
+                A[row, row + res] += -1.0
+                center += 1.0
+            A[row, row] += center
+
+    fill_laplacian_matrix(K)
+    L = K.build()
+    solver = ti.SparseSolver(solver_type="LLT")
+    solver.analyze_pattern(L)
+    solver.factorize(L)
 
 
 class TexPair:
@@ -187,6 +223,30 @@ def enhance_vorticity(vf: ti.template(), cf: ti.template()):
         vf[i, j] = min(max(vf[i, j] + force * dt, -1e3), 1e3)
 
 
+@ti.kernel
+def copy_divergence(div_in: ti.template(), div_out: ti.template()):
+    for I in ti.grouped(div_in):
+        div_out[I[0] * res + I[1]] = -div_in[I]
+
+
+@ti.kernel
+def assign_pressures(p_in: ti.ext_arr(), p_out: ti.template()):
+    for I in ti.grouped(p_out):
+        p_out[I] = p_in[I[0] * res + I[1]]
+
+
+def solve_pressure_sp_mat():
+    copy_divergence(velocity_divs, b)
+    x = solver.solve(b)
+    assign_pressures(x, pressures_pair.cur)
+
+
+def solve_pressure_jacobi():
+    for _ in range(p_jacobi_iters):
+        pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
+    pressures_pair.swap()
+
+
 def step(mouse_data):
     advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt)
     advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt)
@@ -201,8 +261,11 @@ def step(mouse_data):
         vorticity(velocities_pair.cur)
         enhance_vorticity(velocities_pair.cur, velocity_curls)
 
-    for _ in range(p_jacobi_iters):
-        pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
+    if sparse_matrix:
+        solve_pressure_sp_mat()
+    else:
+        for _ in range(p_jacobi_iters):
+            pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
         pressures_pair.swap()
 
     subtract_gradient(velocities_pair.cur, pressures_pair.cur)

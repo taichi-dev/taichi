@@ -20,8 +20,7 @@ force_radius = res / 2.0
 gravity = True
 debug = False
 paused = False
-# sparse_matrix = True
-sparse_matrix = False
+sparse_matrix = True
 
 if sparse_matrix:
     ti.init(arch=ti.x64)

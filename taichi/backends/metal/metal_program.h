@@ -12,9 +12,11 @@
 
 namespace taichi {
 namespace lang {
+
 class MetalProgramImpl : public ProgramImpl {
  public:
   MetalProgramImpl(CompileConfig &config);
+
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   std::size_t get_snode_num_dynamically_allocated(
@@ -35,21 +37,19 @@ class MetalProgramImpl : public ProgramImpl {
     metal_kernel_mgr_->synchronize();
   }
 
-  virtual void destroy_snode_tree(SNodeTree *snode_tree) override{
-      TI_NOT_IMPLEMENTED}
+  void destroy_snode_tree(SNodeTree *snode_tree) override {
+    TI_NOT_IMPLEMENTED;
+  }
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
-    return std::make_unique<metal::AotModuleBuilderImpl>(
-        &(metal_compiled_structs_.value()),
-        metal_kernel_mgr_->get_buffer_meta_data());
-  }
-  ~MetalProgramImpl() {
-  }
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
  private:
-  std::optional<metal::CompiledStructs> metal_compiled_structs_;
-  std::unique_ptr<metal::KernelManager> metal_kernel_mgr_;
+  std::optional<metal::CompiledRuntimeModule> compiled_runtime_module_{
+      std::nullopt};
+  std::optional<metal::CompiledStructs> metal_compiled_structs_{std::nullopt};
+  std::unique_ptr<metal::KernelManager> metal_kernel_mgr_{nullptr};
   metal::KernelManager::Params params_;
 };
+
 }  // namespace lang
 }  // namespace taichi

@@ -334,7 +334,7 @@ def init(arch=None,
             * ``cpu_max_num_threads`` (int): Sets the number of threads used by the CPU thread pool.
             * ``debug`` (bool): Enables the debug mode, under which Taichi does a few more things like boundary checks.
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
-            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/docs/lang/articles/advanced/layout.
+            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/lang/articles/advanced/layout.
     """
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
@@ -449,7 +449,7 @@ def no_activate(*args):
 def block_local(*args):
     """Hints Taichi to cache the fields and to enable the BLS optimization.
 
-    Please visit https://docs.taichi.graphics/docs/lang/articles/advanced/performance
+    Please visit https://docs.taichi.graphics/lang/articles/advanced/performance
     for how BLS is used.
 
     Args:

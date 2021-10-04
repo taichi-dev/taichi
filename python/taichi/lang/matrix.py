@@ -143,7 +143,7 @@ class Matrix(TaichiOperations):
                 ' So the compilation time could be extremely long if the matrix size is too big.'
                 ' You may use a field to store a large matrix like this, e.g.:\n'
                 f'    x = ti.field(ti.f32, ({self.n}, {self.m})).\n'
-                ' See https://docs.taichi.graphics/docs/lang/articles/basic/field#matrix-size'
+                ' See https://docs.taichi.graphics/lang/articles/basic/field#matrix-size'
                 ' for more details.',
                 UserWarning,
                 stacklevel=2)
@@ -249,7 +249,7 @@ class Matrix(TaichiOperations):
                     'If you want to *iterate through matrix elements*, use a static range:\n'
                     '  for i in ti.static(range(3)):\n'
                     '    print(i, "-th component is", vec[i])\n'
-                    'See https://docs.taichi.graphics/docs/lang/articles/advanced/meta#when-to-use-for-loops-with-tistatic for more details.'
+                    'See https://docs.taichi.graphics/lang/articles/advanced/meta#when-to-use-for-loops-with-tistatic for more details.'
                 )
         assert 0 <= args[0] < self.n, \
                 f"The 0-th matrix index is out of range: 0 <= {args[0]} < {self.n}"

@@ -1122,6 +1122,7 @@ class KernelManager::Impl {
   nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_{nullptr};
   std::unique_ptr<BufferMemoryView> runtime_mem_{nullptr};
   nsobj_unique_ptr<MTLBuffer> runtime_buffer_{nullptr};
+  int last_snode_id_used_in_runtime_{-1};
   // TODO: Rename these to 'print_assert_{mem|buffer}_'
   std::unique_ptr<BufferMemoryView> print_mem_{nullptr};
   nsobj_unique_ptr<MTLBuffer> print_buffer_{nullptr};

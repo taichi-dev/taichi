@@ -1,4 +1,7 @@
 #pragma once
+
+#include <vector>
+
 #include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/system/memory_pool.h"
@@ -47,8 +50,8 @@ class MetalProgramImpl : public ProgramImpl {
   std::optional<metal::CompiledRuntimeModule> compiled_runtime_module_{
       std::nullopt};
   std::optional<metal::CompiledStructs> metal_compiled_structs_{std::nullopt};
+  std::vector<metal::CompiledStructs> compiled_snode_trees_;
   std::unique_ptr<metal::KernelManager> metal_kernel_mgr_{nullptr};
-  metal::KernelManager::Params params_;
 };
 
 }  // namespace lang

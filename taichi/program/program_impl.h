@@ -9,6 +9,7 @@
 
 namespace taichi {
 namespace lang {
+
 class ProgramImpl {
  public:
   // TODO: Make it safer, we exposed it for now as it's directly accessed

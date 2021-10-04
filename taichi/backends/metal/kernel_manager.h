@@ -27,12 +27,10 @@ class KernelManager {
  public:
   struct Params {
     CompiledRuntimeModule compiled_runtime_module;
-    CompiledStructs compiled_structs;
     CompileConfig *config;
-    MemoryPool *mem_pool;
     uint64_t *host_result_buffer;
+    MemoryPool *mem_pool;
     KernelProfilerBase *profiler;
-    int root_id;
   };
 
   explicit KernelManager(Params params);

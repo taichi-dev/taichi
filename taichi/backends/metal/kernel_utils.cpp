@@ -27,16 +27,30 @@ const std::string &PrintStringTable::get(int i) {
   return strs_[i];
 }
 
-// static
-std::string KernelAttributes::buffers_name(Buffers b) {
+bool BufferDescriptor::operator==(const BufferDescriptor &other) const {
+  if (type_ != other.type_) {
+    return false;
+  }
+  if (type_ == Type::Root) {
+    return root_id_ == other.root_id_;
+  }
+  return true;
+}
+
+std::string BufferDescriptor::debug_string() const {
 #define REGISTER_NAME(x) \
-  { Buffers::x, #x }
-  const static std::unordered_map<Buffers, std::string> m = {
-      REGISTER_NAME(Root),    REGISTER_NAME(GlobalTmps), REGISTER_NAME(Context),
-      REGISTER_NAME(Runtime), REGISTER_NAME(Print),
+  { Type::x, #x }
+  const static std::unordered_map<Type, std::string> m = {
+      REGISTER_NAME(GlobalTmps),
+      REGISTER_NAME(Context),
+      REGISTER_NAME(Runtime),
+      REGISTER_NAME(Print),
   };
 #undef REGISTER_NAME
-  return m.find(b)->second;
+  if (type_ == Type::Root) {
+    return fmt::format("Root_{}", root_id());
+  }
+  return m.find(type_)->second;
 }
 
 std::string KernelAttributes::debug_string() const {
@@ -47,7 +61,7 @@ std::string KernelAttributes::debug_string() const {
       name, advisory_total_num_threads, advisory_num_threads_per_group,
       offloaded_task_type_name(task_type));
   for (auto b : buffers) {
-    result += buffers_name(b) + " ";
+    result += b.debug_string() + " ";
   }
   result += "]";  // closes |buffers|
   // TODO(k-ye): show range_for

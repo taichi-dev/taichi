@@ -261,8 +261,6 @@ class SparseRuntimeMtlKernelBase : public CompiledMtlKernelBase {
 class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
  public:
   struct Params : public SparseRuntimeMtlKernelBase::Params {
-    const SNodeDescriptorsMap *snode_descriptors{nullptr};
-
     const SNode *snode() const {
       return kernel_attribs->runtime_list_op_attribs->snode;
     }
@@ -318,7 +316,6 @@ class CompiledTaichiKernel {
     std::string mtl_source_code;
     const TaichiKernelAttributes *ti_kernel_attribs;
     const KernelContextAttributes *ctx_attribs;
-    const SNodeDescriptorsMap *snode_descriptors;
     MTLDevice *device;
     MemoryPool *mem_pool;
     KernelProfilerBase *profiler;
@@ -359,7 +356,6 @@ class CompiledTaichiKernel {
         kparams.device = device;
         kparams.mtl_func = mtl_func.get();
         kparams.mem_pool = params.mem_pool;
-        kparams.snode_descriptors = params.snode_descriptors;
         kernel = std::make_unique<ListgenOpMtlKernel>(kparams);
       } else if (ktype == KernelTaskType::gc) {
         GcOpMtlKernel::Params kparams;
@@ -570,7 +566,6 @@ class KernelManager::Impl {
   explicit Impl(Params params)
       : config_(params.config),
         compiled_runtime_module_(params.compiled_runtime_module),
-        compiled_structs_(params.compiled_structs),
         mem_pool_(params.mem_pool),
         host_result_buffer_(params.host_result_buffer),
         profiler_(params.profiler),
@@ -583,18 +578,6 @@ class KernelManager::Impl {
     command_queue_ = new_command_queue(device_.get());
     TI_ASSERT(command_queue_ != nullptr);
     create_new_command_buffer();
-    if (compiled_structs_.root_size > 0) {
-      root_mem_ = std::make_unique<BufferMemoryView>(
-          compiled_structs_.root_size, mem_pool_);
-      root_buffer_ = new_mtl_buffer_no_copy(device_.get(), root_mem_->ptr(),
-                                            root_mem_->size());
-      TI_ASSERT(root_buffer_ != nullptr);
-      buffer_meta_data_.root_buffer_size = root_mem_->size();
-      TI_DEBUG("Metal root buffer size: {} bytes", root_mem_->size());
-      ActionRecorder::get_instance().record(
-          "allocate_root_buffer",
-          {ActionArg("size_in_bytes", (int64)root_mem_->size())});
-    }
 
     global_tmps_mem_ = std::make_unique<BufferMemoryView>(
         taichi_global_tmp_buffer_size, mem_pool_);
@@ -607,7 +590,6 @@ class KernelManager::Impl {
         device_.get(), global_tmps_mem_->ptr(), global_tmps_mem_->size());
     TI_ASSERT(global_tmps_buffer_ != nullptr);
 
-    TI_ASSERT(compiled_runtime_module_.runtime_size > 0);
     const size_t mem_pool_bytes =
         (config_->device_memory_GB * 1024 * 1024 * 1024ULL);
     runtime_mem_ = std::make_unique<BufferMemoryView>(
@@ -625,7 +607,7 @@ class KernelManager::Impl {
     ActionRecorder::get_instance().record(
         "allocate_runtime_buffer",
         {ActionArg("runtime_buffer_size_in_bytes", (int64)runtime_mem_->size()),
-         ActionArg("runtime_struct_size_in_bytes",
+         ActionArg("runtime_size_in_bytes",
                    (int64)compiled_runtime_module_.runtime_size),
          ActionArg("memory_pool_size", (int64)mem_pool_bytes)});
 
@@ -639,8 +621,27 @@ class KernelManager::Impl {
                                            print_mem_->size());
     TI_ASSERT(print_buffer_ != nullptr);
 
-    init_runtime(params.root_id);
+    init_runtime_buffer(compiled_runtime_module_);
     clear_print_assert_buffer();
+  }
+
+  void add_compiled_snode_tree(const CompiledStructs &compiled_tree) {
+    if (compiled_tree.root_size > 0) {
+      root_mem_ = std::make_unique<BufferMemoryView>(compiled_tree.root_size,
+                                                       mem_pool_);
+      root_buffer_ = new_mtl_buffer_no_copy(device_.get(), root_mem_->ptr(),
+                                         root_mem_->size());
+      TI_ASSERT(root_buffer_ != nullptr);
+      buffer_meta_data_.root_buffer_size += root_mem_->size();
+      TI_DEBUG("Metal root={} buffer_size={} bytes", compiled_tree.root_id,
+               root_mem_->size());
+      ActionRecorder::get_instance().record(
+          "allocate_root_buffer",
+          {ActionArg("root_id={}", (int64)compiled_tree.root_id),
+           ActionArg("size_in_bytes", (int64)root_mem_->size())});
+    }
+
+    init_snode_tree_sparse_runtime(compiled_tree);
   }
 
   void register_taichi_kernel(const std::string &taichi_kernel_name,
@@ -661,7 +662,6 @@ class KernelManager::Impl {
     params.mtl_source_code = mtl_kernel_source_code;
     params.ti_kernel_attribs = &ti_kernel_attribs;
     params.ctx_attribs = &ctx_attribs;
-    params.snode_descriptors = &compiled_structs_.snode_descriptors;
     params.device = device_.get();
     params.mem_pool = mem_pool_;
     params.profiler = profiler_;
@@ -750,14 +750,69 @@ class KernelManager::Impl {
   }
 
  private:
-  void init_runtime(int root_id) {
+  void init_runtime_buffer(const CompiledRuntimeModule &rtm_module) {
+    char *addr = runtime_mem_->ptr();
+    // init rand_seeds
+    // TODO(k-ye): Provide a way to use a fixed seed in dev mode.
+    std::mt19937 generator(
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::system_clock::now().time_since_epoch())
+            .count());
+    std::uniform_int_distribution<uint32_t> distr(
+        0, std::numeric_limits<uint32_t>::max());
+    for (int i = 0; i < kNumRandSeeds; ++i) {
+      uint32_t *s = reinterpret_cast<uint32_t *>(addr);
+      *s = distr(generator);
+      addr += sizeof(uint32_t);
+    }
+    TI_DEBUG("Initialized random seeds size={}", rtm_module.rand_seeds_size);
+
     using namespace shaders;
-    char *addr = reinterpret_cast<char *>(runtime_mem_->ptr());
+    addr = runtime_mem_->ptr() + rtm_module.rand_seeds_size;
     const char *const addr_begin = addr;
-    const int max_snodes = compiled_structs_.max_snodes;
-    const auto &snode_descriptors = compiled_structs_.snode_descriptors;
-    // init snode_metas
     dev_runtime_mirror_.snode_metas = (SNodeMeta *)addr;
+    size_t addr_offset = sizeof(SNodeMeta) * kMaxNumSNodes;
+    addr += addr_offset;
+    TI_DEBUG("SNodeMeta, size={} accumulated={}", addr_offset,
+             (addr - addr_begin));
+    dev_runtime_mirror_.snode_extractors = (SNodeExtractors *)addr;
+    addr_offset = sizeof(SNodeExtractors) * kMaxNumSNodes;
+    addr += addr_offset;
+    TI_DEBUG("SNodeExtractors, size={} accumulated={}", addr_offset,
+             (addr - addr_begin));
+    dev_runtime_mirror_.snode_lists = (ListManagerData *)addr;
+    addr_offset = sizeof(ListManagerData) * kMaxNumSNodes;
+    addr += addr_offset;
+    TI_DEBUG("ListManagerData, size={} accumulated={}", addr_offset,
+             (addr - addr_begin));
+    dev_runtime_mirror_.snode_allocators = (NodeManagerData *)addr;
+    addr_offset = sizeof(NodeManagerData) * kMaxNumSNodes;
+    addr += addr_offset;
+    TI_DEBUG("NodeManagerData, size={} accumulated={}", addr_offset,
+             (addr - addr_begin));
+    dev_runtime_mirror_.ambient_indices = (NodeManagerData::ElemIndex *)addr;
+    addr_offset = sizeof(NodeManagerData::ElemIndex) * kMaxNumSNodes;
+    addr += addr_offset;
+    TI_DEBUG("SNode ambient elements, size={} accumulated={}", addr_offset,
+             (addr - addr_begin));
+
+    // Initialize the memory allocator
+    dev_mem_alloc_mirror_ = reinterpret_cast<MemoryAllocator *>(addr);
+    // Make sure the retured memory address is always greater than 1.
+    dev_mem_alloc_mirror_->next = shaders::MemoryAllocator::kInitOffset;
+    TI_DEBUG("Memory allocator, begin={} next={}", (addr - addr_begin),
+             dev_mem_alloc_mirror_->next);
+
+    mark_runtime_buffer_modified();
+  }
+
+  void init_snode_tree_sparse_runtime(const CompiledStructs &snode_tree) {
+    using namespace shaders;
+    const int max_snodes = snode_tree.max_snodes;
+    const auto &snode_descriptors = snode_tree.snode_descriptors;
+    char *addr = nullptr;
+    // init snode_metas
+    addr = (char *)dev_runtime_mirror_.snode_metas;
     for (int i = 0; i < max_snodes; ++i) {
       auto iter = snode_descriptors.find(i);
       if (iter == snode_descriptors.end()) {
@@ -798,12 +853,8 @@ class KernelManager::Impl {
           i, snode_type_name(sn_meta.snode->type), rtm_meta->element_stride,
           rtm_meta->num_slots, rtm_meta->mem_offset_in_parent);
     }
-    size_t addr_offset = sizeof(SNodeMeta) * kMaxNumSNodes;
-    addr += addr_offset;
-    TI_DEBUG("Initialized SNodeMeta, size={} accumulated={}", addr_offset,
-             (addr - addr_begin));
     // init snode_extractors
-    dev_runtime_mirror_.snode_extractors = (SNodeExtractors *)addr;
+    addr = (char *)dev_runtime_mirror_.snode_extractors;
     for (int i = 0; i < max_snodes; ++i) {
       auto iter = snode_descriptors.find(i);
       if (iter == snode_descriptors.end()) {
@@ -823,12 +874,8 @@ class KernelManager::Impl {
       }
       TI_DEBUG("");
     }
-    addr_offset = sizeof(SNodeExtractors) * kMaxNumSNodes;
-    addr += addr_offset;
-    TI_DEBUG("Initialized SNodeExtractors, size={} accumulated={}", addr_offset,
-             (addr - addr_begin));
     // init snode_lists
-    dev_runtime_mirror_.snode_lists = (ListManagerData *)addr;
+    addr = (char *)dev_runtime_mirror_.snode_lists;
     ListManagerData *const rtm_list_begin =
         reinterpret_cast<ListManagerData *>(addr);
     for (int i = 0; i < max_snodes; ++i) {
@@ -847,12 +894,8 @@ class KernelManager::Impl {
       TI_DEBUG("ListManagerData\n  id={}\n  num_elems_per_chunk={}\n", i,
                num_elems_per_chunk);
     }
-    addr_offset = sizeof(ListManagerData) * kMaxNumSNodes;
-    addr += addr_offset;
-    TI_DEBUG("Initialized ListManagerData, size={} accumulated={}", addr_offset,
-             (addr - addr_begin));
     // init snode_allocators
-    dev_runtime_mirror_.snode_allocators = (NodeManagerData *)addr;
+    addr = (char *)dev_runtime_mirror_.snode_allocators;
     auto init_node_mgr = [&snode_descriptors](const SNodeDescriptor &sn_desc,
                                               NodeManagerData *nm_data) {
       nm_data->data_list.element_stride = sn_desc.element_stride;
@@ -896,51 +939,6 @@ class KernelManager::Impl {
       init_node_mgr(sn_desc, nm_data);
       snode_id_to_nodemgrs.push_back(std::make_pair(i, nm_data));
     }
-    addr_offset = sizeof(NodeManagerData) * kMaxNumSNodes;
-    addr += addr_offset;
-    TI_DEBUG("Initialized NodeManagerData, size={} accumulated={}", addr_offset,
-             (addr - addr_begin));
-    // ambient_indices initialization has to be delayed, because it relies on
-    // the initialization of MemoryAllocator.
-    auto *const ambient_indices_begin =
-        reinterpret_cast<NodeManagerData::ElemIndex *>(addr);
-    dev_runtime_mirror_.ambient_indices = ambient_indices_begin;
-    addr_offset = sizeof(NodeManagerData::ElemIndex) * kMaxNumSNodes;
-    addr += addr_offset;
-    TI_DEBUG(
-        "Delayed the initialization of SNode ambient elements, size={} "
-        "accumulated={}",
-        addr_offset, (addr - addr_begin));
-    // init rand_seeds
-    // TODO(k-ye): Provide a way to use a fixed seed in dev mode.
-    std::mt19937 generator(
-        std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count());
-    const auto rand_seeds_begin = (addr - addr_begin);
-    buffer_meta_data_.randseedoffset_in_runtime_buffer = rand_seeds_begin;
-    std::uniform_int_distribution<uint32_t> distr(
-        0, std::numeric_limits<uint32_t>::max());
-    for (int i = 0; i < kNumRandSeeds; ++i) {
-      uint32_t *s = reinterpret_cast<uint32_t *>(addr);
-      *s = distr(generator);
-      addr += sizeof(uint32_t);
-    }
-    TI_DEBUG("Initialized random seeds, begin={} size={} accumuated={}",
-             rand_seeds_begin, kNumRandSeeds * sizeof(uint32_t),
-             (addr - addr_begin));
-    ActionRecorder::get_instance().record(
-        "initialize_runtime_buffer",
-        {
-            ActionArg("rand_seeds_begin", (int64)rand_seeds_begin),
-        });
-
-    // Initialize the memory allocator
-    auto *mem_alloc = reinterpret_cast<MemoryAllocator *>(addr);
-    // Make sure the retured memory address is always greater than 1.
-    mem_alloc->next = shaders::MemoryAllocator::kInitOffset;
-    TI_DEBUG("Initialized memory allocator, begin={} next={}",
-             (addr - addr_begin), mem_alloc->next);
 
     // Root list is static, so it can be initialized here once.
     ListgenElement root_elem;
@@ -949,20 +947,25 @@ class KernelManager::Impl {
       root_elem.coords.at[i] = 0;
     }
     ListManager root_lm;
-    root_lm.lm_data = rtm_list_begin + root_id;
-    root_lm.mem_alloc = mem_alloc;
+    root_lm.lm_data = rtm_list_begin + snode_tree.root_id;
+    root_lm.mem_alloc = dev_mem_alloc_mirror_;
     root_lm.append(root_elem);
 
     // Initialize all the ambient elements
+    auto *const ambient_indices_begin = dev_runtime_mirror_.ambient_indices;
     for (const auto &p : snode_id_to_nodemgrs) {
       NodeManager nm;
       nm.nm_data = p.second;
-      nm.mem_alloc = mem_alloc;
+      nm.mem_alloc = dev_mem_alloc_mirror_;
       const auto snode_id = p.first;
       ambient_indices_begin[snode_id] = nm.allocate();
       TI_DEBUG("AmbientIndex\n  id={}\n  mem_alloc->next={}\n", snode_id,
-               mem_alloc->next);
+               dev_mem_alloc_mirror_->next);
     }
+    mark_runtime_buffer_modified();
+  }
+
+  void mark_runtime_buffer_modified() {
     did_modify_range(runtime_buffer_.get(), /*location=*/0,
                      runtime_mem_->size());
   }
@@ -1000,30 +1003,30 @@ class KernelManager::Impl {
   void print_runtime_debug() {
     // If debugging is necessary, make sure this is called after
     // blit_buffers_and_sync().
-    int *root_base = reinterpret_cast<int *>(root_mem_->ptr());
-    for (int i = 0; i < 10; ++i) {
-      TI_INFO("root[{}]={}", i, root_base[i]);
-    }
+    // int *root_base = reinterpret_cast<int *>(root_mem_->ptr());
+    // for (int i = 0; i < 10; ++i) {
+    //   TI_INFO("root[{}]={}", i, root_base[i]);
+    // }
 
-    const auto &sn_descs = compiled_structs_.snode_descriptors;
-    for (int i = 0; i < compiled_structs_.max_snodes; ++i) {
-      auto iter = sn_descs.find(i);
-      if (iter == sn_descs.end()) {
-        continue;
-      }
-      // const SNodeDescriptor &sn_desc = iter->second;
-      shaders::ListManager lm;
-      lm.lm_data = (dev_runtime_mirror_.snode_lists + i);
-      lm.mem_alloc = dev_mem_alloc_mirror_;
+    // const auto &sn_descs = compiled_structs_.snode_descriptors;
+    // for (int i = 0; i < compiled_structs_.max_snodes; ++i) {
+    //   auto iter = sn_descs.find(i);
+    //   if (iter == sn_descs.end()) {
+    //     continue;
+    //   }
+    //   // const SNodeDescriptor &sn_desc = iter->second;
+    //   shaders::ListManager lm;
+    //   lm.lm_data = (dev_runtime_mirror_.snode_lists + i);
+    //   lm.mem_alloc = dev_mem_alloc_mirror_;
 
-      shaders::NodeManagerData *nma =
-          (dev_runtime_mirror_.snode_allocators + i);
-      TI_INFO(
-          "ListManager for SNode={} num_active={} num_allocated={} "
-          "free_list_used={}",
-          i, lm.num_active(), nma->data_list.next, nma->free_list_used);
-    }
-    TI_INFO("");
+    //   shaders::NodeManagerData *nma =
+    //       (dev_runtime_mirror_.snode_allocators + i);
+    //   TI_INFO(
+    //       "ListManager for SNode={} num_active={} num_allocated={} "
+    //       "free_list_used={}",
+    //       i, lm.num_active(), nma->data_list.next, nma->free_list_used);
+    // }
+    // TI_INFO("");
   }
 
   void check_assertion_failure() {
@@ -1138,19 +1141,20 @@ class KernelManager::Impl {
   MemoryPool *const mem_pool_;
   uint64_t *const host_result_buffer_;
   KernelProfilerBase *const profiler_;
-  nsobj_unique_ptr<MTLDevice> device_;
-  nsobj_unique_ptr<MTLCommandQueue> command_queue_;
-  nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_;
-  std::size_t command_buffer_id_;
+  nsobj_unique_ptr<MTLDevice> device_{nullptr};
+  nsobj_unique_ptr<MTLCommandQueue> command_queue_{nullptr};
+  nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_{nullptr};
+  std::size_t command_buffer_id_{0};
   std::unique_ptr<BufferMemoryView> root_mem_;
   nsobj_unique_ptr<MTLBuffer> root_buffer_;
-  std::unique_ptr<BufferMemoryView> global_tmps_mem_;
-  nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_;
-  std::unique_ptr<BufferMemoryView> runtime_mem_;
-  nsobj_unique_ptr<MTLBuffer> runtime_buffer_;
+  std::unique_ptr<BufferMemoryView> global_tmps_mem_{nullptr};
+  nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_{nullptr};
+  std::unique_ptr<BufferMemoryView> runtime_mem_{nullptr};
+  nsobj_unique_ptr<MTLBuffer> runtime_buffer_{nullptr};
+  int last_snode_id_used_in_runtime_{-1};
   // TODO: Rename these to 'print_assert_{mem|buffer}_'
-  std::unique_ptr<BufferMemoryView> print_mem_;
-  nsobj_unique_ptr<MTLBuffer> print_buffer_;
+  std::unique_ptr<BufferMemoryView> print_mem_{nullptr};
+  nsobj_unique_ptr<MTLBuffer> print_buffer_{nullptr};
   std::unordered_map<std::string, std::unique_ptr<CompiledTaichiKernel>>
       compiled_taichi_kernels_;
   PrintStringTable print_strtable_;

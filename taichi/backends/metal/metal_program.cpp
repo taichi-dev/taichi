@@ -56,6 +56,13 @@ void MetalProgramImpl::materialize_snode_tree(
     metal_kernel_mgr_ =
         std::make_unique<metal::KernelManager>(std::move(params_));
   }
+  metal_kernel_mgr_->add_compiled_snode_tree(metal_compiled_structs_.value());
+}
+
+std::unique_ptr<AotModuleBuilder> MetalProgramImpl::make_aot_module_builder() {
+  return std::make_unique<metal::AotModuleBuilderImpl>(
+      &(compiled_runtime_module_.value()), &(metal_compiled_structs_.value()),
+      metal_kernel_mgr_->get_buffer_meta_data());
 }
 
 std::unique_ptr<AotModuleBuilder> MetalProgramImpl::make_aot_module_builder() {

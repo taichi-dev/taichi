@@ -614,11 +614,13 @@ class KernelManager::Impl {
         compiled_runtime_module_.runtime_size + mem_pool_bytes, mem_pool_);
     runtime_buffer_ = new_mtl_buffer_no_copy(device_.get(), runtime_mem_->ptr(),
                                              runtime_mem_->size());
-    buffer_meta_data_.runtime_buffer_size = compiled_runtime_module_.runtime_size;
+    buffer_meta_data_.runtime_buffer_size =
+        compiled_runtime_module_.runtime_size;
     TI_DEBUG(
         "Metal runtime buffer size: {} bytes (sizeof(Runtime)={} "
         "memory_pool={})",
-        runtime_mem_->size(), compiled_runtime_module_.runtime_size, mem_pool_bytes);
+        runtime_mem_->size(), compiled_runtime_module_.runtime_size,
+        mem_pool_bytes);
 
     ActionRecorder::get_instance().record(
         "allocate_runtime_buffer",

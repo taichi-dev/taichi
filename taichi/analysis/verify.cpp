@@ -49,7 +49,7 @@ class IRVerifier : public BasicStmtVisitor {
           found,
           "IR broken: stmt {} cannot have operand {}."
           " If you are using autodiff, please check"
-          " https://docs.taichi.graphics/docs/lang/articles/advanced/"
+          " https://docs.taichi.graphics/lang/articles/advanced/"
           "differentiable_programming#kernel-simplicity-rule"
           " If it doesn't help, please report this bug by opening an issue at"
           " https://github.com/taichi-dev/taichi to help us improve."

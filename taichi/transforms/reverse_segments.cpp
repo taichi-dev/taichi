@@ -68,7 +68,7 @@ void reverse_segments(IRNode *root) {
     TI_ERROR(
         "Invalid program input for autodiff. Please check the documentation "
         "for the \"Kernel Simplicity Rule\":\n"
-        "https://docs.taichi.graphics/docs/lang/articles/advanced/"
+        "https://docs.taichi.graphics/lang/articles/advanced/"
         "differentiable_programming#kernel-simplicity-rule");
   for (auto &sblock : statement_blocks) {
     for (auto &&s : sblock) {

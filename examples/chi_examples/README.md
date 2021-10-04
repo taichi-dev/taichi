@@ -2,7 +2,7 @@
 
 ## Build Taichi
 
-Follow the steps in `https://docs.taichi.graphics/docs/lang/articles/contribution/dev_install`
+Follow the steps in `https://docs.taichi.graphics/lang/articles/contribution/dev_install`
 
 Add option `-DTI_EXPORT_CORE=ON` to your `cmake` command (i.e. use `cmake .. DTI_EXPORT_CORE=ON`).
 

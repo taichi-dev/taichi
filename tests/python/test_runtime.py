@@ -146,3 +146,18 @@ def test_materialize_callback():
     for i in range(3):
         for j in range(4):
             assert x[i, j] == i + j + 1
+
+
+@pytest.mark.parametrize('level', ti.supported_log_levels)
+@ti.test()
+def test_supported_log_levels(level):
+    spec_cfg = ti.init(_test_mode=True, log_level=level)
+    assert spec_cfg.log_level == level
+
+
+@pytest.mark.parametrize('level', ti.supported_log_levels)
+@ti.test()
+def test_supported_log_levels(level):
+    spec_cfg = ti.init(_test_mode=True)
+    ti.set_logging_level(level)
+    assert ti.is_logging_effective(level)

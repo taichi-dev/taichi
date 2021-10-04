@@ -1,10 +1,10 @@
 import os
 
-from taichi.core import util
+from taichi.core import ti_core
 
 
 def record_action_entry(name, contents):
-    util.ti_core.record_action_entry(name, list(contents.items()))
+    ti_core.record_action_entry(name, list(contents.items()))
 
 
 def record_action_hint(name, content=None):
@@ -18,11 +18,11 @@ def record_action_config(key, value):
 
 
 def start_recording(filename):
-    util.ti_core.start_recording(filename)
+    ti_core.start_recording(filename)
 
 
 def stop_recording():
-    util.ti_core.stop_recording()
+    ti_core.stop_recording()
 
 
 class RecordKernelGroup:

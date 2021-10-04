@@ -1,12 +1,12 @@
 import pathlib
 
 from taichi.core import ti_core as _ti_core
-from taichi.core.primitive_types import f32
 from taichi.lang.impl import default_cfg, field
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
 from taichi.lang.ops import atomic_add, get_addr
+from taichi.type.primitive_types import f32
 
 from .camera import Camera
 from .staging_buffer import (copy_colors_to_vbo, copy_normals_to_vbo,

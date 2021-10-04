@@ -42,7 +42,7 @@ First, modify `mpm88.py` as shown below:
 ```python
 import taichi as ti
 
-ti.core.start_recording('mpm88.yml')
+ti.aot.start_recording('mpm88.yml')
 ti.init(arch=ti.cc)
 
 ... # your program

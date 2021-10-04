@@ -30,7 +30,7 @@ def test_log10():
     pass
 ```
 
-Add some simple code that makes use of `ti.log10` to ensure it works
+Add some tests that make use of `ti.log10` to ensure it works
 well. Hint: You may pass/return values to/from Taichi-scope using 0-D
 fields, i.e. `r[None]`.
 
@@ -62,7 +62,7 @@ The line `ti.init(arch=ti.cpu)` in the test above means that it will only test o
 import taichi as ti
 
 # will test against both CPU and CUDA backends
-@ti.test(ti.cpu, ti.cuda)
+@ti.test(arch=[ti.cpu, ti.cuda])
 def test_log10():
     r = ti.field(ti.f32, ())
 
@@ -75,7 +75,9 @@ def test_log10():
     assert r[None] == 2
 ```
 
-And you may test against **all backends** by simply not specifying the
+In this case, Taichi will execute this test case on both `ti.cpu` and `ti.cuda` backends.
+
+And you may test against all available backends (depends on your system and building environment) by simply not specifying the
 argument:
 
 ```python
@@ -97,8 +99,8 @@ def test_log10():
 
 ## Using `ti.approx` for comparison with tolerance
 
-Sometimes the precision of math operations could be relatively low on certain backends such as OpenGL,
-e.g. `ti.log10(100)` may return `2.001` or `1.999` in this case.
+Sometimes the precision of math operations could be limited on certain backends such as OpenGL,
+e.g., `ti.log10(100)` may return `2.000001` or `1.999999` in this case.
 
 Adding tolerance with `ti.approx` can be helpful to mitigate
 such errors on different backends, for example `2.001 == ti.approx(2)`
@@ -241,3 +243,46 @@ a specific feature:
 def test_sparse_field():
     # ... (some tests that requires sparse feature which is not supported by OpenGL)
 ```
+
+## Requiring extension in tests
+
+If a test case depends on some extensions, you should add an argument `require` in the `@ti.test` decorator.
+
+```python {1}
+@ti.test(require=ti.extension.sparse)
+def test_struct_for_pointer_block():
+    n = 16
+    block_size = 8
+
+    f = ti.field(dtype=ti.f32)
+
+    block = ti.root.pointer(ti.ijk, n // block_size)
+    block.dense(ti.ijk, block_size).place(f)
+
+    f[0, 2, 3] = 1
+
+    @ti.kernel
+    def count() -> int:
+        tot = 0
+        for I in ti.grouped(block):
+            tot += 1
+        return tot
+
+    assert count() == 1
+```
+
+Now, Taichi supports the following extensions:
+
+| Name          | Extension details                                             |
+| ------------- | ------------------------------------------------------------- |
+| sparse        | Sparse data structures                                        |
+| async_mode    | Asynchronous execution mode                                   |
+| quant_basic   | Basic operations in quantization                              |
+| quant         | Full quantization functionalities                             |
+| data64        | 64-bit data and arithmetics                                   |
+| adstack       | For keeping the history of mutable local variables in autodiff|
+| bls           | Block-local storage                                           |
+| assertion     | Run-time asserts in Taichi kernels                            |
+| extfunc       | Support inserting external function calls or backend source   |
+| packed        | Packed mode: shapes will not be padded to powers of two       |
+| dynamic_index | Dynamic index support for tensors                             |

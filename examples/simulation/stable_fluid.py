@@ -37,8 +37,21 @@ _new_pressures = ti.field(float, shape=(res, res))
 _dye_buffer = ti.Vector.field(3, float, shape=(res, res))
 _new_dye_buffer = ti.Vector.field(3, float, shape=(res, res))
 
-if sparse_matrix:
 
+class TexPair:
+    def __init__(self, cur, nxt):
+        self.cur = cur
+        self.nxt = nxt
+
+    def swap(self):
+        self.cur, self.nxt = self.nxt, self.cur
+
+
+velocities_pair = TexPair(_velocities, _new_velocities)
+pressures_pair = TexPair(_pressures, _new_pressures)
+dyes_pair = TexPair(_dye_buffer, _new_dye_buffer)
+
+if sparse_matrix:
     N = res * res
     K = ti.SparseMatrixBuilder(N, N, max_num_triplets=N*6)
     b = ti.field(ti.f32, shape=N)
@@ -67,20 +80,6 @@ if sparse_matrix:
     solver = ti.SparseSolver(solver_type="LLT")
     solver.analyze_pattern(L)
     solver.factorize(L)
-
-
-class TexPair:
-    def __init__(self, cur, nxt):
-        self.cur = cur
-        self.nxt = nxt
-
-    def swap(self):
-        self.cur, self.nxt = self.nxt, self.cur
-
-
-velocities_pair = TexPair(_velocities, _new_velocities)
-pressures_pair = TexPair(_pressures, _new_pressures)
-dyes_pair = TexPair(_dye_buffer, _new_dye_buffer)
 
 
 @ti.func
@@ -244,7 +243,7 @@ def solve_pressure_sp_mat():
 def solve_pressure_jacobi():
     for _ in range(p_jacobi_iters):
         pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
-    pressures_pair.swap()
+        pressures_pair.swap()
 
 
 def step(mouse_data):
@@ -264,9 +263,7 @@ def step(mouse_data):
     if sparse_matrix:
         solve_pressure_sp_mat()
     else:
-        for _ in range(p_jacobi_iters):
-            pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
-        pressures_pair.swap()
+        solve_pressure_jacobi()
 
     subtract_gradient(velocities_pair.cur, pressures_pair.cur)
 

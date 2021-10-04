@@ -66,13 +66,13 @@ if sparse_matrix:
             if i != 0:
                 A[row, row - res] += -1.0
                 center += 1.0
-            if i != res-1:
+            if i != res - 1:
                 A[row, row + res] += -1.0
                 center += 1.0
             A[row, row] += center
 
     N = res * res
-    K = ti.SparseMatrixBuilder(N, N, max_num_triplets=N*6)
+    K = ti.SparseMatrixBuilder(N, N, max_num_triplets=N * 6)
     b = ti.field(ti.f32, shape=N)
 
     fill_laplacian_matrix(K)

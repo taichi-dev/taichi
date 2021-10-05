@@ -12,6 +12,8 @@ namespace lang {
 
 using PassID = std::string;
 
+class Program;
+
 /*class PassContext {
  public:
   PassContext() {

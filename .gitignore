@@ -42,6 +42,7 @@ runtimes/libtaichi_core*
 dist/
 python/MANIFEST
 build/
+build_clang_tidy/
 bin/
 tmp/
 cmake-build-*

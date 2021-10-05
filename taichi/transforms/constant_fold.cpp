@@ -9,6 +9,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/transforms/constant_fold.h"
+#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
 

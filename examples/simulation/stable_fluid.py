@@ -51,7 +51,7 @@ pressures_pair = TexPair(_pressures, _new_pressures)
 dyes_pair = TexPair(_dye_buffer, _new_dye_buffer)
 
 if sparse_matrix:
-    # use sparse matrix to solve the Poisson's pressure equation.
+    # use a sparse matrix to solve Poisson's pressure equation.
     @ti.kernel
     def fill_laplacian_matrix(A: ti.sparse_matrix_builder()):
         for i, j in ti.ndrange(res, res):
@@ -229,7 +229,7 @@ def copy_divergence(div_in: ti.template(), div_out: ti.template()):
 
 
 @ti.kernel
-def apply_pressures(p_in: ti.ext_arr(), p_out: ti.template()):
+def apply_pressure(p_in: ti.ext_arr(), p_out: ti.template()):
     for I in ti.grouped(p_out):
         p_out[I] = p_in[I[0] * res + I[1]]
 
@@ -237,7 +237,7 @@ def apply_pressures(p_in: ti.ext_arr(), p_out: ti.template()):
 def solve_pressure_sp_mat():
     copy_divergence(velocity_divs, b)
     x = solver.solve(b)
-    apply_pressures(x, pressures_pair.cur)
+    apply_pressure(x, pressures_pair.cur)
 
 
 def solve_pressure_jacobi():

@@ -5,6 +5,7 @@
 # https://github.com/ShaneFX/GAMES201/tree/master/HW01
 
 import argparse
+
 import numpy as np
 
 import taichi as ti
@@ -13,7 +14,10 @@ import taichi as ti
 #   `python stable_fluid.py`: use the jacobi iteration to solve the linear system.
 #   `python stable_fluid.py -s`: use a sparse matrix to do so.
 parser = argparse.ArgumentParser()
-parser.add_argument('-s', '--use-sp-mat', action='store_true', help='Solve Poisson\'s equation by using a sparse matrix')
+parser.add_argument('-s',
+                    '--use-sp-mat',
+                    action='store_true',
+                    help='Solve Poisson\'s equation by using a sparse matrix')
 args = parser.parse_args()
 
 res = 512
@@ -29,7 +33,6 @@ gravity = True
 debug = False
 paused = False
 use_sparse_matrix = False
-
 
 use_sparse_matrix = args.use_sp_mat
 

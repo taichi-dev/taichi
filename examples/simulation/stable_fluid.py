@@ -4,9 +4,17 @@
 # https://www.bilibili.com/video/BV1ZK411H7Hc?p=4
 # https://github.com/ShaneFX/GAMES201/tree/master/HW01
 
+import argparse
 import numpy as np
 
 import taichi as ti
+
+# How to run:
+#   `python stable_fluid.py`: use the jacobi iteration to solve the linear system.
+#   `python stable_fluid.py -s`: use a sparse matrix to do so.
+parser = argparse.ArgumentParser()
+parser.add_argument('-s', '--use-sp-mat', action='store_true', help='Solve Poisson\'s equation by using a sparse matrix')
+args = parser.parse_args()
 
 res = 512
 dt = 0.03
@@ -20,12 +28,17 @@ force_radius = res / 2.0
 gravity = True
 debug = False
 paused = False
-sparse_matrix = False
+use_sparse_matrix = False
 
-if sparse_matrix:
+
+use_sparse_matrix = args.use_sp_mat
+
+if use_sparse_matrix:
     ti.init(arch=ti.x64)
+    print('Using sparse matrix')
 else:
     ti.init(arch=ti.gpu)
+    print('Using jacobi iteration')
 
 _velocities = ti.Vector.field(2, float, shape=(res, res))
 _new_velocities = ti.Vector.field(2, float, shape=(res, res))
@@ -50,7 +63,7 @@ velocities_pair = TexPair(_velocities, _new_velocities)
 pressures_pair = TexPair(_pressures, _new_pressures)
 dyes_pair = TexPair(_dye_buffer, _new_dye_buffer)
 
-if sparse_matrix:
+if use_sparse_matrix:
     # use a sparse matrix to solve Poisson's pressure equation.
     @ti.kernel
     def fill_laplacian_matrix(A: ti.sparse_matrix_builder()):
@@ -260,7 +273,7 @@ def step(mouse_data):
         vorticity(velocities_pair.cur)
         enhance_vorticity(velocities_pair.cur, velocity_curls)
 
-    if sparse_matrix:
+    if use_sparse_matrix:
         solve_pressure_sp_mat()
     else:
         solve_pressure_jacobi()

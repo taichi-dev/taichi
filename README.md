@@ -37,7 +37,7 @@ Advanced features of Taichi include [spatially sparse computing](https://docs.ta
 python3 -m pip install taichi
 ```
 
-**Supported OS**: Windows, Linux, Mac OS X; **Python**: 3.6-3.9 (64-bit only); **Backends**: x64 CPUs, CUDA, Apple Metal, OpenGL Compute Shaders.
+**Supported OS**: Windows, Linux, Mac OS X; **Python**: 3.6-3.9 (64-bit only); **Backends**: x64 CPUs, CUDA, Apple Metal, Vulkan, OpenGL Compute Shaders.
 
 Please build from source for other configurations (e.g., your CPU is ARM, or you want to try out our experimental C backend).
 

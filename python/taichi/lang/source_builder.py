@@ -8,7 +8,7 @@ from taichi.lang.ops import asm, bitcode_func_call, external_func_call
 from taichi.lang.util import get_clangpp, has_clangpp
 
 
-class SourceBuilder():
+class SourceBuilder:
     def __init__(self, source, mode='bc'):
         self.mode = mode
         if self.mode == 'bc':

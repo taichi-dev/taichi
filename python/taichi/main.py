@@ -659,7 +659,7 @@ class TaichiMain:
             threads = 2
 
         if not os.environ.get('TI_DEVICE_MEMORY_GB'):
-            os.environ['TI_DEVICE_MEMORY_GB'] = '3'
+            os.environ['TI_DEVICE_MEMORY_GB'] = '1.0'  # Discussion: #769
 
         env_threads = os.environ.get('TI_TEST_THREADS', '')
         threads = args.threads or env_threads or threads
@@ -669,9 +669,9 @@ class TaichiMain:
             print(
                 f'Due to how pytest-xdist is implemented, the -s option does not work with multiple thread...'
             )
-        # else:
-        #     if int(threads) > 1:
-        #         pytest_args += ['-n', str(threads)]
+        else:
+            if int(threads) > 1:
+                pytest_args += ['-n', str(threads)]
         return int(pytest.main(pytest_args))
 
     @staticmethod

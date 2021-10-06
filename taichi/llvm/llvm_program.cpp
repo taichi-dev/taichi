@@ -323,8 +323,6 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     CUDADriver::get_instance().memset(preallocated_device_buffer, 0,
                                       prealloc_size);
     tlctx = llvm_context_device.get();
-    TI_INFO("CUDA preallocated_device_buffer={}",
-            (intptr_t)preallocated_device_buffer);
 #else
     TI_NOT_IMPLEMENTED
 #endif

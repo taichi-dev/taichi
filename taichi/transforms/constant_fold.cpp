@@ -36,28 +36,6 @@ class ConstantFold : public BasicStmtVisitor {
 
   std::vector<deferred_jit_eval> batched_eval;
 
-  static int get_i64_multiplier(DataType dt) {
-    if (dt == PrimitiveType::i8) {
-      return 8;
-    } else if (dt == PrimitiveType::u8) {
-      return 8;
-    } else if (dt == PrimitiveType::i16) {
-      return 4;
-    } else if (dt == PrimitiveType::u16) {
-      return 4;
-    } else if (dt == PrimitiveType::f16) {
-      return 4;
-    } else if (dt == PrimitiveType::i32) {
-      return 2;
-    } else if (dt == PrimitiveType::u32) {
-      return 2;
-    } else if (dt == PrimitiveType::f32) {
-      return 2;
-    } else {
-      return 1;
-    }
-  }
-
   struct DataTypeHasher {
     size_t operator()(const DataType &dt) const {
       return dt.hash();
@@ -252,10 +230,10 @@ class ConstantFold : public BasicStmtVisitor {
         launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_i64.data()),
                                           uint64(arr_size * 8));
       } else if (dt == PrimitiveType::u64) {
-        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_u16.data()),
+        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_u64.data()),
                                           uint64(arr_size * 8));
       } else {
-        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_f16.data()),
+        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_f64.data()),
                                           uint64(arr_size * 8));
       }
       arg_id++;

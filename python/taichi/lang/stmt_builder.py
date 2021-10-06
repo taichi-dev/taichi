@@ -112,7 +112,8 @@ class StmtBuilder(Builder):
         assign_stmts = []
         for node_target in node.targets:
             if isinstance(node_target, ast.Tuple):
-                assign_stmts.append(StmtBuilder.build_assign_unpack(ctx, node, node_target))
+                assign_stmts.append(
+                    StmtBuilder.build_assign_unpack(ctx, node, node_target))
             else:
                 is_local = isinstance(node_target, ast.Name)
                 if is_local and ctx.is_creation(node_target.id):
@@ -171,8 +172,7 @@ class StmtBuilder(Builder):
 
         def tuple_indexed(i):
             indexing = parse_stmt('__tmp_tuple[0]')
-            StmtBuilder.set_subscript_index(indexing.value,
-                                            parse_expr(f"{i}"))
+            StmtBuilder.set_subscript_index(indexing.value, parse_expr(f"{i}"))
             return indexing.value
 
         # Generate assign statements for every target, then merge them into one.
@@ -182,8 +182,7 @@ class StmtBuilder(Builder):
                 var_name = target.id
                 target.ctx = ast.Store()
                 # Create, no AST resolution needed
-                init = ast.Attribute(value=ast.Name(id='ti',
-                                                    ctx=ast.Load()),
+                init = ast.Attribute(value=ast.Name(id='ti', ctx=ast.Load()),
                                      attr='expr_init',
                                      ctx=ast.Load())
                 rhs = ast.Call(
@@ -193,9 +192,7 @@ class StmtBuilder(Builder):
                 )
                 ctx.create_variable(var_name)
                 stmts.append(
-                    ast.Assign(targets=[target],
-                               value=rhs,
-                               type_comment=None))
+                    ast.Assign(targets=[target], value=rhs, type_comment=None))
             else:
                 # Assign
                 target.ctx = ast.Load()

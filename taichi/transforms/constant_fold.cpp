@@ -180,15 +180,23 @@ class ConstantFold : public BasicStmtVisitor {
       }
     };
 
+    auto program_compile_config_org = program->config;
+    program->config.advanced_optimization = false;
+    program->config.cfg_optimization = false;
+    program->config.simplify_before_lower_access = false;
+    program->config.simplify_after_lower_access = false;
+    program->config.constant_folding = false;
+    program->config.external_optimization_level = 0;
+
     auto ker = std::make_unique<Kernel>(*program, func, kernel_name);
     for (auto dt : dtypes) {
       ker->insert_arg(dt, true);
     }
     ker->is_evaluator = true;
 
-    std::string output;
-    irpass::print(ker->ir.get(), &output);
-    std::cout << output << std::flush;
+    //std::string output;
+    //irpass::print(ker->ir.get(), &output);
+    //std::cout << output << std::flush;
 
     int i = 0;
     for (auto &e : batched_eval) {
@@ -254,6 +262,8 @@ class ConstantFold : public BasicStmtVisitor {
       modifier.erase(e.replaced_stmt);
       i += 2;
     }
+
+    program->config = program_compile_config_org;
 
     batched_eval.clear();
   }
@@ -355,7 +365,7 @@ class ConstantFold : public BasicStmtVisitor {
     bool modified = false;
     while (true) {
       node->accept(&folder);
-      folder.evaluate_batched(0);
+      folder.evaluate_batched(program->jit_evaluator_id.fetch_add(1));
       if (folder.modifier.modify_ir()) {
         modified = true;
       } else {

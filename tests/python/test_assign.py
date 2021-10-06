@@ -3,8 +3,8 @@ import pytest
 import taichi as ti
 
 
-@ti.test()
-def test_assign():
+@ti.test(debug=True)
+def test_assign_basic():
     @ti.kernel
     def func_basic():
         a = 1
@@ -12,6 +12,9 @@ def test_assign():
 
     func_basic()
 
+
+@ti.test(debug=True)
+def test_assign_unpack():
     @ti.kernel
     def func_unpack():
         (a, b) = (1, 2)
@@ -20,6 +23,9 @@ def test_assign():
 
     func_unpack()
 
+
+@ti.test(debug=True)
+def test_assign_chained():
     @ti.kernel
     def func_chained():
         a = b = 1
@@ -28,6 +34,9 @@ def test_assign():
 
     func_chained()
 
+
+@ti.test(debug=True)
+def test_assign_chained_unpack():
     @ti.kernel
     def func_chained_unpack():
         (a, b) = (c, d) = (1, 2)
@@ -38,6 +47,9 @@ def test_assign():
 
     func_chained_unpack()
 
+
+@ti.test(debug=True)
+def test_assign_assign():
     @ti.kernel
     def func_assign():
         a = 0

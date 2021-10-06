@@ -1150,6 +1150,10 @@ class KernelManager::Impl {
     TI_ERROR("Metal not supported on the current OS");
   }
 
+  void add_compiled_snode_tree(const CompiledStructs &) {
+    TI_ERROR("Metal not supported on the current OS");
+  }
+
   void register_taichi_kernel(const std::string &taichi_kernel_name,
                               const std::string &mtl_kernel_source_code,
                               const TaichiKernelAttributes &ti_kernel_attribs,

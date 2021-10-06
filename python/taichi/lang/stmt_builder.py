@@ -112,59 +112,7 @@ class StmtBuilder(Builder):
         assign_stmts = []
         for node_target in node.targets:
             if isinstance(node_target, ast.Tuple):
-                targets = node_target.elts
-
-                # Create
-                stmts = []
-
-                holder = parse_stmt('__tmp_tuple = ti.expr_init_list(0, '
-                                    f'{len(targets)})')
-                holder.value.args[0] = node.value
-
-                stmts.append(holder)
-
-                def tuple_indexed(i):
-                    indexing = parse_stmt('__tmp_tuple[0]')
-                    StmtBuilder.set_subscript_index(indexing.value,
-                                                    parse_expr("{}".format(i)))
-                    return indexing.value
-
-                # Generate assign statements for every target, then merge them into one.
-                for i, target in enumerate(targets):
-                    is_local = isinstance(target, ast.Name)
-                    if is_local and ctx.is_creation(target.id):
-                        var_name = target.id
-                        target.ctx = ast.Store()
-                        # Create, no AST resolution needed
-                        init = ast.Attribute(value=ast.Name(id='ti',
-                                                            ctx=ast.Load()),
-                                             attr='expr_init',
-                                             ctx=ast.Load())
-                        rhs = ast.Call(
-                            func=init,
-                            args=[tuple_indexed(i)],
-                            keywords=[],
-                        )
-                        ctx.create_variable(var_name)
-                        stmts.append(
-                            ast.Assign(targets=[target],
-                                       value=rhs,
-                                       type_comment=None))
-                    else:
-                        # Assign
-                        target.ctx = ast.Load()
-                        func = ast.Attribute(value=target,
-                                             attr='assign',
-                                             ctx=ast.Load())
-                        call = ast.Call(func=func,
-                                        args=[tuple_indexed(i)],
-                                        keywords=[])
-                        stmts.append(ast.Expr(value=call))
-
-                for stmt in stmts:
-                    ast.copy_location(stmt, node)
-                stmts.append(parse_stmt('del __tmp_tuple'))
-                assign_stmts.append(StmtBuilder.make_single_statement(stmts))
+                assign_stmts.append(StmtBuilder.build_assign_unpack(ctx, node, node_target))
             else:
                 is_local = isinstance(node_target, ast.Name)
                 if is_local and ctx.is_creation(node_target.id):
@@ -195,6 +143,74 @@ class StmtBuilder(Builder):
                     assign_stmts.append(
                         ast.copy_location(ast.Expr(value=call), node))
         return StmtBuilder.make_single_statement(assign_stmts)
+
+    @staticmethod
+    def build_assign_unpack(ctx, node, node_target):
+        """Build the unpack assignments like this: (node1, node2) = (value1, value2).
+        The function should be called only if the node target is a tuple.
+
+        Args:
+            ctx (ast_builder_utils.BuilderContext): The builder context.
+            node (ast.Assign): An assignment. targets is a list of nodes,
+            and value is a single node.
+            node_target (ast.Tuple): A list or tuple object. elts holds a
+            list of nodes representing the elements.
+        """
+
+        targets = node_target.elts
+
+        # Create
+        stmts = []
+
+        # Create a temp list and keep values in it, delete it after the initialization is finished.
+        holder = parse_stmt('__tmp_tuple = ti.expr_init_list(0, '
+                            f'{len(targets)})')
+        holder.value.args[0] = node.value
+
+        stmts.append(holder)
+
+        def tuple_indexed(i):
+            indexing = parse_stmt('__tmp_tuple[0]')
+            StmtBuilder.set_subscript_index(indexing.value,
+                                            parse_expr(f"{i}"))
+            return indexing.value
+
+        # Generate assign statements for every target, then merge them into one.
+        for i, target in enumerate(targets):
+            is_local = isinstance(target, ast.Name)
+            if is_local and ctx.is_creation(target.id):
+                var_name = target.id
+                target.ctx = ast.Store()
+                # Create, no AST resolution needed
+                init = ast.Attribute(value=ast.Name(id='ti',
+                                                    ctx=ast.Load()),
+                                     attr='expr_init',
+                                     ctx=ast.Load())
+                rhs = ast.Call(
+                    func=init,
+                    args=[tuple_indexed(i)],
+                    keywords=[],
+                )
+                ctx.create_variable(var_name)
+                stmts.append(
+                    ast.Assign(targets=[target],
+                               value=rhs,
+                               type_comment=None))
+            else:
+                # Assign
+                target.ctx = ast.Load()
+                func = ast.Attribute(value=target,
+                                     attr='assign',
+                                     ctx=ast.Load())
+                call = ast.Call(func=func,
+                                args=[tuple_indexed(i)],
+                                keywords=[])
+                stmts.append(ast.Expr(value=call))
+
+        for stmt in stmts:
+            ast.copy_location(stmt, node)
+        stmts.append(parse_stmt('del __tmp_tuple'))
+        return StmtBuilder.make_single_statement(stmts)
 
     @staticmethod
     def build_Try(ctx, node):

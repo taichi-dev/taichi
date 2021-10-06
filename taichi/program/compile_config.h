@@ -26,6 +26,7 @@ struct CompileConfig {
   bool move_loop_invariant_outside_if;
   bool demote_dense_struct_fors;
   bool advanced_optimization;
+  bool constant_folding;
   bool use_llvm;
   bool verbose_kernel_launches;
   bool kernel_profiler;

@@ -194,9 +194,9 @@ class ConstantFold : public BasicStmtVisitor {
     }
     ker->is_evaluator = true;
 
-    //std::string output;
-    //irpass::print(ker->ir.get(), &output);
-    //std::cout << output << std::flush;
+    // std::string output;
+    // irpass::print(ker->ir.get(), &output);
+    // std::cout << output << std::flush;
 
     int i = 0;
     for (auto &e : batched_eval) {

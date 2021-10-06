@@ -70,17 +70,84 @@ class ConstantFold : public BasicStmtVisitor {
 
     auto kernel_name = fmt::format("jit_evaluator_{}", eval_kernel_id);
 
+    size_t arr_size = batched_eval.size() * 2;
+    std::vector<int8> ext_arr_i8(arr_size);
+    std::vector<int8> ext_arr_u8(arr_size);
+    std::vector<int16> ext_arr_i16(arr_size);
+    std::vector<int16> ext_arr_u16(arr_size);
+    std::vector<int16> ext_arr_f16(arr_size);
+    std::vector<int32> ext_arr_i32(arr_size);
+    std::vector<int32> ext_arr_u32(arr_size);
+    std::vector<int32> ext_arr_f32(arr_size);
+    std::vector<int64> ext_arr_i64(arr_size);
+    std::vector<int64> ext_arr_u64(arr_size);
+    std::vector<int64> ext_arr_f64(arr_size);
+
+    auto write_typed_val = [&](const TypedConstant &c, int index) {
+      if (c.dt == PrimitiveType::i8) {
+        ext_arr_i8[index] = c.val_i8;
+      } else if (c.dt == PrimitiveType::u8) {
+        ext_arr_u8[index] = c.val_i8;
+      } else if (c.dt == PrimitiveType::i16) {
+        ext_arr_i16[index] = c.val_i16;
+      } else if (c.dt == PrimitiveType::u16) {
+        ext_arr_u16[index] = c.val_i16;
+      } else if (c.dt == PrimitiveType::f16) {
+        ext_arr_f16[index] = c.val_i16;
+      } else if (c.dt == PrimitiveType::i32) {
+        ext_arr_i32[index] = c.val_i32;
+      } else if (c.dt == PrimitiveType::u32) {
+        ext_arr_u32[index] = c.val_i32;
+      } else if (c.dt == PrimitiveType::f32) {
+        ext_arr_f32[index] = c.val_i32;
+      } else if (c.dt == PrimitiveType::i64) {
+        ext_arr_i64[index] = c.val_i64;
+      } else if (c.dt == PrimitiveType::u64) {
+        ext_arr_u64[index] = c.val_i64;
+      } else {
+        ext_arr_f64[index] = c.val_i64;
+      }
+    };
+
+    auto read_typed_val = [&](TypedConstant &c, int index) {
+      if (c.dt == PrimitiveType::i8) {
+        c.val_i8 = ext_arr_i8[index];
+      } else if (c.dt == PrimitiveType::u8) {
+        c.val_i8 = ext_arr_u8[index];
+      } else if (c.dt == PrimitiveType::i16) {
+        c.val_i16 = ext_arr_i16[index];
+      } else if (c.dt == PrimitiveType::u16) {
+        c.val_i16 = ext_arr_u16[index];
+      } else if (c.dt == PrimitiveType::f16) {
+        c.val_i16 = ext_arr_f16[index];
+      } else if (c.dt == PrimitiveType::i32) {
+        c.val_i32 = ext_arr_i32[index];
+      } else if (c.dt == PrimitiveType::u32) {
+        c.val_i32 = ext_arr_u32[index];
+      } else if (c.dt == PrimitiveType::f32) {
+        c.val_i32 = ext_arr_f32[index];
+      } else if (c.dt == PrimitiveType::i64) {
+        c.val_i64 = ext_arr_i64[index];
+      } else if (c.dt == PrimitiveType::u64) {
+        c.val_i64 = ext_arr_u64[index];
+      } else {
+        c.val_i64 = ext_arr_f64[index];
+      }
+    };
+
+    std::unordered_set<DataType, DataTypeHasher> dtypes;
+    for (auto &e : batched_eval) {
+      dtypes.insert(e.ret_type);
+      dtypes.insert(e.lhs.dt);
+      dtypes.insert(e.rhs.dt);
+    }
+
     auto func = [&]() {
       std::unordered_map<DataType, Stmt *, DataTypeHasher> ext_ptr_arg_stmts;
-      std::unordered_set<DataType, DataTypeHasher> dtypes;
-      for (auto &e : batched_eval) {
-        dtypes.insert(e.ret_type);
-        dtypes.insert(e.lhs.dt);
-        dtypes.insert(e.rhs.dt);
-      }
+      int arg_id = 0;
       for (auto dt : dtypes) {
         auto ext_ptr_arg_stmt_unique =
-            Stmt::make<ArgLoadStmt>(0, dt, /*is_ptr=*/true);
+            Stmt::make<ArgLoadStmt>(arg_id++, dt, /*is_ptr=*/true);
         ext_ptr_arg_stmts[dt] = ext_ptr_arg_stmt_unique.get();
         current_ast_builder().insert(std::move(ext_ptr_arg_stmt_unique));
       }
@@ -88,14 +155,11 @@ class ConstantFold : public BasicStmtVisitor {
       int param_count = 0;
       for (auto &e : batched_eval) {
         auto ret_index_stmt =
-            Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
-                param_count * get_i64_multiplier(e.ret_type)));
+            Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(param_count));
         auto lhs_index_stmt =
-            Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
-                (param_count++) * get_i64_multiplier(e.lhs.dt)));
+            Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(param_count++));
         auto rhs_index_stmt =
-            Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
-                (param_count++) * get_i64_multiplier(e.rhs.dt)));
+            Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(param_count++));
 
         auto ret_ptr_stmt = Stmt::make<ExternalPtrStmt>(
             LaneAttribute(ext_ptr_arg_stmts.at(e.ret_type)),
@@ -107,10 +171,8 @@ class ConstantFold : public BasicStmtVisitor {
             LaneAttribute(ext_ptr_arg_stmts.at(e.rhs.dt)),
             std::vector<Stmt *>{rhs_index_stmt.get()});
 
-        auto lhstmt =
-            Stmt::make_typed<GlobalLoadStmt>(lhs_ptr_stmt.get());
-        auto rhstmt =
-            Stmt::make_typed<GlobalLoadStmt>(rhs_ptr_stmt.get());
+        auto lhstmt = Stmt::make_typed<GlobalLoadStmt>(lhs_ptr_stmt.get());
+        auto rhstmt = Stmt::make_typed<GlobalLoadStmt>(rhs_ptr_stmt.get());
 
         pStmt oper;
         if (e.is_binary) {
@@ -141,33 +203,72 @@ class ConstantFold : public BasicStmtVisitor {
     };
 
     auto ker = std::make_unique<Kernel>(*program, func, kernel_name);
-    ker->insert_arg(PrimitiveType::i32, true);
+    for (auto dt : dtypes) {
+      ker->insert_arg(dt, true);
+    }
     ker->is_evaluator = true;
 
     std::string output;
     irpass::print(ker->ir.get(), &output);
     std::cout << output << std::flush;
 
-    std::vector<int64> ext_arr(batched_eval.size() * 2);
-
     int i = 0;
     for (auto &e : batched_eval) {
-      ext_arr[i] = e.lhs.val_i64;
+      write_typed_val(e.lhs, i);
       if (e.is_binary)
-        ext_arr[i + 1] = e.rhs.val_i64;
+        write_typed_val(e.rhs, i + 1);
       i += 2;
     }
 
     auto launch_ctx = ker->make_launch_context();
-    launch_ctx.set_arg_external_array(0, uint64(ext_arr.data()),
-                                      uint64(ext_arr.size() * sizeof(int64_t)));
+
+    int arg_id = 0;
+    for (auto dt : dtypes) {
+      if (dt == PrimitiveType::i8) {
+        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_i8.data()),
+                                          uint64(arr_size));
+      } else if (dt == PrimitiveType::u8) {
+        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_u8.data()),
+                                          uint64(arr_size));
+      } else if (dt == PrimitiveType::i16) {
+        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_i16.data()),
+                                          uint64(arr_size * 2));
+      } else if (dt == PrimitiveType::u16) {
+        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_u16.data()),
+                                          uint64(arr_size * 2));
+      } else if (dt == PrimitiveType::f16) {
+        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_f16.data()),
+                                          uint64(arr_size * 2));
+      } else if (dt == PrimitiveType::i32) {
+        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_i32.data()),
+                                          uint64(arr_size * 4));
+      } else if (dt == PrimitiveType::u32) {
+        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_u32.data()),
+                                          uint64(arr_size * 4));
+      } else if (dt == PrimitiveType::f32) {
+        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_f32.data()),
+                                          uint64(arr_size * 4));
+      } else if (dt == PrimitiveType::i64) {
+        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_i64.data()),
+                                          uint64(arr_size * 8));
+      } else if (dt == PrimitiveType::u64) {
+        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_u16.data()),
+                                          uint64(arr_size * 8));
+      } else {
+        launch_ctx.set_arg_external_array(arg_id, uint64(ext_arr_f16.data()),
+                                          uint64(arr_size * 8));
+      }
+      arg_id++;
+    }
+
     (*ker)(launch_ctx);
 
     i = 0;
     for (auto &e : batched_eval) {
       TypedConstant new_constant(e.ret_type);
-      new_constant.val_i64 = ext_arr[i];
-      TI_TRACE("{} result = {}", e.replaced_stmt->id, new_constant.val_cast_to_float64());
+      read_typed_val(new_constant, i);
+      TI_TRACE("{} result = {}", e.replaced_stmt->id,
+               new_constant.val_cast_to_float64());
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
       e.replaced_stmt->replace_with(evaluated.get());

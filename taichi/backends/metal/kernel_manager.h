@@ -26,6 +26,7 @@ namespace metal {
 class KernelManager {
  public:
   struct Params {
+    CompiledRuntimeModule compiled_runtime_module;
     CompiledStructs compiled_structs;
     CompileConfig *config;
     MemoryPool *mem_pool;
@@ -38,6 +39,7 @@ class KernelManager {
   // To make Pimpl + std::unique_ptr work
   ~KernelManager();
 
+  void add_compiled_snode_tree(const CompiledStructs &snode_tree);
   // Register a Taichi kernel to the Metal runtime.
   // * |mtl_kernel_source_code| is the complete source code compiled from a
   // Taichi kernel. It may include one or more Metal compute kernels. Each

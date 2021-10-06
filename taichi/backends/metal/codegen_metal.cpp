@@ -101,12 +101,14 @@ class KernelCodegenImpl : public IRVisitor {
   // TODO(k-ye): Create a Params to hold these ctor params.
   KernelCodegenImpl(const std::string &taichi_kernel_name,
                     Kernel *kernel,
+                    const CompiledRuntimeModule *compiled_runtime_module,
                     const CompiledStructs *compiled_structs,
                     PrintStringTable *print_strtab,
                     const Config &config,
                     OffloadedStmt *offloaded)
       : mtl_kernel_prefix_(taichi_kernel_name),
         kernel_(kernel),
+        compiled_runtime_module_(compiled_runtime_module),
         compiled_structs_(compiled_structs),
         needs_root_buffer_(compiled_structs_->root_size > 0),
         print_strtab_(print_strtab),
@@ -806,7 +808,8 @@ class KernelCodegenImpl : public IRVisitor {
     emit("");
     current_appender().append_raw(shaders::kMetalHelpersSourceCode);
     emit("");
-    current_appender().append_raw(compiled_structs_->runtime_utils_source_code);
+    current_appender().append_raw(
+        compiled_runtime_module_->runtime_utils_source_code);
     emit("");
     current_appender().append_raw(compiled_structs_->snode_structs_source_code);
     emit("");
@@ -1495,6 +1498,7 @@ class KernelCodegenImpl : public IRVisitor {
 
   const std::string mtl_kernel_prefix_;
   Kernel *const kernel_;
+  const CompiledRuntimeModule *const compiled_runtime_module_;
   const CompiledStructs *const compiled_structs_;
   const bool needs_root_buffer_;
   PrintStringTable *const print_strtab_;
@@ -1515,10 +1519,12 @@ class KernelCodegenImpl : public IRVisitor {
 
 }  // namespace
 
-CompiledKernelData run_codegen(const CompiledStructs *compiled_structs,
-                               Kernel *kernel,
-                               PrintStringTable *strtab,
-                               OffloadedStmt *offloaded) {
+CompiledKernelData run_codegen(
+    const CompiledRuntimeModule *compiled_runtime_module,
+    const CompiledStructs *compiled_structs,
+    Kernel *kernel,
+    PrintStringTable *strtab,
+    OffloadedStmt *offloaded) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(
       fmt::format("mtl_k{:04d}_{}", id, kernel->name));
@@ -1526,8 +1532,8 @@ CompiledKernelData run_codegen(const CompiledStructs *compiled_structs,
   KernelCodegenImpl::Config cgen_config;
   cgen_config.allow_simdgroup = EnvConfig::instance().is_simdgroup_enabled();
 
-  KernelCodegenImpl codegen(taichi_kernel_name, kernel, compiled_structs,
-                            strtab, cgen_config, offloaded);
+  KernelCodegenImpl codegen(taichi_kernel_name, kernel, compiled_runtime_module,
+                            compiled_structs, strtab, cgen_config, offloaded);
 
   return codegen.run();
 }
@@ -1535,10 +1541,12 @@ CompiledKernelData run_codegen(const CompiledStructs *compiled_structs,
 FunctionType compile_to_metal_executable(
     Kernel *kernel,
     KernelManager *kernel_mgr,
+    const CompiledRuntimeModule *compiled_runtime_module,
     const CompiledStructs *compiled_structs,
     OffloadedStmt *offloaded) {
-  const auto compiled_res = run_codegen(
-      compiled_structs, kernel, kernel_mgr->print_strtable(), offloaded);
+  const auto compiled_res =
+      run_codegen(compiled_runtime_module, compiled_structs, kernel,
+                  kernel_mgr->print_strtable(), offloaded);
   kernel_mgr->register_taichi_kernel(
       compiled_res.kernel_name, compiled_res.source_code,
       compiled_res.kernel_attribs, compiled_res.ctx_attribs);

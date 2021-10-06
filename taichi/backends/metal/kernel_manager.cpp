@@ -1000,35 +1000,6 @@ class KernelManager::Impl {
     // print_runtime_debug();
   }
 
-  void print_runtime_debug() {
-    // If debugging is necessary, make sure this is called after
-    // blit_buffers_and_sync().
-    // int *root_base = reinterpret_cast<int *>(root_mem_->ptr());
-    // for (int i = 0; i < 10; ++i) {
-    //   TI_INFO("root[{}]={}", i, root_base[i]);
-    // }
-
-    // const auto &sn_descs = compiled_structs_.snode_descriptors;
-    // for (int i = 0; i < compiled_structs_.max_snodes; ++i) {
-    //   auto iter = sn_descs.find(i);
-    //   if (iter == sn_descs.end()) {
-    //     continue;
-    //   }
-    //   // const SNodeDescriptor &sn_desc = iter->second;
-    //   shaders::ListManager lm;
-    //   lm.lm_data = (dev_runtime_mirror_.snode_lists + i);
-    //   lm.mem_alloc = dev_mem_alloc_mirror_;
-
-    //   shaders::NodeManagerData *nma =
-    //       (dev_runtime_mirror_.snode_allocators + i);
-    //   TI_INFO(
-    //       "ListManager for SNode={} num_active={} num_allocated={} "
-    //       "free_list_used={}",
-    //       i, lm.num_active(), nma->data_list.next, nma->free_list_used);
-    // }
-    // TI_INFO("");
-  }
-
   void check_assertion_failure() {
     // TODO: Copy this to program's result_buffer, and let the Taichi runtime
     // handle the assertion failures uniformly.

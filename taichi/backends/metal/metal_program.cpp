@@ -65,11 +65,5 @@ std::unique_ptr<AotModuleBuilder> MetalProgramImpl::make_aot_module_builder() {
       metal_kernel_mgr_->get_buffer_meta_data());
 }
 
-std::unique_ptr<AotModuleBuilder> MetalProgramImpl::make_aot_module_builder() {
-  return std::make_unique<metal::AotModuleBuilderImpl>(
-      &(compiled_runtime_module_.value()), &(metal_compiled_structs_.value()),
-      metal_kernel_mgr_->get_buffer_meta_data());
-}
-
 }  // namespace lang
 }  // namespace taichi

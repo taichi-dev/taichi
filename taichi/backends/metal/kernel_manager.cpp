@@ -628,9 +628,9 @@ class KernelManager::Impl {
   void add_compiled_snode_tree(const CompiledStructs &compiled_tree) {
     if (compiled_tree.root_size > 0) {
       root_mem_ = std::make_unique<BufferMemoryView>(compiled_tree.root_size,
-                                                       mem_pool_);
+                                                     mem_pool_);
       root_buffer_ = new_mtl_buffer_no_copy(device_.get(), root_mem_->ptr(),
-                                         root_mem_->size());
+                                            root_mem_->size());
       TI_ASSERT(root_buffer_ != nullptr);
       buffer_meta_data_.root_buffer_size += root_mem_->size();
       TI_DEBUG("Metal root={} buffer_size={} bytes", compiled_tree.root_id,

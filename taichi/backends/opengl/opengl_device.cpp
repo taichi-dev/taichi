@@ -187,6 +187,7 @@ void GLCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
 void GLCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
   auto cmd = std::make_unique<CmdBufferFill>();
   cmd->buffer = ptr.alloc_id;
+  cmd->offset = ptr.offset;
   cmd->size = size;
   cmd->data = data;
   recorded_commands_.push_back(std::move(cmd));
@@ -286,8 +287,8 @@ GLDevice::~GLDevice() {
 
 DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   GLuint buffer;
-  glCreateBuffers(1, &buffer);
-  check_opengl_error("glCreateBuffers");
+  glGenBuffers(1, &buffer);
+  check_opengl_error("glGenBuffers");
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
   check_opengl_error("glBindBuffer");
   glBufferData(GL_SHADER_STORAGE_BUFFER, params.size, nullptr, GL_DYNAMIC_READ);
@@ -479,7 +480,7 @@ void GLCommandList::CmdBufferCopy::execute() {
 void GLCommandList::CmdBufferFill::execute() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
   check_opengl_error("glBindBuffer");
-  glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 0, size, GL_RED,
+  glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, offset, size, GL_RED,
                        GL_UNSIGNED_INT, &data);
   check_opengl_error("glClearBufferSubData");
 }

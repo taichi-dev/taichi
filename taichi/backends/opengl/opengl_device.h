@@ -153,6 +153,7 @@ class GLCommandList : public CommandList {
 
   struct CmdBufferFill : public Cmd {
     GLuint buffer{0};
+    size_t offset{0};
     size_t size{0};
     uint32_t data{0};
     void execute() override;

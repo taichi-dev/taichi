@@ -235,7 +235,7 @@ uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
   if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
-                                                       sizeof(uint64));
+                                                     sizeof(uint64));
 #else
     TI_NOT_IMPLEMENTED;
 #endif

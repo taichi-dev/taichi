@@ -43,9 +43,7 @@ class MPMSolver:
             self.build_pid()
 
 
-@ti.test(require=ti.extension.sparse,
-         exclude=[ti.metal],
-         device_memory_GB=1.0)
+@ti.test(require=ti.extension.sparse, exclude=[ti.metal], device_memory_GB=1.0)
 def test_mpm_particle_list_no_leakage():
     # By default Taichi will allocate 0.5 GB for testing.
     mpm = MPMSolver(res=(128, 128))

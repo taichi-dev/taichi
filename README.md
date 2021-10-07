@@ -1,7 +1,7 @@
 <div align="center">
   <img width="500px" src="https://github.com/taichi-dev/taichi/raw/master/misc/logo.png">
    <h3> <a href="https://docs.taichi.graphics/"> Tutorial </a> | <a href="https://github.com/taichi-dev/taichi/tree/master/examples"> Examples </a> | <a href="https://forum.taichi.graphics/"> Forum </a><!-- | <a href="http://hub.taichi.graphics/"> Playground </a> --></h3>
-  <h3> <a href="https://docs.taichi.graphics/"> Documentation </a> | <a href="https://docs.taichi.graphics/zh-Hans/docs/"> 简体中文文档 </a> | <a href="https://docs.taichi.graphics/docs/lang/articles/contribution/contributor_guide"> Contributor Guidelines </a> </h3>
+  <h3> <a href="https://docs.taichi.graphics/"> Documentation </a> | <a href="https://docs.taichi.graphics/zh-Hans/"> 简体中文文档 </a> | <a href="https://docs.taichi.graphics/lang/articles/contribution/contributor_guide"> Contributor Guidelines </a> </h3>
 </div>
 
 [![AppVeyor Status](https://img.shields.io/appveyor/build/yuanming-hu/taichi?logo=AppVeyor&label=AppVeyor)](https://ci.appveyor.com/project/yuanming-hu/taichi/branch/master)
@@ -15,7 +15,7 @@
 
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/simulation/fractal.py#L1-L31"> <img src="https://github.com/taichi-dev/public_files/raw/master/taichi/fractal_code.png" height="270px"></a>  <img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fractal_small.gif" height="270px">
 
-Advanced features of Taichi include [spatially sparse computing](https://docs.taichi.graphics/docs/lang/articles/advanced/sparse), [differentiable programming](https://docs.taichi.graphics/docs/lang/articles/advanced/differentiable_programming) [[examples]](https://github.com/yuanming-hu/difftaichi), and [quantized computation](https://github.com/taichi-dev/quantaichi).
+Advanced features of Taichi include [spatially sparse computing](https://docs.taichi.graphics/lang/articles/advanced/sparse), [differentiable programming](https://docs.taichi.graphics/lang/articles/advanced/differentiable_programming) [[examples]](https://github.com/yuanming-hu/difftaichi), and [quantized computation](https://github.com/taichi-dev/quantaichi).
 
 **Please check out our SIGGRAPH 2020 course on Taichi basics:** [YouTube](https://youtu.be/Y0-76n3aZFA), [Bilibili](https://www.bilibili.com/video/BV1kA411n7jk/), [slides (pdf)](https://yuanming.taichi.graphics/publication/2020-taichi-tutorial/taichi-tutorial.pdf).
 
@@ -54,7 +54,7 @@ Please build from source for other configurations (e.g., your CPU is ARM, or you
 
 ## Developer Installation
 
-Please follow [this doc](https://docs.taichi.graphics/docs/lang/articles/contribution/dev_install) to learn how to build Taichi from source. Note that Taichi requires LLVM-10.0.0, and it is recommneded to use [our prebuilt LLVM libraries](https://docs.taichi.graphics/docs/lang/articles/contribution/dev_install#installing-dependencies) for each platform.
+Please follow [this doc](https://docs.taichi.graphics/lang/articles/contribution/dev_install) to learn how to build Taichi from source. Note that Taichi requires LLVM-10.0.0, and it is recommneded to use [our prebuilt LLVM libraries](https://docs.taichi.graphics/lang/articles/contribution/dev_install#installing-dependencies) for each platform.
 
 ## Contributors
 
@@ -64,7 +64,7 @@ Please follow [this doc](https://docs.taichi.graphics/docs/lang/articles/contrib
 
 -------------------------------
 
-We welcome feedback and comments. If you would like to contribute to Taichi, please check out our [Contributor Guidelines](https://docs.taichi.graphics/docs/lang/articles/contribution/contributor_guide).
+We welcome feedback and comments. If you would like to contribute to Taichi, please check out our [Contributor Guidelines](https://docs.taichi.graphics/lang/articles/contribution/contributor_guide).
 
 If you use Taichi in your research, please cite related papers:
 

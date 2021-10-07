@@ -106,7 +106,7 @@ Example::
 class Template:
     """Type annotation for template kernel parameter.
 
-    See also https://docs.taichi.graphics/docs/lang/articles/advanced/meta.
+    See also https://docs.taichi.graphics/lang/articles/advanced/meta.
 
     Args:
         tensor (Any): unused

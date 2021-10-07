@@ -508,7 +508,7 @@ class _Root:
 root = _Root()
 """Root of the declared Taichi :func:`~taichi.lang.impl.field`s.
 
-See also https://docs.taichi.graphics/docs/lang/articles/advanced/layout
+See also https://docs.taichi.graphics/lang/articles/advanced/layout
 
 Example::
 
@@ -556,7 +556,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     actually defined. The data in a Taichi field can be directly accessed by
     a Taichi :func:`~taichi.lang.kernel_impl.kernel`.
 
-    See also https://docs.taichi.graphics/docs/lang/articles/basic/field
+    See also https://docs.taichi.graphics/lang/articles/basic/field
 
     Args:
         dtype (DataType): data type of the field.
@@ -798,7 +798,7 @@ def static(x, *xs):
     `static()` is what enables the so-called metaprogramming in Taichi. It is
     in many ways similar to ``constexpr`` in C++11.
 
-    See also https://docs.taichi.graphics/docs/lang/articles/advanced/meta.
+    See also https://docs.taichi.graphics/lang/articles/advanced/meta.
 
     Args:
         x (Any): an expression to be evaluated

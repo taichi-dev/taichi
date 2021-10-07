@@ -16,7 +16,7 @@ For convenience, let's call the hybrid scheme **objective data-oriented
 programming** (ODOP).
 
 
-## Data-oriented class
+## Data-oriented classes
 
 If you need to define a **Taichi kernel** as a Python class member function, please decorate the class with a `@ti.data_oriented` decorator. You can then define `ti.kernel`s and `ti.func`s in your *data-oriented* Python class.
 

@@ -256,7 +256,7 @@ if (TI_WITH_VULKAN)
     # Vulkan libs
     # https://cmake.org/cmake/help/latest/module/FindVulkan.html
     # https://github.com/PacktPublishing/Learning-Vulkan/blob/master/Chapter%2003/HandShake/CMakeLists.txt
-    #find_package(Vulkan REQUIRED)
+    find_package(Vulkan REQUIRED)
 
     #if(NOT Vulkan_FOUND)
     #    message(FATAL_ERROR "TI_WITH_VULKAN is ON but Vulkan could not be found")

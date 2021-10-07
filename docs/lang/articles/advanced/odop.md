@@ -114,7 +114,7 @@ print(a.y)
 
 ## Some workaround about Python
 
-### Inherit of data-oriented class
+### Inheritance of data-oriented classes
 
 The *data-oriented* property will be automatically carried beyond the Python class inheriting. This means the **Taichi Kernel** could be called while any of the ancestor classes are decorated by the `@ti.data_oriented` decorator.
 

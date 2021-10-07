@@ -256,15 +256,14 @@ if (TI_WITH_VULKAN)
     # Vulkan libs
     # https://cmake.org/cmake/help/latest/module/FindVulkan.html
     # https://github.com/PacktPublishing/Learning-Vulkan/blob/master/Chapter%2003/HandShake/CMakeLists.txt
-    find_package(Vulkan REQUIRED)
+    #find_package(Vulkan REQUIRED)
 
-    if(NOT Vulkan_FOUND)
-        message(FATAL_ERROR "TI_WITH_VULKAN is ON but Vulkan could not be found")
-    endif()
+    #if(NOT Vulkan_FOUND)
+    #    message(FATAL_ERROR "TI_WITH_VULKAN is ON but Vulkan could not be found")
+    #endif()
 
     message(STATUS "Vulkan_INCLUDE_DIR=${Vulkan_INCLUDE_DIR}")
     message(STATUS "Vulkan_LIBRARY=${Vulkan_LIBRARY}")
-    include_directories(${Vulkan_INCLUDE_DIR})
 
     include_directories(external/SPIRV-Headers/include)
     
@@ -277,6 +276,7 @@ if (TI_WITH_VULKAN)
 
     # No longer link against vulkan, using volk instead
     #target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
+    include_directories(${Vulkan_INCLUDE_DIR})
     include_directories(external/volk)
 
     # Is this the best way to include the SPIRV-Headers?

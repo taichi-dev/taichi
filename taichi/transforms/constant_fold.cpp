@@ -132,6 +132,7 @@ class ConstantFold : public BasicStmtVisitor {
 
       int param_count = 0;
       for (auto &e : batched_eval) {
+        // We place the return value on the same slot as the LHS
         auto ret_index_stmt =
             Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(param_count));
         auto lhs_index_stmt =
@@ -180,7 +181,7 @@ class ConstantFold : public BasicStmtVisitor {
       }
     };
 
-    std::lock_guard lg(program->jit_evaluator_cache_mut);
+    std::lock_guard lg(program->jit_evaluator_mutex);
 
     auto program_compile_config_org = program->config;
     program->config.advanced_optimization = false;

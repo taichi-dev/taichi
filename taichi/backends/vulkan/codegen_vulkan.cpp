@@ -1392,12 +1392,12 @@ class KernelCodegen {
       TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n",params_.ti_kernel_name, spirv_asm);
 
       std::ofstream fout((params_.ti_kernel_name).c_str(), std::ios::binary | std::ios::out);
-      fout.write(reinterpret_cast<const char*>(task_res.spirv_code.data()), task_res.spirv_code.size() * sizeof(uint32_t));
+      fout.write(reinterpret_cast<const char*>(optimized_spv.data()), optimized_spv.size() * sizeof(uint32_t));
       fout.close();
 #endif
 
       kernel_attribs.tasks_attribs.push_back(std::move(task_res.task_attribs));
-      res.task_spirv_source_codes.push_back(std::move(task_res.spirv_code));
+      res.task_spirv_source_codes.push_back(std::move(optimized_spv));
     }
     kernel_attribs.ctx_attribs = std::move(ctx_attribs_);
     kernel_attribs.name = params_.ti_kernel_name;

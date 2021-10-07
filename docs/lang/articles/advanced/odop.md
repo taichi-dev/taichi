@@ -62,7 +62,6 @@ class MyClass:
         self.temp = ti.field(dtype = ti.i32, shape=n)
 
 
-
 a = MyClass()
 # a.call_func()
 # temp has not been allocated now

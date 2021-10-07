@@ -52,8 +52,8 @@ ti.init()
 class MyClass:
     @ti.kernel
     def func(self, temp: ti.template()):
-        for i in ti.grouped(temp):
-            temp[i] += 1
+        for I in ti.grouped(temp):
+            temp[I] += 1
 
     def call_func(self):
         self.func(self.temp)

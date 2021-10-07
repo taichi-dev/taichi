@@ -46,7 +46,7 @@ After new feature **Dynamic SNode** released in `v0.8.0`, you could define **Tai
 ```python
 import taichi as ti
 
-ti.init(arch=ti.cuda)
+ti.init()
 
 @ti.data_oriented
 class MyClass:

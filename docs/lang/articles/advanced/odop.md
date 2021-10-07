@@ -64,7 +64,7 @@ class MyClass:
 
 a = MyClass()
 # a.call_func()
-# temp has not been allocated now
+# a.temp has not been allocated at this point
 a.allocate_temp(4)
 a.call_func()
 a.call_func()

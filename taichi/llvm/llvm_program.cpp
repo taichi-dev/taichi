@@ -148,7 +148,7 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
                                                      StructCompiler *scomp,
                                                      uint64 *result_buffer) {
   TaichiLLVMContext *tlctx = nullptr;
-  if (config->is_cuda_no_unified_memory()) {
+  if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     tlctx = llvm_context_device.get();
 #else
@@ -234,13 +234,8 @@ uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
   auto arch = config->arch;
   if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    if (config->use_unified_memory) {
-      // More efficient than a cudaMemcpy call in practice
-      ret = result_buffer[i];
-    } else {
-      CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
+    CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
                                                        sizeof(uint64));
-    }
 #else
     TI_NOT_IMPLEMENTED;
 #endif
@@ -295,7 +290,7 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 
   std::size_t prealloc_size = 0;
   TaichiLLVMContext *tlctx = nullptr;
-  if (config->is_cuda_no_unified_memory()) {
+  if (config.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().malloc(
         (void **)result_buffer_ptr,
@@ -367,7 +362,7 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                       *result_buffer_ptr);
   TI_TRACE("LLVMRuntime pointer fetched");
 
-  if (arch_use_host_memory(config->arch) || config->use_unified_memory) {
+  if (arch_use_host_memory(config->arch)) {
     runtime_jit->call<void *>("runtime_get_mem_req_queue", llvm_runtime);
     auto mem_req_queue = fetch_result<void *>(taichi_result_buffer_ret_value_id,
                                               *result_buffer_ptr);

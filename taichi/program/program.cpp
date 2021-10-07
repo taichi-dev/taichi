@@ -348,7 +348,7 @@ Arch Program::get_snode_accessor_arch() {
     return Arch::opengl;
   } else if (config.arch == Arch::vulkan) {
     return Arch::vulkan;
-  } else if (config.is_cuda_no_unified_memory()) {
+  } else if (config.arch == Arch::cuda) {
     return Arch::cuda;
   } else if (config.arch == Arch::metal) {
     return Arch::metal;

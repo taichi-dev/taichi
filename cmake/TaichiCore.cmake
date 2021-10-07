@@ -266,7 +266,7 @@ if (TI_WITH_VULKAN)
     message(STATUS "Vulkan_LIBRARY=${Vulkan_LIBRARY}")
 
     include_directories(external/SPIRV-Headers/include)
-    
+
     set(SPIRV_SKIP_EXECUTABLES true)
     set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
     add_subdirectory(external/SPIRV-Tools)

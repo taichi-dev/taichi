@@ -75,7 +75,7 @@ a.call_func()
 print(a.temp)
 ```
 
-Another example of automatically recycle memory:
+Another memory recycling example:
 ```python
 import taichi as ti
 

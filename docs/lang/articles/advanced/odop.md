@@ -104,7 +104,6 @@ class Calc:
         tree.destroy()
 
 
-
 a = Calc()
 for i in range(16):
     a.x[i] = i

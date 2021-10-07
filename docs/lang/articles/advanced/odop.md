@@ -79,7 +79,7 @@ Another memory recycling example:
 ```python
 import taichi as ti
 
-ti.init(arch=ti.cuda)
+ti.init()
 
 @ti.data_oriented
 class Calc:

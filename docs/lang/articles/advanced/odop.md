@@ -41,7 +41,7 @@ a = TiArray(32)
 a.inc()
 ```
 
-After new feature **Dynamic SNode** released in `v0.8.0`, you could define **Taichi Fields** not only in `__init__` but also **any place** of Python-scope functions, like:
+Programmers used to define Taichi fields in `__init__` functions of `@ti.data_oriented` classes. With the new **Dynamic SNode** feature (released in `v0.8.0`), you can define Taichi fields **at any places** of Python-scope functions. For example,
 
 ```python
 import taichi as ti

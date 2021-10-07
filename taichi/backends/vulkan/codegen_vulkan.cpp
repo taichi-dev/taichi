@@ -1393,7 +1393,6 @@ class KernelCodegen {
       TaskCodegen cgen(tp);
       auto task_res = cgen.run();
 
-      /*
       std::vector<uint32_t> optimized_spv;
       TI_WARN_IF(!spirv_opt_->Run(task_res.spirv_code.data(),
                                   task_res.spirv_code.size(), &optimized_spv,
@@ -1402,7 +1401,6 @@ class KernelCodegen {
 
       TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
                task_res.spirv_code.size(), optimized_spv.size());
-               */
 
       // Enable to dump SPIR-V assembly of kernels
 #if 0

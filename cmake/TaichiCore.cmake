@@ -266,6 +266,15 @@ if (TI_WITH_VULKAN)
     message(STATUS "Vulkan_LIBRARY=${Vulkan_LIBRARY}")
     include_directories(${Vulkan_INCLUDE_DIR})
 
+    include_directories(external/SPIRV-Headers/include)
+    
+    set(SPIRV_SKIP_EXECUTABLES true)
+    set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
+    add_subdirectory(external/SPIRV-Tools)
+    # NOTE: SPIRV-Tools-opt must come before SPIRV-Tools
+    # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
+    target_link_libraries(${CORE_LIBRARY_NAME} SPIRV-Tools-opt ${SPIRV_TOOLS})
+
     # No longer link against vulkan, using volk instead
     #target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
     include_directories(external/volk)
@@ -274,25 +283,6 @@ if (TI_WITH_VULKAN)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/VulkanMemoryAllocator/include)
-
-    if (MSVC)
-      find_library(SPIRV_TOOLS NAMES "SPIRV-Tools" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
-      find_library(SPIRV_OPT NAMES "SPIRV-Tools-opt" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
-      find_library(SPIRV_LINK NAMES "SPIRV-Tools-link" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
-    else ()
-      get_filename_component(VULKAN_LIBRARY_PATH ${Vulkan_LIBRARY} DIRECTORY)
-      find_library(SPIRV_TOOLS NAMES "SPIRV-Tools"  PATHS ${VULKAN_LIBRARY_PATH} REQUIRED)
-      find_library(SPIRV_OPT NAMES "SPIRV-Tools-opt" PATHS ${VULKAN_LIBRARY_PATH} REQUIRED)
-      find_library(SPIRV_LINK NAMES "SPIRV-Tools-link"  PATHS ${VULKAN_LIBRARY_PATH} REQUIRED)
-    endif ()
-
-    message(STATUS "SPIRV_TOOLS=" ${SPIRV_TOOLS})
-    message(STATUS "SPIRV_OPT=" ${SPIRV_OPT})
-    message(STATUS "SPIRV_LINK=" ${SPIRV_LINK})
-
-    # NOTE: SPIRV-Tools-opt must come before SPIRV-Tools
-    # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
-    target_link_libraries(${CORE_LIBRARY_NAME} ${SPIRV_OPT} ${SPIRV_TOOLS} ${SPIRV_LINK})
 
     if (LINUX)
         # shaderc requires pthread

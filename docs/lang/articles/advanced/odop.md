@@ -18,7 +18,7 @@ programming** (ODOP).
 
 ## Data-oriented class
 
-If you need to define a **Taichi kernel** as a Python class member function, you need to decorate the class with a `@ti.data_oriented` decorator. Then, you can define `ti.kernel`s and `ti.func`s in your *data-oriented* Python class.
+If you need to define a **Taichi kernel** as a Python class member function, please decorate the class with a `@ti.data_oriented` decorator. You can then define `ti.kernel`s and `ti.func`s in your *data-oriented* Python class.
 
 :::note
 The first argument of the function should be the class instance ("`self`"), unless you are defining a `@staticmethod`.

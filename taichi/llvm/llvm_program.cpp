@@ -290,7 +290,7 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 
   std::size_t prealloc_size = 0;
   TaichiLLVMContext *tlctx = nullptr;
-  if (config.arch == Arch::cuda) {
+  if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().malloc(
         (void **)result_buffer_ptr,

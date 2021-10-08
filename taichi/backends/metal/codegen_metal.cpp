@@ -89,6 +89,18 @@ class RootIdsExtractor : public BasicStmtVisitor {
     return re.roots_;
   }
 
+  void visit(OffloadedStmt *stmt) override {
+    if (stmt->task_type == OffloadedStmt::TaskType::struct_for) {
+      auto *cur = stmt->snode;
+      while (cur->parent) {
+        cur = cur->parent;
+      }
+      TI_ASSERT(cur->type == SNodeType::root);
+      roots_.insert(cur->id);
+    }
+    BasicStmtVisitor::visit(stmt);
+  }
+
   void visit(GetRootStmt *stmt) override {
     roots_.insert(stmt->root()->id);
   }

@@ -1,4 +1,5 @@
 #include "taichi/backends/wasm/aot_module_builder_impl.h"
+#include "taichi/llvm/llvm_program.h"
 
 #include <fstream>
 

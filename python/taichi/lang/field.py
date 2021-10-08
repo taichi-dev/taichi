@@ -250,9 +250,13 @@ class ScalarField(Field):
 
     @python_scope
     def from_numpy(self, arr):
-        assert len(self.shape) == len(arr.shape)
-        for i in range(len(self.shape)):
-            assert self.shape[i] == arr.shape[i]
+        if len(self.shape) != len(arr.shape):
+            raise ValueError(f"ti.field shape {self.shape} does not match"
+                             f" the numpy array shape {arr.shape}")
+        for i, _ in enumerate(self.shape):
+            if self.shape[i] != arr.shape[i]:
+                raise ValueError(f"ti.field shape {self.shape} does not match"
+                                 f" the numpy array shape {arr.shape}")
         if hasattr(arr, 'contiguous'):
             arr = arr.contiguous()
         from taichi.lang.meta import ext_arr_to_tensor

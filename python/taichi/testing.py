@@ -106,6 +106,8 @@ def test(arch=None, exclude=None, require=None, **options):
         arch = supported_archs
     else:
         arch = list(filter(lambda x: x in supported_archs, arch))
+    if len(arch) == 0:
+        return lambda x: print('No supported arch found. Skipping')
 
     def decorator(foo):
         import functools

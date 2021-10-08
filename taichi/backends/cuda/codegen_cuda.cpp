@@ -13,6 +13,7 @@
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_context.h"
 #include "taichi/codegen/codegen_llvm.h"
+#include "taichi/llvm/llvm_program.h"
 
 TLANG_NAMESPACE_BEGIN
 

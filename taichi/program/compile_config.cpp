@@ -54,11 +54,8 @@ CompileConfig::CompileConfig() {
   print_kernel_llvm_ir_optimized = false;
 
   // CUDA backend options:
-#if defined(TI_PLATFORM_WINDOWS) or defined(TI_PLATFORM_OSX)
   use_unified_memory = false;
-#else
-  use_unified_memory = true;
-#endif
+
   device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory
   device_memory_fraction = 0.0;
 

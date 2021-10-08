@@ -14,8 +14,8 @@ class GUI:
         name (str, optional): The name of the GUI to be constructed.
             Default is 'Taichi'.
         res (Union[int, List[int]], optional): The resolution of created
-            GUI. Default is 512*512.
-        background_color (int, optional): The background color of creted GUI.
+            GUI. Default is 512*512. If `res` is scalar, then width will be equal to height.
+        background_color (int, optional): The background color of created GUI.
             Default is 0x000000.
         show_gui (bool, optional): Specify whether to render the GUI. Default is True.
         fullscreen (bool, optional): Specify whether to render the GUI in
@@ -63,12 +63,9 @@ class GUI:
                  show_gui=True,
                  fullscreen=False,
                  fast_gui=False):
-        if 'TI_GUI_SHOW' in os.environ:
-            show_gui = bool(int(os.environ['TI_GUI_SHOW']))
-        if 'TI_GUI_FULLSCREEN' in os.environ:
-            fullscreen = bool(int(os.environ['TI_GUI_FULLSCREEN']))
-        if 'TI_GUI_FAST' in os.environ:
-            fast_gui = bool(int(os.environ['TI_GUI_FAST']))
+        show_gui = self.get_bool_environ('TI_GUI_SHOW', show_gui)
+        fullscreen = self.get_bool_environ('TI_GUI_FULLSCREEN', fullscreen)
+        fast_gui = self.get_bool_environ('TI_GUI_FAST', fast_gui)
 
         self.name = name
         if isinstance(res, numbers.Number):
@@ -119,6 +116,18 @@ class GUI:
         @value.setter
         def value(self, value):
             self.gui.core.set_widget_value(self.wid, value)
+
+    def get_bool_environ(self, key, default):
+        """Get an environment variable and cast to bool.
+        Args:
+            key (str): The environment variable key.
+            default (bool): The default value.
+        Return:
+            The environment variable value cast to bool. If the value is not found, directly return argument 'default'.
+        """
+        if key not in os.environ:
+            return default
+        return bool(int(os.environ[key]))
 
     def slider(self, text, minimum, maximum, step=1):
         """Create a slider object on canvas to be manipulated with.

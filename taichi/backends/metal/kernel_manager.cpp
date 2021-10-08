@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstring>
 #include <limits>
+#include <optional>
 #include <random>
 #include <string_view>
 
@@ -568,6 +569,7 @@ class KernelManager::Impl {
  public:
   explicit Impl(Params params)
       : config_(params.config),
+        compiled_runtime_module_(params.compiled_runtime_module),
         compiled_structs_(params.compiled_structs),
         mem_pool_(params.mem_pool),
         host_result_buffer_(params.host_result_buffer),
@@ -605,24 +607,26 @@ class KernelManager::Impl {
         device_.get(), global_tmps_mem_->ptr(), global_tmps_mem_->size());
     TI_ASSERT(global_tmps_buffer_ != nullptr);
 
-    TI_ASSERT(compiled_structs_.runtime_size > 0);
+    TI_ASSERT(compiled_runtime_module_.runtime_size > 0);
     const size_t mem_pool_bytes =
         (config_->device_memory_GB * 1024 * 1024 * 1024ULL);
     runtime_mem_ = std::make_unique<BufferMemoryView>(
-        compiled_structs_.runtime_size + mem_pool_bytes, mem_pool_);
+        compiled_runtime_module_.runtime_size + mem_pool_bytes, mem_pool_);
     runtime_buffer_ = new_mtl_buffer_no_copy(device_.get(), runtime_mem_->ptr(),
                                              runtime_mem_->size());
-    buffer_meta_data_.runtime_buffer_size = compiled_structs_.runtime_size;
+    buffer_meta_data_.runtime_buffer_size =
+        compiled_runtime_module_.runtime_size;
     TI_DEBUG(
         "Metal runtime buffer size: {} bytes (sizeof(Runtime)={} "
         "memory_pool={})",
-        runtime_mem_->size(), compiled_structs_.runtime_size, mem_pool_bytes);
+        runtime_mem_->size(), compiled_runtime_module_.runtime_size,
+        mem_pool_bytes);
 
     ActionRecorder::get_instance().record(
         "allocate_runtime_buffer",
         {ActionArg("runtime_buffer_size_in_bytes", (int64)runtime_mem_->size()),
          ActionArg("runtime_struct_size_in_bytes",
-                   (int64)compiled_structs_.runtime_size),
+                   (int64)compiled_runtime_module_.runtime_size),
          ActionArg("memory_pool_size", (int64)mem_pool_bytes)});
 
     TI_ASSERT_INFO(
@@ -794,7 +798,7 @@ class KernelManager::Impl {
           i, snode_type_name(sn_meta.snode->type), rtm_meta->element_stride,
           rtm_meta->num_slots, rtm_meta->mem_offset_in_parent);
     }
-    size_t addr_offset = sizeof(SNodeMeta) * max_snodes;
+    size_t addr_offset = sizeof(SNodeMeta) * kMaxNumSNodes;
     addr += addr_offset;
     TI_DEBUG("Initialized SNodeMeta, size={} accumulated={}", addr_offset,
              (addr - addr_begin));
@@ -819,7 +823,7 @@ class KernelManager::Impl {
       }
       TI_DEBUG("");
     }
-    addr_offset = sizeof(SNodeExtractors) * max_snodes;
+    addr_offset = sizeof(SNodeExtractors) * kMaxNumSNodes;
     addr += addr_offset;
     TI_DEBUG("Initialized SNodeExtractors, size={} accumulated={}", addr_offset,
              (addr - addr_begin));
@@ -843,7 +847,7 @@ class KernelManager::Impl {
       TI_DEBUG("ListManagerData\n  id={}\n  num_elems_per_chunk={}\n", i,
                num_elems_per_chunk);
     }
-    addr_offset = sizeof(ListManagerData) * max_snodes;
+    addr_offset = sizeof(ListManagerData) * kMaxNumSNodes;
     addr += addr_offset;
     TI_DEBUG("Initialized ListManagerData, size={} accumulated={}", addr_offset,
              (addr - addr_begin));
@@ -892,7 +896,7 @@ class KernelManager::Impl {
       init_node_mgr(sn_desc, nm_data);
       snode_id_to_nodemgrs.push_back(std::make_pair(i, nm_data));
     }
-    addr_offset = sizeof(NodeManagerData) * max_snodes;
+    addr_offset = sizeof(NodeManagerData) * kMaxNumSNodes;
     addr += addr_offset;
     TI_DEBUG("Initialized NodeManagerData, size={} accumulated={}", addr_offset,
              (addr - addr_begin));
@@ -901,7 +905,7 @@ class KernelManager::Impl {
     auto *const ambient_indices_begin =
         reinterpret_cast<NodeManagerData::ElemIndex *>(addr);
     dev_runtime_mirror_.ambient_indices = ambient_indices_begin;
-    addr_offset = sizeof(NodeManagerData::ElemIndex) * max_snodes;
+    addr_offset = sizeof(NodeManagerData::ElemIndex) * kMaxNumSNodes;
     addr += addr_offset;
     TI_DEBUG(
         "Delayed the initialization of SNode ambient elements, size={} "
@@ -959,7 +963,6 @@ class KernelManager::Impl {
       TI_DEBUG("AmbientIndex\n  id={}\n  mem_alloc->next={}\n", snode_id,
                mem_alloc->next);
     }
-
     did_modify_range(runtime_buffer_.get(), /*location=*/0,
                      runtime_mem_->size());
   }
@@ -1129,6 +1132,7 @@ class KernelManager::Impl {
   }
 
   CompileConfig *const config_;
+  const CompiledRuntimeModule compiled_runtime_module_;
   const CompiledStructs compiled_structs_;
   BufferMetaData buffer_meta_data_;
   MemoryPool *const mem_pool_;
@@ -1210,6 +1214,9 @@ KernelManager::KernelManager(Params params)
 }
 
 KernelManager::~KernelManager() {
+}
+
+void KernelManager::add_compiled_snode_tree(const CompiledStructs &snode_tree) {
 }
 
 void KernelManager::register_taichi_kernel(

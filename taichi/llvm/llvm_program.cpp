@@ -9,6 +9,9 @@
 #include "taichi/codegen/codegen.h"
 #include "taichi/ir/statements.h"
 #include "taichi/backends/cpu/cpu_device.h"
+#include "taichi/backends/cuda/cuda_device.h"
+
+#include "taichi/backends/cuda/cuda_device.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
@@ -521,5 +524,13 @@ void LlvmProgramImpl::print_memory_profiler_info(
       "Total requested dynamic memory (excluding alignment padding): {:n} B\n",
       total_requested_memory);
 }
+
+cuda::CudaDevice *LlvmProgramImpl::cuda_device() {
+  if (config->arch != Arch::cuda) {
+    TI_ERROR("arch is not cuda");
+  }
+  return static_cast<cuda::CudaDevice *>(device_.get());
+}
+
 }  // namespace lang
 }  // namespace taichi

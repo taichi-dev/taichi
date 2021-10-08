@@ -5,17 +5,17 @@ import inspect
 import re
 
 import numpy as np
-from taichi.core import primitive_types
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
-from taichi.lang.ast_checker import KernelSimplicityASTChecker
+from taichi.lang.ast.checkers import KernelSimplicityASTChecker
+from taichi.lang.ast.transformer import ASTTransformerTotal
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.kernel_arguments import (any_arr, sparse_matrix_builder,
                                           template)
 from taichi.lang.ndarray import Ndarray
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.transformer import ASTTransformerTotal
 from taichi.misc.util import obsolete
+from taichi.type import primitive_types
 
 import taichi as ti
 
@@ -687,7 +687,7 @@ def kernel(fn):
 
     Kernel's gradient kernel would be generated automatically by the AutoDiff system.
 
-    See also https://docs.taichi.graphics/docs/lang/articles/basic/syntax#kernels.
+    See also https://docs.taichi.graphics/lang/articles/basic/syntax#kernels.
 
     Args:
         fn (Callable): the Python function to be decorated
@@ -739,7 +739,7 @@ def data_oriented(cls):
     To allow for modularized code, Taichi provides this decorator so that
     Taichi kernels can be defined inside a class.
 
-    See also https://docs.taichi.graphics/docs/lang/articles/advanced/odop
+    See also https://docs.taichi.graphics/lang/articles/advanced/odop
 
     Example::
 

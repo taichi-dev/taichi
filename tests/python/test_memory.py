@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.test(arch=ti.cuda, use_unified_memory=True)
 def test_unified_memory_allocate():
-    HUGE_SIZE = 1024**3
+    HUGE_SIZE = 1024**2 * 128
     x = ti.field(ti.i32, shape=(HUGE_SIZE, ))
     for i in range(10):
         x[i] = i

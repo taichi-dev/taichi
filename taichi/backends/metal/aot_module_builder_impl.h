@@ -14,8 +14,11 @@ namespace metal {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
-  explicit AotModuleBuilderImpl(const CompiledStructs *compiled_structs,
-                                const BufferMetaData &buffer_meta_data);
+  explicit AotModuleBuilderImpl(
+      const CompiledRuntimeModule *compiled_runtime_module,
+      const CompiledStructs *compiled_structs,
+      const BufferMetaData &buffer_meta_data);
+
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
 
@@ -32,10 +35,12 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                             Kernel *kernel) override;
 
  private:
+  const CompiledRuntimeModule *compiled_runtime_module_;
   const CompiledStructs *compiled_structs_;
   BufferMetaData buffer_meta_data_;
   PrintStringTable strtab_;
   TaichiAotData ti_aot_data_;
+
   void metalgen(const stdfs::path &dir,
                 const std::string &filename,
                 const CompiledKernelData &k) const;

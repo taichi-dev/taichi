@@ -4,6 +4,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/program.h"
 
 namespace taichi {
 namespace lang {

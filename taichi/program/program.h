@@ -11,9 +11,7 @@
 #include "taichi/ir/type_factory.h"
 #include "taichi/ir/snode.h"
 #include "taichi/lang_util.h"
-#include "taichi/llvm/llvm_program.h"
-#include "taichi/backends/metal/metal_program.h"
-#include "taichi/backends/cc/cc_program.h"
+#include "taichi/program/program_impl.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/aot_module_builder.h"
 #include "taichi/program/function.h"
@@ -81,7 +79,7 @@ TI_FORCE_INLINE Program &get_current_program() {
 }
 
 class StructCompiler;
-
+class LlvmProgramImpl;
 class AsyncEngine;
 
 /**
@@ -270,9 +268,7 @@ class Program {
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 
-  LlvmProgramImpl *get_llvm_program_impl() {
-    return static_cast<LlvmProgramImpl *>(program_impl_.get());
-  }
+  LlvmProgramImpl *get_llvm_program_impl();
 
  private:
   /**

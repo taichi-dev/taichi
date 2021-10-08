@@ -2,14 +2,11 @@ from enum import Enum
 from typing import OrderedDict
 
 import numpy as np
-import taichi.core.primitive_types as primitive_type
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccessor
-from taichi.lang.kernel_arguments import template
-from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Matrix, MatrixField
 from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField

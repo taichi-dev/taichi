@@ -4,12 +4,15 @@ import os
 import random
 import runpy
 import shutil
+import subprocess
 import sys
-import time
+import timeit
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
 
+import numpy as np
+import pytest
 from colorama import Back, Fore, Style
 from taichi.core import ti_core as _ti_core
 from taichi.tools import video
@@ -19,8 +22,6 @@ import taichi as ti
 
 def timer(func):
     """Function decorator to benchmark a function runnign time."""
-    import timeit
-
     @wraps(func)
     def wrapper(*args, **kwargs):
         start = timeit.default_timer()
@@ -113,13 +114,11 @@ class TaichiMain:
     def _exec_python_file(filename: str):
         """Execute a Python file based on filename."""
         # TODO: do we really need this?
-        import subprocess
         subprocess.call([sys.executable, filename] + sys.argv[1:])
 
     @staticmethod
     def _get_examples_dir() -> Path:
         """Get the path to the examples directory."""
-        import taichi as ti
 
         root_dir = ti.package_root()
         examples_dir = Path(root_dir) / 'examples'
@@ -499,7 +498,6 @@ class TaichiMain:
         def plot_in_gui(scatter):
             import numpy as np
 
-            import taichi as ti
             gui = ti.GUI('Regression Test', (640, 480), 0x001122)
             print('[Hint] press SPACE to go for next display')
             for key, data in scatter.items():
@@ -561,12 +559,10 @@ class TaichiMain:
 
     @staticmethod
     def _get_benchmark_baseline_dir():
-        import taichi as ti
         return os.path.join(_ti_core.get_repo_dir(), 'benchmarks', 'baseline')
 
     @staticmethod
     def _get_benchmark_output_dir():
-        import taichi as ti
         return os.path.join(_ti_core.get_repo_dir(), 'benchmarks', 'output')
 
     @register
@@ -602,7 +598,6 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
 
-        import shutil
         baseline_dir = TaichiMain._get_benchmark_baseline_dir()
         output_dir = TaichiMain._get_benchmark_output_dir()
         shutil.rmtree(baseline_dir, True)
@@ -612,9 +607,7 @@ class TaichiMain:
     @staticmethod
     def _test_python(args):
         print("\nRunning Python tests...\n")
-        import pytest
 
-        import taichi as ti
         root_dir = ti.package_root()
         test_dir = os.path.join(root_dir, 'tests')
         pytest_args = []
@@ -676,8 +669,6 @@ class TaichiMain:
 
     @staticmethod
     def _test_cpp(args):
-        import taichi as ti
-
         # Cpp tests use the legacy non LLVM backend
         ti.reset()
         print("Running C++ tests...")
@@ -720,7 +711,6 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
 
-        import shutil
         commit_hash = _ti_core.get_commit_hash()
         with os.popen('git rev-parse HEAD') as f:
             current_commit_hash = f.read().strip()
@@ -981,12 +971,7 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         def local_scope():
-            import math
-            import time
 
-            import numpy as np
-
-            import taichi as ti
             try:
                 import IPython
                 IPython.embed()

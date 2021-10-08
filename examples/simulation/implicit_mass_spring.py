@@ -1,6 +1,7 @@
+from os import initgroups
 import taichi as ti
 import numpy as np
-
+from taichi.lang import init
 
 @ti.data_oriented
 class Cloth:
@@ -10,6 +11,7 @@ class Cloth:
         self.NV = (N + 1)**2  # number of vertices
         self.NE = 2 * N * (N + 1) + 2 * N * N  # numbser os edges
         self.pos = ti.Vector.field(2, ti.f32, self.NV)
+        self.initPos = ti.Vector.field(2, ti.f32, self.NV)
         self.vel = ti.Vector.field(2, ti.f32, self.NV)
         self.force = ti.Vector.field(2, ti.f32, self.NV)
         self.invMass = ti.field(ti.f32, self.NV)
@@ -22,6 +24,7 @@ class Cloth:
         self.rest_len = ti.field(ti.f32, self.NE)
         self.ks = 1000.0  # spring stiffness
         self.kd = 0.5  # damping constant
+        self.kf = 1.0e5 # fix point stiffness
 
         self.gravity = ti.Vector([0.0, -2.0])
         self.init_pos()
@@ -34,13 +37,15 @@ class Cloth:
         self.init_mass_sp(self.MassBuilder)
         self.M = self.MassBuilder.build()
         self.fix_vertex = [self.N, self.NV - 1]
-
+        self.Jf = ti.Matrix.field(2,2, ti.f32, len(self.fix_vertex))
+        
     @ti.kernel
     def init_pos(self):
         for i, j in ti.ndrange(self.N + 1, self.N + 1):
             k = i * (self.N + 1) + j
             self.pos[k] = ti.Vector([i, j]) / self.N * 0.5 + ti.Vector(
                 [0.25, 0.25])
+            self.initPos[k] = self.pos[k]
             self.vel[k] = ti.Vector([0, 0])
             self.invMass[k] = 1.0
         self.invMass[self.N] = 0.0
@@ -100,8 +105,7 @@ class Cloth:
     @ti.func
     def clear_force(self):
         for i in self.force:
-            if self.invMass[i] != 0.0:
-                self.force[i] = ti.Vector([0.0, 0.0])
+            self.force[i] = ti.Vector([0.0, 0.0])
 
     @ti.kernel
     def compute_force(self):
@@ -118,6 +122,9 @@ class Cloth:
                                self.rest_len[i]) * dis.normalized()
             self.force[idx1] += force
             self.force[idx2] -= force
+        
+        self.force[self.N] += self.kf * (self.initPos[self.N] - self.pos[self.N])
+        self.force[self.NV - 1] += self.kf * (self.initPos[self.NV - 1] - self.pos[self.NV-1])
 
     @ti.kernel
     def compute_Jacobians(self):
@@ -134,6 +141,9 @@ class Cloth:
             self.Jx[i] = (I - self.rest_len[i] * l *
                           (I - dxtdx * l**2)) * self.ks
             self.Jv[i] = self.kd * I
+
+        self.Jf[0] = ti.Matrix([[self.kf,0],[0, self.kf]])
+        self.Jf[1] = ti.Matrix([[self.kf,0],[0, self.kf]])
 
     @ti.kernel
     def assemble_K(self, K: ti.sparse_matrix_builder()):
@@ -158,6 +168,16 @@ class Cloth:
             K[2 * idx2 + 0, 2 * idx2 + 1] -= self.Jx[i][0, 1]
             K[2 * idx2 + 1, 2 * idx2 + 0] -= self.Jx[i][1, 0]
             K[2 * idx2 + 1, 2 * idx2 + 1] -= self.Jx[i][1, 1]
+        # fix point constraint hessian
+        K[2 * self.N + 0, 2 * self.N + 0] += self.Jf[0][0,0]
+        K[2 * self.N + 0, 2 * self.N + 1] += self.Jf[0][0,1]
+        K[2 * self.N + 1, 2 * self.N + 0] += self.Jf[0][1,0]
+        K[2 * self.N + 1, 2 * self.N + 1] += self.Jf[0][1,1]
+
+        K[2 * (self.NV - 1) + 0, 2 * (self.NV - 1) + 0] += self.Jf[1][0,0]
+        K[2 * (self.NV - 1) + 0, 2 * (self.NV - 1) + 1] += self.Jf[1][0,1]
+        K[2 * (self.NV - 1) + 1, 2 * (self.NV - 1) + 0] += self.Jf[1][1,0]
+        K[2 * (self.NV - 1) + 1, 2 * (self.NV - 1) + 1] += self.Jf[1][1,1]
 
     @ti.kernel
     def assemble_D(self, D: ti.sparse_matrix_builder()):
@@ -190,17 +210,6 @@ class Cloth:
                 self.vel[i] += ti.Vector([dv[2 * i], dv[2 * i + 1]])
                 self.pos[i] += h * self.vel[i]
 
-    def fix_point(self, A, idx):
-        A[2 * idx, 2 * idx] = 1.0
-        A[2 * idx + 1, 2 * idx + 1] = 1.0
-
-        spring = self.spring.to_numpy()
-        for i in range(len(spring)):
-            if idx in spring[i]:
-                idx2 = spring[i][0] if spring[i][0] == idx else spring[i][1]
-                A[2*idx2, 2*idx2] = 0.0
-                A[2*idx2+1, 2*idx2+1] = 0.0
-
 
     def update(self, h):
         self.compute_force()
@@ -220,10 +229,7 @@ class Cloth:
         K = KBuilder.build()
 
         A = self.M - h * D - h**2 * K
-        for i in range(len(self.fix_vertex)):
-            self.fix_point(A, self.fix_vertex[i])
 
-        # A = self.M - h**2 * K
         vel = self.vel.to_numpy().reshape(2 * self.NV)
         force = self.force.to_numpy().reshape(2 * self.NV)
         b = (force + h * K @ vel) * h
@@ -238,7 +244,7 @@ class Cloth:
 
 if __name__ == "__main__":
     ti.init(arch=ti.cpu)
-    h = 0.001
+    h = 0.01
     cloth = Cloth(N=5)
 
     pause = True

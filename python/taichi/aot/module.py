@@ -1,8 +1,9 @@
 from contextlib import contextmanager
 
-from taichi.lang import impl, kernel_arguments, kernel_impl
+from taichi.lang import impl, kernel_impl
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField
+from taichi.type.annotations import ArgAnyArray, template
 
 
 class KernelTemplate:
@@ -37,7 +38,7 @@ class KernelTemplate:
 
         for i in range(len(kernel.argument_annotations)):
             anno = kernel.argument_annotations[i]
-            if isinstance(anno, kernel_arguments.template):
+            if isinstance(anno, template):
                 (k, v) = template_args[anno_index]
                 key_p += k
                 key_p = self.keygen(v, key_p, self._aot_module._fields.items())
@@ -128,7 +129,7 @@ class Module:
         injected_args = []
         for i in range(len(kernel.argument_annotations)):
             anno = kernel.argument_annotations[i]
-            if isinstance(anno, kernel_arguments.ArgAnyArray):
+            if isinstance(anno, ArgAnyArray):
                 raise RuntimeError(
                     'Arg type `ext_arr`/`any_arr` not supported yet')
             else:

@@ -12,14 +12,13 @@ from taichi.lang.ast.transformer import ASTTransformerTotal
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr
-from taichi.lang.kernel_arguments import (any_arr, sparse_matrix_builder,
-                                          template)
+from taichi.lang.kernel_arguments import sparse_matrix_builder
 from taichi.lang.ndarray import Ndarray, ScalarNdarray
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.snode import SNode
 from taichi.lang.util import to_taichi_type
 from taichi.misc.util import obsolete
-from taichi.type import primitive_types
+from taichi.type import any_arr, primitive_types, template
 
 import taichi as ti
 

@@ -64,7 +64,7 @@ struct BufferDescriptor {
     return BufferDescriptor{Type::Runtime};
   }
 
-  static BufferDescriptor Print(){
+  static BufferDescriptor Print() {
     return BufferDescriptor{Type::Print};
   }
 

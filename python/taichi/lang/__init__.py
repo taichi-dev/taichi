@@ -400,6 +400,13 @@ def init(arch=None,
         env_comp.add(key, cast)
 
     unexpected_keys = kwargs.keys()
+
+    if 'use_unified_memory' in unexpected_keys:
+        _ti_core.warn(
+            f'"use_unified_memory" is a deprecated option, as taichi no longer have the option of using unified memory.'
+        )
+        del kwargs['use_unified_memory']
+
     if len(unexpected_keys):
         raise KeyError(
             f'Unrecognized keyword argument(s) for ti.init: {", ".join(unexpected_keys)}'

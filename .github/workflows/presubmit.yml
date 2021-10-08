@@ -254,20 +254,11 @@ jobs:
 
       - name: Build
         run: |
-          python3 -m pip uninstall taichi -y
           rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
-          git --version
-          export CXX=clang++
-          python3 -m pip install -r requirements_dev.txt
-          cd python
-          git fetch origin master
-          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python3 build.py build
-          cd ..
-          export NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          python3 -m pip install dist/*.whl
+          .github/workflows/scripts/unix_build.sh
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          CXX: clang++
 
       - name: Test
         run: |

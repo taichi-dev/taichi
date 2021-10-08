@@ -226,13 +226,14 @@ class MeshElement:
                 impl.root.dense(impl.axes(0), size).place(field)
                 if self.attr_dict[key].needs_grad:
                     impl.root.dense(impl.axes(0), size).place(field.grad)
-        else:
+        elif len(field_dict) > 0:
             impl.root.dense(impl.axes(0),
                             size).place(*tuple(field_dict.values()))
             grads = []
             for key, field in field_dict.items():
-                if self.attr_dict[key].needs_gard: grads.append(field.grad)
-            impl.root.dense(impl.axes(0), size).place(*grads)
+                if self.attr_dict[key].needs_grad: grads.append(field.grad)
+            if len(grads) > 0:
+                impl.root.dense(impl.axes(0), size).place(*grads)
 
         return MeshElementField(mesh_instance, self.type, self.attr_dict,
                                 field_dict)

@@ -1,4 +1,4 @@
-from taichi.lang.sparse_matrix import SparseMatrix
+from taichi.lang.sparse_matrix.sparse_matrix import SparseMatrix
 
 
 class SparseSolver:

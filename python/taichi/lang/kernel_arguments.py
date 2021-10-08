@@ -3,7 +3,7 @@ from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
 from taichi.lang.snode import SNode
-from taichi.lang.sparse_matrix import SparseMatrixBuilder
+from taichi.lang.sparse_matrix.sparse_matrix import SparseMatrixBuilder
 from taichi.lang.util import cook_dtype, to_taichi_type
 from taichi.type.primitive_types import u64
 

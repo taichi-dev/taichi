@@ -173,8 +173,8 @@ class StmtBuilder(Builder):
         is_local = isinstance(target, ast.Name)
         if is_local and target.id in ctx.args:
             raise TaichiSyntaxError(
-                "Kernel argument \"{}\" cannot be redefined in the kernel".
-                format(target.id))
+                f"Kernel argument \"{target.id}\" cannot be redefined in the kernel"
+            )
         if is_local and ctx.is_creation(target.id):
             var_name = target.id
             target.ctx = ast.Store()

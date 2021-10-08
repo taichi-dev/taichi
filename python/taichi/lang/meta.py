@@ -2,8 +2,8 @@ from taichi.core import get_os_name
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
-from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import kernel
+from taichi.type.annotations import ext_arr, template
 
 import taichi as ti
 

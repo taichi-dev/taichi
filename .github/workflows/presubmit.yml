@@ -79,26 +79,13 @@ jobs:
           CI_PLATFORM: ${{ matrix.os }}
 
       - name: Build & Install
-        run: sh .github/workflows/scripts/linux_build.sh
+        run: .github/workflows/scripts/unix_build.sh
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
-          PATH: `pwd`/taichi-llvm/bin/:$PATH
           CXX: clang++
 
       - name: Test
-        run: |
-          TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          # Note we only need this since we cannot write into system python package.
-          export PATH=$PATH:$HOME/.local/bin
-          hash -r
-          python examples/algorithm/laplace.py
-          ti diagnose
-          ti changelog
-          # taichi_cpp_tests requires passing in TI_LIB_DIR manually.
-          TI_LIB_DIR=`python -c "import taichi;print(taichi.__path__[0])" | tail -1`
-          TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
-          ti test -vr2 -t2
+        run: .github/workflows/scripts/unix_test.sh
 
   build_and_test_cpu:
     name: Build and Test (CPU)
@@ -139,10 +126,9 @@ jobs:
           CI_PLATFORM: ${{ matrix.os }}
 
       - name: Build & Install
-        run: sh .github/workflows/scripts/linux_build.sh
+        run: .github/workflows/scripts/unix_build.sh
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
-          PATH: `pwd`/taichi-llvm/bin/:$PATH
           CXX: clang++
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
@@ -151,18 +137,7 @@ jobs:
       #    limit-access-to-actor: true
 
       - name: Test
-        run: |
-          TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export PATH=$PATH:$HOME/.local/bin
-          hash -r
-          python examples/algorithm/laplace.py
-          ti diagnose
-          ti changelog
-          # taichi_cpp_tests requires passing in TI_LIB_DIR manually.
-          TI_LIB_DIR=`python -c "import taichi;print(taichi.__path__[0])" | tail -1`
-          [ "$RUN_CPP_TESTS" = "ON" ] && TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
-          ti test -vr2 -t2
+        run: .github/workflows/scripts/unix_test.sh
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
 
@@ -177,27 +152,20 @@ jobs:
           submodules: 'recursive'
 
       - name: Build
-        run: sh .github/workflows/scripts/linux_build.sh
+        run: .github/workflows/scripts/linux_build.sh
         env:
           LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON
           BUILD_NUM_THREADS: 8
-          PATH: /usr/bin/python3:/opt/taichi-llvm-10.0.0/bin:/usr/local/cuda/bin:$PATH
+          LLVM_PATH: /opt/taichi-llvm-10.0.0/bin:/usr/local/cuda/bin
           LLVM_DIR: /opt/taichi-llvm-10.0.0/lib/cmake/llvm
           CXX: clang++-8
 
       - name: Test
-        run: |
-          export PYTHON=/usr/bin/python3
-          export PATH=$PATH:$HOME/.local/bin
-          export DISPLAY=:1
-          hash -r
-          glewinfo
-          $PYTHON examples/algorithm/laplace.py
-          ti diagnose
-          ti changelog
-          ti test -vr2 -t2 -k "not ndarray and not torch"
-          ti test -vr2 -t1 -k "ndarray or torch"
+        run: .github/workflows/scripts/unix_test.sh
+        env:
+          DISPLAY: :1
+          GPU_TEST: ON
 
   build_and_test_windows:
     name: Build and Test (Windows)

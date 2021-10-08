@@ -1,3 +1,4 @@
+export PATH=`pwd`/taichi-llvm/bin/:$LLVM_PATH:$PATH
 python3 -m pip uninstall taichi -y
 python3 -m pip install -r requirements_dev.txt
 cd python

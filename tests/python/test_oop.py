@@ -224,7 +224,7 @@ def test_hook():
             assert (solver.val[i, j] == 1.0)
 
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test()
 def test_oop_with_portery_decorator():
     @ti.data_oriented
     class TestPortery:

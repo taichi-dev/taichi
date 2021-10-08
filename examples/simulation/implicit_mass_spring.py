@@ -31,7 +31,6 @@ class Cloth:
                                                   2 * self.NV,
                                                   max_num_triplets=10000)
 
-
         self.init_mass_sp(self.MassBuilder)
         self.M = self.MassBuilder.build()
 
@@ -43,8 +42,8 @@ class Cloth:
                 [0.25, 0.25])
             self.vel[k] = ti.Vector([0, 0])
             self.invMass[k] = 1.0
-        self.invMass[self.N] = 0.0
-        self.invMass[self.NV - 1] = 0.0
+        # self.invMass[self.N] = 0.0
+        # self.invMass[self.NV - 1] = 0.0
 
     @ti.kernel
     def init_edges(self):
@@ -124,92 +123,93 @@ class Cloth:
         for i in self.spring:
             idx1, idx2 = self.spring[i][0], self.spring[i][1]
             pos1, pos2 = self.pos[idx1], self.pos[idx2]
-            dx = pos2 - pos1
+            dx = pos1 - pos2
             I = ti.Matrix([[1.0, 0.0], [0.0, 1.0]])
             dxtdx = ti.Matrix([[dx[0] * dx[0], dx[0] * dx[1]],
                                [dx[1] * dx[0], dx[1] * dx[1]]])
             l = dx.norm()
             if l != 0.0:
                 l = 1.0 / l
-            dxtdx *= l**2
-            self.Jx[i] = (dxtdx + (I - dxtdx) *
-                          (1 - self.rest_len[i] * l)) * self.ks
+            self.Jx[i] = (I - self.rest_len[i] * l * (I - dxtdx * l**2)) * self.ks
             self.Jv[i] = self.kd * I
 
     @ti.kernel
     def assemble_K(self, K: ti.sparse_matrix_builder()):
         for i in self.spring:
             idx1, idx2 = self.spring[i][0], self.spring[i][1]
-            K[2 * idx1 + 0, 2 * idx1 + 0] -= self.Jx[i][0,0]
-            K[2 * idx1 + 0, 2 * idx1 + 1] -= self.Jx[i][0,1]
-            K[2 * idx1 + 1, 2 * idx1 + 0] -= self.Jx[i][1,0]
-            K[2 * idx1 + 1, 2 * idx1 + 1] -= self.Jx[i][1,1]
+            K[2 * idx1 + 0, 2 * idx1 + 0] -= self.Jx[i][0, 0]
+            K[2 * idx1 + 0, 2 * idx1 + 1] -= self.Jx[i][0, 1]
+            K[2 * idx1 + 1, 2 * idx1 + 0] -= self.Jx[i][1, 0]
+            K[2 * idx1 + 1, 2 * idx1 + 1] -= self.Jx[i][1, 1]
 
-            K[2 * idx1 + 0, 2 * idx2 + 0] += self.Jx[i][0,0]
-            K[2 * idx1 + 0, 2 * idx2 + 1] += self.Jx[i][0,1]
-            K[2 * idx1 + 1, 2 * idx2 + 0] += self.Jx[i][1,0]
-            K[2 * idx1 + 1, 2 * idx2 + 1] += self.Jx[i][1,1]
+            K[2 * idx1 + 0, 2 * idx2 + 0] += self.Jx[i][0, 0]
+            K[2 * idx1 + 0, 2 * idx2 + 1] += self.Jx[i][0, 1]
+            K[2 * idx1 + 1, 2 * idx2 + 0] += self.Jx[i][1, 0]
+            K[2 * idx1 + 1, 2 * idx2 + 1] += self.Jx[i][1, 1]
 
-            K[2 * idx2 + 0, 2 * idx1 + 0] += self.Jx[i][0,0]
-            K[2 * idx2 + 0, 2 * idx1 + 1] += self.Jx[i][0,1]
-            K[2 * idx2 + 1, 2 * idx1 + 0] += self.Jx[i][1,0]
-            K[2 * idx2 + 1, 2 * idx1 + 1] += self.Jx[i][1,1]
+            K[2 * idx2 + 0, 2 * idx1 + 0] += self.Jx[i][0, 0]
+            K[2 * idx2 + 0, 2 * idx1 + 1] += self.Jx[i][0, 1]
+            K[2 * idx2 + 1, 2 * idx1 + 0] += self.Jx[i][1, 0]
+            K[2 * idx2 + 1, 2 * idx1 + 1] += self.Jx[i][1, 1]
 
-            K[2 * idx2 + 0, 2 * idx2 + 0] -= self.Jx[i][0,0]
-            K[2 * idx2 + 0, 2 * idx2 + 1] -= self.Jx[i][0,1]
-            K[2 * idx2 + 1, 2 * idx2 + 0] -= self.Jx[i][1,0]
-            K[2 * idx2 + 1, 2 * idx2 + 1] -= self.Jx[i][1,1]
-
+            K[2 * idx2 + 0, 2 * idx2 + 0] -= self.Jx[i][0, 0]
+            K[2 * idx2 + 0, 2 * idx2 + 1] -= self.Jx[i][0, 1]
+            K[2 * idx2 + 1, 2 * idx2 + 0] -= self.Jx[i][1, 0]
+            K[2 * idx2 + 1, 2 * idx2 + 1] -= self.Jx[i][1, 1]
 
     @ti.kernel
     def assemble_D(self, D: ti.sparse_matrix_builder()):
         for i in self.spring:
             idx1, idx2 = self.spring[i][0], self.spring[i][1]
-            D[2 * idx1 + 0, 2 * idx1 + 0] -= self.Jv[i][0,0]
-            D[2 * idx1 + 0, 2 * idx1 + 1] -= self.Jv[i][0,1]
-            D[2 * idx1 + 1, 2 * idx1 + 0] -= self.Jv[i][1,0]
-            D[2 * idx1 + 1, 2 * idx1 + 1] -= self.Jv[i][1,1]
+            D[2 * idx1 + 0, 2 * idx1 + 0] -= self.Jv[i][0, 0]
+            D[2 * idx1 + 0, 2 * idx1 + 1] -= self.Jv[i][0, 1]
+            D[2 * idx1 + 1, 2 * idx1 + 0] -= self.Jv[i][1, 0]
+            D[2 * idx1 + 1, 2 * idx1 + 1] -= self.Jv[i][1, 1]
 
-            D[2 * idx1 + 0, 2 * idx2 + 0] += self.Jv[i][0,0]
-            D[2 * idx1 + 0, 2 * idx2 + 1] += self.Jv[i][0,1]
-            D[2 * idx1 + 1, 2 * idx2 + 0] += self.Jv[i][1,0]
-            D[2 * idx1 + 1, 2 * idx2 + 1] += self.Jv[i][1,1]
+            D[2 * idx1 + 0, 2 * idx2 + 0] += self.Jv[i][0, 0]
+            D[2 * idx1 + 0, 2 * idx2 + 1] += self.Jv[i][0, 1]
+            D[2 * idx1 + 1, 2 * idx2 + 0] += self.Jv[i][1, 0]
+            D[2 * idx1 + 1, 2 * idx2 + 1] += self.Jv[i][1, 1]
 
-            D[2 * idx2 + 0, 2 * idx1 + 0] += self.Jv[i][0,0]
-            D[2 * idx2 + 0, 2 * idx1 + 1] += self.Jv[i][0,1]
-            D[2 * idx2 + 1, 2 * idx1 + 0] += self.Jv[i][1,0]
-            D[2 * idx2 + 1, 2 * idx1 + 1] += self.Jv[i][1,1]
+            D[2 * idx2 + 0, 2 * idx1 + 0] += self.Jv[i][0, 0]
+            D[2 * idx2 + 0, 2 * idx1 + 1] += self.Jv[i][0, 1]
+            D[2 * idx2 + 1, 2 * idx1 + 0] += self.Jv[i][1, 0]
+            D[2 * idx2 + 1, 2 * idx1 + 1] += self.Jv[i][1, 1]
 
-            D[2 * idx2 + 0, 2 * idx2 + 0] -= self.Jv[i][0,0]
-            D[2 * idx2 + 0, 2 * idx2 + 1] -= self.Jv[i][0,1]
-            D[2 * idx2 + 1, 2 * idx2 + 0] -= self.Jv[i][1,0]
-            D[2 * idx2 + 1, 2 * idx2 + 1] -= self.Jv[i][1,1]
+            D[2 * idx2 + 0, 2 * idx2 + 0] -= self.Jv[i][0, 0]
+            D[2 * idx2 + 0, 2 * idx2 + 1] -= self.Jv[i][0, 1]
+            D[2 * idx2 + 1, 2 * idx2 + 0] -= self.Jv[i][1, 0]
+            D[2 * idx2 + 1, 2 * idx2 + 1] -= self.Jv[i][1, 1]
 
     @ti.kernel
     def updatePosVel(self, h: ti.f32, dv: ti.ext_arr()):
         for i in self.pos:
             if self.invMass[i] != 0.0:
-                self.vel[i] += dv[i]
+                self.vel[i] += ti.Vector([dv[2*i], dv[2*i+1]])
                 self.pos[i] += h * self.vel[i]
 
     def update(self, h):
         self.compute_force()
-        
+
         self.compute_Jacobians()
         # Assemble global system
-        DBuilder = ti.SparseMatrixBuilder(2 * self.NV, 2 * self.NV, max_num_triplets=10000)
+        DBuilder = ti.SparseMatrixBuilder(2 * self.NV,
+                                          2 * self.NV,
+                                          max_num_triplets=10000)
         self.assemble_D(DBuilder)
         D = DBuilder.build()
-        
-        KBuilder = ti.SparseMatrixBuilder(2 * self.NV, 2 * self.NV, max_num_triplets=10000)
+
+        KBuilder = ti.SparseMatrixBuilder(2 * self.NV,
+                                          2 * self.NV,
+                                          max_num_triplets=10000)
         self.assemble_K(KBuilder)
         K = KBuilder.build()
 
         A = self.M - h * D - h**2 * K
         # A = self.M - h**2 * K
         vel = self.vel.to_numpy().reshape(2 * self.NV)
-        force = self.force.to_numpy().reshape(2*self.NV)
-        b = (force + K @ vel) * h
+        force = self.force.to_numpy().reshape(2 * self.NV)
+        b = (force + h * K @ vel) * h
         # Sparse solver
         solver = ti.SparseSolver(solver_type="LU")
         solver.analyze_pattern(A)

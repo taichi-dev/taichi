@@ -1,9 +1,13 @@
+import numpy as np
+from taichi.core.util import ti_core as _ti_core
+from taichi.lang.field import Field
+
+
 class SparseMatrix:
     def __init__(self, n=None, m=None, sm=None):
         if sm is None:
             self.n = n
             self.m = m if m else n
-            from taichi.core.util import ti_core as _ti_core
             self.matrix = _ti_core.create_sparse_matrix(n, m)
         else:
             self.n = sm.num_rows()
@@ -39,8 +43,6 @@ class SparseMatrix:
         return SparseMatrix(sm=sm)
 
     def __matmul__(self, other):
-        import numpy as np
-        from taichi.lang import Field
         if isinstance(other, SparseMatrix):
             assert self.m == other.n, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
             sm = self.matrix.matmul(other.matrix)
@@ -71,7 +73,6 @@ class SparseMatrixBuilder:
         self.num_rows = num_rows
         self.num_cols = num_cols if num_cols else num_rows
         if num_rows is not None:
-            from taichi.core.util import ti_core as _ti_core
             self.ptr = _ti_core.create_sparse_matrix_builder(
                 num_rows, num_cols, max_num_triplets)
 

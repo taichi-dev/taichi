@@ -177,37 +177,38 @@ class StmtBuilder(Builder):
 
         # Generate assign statements for every target, then merge them into one.
         for i, target in enumerate(targets):
-            is_local = isinstance(target, ast.Name)
-            if is_local and ctx.is_creation(target.id):
-                var_name = target.id
-                target.ctx = ast.Store()
-                # Create, no AST resolution needed
-                init = ast.Attribute(value=ast.Name(id='ti', ctx=ast.Load()),
-                                     attr='expr_init',
-                                     ctx=ast.Load())
-                rhs = ast.Call(
-                    func=init,
-                    args=[tuple_indexed(i)],
-                    keywords=[],
-                )
-                ctx.create_variable(var_name)
-                stmts.append(
-                    ast.Assign(targets=[target], value=rhs, type_comment=None))
-            else:
-                # Assign
-                target.ctx = ast.Load()
-                func = ast.Attribute(value=target,
-                                     attr='assign',
-                                     ctx=ast.Load())
-                call = ast.Call(func=func,
-                                args=[tuple_indexed(i)],
-                                keywords=[])
-                stmts.append(ast.Expr(value=call))
-
-        for stmt in stmts:
-            ast.copy_location(stmt, node)
+            stmts.append(
+                StmtBuilder.build_assign_basic(ctx, node, target, tuple_indexed(i)))
         stmts.append(parse_stmt('del __tmp_tuple'))
         return StmtBuilder.make_single_statement(stmts)
+
+    @staticmethod
+    def build_assign_basic(ctx, node, target, value):
+        is_local = isinstance(target, ast.Name)
+        if is_local and ctx.is_creation(target.id):
+            var_name = target.id
+            target.ctx = ast.Store()
+            # Create, no AST resolution needed
+            init = ast.Attribute(value=ast.Name(id='ti', ctx=ast.Load()),
+                                 attr='expr_init',
+                                 ctx=ast.Load())
+            rhs = ast.Call(
+                func=init,
+                args=[value],
+                keywords=[],
+            )
+            ctx.create_variable(var_name)
+            return ast.copy_location(ast.Assign(targets=[target],
+                                                value=rhs,
+                                                type_comment=None), node)
+        else:
+            # Assign
+            target.ctx = ast.Load()
+            func = ast.Attribute(value=target,
+                                 attr='assign',
+                                 ctx=ast.Load())
+            call = ast.Call(func=func, args=[value], keywords=[])
+            return ast.copy_location(ast.Expr(value=call), node)
 
     @staticmethod
     def build_Try(ctx, node):

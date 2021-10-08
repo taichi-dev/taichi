@@ -15,3 +15,13 @@ def test_pass_float_as_i32():
     assert e.type is ti.KernelArgError
     assert e.value.args[
         0] == "Argument 0 (type=<class 'float'>) cannot be converted into required type i32"
+
+
+@ti.test(arch=ti.cpu)
+def test_argument_redefinition():
+    @ti.kernel
+    def foo(a: ti.i32):
+        a = 1
+
+    with pytest.raises(RuntimeError):
+        foo(5)

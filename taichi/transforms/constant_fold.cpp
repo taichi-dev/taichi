@@ -56,8 +56,6 @@ class ConstantFold : public BasicStmtVisitor {
       current_ast_builder().insert(std::move(ret));
     };
 
-    std::lock_guard lg(program->jit_evaluator_cache_mut);
-
     auto program_compile_config_org = program->config;
     program->config.advanced_optimization = false;
     program->config.cfg_optimization = false;

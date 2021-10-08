@@ -49,6 +49,10 @@ class ConstantFold : public BasicStmtVisitor {
     auto kernel_name = fmt::format("jit_evaluator_{}", eval_kernel_id);
 
     size_t arr_size = batched_eval.size() * 2;
+
+    // Here all the values are stored in int instead of their actual type
+    // Since we actually don't care the meaning of the values, int types
+    // naturally represents the actual bit pattern.
     std::vector<int8> ext_arr_i8(arr_size);
     std::vector<int8> ext_arr_u8(arr_size);
     std::vector<int16> ext_arr_i16(arr_size);
@@ -286,32 +290,28 @@ class ConstantFold : public BasicStmtVisitor {
       return false;
   }
 
-  bool jit_evaluate_binary_op(DataType ret_type,
+  void jit_evaluate_binary_op(DataType ret_type,
                               BinaryOpStmt *stmt,
                               const TypedConstant &lhs,
                               const TypedConstant &rhs) {
     if (!is_good_type(ret_type))
-      return false;
+      return;
 
     TI_TRACE("JIT Binary {} {} {}", stmt->id, lhs.val_cast_to_float64(),
              rhs.val_cast_to_float64());
     batched_eval.push_back(
         {(int)stmt->op_type, true, lhs, rhs, ret_type, stmt});
-
-    return true;
   }
 
-  bool jit_evaluate_unary_op(DataType ret_type,
+  void jit_evaluate_unary_op(DataType ret_type,
                              UnaryOpStmt *stmt,
                              const TypedConstant &operand) {
     if (!is_good_type(ret_type))
-      return false;
+      return;
 
     TI_TRACE("JIT Unary {} {}", stmt->id, operand.val_cast_to_float64());
     batched_eval.push_back(
         {(int)stmt->op_type, false, operand, operand, ret_type, stmt});
-
-    return true;
   }
 
   void visit(BinaryOpStmt *stmt) override {

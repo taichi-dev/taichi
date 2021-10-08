@@ -2,13 +2,16 @@ import sys
 
 import taichi.ad as ad
 from taichi._logging import *
-from taichi.core import *
+from taichi.core import (get_os_name, package_root, require_version,
+                         start_memory_monitoring)
+from taichi.core import ti_core as core
 from taichi.lang import *  # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.main import main
 from taichi.misc import *
 from taichi.testing import *
 from taichi.tools import *
 from taichi.torch_io import from_torch, to_torch
+from taichi.type import *
 
 import taichi.ui as ui
 

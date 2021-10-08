@@ -31,9 +31,6 @@ from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
 
-# TODO(#2223): Remove
-core = _ti_core
-
 runtime = impl.get_runtime()
 
 i = axes(0)

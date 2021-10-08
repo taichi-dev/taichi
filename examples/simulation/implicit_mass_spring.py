@@ -130,7 +130,8 @@ class Cloth:
             l = dx.norm()
             if l != 0.0:
                 l = 1.0 / l
-            self.Jx[i] = (I - self.rest_len[i] * l * (I - dxtdx * l**2)) * self.ks
+            self.Jx[i] = (I - self.rest_len[i] * l *
+                          (I - dxtdx * l**2)) * self.ks
             self.Jv[i] = self.kd * I
 
     @ti.kernel
@@ -185,7 +186,7 @@ class Cloth:
     def updatePosVel(self, h: ti.f32, dv: ti.ext_arr()):
         for i in self.pos:
             if self.invMass[i] != 0.0:
-                self.vel[i] += ti.Vector([dv[2*i], dv[2*i+1]])
+                self.vel[i] += ti.Vector([dv[2 * i], dv[2 * i + 1]])
                 self.pos[i] += h * self.vel[i]
 
     def update(self, h):

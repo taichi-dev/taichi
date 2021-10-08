@@ -1,7 +1,7 @@
-from os import initgroups
+# https://www.cs.cmu.edu/~baraff/papers/sig98.pdf
 import taichi as ti
 import numpy as np
-from taichi.lang import init
+
 
 @ti.data_oriented
 class Cloth:
@@ -24,7 +24,7 @@ class Cloth:
         self.rest_len = ti.field(ti.f32, self.NE)
         self.ks = 1000.0  # spring stiffness
         self.kd = 0.5  # damping constant
-        self.kf = 1.0e5 # fix point stiffness
+        self.kf = 1.0e5  # fix point stiffness
 
         self.gravity = ti.Vector([0.0, -2.0])
         self.init_pos()
@@ -37,8 +37,9 @@ class Cloth:
         self.init_mass_sp(self.MassBuilder)
         self.M = self.MassBuilder.build()
         self.fix_vertex = [self.N, self.NV - 1]
-        self.Jf = ti.Matrix.field(2,2, ti.f32, len(self.fix_vertex))
-        
+        self.Jf = ti.Matrix.field(2, 2, ti.f32, len(
+            self.fix_vertex))  # fix constraint hessian
+
     @ti.kernel
     def init_pos(self):
         for i, j in ti.ndrange(self.N + 1, self.N + 1):
@@ -53,34 +54,33 @@ class Cloth:
 
     @ti.kernel
     def init_edges(self):
-        for i, j in ti.ndrange(self.N + 1, self.N):
-            self.spring[i * self.N + j] = ti.Vector(
-                [i * (self.N + 1) + j, i * (self.N + 1) + j + 1])
-            self.rest_len[i * self.N +
-                          j] = (self.pos[i * (self.N + 1) + j] -
-                                self.pos[i * (self.N + 1) + j + 1]).norm()
-        start = self.N * (self.N + 1)
-        for i, j in ti.ndrange(self.N, self.N + 1):
-            self.spring[start + i + j * self.N] = ti.Vector(
-                [i * (self.N + 1) + j, i * (self.N + 1) + j + self.N + 1])
-            self.rest_len[start + i + j * self.N] = (
-                self.pos[i * (self.N + 1) + j] -
-                self.pos[i * (self.N + 1) + j + self.N + 1]).norm()
-        start = 2 * self.N * (self.N + 1)
-        for i, j in ti.ndrange(self.N, self.N):
-            self.spring[start + i * self.N + j] = ti.Vector(
-                [i * (self.N + 1) + j, (i + 1) * (self.N + 1) + j + 1])
-            self.rest_len[start + i * self.N +
-                          j] = (self.pos[i * (self.N + 1) + j] -
-                                self.pos[(i + 1) *
-                                         (self.N + 1) + j + 1]).norm()
-        start = 2 * self.N * (self.N + 1) + self.N * self.N
-        for i, j in ti.ndrange(self.N, self.N):
-            self.spring[start + i * self.N + j] = ti.Vector(
-                [i * (self.N + 1) + j + 1, (i + 1) * (self.N + 1) + j])
-            self.rest_len[start + i * self.N +
-                          j] = (self.pos[i * (self.N + 1) + j + 1] -
-                                self.pos[(i + 1) * (self.N + 1) + j]).norm()
+        pos, spring, N, rest_len = ti.static(self.pos, self.spring, self.N,
+                                             self.rest_len)
+        for i, j in ti.ndrange(N + 1, N):
+            spring[i * N + j] = ti.Vector(
+                [i * (N + 1) + j, i * (N + 1) + j + 1])
+            rest_len[i * N + j] = (pos[i * (N + 1) + j] -
+                                   pos[i * (N + 1) + j + 1]).norm()
+        start = N * (N + 1)
+        for i, j in ti.ndrange(N, N + 1):
+            spring[start + i + j * N] = ti.Vector(
+                [i * (N + 1) + j, i * (N + 1) + j + N + 1])
+            rest_len[start + i + j * N] = (pos[i * (N + 1) + j] -
+                                           pos[i *
+                                               (N + 1) + j + N + 1]).norm()
+        start = 2 * N * (N + 1)
+        for i, j in ti.ndrange(N, N):
+            spring[start + i * N + j] = ti.Vector(
+                [i * (N + 1) + j, (i + 1) * (N + 1) + j + 1])
+            rest_len[start + i * N + j] = (pos[i * (N + 1) + j] -
+                                           pos[(i + 1) *
+                                               (N + 1) + j + 1]).norm()
+        start = 2 * N * (N + 1) + N * N
+        for i, j in ti.ndrange(N, N):
+            spring[start + i * N + j] = ti.Vector(
+                [i * (N + 1) + j + 1, (i + 1) * (N + 1) + j])
+            rest_len[start + i * N + j] = (pos[i * (N + 1) + j + 1] -
+                                           pos[(i + 1) * (N + 1) + j]).norm()
 
     @ti.kernel
     def init_mass_sp(self, M: ti.sparse_matrix_builder()):
@@ -122,9 +122,11 @@ class Cloth:
                                self.rest_len[i]) * dis.normalized()
             self.force[idx1] += force
             self.force[idx2] -= force
-        
-        self.force[self.N] += self.kf * (self.initPos[self.N] - self.pos[self.N])
-        self.force[self.NV - 1] += self.kf * (self.initPos[self.NV - 1] - self.pos[self.NV-1])
+        # fix constraint gradient
+        self.force[self.N] += self.kf * (self.initPos[self.N] -
+                                         self.pos[self.N])
+        self.force[self.NV - 1] += self.kf * (self.initPos[self.NV - 1] -
+                                              self.pos[self.NV - 1])
 
     @ti.kernel
     def compute_Jacobians(self):
@@ -142,8 +144,8 @@ class Cloth:
                           (I - dxtdx * l**2)) * self.ks
             self.Jv[i] = self.kd * I
 
-        self.Jf[0] = ti.Matrix([[self.kf,0],[0, self.kf]])
-        self.Jf[1] = ti.Matrix([[self.kf,0],[0, self.kf]])
+        self.Jf[0] = ti.Matrix([[self.kf, 0], [0, self.kf]])
+        self.Jf[1] = ti.Matrix([[self.kf, 0], [0, self.kf]])
 
     @ti.kernel
     def assemble_K(self, K: ti.sparse_matrix_builder()):
@@ -169,15 +171,15 @@ class Cloth:
             K[2 * idx2 + 1, 2 * idx2 + 0] -= self.Jx[i][1, 0]
             K[2 * idx2 + 1, 2 * idx2 + 1] -= self.Jx[i][1, 1]
         # fix point constraint hessian
-        K[2 * self.N + 0, 2 * self.N + 0] += self.Jf[0][0,0]
-        K[2 * self.N + 0, 2 * self.N + 1] += self.Jf[0][0,1]
-        K[2 * self.N + 1, 2 * self.N + 0] += self.Jf[0][1,0]
-        K[2 * self.N + 1, 2 * self.N + 1] += self.Jf[0][1,1]
+        K[2 * self.N + 0, 2 * self.N + 0] += self.Jf[0][0, 0]
+        K[2 * self.N + 0, 2 * self.N + 1] += self.Jf[0][0, 1]
+        K[2 * self.N + 1, 2 * self.N + 0] += self.Jf[0][1, 0]
+        K[2 * self.N + 1, 2 * self.N + 1] += self.Jf[0][1, 1]
 
-        K[2 * (self.NV - 1) + 0, 2 * (self.NV - 1) + 0] += self.Jf[1][0,0]
-        K[2 * (self.NV - 1) + 0, 2 * (self.NV - 1) + 1] += self.Jf[1][0,1]
-        K[2 * (self.NV - 1) + 1, 2 * (self.NV - 1) + 0] += self.Jf[1][1,0]
-        K[2 * (self.NV - 1) + 1, 2 * (self.NV - 1) + 1] += self.Jf[1][1,1]
+        K[2 * (self.NV - 1) + 0, 2 * (self.NV - 1) + 0] += self.Jf[1][0, 0]
+        K[2 * (self.NV - 1) + 0, 2 * (self.NV - 1) + 1] += self.Jf[1][0, 1]
+        K[2 * (self.NV - 1) + 1, 2 * (self.NV - 1) + 0] += self.Jf[1][1, 0]
+        K[2 * (self.NV - 1) + 1, 2 * (self.NV - 1) + 1] += self.Jf[1][1, 1]
 
     @ti.kernel
     def assemble_D(self, D: ti.sparse_matrix_builder()):
@@ -210,7 +212,6 @@ class Cloth:
                 self.vel[i] += ti.Vector([dv[2 * i], dv[2 * i + 1]])
                 self.pos[i] += h * self.vel[i]
 
-
     def update(self, h):
         self.compute_force()
 
@@ -234,7 +235,7 @@ class Cloth:
         force = self.force.to_numpy().reshape(2 * self.NV)
         b = (force + h * K @ vel) * h
         # Sparse solver
-        solver = ti.SparseSolver(solver_type="LU")
+        solver = ti.SparseSolver(solver_type="LDLT")
         solver.analyze_pattern(A)
         solver.factorize(A)
         # Solve the linear system
@@ -247,7 +248,7 @@ if __name__ == "__main__":
     h = 0.01
     cloth = Cloth(N=5)
 
-    pause = True
+    pause = False
     gui = ti.GUI('Implicit Mass Spring System')
     while gui.running:
         for e in gui.get_events():

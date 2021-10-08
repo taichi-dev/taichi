@@ -2,10 +2,8 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
-from taichi.lang.ndarray import ScalarNdarray
-from taichi.lang.snode import SNode
 from taichi.lang.sparse_matrix import SparseMatrixBuilder
-from taichi.lang.util import cook_dtype, to_taichi_type
+from taichi.lang.util import cook_dtype
 from taichi.type.primitive_types import u64
 
 
@@ -45,33 +43,6 @@ class ArgAnyArray:
             )
         self.element_dim = element_dim
         self.layout = layout
-
-    def extract(self, x):
-        from taichi.lang.matrix import MatrixNdarray, VectorNdarray
-        if isinstance(x, ScalarNdarray):
-            self.check_element_dim(x, 0)
-            return x.dtype, len(x.shape), (), Layout.AOS
-        if isinstance(x, VectorNdarray):
-            self.check_element_dim(x, 1)
-            self.check_layout(x)
-            return x.dtype, len(x.shape) + 1, (x.n, ), x.layout
-        if isinstance(x, MatrixNdarray):
-            self.check_element_dim(x, 2)
-            self.check_layout(x)
-            return x.dtype, len(x.shape) + 2, (x.n, x.m), x.layout
-        # external arrays
-        element_dim = 0 if self.element_dim is None else self.element_dim
-        layout = Layout.AOS if self.layout is None else self.layout
-        shape = tuple(x.shape)
-        if len(shape) < element_dim:
-            raise ValueError(
-                f"Invalid argument into ti.any_arr() - required element_dim={element_dim}, but the argument has only {len(shape)} dimensions"
-            )
-        element_shape = (
-        ) if element_dim == 0 else shape[:
-                                         element_dim] if layout == Layout.SOA else shape[
-                                             -element_dim:]
-        return to_taichi_type(x.dtype), len(shape), element_shape, layout
 
     def check_element_dim(self, arg, arg_dim):
         if self.element_dim is not None and self.element_dim != arg_dim:
@@ -115,17 +86,6 @@ class Template:
     def __init__(self, tensor=None, dim=None):
         self.tensor = tensor
         self.dim = dim
-
-    def extract(self, x):
-        if isinstance(x, SNode):
-            return x.ptr
-        if isinstance(x, Expr):
-            return x.ptr.get_underlying_ptr_address()
-        if isinstance(x, _ti_core.Expr):
-            return x.get_underlying_ptr_address()
-        if isinstance(x, tuple):
-            return tuple(self.extract(item) for item in x)
-        return x
 
 
 template = Template

@@ -33,6 +33,7 @@ class Cloth:
 
         self.init_mass_sp(self.MassBuilder)
         self.M = self.MassBuilder.build()
+        self.fix_vertex = [self.N, self.NV - 1]
 
     @ti.kernel
     def init_pos(self):
@@ -42,8 +43,8 @@ class Cloth:
                 [0.25, 0.25])
             self.vel[k] = ti.Vector([0, 0])
             self.invMass[k] = 1.0
-        # self.invMass[self.N] = 0.0
-        # self.invMass[self.NV - 1] = 0.0
+        self.invMass[self.N] = 0.0
+        self.invMass[self.NV - 1] = 0.0
 
     @ti.kernel
     def init_edges(self):
@@ -189,6 +190,18 @@ class Cloth:
                 self.vel[i] += ti.Vector([dv[2 * i], dv[2 * i + 1]])
                 self.pos[i] += h * self.vel[i]
 
+    def fix_point(self, A, idx):
+        A[2 * idx, 2 * idx] = 1.0
+        A[2 * idx + 1, 2 * idx + 1] = 1.0
+
+        spring = self.spring.to_numpy()
+        for i in range(len(spring)):
+            if idx in spring[i]:
+                idx2 = spring[i][0] if spring[i][0] == idx else spring[i][1]
+                A[2*idx2, 2*idx2] = 0.0
+                A[2*idx2+1, 2*idx2+1] = 0.0
+
+
     def update(self, h):
         self.compute_force()
 
@@ -207,6 +220,9 @@ class Cloth:
         K = KBuilder.build()
 
         A = self.M - h * D - h**2 * K
+        for i in range(len(self.fix_vertex)):
+            self.fix_point(A, self.fix_vertex[i])
+
         # A = self.M - h**2 * K
         vel = self.vel.to_numpy().reshape(2 * self.NV)
         force = self.force.to_numpy().reshape(2 * self.NV)

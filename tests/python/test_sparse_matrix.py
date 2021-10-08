@@ -33,6 +33,20 @@ def test_sparse_matrix_element_access():
     for i in range(n):
         assert A[i, i] == i
 
+@ti.test(arch=ti.cpu)
+def test_sparse_matrix_element_modify():
+    n = 8
+    Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+
+    @ti.kernel
+    def fill(Abuilder: ti.sparse_matrix_builder()):
+        for i in range(n):
+            Abuilder[i, i] += i
+
+    fill(Abuilder)
+    A = Abuilder.build()
+    A[0,0] = 1024.0
+    assert A[0,0] == 1024.0
 
 @ti.test(arch=ti.cpu)
 def test_sparse_matrix_addition():

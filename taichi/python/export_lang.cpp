@@ -987,6 +987,7 @@ void export_lang(py::module &m) {
       .def("transpose", &SparseMatrix::transpose,
            py::return_value_policy::reference_internal)
       .def("get_element", &SparseMatrix::get_element)
+      .def("set_element", &SparseMatrix::set_element)
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols);
 

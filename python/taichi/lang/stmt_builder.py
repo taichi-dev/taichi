@@ -178,7 +178,8 @@ class StmtBuilder(Builder):
         # Generate assign statements for every target, then merge them into one.
         for i, target in enumerate(targets):
             stmts.append(
-                StmtBuilder.build_assign_basic(ctx, node, target, tuple_indexed(i)))
+                StmtBuilder.build_assign_basic(ctx, node, target,
+                                               tuple_indexed(i)))
         stmts.append(parse_stmt('del __tmp_tuple'))
         return StmtBuilder.make_single_statement(stmts)
 
@@ -198,15 +199,13 @@ class StmtBuilder(Builder):
                 keywords=[],
             )
             ctx.create_variable(var_name)
-            return ast.copy_location(ast.Assign(targets=[target],
-                                                value=rhs,
-                                                type_comment=None), node)
+            return ast.copy_location(
+                ast.Assign(targets=[target], value=rhs, type_comment=None),
+                node)
         else:
             # Assign
             target.ctx = ast.Load()
-            func = ast.Attribute(value=target,
-                                 attr='assign',
-                                 ctx=ast.Load())
+            func = ast.Attribute(value=target, attr='assign', ctx=ast.Load())
             call = ast.Call(func=func, args=[value], keywords=[])
             return ast.copy_location(ast.Expr(value=call), node)
 

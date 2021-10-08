@@ -3,6 +3,7 @@ from taichi.lang.exception import InvalidOperationError
 
 import taichi as ti
 
+
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_with_shape():
     n = 5
@@ -141,6 +142,7 @@ def test_fields_builder_pointer():
     func1()
     for i in range(n):
         assert x[i] == i * 3
+
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_fields_builder_destroy():

@@ -10,5 +10,5 @@ ti diagnose
 ti changelog
 [ -z $GPU_TEST ] && ti test -vr2 -t2
 
-[ -z $GPU_TEST ] || ti test -vr2 -t2 -k "not ndarray"
-[ -z $GPU_TEST ] || ti test -vr2 -t1 -k "ndarray"
+[ -z $GPU_TEST ] || ti test -vr2 -t2 -k "not ndarray and not torch"
+[ -z $GPU_TEST ] || ti test -vr2 -t1 -k "ndarray or torch"

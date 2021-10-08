@@ -24,7 +24,7 @@ class Ndarray {
   std::vector<int> shape;
 
   void set_item(const std::vector<int> &key, uint64_t val);
-  int get_item(std::vector<int> &key) const;
+  uint64_t get_item(const std::vector<int> &key) const;
   intptr_t get_data_ptr_as_int() const;
   int get_element_size() const;
   int get_nelement() const;

@@ -1,10 +1,11 @@
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.impl import expr_init
+from taichi.lang.kernel_impl import func
 
 import taichi as ti
 
 
-@ti.func
+@func
 def polar_decompose2d(A, dt):
     """Perform polar decomposition (A=UP) for 2x2 matrix.
 
@@ -25,7 +26,7 @@ def polar_decompose2d(A, dt):
     return r, r.transpose() @ A
 
 
-@ti.func
+@func
 def polar_decompose3d(A, dt):
     """Perform polar decomposition (A=UP) for 3x3 matrix.
 
@@ -43,7 +44,7 @@ def polar_decompose3d(A, dt):
 
 
 # https://www.seas.upenn.edu/~cffjiang/research/svd/svd.pdf
-@ti.func
+@func
 def svd2d(A, dt):
     """Perform singular value decomposition (A=USV^T) for 2x2 matrix.
 
@@ -126,7 +127,7 @@ def svd3d(A, dt, iters=None):
     return U, sigma, V
 
 
-@ti.func
+@func
 def eig2x2(A, dt):
     """Compute the eigenvalues and right eigenvectors (Av=lambda v) of a 2x2 real matrix.
 
@@ -176,7 +177,7 @@ def eig2x2(A, dt):
     return eigenvalues, eigenvectors
 
 
-@ti.func
+@func
 def sym_eig2x2(A, dt):
     """Compute the eigenvalues and right eigenvectors (Av=lambda v) of a 2x2 real symmetric matrix.
 
@@ -212,7 +213,7 @@ def sym_eig2x2(A, dt):
     return eigenvalues, eigenvectors
 
 
-@ti.func
+@func
 def svd(A, dt):
     """Perform singular value decomposition (A=USV^T) for arbitrary size matrix.
 
@@ -236,7 +237,7 @@ def svd(A, dt):
         raise Exception("SVD only supports 2D and 3D matrices.")
 
 
-@ti.func
+@func
 def polar_decompose(A, dt):
     """Perform polar decomposition (A=UP) for arbitrary size matrix.
 

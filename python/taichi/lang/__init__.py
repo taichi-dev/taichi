@@ -1,7 +1,13 @@
+import atexit
 import functools
 import os
+import shutil
+import tempfile
+import time
 from copy import deepcopy as _deepcopy
 
+import taichi.lang.linalg
+import taichi.lang.meta
 from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, types
@@ -18,7 +24,8 @@ from taichi.lang.ndrange import GroupedNDRange, ndrange
 from taichi.lang.ops import *
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
-from taichi.lang.sparse_matrix.sparse_matrix import SparseMatrix, SparseMatrixBuilder
+from taichi.lang.sparse_matrix.sparse_matrix import (SparseMatrix,
+                                                     SparseMatrixBuilder)
 from taichi.lang.sparse_matrix.sparse_solver import SparseSolver
 from taichi.lang.struct import Struct
 from taichi.lang.type_factory_impl import type_factory
@@ -30,9 +37,6 @@ from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
-
-# TODO(#2223): Remove
-core = _ti_core
 
 runtime = impl.get_runtime()
 
@@ -301,10 +305,7 @@ def prepare_sandbox():
     Returns a temporary directory, which will be automatically deleted on exit.
     It may contain the taichi_core shared object or some misc. files.
     '''
-    import atexit
-    import shutil
-    from tempfile import mkdtemp
-    tmp_dir = mkdtemp(prefix='taichi-')
+    tmp_dir = tempfile.mkdtemp(prefix='taichi-')
     atexit.register(shutil.rmtree, tmp_dir)
     print(f'[Taichi] preparing sandbox at {tmp_dir}')
     os.mkdir(os.path.join(tmp_dir, 'runtime/'))
@@ -520,8 +521,7 @@ def polar_decompose(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    from .linalg import polar_decompose
-    return polar_decompose(A, dt)
+    return taichi.lang.linalg.polar_decompose(A, dt)
 
 
 def svd(A, dt=None):
@@ -539,8 +539,7 @@ def svd(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    from .linalg import svd
-    return svd(A, dt)
+    return taichi.lang.linalg.svd(A, dt)
 
 
 def eig(A, dt=None):
@@ -559,9 +558,8 @@ def eig(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    from taichi.lang import linalg
     if A.n == 2:
-        return linalg.eig2x2(A, dt)
+        return taichi.lang.linalg.eig2x2(A, dt)
     raise Exception("Eigen solver only supports 2D matrices.")
 
 
@@ -582,9 +580,8 @@ def sym_eig(A, dt=None):
     assert all(A == A.transpose()), "A needs to be symmetric"
     if dt is None:
         dt = impl.get_runtime().default_fp
-    from taichi.lang import linalg
     if A.n == 2:
-        return linalg.sym_eig2x2(A, dt)
+        return taichi.lang.linalg.sym_eig2x2(A, dt)
     raise Exception("Symmetric eigen solver only supports 2D matrices.")
 
 
@@ -601,7 +598,7 @@ def randn(dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    from .random import randn
+    from taichi.lang._random import randn
     return randn(dt)
 
 
@@ -649,8 +646,7 @@ def Tape(loss, clear_gradients=True):
     if clear_gradients:
         clear_all_gradients()
 
-    from taichi.lang.meta import clear_loss
-    clear_loss(loss)
+    taichi.lang.meta.clear_loss(loss)
 
     return runtime.get_tape(loss)
 
@@ -671,8 +667,7 @@ def clear_all_gradients():
 
         places = tuple(places)
         if places:
-            from taichi.lang.meta import clear_gradients
-            clear_gradients(places)
+            taichi.lang.meta.clear_gradients(places)
 
     for root_fb in FieldsBuilder.finalized_roots():
         visit(root_fb)
@@ -685,8 +680,6 @@ def deactivate_all_snodes():
 
 
 def benchmark(func, repeat=300, args=()):
-    import time
-
     def run_benchmark():
         compile_time = time.time()
         func(*args)  # compile the kernel first
@@ -740,8 +733,8 @@ def benchmark_plot(fn=None,
                    bar_distance=0,
                    left_margin=0,
                    size=(12, 8)):
-    import matplotlib.pyplot as plt
-    import yaml
+    import matplotlib.pyplot as plt  # pylint: disable=C0415
+    import yaml  # pylint: disable=C0415
     if fn is None:
         fn = os.path.join(_ti_core.get_repo_dir(), 'benchmarks', 'output',
                           'benchmark.yml')
@@ -860,7 +853,7 @@ def benchmark_plot(fn=None,
 
 
 def stat_write(key, value):
-    import yaml
+    import yaml  # pylint: disable=C0415
     case_name = os.environ.get('TI_CURRENT_BENCHMARK')
     if case_name is None:
         return

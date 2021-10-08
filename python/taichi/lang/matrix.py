@@ -1306,7 +1306,7 @@ class MatrixField(Field):
             dtype = to_numpy_type(self.dtype)
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        import numpy as np
+        import numpy as np  # pylint: disable=C0415
         arr = np.zeros(self.shape + shape_ext, dtype=dtype)
         from taichi.lang.meta import matrix_to_ext_arr
         matrix_to_ext_arr(self, arr, as_vector)
@@ -1324,7 +1324,7 @@ class MatrixField(Field):
         Returns:
             torch.tensor: The result torch tensor.
         """
-        import torch
+        import torch  # pylint: disable=C0415
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
         arr = torch.empty(self.shape + shape_ext,

@@ -19,6 +19,9 @@ from taichi.type import primitive_types
 
 import taichi as ti
 
+if util.has_pytorch():
+    import torch
+
 
 def _remove_indent(lines):
     lines = lines.split('\n')
@@ -492,7 +495,6 @@ class Kernel:
                     if isinstance(v, Ndarray):
                         v = v.arr
                     has_external_arrays = True
-                    has_torch = util.has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
@@ -509,8 +511,7 @@ class Kernel:
 
                             return call_back
 
-                        assert has_torch
-                        import torch
+                        assert util.has_pytorch()
                         assert isinstance(v, torch.Tensor)
                         tmp = v
                         taichi_arch = self.runtime.prog.config.arch
@@ -577,7 +578,6 @@ class Kernel:
     def match_ext_arr(self, v):
         has_array = isinstance(v, np.ndarray)
         if not has_array and util.has_pytorch():
-            import torch
             has_array = isinstance(v, torch.Tensor)
         return has_array
 
@@ -762,9 +762,14 @@ def data_oriented(cls):
     Returns:
         The decorated class.
     """
-    def getattr(self, item):
+    def _getattr(self, item):
         _taichi_skip_traceback = 1
-        x = super(cls, self).__getattribute__(item)
+        method = getattr(cls, item, None)
+        is_property = method.__class__ == property
+        if is_property:
+            x = method.fget
+        else:
+            x = super(cls, self).__getattribute__(item)
         if hasattr(x, '_is_wrapped_kernel'):
             if inspect.ismethod(x):
                 wrapped = x.__func__
@@ -774,10 +779,14 @@ def data_oriented(cls):
             if wrapped._is_classkernel:
                 ret = _BoundedDifferentiableMethod(self, wrapped)
                 ret.__name__ = wrapped.__name__
+                if is_property:
+                    return ret()
                 return ret
+        if is_property:
+            return x(self)
         return x
 
-    cls.__getattribute__ = getattr
+    cls.__getattribute__ = _getattr
     cls._data_oriented = True
 
     return cls

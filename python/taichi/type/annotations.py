@@ -49,7 +49,7 @@ def ext_arr():
 
 
 any_arr = ArgAnyArray
-"""Alias for :class:`~taichi.lang.kernel_arguments.ArgAnyArray`.
+"""Alias for :class:`~taichi.type.annotations.ArgAnyArray`.
 
 Example::
 
@@ -80,7 +80,7 @@ class Template:
 
 
 template = Template
-"""Alias for :class:`~taichi.lang.kernel_arguments.Template`.
+"""Alias for :class:`~taichi.type.annotations.Template`.
 """
 
 __all__ = ['ext_arr', 'any_arr', 'template']

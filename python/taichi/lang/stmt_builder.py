@@ -116,12 +116,13 @@ class StmtBuilder(Builder):
                     StmtBuilder.build_assign_unpack(ctx, node, node_target))
             else:
                 assign_stmts.append(
-                    StmtBuilder.build_assign_basic(ctx, node, node_target, node.value))
+                    StmtBuilder.build_assign_basic(ctx, node, node_target,
+                                                   node.value))
         return StmtBuilder.make_single_statement(assign_stmts)
 
     @staticmethod
     def build_assign_unpack(ctx, node, node_target):
-        """Build the unpack assignments like this: (node1, node2) = (value1, value2).
+        """Build the unpack assignments like this: (target1, target2) = (value1, value2).
         The function should be called only if the node target is a tuple.
 
         Args:
@@ -152,12 +153,23 @@ class StmtBuilder(Builder):
         # Generate assign statements for every target, then merge them into one.
         for i, target in enumerate(targets):
             stmts.append(
-                StmtBuilder.build_assign_basic(ctx, node, target, tuple_indexed(i)))
+                StmtBuilder.build_assign_basic(ctx, node, target,
+                                               tuple_indexed(i)))
         stmts.append(parse_stmt('del __tmp_tuple'))
         return StmtBuilder.make_single_statement(stmts)
 
     @staticmethod
     def build_assign_basic(ctx, node, target, value):
+        """Build basic assginment like this: target = value.
+
+         Args:
+            ctx (ast_builder_utils.BuilderContext): The builder context.
+            node (ast.Assign): An assignment. targets is a list of nodes,
+            and value is a single node.
+            target (ast.Name): A variable name. id holds the name as
+            a string.
+            value: A node representing the value.
+        """
         is_local = isinstance(target, ast.Name)
         if is_local and ctx.is_creation(target.id):
             var_name = target.id
@@ -172,15 +184,13 @@ class StmtBuilder(Builder):
                 keywords=[],
             )
             ctx.create_variable(var_name)
-            return ast.copy_location(ast.Assign(targets=[target],
-                                                value=rhs,
-                                                type_comment=None), node)
+            return ast.copy_location(
+                ast.Assign(targets=[target], value=rhs, type_comment=None),
+                node)
         else:
             # Assign
             target.ctx = ast.Load()
-            func = ast.Attribute(value=target,
-                                 attr='assign',
-                                 ctx=ast.Load())
+            func = ast.Attribute(value=target, attr='assign', ctx=ast.Load())
             call = ast.Call(func=func, args=[value], keywords=[])
             return ast.copy_location(ast.Expr(value=call), node)
 

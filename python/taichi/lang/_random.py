@@ -1,9 +1,11 @@
 import math
 
+from taichi.lang.kernel_impl import func
+
 import taichi as ti
 
 
-@ti.func
+@func
 def randn(dt):
     '''
     Generates a random number from standard normal distribution

@@ -1,5 +1,6 @@
 import numbers
 
+import taichi.lang.matrix
 from taichi.lang.exception import TaichiSyntaxError
 
 
@@ -19,15 +20,12 @@ class CompoundType:
 
 
 def matrix(m, n, dtype=None):
-    from taichi.lang.matrix import MatrixType
-    return MatrixType(m, n, dtype=dtype)
+    return taichi.lang.matrix.MatrixType(m, n, dtype=dtype)
 
 
 def vector(m, dtype=None):
-    from taichi.lang.matrix import MatrixType
-    return MatrixType(m, 1, dtype=dtype)
+    return taichi.lang.matrix.MatrixType(m, 1, dtype=dtype)
 
 
 def struct(**kwargs):
-    from taichi.lang.struct import StructType
-    return StructType(**kwargs)
+    return taichi.lang.struct.StructType(**kwargs)

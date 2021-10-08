@@ -8,7 +8,7 @@ class Builder(object):
         method = getattr(self, 'build_' + node.__class__.__name__, None)
         if method is None:
             try:
-                import astpretty
+                import astpretty  # pylint: disable=C0415
                 error_msg = f'Unsupported node {node}:\n{astpretty.pformat(node)}'
             except:
                 error_msg = f'Unsupported node {node}'

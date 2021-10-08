@@ -99,11 +99,6 @@ struct CompileConfig {
   bool mesh_localize_from_end_mapping{false};
   bool mesh_localize_all_attr_mappings{false};
 
-  // helpers
-  bool is_cuda_no_unified_memory() {
-    return arch == Arch::cuda && !use_unified_memory;
-  }
-
   CompileConfig();
 };
 

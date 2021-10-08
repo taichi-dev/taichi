@@ -581,6 +581,7 @@ if 1:
                     arg_init = parse_stmt(
                         'x = ti.lang.kernel_arguments.decl_scalar_arg(0)')
                     arg_init.targets[0].id = arg.arg
+                    ctx.create_variable(arg.arg)
                     dt = arg.annotation
                     arg_init.value.args[0] = dt
                     arg_decls.append(arg_init)

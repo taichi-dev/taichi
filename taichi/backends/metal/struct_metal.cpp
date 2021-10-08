@@ -364,12 +364,12 @@ class RuntimeModuleCompiler {
     line_appender_.append_raw(shaders::kMetalRuntimeStructsSourceCode);
     emit("");
     emit("struct Runtime {{");
+    emit("  uint32_t rand_seeds[{}];", kNumRandSeeds);
     emit("  SNodeMeta snode_metas[{}];", kMaxNumSNodes);
     emit("  SNodeExtractors snode_extractors[{}];", kMaxNumSNodes);
     emit("  ListManagerData snode_lists[{}];", kMaxNumSNodes);
     emit("  NodeManagerData snode_allocators[{}];", kMaxNumSNodes);
     emit("  NodeManagerData::ElemIndex ambient_indices[{}];", kMaxNumSNodes);
-    emit("  uint32_t rand_seeds[{}];", kNumRandSeeds);
     emit("}};");
     emit("");
     line_appender_.append_raw(shaders::kMetalRuntimeUtilsSourceCode);

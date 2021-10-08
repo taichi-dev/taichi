@@ -4,6 +4,15 @@ from taichi.lang.field import Field
 
 
 class SparseMatrix:
+    """Taichi's Sparse Matrix class
+
+    A sparse matrix allows programmer solve large linear system.
+
+    Args:
+        n (int): the first dimension of a sparse matrix.
+        m (int): the second dimension of a sparse matrix.
+        sm (SparseMatrix): another sparse matrix that will be built from.
+    """
     def __init__(self, n=None, m=None, sm=None):
         if sm is None:
             self.n = n
@@ -69,6 +78,15 @@ class SparseMatrix:
 
 
 class SparseMatrixBuilder:
+    """A python wrap around sparse matrix builder.
+
+    Use this builder to fill the sparse matrix.
+
+    Args:
+        num_rows (int): the first dimension of a sparse matrix.
+        num_cols (int): the second dimension of a sparse matrix.
+        max_num_triplets (int): the maximum number of triplets.
+    """
     def __init__(self, num_rows=None, num_cols=None, max_num_triplets=0):
         self.num_rows = num_rows
         self.num_cols = num_cols if num_cols else num_rows

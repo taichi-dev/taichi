@@ -664,9 +664,10 @@ Value IRBuilder::query_value(std::string name) const {
   TI_ERROR("{} is not existed.", name);
 }
 
-Value IRBuilder::float_atomic(AtomicOpType op_type, Value addr_ptr, Value data) {
-  auto atomic_func_ = [&](std::function<void(Value, Value, Value)>
-                                   atomic_op) {
+Value IRBuilder::float_atomic(AtomicOpType op_type,
+                              Value addr_ptr,
+                              Value data) {
+  auto atomic_func_ = [&](std::function<void(Value, Value, Value)> atomic_op) {
     // inline function begin
     auto &func_ = function_;
     Value old_val = alloca_variable(t_int32_);
@@ -753,37 +754,33 @@ Value IRBuilder::float_atomic(AtomicOpType op_type, Value addr_ptr, Value data) 
   };
 
   if (op_type == AtomicOpType::add) {
-      return atomic_func_([&](Value res, Value lhs, Value rhs) {
-                          ib_.begin(spv::OpFAdd)
-                              .add_seq(t_fp32_, res, lhs, rhs)
-                              .commit(&function_);
-                        });
+    return atomic_func_([&](Value res, Value lhs, Value rhs) {
+      ib_.begin(spv::OpFAdd).add_seq(t_fp32_, res, lhs, rhs).commit(&function_);
+    });
   } else if (op_type == AtomicOpType::sub) {
-      return atomic_func_([&](Value res, Value lhs, Value rhs) {
-                          ib_.begin(spv::OpFSub)
-                              .add_seq(t_fp32_, res, lhs, rhs)
-                              .commit(&function_);
-                        });
+    return atomic_func_([&](Value res, Value lhs, Value rhs) {
+      ib_.begin(spv::OpFSub).add_seq(t_fp32_, res, lhs, rhs).commit(&function_);
+    });
   } else if (op_type == AtomicOpType::min) {
-      return atomic_func_([&](Value res, Value lhs, Value rhs) {
-                          Value cond = new_value(t_bool_, ValueKind::kNormal);
-                          ib_.begin(spv::OpFOrdLessThan)
-                              .add_seq(t_bool_, cond, lhs, rhs)
-                              .commit(&function_);
-                          ib_.begin(spv::OpSelect)
-                              .add_seq(t_fp32_, res, cond, lhs, rhs)
-                              .commit(&function_);
-                        });
+    return atomic_func_([&](Value res, Value lhs, Value rhs) {
+      Value cond = new_value(t_bool_, ValueKind::kNormal);
+      ib_.begin(spv::OpFOrdLessThan)
+          .add_seq(t_bool_, cond, lhs, rhs)
+          .commit(&function_);
+      ib_.begin(spv::OpSelect)
+          .add_seq(t_fp32_, res, cond, lhs, rhs)
+          .commit(&function_);
+    });
   } else if (op_type == AtomicOpType::max) {
-      return atomic_func_([&](Value res, Value lhs, Value rhs) {
-                          Value cond = new_value(t_bool_, ValueKind::kNormal);
-                          ib_.begin(spv::OpFOrdGreaterThan)
-                              .add_seq(t_bool_, cond, lhs, rhs)
-                              .commit(&function_);
-                          ib_.begin(spv::OpSelect)
-                              .add_seq(t_fp32_, res, cond, lhs, rhs)
-                              .commit(&function_);
-                        });
+    return atomic_func_([&](Value res, Value lhs, Value rhs) {
+      Value cond = new_value(t_bool_, ValueKind::kNormal);
+      ib_.begin(spv::OpFOrdGreaterThan)
+          .add_seq(t_bool_, cond, lhs, rhs)
+          .commit(&function_);
+      ib_.begin(spv::OpSelect)
+          .add_seq(t_fp32_, res, cond, lhs, rhs)
+          .commit(&function_);
+    });
   } else {
     TI_NOT_IMPLEMENTED
   }

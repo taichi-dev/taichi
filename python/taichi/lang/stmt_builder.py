@@ -115,34 +115,8 @@ class StmtBuilder(Builder):
                 assign_stmts.append(
                     StmtBuilder.build_assign_unpack(ctx, node, node_target))
             else:
-                is_local = isinstance(node_target, ast.Name)
-                if is_local and ctx.is_creation(node_target.id):
-                    var_name = node_target.id
-                    # Create, no AST resolution needed
-                    init = ast.Attribute(value=ast.Name(id='ti',
-                                                        ctx=ast.Load()),
-                                         attr='expr_init',
-                                         ctx=ast.Load())
-                    rhs = ast.Call(
-                        func=init,
-                        args=[node.value],
-                        keywords=[],
-                    )
-                    ctx.create_variable(var_name)
-                    assign_stmts.append(
-                        ast.copy_location(
-                            ast.Assign(targets=node.targets,
-                                       value=rhs,
-                                       type_comment=None), node))
-                else:
-                    # Assign
-                    node_target.ctx = ast.Load()
-                    func = ast.Attribute(value=node_target,
-                                         attr='assign',
-                                         ctx=ast.Load())
-                    call = ast.Call(func=func, args=[node.value], keywords=[])
-                    assign_stmts.append(
-                        ast.copy_location(ast.Expr(value=call), node))
+                assign_stmts.append(
+                    StmtBuilder.build_assign_basic(ctx, node, node_target, node.value))
         return StmtBuilder.make_single_statement(assign_stmts)
 
     @staticmethod
@@ -178,8 +152,7 @@ class StmtBuilder(Builder):
         # Generate assign statements for every target, then merge them into one.
         for i, target in enumerate(targets):
             stmts.append(
-                StmtBuilder.build_assign_basic(ctx, node, target,
-                                               tuple_indexed(i)))
+                StmtBuilder.build_assign_basic(ctx, node, target, tuple_indexed(i)))
         stmts.append(parse_stmt('del __tmp_tuple'))
         return StmtBuilder.make_single_statement(stmts)
 
@@ -199,13 +172,15 @@ class StmtBuilder(Builder):
                 keywords=[],
             )
             ctx.create_variable(var_name)
-            return ast.copy_location(
-                ast.Assign(targets=[target], value=rhs, type_comment=None),
-                node)
+            return ast.copy_location(ast.Assign(targets=[target],
+                                                value=rhs,
+                                                type_comment=None), node)
         else:
             # Assign
             target.ctx = ast.Load()
-            func = ast.Attribute(value=target, attr='assign', ctx=ast.Load())
+            func = ast.Attribute(value=target,
+                                 attr='assign',
+                                 ctx=ast.Load())
             call = ast.Call(func=func, args=[value], keywords=[])
             return ast.copy_location(ast.Expr(value=call), node)
 

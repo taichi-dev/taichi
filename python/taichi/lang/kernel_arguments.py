@@ -2,6 +2,7 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
+from taichi.lang.ndarray import ScalarNdarray
 from taichi.lang.snode import SNode
 from taichi.lang.sparse_matrix import SparseMatrixBuilder
 from taichi.lang.util import cook_dtype, to_taichi_type
@@ -47,7 +48,6 @@ class ArgAnyArray:
 
     def extract(self, x):
         from taichi.lang.matrix import MatrixNdarray, VectorNdarray
-        from taichi.lang.ndarray import ScalarNdarray
         if isinstance(x, ScalarNdarray):
             self.check_element_dim(x, 0)
             return x.dtype, len(x.shape), (), Layout.AOS

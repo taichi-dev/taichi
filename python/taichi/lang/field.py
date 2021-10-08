@@ -230,7 +230,7 @@ class ScalarField(Field):
     def to_numpy(self, dtype=None):
         if dtype is None:
             dtype = to_numpy_type(self.dtype)
-        import numpy as np
+        import numpy as np  # pylint: disable=C0415
         arr = np.zeros(shape=self.shape, dtype=dtype)
         from taichi.lang.meta import tensor_to_ext_arr
         tensor_to_ext_arr(self, arr)
@@ -239,7 +239,7 @@ class ScalarField(Field):
 
     @python_scope
     def to_torch(self, device=None):
-        import torch
+        import torch  # pylint: disable=C0415
         arr = torch.zeros(size=self.shape,
                           dtype=to_pytorch_type(self.dtype),
                           device=device)

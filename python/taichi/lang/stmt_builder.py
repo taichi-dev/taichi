@@ -1,6 +1,7 @@
 import ast
 import copy
 
+import astor
 from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.ast_builder_utils import *
@@ -84,7 +85,6 @@ class StmtBuilder(Builder):
                 raise ValueError(
                     f"assert info must be constant, not {ast.dump(node.msg)}")
         else:
-            import astor
             msg = astor.to_source(node.test)
         node.test = build_expr(ctx, node.test)
 

@@ -170,8 +170,33 @@ class ConstantFold : public BasicStmtVisitor {
     auto operand = stmt->operand->cast<ConstStmt>();
     if (!operand)
       return;
-    if (stmt->width() != 1)
+    if (stmt->width() != 1) {
       return;
+    }
+    if (stmt->is_cast()) {
+      bool cast_available = true;
+      TypedConstant new_constant(stmt->ret_type);
+      auto operand = stmt->operand->cast<ConstStmt>();
+      if (stmt->op_type == UnaryOpType::cast_bits) {
+        new_constant.value_bits = operand->val[0].value_bits;
+      } else {
+        if (stmt->cast_type == PrimitiveType::f32) {
+          new_constant.val_f32 = float32(operand->val[0].val_cast_to_float64());
+        } else if (stmt->cast_type == PrimitiveType::f64) {
+          new_constant.val_f64 = operand->val[0].val_cast_to_float64();
+        } else {
+          cast_available = false;
+        }
+      }
+      if (cast_available) {
+        auto evaluated =
+            Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
+        stmt->replace_with(evaluated.get());
+        modifier.insert_before(stmt, std::move(evaluated));
+        modifier.erase(stmt);
+        return;
+      }
+    }
     auto dst_type = stmt->ret_type;
     TypedConstant new_constant(dst_type);
     if (jit_evaluate_unary_op(new_constant, stmt, operand->val[0])) {

@@ -49,7 +49,6 @@ class MetalProgramImpl : public ProgramImpl {
  private:
   std::optional<metal::CompiledRuntimeModule> compiled_runtime_module_{
       std::nullopt};
-  // std::optional<metal::CompiledStructs metal_compiled_structs_{std::nullopt};
   std::vector<metal::CompiledStructs> compiled_snode_trees_;
   std::unique_ptr<metal::KernelManager> metal_kernel_mgr_{nullptr};
 };

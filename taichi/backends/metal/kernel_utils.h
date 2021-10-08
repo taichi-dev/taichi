@@ -34,9 +34,6 @@ class PrintStringTable {
   std::vector<std::string> strs_;
 };
 
-/**
- * Per offloaded task attributes.
- */
 struct BufferDescriptor {
   enum class Type {
     Root,

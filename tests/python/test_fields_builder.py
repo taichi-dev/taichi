@@ -3,8 +3,7 @@ from taichi.lang.exception import InvalidOperationError
 
 import taichi as ti
 
-
-@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_with_shape():
     n = 5
     x = ti.field(ti.f32, [n])
@@ -40,7 +39,7 @@ def test_fields_with_shape():
         assert x[i] == i
 
 
-@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_dense():
     n = 5
 
@@ -85,7 +84,7 @@ def test_fields_builder_dense():
         assert x[i] == i * 3
 
 
-@ti.test(arch=[ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.metal])
 def test_fields_builder_pointer():
     n = 5
 
@@ -110,6 +109,7 @@ def test_fields_builder_pointer():
     fb2.pointer(ti.i, n).place(z)
     fb2.finalize()
 
+    # test range-for
     @ti.kernel
     def func2():
         for i in range(n):
@@ -125,10 +125,22 @@ def test_fields_builder_pointer():
         assert y[i] == i + 5
         assert z[i] == i + 10
 
+    # test struct-for
+    @ti.kernel
+    def func3():
+        for i in y:
+            y[i] += 5
+        for i in z:
+            z[i] -= 5
+
+    func3()
+    for i in range(n):
+        assert y[i] == i + 10
+        assert z[i] == i + 5
+
     func1()
     for i in range(n):
         assert x[i] == i * 3
-
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_fields_builder_destroy():

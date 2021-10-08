@@ -633,6 +633,7 @@ class KernelCodegenImpl : public IRVisitor {
     for (const auto rid : root_ids) {
       used_root_descs.insert(BufferDescriptor::Root(rid));
     }
+    root_id_to_stmts_.clear();
 
     using Type = OffloadedStmt::TaskType;
     if (stmt->task_type == Type::serial) {
@@ -1237,6 +1238,8 @@ class KernelCodegenImpl : public IRVisitor {
     emit("for (int ii = {};; ii += {}) {{", kKernelThreadIdName,
          kKernelGridSizeName);
     {
+      const auto belonged_root_id = snode_to_roots_.at(sn_id).snode_id;
+      const auto root_desc = BufferDescriptor::Root(belonged_root_id);
       ScopedIndent s2(current_appender());
       emit("const int parent_idx_ = (ii / child_num_slots);");
       emit("if (parent_idx_ >= parent_list.num_active()) break;");
@@ -1247,7 +1250,7 @@ class KernelCodegenImpl : public IRVisitor {
       emit(
           "device auto *parent_addr_ = mtl_lgen_snode_addr(parent_elem_, {}, "
           "{}, {});",
-          kRootBufferName, kRuntimeVarName, kMemAllocVarName);
+          buffer_to_name(root_desc), kRuntimeVarName, kMemAllocVarName);
       emit("if (!is_active(parent_addr_, parent_meta, child_idx_)) continue;");
       emit("ElementCoords {};", kElementCoordsVarName);
       emit(

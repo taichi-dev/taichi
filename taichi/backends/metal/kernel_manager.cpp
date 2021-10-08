@@ -1130,8 +1130,6 @@ class KernelManager::Impl {
   nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_{nullptr};
   std::size_t command_buffer_id_{0};
   std::vector<SNodesRootBuffer> root_buffers_;
-  // std::unique_ptr<BufferMemoryView> root_mem_;
-  // nsobj_unique_ptr<MTLBuffer> root_buffer_;
   std::unique_ptr<BufferMemoryView> global_tmps_mem_{nullptr};
   nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_{nullptr};
   std::unique_ptr<BufferMemoryView> runtime_mem_{nullptr};

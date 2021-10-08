@@ -56,21 +56,12 @@ class ConstantFold : public BasicStmtVisitor {
       current_ast_builder().insert(std::move(ret));
     };
 
-    auto program_compile_config_org = program->config;
-    program->config.advanced_optimization = false;
-    program->config.cfg_optimization = false;
-    program->config.simplify_before_lower_access = false;
-    program->config.simplify_after_lower_access = false;
-    program->config.constant_folding = false;
-    program->config.external_optimization_level = 0;
-
     auto ker = std::make_unique<Kernel>(*program, func, kernel_name);
     ker->insert_ret(id.ret);
     ker->insert_arg(id.lhs, false);
     if (id.is_binary)
       ker->insert_arg(id.rhs, false);
     ker->is_evaluator = true;
-    program->config = program_compile_config_org;
 
     auto *ker_ptr = ker.get();
     TI_TRACE("Saving JIT evaluator cache entry id={}",
@@ -232,6 +223,12 @@ class ConstantFold : public BasicStmtVisitor {
   static bool run(IRNode *node, Program *program) {
     ConstantFold folder(program);
     bool modified = false;
+
+    auto program_compile_config_org = program->config;
+    program->config.advanced_optimization = false;
+    program->config.constant_folding = false;
+    program->config.external_optimization_level = 0;
+
     while (true) {
       node->accept(&folder);
       if (folder.modifier.modify_ir()) {
@@ -240,6 +237,9 @@ class ConstantFold : public BasicStmtVisitor {
         break;
       }
     }
+
+    program->config = program_compile_config_org;
+
     return modified;
   }
 };

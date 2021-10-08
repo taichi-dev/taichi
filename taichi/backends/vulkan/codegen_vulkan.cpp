@@ -1339,6 +1339,7 @@ class KernelCodegen {
     Kernel *kernel;
     std::vector<CompiledSNodeStructs> compiled_structs;
     Device *device;
+    bool enable_spv_opt{true};
   };
 
   explicit KernelCodegen(const Params &params)
@@ -1352,7 +1353,9 @@ class KernelCodegen {
     // TODO: Profile these passes, remove ones we don't need to speed up JIT
     // ref:
     // https://github.com/KhronosGroup/SPIRV-Tools/blob/f9893c4549406eb9643e0eb05a521ab70a320fff/source/opt/optimizer.cpp
-    spirv_opt_->RegisterPerformancePasses();
+    if (params.enable_spv_opt) {
+      spirv_opt_->RegisterPerformancePasses();
+    }
 
     _spirv_opt_options.set_run_validator(false);
   }
@@ -1435,6 +1438,8 @@ FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
   params.kernel = kernel;
   params.compiled_structs = runtime->get_compiled_structs();
   params.device = runtime->get_ti_device();
+  params.enable_spv_opt =
+      kernel->program->config.external_optimization_level > 0;
   KernelCodegen codegen(params);
   auto res = codegen.run();
   auto handle = runtime->register_taichi_kernel(std::move(res));

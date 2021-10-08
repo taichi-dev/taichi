@@ -1,5 +1,5 @@
 #include <numeric>
-#include "ndarray.h"
+#include "taichi/program/ndarray.h"
 
 namespace taichi {
 namespace lang {

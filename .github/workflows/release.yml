@@ -84,10 +84,10 @@ jobs:
           glewinfo
           ti diagnose
           ti changelog
-          ti test -vr2 -t2 -k "not ndarray"
+          ti test -vr2 -t2 -k "not ndarray and not torch"
           # ndarray test might OOM if run with -t2.
           # FIXME: unify this with presubmit.yml to avoid further divergence
-          ti test -vr2 -t1 -k "ndarray"
+          ti test -vr2 -t1 -k "ndarray or torch"
         env:
           PYTHON: ${{ matrix.python }}
 
@@ -267,8 +267,7 @@ jobs:
           7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi_llvm
           curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip -LO
           7z x clang-10.0.0-win.zip -otaichi_clang
-          $env:PATH += ";C:\taichi_llvm\bin"
-          $env:PATH += ";C:\taichi_clang\bin"
+          $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
           clang --version
           cd D:\a\taichi\taichi
           python -m pip install -r requirements_dev.txt
@@ -293,8 +292,7 @@ jobs:
       - name: Test
         shell: powershell
         run: |
-          $env:PATH += ";C:\taichi_llvm\bin"
-          $env:PATH += ";C:\taichi_clang\bin"
+          $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
           python -c "import taichi"
           python examples/algorithm/laplace.py
           python bin/taichi diagnose

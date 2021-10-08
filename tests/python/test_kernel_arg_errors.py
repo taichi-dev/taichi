@@ -23,5 +23,8 @@ def test_argument_redefinition():
     def foo(a: ti.i32):
         a = 1
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ti.TaichiSyntaxError) as e:
         foo(5)
+
+    assert e.value.args[
+        0] == "Kernel argument \"a\" cannot be redefined in the kernel"

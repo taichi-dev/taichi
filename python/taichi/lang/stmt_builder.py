@@ -171,6 +171,10 @@ class StmtBuilder(Builder):
             value: A node representing the value.
         """
         is_local = isinstance(target, ast.Name)
+        if is_local and target.id in ctx.args:
+            raise TaichiSyntaxError(
+                "Kernel argument \"{}\" cannot be redefined in the kernel".
+                format(target.id))
         if is_local and ctx.is_creation(target.id):
             var_name = target.id
             target.ctx = ast.Store()
@@ -548,6 +552,7 @@ if 1:
             for i, arg in enumerate(args.args):
                 # Directly pass in template arguments,
                 # such as class instances ("self"), fields, SNodes, etc.
+                ctx.args.append(arg.arg)
                 if isinstance(ctx.func.argument_annotations[i], ti.template):
                     continue
                 if isinstance(ctx.func.argument_annotations[i],

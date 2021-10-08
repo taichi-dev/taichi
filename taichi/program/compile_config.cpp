@@ -41,7 +41,7 @@ CompileConfig::CompileConfig() {
   make_thread_local = true;
   make_block_local = true;
   detect_read_only = true;
-  use_torch = true;
+  ndarray_use_torch = true;
 
   saturating_grid_dim = 0;
   max_block_dim = 0;

@@ -83,4 +83,4 @@ RUN strings build/libtaichi_core.so | grep GLIBC
 
 # # Install twine and upload project to pypi.
 # RUN $PYTHON -m pip install --user twine
-RUN $PYTHON -m pytest tests/python -s -k "not ndarray and not torch"
+# RUN $PYTHON -m pytest tests/python -n4 -v -k "not ndarray and not torch"

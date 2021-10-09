@@ -2,6 +2,7 @@ import copy
 import functools
 import itertools
 import os
+import sys
 from tempfile import mkstemp
 
 import pytest
@@ -143,6 +144,7 @@ def test(arch=None, exclude=None, require=None, **options):
                 if skip:
                     continue
 
+                print(f'arch={req_arch}', file=sys.stderr)
                 ti.init(arch=req_arch, **current_options)
                 foo(*args, **kwargs)
                 ti.reset()

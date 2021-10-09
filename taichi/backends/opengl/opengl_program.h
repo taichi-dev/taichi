@@ -1,10 +1,7 @@
 #pragma once
 
-#include "taichi/backends/opengl/struct_opengl.h"
-
-#include "taichi/backends/opengl/opengl_kernel_launcher.h"
+#include "taichi/backends/vulkan/runtime.h"
 #include "taichi/backends/opengl/opengl_api.h"
-#include "taichi/backends/opengl/codegen_opengl.h"
 
 #include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"
@@ -21,6 +18,7 @@ class OpenglProgramImpl : public ProgramImpl {
  public:
   OpenglProgramImpl(CompileConfig &config) : ProgramImpl(config) {
   }
+
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   std::size_t get_snode_num_dynamically_allocated(
@@ -33,7 +31,9 @@ class OpenglProgramImpl : public ProgramImpl {
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
 
-  void compile_snode_tree_types(SNodeTree *tree) override;
+  void compile_snode_tree_types(SNodeTree *tree) override {
+    TI_NOT_IMPLEMENTED 
+  }
 
   void materialize_snode_tree(
       SNodeTree *tree,
@@ -43,7 +43,9 @@ class OpenglProgramImpl : public ProgramImpl {
   void synchronize() override {
   }
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
+    TI_NOT_IMPLEMENTED 
+  }
 
   virtual void destroy_snode_tree(SNodeTree *snode_tree) override {
     TI_NOT_IMPLEMENTED
@@ -53,8 +55,8 @@ class OpenglProgramImpl : public ProgramImpl {
   }
 
  private:
-  std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
-  std::unique_ptr<opengl::OpenGlRuntime> opengl_runtime_;
+  std::unique_ptr<vulkan::VkRuntime> runtime_;
+  std::unique_ptr<Device> device_;
 };
 
 }  // namespace lang

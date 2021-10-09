@@ -545,7 +545,7 @@ cuda::CudaDevice *LlvmProgramImpl::cuda_device() {
 }
 
 cpu::CpuDevice *LlvmProgramImpl::cpu_device() {
-  if (config->arch != Arch::x64) {
+  if (!arch_is_cpu(config->arch)) {
     TI_ERROR("arch is not cpu");
   }
   return static_cast<cpu::CpuDevice *>(device_.get());

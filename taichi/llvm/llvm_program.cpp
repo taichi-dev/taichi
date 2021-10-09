@@ -551,7 +551,7 @@ cpu::CpuDevice *LlvmProgramImpl::cpu_device() {
 
 DevicePtr LlvmProgramImpl::get_snode_tree_device_ptr(int tree_id) {
   DeviceAllocation tree_alloc = snode_tree_allocs_[tree_id];
-  return tree_alloc.get_ptr(0);
+  return tree_alloc.get_ptr();
 }
 
 }  // namespace lang

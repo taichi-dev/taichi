@@ -2,8 +2,8 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
-from taichi.linalg import SparseMatrixBuilder
 from taichi.lang.util import cook_dtype
+from taichi.linalg import SparseMatrixBuilder
 from taichi.type.primitive_types import u64
 
 

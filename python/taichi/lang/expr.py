@@ -1,3 +1,4 @@
+import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
@@ -25,7 +26,6 @@ class Expr(TaichiOperations):
                 # assume to be constant
                 arg = args[0]
                 try:
-                    import numpy as np
                     if isinstance(arg, np.ndarray):
                         arg = arg.dtype(arg)
                 except:

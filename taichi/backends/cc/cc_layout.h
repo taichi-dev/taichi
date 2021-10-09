@@ -2,18 +2,18 @@
 
 #include "taichi/lang_util.h"
 
+class CCProgramImpl;
+
 TLANG_NAMESPACE_BEGIN
 namespace cccp {
 
-class CCProgram;
-
 class CCLayout {
  public:
-  CCLayout(CCProgram *program) : program(program) {
+  CCLayout(CCProgramImpl *cc_program_impl) : cc_program_impl_(cc_program_impl) {
   }
 
   std::string get_object() {
-    return obj_path;
+    return obj_path_;
   }
 
   size_t compile();
@@ -21,10 +21,10 @@ class CCLayout {
   std::string source;
 
  private:
-  CCProgram *program;
+  CCProgramImpl *cc_program_impl_{nullptr};
 
-  std::string src_path;
-  std::string obj_path;
+  std::string src_path_;
+  std::string obj_path_;
 };
 
 }  // namespace cccp

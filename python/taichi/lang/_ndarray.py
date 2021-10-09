@@ -1,8 +1,12 @@
+import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.util import (cook_dtype, has_pytorch, python_scope,
                               to_pytorch_type, to_taichi_type)
+
+if has_pytorch():
+    import torch
 
 
 class Ndarray:
@@ -15,14 +19,9 @@ class Ndarray:
     def __init__(self, dtype, shape):
         assert has_pytorch(
         ), "PyTorch must be available if you want to create a Taichi ndarray."
-        import torch
+        self.arr = torch.zeros(shape, dtype=to_pytorch_type(cook_dtype(dtype)))
         if impl.current_cfg().arch == _ti_core.Arch.cuda:
-            device = 'cuda:0'
-        else:
-            device = 'cpu'
-        self.arr = torch.zeros(shape,
-                               dtype=to_pytorch_type(cook_dtype(dtype)),
-                               device=device)
+            self.arr = self.arr.cuda()
 
     @property
     def shape(self):
@@ -98,14 +97,12 @@ class Ndarray:
         Args:
             arr (numpy.ndarray): The source numpy array.
         """
-        import numpy as np
         if not isinstance(arr, np.ndarray):
             raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
         if tuple(self.arr.shape) != tuple(arr.shape):
             raise ValueError(
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
-        import torch
         self.arr = torch.from_numpy(arr).to(self.arr.dtype)
 
 

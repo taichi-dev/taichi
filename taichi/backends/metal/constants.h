@@ -2,14 +2,17 @@
 
 #include <string>
 
-#include "taichi/lang_util.h"
+#include "taichi/inc/constants.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 namespace metal {
 
 inline constexpr int kMaxNumThreadsGridStrideLoop = 64 * 1024;
 inline constexpr int kNumRandSeeds = 64 * 1024;  // 256 KB is nothing
 inline constexpr int kMslVersionNone = 0;
+inline constexpr int kMaxNumSNodes = taichi_max_num_snodes;
 
 }  // namespace metal
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

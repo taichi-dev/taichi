@@ -33,8 +33,9 @@ jobs:
     name: Build and Upload (linux only)
     needs: matrix_prep
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    runs-on: [self-hosted, cuda, vulkan, cn]
+    runs-on: [self-hosted, cuda, vulkan, cn, release]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -50,9 +51,9 @@ jobs:
           export PATH=$LLVM_LIB_ROOT_DIR/bin:/usr/local/cuda/bin:$PATH
           export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
           export CXX=clang++-8
-          python3 -m pip uninstall taichi -y
-          python3 -m pip install --user -r requirements_dev.txt
-          python3 -m pip install --user twine
+          python3 -m pip uninstall taichi taichi-nightly -y
+          python3 -m pip install -r requirements_dev.txt
+          python3 -m pip install twine
           cd python
           git fetch origin master
           export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
@@ -83,14 +84,12 @@ jobs:
           glewinfo
           ti diagnose
           ti changelog
-          ti test -vr2 -t2
+          ti test -vr2 -t2 -k "not ndarray and not torch"
+          # ndarray test might OOM if run with -t2.
+          # FIXME: unify this with presubmit.yml to avoid further divergence
+          ti test -vr2 -t1 -k "ndarray or torch"
         env:
           PYTHON: ${{ matrix.python }}
-
-      - name: Setup tmate session
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 180
 
       - name: Upload PyPI
         env:
@@ -109,6 +108,7 @@ jobs:
     name: Build and Upload (macOS only)
     needs: matrix_prep
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     runs-on: macos-latest
     steps:
@@ -174,6 +174,7 @@ jobs:
     name: Build and Upload (Apple M1)
     needs: matrix_prep
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix_osx) }}
     runs-on: [self-hosted, m1]
     defaults:
@@ -230,6 +231,7 @@ jobs:
     name: Build and Upload (Windows only)
     needs: matrix_prep
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     runs-on: windows-latest
     steps:
@@ -265,8 +267,7 @@ jobs:
           7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi_llvm
           curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip -LO
           7z x clang-10.0.0-win.zip -otaichi_clang
-          $env:PATH += ";C:\taichi_llvm\bin"
-          $env:PATH += ";C:\taichi_clang\bin"
+          $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
           clang --version
           cd D:\a\taichi\taichi
           python -m pip install -r requirements_dev.txt
@@ -291,8 +292,7 @@ jobs:
       - name: Test
         shell: powershell
         run: |
-          $env:PATH += ";C:\taichi_llvm\bin"
-          $env:PATH += ";C:\taichi_clang\bin"
+          $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
           python -c "import taichi"
           python examples/algorithm/laplace.py
           python bin/taichi diagnose

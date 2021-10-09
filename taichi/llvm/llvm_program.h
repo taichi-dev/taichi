@@ -22,6 +22,10 @@ namespace taichi {
 namespace lang {
 class StructCompiler;
 
+namespace cuda {
+class CudaDevice;
+}
+
 class LlvmProgramImpl : public ProgramImpl {
  public:
   LlvmProgramImpl(CompileConfig &config, KernelProfilerBase *profiler);
@@ -124,6 +128,10 @@ class LlvmProgramImpl : public ProgramImpl {
     TI_NOT_IMPLEMENTED;
   }
 
+  virtual Device *get_compute_device() override {
+    return device_.get();
+  }
+
  private:
   std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
   std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
@@ -132,6 +140,11 @@ class LlvmProgramImpl : public ProgramImpl {
   std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
   void *llvm_runtime{nullptr};
   void *preallocated_device_buffer{nullptr};  // TODO: move to memory allocator
+
+  DeviceAllocation preallocated_device_buffer_alloc{kDeviceNullAllocation};
+
+  std::unique_ptr<Device> device_;
+  cuda::CudaDevice *cuda_device();
 };
 }  // namespace lang
 }  // namespace taichi

@@ -6,7 +6,7 @@
 #ifdef TI_INSIDE_OPENGL_CODEGEN
 
 #ifndef TI_OPENGL_NESTED_INCLUDE
-#define OPENGL_BEGIN_RUNTIME_DEF constexpr auto kOpenGLRuntimeSourceCode =
+#define OPENGL_BEGIN_RUNTIME_DEF constexpr auto kOpenGlRuntimeSourceCode =
 #define OPENGL_END_RUNTIME_DEF ;
 #else
 #define OPENGL_BEGIN_RUNTIME_DEF

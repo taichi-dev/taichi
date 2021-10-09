@@ -47,9 +47,7 @@ static std::string add_line_markers(std::string x) {
   return x;
 }
 
-struct GLSLLauncherImpl {
-  std::unique_ptr<Device> device;
-
+struct OpenGlRuntimeImpl {
   struct {
     DeviceAllocation runtime = kDeviceNullAllocation;
     DeviceAllocation listman = kDeviceNullAllocation;
@@ -57,7 +55,7 @@ struct GLSLLauncherImpl {
     DeviceAllocation gtmp = kDeviceNullAllocation;
   } core_bufs;
 
-  GLSLLauncherImpl() {
+  OpenGlRuntimeImpl() {
   }
 
   std::unique_ptr<GLSLRuntime> runtime;
@@ -264,9 +262,8 @@ struct CompiledProgram::Impl {
     return i;
   }
 
-  void dump_message_buffer(GLSLLauncher *launcher) const {
-    auto runtime = launcher->impl->core_bufs.runtime;
-    auto rt_buf = (GLSLRuntime *)device->map(launcher->impl->core_bufs.runtime);
+  void dump_message_buffer(OpenGlRuntime *runtime) const {
+    auto rt_buf = (GLSLRuntime *)device->map(runtime->impl->core_bufs.runtime);
 
     auto msg_count = rt_buf->msg_count;
     if (msg_count > MAX_MESSAGES) {
@@ -300,7 +297,7 @@ struct CompiledProgram::Impl {
       }
     }
     rt_buf->msg_count = 0;
-    device->unmap(launcher->impl->core_bufs.runtime);
+    device->unmap(runtime->impl->core_bufs.runtime);
   }
 
   bool check_ext_arr_read(int i) const {
@@ -335,7 +332,7 @@ struct CompiledProgram::Impl {
     return access;
   }
 
-  void launch(Context &ctx, GLSLLauncher *launcher) const {
+  void launch(Context &ctx, OpenGlRuntime *launcher) const {
     std::array<void *, taichi_max_num_args> ext_arr_host_ptrs;
 
     uint8_t *args_buf_mapped = nullptr;
@@ -428,12 +425,12 @@ struct CompiledProgram::Impl {
   }
 };
 
-GLSLLauncher::GLSLLauncher(size_t root_size) {
+OpenGlRuntime::OpenGlRuntime() {
   initialize_opengl();
 
   device = std::make_unique<GLDevice>();
 
-  impl = std::make_unique<GLSLLauncherImpl>();
+  impl = std::make_unique<OpenGlRuntimeImpl>();
 
   impl->runtime = std::make_unique<GLSLRuntime>();
   impl->core_bufs.runtime = device->allocate_memory(
@@ -441,8 +438,6 @@ GLSLLauncher::GLSLLauncher(size_t root_size) {
 
   impl->listman = std::make_unique<GLSLListman>();
   impl->core_bufs.listman = device->allocate_memory({sizeof(GLSLListman)});
-
-  impl->core_bufs.root = device->allocate_memory({root_size});
 
   impl->core_bufs.gtmp =
       device->allocate_memory({taichi_global_tmp_buffer_size});
@@ -452,14 +447,21 @@ GLSLLauncher::GLSLLauncher(size_t root_size) {
                        0);
   cmdlist->buffer_fill(impl->core_bufs.listman.get_ptr(0), sizeof(GLSLListman),
                        0);
-  cmdlist->buffer_fill(impl->core_bufs.root.get_ptr(0), root_size, 0);
   cmdlist->buffer_fill(impl->core_bufs.gtmp.get_ptr(0),
                        taichi_global_tmp_buffer_size, 0);
   device->get_compute_stream()->submit_synced(cmdlist.get());
 }
 
-void GLSLLauncher::keep(std::unique_ptr<CompiledProgram> program) {
+void OpenGlRuntime::keep(std::unique_ptr<CompiledProgram> program) {
   impl->programs.push_back(std::move(program));
+}
+
+void OpenGlRuntime::add_snode_tree(size_t size) {
+  impl->core_bufs.root = device->allocate_memory({size});
+
+  auto cmdlist = device->get_compute_stream()->new_command_list();
+  cmdlist->buffer_fill(impl->core_bufs.root.get_ptr(0), size, 0);
+  device->get_compute_stream()->submit_synced(cmdlist.get());
 }
 
 bool is_opengl_api_available() {
@@ -470,7 +472,7 @@ bool is_opengl_api_available() {
 
 #else
 struct GLProgram {};
-struct GLSLLauncherImpl {};
+struct OpenGlRuntimeImpl {};
 
 struct CompiledProgram::Impl {
   UsedFeature used;
@@ -491,16 +493,20 @@ struct CompiledProgram::Impl {
     TI_NOT_IMPLEMENTED;
   }
 
-  void launch(Context &ctx, GLSLLauncher *launcher) const {
+  void launch(Context &ctx, OpenGlRuntime *launcher) const {
     TI_NOT_IMPLEMENTED;
   }
 };
 
-GLSLLauncher::GLSLLauncher(size_t size) {
+OpenGlRuntime::OpenGlRuntime() {
   TI_NOT_IMPLEMENTED;
 }
 
-void GLSLLauncher::keep(std::unique_ptr<CompiledProgram>) {
+void OpenGlRuntime::keep(std::unique_ptr<CompiledProgram>) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void OpenGlRuntime::add_snode_tree(size_t size) {
   TI_NOT_IMPLEMENTED;
 }
 
@@ -538,11 +544,11 @@ int CompiledProgram::lookup_or_add_string(const std::string &str) {
   return impl->lookup_or_add_string(str);
 }
 
-void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {
+void CompiledProgram::launch(Context &ctx, OpenGlRuntime *launcher) const {
   impl->launch(ctx, launcher);
 }
 
-GLSLLauncher::~GLSLLauncher() = default;
+OpenGlRuntime::~OpenGlRuntime() = default;
 
 }  // namespace opengl
 TLANG_NAMESPACE_END

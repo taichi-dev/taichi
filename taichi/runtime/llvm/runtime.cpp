@@ -789,7 +789,7 @@ Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
         ((std::size_t)preallocated_head + alignment - 1) % alignment;
     size += alignment_bytes;
     if (preallocated_head + size <= preallocated_tail) {
-      ret = preallocated_head;
+      ret = preallocated_head + alignment_bytes;
       preallocated_head += size;
       success = true;
     } else {
@@ -840,9 +840,9 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
   }
 }
 
-void runtime_snode_tree_allocate_aligned(LLVMRuntime *runtime,
-                                         std::size_t size,
-                                         std::size_t alignment) {
+void runtime_memory_allocate_aligned(LLVMRuntime *runtime,
+                                     std::size_t size,
+                                     std::size_t alignment) {
   runtime->set_result(taichi_result_buffer_runtime_query_id,
                       runtime->allocate_aligned(size, alignment));
 }

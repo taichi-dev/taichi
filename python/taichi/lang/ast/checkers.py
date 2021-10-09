@@ -1,5 +1,6 @@
 import ast
 
+import taichi.lang.kernel_impl
 from taichi.lang.shell import oinspect
 
 
@@ -68,8 +69,7 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
             return
 
         if not (self.top_level or self.current_scope.allows_more_stmt):
-            import taichi as ti
-            raise ti.KernelDefError(
+            raise taichi.lang.kernel_impl.KernelDefError(
                 f'No more statements allowed, at {self.get_error_location(node)}'
             )
         old_top_level = self.top_level
@@ -96,8 +96,7 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
             is_static = False
         if not (self.top_level or self.current_scope.allows_for_loop
                 or is_static):
-            import taichi as ti
-            raise ti.KernelDefError(
+            raise taichi.lang.kernel_impl.KernelDefError(
                 f'No more for loops allowed, at {self.get_error_location(node)}'
             )
 

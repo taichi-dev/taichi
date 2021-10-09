@@ -1,6 +1,10 @@
 import copy
+import functools
 import itertools
+import os
+from tempfile import mkstemp
 
+import pytest
 from taichi.core import ti_core as _ti_core
 
 import taichi as ti
@@ -21,8 +25,6 @@ def get_rel_eps():
 
 def approx(expected, **kwargs):
     '''Tweaked pytest.approx for OpenGL low precisions'''
-    import pytest
-
     class boolean_integer:
         def __init__(self, value):
             self.value = value
@@ -48,8 +50,7 @@ def allclose(x, y, **kwargs):
 
 def make_temp_file(*args, **kwargs):
     '''Create a temporary file'''
-    import os
-    from tempfile import mkstemp
+
     fd, name = mkstemp(*args, **kwargs)
     os.close(fd)
     return name
@@ -106,10 +107,10 @@ def test(arch=None, exclude=None, require=None, **options):
         arch = supported_archs
     else:
         arch = list(filter(lambda x: x in supported_archs, arch))
+    if len(arch) == 0:
+        return lambda x: print('No supported arch found. Skipping')
 
     def decorator(foo):
-        import functools
-
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
             arch_params_sets = [arch, *_test_features.values()]

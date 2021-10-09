@@ -13,9 +13,9 @@ FunctionType MetalProgramImpl::compile(Kernel *kernel,
   if (!kernel->lowered()) {
     kernel->lower();
   }
-  return metal::compile_to_metal_executable(kernel, metal_kernel_mgr_.get(),
-                                            &metal_compiled_structs_.value(),
-                                            offloaded);
+  return metal::compile_to_metal_executable(
+      kernel, metal_kernel_mgr_.get(), &(compiled_runtime_module_.value()),
+      &(metal_compiled_structs_.value()), offloaded);
 }
 
 std::size_t MetalProgramImpl::get_snode_num_dynamically_allocated(SNode *snode,
@@ -29,10 +29,18 @@ void MetalProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                            KernelProfilerBase *profiler,
                                            uint64 **result_buffer_ptr) {
   TI_ASSERT(*result_buffer_ptr == nullptr);
+  TI_ASSERT(metal_kernel_mgr_ == nullptr);
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
-  params_.mem_pool = memory_pool;
-  params_.profiler = profiler;
+  compiled_runtime_module_ = metal::compile_runtime_module();
+
+  metal::KernelManager::Params params;
+  params.compiled_runtime_module = compiled_runtime_module_.value();
+  params.config = config;
+  params.host_result_buffer = *result_buffer_ptr;
+  params.mem_pool = memory_pool;
+  params.profiler = profiler;
+  metal_kernel_mgr_ = std::make_unique<metal::KernelManager>(std::move(params));
 }
 
 void MetalProgramImpl::materialize_snode_tree(
@@ -46,14 +54,13 @@ void MetalProgramImpl::materialize_snode_tree(
   auto *const root = tree->root();
 
   metal_compiled_structs_ = metal::compile_structs(*root);
-  if (metal_kernel_mgr_ == nullptr) {
-    params_.compiled_structs = metal_compiled_structs_.value();
-    params_.config = config;
-    params_.host_result_buffer = result_buffer;
-    params_.root_id = root->id;
-    metal_kernel_mgr_ =
-        std::make_unique<metal::KernelManager>(std::move(params_));
-  }
+  metal_kernel_mgr_->add_compiled_snode_tree(metal_compiled_structs_.value());
+}
+
+std::unique_ptr<AotModuleBuilder> MetalProgramImpl::make_aot_module_builder() {
+  return std::make_unique<metal::AotModuleBuilderImpl>(
+      &(compiled_runtime_module_.value()), &(metal_compiled_structs_.value()),
+      metal_kernel_mgr_->get_buffer_meta_data());
 }
 
 }  // namespace lang

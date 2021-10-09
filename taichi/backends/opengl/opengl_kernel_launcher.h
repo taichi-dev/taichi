@@ -10,16 +10,18 @@ TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
 struct CompiledProgram;
-struct GLSLLauncherImpl;
-struct GLSLLauncher;
+struct OpenGlRuntimeImpl;
+struct OpenGlRuntime;
 class GLBuffer;
 
-struct GLSLLauncher {
-  std::unique_ptr<GLSLLauncherImpl> impl;
+struct OpenGlRuntime {
+  std::unique_ptr<OpenGlRuntimeImpl> impl;
   std::unique_ptr<Device> device{nullptr};
-  GLSLLauncher(size_t size);
-  ~GLSLLauncher();
+  OpenGlRuntime();
+  ~OpenGlRuntime();
   void keep(std::unique_ptr<CompiledProgram> program);
+  // FIXME: Currently GLSL codegen only supports single root
+  void add_snode_tree(size_t size);
 
   void *result_buffer;
 };

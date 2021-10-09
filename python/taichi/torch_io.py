@@ -1,5 +1,5 @@
-from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import kernel
+from taichi.type.annotations import ext_arr, template
 
 
 @kernel

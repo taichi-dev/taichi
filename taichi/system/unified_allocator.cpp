@@ -3,56 +3,30 @@
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_context.h"
+#include "taichi/backends/cuda/cuda_device.h"
+
 #endif
 #include "taichi/lang_util.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/virtual_memory.h"
 #include "taichi/system/timer.h"
+#include "taichi/backends/cpu/cpu_device.h"
 #include <string>
 
 TLANG_NAMESPACE_BEGIN
 
-UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
-    : size(size), arch_(arch) {
+UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
+    : size(size), arch_(arch), device_(device) {
   auto t = Time::get_time();
-  if (arch_ == Arch::cuda) {
-    // CUDA gets stuck when
-    //  - kernel A requests memory
-    //  - the memory allocator trys to allocate memory (and get stuck at
-    //  cudaMallocManaged for some reason)
-    //  - kernel B is getting loaded via cuModuleLoadDataEx (and get stuck for
-    //  some reason)
-    // So we need a mutex here...
-    // std::lock_guard<std::mutex> _(cuda_context->lock);
-    TI_TRACE("Allocating unified (CPU+GPU) address space of size {} MB",
-             size / 1024 / 1024);
-#if defined(TI_WITH_CUDA)
-    // This could be run on a host worker thread, so we have to set the context
-    // before using any of the CUDA driver function call.
-    auto _ = CUDAContext::get_instance().get_guard();
-    CUDADriver::get_instance().malloc_managed(&_cuda_data, size,
-                                              CU_MEM_ATTACH_GLOBAL);
-    if (_cuda_data == nullptr) {
-      TI_ERROR("CUDA memory allocation failed.");
-    }
-#if !defined(TI_ARCH_ARM) && !defined(TI_PLATFORM_WINDOWS)
-    // Assuming ARM devices have shared CPU/GPU memory and do no support
-    // memAdvise; CUDA on Windows has limited support for unified memory
-    CUDADriver::get_instance().mem_advise.call_with_warning(
-        _cuda_data, size, CU_MEM_ADVISE_SET_PREFERRED_LOCATION, 0);
-#endif
-    // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
-    /*
-    cudaMemAdvise(_cuda_data, size, cudaMemAdviseSetReadMostly,
-                  cudaCpuDeviceId);
-    cudaMemAdvise(_cuda_data, size, cudaMemAdviseSetAccessedBy,
-                  0);
-                  */
-    data = (uint8 *)_cuda_data;
-    TI_TRACE("UM created, data={}", (intptr_t)data);
-#else
-    TI_NOT_IMPLEMENTED
-#endif
+  if (arch_ == Arch::x64) {
+    Device::AllocParams alloc_params;
+    alloc_params.size = size;
+    alloc_params.host_read = true;
+    alloc_params.host_write = true;
+
+    cpu::CpuDevice *cpu_device = static_cast<cpu::CpuDevice *>(device);
+    alloc = cpu_device->allocate_memory(alloc_params);
+    data = (uint8 *)cpu_device->get_alloc_info(alloc).ptr;
   } else {
     TI_TRACE("Allocating virtual address space of size {} MB",
              size / 1024 / 1024);
@@ -71,12 +45,9 @@ taichi::lang::UnifiedAllocator::~UnifiedAllocator() {
   if (!initialized()) {
     return;
   }
-  if (arch_ == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().mem_free(_cuda_data);
-#else
-    TI_ERROR("No CUDA support");
-#endif
+  if (arch_ == Arch::x64) {
+    cpu::CpuDevice *cpu_device = static_cast<cpu::CpuDevice *>(device_);
+    cpu_device->dealloc_memory(alloc);
   }
 }
 

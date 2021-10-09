@@ -5,7 +5,8 @@
 
 #include "taichi/ir/snode.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 namespace metal {
 
 struct SNodeDescriptor {
@@ -44,20 +45,30 @@ int total_num_self_from_root(const SNodeDescriptorsMap &m, int snode_id);
 struct CompiledStructs {
   // Source code of the SNode data structures compiled to Metal
   std::string snode_structs_source_code;
-  // Runtime related source code
-  std::string runtime_utils_source_code;
   // Type name of the generated root SNode.
   std::string root_snode_type_name;
   // Root buffer size in bytes.
-  size_t root_size;
+  size_t root_size{0};
+  // Root SNode ID
+  int root_id{0};
+  // max(ID of Root or Dense Snode) + 1
+  int max_snodes{0};
+  // Map from SNode ID to its descriptor.
+  SNodeDescriptorsMap snode_descriptors;
+};
+
+// Compile all snodes to Metal source code
+CompiledStructs compile_structs(SNode &root);
+
+struct CompiledRuntimeModule {
   // Runtime struct size.
   // A Runtime struct is generated dynamically, depending on the number of
   // SNodes. It looks like something below:
   // struct Runtime {
-  //     SNodeMeta snode_metas[max_snodes];
-  //     SNodeExtractors snode_extractors[max_snodes];
-  //     ListManagerData snode_lists[max_snodes];
   //     uint32_t rand_seeds[kNumRandSeeds];
+  //     SNodeMeta snode_metas[kMaxNumSNodes];
+  //     SNodeExtractors snode_extractors[kMaxNumSNodes];
+  //     ListManagerData snode_lists[kMaxNumSNodes];
   // };
   //
   // |runtime_size| will be sizeof(Runtime), which is useful for allocating the
@@ -71,15 +82,16 @@ struct CompiledStructs {
   // |<-- runtime_size -->|<------- decided by config, usually ~GB -------->|
   //
   // TODO(k-ye): See if Metal ArgumentBuffer can directly store the pointers.
-  size_t runtime_size;
-  // max(ID of Root or Dense Snode) + 1
-  int max_snodes;
-  // Map from SNode ID to its descriptor.
-  SNodeDescriptorsMap snode_descriptors;
+  size_t runtime_size{0};
+  // |runtime_size| includes |rand_seeds_size|.
+  size_t rand_seeds_size{0};
+
+  // Runtime related source code
+  std::string runtime_utils_source_code;
 };
 
-// Compile all snodes to Metal source code
-CompiledStructs compile_structs(SNode &root);
+CompiledRuntimeModule compile_runtime_module();
 
 }  // namespace metal
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

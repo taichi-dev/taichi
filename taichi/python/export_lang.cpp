@@ -28,6 +28,8 @@
 #include "taichi/program/sparse_matrix.h"
 #include "taichi/program/sparse_solver.h"
 
+#include "taichi/program/kernel_profiler.h"
+
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
 #endif
@@ -158,7 +160,6 @@ void export_lang(py::module &m) {
       .def_readwrite("verbose", &CompileConfig::verbose)
       .def_readwrite("demote_dense_struct_fors",
                      &CompileConfig::demote_dense_struct_fors)
-      .def_readwrite("use_unified_memory", &CompileConfig::use_unified_memory)
       .def_readwrite("kernel_profiler", &CompileConfig::kernel_profiler)
       .def_readwrite("timeline", &CompileConfig::timeline)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
@@ -212,13 +213,28 @@ void export_lang(py::module &m) {
       .def_readwrite("max", &Program::KernelProfilerQueryResult::max)
       .def_readwrite("avg", &Program::KernelProfilerQueryResult::avg);
 
+  py::class_<KernelProfileTracedRecord>(m, "KernelProfileTracedRecord")
+      .def_readwrite("name", &KernelProfileTracedRecord::name)
+      .def_readwrite("kernel_time",
+                     &KernelProfileTracedRecord::kernel_elapsed_time_in_ms)
+      .def_readwrite("base_time", &KernelProfileTracedRecord::time_since_base)
+      .def_readwrite("metric_values",
+                     &KernelProfileTracedRecord::metric_values);
+
   py::class_<Program>(m, "Program")
       .def(py::init<>())
       .def_readonly("config", &Program::config)
-      .def("print_kernel_profile_info", &Program::print_kernel_profile_info)
       .def("query_kernel_profile_info",
            [](Program *program, const std::string &name) {
              return program->query_kernel_profile_info(name);
+           })
+      .def("get_kernel_profiler_records",
+           [](Program *program) {
+             return program->profiler->get_traced_records();
+           })
+      .def("reinit_kernel_profiler_with_metrics",
+           [](Program *program, const std::vector<std::string> metrics) {
+             return program->profiler->reinit_with_metrics(metrics);
            })
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })

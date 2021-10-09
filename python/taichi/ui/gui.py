@@ -1,10 +1,11 @@
 import pathlib
+from contextlib import contextmanager
 
 from taichi.core import ti_core as _ti_core
 from taichi.lang.impl import default_cfg
-from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.ops import get_addr
+from taichi.type.annotations import ext_arr, template
 
 from .utils import *
 
@@ -12,6 +13,30 @@ from .utils import *
 class Gui:
     def __init__(self, gui) -> None:
         self.gui = gui  #reference to a PyGui
+
+    @contextmanager
+    def sub_window(self, name, x, y, width, height):
+        """Creating a context manager for subwindow
+
+        Note:
+            All args of this method should align with `begin`.
+
+        Args:
+            x (float): The x-coordinate (between 0 and 1) of the top-left corner of the subwindow, relative to the full window.
+            y (float): The y-coordinate (between 0 and 1) of the top-left corner of the subwindow, relative to the full window.
+            width (float): The width of the subwindow relative to the full window.
+            height (float): The height of the subwindow relative to the full window.
+
+        Usage::
+
+            >>> with gui.sub_window(name, x, y, width, height) as g:
+            >>>     g.text("Hello, World!")
+        """
+        self.begin(name, x, y, width, height)
+        try:
+            yield self
+        finally:
+            self.end()
 
     def begin(self, name, x, y, width, height):
         """Creates a subwindow that holds imgui widgets.

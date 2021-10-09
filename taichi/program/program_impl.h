@@ -5,9 +5,11 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/program/aot_module_builder.h"
+#include "taichi/backends/device.h"
 
 namespace taichi {
 namespace lang {
+
 class ProgramImpl {
  public:
   // TODO: Make it safer, we exposed it for now as it's directly accessed
@@ -54,6 +56,14 @@ class ProgramImpl {
    * Make a AotModulerBuilder, currently only supported by metal and wasm.
    */
   virtual std::unique_ptr<AotModuleBuilder> make_aot_module_builder() = 0;
+
+  virtual Device *get_compute_device() {
+    return nullptr;
+  }
+
+  virtual Device *get_graphics_device() {
+    return nullptr;
+  }
 
   virtual ~ProgramImpl() {
   }

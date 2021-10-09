@@ -9,6 +9,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/transforms/constant_fold.h"
+#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -54,16 +55,19 @@ class ConstantFold : public BasicStmtVisitor {
       current_ast_builder().insert(std::move(oper));
       current_ast_builder().insert(std::move(ret));
     };
+
     auto ker = std::make_unique<Kernel>(*program, func, kernel_name);
     ker->insert_ret(id.ret);
     ker->insert_arg(id.lhs, false);
     if (id.is_binary)
       ker->insert_arg(id.rhs, false);
     ker->is_evaluator = true;
+
     auto *ker_ptr = ker.get();
     TI_TRACE("Saving JIT evaluator cache entry id={}",
              std::hash<JITEvaluatorId>{}(id));
     cache[id] = std::move(ker);
+
     return ker_ptr;
   }
 
@@ -155,8 +159,33 @@ class ConstantFold : public BasicStmtVisitor {
     auto operand = stmt->operand->cast<ConstStmt>();
     if (!operand)
       return;
-    if (stmt->width() != 1)
+    if (stmt->width() != 1) {
       return;
+    }
+    if (stmt->is_cast()) {
+      bool cast_available = true;
+      TypedConstant new_constant(stmt->ret_type);
+      auto operand = stmt->operand->cast<ConstStmt>();
+      if (stmt->op_type == UnaryOpType::cast_bits) {
+        new_constant.value_bits = operand->val[0].value_bits;
+      } else {
+        if (stmt->cast_type == PrimitiveType::f32) {
+          new_constant.val_f32 = float32(operand->val[0].val_cast_to_float64());
+        } else if (stmt->cast_type == PrimitiveType::f64) {
+          new_constant.val_f64 = operand->val[0].val_cast_to_float64();
+        } else {
+          cast_available = false;
+        }
+      }
+      if (cast_available) {
+        auto evaluated =
+            Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
+        stmt->replace_with(evaluated.get());
+        modifier.insert_before(stmt, std::move(evaluated));
+        modifier.erase(stmt);
+        return;
+      }
+    }
     auto dst_type = stmt->ret_type;
     TypedConstant new_constant(dst_type);
     if (jit_evaluate_unary_op(new_constant, stmt, operand->val[0])) {
@@ -194,6 +223,12 @@ class ConstantFold : public BasicStmtVisitor {
   static bool run(IRNode *node, Program *program) {
     ConstantFold folder(program);
     bool modified = false;
+
+    auto program_compile_config_org = program->config;
+    program->config.advanced_optimization = false;
+    program->config.constant_folding = false;
+    program->config.external_optimization_level = 0;
+
     while (true) {
       node->accept(&folder);
       if (folder.modifier.modify_ir()) {
@@ -202,6 +237,9 @@ class ConstantFold : public BasicStmtVisitor {
         break;
       }
     }
+
+    program->config = program_compile_config_org;
+
     return modified;
   }
 };

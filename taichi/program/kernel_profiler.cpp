@@ -34,35 +34,7 @@ void KernelProfilerBase::profiler_stop(KernelProfilerBase *profiler) {
   profiler->stop();
 }
 
-void KernelProfilerBase::print() {
-  sync();
-  fmt::print("{}\n", title());
-  fmt::print(
-      "========================================================================"
-      "=\n");
-  fmt::print(
-      "[      %     total   count |      min       avg       max   ] Kernel "
-      "name\n");
-  std::sort(statistical_results_.begin(), statistical_results_.end());
-  for (auto &rec : statistical_results_) {
-    auto fraction = rec.total / total_time_ms_ * 100.0f;
-    fmt::print("[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms] {}\n",
-               fraction, rec.total / 1000.0f, rec.counter, rec.min,
-               rec.total / rec.counter, rec.max, rec.name);
-  }
-  fmt::print(
-      "------------------------------------------------------------------------"
-      "-\n");
-  fmt::print(
-      "[100.00%] Total kernel execution time: {:7.3f} s   number of records: "
-      "{}\n",
-      get_total_time(), statistical_results_.size());
-
-  fmt::print(
-      "========================================================================"
-      "=\n");
-}
-
+// TODO : deprecated
 void KernelProfilerBase::query(const std::string &kernel_name,
                                int &counter,
                                double &min,
@@ -97,10 +69,6 @@ namespace {
 // A simple profiler that uses Time::get_time()
 class DefaultProfiler : public KernelProfilerBase {
  public:
-  explicit DefaultProfiler(Arch arch)
-      : title_(fmt::format("{} Profiler", arch_name(arch))) {
-  }
-
   void sync() override {
   }
 
@@ -111,10 +79,6 @@ class DefaultProfiler : public KernelProfilerBase {
     statistical_results_.clear();
   }
 
-  std::string title() const override {
-    return title_;
-  }
-
   void start(const std::string &kernel_name) override {
     start_t_ = Time::get_time();
     event_name_ = kernel_name;
@@ -123,6 +87,12 @@ class DefaultProfiler : public KernelProfilerBase {
   void stop() override {
     auto t = Time::get_time() - start_t_;
     auto ms = t * 1000.0;
+    // trace record
+    KernelProfileTracedRecord record;
+    record.name = event_name_;
+    record.kernel_elapsed_time_in_ms = ms;
+    traced_records_.push_back(record);
+    // count record
     auto it =
         std::find_if(statistical_results_.begin(), statistical_results_.end(),
                      [&](KernelProfileStatisticalResult &r) {
@@ -139,20 +109,19 @@ class DefaultProfiler : public KernelProfilerBase {
  private:
   double start_t_;
   std::string event_name_;
-  std::string title_;
 };
 
 }  // namespace
 
-std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch) {
+std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable) {
   if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    return std::make_unique<KernelProfilerCUDA>();
+    return std::make_unique<KernelProfilerCUDA>(enable);
 #else
     TI_NOT_IMPLEMENTED;
 #endif
   } else {
-    return std::make_unique<DefaultProfiler>(arch);
+    return std::make_unique<DefaultProfiler>();
   }
 }
 

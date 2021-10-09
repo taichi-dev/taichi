@@ -15,7 +15,8 @@ TLANG_NAMESPACE_BEGIN
 struct KernelProfileTracedRecord {
   std::string name;
   float kernel_elapsed_time_in_ms{0.0};
-  float time_since_base{0.0};  // for Timeline
+  float time_since_base{0.0};        // for Timeline
+  std::vector<float> metric_values;  // user selected metrics
 };
 
 struct KernelProfileStatisticalResult {
@@ -45,11 +46,12 @@ class KernelProfilerBase {
   // Needed for the CUDA backend since we need to know which task to "stop"
   using TaskHandle = void *;
 
+  virtual void reinit_with_metrics(const std::vector<std::string> &metrics){
+      TI_NOT_IMPLEMENTED};
+
   virtual void clear() = 0;
 
   virtual void sync() = 0;
-
-  virtual std::string title() const = 0;
 
   // TODO: remove start and always use start_with_handle
   virtual void start(const std::string &kernel_name){TI_NOT_IMPLEMENTED};
@@ -66,8 +68,6 @@ class KernelProfilerBase {
 
   static void profiler_stop(KernelProfilerBase *profiler);
 
-  virtual void print();
-
   virtual void trace(KernelProfilerBase::TaskHandle &task_handle,
                      const std::string &task_name){TI_NOT_IMPLEMENTED};
 
@@ -77,12 +77,16 @@ class KernelProfilerBase {
              double &max,
              double &avg);
 
+  std::vector<KernelProfileTracedRecord> get_traced_records() {
+    return traced_records_;
+  }
+
   double get_total_time() const;
 
   virtual ~KernelProfilerBase() {
   }
 };
 
-std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch);
+std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable);
 
 TLANG_NAMESPACE_END

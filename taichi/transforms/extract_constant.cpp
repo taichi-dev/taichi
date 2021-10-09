@@ -9,6 +9,7 @@ TLANG_NAMESPACE_BEGIN
 class ExtractConstant : public BasicStmtVisitor {
  private:
   Block *top_level;
+  DelayedIRModifier modifier;
 
  public:
   using BasicStmtVisitor::visit;
@@ -21,9 +22,7 @@ class ExtractConstant : public BasicStmtVisitor {
   void visit(ConstStmt *stmt) override {
     TI_ASSERT(top_level);
     if (stmt->parent != top_level) {
-      auto extracted = stmt->parent->extract(stmt);
-      top_level->insert(std::move(extracted), 0);
-      throw IRModified();
+      modifier.extract_to_block_front(stmt, top_level);
     }
   }
 
@@ -40,15 +39,12 @@ class ExtractConstant : public BasicStmtVisitor {
     ExtractConstant extractor(node);
     bool ir_modified = false;
     while (true) {
-      bool modified = false;
-      try {
-        node->accept(&extractor);
-      } catch (IRModified) {
-        modified = true;
+      node->accept(&extractor);
+      if (extractor.modifier.modify_ir()) {
         ir_modified = true;
-      }
-      if (!modified)
+      } else {
         break;
+      }
     }
     return ir_modified;
   }

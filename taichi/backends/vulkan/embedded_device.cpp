@@ -17,7 +17,9 @@ namespace vulkan {
 
 namespace {
 
-constexpr bool kEnableValidationLayers = true;
+// FIXME: NDEBUG is broken, so just manually enable this if necessary.
+constexpr bool kEnableValidationLayers = false;
+
 const std::vector<const char *> kValidationLayers = {
     "VK_LAYER_KHRONOS_validation",
 };

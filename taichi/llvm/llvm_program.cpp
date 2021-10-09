@@ -8,6 +8,11 @@
 #include "taichi/util/str.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/ir/statements.h"
+#include "taichi/backends/cpu/cpu_device.h"
+#include "taichi/backends/cuda/cuda_device.h"
+
+#include "taichi/backends/cuda/cuda_device.h"
+
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/codegen_cuda.h"
@@ -79,6 +84,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
   if (arch_is_cpu(config->arch)) {
     config_.max_block_dim = 1024;
+    device_ = std::make_unique<cpu::CpuDevice>();
   }
 
   if (config->kernel_profiler && runtime_mem_info) {
@@ -92,6 +98,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
       CUDAContext::get_instance().set_profiler(nullptr);
     }
     CUDAContext::get_instance().set_debug(config->debug);
+    device_ = std::make_unique<cuda::CudaDevice>();
   }
 #endif
 }
@@ -141,7 +148,7 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
                                                      StructCompiler *scomp,
                                                      uint64 *result_buffer) {
   TaichiLLVMContext *tlctx = nullptr;
-  if (config->is_cuda_no_unified_memory()) {
+  if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     tlctx = llvm_context_device.get();
 #else
@@ -227,13 +234,8 @@ uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
   auto arch = config->arch;
   if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    if (config->use_unified_memory) {
-      // More efficient than a cudaMemcpy call in practice
-      ret = result_buffer[i];
-    } else {
-      CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
-                                                       sizeof(uint64));
-    }
+    CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
+                                                     sizeof(uint64));
 #else
     TI_NOT_IMPLEMENTED;
 #endif
@@ -288,7 +290,7 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 
   std::size_t prealloc_size = 0;
   TaichiLLVMContext *tlctx = nullptr;
-  if (config->is_cuda_no_unified_memory()) {
+  if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().malloc(
         (void **)result_buffer_ptr,
@@ -305,8 +307,14 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     TI_TRACE("Allocating device memory {:.2f} GB",
              1.0 * prealloc_size / (1UL << 30));
 
-    CUDADriver::get_instance().malloc(&preallocated_device_buffer,
-                                      prealloc_size);
+    Device::AllocParams preallocated_device_buffer_alloc_params;
+    preallocated_device_buffer_alloc_params.size = prealloc_size;
+    preallocated_device_buffer_alloc =
+        cuda_device()->allocate_memory(preallocated_device_buffer_alloc_params);
+    cuda::CudaDevice::AllocInfo preallocated_device_buffer_alloc_info =
+        cuda_device()->get_alloc_info(preallocated_device_buffer_alloc);
+    preallocated_device_buffer = preallocated_device_buffer_alloc_info.ptr;
+
     CUDADriver::get_instance().memset(preallocated_device_buffer, 0,
                                       prealloc_size);
     tlctx = llvm_context_device.get();
@@ -354,7 +362,7 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                       *result_buffer_ptr);
   TI_TRACE("LLVMRuntime pointer fetched");
 
-  if (arch_use_host_memory(config->arch) || config->use_unified_memory) {
+  if (arch_use_host_memory(config->arch)) {
     runtime_jit->call<void *>("runtime_get_mem_req_queue", llvm_runtime);
     auto mem_req_queue = fetch_result<void *>(taichi_result_buffer_ret_value_id,
                                               *result_buffer_ptr);
@@ -434,8 +442,9 @@ void LlvmProgramImpl::finalize() {
   if (runtime_mem_info)
     runtime_mem_info->set_profiler(nullptr);
 #if defined(TI_WITH_CUDA)
-  if (preallocated_device_buffer != nullptr)
-    CUDADriver::get_instance().mem_free(preallocated_device_buffer);
+  if (preallocated_device_buffer != nullptr) {
+    cuda_device()->dealloc_memory(preallocated_device_buffer_alloc);
+  }
 #endif
 }
 
@@ -510,5 +519,13 @@ void LlvmProgramImpl::print_memory_profiler_info(
       "Total requested dynamic memory (excluding alignment padding): {:n} B\n",
       total_requested_memory);
 }
+
+cuda::CudaDevice *LlvmProgramImpl::cuda_device() {
+  if (config->arch != Arch::cuda) {
+    TI_ERROR("arch is not cuda");
+  }
+  return static_cast<cuda::CudaDevice *>(device_.get());
+}
+
 }  // namespace lang
 }  // namespace taichi

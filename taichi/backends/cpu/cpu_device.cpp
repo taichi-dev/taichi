@@ -36,6 +36,19 @@ void CpuDevice::dealloc_memory(DeviceAllocation handle) {
   info.ptr = nullptr;
 }
 
+DeviceAllocation CpuDevice::import_memory(void *ptr, size_t size) {
+  AllocInfo info;
+  info.ptr = ptr;
+  info.size = size;
+
+  DeviceAllocation alloc;
+  alloc.alloc_id = allocations_.size();
+  alloc.device = this;
+
+  allocations_.push_back(info);
+  return alloc;
+}
+
 }  // namespace cpu
 }  // namespace lang
 

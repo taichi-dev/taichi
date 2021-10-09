@@ -101,6 +101,8 @@ class CudaDevice : public Device {
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override{
       TI_NOT_IMPLEMENTED};
 
+  DeviceAllocation import_memory(void *ptr, size_t size);
+
   Stream *get_compute_stream() override{TI_NOT_IMPLEMENTED};
 
  private:

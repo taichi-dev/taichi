@@ -43,7 +43,7 @@ struct DeviceAllocation {
   Device *device{nullptr};
   uint32_t alloc_id{0};
 
-  DevicePtr get_ptr(uint64_t offset) const;
+  DevicePtr get_ptr(uint64_t offset = 0) const;
 
   bool operator==(const DeviceAllocation &other) const {
     return other.device == device && other.alloc_id == alloc_id;

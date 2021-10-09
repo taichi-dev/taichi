@@ -16,4 +16,3 @@ pytest-xdist
 pytest-rerunfailures
 pytest-cov
 torch
-setuptools-rust

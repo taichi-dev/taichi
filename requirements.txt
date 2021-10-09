@@ -10,7 +10,6 @@ pylint
 pytest
 pytest-rerunfailures
 pytest-xdist
-setuptools-rust
 setuptools
 sourceinspect
 yapf==0.31.0

@@ -453,7 +453,6 @@ void TaichiLLVMContext::set_struct_module(
   }
   // TODO: Move this after ``if (!arch_is_cpu(arch))``.
   data->struct_module = llvm::CloneModule(*module);
-  update_runtime_jit_module(clone_struct_module());
 }
 
 template <typename T>

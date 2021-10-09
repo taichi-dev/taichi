@@ -132,6 +132,15 @@ MSVS directory and make it a higher priority (for instance than the one
 shipped with .NET).
 :::
 
+:::note
+`python setup.py develop` command (recommended for developers) works very similarly to
+`setup.py install` command (recommended for users) except
+that it doesn't actually install anything. It fits developer need better since edits
+on python file take effect immediately without rebuilding. You only need to rerun `develop`
+commands when you change a project’s C extensions or similarly compiled files. See
+[development mode](https://setuptools.pypa.io/en/stable/userguide/development_mode.html) for more details.
+:::
+
 2. Check out the `examples` folder for runnable examples. Run them with commands
   like `python3 examples/simulation/mpm128.py`.
 

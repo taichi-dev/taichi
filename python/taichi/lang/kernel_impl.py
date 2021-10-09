@@ -9,13 +9,16 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
 from taichi.lang.ast.checkers import KernelSimplicityASTChecker
 from taichi.lang.ast.transformer import ASTTransformerTotal
+from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.kernel_arguments import (any_arr, sparse_matrix_builder,
-                                          template)
-from taichi.lang.ndarray import Ndarray
+from taichi.lang.expr import Expr
+from taichi.lang.kernel_arguments import sparse_matrix_builder
+from taichi.lang.ndarray import Ndarray, ScalarNdarray
 from taichi.lang.shell import _shell_pop_print, oinspect
+from taichi.lang.snode import SNode
+from taichi.lang.util import to_taichi_type
 from taichi.misc.util import obsolete
-from taichi.type import primitive_types
+from taichi.type import any_arr, primitive_types, template
 
 import taichi as ti
 
@@ -250,18 +253,58 @@ class Func:
 class TaichiCallableTemplateMapper:
     def __init__(self, annotations, template_slot_locations):
         self.annotations = annotations
-        # Make sure extractors's size is the same as the number of args
-        dummy_extract = lambda arg: (type(arg).__name__, )
-        self.extractors = tuple((i, getattr(anno, 'extract', dummy_extract))
-                                for (i, anno) in enumerate(self.annotations))
         self.num_args = len(annotations)
         self.template_slot_locations = template_slot_locations
         self.mapping = {}
 
+    @staticmethod
+    def extract_arg(arg, anno):
+        if isinstance(anno, template):
+            if isinstance(arg, SNode):
+                return arg.ptr
+            if isinstance(arg, Expr):
+                return arg.ptr.get_underlying_ptr_address()
+            if isinstance(arg, _ti_core.Expr):
+                return arg.get_underlying_ptr_address()
+            if isinstance(arg, tuple):
+                return tuple(
+                    TaichiCallableTemplateMapper.extract_arg(item, anno)
+                    for item in arg)
+            return arg
+        elif isinstance(anno, any_arr):
+            # TODO: Removing this line is blocked by another cyclic import between kernel_impl.py and matrix.py
+            from taichi.lang.matrix import MatrixNdarray, VectorNdarray
+            if isinstance(arg, ScalarNdarray):
+                anno.check_element_dim(arg, 0)
+                return arg.dtype, len(arg.shape), (), Layout.AOS
+            if isinstance(arg, VectorNdarray):
+                anno.check_element_dim(arg, 1)
+                anno.check_layout(arg)
+                return arg.dtype, len(arg.shape) + 1, (arg.n, ), arg.layout
+            if isinstance(arg, MatrixNdarray):
+                anno.check_element_dim(arg, 2)
+                anno.check_layout(arg)
+                return arg.dtype, len(arg.shape) + 2, (arg.n,
+                                                       arg.m), arg.layout
+            # external arrays
+            element_dim = 0 if anno.element_dim is None else anno.element_dim
+            layout = Layout.AOS if anno.layout is None else anno.layout
+            shape = tuple(arg.shape)
+            if len(shape) < element_dim:
+                raise ValueError(
+                    f"Invalid argument into ti.any_arr() - required element_dim={element_dim}, but the argument has only {len(shape)} dimensions"
+                )
+            element_shape = (
+            ) if element_dim == 0 else shape[:
+                                             element_dim] if layout == Layout.SOA else shape[
+                                                 -element_dim:]
+            return to_taichi_type(arg.dtype), len(shape), element_shape, layout
+        return (type(arg).__name__, )
+
     def extract(self, args):
         extracted = []
-        for i, extractor in self.extractors:
-            extracted.append(extractor(args[i]))
+        for arg, anno in zip(args, self.annotations):
+            extracted.append(self.extract_arg(arg, anno))
         return tuple(extracted)
 
     def lookup(self, args):

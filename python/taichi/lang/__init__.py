@@ -15,8 +15,7 @@ from taichi.lang.ast.transformer import TaichiSyntaxError
 from taichi.lang.enums import Layout
 from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *
-from taichi.lang.kernel_arguments import (any_arr, ext_arr,
-                                          sparse_matrix_builder, template)
+from taichi.lang.kernel_arguments import sparse_matrix_builder
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, Vector
@@ -33,6 +32,7 @@ from taichi.linalg import SparseMatrix, SparseMatrixBuilder, SparseSolver
 from taichi.misc.util import deprecated
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.snode.fields_builder import FieldsBuilder
+from taichi.type.annotations import any_arr, ext_arr, template
 
 import taichi as ti
 
@@ -399,6 +399,13 @@ def init(arch=None,
         env_comp.add(key, cast)
 
     unexpected_keys = kwargs.keys()
+
+    if 'use_unified_memory' in unexpected_keys:
+        _ti_core.warn(
+            f'"use_unified_memory" is a deprecated option, as taichi no longer have the option of using unified memory.'
+        )
+        del kwargs['use_unified_memory']
+
     if len(unexpected_keys):
         raise KeyError(
             f'Unrecognized keyword argument(s) for ti.init: {", ".join(unexpected_keys)}'

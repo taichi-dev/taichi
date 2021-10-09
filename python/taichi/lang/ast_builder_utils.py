@@ -55,6 +55,7 @@ class BuilderContext:
         self.is_kernel = is_kernel
         self.arg_features = arg_features
         self.returns = None
+        self.args = []
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope(self, *args):

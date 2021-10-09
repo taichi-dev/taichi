@@ -137,29 +137,6 @@ def at_startup():
     ti_core.set_core_state_python_imported(True)
 
 
-def start_memory_monitoring(output_fn, pid=-1, interval=1):
-    # removing dependency on psutil
-    return
-    import psutil  # pylint: disable=C0415
-    if pid == -1:
-        pid = os.getpid()
-
-    def task():
-        with open(output_fn, 'w') as f:
-            process = psutil.Process(pid)
-            while True:
-                try:
-                    mem = process.memory_info().rss
-                except:
-                    mem = -1
-                time.sleep(interval)
-                print(time.time(), mem, file=f)
-                f.flush()
-
-    proc = multiprocessing.Process(target=task, daemon=True)
-    proc.start()
-
-
 def require_version(major, minor=None, patch=None):
     versions = [
         int(ti_core.get_version_major()),
@@ -204,7 +181,6 @@ _print_taichi_header()
 __all__ = [
     'ti_core',
     'get_os_name',
-    'start_memory_monitoring',
     'package_root',
     'require_version',
 ]

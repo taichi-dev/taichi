@@ -1,6 +1,7 @@
 # https://www.cs.cmu.edu/~baraff/papers/sig98.pdf
 import taichi as ti
 import numpy as np
+import argparse
 
 
 @ti.data_oriented
@@ -9,7 +10,7 @@ class Cloth:
         self.N = N
         self.NF = 2 * N**2  # number of faces
         self.NV = (N + 1)**2  # number of vertices
-        self.NE = 2 * N * (N + 1) + 2 * N * N  # numbser os edges
+        self.NE = 2 * N * (N + 1) + 2 * N * N  # numbser of edges
         self.pos = ti.Vector.field(2, ti.f32, self.NV)
         self.initPos = ti.Vector.field(2, ti.f32, self.NV)
         self.vel = ti.Vector.field(2, ti.f32, self.NV)
@@ -17,6 +18,7 @@ class Cloth:
         self.invMass = ti.field(ti.f32, self.NV)
 
         self.spring = ti.Vector.field(2, ti.i32, self.NE)
+        self.indices = ti.field(ti.i32, 2 * self.NE)
         self.Jx = ti.Matrix.field(2, 2, ti.f32,
                                   self.NE)  # Jacobian with respect to position
         self.Jv = ti.Matrix.field(2, 2, ti.f32,
@@ -29,7 +31,6 @@ class Cloth:
         self.gravity = ti.Vector([0.0, -2.0])
         self.init_pos()
         self.init_edges()
-        # Mass Matrix Builder, Damping Matrix Builder, Stiffness Matrix Builder
         self.MassBuilder = ti.SparseMatrixBuilder(2 * self.NV,
                                                   2 * self.NV,
                                                   max_num_triplets=10000)
@@ -57,30 +58,27 @@ class Cloth:
         pos, spring, N, rest_len = ti.static(self.pos, self.spring, self.N,
                                              self.rest_len)
         for i, j in ti.ndrange(N + 1, N):
-            spring[i * N + j] = ti.Vector(
-                [i * (N + 1) + j, i * (N + 1) + j + 1])
-            rest_len[i * N + j] = (pos[i * (N + 1) + j] -
-                                   pos[i * (N + 1) + j + 1]).norm()
+            idx, idx1 = i * N + j, i * (N + 1) + j
+            spring[idx] = ti.Vector([idx1, idx1 + 1])
+            rest_len[idx] = (pos[idx1] - pos[idx1 + 1]).norm()
         start = N * (N + 1)
         for i, j in ti.ndrange(N, N + 1):
-            spring[start + i + j * N] = ti.Vector(
-                [i * (N + 1) + j, i * (N + 1) + j + N + 1])
-            rest_len[start + i + j * N] = (pos[i * (N + 1) + j] -
-                                           pos[i *
-                                               (N + 1) + j + N + 1]).norm()
+            idx, idx1, idx2 = start + i + j * N, i * (N + 1) + j, i * (
+                N + 1) + j + N + 1
+            spring[idx] = ti.Vector([idx1, idx2])
+            rest_len[idx] = (pos[idx1] - pos[idx2]).norm()
         start = 2 * N * (N + 1)
         for i, j in ti.ndrange(N, N):
-            spring[start + i * N + j] = ti.Vector(
-                [i * (N + 1) + j, (i + 1) * (N + 1) + j + 1])
-            rest_len[start + i * N + j] = (pos[i * (N + 1) + j] -
-                                           pos[(i + 1) *
-                                               (N + 1) + j + 1]).norm()
+            idx, idx1, idx2 = start + i * N + j, i * (N + 1) + j, (i + 1) * (
+                N + 1) + j + 1
+            spring[idx] = ti.Vector([idx1, idx2])
+            rest_len[idx] = (pos[idx1] - pos[idx2]).norm()
         start = 2 * N * (N + 1) + N * N
         for i, j in ti.ndrange(N, N):
-            spring[start + i * N + j] = ti.Vector(
-                [i * (N + 1) + j + 1, (i + 1) * (N + 1) + j])
-            rest_len[start + i * N + j] = (pos[i * (N + 1) + j + 1] -
-                                           pos[(i + 1) * (N + 1) + j]).norm()
+            idx, idx1, idx2 = start + i * N + j, i * (N + 1) + j + 1, (
+                i + 1) * (N + 1) + j
+            spring[idx] = ti.Vector([idx1, idx2])
+            rest_len[idx] = (pos[idx1] - pos[idx2]).norm()
 
     @ti.kernel
     def init_mass_sp(self, M: ti.sparse_matrix_builder()):
@@ -89,18 +87,6 @@ class Cloth:
                 mass = 1.0 / self.invMass[i]
                 M[2 * i + 0, 2 * i + 0] += mass
                 M[2 * i + 1, 2 * i + 1] += mass
-
-    def display(self, gui, radius=5, color=0xffffff):
-        lines = self.spring.to_numpy()
-        pos = self.pos.to_numpy()
-        edgeBegin = np.zeros(shape=(lines.shape[0], 2))
-        edgeEnd = np.zeros(shape=(lines.shape[0], 2))
-        for i in range(lines.shape[0]):
-            idx1, idx2 = lines[i][0], lines[i][1]
-            edgeBegin[i] = pos[idx1]
-            edgeEnd[i] = pos[idx2]
-        gui.lines(edgeBegin, edgeEnd, radius=2, color=0x0000ff)
-        gui.circles(self.pos.to_numpy(), radius, color)
 
     @ti.func
     def clear_force(self):
@@ -144,6 +130,7 @@ class Cloth:
                           (I - dxtdx * l**2)) * self.ks
             self.Jv[i] = self.kd * I
 
+        # fix point constraint hessian
         self.Jf[0] = ti.Matrix([[self.kf, 0], [0, self.kf]])
         self.Jf[1] = ti.Matrix([[self.kf, 0], [0, self.kf]])
 
@@ -170,7 +157,7 @@ class Cloth:
             K[2 * idx2 + 0, 2 * idx2 + 1] -= self.Jx[i][0, 1]
             K[2 * idx2 + 1, 2 * idx2 + 0] -= self.Jx[i][1, 0]
             K[2 * idx2 + 1, 2 * idx2 + 1] -= self.Jx[i][1, 1]
-        # fix point constraint hessian
+
         K[2 * self.N + 0, 2 * self.N + 0] += self.Jf[0][0, 0]
         K[2 * self.N + 0, 2 * self.N + 1] += self.Jf[0][0, 1]
         K[2 * self.N + 1, 2 * self.N + 0] += self.Jf[0][1, 0]
@@ -242,6 +229,32 @@ class Cloth:
         dv = solver.solve(b)
         self.updatePosVel(h, dv)
 
+    def display(self, gui, radius=5, color=0xffffff):
+        lines = self.spring.to_numpy()
+        pos = self.pos.to_numpy()
+        edgeBegin = np.zeros(shape=(lines.shape[0], 2))
+        edgeEnd = np.zeros(shape=(lines.shape[0], 2))
+        for i in range(lines.shape[0]):
+            idx1, idx2 = lines[i][0], lines[i][1]
+            edgeBegin[i] = pos[idx1]
+            edgeEnd[i] = pos[idx2]
+        gui.lines(edgeBegin, edgeEnd, radius=2, color=0x0000ff)
+        gui.circles(self.pos.to_numpy(), radius, color)
+
+    @ti.kernel
+    def spring2indices(self):
+        for i in self.spring:
+            self.indices[2 * i + 0] = self.spring[i][0]
+            self.indices[2 * i + 1] = self.spring[i][1]
+
+    def displayGGUI(self, canvas, radius=0.01, color=(1.0, 1.0, 1.0)):
+        self.spring2indices()
+        canvas.lines(self.pos,
+                     width=0.005,
+                     indices=self.indices,
+                     color=(0.0, 0.0, 1.0))
+        canvas.circles(self.pos, radius, color)
+
 
 if __name__ == "__main__":
     ti.init(arch=ti.cpu)
@@ -249,16 +262,41 @@ if __name__ == "__main__":
     cloth = Cloth(N=5)
 
     pause = False
-    gui = ti.GUI('Implicit Mass Spring System')
-    while gui.running:
-        for e in gui.get_events():
-            if e.key == gui.ESCAPE:
-                gui.running = False
-            elif e.key == gui.SPACE:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-g',
+                        '--use-ggui',
+                        action='store_true',
+                        help='Display with GGUI')
+    args = parser.parse_args()
+    use_ggui = False
+    use_ggui = args.use_ggui
+
+    if not use_ggui:
+        gui = ti.GUI('Implicit Mass Spring System', res=(500, 500))
+        while gui.running:
+            for e in gui.get_events():
+                if e.key == gui.ESCAPE:
+                    gui.running = False
+                elif e.key == gui.SPACE:
+                    pause = not pause
+
+            if not pause:
+                cloth.update(h)
+
+            cloth.display(gui)
+            gui.show()
+    else:
+        window = ti.ui.Window('Implicit Mass Spring System', res=(500, 500))
+        while window.running:
+            if window.get_event(ti.ui.PRESS):
+                if window.event.key == ti.ui.ESCAPE:
+                    break
+            if window.is_pressed(ti.ui.SPACE):
                 pause = not pause
 
-        if not pause:
-            cloth.update(h)
+            if not pause:
+                cloth.update(h)
 
-        cloth.display(gui)
-        gui.show()
+            canvas = window.get_canvas()
+            cloth.displayGGUI(canvas)
+            window.show()

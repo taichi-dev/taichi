@@ -34,6 +34,7 @@ bool BufferDescriptor::operator==(const BufferDescriptor &other) const {
   if (type_ == Type::Root) {
     return root_id_ == other.root_id_;
   }
+  TI_ASSERT(root_id_ == -1);
   return true;
 }
 

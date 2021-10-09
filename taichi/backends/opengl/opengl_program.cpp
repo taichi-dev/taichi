@@ -1,14 +1,17 @@
+#include "taichi/backends/vulkan/codegen_vulkan.h"
+#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/backends/vulkan/snode_struct_compiler.h"
+
 #include "taichi/backends/opengl/opengl_program.h"
-using namespace taichi::lang::opengl;
+#include "taichi/backends/opengl/opengl_device.h"
 
 namespace taichi {
 namespace lang {
 
 FunctionType OpenglProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
-  opengl::OpenglCodeGen codegen(kernel->name, &opengl_struct_compiled_.value(),
-                                opengl_runtime_.get());
-  return codegen.compile(*kernel);
+  vulkan::lower(kernel);
+  return vulkan::compile_to_executable(kernel, runtime_.get());
 }
 
 void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -16,7 +19,15 @@ void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                             uint64 **result_buffer_ptr) {
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
-  opengl_runtime_ = std::make_unique<opengl::OpenGlRuntime>();
+
+  TI_ASSERT(opengl::is_opengl_api_available());
+
+  device_ = opengl::get_opengl_device();
+
+  vulkan::VkRuntime::Params params;
+  params.host_result_buffer = *result_buffer_ptr;
+  params.device = device_.get();
+  runtime_ = std::make_unique<vulkan::VkRuntime>(std::move(params));
 }
 
 void OpenglProgramImpl::materialize_snode_tree(
@@ -24,13 +35,7 @@ void OpenglProgramImpl::materialize_snode_tree(
     std::vector<std::unique_ptr<SNodeTree>> &,
     std::unordered_map<int, SNode *> &,
     uint64 *result_buffer) {
-  // TODO: support materializing multiple snode trees
-  auto *const root = tree->root();
-  opengl::OpenglStructCompiler scomp;
-  opengl_struct_compiled_ = scomp.run(*root);
-  TI_TRACE("OpenGL root buffer size: {} B", opengl_struct_compiled_->root_size);
-  opengl_runtime_->add_snode_tree(opengl_struct_compiled_->root_size);
-  opengl_runtime_->result_buffer = result_buffer;
+  runtime_->materialize_snode_tree(tree);
 }
 
 }  // namespace lang

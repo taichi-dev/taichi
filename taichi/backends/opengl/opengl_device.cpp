@@ -1,4 +1,5 @@
 #include "opengl_device.h"
+#include "spirv_glsl.hpp"
 
 namespace taichi {
 namespace lang {
@@ -86,13 +87,33 @@ std::unique_ptr<ResourceBinder::Bindings> GLResourceBinder::materialize() {
 
 GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
                        const std::string &name) {
-  TI_ASSERT(desc.type == PipelineSourceType::glsl_src);
+  TI_ASSERT(desc.type == PipelineSourceType::glsl_src ||
+            desc.type == PipelineSourceType::spirv_binary);
 
   GLuint shader_id;
   shader_id = glCreateShader(GL_COMPUTE_SHADER);
 
-  const GLchar *source_cstr = (const GLchar *)desc.data;
-  glShaderSource(shader_id, 1, &source_cstr, nullptr);
+  if (desc.type == PipelineSourceType::glsl_src) {
+    const GLchar *source_cstr = (const GLchar *)desc.data;
+    glShaderSource(shader_id, 1, &source_cstr, nullptr);
+  } else {
+    std::vector<uint32_t> spirv_binary(
+        (uint32_t *)desc.data, (uint32_t *)((uint8_t *)desc.data + desc.size));
+    
+    spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
+    spirv_cross::CompilerGLSL::Options options;
+    options.version = 430;
+    glsl.set_common_options(options);
+    glsl.add_header_line("#define buffer volatile buffer");
+    glsl.add_header_line("#define struct volatile struct");
+    
+    std::string source = glsl.compile();
+
+    TI_TRACE("glsl source: \n{}", source);
+
+    const GLchar *source_cstr = (const GLchar *)source.data();
+    glShaderSource(shader_id, 1, &source_cstr, nullptr);
+  }
 
   glCompileShader(shader_id);
   int status = GL_TRUE;

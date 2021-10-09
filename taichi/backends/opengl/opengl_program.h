@@ -1,10 +1,7 @@
 #pragma once
 
-#include "taichi/backends/opengl/struct_opengl.h"
-
-#include "taichi/backends/opengl/opengl_kernel_launcher.h"
+#include "taichi/backends/vulkan/runtime.h"
 #include "taichi/backends/opengl/opengl_api.h"
-#include "taichi/backends/opengl/codegen_opengl.h"
 
 #include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"
@@ -20,6 +17,7 @@ class OpenglProgramImpl : public ProgramImpl {
  public:
   OpenglProgramImpl(CompileConfig &config) : ProgramImpl(config) {
   }
+
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   std::size_t get_snode_num_dynamically_allocated(
@@ -54,8 +52,8 @@ class OpenglProgramImpl : public ProgramImpl {
   }
 
  private:
-  std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
-  std::unique_ptr<opengl::OpenGlRuntime> opengl_runtime_;
+  std::unique_ptr<vulkan::VkRuntime> runtime_;
+  std::unique_ptr<Device> device_;
 };
 }  // namespace lang
 }  // namespace taichi

@@ -166,12 +166,25 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
   std::size_t rounded_size =
       taichi::iroundup(scomp->root_size, taichi_page_size);
+
+  Ptr root_buffer = snode_tree_buffer_manager->allocate(
+      runtime_jit, llvm_runtime, rounded_size, taichi_page_size, tree->id(),
+      result_buffer);
+
+  DeviceAllocation alloc{kDeviceNullAllocation};
+
+  if (config->arch == Arch::cuda) {
+    alloc = cuda_device()->import_memory(root_buffer, rounded_size);
+  } else {
+    alloc = cpu_device()->import_memory(root_buffer, rounded_size);
+  }
+
+  snode_tree_allocs_[tree->id()] = alloc;
+
   runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
-      (int)snodes.size(), tree->id(), rounded_size,
-      snode_tree_buffer_manager->allocate(runtime_jit, llvm_runtime,
-                                          rounded_size, taichi_page_size,
-                                          tree->id(), result_buffer));
+      (int)snodes.size(), tree->id(), rounded_size, root_buffer);
+
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
@@ -525,6 +538,18 @@ cuda::CudaDevice *LlvmProgramImpl::cuda_device() {
     TI_ERROR("arch is not cuda");
   }
   return static_cast<cuda::CudaDevice *>(device_.get());
+}
+
+cpu::CpuDevice *LlvmProgramImpl::cpu_device() {
+  if (config->arch != Arch::x64) {
+    TI_ERROR("arch is not cpu");
+  }
+  return static_cast<cpu::CpuDevice *>(device_.get());
+}
+
+DevicePtr LlvmProgramImpl::get_snode_tree_device_ptr(int tree_id) {
+  DeviceAllocation tree_alloc = snode_tree_allocs_[tree_id];
+  return tree_alloc.get_ptr(0);
 }
 
 }  // namespace lang

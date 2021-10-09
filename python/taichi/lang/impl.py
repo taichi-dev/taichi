@@ -34,7 +34,7 @@ def expr_init(rhs):
     if rhs is None:
         return Expr(_ti_core.expr_alloca())
     if is_taichi_class(rhs):
-        if rhs.local_tensor_proxy != None:
+        if rhs.local_tensor_proxy is not None:
             return rhs
         else:
             return rhs.variable()
@@ -590,7 +590,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
         ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
     assert (offset is not None and shape is None
-            ) == False, f'The shape cannot be None when offset is being set'
+            ) is False, f'The shape cannot be None when offset is being set'
 
     del _taichi_skip_traceback
 

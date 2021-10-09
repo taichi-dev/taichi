@@ -41,11 +41,11 @@ class Window(_ti_core.PyWindow):
         Args:
             tag (str): A tag used for filtering events. If it is None, then all events are returned.
         """
-        if tag == None:
+        if tag is None:
             return super().get_events(_ti_core.EventType.Any)
-        elif tag == PRESS:
+        elif tag is PRESS:
             return super().get_events(_ti_core.EventType.Press)
-        elif tag == RELEASE:
+        elif tag is RELEASE:
             return super().get_events(_ti_core.EventType.Release)
         raise Exception("unrecognized event tag")
 
@@ -55,11 +55,11 @@ class Window(_ti_core.PyWindow):
         If tag is None, then no filters are applied. If this function returns `True`, the `event` property of the window will be set to the corresponding event.
 
         """
-        if tag == None:
+        if tag is None:
             return super().get_event(_ti_core.EventType.Any)
-        elif tag == PRESS:
+        elif tag is PRESS:
             return super().get_event(_ti_core.EventType.Press)
-        elif tag == RELEASE:
+        elif tag is RELEASE:
             return super().get_event(_ti_core.EventType.Release)
         raise Exception("unrecognized event tag")
 

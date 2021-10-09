@@ -289,7 +289,7 @@ class Matrix(TaichiOperations):
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
-        elif self.local_tensor_proxy != None:
+        elif self.local_tensor_proxy is not None:
             if len(indices) == 1:
                 return ti.local_subscript_with_offset(self.local_tensor_proxy,
                                                       (i, ), (self.n, ))

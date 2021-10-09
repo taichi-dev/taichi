@@ -53,7 +53,7 @@ RUN $PYTHON -m pip install cmake colorama coverage numpy Pillow pybind11 GitPyth
 
 # Install Vulkan
 RUN wget -qO - http://packages.lunarg.com/lunarg-signing-key-pub.asc | apt-key add -
-RUN wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.182-bionic.list http://packages.lunarg.com/vulkan/1.2.182/lunarg-vulkan-1.2.182-bionic.list
+RUN wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.182-focal.list https://packages.lunarg.com/vulkan/1.2.182/lunarg-vulkan-1.2.182-focal.list
 RUN apt update
 RUN apt install -y vulkan-sdk
 

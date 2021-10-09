@@ -831,20 +831,8 @@ class TaskCodegen : public IRVisitor {
             spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt), addr_ptr,
             ir_->uint_immediate_number(ir_->u32_type(), 1),
             ir_->uint_immediate_number(ir_->u32_type(), 0), data);
-      } else if (device_->get_cap(DeviceCapability::vk_has_spv_variable_ptr)) {
-        spirv::Value func = ir_->float_atomic(stmt->op_type);
-        val = ir_->make_value(spv::OpFunctionCall, ir_->f32_type(), func,
-                              addr_ptr, data);
       } else {
-        if (is_compiled_struct) {
-          TI_ERROR(
-              "Atomic operation requires either shader atomic float capability "
-              "or OpVariablePtr capability");
-        } else {
-          TI_ERROR(
-              "Atomic operation on global temporaries or context buffers "
-              "requires OpVariablePtr capability");
-        }
+        val = ir_->float_atomic(stmt->op_type, addr_ptr, data);
       }
     } else if (is_integral(dt)) {
       spv::Op op;

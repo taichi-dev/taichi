@@ -1,8 +1,9 @@
 import ast
+import collections.abc
 import warnings
 
 from taichi.lang.ast_builder_utils import *
-from taichi.lang.ast_resolver import ASTResolver
+from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 
 import taichi as ti
@@ -37,6 +38,12 @@ class IRBuilder(Builder):
         return node
 
     @staticmethod
+    def build_Tuple(ctx, node):
+        node.elts = build_irs(ctx, node.elts)
+        node.ptr = tuple(elt.ptr for elt in node.elts)
+        return node
+
+    @staticmethod
     def build_Index(ctx, node):
         node.value = build_ir(ctx, node.value)
         node.ptr = node.value.ptr
@@ -44,6 +51,15 @@ class IRBuilder(Builder):
     @staticmethod
     def build_Constant(ctx, node):
         node.ptr = node.value
+        return node
+
+    @staticmethod
+    def build_Call(ctx, node):
+        # TODO: support for keyword arguments and arguments like *a, **b
+        node.func = build_ir(ctx, node.func)
+        node.args = build_irs(ctx, node.args)
+        args = [arg.ptr for arg in node.args]
+        node.ptr = node.func.ptr(*args)
         return node
 
     @staticmethod
@@ -217,7 +233,19 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_static_for(ctx, node, is_grouped):
-        pass
+        if is_grouped:
+            pass
+        else:
+            node.iter = build_ir(ctx, node.iter)
+            targets = IRBuilder.get_for_loop_targets(node)
+            for target_values in node.iter.ptr:
+                if not isinstance(target_values, collections.abc.Sequence):
+                    target_values = [target_values]
+                with ctx.variable_scope():
+                    for target, target_value in zip(targets, target_values):
+                        ctx.create_variable(target, target_value)
+                    node.body = build_irs_wo_scope(ctx, node.body)
+        return node
 #         # for i in ti.static(range(n))
 #         # for i, j in ti.static(ti.ndrange(n))
 #         # for I in ti.static(ti.grouped(ti.ndrange(n, m)))
@@ -448,6 +476,7 @@ def build_irs(ctx, stmts):
         for stmt in list(stmts):
             result.append(build_ir(ctx, stmt))
     return result
+
 def build_irs_wo_scope(ctx, stmts):
     result = []
     for stmt in list(stmts):

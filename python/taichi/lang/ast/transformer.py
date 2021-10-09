@@ -3,9 +3,9 @@ import ast
 import astor
 from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.ast_builder_utils import BuilderContext
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.stmt_builder import build_stmt
+from taichi.lang.ast_builder_utils import IRBuilderContext
+from taichi.lang.ir_builder import build_ir
 
 import taichi as ti
 
@@ -34,8 +34,6 @@ class ASTTransformerTotal(object):
         print(astor.to_source(tree.body[0], indent_with='    '), flush=True)
 
     def visit(self, tree):
-        from taichi.lang.ast_builder_utils import IRBuilderContext
-        from taichi.lang.ir_builder import build_ir
         ctx = IRBuilderContext(func=self.func,
                                excluded_parameters=self.excluded_parameters,
                                is_kernel=self.is_kernel,

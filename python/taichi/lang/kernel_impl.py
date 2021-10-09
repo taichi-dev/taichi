@@ -333,7 +333,7 @@ class KernelArgError(Exception):
 
 def _get_global_vars(func):
     closure_vars = inspect.getclosurevars(func)
-    return {**closure_vars.globals, **closure_vars.nonlocals}
+    return {**closure_vars.globals, **closure_vars.nonlocals, **closure_vars.builtins}
 
 
 class Kernel:

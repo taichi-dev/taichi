@@ -13,6 +13,7 @@ RUN apt-get update && \
                        clang-10 \
                        wget \
                        git \
+                       unzip \
                        libxrandr-dev \
                        libxinerama-dev \
                        libxcursor-dev \
@@ -51,16 +52,12 @@ ENV PATH="/cmake-3.20.5-linux-x86_64/bin:$PATH"
 
 # Intall LLVM 10
 WORKDIR /
-ENV CC=/usr/bin/clang-10
-ENV CXX=/usr/bin/clang++-10
-RUN wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/llvm-10.0.0.src.tar.xz
-RUN tar xvJf llvm-10.0.0.src.tar.xz && \
-    rm llvm-10.0.0.src.tar.xz
-RUN cd llvm-10.0.0.src && mkdir build
-WORKDIR /llvm-10.0.0.src/build
-RUN cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON
-RUN make -j 8
-RUN make install
+# Make sure this URL gets updated each time there is a new prebuilt bin release
+RUN wget https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_linux_patch2/taichi-llvm-10.0.0-linux.zip
+RUN unzip taichi-llvm-10.0.0-linux.zip && \
+    rm taichi-llvm-10.0.0-linux.zip
+ENV PATH="/taichi-llvm-10.0.0-linux/bin:$PATH"
+
 
 # Setting up Vulkan sdk
 WORKDIR /vulkan
@@ -75,16 +72,22 @@ ENV VK_LAYER_PATH="$VULKAN_SDK/etc/vulkan/explicit_layer.d"
 WORKDIR /usr/share/vulkan/icd.d
 COPY ci/vulkan/icd.d/nvidia_icd.json nvidia_icd.json
 
+
 # Install Taichi from source
+ENV CC="clang-10"
+ENV CXX="clang++-10"
 WORKDIR /taichi-dev
-RUN git clone https://github.com/taichi-dev/taichi --depth=1 --branch=master
-RUN cd taichi && \
-    git submodule update --init --recursive --depth=1
+# Prevent docker caching when head changes
+ADD https://api.github.com/repos/taichi-dev/taichi/git/refs/heads/master version.json
+RUN git clone --recursive https://github.com/taichi-dev/taichi --branch=master
 WORKDIR /taichi-dev/taichi
 RUN python3 -m pip install --user -r requirements_dev.txt
-# TODO, otherwise cuda test fails. See #2969
-RUN python3 -m pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html
-RUN TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_CUDA:BOOL=ON" python3 setup.py develop --user
+# Update Torch version, otherwise cuda tests fail. See #2969.
+RUN python3 -m pip install torch==1.9.0+cu111 -f https://download.pytorch.org/whl/torch_stable.html
+RUN TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_CUDA:BOOL=ON -DTI_WITH_OPENGL:BOOL=ON" python3 setup.py develop --user
+# Show ELF info
+RUN ldd build/libtaichi_core.so
+RUN strings build/libtaichi_core.so | grep GLIBC
 
 # Link Taichi source repo to Python Path
 ENV PATH="/taichi-dev/taichi/bin:$PATH"

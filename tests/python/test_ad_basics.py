@@ -1,4 +1,5 @@
 import functools
+
 import pytest
 
 import taichi as ti

@@ -39,12 +39,22 @@ jobs:
           git remote add upstream https://github.com/taichi-dev/taichi.git
           git fetch upstream master
           sudo apt install clang-format-10
-          python3 -m pip install --user yapf==0.31.0 gitpython colorama isort
+          python3 -m pip install --user -r requirements_lint.txt
           python3 python/taichi/code_format.py
           git checkout -b _enforced_format
           git commit -am "enforce code format" || true
           # exit with 1 if there were differences:
           git diff _fake_squash _enforced_format --exit-code
+          # Make sure pylint doesn't regress
+          pylint python/taichi/ --disable=all --enable=C0415
+          if [ $? -eq 0 ]
+          then
+            echo "PASSED: pylint is happy"
+            exit 0
+          else
+            echo "FAILED: please run the pylint command above and make sure it passes"
+            exit 1
+          fi
 
   build_and_test_cpu_required:
     # This job will be required to pass before merging to master branch.

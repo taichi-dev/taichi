@@ -89,7 +89,7 @@ def test_pointer2_packed():
 
 
 @pytest.mark.skip(reason='https://github.com/taichi-dev/taichi/issues/2520')
-@ti.test(require=ti.extension.sparse, use_unified_memory=False)
+@ti.test(require=ti.extension.sparse)
 def test_pointer_direct_place():
     x, y = ti.field(ti.i32), ti.field(ti.i32)
 

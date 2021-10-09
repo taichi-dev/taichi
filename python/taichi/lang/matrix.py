@@ -3,14 +3,15 @@ import numbers
 from collections.abc import Iterable
 
 import numpy as np
+import taichi.lang
 from taichi.lang import expr, impl
 from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod
+from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
-from taichi.lang.ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.ops import cast
 from taichi.lang.types import CompoundType
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
@@ -1276,8 +1277,7 @@ class MatrixField(Field):
             val = tuple(val_tuple)
         assert len(val) == self.n
         assert len(val[0]) == self.m
-        from taichi.lang.meta import fill_matrix
-        fill_matrix(self, val)
+        taichi.lang.meta.fill_matrix(self, val)
 
     @python_scope
     def to_numpy(self, keep_dims=False, as_vector=None, dtype=None):
@@ -1306,10 +1306,9 @@ class MatrixField(Field):
             dtype = to_numpy_type(self.dtype)
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        import numpy as np
+        import numpy as np  # pylint: disable=C0415
         arr = np.zeros(self.shape + shape_ext, dtype=dtype)
-        from taichi.lang.meta import matrix_to_ext_arr
-        matrix_to_ext_arr(self, arr, as_vector)
+        taichi.lang.meta.matrix_to_ext_arr(self, arr, as_vector)
         ti.sync()
         return arr
 
@@ -1324,14 +1323,13 @@ class MatrixField(Field):
         Returns:
             torch.tensor: The result torch tensor.
         """
-        import torch
+        import torch  # pylint: disable=C0415
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
         arr = torch.empty(self.shape + shape_ext,
                           dtype=to_pytorch_type(self.dtype),
                           device=device)
-        from taichi.lang.meta import matrix_to_ext_arr
-        matrix_to_ext_arr(self, arr, as_vector)
+        taichi.lang.meta.matrix_to_ext_arr(self, arr, as_vector)
         ti.sync()
         return arr
 
@@ -1345,8 +1343,7 @@ class MatrixField(Field):
             assert len(arr.shape) == len(self.shape) + 2
         dim_ext = 1 if as_vector else 2
         assert len(arr.shape) == len(self.shape) + dim_ext
-        from taichi.lang.meta import ext_arr_to_matrix
-        ext_arr_to_matrix(arr, self, as_vector)
+        taichi.lang.meta.ext_arr_to_matrix(arr, self, as_vector)
         ti.sync()
 
     @python_scope

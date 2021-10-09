@@ -8,7 +8,7 @@ class Builder(object):
         method = getattr(self, 'build_' + node.__class__.__name__, None)
         if method is None:
             try:
-                import astpretty
+                import astpretty  # pylint: disable=C0415
                 error_msg = f'Unsupported node {node}:\n{astpretty.pformat(node)}'
             except:
                 error_msg = f'Unsupported node {node}'
@@ -55,6 +55,7 @@ class BuilderContext:
         self.is_kernel = is_kernel
         self.arg_features = arg_features
         self.returns = None
+        self.args = []
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope(self, *args):

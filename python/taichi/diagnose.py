@@ -1,13 +1,13 @@
+import locale
+import os
+import platform
+import subprocess
+import sys
+
+
 def main():
     print('Taichi system diagnose:')
     print('')
-
-    import locale
-    import os
-    import platform
-    import subprocess
-    import sys
-
     executable = sys.executable
 
     print(f'python: {sys.version}')

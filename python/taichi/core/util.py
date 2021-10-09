@@ -1,8 +1,12 @@
 import ctypes
+import datetime
+import multiprocessing
 import os
 import platform
+import random
 import shutil
 import sys
+import time
 
 from colorama import Back, Fore, Style
 
@@ -43,7 +47,7 @@ def import_ti_core():
         pyddir = os.path.join(package_root(), 'lib')
         os.environ['PATH'] += ';' + pyddir
     try:
-        import taichi_core as core
+        import taichi_core as core  # pylint: disable=C0415
     except Exception as e:
         if isinstance(e, ImportError):
             print(Fore.YELLOW + "Share object taichi_core import failed, "
@@ -64,11 +68,10 @@ def import_ti_core():
 
 def locale_encode(path):
     try:
-        import locale
+        import locale  # pylint: disable=C0415
         return path.encode(locale.getdefaultlocale()[1])
     except:
         try:
-            import sys
             return path.encode(sys.getfilesystemencoding())
         except:
             try:
@@ -104,8 +107,6 @@ def check_exists(src):
 
 
 def get_unique_task_id():
-    import datetime
-    import random
     return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + (
         '%05d' % random.randint(0, 10000))
 
@@ -134,33 +135,6 @@ def get_dll_name(name):
 
 def at_startup():
     ti_core.set_core_state_python_imported(True)
-
-
-def start_memory_monitoring(output_fn, pid=-1, interval=1):
-    # removing dependency on psutil
-    return
-    import os
-    import time
-
-    import psutil
-    if pid == -1:
-        pid = os.getpid()
-    import multiprocessing
-
-    def task():
-        with open(output_fn, 'w') as f:
-            process = psutil.Process(pid)
-            while True:
-                try:
-                    mem = process.memory_info().rss
-                except:
-                    mem = -1
-                time.sleep(interval)
-                print(time.time(), mem, file=f)
-                f.flush()
-
-    proc = multiprocessing.Process(target=task, daemon=True)
-    proc.start()
 
 
 def require_version(major, minor=None, patch=None):
@@ -207,7 +181,6 @@ _print_taichi_header()
 __all__ = [
     'ti_core',
     'get_os_name',
-    'start_memory_monitoring',
     'package_root',
     'require_version',
 ]

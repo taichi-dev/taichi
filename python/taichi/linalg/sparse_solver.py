@@ -1,13 +1,14 @@
-from taichi.lang.sparse_matrix import SparseMatrix
+import numpy as np
+from taichi.core.util import ti_core as _ti_core
+from taichi.linalg import SparseMatrix
 
 
 class SparseSolver:
     def __init__(self, solver_type="LLT", ordering="AMD"):
+        from taichi.lang.impl import get_runtime
         solver_type_list = ["LLT", "LDLT", "LU"]
         solver_ordering = ['AMD', 'COLAMD']
         if solver_type in solver_type_list and ordering in solver_ordering:
-            from taichi.core.util import ti_core as _ti_core
-            from taichi.lang.impl import get_runtime
             taichi_arch = get_runtime().prog.config.arch
             assert taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64, "SparseSolver only supports CPU for now."
             self.solver = _ti_core.make_sparse_solver(solver_type, ordering)
@@ -37,7 +38,6 @@ class SparseSolver:
             self.type_assert(sparse_matrix)
 
     def solve(self, b):
-        import numpy as np
         from taichi.lang import Field
         if isinstance(b, Field):
             return self.solver.solve(b.to_numpy())

@@ -1,12 +1,11 @@
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
-from taichi.lang import Field
-from taichi.lang.impl import get_runtime
-from taichi.lang.sparse_matrix.sparse_matrix import SparseMatrix
+from taichi.linalg import SparseMatrix
 
 
 class SparseSolver:
     def __init__(self, solver_type="LLT", ordering="AMD"):
+        from taichi.lang.impl import get_runtime
         solver_type_list = ["LLT", "LDLT", "LU"]
         solver_ordering = ['AMD', 'COLAMD']
         if solver_type in solver_type_list and ordering in solver_ordering:
@@ -39,6 +38,7 @@ class SparseSolver:
             self.type_assert(sparse_matrix)
 
     def solve(self, b):
+        from taichi.lang import Field
         if isinstance(b, Field):
             return self.solver.solve(b.to_numpy())
         elif isinstance(b, np.ndarray):

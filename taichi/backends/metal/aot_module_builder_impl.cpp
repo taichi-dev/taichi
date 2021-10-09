@@ -11,10 +11,10 @@ namespace metal {
 
 AotModuleBuilderImpl::AotModuleBuilderImpl(
     const CompiledRuntimeModule *compiled_runtime_module,
-    const CompiledStructs *compiled_structs,
+    const std::vector<CompiledStructs> &compiled_snode_trees,
     const BufferMetaData &buffer_meta_data)
     : compiled_runtime_module_(compiled_runtime_module),
-      compiled_structs_(compiled_structs),
+      compiled_snode_trees_(compiled_snode_trees),
       buffer_meta_data_(buffer_meta_data) {
   ti_aot_data_.metadata = buffer_meta_data;
 }
@@ -53,7 +53,7 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  auto compiled = run_codegen(compiled_runtime_module_, compiled_structs_,
+  auto compiled = run_codegen(compiled_runtime_module_, compiled_snode_trees_,
                               kernel, &strtab_, /*offloaded=*/nullptr);
   compiled.kernel_name = identifier;
   ti_aot_data_.kernels.push_back(std::move(compiled));
@@ -79,7 +79,7 @@ void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
-  auto compiled = run_codegen(compiled_runtime_module_, compiled_structs_,
+  auto compiled = run_codegen(compiled_runtime_module_, compiled_snode_trees_,
                               kernel, &strtab_, /*offloaded=*/nullptr);
   for (auto &k : ti_aot_data_.tmpl_kernels) {
     if (k.kernel_bundle_name == identifier) {

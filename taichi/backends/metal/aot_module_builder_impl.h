@@ -16,7 +16,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
   explicit AotModuleBuilderImpl(
       const CompiledRuntimeModule *compiled_runtime_module,
-      const CompiledStructs *compiled_structs,
+      const std::vector<CompiledStructs> &compiled_snode_trees,
       const BufferMetaData &buffer_meta_data);
 
   void dump(const std::string &output_dir,
@@ -36,7 +36,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 
  private:
   const CompiledRuntimeModule *compiled_runtime_module_;
-  const CompiledStructs *compiled_structs_;
+  const std::vector<CompiledStructs> &compiled_snode_trees_;
   BufferMetaData buffer_meta_data_;
   PrintStringTable strtab_;
   TaichiAotData ti_aot_data_;

@@ -22,7 +22,8 @@ class IRBuilder(Builder):
         is_local = isinstance(node.targets[0], ast.Name)
         node.value = build_ir(ctx, node.value)
         if is_local and ctx.is_creation(node.targets[0].id):
-            ctx.create_variable(node.targets[0].id, ti.expr_init(node.value.ptr))
+            ctx.create_variable(node.targets[0].id,
+                                ti.expr_init(node.value.ptr))
         else:
             var = node.targets[0].ptr
             var.assign(node.value.ptr)
@@ -115,7 +116,10 @@ class IRBuilder(Builder):
                     pass
                 else:
                     arg.annotation = build_ir(ctx, arg.annotation)
-                    ctx.create_variable(arg.arg, ti.lang.kernel_arguments.decl_scalar_arg(arg.annotation.ptr))
+                    ctx.create_variable(
+                        arg.arg,
+                        ti.lang.kernel_arguments.decl_scalar_arg(
+                            arg.annotation.ptr))
             # remove original args
             node.args.args = []
 
@@ -140,7 +144,8 @@ class IRBuilder(Builder):
                     raise TaichiSyntaxError("Function argument of ")
                 # Transform as force-inlined func
                 arg_decls = []
-                for i, (arg, data) in enumerate(zip(args.args, ctx.argument_data)):
+                for i, (arg,
+                        data) in enumerate(zip(args.args, ctx.argument_data)):
                     # Remove annotations because they are not used.
                     args.args[i].annotation = None
                     # Template arguments are passed by reference.
@@ -168,7 +173,8 @@ class IRBuilder(Builder):
                         f'A {"kernel" if ctx.is_kernel else "function"} '
                         'with a return value must be annotated '
                         'with a return type, e.g. def func() -> ti.f32')
-                ti.core.create_kernel_return(ti.cast(ti.Expr(node.value.ptr), ctx.returns).ptr)
+                ti.core.create_kernel_return(
+                    ti.cast(ti.Expr(node.value.ptr), ctx.returns).ptr)
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value
@@ -204,7 +210,6 @@ class IRBuilder(Builder):
         }.get(type(node.op))
         node.ptr = op(node.left.ptr, node.right.ptr)
         return node
-
 
     @staticmethod
     def get_decorator(node):
@@ -394,6 +399,8 @@ class IRBuilder(Builder):
 
         if is_grouped:
             pass
+
+
 #             template = '''
 # if 1:
 #     ___loop_var = 0
@@ -409,10 +416,12 @@ class IRBuilder(Builder):
         else:
             with ctx.variable_scope():
                 for name in targets:
-                    ctx.create_variable(name, ti.Expr(ti.core.make_id_expr("")))
+                    ctx.create_variable(name,
+                                        ti.Expr(ti.core.make_id_expr("")))
                 vars = [ctx.get_var_by_name(name) for name in targets]
                 node.iter = build_ir(ctx, node.iter)
-                ti.begin_frontend_struct_for(ti.lang.expr.make_expr_group(*vars), node.iter.ptr)
+                ti.begin_frontend_struct_for(
+                    ti.lang.expr.make_expr_group(*vars), node.iter.ptr)
                 node.body = build_irs_wo_scope(ctx, node.body)
                 ti.core.end_frontend_range_for()
         return node
@@ -452,15 +461,13 @@ class IRBuilder(Builder):
                     raise TaichiSyntaxError("'ti.grouped' cannot be nested")
                 else:
                     return IRBuilder.build_struct_for(ctx,
-                                                        node,
-                                                        is_grouped=True)
+                                                      node,
+                                                      is_grouped=True)
             elif isinstance(node.iter, ast.Call) and isinstance(
                     node.iter.func, ast.Name) and node.iter.func.id == 'range':
                 return IRBuilder.build_range_for(ctx, node)
             else:  # Struct for
-                return IRBuilder.build_struct_for(ctx,
-                                                    node,
-                                                    is_grouped=False)
+                return IRBuilder.build_struct_for(ctx, node, is_grouped=False)
 
     @staticmethod
     def build_If(ctx, node):
@@ -485,7 +492,6 @@ class IRBuilder(Builder):
         ti.core.pop_scope()
         return node
 
-
 build_ir = IRBuilder()
 
 
@@ -495,6 +501,7 @@ def build_irs(ctx, stmts):
         for stmt in list(stmts):
             result.append(build_ir(ctx, stmt))
     return result
+
 
 def build_irs_wo_scope(ctx, stmts):
     result = []

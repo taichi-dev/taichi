@@ -289,7 +289,11 @@ class KernelArgError(Exception):
 
 def _get_global_vars(func):
     closure_vars = inspect.getclosurevars(func)
-    return {**closure_vars.globals, **closure_vars.nonlocals, **closure_vars.builtins}
+    return {
+        **closure_vars.globals,
+        **closure_vars.nonlocals,
+        **closure_vars.builtins
+    }
 
 
 class Kernel:
@@ -421,9 +425,7 @@ class Kernel:
             arg_features=arg_features,
             globals=global_vars)
 
-
         ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
-
 
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages

@@ -162,4 +162,3 @@ class IRBuilderContext:
             if name in s:
                 return s[name]
         return self.globals.get(name)
-    

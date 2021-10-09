@@ -7,7 +7,7 @@ namespace ui {
 
 using namespace taichi::lang;
 
-DevicePtr get_device_ptr(SNode *snode) {
+DevicePtr get_device_ptr(taichi::lang::Program *program, SNode *snode) {
   /*
   GGUI makes the assumption that the input fields are created directly from
   ti.field() or ti.Vector field. In other words, we assume that the fields are
@@ -23,15 +23,14 @@ DevicePtr get_device_ptr(SNode *snode) {
   SNode *dense_parent = snode->parent;
   SNode *root = dense_parent->parent;
 
-  Program &curr_program = get_current_program();
   int tree_id = root->get_snode_tree_id();
-  DevicePtr root_ptr = curr_program.get_snode_tree_device_ptr(tree_id);
+  DevicePtr root_ptr = program->get_snode_tree_device_ptr(tree_id);
 
   size_t offset = 0;
 
   int child_id = root->child_id(dense_parent);
 
-  TI_ASSERT_INFO(root == curr_program.get_snode_root(tree_id),
+  TI_ASSERT_INFO(root == program->get_snode_root(tree_id),
                  "SNode roots don't match");
 
   for (int i = 0; i < child_id; ++i) {

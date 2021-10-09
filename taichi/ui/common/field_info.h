@@ -32,6 +32,7 @@ struct FieldInfo {
   }
 };
 
-taichi::lang::DevicePtr get_device_ptr(taichi::lang::SNode *snode);
+taichi::lang::DevicePtr get_device_ptr(taichi::lang::Program *program,
+                                       taichi::lang::SNode *snode);
 
 TI_UI_NAMESPACE_END

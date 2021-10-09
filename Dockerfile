@@ -41,15 +41,13 @@ RUN apt-get update && \
                        libvulkan-dev \
                        vulkan-validationlayers-dev
 
-# Install the latest version of CMAKE v3.20.2 from source
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.20.2/cmake-3.20.2.tar.gz
-RUN tar -zxvf cmake-3.20.2.tar.gz && \
-    rm cmake-3.20.2.tar.gz
-RUN cd cmake-3.20.2
-WORKDIR /cmake-3.20.2
-RUN ./bootstrap
-RUN make -j 8
-RUN make install
+# Install the latest version of CMAKE v3.20.5 from source
+WORKDIR /
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-x86_64.tar.gz
+RUN tar xf cmake-3.20.5-linux-x86_64.tar.gz && \
+    rm cmake-3.20.5-linux-x86_64.tar.gz
+ENV PATH="/cmake-3.20.5-linux-x86_64/bin:$PATH"
+
 
 # Intall LLVM 10
 WORKDIR /

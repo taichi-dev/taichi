@@ -33,16 +33,19 @@ class ASTTransformerTotal(object):
             ti.info(f'{title}:')
         print(astor.to_source(tree.body[0], indent_with='    '), flush=True)
 
-    def visit(self, tree):
+    def visit(self, tree, *arguments):
         ctx = IRBuilderContext(func=self.func,
                                excluded_parameters=self.excluded_parameters,
                                is_kernel=self.is_kernel,
                                arg_features=self.arg_features,
-                               globals=self.globals)
+                               globals=self.globals,
+                               argument_data=arguments)
         # Convert Python AST to Python code that generates Taichi C++ AST.
+
         tree = build_ir(ctx, tree)
         ast.fix_missing_locations(tree)
         self.pass_Checks.visit(tree)  # does not modify the AST
+        return ctx.return_data
 
 
 class ASTTransformerBase(ast.NodeTransformer):

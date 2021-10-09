@@ -138,23 +138,14 @@ class Func:
                     "from both Python-scope and Taichi-scope.")
             return self.func(*args)
 
-        if impl.get_runtime().experimental_real_function:
-            if impl.get_runtime().current_kernel.is_grad:
-                raise TaichiSyntaxError(
-                    "Real function in gradient kernels unsupported.")
-            instance_id, arg_features = self.mapper.lookup(args)
-            key = _ti_core.FunctionKey(self.func.__name__, self.func_id,
-                                       instance_id)
-            if self.compiled is None:
-                self.compiled = {}
-            if key.instance_id not in self.compiled:
-                self.do_compile(key=key, args=args)
-            return self.func_call_rvalue(key=key, args=args)
-        else:
-            if self.compiled is None:
-                self.do_compile(key=None, args=args)
-            ret = self.compiled(*args)
-            return ret
+        src = _remove_indent(oinspect.getsource(self.func))
+        tree = ast.parse(src)
+
+        func_body = tree.body[0]
+        func_body.decorator_list = []
+
+        visitor = ASTTransformerTotal(is_kernel=False, func=self)
+        return visitor.visit(tree, *args)
 
     def func_call_rvalue(self, key, args):
         # Skip the template args, e.g., |self|
@@ -167,41 +158,6 @@ class Func:
         return ti.Expr(
             _ti_core.make_func_call_expr(
                 self.taichi_functions[key.instance_id], non_template_args))
-
-    def do_compile(self, key, args):
-        src = _remove_indent(oinspect.getsource(self.func))
-        tree = ast.parse(src)
-
-        func_body = tree.body[0]
-        func_body.decorator_list = []
-
-        visitor = ASTTransformerTotal(is_kernel=False, func=self)
-        visitor.visit(tree)
-
-        ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
-
-        local_vars = {}
-        global_vars = _get_global_vars(self.func)
-
-        if impl.get_runtime().experimental_real_function:
-            # inject template parameters into globals
-            for i in self.template_slot_locations:
-                template_var_name = self.argument_names[i]
-                global_vars[template_var_name] = args[i]
-
-        exec(
-            compile(tree,
-                    filename=oinspect.getsourcefile(self.func),
-                    mode='exec'), global_vars, local_vars)
-
-        if impl.get_runtime().experimental_real_function:
-            self.compiled[key.instance_id] = local_vars[self.func.__name__]
-            self.taichi_functions[key.instance_id] = _ti_core.create_function(
-                key)
-            self.taichi_functions[key.instance_id].set_function_body(
-                self.compiled[key.instance_id])
-        else:
-            self.compiled = local_vars[self.func.__name__]
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)

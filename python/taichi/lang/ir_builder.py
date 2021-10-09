@@ -125,34 +125,32 @@ class IRBuilder(Builder):
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.kernel'.")
             transform_as_kernel()
-        #
-        # else:  # ti.func
-        #     for decorator in node.decorator_list:
-        #         if ASTResolver.resolve_to(decorator, ti.func, globals()):
-        #             raise TaichiSyntaxError(
-        #                 "Function definition not allowed in 'ti.func'.")
-        #     if impl.get_runtime().experimental_real_function:
-        #         transform_as_kernel()
-        #     else:
-        #         # Transform as force-inlined func
-        #         arg_decls = []
-        #         for i, arg in enumerate(args.args):
-        #             # Remove annotations because they are not used.
-        #             args.args[i].annotation = None
-        #             # Template arguments are passed by reference.
-        #             if isinstance(ctx.func.argument_annotations[i],
-        #                           ti.template):
-        #                 ctx.create_variable(ctx.func.argument_names[i])
-        #                 continue
-        #             # Create a copy for non-template arguments,
-        #             # so that they are passed by value.
-        #             arg_init = parse_stmt('x = ti.expr_init_func(0)')
-        #             arg_init.targets[0].id = arg.arg
-        #             ctx.create_variable(arg.arg)
-        #             arg_init.value.args[0] = parse_expr(arg.arg +
-        #                                                 '_by_value__')
-        #             args.args[i].arg += '_by_value__'
-        #             arg_decls.append(arg_init)
+
+        else:  # ti.func
+            for decorator in node.decorator_list:
+                if ASTResolver.resolve_to(decorator, ti.func, globals()):
+                    raise TaichiSyntaxError(
+                        "Function definition not allowed in 'ti.func'.")
+            # if impl.get_runtime().experimental_real_function:
+            #     transform_as_kernel()
+            if False:
+                pass
+            else:
+                if len(args.args) != len(ctx.argument_data):
+                    raise TaichiSyntaxError("Function argument of ")
+                # Transform as force-inlined func
+                arg_decls = []
+                for i, (arg, data) in enumerate(zip(args.args, ctx.argument_data)):
+                    # Remove annotations because they are not used.
+                    args.args[i].annotation = None
+                    # Template arguments are passed by reference.
+                    if isinstance(ctx.func.argument_annotations[i],
+                                  ti.template):
+                        ctx.create_variable(ctx.func.argument_names[i], data)
+                        continue
+                    # Create a copy for non-template arguments,
+                    # so that they are passed by value.
+                    ctx.create_variable(arg.arg, ti.expr_init_func(data))
 
         with ctx.variable_scope():
             build_irs(ctx, node.body)
@@ -162,7 +160,7 @@ class IRBuilder(Builder):
     @staticmethod
     def build_Return(ctx, node):
         node.value = build_ir(ctx, node.value)
-        if ctx.is_kernel or impl.get_runtime().experimental_real_function:
+        if ctx.is_kernel:
             # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
             if node.value is not None:
                 if ctx.returns is None:
@@ -174,6 +172,8 @@ class IRBuilder(Builder):
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value
+        else:
+            ctx.return_data = node.value.ptr
         return node
 
     @staticmethod
@@ -410,9 +410,6 @@ class IRBuilder(Builder):
             with ctx.variable_scope():
                 for name in targets:
                     ctx.create_variable(name, ti.Expr(ti.core.make_id_expr("")))
-                # var_decl = ''.join(
-                #     '    {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(name)
-                #     for name in targets)  # indent: 4 spaces
                 vars = [ctx.get_var_by_name(name) for name in targets]
                 node.iter = build_ir(ctx, node.iter)
                 ti.begin_frontend_struct_for(ti.lang.expr.make_expr_group(*vars), node.iter.ptr)

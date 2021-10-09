@@ -298,3 +298,19 @@ def test_ad_precision_2():
         func()
 
     assert x.grad[None] == 1
+
+
+@ti.test()
+def test_ad_rand():
+    loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    x = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def work():
+        loss[None] = x[None] * ti.random()
+
+    x[None] = 10
+    with pytest.raises(RuntimeError) as e:
+        with ti.Tape(loss):
+            work()
+    assert 'RandStmt not supported' in e.value.args[0]

@@ -34,5 +34,10 @@ void VulkanProgramImpl::materialize_snode_tree(
   vulkan_runtime_->materialize_snode_tree(tree);
 }
 
+VulkanProgramImpl::~VulkanProgramImpl() {
+  vulkan_runtime_.reset();
+  embedded_device_.reset();
+}
+
 }  // namespace lang
 }  // namespace taichi

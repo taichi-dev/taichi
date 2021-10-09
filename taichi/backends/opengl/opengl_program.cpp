@@ -38,5 +38,10 @@ void OpenglProgramImpl::materialize_snode_tree(
   runtime_->materialize_snode_tree(tree);
 }
 
+OpenglProgramImpl::~OpenglProgramImpl() {
+  runtime_.reset();
+  device_.reset();
+}
+
 }  // namespace lang
 }  // namespace taichi

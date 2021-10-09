@@ -101,12 +101,12 @@ class VkRuntime {
   void init_buffers();
   void add_root_buffer(size_t root_buffer_size);
 
+  Device *device_;
+
   uint64_t *const host_result_buffer_;
 
   std::vector<std::unique_ptr<DeviceAllocationGuard>> root_buffers_;
   std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_;
-
-  Device *device_;
 
   std::unique_ptr<CommandList> current_cmdlist_{nullptr};
 

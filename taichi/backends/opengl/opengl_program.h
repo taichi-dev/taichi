@@ -48,12 +48,11 @@ class OpenglProgramImpl : public ProgramImpl {
     TI_NOT_IMPLEMENTED
   }
 
-  ~OpenglProgramImpl() {
-  }
+  ~OpenglProgramImpl() override;
 
  private:
-  std::unique_ptr<vulkan::VkRuntime> runtime_;
   std::unique_ptr<Device> device_;
+  std::unique_ptr<vulkan::VkRuntime> runtime_;
 };
 }  // namespace lang
 }  // namespace taichi

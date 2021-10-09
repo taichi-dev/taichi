@@ -58,12 +58,11 @@ class VulkanProgramImpl : public ProgramImpl {
     vulkan_runtime_->destroy_snode_tree(snode_tree);
   }
 
-  ~VulkanProgramImpl() {
-  }
+  ~VulkanProgramImpl() override;
 
  private:
-  std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
   std::unique_ptr<vulkan::EmbeddedVulkanDevice> embedded_device_{nullptr};
+  std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
 };
 }  // namespace lang
 }  // namespace taichi

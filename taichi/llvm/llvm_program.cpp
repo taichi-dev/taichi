@@ -174,7 +174,11 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   DeviceAllocation alloc{kDeviceNullAllocation};
 
   if (config->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
     alloc = cuda_device()->import_memory(root_buffer, rounded_size);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   } else {
     alloc = cpu_device()->import_memory(root_buffer, rounded_size);
   }

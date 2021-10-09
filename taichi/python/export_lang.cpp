@@ -217,12 +217,13 @@ void export_lang(py::module &m) {
       .def_readwrite("name", &KernelProfileTracedRecord::name)
       .def_readwrite("kernel_time",
                      &KernelProfileTracedRecord::kernel_elapsed_time_in_ms)
-      .def_readwrite("base_time", &KernelProfileTracedRecord::time_since_base);
+      .def_readwrite("base_time", &KernelProfileTracedRecord::time_since_base)
+      .def_readwrite("metric_values",
+                     &KernelProfileTracedRecord::metric_values);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
       .def_readonly("config", &Program::config)
-      .def("print_kernel_profile_info", &Program::print_kernel_profile_info)
       .def("query_kernel_profile_info",
            [](Program *program, const std::string &name) {
              return program->query_kernel_profile_info(name);
@@ -230,6 +231,10 @@ void export_lang(py::module &m) {
       .def("get_kernel_profiler_records",
            [](Program *program) {
              return program->profiler->get_traced_records();
+           })
+      .def("reinit_kernel_profiler_with_metrics",
+           [](Program *program, const std::vector<std::string> metrics) {
+             return program->profiler->reinit_with_metrics(metrics);
            })
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })

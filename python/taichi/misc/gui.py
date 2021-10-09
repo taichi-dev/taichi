@@ -1,8 +1,13 @@
+import math
 import numbers
 import os
 
 import numpy as np
+import taichi.lang
 from taichi.core import ti_core as _ti_core
+from taichi.lang.field import Field, ScalarField
+
+import taichi as ti
 
 from .util import core_veci, deprecated
 
@@ -235,14 +240,9 @@ class GUI:
                 representations. Its shape must match GUI resolution.
 
         """
-        import numpy as np
-        from taichi.lang.field import ScalarField
-        from taichi.lang.matrix import MatrixField
-
-        import taichi as ti
 
         if self.fast_gui:
-            assert isinstance(img, MatrixField), \
+            assert isinstance(img, taichi.lang.matrix.MatrixField), \
                     "Only ti.Vector.field is supported in GUI.set_image when fast_gui=True"
             assert img.shape == self.res, \
                     "Image resolution does not match GUI resolution"
@@ -251,8 +251,7 @@ class GUI:
             assert img.dtype in [ti.f32, ti.f64, ti.u8], \
                     "Only f32, f64, u8 are supported in GUI.set_image when fast_gui=True"
 
-            from taichi.lang.meta import vector_to_fast_image
-            vector_to_fast_image(img, self.img)
+            taichi.lang.meta.vector_to_fast_image(img, self.img)
             return
 
         if isinstance(img, ScalarField):
@@ -263,11 +262,10 @@ class GUI:
                 # Type matched! We can use an optimized copy kernel.
                 assert img.shape \
                  == self.res, "Image resolution does not match GUI resolution"
-                from taichi.lang.meta import tensor_to_image
-                tensor_to_image(img, self.img)
+                taichi.lang.meta.tensor_to_image(img, self.img)
                 ti.sync()
 
-        elif isinstance(img, MatrixField):
+        elif isinstance(img, taichi.lang.matrix.MatrixField):
             if _ti_core.is_integral(img.dtype):
                 self.img = self.cook_image(img.to_numpy())
             else:
@@ -276,8 +274,8 @@ class GUI:
                         "Image resolution does not match GUI resolution"
                 assert img.n in [2, 3, 4] and img.m == 1, \
                         "Only greyscale, RG, RGB or RGBA images are supported in GUI.set_image"
-                from taichi.lang.meta import vector_to_image
-                vector_to_image(img, self.img)
+
+                taichi.lang.meta.vector_to_image(img, self.img)
                 ti.sync()
 
         elif isinstance(img, np.ndarray):
@@ -346,8 +344,6 @@ class GUI:
 
         if palette is not None:
             assert palette_indices is not None, 'palette must be used together with palette_indices'
-
-            from taichi.lang.field import Field
 
             if isinstance(palette_indices, Field):
                 ind_int = palette_indices.to_numpy().astype(np.uint32)
@@ -522,7 +518,6 @@ class GUI:
 
     @staticmethod
     def _arrow_to_lines(orig, major, tip_scale=0.2, angle=45):
-        import math
         angle = math.radians(180 - angle)
         c, s = math.cos(angle), math.sin(angle)
         minor1 = np.array([
@@ -596,7 +591,6 @@ class GUI:
             color (int, optional): The color of the text. Default is 0xFFFFFF.
 
         """
-        import taichi as ti
 
         # TODO: refactor Canvas::text
         font_size = float(font_size)

@@ -5,17 +5,15 @@ import inspect
 import re
 
 import numpy as np
+import taichi.lang
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
 from taichi.lang.ast.checkers import KernelSimplicityASTChecker
 from taichi.lang.ast.transformer import ASTTransformerTotal
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import sparse_matrix_builder
-from taichi.lang.ndarray import Ndarray, ScalarNdarray
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.snode import SNode
 from taichi.lang.util import to_taichi_type
 from taichi.misc.util import obsolete
 from taichi.type import any_arr, primitive_types, template
@@ -260,9 +258,9 @@ class TaichiCallableTemplateMapper:
     @staticmethod
     def extract_arg(arg, anno):
         if isinstance(anno, template):
-            if isinstance(arg, SNode):
+            if isinstance(arg, taichi.lang.snode.SNode):
                 return arg.ptr
-            if isinstance(arg, Expr):
+            if isinstance(arg, taichi.lang.expr.Expr):
                 return arg.ptr.get_underlying_ptr_address()
             if isinstance(arg, _ti_core.Expr):
                 return arg.get_underlying_ptr_address()
@@ -272,16 +270,14 @@ class TaichiCallableTemplateMapper:
                     for item in arg)
             return arg
         elif isinstance(anno, any_arr):
-            # TODO: Removing this line is blocked by another cyclic import between kernel_impl.py and matrix.py
-            from taichi.lang.matrix import MatrixNdarray, VectorNdarray
-            if isinstance(arg, ScalarNdarray):
+            if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_element_dim(arg, 0)
                 return arg.dtype, len(arg.shape), (), Layout.AOS
-            if isinstance(arg, VectorNdarray):
+            if isinstance(arg, taichi.lang.matrix.VectorNdarray):
                 anno.check_element_dim(arg, 1)
                 anno.check_layout(arg)
                 return arg.dtype, len(arg.shape) + 1, (arg.n, ), arg.layout
-            if isinstance(arg, MatrixNdarray):
+            if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
                 anno.check_element_dim(arg, 2)
                 anno.check_layout(arg)
                 return arg.dtype, len(arg.shape) + 2, (arg.n,
@@ -533,9 +529,10 @@ class Kernel:
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.sparse_matrix_builder() argument
                     launch_ctx.set_arg_int(actual_argument_slot, v.get_addr())
-                elif isinstance(needed, any_arr) and (self.match_ext_arr(v) or
-                                                      isinstance(v, Ndarray)):
-                    if isinstance(v, Ndarray):
+                elif isinstance(needed, any_arr) and (
+                        self.match_ext_arr(v)
+                        or isinstance(v, taichi.lang._ndarray.Ndarray)):
+                    if isinstance(v, taichi.lang._ndarray.Ndarray):
                         v = v.arr
                     has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)

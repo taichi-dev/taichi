@@ -10,7 +10,7 @@ import taichi.lang.linalg
 import taichi.lang.meta
 from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
-from taichi.lang import impl, types
+from taichi.lang import _random, impl, types
 from taichi.lang.ast.transformer import TaichiSyntaxError
 from taichi.lang.enums import Layout
 from taichi.lang.exception import InvalidOperationError
@@ -604,8 +604,7 @@ def randn(dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    from taichi.lang._random import randn
-    return randn(dt)
+    return _random.randn(dt)
 
 
 determinant = deprecated('ti.determinant(a)',

@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from taichi.core import get_os_name
 from taichi.misc.image import imwrite
@@ -132,7 +133,7 @@ class VideoManager:
 
 def interpolate_frames(frame_dir, mul=4):
     # TODO: remove dependency on cv2 here
-    import cv2
+    import cv2  # pylint: disable=C0415
     files = os.listdir(frame_dir)
     images = []
     images_interpolated = []
@@ -166,10 +167,9 @@ def make_video(input_files,
                crf=20,
                output_path='video.mp4'):
     if isinstance(input_files, list):
-        from PIL import Image
+        from PIL import Image  # pylint: disable=C0415
         with Image.open(input_files[0]) as img:
             width, height = img.size
-        import shutil
         tmp_dir = 'tmp_ffmpeg_dir'
         os.mkdir(tmp_dir)
         if width % 2 != 0:

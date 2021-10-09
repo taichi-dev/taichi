@@ -462,6 +462,28 @@ class IRBuilder(Builder):
                                                     node,
                                                     is_grouped=False)
 
+    @staticmethod
+    def build_If(ctx, node):
+        node.test = build_ir(ctx, node.test)
+        # node.body = build_stmts(ctx, node.body)
+        # node.orelse = build_stmts(ctx, node.orelse)
+        is_static_if = (IRBuilder.get_decorator(node.test) == "static")
+
+        if is_static_if:
+            if node.test.ptr:
+                node.body = build_irs(ctx, node.body)
+            else:
+                node.orelse = build_irs(ctx, node.orelse)
+            return node
+
+        ti.begin_frontend_if(node.test.ptr)
+        ti.core.begin_frontend_if_true()
+        node.body = build_irs(ctx, node.body)
+        ti.core.pop_scope()
+        ti.core.begin_frontend_if_false()
+        node.orelse = build_irs(ctx, node.orelse)
+        ti.core.pop_scope()
+        return node
 
 
 build_ir = IRBuilder()

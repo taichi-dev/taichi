@@ -10,7 +10,7 @@ using namespace taichi::lang;
 DevicePtr get_device_ptr(taichi::lang::Program *program, SNode *snode) {
   /*
   GGUI makes the assumption that the input fields are created directly from
-  ti.field() or ti.Vector field. In other words, we assume that the fields are
+  ti.field() or ti.Vector field with `shape` specified. In other words, we assume that the fields are
   created via ti.root.dense.place() That is, the parent of the snode is a dense,
   and the parent of that node is a root. Note that, GGUI's python-side code
   creates a staging buffer to construct the VBO, which obeys this assumption.

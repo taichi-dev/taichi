@@ -1,7 +1,7 @@
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_CUDA_TOOLKIT "Build with the CUDA toolkit" OFF)
-option(TI_WITH_OPENGL "Build with the OpenGL backend" OFF)
+option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(TI_WITH_CC "Build with the C backend" OFF)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
 

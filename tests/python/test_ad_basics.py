@@ -25,7 +25,9 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32, excluded_archs=None):
         npfunc = tifunc
 
     excluded_archs = excluded_archs or []
-    @ti.test(exclude=excluded_archs, require=ti.extension.data64 if default_fp == ti.f64 else [],
+
+    @ti.test(exclude=excluded_archs,
+             require=ti.extension.data64 if default_fp == ti.f64 else [],
              default_fp=default_fp)
     def impl():
         print(f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp}')
@@ -79,11 +81,21 @@ def test_poly():
 @if_has_autograd
 def test_trigonometric():
     excluded_archs = [ti.vulkan]
-    grad_test(lambda x: ti.tanh(x), lambda x: np.tanh(x), excluded_archs=excluded_archs)
-    grad_test(lambda x: ti.sin(x), lambda x: np.sin(x), excluded_archs=excluded_archs)
-    grad_test(lambda x: ti.cos(x), lambda x: np.cos(x), excluded_archs=excluded_archs)
-    grad_test(lambda x: ti.acos(x), lambda x: np.arccos(x), excluded_archs=excluded_archs)
-    grad_test(lambda x: ti.asin(x), lambda x: np.arcsin(x), excluded_archs=excluded_archs)
+    grad_test(lambda x: ti.tanh(x),
+              lambda x: np.tanh(x),
+              excluded_archs=excluded_archs)
+    grad_test(lambda x: ti.sin(x),
+              lambda x: np.sin(x),
+              excluded_archs=excluded_archs)
+    grad_test(lambda x: ti.cos(x),
+              lambda x: np.cos(x),
+              excluded_archs=excluded_archs)
+    grad_test(lambda x: ti.acos(x),
+              lambda x: np.arccos(x),
+              excluded_archs=excluded_archs)
+    grad_test(lambda x: ti.asin(x),
+              lambda x: np.arcsin(x),
+              excluded_archs=excluded_archs)
 
 
 @if_has_autograd

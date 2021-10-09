@@ -10,7 +10,7 @@ RUN apt-get update && \
                        python3-pip \
                        python-is-python3 \
                        libtinfo-dev \
-                       clang-8 \
+                       clang-10 \
                        wget \
                        git \
                        libxrandr-dev \
@@ -53,8 +53,8 @@ RUN make install
 
 # Intall LLVM 10
 WORKDIR /
-ENV CC=/usr/bin/clang-8
-ENV CXX=/usr/bin/clang++-8
+ENV CC=/usr/bin/clang-10
+ENV CXX=/usr/bin/clang++-10
 RUN wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/llvm-10.0.0.src.tar.xz
 RUN tar xvJf llvm-10.0.0.src.tar.xz && \
     rm llvm-10.0.0.src.tar.xz

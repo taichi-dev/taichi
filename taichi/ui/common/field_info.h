@@ -26,7 +26,9 @@ struct FieldInfo {
   DEFINE_PROPERTY(std::vector<int>, shape);
   DEFINE_PROPERTY(FieldSource, field_source);
   DEFINE_PROPERTY(taichi::lang::DataType, dtype);
-  DEFINE_PROPERTY(uint64_t, data);
+
+  using SNodePtr = taichi::lang::SNode *;
+  DEFINE_PROPERTY(SNodePtr, snode);
 
   FieldInfo() {
     valid = false;

@@ -1,9 +1,9 @@
 #include "taichi/backends/interop/vulkan_cpu_interop.h"
-#include "taichi/backends/cpu/cpu_device.h" 
+#include "taichi/backends/cpu/cpu_device.h"
 
 #if TI_WITH_VULKAN
 #include "taichi/backends/vulkan/vulkan_device.h"
-#endif // TI_WITH_VULKAN
+#endif  // TI_WITH_VULKAN
 
 #include <unordered_map>
 
@@ -46,7 +46,7 @@ void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,
                                       uint64_t size) {
   TI_NOT_IMPLEMENTED;
 }
-#endif  // TI_WITH_VULKAN && TI_WITH_CUDA
+#endif  // TI_WITH_VULKAN
 
 }  // namespace lang
 }  // namespace taichi

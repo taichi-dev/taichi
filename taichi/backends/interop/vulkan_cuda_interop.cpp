@@ -5,7 +5,7 @@
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_context.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
-#endif // TI_WITH_VULKAN && TI_WITH_CUDA
+#endif  // TI_WITH_VULKAN && TI_WITH_CUDA
 
 #include <unordered_map>
 
@@ -14,7 +14,6 @@ namespace lang {
 
 using namespace taichi::lang::vulkan;
 using namespace taichi::lang::cuda;
-using namespace taichi::lang::cpu;
 
 #if TI_WITH_VULKAN && TI_WITH_CUDA
 

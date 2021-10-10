@@ -95,8 +95,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       for (auto task : offloaded_local) {
         TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
-        cuda_module->launch(task.name, task.grid_dim, task.block_dim,
-                            0, {&context});
+        cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
+                            {&context});
       }
       // copy data back to host
       if (transferred) {

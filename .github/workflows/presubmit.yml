@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: 3.8
           
-      - name: Check code format for git init 
+      - name: Setup git & clang-format
         run: |
           git config user.email "taichigardener@gmail.com"
           git config user.name "Taichi Gardener"
@@ -51,13 +51,16 @@ jobs:
         run: |
           python3 -m pip install --user -r requirements_lint.txt
       
-      - name: Check code format for run code_format and pylint
+      - name: Check code format
         run: |
           python3 python/taichi/code_format.py
           git checkout -b _enforced_format
           git commit -am "enforce code format" || true
           # exit with 1 if there were differences:
           git diff _fake_squash _enforced_format --exit-code
+
+      - name: Pylint
+        run: |
           # Make sure pylint doesn't regress
           pylint python/taichi/ --disable=all --enable=C0415
           if [ $? -eq 0 ]

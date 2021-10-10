@@ -1,9 +1,16 @@
 #include <taichi/backends/device.h>
-#include <taichi/backends/cuda/cuda_device.h>
 #include <taichi/backends/cpu/cpu_device.h>
+
+#if TI_WITH_VULKAN 
 #include <taichi/backends/vulkan/vulkan_device.h>
-#include <taichi/backends/interop/vulkan_cuda_interop.h>
 #include <taichi/backends/interop/vulkan_cpu_interop.h>
+
+#if TI_WITH_CUDA
+#include <taichi/backends/cuda/cuda_device.h>
+#include <taichi/backends/interop/vulkan_cuda_interop.h>
+#endif // TI_WITH_CUDA
+
+#endif // TI_WITH_VULKAN 
 
 namespace taichi {
 namespace lang {

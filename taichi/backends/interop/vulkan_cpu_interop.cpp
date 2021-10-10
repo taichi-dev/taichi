@@ -1,12 +1,9 @@
 #include "taichi/backends/interop/vulkan_cpu_interop.h"
-#include "taichi/llvm/llvm_context.h"
-#include "taichi/backends/cpu/cpu_device.h"
+#include "taichi/backends/cpu/cpu_device.h" 
+
+#if TI_WITH_VULKAN
 #include "taichi/backends/vulkan/vulkan_device.h"
-#include "taichi/jit/jit_session.h"
-#include "taichi/lang_util.h"
-#include "taichi/program/program.h"
-#include "taichi/system/timer.h"
-#include "taichi/util/file_sequence_writer.h"
+#endif // TI_WITH_VULKAN
 
 #include <unordered_map>
 

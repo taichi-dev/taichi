@@ -1,16 +1,11 @@
 #include "taichi/backends/interop/vulkan_cuda_interop.h"
-#include "taichi/llvm/llvm_context.h"
+
+#if TI_WITH_VULKAN && TI_WITH_CUDA
 #include "taichi/backends/cuda/cuda_device.h"
-#include "taichi/backends/cpu/cpu_device.h"
-#include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_context.h"
-#include "taichi/backends/cuda/cuda_driver.h"
-#include "taichi/jit/jit_session.h"
-#include "taichi/lang_util.h"
-#include "taichi/program/program.h"
-#include "taichi/system/timer.h"
-#include "taichi/util/file_sequence_writer.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
+#endif // TI_WITH_VULKAN && TI_WITH_CUDA
 
 #include <unordered_map>
 

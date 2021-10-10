@@ -314,6 +314,7 @@ To create sparse matrix in taichi programs, you may need to:
 2. Fill the build with your data. 
 3. Create sparse matrices from the builder.
 
+Here's an example:
 ```python
 import taichi as ti
 ti.init(arch=ti.x64)
@@ -339,8 +340,80 @@ print(">>>> A = K.build()")
 print(A)
 ```
 
+The basic operations like `+`, `-`, `*`, `@` and transpose of sparse matrices are supported now.
 
-Please have a look at our two demos:
+```python
+print(">>>> Summation: C = A + A")
+C = A + A
+print(C)
+
+print(">>>> Subtraction: D = A - A")
+D = A - A
+print(D)
+
+print(">>>> Multiplication with a scalar on the right: E = A * 3.0")
+E = A * 3.0
+print(E)
+
+print(">>>> Multiplication with a scalar on the left: E = 3.0 * A")
+E = 3.0 * A
+print(E)
+
+print(">>>> Transpose: F = A.transpose()")
+F = A.transpose()
+print(F)
+
+print(">>>> Matrix multiplication: G = E @ A")
+G = E @ A
+print(G)
+
+print(">>>> Element-wise multiplication: H = E * A")
+H = E * A
+print(H)
+
+print(f">>>> Element Access: A[0,0] = {A[0,0]}")
+```
+You may want to solve some linear equations using sparse matrices.
+Then, it might be steps:
+1. Create a `solver` using `ti.SparseSolver(solver_type, ordering)`. Currently, the sparse solver supports `LLT`, `LDLT` and `LU` factorization types, and orderings including `AMD`, `COLAMD`
+2. Analyze and factorize the sparse matrix you want to solve.
+3. Call `solver.solve(b)` to get your solutions, where `b` is a numpy array or taichi filed representing the right-hand side of the linear system.
+4. Call `solver.info()` to check if the solving process succeed.
+
+Here's a full example.
+
+```python
+import taichi as ti
+
+ti.init(arch=ti.x64)
+
+n = 8
+
+K = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+b = ti.field(ti.f32, shape=n)
+
+@ti.kernel
+def fill(A: ti.sparse_matrix_builder(), b: ti.template(), interval: ti.i32):
+    for i in range(n):
+        A[i, i] += 2.0
+
+        if i % interval == 0:
+            b[i] += 1.0
+
+fill(K, b, 3)
+
+A = K.build()
+print("Solving sparse linear systems Ax = b with the solution x:")
+solver = ti.SparseSolver(solver_type="LLT")
+solver.analyze_pattern(A)
+solver.factorize(A)
+x = solver.solve(b)
+print(x)
+isSuccess = solver.info()
+print(f"Computation was successful?: {isSuccess}")
+```
+
+Please have a look at our two demos for more information:
 + `examples/simulation/stable_fluid.py`: A 2D fluid simulation using a sparse Laplacian matrix to solve Poisson's pressure equation.
 + `examples/simulation/implicit_mass_spring.py`: A 2D cloth simulation demo using sparse matrices to solve the linear systems.
 

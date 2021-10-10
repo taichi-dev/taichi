@@ -306,6 +306,45 @@ doing so couples computation code with the internal configuration of data struct
 Use `ti.rescale_index` to avoid hard-coding internal information of data structures.
 :::
 
+## Sparse Matrix
+In scientific and engineering computing, sparse matrices are frequently used. Taichi also provides APIs for sparse matrices.
+
+To create sparse matrix in taichi programs, you may need to:
+1. Creating a `ti.SparseMatrixBuilder()`:
+2. Fill the build with your data. 
+3. Create sparse matrices from the builder.
+
+```python
+import taichi as ti
+ti.init(arch=ti.x64)
+
+n = 8
+# create sparse matrix builder
+K = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+
+@ti.kernel
+def fill(A: ti.sparse_matrix_builder()):
+    for i in range(n):
+        A[i, i] += 1
+
+# fill the builder with data.
+fill(K)
+
+print(">>>> K.print_triplets()")
+K.print_triplets()
+
+# create a sparse matrix from the builder.
+A = K.build()
+print(">>>> A = K.build()")
+print(A)
+```
+
+
+Please have a look at our two demos:
++ `examples/simulation/stable_fluid.py`: A 2D fluid simulation using a sparse Laplacian matrix to solve Poisson's pressure equation.
++ `examples/simulation/implicit_mass_spring.py`: A 2D cloth simulation demo using sparse matrices to solve the linear systems.
+
+
 ## Further reading
 
 Please read our [paper](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf),

@@ -105,6 +105,7 @@ class SparseMatrix:
         return self.matrix.get_element(indices[0], indices[1])
 
     def __str__(self):
+        """Python scope matrix print support."""
         return self.matrix.to_string()
 
     def __repr__(self):
@@ -129,11 +130,14 @@ class SparseMatrixBuilder:
                 num_rows, num_cols, max_num_triplets)
 
     def get_addr(self):
+        """Get the address of the sparse matrix"""
         return self.ptr.get_addr()
 
     def print_triplets(self):
+        """Print the triplets stored in the builder"""
         self.ptr.print_triplets()
 
     def build(self):
+        """Create a sparse matrix using the triplets"""
         sm = self.ptr.build()
         return SparseMatrix(sm=sm)

@@ -24,16 +24,31 @@ class SparseMatrix:
             self.matrix = sm
 
     def __add__(self, other):
+        """Addition operation for sparse matrix.
+
+        Returns: The result of addition.
+        """
         assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
         sm = self.matrix + other.matrix
         return SparseMatrix(sm=sm)
 
     def __sub__(self, other):
+        """Subtraction operation for sparse matrix.
+
+        Returns: The result of subtraction..
+        """
         assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
         sm = self.matrix - other.matrix
         return SparseMatrix(sm=sm)
 
     def __mul__(self, other):
+        """Sparse matrix's multiplication against real numbers or the hadamard product against another matrix
+
+        Args:
+             other (float or SparseMatrix): the other operand of multiplication.
+        Returns:
+            The result of multiplication.
+        """
         if isinstance(other, float):
             sm = self.matrix * other
             return SparseMatrix(sm=sm)
@@ -43,15 +58,34 @@ class SparseMatrix:
             return SparseMatrix(sm=sm)
 
     def __rmul__(self, other):
+        """Right scalar multiplication for sparse matrix.
+
+        Args:
+            other (float): the other operand of the scalar multiplication.
+        Returns:
+            The result of multiplication.
+        """
         if isinstance(other, float):
             sm = other * self.matrix
             return SparseMatrix(sm=sm)
 
     def transpose(self):
+        """Sparse Matrix transpose.
+
+        Returns:
+            The transposed sparse mastrix.
+        """
         sm = self.matrix.transpose()
         return SparseMatrix(sm=sm)
 
     def __matmul__(self, other):
+        """Matrix multiplication.
+
+        Args:
+            other (SparseMatrix, Field, or numpy array)
+        Returns:
+            The result of matrix multiplication.
+        """
         if isinstance(other, SparseMatrix):
             assert self.m == other.n, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
             sm = self.matrix.matmul(other.matrix)

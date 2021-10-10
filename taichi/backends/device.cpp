@@ -4,12 +4,10 @@
 #if TI_WITH_VULKAN
 #include <taichi/backends/vulkan/vulkan_device.h>
 #include <taichi/backends/interop/vulkan_cpu_interop.h>
-
 #if TI_WITH_CUDA
 #include <taichi/backends/cuda/cuda_device.h>
 #include <taichi/backends/interop/vulkan_cuda_interop.h>
 #endif  // TI_WITH_CUDA
-
 #endif  // TI_WITH_VULKAN
 
 namespace taichi {
@@ -31,7 +29,6 @@ Device::MemcpyCapability Device::check_memcpy_capability(DevicePtr dst,
   }
 
 #if TI_WITH_VULKAN
-
   if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
       dynamic_cast<cpu::CpuDevice *>(src.device)) {
     // TODO: support direct copy if dst itself supports host write.
@@ -73,7 +70,7 @@ void Device::memcpy_via_staging(DevicePtr dst,
   // Intra-device copy
 #if TI_WITH_VULKAN
   if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
-      dynamic_cast<cuda::CpuDevice *>(src.device)) {
+      dynamic_cast<cpu::CpuDevice *>(src.device)) {
     memcpy_cpu_to_vulkan_via_staging(dst, staging, src, size);
     return;
   }

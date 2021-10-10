@@ -96,7 +96,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
         cuda_module->launch(task.name, task.grid_dim, task.block_dim,
-                            task.shmem_bytes, {&context});
+                            0, {&context});
       }
       // copy data back to host
       if (transferred) {
@@ -546,7 +546,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       current_task->block_dim = stmt->block_dim;
       TI_ASSERT(current_task->grid_dim != 0);
       TI_ASSERT(current_task->block_dim != 0);
-      current_task->shmem_bytes = stmt->bls_size;
       current_task->end();
       current_task = nullptr;
     }

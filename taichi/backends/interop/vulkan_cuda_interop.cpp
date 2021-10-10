@@ -12,10 +12,10 @@
 namespace taichi {
 namespace lang {
 
+#if TI_WITH_VULKAN && TI_WITH_CUDA
+
 using namespace taichi::lang::vulkan;
 using namespace taichi::lang::cuda;
-
-#if TI_WITH_VULKAN && TI_WITH_CUDA
 
 namespace {
 

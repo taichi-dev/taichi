@@ -10,10 +10,10 @@
 namespace taichi {
 namespace lang {
 
+#if TI_WITH_VULKAN
+
 using namespace taichi::lang::vulkan;
 using namespace taichi::lang::cpu;
-
-#if TI_WITH_VULKAN
 
 void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,
                                       DevicePtr staging,

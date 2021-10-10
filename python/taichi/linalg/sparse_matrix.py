@@ -6,7 +6,7 @@ from taichi.lang.field import Field
 class SparseMatrix:
     """Taichi's Sparse Matrix class
 
-    A sparse matrix allows programmer solve large linear system.
+    A sparse matrix allows the programmer to solve a large linear system.
 
     Args:
         n (int): the first dimension of a sparse matrix.

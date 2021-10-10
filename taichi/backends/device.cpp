@@ -15,10 +15,6 @@
 namespace taichi {
 namespace lang {
 
-using namespace taichi::lang::vulkan;
-using namespace taichi::lang::cuda;
-using namespace taichi::lang::cpu;
-
 DeviceAllocationGuard::~DeviceAllocationGuard() {
   device->dealloc_memory(*this);
 }
@@ -34,18 +30,20 @@ Device::MemcpyCapability Device::check_memcpy_capability(DevicePtr dst,
     return Device::MemcpyCapability::Direct;
   }
 
-#if TI_WITH_VULKAN && TI_WITH_CUDA
-  if (dynamic_cast<VulkanDevice *>(dst.device) &&
-      dynamic_cast<CudaDevice *>(src.device)) {
-    return Device::MemcpyCapability::Direct;
-  }
-#endif
+#if TI_WITH_VULKAN
 
-  if (dynamic_cast<VulkanDevice *>(dst.device) &&
-      dynamic_cast<CpuDevice *>(src.device)) {
+  if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
+      dynamic_cast<cpu::CpuDevice *>(src.device)) {
     // TODO: support direct copy if dst itself supports host write.
     return Device::MemcpyCapability::RequiresStagingBuffer;
   }
+#if TI_WITH_CUDA
+  if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
+      dynamic_cast<cuda::CudaDevice *>(src.device)) {
+    return Device::MemcpyCapability::Direct;
+  }
+#endif  // TI_WITH_CUDA
+#endif  // TI_WITH_VULKAN
 
   return Device::MemcpyCapability::RequiresHost;
 }
@@ -58,8 +56,8 @@ void Device::memcpy_direct(DevicePtr dst, DevicePtr src, uint64_t size) {
   }
   // Intra-device copy
 #if TI_WITH_VULKAN && TI_WITH_CUDA
-  if (dynamic_cast<VulkanDevice *>(dst.device) &&
-      dynamic_cast<CudaDevice *>(src.device)) {
+  if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
+      dynamic_cast<cuda::CudaDevice *>(src.device)) {
     memcpy_cuda_to_vulkan(dst, src, size);
     return;
   }
@@ -74,8 +72,8 @@ void Device::memcpy_via_staging(DevicePtr dst,
                                 uint64_t size) {
   // Intra-device copy
 #if TI_WITH_VULKAN
-  if (dynamic_cast<VulkanDevice *>(dst.device) &&
-      dynamic_cast<CpuDevice *>(src.device)) {
+  if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
+      dynamic_cast<cuda::CpuDevice *>(src.device)) {
     memcpy_cpu_to_vulkan_via_staging(dst, staging, src, size);
     return;
   }

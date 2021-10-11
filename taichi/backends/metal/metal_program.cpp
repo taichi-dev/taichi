@@ -13,9 +13,9 @@ FunctionType MetalProgramImpl::compile(Kernel *kernel,
   if (!kernel->lowered()) {
     kernel->lower();
   }
-  return metal::compile_to_metal_executable(
-      kernel, metal_kernel_mgr_.get(), &(compiled_runtime_module_.value()),
-      &(metal_compiled_structs_.value()), offloaded);
+  return metal::compile_to_metal_executable(kernel, metal_kernel_mgr_.get(),
+                                            &(compiled_runtime_module_.value()),
+                                            compiled_snode_trees_, offloaded);
 }
 
 std::size_t MetalProgramImpl::get_snode_num_dynamically_allocated(SNode *snode,
@@ -52,14 +52,14 @@ void MetalProgramImpl::materialize_snode_tree(
   TI_ASSERT_INFO(config->use_llvm,
                  "Metal arch requires that LLVM being enabled");
   auto *const root = tree->root();
-
-  metal_compiled_structs_ = metal::compile_structs(*root);
-  metal_kernel_mgr_->add_compiled_snode_tree(metal_compiled_structs_.value());
+  auto csnode_tree = metal::compile_structs(*root);
+  metal_kernel_mgr_->add_compiled_snode_tree(csnode_tree);
+  compiled_snode_trees_.push_back(std::move(csnode_tree));
 }
 
 std::unique_ptr<AotModuleBuilder> MetalProgramImpl::make_aot_module_builder() {
   return std::make_unique<metal::AotModuleBuilderImpl>(
-      &(compiled_runtime_module_.value()), &(metal_compiled_structs_.value()),
+      &(compiled_runtime_module_.value()), compiled_snode_trees_,
       metal_kernel_mgr_->get_buffer_meta_data());
 }
 

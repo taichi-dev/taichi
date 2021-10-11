@@ -26,6 +26,10 @@ namespace cuda {
 class CudaDevice;
 }
 
+namespace cpu {
+class CpuDevice;
+}
+
 class LlvmProgramImpl : public ProgramImpl {
  public:
   LlvmProgramImpl(CompileConfig &config, KernelProfilerBase *profiler);
@@ -132,6 +136,8 @@ class LlvmProgramImpl : public ProgramImpl {
     return device_.get();
   }
 
+  DevicePtr get_snode_tree_device_ptr(int tree_id) override;
+
  private:
   std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
   std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
@@ -143,8 +149,11 @@ class LlvmProgramImpl : public ProgramImpl {
 
   DeviceAllocation preallocated_device_buffer_alloc{kDeviceNullAllocation};
 
+  std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
+
   std::unique_ptr<Device> device_;
   cuda::CudaDevice *cuda_device();
+  cpu::CpuDevice *cpu_device();
 };
 }  // namespace lang
 }  // namespace taichi

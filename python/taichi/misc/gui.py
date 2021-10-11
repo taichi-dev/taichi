@@ -828,14 +828,14 @@ def rgb_to_hex(c):
     """Convert rgb color format to hex color format.
 
     Args:
-        c (List[int]): The rbg representation of color.
+        c (List[int]): The rgb representation of color.
 
     Returns:
         The hex representation of color.
 
     """
     to255 = lambda x: np.clip(np.int32(x * 255), 0, 255)
-    return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])
+    return (to255(c[0]) << 16) + (to255(c[1]) << 8) + to255(c[2])
 
 
 def hex_to_rgb(color):

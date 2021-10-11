@@ -15,9 +15,8 @@ TLANG_NAMESPACE_BEGIN
 struct KernelProfileTracedRecord {
   std::string name;
   float kernel_elapsed_time_in_ms{0.0};
-  float time_since_base{0.0};  // for Timeline
-  // TODO: user defined metrics
-  // std::vector<float> metric_values;
+  float time_since_base{0.0};        // for Timeline
+  std::vector<float> metric_values;  // user selected metrics
 };
 
 struct KernelProfileStatisticalResult {
@@ -54,8 +53,6 @@ class KernelProfilerBase {
 
   virtual void sync() = 0;
 
-  virtual std::string title() const = 0;
-
   // TODO: remove start and always use start_with_handle
   virtual void start(const std::string &kernel_name){TI_NOT_IMPLEMENTED};
 
@@ -70,8 +67,6 @@ class KernelProfilerBase {
   virtual void stop(TaskHandle){TI_NOT_IMPLEMENTED};
 
   static void profiler_stop(KernelProfilerBase *profiler);
-
-  virtual void print();
 
   virtual void trace(KernelProfilerBase::TaskHandle &task_handle,
                      const std::string &task_name){TI_NOT_IMPLEMENTED};

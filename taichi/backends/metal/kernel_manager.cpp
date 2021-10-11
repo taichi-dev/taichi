@@ -40,7 +40,6 @@ namespace shaders {
 }  // namespace shaders
 
 using KernelTaskType = OffloadedTaskType;
-using BufferEnum = KernelAttributes::Buffers;
 
 inline int infer_msl_version(const TaichiKernelAttributes::UsedFeatures &f) {
   if (f.simdgroup) {
@@ -84,7 +83,8 @@ class BufferMemoryView {
 // Metal kernels mapped by a single Taichi kernel. This map stores those buffers
 // from their enum. Each CompiledMtlKernelBase can then decide which specific
 // buffers they will need to use in a launch.
-using InputBuffersMap = std::unordered_map<BufferEnum, MTLBuffer *>;
+using InputBuffersMap =
+    std::unordered_map<BufferDescriptor, MTLBuffer *, BufferDescriptor::Hasher>;
 
 // Info for launching a compiled Metal kernel
 class CompiledMtlKernelBase {
@@ -117,7 +117,7 @@ class CompiledMtlKernelBase {
                       MTLCommandBuffer *command_buffer) = 0;
 
  protected:
-  using BindBuffers = std::vector<std::pair<MTLBuffer *, BufferEnum>>;
+  using BindBuffers = std::vector<std::pair<MTLBuffer *, BufferDescriptor>>;
 
   void launch_if_not_empty(BindBuffers buffers,
                            MTLCommandBuffer *command_buffer) {
@@ -151,9 +151,8 @@ class CompiledMtlKernelBase {
       };
       const auto &buffers = kernel_attribs_.buffers;
       for (int i = 0; i < buffers.size(); ++i) {
-        record_args.push_back(
-            ActionArg(fmt::format("mtl_buffer_{}", i),
-                      KernelAttributes::buffers_name(buffers[i])));
+        record_args.push_back(ActionArg(fmt::format("mtl_buffer_{}", i),
+                                        buffers[i].debug_string()));
       }
       ActionRecorder::get_instance().record("launch_kernel",
                                             std::move(record_args));
@@ -244,7 +243,7 @@ class SparseRuntimeMtlKernelBase : public CompiledMtlKernelBase {
               MTLCommandBuffer *command_buffer) override {
     BindBuffers buffers;
     for (const auto b : kernel_attribs_.buffers) {
-      if (b == BufferEnum::Context) {
+      if (b.type() == BufferDescriptor::Type::Context) {
         buffers.push_back({args_buffer_.get(), b});
       } else {
         buffers.push_back({input_buffers.find(b)->second, b});
@@ -626,22 +625,27 @@ class KernelManager::Impl {
   }
 
   void add_compiled_snode_tree(const CompiledStructs &compiled_tree) {
+    SNodesRootBuffer rtbuf{};
+    rtbuf.desc = BufferDescriptor::Root(compiled_tree.root_id);
     if (compiled_tree.root_size > 0) {
-      root_mem_ = std::make_unique<BufferMemoryView>(compiled_tree.root_size,
+      rtbuf.mem = std::make_unique<BufferMemoryView>(compiled_tree.root_size,
                                                      mem_pool_);
-      root_buffer_ = new_mtl_buffer_no_copy(device_.get(), root_mem_->ptr(),
-                                            root_mem_->size());
-      TI_ASSERT(root_buffer_ != nullptr);
-      buffer_meta_data_.root_buffer_size += root_mem_->size();
+      rtbuf.buffer = new_mtl_buffer_no_copy(device_.get(), rtbuf.mem->ptr(),
+                                            rtbuf.mem->size());
+
+      TI_ASSERT(rtbuf.buffer != nullptr);
+      buffer_meta_data_.root_buffer_size += rtbuf.mem->size();
       TI_DEBUG("Metal root={} buffer_size={} bytes", compiled_tree.root_id,
-               root_mem_->size());
+               rtbuf.mem->size());
       ActionRecorder::get_instance().record(
           "allocate_root_buffer",
           {ActionArg("root_id={}", (int64)compiled_tree.root_id),
-           ActionArg("size_in_bytes", (int64)root_mem_->size())});
+           ActionArg("size_in_bytes", (int64)rtbuf.mem->size())});
     }
-
     init_snode_tree_sparse_runtime(compiled_tree);
+
+    compiled_snode_trees_.push_back(compiled_tree);
+    root_buffers_.push_back(std::move(rtbuf));
   }
 
   void register_taichi_kernel(const std::string &taichi_kernel_name,
@@ -681,15 +685,17 @@ class KernelManager::Impl {
       TI_INFO("Launching Taichi kernel <{}>", taichi_kernel_name);
     }
 
-    InputBuffersMap input_buffers = {
-        {BufferEnum::Root, root_buffer_.get()},
-        {BufferEnum::GlobalTmps, global_tmps_buffer_.get()},
-        {BufferEnum::Runtime, runtime_buffer_.get()},
-        {BufferEnum::Print, print_buffer_.get()},
-    };
+    InputBuffersMap input_buffers;
+    for (auto &rb : root_buffers_) {
+      input_buffers[rb.desc] = rb.buffer.get();
+    }
+    input_buffers[BufferDescriptor::GlobalTmps()] = global_tmps_buffer_.get();
+    input_buffers[BufferDescriptor::Runtime()] = runtime_buffer_.get();
+    input_buffers[BufferDescriptor::Print()] = print_buffer_.get();
+
     if (ctx_blitter) {
       ctx_blitter->host_to_metal();
-      input_buffers[BufferEnum::Context] = ctk.ctx_buffer.get();
+      input_buffers[BufferDescriptor::Context()] = ctk.ctx_buffer.get();
     }
 
     for (const auto &mk : ctk.compiled_mtl_kernels) {
@@ -1105,19 +1111,25 @@ class KernelManager::Impl {
                                         offset);
   }
 
+  struct SNodesRootBuffer {
+    BufferDescriptor desc;
+    std::unique_ptr<BufferMemoryView> mem{nullptr};
+    nsobj_unique_ptr<MTLBuffer> buffer{nullptr};
+  };
+
   CompileConfig *const config_;
   const CompiledRuntimeModule compiled_runtime_module_;
-  const CompiledStructs compiled_structs_;
-  BufferMetaData buffer_meta_data_;
   MemoryPool *const mem_pool_;
   uint64_t *const host_result_buffer_;
   KernelProfilerBase *const profiler_;
+  // FIXME: This is for AOT, name it better
+  BufferMetaData buffer_meta_data_;
+  std::vector<CompiledStructs> compiled_snode_trees_;
   nsobj_unique_ptr<MTLDevice> device_{nullptr};
   nsobj_unique_ptr<MTLCommandQueue> command_queue_{nullptr};
   nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_{nullptr};
   std::size_t command_buffer_id_{0};
-  std::unique_ptr<BufferMemoryView> root_mem_;
-  nsobj_unique_ptr<MTLBuffer> root_buffer_;
+  std::vector<SNodesRootBuffer> root_buffers_;
   std::unique_ptr<BufferMemoryView> global_tmps_mem_{nullptr};
   nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_{nullptr};
   std::unique_ptr<BufferMemoryView> runtime_mem_{nullptr};

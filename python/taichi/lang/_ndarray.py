@@ -21,7 +21,7 @@ class Ndarray:
     def __init__(self, dtype, shape):
         if impl.current_cfg().ndarray_use_torch:
             assert has_pytorch(
-            ), "PyTorch must be available if you want to create a Taichi ndarray."
+            ), "PyTorch must be available if you want to create a Taichi ndarray with PyTorch as its underlying storage."
             self.arr = torch.zeros(shape,
                                    dtype=to_pytorch_type(cook_dtype(dtype)))
             if impl.current_cfg().arch == _ti_core.Arch.cuda:

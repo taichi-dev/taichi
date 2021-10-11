@@ -26,7 +26,8 @@ class SparseMatrix:
     def __add__(self, other):
         """Addition operation for sparse matrix.
 
-        Returns: The result of addition.
+        Returns:
+            The result of addition.
         """
         assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
         sm = self.matrix + other.matrix
@@ -35,7 +36,8 @@ class SparseMatrix:
     def __sub__(self, other):
         """Subtraction operation for sparse matrix.
 
-        Returns: The result of subtraction..
+        Returns:
+            The result of subtraction..
         """
         assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
         sm = self.matrix - other.matrix
@@ -45,7 +47,7 @@ class SparseMatrix:
         """Sparse matrix's multiplication against real numbers or the hadamard product against another matrix
 
         Args:
-             other (float or SparseMatrix): the other operand of multiplication.
+            other (float or SparseMatrix): the other operand of multiplication.
         Returns:
             The result of multiplication.
         """
@@ -82,7 +84,7 @@ class SparseMatrix:
         """Matrix multiplication.
 
         Args:
-            other (SparseMatrix, Field, or numpy array)
+            other (SparseMatrix, Field, or numpy.array): the other sparse matrix of the multiplication.
         Returns:
             The result of matrix multiplication.
         """

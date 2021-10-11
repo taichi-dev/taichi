@@ -37,6 +37,9 @@ Device::MemcpyCapability Device::check_memcpy_capability(DevicePtr dst,
 #if TI_WITH_CUDA
   if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
       dynamic_cast<cuda::CudaDevice *>(src.device)) {
+    // FIXME: direct copy isn't always possible.
+    // The vulkan buffer needs export_sharing turned on.
+    // Otherwise, needs staging buffer
     return Device::MemcpyCapability::Direct;
   }
 #endif  // TI_WITH_CUDA
@@ -46,12 +49,12 @@ Device::MemcpyCapability Device::check_memcpy_capability(DevicePtr dst,
 }
 
 void Device::memcpy_direct(DevicePtr dst, DevicePtr src, uint64_t size) {
-  // Inter-device copy
+  // Intra-device copy
   if (dst.device == src.device) {
     dst.device->memcpy_internal(dst, src, size);
     return;
   }
-  // Intra-device copy
+  // Inter-device copy
 #if TI_WITH_VULKAN && TI_WITH_CUDA
   if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
       dynamic_cast<cuda::CudaDevice *>(src.device)) {
@@ -67,7 +70,7 @@ void Device::memcpy_via_staging(DevicePtr dst,
                                 DevicePtr staging,
                                 DevicePtr src,
                                 uint64_t size) {
-  // Intra-device copy
+  // Inter-device copy
 #if TI_WITH_VULKAN
   if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
       dynamic_cast<cpu::CpuDevice *>(src.device)) {

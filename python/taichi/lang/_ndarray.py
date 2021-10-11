@@ -22,7 +22,6 @@ class Ndarray:
         if impl.current_cfg().ndarray_use_torch:
             assert has_pytorch(
             ), "PyTorch must be available if you want to create a Taichi ndarray."
-            import torch
             self.arr = torch.zeros(shape,
                                    dtype=to_pytorch_type(cook_dtype(dtype)))
             if impl.current_cfg().arch == _ti_core.Arch.cuda:
@@ -90,7 +89,7 @@ class Ndarray:
         if impl.current_cfg().ndarray_use_torch:
             self.arr.fill_(val)
         else:
-            from taichi.lang.meta import fill_ndarray
+            from taichi.lang.meta import fill_ndarray  # pylint: disable=C0415
             fill_ndarray(self, val)
 
     @python_scope
@@ -103,10 +102,10 @@ class Ndarray:
         if impl.current_cfg().ndarray_use_torch:
             return self.arr.cpu().numpy()
         else:
-            import numpy as np
+            import numpy as np  # pylint: disable=C0415
             arr = np.zeros(shape=self.arr.shape,
                            dtype=to_numpy_type(self.dtype))
-            from taichi.lang.meta import ndarray_to_ext_arr
+            from taichi.lang.meta import ndarray_to_ext_arr  # pylint: disable=C0415
             ndarray_to_ext_arr(self, arr)
             ti.sync()
             return arr
@@ -125,12 +124,11 @@ class Ndarray:
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
         if impl.current_cfg().ndarray_use_torch:
-            import torch
             self.arr = torch.from_numpy(arr).to(self.arr.dtype)
         else:
             if hasattr(arr, 'contiguous'):
                 arr = arr.contiguous()
-            from taichi.lang.meta import ext_arr_to_ndarray
+            from taichi.lang.meta import ext_arr_to_ndarray  # pylint: disable=C0415
             ext_arr_to_ndarray(arr, self)
             ti.sync()
 

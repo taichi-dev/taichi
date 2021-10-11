@@ -218,8 +218,8 @@ def svd(A, dt):
     """Perform singular value decomposition (A=USV^T) for arbitrary size matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
-    2D implementation refers to :func:`taichi.lang.linalg.svd2d`.
-    3D implementation refers to :func:`taichi.lang.linalg.svd3d`.
+    2D implementation refers to :func:`taichi.lang.linalg_impl.svd2d`.
+    3D implementation refers to :func:`taichi.lang.linalg_impl.svd3d`.
 
     Args:
         A (ti.Matrix(n, n)): input nxn matrix `A`.
@@ -242,8 +242,8 @@ def polar_decompose(A, dt):
     """Perform polar decomposition (A=UP) for arbitrary size matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
-    2D implementation refers to :func:`taichi.lang.linalg.polar_decompose2d`.
-    3D implementation refers to :func:`taichi.lang.linalg.polar_decompose3d`.
+    2D implementation refers to :func:`taichi.lang.linalg_impl.polar_decompose2d`.
+    3D implementation refers to :func:`taichi.lang.linalg_impl.polar_decompose3d`.
 
     Args:
         A (ti.Matrix(n, n)): input nxn matrix `A`.

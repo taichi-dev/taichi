@@ -26,7 +26,7 @@ HANDLE get_device_mem_handle(VkDeviceMemory &mem, VkDevice device) {
   VkMemoryGetWin32HandleInfoKHR memory_get_win32_handle_info = {};
   memory_get_win32_handle_info.sType =
       VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR;
-  memory_get_win32_handle_info.pNext = NULL;
+  memory_get_win32_handle_info.pNext = nullptr;
   memory_get_win32_handle_info.memory = mem;
   memory_get_win32_handle_info.handleType =
       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
@@ -53,7 +53,7 @@ int get_device_mem_handle(VkDeviceMemory &mem, VkDevice device) {
 
   VkMemoryGetFdInfoKHR memory_get_fd_info = {};
   memory_get_fd_info.sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR;
-  memory_get_fd_info.pNext = NULL;
+  memory_get_fd_info.pNext = nullptr;
   memory_get_fd_info.memory = mem;
   memory_get_fd_info.handleType =
       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
@@ -74,7 +74,7 @@ int get_device_mem_handle(VkDeviceMemory &mem, VkDevice device) {
 CUexternalMemory import_vk_memory_object_from_handle(HANDLE handle,
                                                      unsigned long long size,
                                                      bool is_dedicated) {
-  CUexternalMemory ext_mem = NULL;
+  CUexternalMemory ext_mem = nullptr;
   CUDA_EXTERNAL_MEMORY_HANDLE_DESC desc = {};
 
   memset(&desc, 0, sizeof(desc));
@@ -93,7 +93,7 @@ CUexternalMemory import_vk_memory_object_from_handle(HANDLE handle,
 CUexternalMemory import_vk_memory_object_from_handle(int fd,
                                                      unsigned long long size,
                                                      bool is_dedicated) {
-  CUexternalMemory ext_mem = NULL;
+  CUexternalMemory ext_mem = nullptr;
   CUDA_EXTERNAL_MEMORY_HANDLE_DESC desc = {};
 
   memset(&desc, 0, sizeof(desc));
@@ -112,7 +112,7 @@ CUexternalMemory import_vk_memory_object_from_handle(int fd,
 void *map_buffer_onto_external_memory(CUexternalMemory ext_mem,
                                       unsigned long long offset,
                                       unsigned long long size) {
-  void *ptr = NULL;
+  void *ptr = nullptr;
   CUDA_EXTERNAL_MEMORY_BUFFER_DESC desc = {};
 
   memset(&desc, 0, sizeof(desc));

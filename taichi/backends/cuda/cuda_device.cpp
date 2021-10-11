@@ -40,6 +40,19 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
   info.ptr = nullptr;
 }
 
+DeviceAllocation CudaDevice::import_memory(void *ptr, size_t size) {
+  AllocInfo info;
+  info.ptr = ptr;
+  info.size = size;
+
+  DeviceAllocation alloc;
+  alloc.alloc_id = allocations_.size();
+  alloc.device = this;
+
+  allocations_.push_back(info);
+  return alloc;
+}
+
 }  // namespace cuda
 }  // namespace lang
 

@@ -24,15 +24,10 @@ class KernelProfilerCUDA : public KernelProfilerBase {
  public:
   KernelProfilerCUDA(bool enable);
 
-  std::string title() const override {
-    return "CUDA Profiler";
-  }
-
   void reinit_with_metrics(const std::vector<std::string> &metrics) override;
   void trace(KernelProfilerBase::TaskHandle &task_handle,
              const std::string &task_name) override;
   void sync() override;
-  void print() override;
   void clear() override;
   void stop(KernelProfilerBase::TaskHandle handle) override;
 

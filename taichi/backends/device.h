@@ -384,7 +384,23 @@ class Device {
   virtual void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) = 0;
 
   // Copy memory inter or intra devices (synced)
-  static void memcpy(DevicePtr dst, DevicePtr src, uint64_t size);
+  enum class MemcpyCapability { Direct, RequiresStagingBuffer, RequiresHost };
+
+  static MemcpyCapability check_memcpy_capability(DevicePtr dst,
+                                                  DevicePtr src,
+                                                  uint64_t size);
+
+  static void memcpy_direct(DevicePtr dst, DevicePtr src, uint64_t size);
+
+  static void memcpy_via_staging(DevicePtr dst,
+                                 DevicePtr staging,
+                                 DevicePtr src,
+                                 uint64_t size);
+
+  static void memcpy_via_host(DevicePtr dst,
+                              void *host_buffer,
+                              DevicePtr src,
+                              uint64_t size);
 
   // Each thraed will acquire its own stream
   virtual Stream *get_compute_stream() = 0;

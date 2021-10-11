@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef _WIN64
+#define VK_USE_PLATFORM_WIN32_KHR 1
+#endif
+
 #include <volk.h>
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>

@@ -51,26 +51,25 @@ ti.init()
 @ti.data_oriented
 class MyClass:
     @ti.kernel
-    def func(self, temp: ti.template()):
+    def inc(self, temp: ti.template()):
         for I in ti.grouped(temp):
             temp[I] += 1
 
-    def call_func(self):
-        self.func(self.temp)
+    def call_inc(self):
+        self.inc(self.temp)
 
     def allocate_temp(self, n):
         self.temp = ti.field(dtype = ti.i32, shape=n)
 
 
 a = MyClass()
-# a.call_func()
-# a.temp has not been allocated at this point
+# a.call_inc() cannot be called, since a.temp has not been allocated at this point
 a.allocate_temp(4)
-a.call_func()
-a.call_func()
+a.call_inc()
+a.call_inc()
 print(a.temp)
 a.allocate_temp(8)
-a.call_func()
+a.call_inc()
 print(a.temp)
 ```
 

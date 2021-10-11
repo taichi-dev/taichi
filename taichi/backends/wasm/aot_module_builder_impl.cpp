@@ -3,7 +3,6 @@
 
 #include <fstream>
 
-#include "taichi/system/std_filesystem.h"
 #include "taichi/util/file_sequence_writer.h"
 
 namespace taichi {
@@ -27,11 +26,10 @@ void AotModuleBuilderImpl::eliminate_unused_functions() const {
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
-  const stdfs::path dir{output_dir};
-  const stdfs::path bin_path = dir / fmt::format("{}.ll", filename);
+  std::string bin_path = output_dir + "/" + fmt::format("{}.ll", filename);
 
   eliminate_unused_functions();
-  FileSequenceWriter writer(bin_path.string(), "optimized LLVM IR (WASM)");
+  FileSequenceWriter writer(bin_path, "optimized LLVM IR (WASM)");
   writer.write(module_.get());
 }
 

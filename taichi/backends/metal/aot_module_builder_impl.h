@@ -6,7 +6,6 @@
 #include "taichi/backends/metal/aot_utils.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/program/aot_module_builder.h"
-#include "taichi/system/std_filesystem.h"
 
 namespace taichi {
 namespace lang {
@@ -41,7 +40,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   PrintStringTable strtab_;
   TaichiAotData ti_aot_data_;
 
-  void metalgen(const stdfs::path &dir,
+  void metalgen(const std::string &dir,
                 const std::string &filename,
                 const CompiledKernelData &k) const;
 };

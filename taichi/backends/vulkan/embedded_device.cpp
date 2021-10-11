@@ -513,7 +513,8 @@ void EmbeddedVulkanDevice::create_logical_device() {
       if (shader_atomic_float_feature.shaderBufferFloat32AtomicAdd) {
         ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float_add, true);
       } else if (shader_atomic_float_feature.shaderBufferFloat64AtomicAdd) {
-        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float64_add, true);
+        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float64_add,
+                            true);
       } else if (shader_atomic_float_feature.shaderBufferFloat32Atomics) {
         ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float, true);
       } else if (shader_atomic_float_feature.shaderBufferFloat64Atomics) {

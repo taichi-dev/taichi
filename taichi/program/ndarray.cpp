@@ -11,10 +11,14 @@ Ndarray::Ndarray(Program *prog,
       shape(shape),
       program_(prog),
       data_ptr_(nullptr),
-      nelement_(std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>())),
+      nelement_(std::accumulate(std::begin(shape),
+                                std::end(shape),
+                                1,
+                                std::multiplies<>())),
       element_size_(data_type_size(dtype)) {
   prog_ = program_->get_llvm_program_impl();
-  data_ptr_ = (uint64_t*)prog_->initialize_llvm_runtime_ndarray(nelement_ * element_size_, program_->result_buffer);
+  data_ptr_ = (uint64_t *)prog_->initialize_llvm_runtime_ndarray(
+      nelement_ * element_size_, program_->result_buffer);
 }
 
 void Ndarray::set_item(const std::vector<int> &key, uint64_t val) {

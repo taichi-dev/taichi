@@ -3,7 +3,7 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.util import (cook_dtype, has_pytorch, python_scope,
-                              to_pytorch_type, to_taichi_type, to_numpy_type)
+                              to_numpy_type, to_pytorch_type, to_taichi_type)
 
 import taichi as ti
 
@@ -104,7 +104,8 @@ class Ndarray:
             return self.arr.cpu().numpy()
         else:
             import numpy as np
-            arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
+            arr = np.zeros(shape=self.arr.shape,
+                           dtype=to_numpy_type(self.dtype))
             from taichi.lang.meta import ndarray_to_ext_arr
             ndarray_to_ext_arr(self, arr)
             ti.sync()
@@ -133,6 +134,7 @@ class Ndarray:
             ext_arr_to_ndarray(arr, self)
             ti.sync()
 
+
 class ScalarNdarray(Ndarray):
     """Taichi ndarray with scalar elements implemented with a torch tensor.
 
@@ -149,14 +151,16 @@ class ScalarNdarray(Ndarray):
 
     @python_scope
     def __setitem__(self, key, value):
-        if impl.current_cfg().ndarray_use_torch or impl.current_cfg().arch == _ti_core.Arch.x64:
+        if impl.current_cfg().ndarray_use_torch or impl.current_cfg(
+        ).arch == _ti_core.Arch.x64:
             self.arr.__setitem__(key, value)
         else:
             raise NotImplementedError()
 
     @python_scope
     def __getitem__(self, key):
-        if impl.current_cfg().ndarray_use_torch or impl.current_cfg().arch == _ti_core.Arch.x64:
+        if impl.current_cfg().ndarray_use_torch or impl.current_cfg(
+        ).arch == _ti_core.Arch.x64:
             return self.arr.__getitem__(key)
         else:
             raise NotImplementedError()

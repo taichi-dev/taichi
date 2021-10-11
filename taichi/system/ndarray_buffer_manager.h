@@ -20,7 +20,7 @@ class NdarrayBufferManager {
                void *runtime,
                std::size_t size,
                std::size_t alignment,
-               //const int snode_tree_id,
+               // const int snode_tree_id,
                uint64 *result_buffer);
 
  private:

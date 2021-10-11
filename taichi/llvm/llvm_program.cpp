@@ -215,8 +215,9 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 }
 
-uint8_t *LlvmProgramImpl::initialize_llvm_runtime_ndarray(std::size_t size,
-                                                     uint64 *result_buffer) {
+uint8_t *LlvmProgramImpl::initialize_llvm_runtime_ndarray(
+    std::size_t size,
+    uint64 *result_buffer) {
   TaichiLLVMContext *tlctx = nullptr;
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
@@ -229,9 +230,8 @@ uint8_t *LlvmProgramImpl::initialize_llvm_runtime_ndarray(std::size_t size,
   }
 
   auto *const runtime_jit = tlctx->runtime_jit_module;
-  uint8_t *buf = ndarray_buffer_manager->allocate(runtime_jit, llvm_runtime,
-                                      size, 1/*alignment*/,
-                                      result_buffer);
+  uint8_t *buf = ndarray_buffer_manager->allocate(
+      runtime_jit, llvm_runtime, size, 1 /*alignment*/, result_buffer);
   return buf;
 }
 

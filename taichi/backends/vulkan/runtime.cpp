@@ -9,6 +9,20 @@
 #include <unordered_set>
 #include <vector>
 
+#include "taichi/util/environ_config.h"
+
+#ifdef TI_WITH_VULKAN
+#include "taichi/backends/vulkan/embedded_device.h"
+#include "taichi/backends/vulkan/vulkan_utils.h"
+#include "taichi/backends/vulkan/loader.h"
+
+#include "vk_mem_alloc.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
+
+#include "GLFW/glfw3.h"
+#endif  // TI_WITH_VULKAN
+
+#include "taichi/math/arithmetic.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST

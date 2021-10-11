@@ -20,7 +20,7 @@ namespace vulkan {
 #define BAIL_ON_VK_BAD_RESULT(result, msg) \
   do {                                     \
     if ((result) != VK_SUCCESS) {          \
-      throw std::runtime_error((msg));     \
+      TI_ERROR( "Vulkan Error : {} : {}",result, (msg));     \
     };                                     \
   } while (0)
 

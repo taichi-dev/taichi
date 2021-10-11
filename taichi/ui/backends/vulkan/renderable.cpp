@@ -66,7 +66,7 @@ void Renderable::update_data(const RenderableInfo &info) {
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
       vertex_buffer_.get_ptr(), vbo_dev_ptr, vbo_size);
   if (memcpy_cap == Device::MemcpyCapability::Direct) {
-    Device::memcpy_direct(vertex_buffer_.get_ptr(), vbo_dev_ptr.get_ptr(),
+    Device::memcpy_direct(vertex_buffer_.get_ptr(), vbo_dev_ptr,
                           vbo_size);
   } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
     Device::memcpy_via_staging(vertex_buffer_.get_ptr(),
@@ -90,6 +90,8 @@ void Renderable::update_data(const RenderableInfo &info) {
       TI_NOT_IMPLEMENTED;
     }
   }
+
+  TI_INFO("done update data");
 }
 
 Pipeline &Renderable::pipeline() {

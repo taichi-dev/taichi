@@ -58,7 +58,26 @@ class VulkanProgramImpl : public ProgramImpl {
     vulkan_runtime_->destroy_snode_tree(snode_tree);
   }
 
-  ~VulkanProgramImpl() override;
+  Device *get_compute_device() override{
+    if(vulkan_runtime_){
+      return vulkan_runtime_ -> get_ti_device();
+    }
+    return nullptr;
+  }
+
+  Device *get_graphics_device() override{
+    if(vulkan_runtime_){
+      return vulkan_runtime_ -> get_ti_device();
+    }
+    return nullptr;
+  }
+
+  DevicePtr get_snode_tree_device_ptr(int tree_id) override {
+    return vulkan_runtime_ ->get_snode_tree_device_ptr(tree_id);
+  }
+
+  ~VulkanProgramImpl() {
+  }
 
  private:
   std::unique_ptr<vulkan::EmbeddedVulkanDevice> embedded_device_{nullptr};

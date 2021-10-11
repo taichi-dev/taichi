@@ -64,9 +64,9 @@ class KernelProfiler:
         if type(mode) is bool:
             self._profiling_mode = mode
         else:
-            raise TypeError(f'Arg `mode` must be of type boolean. '
-                            f'Type {type(mode)} '
-                            f'is not supported')
+            raise TypeError(
+                f'Arg `mode` must be of type boolean. Type {type(mode)} is not supported.'
+            )
 
     def get_kernel_profiler_mode(self):
         """Get status of :class:`~taichi.profiler.kernelprofiler.KernelProfiler`."""
@@ -86,7 +86,7 @@ class KernelProfiler:
         """Clear all records both in front-end :class:`~taichi.profiler.kernelprofiler.KernelProfiler` and back-end instance ``KernelProfilerBase``.
 
         Note:
-        The values of ``self._profiling_mode`` and ``self._metric_list`` will not be cleared.
+            The values of ``self._profiling_mode`` and ``self._metric_list`` will not be cleared.
         """
         #sync first
         impl.get_runtime().sync()
@@ -115,7 +115,7 @@ class KernelProfiler:
     def collect_metrics_in_context(self, metric_list=default_cupti_metrics):
         """This function is not exposed to user now.
 
-        For usage of this function, see :func:`~taichi.lang.collect_kernel_profile_metrics_in_context`.
+        For usage of this function, see :func:`~taichi.lang.collect_kernel_profile_metrics`.
         """
         self.set_metrics(metric_list)
         yield self
@@ -139,10 +139,13 @@ class KernelProfiler:
         #COUNT mode (default) : print statistics of all kernel
         if mode == self.COUNT:
             self._print_statistics_info()
-
         #TRACE mode : print records of launched kernel
-        if mode == self.TRACE:
+        elif mode == self.TRACE:
             self._print_kernel_info()
+        else:
+            raise ValueError(
+                f'Arg `mode` must be of type \'str\', and has the value \'count\' or \'trace\'.'
+            )
 
     # private methods
 

@@ -47,9 +47,50 @@ bool check_cupti_availability() {
 
 bool check_cupti_privileges() {
 #if defined(TI_WITH_CUDA_TOOLKIT)
-  CUpti_Profiler_Initialize_Params init_param = {
+
+#define TEMP_CUPTI_API_CALL(api_func_call)                                 \
+  do {                                                                     \
+    CUptiResult status = api_func_call;                                    \
+    if (status != CUPTI_SUCCESS) {                                         \
+      const char *errstr;                                                  \
+      cuptiGetResultString(status, &errstr);                               \
+      fprintf(stderr, "%s:%d: error: function %s failed with error %s.\n", \
+              __FILE__, __LINE__, #api_func_call, errstr);                 \
+      exit(-1);                                                            \
+    }                                                                      \
+  } while (0)
+
+  CUpti_Profiler_Initialize_Params profiler_initialize_params = {
       CUpti_Profiler_Initialize_Params_STRUCT_SIZE};
-  CUptiResult status = cuptiProfilerInitialize(&init_param);
+  TEMP_CUPTI_API_CALL(cuptiProfilerInitialize(&profiler_initialize_params));
+  TI_TRACE("cuptiProfilerInitialized");
+
+  int device_num = 0;  // TODO
+  // CUDADriver::get_instance_without_context().init(0);
+  CUpti_Device_GetChipName_Params get_chip_name_params = {
+      CUpti_Device_GetChipName_Params_STRUCT_SIZE};
+  get_chip_name_params.deviceIndex = device_num;
+  TEMP_CUPTI_API_CALL(cuptiDeviceGetChipName(&get_chip_name_params));
+  std::string chip_name = get_chip_name_params.pChipName;
+
+  CUpti_Profiler_GetCounterAvailability_Params get_counter_availability_params =
+      {CUpti_Profiler_GetCounterAvailability_Params_STRUCT_SIZE};
+  get_counter_availability_params.ctx =
+      (CUcontext)(CUDAContext::get_instance().get_context());
+  TEMP_CUPTI_API_CALL(
+      cuptiProfilerGetCounterAvailability(&get_counter_availability_params));
+
+#undef TEMP_CUPTI_API_CALL
+
+  std::vector<uint8_t> counter_availability_image;
+  counter_availability_image.clear();
+  counter_availability_image.resize(
+      get_counter_availability_params.counterAvailabilityImageSize);
+  get_counter_availability_params.pCounterAvailabilityImage =
+      counter_availability_image.data();
+  CUptiResult status =
+      cuptiProfilerGetCounterAvailability(&get_counter_availability_params);
+
   if (status == CUPTI_ERROR_INSUFFICIENT_PRIVILEGES) {
     TI_WARN(
         "function cuptiProfilerInitialize failed with error : "
@@ -57,11 +98,10 @@ bool check_cupti_privileges() {
     TI_WARN("fallback to default kernel profiler : cuEvent");
     TI_WARN(
         "=================================================================");
-    TI_WARN("(Run your commands with `sudo` to get administrative privileges)");
-    TI_WARN("Add option: `nvidia NVreg_RestrictProfilingToAdminUsers=0` ");
+    TI_WARN("Add `option nvidia NVreg_RestrictProfilingToAdminUsers=0`");
     TI_WARN("to /etc/modprobe.d/nvidia-kernel-common.conf");
+    TI_WARN("run `update-initramfs -u`");
     TI_WARN("then `reboot` should resolve the permission issue.");
-    TI_WARN("(Probably needs to run `update-initramfs -u`  before `reboot`)");
     TI_WARN(
         "=================================================================");
     TI_WARN(

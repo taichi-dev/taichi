@@ -116,8 +116,9 @@ def print_kernel_profile_info(mode='count'):
     """Print the profiling results of Taichi kernels.
 
     To enable this profiler, set ``kernel_profiler=True`` in ``ti.init()``.
-    The default print mode is ``COUNT`` mode: print the statistics (min,max,avg time) of launched kernels,
-    another mode ``TRACE``: print the records of launched kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
+    ``'count'`` mode: print the statistics (min,max,avg time) of launched kernels,
+    ``'trace'`` mode: print the records of launched kernels with specific profiling metrics (time, memory load/store and core utilization etc.),
+    and defaults to ``'count'``.
 
     Args:
         mode (str): the way to print profiling results.
@@ -134,15 +135,17 @@ def print_kernel_profile_info(mode='count'):
         >>>     var[0] = 1.0
 
         >>> compute()
-        >>> ti.print_kernel_profile_info() #[1]
+        >>> ti.print_kernel_profile_info()
         >>> # equivalent calls :
         >>> # ti.print_kernel_profile_info('count')
 
         >>> ti.print_kernel_profile_info('trace')
 
     Note:
-        [1] Currently the result of `KernelProfiler` could be incorrect on OpenGL
+        Currently the result of `KernelProfiler` could be incorrect on OpenGL
         backend due to its lack of support for `ti.sync()`.
+
+        For advanced mode of `KernelProfiler`, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
     """
     get_default_kernel_profiler().print_info(mode)
 
@@ -257,8 +260,7 @@ def set_kernel_profile_metrics(metric_list=default_cupti_metrics):
 
 
 @contextmanager
-def collect_kernel_profile_metrics_in_context(
-        metric_list=default_cupti_metrics):
+def collect_kernel_profile_metrics(metric_list=default_cupti_metrics):
     """Set temporary metrics that will be collected by the CUPTI toolkit within this context.
 
     Args:
@@ -293,7 +295,7 @@ def collect_kernel_profile_metrics_in_context(
         >>> profiling_metrics += [global_op_atom]
 
         >>> # metrics setting is temporary, and will be clear when exit from this context.
-        >>> with ti.collect_kernel_profile_metrics_in_context(profiling_metrics):
+        >>> with ti.collect_kernel_profile_metrics(profiling_metrics):
         >>>     for i in range(16):
         >>>         reduction()
         >>>     ti.print_kernel_profile_info('trace')

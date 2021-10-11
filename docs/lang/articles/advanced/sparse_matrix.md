@@ -1,7 +1,7 @@
 # Sparse Matrix
 Sparse matrices are frequently used when solving linear systems in science and engineering. Taichi provides programmers with useful APIs for sparse matrices.
 
-To use the sparse matrix in taichi programs, you should follow these three steps :
+To use the sparse matrix in taichi programs, you should follow these three steps:
 1. Create a `builder` using `ti.SparseMatrixBuilder()`.
 2. Fill the `builder` with your matrices' data.
 3. Create sparse matrices from the `builder`.

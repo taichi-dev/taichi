@@ -122,7 +122,7 @@ FunctionType LlvmProgramImpl::compile(Kernel *kernel,
     kernel->lower();
   }
   auto codegen = KernelCodeGen::create(kernel->arch, kernel, offloaded);
-  return codegen->compile();
+  return codegen->codegen();
 }
 
 void LlvmProgramImpl::synchronize() {

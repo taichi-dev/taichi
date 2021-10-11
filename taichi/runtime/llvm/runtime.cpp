@@ -527,8 +527,8 @@ struct LLVMRuntime {
   host_vsnprintf_type host_vsnprintf;
   Ptr memory_pool;
 
-  Ptr roots[taichi_max_num_snode_trees];
-  size_t root_mem_sizes[taichi_max_num_snode_trees];
+  Ptr roots[kMaxNumSnodeTreesLlvm];
+  size_t root_mem_sizes[kMaxNumSnodeTreesLlvm];
 
   Ptr thread_pool;
   parallel_for_type parallel_for;

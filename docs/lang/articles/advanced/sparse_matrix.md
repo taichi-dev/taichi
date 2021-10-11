@@ -186,4 +186,3 @@ print(f">>>> Computation was successful?: {isSuccess}")
 Please have a look at our two demos for more information:
 + `examples/simulation/stable_fluid.py`: A 2D fluid simulation using a sparse Laplacian matrix to solve Poisson's pressure equation.
 + `examples/simulation/implicit_mass_spring.py`: A 2D cloth simulation demo using sparse matrices to solve the linear systems.
-

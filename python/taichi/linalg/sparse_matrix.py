@@ -27,7 +27,7 @@ class SparseMatrix:
         """Addition operation for sparse matrix.
 
         Returns:
-            The result of addition.
+            The result sparse matrix of the addition.
         """
         assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
         sm = self.matrix + other.matrix
@@ -37,7 +37,7 @@ class SparseMatrix:
         """Subtraction operation for sparse matrix.
 
         Returns:
-            The result of subtraction..
+             The result sparse matrix of the subtraction.
         """
         assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
         sm = self.matrix - other.matrix
@@ -63,7 +63,7 @@ class SparseMatrix:
         """Right scalar multiplication for sparse matrix.
 
         Args:
-            other (float): the other operand of the scalar multiplication.
+            other (float): the other operand of scalar multiplication.
         Returns:
             The result of multiplication.
         """

@@ -1,7 +1,7 @@
 # Sparse Matrix
 Sparse matrices are frequently used when solving linear systems in science and engineering. Taichi provides programmers with useful APIs for sparse matrices.
 
-To use sparse matrix in taichi programs, you may need to:
+To use the sparse matrix in taichi programs, you should follow these three steps :
 1. Create a `builder` using `ti.SparseMatrixBuilder()`.
 2. Fill the `builder` with your matrices' data.
 3. Create sparse matrices from the `builder`.
@@ -9,10 +9,10 @@ To use sparse matrix in taichi programs, you may need to:
 Here's an example:
 ```python
 import taichi as ti
-ti.init(arch=ti.x64)
+ti.init(arch=ti.x64) # only CPU backend is supported for now
 
 n = 4
-# create sparse matrix builder
+# step 1: create sparse matrix builder
 K = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
 @ti.kernel
@@ -20,7 +20,7 @@ def fill(A: ti.sparse_matrix_builder()):
     for i in range(n):
         A[i, i] += 1
 
-# fill the builder with data.
+# step 2: fill the builder with data.
 fill(K)
 
 print(">>>> K.print_triplets()")
@@ -29,7 +29,7 @@ K.print_triplets()
 # >>>> K.print_triplets()
 # n=4, m=4, num_triplets=4 (max=100)(0, 0) val=1.0(1, 1) val=1.0(2, 2) val=1.0(3, 3) val=1.0
 
-# create a sparse matrix from the builder.
+# step 3: create a sparse matrix from the builder.
 A = K.build()
 print(">>>> A = K.build()")
 print(A)
@@ -123,7 +123,7 @@ Then, the following steps could help:
 1. Create a `solver` using `ti.SparseSolver(solver_type, ordering)`. Currently, the sparse solver supports `LLT`, `LDLT` and `LU` factorization types, and orderings including `AMD`, `COLAMD`
 2. Analyze and factorize the sparse matrix you want to solve using `solver.analyze_pattern(sparse_matrix)` and `solver.factorize(sparse_matrix)`
 3. Call `solver.solve(b)` to get your solutions, where `b` is a numpy array or taichi filed representing the right-hand side of the linear system.
-4. Call `solver.info()` to check if the solving process succeed.
+4. Call `solver.info()` to check if the solving process succeeds.
 
 Here's a full example.
 

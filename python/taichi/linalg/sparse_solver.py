@@ -5,7 +5,7 @@ from taichi.linalg import SparseMatrix
 
 
 class SparseSolver:
-    """Solver for sparse matrix
+    """Sparse linear system solver
 
     Use this class to solve linear systems represented by sparse matrices.
 
@@ -28,7 +28,7 @@ class SparseSolver:
         assert False, f"The parameter type: {type(sparse_matrix)} is not supported in linear solvers for now."
 
     def compute(self, sparse_matrix):
-        """This method is equivalent to calling both analyze_pattern and then factorize().
+        """This method is equivalent to calling both `analyze_pattern` and then `factorize`.
 
         Args:
             sparse_matrix (SparseMatrix): The sparse matrix to be computed.

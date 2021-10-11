@@ -34,7 +34,7 @@ if (WIN32)
 endif()
 
 set(TI_WITH_GGUI OFF)
-if(TI_WITH_CUDA AND TI_WITH_VULKAN)
+if(TI_WITH_VULKAN)
     set(TI_WITH_GGUI ON)
 endif()
 

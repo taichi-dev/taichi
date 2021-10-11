@@ -105,7 +105,8 @@ class Ndarray:
             import numpy as np  # pylint: disable=C0415
             arr = np.zeros(shape=self.arr.shape,
                            dtype=to_numpy_type(self.dtype))
-            from taichi.lang.meta import ndarray_to_ext_arr  # pylint: disable=C0415
+            from taichi.lang.meta import \
+                ndarray_to_ext_arr  # pylint: disable=C0415
             ndarray_to_ext_arr(self, arr)
             ti.sync()
             return arr
@@ -128,7 +129,8 @@ class Ndarray:
         else:
             if hasattr(arr, 'contiguous'):
                 arr = arr.contiguous()
-            from taichi.lang.meta import ext_arr_to_ndarray  # pylint: disable=C0415
+            from taichi.lang.meta import \
+                ext_arr_to_ndarray  # pylint: disable=C0415
             ext_arr_to_ndarray(arr, self)
             ti.sync()
 

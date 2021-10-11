@@ -60,6 +60,9 @@ ENV PATH="/taichi-llvm-10.0.0-linux/bin:$PATH"
 
 
 # Setting up Vulkan SDK
+# References
+# [1] https://github.com/edowson/docker-nvidia-vulkan
+# [2] https://gitlab.com/nvidia/container-images/vulkan/-/tree/master/docker
 WORKDIR /vulkan
 RUN wget https://sdk.lunarg.com/sdk/download/1.2.189.0/linux/vulkansdk-linux-x86_64-1.2.189.0.tar.gz
 RUN tar xf vulkansdk-linux-x86_64-1.2.189.0.tar.gz && \

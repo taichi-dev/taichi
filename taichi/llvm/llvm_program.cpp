@@ -218,7 +218,7 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
 uint8_t *LlvmProgramImpl::initialize_llvm_runtime_ndarray(std::size_t size,
                                                      uint64 *result_buffer) {
   TaichiLLVMContext *tlctx = nullptr;
-  if (config->is_cuda_no_unified_memory()) {
+  if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     tlctx = llvm_context_device.get();
 #else

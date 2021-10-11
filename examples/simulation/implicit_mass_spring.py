@@ -1,7 +1,9 @@
 # https://www.cs.cmu.edu/~baraff/papers/sig98.pdf
-import taichi as ti
-import numpy as np
 import argparse
+
+import numpy as np
+
+import taichi as ti
 
 
 @ti.data_oriented

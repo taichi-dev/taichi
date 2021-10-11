@@ -37,9 +37,8 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
   if (info.ptr == nullptr) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }
-  if (!info.is_imported) {
-    CUDADriver::get_instance().mem_free(info.ptr);
-  }
+  TI_ASSERT(!info.is_imported);
+  CUDADriver::get_instance().mem_free(info.ptr);
   info.ptr = nullptr;
 }
 

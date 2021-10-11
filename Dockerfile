@@ -1,5 +1,7 @@
 # Taichi Dockerfile for development
 FROM nvidia/cudagl:11.2.2-devel-ubuntu20.04
+# Use 11.2 instead of 11.4 to avoid forward compatibility issue on Nvidia driver 460
+
 ENV NVIDIA_DRIVER_CAPABILITIES compute,graphics,utility
 ENV DEBIAN_FRONTEND=noninteractive
 LABEL maintainer="https://github.com/taichi-dev"

@@ -306,7 +306,6 @@ doing so couples computation code with the internal configuration of data struct
 Use `ti.rescale_index` to avoid hard-coding internal information of data structures.
 :::
 
-
 ## Further reading
 
 Please read our [paper](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf),

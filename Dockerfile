@@ -59,7 +59,7 @@ RUN unzip taichi-llvm-10.0.0-linux.zip && \
 ENV PATH="/taichi-llvm-10.0.0-linux/bin:$PATH"
 
 
-# Setting up Vulkan sdk
+# Setting up Vulkan SDK
 WORKDIR /vulkan
 RUN wget https://sdk.lunarg.com/sdk/download/1.2.189.0/linux/vulkansdk-linux-x86_64-1.2.189.0.tar.gz
 RUN tar xf vulkansdk-linux-x86_64-1.2.189.0.tar.gz && \

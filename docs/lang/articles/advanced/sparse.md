@@ -310,16 +310,16 @@ Use `ti.rescale_index` to avoid hard-coding internal information of data structu
 In scientific and engineering computing, sparse matrices are frequently used. Taichi also provides APIs for sparse matrices.
 
 To create sparse matrix in taichi programs, you may need to:
-1. Creating a `ti.SparseMatrixBuilder()`:
-2. Fill the build with your data. 
-3. Create sparse matrices from the builder.
+1. Create a `builder` using `ti.SparseMatrixBuilder()`.
+2. Fill the `builder` with your data. 
+3. Create sparse matrices from the `builder`.
 
 Here's an example:
 ```python
 import taichi as ti
 ti.init(arch=ti.x64)
 
-n = 8
+n = 4
 # create sparse matrix builder
 K = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
@@ -333,11 +333,20 @@ fill(K)
 
 print(">>>> K.print_triplets()")
 K.print_triplets()
+# outputs:
+# >>>> K.print_triplets()
+# n=4, m=4, num_triplets=4 (max=100)(0, 0) val=1.0(1, 1) val=1.0(2, 2) val=1.0(3, 3) val=1.0
 
 # create a sparse matrix from the builder.
 A = K.build()
 print(">>>> A = K.build()")
 print(A)
+# outputs:
+# >>>> A = K.build()
+# [1, 0, 0, 0]
+# [0, 1, 0, 0]
+# [0, 0, 1, 0]
+# [0, 0, 0, 1]
 ```
 
 The basic operations like `+`, `-`, `*`, `@` and transpose of sparse matrices are supported now.
@@ -346,32 +355,76 @@ The basic operations like `+`, `-`, `*`, `@` and transpose of sparse matrices ar
 print(">>>> Summation: C = A + A")
 C = A + A
 print(C)
+# outputs:
+# >>>> Summation: C = A + A
+# [2, 0, 0, 0]
+# [0, 2, 0, 0]
+# [0, 0, 2, 0]
+# [0, 0, 0, 2]
 
 print(">>>> Subtraction: D = A - A")
 D = A - A
 print(D)
+# outputs:
+# >>>> Subtraction: D = A - A
+# [0, 0, 0, 0]
+# [0, 0, 0, 0]
+# [0, 0, 0, 0]
+# [0, 0, 0, 0]
 
 print(">>>> Multiplication with a scalar on the right: E = A * 3.0")
 E = A * 3.0
 print(E)
+# outputs:
+# >>>> Multiplication with a scalar on the right: E = A * 3.0
+# [3, 0, 0, 0]
+# [0, 3, 0, 0]
+# [0, 0, 3, 0]
+# [0, 0, 0, 3]
 
 print(">>>> Multiplication with a scalar on the left: E = 3.0 * A")
 E = 3.0 * A
 print(E)
+# outputs:
+# >>>> Multiplication with a scalar on the left: E = 3.0 * A
+# [3, 0, 0, 0]
+# [0, 3, 0, 0]
+# [0, 0, 3, 0]
+# [0, 0, 0, 3]
 
 print(">>>> Transpose: F = A.transpose()")
 F = A.transpose()
 print(F)
+# outputs:
+# >>>> Transpose: F = A.transpose()
+# [1, 0, 0, 0]
+# [0, 1, 0, 0]
+# [0, 0, 1, 0]
+# [0, 0, 0, 1]
 
 print(">>>> Matrix multiplication: G = E @ A")
 G = E @ A
 print(G)
+# outputs:
+# >>>> Matrix multiplication: G = E @ A
+# [3, 0, 0, 0]
+# [0, 3, 0, 0]
+# [0, 0, 3, 0]
+# [0, 0, 0, 3]
 
 print(">>>> Element-wise multiplication: H = E * A")
 H = E * A
 print(H)
+# outputs:
+# >>>> Element-wise multiplication: H = E * A
+# [3, 0, 0, 0]
+# [0, 3, 0, 0]
+# [0, 0, 3, 0]
+# [0, 0, 0, 3]
 
 print(f">>>> Element Access: A[0,0] = {A[0,0]}")
+# outputs:
+# >>>> Element Access: A[0,0] = 1.0
 ```
 You may want to solve some linear equations using sparse matrices.
 Then, it might be steps:
@@ -403,14 +456,26 @@ def fill(A: ti.sparse_matrix_builder(), b: ti.template(), interval: ti.i32):
 fill(K, b, 3)
 
 A = K.build()
-print("Solving sparse linear systems Ax = b with the solution x:")
+print(">>>> Matrix A:")
+print(A)
+# outputs:
+# >>>> Matrix A:
+# [2, 0, 0, 0]
+# [0, 2, 0, 0]
+# [0, 0, 2, 0]
+# [0, 0, 0, 2]
 solver = ti.SparseSolver(solver_type="LLT")
 solver.analyze_pattern(A)
 solver.factorize(A)
 x = solver.solve(b)
-print(x)
 isSuccess = solver.info()
-print(f"Computation was successful?: {isSuccess}")
+print(">>>> Solve sparse linear systems Ax = b with the solution x:")
+print(x)
+print(f">>>> Computation was successful?: {isSuccess}")
+# outputs:
+# >>>> Solve sparse linear systems Ax = b with the solution x:
+# [0.5 0.  0.  0.5]
+# >>>> Computation was successful?: True
 ```
 
 Please have a look at our two demos for more information:

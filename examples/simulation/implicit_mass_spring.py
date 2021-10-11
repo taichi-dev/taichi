@@ -138,59 +138,24 @@ class Cloth:
     def assemble_K(self, K: ti.sparse_matrix_builder()):
         for i in self.spring:
             idx1, idx2 = self.spring[i][0], self.spring[i][1]
-            K[2 * idx1 + 0, 2 * idx1 + 0] -= self.Jx[i][0, 0]
-            K[2 * idx1 + 0, 2 * idx1 + 1] -= self.Jx[i][0, 1]
-            K[2 * idx1 + 1, 2 * idx1 + 0] -= self.Jx[i][1, 0]
-            K[2 * idx1 + 1, 2 * idx1 + 1] -= self.Jx[i][1, 1]
-
-            K[2 * idx1 + 0, 2 * idx2 + 0] += self.Jx[i][0, 0]
-            K[2 * idx1 + 0, 2 * idx2 + 1] += self.Jx[i][0, 1]
-            K[2 * idx1 + 1, 2 * idx2 + 0] += self.Jx[i][1, 0]
-            K[2 * idx1 + 1, 2 * idx2 + 1] += self.Jx[i][1, 1]
-
-            K[2 * idx2 + 0, 2 * idx1 + 0] += self.Jx[i][0, 0]
-            K[2 * idx2 + 0, 2 * idx1 + 1] += self.Jx[i][0, 1]
-            K[2 * idx2 + 1, 2 * idx1 + 0] += self.Jx[i][1, 0]
-            K[2 * idx2 + 1, 2 * idx1 + 1] += self.Jx[i][1, 1]
-
-            K[2 * idx2 + 0, 2 * idx2 + 0] -= self.Jx[i][0, 0]
-            K[2 * idx2 + 0, 2 * idx2 + 1] -= self.Jx[i][0, 1]
-            K[2 * idx2 + 1, 2 * idx2 + 0] -= self.Jx[i][1, 0]
-            K[2 * idx2 + 1, 2 * idx2 + 1] -= self.Jx[i][1, 1]
-
-        K[2 * self.N + 0, 2 * self.N + 0] += self.Jf[0][0, 0]
-        K[2 * self.N + 0, 2 * self.N + 1] += self.Jf[0][0, 1]
-        K[2 * self.N + 1, 2 * self.N + 0] += self.Jf[0][1, 0]
-        K[2 * self.N + 1, 2 * self.N + 1] += self.Jf[0][1, 1]
-
-        K[2 * (self.NV - 1) + 0, 2 * (self.NV - 1) + 0] += self.Jf[1][0, 0]
-        K[2 * (self.NV - 1) + 0, 2 * (self.NV - 1) + 1] += self.Jf[1][0, 1]
-        K[2 * (self.NV - 1) + 1, 2 * (self.NV - 1) + 0] += self.Jf[1][1, 0]
-        K[2 * (self.NV - 1) + 1, 2 * (self.NV - 1) + 1] += self.Jf[1][1, 1]
+            for m, n in ti.static(ti.ndrange(2, 2)):
+                K[2 * idx1 + m, 2 * idx1 + n] -= self.Jx[i][m, n]
+                K[2 * idx1 + m, 2 * idx2 + n] += self.Jx[i][m, n]
+                K[2 * idx2 + m, 2 * idx1 + n] += self.Jx[i][m, n]
+                K[2 * idx2 + m, 2 * idx2 + n] -= self.Jx[i][m, n]
+        for m, n in ti.static(ti.ndrange(2, 2)):
+            K[2 * self.N + m, 2 * self.N + n] += self.Jf[0][m, n]
+            K[2 * (self.NV - 1) + m, 2 * (self.NV - 1) + n] += self.Jf[1][m, n]
 
     @ti.kernel
     def assemble_D(self, D: ti.sparse_matrix_builder()):
         for i in self.spring:
             idx1, idx2 = self.spring[i][0], self.spring[i][1]
-            D[2 * idx1 + 0, 2 * idx1 + 0] -= self.Jv[i][0, 0]
-            D[2 * idx1 + 0, 2 * idx1 + 1] -= self.Jv[i][0, 1]
-            D[2 * idx1 + 1, 2 * idx1 + 0] -= self.Jv[i][1, 0]
-            D[2 * idx1 + 1, 2 * idx1 + 1] -= self.Jv[i][1, 1]
-
-            D[2 * idx1 + 0, 2 * idx2 + 0] += self.Jv[i][0, 0]
-            D[2 * idx1 + 0, 2 * idx2 + 1] += self.Jv[i][0, 1]
-            D[2 * idx1 + 1, 2 * idx2 + 0] += self.Jv[i][1, 0]
-            D[2 * idx1 + 1, 2 * idx2 + 1] += self.Jv[i][1, 1]
-
-            D[2 * idx2 + 0, 2 * idx1 + 0] += self.Jv[i][0, 0]
-            D[2 * idx2 + 0, 2 * idx1 + 1] += self.Jv[i][0, 1]
-            D[2 * idx2 + 1, 2 * idx1 + 0] += self.Jv[i][1, 0]
-            D[2 * idx2 + 1, 2 * idx1 + 1] += self.Jv[i][1, 1]
-
-            D[2 * idx2 + 0, 2 * idx2 + 0] -= self.Jv[i][0, 0]
-            D[2 * idx2 + 0, 2 * idx2 + 1] -= self.Jv[i][0, 1]
-            D[2 * idx2 + 1, 2 * idx2 + 0] -= self.Jv[i][1, 0]
-            D[2 * idx2 + 1, 2 * idx2 + 1] -= self.Jv[i][1, 1]
+            for m, n in ti.static(ti.ndrange(2, 2)):
+                D[2 * idx1 + m, 2 * idx1 + n] -= self.Jv[i][m, n]
+                D[2 * idx1 + m, 2 * idx2 + n] += self.Jv[i][m, n]
+                D[2 * idx2 + m, 2 * idx1 + n] += self.Jv[i][m, n]
+                D[2 * idx2 + m, 2 * idx2 + n] -= self.Jv[i][m, n]
 
     @ti.kernel
     def updatePosVel(self, h: ti.f32, dv: ti.ext_arr()):

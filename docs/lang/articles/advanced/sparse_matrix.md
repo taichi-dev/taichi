@@ -125,7 +125,7 @@ print(f">>>> Element Access: A[0,0] = {A[0,0]}")
 # >>>> Element Access: A[0,0] = 1.0
 ```
 
-# Sparse linear solver
+## Sparse linear solver
 You may want to solve some linear equations using sparse matrices.
 Then, the following steps could help:
 1. Create a `solver` using `ti.SparseSolver(solver_type, ordering)`. Currently, the sparse solver supports `LLT`, `LDLT` and `LU` factorization types, and orderings including `AMD`, `COLAMD`

@@ -5,13 +5,13 @@ from typing import Iterable
 
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
+from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import MatrixField
-from taichi.lang.ndarray import ScalarNdarray
 from taichi.lang.snode import SNode
 from taichi.lang.struct import StructField
 from taichi.lang.tape import TapeImpl
@@ -19,6 +19,7 @@ from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
                               python_scope, taichi_scope, to_pytorch_type)
 from taichi.misc.util import deprecated, get_traceback, warning
 from taichi.snode.fields_builder import FieldsBuilder
+from taichi.type.primitive_types import f32, f64, i32, i64, u32, u64
 
 import taichi as ti
 
@@ -284,8 +285,8 @@ class PyTaichi:
         self.global_vars = []
         self.print_preprocessed = False
         self.experimental_real_function = False
-        self.default_fp = ti.f32
-        self.default_ip = ti.i32
+        self.default_fp = f32
+        self.default_ip = i32
         self.target_tape = None
         self.grad_replaced = False
         self.kernels = kernels or []
@@ -294,12 +295,12 @@ class PyTaichi:
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
 
     def set_default_fp(self, fp):
-        assert fp in [ti.f32, ti.f64]
+        assert fp in [f32, f64]
         self.default_fp = fp
         default_cfg().default_fp = self.default_fp
 
     def set_default_ip(self, ip):
-        assert ip in [ti.i32, ti.i64]
+        assert ip in [i32, i64]
         self.default_ip = ip
         default_cfg().default_ip = self.default_ip
 
@@ -389,23 +390,23 @@ def _clamp_unsigned_to_range(npty, val):
 def make_constant_expr(val):
     _taichi_skip_traceback = 1
     if isinstance(val, (int, np.integer)):
-        if pytaichi.default_ip in {ti.i32, ti.u32}:
+        if pytaichi.default_ip in {i32, u32}:
             # It is not always correct to do such clamp without the type info on
             # the LHS, but at least this makes assigning constant to unsigned
             # int work. See https://github.com/taichi-dev/taichi/issues/2060
             return Expr(
                 _ti_core.make_const_expr_i32(
                     _clamp_unsigned_to_range(np.int32, val)))
-        elif pytaichi.default_ip in {ti.i64, ti.u64}:
+        elif pytaichi.default_ip in {i64, u64}:
             return Expr(
                 _ti_core.make_const_expr_i64(
                     _clamp_unsigned_to_range(np.int64, val)))
         else:
             assert False
     elif isinstance(val, (float, np.floating, np.ndarray)):
-        if pytaichi.default_fp == ti.f32:
+        if pytaichi.default_fp == f32:
             return Expr(_ti_core.make_const_expr_f32(val))
-        elif pytaichi.default_fp == ti.f64:
+        elif pytaichi.default_fp == f64:
             return Expr(_ti_core.make_const_expr_f64(val))
         else:
             assert False
@@ -508,7 +509,7 @@ class _Root:
 root = _Root()
 """Root of the declared Taichi :func:`~taichi.lang.impl.field`s.
 
-See also https://docs.taichi.graphics/docs/lang/articles/advanced/layout
+See also https://docs.taichi.graphics/lang/articles/advanced/layout
 
 Example::
 
@@ -556,7 +557,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     actually defined. The data in a Taichi field can be directly accessed by
     a Taichi :func:`~taichi.lang.kernel_impl.kernel`.
 
-    See also https://docs.taichi.graphics/docs/lang/articles/basic/field
+    See also https://docs.taichi.graphics/lang/articles/basic/field
 
     Args:
         dtype (DataType): data type of the field.
@@ -798,7 +799,7 @@ def static(x, *xs):
     `static()` is what enables the so-called metaprogramming in Taichi. It is
     in many ways similar to ``constexpr`` in C++11.
 
-    See also https://docs.taichi.graphics/docs/lang/articles/advanced/meta.
+    See also https://docs.taichi.graphics/lang/articles/advanced/meta.
 
     Args:
         x (Any): an expression to be evaluated

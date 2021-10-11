@@ -831,20 +831,8 @@ class TaskCodegen : public IRVisitor {
             spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt), addr_ptr,
             ir_->uint_immediate_number(ir_->u32_type(), 1),
             ir_->uint_immediate_number(ir_->u32_type(), 0), data);
-      } else if (device_->get_cap(DeviceCapability::vk_has_spv_variable_ptr)) {
-        spirv::Value func = ir_->float_atomic(stmt->op_type);
-        val = ir_->make_value(spv::OpFunctionCall, ir_->f32_type(), func,
-                              addr_ptr, data);
       } else {
-        if (is_compiled_struct) {
-          TI_ERROR(
-              "Atomic operation requires either shader atomic float capability "
-              "or OpVariablePtr capability");
-        } else {
-          TI_ERROR(
-              "Atomic operation on global temporaries or context buffers "
-              "requires OpVariablePtr capability");
-        }
+        val = ir_->float_atomic(stmt->op_type, addr_ptr, data);
       }
     } else if (is_integral(dt)) {
       spv::Op op;
@@ -1339,6 +1327,7 @@ class KernelCodegen {
     Kernel *kernel;
     std::vector<CompiledSNodeStructs> compiled_structs;
     Device *device;
+    bool enable_spv_opt{true};
   };
 
   explicit KernelCodegen(const Params &params)
@@ -1352,24 +1341,9 @@ class KernelCodegen {
     // TODO: Profile these passes, remove ones we don't need to speed up JIT
     // ref:
     // https://github.com/KhronosGroup/SPIRV-Tools/blob/f9893c4549406eb9643e0eb05a521ab70a320fff/source/opt/optimizer.cpp
-    spirv_opt_->RegisterPass(spvtools::CreateWrapOpKillPass())
-        .RegisterPass(spvtools::CreateMergeReturnPass())
-        .RegisterPass(spvtools::CreateEliminateDeadFunctionsPass())
-        .RegisterPass(spvtools::CreateInlineExhaustivePass())
-        .RegisterPass(spvtools::CreateLoopUnrollPass(true))
-        .RegisterPass(spvtools::CreatePrivateToLocalPass())
-        .RegisterPass(spvtools::CreateScalarReplacementPass())
-        .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
-        .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
-        .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
-        .RegisterPass(spvtools::CreateLocalMultiStoreElimPass())
-        .RegisterPass(spvtools::CreateAggressiveDCEPass())
-        .RegisterPass(spvtools::CreateVectorDCEPass())
-        .RegisterPass(spvtools::CreateIfConversionPass())
-        .RegisterPass(spvtools::CreateCopyPropagateArraysPass())
-        .RegisterPass(spvtools::CreateReduceLoadSizePass())
-        .RegisterPass(spvtools::CreateRedundancyEliminationPass())
-        .RegisterPass(spvtools::CreateSimplificationPass());
+    if (params.enable_spv_opt) {
+      spirv_opt_->RegisterPerformancePasses();
+    }
 
     _spirv_opt_options.set_run_validator(false);
   }
@@ -1453,6 +1427,8 @@ FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
   params.kernel = kernel;
   params.compiled_structs = runtime->get_compiled_structs();
   params.device = runtime->get_ti_device();
+  params.enable_spv_opt =
+      kernel->program->config.external_optimization_level > 0;
   KernelCodegen codegen(params);
   auto res = codegen.run();
   auto handle = runtime->register_taichi_kernel(std::move(res));

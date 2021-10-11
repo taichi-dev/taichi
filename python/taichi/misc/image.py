@@ -1,3 +1,5 @@
+from io import BytesIO
+
 import numpy as np
 from taichi.core import ti_core as _ti_core
 
@@ -44,10 +46,8 @@ def imdisplay(img):
     except:
         ti.imshow(img)
     else:
-        from io import BytesIO
-
-        import IPython.display
-        import PIL.Image
+        import IPython.display  # pylint: disable=C0415
+        import PIL.Image  # pylint: disable=C0415
         img = cook_image_to_bytes(img)
         with BytesIO() as f:
             PIL.Image.fromarray(img).save(f, 'png')

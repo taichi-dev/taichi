@@ -102,35 +102,6 @@ void KernelProfilerCUDA::sync() {
   }
 }
 
-void KernelProfilerCUDA::print() {
-  sync();
-  fmt::print("{}\n", title());
-  fmt::print(
-      "========================================================================"
-      "=\n");
-  fmt::print(
-      "[      %     total   count |      min       avg       max   ] Kernel "
-      "name\n");
-  std::sort(statistical_results_.begin(), statistical_results_.end());
-  for (auto &rec : statistical_results_) {
-    auto fraction = rec.total / total_time_ms_ * 100.0f;
-    fmt::print("[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms] {}\n",
-               fraction, rec.total / 1000.0f, rec.counter, rec.min,
-               rec.total / rec.counter, rec.max, rec.name);
-  }
-  fmt::print(
-      "------------------------------------------------------------------------"
-      "-\n");
-  fmt::print(
-      "[100.00%] Total kernel execution time: {:7.3f} s   number of records: "
-      "{}\n",
-      get_total_time(), statistical_results_.size());
-
-  fmt::print(
-      "========================================================================"
-      "=\n");
-}
-
 void KernelProfilerCUDA::clear() {
   sync();
   total_time_ms_ = 0;

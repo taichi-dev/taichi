@@ -6,7 +6,6 @@
 #include "taichi/system/dynamic_loader.h"
 #include "taichi/util/action_recorder.h"
 #include "struct_cc.h"
-#include "cc_program.h"
 #include "cc_runtime.h"
 #include "cc_kernel.h"
 #include "cc_layout.h"

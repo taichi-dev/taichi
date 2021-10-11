@@ -2,9 +2,6 @@ name: Presubmit Checks
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  push:
-    branches:
-      - master
 
 jobs:
   title_format:
@@ -34,7 +31,8 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
-      - name: Check code format
+          
+      - name: Setup git & clang-format
         run: |
           git config user.email "taichigardener@gmail.com"
           git config user.name "Taichi Gardener"
@@ -42,12 +40,37 @@ jobs:
           git remote add upstream https://github.com/taichi-dev/taichi.git
           git fetch upstream master
           sudo apt install clang-format-10
-          python3 -m pip install --user yapf==0.31.0 gitpython colorama isort
+
+      - name: Cache PIP 
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ hashFiles('setup.py') }}-${{ hashFiles('requirements_lint.txt') }}
+
+      - name: Install requirements 
+        run: |
+          python3 -m pip install --user -r requirements_lint.txt
+      
+      - name: Check code format
+        run: |
           python3 python/taichi/code_format.py
           git checkout -b _enforced_format
           git commit -am "enforce code format" || true
           # exit with 1 if there were differences:
           git diff _fake_squash _enforced_format --exit-code
+
+      - name: Pylint
+        run: |
+          # Make sure pylint doesn't regress
+          pylint python/taichi/ --disable=all --enable=C0415
+          if [ $? -eq 0 ]
+          then
+            echo "PASSED: pylint is happy"
+            exit 0
+          else
+            echo "FAILED: please run the pylint command above and make sure it passes"
+            exit 1
+          fi
 
   build_and_test_cpu_required:
     # This job will be required to pass before merging to master branch.
@@ -79,35 +102,13 @@ jobs:
           CI_PLATFORM: ${{ matrix.os }}
 
       - name: Build & Install
-        run: |
-          TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export CXX=clang++
-          python -m pip install -r requirements_dev.txt
-          cd python
-          git fetch origin master
-          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python build.py build
-          cd ..
-          export NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          pip install dist/*.whl
+        run: .github/workflows/scripts/unix_build.sh
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          CXX: clang++
 
       - name: Test
-        run: |
-          TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          # Note we only need this since we cannot write into system python package.
-          export PATH=$PATH:$HOME/.local/bin
-          hash -r
-          python examples/algorithm/laplace.py
-          ti diagnose
-          ti changelog
-          # taichi_cpp_tests requires passing in TI_LIB_DIR manually.
-          TI_LIB_DIR=`python -c "import taichi;print(taichi.__path__[0])" | tail -1`
-          TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
-          ti test -vr2 -t2
+        run: .github/workflows/scripts/unix_test.sh
 
   build_and_test_cpu:
     name: Build and Test (CPU)
@@ -148,20 +149,10 @@ jobs:
           CI_PLATFORM: ${{ matrix.os }}
 
       - name: Build & Install
-        run: |
-          TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export CXX=clang++
-          python -m pip install -r requirements_dev.txt
-          cd python
-          git fetch origin master
-          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python build.py build
-          cd ..
-          NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          pip install dist/*.whl
+        run: .github/workflows/scripts/unix_build.sh
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          CXX: clang++
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
@@ -169,18 +160,7 @@ jobs:
       #    limit-access-to-actor: true
 
       - name: Test
-        run: |
-          TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export PATH=$PATH:$HOME/.local/bin
-          hash -r
-          python examples/algorithm/laplace.py
-          ti diagnose
-          ti changelog
-          # taichi_cpp_tests requires passing in TI_LIB_DIR manually.
-          TI_LIB_DIR=`python -c "import taichi;print(taichi.__path__[0])" | tail -1`
-          [ "$RUN_CPP_TESTS" = "ON" ] && TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
-          ti test -vr2 -t2
+        run: .github/workflows/scripts/unix_test.sh
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
 
@@ -196,37 +176,21 @@ jobs:
 
       - name: Build
         run: |
-          git --version
-          export PATH=$LLVM_LIB_ROOT_DIR/bin:/usr/local/cuda/bin:$PATH
-          export LLVM_DIR=$LLVM_LIB_ROOT_DIR/lib/cmake/llvm
-          export CXX=clang++-8
-          export PYTHON=/usr/bin/python3
-          $PYTHON -m pip uninstall taichi -y
-          $PYTHON -m pip install -r requirements_dev.txt
-          cd python
-          git fetch origin master
-          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS $PYTHON build.py build
-          cd ..
-          export NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          $PYTHON -m pip install dist/*.whl
+          export PATH=$PATH:/usr/local/cuda/bin
+          .github/workflows/scripts/unix_build.sh
         env:
           LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON
           BUILD_NUM_THREADS: 8
+          LLVM_PATH: /opt/taichi-llvm-10.0.0/bin
+          LLVM_DIR: /opt/taichi-llvm-10.0.0/lib/cmake/llvm
+          CXX: clang++-8
 
       - name: Test
-        run: |
-          export PYTHON=/usr/bin/python3
-          export PATH=$PATH:$HOME/.local/bin
-          export DISPLAY=:1
-          hash -r
-          glewinfo
-          $PYTHON examples/algorithm/laplace.py
-          ti diagnose
-          ti changelog
-          ti test -vr2 -t2 -k "not ndarray and not torch"
-          ti test -vr2 -t1 -k "ndarray or torch"
+        run: .github/workflows/scripts/unix_test.sh
+        env:
+          DISPLAY: :1
+          GPU_TEST: ON
 
   build_and_test_windows:
     name: Build and Test (Windows)
@@ -316,20 +280,11 @@ jobs:
 
       - name: Build
         run: |
-          python3 -m pip uninstall taichi -y
           rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
-          git --version
-          export CXX=clang++
-          python3 -m pip install -r requirements_dev.txt
-          cd python
-          git fetch origin master
-          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python3 build.py build
-          cd ..
-          export NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          python3 -m pip install dist/*.whl
+          .github/workflows/scripts/unix_build.sh
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          CXX: clang++
 
       - name: Test
         run: |

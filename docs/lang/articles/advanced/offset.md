@@ -18,10 +18,10 @@ a = ti.Matrix.field(2, 2, dtype=ti.f32, shape=(32, 64), offset=(-16, 8))
 In this way, the field's indices are from `(-16, 8)` to `(16, 72)` (exclusive).
 
 ```python
-a[-16, 32]  # lower left corner
-a[16, 32]   # lower right corner
-a[-16, 64]  # upper left corner
-a[16, 64]   # upper right corner
+a[-16, 8]  # lower left corner
+a[16, 8]   # lower right corner
+a[-16, 72]  # upper left corner
+a[16, 72]   # upper right corner
 ```
 
 :::note

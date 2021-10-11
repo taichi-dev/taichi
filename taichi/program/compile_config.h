@@ -26,6 +26,7 @@ struct CompileConfig {
   bool move_loop_invariant_outside_if;
   bool demote_dense_struct_fors;
   bool advanced_optimization;
+  bool constant_folding;
   bool use_llvm;
   bool verbose_kernel_launches;
   bool kernel_profiler;
@@ -62,7 +63,6 @@ struct CompileConfig {
   bool print_kernel_nvptx;
 
   // CUDA backend options:
-  bool use_unified_memory;
   float64 device_memory_GB;
   float64 device_memory_fraction;
 
@@ -86,11 +86,6 @@ struct CompileConfig {
 
   bool quant_opt_store_fusion{true};
   bool quant_opt_atomic_demotion{true};
-
-  // helpers
-  bool is_cuda_no_unified_memory() {
-    return arch == Arch::cuda && !use_unified_memory;
-  }
 
   CompileConfig();
 };

@@ -1,12 +1,13 @@
 import copy
-import inspect
+import functools
+import subprocess
 import sys
 import traceback
 
 from colorama import Fore, Style
 from taichi.core import ti_core as _ti_core
 
-import taichi
+import taichi as ti
 
 
 def config_from_dict(args):
@@ -133,8 +134,6 @@ def deprecated(old, new, warning_type=DeprecationWarning):
     Returns:
         Decorated fuction with warning message
     """
-    import functools
-
     def decorator(foo):
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
@@ -225,7 +224,6 @@ def dump_dot(filepath=None, rankdir=None, embed_states_threshold=0):
 
 def dot_to_pdf(dot, filepath):
     assert filepath.endswith('.pdf')
-    import subprocess
     p = subprocess.Popen(['dot', '-Tpdf'],
                          stdin=subprocess.PIPE,
                          stdout=subprocess.PIPE)
@@ -239,7 +237,6 @@ def get_kernel_stats():
 
 
 def print_async_stats(include_kernel_profiler=False):
-    import taichi as ti
     if include_kernel_profiler:
         ti.print_kernel_profile_info()
         print()

@@ -6,20 +6,6 @@ sidebar_position: 0
 
 ### Linux issues
 
-- If Taichi crashes and reports `libtinfo.so.5 not found`:
-
-  - On Ubuntu, execute `sudo apt install libtinfo-dev`.
-
-  - On Arch Linux, first edit `/etc/pacman.conf`, and append these
-    lines:
-
-    ```
-    [archlinuxcn]
-    Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxcn/$arch
-    ```
-
-    Then execute `sudo pacman -Syy ncurses5-compat-libs`.
-
 - If Taichi crashes and reports
   `` /usr/lib/libstdc++.so.6: version `CXXABI_1.3.11' not found ``:
 
@@ -49,11 +35,11 @@ sidebar_position: 0
   ERROR: No matching distribution found for taichi
   ```
 
-  - Make sure you're using Python version 3.6/3.7/3.8:
+  - Make sure you're using Python version 3.6/3.7/3.8/3.9:
 
     ```bash
     python3 -c "print(__import__('sys').version[:3])"
-    # 3.6, 3.7 or 3.8
+    # 3.6, 3.7, 3.8 or 3.9
     ```
 
   - Make sure your Python executable is 64-bit:
@@ -74,7 +60,7 @@ sidebar_position: 0
   [E 05/14/20 10:46:49.911] Received signal 7 (Bus error)
   ```
 
-  This might be because that your NVIDIA GPU is pre-Pascal and it
+  This might be because that your NVIDIA GPU is pre-Pascal, and it
   has limited support for [Unified
   Memory](https://www.nextplatform.com/2019/01/24/unified-memory-the-final-piece-of-the-gpu-programming-puzzle/).
 

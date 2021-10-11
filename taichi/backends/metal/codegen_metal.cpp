@@ -10,6 +10,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/ir/visitors.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
 
@@ -31,8 +32,6 @@ namespace shaders {
 
 }  // namespace shaders
 
-using BuffersEnum = KernelAttributes::Buffers;
-
 constexpr char kKernelThreadIdName[] = "utid_";        // 'u' for unsigned
 constexpr char kKernelGridSizeName[] = "ugrid_size_";  // 'u' for unsigned
 constexpr char kKernelTidInSimdgroupName[] = "utid_in_simdg_";
@@ -51,17 +50,21 @@ constexpr char kRandStateVarName[] = "rand_state_";
 constexpr char kMemAllocVarName[] = "mem_alloc_";
 constexpr char kTlsBufferName[] = "tls_buffer_";
 
-std::string buffer_to_name(BuffersEnum b) {
-  switch (b) {
-    case BuffersEnum::Root:
-      return kRootBufferName;
-    case BuffersEnum::GlobalTmps:
+using BufferType = BufferDescriptor::Type;
+using BufferDescSet =
+    std::unordered_set<BufferDescriptor, BufferDescriptor::Hasher>;
+
+std::string buffer_to_name(const BufferDescriptor &b) {
+  switch (b.type()) {
+    case BufferType::Root:
+      return fmt::format("{}_{}", kRootBufferName, b.root_id());
+    case BufferType::GlobalTmps:
       return kGlobalTmpsBufferName;
-    case BuffersEnum::Context:
+    case BufferType::Context:
       return kContextBufferName;
-    case BuffersEnum::Runtime:
+    case BufferType::Runtime:
       return kRuntimeBufferName;
-    case BuffersEnum::Print:
+    case BufferType::Print:
       return kPrintAssertBufferName;
     default:
       TI_NOT_IMPLEMENTED;
@@ -77,6 +80,34 @@ bool is_ret_type_bit_pointer(Stmt *s) {
   }
   return false;
 }
+
+class RootIdsExtractor : public BasicStmtVisitor {
+ public:
+  static std::unordered_set<int> run(Stmt *s) {
+    RootIdsExtractor re;
+    s->accept(&re);
+    return re.roots_;
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    if (stmt->task_type == OffloadedStmt::TaskType::struct_for) {
+      auto *cur = stmt->snode;
+      while (cur->parent) {
+        cur = cur->parent;
+      }
+      TI_ASSERT(cur->type == SNodeType::root);
+      roots_.insert(cur->id);
+    }
+    BasicStmtVisitor::visit(stmt);
+  }
+
+  void visit(GetRootStmt *stmt) override {
+    roots_.insert(stmt->root()->id);
+  }
+
+ private:
+  std::unordered_set<int> roots_;
+};
 
 class KernelCodegenImpl : public IRVisitor {
  private:
@@ -102,24 +133,32 @@ class KernelCodegenImpl : public IRVisitor {
   KernelCodegenImpl(const std::string &taichi_kernel_name,
                     Kernel *kernel,
                     const CompiledRuntimeModule *compiled_runtime_module,
-                    const CompiledStructs *compiled_structs,
+                    const std::vector<CompiledStructs> &compiled_snode_trees,
                     PrintStringTable *print_strtab,
                     const Config &config,
                     OffloadedStmt *offloaded)
       : mtl_kernel_prefix_(taichi_kernel_name),
         kernel_(kernel),
         compiled_runtime_module_(compiled_runtime_module),
-        compiled_structs_(compiled_structs),
-        needs_root_buffer_(compiled_structs_->root_size > 0),
+        compiled_snode_trees_(compiled_snode_trees),
         print_strtab_(print_strtab),
         cgen_config_(config),
         offloaded_(offloaded),
         ctx_attribs_(*kernel_) {
     ti_kernel_attribs_.name = taichi_kernel_name;
     ti_kernel_attribs_.is_jit_evaluator = kernel->is_evaluator;
-    // allow_undefined_visitor = true;
     for (const auto s : kAllSections) {
       section_appenders_[s] = LineAppender();
+    }
+
+    for (int i = 0; i < compiled_snode_trees_.size(); ++i) {
+      const auto &cst = compiled_snode_trees_[i];
+      for (const auto [node_id, _] : cst.snode_descriptors) {
+        RootInfo ri{};
+        ri.snode_id = cst.root_id;
+        ri.index_in_cst = i;
+        snode_to_roots_[node_id] = ri;
+      }
     }
   }
 
@@ -190,11 +229,12 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void visit(GetRootStmt *stmt) override {
-    // Should we assert |root_stmt_| is assigned only once?
-    TI_ASSERT(needs_root_buffer_);
-    root_stmt_ = stmt;
-    emit(R"({} {}({});)", compiled_structs_->root_snode_type_name,
-         stmt->raw_name(), kRootBufferName);
+    const auto root_id = stmt->root()->id;
+    root_id_to_stmts_[root_id] = stmt;
+    const auto &cst = get_compiled_snode_tree(stmt->root());
+    const auto root_desc = BufferDescriptor::Root(root_id);
+    emit(R"({} {}({});)", cst.root_snode_type_name, stmt->raw_name(),
+         buffer_to_name(root_desc));
   }
 
   void visit(LinearizeStmt *stmt) override {
@@ -213,14 +253,15 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void visit(SNodeLookupStmt *stmt) override {
+    const auto *sn = stmt->snode;
     std::string parent;
     if (stmt->input_snode) {
       parent = stmt->input_snode->raw_name();
     } else {
-      TI_ASSERT(root_stmt_ != nullptr);
-      parent = root_stmt_->raw_name();
+      const auto *root_stmt =
+          root_id_to_stmts_.at(snode_to_roots_.at(sn->id).snode_id);
+      parent = root_stmt->raw_name();
     }
-    const auto *sn = stmt->snode;
     const auto snty = sn->type;
     if (snty == SNodeType::bit_struct) {
       // Example *bit_struct* struct generated on Metal:
@@ -598,13 +639,21 @@ class KernelCodegenImpl : public IRVisitor {
   void visit(OffloadedStmt *stmt) override {
     TI_ASSERT(is_top_level_);
     is_top_level_ = false;
+
+    const auto root_ids = RootIdsExtractor::run(stmt);
+    BufferDescSet used_root_descs;
+    for (const auto rid : root_ids) {
+      used_root_descs.insert(BufferDescriptor::Root(rid));
+    }
+    root_id_to_stmts_.clear();
+
     using Type = OffloadedStmt::TaskType;
     if (stmt->task_type == Type::serial) {
-      generate_serial_kernel(stmt);
+      generate_serial_kernel(stmt, used_root_descs);
     } else if (stmt->task_type == Type::range_for) {
-      generate_range_for_kernel(stmt);
+      generate_range_for_kernel(stmt, used_root_descs);
     } else if (stmt->task_type == Type::struct_for) {
-      generate_struct_for_kernel(stmt);
+      generate_struct_for_kernel(stmt, used_root_descs);
     } else if (stmt->task_type == Type::listgen) {
       add_runtime_list_op_kernel(stmt);
     } else if (stmt->task_type == Type::gc) {
@@ -811,8 +860,11 @@ class KernelCodegenImpl : public IRVisitor {
     current_appender().append_raw(
         compiled_runtime_module_->runtime_utils_source_code);
     emit("");
-    current_appender().append_raw(compiled_structs_->snode_structs_source_code);
-    emit("");
+    for (const auto &cst : compiled_snode_trees_) {
+      current_appender().append_raw(cst.snode_structs_source_code);
+      emit("");
+    }
+
     current_appender().append_raw(shaders::kMetalAdStackSourceCode);
     emit("");
     current_appender().append_raw(shaders::kMetalPrintSourceCode);
@@ -1002,28 +1054,37 @@ class KernelCodegenImpl : public IRVisitor {
     }
   }
 
-  std::vector<BuffersEnum> get_common_buffers() {
-    std::vector<BuffersEnum> result;
-    if (needs_root_buffer_) {
-      result.push_back(BuffersEnum::Root);
-    }
-    result.push_back(BuffersEnum::GlobalTmps);
+  std::vector<BufferDescriptor> get_used_buffer_descriptors(
+      const BufferDescSet &root_buffer_descs) const {
+    std::vector<BufferDescriptor> result;
+    result.insert(result.end(), root_buffer_descs.begin(),
+                  root_buffer_descs.end());
+
+    std::sort(
+        result.begin(), result.end(),
+        [](const BufferDescriptor &lhs, const BufferDescriptor &rhs) -> bool {
+          TI_ASSERT(lhs.type() == BufferType::Root);
+          TI_ASSERT(rhs.type() == BufferType::Root);
+          return lhs.root_id() < rhs.root_id();
+        });
+    result.push_back(BufferDescriptor::GlobalTmps());
     if (!ctx_attribs_.empty()) {
-      result.push_back(BuffersEnum::Context);
+      result.push_back(BufferDescriptor::Context());
     }
-    result.push_back(BuffersEnum::Runtime);
+    result.push_back(BufferDescriptor::Runtime());
     // TODO(k-ye): Bind this buffer only when print() is used.
-    result.push_back(BuffersEnum::Print);
+    result.push_back(BufferDescriptor::Print());
     return result;
   }
 
-  void generate_serial_kernel(OffloadedStmt *stmt) {
+  void generate_serial_kernel(OffloadedStmt *stmt,
+                              const BufferDescSet &root_buffer_descs) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::serial);
     const std::string mtl_kernel_name = make_kernel_name();
     KernelAttributes ka;
     ka.name = mtl_kernel_name;
     ka.task_type = stmt->task_type;
-    ka.buffers = get_common_buffers();
+    ka.buffers = get_used_buffer_descriptors(root_buffer_descs);
     ka.advisory_total_num_threads = 1;
     ka.advisory_num_threads_per_group = 1;
 
@@ -1041,18 +1102,19 @@ class KernelCodegenImpl : public IRVisitor {
     }
     // Close kernel
     emit("}}\n");
-    current_kernel_attribs_ = nullptr;
 
+    current_kernel_attribs_ = nullptr;
     mtl_kernels_attribs()->push_back(ka);
   }
 
-  void generate_range_for_kernel(OffloadedStmt *stmt) {
+  void generate_range_for_kernel(OffloadedStmt *stmt,
+                                 const BufferDescSet &root_buffer_descs) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::range_for);
     const std::string mtl_kernel_name = make_kernel_name();
     KernelAttributes ka;
     ka.name = mtl_kernel_name;
     ka.task_type = stmt->task_type;
-    ka.buffers = get_common_buffers();
+    ka.buffers = get_used_buffer_descriptors(root_buffer_descs);
 
     const bool used_tls = (stmt->tls_prologue != nullptr);
     KernelSigExtensions kernel_exts;
@@ -1136,19 +1198,20 @@ class KernelCodegenImpl : public IRVisitor {
     current_appender().pop_indent();
     // Close kernel
     emit("}}\n");
-    current_kernel_attribs_ = nullptr;
 
+    current_kernel_attribs_ = nullptr;
     mtl_kernels_attribs()->push_back(ka);
   }
 
-  void generate_struct_for_kernel(OffloadedStmt *stmt) {
+  void generate_struct_for_kernel(OffloadedStmt *stmt,
+                                  const BufferDescSet &root_buffer_descs) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::struct_for);
     const std::string mtl_kernel_name = make_kernel_name();
 
     KernelAttributes ka;
     ka.name = mtl_kernel_name;
     ka.task_type = stmt->task_type;
-    ka.buffers = get_common_buffers();
+    ka.buffers = get_used_buffer_descriptors(root_buffer_descs);
 
     const bool used_tls = (stmt->tls_prologue != nullptr);
     KernelSigExtensions kernel_exts;
@@ -1159,9 +1222,9 @@ class KernelCodegenImpl : public IRVisitor {
 
     const int sn_id = stmt->snode->id;
     // struct_for kernels use grid-stride loops
-    const int total_num_elems_from_root =
-        compiled_structs_->snode_descriptors.find(sn_id)
-            ->second.total_num_elems_from_root;
+    const int total_num_elems_from_root = get_compiled_snode_tree(stmt->snode)
+                                              .snode_descriptors.at(sn_id)
+                                              .total_num_elems_from_root;
     ka.advisory_total_num_threads =
         std::min(total_num_elems_from_root, kMaxNumThreadsGridStrideLoop);
     ka.advisory_num_threads_per_group = stmt->block_dim;
@@ -1187,6 +1250,8 @@ class KernelCodegenImpl : public IRVisitor {
     emit("for (int ii = {};; ii += {}) {{", kKernelThreadIdName,
          kKernelGridSizeName);
     {
+      const auto belonged_root_id = snode_to_roots_.at(sn_id).snode_id;
+      const auto root_desc = BufferDescriptor::Root(belonged_root_id);
       ScopedIndent s2(current_appender());
       emit("const int parent_idx_ = (ii / child_num_slots);");
       emit("if (parent_idx_ >= parent_list.num_active()) break;");
@@ -1197,7 +1262,7 @@ class KernelCodegenImpl : public IRVisitor {
       emit(
           "device auto *parent_addr_ = mtl_lgen_snode_addr(parent_elem_, {}, "
           "{}, {});",
-          kRootBufferName, kRuntimeVarName, kMemAllocVarName);
+          buffer_to_name(root_desc), kRuntimeVarName, kMemAllocVarName);
       emit("if (!is_active(parent_addr_, parent_meta, child_idx_)) continue;");
       emit("ElementCoords {};", kElementCoordsVarName);
       emit(
@@ -1221,7 +1286,6 @@ class KernelCodegenImpl : public IRVisitor {
                                stmt->body.get());
       emit_call_mtl_kernel_func(mtl_func_name, ka.buffers, extra_args,
                                 /*loop_index_expr=*/"ii");
-      current_kernel_attribs_ = nullptr;
     }
     emit("}}");  // closes for loop
     if (used_tls) {
@@ -1231,6 +1295,7 @@ class KernelCodegenImpl : public IRVisitor {
     current_appender().pop_indent();
     emit("}}\n");  // closes kernel
 
+    current_kernel_attribs_ = nullptr;
     mtl_kernels_attribs()->push_back(ka);
   }
 
@@ -1261,13 +1326,14 @@ class KernelCodegenImpl : public IRVisitor {
     ka.name = "element_listgen";
     ka.task_type = stmt->task_type;
     // listgen kernels use grid-stride loops
-    const auto &sn_descs = compiled_structs_->snode_descriptors;
+    const auto &sn_descs = get_compiled_snode_tree(sn).snode_descriptors;
     ka.advisory_total_num_threads =
         std::min(total_num_self_from_root(sn_descs, sn->id),
                  kMaxNumThreadsGridStrideLoop);
     ka.advisory_num_threads_per_group = stmt->block_dim;
-    ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Root,
-                  BuffersEnum::Context};
+    ka.buffers = {BufferDescriptor::Runtime(),
+                  BufferDescriptor::Root(snode_to_roots_.at(sn->id).snode_id),
+                  BufferDescriptor::Context()};
 
     ka.runtime_list_op_attribs = KernelAttributes::RuntimeListOpAttributes();
     ka.runtime_list_op_attribs->snode = sn;
@@ -1281,13 +1347,13 @@ class KernelCodegenImpl : public IRVisitor {
     TI_ASSERT(stmt->task_type == OffloadedTaskType::gc);
 
     auto *const sn = stmt->snode;
-    const auto &sn_descs = compiled_structs_->snode_descriptors;
+    const auto &sn_descs = get_compiled_snode_tree(sn).snode_descriptors;
     // common attributes shared among the 3-stage GC kernels
     KernelAttributes ka;
     ka.task_type = OffloadedTaskType::gc;
     ka.gc_op_attribs = KernelAttributes::GcOpAttributes();
     ka.gc_op_attribs->snode = sn;
-    ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Context};
+    ka.buffers = {BufferDescriptor::Runtime(), BufferDescriptor::Context()};
     current_kernel_attribs_ = nullptr;
     // stage 1 specific
     ka.name = "gc_compact_free_list";
@@ -1312,6 +1378,11 @@ class KernelCodegenImpl : public IRVisitor {
     used_features()->sparse = true;
   }
 
+  const CompiledStructs &get_compiled_snode_tree(const SNode *sn) const {
+    const auto &ri = snode_to_roots_.at(sn->id);
+    return compiled_snode_trees_[ri.index_in_cst];
+  }
+
   std::string inject_load_global_tmp(int offset,
                                      DataType dt = PrimitiveType::i32) {
     const auto vt = TypeFactory::create_vector_or_scalar_type(1, dt);
@@ -1330,7 +1401,7 @@ class KernelCodegenImpl : public IRVisitor {
 
   void emit_mtl_kernel_func_def(
       const std::string &kernel_func_name,
-      const std::vector<KernelAttributes::Buffers> &buffers,
+      const std::vector<BufferDescriptor> &buffers,
       const std::vector<FuncParamLiteral> &extra_params,
       Block *func_ir) {
     SectionGuard sg(this, Section::KernelFuncs);
@@ -1380,17 +1451,16 @@ class KernelCodegenImpl : public IRVisitor {
 
   inline void emit_mtl_kernel_func_def(
       const std::string &kernel_func_name,
-      const std::vector<KernelAttributes::Buffers> &buffers,
+      const std::vector<BufferDescriptor> &buffers,
       Block *func_ir) {
     emit_mtl_kernel_func_def(kernel_func_name, buffers, /*extra_params=*/{},
                              func_ir);
   }
 
-  void emit_call_mtl_kernel_func(
-      const std::string &kernel_func_name,
-      const std::vector<KernelAttributes::Buffers> &buffers,
-      const std::vector<std::string> &extra_args,
-      const std::string &loop_index_expr) {
+  void emit_call_mtl_kernel_func(const std::string &kernel_func_name,
+                                 const std::vector<BufferDescriptor> &buffers,
+                                 const std::vector<std::string> &extra_args,
+                                 const std::string &loop_index_expr) {
     TI_ASSERT(code_section_ == Section::Kernels);
     std::string call = kernel_func_name + "(";
     for (auto b : buffers) {
@@ -1405,7 +1475,7 @@ class KernelCodegenImpl : public IRVisitor {
 
   inline void emit_call_mtl_kernel_func(
       const std::string &kernel_func_name,
-      const std::vector<KernelAttributes::Buffers> &buffers,
+      const std::vector<BufferDescriptor> &buffers,
       const std::string &loop_index_expr) {
     emit_call_mtl_kernel_func(kernel_func_name, buffers, /*extra_args=*/{},
                               loop_index_expr);
@@ -1419,10 +1489,9 @@ class KernelCodegenImpl : public IRVisitor {
     bool use_simdgroup = false;
   };
 
-  void emit_mtl_kernel_sig(
-      const std::string &kernel_name,
-      const std::vector<KernelAttributes::Buffers> &buffers,
-      const KernelSigExtensions &exts = {}) {
+  void emit_mtl_kernel_sig(const std::string &kernel_name,
+                           const std::vector<BufferDescriptor> &buffers,
+                           const KernelSigExtensions &exts = {}) {
     emit("kernel void {}(", kernel_name);
     for (int i = 0; i < buffers.size(); ++i) {
       emit("    device byte* {} [[buffer({})]],", buffer_to_name(buffers[i]),
@@ -1499,8 +1568,14 @@ class KernelCodegenImpl : public IRVisitor {
   const std::string mtl_kernel_prefix_;
   Kernel *const kernel_;
   const CompiledRuntimeModule *const compiled_runtime_module_;
-  const CompiledStructs *const compiled_structs_;
-  const bool needs_root_buffer_;
+  const std::vector<CompiledStructs> &compiled_snode_trees_;
+  // const bool needs_root_buffer_;
+  struct RootInfo {
+    int snode_id{-1};
+    int index_in_cst{-1};
+  };
+  std::unordered_map<int, RootInfo> snode_to_roots_;
+  std::unordered_map<int, const GetRootStmt *> root_id_to_stmts_;
   PrintStringTable *const print_strtab_;
   const Config &cgen_config_;
   OffloadedStmt *const offloaded_;
@@ -1510,7 +1585,6 @@ class KernelCodegenImpl : public IRVisitor {
 
   bool is_top_level_{true};
   int mtl_kernel_count_{0};
-  GetRootStmt *root_stmt_{nullptr};
   KernelAttributes *current_kernel_attribs_{nullptr};
   bool inside_tls_epilogue_{false};
   Section code_section_{Section::Structs};
@@ -1521,7 +1595,7 @@ class KernelCodegenImpl : public IRVisitor {
 
 CompiledKernelData run_codegen(
     const CompiledRuntimeModule *compiled_runtime_module,
-    const CompiledStructs *compiled_structs,
+    const std::vector<CompiledStructs> &compiled_snode_trees,
     Kernel *kernel,
     PrintStringTable *strtab,
     OffloadedStmt *offloaded) {
@@ -1533,7 +1607,8 @@ CompiledKernelData run_codegen(
   cgen_config.allow_simdgroup = EnvConfig::instance().is_simdgroup_enabled();
 
   KernelCodegenImpl codegen(taichi_kernel_name, kernel, compiled_runtime_module,
-                            compiled_structs, strtab, cgen_config, offloaded);
+                            compiled_snode_trees, strtab, cgen_config,
+                            offloaded);
 
   return codegen.run();
 }
@@ -1542,10 +1617,10 @@ FunctionType compile_to_metal_executable(
     Kernel *kernel,
     KernelManager *kernel_mgr,
     const CompiledRuntimeModule *compiled_runtime_module,
-    const CompiledStructs *compiled_structs,
+    const std::vector<CompiledStructs> &compiled_snode_trees,
     OffloadedStmt *offloaded) {
   const auto compiled_res =
-      run_codegen(compiled_runtime_module, compiled_structs, kernel,
+      run_codegen(compiled_runtime_module, compiled_snode_trees, kernel,
                   kernel_mgr->print_strtable(), offloaded);
   kernel_mgr->register_taichi_kernel(
       compiled_res.kernel_name, compiled_res.source_code,

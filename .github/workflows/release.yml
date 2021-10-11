@@ -191,7 +191,7 @@ jobs:
           # automatically. So we don't activate and use desired python version
           # directly.
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
-          python3 -m pip uninstall taichi -y
+          python3 -m pip uninstall taichi taichi-nightly -y
           git --version
           export CXX=clang++
           python3 -m pip install -r requirements_dev.txt
@@ -226,6 +226,72 @@ jobs:
           cd python
           if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
           elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
+
+  build_and_upload_macos_1014:
+    name: Build and Upload (macos 1014)
+    needs: matrix_prep
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    runs-on: [self-hosted, macos10.14]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Build
+        run: |
+          # We hacked here because conda activate in CI won't update python PATH
+          # automatically. So we don't activate and use desired python version
+          # directly.
+          export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
+          export LLVM_DIR=/Users/buildbot6/taichi-llvm-10.0.0-macos
+          export PATH=$LLVM_DIR/bin:$PATH
+          python3 -m pip uninstall taichi taichi-nightly -y
+          git --version
+          export CXX=clang++
+          python3 -m pip install -r requirements_dev.txt
+          cd python
+          git fetch origin master
+          export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
+          python3 build.py build --project_name $PROJECT_NAME
+          cd ..
+          export NUM_WHL=`ls dist/*.whl | wc -l`
+          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
+          python3 -m pip install dist/*.whl
+        env:
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_TESTS:BOOL=ON
+          PROJECT_NAME: ${{ matrix.name }}
+          PYTHON: ${{ matrix.python }}
+
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.name }}-py${{ matrix.python }}-macos-1014.whl
+          path: dist/*.whl
+
+      - name: Test
+        run: |
+          export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
+          python examples/algorithm/laplace.py
+          ti diagnose
+          ti test -vr2 -t2 -a cpu
+        env:
+          PYTHON: ${{ matrix.python }}
+
+      - name: Upload PyPI
+        env:
+          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
+          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
+          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
+          PROJECT_NAME: ${{ matrix.name }}
+          PYTHON: ${{ matrix.python }}
+        run: |
+          export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
+          cd python
+          if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
+          elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
+
 
   build_and_upload_windows:
     name: Build and Upload (Windows only)

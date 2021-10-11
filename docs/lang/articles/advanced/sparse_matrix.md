@@ -181,7 +181,7 @@ print(f">>>> Computation was successful?: {isSuccess}")
 # [0.5 0.  0.  0.5]
 # >>>> Computation was successful?: True
 ```
-# Examples
+## Examples
 
 Please have a look at our two demos for more information:
 + `examples/simulation/stable_fluid.py`: A 2D fluid simulation using a sparse Laplacian matrix to solve Poisson's pressure equation.

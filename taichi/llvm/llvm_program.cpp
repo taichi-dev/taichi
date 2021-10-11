@@ -9,6 +9,9 @@
 #include "taichi/codegen/codegen.h"
 #include "taichi/ir/statements.h"
 #include "taichi/backends/cpu/cpu_device.h"
+#include "taichi/backends/cuda/cuda_device.h"
+
+#include "taichi/backends/cuda/cuda_device.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
@@ -119,7 +122,7 @@ FunctionType LlvmProgramImpl::compile(Kernel *kernel,
     kernel->lower();
   }
   auto codegen = KernelCodeGen::create(kernel->arch, kernel, offloaded);
-  return codegen->compile();
+  return codegen->codegen();
 }
 
 void LlvmProgramImpl::synchronize() {
@@ -145,7 +148,7 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
                                                      StructCompiler *scomp,
                                                      uint64 *result_buffer) {
   TaichiLLVMContext *tlctx = nullptr;
-  if (config->is_cuda_no_unified_memory()) {
+  if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     tlctx = llvm_context_device.get();
 #else
@@ -163,12 +166,29 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
   std::size_t rounded_size =
       taichi::iroundup(scomp->root_size, taichi_page_size);
+
+  Ptr root_buffer = snode_tree_buffer_manager->allocate(
+      runtime_jit, llvm_runtime, rounded_size, taichi_page_size, tree->id(),
+      result_buffer);
+
+  DeviceAllocation alloc{kDeviceNullAllocation};
+
+  if (config->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    alloc = cuda_device()->import_memory(root_buffer, rounded_size);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    alloc = cpu_device()->import_memory(root_buffer, rounded_size);
+  }
+
+  snode_tree_allocs_[tree->id()] = alloc;
+
   runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
-      (int)snodes.size(), tree->id(), rounded_size,
-      snode_tree_buffer_manager->allocate(runtime_jit, llvm_runtime,
-                                          rounded_size, taichi_page_size,
-                                          tree->id(), result_buffer));
+      (int)snodes.size(), tree->id(), rounded_size, root_buffer);
+
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
@@ -231,13 +251,8 @@ uint64 LlvmProgramImpl::fetch_result_uint64(int i, uint64 *result_buffer) {
   auto arch = config->arch;
   if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    if (config->use_unified_memory) {
-      // More efficient than a cudaMemcpy call in practice
-      ret = result_buffer[i];
-    } else {
-      CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
-                                                       sizeof(uint64));
-    }
+    CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
+                                                     sizeof(uint64));
 #else
     TI_NOT_IMPLEMENTED;
 #endif
@@ -292,7 +307,7 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 
   std::size_t prealloc_size = 0;
   TaichiLLVMContext *tlctx = nullptr;
-  if (config->is_cuda_no_unified_memory()) {
+  if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().malloc(
         (void **)result_buffer_ptr,
@@ -364,7 +379,7 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                       *result_buffer_ptr);
   TI_TRACE("LLVMRuntime pointer fetched");
 
-  if (arch_use_host_memory(config->arch) || config->use_unified_memory) {
+  if (arch_use_host_memory(config->arch)) {
     runtime_jit->call<void *>("runtime_get_mem_req_queue", llvm_runtime);
     auto mem_req_queue = fetch_result<void *>(taichi_result_buffer_ret_value_id,
                                               *result_buffer_ptr);
@@ -521,5 +536,23 @@ void LlvmProgramImpl::print_memory_profiler_info(
       "Total requested dynamic memory (excluding alignment padding): {:n} B\n",
       total_requested_memory);
 }
+
+cuda::CudaDevice *LlvmProgramImpl::cuda_device() {
+  if (config->arch != Arch::cuda) {
+    TI_ERROR("arch is not cuda");
+  }
+  return static_cast<cuda::CudaDevice *>(device_.get());
+}
+
+cpu::CpuDevice *LlvmProgramImpl::cpu_device() {
+  TI_ERROR_IF(!arch_is_cpu(config->arch), "arch is not cpu");
+  return static_cast<cpu::CpuDevice *>(device_.get());
+}
+
+DevicePtr LlvmProgramImpl::get_snode_tree_device_ptr(int tree_id) {
+  DeviceAllocation tree_alloc = snode_tree_allocs_[tree_id];
+  return tree_alloc.get_ptr();
+}
+
 }  // namespace lang
 }  // namespace taichi

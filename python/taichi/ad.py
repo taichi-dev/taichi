@@ -1,3 +1,6 @@
+from taichi.lang import impl
+
+
 def grad_replaced(func):
     """A decorator for python function to customize gradient with Taichi's autodiff
     system, e.g. `ti.Tape()` and `kernel.grad()`.
@@ -32,7 +35,6 @@ def grad_replaced(func):
         >>>     multiply_grad(a)"""
     def decorated(*args, **kwargs):
         # TODO [#3025]: get rid of circular imports and move this to the top.
-        from taichi.lang import impl
         impl.get_runtime().grad_replaced = True
         if impl.get_runtime().target_tape:
             impl.get_runtime().target_tape.insert(decorated, args)

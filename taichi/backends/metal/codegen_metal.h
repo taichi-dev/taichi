@@ -17,10 +17,12 @@ namespace taichi {
 namespace lang {
 namespace metal {
 
-CompiledKernelData run_codegen(const CompiledStructs *compiled_structs,
-                               Kernel *kernel,
-                               PrintStringTable *print_strtab,
-                               OffloadedStmt *offloaded);
+CompiledKernelData run_codegen(
+    const CompiledRuntimeModule *compiled_runtime_module,
+    const std::vector<CompiledStructs> &compiled_snode_trees,
+    Kernel *kernel,
+    PrintStringTable *print_strtab,
+    OffloadedStmt *offloaded);
 
 // If |offloaded| is nullptr, this compiles the AST in |kernel|. Otherwise it
 // compiles just |offloaded|. These ASTs must have already been lowered at the
@@ -28,7 +30,8 @@ CompiledKernelData run_codegen(const CompiledStructs *compiled_structs,
 FunctionType compile_to_metal_executable(
     Kernel *kernel,
     KernelManager *kernel_mgr,
-    const CompiledStructs *compiled_structs,
+    const CompiledRuntimeModule *compiled_runtime_module,
+    const std::vector<CompiledStructs> &compiled_snode_trees,
     OffloadedStmt *offloaded = nullptr);
 
 }  // namespace metal

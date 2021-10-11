@@ -27,12 +27,12 @@
 // The actual Runtime struct has to be emitted by codegen, because it depends
 // on the number of SNodes.
 struct Runtime {
+  uint32_t *rand_seeds = nullptr;
   SNodeMeta *snode_metas = nullptr;
   SNodeExtractors *snode_extractors = nullptr;
   ListManagerData *snode_lists = nullptr;
   NodeManagerData *snode_allocators = nullptr;
   NodeManagerData::ElemIndex *ambient_indices = nullptr;
-  uint32_t *rand_seeds = nullptr;
 };
 
 #define METAL_BEGIN_RUNTIME_UTILS_DEF

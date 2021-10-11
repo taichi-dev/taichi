@@ -722,6 +722,10 @@ class MakeAdjoint : public IRVisitor {
   void visit(IntegerOffsetStmt *stmt) override {
     // do nothing
   }
+
+  void visit(RandStmt *stmt) override {
+    TI_ERROR("RandStmt not supported in AutoDiff for now.");
+  }
 };
 
 class BackupSSA : public BasicStmtVisitor {

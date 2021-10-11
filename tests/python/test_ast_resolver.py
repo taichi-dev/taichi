@@ -1,7 +1,7 @@
 import ast
 from collections import namedtuple
 
-from taichi.lang.ast_resolver import ASTResolver
+from taichi.lang.ast.symbol_resolver import ASTResolver
 
 
 def test_ast_resolver_basic():

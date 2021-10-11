@@ -15,10 +15,6 @@ TLANG_NAMESPACE_BEGIN
 // This class can only have one instance
 class UnifiedAllocator {
   std::unique_ptr<VirtualMemoryAllocator> cpu_vm;
-#if defined(TI_WITH_CUDA)
-  void *_cuda_data;
-  DeviceAllocation cuda_alloc;
-#endif
   std::size_t size;
   Arch arch_;
 

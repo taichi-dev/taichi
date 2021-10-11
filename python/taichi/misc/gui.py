@@ -1,8 +1,13 @@
+import math
 import numbers
 import os
 
 import numpy as np
+import taichi.lang
 from taichi.core import ti_core as _ti_core
+from taichi.lang.field import Field, ScalarField
+
+import taichi as ti
 
 from .util import core_veci, deprecated
 
@@ -14,8 +19,8 @@ class GUI:
         name (str, optional): The name of the GUI to be constructed.
             Default is 'Taichi'.
         res (Union[int, List[int]], optional): The resolution of created
-            GUI. Default is 512*512.
-        background_color (int, optional): The background color of creted GUI.
+            GUI. Default is 512*512. If `res` is scalar, then width will be equal to height.
+        background_color (int, optional): The background color of created GUI.
             Default is 0x000000.
         show_gui (bool, optional): Specify whether to render the GUI. Default is True.
         fullscreen (bool, optional): Specify whether to render the GUI in
@@ -63,12 +68,9 @@ class GUI:
                  show_gui=True,
                  fullscreen=False,
                  fast_gui=False):
-        if 'TI_GUI_SHOW' in os.environ:
-            show_gui = bool(int(os.environ['TI_GUI_SHOW']))
-        if 'TI_GUI_FULLSCREEN' in os.environ:
-            fullscreen = bool(int(os.environ['TI_GUI_FULLSCREEN']))
-        if 'TI_GUI_FAST' in os.environ:
-            fast_gui = bool(int(os.environ['TI_GUI_FAST']))
+        show_gui = self.get_bool_environ('TI_GUI_SHOW', show_gui)
+        fullscreen = self.get_bool_environ('TI_GUI_FULLSCREEN', fullscreen)
+        fast_gui = self.get_bool_environ('TI_GUI_FAST', fast_gui)
 
         self.name = name
         if isinstance(res, numbers.Number):
@@ -119,6 +121,18 @@ class GUI:
         @value.setter
         def value(self, value):
             self.gui.core.set_widget_value(self.wid, value)
+
+    def get_bool_environ(self, key, default):
+        """Get an environment variable and cast to bool.
+        Args:
+            key (str): The environment variable key.
+            default (bool): The default value.
+        Return:
+            The environment variable value cast to bool. If the value is not found, directly return argument 'default'.
+        """
+        if key not in os.environ:
+            return default
+        return bool(int(os.environ[key]))
 
     def slider(self, text, minimum, maximum, step=1):
         """Create a slider object on canvas to be manipulated with.
@@ -226,14 +240,9 @@ class GUI:
                 representations. Its shape must match GUI resolution.
 
         """
-        import numpy as np
-        from taichi.lang.field import ScalarField
-        from taichi.lang.matrix import MatrixField
-
-        import taichi as ti
 
         if self.fast_gui:
-            assert isinstance(img, MatrixField), \
+            assert isinstance(img, taichi.lang.matrix.MatrixField), \
                     "Only ti.Vector.field is supported in GUI.set_image when fast_gui=True"
             assert img.shape == self.res, \
                     "Image resolution does not match GUI resolution"
@@ -242,8 +251,7 @@ class GUI:
             assert img.dtype in [ti.f32, ti.f64, ti.u8], \
                     "Only f32, f64, u8 are supported in GUI.set_image when fast_gui=True"
 
-            from taichi.lang.meta import vector_to_fast_image
-            vector_to_fast_image(img, self.img)
+            taichi.lang.meta.vector_to_fast_image(img, self.img)
             return
 
         if isinstance(img, ScalarField):
@@ -254,11 +262,10 @@ class GUI:
                 # Type matched! We can use an optimized copy kernel.
                 assert img.shape \
                  == self.res, "Image resolution does not match GUI resolution"
-                from taichi.lang.meta import tensor_to_image
-                tensor_to_image(img, self.img)
+                taichi.lang.meta.tensor_to_image(img, self.img)
                 ti.sync()
 
-        elif isinstance(img, MatrixField):
+        elif isinstance(img, taichi.lang.matrix.MatrixField):
             if _ti_core.is_integral(img.dtype):
                 self.img = self.cook_image(img.to_numpy())
             else:
@@ -267,8 +274,8 @@ class GUI:
                         "Image resolution does not match GUI resolution"
                 assert img.n in [2, 3, 4] and img.m == 1, \
                         "Only greyscale, RG, RGB or RGBA images are supported in GUI.set_image"
-                from taichi.lang.meta import vector_to_image
-                vector_to_image(img, self.img)
+
+                taichi.lang.meta.vector_to_image(img, self.img)
                 ti.sync()
 
         elif isinstance(img, np.ndarray):
@@ -337,8 +344,6 @@ class GUI:
 
         if palette is not None:
             assert palette_indices is not None, 'palette must be used together with palette_indices'
-
-            from taichi.lang.field import Field
 
             if isinstance(palette_indices, Field):
                 ind_int = palette_indices.to_numpy().astype(np.uint32)
@@ -513,7 +518,6 @@ class GUI:
 
     @staticmethod
     def _arrow_to_lines(orig, major, tip_scale=0.2, angle=45):
-        import math
         angle = math.radians(180 - angle)
         c, s = math.cos(angle), math.sin(angle)
         minor1 = np.array([
@@ -587,7 +591,6 @@ class GUI:
             color (int, optional): The color of the text. Default is 0xFFFFFF.
 
         """
-        import taichi as ti
 
         # TODO: refactor Canvas::text
         font_size = float(font_size)
@@ -825,14 +828,14 @@ def rgb_to_hex(c):
     """Convert rgb color format to hex color format.
 
     Args:
-        c (List[int]): The rbg representation of color.
+        c (List[int]): The rgb representation of color.
 
     Returns:
         The hex representation of color.
 
     """
     to255 = lambda x: np.clip(np.int32(x * 255), 0, 255)
-    return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])
+    return (to255(c[0]) << 16) + (to255(c[1]) << 8) + to255(c[2])
 
 
 def hex_to_rgb(color):

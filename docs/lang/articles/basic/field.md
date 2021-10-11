@@ -15,7 +15,7 @@ To be noticed:
 * Sparse fields are initially inactive.
 
 :::tip
-In earlier versions of Taichi, you could not allocate new fields after executing the first kernel. Since Taichi v0.8.0, you can use a new class `FieldsBuilder` for dynamic field allocation and destruction. For more details, please see [Field (advanced)](/docs/lang/articles/advanced/layout).
+In earlier versions of Taichi, you could not allocate new fields after executing the first kernel. Since Taichi v0.8.0, you can use a new class `FieldsBuilder` for dynamic field allocation and destruction. For more details, please see [Field (advanced)](/lang/articles/advanced/layout).
 :::
 
 ## Scalar fields

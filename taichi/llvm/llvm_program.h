@@ -16,13 +16,19 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-#include "taichi/backends/cuda/cuda_device.h"
-
 #include <memory>
 
 namespace taichi {
 namespace lang {
 class StructCompiler;
+
+namespace cuda {
+class CudaDevice;
+}
+
+namespace cpu {
+class CpuDevice;
+}
 
 class LlvmProgramImpl : public ProgramImpl {
  public:
@@ -130,6 +136,8 @@ class LlvmProgramImpl : public ProgramImpl {
     return device_.get();
   }
 
+  DevicePtr get_snode_tree_device_ptr(int tree_id) override;
+
  private:
   std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
   std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
@@ -141,13 +149,11 @@ class LlvmProgramImpl : public ProgramImpl {
 
   DeviceAllocation preallocated_device_buffer_alloc{kDeviceNullAllocation};
 
+  std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
+
   std::unique_ptr<Device> device_;
-  cuda::CudaDevice *cuda_device() {
-    if (config->arch != Arch::cuda) {
-      TI_ERROR("arch is not cuda");
-    }
-    return static_cast<cuda::CudaDevice *>(device_.get());
-  }
+  cuda::CudaDevice *cuda_device();
+  cpu::CpuDevice *cpu_device();
 };
 }  // namespace lang
 }  // namespace taichi

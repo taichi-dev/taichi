@@ -28,7 +28,7 @@ One feasible solution is `field.from_numpy(ti.imread('filename.png'))`.
 
 ### Can Taichi interact with **other Python packages** such as `matplotlib`?
 
-Yes, Taichi supports various popular Python packages. Please check out [Interacting with other Python packages](/docs/#interacting-with-other-python-packages).
+Yes, Taichi supports various popular Python packages. Please check out [Interacting with other Python packages](/#interacting-with-other-python-packages).
 
 ### How do I declare a field with a **dynamic length**?
 

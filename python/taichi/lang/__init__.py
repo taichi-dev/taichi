@@ -1,16 +1,22 @@
+import atexit
 import functools
 import os
+import shutil
+import tempfile
+import time
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 
+import taichi.lang.linalg
+import taichi.lang.meta
 from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
-from taichi.lang import impl, types
+from taichi.lang import _random, impl, types
+from taichi.lang.ast.transformer import TaichiSyntaxError
 from taichi.lang.enums import Layout
 from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *
-from taichi.lang.kernel_arguments import (any_arr, ext_arr,
-                                          sparse_matrix_builder, template)
+from taichi.lang.kernel_arguments import sparse_matrix_builder
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, Vector
@@ -18,24 +24,20 @@ from taichi.lang.ndrange import GroupedNDRange, ndrange
 from taichi.lang.ops import *
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
-from taichi.lang.sparse_matrix import SparseMatrix, SparseMatrixBuilder
-from taichi.lang.sparse_solver import SparseSolver
 from taichi.lang.struct import Struct
-from taichi.lang.transformer import TaichiSyntaxError
 from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
+from taichi.linalg import SparseMatrix, SparseMatrixBuilder, SparseSolver
 from taichi.misc.util import deprecated
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
+from taichi.type.annotations import any_arr, ext_arr, template
 
 import taichi as ti
-
-# TODO(#2223): Remove
-core = _ti_core
 
 runtime = impl.get_runtime()
 
@@ -402,10 +404,7 @@ def prepare_sandbox():
     Returns a temporary directory, which will be automatically deleted on exit.
     It may contain the taichi_core shared object or some misc. files.
     '''
-    import atexit
-    import shutil
-    from tempfile import mkdtemp
-    tmp_dir = mkdtemp(prefix='taichi-')
+    tmp_dir = tempfile.mkdtemp(prefix='taichi-')
     atexit.register(shutil.rmtree, tmp_dir)
     print(f'[Taichi] preparing sandbox at {tmp_dir}')
     os.mkdir(os.path.join(tmp_dir, 'runtime/'))
@@ -435,7 +434,7 @@ def init(arch=None,
             * ``cpu_max_num_threads`` (int): Sets the number of threads used by the CPU thread pool.
             * ``debug`` (bool): Enables the debug mode, under which Taichi does a few more things like boundary checks.
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
-            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/docs/lang/articles/advanced/layout.
+            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/lang/articles/advanced/layout.
     """
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
@@ -501,6 +500,13 @@ def init(arch=None,
         env_comp.add(key, cast)
 
     unexpected_keys = kwargs.keys()
+
+    if 'use_unified_memory' in unexpected_keys:
+        _ti_core.warn(
+            f'"use_unified_memory" is a deprecated option, as taichi no longer have the option of using unified memory.'
+        )
+        del kwargs['use_unified_memory']
+
     if len(unexpected_keys):
         raise KeyError(
             f'Unrecognized keyword argument(s) for ti.init: {", ".join(unexpected_keys)}'
@@ -550,7 +556,7 @@ def no_activate(*args):
 def block_local(*args):
     """Hints Taichi to cache the fields and to enable the BLS optimization.
 
-    Please visit https://docs.taichi.graphics/docs/lang/articles/advanced/performance
+    Please visit https://docs.taichi.graphics/lang/articles/advanced/performance
     for how BLS is used.
 
     Args:
@@ -621,8 +627,7 @@ def polar_decompose(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    from .linalg import polar_decompose
-    return polar_decompose(A, dt)
+    return taichi.lang.linalg.polar_decompose(A, dt)
 
 
 def svd(A, dt=None):
@@ -640,8 +645,7 @@ def svd(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    from .linalg import svd
-    return svd(A, dt)
+    return taichi.lang.linalg.svd(A, dt)
 
 
 def eig(A, dt=None):
@@ -660,9 +664,8 @@ def eig(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    from taichi.lang import linalg
     if A.n == 2:
-        return linalg.eig2x2(A, dt)
+        return taichi.lang.linalg.eig2x2(A, dt)
     raise Exception("Eigen solver only supports 2D matrices.")
 
 
@@ -683,9 +686,8 @@ def sym_eig(A, dt=None):
     assert all(A == A.transpose()), "A needs to be symmetric"
     if dt is None:
         dt = impl.get_runtime().default_fp
-    from taichi.lang import linalg
     if A.n == 2:
-        return linalg.sym_eig2x2(A, dt)
+        return taichi.lang.linalg.sym_eig2x2(A, dt)
     raise Exception("Symmetric eigen solver only supports 2D matrices.")
 
 
@@ -702,8 +704,7 @@ def randn(dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    from .random import randn
-    return randn(dt)
+    return _random.randn(dt)
 
 
 determinant = deprecated('ti.determinant(a)',
@@ -750,8 +751,7 @@ def Tape(loss, clear_gradients=True):
     if clear_gradients:
         clear_all_gradients()
 
-    from taichi.lang.meta import clear_loss
-    clear_loss(loss)
+    taichi.lang.meta.clear_loss(loss)
 
     return runtime.get_tape(loss)
 
@@ -772,8 +772,7 @@ def clear_all_gradients():
 
         places = tuple(places)
         if places:
-            from taichi.lang.meta import clear_gradients
-            clear_gradients(places)
+            taichi.lang.meta.clear_gradients(places)
 
     for root_fb in FieldsBuilder.finalized_roots():
         visit(root_fb)
@@ -786,8 +785,6 @@ def deactivate_all_snodes():
 
 
 def benchmark(func, repeat=300, args=()):
-    import time
-
     def run_benchmark():
         compile_time = time.time()
         func(*args)  # compile the kernel first
@@ -841,8 +838,8 @@ def benchmark_plot(fn=None,
                    bar_distance=0,
                    left_margin=0,
                    size=(12, 8)):
-    import matplotlib.pyplot as plt
-    import yaml
+    import matplotlib.pyplot as plt  # pylint: disable=C0415
+    import yaml  # pylint: disable=C0415
     if fn is None:
         fn = os.path.join(_ti_core.get_repo_dir(), 'benchmarks', 'output',
                           'benchmark.yml')
@@ -961,7 +958,7 @@ def benchmark_plot(fn=None,
 
 
 def stat_write(key, value):
-    import yaml
+    import yaml  # pylint: disable=C0415
     case_name = os.environ.get('TI_CURRENT_BENCHMARK')
     if case_name is None:
         return
@@ -1020,7 +1017,8 @@ def supported_archs():
     Returns:
         List[taichi_core.Arch]: All supported archs on the machine.
     """
-    archs = [cpu, cuda, metal, vulkan, opengl, cc]
+    archs = set([cpu, cuda, metal, vulkan, opengl, cc])
+    archs = set(filter(lambda x: is_arch_supported(x), archs))
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')
@@ -1028,19 +1026,23 @@ def supported_archs():
         wanted_archs = wanted_archs[1:]
     wanted_archs = wanted_archs.split(',')
     # Note, ''.split(',') gives you [''], which is not an empty array.
-    wanted_archs = list(filter(lambda x: x != '', wanted_archs))
-    if len(wanted_archs):
-        archs, old_archs = [], archs
-        for arch in old_archs:
-            if want_exclude == (_ti_core.arch_name(arch) not in wanted_archs):
-                archs.append(arch)
-
-    archs, old_archs = [], archs
-    for arch in old_archs:
-        if is_arch_supported(arch):
-            archs.append(arch)
-
-    return archs
+    expanded_wanted_archs = set([])
+    for arch in wanted_archs:
+        if arch == '':
+            continue
+        if arch == 'cpu':
+            expanded_wanted_archs.add(cpu)
+        elif arch == 'gpu':
+            expanded_wanted_archs.update(gpu)
+        else:
+            expanded_wanted_archs.add(_ti_core.arch_from_name(arch))
+    if len(expanded_wanted_archs) == 0:
+        return list(archs)
+    if want_exclude:
+        supported = archs - expanded_wanted_archs
+    else:
+        supported = archs & expanded_wanted_archs
+    return list(supported)
 
 
 def adaptive_arch_select(arch):

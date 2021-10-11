@@ -13,7 +13,8 @@
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 namespace metal {
 namespace {
 namespace shaders {
@@ -51,9 +52,6 @@ class StructCompiler {
   CompiledStructs run(SNode &root) {
     TI_ASSERT(root.type == SNodeType::root);
     collect_snodes(root);
-    // The host side has run this!
-    // infer_snode_properties(node);
-
     auto snodes_rev = snodes_;
     std::reverse(snodes_rev.begin(), snodes_rev.end());
     {
@@ -82,17 +80,15 @@ class StructCompiler {
     CompiledStructs result;
     result.root_snode_type_name = root.node_type_name;
     result.root_size = compute_snode_size(&root);
-    emit_runtime_structs();
-    line_appender_.dump(&result.runtime_utils_source_code);
-    result.runtime_size = compute_runtime_size();
     for (auto &n : snodes_rev) {
       generate_types(*n);
     }
     line_appender_.dump(&result.snode_structs_source_code);
+    result.root_id = root.id;
     result.max_snodes = max_snodes_;
     result.snode_descriptors = std::move(snode_descriptors_);
-    TI_DEBUG("Metal: root_size={} runtime_size={}", result.root_size,
-             result.runtime_size);
+    TI_DEBUG("Metal: root_id={} root_size={}", result.root_id,
+             result.root_size);
     return result;
   }
 
@@ -340,16 +336,40 @@ class StructCompiler {
     return sn_desc.stride;
   }
 
+  template <typename... Args>
+  void emit(std::string f, Args &&... args) {
+    line_appender_.append(std::move(f), std::move(args)...);
+  }
+
+  std::vector<SNode *> snodes_;
+  int max_snodes_{0};
+  LineAppender line_appender_;
+  std::unordered_map<int, SNodeDescriptor> snode_descriptors_;
+  bool has_sparse_snode_{false};
+};
+
+class RuntimeModuleCompiler {
+ public:
+  CompiledRuntimeModule run() {
+    CompiledRuntimeModule res;
+    emit_runtime_structs();
+    line_appender_.dump(&res.runtime_utils_source_code);
+    res.rand_seeds_size = compute_rand_seeds_size();
+    res.runtime_size = compute_snodes_runtime_size() + res.rand_seeds_size;
+    return res;
+  }
+
+ private:
   void emit_runtime_structs() {
     line_appender_.append_raw(shaders::kMetalRuntimeStructsSourceCode);
     emit("");
     emit("struct Runtime {{");
-    emit("  SNodeMeta snode_metas[{}];", max_snodes_);
-    emit("  SNodeExtractors snode_extractors[{}];", max_snodes_);
-    emit("  ListManagerData snode_lists[{}];", max_snodes_);
-    emit("  NodeManagerData snode_allocators[{}];", max_snodes_);
-    emit("  NodeManagerData::ElemIndex ambient_indices[{}];", max_snodes_);
     emit("  uint32_t rand_seeds[{}];", kNumRandSeeds);
+    emit("  SNodeMeta snode_metas[{}];", kMaxNumSNodes);
+    emit("  SNodeExtractors snode_extractors[{}];", kMaxNumSNodes);
+    emit("  ListManagerData snode_lists[{}];", kMaxNumSNodes);
+    emit("  NodeManagerData snode_allocators[{}];", kMaxNumSNodes);
+    emit("  NodeManagerData::ElemIndex ambient_indices[{}];", kMaxNumSNodes);
     emit("}};");
     emit("");
     line_appender_.append_raw(shaders::kMetalRuntimeUtilsSourceCode);
@@ -358,12 +378,14 @@ class StructCompiler {
     emit("");
   }
 
-  size_t compute_runtime_size() {
-    size_t result = max_snodes_ * (kSNodeMetaSize + kSNodeExtractorsSize +
-                                   kListManagerDataSize + kNodeManagerDataSize +
-                                   kNodeManagerElemIndexSize);
-    result += sizeof(uint32_t) * kNumRandSeeds;
-    return result;
+  size_t compute_snodes_runtime_size() {
+    return kMaxNumSNodes *
+           (kSNodeMetaSize + kSNodeExtractorsSize + kListManagerDataSize +
+            kNodeManagerDataSize + kNodeManagerElemIndexSize);
+  }
+
+  size_t compute_rand_seeds_size() {
+    return sizeof(uint32_t) * kNumRandSeeds;
   }
 
   template <typename... Args>
@@ -371,11 +393,7 @@ class StructCompiler {
     line_appender_.append(std::move(f), std::move(args)...);
   }
 
-  std::vector<SNode *> snodes_;
-  int max_snodes_;
   LineAppender line_appender_;
-  std::unordered_map<int, SNodeDescriptor> snode_descriptors_;
-  bool has_sparse_snode_;
 };
 
 }  // namespace
@@ -397,5 +415,11 @@ int total_num_self_from_root(const SNodeDescriptorsMap &m, int snode_id) {
 CompiledStructs compile_structs(SNode &root) {
   return StructCompiler().run(root);
 }
+
+CompiledRuntimeModule compile_runtime_module() {
+  return RuntimeModuleCompiler{}.run();
+}
+
 }  // namespace metal
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

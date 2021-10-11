@@ -3,18 +3,17 @@ import functools
 import os
 import sys
 
+from taichi._logging import info, warn
 from taichi.core.util import ti_core as _ti_core
-
-import taichi as ti
 
 try:
     import sourceinspect as oinspect
 except ImportError:
-    ti.warn('`sourceinspect` not installed!')
-    ti.warn(
+    warn('`sourceinspect` not installed!')
+    warn(
         'Without this package Taichi may not function well in Python IDLE interactive shell, '
         'Blender scripting module and Python native shell.')
-    ti.warn('Please run `python3 -m pip install sourceinspect` to install.')
+    warn('Please run `python3 -m pip install sourceinspect` to install.')
     import inspect as oinspect
 
 pybuf_enabled = False
@@ -32,7 +31,7 @@ def _shell_pop_print(old_call):
         # zero-overhead!
         return old_call
 
-    ti.info('Graphical python shell detected, using wrapped sys.stdout')
+    info('Graphical python shell detected, using wrapped sys.stdout')
 
     @functools.wraps(old_call)
     def new_call(*args, **kwargs):

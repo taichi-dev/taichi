@@ -2,6 +2,9 @@
 #include "taichi/ui/utils/utils.h"
 
 #include "taichi/ir/type_utils.h"
+#include "taichi/ir/snode.h"
+#include "taichi/backends/device.h"
+#include "taichi/program/program.h"
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -29,5 +32,8 @@ struct FieldInfo {
     valid = false;
   }
 };
+
+taichi::lang::DevicePtr get_device_ptr(taichi::lang::Program *program,
+                                       taichi::lang::SNode *snode);
 
 TI_UI_NAMESPACE_END

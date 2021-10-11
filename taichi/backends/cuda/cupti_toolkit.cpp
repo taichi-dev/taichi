@@ -39,7 +39,7 @@ bool check_cupti_availability() {
         "7.0 , fallback to default kernel profiler");
     TI_WARN(
         "See also: "
-        "https://docs.taichi.graphics/docs/lang/articles/misc/profiler");
+        "https://docs.taichi.graphics/lang/articles/misc/profiler");
     return false;
   }
   return true;
@@ -106,7 +106,7 @@ bool check_cupti_privileges() {
         "=================================================================");
     TI_WARN(
         "See also: "
-        "https://docs.taichi.graphics/docs/lang/articles/misc/profiler");
+        "https://docs.taichi.graphics/lang/articles/misc/profiler");
     return false;
   }
   // For other errors , CuptiToolkit::init_cupti() will send error message.
@@ -570,9 +570,9 @@ void CuptiToolkit::reset_metrics(const std::vector<std::string> &metrics) {
   for (uint idx = 0; idx < metric_list_size; idx++) {
     cupti_config_.metric_list.push_back(MetricListDeafult[idx]);
   }
-  // TODO: user defined metrics
-  // for (auto metric : metrics)
-  //   cupti_config_.metric_list.push_back(metric);
+  // user selected metrics
+  for (auto metric : metrics)
+    cupti_config_.metric_list.push_back(metric);
 }
 
 bool CuptiToolkit::init_cupti() {
@@ -824,11 +824,13 @@ bool CuptiToolkit::update_record(
     traced_records[range_index].kernel_elapsed_time_in_ms =
         kernel_elapsed_clk_nums / core_frequency_hzs * 1000;  // from s to ms
 
-    // TODO: user defined metrics
-    // int metric_num = cupti_config_.metric_list.size();
-    // for (int idx = CUPTI_METRIC_DEFAULT_TOTAL; idx < metric_num; idx++) {
-    //   traced_records[range_index].metric_values.push_back(gpu_values[idx]);
-    // }
+    // user selected metrics
+    uint user_metric_idx_begin =
+        static_cast<uint>(CuptiMetricsDefault::CUPTI_METRIC_DEFAULT_TOTAL);
+    uint metric_num = cupti_config_.metric_list.size();
+    for (uint idx = user_metric_idx_begin; idx < metric_num; idx++) {
+      traced_records[range_index].metric_values.push_back(gpu_values[idx]);
+    }
   }
   return true;
 }

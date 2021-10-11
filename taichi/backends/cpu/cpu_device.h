@@ -97,6 +97,8 @@ class CpuDevice : public Device {
   void unmap(DevicePtr ptr) override{TI_NOT_IMPLEMENTED};
   void unmap(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
 
+  DeviceAllocation import_memory(void *ptr, size_t size);
+
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override{
       TI_NOT_IMPLEMENTED};
 

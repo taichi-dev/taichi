@@ -1,8 +1,11 @@
 import ast
 
+import astor
 from taichi.lang import impl
-from taichi.lang.ast_resolver import ASTResolver
+from taichi.lang.ast.symbol_resolver import ASTResolver
+from taichi.lang.ast_builder_utils import BuilderContext
 from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.stmt_builder import build_stmt
 
 import taichi as ti
 
@@ -25,13 +28,10 @@ class ASTTransformerTotal(object):
         if not impl.get_runtime().print_preprocessed:
             return
         if title is not None:
-            print(f'{title}:')
-        import astor
-        print(astor.to_source(tree.body[0], indent_with='    '))
+            ti.info(f'{title}:')
+        print(astor.to_source(tree.body[0], indent_with='    '), flush=True)
 
     def visit(self, tree):
-        from taichi.lang.ast_builder_utils import BuilderContext
-        from taichi.lang.stmt_builder import build_stmt
         self.print_ast(tree, 'Initial AST')
         ctx = BuilderContext(func=self.func,
                              excluded_parameters=self.excluded_parameters,

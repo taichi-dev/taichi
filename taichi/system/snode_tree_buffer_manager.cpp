@@ -1,5 +1,6 @@
 #include "snode_tree_buffer_manager.h"
 #include "taichi/program/program.h"
+#include "taichi/llvm/llvm_program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -38,6 +39,9 @@ Ptr SNodeTreeBufferManager::allocate(JITModule *runtime_jit,
                                      const int snode_tree_id,
                                      uint64 *result_buffer) {
   TI_TRACE("allocating memory for SNode Tree {}", snode_tree_id);
+  TI_ASSERT_INFO(snode_tree_id < kMaxNumSnodeTreesLlvm,
+                 "LLVM backend supports up to {} snode trees",
+                 kMaxNumSnodeTreesLlvm);
   auto set_it = size_set_.lower_bound(std::make_pair(size, nullptr));
   if (set_it == size_set_.end()) {
     runtime_jit->call<void *, std::size_t, std::size_t>(

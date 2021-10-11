@@ -976,6 +976,10 @@ class GetRootStmt : public Stmt {
     return root_;
   }
 
+  const SNode *root() const {
+    return root_;
+  }
+
  private:
   SNode *root_;
 };

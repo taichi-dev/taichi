@@ -9,6 +9,7 @@
 
 namespace taichi {
 namespace lang {
+
 class ProgramImpl {
  public:
   // TODO: Make it safer, we exposed it for now as it's directly accessed
@@ -62,6 +63,10 @@ class ProgramImpl {
 
   virtual Device *get_graphics_device() {
     return nullptr;
+  }
+
+  virtual DevicePtr get_snode_tree_device_ptr(int tree_id) {
+    return kDeviceNullPtr;
   }
 
   virtual ~ProgramImpl() {

@@ -68,7 +68,7 @@ We follow the best practices suggested by [Docusaurus](https://docusaurus.io/doc
 is docs-versioning and IDE/GitHub friendly:
 
 - `[Return to Contribution guidelines](./contributor_guide.md)`: [Return to Contribution guidelines](./contributor_guide.md)
-- `[Return to Getting Started](/docs/#fields)`: [Return to Getting Started](/docs/#fields)
+- `[Return to Getting Started](/#fields)`: [Return to Getting Started](/#fields)
 
 ## 4. Centered text blocks
 

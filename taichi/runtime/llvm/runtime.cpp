@@ -527,8 +527,8 @@ struct LLVMRuntime {
   host_vsnprintf_type host_vsnprintf;
   Ptr memory_pool;
 
-  Ptr roots[taichi_max_num_snode_trees];
-  size_t root_mem_sizes[taichi_max_num_snode_trees];
+  Ptr roots[kMaxNumSnodeTreesLlvm];
+  size_t root_mem_sizes[kMaxNumSnodeTreesLlvm];
 
   Ptr thread_pool;
   parallel_for_type parallel_for;
@@ -789,7 +789,7 @@ Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
         ((std::size_t)preallocated_head + alignment - 1) % alignment;
     size += alignment_bytes;
     if (preallocated_head + size <= preallocated_tail) {
-      ret = preallocated_head;
+      ret = preallocated_head + alignment_bytes;
       preallocated_head += size;
       success = true;
     } else {

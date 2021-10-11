@@ -5,12 +5,7 @@ from taichi.linalg import SparseMatrix
 
 
 class SparseSolver:
-<<<<<<< HEAD
     def __init__(self, dtype=None, solver_type="LLT", ordering="AMD"):
-        from taichi.lang.impl import get_runtime
-=======
-    def __init__(self, solver_type="LLT", ordering="AMD"):
->>>>>>> master
         solver_type_list = ["LLT", "LDLT", "LU"]
         solver_ordering = ['AMD', 'COLAMD']
         if solver_type in solver_type_list and ordering in solver_ordering:

@@ -28,11 +28,6 @@ KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
   stat.add("codegen_statements", num_stmts);
 }
 
-FunctionType KernelCodeGen::compile() {
-  TI_AUTO_PROF;
-  return codegen();
-}
-
 std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
                                                      Kernel *kernel,
                                                      Stmt *stmt) {

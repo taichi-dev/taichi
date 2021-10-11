@@ -9,6 +9,7 @@ TLANG_NAMESPACE_BEGIN
 // The init logic here is temporarily set up for test CUPTI
 // will not affect default toolkit (cuEvent)
 KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
+  metric_list_.clear();
   if (enable) {
     tool_ = ProfilingToolkit::event;
 #if defined(TI_WITH_CUDA_TOOLKIT)
@@ -27,17 +28,26 @@ KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
   }
 }
 
-void KernelProfilerCUDA::reinit_with_metrics(
-    const std::vector<std::string> &metrics) {
+bool KernelProfilerCUDA::reinit_with_metrics(
+    const std::vector<std::string> metrics) {
+  // do not pass by reference
   TI_TRACE("KernelProfilerCUDA::reinit_with_metrics");
+
   if (tool_ == ProfilingToolkit::event) {
-    return;
+    return false;
   } else if (tool_ == ProfilingToolkit::cupti) {
     cupti_toolkit_->end_profiling();
     cupti_toolkit_->deinit_cupti();
     cupti_toolkit_->reset_metrics(metrics);
     cupti_toolkit_->init_cupti();
     cupti_toolkit_->begin_profiling();
+    // user selected metrics
+    metric_list_.clear();
+    for (auto metric : metrics)
+      metric_list_.push_back(metric);
+    TI_TRACE("size of metric list : {} >>> {}", metrics.size(),
+             metric_list_.size());
+    return true;
   }
 }
 
@@ -89,22 +99,21 @@ void KernelProfilerCUDA::sync() {
   if (tool_ == ProfilingToolkit::event) {
     event_toolkit_->update_record(traced_records_);
     event_toolkit_->update_timeline(traced_records_);
-    statistics_on_traced_records();
+    statistics_on_traced_records();  // TODO: deprecated
     event_toolkit_->clear();
   } else if (tool_ == ProfilingToolkit::cupti) {
-    cupti_toolkit_->update_record(traced_records_);
-    statistics_on_traced_records();
-    cupti_toolkit_->end_profiling();
-    cupti_toolkit_->deinit_cupti();
-    // reinit is necessary to get accurate  result
-    cupti_toolkit_->init_cupti();  // data image will be cleared
-    cupti_toolkit_->begin_profiling();
+    cupti_toolkit_->update_record(records_size_after_sync_, traced_records_);
+    statistics_on_traced_records();  // TODO: deprecated
+    this->reinit_with_metrics(metric_list_);
   }
+
+  records_size_after_sync_ = traced_records_.size();
 }
 
 void KernelProfilerCUDA::clear() {
-  sync();
+  // sync(); //decoupled: trigger from the foront end
   total_time_ms_ = 0;
+  records_size_after_sync_ = 0;
   traced_records_.clear();
   statistical_results_.clear();
 }
@@ -114,9 +123,9 @@ void KernelProfilerCUDA::clear() {
 KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
   TI_NOT_IMPLEMENTED;
 }
-void KernelProfilerCUDA::reinit_with_metrics(
-    const std::vector<std::string> &metrics) {
-  TI_NOT_IMPLEMENTED;
+bool KernelProfilerCUDA::reinit_with_metrics(
+    const std::vector<std::string> metrics) {
+  return false;  // public API for all backend, do not use TI_NOT_IMPLEMENTED;
 }
 KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
     const std::string &kernel_name) {

@@ -164,7 +164,7 @@ print(b.count()) # Output: 1
 c = BaseClass()
 # c.add(3)
 # print(c.count())
-# These two lines would cause error...
+# The two lines above will trigger a kernel define error, since class c is not decorated by @ti.data_oriented
 ```
 
 ### Python-built-in-decorators

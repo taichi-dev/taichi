@@ -2,10 +2,10 @@ import numpy as np
 import taichi.lang
 from taichi.core.util import ti_core as _ti_core
 from taichi.linalg import SparseMatrix
-
+from taichi.type.primitive_types import f32
 
 class SparseSolver:
-    def __init__(self, dtype=None, solver_type="LLT", ordering="AMD"):
+    def __init__(self, dtype=f32, solver_type="LLT", ordering="AMD"):
         solver_type_list = ["LLT", "LDLT", "LU"]
         solver_ordering = ['AMD', 'COLAMD']
         if solver_type in solver_type_list and ordering in solver_ordering:

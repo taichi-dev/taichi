@@ -1,10 +1,10 @@
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.field import Field
-
+from taichi.type.primitive_types import f32
 
 class SparseMatrix:
-    def __init__(self, n=None, m=None, sm=None, dtype=None):
+    def __init__(self, n=None, m=None, sm=None, dtype=f32):
         if sm is None:
             self.n = n
             self.m = m if m else n
@@ -69,7 +69,7 @@ class SparseMatrix:
 
 
 class SparseMatrixBuilder:
-    def __init__(self, num_rows=None, num_cols=None, max_num_triplets=0, dtype=None):
+    def __init__(self, num_rows=None, num_cols=None, max_num_triplets=0, dtype=f32):
         self.num_rows = num_rows
         self.num_cols = num_cols if num_cols else num_rows
         if num_rows is not None:
@@ -82,6 +82,6 @@ class SparseMatrixBuilder:
     def print_triplets(self):
         self.ptr.print_triplets()
 
-    def build(self, dtype=None, format='CSR'):
+    def build(self, dtype=f32, format='CSR'):
         sm = self.ptr.build()
         return SparseMatrix(sm=sm)

@@ -1,5 +1,0 @@
-yapf==0.31.0
-gitpython
-colorama
-isort
-pylint

@@ -31,7 +31,7 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
-          
+
       - name: Setup git & clang-format
         run: |
           git config user.email "taichigardener@gmail.com"
@@ -41,16 +41,16 @@ jobs:
           git fetch upstream master
           sudo apt install clang-format-10
 
-      - name: Cache PIP 
+      - name: Cache PIP
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
-          key: ${{ hashFiles('setup.py') }}-${{ hashFiles('requirements_lint.txt') }}
+          key: ${{ hashFiles('setup.py') }}-${{ hashFiles('requirements_dev.txt') }}
 
-      - name: Install requirements 
+      - name: Install requirements
         run: |
-          python3 -m pip install --user -r requirements_lint.txt
-      
+          python3 -m pip install --user -r requirements_dev.txt
+
       - name: Check code format
         run: |
           python3 python/taichi/code_format.py

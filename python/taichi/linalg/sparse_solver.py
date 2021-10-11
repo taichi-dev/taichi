@@ -66,7 +66,7 @@ class SparseSolver:
             b (numpy.array or Field): The right-hand side of the linear systems.
 
         Returns:
-            The solution of linear systems.
+            numpy.array: The solution of linear systems.
         """
         if isinstance(b, taichi.lang.Field):
             return self.solver.solve(b.to_numpy())
@@ -79,6 +79,6 @@ class SparseSolver:
         """Check if the linear systems are solved successfully.
 
         Returns:
-            Whether the solving process succeeded.
+            bool: True if the solving process succeeded, False otherwise.
         """
         return self.solver.info()

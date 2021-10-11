@@ -1,9 +1,6 @@
 #pragma once
 
-#include <volk.h>
-#define VK_NO_PROTOTYPES
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
+#include "taichi/backends/vulkan/vulkan_common.h"
 
 #include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
 

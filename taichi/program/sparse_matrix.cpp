@@ -118,5 +118,9 @@ float32 SparseMatrix::get_element(int row, int col) {
   return matrix_.coeff(row, col);
 }
 
+void SparseMatrix::set_element(int row, int col, float32 value) {
+  matrix_.coeffRef(row, col) = value;
+}
+
 }  // namespace lang
 }  // namespace taichi

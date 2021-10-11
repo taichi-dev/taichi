@@ -1,6 +1,7 @@
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.field import Field
+from taichi.type.primitive_types import f32
 
 
 class SparseMatrix:
@@ -13,7 +14,7 @@ class SparseMatrix:
         m (int): the second dimension of a sparse matrix.
         sm (SparseMatrix): another sparse matrix that will be built from.
     """
-    def __init__(self, n=None, m=None, sm=None):
+    def __init__(self, n=None, m=None, sm=None, dtype=f32):
         if sm is None:
             self.n = n
             self.m = m if m else n
@@ -106,6 +107,9 @@ class SparseMatrix:
     def __getitem__(self, indices):
         return self.matrix.get_element(indices[0], indices[1])
 
+    def __setitem__(self, indices, value):
+        self.matrix.set_element(indices[0], indices[1], value)
+
     def __str__(self):
         """Python scope matrix print support."""
         return self.matrix.to_string()
@@ -124,7 +128,11 @@ class SparseMatrixBuilder:
         num_cols (int): the second dimension of a sparse matrix.
         max_num_triplets (int): the maximum number of triplets.
     """
-    def __init__(self, num_rows=None, num_cols=None, max_num_triplets=0):
+    def __init__(self,
+                 num_rows=None,
+                 num_cols=None,
+                 max_num_triplets=0,
+                 dtype=f32):
         self.num_rows = num_rows
         self.num_cols = num_cols if num_cols else num_rows
         if num_rows is not None:
@@ -139,7 +147,7 @@ class SparseMatrixBuilder:
         """Print the triplets stored in the builder"""
         self.ptr.print_triplets()
 
-    def build(self):
+    def build(self, dtype=f32, format='CSR'):
         """Create a sparse matrix using the triplets"""
         sm = self.ptr.build()
         return SparseMatrix(sm=sm)

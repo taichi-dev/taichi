@@ -59,6 +59,8 @@ file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal
 file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/opengl/*.cpp" "taichi/backends/opengl/shaders/*")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
 file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "taichi/backends/vulkan/shaders/*" "external/SPIRV-Reflect/spirv_reflect.c")
+file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
+
 
 file(GLOB TAICHI_GGUI_SOURCE
     "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"  "taichi/ui/*/*/*/*.cpp" "taichi/ui/*/*/*/*/*.cpp"
@@ -96,6 +98,8 @@ list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CPU_SOURCE})
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_WASM_SOURCE})
+list(APPEND TAICHI_CORE_SOURCE ${TAICHI_INTEROP_SOURCE})
+
 
 if (TI_WITH_CUDA)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")

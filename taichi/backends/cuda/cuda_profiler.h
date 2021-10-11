@@ -24,7 +24,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
  public:
   KernelProfilerCUDA(bool enable);
 
-  void reinit_with_metrics(const std::vector<std::string> &metrics) override;
+  bool reinit_with_metrics(const std::vector<std::string> metrics) override;
   void trace(KernelProfilerBase::TaskHandle &task_handle,
              const std::string &task_name) override;
   void sync() override;
@@ -43,6 +43,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
   std::unique_ptr<CuptiToolkit> cupti_toolkit_{nullptr};
   // if(tool_ == ProfilingToolkit::event) cupti_toolkit_ = nullptr
   // TODO : switch profiling toolkit at runtime
+  std::vector<std::string> metric_list_;
+  uint32_t records_size_after_sync_{0};
 };
 
 // default profiling toolkit

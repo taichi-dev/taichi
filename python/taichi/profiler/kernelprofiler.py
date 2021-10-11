@@ -52,7 +52,7 @@ class KernelProfiler:
     """
     def __init__(self):
         self._profiling_mode = False
-        self._metric_list = []
+        self._metric_list = [default_cupti_metrics]
         self._total_time_ms = 0.0
         self._traced_records = []
         self._statistical_results = {}

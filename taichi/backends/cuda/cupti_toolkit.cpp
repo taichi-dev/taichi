@@ -715,6 +715,7 @@ bool CuptiToolkit::deinit_cupti() {
 }
 
 bool CuptiToolkit::update_record(
+    uint32_t records_size_after_sync,
     std::vector<KernelProfileTracedRecord> &traced_records) {
   if (!cupti_image_.counter_data_image.size()) {
     TI_WARN("Counter Data Image is empty!");
@@ -821,7 +822,8 @@ bool CuptiToolkit::update_record(
         CuptiMetricsDefault::CUPTI_METRIC_KERNEL_ELAPSED_CLK_NUMS)];
     double core_frequency_hzs = gpu_values[static_cast<uint>(
         CuptiMetricsDefault::CUPTI_METRIC_CORE_FREQUENCY_HZS)];
-    traced_records[range_index].kernel_elapsed_time_in_ms =
+    traced_records[records_size_after_sync + range_index]
+        .kernel_elapsed_time_in_ms =
         kernel_elapsed_clk_nums / core_frequency_hzs * 1000;  // from s to ms
 
     // user selected metrics
@@ -829,7 +831,8 @@ bool CuptiToolkit::update_record(
         static_cast<uint>(CuptiMetricsDefault::CUPTI_METRIC_DEFAULT_TOTAL);
     uint metric_num = cupti_config_.metric_list.size();
     for (uint idx = user_metric_idx_begin; idx < metric_num; idx++) {
-      traced_records[range_index].metric_values.push_back(gpu_values[idx]);
+      traced_records[records_size_after_sync + range_index]
+          .metric_values.push_back(gpu_values[idx]);
     }
   }
   return true;
@@ -866,6 +869,7 @@ bool CuptiToolkit::deinit_cupti() {
   TI_NOT_IMPLEMENTED;
 }
 bool CuptiToolkit::update_record(
+    uint32_t records_size_after_sync,
     std::vector<KernelProfileTracedRecord> &traced_records) {
   TI_NOT_IMPLEMENTED;
 }

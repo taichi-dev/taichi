@@ -73,7 +73,7 @@ class DefaultProfiler : public KernelProfilerBase {
   }
 
   void clear() override {
-    sync();
+    // sync(); //decoupled: trigger from the foront end
     total_time_ms_ = 0;
     traced_records_.clear();
     statistical_results_.clear();

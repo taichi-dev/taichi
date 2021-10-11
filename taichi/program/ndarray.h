@@ -23,20 +23,20 @@ class Ndarray {
   DataType dtype;
   std::vector<int> shape;
 
-  void set_item(std::vector<int> &key, int val);
-  int get_item(std::vector<int> &key) const;
+  void set_item(const std::vector<int> &key, uint64_t val);
+  uint64_t get_item(const std::vector<int> &key) const;
   intptr_t get_data_ptr_as_int() const;
-  int get_element_size() const;
-  int get_nelement() const;
+  std::size_t get_element_size() const;
+  std::size_t get_nelement() const;
 
  private:
   Program *program_{nullptr};
-  int *data_ptr_{nullptr};
-  int nelement_{1};
-  int element_size_{1};
+  uint64_t *data_ptr_{nullptr};
+  std::size_t nelement_{1};
+  std::size_t element_size_{1};
   LlvmProgramImpl *prog_{nullptr};
 
-  int get_linear_index(std::vector<int> &key) const;
+  int get_linear_index(const std::vector<int> &key) const;
 };
 
 }  // namespace lang

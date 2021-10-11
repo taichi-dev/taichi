@@ -492,7 +492,7 @@ class Kernel:
                     if isinstance(v, Ndarray):
                         v = v.arr
                     has_external_arrays = True
-                    use_torch = self.runtime.prog.config.use_torch
+                    ndarray_use_torch = self.runtime.prog.config.ndarray_use_torch
                     has_torch = util.has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
@@ -502,7 +502,7 @@ class Kernel:
                         launch_ctx.set_arg_nparray(actual_argument_slot,
                                                    int(tmp.ctypes.data),
                                                    tmp.nbytes)
-                    elif use_torch:
+                    elif ndarray_use_torch:
 
                         def get_call_back(u, v):
                             def call_back():

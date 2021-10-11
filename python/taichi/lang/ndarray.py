@@ -15,7 +15,7 @@ class Ndarray:
         shape (Tuple[int]): Shape of the torch tensor.
     """
     def __init__(self, dtype, shape):
-        if impl.current_cfg().use_torch:
+        if impl.current_cfg().ndarray_use_torch:
             assert has_pytorch(
             ), "PyTorch must be available if you want to create a Taichi ndarray."
             import torch
@@ -83,7 +83,7 @@ class Ndarray:
         Args:
             val (Union[int, float]): Value to fill.
         """
-        if impl.current_cfg().use_torch:
+        if impl.current_cfg().ndarray_use_torch:
             self.arr.fill_(val)
         else:
             from taichi.lang.meta import fill_ndarray
@@ -96,7 +96,7 @@ class Ndarray:
         Returns:
             numpy.ndarray: The result numpy array.
         """
-        if impl.current_cfg().use_torch:
+        if impl.current_cfg().ndarray_use_torch:
             return self.arr.cpu().numpy()
         else:
             import numpy as np
@@ -120,7 +120,7 @@ class Ndarray:
             raise ValueError(
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
-        if impl.current_cfg().use_torch:
+        if impl.current_cfg().ndarray_use_torch:
             import torch
             self.arr = torch.from_numpy(arr).to(self.arr.dtype)
         else:
@@ -146,14 +146,14 @@ class ScalarNdarray(Ndarray):
 
     @python_scope
     def __setitem__(self, key, value):
-        if impl.current_cfg().use_torch or impl.current_cfg().arch == _ti_core.Arch.x64:
+        if impl.current_cfg().ndarray_use_torch or impl.current_cfg().arch == _ti_core.Arch.x64:
             self.arr.__setitem__(key, value)
         else:
             raise NotImplementedError()
 
     @python_scope
     def __getitem__(self, key):
-        if impl.current_cfg().use_torch or impl.current_cfg().arch == _ti_core.Arch.x64:
+        if impl.current_cfg().ndarray_use_torch or impl.current_cfg().arch == _ti_core.Arch.x64:
             return self.arr.__getitem__(key)
         else:
             raise NotImplementedError()
@@ -177,11 +177,11 @@ class NdarrayHostAccess:
             self.indices = indices_first + indices_second
 
     def getter(self):
-        if not impl.current_cfg().use_torch:
+        if not impl.current_cfg().ndarray_use_torch:
             raise NotImplementedError()
         return self.arr[self.indices]
 
     def setter(self, value):
-        if not impl.current_cfg().use_torch:
+        if not impl.current_cfg().ndarray_use_torch:
             raise NotImplementedError()
         self.arr[self.indices] = value

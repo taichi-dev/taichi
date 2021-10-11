@@ -4,7 +4,7 @@ from taichi.lang.field import Field
 
 
 class SparseMatrix:
-    def __init__(self, n=None, m=None, sm=None):
+    def __init__(self, n=None, m=None, sm=None, dtype=None):
         if sm is None:
             self.n = n
             self.m = m if m else n
@@ -69,7 +69,7 @@ class SparseMatrix:
 
 
 class SparseMatrixBuilder:
-    def __init__(self, num_rows=None, num_cols=None, max_num_triplets=0):
+    def __init__(self, num_rows=None, num_cols=None, max_num_triplets=0, dtype=None):
         self.num_rows = num_rows
         self.num_cols = num_cols if num_cols else num_rows
         if num_rows is not None:
@@ -82,6 +82,6 @@ class SparseMatrixBuilder:
     def print_triplets(self):
         self.ptr.print_triplets()
 
-    def build(self):
+    def build(self, dtype=None, format='CSR'):
         sm = self.ptr.build()
         return SparseMatrix(sm=sm)

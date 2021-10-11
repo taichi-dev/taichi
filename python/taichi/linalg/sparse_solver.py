@@ -4,7 +4,7 @@ from taichi.linalg import SparseMatrix
 
 
 class SparseSolver:
-    def __init__(self, solver_type="LLT", ordering="AMD"):
+    def __init__(self, dtype=None, solver_type="LLT", ordering="AMD"):
         from taichi.lang.impl import get_runtime
         solver_type_list = ["LLT", "LDLT", "LU"]
         solver_ordering = ['AMD', 'COLAMD']

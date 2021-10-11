@@ -6,7 +6,7 @@ import tempfile
 import time
 from copy import deepcopy as _deepcopy
 
-import taichi.lang.linalg
+import taichi.lang.linalg_impl
 import taichi.lang.meta
 from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
@@ -515,7 +515,7 @@ def polar_decompose(A, dt=None):
     """Perform polar decomposition (A=UP) for arbitrary size matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
-    This is only a wrapper for :func:`taichi.lang.linalg.polar_decompose`.
+    This is only a wrapper for :func:`taichi.lang.linalg_impl.polar_decompose`.
 
     Args:
         A (ti.Matrix(n, n)): input nxn matrix `A`.
@@ -526,14 +526,14 @@ def polar_decompose(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    return taichi.lang.linalg.polar_decompose(A, dt)
+    return taichi.lang.linalg_impl.polar_decompose(A, dt)
 
 
 def svd(A, dt=None):
     """Perform singular value decomposition (A=USV^T) for arbitrary size matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
-    This is only a wrappers for :func:`taichi.lang.linalg.svd`.
+    This is only a wrappers for :func:`taichi.lang.linalg_impl.svd`.
 
     Args:
         A (ti.Matrix(n, n)): input nxn matrix `A`.
@@ -544,14 +544,14 @@ def svd(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    return taichi.lang.linalg.svd(A, dt)
+    return taichi.lang.linalg_impl.svd(A, dt)
 
 
 def eig(A, dt=None):
     """Compute the eigenvalues and right eigenvectors of a real matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
-    2D implementation refers to :func:`taichi.lang.linalg.eig2x2`.
+    2D implementation refers to :func:`taichi.lang.linalg_impl.eig2x2`.
 
     Args:
         A (ti.Matrix(n, n)): 2D Matrix for which the eigenvalues and right eigenvectors will be computed.
@@ -564,7 +564,7 @@ def eig(A, dt=None):
     if dt is None:
         dt = impl.get_runtime().default_fp
     if A.n == 2:
-        return taichi.lang.linalg.eig2x2(A, dt)
+        return taichi.lang.linalg_impl.eig2x2(A, dt)
     raise Exception("Eigen solver only supports 2D matrices.")
 
 
@@ -572,7 +572,7 @@ def sym_eig(A, dt=None):
     """Compute the eigenvalues and right eigenvectors of a real symmetric matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
-    2D implementation refers to :func:`taichi.lang.linalg.sym_eig2x2`.
+    2D implementation refers to :func:`taichi.lang.linalg_impl.sym_eig2x2`.
 
     Args:
         A (ti.Matrix(n, n)): Symmetric Matrix for which the eigenvalues and right eigenvectors will be computed.
@@ -586,7 +586,7 @@ def sym_eig(A, dt=None):
     if dt is None:
         dt = impl.get_runtime().default_fp
     if A.n == 2:
-        return taichi.lang.linalg.sym_eig2x2(A, dt)
+        return taichi.lang.linalg_impl.sym_eig2x2(A, dt)
     raise Exception("Symmetric eigen solver only supports 2D matrices.")
 
 

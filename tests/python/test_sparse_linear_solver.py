@@ -33,7 +33,7 @@ res = np.array([
 @ti.test(arch=ti.cpu)
 def test_sparse_LLT_solver(solver_type):
     n = 4
-    Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
     b = ti.field(ti.f32, shape=n)
 
     @ti.kernel

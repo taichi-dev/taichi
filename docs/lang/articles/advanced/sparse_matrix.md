@@ -118,6 +118,8 @@ print(f">>>> Element Access: A[0,0] = {A[0,0]}")
 # outputs:
 # >>>> Element Access: A[0,0] = 1.0
 ```
+
+# Sparse linear solver
 You may want to solve some linear equations using sparse matrices.
 Then, the following steps could help:
 1. Create a `solver` using `ti.SparseSolver(solver_type, ordering)`. Currently, the sparse solver supports `LLT`, `LDLT` and `LU` factorization types, and orderings including `AMD`, `COLAMD`
@@ -173,6 +175,7 @@ print(f">>>> Computation was successful?: {isSuccess}")
 # [0.5 0.  0.  0.5]
 # >>>> Computation was successful?: True
 ```
+# Examples
 
 Please have a look at our two demos for more information:
 + `examples/simulation/stable_fluid.py`: A 2D fluid simulation using a sparse Laplacian matrix to solve Poisson's pressure equation.

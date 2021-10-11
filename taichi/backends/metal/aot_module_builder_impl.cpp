@@ -3,7 +3,6 @@
 #include <fstream>
 
 #include "taichi/backends/metal/codegen_metal.h"
-#include "taichi/system/std_filesystem.h"
 
 namespace taichi {
 namespace lang {
@@ -19,34 +18,35 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
   ti_aot_data_.metadata = buffer_meta_data;
 }
 
-void AotModuleBuilderImpl::metalgen(const stdfs::path &dir,
+void AotModuleBuilderImpl::metalgen(const std::string &dir,
                                     const std::string &filename,
                                     const CompiledKernelData &k) const {
-  const stdfs::path mtl_path =
-      dir / fmt::format("{}_{}.metal", filename, k.kernel_name);
-  std::ofstream fs{mtl_path.string()};
+  const std::string mtl_path =
+      fmt::format("{}/{}_{}.metal", dir, filename, k.kernel_name);
+  std::ofstream fs{mtl_path};
   fs << k.source_code;
   fs.close();
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
-  const stdfs::path dir{output_dir};
-  const stdfs::path bin_path = dir / fmt::format("{}_metadata.tcb", filename);
-  write_to_binary_file(ti_aot_data_, bin_path.string());
+  const std::string bin_path =
+      fmt::format("{}/{}_metadata.tcb", output_dir, filename);
+  write_to_binary_file(ti_aot_data_, bin_path);
   // The txt file is mostly for debugging purpose.
-  const stdfs::path txt_path = dir / fmt::format("{}_metadata.txt", filename);
+  const std::string txt_path =
+      fmt::format("{}/{}_metadata.txt", output_dir, filename);
   TextSerializer ts;
   ts("taichi aot data", ti_aot_data_);
-  ts.write_to_file(txt_path.string());
+  ts.write_to_file(txt_path);
 
   for (const auto &k : ti_aot_data_.kernels) {
-    metalgen(dir, filename, k);
+    metalgen(output_dir, filename, k);
   }
 
   for (const auto &k : ti_aot_data_.tmpl_kernels) {
     for (auto &ki : k.kernel_tmpl_map) {
-      metalgen(dir, filename, ki.second);
+      metalgen(output_dir, filename, ki.second);
     }
   }
 }

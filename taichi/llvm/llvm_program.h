@@ -1,5 +1,6 @@
 #pragma once
 #include "taichi/system/snode_tree_buffer_manager.h"
+#include "taichi/system/ndarray_buffer_manager.h"
 #include "taichi/inc/constants.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/common/logging.h"
@@ -88,6 +89,9 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void finalize();
 
+  uint8_t *initialize_llvm_runtime_ndarray(std::size_t size,
+                                           uint64 *result_buffer);
+
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
       const std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
@@ -136,6 +140,7 @@ class LlvmProgramImpl : public ProgramImpl {
   std::unique_ptr<ThreadPool> thread_pool{nullptr};
   std::unique_ptr<Runtime> runtime_mem_info{nullptr};
   std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
+  std::unique_ptr<NdarrayBufferManager> ndarray_buffer_manager{nullptr};
   void *llvm_runtime{nullptr};
   void *preallocated_device_buffer{nullptr};  // TODO: move to memory allocator
 

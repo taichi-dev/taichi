@@ -30,10 +30,11 @@ class Ndarray {
   int get_nelement() const;
 
  private:
-  Program *program;
-  int *data_ptr;
-  int nelement;
-  int element_size;
+  Program *program_{nullptr};
+  int *data_ptr_{nullptr};
+  int nelement_{1};
+  int element_size_{1};
+  LlvmProgramImpl *prog_{nullptr};
 
   int get_linear_index(std::vector<int> &key) const;
 };

@@ -7,47 +7,36 @@ namespace lang {
 Ndarray::Ndarray(Program *prog,
                  const DataType type,
                  const std::vector<int> &shape)
-    : program(prog),
+    : program_(prog),
       dtype(type),
       shape(shape),
-      data_ptr(nullptr),
-      nelement(1),
-      element_size(1) {
-  LlvmProgramImpl *prog_ = program->get_llvm_program_impl();
-  TaichiLLVMContext *tlctx = prog_->get_llvm_context(program->config.arch);
-
-  nelement = std::accumulate(std::begin(shape), std::end(shape), 1,
-                             std::multiplies<>());
-  element_size = data_type_size(dtype);
-  auto *const runtime_jit = tlctx->runtime_jit_module;
-  runtime_jit->call<void *, std::size_t, std::size_t>(
-      "runtime_memory_allocate_aligned", prog_->get_llvm_runtime(),
-      nelement * element_size, 1);
-
-  data_ptr = prog_->fetch_result<int *>(taichi_result_buffer_runtime_query_id,
-                                        program->result_buffer);
+      data_ptr_(nullptr),
+      nelement_(std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>())),
+      element_size_(data_type_size(dtype)) {
+  prog_ = program_->get_llvm_program_impl();
+  data_ptr_ = (int*)prog_->initialize_llvm_runtime_ndarray(nelement_ * element_size_, program_->result_buffer);
 }
 
 void Ndarray::set_item(std::vector<int> &key, int val) {
   int pos = get_linear_index(key);
-  data_ptr[pos] = val;
+  data_ptr_[pos] = val;
 }
 
 int Ndarray::get_item(std::vector<int> &key) const {
   int pos = get_linear_index(key);
-  return data_ptr[pos];
+  return data_ptr_[pos];
 }
 
 intptr_t Ndarray::get_data_ptr_as_int() const {
-  return reinterpret_cast<std::intptr_t>(data_ptr);
+  return reinterpret_cast<std::intptr_t>(data_ptr_);
 }
 
 int Ndarray::get_element_size() const {
-  return element_size;
+  return element_size_;
 }
 
 int Ndarray::get_nelement() const {
-  return nelement;
+  return nelement_;
 }
 
 int Ndarray::get_linear_index(std::vector<int> &key) const {

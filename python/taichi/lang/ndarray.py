@@ -2,7 +2,9 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.util import (cook_dtype, has_pytorch, python_scope,
-                              to_pytorch_type, to_taichi_type)
+                              to_pytorch_type, to_taichi_type, to_numpy_type)
+
+import taichi as ti
 
 
 class Ndarray:
@@ -81,7 +83,11 @@ class Ndarray:
         Args:
             val (Union[int, float]): Value to fill.
         """
-        self.arr.fill_(val)
+        if impl.current_cfg().use_torch:
+            self.arr.fill_(val)
+        else:
+            from taichi.lang.meta import fill_ndarray
+            fill_ndarray(self, val)
 
     @python_scope
     def to_numpy(self):
@@ -90,7 +96,15 @@ class Ndarray:
         Returns:
             numpy.ndarray: The result numpy array.
         """
-        return self.arr.cpu().numpy()
+        if impl.current_cfg().use_torch:
+            return self.arr.cpu().numpy()
+        else:
+            import numpy as np
+            arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
+            from taichi.lang.meta import ndarray_to_ext_arr
+            ndarray_to_ext_arr(self, arr)
+            ti.sync()
+            return arr
 
     @python_scope
     def from_numpy(self, arr):
@@ -106,9 +120,15 @@ class Ndarray:
             raise ValueError(
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
-        import torch
-        self.arr = torch.from_numpy(arr).to(self.arr.dtype)
-
+        if impl.current_cfg().use_torch:
+            import torch
+            self.arr = torch.from_numpy(arr).to(self.arr.dtype)
+        else:
+            if hasattr(arr, 'contiguous'):
+                arr = arr.contiguous()
+            from taichi.lang.meta import ext_arr_to_ndarray
+            ext_arr_to_ndarray(arr, self)
+            ti.sync()
 
 class ScalarNdarray(Ndarray):
     """Taichi ndarray with scalar elements implemented with a torch tensor.
@@ -126,11 +146,17 @@ class ScalarNdarray(Ndarray):
 
     @python_scope
     def __setitem__(self, key, value):
-        self.arr.__setitem__(key, value)
+        if impl.current_cfg().use_torch or impl.current_cfg().arch == _ti_core.Arch.x64:
+            self.arr.__setitem__(key, value)
+        else:
+            raise NotImplementedError()
 
     @python_scope
     def __getitem__(self, key):
-        return self.arr.__getitem__(key)
+        if impl.current_cfg().use_torch or impl.current_cfg().arch == _ti_core.Arch.x64:
+            return self.arr.__getitem__(key)
+        else:
+            raise NotImplementedError()
 
     def __repr__(self):
         return '<ti.ndarray>'
@@ -151,7 +177,11 @@ class NdarrayHostAccess:
             self.indices = indices_first + indices_second
 
     def getter(self):
+        if not impl.current_cfg().use_torch:
+            raise NotImplementedError()
         return self.arr[self.indices]
 
     def setter(self, value):
+        if not impl.current_cfg().use_torch:
+            raise NotImplementedError()
         self.arr[self.indices] = value

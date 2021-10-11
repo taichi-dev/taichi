@@ -79,6 +79,7 @@ class CudaDevice : public Device {
   struct AllocInfo {
     void *ptr{nullptr};
     size_t size{0};
+    bool is_imported{false};
   };
 
   AllocInfo get_alloc_info(DeviceAllocation handle);

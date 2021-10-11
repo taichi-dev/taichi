@@ -21,6 +21,7 @@ DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
   }
 
   info.size = params.size;
+  info.is_imported = false;
 
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();
@@ -36,6 +37,7 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
   if (info.ptr == nullptr) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }
+  TI_ASSERT(!info.is_imported);
   CUDADriver::get_instance().mem_free(info.ptr);
   info.ptr = nullptr;
 }
@@ -44,6 +46,7 @@ DeviceAllocation CudaDevice::import_memory(void *ptr, size_t size) {
   AllocInfo info;
   info.ptr = ptr;
   info.size = size;
+  info.is_imported = true;
 
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();
@@ -55,5 +58,4 @@ DeviceAllocation CudaDevice::import_memory(void *ptr, size_t size) {
 
 }  // namespace cuda
 }  // namespace lang
-
 }  // namespace taichi

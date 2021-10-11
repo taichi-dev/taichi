@@ -6,6 +6,12 @@ To use the sparse matrix in taichi programs, you should follow these three steps
 2. Fill the `builder` with your matrices' data.
 3. Create sparse matrices from the `builder`.
 
+:::caution WARNING
+The sparse matrix is still under implementation. There are some limitations:
+- Only the CPU backend is supported.
+- The data type of sparse matrix is float32.
+- The storage format is column-major
+:::
 Here's an example:
 ```python
 import taichi as ti

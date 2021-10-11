@@ -61,6 +61,9 @@ class SparseMatrix:
     def __getitem__(self, indices):
         return self.matrix.get_element(indices[0], indices[1])
 
+    def __setitem__(self, indices, value):
+        self.matrix.set_element(indices[0], indices[1], value)
+
     def __str__(self):
         return self.matrix.to_string()
 

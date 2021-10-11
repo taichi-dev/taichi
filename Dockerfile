@@ -1,5 +1,5 @@
 # Taichi Dockerfile for development
-FROM nvidia/cudagl:11.4.1-devel-ubuntu20.04
+FROM nvidia/cudagl:11.2.2-devel-ubuntu20.04
 ENV NVIDIA_DRIVER_CAPABILITIES compute,graphics,utility
 ENV DEBIAN_FRONTEND=noninteractive
 LABEL maintainer="https://github.com/taichi-dev"

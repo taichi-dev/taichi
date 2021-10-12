@@ -12,8 +12,6 @@ from functools import wraps
 from pathlib import Path
 
 import numpy as np
-import pylint.lint
-import pytest
 import taichi.cc_compose
 import taichi.code_format
 import taichi.diagnose
@@ -664,6 +662,7 @@ class TaichiMain:
         else:
             if int(threads) > 1:
                 pytest_args += ['-n', str(threads)]
+        import pytest  # pylint: disable=C0415
         return int(pytest.main(pytest_args))
 
     @staticmethod
@@ -997,6 +996,7 @@ class TaichiMain:
 
         # http://pylint.pycqa.org/en/latest/user_guide/run.html
         # TODO: support redirect output to lint.log
+        import pylint  # pylint: disable=C0415
         pylint.lint.Run(options)
 
 

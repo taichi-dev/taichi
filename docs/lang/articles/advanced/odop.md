@@ -43,7 +43,7 @@ a.inc()
 
 Programmers used to define Taichi fields in `__init__` functions of `@ti.data_oriented` classes. With the new **Dynamic SNode** feature (released in `v0.8.0`), you can define Taichi fields **at any places** of Python-scope functions. For example,
 
-```python
+```python {21,25}
 import taichi as ti
 
 ti.init()
@@ -67,10 +67,10 @@ a = MyClass()
 a.allocate_temp(4)
 a.call_inc()
 a.call_inc()
-print(a.temp)
+print(a.temp)  # [2 2 2 2]
 a.allocate_temp(8)
 a.call_inc()
-print(a.temp)
+print(a.temp)  # [1 1 1 1 1 1 1 1]
 ```
 
 Another memory recycling example:
@@ -177,7 +177,7 @@ Common decorators that are pre-built in Python, `@staticmethod` and `@classmetho
 
 `staticmethod` example :
 
-```python
+```python {16}
 import taichi as ti
 
 ti.init()
@@ -200,8 +200,8 @@ class Array2D:
 
     @ti.kernel
     def inc(self):
-        for I in ti.grouped(self.val):
-            ti.atomic_add(self.val[I], self.increment)
+        for i, j in self.val:
+            ti.atomic_add(self.val[i, j], self.increment)
 
     @ti.kernel
     def inc2(self, increment: ti.i32):
@@ -246,7 +246,7 @@ for i in range(arr.n):
 ```
 
 `classmethod` example:
-```python
+```python {12}
 import taichi as ti
 
 ti.init(arch=ti.cuda)
@@ -272,6 +272,8 @@ class Counter:
         return ret
 
 a = Counter((0, 5))
+print(a.num())  # 5
 b = Counter((4, 10))
+print(a.num())  # 6
 print(b.num())  # 7
 ```

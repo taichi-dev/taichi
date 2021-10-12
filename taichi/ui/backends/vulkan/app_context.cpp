@@ -55,7 +55,7 @@ void AppContext::init(GLFWwindow *glfw_window, const AppConfig &config) {
   glfw_window_ = glfw_window;
   this->config = config;
 
-  if(config.ti_arch != Arch::vulkan){
+  if (config.ti_arch != Arch::vulkan) {
     EmbeddedVulkanDevice::Params evd_params;
     evd_params.additional_instance_extensions =
         get_required_instance_extensions();
@@ -69,30 +69,30 @@ void AppContext::init(GLFWwindow *glfw_window, const AppConfig &config) {
       }
       return surface;
     };
-    embedded_vulkan_device_ = std::make_unique<EmbeddedVulkanDevice>(evd_params);
+    embedded_vulkan_device_ =
+        std::make_unique<EmbeddedVulkanDevice>(evd_params);
+  } else {
+    vulkan_device_ = static_cast<VulkanDevice *>(
+        get_current_program().get_graphics_device());
   }
-  else{
-    vulkan_device_ = static_cast<VulkanDevice*>(get_current_program().get_graphics_device());
-  }
-  
 }
 
 taichi::lang::vulkan::VulkanDevice &AppContext::device() {
-  if(vulkan_device_){
+  if (vulkan_device_) {
     return *vulkan_device_;
   }
   return *(embedded_vulkan_device_->device());
 }
 
 const taichi::lang::vulkan::VulkanDevice &AppContext::device() const {
-  if(vulkan_device_){
+  if (vulkan_device_) {
     return *vulkan_device_;
   }
   return *(embedded_vulkan_device_->device());
 }
 
 void AppContext::cleanup() {
-  if(embedded_vulkan_device_){
+  if (embedded_vulkan_device_) {
     embedded_vulkan_device_.reset();
   }
 }

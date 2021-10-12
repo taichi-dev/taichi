@@ -7,7 +7,7 @@ using namespace taichi::lang::vulkan;
 namespace taichi {
 namespace lang {
 
-  namespace {
+namespace {
 std::vector<std::string> get_required_instance_extensions() {
   uint32_t glfw_ext_count = 0;
   const char **glfw_extensions;
@@ -69,17 +69,17 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   EmbeddedVulkanDevice::Params evd_params;
   evd_params.api_version = VulkanEnvSettings::kApiVersion();
   evd_params.additional_instance_extensions =
-        get_required_instance_extensions();
-    evd_params.additional_device_extensions = get_required_device_extensions();
-    evd_params.is_for_ui = true;
-    evd_params.surface_creator = [&](VkInstance instance) -> VkSurfaceKHR {
-      VkSurfaceKHR surface = VK_NULL_HANDLE;
-      if (glfwCreateWindowSurface(instance, glfw_window, nullptr, &surface) !=
-          VK_SUCCESS) {
-        throw std::runtime_error("failed to create window surface!");
-      }
-      return surface;
-    };
+      get_required_instance_extensions();
+  evd_params.additional_device_extensions = get_required_device_extensions();
+  evd_params.is_for_ui = true;
+  evd_params.surface_creator = [&](VkInstance instance) -> VkSurfaceKHR {
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+    if (glfwCreateWindowSurface(instance, glfw_window, nullptr, &surface) !=
+        VK_SUCCESS) {
+      throw std::runtime_error("failed to create window surface!");
+    }
+    return surface;
+  };
 
   embedded_device_ = std::make_unique<EmbeddedVulkanDevice>(evd_params);
 

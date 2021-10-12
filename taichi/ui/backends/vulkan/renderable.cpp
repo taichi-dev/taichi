@@ -38,6 +38,9 @@ void Renderable::init_buffers() {
 }
 
 void Renderable::update_data(const RenderableInfo &info) {
+  Program &program = get_current_program();
+  program.synchronize();
+
   int num_vertices = info.vbo.shape[0];
   int num_indices;
   if (info.indices.valid) {
@@ -59,15 +62,13 @@ void Renderable::update_data(const RenderableInfo &info) {
     init_buffers();
   }
 
-  Program &program = get_current_program();
   DevicePtr vbo_dev_ptr = get_device_ptr(&program, info.vbo.snode);
   uint64_t vbo_size = sizeof(Vertex) * num_vertices;
 
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
       vertex_buffer_.get_ptr(), vbo_dev_ptr, vbo_size);
   if (memcpy_cap == Device::MemcpyCapability::Direct) {
-    Device::memcpy_direct(vertex_buffer_.get_ptr(), vbo_dev_ptr,
-                          vbo_size);
+    Device::memcpy_direct(vertex_buffer_.get_ptr(), vbo_dev_ptr, vbo_size);
   } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
     Device::memcpy_via_staging(vertex_buffer_.get_ptr(),
                                staging_vertex_buffer_.get_ptr(), vbo_dev_ptr,
@@ -90,8 +91,6 @@ void Renderable::update_data(const RenderableInfo &info) {
       TI_NOT_IMPLEMENTED;
     }
   }
-
-  TI_INFO("done update data");
 }
 
 Pipeline &Renderable::pipeline() {

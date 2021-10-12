@@ -447,7 +447,7 @@ void VkRuntime::add_root_buffer(size_t root_buffer_size) {
   root_buffers_.push_back(std::move(new_buffer));
 }
 
-DevicePtr VkRuntime::get_snode_tree_device_ptr(int tree_id){
+DevicePtr VkRuntime::get_snode_tree_device_ptr(int tree_id) {
   return root_buffers_[tree_id]->get_ptr();
 }
 

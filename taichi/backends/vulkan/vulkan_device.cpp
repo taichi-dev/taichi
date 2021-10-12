@@ -765,18 +765,21 @@ void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) {
       (VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT |
        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 
-  vkCmdPipelineBarrier(
-      buffer_->buffer,
-      /*srcStageMask=*/
-      VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT 
-      | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-      /*dstStageMask=*/VK_PIPELINE_STAGE_TRANSFER_BIT |  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
-      | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-      /*srcStageMask=*/0, /*memoryBarrierCount=*/0, nullptr,
-      /*bufferMemoryBarrierCount=*/1,
-      /*pBufferMemoryBarriers=*/&barrier,
-      /*imageMemoryBarrierCount=*/0,
-      /*pImageMemoryBarriers=*/nullptr);
+  vkCmdPipelineBarrier(buffer_->buffer,
+                       /*srcStageMask=*/
+                       VK_PIPELINE_STAGE_TRANSFER_BIT |
+                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
+                           VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                           VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                       /*dstStageMask=*/VK_PIPELINE_STAGE_TRANSFER_BIT |
+                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
+                           VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                           VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                       /*srcStageMask=*/0, /*memoryBarrierCount=*/0, nullptr,
+                       /*bufferMemoryBarrierCount=*/1,
+                       /*pBufferMemoryBarriers=*/&barrier,
+                       /*imageMemoryBarrierCount=*/0,
+                       /*pImageMemoryBarriers=*/nullptr);
   buffer_->refs.push_back(buffer);
 }
 
@@ -1243,9 +1246,9 @@ void VulkanDevice::memcpy_internal(DevicePtr dst,
   // TODO: always create a queue specifically for transfer
   Stream *stream = get_compute_stream();
   std::unique_ptr<CommandList> cmd = stream->new_command_list();
-  //cmd->memory_barrier();
+  // cmd->memory_barrier();
   cmd->buffer_copy(dst, src, size);
-  //cmd->memory_barrier();
+  // cmd->memory_barrier();
   stream->submit_synced(cmd.get());
 }
 

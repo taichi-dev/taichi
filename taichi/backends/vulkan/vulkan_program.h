@@ -59,15 +59,15 @@ class VulkanProgramImpl : public ProgramImpl {
   }
 
   Device *get_compute_device() override {
-    if (vulkan_runtime_) {
-      return vulkan_runtime_->get_ti_device();
+    if (embedded_device_) {
+      return embedded_device_->device();
     }
     return nullptr;
   }
 
   Device *get_graphics_device() override {
-    if (vulkan_runtime_) {
-      return vulkan_runtime_->get_ti_device();
+    if (embedded_device_) {
+      return embedded_device_->device();
     }
     return nullptr;
   }

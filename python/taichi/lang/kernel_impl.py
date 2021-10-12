@@ -552,6 +552,7 @@ class Kernel:
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement())
                     else:
+
                         def get_call_back(u, v):
                             def call_back():
                                 u.copy_(v)

@@ -15,7 +15,6 @@ import numpy as np
 import pylint.lint
 import pytest
 import taichi.cc_compose
-import taichi.code_format
 import taichi.diagnose
 from colorama import Back, Fore, Style
 from taichi.core import ti_core as _ti_core
@@ -435,29 +434,12 @@ class TaichiMain:
     @register
     def format(self, arguments: list = sys.argv[2:]):
         """Reformat modified source files"""
-        parser = argparse.ArgumentParser(prog='ti format',
-                                         description=f"{self.format.__doc__}")
-        parser.add_argument(
-            'diff',
-            nargs='?',
-            type=str,
-            help="A commit hash that git can use to compare diff with")
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode: return args
-        taichi.code_format.main(diff=args.diff)
+        raise RuntimeError('Please run python misc/code_format.py instead')
 
     @register
     def format_all(self, arguments: list = sys.argv[2:]):
         """Reformat all source files"""
-        parser = argparse.ArgumentParser(
-            prog='ti format_all', description=f"{self.format_all.__doc__}")
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode: return args
-        taichi.code_format.main(all=True)
+        raise RuntimeError('Please run python misc/code_format.py instead')
 
     @staticmethod
     def _display_benchmark_regression(xd, yd, args):

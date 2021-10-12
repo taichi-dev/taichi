@@ -303,6 +303,10 @@ if (TI_WITH_VULKAN)
         find_package(Threads REQUIRED)
         target_link_libraries(${CORE_LIBRARY_NAME} Threads::Threads)
     endif()
+
+    message("Building with GLFW")
+    add_subdirectory(external/glfw)
+    target_link_libraries(${LIBRARY_NAME} glfw)
 endif ()
 
 # Optional dependencies

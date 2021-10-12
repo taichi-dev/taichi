@@ -110,7 +110,7 @@ print(a.y)  # [ 5. 13. 21. 29.]
 ```
 
 
-## Some workaround about Python
+## Integrating features from the Python classes
 
 ### Inheritance of data-oriented classes
 

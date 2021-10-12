@@ -545,8 +545,13 @@ class Kernel:
                         launch_ctx.set_arg_nparray(actual_argument_slot,
                                                    int(tmp.ctypes.data),
                                                    tmp.nbytes)
-                    elif ndarray_use_torch:
-
+                    elif not ndarray_use_torch:
+                        # Use ndarray's own memory allocator
+                        tmp = v
+                        launch_ctx.set_arg_nparray(
+                            actual_argument_slot, int(tmp.data_ptr()),
+                            tmp.element_size() * tmp.nelement())
+                    else:
                         def get_call_back(u, v):
                             def call_back():
                                 u.copy_(v)
@@ -571,11 +576,6 @@ class Kernel:
                                 gpu_v = v.cuda()
                                 tmp = gpu_v
                                 callbacks.append(get_call_back(v, gpu_v))
-                        launch_ctx.set_arg_nparray(
-                            actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement())
-                    else:
-                        tmp = v
                         launch_ctx.set_arg_nparray(
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement())

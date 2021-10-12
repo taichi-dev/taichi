@@ -1,8 +1,6 @@
 #include "taichi/ui/backends/vulkan/renderable.h"
 #include "taichi/ui/utils/utils.h"
 
-#include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
-
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -37,23 +35,6 @@ void Renderable::init_buffers() {
   create_storage_buffers();
 
   create_bindings();
-
-  if (app_context_->config.ti_arch == Arch::cuda) {
-    auto [vb_mem, vb_offset, vb_size] =
-        app_context_->device().get_vkmemory_offset_size(vertex_buffer_);
-
-    auto [ib_mem, ib_offset, ib_size] =
-        app_context_->device().get_vkmemory_offset_size(index_buffer_);
-
-    auto block_size = VulkanDevice::kMemoryBlockSize;
-
-    vertex_buffer_device_ptr_ =
-        (float *)get_memory_pointer(vb_mem, block_size, vb_offset, vb_size,
-                                    app_context_->device().vk_device());
-    index_buffer_device_ptr_ =
-        (int *)get_memory_pointer(ib_mem, block_size, ib_offset, ib_size,
-                                  app_context_->device().vk_device());
-  }
 }
 
 void Renderable::update_data(const RenderableInfo &info) {
@@ -76,42 +57,36 @@ void Renderable::update_data(const RenderableInfo &info) {
     init_buffers();
   }
 
-  if (info.vbo.field_source == FieldSource::TaichiCuda) {
-    cuda_memcpy(vertex_buffer_device_ptr_, (void *)info.vbo.data,
-                sizeof(Vertex) * num_vertices);
+  Program &program = get_current_program();
+  DevicePtr vbo_dev_ptr = get_device_ptr(&program, info.vbo.snode);
+  uint64_t vbo_size = sizeof(Vertex) * num_vertices;
 
-    if (info.indices.valid) {
-      indexed_ = true;
-      cuda_memcpy(index_buffer_device_ptr_, (int *)info.indices.data,
-                  num_indices * sizeof(int));
+  Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
+      vertex_buffer_.get_ptr(), vbo_dev_ptr, vbo_size);
+  if (memcpy_cap == Device::MemcpyCapability::Direct) {
+    Device::memcpy_direct(vertex_buffer_.get_ptr(), vbo_dev_ptr.get_ptr(),
+                          vbo_size);
+  } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
+    Device::memcpy_via_staging(vertex_buffer_.get_ptr(),
+                               staging_vertex_buffer_.get_ptr(), vbo_dev_ptr,
+                               vbo_size);
+  } else {
+    TI_NOT_IMPLEMENTED;
+  }
 
+  if (info.indices.valid) {
+    indexed_ = true;
+    DevicePtr ibo_dev_ptr = get_device_ptr(&program, info.indices.snode);
+    uint64_t ibo_size = num_indices * sizeof(int);
+    if (memcpy_cap == Device::MemcpyCapability::Direct) {
+      Device::memcpy_direct(index_buffer_.get_ptr(), ibo_dev_ptr, ibo_size);
+    } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
+      Device::memcpy_via_staging(index_buffer_.get_ptr(),
+                                 staging_index_buffer_.get_ptr(), ibo_dev_ptr,
+                                 ibo_size);
     } else {
-      indexed_ = false;
+      TI_NOT_IMPLEMENTED;
     }
-  } else if (info.vbo.field_source == FieldSource::TaichiX64) {
-    float *mapped_vbo =
-        (float *)app_context_->device().map(staging_vertex_buffer_);
-    memcpy(mapped_vbo, (void *)info.vbo.data, sizeof(Vertex) * num_vertices);
-    app_context_->device().unmap(staging_vertex_buffer_);
-
-    int *mapped_ibo = (int *)app_context_->device().map(staging_index_buffer_);
-    if (info.indices.valid) {
-      indexed_ = true;
-      memcpy(mapped_ibo, (int *)info.indices.data, num_indices * sizeof(int));
-    } else {
-      indexed_ = false;
-    }
-    app_context_->device().unmap(staging_index_buffer_);
-
-    auto stream = app_context_->device().get_graphics_stream();
-    auto cmd_list = stream->new_command_list();
-    cmd_list->buffer_copy(vertex_buffer_.get_ptr(0),
-                          staging_vertex_buffer_.get_ptr(0),
-                          config_.vertices_count * sizeof(Vertex));
-    cmd_list->buffer_copy(index_buffer_.get_ptr(0),
-                          staging_index_buffer_.get_ptr(0),
-                          config_.indices_count * sizeof(int));
-    stream->submit_synced(cmd_list.get());
   }
 }
 

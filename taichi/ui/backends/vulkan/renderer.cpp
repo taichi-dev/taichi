@@ -1,9 +1,6 @@
 #include "renderer.h"
 #include "taichi/ui/utils/utils.h"
 
-#include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
-#include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
-
 TI_UI_NAMESPACE_BEGIN
 
 namespace vulkan {
@@ -109,10 +106,6 @@ void Renderer::prepare_for_next_frame() {
 
 void Renderer::draw_frame(Gui *gui) {
   uint32_t image_index = 0;
-
-  if (app_context_.config.ti_arch == Arch::cuda) {
-    CUDADriver::get_instance().stream_synchronize(nullptr);
-  }
 
   auto stream = app_context_.device().get_graphics_stream();
   auto cmd_list = stream->new_command_list();

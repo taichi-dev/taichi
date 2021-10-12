@@ -1,6 +1,5 @@
 #include "set_image.h"
-#include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
-#include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
+
 #include "taichi/ui/utils/utils.h"
 
 TI_UI_NAMESPACE_BEGIN
@@ -44,45 +43,35 @@ void SetImage::update_data(const SetImageInfo &info) {
   app_context_->device().image_transition(texture_, ImageLayout::shader_read,
                                           ImageLayout::transfer_dst);
 
+  Program &program = get_current_program();
+  DevicePtr img_dev_ptr = get_device_ptr(&program, img.snode);
+  uint64_t img_size = pixels * 4;
+
+  Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
+      gpu_staging_buffer_.get_ptr(), img_dev_ptr, img_size);
+  if (memcpy_cap == Device::MemcpyCapability::Direct) {
+    Device::memcpy_direct(gpu_staging_buffer_.get_ptr(), img_dev_ptr, img_size);
+  } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
+    Device::memcpy_via_staging(gpu_staging_buffer_.get_ptr(),
+                               cpu_staging_buffer_.get_ptr(), img_dev_ptr,
+                               img_size);
+  } else {
+    TI_NOT_IMPLEMENTED;
+  }
+
   BufferImageCopyParams copy_params;
   // these are flipped because taichi is y-major and vulkan is x-major
   copy_params.image_extent.x = height;
   copy_params.image_extent.y = width;
 
-  if (img.field_source == FieldSource::TaichiCuda) {
-    unsigned char *mapped = device_ptr_;
+  auto stream = app_context_->device().get_graphics_stream();
+  auto cmd_list = stream->new_command_list();
+  cmd_list->buffer_to_image(texture_, gpu_staging_buffer_.get_ptr(0),
+                            ImageLayout::transfer_dst, copy_params);
 
-    cuda_memcpy(mapped, (unsigned char *)img.data, pixels * 4);
-
-    auto stream = app_context_->device().get_graphics_stream();
-    auto cmd_list = stream->new_command_list();
-    cmd_list->buffer_to_image(texture_, gpu_staging_buffer_.get_ptr(0),
-                              ImageLayout::transfer_dst, copy_params);
-
-    cmd_list->image_transition(texture_, ImageLayout::transfer_dst,
-                               ImageLayout::shader_read);
-    stream->submit_synced(cmd_list.get());
-
-  } else if (img.field_source == FieldSource::TaichiX64) {
-    unsigned char *mapped =
-        (unsigned char *)app_context_->device().map(cpu_staging_buffer_);
-
-    memcpy(mapped, (unsigned char *)img.data, pixels * 4);
-
-    app_context_->device().unmap(cpu_staging_buffer_);
-
-    auto stream = app_context_->device().get_graphics_stream();
-    auto cmd_list = stream->new_command_list();
-    cmd_list->buffer_to_image(texture_, cpu_staging_buffer_.get_ptr(0),
-                              ImageLayout::transfer_dst, copy_params);
-
-    cmd_list->image_transition(texture_, ImageLayout::transfer_dst,
-                               ImageLayout::shader_read);
-    stream->submit_synced(cmd_list.get());
-
-  } else {
-    throw std::runtime_error("unsupported field source");
-  }
+  cmd_list->image_transition(texture_, ImageLayout::transfer_dst,
+                             ImageLayout::shader_read);
+  stream->submit_synced(cmd_list.get());
 }
 
 SetImage::SetImage(AppContext *app_context) {
@@ -139,16 +128,6 @@ void SetImage::create_texture() {
                                                 AllocUsage::Uniform};
   gpu_staging_buffer_ =
       app_context_->device().allocate_memory(gpu_staging_buffer_params);
-
-  if (app_context_->config.ti_arch == Arch::cuda) {
-    auto [mem, offset, size] =
-        app_context_->device().get_vkmemory_offset_size(gpu_staging_buffer_);
-
-    auto block_size = VulkanDevice::kMemoryBlockSize;
-
-    device_ptr_ = (unsigned char *)get_memory_pointer(
-        mem, block_size, offset, size, app_context_->device().vk_device());
-  }
 }
 
 void SetImage::destroy_texture() {

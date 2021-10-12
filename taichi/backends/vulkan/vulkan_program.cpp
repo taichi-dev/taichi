@@ -59,28 +59,33 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
-  glfwInit();
-  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
-  // GL context needs a window (There's no true headless GL)
-  GLFWwindow *glfw_window =
-      glfwCreateWindow(1, 1, "Make OpenGL Context", nullptr, nullptr);
+  GLFWwindow *glfw_window = nullptr;
+  if (glfwInit()) {
+    // glfw init success
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
+    glfw_window =
+        glfwCreateWindow(1, 1, "Make OpenGL Context", nullptr, nullptr);
+  }
 
   EmbeddedVulkanDevice::Params evd_params;
   evd_params.api_version = VulkanEnvSettings::kApiVersion();
-  evd_params.additional_instance_extensions =
-      get_required_instance_extensions();
-  evd_params.additional_device_extensions = get_required_device_extensions();
-  evd_params.is_for_ui = true;
-  evd_params.surface_creator = [&](VkInstance instance) -> VkSurfaceKHR {
-    VkSurfaceKHR surface = VK_NULL_HANDLE;
-    if (glfwCreateWindowSurface(instance, glfw_window, nullptr, &surface) !=
-        VK_SUCCESS) {
-      throw std::runtime_error("failed to create window surface!");
-    }
-    return surface;
-  };
+  if (glfw_window) {
+    // then we should be able to create a device with graphics abilities
+    evd_params.additional_instance_extensions =
+        get_required_instance_extensions();
+    evd_params.additional_device_extensions = get_required_device_extensions();
+    evd_params.is_for_ui = true;
+    evd_params.surface_creator = [&](VkInstance instance) -> VkSurfaceKHR {
+      VkSurfaceKHR surface = VK_NULL_HANDLE;
+      if (glfwCreateWindowSurface(instance, glfw_window, nullptr, &surface) !=
+          VK_SUCCESS) {
+        throw std::runtime_error("failed to create window surface!");
+      }
+      return surface;
+    };
+  }
 
   embedded_device_ = std::make_unique<EmbeddedVulkanDevice>(evd_params);
 

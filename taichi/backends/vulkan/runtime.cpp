@@ -389,6 +389,10 @@ void VkRuntime::launch_kernel(KernelHandle handle, Context *host_ctx) {
 }
 
 void VkRuntime::synchronize() {
+  if (current_cmdlist_) {
+    device_->get_compute_stream()->submit(current_cmdlist_.get());
+    current_cmdlist_ = nullptr;
+  }
   device_->get_compute_stream()->command_sync();
 }
 

@@ -186,7 +186,7 @@ endif()
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
-if (TI_WITH_OPENGL)
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
   set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -303,10 +303,6 @@ if (TI_WITH_VULKAN)
         find_package(Threads REQUIRED)
         target_link_libraries(${CORE_LIBRARY_NAME} Threads::Threads)
     endif()
-
-    message("Building with GLFW")
-    add_subdirectory(external/glfw)
-    target_link_libraries(${LIBRARY_NAME} glfw)
 endif ()
 
 # Optional dependencies

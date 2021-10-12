@@ -273,5 +273,5 @@ class Counter:
 
 a = Counter((0, 5))
 b = Counter((4, 10))
-print(b.num())
+print(b.num())  # 7
 ```

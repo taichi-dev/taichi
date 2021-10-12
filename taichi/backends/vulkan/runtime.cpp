@@ -9,9 +9,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include "taichi/util/environ_config.h"
-
-#include "taichi/math/arithmetic.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST

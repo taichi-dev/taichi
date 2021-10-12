@@ -21,25 +21,26 @@ std::vector<std::string> get_required_instance_extensions() {
 
   // EmbeddedVulkanDevice will check that these are supported
   extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+#if TI_WITH_CUDA
+  // so that we can do cuda-vk interop
   extensions.push_back(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
-  extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
   extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-
+#endif  // TI_WITH_CUDA
   return extensions;
 }
 
 std::vector<std::string> get_required_device_extensions() {
-  static std::vector<std::string> extensions{
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-      VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
-      VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
+  static std::vector<std::string> extensions {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+#if TI_WITH_CUDA
+        // so that we can do cuda-vk interop
+        VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
 #ifdef _WIN64
-      VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
-      VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
+        VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
 #else
-      VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
-      VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
+        VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
 #endif
+#endif  // TI_WITH_CUDA
   };
 
   return extensions;

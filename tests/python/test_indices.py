@@ -14,7 +14,7 @@ def test_indices():
 
     mapping_b = b.snode.physical_index_position()
 
-    assert mapping_b == {0: 1, 1: 0}
+    assert mapping_b == {0: 0, 1: 1}
     # Note that b is column-major:
     # the virtual first index exposed to the user comes second in memory layout.
 

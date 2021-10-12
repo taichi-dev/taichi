@@ -73,6 +73,8 @@ SNode &SNode::create_node(std::vector<Axis> axes,
       new_node.physical_index_position[new_node.num_active_indices++] = i;
     }
   }
+  std::sort(new_node.physical_index_position,
+            new_node.physical_index_position + new_node.num_active_indices);
   // infer extractors
   int acc_shape = 1;
   for (int i = taichi_max_num_indices - 1; i >= 0; i--) {

@@ -144,7 +144,25 @@ class Func:
         func_body = tree.body[0]
         func_body.decorator_list = []
 
-        visitor = ASTTransformerTotal(is_kernel=False, func=self)
+        local_vars = {}
+        global_vars = _get_global_vars(self.func)
+
+        for i, arg in enumerate(func_body.args.args):
+            anno = arg.annotation
+            if isinstance(anno, ast.Name):
+                global_vars[anno.id] = self.argument_annotations[i]
+
+        if isinstance(func_body.returns, ast.Name):
+            global_vars[func_body.returns.id] = self.return_type
+
+        # inject template parameters into globals
+        for i in self.template_slot_locations:
+            template_var_name = self.argument_names[i]
+            global_vars[template_var_name] = args[i]
+
+        global_vars["ti"] = ti
+
+        visitor = ASTTransformerTotal(is_kernel=False, func=self, globals=global_vars)
         return visitor.visit(tree, *args)
 
     def func_call_rvalue(self, key, args):

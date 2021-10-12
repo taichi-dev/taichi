@@ -2,6 +2,8 @@ import ast
 import collections.abc
 import warnings
 
+from collections import ChainMap
+
 from taichi.lang.ast_builder_utils import *
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
@@ -17,16 +19,83 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_Assign(ctx, node):
-        assert len(node.targets) == 1
-        node.targets[0] = build_ir(ctx, node.targets[0])
-        is_local = isinstance(node.targets[0], ast.Name)
         node.value = build_ir(ctx, node.value)
-        if is_local and ctx.is_creation(node.targets[0].id):
-            ctx.create_variable(node.targets[0].id,
-                                ti.expr_init(node.value.ptr))
+        node.targets = build_irs(ctx, node.targets)
+
+        is_static_assign = isinstance(
+            node.value, ast.Call) and ASTResolver.resolve_to(
+                node.value.func, ti.static, globals())
+        if is_static_assign:
+            return node
+
+        # Keep all generated assign statements and compose single one at last.
+        # The variable is introduced to support chained assignments.
+        # Ref https://github.com/taichi-dev/taichi/issues/2659.
+        for node_target in node.targets:
+            if isinstance(node_target, ast.Tuple):
+                    IRBuilder.build_assign_unpack(ctx, node, node_target)
+            else:
+                IRBuilder.build_assign_basic(ctx, node, node_target,
+                                                   node.value.ptr)
+        return node
+
+    @staticmethod
+    def build_assign_unpack(ctx, node, node_target):
+        """Build the unpack assignments like this: (target1, target2) = (value1, value2).
+        The function should be called only if the node target is a tuple.
+
+        Args:
+            ctx (ast_builder_utils.BuilderContext): The builder context.
+            node (ast.Assign): An assignment. targets is a list of nodes,
+            and value is a single node.
+            node_target (ast.Tuple): A list or tuple object. elts holds a
+            list of nodes representing the elements.
+        """
+
+        targets = node_target.elts
+
+        # Create
+        stmts = []
+
+        tmp_tuple = ti.expr_init_list(node.value.ptr, len(targets))
+        # Create a temp list and keep values in it, delete it after the initialization is finished.
+        # holder = parse_stmt('__tmp_tuple = ti.expr_init_list(0, '
+        #                     f'{len(targets)})')
+        # holder.value.args[0] = node.value
+
+        # stmts.append(holder)
+
+        # def tuple_indexed(i):
+        #     indexing = parse_stmt('__tmp_tuple[0]')
+        #     StmtBuilder.set_subscript_index(indexing.value, parse_expr(f"{i}"))
+        #     return indexing.value
+
+        # Generate assign statements for every target, then merge them into one.
+        for i, target in enumerate(targets):
+            stmts.append(
+                IRBuilder.build_assign_basic(ctx, node, target,
+                                               tmp_tuple[i]))
+        # stmts.append(parse_stmt('del __tmp_tuple'))
+        return node
+
+    @staticmethod
+    def build_assign_basic(ctx, node, target, value):
+        """Build basic assginment like this: target = value.
+
+         Args:
+            ctx (ast_builder_utils.BuilderContext): The builder context.
+            node (ast.Assign): An assignment. targets is a list of nodes,
+            and value is a single node.
+            target (ast.Name): A variable name. id holds the name as
+            a string.
+            value: A node representing the value.
+        """
+        is_local = isinstance(target, ast.Name)
+        if is_local and ctx.is_creation(target.id):
+            ctx.create_variable(target.id, ti.expr_init(value))
         else:
-            var = node.targets[0].ptr
-            var.assign(node.value.ptr)
+            var = target.ptr
+            var.assign(value)
         return node
 
     @staticmethod
@@ -55,12 +124,33 @@ class IRBuilder(Builder):
         return node
 
     @staticmethod
+    def build_keyword(ctx, node):
+        node.value = build_ir(ctx, node.value)
+        if node.arg is None:
+            node.ptr = node.value.ptr
+        else:
+            node.ptr = {node.arg: node.value.ptr}
+        return node
+
+    @staticmethod
+    def build_Starred(ctx, node):
+        node.value = build_ir(ctx, node.value)
+        node.ptr = node.value.ptr
+        return node
+
+    @staticmethod
     def build_Call(ctx, node):
-        # TODO: support for keyword arguments and arguments like *a, **b
         node.func = build_ir(ctx, node.func)
         node.args = build_irs(ctx, node.args)
-        args = [arg.ptr for arg in node.args]
-        node.ptr = node.func.ptr(*args)
+        node.keywords = build_irs(ctx, node.keywords)
+        args = []
+        for arg in node.args:
+            if isinstance(arg, ast.Starred):
+                args += arg.ptr
+            else:
+                args.append(arg.ptr)
+        keywords = dict(ChainMap(*[keyword.ptr for keyword in node.keywords]))
+        node.ptr = node.func.ptr(*args, **keywords)
         return node
 
     @staticmethod
@@ -207,8 +297,27 @@ class IRBuilder(Builder):
             ast.Div: lambda l, r: l / r,
             ast.FloorDiv: lambda l, r: l // r,
             ast.Mod: lambda l, r: l % r,
+            ast.Pow: lambda l, r: l ** r,
+            ast.LShift: lambda l, r: l << r,
+            ast.RShift: lambda l, r: l >> r,
+            ast.BitOr: lambda l, r: l | r,
+            ast.BitXor: lambda l, r: l ^ r,
+            ast.BitAnd: lambda l, r: l & r,
+            ast.MatMult: lambda l, r: l @ r,
         }.get(type(node.op))
         node.ptr = op(node.left.ptr, node.right.ptr)
+        return node
+
+    @staticmethod
+    def build_UnaryOp(ctx, node):
+        node.operand = build_ir(ctx, node.operand)
+        op = {
+            ast.UAdd: lambda l: l,
+            ast.USub: lambda l: -l,
+            ast.Not: lambda l: not l,
+            ast.Invert: lambda l: ~l,
+        }.get(type(node.op))
+        node.ptr = op(node.operand.ptr)
         return node
 
     @staticmethod
@@ -399,8 +508,6 @@ class IRBuilder(Builder):
 
         if is_grouped:
             pass
-
-
 #             template = '''
 # if 1:
 #     ___loop_var = 0
@@ -490,6 +597,11 @@ class IRBuilder(Builder):
         ti.core.begin_frontend_if_false()
         node.orelse = build_irs(ctx, node.orelse)
         ti.core.pop_scope()
+        return node
+
+    @staticmethod
+    def build_Expr(ctx, node):
+        node.value = build_ir(ctx, node.value)
         return node
 
 build_ir = IRBuilder()

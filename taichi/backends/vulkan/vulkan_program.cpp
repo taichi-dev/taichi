@@ -22,7 +22,7 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 
   vulkan::VkRuntime::Params params;
   params.host_result_buffer = *result_buffer_ptr;
-  params.device = embedded_device_->get_ti_device();
+  params.device = embedded_device_->device();
   vulkan_runtime_ = std::make_unique<vulkan::VkRuntime>(std::move(params));
 }
 

@@ -187,8 +187,6 @@ EmbeddedVulkanDevice::EmbeddedVulkanDevice(
   pick_physical_device();
   create_logical_device();
 
-  // TODO: Change the ownership hierarchy, the taichi Device class should be at
-  // the top level
   {
     VulkanDevice::Params params;
     params.instance = instance_;
@@ -215,10 +213,6 @@ EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
   }
   vkDestroyDevice(device_, kNoVkAllocCallbacks);
   vkDestroyInstance(instance_, kNoVkAllocCallbacks);
-}
-
-Device *EmbeddedVulkanDevice::get_ti_device() const {
-  return ti_device_.get();
 }
 
 void EmbeddedVulkanDevice::create_instance() {
@@ -555,8 +549,6 @@ void EmbeddedVulkanDevice::create_logical_device() {
   if (params_.is_for_ui) {
     vkGetDeviceQueue(device_, queue_family_indices_.graphics_family.value(), 0,
                      &graphics_queue_);
-    vkGetDeviceQueue(device_, queue_family_indices_.graphics_family.value(), 0,
-                     &present_queue_);
   }
 
   vkGetDeviceQueue(device_, queue_family_indices_.compute_family.value(), 0,

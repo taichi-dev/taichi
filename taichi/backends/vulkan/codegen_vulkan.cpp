@@ -825,7 +825,7 @@ class TaskCodegen : public IRVisitor {
     spirv::Value data = ir_->query_value(stmt->val->raw_name());
     spirv::Value val;
     if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      if (device_->get_cap(DeviceCapability::vk_has_atomic_float_add) &&
+      if (device_->get_cap(DeviceCapability::spirv_has_atomic_float_add) &&
           stmt->op_type == AtomicOpType::add && is_compiled_struct) {
         val = ir_->make_value(
             spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt), addr_ptr,
@@ -1024,7 +1024,7 @@ class TaskCodegen : public IRVisitor {
         task_attribs_.advisory_num_threads_per_group, 1, 1};
     ir_->set_work_group_size(group_size);
     std::vector<spirv::Value> buffers;
-    if (device_->get_cap(DeviceCapability::vk_spirv_version) > 0x10300) {
+    if (device_->get_cap(DeviceCapability::spirv_version) > 0x10300) {
       for (const auto &bb : task_attribs_.buffer_binds) {
         const auto it = buffer_value_map_.find(bb.buffer);
         if (it != buffer_value_map_.end()) {
@@ -1140,12 +1140,23 @@ class TaskCodegen : public IRVisitor {
     // For now, |total_invocs_name| is equal to |total_elems|. Once we support
     // dynamic range, they will be different.
     // https://www.khronos.org/opengl/wiki/Compute_Shader#Inputs
+
+    // HLSL & WGSL cross compilers do not support this builtin
+    /*
     spirv::Value total_invocs = ir_->cast(
         ir_->i32_type(),
         ir_->mul(ir_->get_num_work_groups(0),
                  ir_->uint_immediate_number(
                      ir_->u32_type(),
                      task_attribs_.advisory_num_threads_per_group, true)));
+                     */
+    const int group_x = (task_attribs_.advisory_total_num_threads +
+                         task_attribs_.advisory_num_threads_per_group - 1) /
+                        task_attribs_.advisory_num_threads_per_group;
+    spirv::Value total_invocs = ir_->uint_immediate_number(
+        ir_->i32_type(), group_x * task_attribs_.advisory_num_threads_per_group,
+        false);
+
     ir_->debug(spv::OpName, total_invocs, total_invocs_name);
 
     // Must get init label after making value(to make sure they are correct)
@@ -1379,12 +1390,15 @@ class KernelCodegen {
 
       // Enable to dump SPIR-V assembly of kernels
 #if 0
-       std::string spirv_asm;
-       spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
-      TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n",params_.ti_kernel_name, spirv_asm);
+      std::string spirv_asm;
+      spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
+      TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", params_.ti_kernel_name,
+              spirv_asm);
 
-      std::ofstream fout((params_.ti_kernel_name).c_str(), std::ios::binary | std::ios::out);
-      fout.write(reinterpret_cast<const char*>(task_res.spirv_code.data()), task_res.spirv_code.size() * sizeof(uint32_t));
+      std::ofstream fout((params_.ti_kernel_name).c_str(),
+                         std::ios::binary | std::ios::out);
+      fout.write(reinterpret_cast<const char *>(task_res.spirv_code.data()),
+                 task_res.spirv_code.size() * sizeof(uint32_t));
       fout.close();
 #endif
 

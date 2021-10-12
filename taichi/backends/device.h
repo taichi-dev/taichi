@@ -12,25 +12,27 @@ namespace lang {
 // Or the backend runtime itself
 // Capabilities are per-device
 enum class DeviceCapability : uint32_t {
+  // Vulkan Caps
   vk_api_version,
-  vk_spirv_version,
   vk_has_physical_features2,
-  vk_has_int8,
-  vk_has_int16,
-  vk_has_int64,
-  vk_has_float16,
-  vk_has_float64,
   vk_has_external_memory,
-  vk_has_atomic_i64,
-  vk_has_atomic_float,  // load, store, exchange
-  vk_has_atomic_float_add,
-  vk_has_atomic_float_minmax,
-  vk_has_atomic_float64,  // load, store, exchange
-  vk_has_atomic_float64_add,
-  vk_has_atomic_float64_minmax,
   vk_has_surface,
   vk_has_presentation,
-  vk_has_spv_variable_ptr,
+  // SPIR-V Caps
+  spirv_version,
+  spirv_has_int8,
+  spirv_has_int16,
+  spirv_has_int64,
+  spirv_has_float16,
+  spirv_has_float64,
+  spirv_has_atomic_i64,
+  spirv_has_atomic_float,  // load, store, exchange
+  spirv_has_atomic_float_add,
+  spirv_has_atomic_float_minmax,
+  spirv_has_atomic_float64,  // load, store, exchange
+  spirv_has_atomic_float64_add,
+  spirv_has_atomic_float64_minmax,
+  spirv_has_variable_ptr,
 };
 
 class Device;

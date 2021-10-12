@@ -76,9 +76,8 @@ class VulkanProgramImpl : public ProgramImpl {
     return vulkan_runtime_ ->get_snode_tree_device_ptr(tree_id);
   }
 
-  ~VulkanProgramImpl() {
-  }
-
+  ~VulkanProgramImpl();
+  
  private:
   std::unique_ptr<vulkan::EmbeddedVulkanDevice> embedded_device_{nullptr};
   std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;

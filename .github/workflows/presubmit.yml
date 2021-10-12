@@ -53,7 +53,7 @@ jobs:
 
       - name: Check code format
         run: |
-          python3 python/taichi/code_format.py
+          python3 misc/code_format.py
           git checkout -b _enforced_format
           git commit -am "enforce code format" || true
           # exit with 1 if there were differences:

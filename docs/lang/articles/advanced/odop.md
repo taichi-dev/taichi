@@ -106,7 +106,7 @@ a = Calc()
 for i in range(16):
     a.x[i] = i
 a.call_func()
-print(a.y)
+print(a.y)  # [ 5. 13. 21. 29.]
 ```
 
 
@@ -154,12 +154,12 @@ class DeviatedClass(DataOrientedClass):
 a = DeviatedClass()
 a.add(1)
 a.sub(1)
-print(a.count()) # Output: 0
+print(a.count())  # 0
 
 
 b = DataOrientedClass()
 b.add(2)
-print(b.count()) # Output: 1
+print(b.count())  # 1
 
 c = BaseClass()
 # c.add(3)
@@ -189,19 +189,19 @@ class Array2D:
         self.m = m
         self.val = ti.field(ti.f32)
         self.total = ti.field(ti.f32)
-        self.increment = increment
+        self.increment = float(increment)
         ti.root.dense(ti.ij, (self.n, self.m)).place(self.val)
         ti.root.place(self.total)
 
     @staticmethod
     @ti.func
     def clamp(x):  # Clamp to [0, 1)
-        return max(0, min(1 - 1e-6, x))
+        return max(0., min(1 - 1e-6, x))
 
     @ti.kernel
     def inc(self):
-        for i, j in self.val:
-            ti.atomic_add(self.val[i, j], self.increment)
+        for I in ti.grouped(self.val):
+            ti.atomic_add(self.val[I], self.increment)
 
     @ti.kernel
     def inc2(self, increment: ti.i32):
@@ -211,9 +211,9 @@ class Array2D:
     @ti.kernel
     def reduce(self):
         for i, j in self.val:
-            ti.atomic_add(self.total, self.val[i, j] * 4)
+            ti.atomic_add(self.total[None], self.val[i, j] * 4)
 
-arr = Array2D(128, 128, 3)
+arr = Array2D(2, 2, 3)
 
 double_total = ti.field(ti.f32, shape=())
 
@@ -221,20 +221,20 @@ ti.root.lazy_grad()
 
 arr.inc()
 arr.inc.grad()
-assert arr.val[3, 4] == 3
+print(arr.val[0, 0])  # 3
 arr.inc2(4)
-assert arr.val[3, 4] == 7
+print(arr.val[0, 0])  # 7
 
 with ti.Tape(loss=arr.total):
     arr.reduce()
 
 for i in range(arr.n):
     for j in range(arr.m):
-        assert arr.val.grad[i, j] == 4
+        print(arr.val.grad[i, j])  # 4
 
 @ti.kernel
 def double():
-    double_total[None] = 2 * arr.total
+    double_total[None] = 2 * arr.total[None]
 
 with ti.Tape(loss=double_total):
     arr.reduce()
@@ -242,7 +242,7 @@ with ti.Tape(loss=double_total):
 
 for i in range(arr.n):
     for j in range(arr.m):
-        assert arr.val.grad[i, j] == 8
+        print(arr.val.grad[i, j])  # 8
 ```
 
 `classmethod` example:

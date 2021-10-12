@@ -169,10 +169,13 @@ c = BaseClass()
 
 ### Python-built-in-decorators
 
-Common decorators that are pre-built in Python, `@staticmethod` and `@classmethod`, could decorate to a **Taichi kernel** in *data-oriented* classes.
+Common decorators that are pre-built in Python, `@staticmethod`[^1] and `@classmethod`[^2], could decorate to a **Taichi kernel** in *data-oriented* classes.
 
-:::caution
-`@property` decorator is not supported now. Would be fixed soon in `v0.8.2` release.
+[^1]: [Python built-in functions - staticmethod](https://docs.python.org/3/library/functions.html#staticmethod)
+[^2]: [Python built-in functions - classmethod](https://docs.python.org/3/library/functions.html#classmethod)
+
+:::note
+`@property` decorator is not supported now in the stable version. Would be fixed soon in the `v0.8.2` release. If in need, you can try it on the nightly version.
 :::
 
 `staticmethod` example :

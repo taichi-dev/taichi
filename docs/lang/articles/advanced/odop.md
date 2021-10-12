@@ -172,7 +172,7 @@ c = BaseClass()
 Common decorators that are pre-built in Python, `@staticmethod` and `@classmethod`, could decorate to a **Taichi kernel** in *data-oriented* classes.
 
 :::caution
-`@property` decorator is not supported now. Would be fixed soon.
+`@property` decorator is not supported now. Would be fixed soon in `v0.8.2` release.
 :::
 
 `staticmethod` example :

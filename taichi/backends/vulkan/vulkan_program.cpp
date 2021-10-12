@@ -65,8 +65,7 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
-    glfw_window =
-        glfwCreateWindow(1, 1, "Make OpenGL Context", nullptr, nullptr);
+    glfw_window = glfwCreateWindow(1, 1, "Dummy Window", nullptr, nullptr);
   }
 
   EmbeddedVulkanDevice::Params evd_params;

@@ -3,9 +3,10 @@ import ast
 import astor
 from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver
+from taichi.lang.ast_builder_utils import BuilderContext, IRBuilderContext
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.ast_builder_utils import IRBuilderContext
 from taichi.lang.ir_builder import build_ir
+from taichi.lang.stmt_builder import build_stmt
 
 import taichi as ti
 
@@ -34,18 +35,30 @@ class ASTTransformerTotal(object):
         print(astor.to_source(tree.body[0], indent_with='    '), flush=True)
 
     def visit(self, tree, *arguments):
-        ctx = IRBuilderContext(func=self.func,
-                               excluded_parameters=self.excluded_parameters,
-                               is_kernel=self.is_kernel,
-                               arg_features=self.arg_features,
-                               globals=self.globals,
-                               argument_data=arguments)
-        # Convert Python AST to Python code that generates Taichi C++ AST.
+        if impl.get_runtime().experimental_ast_refactor:
+            ctx = IRBuilderContext(
+                func=self.func,
+                excluded_parameters=self.excluded_parameters,
+                is_kernel=self.is_kernel,
+                arg_features=self.arg_features,
+                globals=self.globals,
+                argument_data=arguments)
+            # Convert Python AST to Python code that generates Taichi C++ AST.
 
-        tree = build_ir(ctx, tree)
+            tree = build_ir(ctx, tree)
+            ast.fix_missing_locations(tree)
+            self.pass_Checks.visit(tree)  # does not modify the AST
+            return ctx.return_data
+        self.print_ast(tree, 'Initial AST')
+        ctx = BuilderContext(func=self.func,
+                             excluded_parameters=self.excluded_parameters,
+                             is_kernel=self.is_kernel,
+                             arg_features=self.arg_features)
+        # Convert Python AST to Python code that generates Taichi C++ AST.
+        tree = build_stmt(ctx, tree)
         ast.fix_missing_locations(tree)
+        self.print_ast(tree, 'Preprocessed')
         self.pass_Checks.visit(tree)  # does not modify the AST
-        return ctx.return_data
 
 
 class ASTTransformerBase(ast.NodeTransformer):

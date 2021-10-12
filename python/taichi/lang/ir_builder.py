@@ -1,11 +1,10 @@
 import ast
 import collections.abc
 import warnings
-
 from collections import ChainMap
 
-from taichi.lang.ast_builder_utils import *
 from taichi.lang.ast.symbol_resolver import ASTResolver
+from taichi.lang.ast_builder_utils import *
 from taichi.lang.exception import TaichiSyntaxError
 
 import taichi as ti
@@ -19,6 +18,7 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_Assign(ctx, node):
+        print("assigning")
         node.value = build_ir(ctx, node.value)
         node.targets = build_irs(ctx, node.targets)
 
@@ -33,10 +33,10 @@ class IRBuilder(Builder):
         # Ref https://github.com/taichi-dev/taichi/issues/2659.
         for node_target in node.targets:
             if isinstance(node_target, ast.Tuple):
-                    IRBuilder.build_assign_unpack(ctx, node, node_target)
+                IRBuilder.build_assign_unpack(ctx, node, node_target)
             else:
                 IRBuilder.build_assign_basic(ctx, node, node_target,
-                                                   node.value.ptr)
+                                             node.value.ptr)
         return node
 
     @staticmethod
@@ -53,29 +53,10 @@ class IRBuilder(Builder):
         """
 
         targets = node_target.elts
-
-        # Create
-        stmts = []
-
         tmp_tuple = ti.expr_init_list(node.value.ptr, len(targets))
-        # Create a temp list and keep values in it, delete it after the initialization is finished.
-        # holder = parse_stmt('__tmp_tuple = ti.expr_init_list(0, '
-        #                     f'{len(targets)})')
-        # holder.value.args[0] = node.value
 
-        # stmts.append(holder)
-
-        # def tuple_indexed(i):
-        #     indexing = parse_stmt('__tmp_tuple[0]')
-        #     StmtBuilder.set_subscript_index(indexing.value, parse_expr(f"{i}"))
-        #     return indexing.value
-
-        # Generate assign statements for every target, then merge them into one.
         for i, target in enumerate(targets):
-            stmts.append(
-                IRBuilder.build_assign_basic(ctx, node, target,
-                                               tmp_tuple[i]))
-        # stmts.append(parse_stmt('del __tmp_tuple'))
+            IRBuilder.build_assign_basic(ctx, node, target, tmp_tuple[i])
         return node
 
     @staticmethod
@@ -233,7 +214,6 @@ class IRBuilder(Builder):
                 if len(args.args) != len(ctx.argument_data):
                     raise TaichiSyntaxError("Function argument of ")
                 # Transform as force-inlined func
-                arg_decls = []
                 for i, (arg,
                         data) in enumerate(zip(args.args, ctx.argument_data)):
                     # Remove annotations because they are not used.
@@ -297,7 +277,7 @@ class IRBuilder(Builder):
             ast.Div: lambda l, r: l / r,
             ast.FloorDiv: lambda l, r: l // r,
             ast.Mod: lambda l, r: l % r,
-            ast.Pow: lambda l, r: l ** r,
+            ast.Pow: lambda l, r: l**r,
             ast.LShift: lambda l, r: l << r,
             ast.RShift: lambda l, r: l >> r,
             ast.BitOr: lambda l, r: l | r,
@@ -508,6 +488,8 @@ class IRBuilder(Builder):
 
         if is_grouped:
             pass
+
+
 #             template = '''
 # if 1:
 #     ___loop_var = 0
@@ -579,8 +561,6 @@ class IRBuilder(Builder):
     @staticmethod
     def build_If(ctx, node):
         node.test = build_ir(ctx, node.test)
-        # node.body = build_stmts(ctx, node.body)
-        # node.orelse = build_stmts(ctx, node.orelse)
         is_static_if = (IRBuilder.get_decorator(node.test) == "static")
 
         if is_static_if:

@@ -183,6 +183,14 @@ void offload_to_executable(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  if (is_extension_supported(config.arch, Extension::mesh) &&
+      config.demote_no_access_mesh_fors) {
+    irpass::demote_no_access_mesh_fors(ir);
+    irpass::type_check(ir, config);
+    print("No-access mesh-for demoted");
+    irpass::analysis::verify(ir);
+  }
+
   if (make_thread_local) {
     irpass::make_thread_local(ir, config);
     print("Make thread local");

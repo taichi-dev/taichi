@@ -299,15 +299,23 @@ class MeshType:
         instance = MeshInstance(self)
         instance.fields = {}
         if size[0] > 0:
+            _ti_core.set_num_elements(instance.mesh_ptr,
+                                      MeshElementType.Vertex, size[0])
             instance.verts = self.verts.build(instance, size[0])
             instance.fields[MeshElementType.Vertex] = instance.verts
         if size[1] > 0:
+            _ti_core.set_num_elements(instance.mesh_ptr, MeshElementType.Edge,
+                                      size[1])
             instance.edges = self.edges.build(instance, size[1])
             instance.fields[MeshElementType.Edge] = instance.edges
         if size[2] > 0:
+            _ti_core.set_num_elements(instance.mesh_ptr, MeshElementType.Face,
+                                      size[2])
             instance.faces = self.faces.build(instance, size[2])
             instance.fields[MeshElementType.Face] = instance.faces
         if self.topology == MeshTopology.Tetrahedron and size[3] > 0:
+            _ti_core.set_num_elements(instance.mesh_ptr, MeshElementType.Cell,
+                                      size[3])
             instance.cells = self.cells.build(instance, size[3])
             instance.fields[MeshElementType.Cell] = instance.cells
         return instance

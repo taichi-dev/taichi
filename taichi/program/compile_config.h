@@ -98,6 +98,7 @@ struct CompileConfig {
   bool mesh_localize_to_end_mapping{true};
   bool mesh_localize_from_end_mapping{false};
   bool mesh_localize_all_attr_mappings{false};
+  bool demote_no_access_mesh_fors{true};
 
   CompileConfig();
 };

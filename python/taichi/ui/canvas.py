@@ -67,7 +67,9 @@ class Canvas:
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
         if indices_info.field_type == _ti_core.FieldType.Matrix:
-            indices_info.shape = [indices_info.shape[0] * indices_info.matrix_rows]
+            indices_info.shape = [
+                indices_info.shape[0] * indices_info.matrix_rows
+            ]
         self.canvas.lines(vbo_info, indices_info, has_per_vertex_color, color,
                           width)
 

@@ -1,5 +1,7 @@
 #include "taichi/ir/snode.h"
 
+#include <limits>
+
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
@@ -76,10 +78,16 @@ SNode &SNode::create_node(std::vector<Axis> axes,
   std::sort(new_node.physical_index_position,
             new_node.physical_index_position + new_node.num_active_indices);
   // infer extractors
-  int acc_shape = 1;
+  int64 acc_shape = 1;
   for (int i = taichi_max_num_indices - 1; i >= 0; i--) {
-    new_node.extractors[i].acc_shape = acc_shape;
+    // casting to int32 in extractors.
+    new_node.extractors[i].acc_shape = static_cast<int>(acc_shape);
     acc_shape *= new_node.extractors[i].shape;
+  }
+  if (acc_shape > std::numeric_limits<int>::max()) {
+    TI_WARN(
+        "Snode index might be out of int32 boundary but int64 indexing is not "
+        "supported yet.");
   }
   new_node.num_cells_per_container = acc_shape;
   // infer extractors (only for POT)

@@ -1578,7 +1578,6 @@ class BitStructStoreStmt : public Stmt {
 };
 
 // Mesh related.
-mesh::MeshElementType get_mesh_element_type(Stmt *stmt);
 
 /**
  * The relation access, mesh_idx -> to_type[neighbor_idx]

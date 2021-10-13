@@ -119,6 +119,7 @@ bool replace_statements(IRNode *root,
                         std::function<bool(Stmt *)> filter,
                         std::function<Stmt *(Stmt *)> finder);
 void demote_dense_struct_fors(IRNode *root, bool packed);
+void demote_no_access_mesh_fors(IRNode *root);
 bool demote_atomics(IRNode *root, const CompileConfig &config);
 void reverse_segments(IRNode *root);  // for autograd
 void detect_read_only(IRNode *root);

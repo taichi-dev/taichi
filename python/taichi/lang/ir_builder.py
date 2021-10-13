@@ -18,7 +18,6 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_Assign(ctx, node):
-        print("assigning")
         node.value = build_ir(ctx, node.value)
         node.targets = build_irs(ctx, node.targets)
 
@@ -92,6 +91,12 @@ class IRBuilder(Builder):
     def build_Tuple(ctx, node):
         node.elts = build_irs(ctx, node.elts)
         node.ptr = tuple(elt.ptr for elt in node.elts)
+        return node
+
+    @staticmethod
+    def build_List(ctx, node):
+        node.elts = build_irs(ctx, node.elts)
+        node.ptr = [elt.ptr for elt in node.elts]
         return node
 
     @staticmethod
@@ -183,8 +188,8 @@ class IRBuilder(Builder):
                 #     arg_init.value.args[3] = parse_expr(
                 #         "ti.{}".format(array_layout))
                 #     arg_decls.append(arg_init)
-                if False:
-                    pass
+                if isinstance(ctx.func.argument_annotations[i], ti.template):
+                    continue
                 else:
                     arg.annotation = build_ir(ctx, arg.annotation)
                     ctx.create_variable(
@@ -249,6 +254,7 @@ class IRBuilder(Builder):
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value
         else:
+            print(f"return data: {node.value.ptr}")
             ctx.return_data = node.value.ptr
         return node
 

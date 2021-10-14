@@ -48,7 +48,7 @@ struct CompiledSNodeStructs {
   SNodeDescriptorsMap snode_descriptors;
 };
 
-CompiledSNodeStructs compile_snode_structs(const SNode &root);
+CompiledSNodeStructs compile_snode_structs(SNode &root);
 
 }  // namespace vulkan
 }  // namespace lang

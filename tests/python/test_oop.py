@@ -239,5 +239,4 @@ def test_oop_with_portery_decorator():
 
     a = TestPortery()
     assert a.kernel_property != 42
-
     assert a.raw_proterty == 3

@@ -14,58 +14,13 @@ namespace taichi {
 namespace lang {
 namespace vulkan {
 
-using BufferType = TaskAttributes::BufferType;
-using BufferInfo = TaskAttributes::BufferInfo;
-using BufferBind = TaskAttributes::BufferBind;
-using BufferInfoHasher = TaskAttributes::BufferInfoHasher;
-
-// TODO: In the future this isn't necessarily a pointer, since DeviceAllocation
-// is already a pretty cheap handle>
-using InputBuffersMap =
-    std::unordered_map<BufferInfo, DeviceAllocation *, BufferInfoHasher>;
-
-class CompiledTaichiKernel {
- public:
-  struct Params {
-    const TaichiKernelAttributes *ti_kernel_attribs{nullptr};
-    std::vector<std::vector<uint32_t>> spirv_bins;
-    std::vector<CompiledSNodeStructs> compiled_structs;
-
-    Device *device{nullptr};
-    std::vector<DeviceAllocation *> root_buffers;
-    DeviceAllocation *global_tmps_buffer{nullptr};
-  };
-
-  CompiledTaichiKernel(const Params &ti_params);
-
-  const TaichiKernelAttributes &ti_kernel_attribs() const;
-
-  size_t num_pipelines() const;
-
-  DeviceAllocation *ctx_buffer() const;
-
-  DeviceAllocation *ctx_buffer_host() const;
-
-  void command_list(CommandList *cmdlist) const;
-
- private:
-  TaichiKernelAttributes ti_kernel_attribs_;
-  std::vector<TaskAttributes> tasks_attribs_;
-
-  Device *device_;
-
-  InputBuffersMap input_buffers_;
-
-  std::unique_ptr<DeviceAllocationGuard> ctx_buffer_{nullptr};
-  std::unique_ptr<DeviceAllocationGuard> ctx_buffer_host_{nullptr};
-  std::vector<std::unique_ptr<Pipeline>> pipelines_;
-};
-
 class VkRuntime {
+ private:
+  class Impl;
+
  public:
   struct Params {
-    uint64_t *host_result_buffer{nullptr};
-    Device *device{nullptr};
+    uint64_t *host_result_buffer = nullptr;
   };
 
   explicit VkRuntime(const Params &params);
@@ -74,7 +29,7 @@ class VkRuntime {
 
   class KernelHandle {
    private:
-    friend class VkRuntime;
+    friend class Impl;
     int id_ = -1;
   };
 
@@ -98,22 +53,10 @@ class VkRuntime {
   const std::vector<CompiledSNodeStructs> &get_compiled_structs() const;
 
  private:
-  void init_buffers();
-  void add_root_buffer(size_t root_buffer_size);
-
-  Device *device_;
-
-  uint64_t *const host_result_buffer_;
-
-  std::vector<std::unique_ptr<DeviceAllocationGuard>> root_buffers_;
-  std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_;
-
-  std::unique_ptr<CommandList> current_cmdlist_{nullptr};
-
-  std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;
-
-  std::vector<CompiledSNodeStructs> compiled_snode_structs_;
+  std::unique_ptr<Impl> impl_;
 };
+
+bool is_vulkan_api_available();
 
 }  // namespace vulkan
 }  // namespace lang

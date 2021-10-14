@@ -4,9 +4,8 @@ ti.init()
 
 
 @ti.kernel
-def p() -> ti.f32:
+def p():
     print(42)
-    return 40 + 2
 
 
-print(p())
+p()

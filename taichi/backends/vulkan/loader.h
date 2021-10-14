@@ -35,8 +35,6 @@ class VulkanLoader {
   VkDevice vulkan_device_{VK_NULL_HANDLE};
 };
 
-bool is_vulkan_api_available();
-
 }  // namespace vulkan
 }  // namespace lang
 }  // namespace taichi

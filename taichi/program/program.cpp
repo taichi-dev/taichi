@@ -28,7 +28,7 @@
 #endif
 #ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/vulkan_program.h"
-#include "taichi/backends/vulkan/loader.h"
+#include "taichi/backends/vulkan/runtime.h"
 #endif
 
 #if defined(TI_ARCH_x64)

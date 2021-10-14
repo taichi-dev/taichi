@@ -92,12 +92,7 @@ file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
   "taichi/backends/opengl/codegen_opengl.*"
   "taichi/backends/opengl/struct_opengl.*"
 )
-file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE
-  "taichi/backends/vulkan/runtime.h"
-  "taichi/backends/vulkan/runtime.cpp"
-  "taichi/backends/vulkan/snode_struct_compiler.cpp"
-  "taichi/backends/vulkan/snode_struct_compiler.h"
-)
+file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE "taichi/backends/vulkan/runtime.h" "taichi/backends/vulkan/runtime.cpp")
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
@@ -260,10 +255,6 @@ if (TI_WITH_CUDA_TOOLKIT)
 else()
     message(STATUS "TI_WITH_CUDA_TOOLKIT = OFF")
 endif()
-
-add_subdirectory(external/SPIRV-Cross)
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
-target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl spirv-cross-core)
 
 if (TI_WITH_VULKAN)
     # Vulkan libs

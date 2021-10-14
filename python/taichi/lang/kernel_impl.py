@@ -763,9 +763,12 @@ class _BoundedDifferentiableMethod:
         self._kernel_owner = kernel_owner
         self._primal = wrapped_kernel_func._primal
         self._adjoint = wrapped_kernel_func._adjoint
+        self._is_staticmethod = wrapped_kernel_func._is_staticmethod
 
     def __call__(self, *args, **kwargs):
         _taichi_skip_traceback = 1
+        if self._is_staticmethod:
+            return self._primal(*args, **kwargs)
         return self._primal(self._kernel_owner, *args, **kwargs)
 
     def grad(self, *args, **kwargs):
@@ -804,8 +807,9 @@ def data_oriented(cls):
     """
     def _getattr(self, item):
         _taichi_skip_traceback = 1
-        method = getattr(cls, item, None)
+        method = cls.__dict__.get(item, None)
         is_property = method.__class__ == property
+        is_staticmethod = method.__class__ == staticmethod
         if is_property:
             x = method.fget
         else:
@@ -815,6 +819,7 @@ def data_oriented(cls):
                 wrapped = x.__func__
             else:
                 wrapped = x
+            wrapped._is_staticmethod = is_staticmethod
             assert inspect.isfunction(wrapped)
             if wrapped._is_classkernel:
                 ret = _BoundedDifferentiableMethod(self, wrapped)

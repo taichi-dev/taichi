@@ -23,10 +23,6 @@
 #include "taichi/backends/cuda/cuda_driver.h"
 #endif
 
-#ifdef TI_WITH_VULKAN
-#include "taichi/backends/vulkan/loader.h"
-#endif
-
 #ifdef TI_WITH_CC
 namespace taichi::lang::cccp {
 extern bool is_c_backend_available();
@@ -170,11 +166,7 @@ void export_misc(py::module &m) {
   m.def("with_cuda", is_cuda_api_available);
   m.def("with_metal", taichi::lang::metal::is_metal_api_available);
   m.def("with_opengl", taichi::lang::opengl::is_opengl_api_available);
-#ifdef TI_WITH_VULKAN
   m.def("with_vulkan", taichi::lang::vulkan::is_vulkan_api_available);
-#else
-  m.def("with_vulkan", []() { return false; });
-#endif
 
 #ifdef TI_WITH_CC
   m.def("with_cc", taichi::lang::cccp::is_c_backend_available);

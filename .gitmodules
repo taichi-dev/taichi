@@ -47,6 +47,3 @@
 [submodule "external/SPIRV-Tools"]
 	path = external/SPIRV-Tools
 	url = https://github.com/KhronosGroup/SPIRV-Tools
-[submodule "external/SPIRV-Cross"]
-	path = external/SPIRV-Cross
-	url = https://github.com/KhronosGroup/SPIRV-Cross

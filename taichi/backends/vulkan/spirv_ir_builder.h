@@ -332,8 +332,6 @@ class IRBuilder {
     return new_value(t_void_func_, ValueKind::kFunction);
   }
 
-  std::vector<Value> global_values;
-
   // Declare the entry point for a kernel function
   void commit_kernel_function(const Value &func,
                               const std::string &name,
@@ -343,11 +341,6 @@ class IRBuilder {
         .add_seq(spv::ExecutionModelGLCompute, func, name);
     for (const auto &arg : args) {
       ib_.add(arg);
-    }
-    if (device_->get_cap(DeviceCapability::spirv_version) >= 0x10400) {
-      for (const auto &v : global_values) {
-        ib_.add(v);
-      }
     }
     if (gl_global_invocation_id.id != 0) {
       ib_.add(gl_global_invocation_id);

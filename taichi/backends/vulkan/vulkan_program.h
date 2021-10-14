@@ -8,22 +8,10 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/program_impl.h"
 
-#include "taichi/backends/vulkan/embedded_device.h"
-#include "taichi/backends/vulkan/vulkan_utils.h"
-#include "taichi/backends/vulkan/loader.h"
-
-#include "vk_mem_alloc.h"
-#include "taichi/backends/vulkan/vulkan_device.h"
-
 #include <optional>
 
 namespace taichi {
 namespace lang {
-
-namespace vulkan {
-class EmbeddedVulkanDevice;
-}
-
 class VulkanProgramImpl : public ProgramImpl {
  public:
   VulkanProgramImpl(CompileConfig &config) : ProgramImpl(config) {
@@ -58,10 +46,10 @@ class VulkanProgramImpl : public ProgramImpl {
     vulkan_runtime_->destroy_snode_tree(snode_tree);
   }
 
-  ~VulkanProgramImpl() override;
+  ~VulkanProgramImpl() {
+  }
 
  private:
-  std::unique_ptr<vulkan::EmbeddedVulkanDevice> embedded_device_{nullptr};
   std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
 };
 }  // namespace lang

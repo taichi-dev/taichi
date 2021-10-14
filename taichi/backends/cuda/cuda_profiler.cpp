@@ -132,6 +132,9 @@ void KernelProfilerCUDA::clear() {
 KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
   TI_NOT_IMPLEMENTED;
 }
+std::string KernelProfilerCUDA::get_device_name() {
+  TI_NOT_IMPLEMENTED;
+}
 bool KernelProfilerCUDA::reinit_with_metrics(
     const std::vector<std::string> metrics) {
   return false;  // public API for all backend, do not use TI_NOT_IMPLEMENTED;

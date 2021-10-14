@@ -540,9 +540,9 @@ class Kernel:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!
                         tmps.append(tmp)
-                        launch_ctx.set_arg_nparray(actual_argument_slot,
-                                                   int(tmp.ctypes.data),
-                                                   tmp.nbytes)
+                        launch_ctx.set_arg_external_array(actual_argument_slot,
+                                                          int(tmp.ctypes.data),
+                                                          tmp.nbytes)
                     else:
 
                         def get_call_back(u, v):
@@ -569,7 +569,7 @@ class Kernel:
                                 gpu_v = v.cuda()
                                 tmp = gpu_v
                                 callbacks.append(get_call_back(v, gpu_v))
-                        launch_ctx.set_arg_nparray(
+                        launch_ctx.set_arg_external_array(
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement())
                     shape = v.shape

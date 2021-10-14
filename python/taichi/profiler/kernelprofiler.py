@@ -234,18 +234,24 @@ class KernelProfiler:
     def _print_kernel_info(self):
         """Print a list of launched kernels during the profiling period."""
         metric_list = self._metric_list
+        kernel_attribute_state = self._traced_records[0].register_per_thread > 0
         values_num = len(self._traced_records[0].metric_values)
 
         # headers
-        table_header = f"Kernel Profiler(trace) @ {_ti_core.arch_name(ti.cfg.arch).upper()}"
+        table_header = self._make_table_header('trace')
         column_header = ('[  start.time | kernel.time |')  #default
+        if kernel_attribute_state:
+            column_header += (
+                '   regs  |   shared mem | grid size | block size | occupancy |'
+            )  #kernel_attributes
         for idx in range(values_num):
             column_header += metric_list[idx].header + '|'
         column_header = (column_header + '] Kernel name').replace("|]", "]")
 
         # partition line
-        outer_partition_line = '=' * len(column_header)
-        inner_partition_line = '-' * len(column_header)
+        line_length = max(len(column_header), len(table_header))
+        outer_partition_line = '=' * line_length
+        inner_partition_line = '-' * line_length
 
         # message in one line: formatted_str.format(*values)
         fake_timestamp = 0.0
@@ -254,6 +260,12 @@ class KernelProfiler:
         for record in self._traced_records:
             formatted_str = '[{:9.3f} ms |{:9.3f} ms |'  #default
             values = [fake_timestamp, record.kernel_time]  #default
+            if kernel_attribute_state:
+                formatted_str += '    {:4d} | {:6d} bytes |    {:6d} |     {:6d} | {:2d} blocks |'
+                values += [
+                    record.register_per_thread, record.shared_mem_per_block,
+                    record.grid_size, record.block_size, record.block_occupancy
+                ]
             for idx in range(values_num):
                 formatted_str += metric_list[idx].format + '|'
                 values += [record.metric_values[idx] * metric_list[idx].scale]
@@ -274,6 +286,7 @@ class KernelProfiler:
         print(inner_partition_line)
         print(f"Number of records:  {len(self._traced_records)}")
         print(outer_partition_line)
+
 
 
 _ti_kernel_profiler = KernelProfiler()

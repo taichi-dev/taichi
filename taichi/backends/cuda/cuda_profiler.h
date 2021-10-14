@@ -36,6 +36,11 @@ class KernelProfilerCUDA : public KernelProfilerBase {
   KernelProfilerBase::TaskHandle start_with_handle(
       const std::string &kernel_name) override;
 
+  bool record_kernel_attributes(void *kernel,
+                              uint32_t grid_size,
+                              uint32_t block_size,
+                              uint32_t dynamic_smem_size);
+
  private:
   ProfilingToolkit tool_ = ProfilingToolkit::undef;
   std::unique_ptr<EventToolkit> event_toolkit_{nullptr};
@@ -50,7 +55,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
 // default profiling toolkit
 class EventToolkit {
  public:
-  void update_record(std::vector<KernelProfileTracedRecord> &traced_records);
+  void update_record(uint32_t records_size_after_sync,
+                     std::vector<KernelProfileTracedRecord> &traced_records);
   KernelProfilerBase::TaskHandle start_with_handle(
       const std::string &kernel_name);
   void update_timeline(std::vector<KernelProfileTracedRecord> &traced_records);

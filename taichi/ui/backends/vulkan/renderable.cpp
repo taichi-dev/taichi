@@ -42,6 +42,9 @@ void Renderable::update_data(const RenderableInfo &info) {
   int num_indices;
   if (info.indices.valid) {
     num_indices = info.indices.shape[0];
+    if (info.indices.matrix_cols == 1) {
+      num_indices = info.indices.shape[0] * info.indices.matrix_rows;
+    }
     if (info.indices.dtype != PrimitiveType::i32 &&
         info.indices.dtype != PrimitiveType::u32) {
       throw std::runtime_error("dtype needs to be 32-bit ints for indices");

@@ -1,4 +1,4 @@
-set -e
+set -ex
 TAICHI_REPO_DIR=`pwd`
 TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
 TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests

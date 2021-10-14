@@ -1,4 +1,5 @@
-set -e
+set -ex
+echo $CI_SETUP_CMAKE_ARGS
 export PATH=`pwd`/taichi-llvm/bin/:$LLVM_PATH:$PATH
 python3 -m pip uninstall taichi taichi-nightly -y
 python3 -m pip install -r requirements_dev.txt

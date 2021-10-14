@@ -63,12 +63,19 @@ std::size_t CUDAContext::get_free_memory() {
   return ret;
 }
 
+std::string CUDAContext::get_device_name() {
+  char name[128];
+  driver_.device_get_name(name, 128, device_);
+  std::string str(name);
+  return str;
+}
+
 void CUDAContext::launch(void *func,
                          const std::string &task_name,
                          std::vector<void *> arg_pointers,
                          unsigned grid_dim,
                          unsigned block_dim,
-                         std::size_t shared_mem_bytes) {
+                         std::size_t dynamic_shared_mem_bytes) {
   // It is important to keep a handle since in async mode
   // a constant folding kernel may happen during a kernel launch
   // then profiler->start and profiler->stop mismatch.
@@ -97,8 +104,8 @@ void CUDAContext::launch(void *func,
   if (grid_dim > 0) {
     std::lock_guard<std::mutex> _(lock_);
     driver_.launch_kernel(func, grid_dim, 1, 1, block_dim, 1, 1,
-                          shared_mem_bytes, nullptr, arg_pointers.data(),
-                          nullptr);
+                          dynamic_shared_mem_bytes, nullptr,
+                          arg_pointers.data(), nullptr);
   }
   if (profiler_)
     profiler_->stop(task_handle);

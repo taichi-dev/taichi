@@ -232,6 +232,9 @@ void export_lang(py::module &m) {
            [](Program *program) {
              return program->profiler->get_traced_records();
            })
+      .def(
+          "get_kernel_profiler_device_name",
+          [](Program *program) { return program->profiler->get_device_name(); })
       .def("reinit_kernel_profiler_with_metrics",
            [](Program *program, const std::vector<std::string> metrics) {
              return program->profiler->reinit_with_metrics(metrics);

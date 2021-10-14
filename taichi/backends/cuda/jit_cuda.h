@@ -66,11 +66,11 @@ class JITModuleCUDA : public JITModule {
   virtual void launch(const std::string &name,
                       std::size_t grid_dim,
                       std::size_t block_dim,
-                      std::size_t shared_mem_bytes,
+                      std::size_t dynamic_shared_mem_bytes,
                       const std::vector<void *> &arg_pointers) override {
     auto func = lookup_function(name);
     CUDAContext::get_instance().launch(func, name, arg_pointers, grid_dim,
-                                       block_dim, shared_mem_bytes);
+                                       block_dim, dynamic_shared_mem_bytes);
   }
 
   bool direct_dispatch() const override {

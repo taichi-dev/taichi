@@ -84,6 +84,11 @@ class KernelProfilerBase {
 
   double get_total_time() const;
 
+  virtual std::string get_device_name() {
+    std::string str(" ");
+    return str;
+  }
+
   virtual ~KernelProfilerBase() {
   }
 };

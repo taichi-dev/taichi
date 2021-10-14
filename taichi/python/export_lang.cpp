@@ -382,7 +382,7 @@ void export_lang(py::module &m) {
   py::class_<Kernel::LaunchContextBuilder>(m, "KernelLaunchContext")
       .def("set_arg_int", &Kernel::LaunchContextBuilder::set_arg_int)
       .def("set_arg_float", &Kernel::LaunchContextBuilder::set_arg_float)
-      .def("set_arg_nparray",
+      .def("set_arg_external_array",
            &Kernel::LaunchContextBuilder::set_arg_external_array)
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
@@ -806,8 +806,9 @@ void export_lang(py::module &m) {
               std::make_unique<FrontendPrintStmt>(contents));
         });
 
-  m.def("decl_arg", [&](const DataType &dt, bool is_nparray) {
-    return get_current_program().current_callable->insert_arg(dt, is_nparray);
+  m.def("decl_arg", [&](const DataType &dt, bool is_external_array) {
+    return get_current_program().current_callable->insert_arg(
+        dt, is_external_array);
   });
 
   m.def("decl_ret", [&](const DataType &dt) {

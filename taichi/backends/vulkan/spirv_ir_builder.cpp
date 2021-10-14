@@ -705,7 +705,9 @@ Value IRBuilder::float_atomic(AtomicOpType op_type,
         .commit(&func_);
     ib_.begin(spv::OpLabel).add(true_label).commit(&func_);
     Value tmp2 = load_variable(addr_ptr, t_int32_);
-    store_variable(old_val, tmp2);
+    Value tmp2_int = new_value(t_int32_, ValueKind::kNormal);
+    ib_.begin(spv::OpBitcast).add_seq(t_int32_, tmp2_int, tmp2).commit(&func_);
+    store_variable(old_val, tmp2_int);
     Value tmp3 = load_variable(old_val, t_int32_);
     Value tmp4 = new_value(t_fp32_, ValueKind::kNormal);
     ib_.begin(spv::OpBitcast).add_seq(t_fp32_, tmp4, tmp3).commit(&func_);

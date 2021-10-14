@@ -257,6 +257,6 @@ def test_oop_with_static_decorator():
             return 3
 
     a = TestStatic()
-    assert a.kernel_static == 42
+    assert a.kernel_static() == 42
 
-    assert a.raw_static == 3
+    assert a.raw_static() == 3

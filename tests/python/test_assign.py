@@ -18,7 +18,7 @@ def test_assign_unpack():
     @ti.kernel
     def func_unpack():
         (a, b) = (1, 2)
-        assert a == 1
+        assert a == 12345
         assert b == 2
 
     func_unpack()

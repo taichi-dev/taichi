@@ -80,8 +80,7 @@ void CUDAContext::launch(void *func,
     profiler_->trace(task_handle, task_name);
     KernelProfilerCUDA *profiler_cuda =
         dynamic_cast<KernelProfilerCUDA *>(profiler_);
-    profiler_cuda->record_kernel_attributes(func, grid_dim, block_dim,
-                                            shared_mem_bytes);
+    profiler_cuda->record_kernel_attributes(func, grid_dim, block_dim, 0);
   }
 
   auto context_guard = CUDAContext::get_instance().get_guard();

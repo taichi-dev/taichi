@@ -37,9 +37,9 @@ class KernelProfilerCUDA : public KernelProfilerBase {
       const std::string &kernel_name) override;
 
   bool record_kernel_attributes(void *kernel,
-                              uint32_t grid_size,
-                              uint32_t block_size,
-                              uint32_t dynamic_smem_size);
+                                uint32_t grid_size,
+                                uint32_t block_size,
+                                uint32_t dynamic_smem_size);
 
  private:
   ProfilingToolkit tool_ = ProfilingToolkit::undef;

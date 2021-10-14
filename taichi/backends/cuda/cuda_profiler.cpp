@@ -233,7 +233,6 @@ KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
 void EventToolkit::update_record(
     uint32_t records_size_after_sync,
     std::vector<KernelProfileTracedRecord> &traced_records) {
-
   uint32_t events_num = event_records_.size();
   uint32_t records_num = traced_records.size();
   TI_ERROR_IF(records_size_after_sync + events_num != records_num,

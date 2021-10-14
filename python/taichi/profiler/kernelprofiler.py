@@ -238,7 +238,7 @@ class KernelProfiler:
         values_num = len(self._traced_records[0].metric_values)
 
         # headers
-        table_header = self._make_table_header('trace')
+        table_header = f"Kernel Profiler(trace) @ {_ti_core.arch_name(ti.cfg.arch).upper()}"
         column_header = ('[  start.time | kernel.time |')  #default
         if kernel_attribute_state:
             column_header += (
@@ -249,9 +249,8 @@ class KernelProfiler:
         column_header = (column_header + '] Kernel name').replace("|]", "]")
 
         # partition line
-        line_length = max(len(column_header), len(table_header))
-        outer_partition_line = '=' * line_length
-        inner_partition_line = '-' * line_length
+        outer_partition_line = '=' * len(column_header)
+        inner_partition_line = '-' * len(column_header)
 
         # message in one line: formatted_str.format(*values)
         fake_timestamp = 0.0
@@ -286,7 +285,6 @@ class KernelProfiler:
         print(inner_partition_line)
         print(f"Number of records:  {len(self._traced_records)}")
         print(outer_partition_line)
-
 
 
 _ti_kernel_profiler = KernelProfiler()

@@ -63,7 +63,14 @@ class HackedSignalRegister {
   }
 };
 
-HackedSignalRegister _;
+const char *t = std::getenv("DISABLE_BUILTIN_SIGNAL_HANDLER");
+std::string disable_builtin_signal_handler(t ? t : "");
+
+if (disable_builtin_signal_handler == "true") {
+// do not initialize any signal handler
+} else {
+  HackedSignalRegister _;
+}
 
 }  // namespace
 }  // namespace taichi

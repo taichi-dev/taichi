@@ -93,7 +93,7 @@ if use_sparse_matrix:
 
     fill_laplacian_matrix(K)
     L = K.build()
-    solver = ti.SparseSolver(solver_type="LLT")
+    solver = ti.linalg.SparseSolver(solver_type="LLT")
     solver.analyze_pattern(L)
     solver.factorize(L)
 

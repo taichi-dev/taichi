@@ -4,7 +4,7 @@ ti.init(arch=ti.x64)
 
 n = 8
 
-K = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+K = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 b = ti.field(ti.f32, shape=n)
 
 
@@ -30,7 +30,7 @@ x = A @ b
 print(x)
 
 print("Solving sparse linear systems Ax = b with the solution x:")
-solver = ti.SparseSolver(solver_type="LLT")
+solver = ti.linalg.SparseSolver(solver_type="LLT")
 solver.analyze_pattern(A)
 solver.factorize(A)
 x = solver.solve(b)

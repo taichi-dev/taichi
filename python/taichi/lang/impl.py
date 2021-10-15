@@ -589,8 +589,8 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
             offset
         ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
-    assert (offset is not None and shape is None
-            ), f'The shape cannot be None when offset is being set'
+    assert (offset is None or shape
+            is not None), f'The shape cannot be None when offset is being set'
 
     del _taichi_skip_traceback
 

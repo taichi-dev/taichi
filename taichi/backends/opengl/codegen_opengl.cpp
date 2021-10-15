@@ -70,8 +70,8 @@ class KernelGen : public IRVisitor {
       : kernel(kernel),
         struct_compiled_(struct_compiled),
         kernel_name_(kernel_name),
-        glsl_kernel_prefix_(kernel_name),
-        compiled_program_(std::make_unique<CompiledProgram>(kernel, device)) {
+        glsl_kernel_prefix_(kernel_name) {
+    compiled_program_.init_args(kernel);
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -87,7 +87,7 @@ class KernelGen : public IRVisitor {
   // throughout variables:
   int glsl_kernel_count_{0};
   bool is_top_level_{true};
-  std::unique_ptr<CompiledProgram> compiled_program_;
+  CompiledProgram compiled_program_;
   UsedFeature used;  // TODO: is this actually per-offload?
 
   // per-offload variables:
@@ -244,7 +244,7 @@ class KernelGen : public IRVisitor {
     auto kernel_src_code =
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
-    compiled_program_->add(std::move(glsl_kernel_name_), kernel_src_code,
+    compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
                            num_workgroups_, workgroup_size_,
                            &this->extptr_access);
     auto &config = kernel->program->config;
@@ -295,7 +295,7 @@ class KernelGen : public IRVisitor {
 
       } else {
         auto str = std::get<std::string>(content);
-        int stridx = compiled_program_->lookup_or_add_string(str);
+        int stridx = compiled_program_.lookup_or_add_string(str);
         emit("_msg_set_str({}, {}, {});", msgid_name, i, stridx);
       }
     }
@@ -1157,9 +1157,9 @@ class KernelGen : public IRVisitor {
     return kernel;
   }
 
-  std::unique_ptr<CompiledProgram> get_compiled_program() {
+  CompiledProgram get_compiled_program() {
     // We have to set it at the last moment, to get all used feature.
-    compiled_program_->set_used(used);
+    compiled_program_.set_used(used);
     return std::move(compiled_program_);
   }
 
@@ -1171,15 +1171,12 @@ class KernelGen : public IRVisitor {
 
 }  // namespace
 
-FunctionType OpenglCodeGen::gen(void) {
+CompiledProgram OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_,
                     runtime_->device.get());
   codegen.run();
-  auto compiled = codegen.get_compiled_program();
-  auto *ptr = compiled.get();
-  runtime_->keep(std::move(compiled));
-  return [ptr, runtime = runtime_](Context &ctx) { ptr->launch(ctx, runtime); };
+  return codegen.get_compiled_program();
 #else
   TI_NOT_IMPLEMENTED
 #endif
@@ -1199,7 +1196,7 @@ void OpenglCodeGen::lower() {
 #endif
 }
 
-FunctionType OpenglCodeGen::compile(Kernel &kernel) {
+CompiledProgram OpenglCodeGen::compile(Kernel &kernel) {
   this->kernel_ = &kernel;
 
   this->lower();

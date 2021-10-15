@@ -24,11 +24,11 @@ class OpenglCodeGen {
         runtime_(launcher) {
   }
 
-  FunctionType compile(Kernel &kernel);
+  CompiledProgram compile(Kernel &kernel);
 
  private:
   void lower();
-  FunctionType gen();
+  CompiledProgram gen();
 
   const std::string kernel_name_;
 

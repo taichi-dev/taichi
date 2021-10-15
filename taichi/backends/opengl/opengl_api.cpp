@@ -137,105 +137,6 @@ bool initialize_opengl(bool error_tolerance) {
   return true;
 }
 
-OpenGlRuntime::OpenGlRuntime() {
-  initialize_opengl();
-
-  device = std::make_unique<GLDevice>();
-
-  impl = std::make_unique<OpenGlRuntimeImpl>();
-
-  impl->runtime = std::make_unique<GLSLRuntime>();
-  impl->core_bufs.runtime = device->allocate_memory(
-      {sizeof(GLSLRuntime), /*host_write=*/false, /*host_read=*/true});
-
-  impl->listman = std::make_unique<GLSLListman>();
-  impl->core_bufs.listman = device->allocate_memory({sizeof(GLSLListman)});
-
-  impl->core_bufs.gtmp =
-      device->allocate_memory({taichi_global_tmp_buffer_size});
-
-  auto cmdlist = device->get_compute_stream()->new_command_list();
-  cmdlist->buffer_fill(impl->core_bufs.runtime.get_ptr(0), sizeof(GLSLRuntime),
-                       0);
-  cmdlist->buffer_fill(impl->core_bufs.listman.get_ptr(0), sizeof(GLSLListman),
-                       0);
-  cmdlist->buffer_fill(impl->core_bufs.gtmp.get_ptr(0),
-                       taichi_global_tmp_buffer_size, 0);
-  device->get_compute_stream()->submit_synced(cmdlist.get());
-}
-
-DeviceCompiledProgram *OpenGlRuntime::keep(CompiledProgram &&program) {
-  auto p =
-      std::make_unique<DeviceCompiledProgram>(std::move(program), device.get());
-  auto ptr = p.get();
-  impl->programs.push_back(std::move(p));
-  return ptr;
-}
-
-void OpenGlRuntime::add_snode_tree(size_t size) {
-  impl->core_bufs.root = device->allocate_memory({size});
-
-  auto cmdlist = device->get_compute_stream()->new_command_list();
-  cmdlist->buffer_fill(impl->core_bufs.root.get_ptr(0), size, 0);
-  device->get_compute_stream()->submit_synced(cmdlist.get());
-}
-
-bool is_opengl_api_available() {
-  if (get_environ_config("TI_ENABLE_OPENGL", 1) == 0)
-    return false;
-  return initialize_opengl(true);
-}
-
-#else
-struct GLProgram {};
-struct OpenGlRuntimeImpl {};
-
-struct CompiledProgram::Impl {
-  UsedFeature used;
-
-  Impl(Kernel *kernel, Device *device) {
-    TI_NOT_IMPLEMENTED;
-  }
-
-  void add(const std::string &kernel_name,
-           const std::string &kernel_source_code,
-           int num_workgrpus,
-           int workgroup_size,
-           std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
-    TI_NOT_IMPLEMENTED;
-  }
-
-  int lookup_or_add_string(const std::string &str) {
-    TI_NOT_IMPLEMENTED;
-  }
-
-  void launch(Context &ctx, OpenGlRuntime *launcher) const {
-    TI_NOT_IMPLEMENTED;
-  }
-};
-
-OpenGlRuntime::OpenGlRuntime() {
-  TI_NOT_IMPLEMENTED;
-}
-
-void OpenGlRuntime::keep(std::unique_ptr<CompiledProgram>) {
-  TI_NOT_IMPLEMENTED;
-}
-
-void OpenGlRuntime::add_snode_tree(size_t size) {
-  TI_NOT_IMPLEMENTED;
-}
-
-bool is_opengl_api_available() {
-  return false;
-}
-
-bool initialize_opengl(bool error_tolerance) {
-  TI_NOT_IMPLEMENTED;
-}
-
-#endif  // TI_WITH_OPENGL
-
 void CompiledProgram::init_args(Kernel *kernel) {
   arg_count = kernel->args.size();
   ret_count = kernel->rets.size();
@@ -495,6 +396,86 @@ DeviceCompiledProgram::DeviceCompiledProgram(CompiledProgram &&program,
                                 k.kernel_name));
   }
 }
+
+OpenGlRuntime::OpenGlRuntime() {
+  initialize_opengl();
+
+  device = std::make_unique<GLDevice>();
+
+  impl = std::make_unique<OpenGlRuntimeImpl>();
+
+  impl->runtime = std::make_unique<GLSLRuntime>();
+  impl->core_bufs.runtime = device->allocate_memory(
+      {sizeof(GLSLRuntime), /*host_write=*/false, /*host_read=*/true});
+
+  impl->listman = std::make_unique<GLSLListman>();
+  impl->core_bufs.listman = device->allocate_memory({sizeof(GLSLListman)});
+
+  impl->core_bufs.gtmp =
+      device->allocate_memory({taichi_global_tmp_buffer_size});
+
+  auto cmdlist = device->get_compute_stream()->new_command_list();
+  cmdlist->buffer_fill(impl->core_bufs.runtime.get_ptr(0), sizeof(GLSLRuntime),
+                       0);
+  cmdlist->buffer_fill(impl->core_bufs.listman.get_ptr(0), sizeof(GLSLListman),
+                       0);
+  cmdlist->buffer_fill(impl->core_bufs.gtmp.get_ptr(0),
+                       taichi_global_tmp_buffer_size, 0);
+  device->get_compute_stream()->submit_synced(cmdlist.get());
+}
+
+DeviceCompiledProgram *OpenGlRuntime::keep(CompiledProgram &&program) {
+  auto p =
+      std::make_unique<DeviceCompiledProgram>(std::move(program), device.get());
+  auto ptr = p.get();
+  impl->programs.push_back(std::move(p));
+  return ptr;
+}
+
+void OpenGlRuntime::add_snode_tree(size_t size) {
+  impl->core_bufs.root = device->allocate_memory({size});
+
+  auto cmdlist = device->get_compute_stream()->new_command_list();
+  cmdlist->buffer_fill(impl->core_bufs.root.get_ptr(0), size, 0);
+  device->get_compute_stream()->submit_synced(cmdlist.get());
+}
+
+bool is_opengl_api_available() {
+  if (get_environ_config("TI_ENABLE_OPENGL", 1) == 0)
+    return false;
+  return initialize_opengl(true);
+}
+
+#else
+
+struct OpenGlRuntimeImpl {};
+
+OpenGlRuntime::OpenGlRuntime() {
+  TI_NOT_IMPLEMENTED;
+}
+
+OpenGlRuntime::~OpenGlRuntime() {
+  TI_NOT_IMPLEMENTED;
+}
+
+DeviceCompiledProgram *OpenGlRuntime::keep(CompiledProgram &&program) {
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
+}
+
+void OpenGlRuntime::add_snode_tree(size_t size) {
+  TI_NOT_IMPLEMENTED;
+}
+
+bool is_opengl_api_available() {
+  return false;
+}
+
+bool initialize_opengl(bool error_tolerance) {
+  TI_NOT_IMPLEMENTED;
+}
+
+#endif  // TI_WITH_OPENGL
 
 }  // namespace opengl
 TLANG_NAMESPACE_END

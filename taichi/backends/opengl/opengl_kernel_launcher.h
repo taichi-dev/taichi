@@ -20,7 +20,7 @@ struct OpenGlRuntime {
   std::unique_ptr<Device> device{nullptr};
   OpenGlRuntime();
   ~OpenGlRuntime();
-  DeviceCompiledProgram* keep(CompiledProgram &&program);
+  DeviceCompiledProgram *keep(CompiledProgram &&program);
   // FIXME: Currently GLSL codegen only supports single root
   void add_snode_tree(size_t size);
 

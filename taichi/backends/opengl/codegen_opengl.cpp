@@ -245,8 +245,8 @@ class KernelGen : public IRVisitor {
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
     compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
-                           num_workgroups_, workgroup_size_,
-                           &this->extptr_access);
+                          num_workgroups_, workgroup_size_,
+                          &this->extptr_access);
     auto &config = kernel->program->config;
     if (config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer("shader{:04d}.comp",

@@ -19,6 +19,7 @@ class Ndarray:
         shape (Tuple[int]): Shape of the torch tensor.
     """
     def __init__(self, dtype, shape):
+        self.host_accessor = None
         if impl.current_cfg().ndarray_use_torch:
             assert has_pytorch(
             ), "PyTorch must be available if you want to create a Taichi ndarray with PyTorch as its underlying storage."
@@ -134,6 +135,12 @@ class Ndarray:
             ext_arr_to_ndarray(arr, self)
             ti.sync()
 
+    def initialize_host_accessor(self):
+        if self.host_accessor:
+            return
+        ti.lang.impl.get_runtime().materialize()
+        self.host_accessor = NdarrayHostAccessor(self.arr)
+
 
 class ScalarNdarray(Ndarray):
     """Taichi ndarray with scalar elements implemented with a torch tensor.
@@ -151,22 +158,48 @@ class ScalarNdarray(Ndarray):
 
     @python_scope
     def __setitem__(self, key, value):
-        if impl.current_cfg().ndarray_use_torch or impl.current_cfg(
-        ).arch == _ti_core.Arch.x64:
+        if impl.current_cfg().ndarray_use_torch:
             self.arr.__setitem__(key, value)
         else:
-            raise NotImplementedError()
+            self.initialize_host_accessor()
+            self.host_accessor.setter(value, key)
 
     @python_scope
     def __getitem__(self, key):
-        if impl.current_cfg().ndarray_use_torch or impl.current_cfg(
-        ).arch == _ti_core.Arch.x64:
+        if impl.current_cfg().ndarray_use_torch:
             return self.arr.__getitem__(key)
         else:
-            raise NotImplementedError()
+            self.initialize_host_accessor()
+            return self.host_accessor.getter(key)
 
     def __repr__(self):
         return '<ti.ndarray>'
+
+
+class NdarrayHostAccessor:
+    def __init__(self, ndarray):
+        if _ti_core.is_real(ndarray.dtype):
+
+            def getter(*key):
+                return ndarray.read_float(*key)
+
+            def setter(value, *key):
+                ndarray.write_float(*key, value)
+        else:
+            if _ti_core.is_signed(ndarray.dtype):
+
+                def getter(*key):
+                    return ndarray.read_int(*key)
+            else:
+
+                def getter(*key):
+                    return ndarray.read_uint(*key)
+
+            def setter(value, *key):
+                ndarray.write_int(*key, value)
+
+        self.getter = getter
+        self.setter = setter
 
 
 class NdarrayHostAccess:

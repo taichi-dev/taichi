@@ -41,7 +41,7 @@ namespace lang {
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances_;
 
-Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
+Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this), ndarray_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
   // For performance considerations and correctness of CustomFloatType
@@ -343,7 +343,7 @@ void Program::visualize_layout(const std::string &fn) {
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
 
-Arch Program::get_snode_accessor_arch() {
+Arch Program::get_accessor_arch() {
   if (config.arch == Arch::opengl) {
     return Arch::opengl;
   } else if (config.arch == Arch::vulkan) {
@@ -371,7 +371,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
         load_if_ptr(Expr(snode_to_glb_var_exprs_.at(snode))[indices]));
     current_ast_builder().insert(std::move(ret));
   });
-  ker.set_arch(get_snode_accessor_arch());
+  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -392,12 +392,54 @@ Kernel &Program::get_snode_writer(SNode *snode) {
         Expr::make<ArgLoadExpression>(snode->num_active_indices,
                                       snode->dt->get_compute_type());
   });
-  ker.set_arch(get_snode_accessor_arch());
+  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_arg(PrimitiveType::i32, false);
   ker.insert_arg(snode->dt, false);
+  return ker;
+}
+
+Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
+  auto kernel_name = fmt::format("ndarray_reader");
+  auto &ker = kernel([ndarray, this] {
+    ExprGroup indices;
+    for (int i = 0; i < ndarray->num_active_indices; i++) {
+      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
+    }
+    auto ete = Expr::make<ExternalTensorExpression>(ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices, 0);
+    auto ret = Stmt::make<FrontendReturnStmt>(
+        load_if_ptr(
+          Expr(ete)[indices]));
+    current_ast_builder().insert(std::move(ret));
+  });
+  ker.set_arch(get_accessor_arch());
+  ker.name = kernel_name;
+  ker.is_accessor = true;
+  for (int i = 0; i < ndarray->num_active_indices; i++)
+    ker.insert_arg(PrimitiveType::i32, false);
+  ker.insert_arg(ndarray->dtype, true);
+  ker.insert_ret(ndarray->dtype);
+  return ker;
+}
+
+Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
+  auto kernel_name = fmt::format("ndarray_writer");
+  auto &ker = kernel([ndarray, this] {
+    ExprGroup indices;
+    for (int i = 0; i < ndarray->num_active_indices; i++) {
+      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
+    }
+    Expr(Expr::make<ExternalTensorExpression>(ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices+1, 0))[indices] = Expr::make<ArgLoadExpression>(ndarray->num_active_indices, ndarray->dtype->get_compute_type());
+  });
+  ker.set_arch(get_accessor_arch());
+  ker.name = kernel_name;
+  ker.is_accessor = true;
+  for (int i = 0; i < ndarray->num_active_indices; i++)
+    ker.insert_arg(PrimitiveType::i32, false);
+  ker.insert_arg(ndarray->dtype, false);
+  ker.insert_arg(ndarray->dtype, true);
   return ker;
 }
 

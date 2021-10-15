@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <vector>
 
-#include "taichi/program/program.h"
 #include "taichi/inc/constants.h"
 #include "taichi/ir/type_utils.h"
 #include "taichi/llvm/llvm_context.h"
@@ -22,6 +21,7 @@ class Ndarray {
 
   DataType dtype;
   std::vector<int> shape;
+  int num_active_indices{0};
 
   intptr_t get_data_ptr_as_int() const;
   std::size_t get_element_size() const;

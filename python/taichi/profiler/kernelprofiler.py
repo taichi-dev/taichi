@@ -78,8 +78,8 @@ class KernelProfiler:
         Returns:
             time (float): total time in second.
         """
-        if self._check_turned_on_with_warning_message() is False:
-            return None
+        if self._check_not_turned_on_with_warning_message():
+            return 0.0
         self._update_records()  # kernel records
         self._count_statistics()  # _total_time_ms is counted here
         return self._total_time_ms / 1000  # ms to s
@@ -90,7 +90,7 @@ class KernelProfiler:
         Note:
             The values of ``self._profiling_mode`` and ``self._metric_list`` will not be cleared.
         """
-        if self._profiling_mode is False:
+        if self._profiling_mode:
             _ti_core.warn(
                 f'use \'ti.init(kernel_profiler = True)\' to turn on KernelProfiler'
             )
@@ -103,7 +103,7 @@ class KernelProfiler:
 
     def query_info(self, name):
         """For docsting of this function, see :func:`~taichi.lang.query_kernel_profile_info`."""
-        if self._check_turned_on_with_warning_message() is False:
+        if self._check_not_turned_on_with_warning_message():
             return None
         self._update_records()  # kernel records
         self._count_statistics()  # statistics results
@@ -112,7 +112,7 @@ class KernelProfiler:
 
     def set_metrics(self, metric_list=default_cupti_metrics):
         """For docsting of this function, see :func:`~taichi.lang.set_kernel_profile_metrics`."""
-        if self._check_turned_on_with_warning_message() is False:
+        if self._check_not_turned_on_with_warning_message():
             return None
         self._metric_list = metric_list
         metric_name_list = [metric.name for metric in metric_list]
@@ -126,7 +126,7 @@ class KernelProfiler:
 
         For usage of this function, see :func:`~taichi.lang.collect_kernel_profile_metrics`.
         """
-        if self._check_turned_on_with_warning_message() is False:
+        if self._check_not_turned_on_with_warning_message():
             return None
         self.set_metrics(metric_list)
         yield self
@@ -144,7 +144,7 @@ class KernelProfiler:
         Args:
             mode (str): the way to print profiling results.
         """
-        if self._check_turned_on_with_warning_message() is False:
+        if self._check_not_turned_on_with_warning_message():
             return None
         self._update_records()  # kernel records
         self._count_statistics()  # statistics results
@@ -161,12 +161,14 @@ class KernelProfiler:
             )
 
     # private methods
-    def _check_turned_on_with_warning_message(self):
+    def _check_not_turned_on_with_warning_message(self):
         if self._profiling_mode is False:
             _ti_core.warn(
                 f'use \'ti.init(kernel_profiler = True)\' to turn on KernelProfiler.'
             )
-        return self._profiling_mode
+            return True
+        else:    
+            return False
 
     def _clear_frontend(self):
         """Clear member variables in :class:`~taichi.profiler.kernelprofiler.KernelProfiler`.

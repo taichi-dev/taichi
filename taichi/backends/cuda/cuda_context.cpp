@@ -64,8 +64,9 @@ std::size_t CUDAContext::get_free_memory() {
 }
 
 std::string CUDAContext::get_device_name() {
-  char name[128];
-  driver_.device_get_name(name, 128, device_);
+  constexpr uint32_t kMaxNameStringLength = 128;
+  char name[kMaxNameStringLength];
+  driver_.device_get_name(name, kMaxNameStringLength, device_);
   std::string str(name);
   return str;
 }

@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "taichi/program/aot_module_builder.h"
-#include "taichi/backends/opengl/opengl_program.h"
+#include "taichi/backends/opengl/aot_data.h"
 
 namespace taichi {
 namespace lang {
@@ -34,23 +34,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   StructCompiledResult &compiled_structs_;
   OpenGlRuntime &runtime_;
 
-  struct CompiledKernel {
-    CompiledProgram program;
-    std::string identifier;
-    
-    TI_IO_DEF(program, identifier);
-  };
-
-  std::vector<CompiledKernel> aot_kernels_;
-
-  struct CompiledKernelTmpl {
-    std::unordered_map<std::string, CompiledProgram> program;
-    std::string identifier;
-
-    TI_IO_DEF(program, identifier);
-  };
-
-  std::vector<CompiledKernelTmpl> aot_kernel_tmpls_;
+  AotData aot_data_;
 };
 
 }  // namespace opengl

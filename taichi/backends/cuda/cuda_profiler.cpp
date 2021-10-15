@@ -29,12 +29,7 @@ KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
 }
 
 std::string KernelProfilerCUDA::get_device_name() {
-  std::string name = CUDAContext::get_instance().get_device_name();
-  std::string substring = "NVIDIA ";
-  std::string::size_type idx = name.find(substring);
-  if (idx != std::string::npos)
-    name.erase(idx, substring.length());
-  return name;
+  return CUDAContext::get_instance().get_device_name();
 }
 
 bool KernelProfilerCUDA::reinit_with_metrics(

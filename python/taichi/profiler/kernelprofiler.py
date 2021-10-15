@@ -164,7 +164,7 @@ class KernelProfiler:
                 f'use \'ti.init(kernel_profiler = True)\' to turn on KernelProfiler.'
             )
             return True
-        else:    
+        else:
             return False
 
     def _clear_frontend(self):

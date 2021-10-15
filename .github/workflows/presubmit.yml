@@ -123,7 +123,6 @@ jobs:
             python: 3.7
             with_cc: OFF
             with_cpp_tests: ON
-            run_cpp_tests: ON
           - os: ubuntu-latest
             python: 3.9
             with_cc: OFF
@@ -165,7 +164,7 @@ jobs:
       - name: Test
         run: .github/workflows/scripts/unix_test.sh
         env:
-          RUN_CPP_TESTS: ${{ matrix.run_cpp_tests }}
+          RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
 
   build_and_test_gpu_linux:
     name: Build and Test (GPU)

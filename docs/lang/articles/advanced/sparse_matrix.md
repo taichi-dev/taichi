@@ -24,7 +24,7 @@ K = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 @ti.kernel
 def fill(A: ti.sparse_matrix_builder()):
     for i in range(n):
-        A[i, i] += 1
+        A[i, i] += 1  # Only +=  and -= operators are supported for now.
 
 # step 2: fill the builder with data.
 fill(K)

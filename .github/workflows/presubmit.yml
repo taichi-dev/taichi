@@ -62,7 +62,7 @@ jobs:
       - name: Pylint
         run: |
           # Make sure pylint doesn't regress
-          pylint python/taichi/ --disable=all --enable=C0415
+          pylint python/taichi/ --disable=all --enable=C0121,C0415
           if [ $? -eq 0 ]
           then
             echo "PASSED: pylint is happy"

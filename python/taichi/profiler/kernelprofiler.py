@@ -172,7 +172,7 @@ class KernelProfiler:
         The profiling records with the same kernel name are counted as a profiling result.
         """
         for record in self._traced_records:
-            if self._statistical_results.get(record.name) == None:
+            if self._statistical_results.get(record.name) is None:
                 self._statistical_results[record.name] = StatisticalResult(
                     record.name)
             self._statistical_results[record.name].insert_record(

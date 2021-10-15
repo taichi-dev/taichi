@@ -90,10 +90,7 @@ class KernelProfiler:
         Note:
             The values of ``self._profiling_mode`` and ``self._metric_list`` will not be cleared.
         """
-        if self._profiling_mode:
-            _ti_core.warn(
-                f'use \'ti.init(kernel_profiler = True)\' to turn on KernelProfiler'
-            )
+        if self._check_not_turned_on_with_warning_message():
             return None
         #sync first
         impl.get_runtime().sync()

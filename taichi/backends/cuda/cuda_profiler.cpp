@@ -1,4 +1,5 @@
 #include "taichi/backends/cuda/cuda_profiler.h"
+#include "taichi/backends/cuda/cuda_types.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_context.h"
 
@@ -122,18 +123,16 @@ bool KernelProfilerCUDA::record_kernel_attributes(void *kernel,
                                                   uint32_t grid_size,
                                                   uint32_t block_size,
                                                   uint32_t dynamic_smem_size) {
-  uint32_t CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES = 1;
-  uint32_t CU_FUNC_ATTRIBUTE_NUM_REGS = 4;
-
   int register_per_thread = 0;
   int static_shared_mem_per_block = 0;
   int max_active_blocks_per_multiprocessor = 0;
 
   CUDADriver::get_instance().kernel_get_attribute(
-      &register_per_thread, CU_FUNC_ATTRIBUTE_NUM_REGS, kernel);
-  CUDADriver::get_instance().kernel_get_attribute(
-      &static_shared_mem_per_block, CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES,
+      &register_per_thread, CUfunction_attribute::CU_FUNC_ATTRIBUTE_NUM_REGS,
       kernel);
+  CUDADriver::get_instance().kernel_get_attribute(
+      &static_shared_mem_per_block,
+      CUfunction_attribute::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, kernel);
   CUDADriver::get_instance().kernel_get_occupancy(
       &max_active_blocks_per_multiprocessor, kernel, block_size,
       dynamic_smem_size);

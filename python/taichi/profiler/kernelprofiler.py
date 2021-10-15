@@ -234,8 +234,12 @@ class KernelProfiler:
     def _print_kernel_info(self):
         """Print a list of launched kernels during the profiling period."""
         metric_list = self._metric_list
-        kernel_attribute_state = self._traced_records[0].register_per_thread > 0
         values_num = len(self._traced_records[0].metric_values)
+
+        # We currently get kernel attributes through CUDA Driver API,
+        # there is no corresponding implementation in other backends yet.
+        # Profiler dose not print invalid kernel attributes info for now.
+        kernel_attribute_state = self._traced_records[0].register_per_thread > 0
 
         # headers
         table_header = f"Kernel Profiler(trace) @ {_ti_core.arch_name(ti.cfg.arch).upper()}"
@@ -263,7 +267,8 @@ class KernelProfiler:
                 formatted_str += '    {:4d} | {:6d} bytes |    {:6d} |     {:6d} | {:2d} blocks |'
                 values += [
                     record.register_per_thread, record.shared_mem_per_block,
-                    record.grid_size, record.block_size, record.block_occupancy
+                    record.grid_size, record.block_size,
+                    record.active_blocks_per_multiprocessor
                 ]
             for idx in range(values_num):
                 formatted_str += metric_list[idx].format + '|'

@@ -221,7 +221,7 @@ void export_lang(py::module &m) {
       .def_readwrite("grid_size", &KernelProfileTracedRecord::grid_size)
       .def_readwrite("block_size", &KernelProfileTracedRecord::block_size)
       .def_readwrite(
-          "block_occupancy",
+          "active_blocks_per_multiprocessor",
           &KernelProfileTracedRecord::active_blocks_per_multiprocessor)
       .def_readwrite("kernel_time",
                      &KernelProfileTracedRecord::kernel_elapsed_time_in_ms)

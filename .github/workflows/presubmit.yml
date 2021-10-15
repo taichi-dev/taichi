@@ -109,6 +109,8 @@ jobs:
 
       - name: Test
         run: .github/workflows/scripts/unix_test.sh
+        env:
+          RUN_CPP_TESTS: ON
 
   build_and_test_cpu:
     name: Build and Test (CPU)
@@ -180,7 +182,7 @@ jobs:
           .github/workflows/scripts/unix_build.sh
         env:
           LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
           BUILD_NUM_THREADS: 8
           LLVM_PATH: /opt/taichi-llvm-10.0.0/bin
           LLVM_DIR: /opt/taichi-llvm-10.0.0/lib/cmake/llvm
@@ -191,6 +193,7 @@ jobs:
         env:
           DISPLAY: :1
           GPU_TEST: ON
+          RUN_CPP_TESTS: ON
 
   build_and_test_windows:
     name: Build and Test (Windows)

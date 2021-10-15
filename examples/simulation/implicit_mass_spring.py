@@ -33,13 +33,13 @@ class Cloth:
         self.gravity = ti.Vector([0.0, -2.0])
         self.init_pos()
         self.init_edges()
-        self.MassBuilder = ti.SparseMatrixBuilder(2 * self.NV,
+        self.MassBuilder = ti.linalg.SparseMatrixBuilder(2 * self.NV,
                                                   2 * self.NV,
                                                   max_num_triplets=10000)
-        self.DBuilder = ti.SparseMatrixBuilder(2 * self.NV,
+        self.DBuilder = ti.linalg.SparseMatrixBuilder(2 * self.NV,
                                                2 * self.NV,
                                                max_num_triplets=10000)
-        self.KBuilder = ti.SparseMatrixBuilder(2 * self.NV,
+        self.KBuilder = ti.linalg.SparseMatrixBuilder(2 * self.NV,
                                                2 * self.NV,
                                                max_num_triplets=10000)
         self.init_mass_sp(self.MassBuilder)

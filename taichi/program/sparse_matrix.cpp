@@ -41,7 +41,13 @@ SparseMatrix SparseMatrixBuilder::build() {
   }
   SparseMatrix sm(rows_, cols_);
   sm.get_matrix().setFromTriplets(triplets.begin(), triplets.end());
+  clear();
   return sm;
+}
+
+void SparseMatrixBuilder::clear() {
+  built_ = false;
+  num_triplets_ = 0;
 }
 
 SparseMatrix::SparseMatrix(Eigen::SparseMatrix<float32> &matrix) {

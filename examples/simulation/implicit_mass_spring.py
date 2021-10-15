@@ -33,10 +33,14 @@ class Cloth:
         self.gravity = ti.Vector([0.0, -2.0])
         self.init_pos()
         self.init_edges()
-        self.MassBuilder = ti.SparseMatrixBuilder(2 * self.NV,
-                                                  2 * self.NV,
-                                                  max_num_triplets=10000)
-
+        self.MassBuilder = ti.linalg.SparseMatrixBuilder(
+            2 * self.NV, 2 * self.NV, max_num_triplets=10000)
+        self.DBuilder = ti.linalg.SparseMatrixBuilder(2 * self.NV,
+                                                      2 * self.NV,
+                                                      max_num_triplets=10000)
+        self.KBuilder = ti.linalg.SparseMatrixBuilder(2 * self.NV,
+                                                      2 * self.NV,
+                                                      max_num_triplets=10000)
         self.init_mass_sp(self.MassBuilder)
         self.M = self.MassBuilder.build()
         self.fix_vertex = [self.N, self.NV - 1]
@@ -171,17 +175,12 @@ class Cloth:
 
         self.compute_Jacobians()
         # Assemble global system
-        DBuilder = ti.SparseMatrixBuilder(2 * self.NV,
-                                          2 * self.NV,
-                                          max_num_triplets=10000)
-        self.assemble_D(DBuilder)
-        D = DBuilder.build()
 
-        KBuilder = ti.SparseMatrixBuilder(2 * self.NV,
-                                          2 * self.NV,
-                                          max_num_triplets=10000)
-        self.assemble_K(KBuilder)
-        K = KBuilder.build()
+        self.assemble_D(self.DBuilder)
+        D = self.DBuilder.build()
+
+        self.assemble_K(self.KBuilder)
+        K = self.KBuilder.build()
 
         A = self.M - h * D - h**2 * K
 

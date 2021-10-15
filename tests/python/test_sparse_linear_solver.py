@@ -46,7 +46,7 @@ def test_sparse_LLT_solver(solver_type):
 
     fill(Abuilder, Aarray, b)
     A = Abuilder.build()
-    solver = ti.SparseSolver(solver_type=solver_type)
+    solver = ti.linalg.SparseSolver(solver_type=solver_type)
     solver.analyze_pattern(A)
     solver.factorize(A)
     x = solver.solve(b)

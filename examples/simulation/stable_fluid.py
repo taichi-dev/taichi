@@ -88,12 +88,12 @@ if use_sparse_matrix:
             A[row, row] += center
 
     N = res * res
-    K = ti.SparseMatrixBuilder(N, N, max_num_triplets=N * 6)
+    K = ti.linalg.SparseMatrixBuilder(N, N, max_num_triplets=N * 6)
     b = ti.field(ti.f32, shape=N)
 
     fill_laplacian_matrix(K)
     L = K.build()
-    solver = ti.SparseSolver(solver_type="LLT")
+    solver = ti.linalg.SparseSolver(solver_type="LLT")
     solver.analyze_pattern(L)
     solver.factorize(L)
 

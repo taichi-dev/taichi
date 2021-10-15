@@ -33,6 +33,8 @@ def get_field_info(field):
         info.matrix_cols = field.m
     else:
         info.field_type = _ti_core.FieldType.Scalar
+        info.matrix_rows = 1
+        info.matrix_cols = 1
     return info
 
 

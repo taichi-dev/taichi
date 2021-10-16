@@ -207,8 +207,8 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
           "runtime_NodeAllocator_initialize", rt, snodes[i]->id, node_size);
       TI_TRACE("Allocating ambient element for snode {} (node size {})",
                snodes[i]->id, node_size);
-      runtime_jit->call<void *, int>("runtime_allocate_ambient", rt, i,
-                                     node_size);
+      runtime_jit->call<void *, int>("runtime_allocate_ambient", rt,
+                                     snodes[i]->id, node_size);
     }
   }
 }

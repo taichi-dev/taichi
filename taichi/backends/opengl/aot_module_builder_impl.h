@@ -31,7 +31,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 
  private:
   StructCompiledResult &compiled_structs_;
-  OpenGlRuntime &runtime_;
 
   AotData aot_data_;
 };

@@ -33,7 +33,12 @@ class ProgramImpl {
                                    uint64 **result_buffer_ptr) = 0;
 
   /**
-   * Run StructCompiler for the backend.
+   * JIT compiles @param tree to backend-specific data types.
+   */
+  virtual void compile_snode_tree_types(SNodeTree *tree);
+
+  /**
+   * Compiles the @param tree types and allocates runtime buffer for it.
    */
   virtual void materialize_snode_tree(
       SNodeTree *tree,

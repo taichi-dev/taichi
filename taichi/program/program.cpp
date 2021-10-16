@@ -176,26 +176,15 @@ Function *Program::create_function(const FunctionKey &func_key) {
 FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
-  FunctionType ret = nullptr;
-  if (arch_uses_llvm(config.arch) || kernel.arch == Arch::metal ||
-      kernel.arch == Arch::vulkan || kernel.arch == Arch::opengl ||
-      kernel.arch == Arch::cc) {
-    return program_impl_->compile(&kernel, offloaded);
-  } else {
-    TI_NOT_IMPLEMENTED;
-  }
+  auto ret = program_impl_->compile(&kernel, offloaded);
   TI_ASSERT(ret);
   total_compilation_time_ += Time::get_time() - start_t;
   return ret;
 }
 
 void Program::materialize_runtime() {
-  if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
-      config.arch == Arch::vulkan || config.arch == Arch::opengl ||
-      config.arch == Arch::cc) {
-    program_impl_->materialize_runtime(memory_pool_.get(), profiler.get(),
-                                       &result_buffer);
-  }
+  program_impl_->materialize_runtime(memory_pool_.get(), profiler.get(),
+                                     &result_buffer);
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
@@ -203,11 +192,17 @@ void Program::destroy_snode_tree(SNodeTree *snode_tree) {
   program_impl_->destroy_snode_tree(snode_tree);
 }
 
-SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {
+SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root,
+                                   bool compile_only) {
   const int id = snode_trees_.size();
   auto tree = std::make_unique<SNodeTree>(id, std::move(root));
   tree->root()->set_snode_tree_id(id);
-  materialize_snode_tree(tree.get());
+  if (compile_only) {
+    program_impl_->compile_snode_tree_types(tree.get());
+  } else {
+    program_impl_->materialize_snode_tree(tree.get(), snode_trees_, snodes,
+                                          result_buffer);
+  }
   snode_trees_.push_back(std::move(tree));
 
   return snode_trees_[id].get();
@@ -215,15 +210,6 @@ SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {
 
 SNode *Program::get_snode_root(int tree_id) {
   return snode_trees_[tree_id]->root();
-}
-
-void Program::materialize_snode_tree(SNodeTree *tree) {
-  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda ||
-      config.arch == Arch::metal || config.arch == Arch::vulkan ||
-      config.arch == Arch::opengl || config.arch == Arch::cc) {
-    program_impl_->materialize_snode_tree(tree, snode_trees_, snodes,
-                                          result_buffer);
-  }
 }
 
 void Program::check_runtime_error() {

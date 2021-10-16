@@ -308,15 +308,20 @@ class PyTaichi:
         if self.prog is None:
             self.prog = _ti_core.Program()
 
-    def materialize_root_fb(self, first):
+    def materialize_root_fb(self, is_first_call):
         if not root.finalized and not root.empty:
             root.finalize()
-        elif first:
+        elif is_first_call:
             root.finalize(raise_warning=False)
 
         if root.finalized:
             global _root_fb
             _root_fb = FieldsBuilder()
+
+    def _finalize_root_fb_for_aot(self):
+        if _root_fb.finalized:
+            raise RuntimeError('AOT: can only finalize the root FieldsBuilder once')
+        _root_fb._finalize_for_aot()
 
     def materialize(self):
         self.materialize_root_fb(not self.materialized)

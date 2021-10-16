@@ -18,8 +18,7 @@ class OpenglCodeGen {
  public:
   OpenglCodeGen(const std::string &kernel_name,
                 const StructCompiledResult *struct_compiled)
-      : kernel_name_(kernel_name),
-        struct_compiled_(struct_compiled) {
+      : kernel_name_(kernel_name), struct_compiled_(struct_compiled) {
   }
 
   CompiledProgram compile(Kernel &kernel);

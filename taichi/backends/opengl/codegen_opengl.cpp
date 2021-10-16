@@ -60,11 +60,10 @@ std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
 }
 
 class KernelGen : public IRVisitor {
-
  public:
   KernelGen(Kernel *kernel,
             const StructCompiledResult *struct_compiled,
-            const std::string& kernel_name)
+            const std::string &kernel_name)
       : kernel_(kernel),
         kernel_name_(kernel_name),
         struct_compiled_(struct_compiled),

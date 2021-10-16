@@ -128,7 +128,7 @@ print(f">>>> Element Access: A[0,0] = {A[0,0]}")
 ## Sparse linear solver
 You may want to solve some linear equations using sparse matrices.
 Then, the following steps could help:
-1. Create a `solver` using `ti.linalg.SparseSolver(solver_type, ordering)`. Currently, the sparse solver supports `LLT`, `LDLT` and `LU` factorization types, and orderings including `AMD`, `COLAMD`
+1. Create a `solver` using `ti.linalg.SparseSolver(solver_type, ordering)`. Currently, the sparse solver supports `LLT`, `LDLT` and `LU` factorization types, and orderings including `AMD`, `COLAMD`.
 2. Analyze and factorize the sparse matrix you want to solve using `solver.analyze_pattern(sparse_matrix)` and `solver.factorize(sparse_matrix)`
 3. Call `solver.solve(b)` to get your solutions, where `b` is a numpy array or taichi filed representing the right-hand side of the linear system.
 4. Call `solver.info()` to check if the solving process succeeds.

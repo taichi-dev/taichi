@@ -6,9 +6,8 @@ namespace lang {
 namespace opengl {
 
 AotModuleBuilderImpl::AotModuleBuilderImpl(
-    StructCompiledResult &compiled_structs,
-    OpenGlRuntime &runtime)
-    : compiled_structs_(compiled_structs), runtime_(runtime) {
+    StructCompiledResult &compiled_structs)
+    : compiled_structs_(compiled_structs) {
   aot_data_.root_buffer_size = compiled_structs_.root_size;
 }
 
@@ -27,7 +26,7 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_, &runtime_);
+  opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_);
   auto compiled = codegen.compile(*kernel);
   aot_data_.kernels.push_back({compiled, identifier});
 }
@@ -69,7 +68,7 @@ void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
-  opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_, &runtime_);
+  opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_);
   auto compiled = codegen.compile(*kernel);
 
   for (auto &k : aot_data_.kernel_tmpls) {

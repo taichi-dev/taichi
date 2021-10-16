@@ -60,16 +60,14 @@ std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
 }
 
 class KernelGen : public IRVisitor {
-  Kernel *kernel;
-
  public:
   KernelGen(Kernel *kernel,
-            std::string kernel_name,
-            StructCompiledResult *struct_compiled,
-            Device *device)
-      : kernel(kernel),
-        struct_compiled_(struct_compiled),
+            const StructCompiledResult *struct_compiled,
+            const std::string &kernel_name)
+      : kernel_(kernel),
         kernel_name_(kernel_name),
+        struct_compiled_(struct_compiled),
+        root_snode_type_name_(struct_compiled->root_snode_type_name),
         glsl_kernel_prefix_(kernel_name) {
     compiled_program_.init_args(kernel);
     allow_undefined_visitor = true;
@@ -77,14 +75,13 @@ class KernelGen : public IRVisitor {
   }
 
  private:
-  // constants:
-  StructCompiledResult *struct_compiled_;
-  GetRootStmt *root_stmt_;
+  const Kernel *kernel_;
+  const StructCompiledResult *struct_compiled_;
   std::string kernel_name_;
   std::string root_snode_type_name_;
   std::string glsl_kernel_prefix_;
 
-  // throughout variables:
+  GetRootStmt *root_stmt_;
   int glsl_kernel_count_{0};
   bool is_top_level_{true};
   CompiledProgram compiled_program_;
@@ -247,7 +244,7 @@ class KernelGen : public IRVisitor {
     compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
                           num_workgroups_, workgroup_size_,
                           &this->extptr_access);
-    auto &config = kernel->program->config;
+    auto &config = kernel_->program->config;
     if (config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer("shader{:04d}.comp",
                                        "OpenGL compute shader");
@@ -1009,7 +1006,7 @@ class KernelGen : public IRVisitor {
     // the `length` field of a dynamic SNode is at it's end:
     // | x[0] | x[1] | x[2] | x[3] | ... | len |
     emit("_list_len_ = {};",
-         struct_compiled_->snode_map[snode->node_type_name].length);
+         struct_compiled_->snode_map.at(snode->node_type_name).length);
     emit("for (int i = 0; i < _list_len_; i++) {{");
     {
       ScopedIndent _s(line_appender_);
@@ -1153,10 +1150,6 @@ class KernelGen : public IRVisitor {
   }
 
  public:
-  Kernel *get_kernel() const {
-    return kernel;
-  }
-
   CompiledProgram get_compiled_program() {
     // We have to set it at the last moment, to get all used feature.
     compiled_program_.set_used(used);
@@ -1164,8 +1157,7 @@ class KernelGen : public IRVisitor {
   }
 
   void run() {
-    root_snode_type_name_ = struct_compiled_->root_snode_type_name;
-    kernel->ir->accept(this);
+    kernel_->ir->accept(this);
   }
 };
 
@@ -1173,8 +1165,7 @@ class KernelGen : public IRVisitor {
 
 CompiledProgram OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
-  KernelGen codegen(kernel_, kernel_name_, struct_compiled_,
-                    runtime_->device.get());
+  KernelGen codegen(kernel_, struct_compiled_, kernel_name_);
   codegen.run();
   return codegen.get_compiled_program();
 #else

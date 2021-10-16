@@ -8,8 +8,7 @@ namespace lang {
 FunctionType OpenglProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
 #ifdef TI_WITH_OPENGL
-  opengl::OpenglCodeGen codegen(kernel->name, &opengl_struct_compiled_.value(),
-                                opengl_runtime_.get());
+  opengl::OpenglCodeGen codegen(kernel->name, &opengl_struct_compiled_.value());
   auto ptr = opengl_runtime_->keep(codegen.compile(*kernel));
 
   return [ptr, runtime = opengl_runtime_.get()](Context &ctx) {
@@ -51,9 +50,11 @@ void OpenglProgramImpl::materialize_snode_tree(
 }
 
 std::unique_ptr<AotModuleBuilder> OpenglProgramImpl::make_aot_module_builder() {
+  // TODO: Remove this compilation guard -- AOT is a compile-time thing, so it's
+  // fine to JIT to GLSL on systems without the OpenGL runtime.
 #ifdef TI_WITH_OPENGL
-  return std::make_unique<AotModuleBuilderImpl>(opengl_struct_compiled_.value(),
-                                                *opengl_runtime_);
+  return std::make_unique<AotModuleBuilderImpl>(
+      opengl_struct_compiled_.value());
 #else
   TI_NOT_IMPLEMENTED;
   return nullptr;

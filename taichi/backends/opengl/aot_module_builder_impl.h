@@ -12,8 +12,7 @@ namespace opengl {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
-  explicit AotModuleBuilderImpl(StructCompiledResult &compiled_structs,
-                                OpenGlRuntime &runtime);
+  explicit AotModuleBuilderImpl(StructCompiledResult &compiled_structs);
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
@@ -32,7 +31,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 
  private:
   StructCompiledResult &compiled_structs_;
-  OpenGlRuntime &runtime_;
 
   AotData aot_data_;
 };

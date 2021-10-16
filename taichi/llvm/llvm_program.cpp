@@ -191,6 +191,7 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
 
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
+      const auto snode_id = snodes[i]->id;
       std::size_t node_size;
       auto element_size = snodes[i]->cell_size_bytes;
       if (snodes[i]->type == SNodeType::pointer) {
@@ -200,15 +201,15 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
         // dynamic. Allocators are for the chunks
         node_size = sizeof(void *) + element_size * snodes[i]->chunk_size;
       }
-      TI_TRACE("Initializing allocator for snode {} (node size {})",
-               snodes[i]->id, node_size);
+      TI_TRACE("Initializing allocator for snode {} (node size {})", snode_id,
+               node_size);
       auto rt = llvm_runtime;
       runtime_jit->call<void *, int, std::size_t>(
-          "runtime_NodeAllocator_initialize", rt, snodes[i]->id, node_size);
+          "runtime_NodeAllocator_initialize", rt, snode_id, node_size);
       TI_TRACE("Allocating ambient element for snode {} (node size {})",
-               snodes[i]->id, node_size);
-      runtime_jit->call<void *, int>("runtime_allocate_ambient", rt,
-                                     snodes[i]->id, node_size);
+               snode_id, node_size);
+      runtime_jit->call<void *, int>("runtime_allocate_ambient", rt, snode_id,
+                                     node_size);
     }
   }
 }

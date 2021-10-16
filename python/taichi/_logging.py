@@ -5,6 +5,15 @@ from taichi.core import ti_core
 
 
 def _get_logging(name):
+    """Generates a decorator to decorate a specific logger function.
+
+    Args:
+        name (str): The string represents logging level. 
+            Supported levels include: `trace`, `debug`, `info`, `warn`, `error`, `critical`.
+
+    Returns:
+        Callabe: The decorated function.
+    """
     def logger(msg, *args, **kwargs):
         # Python inspection takes time (~0.1ms) so avoid it as much as possible
         if ti_core.logging_effective(name):
@@ -20,10 +29,26 @@ def _get_logging(name):
 
 
 def set_logging_level(level):
+    """Controls the level of detail in logs.
+
+    Args:
+        level (str): The string represents logging level.
+            Supported levels include: `trace`, `debug`, `info`, `warn`, `error`, `critical`.
+            Default is `info`.
+    """
     ti_core.set_logging_level(level)
 
 
 def is_logging_effective(level):
+    """Check if the input level is valid.
+
+    Args:
+        level (str): The string represents logging level. 
+            Supported levels include: `trace`, `debug`, `info`, `warn`, `error`, `critical`.
+            
+    Returns:
+        Bool: Indicate whether the logging level is supported.
+    """
     return ti_core.logging_effective(level)
 
 

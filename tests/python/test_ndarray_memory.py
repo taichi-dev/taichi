@@ -139,7 +139,7 @@ def test_ndarray_numpy_io():
     assert (a.to_numpy() == b.to_numpy()).all()
 
 
-# TODO, currently fall back to Torch
+@pytest.mark.skip(reason='Currently only support using Torch.')
 @pytest.mark.parametrize('layout', layouts)
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl, ndarray_use_torch=True)
@@ -155,9 +155,9 @@ def test_matrix_ndarray_python_scope(layout):
     assert a[4][0, 1] == 1
 
 
-# TODO, currently fall back to Torch
-@pytest.mark.parametrize('layout', layouts)
+@pytest.mark.skip(reason='Currently only support using Torch.')
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.parametrize('layout', layouts)
 @ti.test(exclude=ti.opengl, ndarray_use_torch=True)
 def test_matrix_ndarray_taichi_scope(layout):
     @ti.kernel
@@ -175,9 +175,9 @@ def test_matrix_ndarray_taichi_scope(layout):
     assert m[4][0, 1] == 1
 
 
-# TODO, currently fall back to Torch
-@pytest.mark.parametrize('layout', layouts)
+@pytest.mark.skip(reason='Currently only support using Torch.')
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.parametrize('layout', layouts)
 @ti.test(exclude=ti.opengl, ndarray_use_torch=True)
 def test_matrix_ndarray_taichi_scope_struct_for(layout):
     @ti.kernel
@@ -195,9 +195,9 @@ def test_matrix_ndarray_taichi_scope_struct_for(layout):
     assert m[4][0, 1] == 1
 
 
-# TODO, currently fall back to Torch
-@pytest.mark.parametrize('layout', layouts)
+@pytest.mark.skip(reason='Currently only support using Torch.')
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.parametrize('layout', layouts)
 @ti.test(exclude=ti.opengl, ndarray_use_torch=True)
 def test_vector_ndarray_python_scope(layout):
     a = ti.Vector.ndarray(10, ti.i32, 5, layout=layout)
@@ -211,9 +211,9 @@ def test_vector_ndarray_python_scope(layout):
     assert a[4][9] == 9
 
 
-# TODO, currently fall back to Torch
-@pytest.mark.parametrize('layout', layouts)
+@pytest.mark.skip(reason='Currently only support using Torch.')
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.parametrize('layout', layouts)
 @ti.test(exclude=ti.opengl, ndarray_use_torch=True)
 def test_vector_ndarray_taichi_scope(layout):
     @ti.kernel
@@ -234,7 +234,7 @@ def test_vector_ndarray_taichi_scope(layout):
 # number of compiled functions
 
 
-# TODO, currently fall back to Torch
+@pytest.mark.skip(reason='Currently only support using Torch.')
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl, ndarray_use_torch=True)
 def test_compiled_functions():

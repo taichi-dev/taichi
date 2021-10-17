@@ -12,9 +12,9 @@ from taichi.lang.ast.checkers import KernelSimplicityASTChecker
 from taichi.lang.ast.transformer import ASTTransformerTotal
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.linalg.sparse_matrix import sparse_matrix_builder
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
+from taichi.linalg.sparse_matrix import sparse_matrix_builder
 from taichi.misc.util import obsolete
 from taichi.type import any_arr, primitive_types, template
 

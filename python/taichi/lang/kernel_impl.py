@@ -12,7 +12,6 @@ from taichi.lang.ast.checkers import KernelSimplicityASTChecker
 from taichi.lang.ast.transformer import ASTTransformerTotal
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
-# from taichi.lang.kernel_arguments import sparse_matrix_builder
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
@@ -528,7 +527,7 @@ class Kernel:
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
-                    # Pass only the base pointer of the ti.sparse_matrix_builder() argument
+                    # Pass only the base pointer of the ti.linalg.sparse_matrix_builder() argument
                     launch_ctx.set_arg_int(actual_argument_slot, v.get_addr())
                 elif isinstance(needed, any_arr) and (
                         self.match_ext_arr(v)

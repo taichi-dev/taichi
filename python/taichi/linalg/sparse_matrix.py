@@ -154,3 +154,4 @@ class SparseMatrixBuilder:
 
 
 sparse_matrix_builder = SparseMatrixBuilder
+# Alias for :class:`SparseMatrixBuilder`

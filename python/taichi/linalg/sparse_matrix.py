@@ -151,3 +151,6 @@ class SparseMatrixBuilder:
         """Create a sparse matrix using the triplets"""
         sm = self.ptr.build()
         return SparseMatrix(sm=sm)
+
+
+sparse_matrix_builder = SparseMatrixBuilder

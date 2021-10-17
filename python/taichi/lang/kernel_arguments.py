@@ -35,9 +35,9 @@ class SparseMatrixProxy:
         return SparseMatrixEntry(self.ptr, i, j)
 
 
-sparse_matrix_builder = SparseMatrixBuilder
-"""Alias for :class:`~taichi.lang.sparse_matrix.SparseMatrixBuilder`.
-"""
+# sparse_matrix_builder = SparseMatrixBuilder
+# """Alias for :class:`~taichi.lang.sparse_matrix.SparseMatrixBuilder`.
+# """
 
 
 def decl_scalar_arg(dtype):

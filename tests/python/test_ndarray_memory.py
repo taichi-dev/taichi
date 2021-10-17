@@ -90,10 +90,10 @@ def test_ndarray_1d():
         for i in range(n):
             x[i] += i + y[i]
 
-    a = ti.ndarray(ti.i32, shape=(n,))
+    a = ti.ndarray(ti.i32, shape=(n, ))
     for i in range(n):
         a[i] = i * i
-    b = np.ones((n,), dtype=np.int32)
+    b = np.ones((n, ), dtype=np.int32)
     run(a, b)
     for i in range(n):
         assert a[i] == i * i + i + 1

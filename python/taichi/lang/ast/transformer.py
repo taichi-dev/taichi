@@ -29,7 +29,7 @@ class ASTTransformerTotal(object):
             return
         if title is not None:
             ti.info(f'{title}:')
-        print(astor.to_source(tree.body[0], indent_with='    '))
+        print(astor.to_source(tree.body[0], indent_with='    '), flush=True)
 
     def visit(self, tree):
         self.print_ast(tree, 'Initial AST')

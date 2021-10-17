@@ -31,8 +31,8 @@ class SNodeTreeBufferManager {
   std::set<std::pair<std::size_t, Ptr>> size_set_;
   std::map<Ptr, std::size_t> ptr_map_;
   LlvmProgramImpl *prog_;
-  Ptr roots_[taichi_max_num_snode_trees];
-  std::size_t sizes_[taichi_max_num_snode_trees];
+  Ptr roots_[kMaxNumSnodeTreesLlvm];
+  std::size_t sizes_[kMaxNumSnodeTreesLlvm];
 };
 
 TLANG_NAMESPACE_END

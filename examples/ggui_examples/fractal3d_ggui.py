@@ -134,8 +134,8 @@ class Julia:
         return light_color * surface_color * max(0, dot(light_dir, normal))
 
     @ti.kernel
-    def march(self, time: float):
-        time = time * 0.15
+    def march(self, time_arg: float):
+        time = time_arg * 0.15
         c = 0.45 * ti.cos(
             ti.Vector([0.5, 3.9, 1.4, 1.1]) + time *
             ti.Vector([1.2, 1.7, 1.3, 2.5])) - ti.Vector([0.3, 0.0, 0.0, 0.0])

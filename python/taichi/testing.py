@@ -4,7 +4,6 @@ import itertools
 import os
 from tempfile import mkstemp
 
-import pytest
 from taichi.core import ti_core as _ti_core
 
 import taichi as ti
@@ -40,6 +39,7 @@ def approx(expected, **kwargs):
 
     kwargs['rel'] = max(kwargs.get('rel', 1e-6), get_rel_eps())
 
+    import pytest  # pylint: disable=C0415
     return pytest.approx(expected, **kwargs)
 
 

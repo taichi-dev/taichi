@@ -83,7 +83,8 @@ class WholeKernelCSE : public BasicStmtVisitor {
                                        prev_loop_unique->input)) {
         // Merge the "covers" information into prev_loop_unique.
         // Notice that this_loop_unique->covers is corrupted here.
-        prev_loop_unique->covers.merge(this_loop_unique->covers);
+        prev_loop_unique->covers.insert(this_loop_unique->covers.begin(),
+                                        this_loop_unique->covers.end());
         return true;
       }
       return false;

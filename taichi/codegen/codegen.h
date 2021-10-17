@@ -21,8 +21,6 @@ class KernelCodeGen {
                                                Kernel *kernel,
                                                Stmt *stmt = nullptr);
 
-  virtual FunctionType compile();
-
   virtual FunctionType codegen() = 0;
 };
 

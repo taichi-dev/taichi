@@ -1,6 +1,8 @@
 #pragma once
-#include <vector>
+
 #include <set>
+#include <unordered_map>
+#include <vector>
 
 #include "taichi/common/core.h"
 #include "taichi/backends/device.h"
@@ -106,7 +108,9 @@ class CpuDevice : public Device {
 
  private:
   std::vector<AllocInfo> allocations_;
-  std::vector<std::unique_ptr<VirtualMemoryAllocator>> virtual_memories_;
+  std::unordered_map<int, std::unique_ptr<VirtualMemoryAllocator>>
+      virtual_memories_;
+
   void validate_device_alloc(DeviceAllocation alloc) {
     if (allocations_.size() <= alloc.alloc_id) {
       TI_ERROR("invalid DeviceAllocation");

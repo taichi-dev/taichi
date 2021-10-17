@@ -135,6 +135,14 @@ class Ndarray:
             ext_arr_to_ndarray(arr, self)
             ti.sync()
 
+    def pad_key(self, key):
+        if key is None:
+            key = ()
+        if not isinstance(key, (tuple, list)):
+            key = (key, )
+        assert len(key) == len(self.arr.shape)
+        return key
+
     def initialize_host_accessor(self):
         if self.host_accessor:
             return
@@ -162,7 +170,7 @@ class ScalarNdarray(Ndarray):
             self.arr.__setitem__(key, value)
         else:
             self.initialize_host_accessor()
-            self.host_accessor.setter(value, key)
+            self.host_accessor.setter(value, *self.pad_key(key))
 
     @python_scope
     def __getitem__(self, key):
@@ -170,7 +178,7 @@ class ScalarNdarray(Ndarray):
             return self.arr.__getitem__(key)
         else:
             self.initialize_host_accessor()
-            return self.host_accessor.getter(key)
+            return self.host_accessor.getter(*self.pad_key(key))
 
     def __repr__(self):
         return '<ti.ndarray>'
@@ -181,22 +189,22 @@ class NdarrayHostAccessor:
         if _ti_core.is_real(ndarray.dtype):
 
             def getter(*key):
-                return ndarray.read_float(*key)
+                return ndarray.read_float(key)
 
             def setter(value, *key):
-                ndarray.write_float(*key, value)
+                ndarray.write_float(key, value)
         else:
             if _ti_core.is_signed(ndarray.dtype):
 
                 def getter(*key):
-                    return ndarray.read_int(*key)
+                    return ndarray.read_int(key)
             else:
 
                 def getter(*key):
-                    return ndarray.read_uint(*key)
+                    return ndarray.read_uint(key)
 
             def setter(value, *key):
-                ndarray.write_int(*key, value)
+                ndarray.write_int(key, value)
 
         self.getter = getter
         self.setter = setter

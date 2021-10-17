@@ -16,3 +16,4 @@ pytest-xdist
 pytest-rerunfailures
 pytest-cov
 torch
+isort

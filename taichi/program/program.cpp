@@ -408,10 +408,7 @@ Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
     for (int i = 0; i < ndarray->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    auto ete = Expr::make<ExternalTensorExpression>(ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices, 0);
-    auto ret = Stmt::make<FrontendReturnStmt>(
-        load_if_ptr(
-          Expr(ete)[indices]));
+    auto ret = Stmt::make<FrontendReturnStmt>(load_if_ptr(Expr(Expr::make<ExternalTensorExpression>(ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices, 0))[indices]));
     current_ast_builder().insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());

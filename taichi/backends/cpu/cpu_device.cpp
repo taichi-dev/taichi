@@ -22,7 +22,7 @@ DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
   alloc.device = this;
 
   allocations_.push_back(info);
-  virtual_memories_.push_back(std::move(vm));
+  virtual_memories_[alloc.alloc_id] = std::move(vm);
   return alloc;
 }
 
@@ -32,7 +32,8 @@ void CpuDevice::dealloc_memory(DeviceAllocation handle) {
   if (info.ptr == nullptr) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }
-  virtual_memories_[handle.alloc_id].reset();
+  // Use at() to ensure that the memory is allocated, and not imported
+  virtual_memories_.at(handle.alloc_id).reset();
   info.ptr = nullptr;
 }
 
@@ -51,5 +52,4 @@ DeviceAllocation CpuDevice::import_memory(void *ptr, size_t size) {
 
 }  // namespace cpu
 }  // namespace lang
-
 }  // namespace taichi

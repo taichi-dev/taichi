@@ -18,7 +18,7 @@ except ImportError:
     # TODO(#2223): Make `isort` a required package in a future release
     print('Please install `isort` or the formatter may not work')
 
-repo_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+repo_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 _yapf_config_path = os.path.join(repo_dir, 'misc', '.style.yapf')
 
 

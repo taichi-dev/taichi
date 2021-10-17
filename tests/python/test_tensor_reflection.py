@@ -48,7 +48,7 @@ def test_unordered():
     blk3.place(val)
 
     assert val.dtype == ti.i32
-    assert val.shape == (n, m, p)
+    assert val.shape == (m, p, n)
     assert val.snode.parent(0) == val.snode
     assert val.snode.parent() == blk3
     assert val.snode.parent(1) == blk3
@@ -62,8 +62,8 @@ def test_unordered():
     ti.get_runtime().materialize()
     assert blk1 in ti.FieldsBuilder.finalized_roots()[0].get_children()
 
-    expected_str = f'ti.root => dense {[n]} => dense {[n, m]}' \
-        f' => dense {[n, m, p]} => place {[n, m, p]}'
+    expected_str = f'ti.root => dense {[n]} => dense {[m, n]}' \
+        f' => dense {[m, p, n]} => place {[m, p, n]}'
     assert str(val.snode) == expected_str
 
 
@@ -80,7 +80,7 @@ def test_unordered_matrix():
     blk3 = blk2.dense(ti.j, p)
     blk3.place(val)
 
-    assert val.shape == (n, m, p)
+    assert val.shape == (m, p, n)
     assert val.dtype == ti.i32
     assert val.snode.parent(0) == val.snode
     assert val.snode.parent() == blk3

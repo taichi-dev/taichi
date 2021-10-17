@@ -10,29 +10,6 @@ from taichi.type.annotations import ext_arr, template
 from taichi.type.primitive_types import u64
 
 
-@kernel
-def get_field_addr_0D(x: template()) -> u64:
-    return get_addr(x, [None])
-
-
-@kernel
-def get_field_addr_ND(x: template()) -> u64:
-    return get_addr(x, [0 for _ in x.shape])
-
-
-field_addr_cache = {}
-
-
-def get_field_addr(x):
-    if x not in field_addr_cache:
-        if len(x.shape) == 0:
-            addr = get_field_addr_0D(x)
-        else:
-            addr = get_field_addr_ND(x)
-        field_addr_cache[x] = addr
-    return field_addr_cache[x]
-
-
 def get_field_info(field):
     info = _ti_core.FieldInfo()
     if field is None:
@@ -48,7 +25,7 @@ def get_field_info(field):
     info.shape = [n for n in field.shape]
 
     info.dtype = field.dtype
-    info.data = get_field_addr(field)
+    info.snode = field.snode.ptr
 
     if hasattr(field, 'n'):
         info.field_type = _ti_core.FieldType.Matrix

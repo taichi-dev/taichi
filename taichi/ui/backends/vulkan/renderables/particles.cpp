@@ -1,5 +1,4 @@
 #include "particles.h"
-#include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
 
 #include "taichi/ui/utils/utils.h"
 

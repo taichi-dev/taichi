@@ -368,7 +368,7 @@ void export_ggui(py::module &m) {
       .def_property("dtype", &FieldInfo::get_dtype, &FieldInfo::set_dtype)
       .def_property("field_source", &FieldInfo::get_field_source,
                     &FieldInfo::set_field_source)
-      .def_property("data", &FieldInfo::get_data, &FieldInfo::set_data)
+      .def_property("snode", &FieldInfo::get_snode, &FieldInfo::set_snode)
       .def_property("shape", &FieldInfo::get_shape, &FieldInfo::set_shape)
       .def_property("valid", &FieldInfo::get_valid, &FieldInfo::set_valid);
 

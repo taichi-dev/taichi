@@ -49,8 +49,6 @@ class SetImage final : public Renderable {
 
   taichi::lang::DeviceAllocation texture_;
 
-  unsigned char *device_ptr_{nullptr};
-
  private:
   void init_set_image(AppContext *app_context, int img_width, int img_height);
 

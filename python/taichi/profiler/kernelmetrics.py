@@ -166,7 +166,6 @@ achieved_occupancy = CuptiMetric(
 
 # metric suite: global load & store
 global_access = [
-    dram_utilization,
     dram_bytes_sum,
     dram_bytes_throughput,
     dram_bytes_read,
@@ -177,7 +176,6 @@ global_access = [
 
 # metric suite: shared load & store
 shared_access = [
-    shared_utilization,
     shared_transactions_load,
     shared_transactions_store,
     shared_bank_conflicts_store,

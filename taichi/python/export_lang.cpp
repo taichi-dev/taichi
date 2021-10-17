@@ -214,10 +214,19 @@ void export_lang(py::module &m) {
       .def_readwrite("avg", &Program::KernelProfilerQueryResult::avg);
 
   py::class_<KernelProfileTracedRecord>(m, "KernelProfileTracedRecord")
-      .def_readwrite("name", &KernelProfileTracedRecord::name)
+      .def_readwrite("register_per_thread",
+                     &KernelProfileTracedRecord::register_per_thread)
+      .def_readwrite("shared_mem_per_block",
+                     &KernelProfileTracedRecord::shared_mem_per_block)
+      .def_readwrite("grid_size", &KernelProfileTracedRecord::grid_size)
+      .def_readwrite("block_size", &KernelProfileTracedRecord::block_size)
+      .def_readwrite(
+          "active_blocks_per_multiprocessor",
+          &KernelProfileTracedRecord::active_blocks_per_multiprocessor)
       .def_readwrite("kernel_time",
                      &KernelProfileTracedRecord::kernel_elapsed_time_in_ms)
       .def_readwrite("base_time", &KernelProfileTracedRecord::time_since_base)
+      .def_readwrite("name", &KernelProfileTracedRecord::name)
       .def_readwrite("metric_values",
                      &KernelProfileTracedRecord::metric_values);
 

@@ -8,6 +8,7 @@
 #include "taichi/program/program.h"
 #include "taichi/system/threading.h"
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/backends/cuda/cuda_profiler.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -84,7 +85,9 @@ void CUDAContext::launch(void *func,
   KernelProfilerBase::TaskHandle task_handle;
   // Kernel launch
   if (profiler_) {
-    profiler_->trace(task_handle, task_name);
+    KernelProfilerCUDA *profiler_cuda =
+        dynamic_cast<KernelProfilerCUDA *>(profiler_);
+    profiler_cuda->trace(task_handle, task_name, func, grid_dim, block_dim, 0);
   }
 
   auto context_guard = CUDAContext::get_instance().get_guard();

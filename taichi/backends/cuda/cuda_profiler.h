@@ -26,7 +26,11 @@ class KernelProfilerCUDA : public KernelProfilerBase {
 
   bool reinit_with_metrics(const std::vector<std::string> metrics) override;
   void trace(KernelProfilerBase::TaskHandle &task_handle,
-             const std::string &task_name) override;
+             const std::string &kernel_name,
+             void *kernel,
+             uint32_t grid_size,
+             uint32_t block_size,
+             uint32_t dynamic_smem_size);
   void sync() override;
   void clear() override;
   void stop(KernelProfilerBase::TaskHandle handle) override;

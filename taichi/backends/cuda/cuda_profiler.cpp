@@ -59,12 +59,36 @@ KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
 }
 
 void KernelProfilerCUDA::trace(KernelProfilerBase::TaskHandle &task_handle,
-                               const std::string &task_name) {
+                               const std::string &kernel_name,
+                               void *kernel,
+                               uint32_t grid_size,
+                               uint32_t block_size,
+                               uint32_t dynamic_smem_size) {
+  int register_per_thread = 0;
+  int static_shared_mem_per_block = 0;
+  int max_active_blocks_per_multiprocessor = 0;
+  CUDADriver::get_instance().kernel_get_attribute(
+      &register_per_thread, CUfunction_attribute::CU_FUNC_ATTRIBUTE_NUM_REGS,
+      kernel);
+  CUDADriver::get_instance().kernel_get_attribute(
+      &static_shared_mem_per_block,
+      CUfunction_attribute::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, kernel);
+  CUDADriver::get_instance().kernel_get_occupancy(
+      &max_active_blocks_per_multiprocessor, kernel, block_size,
+      dynamic_smem_size);
+
   if (tool_ == ProfilingToolkit::event) {
-    task_handle = event_toolkit_->start_with_handle(task_name);
+    task_handle = event_toolkit_->start_with_handle(kernel_name);
   }
   KernelProfileTracedRecord record;
-  record.name = task_name;
+  record.name = kernel_name;
+  record.register_per_thread = register_per_thread;
+  record.shared_mem_per_block = static_shared_mem_per_block + dynamic_smem_size;
+  record.grid_size = grid_size;
+  record.block_size = block_size;
+  record.active_blocks_per_multiprocessor =
+      max_active_blocks_per_multiprocessor;
+
   traced_records_.push_back(record);
 }
 
@@ -163,7 +187,11 @@ KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
   TI_NOT_IMPLEMENTED;
 }
 void KernelProfilerCUDA::trace(KernelProfilerBase::TaskHandle &task_handle,
-                               const std::string &task_name) {
+                               const std::string &kernel_name,
+                               void *kernel,
+                               uint32_t grid_size,
+                               uint32_t block_size,
+                               uint32_t dynamic_smem_size) {
   TI_NOT_IMPLEMENTED;
 }
 void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {

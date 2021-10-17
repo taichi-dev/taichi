@@ -28,6 +28,10 @@ KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
   }
 }
 
+std::string KernelProfilerCUDA::get_device_name() {
+  return CUDAContext::get_instance().get_device_name();
+}
+
 bool KernelProfilerCUDA::reinit_with_metrics(
     const std::vector<std::string> metrics) {
   // do not pass by reference
@@ -121,6 +125,9 @@ void KernelProfilerCUDA::clear() {
 #else
 
 KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
+  TI_NOT_IMPLEMENTED;
+}
+std::string KernelProfilerCUDA::get_device_name() {
   TI_NOT_IMPLEMENTED;
 }
 bool KernelProfilerCUDA::reinit_with_metrics(

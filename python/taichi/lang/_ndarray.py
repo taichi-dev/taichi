@@ -5,7 +5,6 @@ from taichi.lang.enums import Layout
 from taichi.lang.util import (cook_dtype, has_pytorch, python_scope,
                               to_numpy_type, to_pytorch_type, to_taichi_type)
 
-import taichi as ti
 
 if has_pytorch():
     import torch
@@ -109,7 +108,7 @@ class Ndarray:
             from taichi.lang.meta import \
                 ndarray_to_ext_arr  # pylint: disable=C0415
             ndarray_to_ext_arr(self, arr)
-            ti.sync()
+            impl.get_runtime().sync()
             return arr
 
     @python_scope
@@ -133,7 +132,7 @@ class Ndarray:
             from taichi.lang.meta import \
                 ext_arr_to_ndarray  # pylint: disable=C0415
             ext_arr_to_ndarray(arr, self)
-            ti.sync()
+            impl.get_runtime().sync()
 
     def pad_key(self, key):
         if key is None:
@@ -146,7 +145,7 @@ class Ndarray:
     def initialize_host_accessor(self):
         if self.host_accessor:
             return
-        ti.lang.impl.get_runtime().materialize()
+        impl.get_runtime().materialize()
         self.host_accessor = NdarrayHostAccessor(self.arr)
 
 

@@ -41,10 +41,7 @@ class OpenglProgramImpl : public ProgramImpl {
   void synchronize() override {
   }
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
-    // TODO: implement opengl aot
-    return nullptr;
-  }
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
   virtual void destroy_snode_tree(SNodeTree *snode_tree) override {
     TI_NOT_IMPLEMENTED

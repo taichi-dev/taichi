@@ -41,7 +41,9 @@ void Renderable::update_data(const RenderableInfo &info) {
   int num_vertices = info.vbo.shape[0];
   int num_indices;
   if (info.indices.valid) {
-    num_indices = info.indices.shape[0];
+    TI_ERROR_IF(info.indices.matrix_cols != 1,
+                "indices must either be a ti.field or a 2D/3D ti.Vector.field");
+    num_indices = info.indices.shape[0] * info.indices.matrix_rows;
     if (info.indices.dtype != PrimitiveType::i32 &&
         info.indices.dtype != PrimitiveType::u32) {
       throw std::runtime_error("dtype needs to be 32-bit ints for indices");

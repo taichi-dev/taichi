@@ -61,7 +61,7 @@ struct OpenGlRuntimeImpl {
   std::unique_ptr<GLSLRuntime> runtime;
   std::unique_ptr<GLSLListman> listman;
 
-  std::vector<std::unique_ptr<CompiledProgram>> programs;
+  std::vector<std::unique_ptr<DeviceCompiledProgram>> programs;
 };
 
 bool initialize_opengl(bool error_tolerance) {
@@ -137,293 +137,265 @@ bool initialize_opengl(bool error_tolerance) {
   return true;
 }
 
-struct CompiledKernel {
-  std::string kernel_name;
-  std::unique_ptr<Pipeline> pipeline;
-  int workgroup_size;
-  int num_groups;
-
-  CompiledKernel(const std::string &kernel_name_,
-                 const std::string &kernel_source_code,
-                 Device *device,
-                 int _workgroup_size,
-                 int _num_groups)
-      : kernel_name(kernel_name_) {
-    num_groups = std::min(_num_groups, opengl_max_grid_dim);
-    workgroup_size = std::min(_workgroup_size, opengl_max_block_dim);
-
-    size_t layout_pos = kernel_source_code.find("precision highp float;\n");
-    TI_ASSERT(layout_pos != std::string::npos);
-    std::string source =
-        kernel_source_code.substr(0, layout_pos) +
-        fmt::format(
-            "layout(local_size_x = {}, local_size_y = 1, local_size_z = "
-            "1) in;\n",
-            workgroup_size) +
-        kernel_source_code.substr(layout_pos);
-
-    TI_TRACE("[glsl]\ncompiling kernel {}<<<{}, {}>>>:\n{}", kernel_name,
-             num_groups, workgroup_size, kernel_source_code);
-
-    pipeline = device->create_pipeline(
-        {PipelineSourceType::glsl_src, source.data(), source.size()},
-        kernel_name);
-  }
-};
-
-struct CompiledProgram::Impl {
-  std::vector<std::unique_ptr<CompiledKernel>> kernels;
-
-  int arg_count{0};
-  int ret_count{0};
-  size_t args_buf_size{0};
-  size_t total_ext_arr_size{0};
-  size_t ret_buf_size{0};
-
-  std::unordered_map<int, size_t> ext_arr_map;
-  std::unordered_map<int, irpass::ExternalPtrAccess> ext_arr_access;
-  std::vector<std::string> str_table;
-  UsedFeature used;
-  Device *device;
-
-  DeviceAllocation args_buf{kDeviceNullAllocation};
-  DeviceAllocation ext_arr_buf{kDeviceNullAllocation};
-  DeviceAllocation ret_buf{kDeviceNullAllocation};
-
-  Impl(Kernel *kernel, Device *device) : device(device) {
-    arg_count = kernel->args.size();
-    ret_count = kernel->rets.size();
-    for (int i = 0; i < arg_count; i++) {
-      if (kernel->args[i].is_external_array) {
-        ext_arr_map[i] = kernel->args[i].size;
-      }
-    }
-
-    for (const auto &[i, size] : ext_arr_map) {
-      total_ext_arr_size += size;
-    }
-
-    args_buf_size = arg_count * sizeof(uint64_t);
-    if (ext_arr_map.size()) {
-      args_buf_size = taichi_opengl_earg_base +
-                      arg_count * taichi_max_num_indices * sizeof(int);
-    }
-
-    ret_buf_size = ret_count * sizeof(uint64_t);
-
-    if (args_buf_size) {
-      args_buf = device->allocate_memory({args_buf_size, /*host_write=*/true,
-                                          /*host_read=*/false,
-                                          /*export_sharing=*/false});
-    }
-
-    if (total_ext_arr_size) {
-      // Set both host write & host read for now
-      ext_arr_buf =
-          device->allocate_memory({total_ext_arr_size, /*host_write=*/true,
-                                   /*host_read=*/true,
-                                   /*export_sharing=*/false});
-    }
-
-    if (ret_buf_size) {
-      ret_buf = device->allocate_memory({ret_buf_size, /*host_write=*/false,
-                                         /*host_read=*/true,
-                                         /*export_sharing=*/false});
+void CompiledProgram::init_args(Kernel *kernel) {
+  arg_count = kernel->args.size();
+  ret_count = kernel->rets.size();
+  for (int i = 0; i < arg_count; i++) {
+    if (kernel->args[i].is_external_array) {
+      ext_arr_map[i] = kernel->args[i].size;
     }
   }
 
-  void add(const std::string &kernel_name,
-           const std::string &kernel_source_code,
-           int num_workgrpus,
-           int workgroup_size,
-           std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
-    kernels.push_back(std::make_unique<CompiledKernel>(
-        kernel_name, kernel_source_code, device, workgroup_size,
-        num_workgrpus));
-    if (ext_ptr_access) {
-      for (auto pair : *ext_ptr_access) {
-        if (ext_arr_access.find(pair.first) != ext_arr_access.end()) {
-          ext_arr_access[pair.first] = ext_arr_access[pair.first] | pair.second;
-        } else {
-          ext_arr_access[pair.first] = pair.second;
-        }
+  for (const auto &[i, size] : ext_arr_map) {
+    total_ext_arr_size += size;
+  }
+
+  args_buf_size = arg_count * sizeof(uint64_t);
+  if (ext_arr_map.size()) {
+    args_buf_size = taichi_opengl_earg_base +
+                    arg_count * taichi_max_num_indices * sizeof(int);
+  }
+
+  ret_buf_size = ret_count * sizeof(uint64_t);
+}
+
+void CompiledProgram::add(
+    const std::string &kernel_name,
+    const std::string &kernel_source_code,
+    int num_workgrpus,
+    int workgroup_size,
+    std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
+  num_workgrpus = std::min(num_workgrpus, opengl_max_grid_dim);
+  workgroup_size = std::min(workgroup_size, opengl_max_block_dim);
+
+  size_t layout_pos = kernel_source_code.find("precision highp float;\n");
+  TI_ASSERT(layout_pos != std::string::npos);
+  std::string source =
+      kernel_source_code.substr(0, layout_pos) +
+      fmt::format(
+          "layout(local_size_x = {}, local_size_y = 1, local_size_z = "
+          "1) in;\n",
+          workgroup_size) +
+      kernel_source_code.substr(layout_pos);
+
+  kernels.push_back({kernel_name, source, workgroup_size, num_workgrpus});
+
+  if (ext_ptr_access) {
+    for (auto pair : *ext_ptr_access) {
+      if (ext_arr_access.find(pair.first) != ext_arr_access.end()) {
+        ext_arr_access[pair.first] = ext_arr_access[pair.first] | pair.second;
+      } else {
+        ext_arr_access[pair.first] = pair.second;
       }
     }
   }
+}
 
-  int lookup_or_add_string(const std::string &str) {
-    int i;
-    for (i = 0; i < str_table.size(); i++) {
-      if (str_table[i] == str) {
-        return i;
-      }
-    }
-    str_table.push_back(str);
-    return i;
-  }
-
-  void dump_message_buffer(OpenGlRuntime *runtime) const {
-    auto rt_buf = (GLSLRuntime *)device->map(runtime->impl->core_bufs.runtime);
-
-    auto msg_count = rt_buf->msg_count;
-    if (msg_count > MAX_MESSAGES) {
-      TI_WARN("[glsl] Too much print within one kernel: {} > {}, clipping",
-              msg_count, MAX_MESSAGES);
-      msg_count = MAX_MESSAGES;
-    }
-
-    for (int i = 0; i < msg_count; i++) {
-      auto const &msg = rt_buf->msg_buf[i];
-      for (int j = 0; j < msg.num_contents; j++) {
-        int type = msg.get_type_of(j);
-        auto value = msg.contents[j];
-
-        std::string str;
-        switch (type) {
-          case 1:
-            str = fmt::format("{}", value.val_i32);
-            break;
-          case 2:
-            str = fmt::format("{}", value.val_f32);
-            break;
-          case 3:
-            str = str_table.at(value.val_i32);
-            break;
-          default:
-            TI_WARN("[glsl] Unexpected serialization type: {}, ignoring", type);
-            break;
-        };
-        py_cout << str;
-      }
-    }
-    rt_buf->msg_count = 0;
-    device->unmap(runtime->impl->core_bufs.runtime);
-  }
-
-  bool check_ext_arr_read(int i) const {
-    auto iter = ext_arr_access.find(i);
-    if (iter == ext_arr_access.end())
-      return false;
-
-    return (iter->second & irpass::ExternalPtrAccess::READ) !=
-           irpass::ExternalPtrAccess::NONE;
-  }
-
-  bool check_ext_arr_write(int i) const {
-    auto iter = ext_arr_access.find(i);
-    if (iter == ext_arr_access.end())
-      return false;
-
-    return (iter->second & irpass::ExternalPtrAccess::WRITE) !=
-           irpass::ExternalPtrAccess::NONE;
-  }
-
-  GLbitfield get_ext_arr_access(size_t &total_ext_arr_size) const {
-    GLbitfield access = 0;
-    for (const auto &[i, size] : ext_arr_map) {
-      total_ext_arr_size += size;
-      if (check_ext_arr_read(i)) {
-        access |= GL_MAP_WRITE_BIT;
-      }
-      if (check_ext_arr_write(i)) {
-        access |= GL_MAP_READ_BIT;
-      }
-    }
-    return access;
-  }
-
-  void launch(Context &ctx, OpenGlRuntime *launcher) const {
-    std::array<void *, taichi_max_num_args> ext_arr_host_ptrs;
-
-    uint8_t *args_buf_mapped = nullptr;
-
-    // Prepare external array
-    if (total_ext_arr_size) {
-      void *baseptr = device->map(ext_arr_buf);
-
-      size_t accum_size = 0;
-      for (const auto &[i, size] : ext_arr_map) {
-        auto ptr = (void *)ctx.args[i];
-        ctx.args[i] = accum_size;
-        ext_arr_host_ptrs[i] = ptr;
-        if (check_ext_arr_read(i)) {
-          std::memcpy((char *)baseptr + accum_size, ptr, size);
-        }
-        accum_size += size;
-      }
-
-      device->unmap(ext_arr_buf);
-    }
-
-    // Prepare argument buffer
-    if (args_buf_size) {
-      args_buf_mapped = (uint8_t *)device->map(args_buf);
-      std::memcpy(args_buf_mapped, ctx.args, arg_count * sizeof(uint64_t));
-      if (ext_arr_map.size()) {
-        std::memcpy(args_buf_mapped + size_t(taichi_opengl_earg_base),
-                    ctx.extra_args,
-                    size_t(arg_count * taichi_max_num_indices) * sizeof(int));
-      }
-      device->unmap(args_buf);
-    }
-
-    // Prepare runtime
-    if (used.print) {
-      // TODO(archibate): use result_buffer for print results
-      auto runtime_buf = launcher->impl->core_bufs.runtime;
-      auto mapped = (GLSLRuntime *)device->map(runtime_buf);
-      mapped->msg_count = 0;
-      device->unmap(runtime_buf);
-    }
-
-    auto cmdlist = device->get_compute_stream()->new_command_list();
-
-    // Kernel dispatch
-    for (const auto &kernel : kernels) {
-      auto binder = kernel->pipeline->resource_binder();
-      auto &core_bufs = launcher->impl->core_bufs;
-      binder->buffer(0, int(GLBufId::Runtime), core_bufs.runtime);
-      binder->buffer(0, int(GLBufId::Listman), core_bufs.listman);
-      binder->buffer(0, int(GLBufId::Root), core_bufs.root);
-      binder->buffer(0, int(GLBufId::Gtmp), core_bufs.gtmp);
-      if (args_buf_size)
-        binder->buffer(0, int(GLBufId::Args), args_buf);
-      if (ret_buf_size)
-        binder->buffer(0, int(GLBufId::Retr), ret_buf);
-      if (total_ext_arr_size)
-        binder->buffer(0, int(GLBufId::Extr), ext_arr_buf);
-
-      cmdlist->bind_pipeline(kernel->pipeline.get());
-      cmdlist->bind_resources(binder);
-      cmdlist->dispatch(kernel->num_groups, 1, 1);
-      cmdlist->memory_barrier();
-    }
-
-    if (used.print || total_ext_arr_size || ret_buf_size) {
-      device->get_compute_stream()->submit_synced(cmdlist.get());
-    } else {
-      device->get_compute_stream()->submit(cmdlist.get());
-    }
-
-    // Data read-back
-    if (used.print) {
-      dump_message_buffer(launcher);
-    }
-
-    if (total_ext_arr_size) {
-      uint8_t *baseptr = (uint8_t *)device->map(ext_arr_buf);
-      for (const auto &[i, size] : ext_arr_map) {
-        memcpy(ext_arr_host_ptrs[i], baseptr + size_t(ctx.args[i]), size);
-      }
-      device->unmap(ext_arr_buf);
-    }
-
-    if (ret_buf_size) {
-      memcpy(launcher->result_buffer, device->map(ret_buf), ret_buf_size);
-      device->unmap(ret_buf);
+int CompiledProgram::lookup_or_add_string(const std::string &str) {
+  int i;
+  for (i = 0; i < str_table.size(); i++) {
+    if (str_table[i] == str) {
+      return i;
     }
   }
-};
+  str_table.push_back(str);
+  return i;
+}
+
+void dump_message_buffer(Device *device,
+                         DeviceAllocation runtime_buf,
+                         const std::vector<std::string> &str_table) {
+  auto rt_buf = (GLSLRuntime *)device->map(runtime_buf);
+
+  auto msg_count = rt_buf->msg_count;
+  if (msg_count > MAX_MESSAGES) {
+    TI_WARN("[glsl] Too much print within one kernel: {} > {}, clipping",
+            msg_count, MAX_MESSAGES);
+    msg_count = MAX_MESSAGES;
+  }
+
+  for (int i = 0; i < msg_count; i++) {
+    auto const &msg = rt_buf->msg_buf[i];
+    for (int j = 0; j < msg.num_contents; j++) {
+      int type = msg.get_type_of(j);
+      auto value = msg.contents[j];
+
+      std::string str;
+      switch (type) {
+        case 1:
+          str = fmt::format("{}", value.val_i32);
+          break;
+        case 2:
+          str = fmt::format("{}", value.val_f32);
+          break;
+        case 3:
+          str = str_table.at(value.val_i32);
+          break;
+        default:
+          TI_WARN("[glsl] Unexpected serialization type: {}, ignoring", type);
+          break;
+      };
+      py_cout << str;
+    }
+  }
+  rt_buf->msg_count = 0;
+  device->unmap(runtime_buf);
+}
+
+bool CompiledProgram::check_ext_arr_read(int i) const {
+  auto iter = ext_arr_access.find(i);
+  if (iter == ext_arr_access.end())
+    return false;
+
+  return (iter->second & irpass::ExternalPtrAccess::READ) !=
+         irpass::ExternalPtrAccess::NONE;
+}
+
+bool CompiledProgram::check_ext_arr_write(int i) const {
+  auto iter = ext_arr_access.find(i);
+  if (iter == ext_arr_access.end())
+    return false;
+
+  return (iter->second & irpass::ExternalPtrAccess::WRITE) !=
+         irpass::ExternalPtrAccess::NONE;
+}
+
+void CompiledProgram::set_used(const UsedFeature &used) {
+  this->used = used;
+}
+
+OpenGlRuntime::~OpenGlRuntime() = default;
+
+void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
+  std::array<void *, taichi_max_num_args> ext_arr_host_ptrs;
+
+  uint8_t *args_buf_mapped = nullptr;
+
+  // Prepare external array
+  if (program_.total_ext_arr_size) {
+    void *baseptr = device_->map(ext_arr_buf_);
+
+    size_t accum_size = 0;
+    for (const auto &[i, size] : program_.ext_arr_map) {
+      auto ptr = (void *)ctx.args[i];
+      ctx.args[i] = accum_size;
+      ext_arr_host_ptrs[i] = ptr;
+      if (program_.check_ext_arr_read(i)) {
+        std::memcpy((char *)baseptr + accum_size, ptr, size);
+      }
+      accum_size += size;
+    }
+
+    device_->unmap(ext_arr_buf_);
+  }
+
+  // Prepare argument buffer
+  if (program_.args_buf_size) {
+    args_buf_mapped = (uint8_t *)device_->map(args_buf_);
+    std::memcpy(args_buf_mapped, ctx.args,
+                program_.arg_count * sizeof(uint64_t));
+    if (program_.ext_arr_map.size()) {
+      std::memcpy(
+          args_buf_mapped + size_t(taichi_opengl_earg_base), ctx.extra_args,
+          size_t(program_.arg_count * taichi_max_num_indices) * sizeof(int));
+    }
+    device_->unmap(args_buf_);
+  }
+
+  // Prepare runtime
+  if (program_.used.print) {
+    // TODO(archibate): use result_buffer for print results
+    auto runtime_buf = runtime->impl->core_bufs.runtime;
+    auto mapped = (GLSLRuntime *)device_->map(runtime_buf);
+    mapped->msg_count = 0;
+    device_->unmap(runtime_buf);
+  }
+
+  auto cmdlist = device_->get_compute_stream()->new_command_list();
+
+  // Kernel dispatch
+  int i = 0;
+  for (const auto &kernel : program_.kernels) {
+    auto binder = compiled_pipeline_[i]->resource_binder();
+    auto &core_bufs = runtime->impl->core_bufs;
+    binder->buffer(0, int(GLBufId::Runtime), core_bufs.runtime);
+    binder->buffer(0, int(GLBufId::Listman), core_bufs.listman);
+    binder->buffer(0, int(GLBufId::Root), core_bufs.root);
+    binder->buffer(0, int(GLBufId::Gtmp), core_bufs.gtmp);
+    if (program_.args_buf_size)
+      binder->buffer(0, int(GLBufId::Args), args_buf_);
+    if (program_.ret_buf_size)
+      binder->buffer(0, int(GLBufId::Retr), ret_buf_);
+    if (program_.total_ext_arr_size)
+      binder->buffer(0, int(GLBufId::Extr), ext_arr_buf_);
+
+    cmdlist->bind_pipeline(compiled_pipeline_[i].get());
+    cmdlist->bind_resources(binder);
+    cmdlist->dispatch(kernel.num_groups, 1, 1);
+    cmdlist->memory_barrier();
+    i++;
+  }
+
+  if (program_.used.print || program_.total_ext_arr_size ||
+      program_.ret_buf_size) {
+    device_->get_compute_stream()->submit_synced(cmdlist.get());
+  } else {
+    device_->get_compute_stream()->submit(cmdlist.get());
+  }
+
+  // Data read-back
+  if (program_.used.print) {
+    dump_message_buffer(device_, runtime->impl->core_bufs.runtime,
+                        program_.str_table);
+  }
+
+  if (program_.total_ext_arr_size) {
+    uint8_t *baseptr = (uint8_t *)device_->map(ext_arr_buf_);
+    for (const auto &[i, size] : program_.ext_arr_map) {
+      memcpy(ext_arr_host_ptrs[i], baseptr + size_t(ctx.args[i]), size);
+    }
+    device_->unmap(ext_arr_buf_);
+  }
+
+  if (program_.ret_buf_size) {
+    memcpy(runtime->result_buffer, device_->map(ret_buf_),
+           program_.ret_buf_size);
+    device_->unmap(ret_buf_);
+  }
+}
+
+DeviceCompiledProgram::DeviceCompiledProgram(CompiledProgram &&program,
+                                             Device *device)
+    : program_(std::move(program)), device_(device) {
+  if (program_.args_buf_size) {
+    args_buf_ =
+        device->allocate_memory({program_.args_buf_size, /*host_write=*/true,
+                                 /*host_read=*/false,
+                                 /*export_sharing=*/false});
+  }
+
+  if (program_.total_ext_arr_size) {
+    // Set both host write & host read for now
+    ext_arr_buf_ = device->allocate_memory({program_.total_ext_arr_size,
+                                            /*host_write=*/true,
+                                            /*host_read=*/true,
+                                            /*export_sharing=*/false});
+  }
+
+  if (program_.ret_buf_size) {
+    ret_buf_ =
+        device->allocate_memory({program_.ret_buf_size, /*host_write=*/false,
+                                 /*host_read=*/true,
+                                 /*export_sharing=*/false});
+  }
+
+  for (auto &k : program_.kernels) {
+    compiled_pipeline_.push_back(
+        device->create_pipeline({PipelineSourceType::glsl_src,
+                                 k.kernel_src.data(), k.kernel_src.size()},
+                                k.kernel_name));
+  }
+}
 
 OpenGlRuntime::OpenGlRuntime() {
   initialize_opengl();
@@ -452,8 +424,12 @@ OpenGlRuntime::OpenGlRuntime() {
   device->get_compute_stream()->submit_synced(cmdlist.get());
 }
 
-void OpenGlRuntime::keep(std::unique_ptr<CompiledProgram> program) {
-  impl->programs.push_back(std::move(program));
+DeviceCompiledProgram *OpenGlRuntime::keep(CompiledProgram &&program) {
+  auto p =
+      std::make_unique<DeviceCompiledProgram>(std::move(program), device.get());
+  auto ptr = p.get();
+  impl->programs.push_back(std::move(p));
+  return ptr;
 }
 
 void OpenGlRuntime::add_snode_tree(size_t size) {
@@ -471,39 +447,20 @@ bool is_opengl_api_available() {
 }
 
 #else
-struct GLProgram {};
+
 struct OpenGlRuntimeImpl {};
-
-struct CompiledProgram::Impl {
-  UsedFeature used;
-
-  Impl(Kernel *kernel, Device *device) {
-    TI_NOT_IMPLEMENTED;
-  }
-
-  void add(const std::string &kernel_name,
-           const std::string &kernel_source_code,
-           int num_workgrpus,
-           int workgroup_size,
-           std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
-    TI_NOT_IMPLEMENTED;
-  }
-
-  int lookup_or_add_string(const std::string &str) {
-    TI_NOT_IMPLEMENTED;
-  }
-
-  void launch(Context &ctx, OpenGlRuntime *launcher) const {
-    TI_NOT_IMPLEMENTED;
-  }
-};
 
 OpenGlRuntime::OpenGlRuntime() {
   TI_NOT_IMPLEMENTED;
 }
 
-void OpenGlRuntime::keep(std::unique_ptr<CompiledProgram>) {
+OpenGlRuntime::~OpenGlRuntime() {
   TI_NOT_IMPLEMENTED;
+}
+
+DeviceCompiledProgram *OpenGlRuntime::keep(CompiledProgram &&program) {
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
 }
 
 void OpenGlRuntime::add_snode_tree(size_t size) {
@@ -519,36 +476,6 @@ bool initialize_opengl(bool error_tolerance) {
 }
 
 #endif  // TI_WITH_OPENGL
-
-CompiledProgram::CompiledProgram(Kernel *kernel, Device *device)
-    : impl(std::make_unique<Impl>(kernel, device)) {
-}
-
-CompiledProgram::~CompiledProgram() = default;
-
-void CompiledProgram::add(
-    const std::string &kernel_name,
-    const std::string &kernel_source_code,
-    int num_workgrous,
-    int workgroup_size,
-    std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
-  impl->add(kernel_name, kernel_source_code, num_workgrous, workgroup_size,
-            ext_ptr_access);
-}
-
-void CompiledProgram::set_used(const UsedFeature &used) {
-  impl->used = used;
-}
-
-int CompiledProgram::lookup_or_add_string(const std::string &str) {
-  return impl->lookup_or_add_string(str);
-}
-
-void CompiledProgram::launch(Context &ctx, OpenGlRuntime *launcher) const {
-  impl->launch(ctx, launcher);
-}
-
-OpenGlRuntime::~OpenGlRuntime() = default;
 
 }  // namespace opengl
 TLANG_NAMESPACE_END

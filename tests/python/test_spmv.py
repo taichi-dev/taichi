@@ -8,7 +8,7 @@ def test_sparse_matrix_vector_multiplication1():
     b = ti.field(ti.f32, shape=n)
 
     @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder(), b: ti.template()):
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder(), b: ti.template()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i
 
@@ -29,7 +29,7 @@ def test_sparse_matrix_vector_multiplication2():
     b = ti.field(ti.f32, shape=n)
 
     @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder(), b: ti.template()):
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder(), b: ti.template()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i - j
 
@@ -53,7 +53,7 @@ def test_sparse_matrix_vector_multiplication3():
     b = ti.field(ti.f32, shape=n)
 
     @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder(), b: ti.template()):
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder(), b: ti.template()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i + j
 

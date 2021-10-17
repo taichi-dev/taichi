@@ -9,7 +9,7 @@ f = ti.linalg.SparseMatrixBuilder(n, 1, max_num_triplets=100)
 
 
 @ti.kernel
-def fill(A: ti.sparse_matrix_builder(), b: ti.sparse_matrix_builder(),
+def fill(A: ti.linalg.sparse_matrix_builder(), b: ti.linalg.sparse_matrix_builder(),
          interval: ti.i32):
     for i in range(n):
         if i > 0:

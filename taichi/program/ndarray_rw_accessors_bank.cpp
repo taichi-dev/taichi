@@ -12,15 +12,17 @@ void set_kernel_args(const std::vector<int> &I,
     launch_ctx->set_arg_int(i, I[i]);
   }
 }
-void set_kernel_extra_args(const Ndarray *ndarray, int arg_id,
-                     Kernel::LaunchContextBuilder *launch_ctx) {
+void set_kernel_extra_args(const Ndarray *ndarray,
+                           int arg_id,
+                           Kernel::LaunchContextBuilder *launch_ctx) {
   for (int i = 0; i < ndarray->num_active_indices; i++) {
     launch_ctx->set_extra_arg_int(arg_id, i, ndarray->shape[i]);
   }
 }
 }  // namespace
 
-NdarrayRwAccessorsBank::Accessors NdarrayRwAccessorsBank::get(Ndarray *ndarray) {
+NdarrayRwAccessorsBank::Accessors NdarrayRwAccessorsBank::get(
+    Ndarray *ndarray) {
   auto &kernels = ndarray_to_kernels_[ndarray];
   if (kernels.reader == nullptr) {
     kernels.reader = &(program_->get_ndarray_reader(ndarray));
@@ -32,8 +34,8 @@ NdarrayRwAccessorsBank::Accessors NdarrayRwAccessorsBank::get(Ndarray *ndarray) 
 }
 
 NdarrayRwAccessorsBank::Accessors::Accessors(const Ndarray *ndarray,
-                                           const RwKernels &kernels,
-                                           Program *prog)
+                                             const RwKernels &kernels,
+                                             Program *prog)
     : ndarray_(ndarray),
       prog_(prog),
       reader_(kernels.reader),
@@ -43,21 +45,27 @@ NdarrayRwAccessorsBank::Accessors::Accessors(const Ndarray *ndarray,
 }
 
 void NdarrayRwAccessorsBank::Accessors::write_float(const std::vector<int> &I,
-                                                  float64 val) {
+                                                    float64 val) {
   auto launch_ctx = writer_->make_launch_context();
   set_kernel_args(I, ndarray_->num_active_indices, &launch_ctx);
   launch_ctx.set_arg_float(ndarray_->num_active_indices, val);
-  launch_ctx.set_arg_external_array(ndarray_->num_active_indices+1, ndarray_->get_data_ptr_as_int(), ndarray_->get_nelement()*ndarray_->get_element_size());
-  set_kernel_extra_args(ndarray_, ndarray_->num_active_indices+1, &launch_ctx);
+  launch_ctx.set_arg_external_array(
+      ndarray_->num_active_indices + 1, ndarray_->get_data_ptr_as_int(),
+      ndarray_->get_nelement() * ndarray_->get_element_size());
+  set_kernel_extra_args(ndarray_, ndarray_->num_active_indices + 1,
+                        &launch_ctx);
   prog_->synchronize();
   (*writer_)(launch_ctx);
 }
 
-float64 NdarrayRwAccessorsBank::Accessors::read_float(const std::vector<int> &I) {
+float64 NdarrayRwAccessorsBank::Accessors::read_float(
+    const std::vector<int> &I) {
   prog_->synchronize();
   auto launch_ctx = reader_->make_launch_context();
   set_kernel_args(I, ndarray_->num_active_indices, &launch_ctx);
-  launch_ctx.set_arg_external_array(ndarray_->num_active_indices, ndarray_->get_data_ptr_as_int(), ndarray_->get_nelement()*ndarray_->get_element_size());
+  launch_ctx.set_arg_external_array(
+      ndarray_->num_active_indices, ndarray_->get_data_ptr_as_int(),
+      ndarray_->get_nelement() * ndarray_->get_element_size());
   set_kernel_extra_args(ndarray_, ndarray_->num_active_indices, &launch_ctx);
   (*reader_)(launch_ctx);
   prog_->synchronize();
@@ -67,12 +75,15 @@ float64 NdarrayRwAccessorsBank::Accessors::read_float(const std::vector<int> &I)
 
 // for int32 and int64
 void NdarrayRwAccessorsBank::Accessors::write_int(const std::vector<int> &I,
-                                                int64 val) {
+                                                  int64 val) {
   auto launch_ctx = writer_->make_launch_context();
   set_kernel_args(I, ndarray_->num_active_indices, &launch_ctx);
   launch_ctx.set_arg_int(ndarray_->num_active_indices, val);
-  launch_ctx.set_arg_external_array(ndarray_->num_active_indices+1, ndarray_->get_data_ptr_as_int(), ndarray_->get_nelement()*ndarray_->get_element_size());
-  set_kernel_extra_args(ndarray_, ndarray_->num_active_indices+1, &launch_ctx);
+  launch_ctx.set_arg_external_array(
+      ndarray_->num_active_indices + 1, ndarray_->get_data_ptr_as_int(),
+      ndarray_->get_nelement() * ndarray_->get_element_size());
+  set_kernel_extra_args(ndarray_, ndarray_->num_active_indices + 1,
+                        &launch_ctx);
   prog_->synchronize();
   (*writer_)(launch_ctx);
 }
@@ -81,7 +92,9 @@ int64 NdarrayRwAccessorsBank::Accessors::read_int(const std::vector<int> &I) {
   prog_->synchronize();
   auto launch_ctx = reader_->make_launch_context();
   set_kernel_args(I, ndarray_->num_active_indices, &launch_ctx);
-  launch_ctx.set_arg_external_array(ndarray_->num_active_indices, ndarray_->get_data_ptr_as_int(), ndarray_->get_nelement()*ndarray_->get_element_size());
+  launch_ctx.set_arg_external_array(
+      ndarray_->num_active_indices, ndarray_->get_data_ptr_as_int(),
+      ndarray_->get_nelement() * ndarray_->get_element_size());
   set_kernel_extra_args(ndarray_, ndarray_->num_active_indices, &launch_ctx);
   (*reader_)(launch_ctx);
   prog_->synchronize();

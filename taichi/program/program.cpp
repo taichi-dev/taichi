@@ -41,7 +41,8 @@ namespace lang {
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances_;
 
-Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this), ndarray_rw_accessors_bank_(this) {
+Program::Program(Arch desired_arch)
+    : snode_rw_accessors_bank_(this), ndarray_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
   // For performance considerations and correctness of CustomFloatType
@@ -408,7 +409,10 @@ Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
     for (int i = 0; i < ndarray->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    auto ret = Stmt::make<FrontendReturnStmt>(load_if_ptr(Expr(Expr::make<ExternalTensorExpression>(ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices, 0))[indices]));
+    auto ret = Stmt::make<FrontendReturnStmt>(
+        load_if_ptr(Expr(Expr::make<ExternalTensorExpression>(
+            ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices,
+            0))[indices]));
     current_ast_builder().insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());
@@ -428,7 +432,11 @@ Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
     for (int i = 0; i < ndarray->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    Expr(Expr::make<ExternalTensorExpression>(ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices+1, 0))[indices] = Expr::make<ArgLoadExpression>(ndarray->num_active_indices, ndarray->dtype->get_compute_type());
+    Expr(Expr::make<ExternalTensorExpression>(
+        ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices + 1,
+        0))[indices] =
+        Expr::make<ArgLoadExpression>(ndarray->num_active_indices,
+                                      ndarray->dtype->get_compute_type());
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;

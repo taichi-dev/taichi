@@ -60,7 +60,7 @@ def test_matrix_ndarray(n, m, dtype, shape):
 
 @pytest.mark.parametrize('dtype', [ti.f32, ti.f64])
 def test_default_fp_ndarray(dtype):
-    ti.init(default_fp=dtype, ndarray_use_torch=False)
+    ti.init(arch=[ti.cpu, ti.cuda], default_fp=dtype, ndarray_use_torch=False)
 
     x = ti.Vector.ndarray(2, float, ())
 
@@ -69,7 +69,7 @@ def test_default_fp_ndarray(dtype):
 
 @pytest.mark.parametrize('dtype', [ti.i32, ti.i64])
 def test_default_ip_ndarray(dtype):
-    ti.init(default_ip=dtype, ndarray_use_torch=False)
+    ti.init(arch=[ti.cpu, ti.cuda], default_ip=dtype, ndarray_use_torch=False)
 
     x = ti.Vector.ndarray(2, int, ())
 
@@ -81,7 +81,28 @@ def test_default_ip_ndarray(dtype):
 layouts = [ti.Layout.SOA, ti.Layout.AOS]
 
 
-@ti.test(exclude=[ti.opengl, ti.cc], ndarray_use_torch=False)
+@ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=False)
+def test_ndarray_1d():
+    n = 4
+
+    @ti.kernel
+    def run(x: ti.any_arr(), y: ti.any_arr()):
+        for i in range(n):
+            x[i] += i + y[i]
+
+    a = ti.ndarray(ti.i32, shape=(n,))
+    for i in range(n):
+        a[i] = i * i
+    b = np.ones((n,), dtype=np.int32)
+    run(a, b)
+    for i in range(n):
+        assert a[i] == i * i + i + 1
+    run(b, a)
+    for i in range(n):
+        assert b[i] == i * i + (i + 1) * 2
+
+
+@ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=False)
 def test_ndarray_2d():
     n = 4
     m = 7
@@ -107,7 +128,7 @@ def test_ndarray_2d():
             assert b[i, j] == i * j + (i + j + 1) * 2
 
 
-@ti.test(exclude=[ti.opengl, ti.cc], ndarray_use_torch=False)
+@ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=False)
 def test_ndarray_numpy_io():
     n = 7
     m = 4

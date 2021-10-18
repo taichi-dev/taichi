@@ -144,7 +144,6 @@ class Ndarray:
     def initialize_host_accessor(self):
         if self.host_accessor:
             return
-        impl.get_runtime().materialize()
         self.host_accessor = NdarrayHostAccessor(self.arr)
 
 

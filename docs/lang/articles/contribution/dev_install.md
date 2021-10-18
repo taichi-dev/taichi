@@ -32,10 +32,10 @@ On Linux, `clang` is the **only** supported compiler for compiling the Taichi pa
 :::
 
 :::note
-On Linux, some additional packages might be required to build Taichi. E.g., on Ubuntu 20.04, you may need `libxi-dev` `libxcursor-dev` `libxinerama-dev` `libxrandr-dev` `libx11-dev` `libgl-dev` `libtinfo5`. please check the output of of CMake when building from source.
+On Linux, some additional packages might be required to build Taichi. E.g., on Ubuntu 20.04, you may need `libxi-dev` `libxcursor-dev` `libxinerama-dev` `libxrandr-dev` `libx11-dev` `libgl-dev`. please check the output of of CMake when building from source.
 :::
 
-3. LLVM: Make sure you have version 10.0.0 installed. Taichi uses a **customized LLVM**, which we provided as binaries depending on your system environment. Note that the pre-built binaries from the LLVM official website or other sources may not work.
+1. LLVM: Make sure you have version 10.0.0 installed. Taichi uses a **customized LLVM**, which we provided as binaries depending on your system environment. Note that the pre-built binaries from the LLVM official website or other sources may not work.
    - [LLVM 10.0.0 for Linux](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_linux_patch2/taichi-llvm-10.0.0-linux.zip)
    - [LLVM 10.0.0 for macOS](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip)
    - [LLVM 10.0.0 for Windows MSVC 2019](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip)

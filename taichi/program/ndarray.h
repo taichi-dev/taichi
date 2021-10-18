@@ -28,11 +28,11 @@ class Ndarray {
   std::size_t get_nelement() const;
 
  private:
-  Program *program_{nullptr};
+  Program *prog_{nullptr};
   uint64_t *data_ptr_{nullptr};
   std::size_t nelement_{1};
   std::size_t element_size_{1};
-  LlvmProgramImpl *prog_{nullptr};
+  LlvmProgramImpl *prog_impl_{nullptr};
 };
 
 }  // namespace lang

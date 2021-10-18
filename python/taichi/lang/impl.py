@@ -387,6 +387,13 @@ def _clamp_unsigned_to_range(npty, val):
 
 
 @taichi_scope
+def make_constant_expr_i32(val):
+    _taichi_skip_traceback = 1
+    assert isinstance(val, (int, np.integer))
+    return Expr(_ti_core.make_const_expr_i32(_clamp_unsigned_to_range(np.int32, val)))
+
+
+@taichi_scope
 def make_constant_expr(val):
     _taichi_skip_traceback = 1
     if isinstance(val, (int, np.integer)):

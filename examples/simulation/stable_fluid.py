@@ -7,7 +7,6 @@
 import argparse
 
 import numpy as np
-import sys
 
 import taichi as ti
 

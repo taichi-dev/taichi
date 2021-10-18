@@ -7,18 +7,19 @@
 import argparse
 
 import numpy as np
+import sys
 
 import taichi as ti
 
 # How to run:
 #   `python stable_fluid.py`: use the jacobi iteration to solve the linear system.
-#   `python stable_fluid.py -s`: use a sparse matrix to do so.
+#   `python stable_fluid.py -S`: use a sparse matrix to do so.
 parser = argparse.ArgumentParser()
-parser.add_argument('-s',
+parser.add_argument('-S',
                     '--use-sp-mat',
                     action='store_true',
                     help='Solve Poisson\'s equation by using a sparse matrix')
-args = parser.parse_args()
+args, unknowns = parser.parse_known_args()
 
 res = 512
 dt = 0.03

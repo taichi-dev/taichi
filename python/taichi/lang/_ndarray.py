@@ -239,8 +239,8 @@ class NdarrayHostAccess:
 
             def setter(value):
                 self.ndarr.initialize_host_accessor()
-                self.ndarr.host_accessor.setter(value,
-                                            *self.ndarr.pad_key(self.indices))
+                self.ndarr.host_accessor.setter(
+                    value, *self.ndarr.pad_key(self.indices))
 
         self.getter = getter
         self.setter = setter

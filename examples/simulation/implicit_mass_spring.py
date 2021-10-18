@@ -233,7 +233,7 @@ if __name__ == "__main__":
                         '--use-ggui',
                         action='store_true',
                         help='Display with GGUI')
-    args = parser.parse_args()
+    args, unknowns = parser.parse_known_args()
     use_ggui = False
     use_ggui = args.use_ggui
 

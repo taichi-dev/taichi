@@ -43,7 +43,12 @@ class GatherMeshThreadLocal : public BasicStmtVisitor {
   }
 
   void visit(MeshRelationAccessStmt *stmt) override {
-    this->owned_ptr->insert(stmt->from_type());
+    if (mesh::element_order(stmt->from_type()) >
+        mesh::element_order(stmt->to_type)) {
+      this->total_ptr->insert(stmt->from_type());
+    } else {
+      this->owned_ptr->insert(stmt->from_type());
+    }
   }
 
   void visit(MeshIndexConversionStmt *stmt) override {

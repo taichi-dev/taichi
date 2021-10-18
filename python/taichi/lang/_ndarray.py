@@ -216,6 +216,7 @@ class NdarrayHostAccess:
         indices_second (Tuple[Int]): Indices of second-level access (indices in the vector/matrix).
     """
     def __init__(self, arr, indices_first, indices_second):
+        self.ndarr = arr
         self.arr = arr.arr
         if arr.layout == Layout.SOA:
             self.indices = indices_second + indices_first
@@ -223,11 +224,15 @@ class NdarrayHostAccess:
             self.indices = indices_first + indices_second
 
     def getter(self):
-        if not impl.current_cfg().ndarray_use_torch:
-            raise NotImplementedError()
-        return self.arr[self.indices]
+        if impl.current_cfg().ndarray_use_torch:
+            return self.arr[self.indices]
+        else:
+            self.ndarr.initialize_host_accessor()
+            return self.ndarr.host_accessor.getter(*self.ndarr.pad_key(self.indices))
 
     def setter(self, value):
-        if not impl.current_cfg().ndarray_use_torch:
-            raise NotImplementedError()
-        self.arr[self.indices] = value
+        if impl.current_cfg().ndarray_use_torch:
+            self.arr[self.indices] = value
+        else:
+            self.ndarr.initialize_host_accessor()
+            self.ndarr.host_accessor.setter(value, *self.ndarr.pad_key(self.indices))

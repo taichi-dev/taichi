@@ -139,10 +139,8 @@ def test_ndarray_numpy_io():
     assert (a.to_numpy() == b.to_numpy()).all()
 
 
-@pytest.mark.skip(reason='Currently only support using Torch.')
 @pytest.mark.parametrize('layout', layouts)
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl, ndarray_use_torch=True)
+@ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=False)
 def test_matrix_ndarray_python_scope(layout):
     a = ti.Matrix.ndarray(2, 2, ti.i32, 5, layout=layout)
     for i in range(5):
@@ -155,10 +153,8 @@ def test_matrix_ndarray_python_scope(layout):
     assert a[4][0, 1] == 1
 
 
-@pytest.mark.skip(reason='Currently only support using Torch.')
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @pytest.mark.parametrize('layout', layouts)
-@ti.test(exclude=ti.opengl, ndarray_use_torch=True)
+@ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=False)
 def test_matrix_ndarray_taichi_scope(layout):
     @ti.kernel
     def func(a: ti.any_arr()):
@@ -175,10 +171,8 @@ def test_matrix_ndarray_taichi_scope(layout):
     assert m[4][0, 1] == 1
 
 
-@pytest.mark.skip(reason='Currently only support using Torch.')
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @pytest.mark.parametrize('layout', layouts)
-@ti.test(exclude=ti.opengl, ndarray_use_torch=True)
+@ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=False)
 def test_matrix_ndarray_taichi_scope_struct_for(layout):
     @ti.kernel
     def func(a: ti.any_arr()):
@@ -195,10 +189,8 @@ def test_matrix_ndarray_taichi_scope_struct_for(layout):
     assert m[4][0, 1] == 1
 
 
-@pytest.mark.skip(reason='Currently only support using Torch.')
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @pytest.mark.parametrize('layout', layouts)
-@ti.test(exclude=ti.opengl, ndarray_use_torch=True)
+@ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=False)
 def test_vector_ndarray_python_scope(layout):
     a = ti.Vector.ndarray(10, ti.i32, 5, layout=layout)
     for i in range(5):
@@ -211,10 +203,8 @@ def test_vector_ndarray_python_scope(layout):
     assert a[4][9] == 9
 
 
-@pytest.mark.skip(reason='Currently only support using Torch.')
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @pytest.mark.parametrize('layout', layouts)
-@ti.test(exclude=ti.opengl, ndarray_use_torch=True)
+@ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=False)
 def test_vector_ndarray_taichi_scope(layout):
     @ti.kernel
     def func(a: ti.any_arr()):
@@ -234,9 +224,7 @@ def test_vector_ndarray_taichi_scope(layout):
 # number of compiled functions
 
 
-@pytest.mark.skip(reason='Currently only support using Torch.')
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl, ndarray_use_torch=True)
+@ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=False)
 def test_compiled_functions():
     @ti.kernel
     def func(a: ti.any_arr(element_dim=1)):
@@ -262,7 +250,6 @@ def test_compiled_functions():
 # annotation compatibility
 
 
-@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=ti.get_host_arch_list(), ndarray_use_torch=False)
 def test_arg_not_match():
     @ti.kernel

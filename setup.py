@@ -228,6 +228,7 @@ setup(name=project_name,
       author='Taichi developers',
       author_email='yuanmhu@gmail.com',
       url='https://github.com/taichi-dev/taichi',
+      python_requires=">=3.6,<3.10",
       install_requires=[
           'numpy',
           'pybind11>=2.5.0',

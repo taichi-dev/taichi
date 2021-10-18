@@ -3,16 +3,15 @@
 
 TI_NAMESPACE_BEGIN
 
-std::string ActionArg::serialize() const {
-  std::string ret = key + ": ";
+void ActionArg::serialize(std::stringstream &ss) const {
+  ss << key << ": ";
   if (type == argument_type::str) {
-    ret += lang::c_quoted(val_str);
+    ss << lang::c_quoted(val_str);
   } else if (type == argument_type::int64) {
-    ret += std::to_string(val_int64);
+    ss << std::to_string(val_int64);
   } else {
-    ret += std::to_string(val_float64);
+    ss << std::to_string(val_float64);
   }
-  return ret;
 }
 
 ActionRecorder &ActionRecorder::get_instance() {
@@ -47,7 +46,9 @@ void ActionRecorder::record(const std::string &content,
     return;
   ofs << "- action: \"" << content << "\"" << std::endl;
   for (auto &arg : arguments) {
-    ofs << "  " << arg.serialize() << std::endl;
+    std::stringstream ss;
+    arg.serialize(ss);
+    ofs << "  " << ss.str() << std::endl;
   }
   ofs.flush();
 }

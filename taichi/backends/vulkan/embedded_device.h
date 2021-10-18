@@ -61,35 +61,13 @@ class EmbeddedVulkanDevice {
   explicit EmbeddedVulkanDevice(const Params &params);
   ~EmbeddedVulkanDevice();
 
-  VkInstance instance() {
-    return instance_;
+  const VulkanDevice *device() const {
+    return ti_device_.get();
   }
 
   VulkanDevice *device() {
     return ti_device_.get();
   }
-
-  const VulkanDevice *device() const {
-    return ti_device_.get();
-  }
-
-  VkPhysicalDevice physical_device() const {
-    return physical_device_;
-  }
-
-  VkSurfaceKHR surface() const {
-    return surface_;
-  }
-
-  VkInstance instance() const {
-    return instance_;
-  }
-
-  const VulkanQueueFamilyIndices &queue_family_indices() const {
-    return queue_family_indices_;
-  }
-
-  Device *get_ti_device() const;
 
  private:
   void create_instance();
@@ -103,18 +81,11 @@ class EmbeddedVulkanDevice {
   VkPhysicalDevice physical_device_{VK_NULL_HANDLE};
   VulkanQueueFamilyIndices queue_family_indices_;
   VkDevice device_{VK_NULL_HANDLE};
-  // TODO: It's probably not right to put these per-queue things here. However,
-  // in Taichi we only use a single queue on a single device (i.e. a single CUDA
-  // stream), so it doesn't make a difference.
+
   VkQueue compute_queue_{VK_NULL_HANDLE};
   VkQueue graphics_queue_{VK_NULL_HANDLE};
-  VkQueue present_queue_{VK_NULL_HANDLE};
 
   VkSurfaceKHR surface_{VK_NULL_HANDLE};
-
-  // TODO: Shall we have dedicated command pools for COMPUTE and TRANSFER
-  // commands, respectively?
-  VkCommandPool command_pool_{VK_NULL_HANDLE};
 
   std::unique_ptr<VulkanDevice> ti_device_{nullptr};
 

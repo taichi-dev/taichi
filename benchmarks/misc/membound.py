@@ -8,7 +8,7 @@ import taichi as ti
 test_cases = [fill, saxpy, reduction]
 test_archs = [ti.cuda]
 test_dtype = [ti.i32, ti.i64, ti.f32, ti.f64]
-test_dsize = [(4**i) * kibibyte for i in range(1, 11)]  #[4KB,16KB...1GB]
+test_dsize = [(4**i) * kibibyte for i in range(1, 10)]  #[4KB,16KB...256MB]
 test_repeat = 10
 results_evaluation = [geometric_mean]
 

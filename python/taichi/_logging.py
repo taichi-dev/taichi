@@ -9,7 +9,7 @@ def _get_logging(name):
 
     Args:
         name (str): The string represents logging level. 
-            Supported levels include: `trace`, `debug`, `info`, `warn`, `error`, `critical`.
+            Effective levels include: 'trace', 'debug', 'info', 'warn', 'error', 'critical'.
 
     Returns:
         Callabe: The decorated function.
@@ -31,23 +31,42 @@ def _get_logging(name):
 def set_logging_level(level):
     """Controls the level of detail in logs.
 
+    See also https://docs.taichi.graphics/lang/articles/contribution/utilities#logging.
+
     Args:
         level (str): The string represents logging level.
-            Supported levels include: `trace`, `debug`, `info`, `warn`, `error`, `critical`.
-            Default is `info`.
+            Effective levels include: 'trace', 'debug', 'info', 'warn', 'error', 'critical'.
+
+    Example:
+            >>> set_logging_level('debug')
+
+        If call this function, then everything below 'debug' will be effective, 
+        and 'trace' won't since it's above debug.
     """
     ti_core.set_logging_level(level)
 
 
 def is_logging_effective(level):
-    """Check if the input level is valid.
+    """Check if the level is effective. The level below current level will be effective. Default level is 'info'.
+
+    See also https://docs.taichi.graphics/lang/articles/contribution/utilities#logging.
 
     Args:
         level (str): The string represents logging level. 
-            Supported levels include: `trace`, `debug`, `info`, `warn`, `error`, `critical`.
+            Effective levels include: 'trace', 'debug', 'info', 'warn', 'error', 'critical'.
             
     Returns:
         Bool: Indicate whether the logging level is supported.
+
+    Example:
+        If current level is 'info':
+
+            >>> print(ti.is_logging_effective("trace"))     # False
+            >>> print(ti.is_logging_effective("debug"))     # False
+            >>> print(ti.is_logging_effective("info"))      # True
+            >>> print(ti.is_logging_effective("warn"))      # True
+            >>> print(ti.is_logging_effective("error"))     # True
+            >>> print(ti.is_logging_effective("critical"))  # True
     """
     return ti_core.logging_effective(level)
 

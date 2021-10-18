@@ -228,11 +228,13 @@ class NdarrayHostAccess:
             return self.arr[self.indices]
         else:
             self.ndarr.initialize_host_accessor()
-            return self.ndarr.host_accessor.getter(*self.ndarr.pad_key(self.indices))
+            return self.ndarr.host_accessor.getter(
+                *self.ndarr.pad_key(self.indices))
 
     def setter(self, value):
         if impl.current_cfg().ndarray_use_torch:
             self.arr[self.indices] = value
         else:
             self.ndarr.initialize_host_accessor()
-            self.ndarr.host_accessor.setter(value, *self.ndarr.pad_key(self.indices))
+            self.ndarr.host_accessor.setter(value,
+                                            *self.ndarr.pad_key(self.indices))

@@ -44,7 +44,7 @@ int from_end_element_order(MeshRelationType rel) {
 }
 
 int to_end_element_order(MeshRelationType rel) {
-  return int(rel) & 0x4;
+  return int(rel) & 0x3;
 }
 
 MeshRelationType relation_by_orders(int from_order, int to_order) {

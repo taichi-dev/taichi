@@ -1,3 +1,4 @@
+import json
 from enum import Enum
 from typing import OrderedDict
 
@@ -180,9 +181,14 @@ class MeshElementField:
     def to_torch(self, device=None):
         return {k: v.to_torch(device=device) for k, v in self.items}
 
+    @python_scope
+    def __len__(self):
+        return _ti_core.get_num_elements(self.mesh.mesh_ptr, self.type)
+
 
 class MeshElement:
-    def __init__(self, type):
+    def __init__(self, type, builder):
+        self.builder = builder
         self.type = type
         self.layout = Layout.SOA
         self.attr_dict = {}
@@ -202,6 +208,7 @@ class MeshElement:
         reordering=MeshElementReorderingType.NonReordering,
         needs_grad=False,
     ):
+        self.builder.elements.add(self.type)
         for key, dtype in members.items():
             self.attr_dict[key] = MeshAttrType(key, dtype, reordering,
                                                needs_grad)
@@ -234,6 +241,13 @@ class MeshElement:
 
         return MeshElementField(mesh_instance, self.type, self.attr_dict,
                                 field_dict)
+
+    def link(self, element):
+        assert isinstance(element, MeshElement)
+        assert element.builder == self.builder
+        self.builder.relations.add(tuple([self.type, element.type]))
+        self.builder.elements.add(self.type)
+        self.builder.elements.add(element.type)
 
 
 # Define the instance of the Mesh Type, stores the field (type and data) info
@@ -282,42 +296,101 @@ class MeshInstance:
 
 
 # Define the Mesh Type, stores the field type info
-class MeshType:
+class MeshBuilder:
     def __init__(self, topology):
         if not ti.is_extension_supported(ti.cfg.arch, ti.extension.mesh):
             raise Exception('Backend ' + str(ti.cfg.arch) +
                             ' doesn\'t support MeshTaichi extension')
 
         self.topology = topology
-        self.verts = MeshElement(MeshElementType.Vertex)
-        self.edges = MeshElement(MeshElementType.Edge)
-        self.faces = MeshElement(MeshElementType.Face)
+        self.verts = MeshElement(MeshElementType.Vertex, self)
+        self.edges = MeshElement(MeshElementType.Edge, self)
+        self.faces = MeshElement(MeshElementType.Face, self)
         if topology == MeshTopology.Tetrahedron:
-            self.cells = MeshElement(MeshElementType.Cell)
+            self.cells = MeshElement(MeshElementType.Cell, self)
 
-    def build(self, size: tuple):
+        self.elements = set()
+        self.relations = set()
+
+    def build(self, filename):
         instance = MeshInstance(self)
         instance.fields = {}
-        if size[0] > 0:
-            _ti_core.set_num_elements(instance.mesh_ptr,
-                                      MeshElementType.Vertex, size[0])
-            instance.verts = self.verts.build(instance, size[0])
-            instance.fields[MeshElementType.Vertex] = instance.verts
-        if size[1] > 0:
-            _ti_core.set_num_elements(instance.mesh_ptr, MeshElementType.Edge,
-                                      size[1])
-            instance.edges = self.edges.build(instance, size[1])
-            instance.fields[MeshElementType.Edge] = instance.edges
-        if size[2] > 0:
-            _ti_core.set_num_elements(instance.mesh_ptr, MeshElementType.Face,
-                                      size[2])
-            instance.faces = self.faces.build(instance, size[2])
-            instance.fields[MeshElementType.Face] = instance.faces
-        if self.topology == MeshTopology.Tetrahedron and size[3] > 0:
-            _ti_core.set_num_elements(instance.mesh_ptr, MeshElementType.Cell,
-                                      size[3])
-            instance.cells = self.cells.build(instance, size[3])
-            instance.fields[MeshElementType.Cell] = instance.cells
+
+        inv_map = {
+            MeshElementType.Vertex: "verts",
+            MeshElementType.Edge: "edges",
+            MeshElementType.Face: "faces",
+            MeshElementType.Cell: "cells"
+        }
+
+        with open(filename, "r") as fi:
+            data = json.loads(fi.read())
+
+        num_patches = data["num_patches"]
+        instance.set_num_patches(num_patches)
+        for element in data["elements"]:
+            element_type = MeshElementType(element["order"])
+            num_elements = element["num"]
+            _ti_core.set_num_elements(instance.mesh_ptr, element_type,
+                                      num_elements)
+            element_name = inv_map[element_type]
+            setattr(instance, element_name,
+                    getattr(self, element_name).build(instance, num_elements))
+            instance.fields[element_type] = getattr(instance, element_name)
+            instance.set_patch_max_element_num(element_type,
+                                               element["max_num_per_patch"])
+
+            l2g_mapping = np.array(element["l2g_mapping"])
+            l2r_mapping = np.array(element["l2r_mapping"])
+            g2r_mapping = np.array(element["g2r_mapping"])
+
+            owned_offsets_field = impl.field(dtype=ti.u32,
+                                             shape=num_patches + 1)
+            total_offsets_field = impl.field(dtype=ti.u32,
+                                             shape=num_patches + 1)
+            l2g_mapping_field = impl.field(dtype=ti.u32,
+                                           shape=l2g_mapping.shape[0])
+            l2r_mapping_field = impl.field(dtype=ti.u32,
+                                           shape=l2r_mapping.shape[0])
+            g2r_mapping_field = impl.field(dtype=ti.i32,
+                                           shape=g2r_mapping.shape[0])
+
+            owned_offsets_field.from_numpy(np.array(element["owned_offsets"]))
+            total_offsets_field.from_numpy(np.array(element["total_offsets"]))
+            l2g_mapping_field.from_numpy(l2g_mapping)
+            l2r_mapping_field.from_numpy(l2r_mapping)
+            g2r_mapping_field.from_numpy(g2r_mapping)
+
+            instance.set_owned_offset(element_type, owned_offsets_field)
+            instance.set_total_offset(element_type, total_offsets_field)
+            instance.set_index_mapping(element_type, ConvType.l2g,
+                                       l2g_mapping_field)
+            instance.set_index_mapping(element_type, ConvType.l2r,
+                                       l2r_mapping_field)
+            instance.set_index_mapping(element_type, ConvType.g2r,
+                                       g2r_mapping_field)
+
+        for relation in data["relations"]:
+            from_order = relation["from_order"]
+            to_order = relation["to_order"]
+            rel_type = MeshRelationType(
+                relation_by_orders(from_order, to_order))
+            if from_order <= to_order:
+                offset = impl.field(dtype=ti.u32,
+                                    shape=len(relation["offset"]))
+                value = impl.field(dtype=ti.u32, shape=len(relation["value"]))
+                offset.from_numpy(np.array(relation["offset"]))
+                value.from_numpy(np.array(relation["value"]))
+                instance.set_relation_dynamic(rel_type, value, offset)
+            else:
+                value = impl.field(dtype=ti.u32, shape=len(relation["value"]))
+                value.from_numpy(np.array(relation["value"]))
+                instance.set_relation_fixed(rel_type, value)
+
+        if hasattr(instance.verts, "x"):
+            instance.verts.x.from_numpy(
+                np.array(data["attrs"]["x"]).reshape(-1, 3))
+
         return instance
 
 
@@ -333,11 +406,11 @@ class Mesh:
 
     @staticmethod
     def Tet():
-        return MeshType(MeshTopology.Tetrahedron)
+        return MeshBuilder(MeshTopology.Tetrahedron)
 
     @staticmethod
     def Tri():
-        return MeshType(MeshTopology.Triangle)
+        return MeshBuilder(MeshTopology.Triangle)
 
 
 def TriMesh():

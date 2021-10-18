@@ -1221,6 +1221,11 @@ void export_lang(py::module &m) {
           mesh_ptr.ptr->num_elements.insert(std::pair(type, num_elements));
         });
 
+  m.def("get_num_elements",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type) {
+          return mesh_ptr.ptr->num_elements.find(type)->second;
+        });
+
   m.def("set_patch_max_element_num",
         [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type,
            uint32_t max_element_num) {

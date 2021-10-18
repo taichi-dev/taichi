@@ -50,7 +50,7 @@ def make_var_list(size):
     exprs = []
     for _ in range(size):
         exprs.append(_ti_core.make_id_expr(''))
-    return exprs#ti.Vector(exprs, disable_local_tensor=True)
+    return exprs
 
 
 def make_expr_group(*exprs):

@@ -320,7 +320,8 @@ class PyTaichi:
 
     def _finalize_root_fb_for_aot(self):
         if _root_fb.finalized:
-            raise RuntimeError('AOT: can only finalize the root FieldsBuilder once')
+            raise RuntimeError(
+                'AOT: can only finalize the root FieldsBuilder once')
         _root_fb._finalize_for_aot()
 
     def materialize(self):

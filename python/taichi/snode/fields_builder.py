@@ -163,7 +163,8 @@ class FieldsBuilder:
         self._finalized = True
         return SNodeTree(
             _ti_core.finalize_snode_tree(_snode_registry, self._ptr,
-                                         impl.get_runtime().prog, compile_only))
+                                         impl.get_runtime().prog,
+                                         compile_only))
 
     def _check_not_finalized(self):
         if self._finalized:

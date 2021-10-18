@@ -56,7 +56,6 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
   }
 
   snode_tree_buffer_manager = std::make_unique<SNodeTreeBufferManager>(this);
-  ndarray_buffer_manager = std::make_unique<NdarrayBufferManager>(this);
 
   thread_pool = std::make_unique<ThreadPool>(config->cpu_max_num_threads);
 
@@ -214,26 +213,6 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
                                      node_size);
     }
   }
-}
-
-uint8_t *LlvmProgramImpl::initialize_llvm_runtime_ndarray(
-    std::size_t size,
-    uint64 *result_buffer) {
-  TaichiLLVMContext *tlctx = nullptr;
-  if (config->arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    tlctx = llvm_context_device.get();
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    tlctx = llvm_context_host.get();
-  }
-
-  auto *const runtime_jit = tlctx->runtime_jit_module;
-  uint8_t *buf = ndarray_buffer_manager->allocate(
-      runtime_jit, llvm_runtime, size, 1 /*alignment*/, result_buffer);
-  return buf;
 }
 
 void LlvmProgramImpl::materialize_snode_tree(

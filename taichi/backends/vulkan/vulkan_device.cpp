@@ -1162,8 +1162,9 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
   }
 
-  alloc.buffer = vkapi::create_buffer(device_, params.export_sharing ? allocator_export_ : allocator_,
-                                      &buffer_info, &alloc_info);
+  alloc.buffer = vkapi::create_buffer(
+      device_, params.export_sharing ? allocator_export_ : allocator_,
+      &buffer_info, &alloc_info);
   vmaGetAllocationInfo(alloc.buffer->allocator, alloc.buffer->allocation,
                        &alloc.alloc_info);
 
@@ -1493,9 +1494,11 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   }
   alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-  alloc.image =
-      vkapi::create_image(device_, params.export_sharing ? allocator_export_ : allocator_, &image_info, &alloc_info);
-  vmaGetAllocationInfo(alloc.image->allocator, alloc.image->allocation, &alloc.alloc_info);
+  alloc.image = vkapi::create_image(
+      device_, params.export_sharing ? allocator_export_ : allocator_,
+      &image_info, &alloc_info);
+  vmaGetAllocationInfo(alloc.image->allocator, alloc.image->allocation,
+                       &alloc.alloc_info);
 
   VkImageViewCreateInfo view_info{};
   view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;

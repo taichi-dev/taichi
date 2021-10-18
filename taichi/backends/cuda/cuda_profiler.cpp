@@ -1,4 +1,5 @@
 #include "taichi/backends/cuda/cuda_profiler.h"
+#include "taichi/backends/cuda/cuda_types.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_context.h"
 
@@ -26,6 +27,10 @@ KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
     cupti_toolkit_->init_cupti();
     cupti_toolkit_->begin_profiling();
   }
+}
+
+std::string KernelProfilerCUDA::get_device_name() {
+  return CUDAContext::get_instance().get_device_name();
 }
 
 bool KernelProfilerCUDA::reinit_with_metrics(
@@ -58,14 +63,37 @@ KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
 }
 
 void KernelProfilerCUDA::trace(KernelProfilerBase::TaskHandle &task_handle,
-                               const std::string &task_name) {
-  if (tool_ == ProfilingToolkit::event)
-    task_handle = event_toolkit_->start_with_handle(task_name);
-  else if (tool_ == ProfilingToolkit::cupti) {
-    KernelProfileTracedRecord record;
-    record.name = task_name;
-    traced_records_.push_back(record);
+                               const std::string &kernel_name,
+                               void *kernel,
+                               uint32_t grid_size,
+                               uint32_t block_size,
+                               uint32_t dynamic_smem_size) {
+  int register_per_thread = 0;
+  int static_shared_mem_per_block = 0;
+  int max_active_blocks_per_multiprocessor = 0;
+  CUDADriver::get_instance().kernel_get_attribute(
+      &register_per_thread, CUfunction_attribute::CU_FUNC_ATTRIBUTE_NUM_REGS,
+      kernel);
+  CUDADriver::get_instance().kernel_get_attribute(
+      &static_shared_mem_per_block,
+      CUfunction_attribute::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, kernel);
+  CUDADriver::get_instance().kernel_get_occupancy(
+      &max_active_blocks_per_multiprocessor, kernel, block_size,
+      dynamic_smem_size);
+
+  if (tool_ == ProfilingToolkit::event) {
+    task_handle = event_toolkit_->start_with_handle(kernel_name);
   }
+  KernelProfileTracedRecord record;
+  record.name = kernel_name;
+  record.register_per_thread = register_per_thread;
+  record.shared_mem_per_block = static_shared_mem_per_block + dynamic_smem_size;
+  record.grid_size = grid_size;
+  record.block_size = block_size;
+  record.active_blocks_per_multiprocessor =
+      max_active_blocks_per_multiprocessor;
+
+  traced_records_.push_back(record);
 }
 
 void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {
@@ -97,7 +125,7 @@ void KernelProfilerCUDA::sync() {
 
   // update
   if (tool_ == ProfilingToolkit::event) {
-    event_toolkit_->update_record(traced_records_);
+    event_toolkit_->update_record(records_size_after_sync_, traced_records_);
     event_toolkit_->update_timeline(traced_records_);
     statistics_on_traced_records();  // TODO: deprecated
     event_toolkit_->clear();
@@ -118,9 +146,43 @@ void KernelProfilerCUDA::clear() {
   statistical_results_.clear();
 }
 
+// must be called immediately after KernelProfilerCUDA::trace()
+bool KernelProfilerCUDA::record_kernel_attributes(void *kernel,
+                                                  uint32_t grid_size,
+                                                  uint32_t block_size,
+                                                  uint32_t dynamic_smem_size) {
+  int register_per_thread = 0;
+  int static_shared_mem_per_block = 0;
+  int max_active_blocks_per_multiprocessor = 0;
+
+  CUDADriver::get_instance().kernel_get_attribute(
+      &register_per_thread, CUfunction_attribute::CU_FUNC_ATTRIBUTE_NUM_REGS,
+      kernel);
+  CUDADriver::get_instance().kernel_get_attribute(
+      &static_shared_mem_per_block,
+      CUfunction_attribute::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, kernel);
+  CUDADriver::get_instance().kernel_get_occupancy(
+      &max_active_blocks_per_multiprocessor, kernel, block_size,
+      dynamic_smem_size);
+
+  KernelProfileTracedRecord &traced_record = traced_records_.back();
+  traced_record.register_per_thread = register_per_thread;
+  traced_record.shared_mem_per_block =
+      static_shared_mem_per_block + dynamic_smem_size;
+  traced_record.grid_size = grid_size;
+  traced_record.block_size = block_size;
+  traced_record.active_blocks_per_multiprocessor =
+      max_active_blocks_per_multiprocessor;
+
+  return true;
+}
+
 #else
 
 KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
+  TI_NOT_IMPLEMENTED;
+}
+std::string KernelProfilerCUDA::get_device_name() {
   TI_NOT_IMPLEMENTED;
 }
 bool KernelProfilerCUDA::reinit_with_metrics(
@@ -132,7 +194,11 @@ KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
   TI_NOT_IMPLEMENTED;
 }
 void KernelProfilerCUDA::trace(KernelProfilerBase::TaskHandle &task_handle,
-                               const std::string &task_name) {
+                               const std::string &kernel_name,
+                               void *kernel,
+                               uint32_t grid_size,
+                               uint32_t block_size,
+                               uint32_t dynamic_smem_size) {
   TI_NOT_IMPLEMENTED;
 }
 void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {
@@ -144,7 +210,12 @@ void KernelProfilerCUDA::sync() {
 void KernelProfilerCUDA::clear() {
   TI_NOT_IMPLEMENTED;
 }
-
+bool KernelProfilerCUDA::record_kernel_attributes(void *kernel,
+                                                  uint32_t grid_size,
+                                                  uint32_t block_size,
+                                                  uint32_t dynamic_smem_size) {
+  TI_NOT_IMPLEMENTED;
+}
 #endif
 
 // default profiling toolkit : cuEvent
@@ -194,8 +265,16 @@ KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
 }
 
 void EventToolkit::update_record(
+    uint32_t records_size_after_sync,
     std::vector<KernelProfileTracedRecord> &traced_records) {
-  // cuEvent : get kernel_elapsed_time
+  uint32_t events_num = event_records_.size();
+  uint32_t records_num = traced_records.size();
+  TI_ERROR_IF(records_size_after_sync + events_num != records_num,
+              "KernelProfilerCUDA::EventToolkit: event_records_.size({}) != "
+              "traced_records_.size({})",
+              records_size_after_sync + events_num, records_num);
+
+  uint32_t idx = 0;
   for (auto &record : event_records_) {
     CUDADriver::get_instance().event_elapsed_time(
         &record.kernel_elapsed_time_in_ms, record.start_event,
@@ -210,11 +289,11 @@ void EventToolkit::update_record(
     CUDADriver::get_instance().event_destroy(record.stop_event);
 
     // copy to traced_records_ then clear event_records_
-    KernelProfileTracedRecord traced_record;
-    traced_record.name = record.name;
-    traced_record.kernel_elapsed_time_in_ms = record.kernel_elapsed_time_in_ms;
-    traced_record.time_since_base = record.time_since_base;
-    traced_records.push_back(traced_record);
+    traced_records[records_size_after_sync + idx].kernel_elapsed_time_in_ms =
+        record.kernel_elapsed_time_in_ms;
+    traced_records[records_size_after_sync + idx].time_since_base =
+        record.time_since_base;
+    idx++;
   }
 }
 
@@ -243,6 +322,7 @@ KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
   TI_NOT_IMPLEMENTED;
 }
 void EventToolkit::update_record(
+    uint32_t records_size_after_sync,
     std::vector<KernelProfileTracedRecord> &traced_records) {
   TI_NOT_IMPLEMENTED;
 }

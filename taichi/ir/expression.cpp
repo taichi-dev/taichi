@@ -18,7 +18,7 @@ ExprGroup ExprGroup::loaded() const {
   return indices_loaded;
 }
 
-void ExprGroup::serialize(std::stringstream &ss) const {
+void ExprGroup::serialize(std::ostream &ss) const {
   for (int i = 0; i < (int)exprs.size(); i++) {
     exprs[i].serialize(ss);
     if (i + 1 < (int)exprs.size()) {

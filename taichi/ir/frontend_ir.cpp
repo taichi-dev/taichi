@@ -100,7 +100,7 @@ void RandExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void UnaryOpExpression::serialize(std::stringstream &ss) {
+void UnaryOpExpression::serialize(std::ostream &ss) {
   ss << '(';
   if (is_cast()) {
     ss << (type == UnaryOpType::cast_value ? "" : "reinterpret_");
@@ -187,7 +187,7 @@ void GlobalVariableExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(ptr));
 }
 
-void GlobalPtrExpression::serialize(std::stringstream &ss) {
+void GlobalPtrExpression::serialize(std::ostream &ss) {
   if (snode) {
     ss << snode->get_node_type_name_hinted();
   } else {
@@ -304,7 +304,7 @@ void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void LoopUniqueExpression::serialize(std::stringstream &ss) {
+void LoopUniqueExpression::serialize(std::ostream &ss) {
   ss << "loop_unique(";
   input.serialize(ss);
   for (int i = 0; i < covers.size(); i++) {
@@ -344,7 +344,7 @@ void IdExpression::flatten(FlattenContext *ctx) {
   }
 }
 
-void AtomicOpExpression::serialize(std::stringstream &ss) {
+void AtomicOpExpression::serialize(std::ostream &ss) {
   if (op_type == AtomicOpType::add) {
     ss << "atomic_add(";
   } else if (op_type == AtomicOpType::sub) {
@@ -395,7 +395,7 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void SNodeOpExpression::serialize(std::stringstream &ss) {
+void SNodeOpExpression::serialize(std::ostream &ss) {
   ss << snode_op_type_name(op_type);
   ss << '(';
   ss << snode->get_node_type_name_hinted() << ", [";
@@ -477,7 +477,7 @@ void FuncCallExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void FuncCallExpression::serialize(std::stringstream &ss) {
+void FuncCallExpression::serialize(std::ostream &ss) {
   ss << "func_call(\"" << func->func_key.get_full_name() << "\", ";
   args.serialize(ss);
   ss << ')';

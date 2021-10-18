@@ -242,7 +242,7 @@ class ArgLoadExpression : public Expression {
   ArgLoadExpression(int arg_id, DataType dt) : arg_id(arg_id), dt(dt) {
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << fmt::format("arg[{}] (dt={})", arg_id, data_type_name(dt));
   }
 
@@ -256,7 +256,7 @@ class RandExpression : public Expression {
   RandExpression(DataType dt) : dt(dt) {
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << fmt::format("rand<{}>()", data_type_name(dt));
   }
 
@@ -276,7 +276,7 @@ class UnaryOpExpression : public Expression {
 
   bool is_cast() const;
 
-  void serialize(std::stringstream &ss) override;
+  void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
 };
@@ -292,7 +292,7 @@ class BinaryOpExpression : public Expression {
     this->rhs.set(smart_load(rhs));
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << '(';
     lhs->serialize(ss);
     ss << ' ';
@@ -320,7 +320,7 @@ class TernaryOpExpression : public Expression {
     this->op3.set(load_if_ptr(op3));
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << ternary_type_name(type) << '(';
     op1->serialize(ss);
     ss << ' ';
@@ -346,7 +346,7 @@ class InternalFuncCallExpression : public Expression {
     }
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << "internal call " << func_name << '(';
     std::string args_str;
     for (int i = 0; i < args.size(); i++) {
@@ -375,7 +375,7 @@ class ExternalFuncCallExpression : public Expression {
       : func(func), source(source), args(args), outputs(outputs) {
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     if (func) {
       ss << fmt::format("call {:x} (", (uint64)func);
     } else {
@@ -416,7 +416,7 @@ class ExternalTensorExpression : public Expression {
     set_attribute("dim", std::to_string(dim));
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << fmt::format("{}d_ext_arr", dim);
   }
 
@@ -452,7 +452,7 @@ class GlobalVariableExpression : public Expression {
     set_attribute("dim", std::to_string(snode->num_active_indices));
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << "#" << ident.name();
   }
 
@@ -473,7 +473,7 @@ class GlobalPtrExpression : public Expression {
       : snode(snode), indices(indices) {
   }
 
-  void serialize(std::stringstream &ss) override;
+  void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -500,7 +500,7 @@ class TensorElementExpression : public Expression {
 
   bool is_global_tensor() const;
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     var.serialize(ss);
     ss << '[';
     for (int i = 0; i < (int)indices.size(); i++) {
@@ -533,7 +533,7 @@ class EvalExpression : public Expression {
     // cache stmt->id since it may be released later
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << '%' << stmt_id;
   }
 
@@ -554,7 +554,7 @@ class RangeAssumptionExpression : public Expression {
       : input(input), base(base), low(low), high(high) {
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << "assume_in_range({";
     base.serialize(ss);
     ss << fmt::format("{:+d}", low);
@@ -577,7 +577,7 @@ class LoopUniqueExpression : public Expression {
       : input(input), covers(covers) {
   }
 
-  void serialize(std::stringstream &ss) override;
+  void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
 };
@@ -590,7 +590,7 @@ class IdExpression : public Expression {
   IdExpression(const Identifier &id) : id(id) {
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << id.name();
   }
 
@@ -615,7 +615,7 @@ class AtomicOpExpression : public Expression {
       : op_type(op_type), dest(dest), val(val) {
   }
 
-  void serialize(std::stringstream &ss) override;
+  void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
 };
@@ -638,7 +638,7 @@ class SNodeOpExpression : public Expression {
       : snode(snode), op_type(op_type), indices(indices), value(value) {
   }
 
-  void serialize(std::stringstream &ss) override;
+  void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
 };
@@ -649,7 +649,7 @@ class LocalLoadExpression : public Expression {
   LocalLoadExpression(const Expr &ptr) : ptr(ptr) {
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << "lcl load ";
     ptr.serialize(ss);
   }
@@ -663,7 +663,7 @@ class GlobalLoadExpression : public Expression {
   GlobalLoadExpression(const Expr &ptr) : ptr(ptr) {
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << "gbl load ";
     ptr.serialize(ss);
   }
@@ -679,7 +679,7 @@ class ConstExpression : public Expression {
   ConstExpression(const T &x) : val(x) {
   }
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << val.stringify();
   }
 
@@ -691,7 +691,7 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   Expr ptr;
   int axis;
 
-  void serialize(std::stringstream &ss) override {
+  void serialize(std::ostream &ss) override {
     ss << "external_tensor_shape_along_axis(";
     ptr->serialize(ss);
     ss << ", " << axis << ')';
@@ -709,7 +709,7 @@ class FuncCallExpression : public Expression {
   Function *func;
   ExprGroup args;
 
-  void serialize(std::stringstream &ss) override;
+  void serialize(std::ostream &ss) override;
 
   FuncCallExpression(Function *func, const ExprGroup &args)
       : func(func), args(args) {

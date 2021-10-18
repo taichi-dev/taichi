@@ -37,7 +37,7 @@ class Expression {
     stmt = nullptr;
   }
 
-  virtual void serialize(std::stringstream &ss) = 0;
+  virtual void serialize(std::ostream &ss) = 0;
 
   virtual void flatten(FlattenContext *ctx) {
     TI_NOT_IMPLEMENTED;
@@ -99,7 +99,7 @@ class ExprGroup {
     return exprs[i];
   }
 
-  void serialize(std::stringstream &ss) const;
+  void serialize(std::ostream &ss) const;
 
   std::string serialize() const;
 

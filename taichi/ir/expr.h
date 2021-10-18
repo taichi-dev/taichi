@@ -78,7 +78,7 @@ class Expr {
   Expr operator[](const ExprGroup &indices) const;
 
   std::string serialize() const;
-  void serialize(std::stringstream &ss) const;
+  void serialize(std::ostream &ss) const;
 
   void operator+=(const Expr &o);
   void operator-=(const Expr &o);

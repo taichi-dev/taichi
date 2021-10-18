@@ -8,7 +8,7 @@ def _get_logging(name):
     """Generates a decorator to decorate a specific logger function.
 
     Args:
-        name (str): The string represents logging level. 
+        name (str): The string represents logging level.
             Effective levels include: 'trace', 'debug', 'info', 'warn', 'error', 'critical'.
 
     Returns:
@@ -40,22 +40,22 @@ def set_logging_level(level):
     Example:
             >>> set_logging_level('debug')
 
-        If call this function, then everything below 'debug' will be effective, 
+        If call this function, then everything below 'debug' will be effective,
         and 'trace' won't since it's above debug.
     """
     ti_core.set_logging_level(level)
 
 
 def is_logging_effective(level):
-    """Check if the level is effective. The level below current level will be effective. 
+    """Check if the level is effective. The level below current level will be effective.
         If not set by manual, the pre-set logging level is 'info'.
 
     See also https://docs.taichi.graphics/lang/articles/contribution/utilities#logging.
 
     Args:
-        level (str): The string represents logging level. 
+        level (str): The string represents logging level.
             Effective levels include: 'trace', 'debug', 'info', 'warn', 'error', 'critical'.
-            
+
     Returns:
         Bool: Indicate whether the logging level is supported.
 

@@ -180,6 +180,8 @@ class TaichiMain:
             dest='save',
             action='store_true',
             help="Save source code to current directory instead of running it")
+
+        #TODO: Pass the arguments to donwstreams correctly(#3216).
         args = parser.parse_args(arguments)
 
         examples_dir = TaichiMain._get_examples_dir()

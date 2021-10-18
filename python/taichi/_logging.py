@@ -47,7 +47,8 @@ def set_logging_level(level):
 
 
 def is_logging_effective(level):
-    """Check if the level is effective. The level below current level will be effective. Default level is 'info'.
+    """Check if the level is effective. The level below current level will be effective. 
+        If not set by manual, the pre-set logging level is 'info'.
 
     See also https://docs.taichi.graphics/lang/articles/contribution/utilities#logging.
 

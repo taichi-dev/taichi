@@ -42,8 +42,7 @@ python3 -m pip install taichi
 Please build from source for other configurations (e.g., your CPU is ARM, or you want to try out our experimental C backend).
 
 **Note:**
- - The PyPI package supports x64 CPU, CUDA 10/11, Metal, and OpenGL Compute Shader backends.
- - On Ubuntu 19.04+, please `sudo apt install libtinfo5`.
+ - The PyPI package supports x64 CPU, CUDA 10/11, Metal, Vulkan and OpenGL Compute Shader backends.
  - On Windows, please install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe) if you haven't.
  - [[All releases]](https://github.com/taichi-dev/taichi/releases)
 

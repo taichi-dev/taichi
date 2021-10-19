@@ -1,5 +1,6 @@
 import taichi as myowntaichi
 
+
 @myowntaichi.test()
 def test_module_import():
     @myowntaichi.kernel

@@ -1,5 +1,4 @@
 import ast
-import astdump
 
 import astor
 from taichi.lang import impl
@@ -72,7 +71,6 @@ class ASTTransformerUnifyModule(ast.NodeTransformer):
     module func calls like `<module alias>.<func-name>` will be renamed to
     `ti.<func-name>`
     """
-
     def __init__(self, func):
         super().__init__()
         self.func = func

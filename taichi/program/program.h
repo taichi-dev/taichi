@@ -260,9 +260,16 @@ class Program {
    * Adds a new SNode tree.
    *
    * @param root The root of the new SNode tree.
+   * @param compile_only Only generates the compiled type
    * @return The pointer to SNode tree.
+   *
+   * FIXME: compile_only is mostly a hack to make AOT & cross-compilation work.
+   * E.g. users who would like to AOT to a specific target backend can do so,
+   * even if their platform doesn't support that backend. Unfortunately, the
+   * current implementation would leave the backend in a mostly broken state. We
+   * need a cleaner design to support both AOT and JIT modes.
    */
-  SNodeTree *add_snode_tree(std::unique_ptr<SNode> root);
+  SNodeTree *add_snode_tree(std::unique_ptr<SNode> root, bool compile_only);
 
   /**
    * Gets the root of a SNode tree.
@@ -289,13 +296,6 @@ class Program {
   }
 
  private:
-  /**
-   * Materializes a new SNodeTree.
-   *
-   * JIT compiles the @param tree to backend-specific data types.
-   */
-  void materialize_snode_tree(SNodeTree *tree);
-
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;

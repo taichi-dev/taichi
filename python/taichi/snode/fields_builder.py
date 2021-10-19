@@ -150,13 +150,21 @@ class FieldsBuilder:
 
         Args:
             raise_warning (bool): Raise warning or not."""
+        return self._finalize(raise_warning, compile_only=False)
+
+    def _finalize_for_aot(self):
+        """Constructs the SNodeTree and compiles the type for AOT purpose."""
+        return self._finalize(raise_warning=True, compile_only=True)
+
+    def _finalize(self, raise_warning, compile_only):
         self._check_not_finalized()
         if self._empty and raise_warning:
             warning("Finalizing an empty FieldsBuilder!")
         self._finalized = True
         return SNodeTree(
             _ti_core.finalize_snode_tree(_snode_registry, self._ptr,
-                                         impl.get_runtime().prog))
+                                         impl.get_runtime().prog,
+                                         compile_only))
 
     def _check_not_finalized(self):
         if self._finalized:

@@ -1008,9 +1008,9 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference);
   m.def(
       "finalize_snode_tree",
-      [](SNodeRegistry *registry, const SNode *root,
-         Program *program) -> SNodeTree * {
-        return program->add_snode_tree(registry->finalize(root));
+      [](SNodeRegistry *registry, const SNode *root, Program *program,
+         bool compile_only) -> SNodeTree * {
+        return program->add_snode_tree(registry->finalize(root), compile_only);
       },
       py::return_value_policy::reference);
 

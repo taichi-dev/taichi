@@ -18,11 +18,13 @@ Ndarray::Ndarray(Program *prog,
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)) {
-  TaichiLLVMContext *tlctx = prog_->get_llvm_program_impl()->get_llvm_context(prog_->config.arch);
+  TaichiLLVMContext *tlctx =
+      prog_->get_llvm_program_impl()->get_llvm_context(prog_->config.arch);
   auto *const runtime_jit = tlctx->runtime_jit_module;
   TI_TRACE("allocating memory for Ndarray");
   runtime_jit->call<void *, std::size_t, std::size_t>(
-      "runtime_memory_allocate_aligned", prog_->get_llvm_program_impl()->get_llvm_runtime(),
+      "runtime_memory_allocate_aligned",
+      prog_->get_llvm_program_impl()->get_llvm_runtime(),
       nelement_ * element_size_, taichi_page_size);
   data_ptr_ = prog_->get_llvm_program_impl()->fetch_result<uint64_t *>(
       taichi_result_buffer_runtime_query_id, prog_->result_buffer);

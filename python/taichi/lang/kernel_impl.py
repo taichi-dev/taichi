@@ -1,5 +1,4 @@
 import ast
-import copy
 import functools
 import inspect
 import re

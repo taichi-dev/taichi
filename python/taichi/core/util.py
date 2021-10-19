@@ -62,7 +62,7 @@ def locale_encode(path):
     try:
         import locale  # pylint: disable=C0415
         return path.encode(locale.getdefaultlocale()[1])
-    except UnicodeEncodeError:
+    except (UnicodeEncodeError, TypeError):
         try:
             return path.encode(sys.getfilesystemencoding())
         except UnicodeEncodeError:

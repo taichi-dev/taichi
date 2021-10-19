@@ -236,7 +236,7 @@ jobs:
     name: Performance monitoring (NVGPU)
     needs: check_code_format
     timeout-minutes: 60
-    runs-on: [self-hosted, x64, cuda, linux, ubuntu20.04, rtx2060, benchmark]
+    runs-on: [self-hosted, x64, cuda, linux, ubuntu20.04, benchmark]
     steps:
       - uses: actions/checkout@v2
         with:

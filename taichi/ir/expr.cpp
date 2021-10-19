@@ -6,9 +6,15 @@
 
 TLANG_NAMESPACE_BEGIN
 
-std::string Expr::serialize() const {
+void Expr::serialize(std::ostream &ss) const {
   TI_ASSERT(expr);
-  return expr->serialize();
+  expr->serialize(ss);
+}
+
+std::string Expr::serialize() const {
+  std::stringstream ss;
+  serialize(ss);
+  return ss.str();
 }
 
 void Expr::set_tb(const std::string &tb) {

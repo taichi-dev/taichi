@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taichi/util/str.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expr.h"
 
@@ -36,7 +37,7 @@ class Expression {
     stmt = nullptr;
   }
 
-  virtual std::string serialize() = 0;
+  virtual void serialize(std::ostream &ss) = 0;
 
   virtual void flatten(FlattenContext *ctx) {
     TI_NOT_IMPLEMENTED;
@@ -98,7 +99,10 @@ class ExprGroup {
     return exprs[i];
   }
 
+  void serialize(std::ostream &ss) const;
+
   std::string serialize() const;
+
   ExprGroup loaded() const;
 };
 

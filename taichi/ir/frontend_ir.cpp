@@ -100,15 +100,17 @@ void RandExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-std::string UnaryOpExpression::serialize() {
+void UnaryOpExpression::serialize(std::ostream &ss) {
+  ss << '(';
   if (is_cast()) {
-    std::string reint = type == UnaryOpType::cast_value ? "" : "reinterpret_";
-    return fmt::format("({}{}<{}> {})", reint, unary_op_type_name(type),
-                       data_type_name(cast_type), operand->serialize());
+    ss << (type == UnaryOpType::cast_value ? "" : "reinterpret_");
+    ss << unary_op_type_name(type);
+    ss << '<' << data_type_name(cast_type) << "> ";
   } else {
-    return fmt::format("({} {})", unary_op_type_name(type),
-                       operand->serialize());
+    ss << unary_op_type_name(type) << ' ';
   }
+  operand->serialize(ss);
+  ss << ')';
 }
 
 bool UnaryOpExpression::is_cast() const {
@@ -185,16 +187,19 @@ void GlobalVariableExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(ptr));
 }
 
-std::string GlobalPtrExpression::serialize() {
-  std::string s = fmt::format(
-      "{}[", snode ? snode->get_node_type_name_hinted() : var.serialize());
-  for (int i = 0; i < (int)indices.size(); i++) {
-    s += indices.exprs[i]->serialize();
-    if (i + 1 < (int)indices.size())
-      s += ", ";
+void GlobalPtrExpression::serialize(std::ostream &ss) {
+  if (snode) {
+    ss << snode->get_node_type_name_hinted();
+  } else {
+    var.serialize(ss);
   }
-  s += "]";
-  return s;
+  ss << '[';
+  for (int i = 0; i < (int)indices.size(); i++) {
+    indices.exprs[i]->serialize(ss);
+    if (i + 1 < (int)indices.size())
+      ss << ", ";
+  }
+  ss << ']';
 }
 
 void GlobalPtrExpression::flatten(FlattenContext *ctx) {
@@ -299,19 +304,19 @@ void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-std::string LoopUniqueExpression::serialize() {
-  std::string result = "loop_unique(" + input->serialize();
+void LoopUniqueExpression::serialize(std::ostream &ss) {
+  ss << "loop_unique(";
+  input.serialize(ss);
   for (int i = 0; i < covers.size(); i++) {
     if (i == 0)
-      result += ", covers=[";
-    result += covers[i]->get_node_type_name_hinted();
+      ss << ", covers=[";
+    ss << covers[i]->get_node_type_name_hinted();
     if (i == (int)covers.size() - 1)
-      result += "]";
+      ss << ']';
     else
-      result += ", ";
+      ss << ", ";
   }
-  result += ")";
-  return result;
+  ss << ')';
 }
 
 void LoopUniqueExpression::flatten(FlattenContext *ctx) {
@@ -339,28 +344,29 @@ void IdExpression::flatten(FlattenContext *ctx) {
   }
 }
 
-std::string AtomicOpExpression::serialize() {
+void AtomicOpExpression::serialize(std::ostream &ss) {
   if (op_type == AtomicOpType::add) {
-    return fmt::format("atomic_add({}, {})", dest.serialize(), val.serialize());
+    ss << "atomic_add(";
   } else if (op_type == AtomicOpType::sub) {
-    return fmt::format("atomic_sub({}, {})", dest.serialize(), val.serialize());
+    ss << "atomic_sub(";
   } else if (op_type == AtomicOpType::min) {
-    return fmt::format("atomic_min({}, {})", dest.serialize(), val.serialize());
+    ss << "atomic_min(";
   } else if (op_type == AtomicOpType::max) {
-    return fmt::format("atomic_max({}, {})", dest.serialize(), val.serialize());
+    ss << "atomic_max(";
   } else if (op_type == AtomicOpType::bit_and) {
-    return fmt::format("atomic_bit_and({}, {})", dest.serialize(),
-                       val.serialize());
+    ss << "atomic_bit_and(";
   } else if (op_type == AtomicOpType::bit_or) {
-    return fmt::format("atomic_bit_or({}, {})", dest.serialize(),
-                       val.serialize());
+    ss << "atomic_bit_or(";
   } else if (op_type == AtomicOpType::bit_xor) {
-    return fmt::format("atomic_bit_xor({}, {})", dest.serialize(),
-                       val.serialize());
+    ss << "atomic_bit_xor(";
   } else {
     // min/max not supported in the LLVM backend yet.
     TI_NOT_IMPLEMENTED;
   }
+  dest.serialize(ss);
+  ss << ", ";
+  val.serialize(ss);
+  ss << ")";
 }
 
 void AtomicOpExpression::flatten(FlattenContext *ctx) {
@@ -389,15 +395,17 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-std::string SNodeOpExpression::serialize() {
+void SNodeOpExpression::serialize(std::ostream &ss) {
+  ss << snode_op_type_name(op_type);
+  ss << '(';
+  ss << snode->get_node_type_name_hinted() << ", [";
+  indices.serialize(ss);
+  ss << "]";
   if (value.expr) {
-    return fmt::format("{}({}, [{}], {})", snode_op_type_name(op_type),
-                       snode->get_node_type_name_hinted(), indices.serialize(),
-                       value.serialize());
-  } else {
-    return fmt::format("{}({}, [{}])", snode_op_type_name(op_type),
-                       snode->get_node_type_name_hinted(), indices.serialize());
+    ss << ' ';
+    value.serialize(ss);
   }
+  ss << ')';
 }
 
 void SNodeOpExpression::flatten(FlattenContext *ctx) {
@@ -469,9 +477,10 @@ void FuncCallExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-std::string FuncCallExpression::serialize() {
-  return fmt::format("func_call(\"{}\", {})", func->func_key.get_full_name(),
-                     args.serialize());
+void FuncCallExpression::serialize(std::ostream &ss) {
+  ss << "func_call(\"" << func->func_key.get_full_name() << "\", ";
+  args.serialize(ss);
+  ss << ')';
 }
 
 Block *ASTBuilder::current_block() {

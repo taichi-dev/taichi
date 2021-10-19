@@ -17,6 +17,8 @@
 #include "taichi/program/async_engine.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/snode_rw_accessors_bank.h"
+#include "taichi/program/ndarray.h"
+#include "taichi/program/ndarray_rw_accessors_bank.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"
 #include "taichi/gui/gui.h"
@@ -63,6 +65,10 @@ std::string libdevice_path();
 
 SNodeRwAccessorsBank::Accessors get_snode_rw_accessors(SNode *snode) {
   return get_current_program().get_snode_rw_accessors_bank().get(snode);
+}
+
+NdarrayRwAccessorsBank::Accessors get_ndarray_rw_accessors(Ndarray *ndarray) {
+  return get_current_program().get_ndarray_rw_accessors_bank().get(ndarray);
 }
 
 TLANG_NAMESPACE_END
@@ -177,6 +183,7 @@ void export_lang(py::module &m) {
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
+      .def_readwrite("ndarray_use_torch", &CompileConfig::ndarray_use_torch)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
@@ -380,6 +387,34 @@ void export_lang(py::module &m) {
       .def("destroy_snode_tree", [](SNodeTree *snode_tree, Program *program) {
         program->destroy_snode_tree(snode_tree);
       });
+
+  py::class_<Ndarray>(m, "Ndarray")
+      .def(py::init<Program *, const DataType &, const std::vector<int> &>())
+      .def("data_ptr", &Ndarray::get_data_ptr_as_int)
+      .def("element_size", &Ndarray::get_element_size)
+      .def("nelement", &Ndarray::get_nelement)
+      .def("read_int",
+           [](Ndarray *ndarray, const std::vector<int> &I) -> int64 {
+             return get_ndarray_rw_accessors(ndarray).read_int(I);
+           })
+      .def("read_uint",
+           [](Ndarray *ndarray, const std::vector<int> &I) -> uint64 {
+             return get_ndarray_rw_accessors(ndarray).read_uint(I);
+           })
+      .def("read_float",
+           [](Ndarray *ndarray, const std::vector<int> &I) -> float64 {
+             return get_ndarray_rw_accessors(ndarray).read_float(I);
+           })
+      .def("write_int",
+           [](Ndarray *ndarray, const std::vector<int> &I, int64 val) {
+             get_ndarray_rw_accessors(ndarray).write_int(I, val);
+           })
+      .def("write_float",
+           [](Ndarray *ndarray, const std::vector<int> &I, float64 val) {
+             get_ndarray_rw_accessors(ndarray).write_float(I, val);
+           })
+      .def_readonly("dtype", &Ndarray::dtype)
+      .def_readonly("shape", &Ndarray::shape);
 
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)

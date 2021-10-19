@@ -1313,9 +1313,8 @@ void VulkanStream::submit_synced(CommandList *cmdlist) {
                                       /*fence=*/cmd_sync_fence_->fence),
                         "failed to submit command buffer");
 
-  // Timeout is in nanoseconds, 60s = 60,000ms = 60,000,000ns
   vkWaitForFences(device_.vk_device(), 1, &cmd_sync_fence_->fence, true,
-                  (60 * 1000 * 1000));
+                  UINT64_MAX);
   vkResetFences(device_.vk_device(), 1, &cmd_sync_fence_->fence);
 }
 

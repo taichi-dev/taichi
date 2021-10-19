@@ -36,16 +36,12 @@ class OpenglProgramImpl : public ProgramImpl {
       SNodeTree *tree,
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       std::unordered_map<int, SNode *> &snodes,
-      SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
       uint64 *result_buffer) override;
 
   void synchronize() override {
   }
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
-    // TODO: implement opengl aot
-    return nullptr;
-  }
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
   virtual void destroy_snode_tree(SNodeTree *snode_tree) override {
     TI_NOT_IMPLEMENTED
@@ -56,7 +52,7 @@ class OpenglProgramImpl : public ProgramImpl {
 
  private:
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
-  std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
+  std::unique_ptr<opengl::OpenGlRuntime> opengl_runtime_;
 };
 }  // namespace lang
 }  // namespace taichi

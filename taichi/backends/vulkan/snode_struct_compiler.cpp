@@ -9,7 +9,7 @@ namespace {
 
 class StructCompiler {
  public:
-  CompiledSNodeStructs run(const SNode &root) {
+  CompiledSNodeStructs run(SNode &root) {
     TI_ASSERT(root.type == SNodeType::root);
 
     CompiledSNodeStructs result;
@@ -21,7 +21,7 @@ class StructCompiler {
   }
 
  private:
-  std::size_t compute_snode_size(const SNode *sn) {
+  std::size_t compute_snode_size(SNode *sn) {
     const bool is_place = sn->is_place();
 
     SNodeDescriptor sn_desc;
@@ -31,9 +31,9 @@ class StructCompiler {
       sn_desc.container_stride = sn_desc.cell_stride;
     } else {
       std::size_t cell_stride = 0;
-      for (const auto &ch : sn->ch) {
-        const auto child_offset = cell_stride;
-        const auto *ch_snode = ch.get();
+      for (auto &ch : sn->ch) {
+        auto child_offset = cell_stride;
+        auto *ch_snode = ch.get();
         cell_stride += compute_snode_size(ch_snode);
         snode_descriptors_.find(ch_snode->id)
             ->second.mem_offset_in_parent_cell = child_offset;
@@ -42,6 +42,8 @@ class StructCompiler {
       sn_desc.container_stride =
           cell_stride * sn_desc.cells_per_container_pot();
     }
+
+    sn->cell_size_bytes = sn_desc.cell_stride;
 
     sn_desc.total_num_cells_from_root = 1;
     for (const auto &e : sn->extractors) {
@@ -74,15 +76,10 @@ class StructCompiler {
 }  // namespace
 
 int SNodeDescriptor::cells_per_container_pot() const {
-  // For root, |snode->n| is 0.
-  const auto ty = snode->type;
-  if (ty == SNodeType::root || ty == SNodeType::place) {
-    return 1;
-  }
-  return snode->n;
+  return snode->num_cells_per_container;
 }
 
-CompiledSNodeStructs compile_snode_structs(const SNode &root) {
+CompiledSNodeStructs compile_snode_structs(SNode &root) {
   StructCompiler compiler;
   return compiler.run(root);
 }

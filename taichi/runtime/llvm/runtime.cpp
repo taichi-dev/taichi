@@ -527,8 +527,8 @@ struct LLVMRuntime {
   host_vsnprintf_type host_vsnprintf;
   Ptr memory_pool;
 
-  Ptr roots[taichi_max_num_snode_trees];
-  size_t root_mem_sizes[taichi_max_num_snode_trees];
+  Ptr roots[kMaxNumSnodeTreesLlvm];
+  size_t root_mem_sizes[kMaxNumSnodeTreesLlvm];
 
   Ptr thread_pool;
   parallel_for_type parallel_for;
@@ -557,6 +557,8 @@ struct LLVMRuntime {
   i32 num_rand_states;
 
   i64 total_requested_memory;
+
+  Ptr wasm_print_buffer = nullptr;
 
   template <typename T>
   void set_result(std::size_t i, T t) {
@@ -787,7 +789,7 @@ Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
         ((std::size_t)preallocated_head + alignment - 1) % alignment;
     size += alignment_bytes;
     if (preallocated_head + size <= preallocated_tail) {
-      ret = preallocated_head;
+      ret = preallocated_head + alignment_bytes;
       preallocated_head += size;
       success = true;
     } else {
@@ -838,9 +840,9 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
   }
 }
 
-void runtime_snode_tree_allocate_aligned(LLVMRuntime *runtime,
-                                         std::size_t size,
-                                         std::size_t alignment) {
+void runtime_memory_allocate_aligned(LLVMRuntime *runtime,
+                                     std::size_t size,
+                                     std::size_t alignment) {
   runtime->set_result(taichi_result_buffer_runtime_query_id,
                       runtime->allocate_aligned(size, alignment));
 }
@@ -1719,13 +1721,18 @@ f64 rounding_prepare_f64(f64 f) {
 }
 }
 
+namespace {
+i32 kWasmPrintBufferSize = 1024 * 1024;
+}
+
 extern "C" {
 // The input means starting address of Context, which should be set to
 // '__heap_base' to avoid conflicts with C++ stack data which is stored in
-// memory. The function returns starting address of root buffer. Here is
-// an illustration for proper memory layout in WASM:
+// memory. The function returns starting address of root buffer. The print
+// buffer locates just before Context (8MB). Here is an illustration for
+// proper memory layout in WASM:
 // ━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━
-//   ...  ┃▄ Context ┃  ▄ Runtime ▄  ┃ RandState[0] ┃ Root Buffer ...
+//  Print ┃▄ Context ┃  ▄ Runtime ▄  ┃ RandState[0] ┃ Root Buffer ...
 // ━━━━━━━┻│━━━━━━━━━▲━━│━━━━━━━━━│━━▲━━━━━━━━━━━━━━▲━━━━━━━━━━━━━━━━━━━
 //         └─────────┘  │         └──┘              │
 //                      └───────────────────────────┘
@@ -1739,6 +1746,57 @@ i32 wasm_materialize(Context *context) {
   context->runtime->roots[0] =
       (Ptr)((size_t)context->runtime->rand_states + sizeof(RandState));
   return (i32)(size_t)context->runtime->roots[0];
+}
+
+// Memory layout for Print section:
+// i32 total_print_character_num;
+// struct {
+//    int type;  // 0 for i32, 1 for f32, 2 for char (i8)
+//    union {
+//      i32 i;
+//      f32 f;
+//      char c[4];
+//    } data;
+//} wasm_buffer_buffer[kWasmPrintBufferSize];
+void wasm_set_print_buffer(Context *context, Ptr buffer) {
+  context->runtime->wasm_print_buffer = buffer;
+}
+
+void wasm_print_i32(Context *context, i32 value) {
+  Ptr buffer = context->runtime->wasm_print_buffer;
+  if (buffer == nullptr)
+    return;
+  i32 total_cnt = ((i32 *)buffer)[0]++;
+  i32 print_pos = total_cnt % kWasmPrintBufferSize;
+  ((i32 *)buffer)[print_pos * 2 + 1] = 0;  // 0 for i32
+  ((i32 *)buffer)[print_pos * 2 + 2] = value;
+}
+
+void wasm_print_f32(Context *context, f32 value) {
+  Ptr buffer = context->runtime->wasm_print_buffer;
+  if (buffer == nullptr)
+    return;
+  i32 total_cnt = ((i32 *)buffer)[0]++;
+  i32 print_pos = total_cnt % kWasmPrintBufferSize;
+  ((i32 *)buffer)[print_pos * 2 + 1] = 1;  // 1 for f32
+  ((f32 *)buffer)[print_pos * 2 + 2] = value;
+}
+
+void wasm_print_char(Context *context,
+                     i8 value0,
+                     i8 value1,
+                     i8 value2,
+                     i8 value3) {
+  Ptr buffer = context->runtime->wasm_print_buffer;
+  if (buffer == nullptr)
+    return;
+  i32 total_cnt = ((i32 *)buffer)[0]++;
+  i32 print_pos = total_cnt % kWasmPrintBufferSize;
+  ((i32 *)buffer)[print_pos * 2 + 1] = 2;  // 2 for char
+  ((i8 *)buffer)[print_pos * 8 + 8] = value0;
+  ((i8 *)buffer)[print_pos * 8 + 9] = value1;
+  ((i8 *)buffer)[print_pos * 8 + 10] = value2;
+  ((i8 *)buffer)[print_pos * 8 + 11] = value3;
 }
 
 void wasm_set_kernel_parameter_i32(Context *context, int index, i32 value) {

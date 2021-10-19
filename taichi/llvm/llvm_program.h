@@ -22,6 +22,14 @@ namespace taichi {
 namespace lang {
 class StructCompiler;
 
+namespace cuda {
+class CudaDevice;
+}
+
+namespace cpu {
+class CpuDevice;
+}
+
 class LlvmProgramImpl : public ProgramImpl {
  public:
   LlvmProgramImpl(CompileConfig &config, KernelProfilerBase *profiler);
@@ -53,7 +61,6 @@ class LlvmProgramImpl : public ProgramImpl {
       SNodeTree *tree,
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       std::unordered_map<int, SNode *> &snodes,
-      SNodeGlobalVarExprMap &snode_to_glb_var_exprs_,
       uint64 *result_buffer) override;
 
   template <typename T>
@@ -99,12 +106,6 @@ class LlvmProgramImpl : public ProgramImpl {
                                       StructCompiler *scomp,
                                       uint64 *result_buffer);
 
-  /**
-   * Sets the attributes of the Exprs that are backed by SNodes.
-   */
-  void materialize_snode_expr_attributes(
-      SNodeGlobalVarExprMap &snode_to_glb_var_exprs_);
-
   uint64 fetch_result_uint64(int i, uint64 *result_buffer);
 
   template <typename T, typename... Args>
@@ -131,6 +132,12 @@ class LlvmProgramImpl : public ProgramImpl {
     TI_NOT_IMPLEMENTED;
   }
 
+  virtual Device *get_compute_device() override {
+    return device_.get();
+  }
+
+  DevicePtr get_snode_tree_device_ptr(int tree_id) override;
+
  private:
   std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
   std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
@@ -139,6 +146,14 @@ class LlvmProgramImpl : public ProgramImpl {
   std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
   void *llvm_runtime{nullptr};
   void *preallocated_device_buffer{nullptr};  // TODO: move to memory allocator
+
+  DeviceAllocation preallocated_device_buffer_alloc{kDeviceNullAllocation};
+
+  std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
+
+  std::unique_ptr<Device> device_;
+  cuda::CudaDevice *cuda_device();
+  cpu::CpuDevice *cpu_device();
 };
 }  // namespace lang
 }  // namespace taichi

@@ -60,6 +60,45 @@ def test_matrix_field(n, m, dtype, shape):
     assert x.m == m
 
 
+@pytest.mark.parametrize('dtype', data_types)
+@pytest.mark.parametrize('shape', field_shapes)
+@ti.test(arch=ti.get_host_arch_list())
+def test_scalr_field_from_numpy(dtype, shape):
+    import numpy as np
+    x = ti.field(dtype, shape)
+    # use the corresponding dtype for the numpy array.
+    numpy_dtypes = {
+        ti.i32: np.int32,
+        ti.f32: np.float32,
+        ti.f64: np.float64,
+        ti.i64: np.int64,
+    }
+    arr = np.empty(shape, dtype=numpy_dtypes[dtype])
+    x.from_numpy(arr)
+
+
+@pytest.mark.parametrize('dtype', data_types)
+@pytest.mark.parametrize('shape', field_shapes)
+@ti.test(arch=ti.get_host_arch_list())
+def test_scalr_field_from_numpy_with_mismatch_shape(dtype, shape):
+    import numpy as np
+    x = ti.field(dtype, shape)
+    numpy_dtypes = {
+        ti.i32: np.int32,
+        ti.f32: np.float32,
+        ti.f64: np.float64,
+        ti.i64: np.int64,
+    }
+    # compose the mismatch shape for every ti.field.
+    # set the shape to (2, 3) by default, if the ti.field shape is a tuple, set it to 1.
+    mismatch_shape = (2, 3)
+    if isinstance(shape, tuple):
+        mismatch_shape = 1
+    arr = np.empty(mismatch_shape, dtype=numpy_dtypes[dtype])
+    with pytest.raises(ValueError):
+        x.from_numpy(arr)
+
+
 @ti.test(arch=ti.get_host_arch_list())
 def test_field_needs_grad():
     # Just make sure the usage doesn't crash, see #1545

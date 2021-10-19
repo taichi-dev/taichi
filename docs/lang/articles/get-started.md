@@ -16,7 +16,7 @@ python3 -m pip install taichi
 ```
 
 :::note
-Currently, Taichi only supports Python 3.6/3.7/3.8 (64-bit).
+Currently, Taichi only supports Python 3.6/3.7/3.8/3.9 (64-bit).
 :::
 
 import Tabs from '@theme/Tabs';
@@ -32,13 +32,6 @@ There are a few of extra requirements depend on which operating system you are u
     {label: 'Windows', value: 'windows'},
   ]}>
 
-  <TabItem value="ubuntu">
-
-  On Ubuntu 19.04+, you need to install `libtinfo5`:
-
-  ```sudo apt install libtinfo5```
-
-  </TabItem>
   <TabItem value="arch-linux">
 
   On Arch Linux, you need to install `ncurses5-compat-libs` package from the Arch User Repository:
@@ -82,7 +75,7 @@ def complex_sqr(z):
 
 @ti.kernel
 def paint(t: float):
-    for i, j in pixels:  # Parallized over all pixels
+    for i, j in pixels:  # Parallelized over all pixels
         c = ti.Vector([-0.8, ti.cos(t) * 0.2])
         z = ti.Vector([i / n - 1, j / n - 0.5]) * 2
         iterations = 0

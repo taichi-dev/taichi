@@ -6,7 +6,7 @@ TLANG_NAMESPACE_BEGIN
 namespace cccp {
 
 void CCLayoutGen::generate_children(SNode *snode) {
-  ScopedIndent _s(line_appender);
+  ScopedIndent _s(line_appender_);
   for (auto const &ch : snode->ch) {
     generate_types(ch.get());
   }
@@ -29,7 +29,7 @@ void CCLayoutGen::generate_types(SNode *snode) {
   } else if (snode->type == SNodeType::dense) {
     emit("struct {} {{", struct_name);
     generate_children(snode);
-    emit("}} {}[{}];", node_name, snode->n);
+    emit("}} {}[{}];", node_name, snode->num_cells_per_container);
 
   } else {
     TI_ERROR("SNodeType={} not supported on C backend",
@@ -38,11 +38,11 @@ void CCLayoutGen::generate_types(SNode *snode) {
 }
 
 std::unique_ptr<CCLayout> CCLayoutGen::compile() {
-  TI_ASSERT(root->type == SNodeType::root);
-  generate_types(root);
+  TI_ASSERT(root_->type == SNodeType::root);
+  generate_types(root_);
 
-  auto lay = std::make_unique<CCLayout>(program);
-  lay->source = line_appender.lines();
+  auto lay = std::make_unique<CCLayout>(cc_program_impl_);
+  lay->source = line_appender_.lines();
   return lay;
 }
 

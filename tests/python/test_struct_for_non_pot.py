@@ -43,13 +43,13 @@ def _test_2d():
 
     @ti.kernel
     def accumulate():
-        for i, j in x:
-            ti.atomic_add(sum[None], i + j * 2)
+        for i, k in x:
+            ti.atomic_add(sum[None], i + k * 2)
 
     gt = 0
-    for i in range(n):
-        for j in range(m):
-            gt += i + j * 2
+    for k in range(n):
+        for i in range(m):
+            gt += i + k * 2
 
     accumulate()
 

@@ -3,20 +3,20 @@
 #include "taichi/lang_util.h"
 
 TLANG_NAMESPACE_BEGIN
-namespace cccp {
+class CCProgramImpl;
 
-class CCProgram;
+namespace cccp {
 
 class CCRuntime {
  public:
-  CCRuntime(CCProgram *program,
+  CCRuntime(CCProgramImpl *cc_program_impl,
             std::string const &header,
             std::string const &source)
-      : header(header), source(source), program(program) {
+      : header(header), source(source), cc_program_impl_(cc_program_impl) {
   }
 
   std::string get_object() {
-    return obj_path;
+    return obj_path_;
   }
 
   void compile();
@@ -25,10 +25,9 @@ class CCRuntime {
   std::string source;
 
  private:
-  [[maybe_unused]] CCProgram *program;
-
-  std::string src_path;
-  std::string obj_path;
+  CCProgramImpl *cc_program_impl_{nullptr};
+  std::string src_path_;
+  std::string obj_path_;
 };
 
 }  // namespace cccp

@@ -1,6 +1,5 @@
 #include "set_image.h"
-#include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
-#include "taichi/ui/backends/vulkan/vulkan_cuda_interop.h"
+
 #include "taichi/ui/utils/utils.h"
 
 TI_UI_NAMESPACE_BEGIN
@@ -10,20 +9,26 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
+int SetImage::get_correct_dimension(int dimension) {
+  if (app_context_->config.is_packed_mode) {
+    return dimension;
+  } else {
+    return next_power_of_2(dimension);
+  }
+}
+
+void SetImage::update_ubo(float x_factor, float y_factor) {
+  UniformBufferObject ubo = {x_factor, y_factor};
+  void *mapped = app_context_->device().map(uniform_buffer_);
+  memcpy(mapped, &ubo, sizeof(ubo));
+  app_context_->device().unmap(uniform_buffer_);
+}
+
 void SetImage::update_data(const SetImageInfo &info) {
   const FieldInfo &img = info.img;
-  if (img.shape.size() != 2) {
-    throw std::runtime_error(
-        "for set image, the image should have exactly two axis. e,g, "
-        "ti.Vector.field(3,ti.u8,(1920,1080) ");
-  }
-  if ((img.matrix_rows != 3 && img.matrix_rows != 4) || img.matrix_cols != 1) {
-    throw std::runtime_error(
-        "for set image, the image should either a 3-D vector field (RGB) or a "
-        "4D vector field (RGBA) ");
-  }
-  int new_width = img.shape[0];
-  int new_height = img.shape[1];
+
+  int new_width = get_correct_dimension(img.shape[0]);
+  int new_height = get_correct_dimension(img.shape[1]);
 
   if (new_width != width || new_height != height) {
     destroy_texture();
@@ -31,71 +36,42 @@ void SetImage::update_data(const SetImageInfo &info) {
     init_set_image(app_context_, new_width, new_height);
   }
 
-  int actual_width = next_power_of_2(width);
-  int actual_height = next_power_of_2(height);
+  update_ubo(img.shape[0] / (float)new_width, img.shape[1] / (float)new_height);
 
   int pixels = width * height;
 
   app_context_->device().image_transition(texture_, ImageLayout::shader_read,
                                           ImageLayout::transfer_dst);
 
-  BufferImageCopyParams copy_params;
-  copy_params.image_extent.x = width;
-  copy_params.image_extent.y = height;
+  Program &program = get_current_program();
+  DevicePtr img_dev_ptr = get_device_ptr(&program, img.snode);
+  uint64_t img_size = pixels * 4;
 
-  if (img.field_source == FieldSource::TaichiCuda) {
-    unsigned char *mapped = device_ptr_;
-
-    if (img.dtype == PrimitiveType::u8) {
-      cuda_launcher_->copy_to_texture_buffer((unsigned char *)img.data, mapped,
-                                             width, height, actual_width,
-                                             actual_height, img.matrix_rows);
-    } else if (img.dtype == PrimitiveType::f32) {
-      cuda_launcher_->copy_to_texture_buffer((float *)img.data, mapped, width,
-                                             height, actual_width,
-                                             actual_height, img.matrix_rows);
-    } else {
-      throw std::runtime_error("for set image, dtype must be u8 or f32");
-    }
-
-    auto stream = app_context_->device().get_graphics_stream();
-    auto cmd_list = stream->new_command_list();
-    cmd_list->buffer_to_image(texture_, gpu_staging_buffer_.get_ptr(0),
-                              ImageLayout::transfer_dst, copy_params);
-
-    cmd_list->image_transition(texture_, ImageLayout::transfer_dst,
-                               ImageLayout::shader_read);
-    stream->submit_synced(cmd_list.get());
-
-  } else if (img.field_source == FieldSource::TaichiX64) {
-    unsigned char *mapped =
-        (unsigned char *)app_context_->device().map(cpu_staging_buffer_);
-
-    if (img.dtype == PrimitiveType::u8) {
-      copy_to_texture_buffer_x64((unsigned char *)img.data, mapped, width,
-                                 height, actual_width, actual_height,
-                                 img.matrix_rows);
-    } else if (img.dtype == PrimitiveType::f32) {
-      copy_to_texture_buffer_x64((float *)img.data, mapped, width, height,
-                                 actual_width, actual_height, img.matrix_rows);
-    } else {
-      throw std::runtime_error("for set image, dtype must be u8 or f32");
-    }
-
-    app_context_->device().unmap(cpu_staging_buffer_);
-
-    auto stream = app_context_->device().get_graphics_stream();
-    auto cmd_list = stream->new_command_list();
-    cmd_list->buffer_to_image(texture_, cpu_staging_buffer_.get_ptr(0),
-                              ImageLayout::transfer_dst, copy_params);
-
-    cmd_list->image_transition(texture_, ImageLayout::transfer_dst,
-                               ImageLayout::shader_read);
-    stream->submit_synced(cmd_list.get());
-
+  Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
+      gpu_staging_buffer_.get_ptr(), img_dev_ptr, img_size);
+  if (memcpy_cap == Device::MemcpyCapability::Direct) {
+    Device::memcpy_direct(gpu_staging_buffer_.get_ptr(), img_dev_ptr, img_size);
+  } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
+    Device::memcpy_via_staging(gpu_staging_buffer_.get_ptr(),
+                               cpu_staging_buffer_.get_ptr(), img_dev_ptr,
+                               img_size);
   } else {
-    throw std::runtime_error("unsupported field source");
+    TI_NOT_IMPLEMENTED;
   }
+
+  BufferImageCopyParams copy_params;
+  // these are flipped because taichi is y-major and vulkan is x-major
+  copy_params.image_extent.x = height;
+  copy_params.image_extent.y = width;
+
+  auto stream = app_context_->device().get_graphics_stream();
+  auto cmd_list = stream->new_command_list();
+  cmd_list->buffer_to_image(texture_, gpu_staging_buffer_.get_ptr(0),
+                            ImageLayout::transfer_dst, copy_params);
+
+  cmd_list->image_transition(texture_, ImageLayout::transfer_dst,
+                             ImageLayout::shader_read);
+  stream->submit_synced(cmd_list.get());
 }
 
 SetImage::SetImage(AppContext *app_context) {
@@ -108,7 +84,7 @@ void SetImage::init_set_image(AppContext *app_context,
   RenderableConfig config = {
       6,
       6,
-      0,
+      sizeof(UniformBufferObject),
       0,
       app_context->config.package_path + "/shaders/SetImage_vk_vert.spv",
       app_context->config.package_path + "/shaders/SetImage_vk_frag.spv",
@@ -135,8 +111,9 @@ void SetImage::create_texture() {
   params.dimension = ImageDimension::d2D;
   params.format = BufferFormat::rgba8;
   params.initial_layout = ImageLayout::shader_read;
-  params.x = width;
-  params.y = height;
+  // these are flipped because taichi is y-major and vulkan is x-major
+  params.x = height;
+  params.y = width;
   params.z = 1;
   params.export_sharing = true;
 
@@ -151,16 +128,6 @@ void SetImage::create_texture() {
                                                 AllocUsage::Uniform};
   gpu_staging_buffer_ =
       app_context_->device().allocate_memory(gpu_staging_buffer_params);
-
-  if (app_context_->config.ti_arch == Arch::cuda) {
-    auto [mem, offset, size] =
-        app_context_->device().get_vkmemory_offset_size(gpu_staging_buffer_);
-
-    auto block_size = VulkanDevice::kMemoryBlockSize;
-
-    device_ptr_ = (unsigned char *)get_memory_pointer(
-        mem, block_size, offset, size, app_context_->device().vk_device());
-  }
 }
 
 void SetImage::destroy_texture() {
@@ -189,9 +156,9 @@ void SetImage::update_vertex_buffer_() {
     app_context_->device().unmap(staging_vertex_buffer_);
   }
 
-  app_context_->device().memcpy(vertex_buffer_.get_ptr(0),
-                                staging_vertex_buffer_.get_ptr(0),
-                                config_.vertices_count * sizeof(Vertex));
+  app_context_->device().memcpy_internal(
+      vertex_buffer_.get_ptr(0), staging_vertex_buffer_.get_ptr(0),
+      config_.vertices_count * sizeof(Vertex));
 }
 
 void SetImage::update_index_buffer_() {
@@ -205,9 +172,9 @@ void SetImage::update_index_buffer_() {
     app_context_->device().unmap(staging_index_buffer_);
   }
 
-  app_context_->device().memcpy(index_buffer_.get_ptr(0),
-                                staging_index_buffer_.get_ptr(0),
-                                config_.indices_count * sizeof(int));
+  app_context_->device().memcpy_internal(index_buffer_.get_ptr(0),
+                                         staging_index_buffer_.get_ptr(0),
+                                         config_.indices_count * sizeof(int));
 
   indexed_ = true;
 }
@@ -216,6 +183,7 @@ void SetImage::create_bindings() {
   Renderable::create_bindings();
   ResourceBinder *binder = pipeline_->resource_binder();
   binder->image(0, 0, texture_, {});
+  binder->buffer(0, 1, uniform_buffer_);
 }
 
 void SetImage::cleanup() {

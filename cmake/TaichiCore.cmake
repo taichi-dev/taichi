@@ -58,7 +58,9 @@ file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/
 file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal/*.cpp" "taichi/backends/metal/shaders/*")
 file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/opengl/*.cpp" "taichi/backends/opengl/shaders/*")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
-file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "taichi/backends/vulkan/shaders/*" "external/SPIRV-Reflect/spirv_reflect.c")
+file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "external/SPIRV-Reflect/spirv_reflect.c")
+file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
+
 
 file(GLOB TAICHI_GGUI_SOURCE
     "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"  "taichi/ui/*/*/*/*.cpp" "taichi/ui/*/*/*/*/*.cpp"
@@ -77,19 +79,32 @@ if(TI_WITH_GGUI)
 endif()
 
 # These files are compiled into .bc and loaded as LLVM module dynamically. They should not be compiled into libtaichi. So they're removed here
-file(GLOB BYTECODE_SOURCE "taichi/runtime/llvm/runtime.cpp" "taichi/runtime/llvm/ui_kernels.cpp")
+file(GLOB BYTECODE_SOURCE "taichi/runtime/llvm/runtime.cpp")
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${BYTECODE_SOURCE})
 
 
 # These are required, regardless of whether Vulkan is enabled or not
 # TODO(#2298): Clean up the Vulkan code structure, all Vulkan API related things should be
 # guarded by TI_WITH_VULKAN macro at the source code level.
-file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE "taichi/backends/vulkan/runtime.h" "taichi/backends/vulkan/runtime.cpp")
+file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
+  "taichi/backends/opengl/opengl_program.*"
+  "taichi/backends/opengl/opengl_api.*"
+  "taichi/backends/opengl/codegen_opengl.*"
+  "taichi/backends/opengl/struct_opengl.*"
+)
+file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE
+  "taichi/backends/vulkan/runtime.h"
+  "taichi/backends/vulkan/runtime.cpp"
+  "taichi/backends/vulkan/snode_struct_compiler.cpp"
+  "taichi/backends/vulkan/snode_struct_compiler.h"
+)
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CPU_SOURCE})
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_WASM_SOURCE})
+list(APPEND TAICHI_CORE_SOURCE ${TAICHI_INTEROP_SOURCE})
+
 
 if (TI_WITH_CUDA)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
@@ -102,7 +117,6 @@ endif()
 
 # TODO(#529) include Metal source only on Apple MacOS, and OpenGL only when TI_WITH_OPENGL is ON
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_METAL_SOURCE})
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_SOURCE})
 
 if (TI_WITH_OPENGL)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
@@ -110,7 +124,9 @@ if (TI_WITH_OPENGL)
   # A: To ensure glad submodule exists when TI_WITH_OPENGL is ON.
   file(GLOB TAICHI_GLAD_SOURCE "external/glad/src/glad.c")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GLAD_SOURCE})
+  list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_SOURCE})
 endif()
+list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_REQUIRED_SOURCE})
 
 if (TI_WITH_CC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CC")
@@ -238,10 +254,16 @@ if (TI_WITH_CUDA_TOOLKIT)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA_TOOLKIT")
         include_directories($ENV{CUDA_TOOLKIT_ROOT_DIR}/include)
         link_directories($ENV{CUDA_TOOLKIT_ROOT_DIR}/lib64)
+        #libraries for cuda kernel profiler CuptiToolkit
+        target_link_libraries(${CORE_LIBRARY_NAME} cupti nvperf_host)
     endif()
 else()
     message(STATUS "TI_WITH_CUDA_TOOLKIT = OFF")
 endif()
+
+add_subdirectory(external/SPIRV-Cross)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
+target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl spirv-cross-core)
 
 if (TI_WITH_VULKAN)
     # Vulkan libs
@@ -255,35 +277,25 @@ if (TI_WITH_VULKAN)
 
     message(STATUS "Vulkan_INCLUDE_DIR=${Vulkan_INCLUDE_DIR}")
     message(STATUS "Vulkan_LIBRARY=${Vulkan_LIBRARY}")
-    include_directories(${Vulkan_INCLUDE_DIR})
+
+    include_directories(external/SPIRV-Headers/include)
+
+    set(SPIRV_SKIP_EXECUTABLES true)
+    set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
+    add_subdirectory(external/SPIRV-Tools)
+    # NOTE: SPIRV-Tools-opt must come before SPIRV-Tools
+    # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
+    target_link_libraries(${CORE_LIBRARY_NAME} SPIRV-Tools-opt ${SPIRV_TOOLS})
 
     # No longer link against vulkan, using volk instead
     #target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
+    include_directories(${Vulkan_INCLUDE_DIR})
     include_directories(external/volk)
 
     # Is this the best way to include the SPIRV-Headers?
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/VulkanMemoryAllocator/include)
-
-    if (MSVC)
-      find_library(SPIRV_TOOLS NAMES "SPIRV-Tools" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
-      find_library(SPIRV_OPT NAMES "SPIRV-Tools-opt" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
-      find_library(SPIRV_LINK NAMES "SPIRV-Tools-link" PATHS "${Vulkan_INCLUDE_DIR}/../Lib" REQUIRED)
-    else ()
-      get_filename_component(VULKAN_LIBRARY_PATH ${Vulkan_LIBRARY} DIRECTORY)
-      find_library(SPIRV_TOOLS NAMES "SPIRV-Tools"  PATHS ${VULKAN_LIBRARY_PATH} REQUIRED)
-      find_library(SPIRV_OPT NAMES "SPIRV-Tools-opt" PATHS ${VULKAN_LIBRARY_PATH} REQUIRED)
-      find_library(SPIRV_LINK NAMES "SPIRV-Tools-link"  PATHS ${VULKAN_LIBRARY_PATH} REQUIRED)
-    endif ()
-
-    message(STATUS "SPIRV_TOOLS=" ${SPIRV_TOOLS})
-    message(STATUS "SPIRV_OPT=" ${SPIRV_OPT})
-    message(STATUS "SPIRV_LINK=" ${SPIRV_LINK})
-
-    # NOTE: SPIRV-Tools-opt must come before SPIRV-Tools
-    # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
-    target_link_libraries(${CORE_LIBRARY_NAME} ${SPIRV_OPT} ${SPIRV_TOOLS} ${SPIRV_LINK})
 
     if (LINUX)
         # shaderc requires pthread

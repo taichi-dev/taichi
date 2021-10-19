@@ -36,7 +36,7 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
     for (int j = 0; j < taichi_max_num_indices; j++) {
       total_shape[j] *= s->extractors[j].shape;
     }
-    total_n *= s->n;
+    total_n *= s->num_cells_per_container;
   }
 
   offloaded->const_begin = true;
@@ -68,9 +68,10 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
   if (packed) {  // no dependence on POT
     for (int i = 0; i < (int)snodes.size(); i++) {
       auto snode = snodes[i];
-      auto extracted = generate_mod_x_div_y(&body_header, main_loop_var,
-                                            total_n, total_n / snode->n);
-      total_n /= snode->n;
+      auto extracted =
+          generate_mod_x_div_y(&body_header, main_loop_var, total_n,
+                               total_n / snode->num_cells_per_container);
+      total_n /= snode->num_cells_per_container;
       for (int j = 0; j < (int)physical_indices.size(); j++) {
         auto p = physical_indices[j];
         auto ext = snode->extractors[p];

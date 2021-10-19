@@ -2,6 +2,9 @@
 #include "taichi/ui/utils/utils.h"
 
 #include "taichi/ir/type_utils.h"
+#include "taichi/ir/snode.h"
+#include "taichi/backends/device.h"
+#include "taichi/program/program.h"
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -23,11 +26,16 @@ struct FieldInfo {
   DEFINE_PROPERTY(std::vector<int>, shape);
   DEFINE_PROPERTY(FieldSource, field_source);
   DEFINE_PROPERTY(taichi::lang::DataType, dtype);
-  DEFINE_PROPERTY(uint64_t, data);
+
+  using SNodePtr = taichi::lang::SNode *;
+  DEFINE_PROPERTY(SNodePtr, snode);
 
   FieldInfo() {
     valid = false;
   }
 };
+
+taichi::lang::DevicePtr get_device_ptr(taichi::lang::Program *program,
+                                       taichi::lang::SNode *snode);
 
 TI_UI_NAMESPACE_END

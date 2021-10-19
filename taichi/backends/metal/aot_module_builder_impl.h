@@ -6,7 +6,6 @@
 #include "taichi/backends/metal/aot_utils.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/program/aot_module_builder.h"
-#include "taichi/system/std_filesystem.h"
 
 namespace taichi {
 namespace lang {
@@ -14,8 +13,11 @@ namespace metal {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
-  explicit AotModuleBuilderImpl(const CompiledStructs *compiled_structs,
-                                const BufferMetaData &buffer_meta_data);
+  explicit AotModuleBuilderImpl(
+      const CompiledRuntimeModule *compiled_runtime_module,
+      const std::vector<CompiledStructs> &compiled_snode_trees,
+      const BufferMetaData &buffer_meta_data);
+
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
 
@@ -32,11 +34,13 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                             Kernel *kernel) override;
 
  private:
-  const CompiledStructs *compiled_structs_;
+  const CompiledRuntimeModule *compiled_runtime_module_;
+  const std::vector<CompiledStructs> &compiled_snode_trees_;
   BufferMetaData buffer_meta_data_;
   PrintStringTable strtab_;
   TaichiAotData ti_aot_data_;
-  void metalgen(const stdfs::path &dir,
+
+  void metalgen(const std::string &dir,
                 const std::string &filename,
                 const CompiledKernelData &k) const;
 };

@@ -4,9 +4,21 @@
 # https://www.bilibili.com/video/BV1ZK411H7Hc?p=4
 # https://github.com/ShaneFX/GAMES201/tree/master/HW01
 
+import argparse
+
 import numpy as np
 
 import taichi as ti
+
+# How to run:
+#   `python stable_fluid.py`: use the jacobi iteration to solve the linear system.
+#   `python stable_fluid.py -S`: use a sparse matrix to do so.
+parser = argparse.ArgumentParser()
+parser.add_argument('-S',
+                    '--use-sp-mat',
+                    action='store_true',
+                    help='Solve Poisson\'s equation by using a sparse matrix')
+args, unknowns = parser.parse_known_args()
 
 res = 512
 dt = 0.03
@@ -20,8 +32,16 @@ force_radius = res / 2.0
 gravity = True
 debug = False
 paused = False
+use_sparse_matrix = False
 
-ti.init(arch=ti.gpu)
+use_sparse_matrix = args.use_sp_mat
+
+if use_sparse_matrix:
+    ti.init(arch=ti.x64)
+    print('Using sparse matrix')
+else:
+    ti.init(arch=ti.gpu)
+    print('Using jacobi iteration')
 
 _velocities = ti.Vector.field(2, float, shape=(res, res))
 _new_velocities = ti.Vector.field(2, float, shape=(res, res))
@@ -45,6 +65,37 @@ class TexPair:
 velocities_pair = TexPair(_velocities, _new_velocities)
 pressures_pair = TexPair(_pressures, _new_pressures)
 dyes_pair = TexPair(_dye_buffer, _new_dye_buffer)
+
+if use_sparse_matrix:
+    # use a sparse matrix to solve Poisson's pressure equation.
+    @ti.kernel
+    def fill_laplacian_matrix(A: ti.linalg.sparse_matrix_builder()):
+        for i, j in ti.ndrange(res, res):
+            row = i * res + j
+            center = 0.0
+            if j != 0:
+                A[row, row - 1] += -1.0
+                center += 1.0
+            if j != res - 1:
+                A[row, row + 1] += -1.0
+                center += 1.0
+            if i != 0:
+                A[row, row - res] += -1.0
+                center += 1.0
+            if i != res - 1:
+                A[row, row + res] += -1.0
+                center += 1.0
+            A[row, row] += center
+
+    N = res * res
+    K = ti.linalg.SparseMatrixBuilder(N, N, max_num_triplets=N * 6)
+    b = ti.field(ti.f32, shape=N)
+
+    fill_laplacian_matrix(K)
+    L = K.build()
+    solver = ti.linalg.SparseSolver(solver_type="LLT")
+    solver.analyze_pattern(L)
+    solver.factorize(L)
 
 
 @ti.func
@@ -187,6 +238,30 @@ def enhance_vorticity(vf: ti.template(), cf: ti.template()):
         vf[i, j] = min(max(vf[i, j] + force * dt, -1e3), 1e3)
 
 
+@ti.kernel
+def copy_divergence(div_in: ti.template(), div_out: ti.template()):
+    for I in ti.grouped(div_in):
+        div_out[I[0] * res + I[1]] = -div_in[I]
+
+
+@ti.kernel
+def apply_pressure(p_in: ti.ext_arr(), p_out: ti.template()):
+    for I in ti.grouped(p_out):
+        p_out[I] = p_in[I[0] * res + I[1]]
+
+
+def solve_pressure_sp_mat():
+    copy_divergence(velocity_divs, b)
+    x = solver.solve(b)
+    apply_pressure(x, pressures_pair.cur)
+
+
+def solve_pressure_jacobi():
+    for _ in range(p_jacobi_iters):
+        pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
+        pressures_pair.swap()
+
+
 def step(mouse_data):
     advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt)
     advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt)
@@ -201,9 +276,10 @@ def step(mouse_data):
         vorticity(velocities_pair.cur)
         enhance_vorticity(velocities_pair.cur, velocity_curls)
 
-    for _ in range(p_jacobi_iters):
-        pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
-        pressures_pair.swap()
+    if use_sparse_matrix:
+        solve_pressure_sp_mat()
+    else:
+        solve_pressure_jacobi()
 
     subtract_gradient(velocities_pair.cur, pressures_pair.cur)
 

@@ -12,6 +12,8 @@ import platform
 import shutil
 import subprocess
 import sys
+from distutils.command.clean import clean
+from distutils.dir_util import remove_tree
 
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
@@ -34,8 +36,8 @@ classifiers = [
 
 project_name = os.getenv('PROJECT_NAME', 'taichi')
 TI_VERSION_MAJOR = 0
-TI_VERSION_MINOR = 7
-TI_VERSION_PATCH = 32
+TI_VERSION_MINOR = 8
+TI_VERSION_PATCH = 3
 version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 
 data_files = glob.glob('python/lib/*')
@@ -45,6 +47,8 @@ print(packages)
 
 # Our python package root dir is python/
 package_dir = 'python'
+
+root_dir = os.path.abspath(os.path.dirname(__file__))
 
 
 def get_python_executable():
@@ -113,7 +117,7 @@ class CMakeBuild(build_ext):
                 ", ".join(e.name for e in self.extensions))
 
         # CMakeLists.txt is in the same directory as this setup.py file
-        cmake_list_dir = os.path.abspath(os.path.dirname(__file__))
+        cmake_list_dir = root_dir
         self.build_temp = os.path.join(cmake_list_dir, 'build')
 
         build_directory = os.path.abspath(self.build_temp)
@@ -191,11 +195,29 @@ class CMakeBuild(build_ext):
                     print(f"Fetching runtime file {f} to {target} folder")
                     shutil.copy(os.path.join(llvm_runtime_dir, f), target)
 
-            ui_kernel_dir = 'taichi/ui/backends/vulkan'
-            for f in os.listdir(ui_kernel_dir):
-                if f.endswith('.bc'):
-                    print(f"Fetching ui kernel file {f} to {target} folder")
-                    shutil.copy(os.path.join(ui_kernel_dir, f), target)
+
+class Clean(clean):
+    def run(self):
+        super().run()
+        self.build_temp = os.path.join(root_dir, 'build')
+        if os.path.exists(self.build_temp):
+            remove_tree(self.build_temp, dry_run=self.dry_run)
+        generated_folders = ('bin', 'dist', 'python/taichi/assets',
+                             'python/taichi/lib', 'python/taichi/examples',
+                             'python/taichi/tests', 'python/taichi.egg-info')
+        for d in generated_folders:
+            if os.path.exists(d):
+                remove_tree(d, dry_run=self.dry_run)
+        generated_files = [
+            'taichi/common/commit_hash.h', 'taichi/common/version.h'
+        ]
+        generated_files += glob.glob('taichi/runtime/llvm/runtime_*.bc')
+        generated_files += glob.glob('taichi/runtime/llvm/runtime_*.ll')
+        for f in generated_files:
+            if os.path.exists(f):
+                print(f'removing generated file {f}')
+                if not self.dry_run:
+                    os.remove(f)
 
 
 setup(name=project_name,
@@ -206,6 +228,7 @@ setup(name=project_name,
       author='Taichi developers',
       author_email='yuanmhu@gmail.com',
       url='https://github.com/taichi-dev/taichi',
+      python_requires=">=3.6,<3.10",
       install_requires=[
           'numpy',
           'pybind11>=2.5.0',
@@ -224,5 +247,8 @@ setup(name=project_name,
       },
       classifiers=classifiers,
       ext_modules=[CMakeExtension('taichi_core')],
-      cmdclass=dict(egg_info=EggInfo, build_py=BuildPy, build_ext=CMakeBuild),
+      cmdclass=dict(egg_info=EggInfo,
+                    build_py=BuildPy,
+                    build_ext=CMakeBuild,
+                    clean=Clean),
       has_ext_modules=lambda: True)

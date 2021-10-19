@@ -1,23 +1,237 @@
 #include "taichi/backends/cuda/cuda_profiler.h"
+#include "taichi/backends/cuda/cuda_types.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_context.h"
-#include "taichi/system/timeline.h"
 
 TLANG_NAMESPACE_BEGIN
 
 #if defined(TI_WITH_CUDA)
 
-std::string KernelProfilerCUDA::title() const {
-  return "CUDA Profiler";
+// The init logic here is temporarily set up for test CUPTI
+// will not affect default toolkit (cuEvent)
+KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
+  metric_list_.clear();
+  if (enable) {
+    tool_ = ProfilingToolkit::event;
+#if defined(TI_WITH_CUDA_TOOLKIT)
+    // if Taichi was compiled with CUDA toolit, then use CUPTI
+    // TODO : add set_mode() to select toolkit by user
+    if (check_cupti_availability() && check_cupti_privileges())
+      tool_ = ProfilingToolkit::cupti;
+#endif
+  }
+  if (tool_ == ProfilingToolkit::event) {
+    event_toolkit_ = std::make_unique<EventToolkit>();
+  } else if (tool_ == ProfilingToolkit::cupti) {
+    cupti_toolkit_ = std::make_unique<CuptiToolkit>();
+    cupti_toolkit_->init_cupti();
+    cupti_toolkit_->begin_profiling();
+  }
 }
 
+std::string KernelProfilerCUDA::get_device_name() {
+  return CUDAContext::get_instance().get_device_name();
+}
+
+bool KernelProfilerCUDA::reinit_with_metrics(
+    const std::vector<std::string> metrics) {
+  // do not pass by reference
+  TI_TRACE("KernelProfilerCUDA::reinit_with_metrics");
+
+  if (tool_ == ProfilingToolkit::event) {
+    return false;
+  } else if (tool_ == ProfilingToolkit::cupti) {
+    cupti_toolkit_->end_profiling();
+    cupti_toolkit_->deinit_cupti();
+    cupti_toolkit_->reset_metrics(metrics);
+    cupti_toolkit_->init_cupti();
+    cupti_toolkit_->begin_profiling();
+    // user selected metrics
+    metric_list_.clear();
+    for (auto metric : metrics)
+      metric_list_.push_back(metric);
+    TI_TRACE("size of metric list : {} >>> {}", metrics.size(),
+             metric_list_.size());
+    return true;
+  }
+}
+
+// deprecated, move to trace()
 KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
     const std::string &kernel_name) {
-  void *start, *stop;
-  CUDADriver::get_instance().event_create(&start, CU_EVENT_DEFAULT);
-  CUDADriver::get_instance().event_create(&stop, CU_EVENT_DEFAULT);
-  CUDADriver::get_instance().event_record(start, 0);
-  outstanding_events_[kernel_name].push_back(std::make_pair(start, stop));
+  TI_NOT_IMPLEMENTED;
+}
+
+void KernelProfilerCUDA::trace(KernelProfilerBase::TaskHandle &task_handle,
+                               const std::string &kernel_name,
+                               void *kernel,
+                               uint32_t grid_size,
+                               uint32_t block_size,
+                               uint32_t dynamic_smem_size) {
+  int register_per_thread = 0;
+  int static_shared_mem_per_block = 0;
+  int max_active_blocks_per_multiprocessor = 0;
+  CUDADriver::get_instance().kernel_get_attribute(
+      &register_per_thread, CUfunction_attribute::CU_FUNC_ATTRIBUTE_NUM_REGS,
+      kernel);
+  CUDADriver::get_instance().kernel_get_attribute(
+      &static_shared_mem_per_block,
+      CUfunction_attribute::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, kernel);
+  CUDADriver::get_instance().kernel_get_occupancy(
+      &max_active_blocks_per_multiprocessor, kernel, block_size,
+      dynamic_smem_size);
+
+  if (tool_ == ProfilingToolkit::event) {
+    task_handle = event_toolkit_->start_with_handle(kernel_name);
+  }
+  KernelProfileTracedRecord record;
+  record.name = kernel_name;
+  record.register_per_thread = register_per_thread;
+  record.shared_mem_per_block = static_shared_mem_per_block + dynamic_smem_size;
+  record.grid_size = grid_size;
+  record.block_size = block_size;
+  record.active_blocks_per_multiprocessor =
+      max_active_blocks_per_multiprocessor;
+
+  traced_records_.push_back(record);
+}
+
+void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {
+  if (tool_ == ProfilingToolkit::event)
+    CUDADriver::get_instance().event_record(handle, 0);
+}
+
+bool KernelProfilerCUDA::statistics_on_traced_records() {
+  for (auto &record : traced_records_) {
+    auto it =
+        std::find_if(statistical_results_.begin(), statistical_results_.end(),
+                     [&](KernelProfileStatisticalResult &result) {
+                       return result.name == record.name;
+                     });
+    if (it == statistical_results_.end()) {
+      statistical_results_.emplace_back(record.name);
+      it = std::prev(statistical_results_.end());
+    }
+    it->insert_record(record.kernel_elapsed_time_in_ms);
+    total_time_ms_ += record.kernel_elapsed_time_in_ms;
+  }
+
+  return true;
+}
+
+void KernelProfilerCUDA::sync() {
+  // sync
+  CUDADriver::get_instance().stream_synchronize(nullptr);
+
+  // update
+  if (tool_ == ProfilingToolkit::event) {
+    event_toolkit_->update_record(records_size_after_sync_, traced_records_);
+    event_toolkit_->update_timeline(traced_records_);
+    statistics_on_traced_records();  // TODO: deprecated
+    event_toolkit_->clear();
+  } else if (tool_ == ProfilingToolkit::cupti) {
+    cupti_toolkit_->update_record(records_size_after_sync_, traced_records_);
+    statistics_on_traced_records();  // TODO: deprecated
+    this->reinit_with_metrics(metric_list_);
+  }
+
+  records_size_after_sync_ = traced_records_.size();
+}
+
+void KernelProfilerCUDA::clear() {
+  // sync(); //decoupled: trigger from the foront end
+  total_time_ms_ = 0;
+  records_size_after_sync_ = 0;
+  traced_records_.clear();
+  statistical_results_.clear();
+}
+
+// must be called immediately after KernelProfilerCUDA::trace()
+bool KernelProfilerCUDA::record_kernel_attributes(void *kernel,
+                                                  uint32_t grid_size,
+                                                  uint32_t block_size,
+                                                  uint32_t dynamic_smem_size) {
+  int register_per_thread = 0;
+  int static_shared_mem_per_block = 0;
+  int max_active_blocks_per_multiprocessor = 0;
+
+  CUDADriver::get_instance().kernel_get_attribute(
+      &register_per_thread, CUfunction_attribute::CU_FUNC_ATTRIBUTE_NUM_REGS,
+      kernel);
+  CUDADriver::get_instance().kernel_get_attribute(
+      &static_shared_mem_per_block,
+      CUfunction_attribute::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, kernel);
+  CUDADriver::get_instance().kernel_get_occupancy(
+      &max_active_blocks_per_multiprocessor, kernel, block_size,
+      dynamic_smem_size);
+
+  KernelProfileTracedRecord &traced_record = traced_records_.back();
+  traced_record.register_per_thread = register_per_thread;
+  traced_record.shared_mem_per_block =
+      static_shared_mem_per_block + dynamic_smem_size;
+  traced_record.grid_size = grid_size;
+  traced_record.block_size = block_size;
+  traced_record.active_blocks_per_multiprocessor =
+      max_active_blocks_per_multiprocessor;
+
+  return true;
+}
+
+#else
+
+KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
+  TI_NOT_IMPLEMENTED;
+}
+std::string KernelProfilerCUDA::get_device_name() {
+  TI_NOT_IMPLEMENTED;
+}
+bool KernelProfilerCUDA::reinit_with_metrics(
+    const std::vector<std::string> metrics) {
+  return false;  // public API for all backend, do not use TI_NOT_IMPLEMENTED;
+}
+KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
+    const std::string &kernel_name) {
+  TI_NOT_IMPLEMENTED;
+}
+void KernelProfilerCUDA::trace(KernelProfilerBase::TaskHandle &task_handle,
+                               const std::string &kernel_name,
+                               void *kernel,
+                               uint32_t grid_size,
+                               uint32_t block_size,
+                               uint32_t dynamic_smem_size) {
+  TI_NOT_IMPLEMENTED;
+}
+void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {
+  TI_NOT_IMPLEMENTED;
+}
+void KernelProfilerCUDA::sync() {
+  TI_NOT_IMPLEMENTED;
+}
+void KernelProfilerCUDA::clear() {
+  TI_NOT_IMPLEMENTED;
+}
+bool KernelProfilerCUDA::record_kernel_attributes(void *kernel,
+                                                  uint32_t grid_size,
+                                                  uint32_t block_size,
+                                                  uint32_t dynamic_smem_size) {
+  TI_NOT_IMPLEMENTED;
+}
+#endif
+
+// default profiling toolkit : cuEvent
+// for now put it together with KernelProfilerCUDA
+#if defined(TI_WITH_CUDA)
+KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
+    const std::string &kernel_name) {
+  EventRecord record;
+  record.name = kernel_name;
+
+  CUDADriver::get_instance().event_create(&(record.start_event),
+                                          CU_EVENT_DEFAULT);
+  CUDADriver::get_instance().event_create(&(record.stop_event),
+                                          CU_EVENT_DEFAULT);
+  CUDADriver::get_instance().event_record((record.start_event), 0);
+  event_records_.push_back(record);
 
   if (!base_event_) {
     // Note that CUDA driver API only allows querying relative time difference
@@ -47,117 +261,75 @@ KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
     }
   }
 
-  return stop;
+  return record.stop_event;
 }
 
-void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {
-  CUDADriver::get_instance().event_record(handle, 0);
+void EventToolkit::update_record(
+    uint32_t records_size_after_sync,
+    std::vector<KernelProfileTracedRecord> &traced_records) {
+  uint32_t events_num = event_records_.size();
+  uint32_t records_num = traced_records.size();
+  TI_ERROR_IF(records_size_after_sync + events_num != records_num,
+              "KernelProfilerCUDA::EventToolkit: event_records_.size({}) != "
+              "traced_records_.size({})",
+              records_size_after_sync + events_num, records_num);
+
+  uint32_t idx = 0;
+  for (auto &record : event_records_) {
+    CUDADriver::get_instance().event_elapsed_time(
+        &record.kernel_elapsed_time_in_ms, record.start_event,
+        record.stop_event);
+    CUDADriver::get_instance().event_elapsed_time(
+        &record.time_since_base, base_event_, record.start_event);
+
+    // TODO: the following two lines seem to increases profiler overhead a
+    // little bit. Is there a way to avoid the overhead while not creating
+    // too many events?
+    CUDADriver::get_instance().event_destroy(record.start_event);
+    CUDADriver::get_instance().event_destroy(record.stop_event);
+
+    // copy to traced_records_ then clear event_records_
+    traced_records[records_size_after_sync + idx].kernel_elapsed_time_in_ms =
+        record.kernel_elapsed_time_in_ms;
+    traced_records[records_size_after_sync + idx].time_since_base =
+        record.time_since_base;
+    idx++;
+  }
 }
 
-void KernelProfilerCUDA::record(KernelProfilerBase::TaskHandle &task_handle,
-                                const std::string &task_name) {
-  task_handle = this->start_with_handle(task_name);
-}
-
-void KernelProfilerCUDA::sync() {
-  CUDADriver::get_instance().stream_synchronize(nullptr);
-  auto &timeline = Timeline::get_this_thread_instance();
-  for (auto &map_elem : outstanding_events_) {
-    auto &list = map_elem.second;
-    for (auto &item : list) {
-      auto start = item.first, stop = item.second;
-      float kernel_time;
-      CUDADriver::get_instance().event_elapsed_time(&kernel_time, start, stop);
-
-      if (Timelines::get_instance().get_enabled()) {
-        float time_since_base;
-        CUDADriver::get_instance().event_elapsed_time(&time_since_base,
-                                                      base_event_, start);
-        timeline.insert_event({map_elem.first, true,
-                               base_time_ + time_since_base * 1e-3, "cuda"});
-        timeline.insert_event(
-            {map_elem.first, false,
-             base_time_ + (time_since_base + kernel_time) * 1e-3, "cuda"});
-      }
-
-      auto it = std::find_if(
-          records.begin(), records.end(),
-          [&](KernelProfileRecord &r) { return r.name == map_elem.first; });
-      if (it == records.end()) {
-        records.emplace_back(map_elem.first);
-        it = std::prev(records.end());
-      }
-      it->insert_sample(kernel_time);
-      total_time_ms += kernel_time;
-
-      // TODO: the following two lines seem to increases profiler overhead a
-      // little bit. Is there a way to avoid the overhead while not creating
-      // too many events?
-      CUDADriver::get_instance().event_destroy(start);
-      CUDADriver::get_instance().event_destroy(stop);
+void EventToolkit::update_timeline(
+    std::vector<KernelProfileTracedRecord> &traced_records) {
+  if (Timelines::get_instance().get_enabled()) {
+    auto &timeline = Timeline::get_this_thread_instance();
+    for (auto &record : traced_records) {
+      // param of insert_event() :
+      // struct TimelineEvent @ taichi/taichi/system/timeline.h
+      timeline.insert_event({record.name, /*param_name=begin*/ true,
+                             base_time_ + record.time_since_base * 1e-3,
+                             "cuda"});
+      timeline.insert_event({record.name, /*param_name=begin*/ false,
+                             base_time_ + (record.time_since_base +
+                                           record.kernel_elapsed_time_in_ms) *
+                                              1e-3,
+                             "cuda"});
     }
   }
-  outstanding_events_.clear();
-}
-
-void KernelProfilerCUDA::print() {
-  sync();
-  fmt::print("{}\n", title());
-  fmt::print(
-      "========================================================================"
-      "=\n");
-  fmt::print(
-      "[      %     total   count |      min       avg       max   ] Kernel "
-      "name\n");
-  std::sort(records.begin(), records.end());
-  for (auto &rec : records) {
-    auto fraction = rec.total / total_time_ms * 100.0f;
-    fmt::print("[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms] {}\n",
-               fraction, rec.total / 1000.0f, rec.counter, rec.min,
-               rec.total / rec.counter, rec.max, rec.name);
-  }
-  fmt::print(
-      "------------------------------------------------------------------------"
-      "-\n");
-  fmt::print(
-      "[100.00%] Total kernel execution time: {:7.3f} s   number of records: "
-      "{}\n",
-      get_total_time(), records.size());
-
-  fmt::print(
-      "========================================================================"
-      "=\n");
-}
-
-void KernelProfilerCUDA::clear() {
-  sync();
-  total_time_ms = 0;
-  records.clear();
 }
 
 #else
-
-std::string KernelProfilerCUDA::title() const {
-  TI_NOT_IMPLEMENTED;
-}
-KernelProfilerBase::TaskHandle KernelProfilerCUDA::start_with_handle(
+KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
     const std::string &kernel_name) {
   TI_NOT_IMPLEMENTED;
 }
-void KernelProfilerCUDA::record(KernelProfilerBase::TaskHandle &task_handle,
-                                const std::string &task_name) {
+void EventToolkit::update_record(
+    uint32_t records_size_after_sync,
+    std::vector<KernelProfileTracedRecord> &traced_records) {
   TI_NOT_IMPLEMENTED;
 }
-void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {
+void EventToolkit::update_timeline(
+    std::vector<KernelProfileTracedRecord> &traced_records) {
   TI_NOT_IMPLEMENTED;
 }
-void KernelProfilerCUDA::sync() {
-  TI_NOT_IMPLEMENTED;
-}
-void KernelProfilerCUDA::clear() {
-  TI_NOT_IMPLEMENTED;
-}
-
 #endif
 
 TLANG_NAMESPACE_END

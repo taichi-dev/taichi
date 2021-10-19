@@ -28,6 +28,8 @@
 #include "taichi/program/sparse_matrix.h"
 #include "taichi/program/sparse_solver.h"
 
+#include "taichi/program/kernel_profiler.h"
+
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
 #endif
@@ -158,7 +160,6 @@ void export_lang(py::module &m) {
       .def_readwrite("verbose", &CompileConfig::verbose)
       .def_readwrite("demote_dense_struct_fors",
                      &CompileConfig::demote_dense_struct_fors)
-      .def_readwrite("use_unified_memory", &CompileConfig::use_unified_memory)
       .def_readwrite("kernel_profiler", &CompileConfig::kernel_profiler)
       .def_readwrite("timeline", &CompileConfig::timeline)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
@@ -212,13 +213,40 @@ void export_lang(py::module &m) {
       .def_readwrite("max", &Program::KernelProfilerQueryResult::max)
       .def_readwrite("avg", &Program::KernelProfilerQueryResult::avg);
 
+  py::class_<KernelProfileTracedRecord>(m, "KernelProfileTracedRecord")
+      .def_readwrite("register_per_thread",
+                     &KernelProfileTracedRecord::register_per_thread)
+      .def_readwrite("shared_mem_per_block",
+                     &KernelProfileTracedRecord::shared_mem_per_block)
+      .def_readwrite("grid_size", &KernelProfileTracedRecord::grid_size)
+      .def_readwrite("block_size", &KernelProfileTracedRecord::block_size)
+      .def_readwrite(
+          "active_blocks_per_multiprocessor",
+          &KernelProfileTracedRecord::active_blocks_per_multiprocessor)
+      .def_readwrite("kernel_time",
+                     &KernelProfileTracedRecord::kernel_elapsed_time_in_ms)
+      .def_readwrite("base_time", &KernelProfileTracedRecord::time_since_base)
+      .def_readwrite("name", &KernelProfileTracedRecord::name)
+      .def_readwrite("metric_values",
+                     &KernelProfileTracedRecord::metric_values);
+
   py::class_<Program>(m, "Program")
       .def(py::init<>())
       .def_readonly("config", &Program::config)
-      .def("print_kernel_profile_info", &Program::print_kernel_profile_info)
       .def("query_kernel_profile_info",
            [](Program *program, const std::string &name) {
              return program->query_kernel_profile_info(name);
+           })
+      .def("get_kernel_profiler_records",
+           [](Program *program) {
+             return program->profiler->get_traced_records();
+           })
+      .def(
+          "get_kernel_profiler_device_name",
+          [](Program *program) { return program->profiler->get_device_name(); })
+      .def("reinit_kernel_profiler_with_metrics",
+           [](Program *program, const std::vector<std::string> metrics) {
+             return program->profiler->reinit_with_metrics(metrics);
            })
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })
@@ -366,7 +394,7 @@ void export_lang(py::module &m) {
   py::class_<Kernel::LaunchContextBuilder>(m, "KernelLaunchContext")
       .def("set_arg_int", &Kernel::LaunchContextBuilder::set_arg_int)
       .def("set_arg_float", &Kernel::LaunchContextBuilder::set_arg_float)
-      .def("set_arg_nparray",
+      .def("set_arg_external_array",
            &Kernel::LaunchContextBuilder::set_arg_external_array)
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
@@ -424,15 +452,6 @@ void export_lang(py::module &m) {
       .def("serialize", &ExprGroup::serialize);
 
   py::class_<Stmt>(m, "Stmt");
-  py::class_<Program::KernelProxy>(m, "KernelProxy")
-      .def(
-          "define",
-          [](Program::KernelProxy *ker,
-             const std::function<void()> &func) -> Kernel * {
-            py::gil_scoped_release release;
-            return ker->def(func);
-          },
-          py::return_value_policy::reference);
 
   m.def("insert_deactivate", [](SNode *snode, const ExprGroup &indices) {
     return Deactivate(snode, indices);
@@ -772,10 +791,14 @@ void export_lang(py::module &m) {
   m.def("get_external_tensor_shape_along_axis",
         Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
 
-  m.def("create_kernel",
-        [&](std::string name, bool grad) -> Program::KernelProxy {
-          return get_current_program().kernel(name, grad);
-        });
+  m.def(
+      "create_kernel",
+      [&](const std::function<void()> &body, const std::string &name,
+          bool grad) -> Kernel * {
+        py::gil_scoped_release release;
+        return &get_current_program().kernel(body, name, grad);
+      },
+      py::return_value_policy::reference);
 
   m.def(
       "create_function",
@@ -795,8 +818,9 @@ void export_lang(py::module &m) {
               std::make_unique<FrontendPrintStmt>(contents));
         });
 
-  m.def("decl_arg", [&](const DataType &dt, bool is_nparray) {
-    return get_current_program().current_callable->insert_arg(dt, is_nparray);
+  m.def("decl_arg", [&](const DataType &dt, bool is_external_array) {
+    return get_current_program().current_callable->insert_arg(
+        dt, is_external_array);
   });
 
   m.def("decl_ret", [&](const DataType &dt) {
@@ -980,6 +1004,7 @@ void export_lang(py::module &m) {
       .def("transpose", &SparseMatrix::transpose,
            py::return_value_policy::reference_internal)
       .def("get_element", &SparseMatrix::get_element)
+      .def("set_element", &SparseMatrix::set_element)
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols);
 
@@ -996,7 +1021,7 @@ void export_lang(py::module &m) {
       .def("solve", &SparseSolver::solve)
       .def("info", &SparseSolver::info);
 
-  m.def("get_sparse_solver", &get_sparse_solver);
+  m.def("make_sparse_solver", &make_sparse_solver);
 }
 
 TI_NAMESPACE_END

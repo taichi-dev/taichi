@@ -27,12 +27,12 @@
 // The actual Runtime struct has to be emitted by codegen, because it depends
 // on the number of SNodes.
 struct Runtime {
+  uint32_t *rand_seeds = nullptr;
   SNodeMeta *snode_metas = nullptr;
   SNodeExtractors *snode_extractors = nullptr;
   ListManagerData *snode_lists = nullptr;
   NodeManagerData *snode_allocators = nullptr;
   NodeManagerData::ElemIndex *ambient_indices = nullptr;
-  uint32_t *rand_seeds = nullptr;
 };
 
 #define METAL_BEGIN_RUNTIME_UTILS_DEF
@@ -538,7 +538,7 @@ STR(
         const auto elem_idx = recycled_list.get<ElemIndex>(ii);
         device char *ptr = nm.get(elem_idx);
         device const char *ptr_end = ptr + data_list.lm_data->element_stride;
-        const int ptr_mod = ((int64_t)(ptr) % kInt32Stride);
+        const int ptr_mod = ((intptr_t)(ptr) % kInt32Stride);
         if (ptr_mod) {
           device char *new_ptr = ptr + kInt32Stride - ptr_mod;
           if (thparams.thread_position_in_threadgroup == 0) {

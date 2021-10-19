@@ -46,32 +46,32 @@ template <typename... Args>
 class CUDADriverFunction {
  public:
   CUDADriverFunction() {
-    function = nullptr;
+    function_ = nullptr;
   }
 
   void set(void *func_ptr) {
-    function = (func_type *)func_ptr;
+    function_ = (func_type *)func_ptr;
   }
 
   uint32 call(Args... args) {
-    TI_ASSERT(function != nullptr);
-    TI_ASSERT(driver_lock != nullptr);
-    std::lock_guard<std::mutex> _(*driver_lock);
-    return (uint32)function(args...);
+    TI_ASSERT(function_ != nullptr);
+    TI_ASSERT(driver_lock_ != nullptr);
+    std::lock_guard<std::mutex> _(*driver_lock_);
+    return (uint32)function_(args...);
   }
 
   void set_names(const std::string &name, const std::string &symbol_name) {
-    this->name = name;
-    this->symbol_name = symbol_name;
+    name_ = name;
+    symbol_name_ = symbol_name;
   }
 
   void set_lock(std::mutex *lock) {
-    driver_lock = lock;
+    driver_lock_ = lock;
   }
 
   std::string get_error_message(uint32 err) {
     return get_cuda_error_message(err) +
-           fmt::format(" while calling {} ({})", name, symbol_name);
+           fmt::format(" while calling {} ({})", name_, symbol_name_);
   }
 
   uint32 call_with_warning(Args... args) {
@@ -89,9 +89,9 @@ class CUDADriverFunction {
  private:
   using func_type = uint32_t(Args...);
 
-  func_type *function{nullptr};
-  std::string name, symbol_name;
-  std::mutex *driver_lock{nullptr};
+  func_type *function_{nullptr};
+  std::string name_, symbol_name_;
+  std::mutex *driver_lock_{nullptr};
 };
 
 class CUDADriver {
@@ -116,9 +116,9 @@ class CUDADriver {
  private:
   CUDADriver();
 
-  std::unique_ptr<DynamicLoader> loader;
+  std::unique_ptr<DynamicLoader> loader_;
 
-  std::mutex lock;
+  std::mutex lock_;
 };
 
 TLANG_NAMESPACE_END

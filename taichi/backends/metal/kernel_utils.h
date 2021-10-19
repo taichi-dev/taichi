@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
@@ -33,15 +34,75 @@ class PrintStringTable {
   std::vector<std::string> strs_;
 };
 
-// This struct holds the necessary information to launch a Metal kernel.
-struct KernelAttributes {
-  enum class Buffers {
+struct BufferDescriptor {
+  enum class Type {
     Root,
     GlobalTmps,
     Context,
     Runtime,
     Print,
   };
+
+  BufferDescriptor() = default;
+
+  static BufferDescriptor Root(int root_id) {
+    return BufferDescriptor{Type::Root, root_id};
+  }
+
+  static BufferDescriptor GlobalTmps() {
+    return BufferDescriptor{Type::GlobalTmps};
+  }
+
+  static BufferDescriptor Context() {
+    return BufferDescriptor{Type::Context};
+  }
+
+  static BufferDescriptor Runtime() {
+    return BufferDescriptor{Type::Runtime};
+  }
+
+  static BufferDescriptor Print() {
+    return BufferDescriptor{Type::Print};
+  }
+
+  Type type() const {
+    return type_;
+  }
+
+  int root_id() const {
+    TI_ASSERT(type_ == Type::Root);
+    return root_id_;
+  }
+
+  std::string debug_string() const;
+
+  bool operator==(const BufferDescriptor &other) const;
+
+  bool operator!=(const BufferDescriptor &other) const {
+    return !(*this == other);
+  }
+
+  struct Hasher {
+    std::size_t operator()(const BufferDescriptor &desc) const {
+      return std::hash<BufferDescriptor::Type>{}(desc.type()) ^ desc.root_id_;
+    }
+  };
+
+ private:
+  explicit BufferDescriptor(Type t) : type_(t) {
+  }
+
+  explicit BufferDescriptor(Type t, int root_id) : type_(t), root_id_(root_id) {
+  }
+  Type type_{Type::Root};
+  int root_id_{-1};  // only used if type==Root
+
+ public:
+  TI_IO_DEF(type_, root_id_);
+};
+
+// This struct holds the necessary information to launch a Metal kernel.
+struct KernelAttributes {
   std::string name;
   // Total number of threads to launch (i.e. threads per grid). Note that this
   // is only advisory, because eventually this numb er is also determined by the
@@ -76,7 +137,7 @@ struct KernelAttributes {
   struct GcOpAttributes {
     const SNode *snode = nullptr;
   };
-  std::vector<Buffers> buffers;
+  std::vector<BufferDescriptor> buffers;
   // Only valid when |task_type| is `range_for`.
   std::optional<RangeForAttributes> range_for_attribs;
   // Only valid when |task_type| is `listgen`.
@@ -84,7 +145,6 @@ struct KernelAttributes {
   // Only valid when |task_type| is `gc`.
   std::optional<GcOpAttributes> gc_op_attribs;
 
-  static std::string buffers_name(Buffers b);
   std::string debug_string() const;
 
   TI_IO_DEF(name,

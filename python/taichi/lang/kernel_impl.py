@@ -5,19 +5,23 @@ import inspect
 import re
 
 import numpy as np
-from taichi.core import primitive_types
+import taichi.lang
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
-from taichi.lang.ast_checker import KernelSimplicityASTChecker
+from taichi.lang.ast.checkers import KernelSimplicityASTChecker
+from taichi.lang.ast.transformer import ASTTransformerTotal
+from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.kernel_arguments import (any_arr, sparse_matrix_builder,
-                                          template)
-from taichi.lang.ndarray import Ndarray
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.transformer import ASTTransformerTotal
+from taichi.lang.util import to_taichi_type
+from taichi.linalg.sparse_matrix import sparse_matrix_builder
 from taichi.misc.util import obsolete
+from taichi.type import any_arr, primitive_types, template
 
 import taichi as ti
+
+if util.has_pytorch():
+    import torch
 
 
 def _remove_indent(lines):
@@ -226,6 +230,13 @@ class Func:
             if annotation is inspect.Parameter.empty:
                 if i == 0 and self.classfunc:
                     annotation = template()
+                # TODO: pyfunc also need type annotation check when real function is enabled,
+                #       but that has to happen at runtime when we know which scope it's called from.
+                elif not self.pyfunc and impl.get_runtime(
+                ).experimental_real_function:
+                    raise KernelDefError(
+                        f'Taichi function `{self.func.__name__}` parameter `{arg_name}` must be type annotated'
+                    )
             else:
                 if not id(annotation
                           ) in primitive_types.type_ids and not isinstance(
@@ -240,18 +251,56 @@ class Func:
 class TaichiCallableTemplateMapper:
     def __init__(self, annotations, template_slot_locations):
         self.annotations = annotations
-        # Make sure extractors's size is the same as the number of args
-        dummy_extract = lambda arg: (type(arg).__name__, )
-        self.extractors = tuple((i, getattr(anno, 'extract', dummy_extract))
-                                for (i, anno) in enumerate(self.annotations))
         self.num_args = len(annotations)
         self.template_slot_locations = template_slot_locations
         self.mapping = {}
 
+    @staticmethod
+    def extract_arg(arg, anno):
+        if isinstance(anno, template):
+            if isinstance(arg, taichi.lang.snode.SNode):
+                return arg.ptr
+            if isinstance(arg, taichi.lang.expr.Expr):
+                return arg.ptr.get_underlying_ptr_address()
+            if isinstance(arg, _ti_core.Expr):
+                return arg.get_underlying_ptr_address()
+            if isinstance(arg, tuple):
+                return tuple(
+                    TaichiCallableTemplateMapper.extract_arg(item, anno)
+                    for item in arg)
+            return arg
+        elif isinstance(anno, any_arr):
+            if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
+                anno.check_element_dim(arg, 0)
+                return arg.dtype, len(arg.shape), (), Layout.AOS
+            if isinstance(arg, taichi.lang.matrix.VectorNdarray):
+                anno.check_element_dim(arg, 1)
+                anno.check_layout(arg)
+                return arg.dtype, len(arg.shape) + 1, (arg.n, ), arg.layout
+            if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
+                anno.check_element_dim(arg, 2)
+                anno.check_layout(arg)
+                return arg.dtype, len(arg.shape) + 2, (arg.n,
+                                                       arg.m), arg.layout
+            # external arrays
+            element_dim = 0 if anno.element_dim is None else anno.element_dim
+            layout = Layout.AOS if anno.layout is None else anno.layout
+            shape = tuple(arg.shape)
+            if len(shape) < element_dim:
+                raise ValueError(
+                    f"Invalid argument into ti.any_arr() - required element_dim={element_dim}, but the argument has only {len(shape)} dimensions"
+                )
+            element_shape = (
+            ) if element_dim == 0 else shape[:
+                                             element_dim] if layout == Layout.SOA else shape[
+                                                 -element_dim:]
+            return to_taichi_type(arg.dtype), len(shape), element_shape, layout
+        return (type(arg).__name__, )
+
     def extract(self, args):
         extracted = []
-        for i, extractor in self.extractors:
-            extracted.append(extractor(args[i]))
+        for arg, anno in zip(args, self.annotations):
+            extracted.append(self.extract_arg(arg, anno))
         return tuple(extracted)
 
     def lookup(self, args):
@@ -283,17 +332,8 @@ class KernelArgError(Exception):
 
 
 def _get_global_vars(func):
-    # Discussions: https://github.com/taichi-dev/taichi/issues/282
-    global_vars = copy.copy(func.__globals__)
-
-    freevar_names = func.__code__.co_freevars
-    closure = func.__closure__
-    if closure:
-        freevar_values = list(map(lambda x: x.cell_contents, closure))
-        for name, value in zip(freevar_names, freevar_values):
-            global_vars[name] = value
-
-    return global_vars
+    closure_vars = inspect.getclosurevars(func)
+    return {**closure_vars.globals, **closure_vars.nonlocals}
 
 
 class Kernel:
@@ -325,9 +365,9 @@ class Kernel:
     def reset(self):
         self.runtime = impl.get_runtime()
         if self.is_grad:
-            self.compiled_functions = self.runtime.compiled_functions
-        else:
             self.compiled_functions = self.runtime.compiled_grad_functions
+        else:
+            self.compiled_functions = self.runtime.compiled_functions
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
@@ -434,8 +474,6 @@ class Kernel:
                     mode='exec'), global_vars, local_vars)
         compiled = local_vars[self.func.__name__]
 
-        taichi_kernel = _ti_core.create_kernel(kernel_name, self.is_grad)
-
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
         def taichi_ast_generator():
@@ -452,7 +490,9 @@ class Kernel:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None
 
-        taichi_kernel = taichi_kernel.define(taichi_ast_generator)
+        taichi_kernel = _ti_core.create_kernel(taichi_ast_generator,
+                                               kernel_name, self.is_grad)
+
         self.kernel_cpp = taichi_kernel
 
         assert key not in self.compiled_functions
@@ -487,22 +527,22 @@ class Kernel:
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
-                    # Pass only the base pointer of the ti.sparse_matrix_builder() argument
+                    # Pass only the base pointer of the ti.linalg.sparse_matrix_builder() argument
                     launch_ctx.set_arg_int(actual_argument_slot, v.get_addr())
-                elif isinstance(needed, any_arr) and (self.match_ext_arr(v) or
-                                                      isinstance(v, Ndarray)):
-                    if isinstance(v, Ndarray):
+                elif isinstance(needed, any_arr) and (
+                        self.match_ext_arr(v)
+                        or isinstance(v, taichi.lang._ndarray.Ndarray)):
+                    if isinstance(v, taichi.lang._ndarray.Ndarray):
                         v = v.arr
                     has_external_arrays = True
-                    has_torch = util.has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!
                         tmps.append(tmp)
-                        launch_ctx.set_arg_nparray(actual_argument_slot,
-                                                   int(tmp.ctypes.data),
-                                                   tmp.nbytes)
+                        launch_ctx.set_arg_external_array(
+                            actual_argument_slot, int(tmp.ctypes.data),
+                            tmp.nbytes)
                     else:
 
                         def get_call_back(u, v):
@@ -511,8 +551,7 @@ class Kernel:
 
                             return call_back
 
-                        assert has_torch
-                        import torch
+                        assert util.has_pytorch()
                         assert isinstance(v, torch.Tensor)
                         tmp = v
                         taichi_arch = self.runtime.prog.config.arch
@@ -530,7 +569,7 @@ class Kernel:
                                 gpu_v = v.cuda()
                                 tmp = gpu_v
                                 callbacks.append(get_call_back(v, gpu_v))
-                        launch_ctx.set_arg_nparray(
+                        launch_ctx.set_arg_external_array(
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement())
                     shape = v.shape
@@ -550,7 +589,7 @@ class Kernel:
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the
             # gradient. For class kernels, args[0] is always the kernel owner.
-            if not self.is_grad and self.runtime.target_tape and not self.runtime.inside_complex_kernel:
+            if not self.is_grad and self.runtime.target_tape and not self.runtime.grad_replaced:
                 self.runtime.target_tape.insert(self, args)
 
             t_kernel(launch_ctx)
@@ -579,7 +618,6 @@ class Kernel:
     def match_ext_arr(self, v):
         has_array = isinstance(v, np.ndarray)
         if not has_array and util.has_pytorch():
-            import torch
             has_array = isinstance(v, torch.Tensor)
         return has_array
 
@@ -689,7 +727,7 @@ def kernel(fn):
 
     Kernel's gradient kernel would be generated automatically by the AutoDiff system.
 
-    See also https://docs.taichi.graphics/docs/lang/articles/basic/syntax#kernels.
+    See also https://docs.taichi.graphics/lang/articles/basic/syntax#kernels.
 
     Args:
         fn (Callable): the Python function to be decorated
@@ -725,9 +763,12 @@ class _BoundedDifferentiableMethod:
         self._kernel_owner = kernel_owner
         self._primal = wrapped_kernel_func._primal
         self._adjoint = wrapped_kernel_func._adjoint
+        self._is_staticmethod = wrapped_kernel_func._is_staticmethod
 
     def __call__(self, *args, **kwargs):
         _taichi_skip_traceback = 1
+        if self._is_staticmethod:
+            return self._primal(*args, **kwargs)
         return self._primal(self._kernel_owner, *args, **kwargs)
 
     def grad(self, *args, **kwargs):
@@ -741,7 +782,7 @@ def data_oriented(cls):
     To allow for modularized code, Taichi provides this decorator so that
     Taichi kernels can be defined inside a class.
 
-    See also https://docs.taichi.graphics/docs/lang/articles/advanced/odop
+    See also https://docs.taichi.graphics/lang/articles/advanced/odop
 
     Example::
 
@@ -752,10 +793,10 @@ def data_oriented(cls):
         >>>
         >>>     @ti.kernel
         >>>     def inc(self):
-        >>>         for i in x:
-        >>>             x[i] += 1
+        >>>         for i in self.x:
+        >>>             self.x[i] += 1.0
         >>>
-        >>> a = TiArray(42)
+        >>> a = TiArray(32)
         >>> a.inc()
 
     Args:
@@ -764,22 +805,33 @@ def data_oriented(cls):
     Returns:
         The decorated class.
     """
-    def getattr(self, item):
+    def _getattr(self, item):
         _taichi_skip_traceback = 1
-        x = super(cls, self).__getattribute__(item)
+        method = cls.__dict__.get(item, None)
+        is_property = method.__class__ == property
+        is_staticmethod = method.__class__ == staticmethod
+        if is_property:
+            x = method.fget
+        else:
+            x = super(cls, self).__getattribute__(item)
         if hasattr(x, '_is_wrapped_kernel'):
             if inspect.ismethod(x):
                 wrapped = x.__func__
             else:
                 wrapped = x
+            wrapped._is_staticmethod = is_staticmethod
             assert inspect.isfunction(wrapped)
             if wrapped._is_classkernel:
                 ret = _BoundedDifferentiableMethod(self, wrapped)
                 ret.__name__ = wrapped.__name__
+                if is_property:
+                    return ret()
                 return ret
+        if is_property:
+            return x(self)
         return x
 
-    cls.__getattribute__ = getattr
+    cls.__getattribute__ = _getattr
     cls._data_oriented = True
 
     return cls

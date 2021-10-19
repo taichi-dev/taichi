@@ -4,14 +4,17 @@ import os
 import random
 import runpy
 import shutil
+import subprocess
 import sys
-import time
+import timeit
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
 
+import numpy as np
+import taichi.cc_compose
+import taichi.diagnose
 from colorama import Back, Fore, Style
-from taichi.core import settings
 from taichi.core import ti_core as _ti_core
 from taichi.tools import video
 
@@ -20,8 +23,6 @@ import taichi as ti
 
 def timer(func):
     """Function decorator to benchmark a function runnign time."""
-    import timeit
-
     @wraps(func)
     def wrapper(*args, **kwargs):
         start = timeit.default_timer()
@@ -91,7 +92,7 @@ class TaichiMain:
     def _get_friend_links(self):
         uri = 'en/stable'
         try:
-            import locale
+            import locale  # pylint: disable=C0415
             if 'zh' in locale.getdefaultlocale()[0]:
                 uri = 'zh_CN/latest'
         except:
@@ -114,13 +115,11 @@ class TaichiMain:
     def _exec_python_file(filename: str):
         """Execute a Python file based on filename."""
         # TODO: do we really need this?
-        import subprocess
         subprocess.call([sys.executable, filename] + sys.argv[1:])
 
     @staticmethod
     def _get_examples_dir() -> Path:
         """Get the path to the examples directory."""
-        import taichi as ti
 
         root_dir = ti.package_root()
         examples_dir = Path(root_dir) / 'examples'
@@ -181,6 +180,8 @@ class TaichiMain:
             dest='save',
             action='store_true',
             help="Save source code to current directory instead of running it")
+
+        # TODO: Pass the arguments to downstream correctly(#3216).
         args = parser.parse_args(arguments)
 
         examples_dir = TaichiMain._get_examples_dir()
@@ -199,8 +200,8 @@ class TaichiMain:
 
         if args.pretty_print:
             try:
-                import rich.console
-                import rich.syntax
+                import rich.console  # pylint: disable=C0415
+                import rich.syntax  # pylint: disable=C0415
             except ImportError as e:
                 print('To make -P work, please: python3 -m pip install rich')
                 return 1
@@ -229,35 +230,7 @@ class TaichiMain:
     @register
     def release(self, arguments: list = sys.argv[2:]):
         """Make source code release"""
-        parser = argparse.ArgumentParser(prog='ti release',
-                                         description=f"{self.release.__doc__}")
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode: return args
-
-        import hashlib
-        import zipfile
-
-        from git import Git
-        g = Git(settings.get_repo_directory())
-        g.init()
-        with zipfile.ZipFile('release.zip', 'w') as zip:
-            files = g.ls_files().split('\n')
-            os.chdir(settings.get_repo_directory())
-            for f in files:
-                if not os.path.isdir(f):
-                    zip.write(f)
-        ver = ti.__version__
-        md5 = hashlib.md5()
-        with open('release.zip', "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                md5.update(chunk)
-        md5 = md5.hexdigest()
-        commit = _ti_core.get_commit_hash()[:8]
-        fn = f'taichi-src-v{ver[0]}-{ver[1]}-{ver[2]}-{commit}-{md5}.zip'
-        import shutil
-        shutil.move('release.zip', fn)
+        raise RuntimeError('TBD')
 
     @staticmethod
     def _mp4_file(name: str) -> str:
@@ -456,70 +429,17 @@ class TaichiMain:
     @register
     def doc(self, arguments: list = sys.argv[2:]):
         """Build documentation"""
-        parser = argparse.ArgumentParser(prog='ti doc',
-                                         description=f"{self.doc.__doc__}")
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode: return args
-        os.system(
-            f'cd {settings.get_repo_directory()}/docs && sphinx-build -b html . build'
-        )
-
-    @register
-    def update(self, arguments: list = sys.argv[2:]):
-        """Update the Taichi codebase"""
-        # TODO: Test if this still works, fix if it doesn't
-        parser = argparse.ArgumentParser(prog='ti update',
-                                         description=f"{self.update.__doc__}")
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode: return args
-        _ti_core.update(True)
-        _ti_core.build()
+        raise RuntimeError('TBD')
 
     @register
     def format(self, arguments: list = sys.argv[2:]):
         """Reformat modified source files"""
-        parser = argparse.ArgumentParser(prog='ti format',
-                                         description=f"{self.format.__doc__}")
-        parser.add_argument(
-            'diff',
-            nargs='?',
-            type=str,
-            help="A commit hash that git can use to compare diff with")
-        args = parser.parse_args(arguments)
-
-        from .code_format import main
-
-        # Short circuit for testing
-        if self.test_mode: return args
-        main(diff=args.diff)
+        raise RuntimeError('Please run python misc/code_format.py instead')
 
     @register
     def format_all(self, arguments: list = sys.argv[2:]):
         """Reformat all source files"""
-        parser = argparse.ArgumentParser(
-            prog='ti format_all', description=f"{self.format_all.__doc__}")
-        args = parser.parse_args(arguments)
-
-        from .code_format import main
-
-        # Short circuit for testing
-        if self.test_mode: return args
-        main(all=True)
-
-    @register
-    def build(self, arguments: list = sys.argv[2:]):
-        """Build C++ files"""
-        parser = argparse.ArgumentParser(prog='ti build',
-                                         description=f"{self.build.__doc__}")
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode: return args
-        _ti_core.build()
+        raise RuntimeError('Please run python misc/code_format.py instead')
 
     @staticmethod
     def _display_benchmark_regression(xd, yd, args):
@@ -558,9 +478,7 @@ class TaichiMain:
             return dict
 
         def plot_in_gui(scatter):
-            import numpy as np
 
-            import taichi as ti
             gui = ti.GUI('Regression Test', (640, 480), 0x001122)
             print('[Hint] press SPACE to go for next display')
             for key, data in scatter.items():
@@ -622,12 +540,10 @@ class TaichiMain:
 
     @staticmethod
     def _get_benchmark_baseline_dir():
-        import taichi as ti
         return os.path.join(_ti_core.get_repo_dir(), 'benchmarks', 'baseline')
 
     @staticmethod
     def _get_benchmark_output_dir():
-        import taichi as ti
         return os.path.join(_ti_core.get_repo_dir(), 'benchmarks', 'output')
 
     @register
@@ -663,7 +579,6 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
 
-        import shutil
         baseline_dir = TaichiMain._get_benchmark_baseline_dir()
         output_dir = TaichiMain._get_benchmark_output_dir()
         shutil.rmtree(baseline_dir, True)
@@ -673,9 +588,7 @@ class TaichiMain:
     @staticmethod
     def _test_python(args):
         print("\nRunning Python tests...\n")
-        import pytest
 
-        import taichi as ti
         root_dir = ti.package_root()
         test_dir = os.path.join(root_dir, 'tests')
         pytest_args = []
@@ -714,13 +627,13 @@ class TaichiMain:
             pass
 
         try:
-            from multiprocessing import cpu_count
+            from multiprocessing import cpu_count  # pylint: disable=C0415
             threads = min(8, cpu_count())  # To prevent running out of memory
         except NotImplementedError:
             threads = 2
 
         if not os.environ.get('TI_DEVICE_MEMORY_GB'):
-            os.environ['TI_DEVICE_MEMORY_GB'] = '0.5'  # Discussion: #769
+            os.environ['TI_DEVICE_MEMORY_GB'] = '1.0'  # Discussion: #769
 
         env_threads = os.environ.get('TI_TEST_THREADS', '')
         threads = args.threads or env_threads or threads
@@ -733,12 +646,11 @@ class TaichiMain:
         else:
             if int(threads) > 1:
                 pytest_args += ['-n', str(threads)]
+        import pytest  # pylint: disable=C0415
         return int(pytest.main(pytest_args))
 
     @staticmethod
     def _test_cpp(args):
-        import taichi as ti
-
         # Cpp tests use the legacy non LLVM backend
         ti.reset()
         print("Running C++ tests...")
@@ -781,7 +693,6 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
 
-        import shutil
         commit_hash = _ti_core.get_commit_hash()
         with os.popen('git rev-parse HEAD') as f:
             current_commit_hash = f.read().strip()
@@ -1004,8 +915,7 @@ class TaichiMain:
             prog='ti diagnose', description=f"{self.diagnose.__doc__}")
         args = parser.parse_args(arguments)
 
-        from .diagnose import main
-        main()
+        taichi.diagnose.main()
 
     @register
     def cc_compose(self, arguments: list = sys.argv[2:]):
@@ -1031,8 +941,8 @@ class TaichiMain:
             help='Generate output C file for Emscripten instead of raw C')
         args = parser.parse_args(arguments)
 
-        from .cc_compose import main
-        main(args.fin_name, args.fout_name, args.hdrout_name, args.emscripten)
+        taichi.cc_compose.main(args.fin_name, args.fout_name, args.hdrout_name,
+                               args.emscripten)
 
     @register
     def repl(self, arguments: list = sys.argv[2:]):
@@ -1042,17 +952,12 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         def local_scope():
-            import math
-            import time
 
-            import numpy as np
-
-            import taichi as ti
             try:
-                import IPython
+                import IPython  # pylint: disable=C0415
                 IPython.embed()
             except ImportError:
-                import code
+                import code  # pylint: disable=C0415
                 __name__ = '__console__'
                 code.interact(local=locals())
 
@@ -1068,13 +973,14 @@ class TaichiMain:
 
         options = [os.path.dirname(__file__)]
 
-        from multiprocessing import cpu_count
+        from multiprocessing import cpu_count  # pylint: disable=C0415
+
         threads = min(8, cpu_count())
         options += ['-j', str(threads)]
 
         # http://pylint.pycqa.org/en/latest/user_guide/run.html
         # TODO: support redirect output to lint.log
-        import pylint.lint
+        import pylint  # pylint: disable=C0415
         pylint.lint.Run(options)
 
 

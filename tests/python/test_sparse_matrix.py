@@ -4,10 +4,10 @@ import taichi as ti
 @ti.test(arch=ti.cpu)
 def test_sparse_matrix_builder():
     n = 8
-    Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
     @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder()):
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i + j
 
@@ -21,10 +21,10 @@ def test_sparse_matrix_builder():
 @ti.test(arch=ti.cpu)
 def test_sparse_matrix_element_access():
     n = 8
-    Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
     @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder()):
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder()):
         for i in range(n):
             Abuilder[i, i] += i
 
@@ -35,14 +35,30 @@ def test_sparse_matrix_element_access():
 
 
 @ti.test(arch=ti.cpu)
-def test_sparse_matrix_addition():
+def test_sparse_matrix_element_modify():
     n = 8
-    Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
-    Bbuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
     @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder(),
-             Bbuilder: ti.sparse_matrix_builder()):
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder()):
+        for i in range(n):
+            Abuilder[i, i] += i
+
+    fill(Abuilder)
+    A = Abuilder.build()
+    A[0, 0] = 1024.0
+    assert A[0, 0] == 1024.0
+
+
+@ti.test(arch=ti.cpu)
+def test_sparse_matrix_addition():
+    n = 8
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    Bbuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
+
+    @ti.kernel
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder(),
+             Bbuilder: ti.linalg.sparse_matrix_builder()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i + j
             Bbuilder[i, j] += i - j
@@ -59,12 +75,12 @@ def test_sparse_matrix_addition():
 @ti.test(arch=ti.cpu)
 def test_sparse_matrix_subtraction():
     n = 8
-    Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
-    Bbuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    Bbuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
     @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder(),
-             Bbuilder: ti.sparse_matrix_builder()):
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder(),
+             Bbuilder: ti.linalg.sparse_matrix_builder()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i + j
             Bbuilder[i, j] += i - j
@@ -81,10 +97,10 @@ def test_sparse_matrix_subtraction():
 @ti.test(arch=ti.cpu)
 def test_sparse_matrix_scalar_multiplication():
     n = 8
-    Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
     @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder()):
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i + j
 
@@ -99,10 +115,10 @@ def test_sparse_matrix_scalar_multiplication():
 @ti.test(arch=ti.cpu)
 def test_sparse_matrix_transpose():
     n = 8
-    Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
     @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder()):
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i + j
 
@@ -117,12 +133,12 @@ def test_sparse_matrix_transpose():
 @ti.test(arch=ti.cpu)
 def test_sparse_matrix_elementwise_multiplication():
     n = 8
-    Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
-    Bbuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    Bbuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
     @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder(),
-             Bbuilder: ti.sparse_matrix_builder()):
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder(),
+             Bbuilder: ti.linalg.sparse_matrix_builder()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i + j
             Bbuilder[i, j] += i - j
@@ -139,12 +155,12 @@ def test_sparse_matrix_elementwise_multiplication():
 @ti.test(arch=ti.cpu)
 def test_sparse_matrix_multiplication():
     n = 2
-    Abuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
-    Bbuilder = ti.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    Bbuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
 
     @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder(),
-             Bbuilder: ti.sparse_matrix_builder()):
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder(),
+             Bbuilder: ti.linalg.sparse_matrix_builder()):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i + j
             Bbuilder[i, j] += i - j
@@ -162,12 +178,12 @@ def test_sparse_matrix_multiplication():
 @ti.test(arch=ti.cpu)
 def test_sparse_matrix_nonsymmetric_multiplication():
     n, k, m = 2, 3, 4
-    Abuilder = ti.SparseMatrixBuilder(n, k, max_num_triplets=100)
-    Bbuilder = ti.SparseMatrixBuilder(k, m, max_num_triplets=100)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, k, max_num_triplets=100)
+    Bbuilder = ti.linalg.SparseMatrixBuilder(k, m, max_num_triplets=100)
 
     @ti.kernel
-    def fill(Abuilder: ti.sparse_matrix_builder(),
-             Bbuilder: ti.sparse_matrix_builder()):
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder(),
+             Bbuilder: ti.linalg.sparse_matrix_builder()):
         for i, j in ti.ndrange(n, k):
             Abuilder[i, j] += i + j
         for i, j in ti.ndrange(k, m):

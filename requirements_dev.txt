@@ -10,8 +10,10 @@ distro
 autograd
 astor
 sourceinspect
+pylint
 pytest
 pytest-xdist
 pytest-rerunfailures
 pytest-cov
 torch
+isort

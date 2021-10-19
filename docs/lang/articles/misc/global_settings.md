@@ -9,8 +9,6 @@ sidebar_position: 7
 - To specify which kind of architecture (Arch) to use: `ti.init(arch=ti.cuda)`.
 - To specify the pre-allocated memory size for CUDA:
   `ti.init(device_memory_GB=0.5)`.
-- To disable the unified memory usage on CUDA:
-  `ti.init(use_unified_memory=False)`.
 - To specify which GPU to use for CUDA:
   `export CUDA_VISIBLE_DEVICES=[gpuid]`.
 - To disable a backend (`CUDA`, `METAL`, `OPENGL`) on start up, e.g. CUDA:
@@ -59,8 +57,6 @@ variables. For example:
 - `ti.init(log_level=ti.TRACE)` is equivalent to
   `export TI_LOG_LEVEL=trace`.
 - `ti.init(debug=True)` is equivalent to `export TI_DEBUG=1`.
-- `ti.init(use_unified_memory=False)` is equivalent to
-  `export TI_USE_UNIFIED_MEMORY=0`.
 
 If both `ti.init` argument and the corresponding environment variable
 are specified, then the one in the environment variable will

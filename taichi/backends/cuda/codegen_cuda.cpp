@@ -13,6 +13,7 @@
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_context.h"
 #include "taichi/codegen/codegen_llvm.h"
+#include "taichi/llvm/llvm_program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -94,8 +95,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       for (auto task : offloaded_local) {
         TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
-        cuda_module->launch(task.name, task.grid_dim, task.block_dim,
-                            task.shmem_bytes, {&context});
+        cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
+                            {&context});
       }
       // copy data back to host
       if (transferred) {
@@ -545,7 +546,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       current_task->block_dim = stmt->block_dim;
       TI_ASSERT(current_task->grid_dim != 0);
       TI_ASSERT(current_task->block_dim != 0);
-      current_task->shmem_bytes = stmt->bls_size;
       current_task->end();
       current_task = nullptr;
     }

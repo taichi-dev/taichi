@@ -1,11 +1,13 @@
 #include "codegen_cc.h"
 #include "cc_kernel.h"
 #include "cc_layout.h"
+#include "cc_program.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/util/line_appender.h"
 #include "taichi/util/str.h"
+#include "taichi/llvm/llvm_program.h"
 #include "cc_utils.h"
 
 #define C90_COMPAT 0
@@ -260,22 +262,20 @@ class CCTransformer : public IRVisitor {
     emit("{} = {};", var, axis_size);
   }
 
-  static std::string _get_libc_function_name(std::string name, DataType dt) {
+  static std::string get_libc_function_name(std::string name, DataType dt) {
+    std::string ret;
     if (dt->is_primitive(PrimitiveTypeID::i32))
-      return name;
+      ret = name;
     else if (dt->is_primitive(PrimitiveTypeID::i64))
-      return "ll" + name;
+      ret = "ll" + name;
     else if (dt->is_primitive(PrimitiveTypeID::f32))
-      return name + "f";
+      ret = name + "f";
     else if (dt->is_primitive(PrimitiveTypeID::f64))
-      return name;
+      ret = name;
     else
       TI_ERROR("Unsupported function \"{}\" for DataType={} on C backend", name,
                data_type_name(dt));
-  }
 
-  static std::string get_libc_function_name(std::string name, DataType dt) {
-    auto ret = _get_libc_function_name(name, dt);
     if (name == "rsqrt") {
       ret = "Ti_" + ret;
     } else if (name == "sgn") {
@@ -601,24 +601,15 @@ class CCTransformer : public IRVisitor {
 };  // namespace cccp
 
 std::unique_ptr<CCKernel> CCKernelGen::compile() {
-  auto program = kernel->program->cc_program.get();
-  auto layout = program->get_layout();
-  CCTransformer tran(kernel, layout);
+  auto layout = cc_program_impl_->get_layout();
+  CCTransformer tran(kernel_, layout);
 
   tran.run();
   auto source = tran.get_source();
-  auto ker = std::make_unique<CCKernel>(program, kernel, source, kernel->name);
+  auto ker = std::make_unique<CCKernel>(cc_program_impl_, kernel_, source,
+                                        kernel_->name);
   ker->compile();
   return ker;
-}
-
-FunctionType compile_kernel(Kernel *kernel) {
-  CCKernelGen codegen(kernel);
-  auto ker = codegen.compile();
-  auto ker_ptr = ker.get();
-  auto program = kernel->program->cc_program.get();
-  program->add_kernel(std::move(ker));
-  return [ker_ptr](Context &ctx) { return ker_ptr->launch(&ctx); };
 }
 
 }  // namespace cccp

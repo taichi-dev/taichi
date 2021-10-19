@@ -30,6 +30,13 @@ class SetImage final : public Renderable {
  public:
   int width, height;
 
+  struct UniformBufferObject {
+    // in non_packed_mode,
+    // the actual image is only a corner of the whole image
+    float x_factor{1.0};
+    float y_factor{1.0};
+  };
+
   SetImage(AppContext *app_context);
 
   void update_data(const SetImageInfo &info);
@@ -42,8 +49,6 @@ class SetImage final : public Renderable {
 
   taichi::lang::DeviceAllocation texture_;
 
-  unsigned char *device_ptr_{nullptr};
-
  private:
   void init_set_image(AppContext *app_context, int img_width, int img_height);
 
@@ -55,6 +60,10 @@ class SetImage final : public Renderable {
   void update_vertex_buffer_();
 
   void update_index_buffer_();
+
+  int get_correct_dimension(int dimension);
+
+  void update_ubo(float x_factor, float y_factor);
 };
 
 }  // namespace vulkan

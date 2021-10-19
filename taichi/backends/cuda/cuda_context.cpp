@@ -8,59 +8,68 @@
 #include "taichi/program/program.h"
 #include "taichi/system/threading.h"
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/backends/cuda/cuda_profiler.h"
 
 TLANG_NAMESPACE_BEGIN
 
 CUDAContext::CUDAContext()
-    : profiler(nullptr), driver(CUDADriver::get_instance_without_context()) {
+    : profiler_(nullptr), driver_(CUDADriver::get_instance_without_context()) {
   // CUDA initialization
-  dev_count = 0;
-  driver.init(0);
-  driver.device_get_count(&dev_count);
-  driver.device_get(&device, 0);
+  dev_count_ = 0;
+  driver_.init(0);
+  driver_.device_get_count(&dev_count_);
+  driver_.device_get(&device_, 0);
 
   char name[128];
-  driver.device_get_name(name, 128, device);
+  driver_.device_get_name(name, 128, device_);
 
   TI_TRACE("Using CUDA device [id=0]: {}", name);
 
   int cc_major, cc_minor;
-  driver.device_get_attribute(
-      &cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device);
-  driver.device_get_attribute(
-      &cc_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device);
+  driver_.device_get_attribute(
+      &cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_);
+  driver_.device_get_attribute(
+      &cc_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_);
 
   TI_TRACE("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
-  driver.context_create(&context, 0, device);
+  driver_.context_create(&context_, 0, device_);
 
   const auto GB = std::pow(1024.0, 3.0);
   TI_TRACE("Total memory {:.2f} GB; free memory {:.2f} GB",
            get_total_memory() / GB, get_free_memory() / GB);
 
-  compute_capability = cc_major * 10 + cc_minor;
+  compute_capability_ = cc_major * 10 + cc_minor;
 
-  if (compute_capability > 75) {
+  if (compute_capability_ > 75) {
     // The NVPTX backend of LLVM 10.0.0 does not seem to support
     // compute_capability > 75 yet. See
     // llvm-10.0.0.src/build/lib/Target/NVPTX/NVPTXGenSubtargetInfo.inc
-    compute_capability = 75;
+    compute_capability_ = 75;
   }
 
-  mcpu = fmt::format("sm_{}", compute_capability);
+  mcpu_ = fmt::format("sm_{}", compute_capability_);
 
-  TI_TRACE("Emitting CUDA code for {}", mcpu);
+  TI_TRACE("Emitting CUDA code for {}", mcpu_);
 }
 
 std::size_t CUDAContext::get_total_memory() {
   std::size_t ret, _;
-  driver.mem_get_info(&_, &ret);
+  driver_.mem_get_info(&_, &ret);
   return ret;
 }
 
 std::size_t CUDAContext::get_free_memory() {
   std::size_t ret, _;
-  driver.mem_get_info(&ret, &_);
+  driver_.mem_get_info(&ret, &_);
   return ret;
+}
+
+std::string CUDAContext::get_device_name() {
+  constexpr uint32_t kMaxNameStringLength = 128;
+  char name[kMaxNameStringLength];
+  driver_.device_get_name(name, kMaxNameStringLength /*=128*/, device_);
+  std::string str(name);
+  return str;
 }
 
 void CUDAContext::launch(void *func,
@@ -68,15 +77,17 @@ void CUDAContext::launch(void *func,
                          std::vector<void *> arg_pointers,
                          unsigned grid_dim,
                          unsigned block_dim,
-                         std::size_t shared_mem_bytes) {
+                         std::size_t dynamic_shared_mem_bytes) {
   // It is important to keep a handle since in async mode
   // a constant folding kernel may happen during a kernel launch
   // then profiler->start and profiler->stop mismatch.
 
   KernelProfilerBase::TaskHandle task_handle;
   // Kernel launch
-  if (profiler) {
-    profiler->record(task_handle, task_name);
+  if (profiler_) {
+    KernelProfilerCUDA *profiler_cuda =
+        dynamic_cast<KernelProfilerCUDA *>(profiler_);
+    profiler_cuda->trace(task_handle, task_name, func, grid_dim, block_dim, 0);
   }
 
   auto context_guard = CUDAContext::get_instance().get_guard();
@@ -95,16 +106,16 @@ void CUDAContext::launch(void *func,
   // get_current_program().config.max_block_dim);
 
   if (grid_dim > 0) {
-    std::lock_guard<std::mutex> _(lock);
-    driver.launch_kernel(func, grid_dim, 1, 1, block_dim, 1, 1,
-                         shared_mem_bytes, nullptr, arg_pointers.data(),
-                         nullptr);
+    std::lock_guard<std::mutex> _(lock_);
+    driver_.launch_kernel(func, grid_dim, 1, 1, block_dim, 1, 1,
+                          dynamic_shared_mem_bytes, nullptr,
+                          arg_pointers.data(), nullptr);
   }
-  if (profiler)
-    profiler->stop(task_handle);
+  if (profiler_)
+    profiler_->stop(task_handle);
 
-  if (debug) {
-    driver.stream_synchronize(nullptr);
+  if (debug_) {
+    driver_.stream_synchronize(nullptr);
   }
 }
 

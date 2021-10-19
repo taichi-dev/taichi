@@ -8,8 +8,7 @@ sidebar_position: 1
 
 Code decorated by `@ti.kernel` or `@ti.func` is in the **Taichi-scope**.
 
-They are to be compiled and executed on CPU or GPU devices with high
-parallelization performance, on the cost of less flexibility.
+They will be compiled by the Taichi compiler and executed on CPU or GPU devices in parallel with high performance.
 
 :::note
 For people from CUDA, Taichi-scope = **device** side.
@@ -17,8 +16,7 @@ For people from CUDA, Taichi-scope = **device** side.
 
 Code outside `@ti.kernel` or `@ti.func` is in the **Python-scope**.
 
-They are not compiled by the Taichi compiler and have lower performance
-but with a richer type system and better flexibility.
+It is native Python code and will not be compiled by the Taichi compiler.
 
 :::note
 For people from CUDA, Python-scope = **host** side.
@@ -36,40 +34,43 @@ def my_kernel():
 my_kernel()
 ```
 
-Kernels should be called from **Python-scope**.
+Kernels should be called from **Python-scope**. Nested kernels are not supported.
 
 :::note
-For people from CUDA, Taichi kernels = `__global__` functions.
+For people from CUDA, Taichi kernels are similar to `__global__` functions.
 :::
 
 ### Arguments
 
-Kernels can have at most 8 parameters so that you can pass values from
-Python-scope to Taichi-scope easily.
+Kernels can have multiple arguments, which support passing values from Python-scope to Taichi-scope conveniently.
 
-Kernel arguments must be type-hinted:
+:::note
+For kernels executed on OpenGL and CC backends, the number of arguments is limited to 8.
+:::
+
+Kernel arguments must be type hinted:
 
 ```python {2}
 @ti.kernel
 def my_kernel(x: ti.i32, y: ti.f32):
     print(x + y)
 
-my_kernel(2, 3.3)  # prints: 5.3
+my_kernel(24, 3.2)  # prints: 27.2
 ```
 
 :::note
 
-For now, we only support scalars as arguments. Specifying `ti.Matrix` or
-`ti.Vector` as argument is not supported. For example:
+For now, Taichi supports scalars as kernel arguments. Specifying `ti.Matrix` or
+`ti.Vector` as an argument is not supported yet:
 
-```python {2,6}
+```python {2,7}
 @ti.kernel
-def bad_kernel(v: ti.Vector):
+def valid_kernel(vx: ti.f32, vy: ti.f32):
+    v = ti.Vector([vx, vy])
     ...
 
 @ti.kernel
-def good_kernel(vx: ti.f32, vy: ti.f32):
-    v = ti.Vector([vx, vy])
+def error_kernel(v: ti.Vector): # Error: Invalid type annotation
     ...
 ```
 
@@ -77,50 +78,53 @@ def good_kernel(vx: ti.f32, vy: ti.f32):
 
 ### Return value
 
-A kernel may or may not have a **scalar** return value. If it does, the
-type of return value must be hinted:
+It is optional for a kernel to have a return value. If specified, it must be a type hinted **scalar** value:
 
 ```python {2}
 @ti.kernel
 def my_kernel() -> ti.f32:
-    return 233.33
+    return 128.32
 
-print(my_kernel())  # 233.33
+print(my_kernel())  # 128.32
 ```
 
-The return value will be automatically cast into the hinted type. e.g.,
+In addition, the return value will be automatically cast into the hinted type:
 
 ```python {2-3,5}
 @ti.kernel
-def add_xy() -> ti.i32:  # int32
-    return 233.33
+def my_kernel() -> ti.i32:  # int32
+    return 128.32
 
-print(my_kernel())  # 233, since return type is ti.i32
+print(my_kernel())  # 128, cast into ti.i32
 ```
 
 :::note
 
 For now, a kernel can only have one scalar return value. Returning
-`ti.Matrix` or `ti.Vector` is not supported. Python-style tuple return
-is not supported either. For example:
+`ti.Matrix`, `ti.Vector` or Python-style tuple is not supported:
 
 ```python {3,9}
-@ti.kernel
-def bad_kernel() -> ti.Matrix:
-    return ti.Matrix([[1, 0], [0, 1]])  # Error
 
 @ti.kernel
-def bad_kernel() -> (ti.i32, ti.f32):
+def valid_kernel() -> ti.f32:
+    return 128.0  # Return 128.0
+
+@ti.kernel
+def error_kernel() -> ti.Matrix:
+    return ti.Matrix([[1, 0], [0, 1]])  # Compilation error
+
+@ti.kernel
+def error_kernel() -> (ti.i32, ti.f32):
     x = 1
     y = 0.5
-    return x, y  # Error
+    return x, y  # Compilation error
 ```
 
 :::
 
 ### Advanced arguments
 
-We also support **template arguments** (see
+Taichi also supports **template arguments** (see
 [Template metaprogramming](../advanced/meta.md#template-metaprogramming)) and **external
 array arguments** (see [Interacting with external arrays](./external.md)) in
 Taichi kernels. Use `ti.template()` or `ti.ext_arr()` as their
@@ -128,12 +132,12 @@ type-hints respectively.
 
 :::note
 
-When using differentiable programming, there are a few more constraints
+For differentiable programming related features, there are a few more constraints
 on kernel structures. See the [**Kernel Simplicity Rule**](../advanced/differentiable_programming.md#kernel-simplicity-rule).
 
-Also, please do not use kernel return values in differentiable
+Besides, please do not specify a return value for kernels in differentiable
 programming, since the return value will not be tracked by automatic
-differentiation. Instead, store the result into a global variable (e.g.
+differentiation. Instead, it is recommended to store the result into a global variable (e.g.
 `loss[None]`).
 :::
 
@@ -155,10 +159,10 @@ def my_kernel():
 my_kernel()    # call kernels from Python-scope
 ```
 
-Taichi functions should be called from **Taichi-scope**.
+Taichi functions can only be called from **Taichi-scope**.
 
 :::note
-For people from CUDA, Taichi functions = `__device__` functions.
+For people from CUDA, Taichi functions are similar to `__device__` functions.
 :::
 
 :::note
@@ -173,7 +177,7 @@ allowed.
 ### Arguments and return values
 
 Functions can have multiple arguments and return values. Unlike kernels,
-arguments in functions don't need to be type-hinted:
+arguments in functions are not required to be type-hinted:
 
 ```python
 @ti.func
@@ -184,13 +188,13 @@ def my_add(x, y):
 @ti.kernel
 def my_kernel():
     ...
-    ret = my_add(2, 3.3)
-    print(ret)  # 5.3
+    ret = my_add(24, 3.2)
+    print(ret)  # 27.2
     ...
 ```
 
-Function arguments are passed by value. So changes made inside function
-scope won't affect the outside value in the caller:
+Function arguments are passed by value. So changes made inside the function
+scope won't affect the original value in the caller:
 
 ```python {3,9,11}
 @ti.func
@@ -201,29 +205,28 @@ def my_func(x):
 @ti.kernel
 def my_kernel():
     ...
-    x = 233
+    x = 24
     my_func(x)
-    print(x)  # 233
+    print(x)  # 24
     ...
 ```
 
 ### Advanced arguments
 
-You may use `ti.template()` as type-hint to force arguments to be passed
-by reference:
+By using `ti.template()` as a type hint, arguments are forced to be passed by reference:
 
 ```python {3,9,11}
 @ti.func
 def my_func(x: ti.template()):
-    x = x + 1  # will change the original value of x
+    x = x + 1  # This line will change the original value of x
 
 
 @ti.kernel
 def my_kernel():
     ...
-    x = 233
+    x = 24
     my_func(x)
-    print(x)  # 234
+    print(x)  # 25
     ...
 ```
 
@@ -238,7 +241,7 @@ def sdf(u):  # functions support matrices and vectors as arguments. No type-hint
     return u.norm() - 1
 
 @ti.kernel
-def render(d_x: ti.f32, d_y: ti.f32):  # kernels do not support vector/matrix arguments yet. We have to use a workaround.
+def render(d_x: ti.f32, d_y: ti.f32):  # Kernels do not support vector/matrix arguments yet.
     d = ti.Vector([d_x, d_y])
     p = ti.Vector([0.0, 0.0])
     t = sdf(p)
@@ -251,11 +254,10 @@ def render(d_x: ti.f32, d_y: ti.f32):  # kernels do not support vector/matrix ar
 :::caution
 
 Functions with multiple `return` statements are not supported for now.
-Use a **local** variable to store the results, so that you end up with
-only one `return` statement:
+It is recommended to use a **local** variable to store the results, so that only one `return` statement is needed:
 
 ```python {1,5,7,9,17}
-# Bad function - two return statements
+# Error function - two return statements
 @ti.func
 def safe_sqrt(x):
   if x >= 0:
@@ -263,7 +265,7 @@ def safe_sqrt(x):
   else:
     return 0.0
 
-# Good function - single return statement
+# Valid function - single return statement
 @ti.func
 def safe_sqrt(x):
   ret = 0.0

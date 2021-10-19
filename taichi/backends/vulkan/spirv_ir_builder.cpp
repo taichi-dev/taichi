@@ -12,9 +12,9 @@ void IRBuilder::init_header() {
   TI_ASSERT(header_.size() == 0U);
   header_.push_back(spv::MagicNumber);
 
-  header_.push_back(device_->get_cap(cap::vk_spirv_version));
+  header_.push_back(device_->get_cap(cap::spirv_version));
 
-  TI_TRACE("SPIR-V Version {}", device_->get_cap(cap::vk_spirv_version));
+  TI_TRACE("SPIR-V Version {}", device_->get_cap(cap::spirv_version));
 
   // generator: set to 0, unknown
   header_.push_back(0U);
@@ -26,46 +26,48 @@ void IRBuilder::init_header() {
   // capability
   ib_.begin(spv::OpCapability).add(spv::CapabilityShader).commit(&header_);
 
-  if (device_->get_cap(cap::vk_has_atomic_float64_add)) {
+  if (device_->get_cap(cap::spirv_has_atomic_float64_add)) {
     ib_.begin(spv::OpCapability)
         .add(spv::CapabilityAtomicFloat64AddEXT)
         .commit(&header_);
   }
 
-  if (device_->get_cap(cap::vk_has_atomic_float_add)) {
+  if (device_->get_cap(cap::spirv_has_atomic_float_add)) {
     ib_.begin(spv::OpCapability)
         .add(spv::CapabilityAtomicFloat32AddEXT)
         .commit(&header_);
   }
 
-  if (device_->get_cap(cap::vk_has_atomic_float_minmax)) {
+  if (device_->get_cap(cap::spirv_has_atomic_float_minmax)) {
     ib_.begin(spv::OpCapability)
         .add(spv::CapabilityAtomicFloat32MinMaxEXT)
         .commit(&header_);
   }
 
-  if (device_->get_cap(cap::vk_has_spv_variable_ptr)) {
+  if (device_->get_cap(cap::spirv_has_variable_ptr)) {
+    /*
     ib_.begin(spv::OpCapability)
         .add(spv::CapabilityVariablePointers)
         .commit(&header_);
     ib_.begin(spv::OpCapability)
         .add(spv::CapabilityVariablePointersStorageBuffer)
         .commit(&header_);
+        */
   }
 
-  if (device_->get_cap(cap::vk_has_int8)) {
+  if (device_->get_cap(cap::spirv_has_int8)) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt8).commit(&header_);
   }
-  if (device_->get_cap(cap::vk_has_int16)) {
+  if (device_->get_cap(cap::spirv_has_int16)) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt16).commit(&header_);
   }
-  if (device_->get_cap(cap::vk_has_int64)) {
+  if (device_->get_cap(cap::spirv_has_int64)) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt64).commit(&header_);
   }
-  if (device_->get_cap(cap::vk_has_float16)) {
+  if (device_->get_cap(cap::spirv_has_float16)) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityFloat16).commit(&header_);
   }
-  if (device_->get_cap(cap::vk_has_float64)) {
+  if (device_->get_cap(cap::spirv_has_float64)) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityFloat64).commit(&header_);
   }
 
@@ -73,19 +75,19 @@ void IRBuilder::init_header() {
       .add("SPV_KHR_storage_buffer_storage_class")
       .commit(&header_);
 
-  if (device_->get_cap(cap::vk_has_spv_variable_ptr)) {
+  if (device_->get_cap(cap::spirv_has_variable_ptr)) {
     ib_.begin(spv::OpExtension)
         .add("SPV_KHR_variable_pointers")
         .commit(&header_);
   }
 
-  if (device_->get_cap(cap::vk_has_atomic_float_add)) {
+  if (device_->get_cap(cap::spirv_has_atomic_float_add)) {
     ib_.begin(spv::OpExtension)
         .add("SPV_EXT_shader_atomic_float_add")
         .commit(&header_);
   }
 
-  if (device_->get_cap(cap::vk_has_atomic_float_minmax)) {
+  if (device_->get_cap(cap::spirv_has_atomic_float_minmax)) {
     ib_.begin(spv::OpExtension)
         .add("SPV_EXT_shader_atomic_float_min_max")
         .commit(&header_);
@@ -112,31 +114,28 @@ std::vector<uint32_t> IRBuilder::finalize() {
   data.insert(data.end(), global_.begin(), global_.end());
   data.insert(data.end(), func_header_.begin(), func_header_.end());
   data.insert(data.end(), function_.begin(), function_.end());
-  if (any_atomic_) {
-    data.insert(data.end(), atomic_functions_.begin(), atomic_functions_.end());
-  }
   return data;
 }
 
 void IRBuilder::init_pre_defs() {
   ext_glsl450_ = ext_inst_import("GLSL.std.450");
   t_bool_ = declare_primitive_type(get_data_type<bool>());
-  if (device_->get_cap(cap::vk_has_int8)) {
+  if (device_->get_cap(cap::spirv_has_int8)) {
     t_int8_ = declare_primitive_type(get_data_type<int8>());
     t_uint8_ = declare_primitive_type(get_data_type<uint8>());
   }
-  if (device_->get_cap(cap::vk_has_int16)) {
+  if (device_->get_cap(cap::spirv_has_int16)) {
     t_int16_ = declare_primitive_type(get_data_type<int16>());
     t_uint16_ = declare_primitive_type(get_data_type<uint16>());
   }
   t_int32_ = declare_primitive_type(get_data_type<int32>());
   t_uint32_ = declare_primitive_type(get_data_type<uint32>());
-  if (device_->get_cap(cap::vk_has_int64)) {
+  if (device_->get_cap(cap::spirv_has_int64)) {
     t_int64_ = declare_primitive_type(get_data_type<int64>());
     t_uint64_ = declare_primitive_type(get_data_type<uint64>());
   }
   t_fp32_ = declare_primitive_type(get_data_type<float32>());
-  if (device_->get_cap(cap::vk_has_float64)) {
+  if (device_->get_cap(cap::spirv_has_float64)) {
     t_fp64_ = declare_primitive_type(get_data_type<float64>());
   }
   // declare void, and void functions
@@ -213,35 +212,35 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
   } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return t_fp32_;
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    if (!device_->get_cap(cap::vk_has_float64))
+    if (!device_->get_cap(cap::spirv_has_float64))
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_fp64_;
   } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    if (!device_->get_cap(cap::vk_has_int8))
+    if (!device_->get_cap(cap::spirv_has_int8))
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_int8_;
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    if (!device_->get_cap(cap::vk_has_int16))
+    if (!device_->get_cap(cap::spirv_has_int16))
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_int16_;
   } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return t_int32_;
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    if (!device_->get_cap(cap::vk_has_int64))
+    if (!device_->get_cap(cap::spirv_has_int64))
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_int64_;
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    if (!device_->get_cap(cap::vk_has_int8))
+    if (!device_->get_cap(cap::spirv_has_int8))
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_uint8_;
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    if (!device_->get_cap(cap::vk_has_int16))
+    if (!device_->get_cap(cap::spirv_has_int16))
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_uint16_;
   } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return t_uint32_;
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    if (!device_->get_cap(cap::vk_has_int64))
+    if (!device_->get_cap(cap::spirv_has_int64))
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_uint64_;
   } else {
@@ -253,13 +252,13 @@ SType IRBuilder::get_primitive_buffer_type(const bool struct_compiled,
                                            const DataType &dt) const {
   if (struct_compiled) {
     if (dt->is_primitive(PrimitiveTypeID::f32) &&
-        device_->get_cap(cap::vk_has_atomic_float_add)) {
+        device_->get_cap(cap::spirv_has_atomic_float_add)) {
       return t_fp32_;
     } else if (dt->is_primitive(PrimitiveTypeID::f64) &&
-               device_->get_cap(cap::vk_has_atomic_float64_add)) {
+               device_->get_cap(cap::spirv_has_atomic_float64_add)) {
       return t_fp64_;
     } else if (dt->is_primitive(PrimitiveTypeID::i64) &&
-               device_->get_cap(cap::vk_has_atomic_i64)) {
+               device_->get_cap(cap::spirv_has_atomic_i64)) {
       return t_int64_;
     }
   }
@@ -335,7 +334,7 @@ SType IRBuilder::get_struct_array_type(const SType &value_type,
       .add_seq(struct_type, 0, spv::DecorationOffset, 0)
       .commit(&decorate_);
 
-  if (device_->get_cap(cap::vk_spirv_version) < 0x10300) {
+  if (device_->get_cap(cap::spirv_version) < 0x10300) {
     // NOTE: BufferBlock was deprecated in SPIRV 1.3
     // use StorageClassStorageBuffer instead.
     // runtime array are always decorated as BufferBlock(shader storage buffer)
@@ -355,7 +354,7 @@ Value IRBuilder::buffer_argument(const SType &value_type,
   // NOTE: BufferBlock was deprecated in SPIRV 1.3
   // use StorageClassStorageBuffer instead.
   spv::StorageClass storage_class;
-  if (device_->get_cap(cap::vk_spirv_version) < 0x10300) {
+  if (device_->get_cap(cap::spirv_version) < 0x10300) {
     storage_class = spv::StorageClassUniform;
   } else {
     storage_class = spv::StorageClassStorageBuffer;
@@ -381,7 +380,7 @@ Value IRBuilder::struct_array_access(const SType &res_type,
   TI_ASSERT(res_type.flag == TypeKind::kPrimitive);
 
   spv::StorageClass storage_class;
-  if (device_->get_cap(cap::vk_spirv_version) < 0x10300) {
+  if (device_->get_cap(cap::spirv_version) < 0x10300) {
     storage_class = spv::StorageClassUniform;
   } else {
     storage_class = spv::StorageClassStorageBuffer;
@@ -667,81 +666,21 @@ Value IRBuilder::query_value(std::string name) const {
   TI_ERROR("{} is not existed.", name);
 }
 
-Value IRBuilder::float_atomic(AtomicOpType op_type) {
-  auto init_atomic_func_ = [&](Value &func, std::string name,
-                               std::function<void(Value, Value, Value)>
-                                   atomic_op) {
-    func.id = id_counter_++;
-    func.flag = ValueKind::kFunction;
-    debug(spv::OpName, func, name);
+Value IRBuilder::float_atomic(AtomicOpType op_type,
+                              Value addr_ptr,
+                              Value data) {
+  auto atomic_func_ = [&](std::function<void(Value, Value, Value)> atomic_op) {
+    // inline function begin
+    auto &func_ = function_;
+    Value old_val = alloca_variable(t_int32_);
+    Value new_val = alloca_variable(t_int32_);
+    Value cas_val = alloca_variable(t_int32_);
+    Value ok = alloca_variable(t_int32_);
 
-    SType addr_ptr_type =
-        get_pointer_type(t_int32_, spv::StorageClassStorageBuffer);
-    SType data_type = t_fp32_;
-    SType float_atomic_func_type;
-    float_atomic_func_type.id = id_counter_++;
-    float_atomic_func_type.flag = TypeKind::kFunc;
-    func.stype = float_atomic_func_type;
-
-    declare_global(spv::OpTypeFunction, float_atomic_func_type, t_fp32_,
-                   addr_ptr_type, data_type);
-
-    // function begin
-    auto &func_ = atomic_functions_;
-
-    // function header
-    ib_.begin(spv::OpFunction)
-        .add_seq(t_fp32_, func, 0, float_atomic_func_type)
-        .commit(&func_);
-    Value addr_ptr = new_value(addr_ptr_type, ValueKind::kStructArrayPtr);
-    debug(spv::OpName, addr_ptr, (name + "_addr_ptr").c_str());
-    Value data = new_value(data_type, ValueKind::kNormal);
-    debug(spv::OpName, data, (name + "_data").c_str());
-    ib_.begin(spv::OpFunctionParameter)
-        .add_seq(addr_ptr_type, addr_ptr)
-        .commit(&func_);
-    ib_.begin(spv::OpFunctionParameter).add_seq(data_type, data).commit(&func_);
-
-    auto alloc_var = [&](const SType &type) {
-      SType ptr_type = get_pointer_type(type, spv::StorageClassFunction);
-      Value ret = new_value(ptr_type, ValueKind::kVariablePtr);
-      ib_.begin(spv::OpVariable)
-          .add_seq(ptr_type, ret, spv::StorageClassFunction)
-          .commit(&func_);
-
-      return ret;
-    };
-
-    auto load_var = [&](Value pointer, const SType &res_type) {
-      TI_ASSERT(pointer.flag == ValueKind::kVariablePtr ||
-                pointer.flag == ValueKind::kStructArrayPtr);
-      Value ret = new_value(res_type, ValueKind::kNormal);
-      ib_.begin(spv::OpLoad).add_seq(res_type, ret, pointer).commit(&func_);
-      return ret;
-    };
-
-    auto store_var = [&](Value pointer, Value value) {
-      TI_ASSERT(pointer.flag == ValueKind::kVariablePtr);
-      TI_ASSERT(value.stype.id == pointer.stype.element_type_id);
-      ib_.begin(spv::OpStore).add_seq(pointer, value).commit(&func_);
-    };
-
-    // init
-    Label init_label = new_label();
-    ib_.begin(spv::OpLabel).add(init_label).commit(&func_);
-    Value old_val = alloc_var(t_int32_);
-    Value new_val = alloc_var(t_int32_);
-    Value cas_val = alloc_var(t_int32_);
-    Value ok = alloc_var(t_int32_);
-    debug(spv::OpName, old_val, (name + "old_val").c_str());
-    debug(spv::OpName, new_val, (name + "new_val").c_str());
-    debug(spv::OpName, cas_val, (name + "cas_val").c_str());
-    debug(spv::OpName, ok, (name + "ok").c_str());
-
-    store_var(old_val, const_i32_zero_);
-    store_var(new_val, const_i32_zero_);
-    store_var(cas_val, const_i32_zero_);
-    store_var(ok, const_i32_zero_);
+    store_variable(old_val, const_i32_zero_);
+    store_variable(new_val, const_i32_zero_);
+    store_variable(cas_val, const_i32_zero_);
+    store_variable(ok, const_i32_zero_);
 
     // while
     Label head_label = new_label();
@@ -758,7 +697,7 @@ Value IRBuilder::float_atomic(AtomicOpType op_type) {
 
     // body part
     ib_.begin(spv::OpLabel).add(body_label).commit(&func_);
-    Value tmp0 = load_var(ok, t_int32_);
+    Value tmp0 = load_variable(ok, t_int32_);
     Value tmp1 = new_value(t_bool_, ValueKind::kNormal);
     ib_.begin(spv::OpIEqual)
         .add_seq(t_bool_, tmp1, tmp0, const_i32_zero_)
@@ -767,9 +706,11 @@ Value IRBuilder::float_atomic(AtomicOpType op_type) {
         .add_seq(tmp1, true_label, merge_label)
         .commit(&func_);
     ib_.begin(spv::OpLabel).add(true_label).commit(&func_);
-    Value tmp2 = load_var(addr_ptr, t_int32_);
-    store_var(old_val, tmp2);
-    Value tmp3 = load_var(old_val, t_int32_);
+    Value tmp2 = load_variable(addr_ptr, t_fp32_);
+    Value tmp2_int = new_value(t_int32_, ValueKind::kNormal);
+    ib_.begin(spv::OpBitcast).add_seq(t_int32_, tmp2_int, tmp2).commit(&func_);
+    store_variable(old_val, tmp2_int);
+    Value tmp3 = load_variable(old_val, t_int32_);
     Value tmp4 = new_value(t_fp32_, ValueKind::kNormal);
     ib_.begin(spv::OpBitcast).add_seq(t_fp32_, tmp4, tmp3).commit(&func_);
     Value tmp5 = new_value(t_fp32_, ValueKind::kNormal);
@@ -779,9 +720,9 @@ Value IRBuilder::float_atomic(AtomicOpType op_type) {
 
     Value tmp6 = new_value(t_int32_, ValueKind::kNormal);
     ib_.begin(spv::OpBitcast).add_seq(t_int32_, tmp6, tmp5).commit(&func_);
-    store_var(new_val, tmp6);
-    Value tmp7 = load_var(old_val, t_int32_);
-    Value tmp8 = load_var(new_val, t_int32_);
+    store_variable(new_val, tmp6);
+    Value tmp7 = load_variable(old_val, t_int32_);
+    Value tmp8 = load_variable(new_val, t_int32_);
     Value tmp9 = new_value(t_int32_, ValueKind::kNormal);
     auto const_u32_1 = uint_immediate_number(t_uint32_, 1);
     auto const_u32_0 = uint_immediate_number(t_uint32_, 0);
@@ -789,9 +730,9 @@ Value IRBuilder::float_atomic(AtomicOpType op_type) {
         .add_seq(t_int32_, tmp9, addr_ptr, const_u32_1, const_u32_0,
                  const_u32_0, tmp8, tmp7)
         .commit(&func_);
-    store_var(cas_val, tmp9);
-    Value tmp10 = load_var(cas_val, t_int32_);
-    Value tmp11 = load_var(old_val, t_int32_);
+    store_variable(cas_val, tmp9);
+    Value tmp10 = load_variable(cas_val, t_int32_);
+    Value tmp11 = load_variable(old_val, t_int32_);
     Value tmp12 = new_value(t_bool_, ValueKind::kNormal);
     ib_.begin(spv::OpIEqual)
         .add_seq(t_bool_, tmp12, tmp10, tmp11)
@@ -800,7 +741,7 @@ Value IRBuilder::float_atomic(AtomicOpType op_type) {
     ib_.begin(spv::OpSelect)
         .add_seq(t_int32_, tmp13, tmp12, const_i32_one_, const_i32_zero_)
         .commit(&func_);
-    store_var(ok, tmp13);
+    store_variable(ok, tmp13);
     ib_.begin(spv::OpBranch).add(continue_label).commit(&func_);
 
     // continue part
@@ -809,66 +750,41 @@ Value IRBuilder::float_atomic(AtomicOpType op_type) {
 
     // merge part
     ib_.begin(spv::OpLabel).add(merge_label).commit(&func_);
-    Value tmp14 = load_var(old_val, t_int32_);
+    Value tmp14 = load_variable(old_val, t_int32_);
     Value tmp15 = new_value(t_fp32_, ValueKind::kNormal);
     ib_.begin(spv::OpBitcast).add_seq(t_fp32_, tmp15, tmp14).commit(&func_);
-    ib_.begin(spv::OpReturnValue).add(tmp15).commit(&func_);
-    ib_.begin(spv::OpFunctionEnd).commit(&func_);
+    return tmp15;
     // function end
   };
 
   if (op_type == AtomicOpType::add) {
-    if (float_atomic_add_.id == 0) {
-      init_atomic_func_(float_atomic_add_, "float_atomic_add",
-                        [&](Value res, Value lhs, Value rhs) {
-                          ib_.begin(spv::OpFAdd)
-                              .add_seq(t_fp32_, res, lhs, rhs)
-                              .commit(&atomic_functions_);
-                        });
-      any_atomic_ = true;
-    }
-    return float_atomic_add_;
+    return atomic_func_([&](Value res, Value lhs, Value rhs) {
+      ib_.begin(spv::OpFAdd).add_seq(t_fp32_, res, lhs, rhs).commit(&function_);
+    });
   } else if (op_type == AtomicOpType::sub) {
-    if (float_atomic_sub_.id == 0) {
-      init_atomic_func_(float_atomic_sub_, "float_atomic_sub",
-                        [&](Value res, Value lhs, Value rhs) {
-                          ib_.begin(spv::OpFSub)
-                              .add_seq(t_fp32_, res, lhs, rhs)
-                              .commit(&atomic_functions_);
-                        });
-      any_atomic_ = true;
-    }
-    return float_atomic_sub_;
+    return atomic_func_([&](Value res, Value lhs, Value rhs) {
+      ib_.begin(spv::OpFSub).add_seq(t_fp32_, res, lhs, rhs).commit(&function_);
+    });
   } else if (op_type == AtomicOpType::min) {
-    if (float_atomic_min_.id == 0) {
-      init_atomic_func_(float_atomic_min_, "float_atomic_min",
-                        [&](Value res, Value lhs, Value rhs) {
-                          Value cond = new_value(t_bool_, ValueKind::kNormal);
-                          ib_.begin(spv::OpFOrdLessThan)
-                              .add_seq(t_bool_, cond, lhs, rhs)
-                              .commit(&atomic_functions_);
-                          ib_.begin(spv::OpSelect)
-                              .add_seq(t_fp32_, res, cond, lhs, rhs)
-                              .commit(&atomic_functions_);
-                        });
-      any_atomic_ = true;
-    }
-    return float_atomic_min_;
+    return atomic_func_([&](Value res, Value lhs, Value rhs) {
+      Value cond = new_value(t_bool_, ValueKind::kNormal);
+      ib_.begin(spv::OpFOrdLessThan)
+          .add_seq(t_bool_, cond, lhs, rhs)
+          .commit(&function_);
+      ib_.begin(spv::OpSelect)
+          .add_seq(t_fp32_, res, cond, lhs, rhs)
+          .commit(&function_);
+    });
   } else if (op_type == AtomicOpType::max) {
-    if (float_atomic_max_.id == 0) {
-      init_atomic_func_(float_atomic_max_, "float_atomic_max",
-                        [&](Value res, Value lhs, Value rhs) {
-                          Value cond = new_value(t_bool_, ValueKind::kNormal);
-                          ib_.begin(spv::OpFOrdGreaterThan)
-                              .add_seq(t_bool_, cond, lhs, rhs)
-                              .commit(&atomic_functions_);
-                          ib_.begin(spv::OpSelect)
-                              .add_seq(t_fp32_, res, cond, lhs, rhs)
-                              .commit(&atomic_functions_);
-                        });
-      any_atomic_ = true;
-    }
-    return float_atomic_max_;
+    return atomic_func_([&](Value res, Value lhs, Value rhs) {
+      Value cond = new_value(t_bool_, ValueKind::kNormal);
+      ib_.begin(spv::OpFOrdGreaterThan)
+          .add_seq(t_bool_, cond, lhs, rhs)
+          .commit(&function_);
+      ib_.begin(spv::OpSelect)
+          .add_seq(t_fp32_, res, cond, lhs, rhs)
+          .commit(&function_);
+    });
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -996,6 +912,10 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   _rand_y_ = new_value(local_type, ValueKind::kVariablePtr);
   _rand_z_ = new_value(local_type, ValueKind::kVariablePtr);
   _rand_w_ = new_value(local_type, ValueKind::kVariablePtr);
+  global_values.push_back(_rand_x_);
+  global_values.push_back(_rand_y_);
+  global_values.push_back(_rand_z_);
+  global_values.push_back(_rand_w_);
   ib_.begin(spv::OpVariable)
       .add_seq(local_type, _rand_x_, spv::StorageClassPrivate)
       .commit(&global_);

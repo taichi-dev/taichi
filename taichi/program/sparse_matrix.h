@@ -19,6 +19,8 @@ class SparseMatrixBuilder {
 
   SparseMatrix build();
 
+  void clear();
+
  private:
   uint64 num_triplets_{0};
   void *data_base_ptr_{nullptr};
@@ -41,6 +43,7 @@ class SparseMatrix {
   Eigen::SparseMatrix<float32> &get_matrix();
   const Eigen::SparseMatrix<float32> &get_matrix() const;
   float32 get_element(int row, int col);
+  void set_element(int row, int col, float32 value);
 
   friend SparseMatrix operator+(const SparseMatrix &sm1,
                                 const SparseMatrix &sm2);
@@ -56,7 +59,7 @@ class SparseMatrix {
   SparseMatrix transpose();
 
  private:
-  Eigen::SparseMatrix<float32> matrix_;
+  Eigen::SparseMatrix<float32, Eigen::ColMajor> matrix_;
 };
 }  // namespace lang
 }  // namespace taichi

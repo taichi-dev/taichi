@@ -222,3 +222,41 @@ def test_hook():
     for i in range(32):
         for j in range(32):
             assert (solver.val[i, j] == 1.0)
+
+
+@ti.test()
+def test_oop_with_portery_decorator():
+    @ti.data_oriented
+    class TestPortery:
+        @property
+        @ti.kernel
+        def kernel_property(self) -> ti.i32:
+            return 42
+
+        @property
+        def raw_proterty(self):
+            return 3
+
+    a = TestPortery()
+    assert a.kernel_property == 42
+
+    assert a.raw_proterty == 3
+
+
+@ti.test()
+def test_oop_with_static_decorator():
+    @ti.data_oriented
+    class TestStatic:
+        @staticmethod
+        @ti.kernel
+        def kernel_static() -> ti.i32:
+            return 42
+
+        @staticmethod
+        def raw_static():
+            return 3
+
+    a = TestStatic()
+    assert a.kernel_static() == 42
+
+    assert a.raw_static() == 3

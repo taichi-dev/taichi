@@ -332,6 +332,8 @@ class IRBuilder {
     return new_value(t_void_func_, ValueKind::kFunction);
   }
 
+  std::vector<Value> global_values;
+
   // Declare the entry point for a kernel function
   void commit_kernel_function(const Value &func,
                               const std::string &name,
@@ -341,6 +343,11 @@ class IRBuilder {
         .add_seq(spv::ExecutionModelGLCompute, func, name);
     for (const auto &arg : args) {
       ib_.add(arg);
+    }
+    if (device_->get_cap(DeviceCapability::spirv_version) >= 0x10400) {
+      for (const auto &v : global_values) {
+        ib_.add(v);
+      }
     }
     if (gl_global_invocation_id.id != 0) {
       ib_.add(gl_global_invocation_id);
@@ -429,8 +436,8 @@ class IRBuilder {
   Value const_i32_zero_;
   Value const_i32_one_;
 
-  // Use float_atomic_add
-  Value float_atomic(AtomicOpType op_type);
+  // Use force-inline float atomic helper function
+  Value float_atomic(AtomicOpType op_type, Value addr_ptr, Value data);
   Value rand_u32(Value global_tmp_);
   Value rand_f32(Value global_tmp_);
   Value rand_i32(Value global_tmp_);
@@ -480,13 +487,6 @@ class IRBuilder {
   Value gl_num_work_groups;
   Value gl_work_group_size;
 
-  // Float type atomic functions
-  bool any_atomic_{false};
-  Value float_atomic_add_;
-  Value float_atomic_sub_;
-  Value float_atomic_min_;
-  Value float_atomic_max_;
-
   // Random function and variables
   bool init_rand_{false};
   Value _rand_x_;
@@ -517,11 +517,6 @@ class IRBuilder {
   std::vector<uint32_t> func_header_;
   // Main Function segment
   std::vector<uint32_t> function_;
-  // Random Function segment
-  std::vector<uint32_t> random_function_;
-
-  // Float Atomic Functions segment
-  std::vector<uint32_t> atomic_functions_;
 };
 }  // namespace spirv
 }  // namespace vulkan

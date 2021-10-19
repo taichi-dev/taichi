@@ -1,8 +1,6 @@
 import sys
 import warnings
 
-import yaml
-
 
 class ComposerBase:
     def __init__(self, entries):
@@ -136,6 +134,7 @@ class ComposerCC(ComposerBase):
 
 
 def main(fin_name, fout_name, hdrout_name, emscripten=False):
+    import yaml  # pylint: disable=C0415
     with open(fin_name, 'r') as fin:
         warnings.filterwarnings('ignore')
         obj = yaml.load(fin)

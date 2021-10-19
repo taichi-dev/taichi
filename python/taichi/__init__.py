@@ -1,12 +1,16 @@
 import sys
 
-from taichi.core import *
+import taichi.ad as ad
+from taichi._logging import *
+from taichi.core import get_os_name, package_root, require_version
+from taichi.core import ti_core as core
 from taichi.lang import *  # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.main import main
 from taichi.misc import *
 from taichi.testing import *
 from taichi.tools import *
 from taichi.torch_io import from_torch, to_torch
+from taichi.type import *
 
 import taichi.ui as ui
 
@@ -30,7 +34,15 @@ else:
         raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")
 
 
-__all__ = ['core', 'misc', 'lang', 'tools', 'main', 'torch_io', 'ui']
+__all__ = [
+    'ad', 'core', 'misc', 'lang', 'tools', 'main', 'torch_io', 'ui', 'profiler'
+]
+
+complex_kernel = deprecated('ti.complex_kernel',
+                            'ti.ad.grad_replaced')(ad.grad_replaced)
+
+complex_kernel_grad = deprecated('ti.complex_kernel_grad',
+                                 'ti.ad.grad_for')(ad.grad_for)
 
 __version__ = (core.get_version_major(), core.get_version_minor(),
                core.get_version_patch())

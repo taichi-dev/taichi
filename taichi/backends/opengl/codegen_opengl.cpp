@@ -60,41 +60,39 @@ std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
 }
 
 class KernelGen : public IRVisitor {
-  Kernel *kernel;
-
  public:
   KernelGen(Kernel *kernel,
-            std::string kernel_name,
-            StructCompiledResult *struct_compiled)
-      : kernel(kernel),
-        struct_compiled_(struct_compiled),
+            const StructCompiledResult *struct_compiled,
+            const std::string &kernel_name)
+      : kernel_(kernel),
         kernel_name_(kernel_name),
-        glsl_kernel_prefix_(kernel_name),
-        compiled_program_(std::make_unique<CompiledProgram>(kernel)),
-        ps(std::make_unique<ParallelSize>()) {
+        struct_compiled_(struct_compiled),
+        root_snode_type_name_(struct_compiled->root_snode_type_name),
+        glsl_kernel_prefix_(kernel_name) {
+    compiled_program_.init_args(kernel);
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
 
  private:
-  // constants:
-  StructCompiledResult *struct_compiled_;
-  GetRootStmt *root_stmt_;
+  const Kernel *kernel_;
+  const StructCompiledResult *struct_compiled_;
   std::string kernel_name_;
   std::string root_snode_type_name_;
   std::string glsl_kernel_prefix_;
 
-  // throughout variables:
+  GetRootStmt *root_stmt_;
   int glsl_kernel_count_{0};
   bool is_top_level_{true};
-  std::unique_ptr<CompiledProgram> compiled_program_;
+  CompiledProgram compiled_program_;
   UsedFeature used;  // TODO: is this actually per-offload?
 
   // per-offload variables:
   LineAppender line_appender_;
   LineAppender line_appender_header_;
   std::string glsl_kernel_name_;
-  std::unique_ptr<ParallelSize> ps;
+  int num_workgroups_{1};
+  int workgroup_size_{1};
   bool used_tls;  // TODO: move into UsedFeature?
   std::unordered_map<int, irpass::ExternalPtrAccess> extptr_access;
 
@@ -149,7 +147,7 @@ class KernelGen : public IRVisitor {
 
     // clang-format off
     if (used.print)  // the runtime buffer is only used for print now..
-      line_appender_header_.append_raw(shaders::kOpenGLRuntimeSourceCode);
+      line_appender_header_.append_raw(shaders::kOpenGlRuntimeSourceCode);
     if (used.listman)
       line_appender_header_.append_raw(shaders::kOpenGLListmanSourceCode);
 
@@ -243,9 +241,10 @@ class KernelGen : public IRVisitor {
     auto kernel_src_code =
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
-    compiled_program_->add(std::move(glsl_kernel_name_), kernel_src_code,
-                           std::move(ps), &this->extptr_access);
-    auto &config = kernel->program->config;
+    compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
+                          num_workgroups_, workgroup_size_,
+                          &this->extptr_access);
+    auto &config = kernel_->program->config;
     if (config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer("shader{:04d}.comp",
                                        "OpenGL compute shader");
@@ -253,7 +252,8 @@ class KernelGen : public IRVisitor {
     }
     line_appender_header_.clear_all();
     line_appender_.clear_all();
-    ps = std::make_unique<ParallelSize>();
+    num_workgroups_ = 1;
+    num_workgroups_ = 1;
   }
 
   void visit(Block *stmt) override {
@@ -292,7 +292,7 @@ class KernelGen : public IRVisitor {
 
       } else {
         auto str = std::get<std::string>(content);
-        int stridx = compiled_program_->lookup_or_add_string(str);
+        int stridx = compiled_program_.lookup_or_add_string(str);
         emit("_msg_set_str({}, {}, {});", msgid_name, i, stridx);
       }
     }
@@ -852,30 +852,27 @@ class KernelGen : public IRVisitor {
                 iterations, "int(gl_WorkGroupSize.x * gl_NumWorkGroups.x)");
       s = std::make_unique<ScopedIndent>(gen->line_appender_);
 
-      TI_ASSERT(gen->ps);
-      if (gen->ps->grid_dim == 0) {
+      if (gen->num_workgroups_ == 0) {
         // if not specified, guess an optimal grid_dim for different situations
         // Refs:
         // https://stackoverflow.com/questions/36374652/compute-shaders-optimal-data-division-on-invocations-threads-and-workgroups
         if (const_iterations > 0) {
           if (gen->used_tls) {
             // const range with TLS reduction
-            gen->ps->grid_dim =
-                std::max((size_t)const_iterations /
-                             std::max(gen->ps->block_dim, (size_t)1) / 32,
-                         (size_t)1);
-            gen->ps->block_dim = std::max(gen->ps->block_dim / 4, (size_t)1);
+            gen->num_workgroups_ = std::max(
+                const_iterations / std::max(gen->workgroup_size_, 1) / 32, 1);
+            gen->workgroup_size_ = std::max(gen->workgroup_size_ / 4, 1);
           } else {
             // const range
-            gen->ps->grid_dim =
-                std::max(((size_t)const_iterations + gen->ps->block_dim - 1) /
-                             gen->ps->block_dim,
-                         (size_t)1);
+            gen->num_workgroups_ =
+                std::max((const_iterations + gen->workgroup_size_ - 1) /
+                             gen->workgroup_size_,
+                         1);
           }
         } else {
           // dynamic range
           // TODO(archibate): think for a better value for SM utilization:
-          gen->ps->grid_dim = 256;
+          gen->num_workgroups_ = 256;
         }
       }
     }
@@ -919,7 +916,8 @@ class KernelGen : public IRVisitor {
       auto end_value = stmt->end_value;
       if (end_value < begin_value)
         end_value = begin_value;
-      ps = std::make_unique<ParallelSize>(stmt->block_dim, stmt->grid_dim);
+      workgroup_size_ = stmt->block_dim;
+      num_workgroups_ = stmt->grid_dim;
       ScopedGridStrideLoop _gsl(this, end_value - begin_value);
       emit("int _itv = {} + _sid;", begin_value);
       stmt->body->accept(this);
@@ -932,7 +930,8 @@ class KernelGen : public IRVisitor {
       auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
                                       : fmt::format("_gtmp_i32_[{} >> 2]",
                                                     stmt->end_offset);
-      ps = std::make_unique<ParallelSize>(stmt->block_dim, stmt->grid_dim);
+      workgroup_size_ = stmt->block_dim;
+      num_workgroups_ = stmt->grid_dim;
       emit("int _beg = {}, _end = {};", begin_expr, end_expr);
       ScopedGridStrideLoop _gsl(this, "_end - _beg");
       emit("int _itv = _beg + _sid;");
@@ -959,7 +958,8 @@ class KernelGen : public IRVisitor {
     emit("{{ // struct for {}", stmt->snode->node_type_name);
     {
       ScopedIndent _s(line_appender_);
-      ps = std::make_unique<ParallelSize>(stmt->block_dim, stmt->grid_dim);
+      workgroup_size_ = stmt->block_dim;
+      num_workgroups_ = stmt->grid_dim;
       ScopedGridStrideLoop _gsl(this, "_list_len_");
       emit("int _itv = _list_[_sid];");
       stmt->body->accept(this);
@@ -1006,7 +1006,7 @@ class KernelGen : public IRVisitor {
     // the `length` field of a dynamic SNode is at it's end:
     // | x[0] | x[1] | x[2] | x[3] | ... | len |
     emit("_list_len_ = {};",
-         struct_compiled_->snode_map[snode->node_type_name].length);
+         struct_compiled_->snode_map.at(snode->node_type_name).length);
     emit("for (int i = 0; i < _list_len_; i++) {{");
     {
       ScopedIndent _s(line_appender_);
@@ -1150,34 +1150,24 @@ class KernelGen : public IRVisitor {
   }
 
  public:
-  Kernel *get_kernel() const {
-    return kernel;
-  }
-
-  std::unique_ptr<CompiledProgram> get_compiled_program() {
+  CompiledProgram get_compiled_program() {
     // We have to set it at the last moment, to get all used feature.
-    compiled_program_->set_used(used);
+    compiled_program_.set_used(used);
     return std::move(compiled_program_);
   }
 
   void run() {
-    root_snode_type_name_ = struct_compiled_->root_snode_type_name;
-    kernel->ir->accept(this);
+    kernel_->ir->accept(this);
   }
 };
 
 }  // namespace
 
-FunctionType OpenglCodeGen::gen(void) {
+CompiledProgram OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
-  KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
+  KernelGen codegen(kernel_, struct_compiled_, kernel_name_);
   codegen.run();
-  auto compiled = codegen.get_compiled_program();
-  auto *ptr = compiled.get();
-  kernel_launcher_->keep(std::move(compiled));
-  return [ptr, launcher = kernel_launcher_](Context &ctx) {
-    ptr->launch(ctx, launcher);
-  };
+  return codegen.get_compiled_program();
 #else
   TI_NOT_IMPLEMENTED
 #endif
@@ -1197,7 +1187,7 @@ void OpenglCodeGen::lower() {
 #endif
 }
 
-FunctionType OpenglCodeGen::compile(Kernel &kernel) {
+CompiledProgram OpenglCodeGen::compile(Kernel &kernel) {
   this->kernel_ = &kernel;
 
   this->lower();

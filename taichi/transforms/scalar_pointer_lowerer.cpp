@@ -60,6 +60,7 @@ void ScalarPointerLowerer::run() {
   if (path_length_ == 0)
     return;
 
+  auto *leaf_snode = snodes_[path_length_ - 1];
   Stmt *last = lowered_->push_back<GetRootStmt>(snodes_[0]);
   for (int i = 0; i < path_length_; i++) {
     auto *snode = snodes_[i];
@@ -72,8 +73,8 @@ void ScalarPointerLowerer::run() {
     std::vector<int> strides;
     // extract lowered indices
     for (int k_ = 0; k_ < (int)indices_.size(); k_++) {
-      int k = snode->physical_index_position[k_];
-      if (k < 0)
+      int k = leaf_snode->physical_index_position[k_];
+      if (!snode->extractors[k].active)
         continue;
       Stmt *extracted;
       if (packed_) {  // no dependence on POT

@@ -461,7 +461,7 @@ class MCISO_Example(MCISO):
         gui = ti.GUI('Marching cube')
         while gui.running and not gui.get_event(gui.ESCAPE):
             if self.use_sparse:
-                ti.root.deactivate_all()
+                ti.deactivate_all_snodes()
             else:
                 self.m.fill(0)
             self.touch(*gui.get_cursor_pos())

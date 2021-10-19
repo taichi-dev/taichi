@@ -2,35 +2,12 @@ import pathlib
 from math import acos, asin, cos, pi, sin
 
 from taichi.core import ti_core as _ti_core
-from taichi.core.primitive_types import u64
 from taichi.lang.impl import default_cfg
-from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
 from taichi.lang.ops import get_addr
-
-
-@kernel
-def get_field_addr_0D(x: template()) -> u64:
-    return get_addr(x, [None])
-
-
-@kernel
-def get_field_addr_ND(x: template()) -> u64:
-    return get_addr(x, [0 for _ in x.shape])
-
-
-field_addr_cache = {}
-
-
-def get_field_addr(x):
-    if x not in field_addr_cache:
-        if len(x.shape) == 0:
-            addr = get_field_addr_0D(x)
-        else:
-            addr = get_field_addr_ND(x)
-        field_addr_cache[x] = addr
-    return field_addr_cache[x]
+from taichi.type.annotations import ext_arr, template
+from taichi.type.primitive_types import u64
 
 
 def get_field_info(field):
@@ -48,7 +25,7 @@ def get_field_info(field):
     info.shape = [n for n in field.shape]
 
     info.dtype = field.dtype
-    info.data = get_field_addr(field)
+    info.snode = field.snode.ptr
 
     if hasattr(field, 'n'):
         info.field_type = _ti_core.FieldType.Matrix
@@ -56,6 +33,8 @@ def get_field_info(field):
         info.matrix_cols = field.m
     else:
         info.field_type = _ti_core.FieldType.Scalar
+        info.matrix_rows = 1
+        info.matrix_cols = 1
     return info
 
 

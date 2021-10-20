@@ -3,7 +3,7 @@ from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
 from taichi.lang.kernel_impl import kernel
-from taichi.type.annotations import ext_arr, template
+from taichi.type.annotations import any_arr, ext_arr, template
 
 import taichi as ti
 
@@ -17,9 +17,21 @@ def fill_tensor(tensor: template(), val: template()):
 
 
 @kernel
+def fill_ndarray(ndarray: any_arr(), val: template()):
+    for I in ti.grouped(ndarray):
+        ndarray[I] = val
+
+
+@kernel
 def tensor_to_ext_arr(tensor: template(), arr: ext_arr()):
     for I in ti.grouped(tensor):
         arr[I] = tensor[I]
+
+
+@kernel
+def ndarray_to_ext_arr(ndarray: any_arr(), arr: ext_arr()):
+    for I in ti.grouped(ndarray):
+        arr[I] = ndarray[I]
 
 
 @kernel
@@ -76,6 +88,12 @@ def tensor_to_tensor(tensor: template(), other: template()):
 def ext_arr_to_tensor(arr: ext_arr(), tensor: template()):
     for I in ti.grouped(tensor):
         tensor[I] = arr[I]
+
+
+@kernel
+def ext_arr_to_ndarray(arr: ext_arr(), ndarray: any_arr()):
+    for I in ti.grouped(ndarray):
+        ndarray[I] = arr[I]
 
 
 @kernel

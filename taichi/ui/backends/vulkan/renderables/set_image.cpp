@@ -25,6 +25,9 @@ void SetImage::update_ubo(float x_factor, float y_factor) {
 }
 
 void SetImage::update_data(const SetImageInfo &info) {
+  Program &program = get_current_program();
+  program.synchronize();
+
   const FieldInfo &img = info.img;
 
   int new_width = get_correct_dimension(img.shape[0]);
@@ -43,7 +46,6 @@ void SetImage::update_data(const SetImageInfo &info) {
   app_context_->device().image_transition(texture_, ImageLayout::shader_read,
                                           ImageLayout::transfer_dst);
 
-  Program &program = get_current_program();
   DevicePtr img_dev_ptr = get_device_ptr(&program, img.snode);
   uint64_t img_size = pixels * 4;
 

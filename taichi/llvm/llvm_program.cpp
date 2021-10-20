@@ -157,6 +157,7 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   } else {
     tlctx = llvm_context_host.get();
   }
+
   auto *const runtime_jit = tlctx->runtime_jit_module;
   // By the time this creator is called, "this" is already destroyed.
   // Therefore it is necessary to capture members by values.

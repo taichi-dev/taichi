@@ -19,6 +19,7 @@
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/snode_rw_accessors_bank.h"
+#include "taichi/program/ndarray_rw_accessors_bank.h"
 #include "taichi/program/context.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/struct/snode_tree.h"
@@ -198,6 +199,10 @@ class Program {
 
   Kernel &get_snode_writer(SNode *snode);
 
+  Kernel &get_ndarray_reader(Ndarray *ndarray);
+
+  Kernel &get_ndarray_writer(Ndarray *ndarray);
+
   uint64 fetch_result_uint64(int i);
 
   template <typename T>
@@ -209,7 +214,7 @@ class Program {
     return host_arch();
   }
 
-  Arch get_snode_accessor_arch();
+  Arch get_accessor_arch();
 
   float64 get_total_compilation_time() {
     return total_compilation_time_;
@@ -240,6 +245,10 @@ class Program {
     return snode_rw_accessors_bank_;
   }
 
+  inline NdarrayRwAccessorsBank &get_ndarray_rw_accessors_bank() {
+    return ndarray_rw_accessors_bank_;
+  }
+
   /**
    * Destroys a new SNode tree.
    *
@@ -251,9 +260,16 @@ class Program {
    * Adds a new SNode tree.
    *
    * @param root The root of the new SNode tree.
+   * @param compile_only Only generates the compiled type
    * @return The pointer to SNode tree.
+   *
+   * FIXME: compile_only is mostly a hack to make AOT & cross-compilation work.
+   * E.g. users who would like to AOT to a specific target backend can do so,
+   * even if their platform doesn't support that backend. Unfortunately, the
+   * current implementation would leave the backend in a mostly broken state. We
+   * need a cleaner design to support both AOT and JIT modes.
    */
-  SNodeTree *add_snode_tree(std::unique_ptr<SNode> root);
+  SNodeTree *add_snode_tree(std::unique_ptr<SNode> root, bool compile_only);
 
   /**
    * Gets the root of a SNode tree.
@@ -280,16 +296,10 @@ class Program {
   }
 
  private:
-  /**
-   * Materializes a new SNodeTree.
-   *
-   * JIT compiles the @param tree to backend-specific data types.
-   */
-  void materialize_snode_tree(SNodeTree *tree);
-
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;
+  NdarrayRwAccessorsBank ndarray_rw_accessors_bank_;
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
 

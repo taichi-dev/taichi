@@ -171,6 +171,8 @@ class CMakeBuild(build_ext):
         ):
             shutil.rmtree(target, ignore_errors=True)
             os.makedirs(target)
+            with open(os.path.join(target, "__init__.py"), "w") as f:
+                pass
             if get_os_name() == 'linux':
                 shutil.copy(os.path.join(self.build_temp, 'libtaichi_core.so'),
                             os.path.join(target, 'taichi_core.so'))

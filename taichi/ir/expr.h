@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taichi/util/str.h"
 #include "taichi/ir/type_utils.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -77,6 +78,7 @@ class Expr {
   Expr operator[](const ExprGroup &indices) const;
 
   std::string serialize() const;
+  void serialize(std::ostream &ss) const;
 
   void operator+=(const Expr &o);
   void operator-=(const Expr &o);

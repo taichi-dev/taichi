@@ -23,8 +23,11 @@ class AppContext {
   AppConfig config;
 
  private:
-  std::unique_ptr<taichi::lang::vulkan::EmbeddedVulkanDevice> vulkan_device_{
-      nullptr};
+  std::unique_ptr<taichi::lang::vulkan::EmbeddedVulkanDevice>
+      embedded_vulkan_device_{nullptr};
+
+  // not owned
+  taichi::lang::vulkan::VulkanDevice *vulkan_device_{nullptr};
 
   GLFWwindow *glfw_window_{nullptr};
 };

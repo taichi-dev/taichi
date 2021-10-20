@@ -27,7 +27,7 @@ struct ActionArg {
       : key(key), val_float64(val), type(argument_type::float64) {
   }
 
-  std::string serialize() const;
+  void serialize(std::ostream &ss) const;
 
   std::string key;
 

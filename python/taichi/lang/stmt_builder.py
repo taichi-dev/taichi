@@ -396,13 +396,13 @@ if ti.static(1):
         template = '''
 if ti.static(1):
     __ndrange = 0
-    {} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions), disable_local_tensor=True))
     ___begin = ti.Expr(0)
     ___end = __ndrange.acc_dimensions[0]
     ___begin = ti.cast(___begin, ti.i32)
     ___end = ti.cast(___end, ti.i32)
     __ndrange_I = ti.Expr(ti.core.make_id_expr(''))
     ti.core.begin_frontend_range_for(__ndrange_I.ptr, ___begin.ptr, ___end.ptr)
+    {} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions), dt=ti.i32))
     __I = __ndrange_I
     for __grouped_I in range(len(__ndrange.dimensions)):
         __grouped_I_tmp = 0
@@ -440,13 +440,14 @@ if ti.static(1):
             template = '''
 if 1:
     ___loop_var = 0
-    {} = ti.lang.expr.make_var_vector(size=len(___loop_var.shape))
-    ___expr_group = ti.lang.expr.make_expr_group({})
+    ___loop_indices = ti.lang.expr.make_var_list(size=len(___loop_var.shape))
+    ___expr_group = ti.lang.expr.make_expr_group(___loop_indices)
     ti.begin_frontend_struct_for(___expr_group, ___loop_var)
+    {} = ti.Vector(___loop_indices, dt=ti.i32)
     ti.core.end_frontend_range_for()
             '''.format(vars, vars)
             t = ast.parse(template).body[0]
-            cut = 4
+            cut = 5
             t.body[0].value = node.iter
             t.body = t.body[:cut] + node.body + t.body[cut:]
         else:

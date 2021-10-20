@@ -16,6 +16,7 @@
 
 namespace taichi {
 namespace lang {
+
 class OpenglProgramImpl : public ProgramImpl {
  public:
   OpenglProgramImpl(CompileConfig &config) : ProgramImpl(config) {
@@ -31,6 +32,8 @@ class OpenglProgramImpl : public ProgramImpl {
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
+
+  void compile_snode_tree_types(SNodeTree *tree) override;
 
   void materialize_snode_tree(
       SNodeTree *tree,
@@ -54,5 +57,6 @@ class OpenglProgramImpl : public ProgramImpl {
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
   std::unique_ptr<opengl::OpenGlRuntime> opengl_runtime_;
 };
+
 }  // namespace lang
 }  // namespace taichi

@@ -1,5 +1,4 @@
 import ast
-import copy
 import functools
 import inspect
 import re
@@ -532,9 +531,13 @@ class Kernel:
                 elif isinstance(needed, any_arr) and (
                         self.match_ext_arr(v)
                         or isinstance(v, taichi.lang._ndarray.Ndarray)):
+                    is_ndarray = False
                     if isinstance(v, taichi.lang._ndarray.Ndarray):
                         v = v.arr
+                        is_ndarray = True
                     has_external_arrays = True
+                    ndarray_use_torch = self.runtime.prog.config.ndarray_use_torch
+                    has_torch = util.has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
@@ -543,6 +546,12 @@ class Kernel:
                         launch_ctx.set_arg_external_array(
                             actual_argument_slot, int(tmp.ctypes.data),
                             tmp.nbytes)
+                    elif is_ndarray and not ndarray_use_torch:
+                        # Use ndarray's own memory allocator
+                        tmp = v
+                        launch_ctx.set_arg_external_array(
+                            actual_argument_slot, int(tmp.data_ptr()),
+                            tmp.element_size() * tmp.nelement())
                     else:
 
                         def get_call_back(u, v):
@@ -572,6 +581,7 @@ class Kernel:
                         launch_ctx.set_arg_external_array(
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement())
+
                     shape = v.shape
                     max_num_indices = _ti_core.get_max_num_indices()
                     assert len(

@@ -105,9 +105,6 @@ class Program {
 
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
 
-  std::unordered_map<int, SNode *>
-      snodes;  // TODO: seems LLVM specific but used by state_flow_graph.cpp.
-
   std::unique_ptr<AsyncEngine> async_engine{nullptr};
 
   std::vector<std::unique_ptr<Kernel>> kernels;

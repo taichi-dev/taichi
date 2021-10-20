@@ -42,7 +42,6 @@ class VulkanProgramImpl : public ProgramImpl {
 
   void materialize_snode_tree(SNodeTree *tree,
                               std::vector<std::unique_ptr<SNodeTree>> &,
-                              std::unordered_map<int, SNode *> &,
                               uint64 *result_buffer) override;
 
   void synchronize() override {

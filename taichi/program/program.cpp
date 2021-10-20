@@ -12,6 +12,8 @@
 #include "taichi/backends/opengl/opengl_program.h"
 #include "taichi/backends/metal/metal_program.h"
 #include "taichi/backends/cc/cc_program.h"
+#include "taichi/backends/dx/dx_program.h"
+#include "taichi/backends/dx/dx_api.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/timeline.h"
@@ -88,6 +90,13 @@ Program::Program(Arch desired_arch)
   } else if (config.arch == Arch::opengl) {
     TI_ASSERT(opengl::initialize_opengl(config.use_gles));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
+  } else if (config.arch == Arch::dx) {
+    if (!dx::is_dx_api_available()) {
+      TI_WARN("No DX API detected.");
+      config.arch = host_arch();
+    } else {
+      program_impl_ = std::make_unique<DxProgramImpl>(config);
+    }
   } else if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
     program_impl_ = std::make_unique<CCProgramImpl>(config);

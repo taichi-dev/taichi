@@ -31,9 +31,11 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
   if (origin1 != nullptr && origin2 != nullptr) {
     if (origin1 == origin2) {
       if (var1->is<PtrOffsetStmt>() && var2->is<PtrOffsetStmt>()) {
-        auto diff = value_diff_ptr_index(var1->cast<PtrOffsetStmt>()->offset, var2->cast<PtrOffsetStmt>()->offset);
+        auto diff = value_diff_ptr_index(var1->cast<PtrOffsetStmt>()->offset,
+                                         var2->cast<PtrOffsetStmt>()->offset);
         if (diff.is_diff_certain) {
-          return diff.diff_range == 0 ? AliasResult::same : AliasResult::different;
+          return diff.diff_range == 0 ? AliasResult::same
+                                      : AliasResult::different;
         }
       }
       return AliasResult::uncertain;

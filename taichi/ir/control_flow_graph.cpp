@@ -706,7 +706,8 @@ void ControlFlowGraph::live_variable_analysis(
     if (stmt->is<AllocaStmt>() || stmt->is<AdStackAllocaStmt>()) {
       return false;
     }
-    if (stmt->is<PtrOffsetStmt>() && stmt->cast<PtrOffsetStmt>()->origin->is<AllocaStmt>()) {
+    if (stmt->is<PtrOffsetStmt>() &&
+        stmt->cast<PtrOffsetStmt>()->origin->is<AllocaStmt>()) {
       return false;
     }
     if (auto *gptr = stmt->cast<GlobalPtrStmt>();

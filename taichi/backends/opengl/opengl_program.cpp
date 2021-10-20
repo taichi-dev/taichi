@@ -41,7 +41,6 @@ void OpenglProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
 void OpenglProgramImpl::materialize_snode_tree(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &,
-    std::unordered_map<int, SNode *> &,
     uint64 *result_buffer) {
 #ifdef TI_WITH_OPENGL
   compile_snode_tree_types(tree);

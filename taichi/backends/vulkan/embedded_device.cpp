@@ -162,7 +162,7 @@ bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
     // this means we need ui
     VkPhysicalDeviceFeatures features{};
     vkGetPhysicalDeviceFeatures(device, &features);
-    return indices.is_complete_for_ui() && features.wideLines == VK_TRUE;
+    return indices.is_complete_for_ui();
   } else {
     return indices.is_complete();
   }

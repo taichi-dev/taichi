@@ -18,7 +18,7 @@ std::string get_cuda_error_message(uint32 err) {
 bool CUDADriver::detected() {
   if (get_environ_config("TI_ENABLE_CUDA", 1) == 0)
     return false;
-  return loader_->loaded();
+  return cuda_version_valid && loader_->loaded();
 }
 
 CUDADriver::CUDADriver() {
@@ -34,20 +34,30 @@ CUDADriver::CUDADriver() {
     loader_->load_function("cuGetErrorName", get_error_name);
     loader_->load_function("cuGetErrorString", get_error_string);
 
-#define PER_CUDA_FUNCTION(name, symbol_name, ...) \
-  name.set(loader_->load_function(#symbol_name)); \
-  name.set_lock(&lock_);                          \
-  name.set_names(#name, #symbol_name);
-#include "taichi/backends/cuda/cuda_driver_functions.inc.h"
-#undef PER_CUDA_FUNCTION
+    loader_->load_function("cuDriverGetVersion", driver_get_version);
 
     int version;
     driver_get_version(&version);
 
     TI_TRACE("CUDA driver API (v{}.{}) loaded.", version / 1000,
              version % 1000 / 10);
+
+    // CUDA versions should >= 10.
+    if (version < 10000) {
+      cuda_version_valid = false;
+      TI_WARN(
+          "CUDA driver version < 10.0. Taichi requires at least installed CUDA "
+          "10.0.");
+    } else {
+#define PER_CUDA_FUNCTION(name, symbol_name, ...) \
+  name.set(loader_->load_function(#symbol_name)); \
+  name.set_lock(&lock_);                          \
+  name.set_names(#name, #symbol_name);
+#include "taichi/backends/cuda/cuda_driver_functions.inc.h"
+#undef PER_CUDA_FUNCTION
+    }
   } else {
-    TI_TRACE("CUDA driver not found.");
+    TI_WARN("CUDA driver not found.");
   }
 }
 

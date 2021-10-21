@@ -803,14 +803,17 @@ class MeshRelationAccessExpression : public Expression {
   mesh::MeshElementType to_type;
   Expr neighbor_idx;
 
-  std::string serialize() override {
+  void serialize(std::ostream &ss) override {
     if (neighbor_idx) {
-      return fmt::format(
-          "mesh_relation_access({}, {}[{}])", mesh_idx->serialize(),
-          mesh::element_type_name(to_type), neighbor_idx->serialize());
+      ss << "mesh_relation_access(";
+      mesh_idx->serialize(ss);
+      ss << ", " << mesh::element_type_name(to_type) << "[";
+      neighbor_idx->serialize(ss);
+      ss << "])";
     } else {
-      return fmt::format("mesh_relation_size({}, {})", mesh_idx->serialize(),
-                         mesh::element_type_name(to_type));
+      ss << "mesh_relation_size(";
+      mesh_idx->serialize(ss);
+      ss << ", " << mesh::element_type_name(to_type) << ")";
     }
   }
 
@@ -840,10 +843,11 @@ class MeshIndexConversionExpression : public Expression {
   Expr idx;
   mesh::ConvType conv_type;
 
-  std::string serialize() override {
-    return fmt::format("mesh_index_conversion({}, {}, {})",
-                       mesh::conv_type_name(conv_type),
-                       mesh::element_type_name(idx_type), idx->serialize());
+  void serialize(std::ostream &ss) override {
+    ss << "mesh_index_conversion(" << mesh::conv_type_name(conv_type) << ", "
+       << mesh::element_type_name(idx_type) << ", ";
+    idx->serialize(ss);
+    ss << ")";
   }
 
   MeshIndexConversionExpression(mesh::Mesh *mesh,

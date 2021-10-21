@@ -1004,7 +1004,7 @@ def is_arch_supported(arch):
         arch = _ti_core.arch_name(arch)
         _ti_core.warn(
             f"{e.__class__.__name__}: '{e}' occurred when detecting "
-            f"{arch}, consider add `export TI_WITH_{arch.upper()}=0` "
+            f"{arch}, consider add `TI_ENABLE_{arch.upper()}=0` "
             f" to environment variables to depress this warning message.")
         return False
 

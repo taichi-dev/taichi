@@ -136,7 +136,7 @@ def mesh_relation_access(mesh, from_index, to_element_type):
 
 
 @taichi_scope
-def subscript(value, *_indices):
+def subscript(value, *_indices, skip_reordered=False):
     _taichi_skip_traceback = 1
     if isinstance(value, np.ndarray):
         return value.__getitem__(*_indices)
@@ -165,9 +165,9 @@ def subscript(value, *_indices):
         return value.subscript(*_indices)
     if isinstance(value, MeshRelationAccessProxy):
         return value.subscript(*_indices)
-    if isinstance(
-            value,
-        (MeshReorderedScalarFieldProxy, MeshReorderedMatrixFieldProxy)):
+    if isinstance(value,
+                    (MeshReorderedScalarFieldProxy,
+                     MeshReorderedMatrixFieldProxy)) and not skip_reordered:
         assert index_dim == 1
         reordered_index = tuple([
             Expr(
@@ -176,9 +176,7 @@ def subscript(value, *_indices):
                                               Expr(_indices[0]).ptr,
                                               ConvType.g2r))
         ])
-        value.__class__ = ScalarField if isinstance(
-            value, MeshReorderedScalarFieldProxy) else MatrixField
-        return subscript(value, *reordered_index)
+        return subscript(value, *reordered_index, skip_reordered=True)
     if isinstance(value, SparseMatrixProxy):
         return value.subscript(*_indices)
     if isinstance(value, Field):

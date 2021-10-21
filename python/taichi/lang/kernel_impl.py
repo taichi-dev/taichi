@@ -3,6 +3,7 @@ import copy
 import functools
 import inspect
 import re
+import textwrap
 
 import numpy as np
 import taichi.lang
@@ -25,22 +26,7 @@ if util.has_pytorch():
 
 
 def _remove_indent(lines):
-    lines = lines.split('\n')
-    to_remove = 0
-    for i in range(len(lines[0])):
-        if lines[0][i] == ' ' or lines[0][i] == '\t':
-            to_remove = i + 1
-        else:
-            break
-
-    cleaned = []
-    for l in lines:
-        cleaned.append(l[to_remove:])
-        if len(l) >= to_remove:
-            for i in range(to_remove):
-                assert (l[i] == ' ' or l[i] == '\t')
-
-    return '\n'.join(cleaned)
+    return textwrap.dedent(lines)
 
 
 def func(fn):

@@ -236,21 +236,25 @@ jobs:
     name: Performance monitoring (NVGPU)
     needs: check_code_format
     timeout-minutes: 60
-    runs-on: [self-hosted, x64, cuda, linux, ubuntu20.04, benchmark]
+    runs-on: [self-hosted, x64, cuda, linux, benchmark]
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
 
-      - name: Build
+      - name: Build & Install
         run: |
-          REPO_DIR=`pwd`
-          export TAICHI_REPO_DIR=$REPO_DIR
-          export PYTHONPATH=$TAICHI_REPO_DIR/python:$PYTHONPATH
-          export PATH=$TAICHI_REPO_DIR/bin:$PATH
-          git submodule update --init --recursive --depth=1
-          TAICHI_CMAKE_ARGS="-DTI_WITH_CUDA_TOOLKIT:BOOL=ON" python3 setup.py develop --user
-      
+          export PATH=$PATH:/usr/local/cuda/bin
+          .github/workflows/scripts/unix_build.sh
+        env:
+          LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
+          LLVM_PATH: /opt/taichi-llvm-10.0.0/bin
+          LLVM_DIR: /opt/taichi-llvm-10.0.0/lib/cmake/llvm
+          CUDA_TOOLKIT_ROOT_DIR: /usr/local/cuda/
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_CUDA_TOOLKIT:BOOL=ON
+          BUILD_NUM_THREADS: 8
+          CXX: clang++-10
+
       - name: Run benchmark
         run: |
           python3 benchmarks/misc/run.py /home/benchmarkbot/benchmark/

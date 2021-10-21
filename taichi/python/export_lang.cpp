@@ -1174,8 +1174,6 @@ void export_lang(py::module &m) {
                                              py::arithmetic())
       .value("NonReordering", mesh::MeshElementReorderingType::NonReordering)
       .value("Reordering", mesh::MeshElementReorderingType::Reordering)
-      .value("SurfaceFirst", mesh::MeshElementReorderingType::SurfaceFirst)
-      .value("CellFirst", mesh::MeshElementReorderingType::CellFirst)
       .export_values();
 
   py::enum_<mesh::ConvType>(m, "ConvType", py::arithmetic())
@@ -1251,13 +1249,6 @@ void export_lang(py::module &m) {
            SNode *offset) {
           mesh_ptr.ptr->relations.insert(
               std::pair(type, mesh::MeshLocalRelation(value, offset)));
-        });
-
-  m.def("get_global_to_reordered_mapping",
-        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType element_type) {
-          return mesh_ptr.ptr->index_mapping
-              .find(std::make_pair(element_type, mesh::ConvType::g2r))
-              ->second;
         });
 }
 

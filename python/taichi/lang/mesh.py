@@ -1,15 +1,11 @@
 import json
-from enum import Enum
-from typing import OrderedDict
 
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
-from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
-from taichi.lang.field import Field, ScalarField, SNodeHostAccessor
+from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import Matrix, MatrixField
-from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField
 from taichi.lang.types import CompoundType
 from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
@@ -40,34 +36,31 @@ class MeshAttrType:
 
 class MeshReorderedScalarFieldProxy(ScalarField):
     def __init__(self, field: ScalarField, mesh_ptr: _ti_core.MeshPtr,
-                 element_type: MeshElementType):
+                 element_type: MeshElementType, g2r_field: ScalarField):
         self.vars = field.vars
         self.host_accessors = field.host_accessors
         self.grad = field.grad
 
         self.mesh_ptr = mesh_ptr
         self.element_type = element_type
-        self.mapping_accessor = SNodeHostAccessor(
-            _ti_core.get_global_to_reordered_mapping(mesh_ptr, element_type))
+        self.g2r_field = g2r_field
 
     @python_scope
     def __setitem__(self, key, value):
         self.initialize_host_accessors()
-        key = self.mapping_accessor.getter(
-            *self.pad_key(key))  # global index -> reordered index
+        key = self.g2r_field[key]
         self.host_accessors[0].setter(value, *self.pad_key(key))
 
     @python_scope
     def __getitem__(self, key):
         self.initialize_host_accessors()
-        key = self.mapping_accessor.getter(
-            *self.pad_key(key))  # global index -> reordered index
+        key = self.g2r_field[key]
         return self.host_accessors[0].getter(*self.pad_key(key))
 
 
 class MeshReorderedMatrixFieldProxy(MatrixField):
     def __init__(self, field: MatrixField, mesh_ptr: _ti_core.MeshPtr,
-                 element_type: MeshElementType):
+                 element_type: MeshElementType, g2r_field: ScalarField):
         self.vars = field.vars
         self.host_accessors = field.host_accessors
         self.grad = field.grad
@@ -76,8 +69,7 @@ class MeshReorderedMatrixFieldProxy(MatrixField):
 
         self.mesh_ptr = mesh_ptr
         self.element_type = element_type
-        self.mapping_accessor = SNodeHostAccessor(
-            _ti_core.get_global_to_reordered_mapping(mesh_ptr, element_type))
+        self.g2r_field = g2r_field
 
     @python_scope
     def __setitem__(self, key, value):
@@ -87,18 +79,18 @@ class MeshReorderedMatrixFieldProxy(MatrixField):
     @python_scope
     def __getitem__(self, key):
         self.initialize_host_accessors()
-        key = self.mapping_accessor.getter(
-            *self.pad_key(key))  # global index -> reordered index
+        key = self.g2r_field[key]
         key = self.pad_key(key)
         return Matrix.with_entries(self.n, self.m, self.host_access(key))
 
 
 class MeshElementField:
-    def __init__(self, mesh_instance, type, attr_dict, field_dict):
+    def __init__(self, mesh_instance, type, attr_dict, field_dict, g2r_field):
         self.mesh = mesh_instance
         self.type = type
         self.attr_dict = attr_dict
         self.field_dict = field_dict
+        self.g2r_field = g2r_field
 
         self.register_fields()
 
@@ -117,22 +109,27 @@ class MeshElementField:
     @staticmethod
     def make_getter(key):
         def getter(self):
+            if key not in self.getter_dict:
+                if self.attr_dict[
+                        key].reordering == MeshElementReorderingType.Reordering:
+                    if isinstance(self.field_dict[key], ScalarField):
+                        self.getter_dict[key] = MeshReorderedScalarFieldProxy(
+                            self.field_dict[key], self.mesh.mesh_ptr,
+                            self.type, self.g2r_field)
+                    elif isinstance(self.field_dict[key], MatrixField):
+                        self.getter_dict[key] = MeshReorderedMatrixFieldProxy(
+                            self.field_dict[key], self.mesh.mesh_ptr,
+                            self.type, self.g2r_field)
+                else:
+                    self.getter_dict[key] = self.field_dict[key]
             """Get an entry from custom struct by name."""
             _taichi_skip_traceback = 1
-            if self.attr_dict[
-                    key].reordering == MeshElementReorderingType.Reordering:
-                if isinstance(self.field_dict[key], ScalarField):
-                    return MeshReorderedScalarFieldProxy(
-                        self.field_dict[key], self.mesh.mesh_ptr, self.type)
-                elif isinstance(self.field_dict[key], MatrixField):
-                    return MeshReorderedMatrixFieldProxy(
-                        self.field_dict[key], self.mesh.mesh_ptr, self.type)
-            else:
-                return self.field_dict[key]
+            return self.getter_dict[key]
 
         return getter
 
     def register_fields(self):
+        self.getter_dict = {}
         for k in self.keys:
             setattr(MeshElementField, k,
                     property(fget=MeshElementField.make_getter(k)))
@@ -213,7 +210,7 @@ class MeshElement:
             self.attr_dict[key] = MeshAttrType(key, dtype, reordering,
                                                needs_grad)
 
-    def build(self, mesh_instance, size):
+    def build(self, mesh_instance, size, g2r_field):
         field_dict = {}
 
         for key, attr in self.attr_dict.items():
@@ -240,7 +237,7 @@ class MeshElement:
                 impl.root.dense(impl.axes(0), size).place(*grads)
 
         return MeshElementField(mesh_instance, self.type, self.attr_dict,
-                                field_dict)
+                                field_dict, g2r_field)
 
     def link(self, element):
         assert isinstance(element, MeshElement)
@@ -333,10 +330,6 @@ class MeshBuilder:
             num_elements = element["num"]
             _ti_core.set_num_elements(instance.mesh_ptr, element_type,
                                       num_elements)
-            element_name = inv_map[element_type]
-            setattr(instance, element_name,
-                    getattr(self, element_name).build(instance, num_elements))
-            instance.fields[element_type] = getattr(instance, element_name)
             instance.set_patch_max_element_num(element_type,
                                                element["max_num_per_patch"])
 
@@ -370,6 +363,13 @@ class MeshBuilder:
             instance.set_index_mapping(element_type, ConvType.g2r,
                                        g2r_mapping_field)
 
+            element_name = inv_map[element_type]
+            setattr(
+                instance, element_name,
+                getattr(self, element_name).build(instance, num_elements,
+                                                  g2r_mapping_field))
+            instance.fields[element_type] = getattr(instance, element_name)
+
         for relation in data["relations"]:
             from_order = relation["from_order"]
             to_order = relation["to_order"]
@@ -387,9 +387,9 @@ class MeshBuilder:
                 value.from_numpy(np.array(relation["value"]))
                 instance.set_relation_fixed(rel_type, value)
 
-        if hasattr(instance.verts, "x"):
-            instance.verts.x.from_numpy(
-                np.array(data["attrs"]["x"]).reshape(-1, 3))
+        if "x" in instance.verts.attr_dict:
+            x = np.array(data["attrs"]["x"]).reshape(-1, 3)
+            instance.verts.x.from_numpy(x)
 
         return instance
 
@@ -401,8 +401,6 @@ class Mesh:
 
     non_reordering = MeshElementReorderingType.NonReordering
     reordering = MeshElementReorderingType.Reordering
-    surface_first = MeshElementReorderingType.SurfaceFirst
-    cell_first = MeshElementReorderingType.CellFirst
 
     @staticmethod
     def Tet():

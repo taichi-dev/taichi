@@ -13,13 +13,14 @@ struct CompiledProgram;
 struct OpenGlRuntimeImpl;
 struct OpenGlRuntime;
 class GLBuffer;
+class DeviceCompiledProgram;
 
 struct OpenGlRuntime {
   std::unique_ptr<OpenGlRuntimeImpl> impl;
   std::unique_ptr<Device> device{nullptr};
   OpenGlRuntime();
   ~OpenGlRuntime();
-  void keep(std::unique_ptr<CompiledProgram> program);
+  DeviceCompiledProgram *keep(CompiledProgram &&program);
   // FIXME: Currently GLSL codegen only supports single root
   void add_snode_tree(size_t size);
 

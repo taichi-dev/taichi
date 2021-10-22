@@ -260,6 +260,9 @@ SType IRBuilder::get_primitive_buffer_type(const bool struct_compiled,
     } else if (dt->is_primitive(PrimitiveTypeID::i64) &&
                device_->get_cap(cap::spirv_has_atomic_i64)) {
       return t_int64_;
+    } else if (dt->is_primitive(PrimitiveTypeID::u8) &&
+               device_->get_cap(cap::spirv_has_int8)) {
+      return t_uint8_;
     } else {
       return get_primitive_type(dt);
     }
@@ -708,8 +711,10 @@ Value IRBuilder::float_atomic(AtomicOpType op_type,
         .add_seq(tmp1, true_label, merge_label)
         .commit(&func_);
     ib_.begin(spv::OpLabel).add(true_label).commit(&func_);
-    Value tmp2 = load_variable(addr_ptr, t_int32_);
-    store_variable(old_val, tmp2);
+    Value tmp2 = load_variable(addr_ptr, t_fp32_);
+    Value tmp2_int = new_value(t_int32_, ValueKind::kNormal);
+    ib_.begin(spv::OpBitcast).add_seq(t_int32_, tmp2_int, tmp2).commit(&func_);
+    store_variable(old_val, tmp2_int);
     Value tmp3 = load_variable(old_val, t_int32_);
     Value tmp4 = new_value(t_fp32_, ValueKind::kNormal);
     ib_.begin(spv::OpBitcast).add_seq(t_fp32_, tmp4, tmp3).commit(&func_);

@@ -29,7 +29,7 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
   TI_ASSERT(total_bits <= 30);
 
   // general shape calculation - no dependence on POT
-  int total_n = 1;
+  int64 total_n = 1;
   std::array<int, taichi_max_num_indices> total_shape;
   total_shape.fill(1);
   for (const auto *s : snodes) {

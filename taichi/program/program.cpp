@@ -41,7 +41,8 @@ namespace lang {
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances_;
 
-Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
+Program::Program(Arch desired_arch)
+    : snode_rw_accessors_bank_(this), ndarray_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
   // For performance considerations and correctness of CustomFloatType
@@ -137,7 +138,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
     TI_WARN("Running in async mode. This is experimental.");
     TI_ASSERT(is_extension_supported(config.arch, Extension::async_mode));
     async_engine = std::make_unique<AsyncEngine>(
-        &config, snodes, [this](Kernel &kernel, OffloadedStmt *offloaded) {
+        &config, [this](Kernel &kernel, OffloadedStmt *offloaded) {
           return this->compile(kernel, offloaded);
         });
   }
@@ -176,26 +177,15 @@ Function *Program::create_function(const FunctionKey &func_key) {
 FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
-  FunctionType ret = nullptr;
-  if (arch_uses_llvm(config.arch) || kernel.arch == Arch::metal ||
-      kernel.arch == Arch::vulkan || kernel.arch == Arch::opengl ||
-      kernel.arch == Arch::cc) {
-    return program_impl_->compile(&kernel, offloaded);
-  } else {
-    TI_NOT_IMPLEMENTED;
-  }
+  auto ret = program_impl_->compile(&kernel, offloaded);
   TI_ASSERT(ret);
   total_compilation_time_ += Time::get_time() - start_t;
   return ret;
 }
 
 void Program::materialize_runtime() {
-  if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
-      config.arch == Arch::vulkan || config.arch == Arch::opengl ||
-      config.arch == Arch::cc) {
-    program_impl_->materialize_runtime(memory_pool_.get(), profiler.get(),
-                                       &result_buffer);
-  }
+  program_impl_->materialize_runtime(memory_pool_.get(), profiler.get(),
+                                     &result_buffer);
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
@@ -203,11 +193,17 @@ void Program::destroy_snode_tree(SNodeTree *snode_tree) {
   program_impl_->destroy_snode_tree(snode_tree);
 }
 
-SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {
+SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root,
+                                   bool compile_only) {
   const int id = snode_trees_.size();
   auto tree = std::make_unique<SNodeTree>(id, std::move(root));
   tree->root()->set_snode_tree_id(id);
-  materialize_snode_tree(tree.get());
+  if (compile_only) {
+    program_impl_->compile_snode_tree_types(tree.get());
+  } else {
+    program_impl_->materialize_snode_tree(tree.get(), snode_trees_,
+                                          result_buffer);
+  }
   snode_trees_.push_back(std::move(tree));
 
   return snode_trees_[id].get();
@@ -215,15 +211,6 @@ SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root) {
 
 SNode *Program::get_snode_root(int tree_id) {
   return snode_trees_[tree_id]->root();
-}
-
-void Program::materialize_snode_tree(SNodeTree *tree) {
-  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda ||
-      config.arch == Arch::metal || config.arch == Arch::vulkan ||
-      config.arch == Arch::opengl || config.arch == Arch::cc) {
-    program_impl_->materialize_snode_tree(tree, snode_trees_, snodes,
-                                          result_buffer);
-  }
 }
 
 void Program::check_runtime_error() {
@@ -343,7 +330,7 @@ void Program::visualize_layout(const std::string &fn) {
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
 
-Arch Program::get_snode_accessor_arch() {
+Arch Program::get_accessor_arch() {
   if (config.arch == Arch::opengl) {
     return Arch::opengl;
   } else if (config.arch == Arch::vulkan) {
@@ -371,7 +358,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
         load_if_ptr(Expr(snode_to_glb_var_exprs_.at(snode))[indices]));
     current_ast_builder().insert(std::move(ret));
   });
-  ker.set_arch(get_snode_accessor_arch());
+  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -392,12 +379,58 @@ Kernel &Program::get_snode_writer(SNode *snode) {
         Expr::make<ArgLoadExpression>(snode->num_active_indices,
                                       snode->dt->get_compute_type());
   });
-  ker.set_arch(get_snode_accessor_arch());
+  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_arg(PrimitiveType::i32, false);
   ker.insert_arg(snode->dt, false);
+  return ker;
+}
+
+Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
+  auto kernel_name = fmt::format("ndarray_reader");
+  auto &ker = kernel([ndarray, this] {
+    ExprGroup indices;
+    for (int i = 0; i < ndarray->num_active_indices; i++) {
+      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
+    }
+    auto ret = Stmt::make<FrontendReturnStmt>(
+        load_if_ptr(Expr(Expr::make<ExternalTensorExpression>(
+            ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices,
+            0))[indices]));
+    current_ast_builder().insert(std::move(ret));
+  });
+  ker.set_arch(get_accessor_arch());
+  ker.name = kernel_name;
+  ker.is_accessor = true;
+  for (int i = 0; i < ndarray->num_active_indices; i++)
+    ker.insert_arg(PrimitiveType::i32, false);
+  ker.insert_arg(ndarray->dtype, true);
+  ker.insert_ret(ndarray->dtype);
+  return ker;
+}
+
+Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
+  auto kernel_name = fmt::format("ndarray_writer");
+  auto &ker = kernel([ndarray, this] {
+    ExprGroup indices;
+    for (int i = 0; i < ndarray->num_active_indices; i++) {
+      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
+    }
+    Expr(Expr::make<ExternalTensorExpression>(
+        ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices + 1,
+        0))[indices] =
+        Expr::make<ArgLoadExpression>(ndarray->num_active_indices,
+                                      ndarray->dtype->get_compute_type());
+  });
+  ker.set_arch(get_accessor_arch());
+  ker.name = kernel_name;
+  ker.is_accessor = true;
+  for (int i = 0; i < ndarray->num_active_indices; i++)
+    ker.insert_arg(PrimitiveType::i32, false);
+  ker.insert_arg(ndarray->dtype, false);
+  ker.insert_arg(ndarray->dtype, true);
   return ker;
 }
 

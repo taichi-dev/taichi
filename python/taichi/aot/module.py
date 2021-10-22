@@ -74,12 +74,18 @@ class Module:
         # for running ``foo`` and ``bar``.
     """
     def __init__(self, arch):
+        """Creates a new AOT module instance
+
+        Args:
+          arch: Target backend architecture. This is ignored for now. The AOT
+            backend still uses the one specified in :func:`~taichi.lang.init`.
+        """
         self._arch = arch
         self._kernels = []
         self._fields = {}
-        impl.get_runtime().materialize()
-        self._aot_builder = impl.get_runtime().prog.make_aot_module_builder(
-            arch)
+        rtm = impl.get_runtime()
+        rtm._finalize_root_fb_for_aot()
+        self._aot_builder = rtm.prog.make_aot_module_builder(arch)
 
     def add_field(self, name, field):
         """Add a taichi field to the AOT module.

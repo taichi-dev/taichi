@@ -2,7 +2,7 @@ import ast
 
 import astor
 from taichi.lang import impl
-from taichi.lang.ast.symbol_resolver import ASTResolver
+from taichi.lang.ast.symbol_resolver import ASTResolver, ModuleResolver
 from taichi.lang.ast_builder_utils import BuilderContext
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.stmt_builder import build_stmt
@@ -21,7 +21,8 @@ class ASTTransformerTotal(object):
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
         self.arg_features = arg_features
-        self.pass_Checks = ASTTransformerChecks(func=func)
+        self.pass_checks = ASTTransformerChecks(func=func)
+        self.rename_module = ASTTransformerUnifyModule(func=func)
 
     @staticmethod
     def print_ast(tree, title=None):
@@ -33,6 +34,8 @@ class ASTTransformerTotal(object):
 
     def visit(self, tree):
         self.print_ast(tree, 'Initial AST')
+        self.rename_module.visit(tree)
+        self.print_ast(tree, 'AST with module renamed')
         ctx = BuilderContext(func=self.func,
                              excluded_parameters=self.excluded_parameters,
                              is_kernel=self.is_kernel,
@@ -41,7 +44,7 @@ class ASTTransformerTotal(object):
         tree = build_stmt(ctx, tree)
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Preprocessed')
-        self.pass_Checks.visit(tree)  # does not modify the AST
+        self.pass_checks.visit(tree)  # does not modify the AST
 
 
 class ASTTransformerBase(ast.NodeTransformer):
@@ -61,6 +64,25 @@ class ASTTransformerBase(ast.NodeTransformer):
             if ASTResolver.resolve_to(node.func, wanted, globals()):
                 return name
         return ''
+
+
+class ASTTransformerUnifyModule(ast.NodeTransformer):
+    """Rename the module alias to `ti`.
+    module func calls like `<module alias>.<func-name>` will be renamed to
+    `ti.<func-name>`
+    """
+    def __init__(self, func):
+        super().__init__()
+        self.func = func
+        # Get the module alias from the global symbols table of the given func.
+        self.custom_module_name = ModuleResolver.get_module_name(func.func, ti)
+        self.default_module_name = "ti"
+
+    def visit_Name(self, node):
+        # Get the id of the ast.Name, rename if it equals to self.module_name.
+        if node.id == self.custom_module_name:
+            node.id = self.default_module_name
+        return node
 
 
 # Performs checks at the Python AST level. Does not modify the AST.

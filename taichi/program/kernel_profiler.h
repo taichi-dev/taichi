@@ -13,9 +13,16 @@
 TLANG_NAMESPACE_BEGIN
 
 struct KernelProfileTracedRecord {
-  std::string name;
+  // kernel attributes
+  int register_per_thread{0};
+  int shared_mem_per_block{0};
+  int grid_size{0};
+  int block_size{0};
+  int active_blocks_per_multiprocessor{0};
+  // kernel time
   float kernel_elapsed_time_in_ms{0.0};
   float time_since_base{0.0};        // for Timeline
+  std::string name;                  // kernel name
   std::vector<float> metric_values;  // user selected metrics
 };
 
@@ -69,9 +76,6 @@ class KernelProfilerBase {
 
   static void profiler_stop(KernelProfilerBase *profiler);
 
-  virtual void trace(KernelProfilerBase::TaskHandle &task_handle,
-                     const std::string &task_name){TI_NOT_IMPLEMENTED};
-
   void query(const std::string &kernel_name,
              int &counter,
              double &min,
@@ -83,6 +87,11 @@ class KernelProfilerBase {
   }
 
   double get_total_time() const;
+
+  virtual std::string get_device_name() {
+    std::string str(" ");
+    return str;
+  }
 
   virtual ~KernelProfilerBase() {
   }

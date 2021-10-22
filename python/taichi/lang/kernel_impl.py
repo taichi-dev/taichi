@@ -1,8 +1,8 @@
 import ast
-import copy
 import functools
 import inspect
 import re
+import textwrap
 
 import numpy as np
 import taichi.lang
@@ -12,9 +12,9 @@ from taichi.lang.ast.checkers import KernelSimplicityASTChecker
 from taichi.lang.ast.transformer import ASTTransformerTotal
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.kernel_arguments import sparse_matrix_builder
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
+from taichi.linalg.sparse_matrix import sparse_matrix_builder
 from taichi.misc.util import obsolete
 from taichi.type import any_arr, primitive_types, template
 
@@ -22,25 +22,6 @@ import taichi as ti
 
 if util.has_pytorch():
     import torch
-
-
-def _remove_indent(lines):
-    lines = lines.split('\n')
-    to_remove = 0
-    for i in range(len(lines[0])):
-        if lines[0][i] == ' ':
-            to_remove = i + 1
-        else:
-            break
-
-    cleaned = []
-    for l in lines:
-        cleaned.append(l[to_remove:])
-        if len(l) >= to_remove:
-            for i in range(to_remove):
-                assert l[i] == ' '
-
-    return '\n'.join(cleaned)
 
 
 def func(fn):
@@ -169,7 +150,7 @@ class Func:
                 self.taichi_functions[key.instance_id], non_template_args))
 
     def do_compile(self, key, args):
-        src = _remove_indent(oinspect.getsource(self.func))
+        src = textwrap.dedent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]
@@ -434,7 +415,7 @@ class Kernel:
                                            grad_suffix)
         ti.trace("Compiling kernel {}...".format(kernel_name))
 
-        src = _remove_indent(oinspect.getsource(self.func))
+        src = textwrap.dedent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]
@@ -527,22 +508,32 @@ class Kernel:
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
-                    # Pass only the base pointer of the ti.sparse_matrix_builder() argument
+                    # Pass only the base pointer of the ti.linalg.sparse_matrix_builder() argument
                     launch_ctx.set_arg_int(actual_argument_slot, v.get_addr())
                 elif isinstance(needed, any_arr) and (
                         self.match_ext_arr(v)
                         or isinstance(v, taichi.lang._ndarray.Ndarray)):
+                    is_ndarray = False
                     if isinstance(v, taichi.lang._ndarray.Ndarray):
                         v = v.arr
+                        is_ndarray = True
                     has_external_arrays = True
+                    ndarray_use_torch = self.runtime.prog.config.ndarray_use_torch
+                    has_torch = util.has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!
                         tmps.append(tmp)
-                        launch_ctx.set_arg_nparray(actual_argument_slot,
-                                                   int(tmp.ctypes.data),
-                                                   tmp.nbytes)
+                        launch_ctx.set_arg_external_array(
+                            actual_argument_slot, int(tmp.ctypes.data),
+                            tmp.nbytes)
+                    elif is_ndarray and not ndarray_use_torch:
+                        # Use ndarray's own memory allocator
+                        tmp = v
+                        launch_ctx.set_arg_external_array(
+                            actual_argument_slot, int(tmp.data_ptr()),
+                            tmp.element_size() * tmp.nelement())
                     else:
 
                         def get_call_back(u, v):
@@ -569,9 +560,10 @@ class Kernel:
                                 gpu_v = v.cuda()
                                 tmp = gpu_v
                                 callbacks.append(get_call_back(v, gpu_v))
-                        launch_ctx.set_arg_nparray(
+                        launch_ctx.set_arg_external_array(
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement())
+
                     shape = v.shape
                     max_num_indices = _ti_core.get_max_num_indices()
                     assert len(
@@ -763,9 +755,12 @@ class _BoundedDifferentiableMethod:
         self._kernel_owner = kernel_owner
         self._primal = wrapped_kernel_func._primal
         self._adjoint = wrapped_kernel_func._adjoint
+        self._is_staticmethod = wrapped_kernel_func._is_staticmethod
 
     def __call__(self, *args, **kwargs):
         _taichi_skip_traceback = 1
+        if self._is_staticmethod:
+            return self._primal(*args, **kwargs)
         return self._primal(self._kernel_owner, *args, **kwargs)
 
     def grad(self, *args, **kwargs):
@@ -804,8 +799,9 @@ def data_oriented(cls):
     """
     def _getattr(self, item):
         _taichi_skip_traceback = 1
-        method = getattr(cls, item, None)
+        method = cls.__dict__.get(item, None)
         is_property = method.__class__ == property
+        is_staticmethod = method.__class__ == staticmethod
         if is_property:
             x = method.fget
         else:
@@ -815,6 +811,7 @@ def data_oriented(cls):
                 wrapped = x.__func__
             else:
                 wrapped = x
+            wrapped._is_staticmethod = is_staticmethod
             assert inspect.isfunction(wrapped)
             if wrapped._is_classkernel:
                 ret = _BoundedDifferentiableMethod(self, wrapped)

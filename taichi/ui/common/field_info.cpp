@@ -26,7 +26,7 @@ DevicePtr get_device_ptr(taichi::lang::Program *program, SNode *snode) {
   int tree_id = root->get_snode_tree_id();
   DevicePtr root_ptr = program->get_snode_tree_device_ptr(tree_id);
 
-  size_t offset = 0;
+  int64 offset = 0;
 
   int child_id = root->child_id(dense_parent);
 

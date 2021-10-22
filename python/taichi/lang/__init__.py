@@ -16,7 +16,6 @@ from taichi.lang.ast.transformer import TaichiSyntaxError
 from taichi.lang.enums import Layout
 from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *
-from taichi.lang.kernel_arguments import sparse_matrix_builder
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, Vector
@@ -29,7 +28,6 @@ from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
-from taichi.linalg import SparseMatrix, SparseMatrixBuilder, SparseSolver
 from taichi.misc.util import deprecated
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
@@ -561,14 +559,7 @@ def block_local(*args):
 
     Args:
         *args (List[Field]): A list of sparse Taichi fields.
-
-    Raises:
-        InvalidOperationError: If the ``dynamic_index`` feature (experimental)
-            is enabled.
     """
-    if ti.current_cfg().dynamic_index:
-        raise InvalidOperationError(
-            'dynamic_index is not allowed when block_local is turned on.')
     for a in args:
         for v in a.get_field_members():
             _ti_core.insert_snode_access_flag(

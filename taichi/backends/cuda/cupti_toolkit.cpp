@@ -260,6 +260,247 @@ inline bool parse_metric_name_string(const std::string &metric_name,
   return true;
 }
 
+#if CUDA_VERSION >= 11040
+
+// copy from : CUPTI/samples/extensions/src/profilerhost_util/Metric.cpp
+bool get_raw_metric_requests(
+    std::string chip_name,
+    const std::vector<std::string> &metric_names,
+    std::vector<NVPA_RawMetricRequest> &raw_metric_requests,
+    const uint8_t *p_counter_availability_image) {
+  NVPW_CUDA_MetricsEvaluator_CalculateScratchBufferSize_Params
+      calculate_scratch_buffer_size_param = {
+          NVPW_CUDA_MetricsEvaluator_CalculateScratchBufferSize_Params_STRUCT_SIZE};
+  calculate_scratch_buffer_size_param.pChipName = chip_name.c_str();
+  calculate_scratch_buffer_size_param.pCounterAvailabilityImage =
+      p_counter_availability_image;
+  RETURN_IF_NVPW_ERROR(false,
+                       NVPW_CUDA_MetricsEvaluator_CalculateScratchBufferSize(
+                           &calculate_scratch_buffer_size_param));
+
+  std::vector<uint8_t> scratch_buffer(
+      calculate_scratch_buffer_size_param.scratchBufferSize);
+  NVPW_CUDA_MetricsEvaluator_Initialize_Params
+      metric_evaluator_initialize_params = {
+          NVPW_CUDA_MetricsEvaluator_Initialize_Params_STRUCT_SIZE};
+  metric_evaluator_initialize_params.scratchBufferSize = scratch_buffer.size();
+  metric_evaluator_initialize_params.pScratchBuffer = scratch_buffer.data();
+  metric_evaluator_initialize_params.pChipName = chip_name.c_str();
+  metric_evaluator_initialize_params.pCounterAvailabilityImage =
+      p_counter_availability_image;
+  RETURN_IF_NVPW_ERROR(false, NVPW_CUDA_MetricsEvaluator_Initialize(
+                                  &metric_evaluator_initialize_params));
+  NVPW_MetricsEvaluator *metric_evaluator =
+      metric_evaluator_initialize_params.pMetricsEvaluator;
+
+  bool isolated = true;
+  bool keep_instances = true;
+  std::vector<const char *> raw_metric_names;
+  for (auto &metric_name : metric_names) {
+    std::string req_name;
+    parse_metric_name_string(metric_name, &req_name, &isolated,
+                             &keep_instances);
+    keep_instances = true;
+    NVPW_MetricEvalRequest metric_eval_request;
+    NVPW_MetricsEvaluator_ConvertMetricNameToMetricEvalRequest_Params
+        convert_metric_to_eval_request = {
+            NVPW_MetricsEvaluator_ConvertMetricNameToMetricEvalRequest_Params_STRUCT_SIZE};
+    convert_metric_to_eval_request.pMetricsEvaluator = metric_evaluator;
+    convert_metric_to_eval_request.pMetricName = req_name.c_str();
+    convert_metric_to_eval_request.pMetricEvalRequest = &metric_eval_request;
+    convert_metric_to_eval_request.metricEvalRequestStructSize =
+        NVPW_MetricEvalRequest_STRUCT_SIZE;
+    RETURN_IF_NVPW_ERROR(
+        false, NVPW_MetricsEvaluator_ConvertMetricNameToMetricEvalRequest(
+                   &convert_metric_to_eval_request));
+
+    std::vector<const char *> raw_dependencies;
+    NVPW_MetricsEvaluator_GetMetricRawDependencies_Params
+        get_metric_raw_dependencies_parms = {
+            NVPW_MetricsEvaluator_GetMetricRawDependencies_Params_STRUCT_SIZE};
+    get_metric_raw_dependencies_parms.pMetricsEvaluator = metric_evaluator;
+    get_metric_raw_dependencies_parms.pMetricEvalRequests =
+        &metric_eval_request;
+    get_metric_raw_dependencies_parms.numMetricEvalRequests = 1;
+    get_metric_raw_dependencies_parms.metricEvalRequestStructSize =
+        NVPW_MetricEvalRequest_STRUCT_SIZE;
+    get_metric_raw_dependencies_parms.metricEvalRequestStrideSize =
+        sizeof(NVPW_MetricEvalRequest);
+    RETURN_IF_NVPW_ERROR(false, NVPW_MetricsEvaluator_GetMetricRawDependencies(
+                                    &get_metric_raw_dependencies_parms));
+    raw_dependencies.resize(
+        get_metric_raw_dependencies_parms.numRawDependencies);
+    get_metric_raw_dependencies_parms.ppRawDependencies =
+        raw_dependencies.data();
+    RETURN_IF_NVPW_ERROR(false, NVPW_MetricsEvaluator_GetMetricRawDependencies(
+                                    &get_metric_raw_dependencies_parms));
+
+    for (size_t i = 0; i < raw_dependencies.size(); ++i) {
+      raw_metric_names.push_back(raw_dependencies[i]);
+    }
+  }
+
+  for (auto &raw_metric_name : raw_metric_names) {
+    NVPA_RawMetricRequest metric_request = {
+        NVPA_RAW_METRIC_REQUEST_STRUCT_SIZE};
+    metric_request.pMetricName = raw_metric_name;
+    metric_request.isolated = isolated;
+    metric_request.keepInstances = keep_instances;
+    raw_metric_requests.push_back(metric_request);
+  }
+
+  NVPW_MetricsEvaluator_Destroy_Params metric_evaluator_destroy_params = {
+      NVPW_MetricsEvaluator_Destroy_Params_STRUCT_SIZE};
+  metric_evaluator_destroy_params.pMetricsEvaluator = metric_evaluator;
+  RETURN_IF_NVPW_ERROR(
+      false, NVPW_MetricsEvaluator_Destroy(&metric_evaluator_destroy_params));
+  return true;
+}
+
+// copy from : CUPTI/samples/extensions/src/profilerhost_util/Metric.cpp
+bool get_config_image(std::string chip_name,
+                      const std::vector<std::string> &metric_names,
+                      std::vector<uint8_t> &config_image,
+                      const uint8_t *p_counter_availability_image) {
+  std::vector<NVPA_RawMetricRequest> raw_metric_requests;
+  get_raw_metric_requests(chip_name, metric_names, raw_metric_requests,
+                          p_counter_availability_image);
+
+  NVPW_CUDA_RawMetricsConfig_Create_V2_Params raw_metrics_config_create_params =
+      {NVPW_CUDA_RawMetricsConfig_Create_V2_Params_STRUCT_SIZE};
+  raw_metrics_config_create_params.activityKind = NVPA_ACTIVITY_KIND_PROFILER;
+  raw_metrics_config_create_params.pChipName = chip_name.c_str();
+  raw_metrics_config_create_params.pCounterAvailabilityImage =
+      p_counter_availability_image;
+  RETURN_IF_NVPW_ERROR(false, NVPW_CUDA_RawMetricsConfig_Create_V2(
+                                  &raw_metrics_config_create_params));
+  NVPA_RawMetricsConfig *p_raw_metrics_config =
+      raw_metrics_config_create_params.pRawMetricsConfig;
+
+  if (p_counter_availability_image) {
+    NVPW_RawMetricsConfig_SetCounterAvailability_Params
+        set_counter_availability_params = {
+            NVPW_RawMetricsConfig_SetCounterAvailability_Params_STRUCT_SIZE};
+    set_counter_availability_params.pRawMetricsConfig = p_raw_metrics_config;
+    set_counter_availability_params.pCounterAvailabilityImage =
+        p_counter_availability_image;
+    RETURN_IF_NVPW_ERROR(false, NVPW_RawMetricsConfig_SetCounterAvailability(
+                                    &set_counter_availability_params));
+  }
+
+  NVPW_RawMetricsConfig_Destroy_Params raw_metrics_config_destroy_params = {
+      NVPW_RawMetricsConfig_Destroy_Params_STRUCT_SIZE};
+  raw_metrics_config_destroy_params.pRawMetricsConfig = p_raw_metrics_config;
+  SCOPE_EXIT([&]() {
+    NVPW_RawMetricsConfig_Destroy((NVPW_RawMetricsConfig_Destroy_Params
+                                       *)&raw_metrics_config_destroy_params);
+  });
+
+  NVPW_RawMetricsConfig_BeginPassGroup_Params begin_pass_group_params = {
+      NVPW_RawMetricsConfig_BeginPassGroup_Params_STRUCT_SIZE};
+  begin_pass_group_params.pRawMetricsConfig = p_raw_metrics_config;
+  RETURN_IF_NVPW_ERROR(
+      false, NVPW_RawMetricsConfig_BeginPassGroup(&begin_pass_group_params));
+
+  NVPW_RawMetricsConfig_AddMetrics_Params add_metrics_params = {
+      NVPW_RawMetricsConfig_AddMetrics_Params_STRUCT_SIZE};
+  add_metrics_params.pRawMetricsConfig = p_raw_metrics_config;
+  add_metrics_params.pRawMetricRequests = raw_metric_requests.data();
+  add_metrics_params.numMetricRequests = raw_metric_requests.size();
+  RETURN_IF_NVPW_ERROR(false,
+                       NVPW_RawMetricsConfig_AddMetrics(&add_metrics_params));
+
+  NVPW_RawMetricsConfig_EndPassGroup_Params end_pass_group_params = {
+      NVPW_RawMetricsConfig_EndPassGroup_Params_STRUCT_SIZE};
+  end_pass_group_params.pRawMetricsConfig = p_raw_metrics_config;
+  RETURN_IF_NVPW_ERROR(
+      false, NVPW_RawMetricsConfig_EndPassGroup(&end_pass_group_params));
+
+  NVPW_RawMetricsConfig_GenerateConfigImage_Params
+      generate_config_image_params = {
+          NVPW_RawMetricsConfig_GenerateConfigImage_Params_STRUCT_SIZE};
+  generate_config_image_params.pRawMetricsConfig = p_raw_metrics_config;
+  RETURN_IF_NVPW_ERROR(false, NVPW_RawMetricsConfig_GenerateConfigImage(
+                                  &generate_config_image_params));
+
+  NVPW_RawMetricsConfig_GetConfigImage_Params get_config_image_params = {
+      NVPW_RawMetricsConfig_GetConfigImage_Params_STRUCT_SIZE};
+  get_config_image_params.pRawMetricsConfig = p_raw_metrics_config;
+  get_config_image_params.bytesAllocated = 0;
+  get_config_image_params.pBuffer = NULL;
+  RETURN_IF_NVPW_ERROR(
+      false, NVPW_RawMetricsConfig_GetConfigImage(&get_config_image_params));
+
+  config_image.resize(get_config_image_params.bytesCopied);
+  get_config_image_params.bytesAllocated = config_image.size();
+  get_config_image_params.pBuffer = config_image.data();
+  RETURN_IF_NVPW_ERROR(
+      false, NVPW_RawMetricsConfig_GetConfigImage(&get_config_image_params));
+
+  return true;
+}
+
+// copy from : CUPTI/samples/extensions/src/profilerhost_util/Metric.cpp
+bool get_counter_data_prefix_image(
+    std::string chip_name,
+    const std::vector<std::string> &metric_names,
+    std::vector<uint8_t> &counter_data_image_prefix,
+    const uint8_t *p_counter_availability_image) {
+  std::vector<NVPA_RawMetricRequest> raw_metric_requests;
+  get_raw_metric_requests(chip_name, metric_names, raw_metric_requests,
+                          p_counter_availability_image);
+
+  NVPW_CUDA_CounterDataBuilder_Create_Params
+      counter_data_builder_create_params = {
+          NVPW_CUDA_CounterDataBuilder_Create_Params_STRUCT_SIZE};
+  counter_data_builder_create_params.pChipName = chip_name.c_str();
+  counter_data_builder_create_params.pCounterAvailabilityImage =
+      p_counter_availability_image;
+  RETURN_IF_NVPW_ERROR(false, NVPW_CUDA_CounterDataBuilder_Create(
+                                  &counter_data_builder_create_params));
+
+  NVPW_CounterDataBuilder_Destroy_Params counter_data_builder_destroy_params = {
+      NVPW_CounterDataBuilder_Destroy_Params_STRUCT_SIZE};
+  counter_data_builder_destroy_params.pCounterDataBuilder =
+      counter_data_builder_create_params.pCounterDataBuilder;
+  SCOPE_EXIT([&]() {
+    NVPW_CounterDataBuilder_Destroy(
+        (NVPW_CounterDataBuilder_Destroy_Params
+             *)&counter_data_builder_destroy_params);
+  });
+
+  NVPW_CounterDataBuilder_AddMetrics_Params add_metrics_params = {
+      NVPW_CounterDataBuilder_AddMetrics_Params_STRUCT_SIZE};
+  add_metrics_params.pCounterDataBuilder =
+      counter_data_builder_create_params.pCounterDataBuilder;
+  add_metrics_params.pRawMetricRequests = raw_metric_requests.data();
+  add_metrics_params.numMetricRequests = raw_metric_requests.size();
+  RETURN_IF_NVPW_ERROR(false,
+                       NVPW_CounterDataBuilder_AddMetrics(&add_metrics_params));
+
+  NVPW_CounterDataBuilder_GetCounterDataPrefix_Params
+      get_counter_dataPrefix_params = {
+          NVPW_CounterDataBuilder_GetCounterDataPrefix_Params_STRUCT_SIZE};
+  get_counter_dataPrefix_params.pCounterDataBuilder =
+      counter_data_builder_create_params.pCounterDataBuilder;
+  get_counter_dataPrefix_params.bytesAllocated =
+      0;  // size_t counterDataPrefixSize = 0
+  get_counter_dataPrefix_params.pBuffer = NULL;
+  RETURN_IF_NVPW_ERROR(false, NVPW_CounterDataBuilder_GetCounterDataPrefix(
+                                  &get_counter_dataPrefix_params));
+
+  counter_data_image_prefix.resize(get_counter_dataPrefix_params.bytesCopied);
+  get_counter_dataPrefix_params.bytesAllocated =
+      counter_data_image_prefix.size();
+  get_counter_dataPrefix_params.pBuffer = counter_data_image_prefix.data();
+  RETURN_IF_NVPW_ERROR(false, NVPW_CounterDataBuilder_GetCounterDataPrefix(
+                                  &get_counter_dataPrefix_params));
+
+  return true;
+}
+
+#else  // CUDA_VERSION < 11040
+
 // copy from : CUPTI/samples/extensions/src/profilerhost_util/Metric.cpp
 bool get_raw_metric_requests(
     NVPA_MetricsContext *metrics_context,
@@ -412,7 +653,8 @@ bool get_config_image(std::string chip_name,
 bool get_counter_data_prefix_image(
     std::string chip_name,
     std::vector<std::string> metric_names,
-    std::vector<uint8_t> &counter_data_image_prefix) {
+    std::vector<uint8_t> &counter_data_image_prefix,
+    const uint8_t *p_counter_availability_image) {
   NVPW_CUDA_MetricsContext_Create_Params metrics_context_create_params = {
       NVPW_CUDA_MetricsContext_Create_Params_STRUCT_SIZE};
   metrics_context_create_params.pChipName = chip_name.c_str();
@@ -479,6 +721,8 @@ bool get_counter_data_prefix_image(
 
   return true;
 }
+
+#endif  // CUDA_VERSION
 
 // copy from CUPTI/samples/autorange_profiling/simplecuda.cu
 bool create_counter_data_image(
@@ -636,9 +880,10 @@ bool CuptiToolkit::init_cupti() {
   }
   TI_TRACE("get_config_image");
 
-  state = get_counter_data_prefix_image(cupti_image_.chip_name,
-                                        cupti_config_.metric_list,
-                                        cupti_image_.counter_data_image_prefix);
+  state = get_counter_data_prefix_image(
+      cupti_image_.chip_name, cupti_config_.metric_list,
+      cupti_image_.counter_data_image_prefix,
+      cupti_image_.counter_availability_image.data());
   if (!state) {
     TI_ERROR("Failed to create counter_data_image_prefix");
   }
@@ -648,8 +893,9 @@ bool CuptiToolkit::init_cupti() {
                                     cupti_image_.counter_data_image,
                                     cupti_image_.counter_data_scratch_buffer,
                                     cupti_image_.counter_data_image_prefix);
+
   if (!state) {
-    TI_ERROR("Failed to create counterDataImage");
+    TI_ERROR("Failed to create counter_data_image");
   }
   TI_TRACE("create_counter_data_image");
 

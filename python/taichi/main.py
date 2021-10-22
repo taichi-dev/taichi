@@ -90,17 +90,10 @@ class TaichiMain:
         return getattr(self, args.command)(sys.argv[2:])
 
     def _get_friend_links(self):
-        uri = 'en/stable'
-        try:
-            import locale  # pylint: disable=C0415
-            if 'zh' in locale.getdefaultlocale()[0]:
-                uri = 'zh_CN/latest'
-        except:
-            pass
         return '\n' \
-               f'Docs:   https://taichi.rtfd.io/{uri}\n' \
-               f'GitHub: https://github.com/taichi-dev/taichi\n' \
-               f'Forum:  https://forum.taichi.graphics\n'
+               'Docs:   https://docs.taichi.graphics/\n' \
+               'GitHub: https://github.com/taichi-dev/taichi/\n' \
+               'Forum:  https://forum.taichi.graphics/\n'
 
     def _usage(self) -> str:
         """Compose deterministic usage message based on registered_commands."""
@@ -180,6 +173,8 @@ class TaichiMain:
             dest='save',
             action='store_true',
             help="Save source code to current directory instead of running it")
+
+        # TODO: Pass the arguments to downstream correctly(#3216).
         args = parser.parse_args(arguments)
 
         examples_dir = TaichiMain._get_examples_dir()

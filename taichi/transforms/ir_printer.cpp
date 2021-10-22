@@ -96,7 +96,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendExprStmt *stmt) override {
-    print("{}", stmt->val->serialize());
+    print("{}", stmt->val.serialize());
   }
 
   void visit(FrontendBreakStmt *stmt) override {
@@ -108,7 +108,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendAssignStmt *assign) override {
-    print("{} = {}", assign->lhs->serialize(), assign->rhs->serialize());
+    print("{} = {}", assign->lhs.serialize(), assign->rhs.serialize());
   }
 
   void visit(FrontendAllocaStmt *alloca) override {
@@ -117,7 +117,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendAssertStmt *assert) override {
-    print("{} : assert {}", assert->id, assert->cond->serialize());
+    print("{} : assert {}", assert->id, assert->cond.serialize());
   }
 
   void visit(AssertStmt *assert) override {
@@ -148,7 +148,7 @@ class IRPrinter : public IRVisitor {
   void visit(FrontendSNodeOpStmt *stmt) override {
     std::string extras = "[";
     for (int i = 0; i < (int)stmt->indices.size(); i++) {
-      extras += stmt->indices[i]->serialize();
+      extras += stmt->indices[i].serialize();
       if (i + 1 < (int)stmt->indices.size())
         extras += ", ";
     }
@@ -223,7 +223,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendIfStmt *if_stmt) override {
-    print("{} : if {} {{", if_stmt->name(), if_stmt->condition->serialize());
+    print("{} : if {} {{", if_stmt->name(), if_stmt->condition.serialize());
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -310,7 +310,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendWhileStmt *stmt) override {
-    print("{} : while {} {{", stmt->name(), stmt->cond->serialize());
+    print("{} : while {} {{", stmt->name(), stmt->cond.serialize());
     stmt->body->accept(this);
     print("}}");
   }
@@ -321,14 +321,14 @@ class IRPrinter : public IRVisitor {
         [](const Identifier &id) -> std::string { return id.name(); });
     if (for_stmt->is_ranged()) {
       print("{} : for {} in range({}, {}) {}{{", for_stmt->name(), vars,
-            for_stmt->begin->serialize(), for_stmt->end->serialize(),
+            for_stmt->begin.serialize(), for_stmt->end.serialize(),
             block_dim_info(for_stmt->block_dim));
     } else {
       print("{} : for {} in {} {}{}{{", for_stmt->name(), vars,
             for_stmt->global_var.is<GlobalVariableExpression>()
                 ? for_stmt->global_var.cast<GlobalVariableExpression>()
                       ->snode->get_node_type_name_hinted()
-                : for_stmt->global_var->serialize(),
+                : for_stmt->global_var.serialize(),
             scratch_pad_info(for_stmt->mem_access_opt),
             block_dim_info(for_stmt->block_dim));
     }
@@ -398,7 +398,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(FrontendReturnStmt *stmt) override {
     print("{}{} : return {}", stmt->type_hint(), stmt->name(),
-          stmt->value->serialize());
+          stmt->value.serialize());
   }
 
   void visit(ReturnStmt *stmt) override {

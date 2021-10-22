@@ -157,6 +157,7 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   } else {
     tlctx = llvm_context_host.get();
   }
+
   auto *const runtime_jit = tlctx->runtime_jit_module;
   // By the time this creator is called, "this" is already destroyed.
   // Therefore it is necessary to capture members by values.
@@ -191,6 +192,7 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
 
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
+      const auto snode_id = snodes[i]->id;
       std::size_t node_size;
       auto element_size = snodes[i]->cell_size_bytes;
       if (snodes[i]->type == SNodeType::pointer) {
@@ -200,14 +202,14 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
         // dynamic. Allocators are for the chunks
         node_size = sizeof(void *) + element_size * snodes[i]->chunk_size;
       }
-      TI_TRACE("Initializing allocator for snode {} (node size {})",
-               snodes[i]->id, node_size);
+      TI_TRACE("Initializing allocator for snode {} (node size {})", snode_id,
+               node_size);
       auto rt = llvm_runtime;
       runtime_jit->call<void *, int, std::size_t>(
-          "runtime_NodeAllocator_initialize", rt, snodes[i]->id, node_size);
+          "runtime_NodeAllocator_initialize", rt, snode_id, node_size);
       TI_TRACE("Allocating ambient element for snode {} (node size {})",
-               snodes[i]->id, node_size);
-      runtime_jit->call<void *, int>("runtime_allocate_ambient", rt, i,
+               snode_id, node_size);
+      runtime_jit->call<void *, int>("runtime_allocate_ambient", rt, snode_id,
                                      node_size);
     }
   }
@@ -216,20 +218,16 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
 void LlvmProgramImpl::materialize_snode_tree(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-    std::unordered_map<int, SNode *> &snodes,
     uint64 *result_buffer) {
   auto *const root = tree->root();
-  auto host_module = clone_struct_compiler_initial_context(
-      snode_trees_, llvm_context_host.get());
-  std::unique_ptr<StructCompiler> scomp = std::make_unique<StructCompilerLLVM>(
-      host_arch(), this, std::move(host_module));
-  scomp->run(*root);
-
-  for (auto snode : scomp->snodes) {
-    snodes[snode->id] = snode;
-  }
-
   if (arch_is_cpu(config->arch)) {
+    auto host_module = clone_struct_compiler_initial_context(
+        snode_trees_, llvm_context_host.get());
+    std::unique_ptr<StructCompiler> scomp =
+        std::make_unique<StructCompilerLLVM>(host_arch(), this,
+                                             std::move(host_module));
+    scomp->run(*root);
+
     initialize_llvm_runtime_snodes(tree, scomp.get(), result_buffer);
   } else if (config->arch == Arch::cuda) {
     auto device_module = clone_struct_compiler_initial_context(

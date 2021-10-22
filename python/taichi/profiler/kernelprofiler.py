@@ -78,6 +78,8 @@ class KernelProfiler:
         Returns:
             time (float): total time in second.
         """
+        if self._check_not_turned_on_with_warning_message():
+            return 0.0
         self._update_records()  # kernel records
         self._count_statistics()  # _total_time_ms is counted here
         return self._total_time_ms / 1000  # ms to s
@@ -88,6 +90,8 @@ class KernelProfiler:
         Note:
             The values of ``self._profiling_mode`` and ``self._metric_list`` will not be cleared.
         """
+        if self._check_not_turned_on_with_warning_message():
+            return None
         #sync first
         impl.get_runtime().sync()
         #then clear backend & frontend info
@@ -96,7 +100,8 @@ class KernelProfiler:
 
     def query_info(self, name):
         """For docsting of this function, see :func:`~taichi.lang.query_kernel_profile_info`."""
-
+        if self._check_not_turned_on_with_warning_message():
+            return None
         self._update_records()  # kernel records
         self._count_statistics()  # statistics results
         # TODO : query self.StatisticalResult in python scope
@@ -104,7 +109,8 @@ class KernelProfiler:
 
     def set_metrics(self, metric_list=default_cupti_metrics):
         """For docsting of this function, see :func:`~taichi.lang.set_kernel_profile_metrics`."""
-
+        if self._check_not_turned_on_with_warning_message():
+            return None
         self._metric_list = metric_list
         metric_name_list = [metric.name for metric in metric_list]
         self.clear_info()
@@ -117,6 +123,8 @@ class KernelProfiler:
 
         For usage of this function, see :func:`~taichi.lang.collect_kernel_profile_metrics`.
         """
+        if self._check_not_turned_on_with_warning_message():
+            return None
         self.set_metrics(metric_list)
         yield self
         self.set_metrics()  #back to default metric list
@@ -133,6 +141,8 @@ class KernelProfiler:
         Args:
             mode (str): the way to print profiling results.
         """
+        if self._check_not_turned_on_with_warning_message():
+            return None
         self._update_records()  # kernel records
         self._count_statistics()  # statistics results
 
@@ -148,6 +158,14 @@ class KernelProfiler:
             )
 
     # private methods
+    def _check_not_turned_on_with_warning_message(self):
+        if self._profiling_mode is False:
+            _ti_core.warn(
+                f'use \'ti.init(kernel_profiler = True)\' to turn on KernelProfiler.'
+            )
+            return True
+        else:
+            return False
 
     def _clear_frontend(self):
         """Clear member variables in :class:`~taichi.profiler.kernelprofiler.KernelProfiler`.
@@ -172,7 +190,7 @@ class KernelProfiler:
         The profiling records with the same kernel name are counted as a profiling result.
         """
         for record in self._traced_records:
-            if self._statistical_results.get(record.name) == None:
+            if self._statistical_results.get(record.name) is None:
                 self._statistical_results[record.name] = StatisticalResult(
                     record.name)
             self._statistical_results[record.name].insert_record(
@@ -185,15 +203,24 @@ class KernelProfiler:
                                reverse=True)
         }
 
+    def _make_table_header(self, mode):
+        header_str = f'Kernel Profiler({mode})'
+        arch_name = f' @ {_ti_core.arch_name(ti.cfg.arch).upper()}'
+        device_name = impl.get_runtime().prog.get_kernel_profiler_device_name()
+        if len(device_name) > 1:  # default device_name = ' '
+            device_name = ' on ' + device_name
+        return header_str + arch_name + device_name
+
     def _print_statistics_info(self):
         """Print statistics of launched kernels during the profiling period."""
 
         # headers
-        table_header = f'Kernel Profiler(count) @ {_ti_core.arch_name(ti.cfg.arch).upper()}'
+        table_header = table_header = self._make_table_header('count')
         column_header = '[      %     total   count |      min       avg       max   ] Kernel name'
         # partition line
-        outer_partition_line = '=' * len(column_header)
-        inner_partition_line = '-' * len(column_header)
+        line_length = max(len(column_header), len(table_header))
+        outer_partition_line = '=' * line_length
+        inner_partition_line = '-' * line_length
 
         #message in one line
         string_list = []
@@ -236,16 +263,26 @@ class KernelProfiler:
         metric_list = self._metric_list
         values_num = len(self._traced_records[0].metric_values)
 
+        # We currently get kernel attributes through CUDA Driver API,
+        # there is no corresponding implementation in other backends yet.
+        # Profiler dose not print invalid kernel attributes info for now.
+        kernel_attribute_state = self._traced_records[0].register_per_thread > 0
+
         # headers
-        table_header = f"Kernel Profiler(trace) @ {_ti_core.arch_name(ti.cfg.arch).upper()}"
+        table_header = self._make_table_header('trace')
         column_header = ('[  start.time | kernel.time |')  #default
+        if kernel_attribute_state:
+            column_header += (
+                '   regs  |   shared mem | grid size | block size | occupancy |'
+            )  #kernel_attributes
         for idx in range(values_num):
             column_header += metric_list[idx].header + '|'
         column_header = (column_header + '] Kernel name').replace("|]", "]")
 
         # partition line
-        outer_partition_line = '=' * len(column_header)
-        inner_partition_line = '-' * len(column_header)
+        line_length = max(len(column_header), len(table_header))
+        outer_partition_line = '=' * line_length
+        inner_partition_line = '-' * line_length
 
         # message in one line: formatted_str.format(*values)
         fake_timestamp = 0.0
@@ -254,6 +291,13 @@ class KernelProfiler:
         for record in self._traced_records:
             formatted_str = '[{:9.3f} ms |{:9.3f} ms |'  #default
             values = [fake_timestamp, record.kernel_time]  #default
+            if kernel_attribute_state:
+                formatted_str += '    {:4d} | {:6d} bytes |    {:6d} |     {:6d} | {:2d} blocks |'
+                values += [
+                    record.register_per_thread, record.shared_mem_per_block,
+                    record.grid_size, record.block_size,
+                    record.active_blocks_per_multiprocessor
+                ]
             for idx in range(values_num):
                 formatted_str += metric_list[idx].format + '|'
                 values += [record.metric_values[idx] * metric_list[idx].scale]

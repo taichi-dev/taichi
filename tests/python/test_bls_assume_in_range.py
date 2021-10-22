@@ -31,7 +31,7 @@ def _test_scattering_two_pointer_levels():
                       use_offset=False)
 
 
-@ti.test(require=ti.extension.bls, dynamic_index=False)
+@ti.test(require=ti.extension.bls)
 def test_gathering():
     bls_particle_grid(N=128,
                       ppc=10,

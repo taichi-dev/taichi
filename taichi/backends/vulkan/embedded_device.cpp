@@ -528,6 +528,9 @@ void EmbeddedVulkanDevice::create_logical_device() {
       } else if (shader_f16_i8_feature.shaderInt8) {
         ti_device_->set_cap(DeviceCapability::spirv_has_int8, true);
       }
+#ifdef __APPLE__
+      ti_device_->set_cap(DeviceCapability::spirv_has_int8, true);
+#endif
       *pNextEnd = &shader_f16_i8_feature;
       pNextEnd = &shader_f16_i8_feature.pNext;
     }

@@ -2,6 +2,7 @@ import ast
 import functools
 import inspect
 import re
+import textwrap
 
 import numpy as np
 import taichi.lang
@@ -21,25 +22,6 @@ import taichi as ti
 
 if util.has_pytorch():
     import torch
-
-
-def _remove_indent(lines):
-    lines = lines.split('\n')
-    to_remove = 0
-    for i in range(len(lines[0])):
-        if lines[0][i] == ' ':
-            to_remove = i + 1
-        else:
-            break
-
-    cleaned = []
-    for l in lines:
-        cleaned.append(l[to_remove:])
-        if len(l) >= to_remove:
-            for i in range(to_remove):
-                assert l[i] == ' '
-
-    return '\n'.join(cleaned)
 
 
 def func(fn):
@@ -168,7 +150,7 @@ class Func:
                 self.taichi_functions[key.instance_id], non_template_args))
 
     def do_compile(self, key, args):
-        src = _remove_indent(oinspect.getsource(self.func))
+        src = textwrap.dedent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]
@@ -433,7 +415,7 @@ class Kernel:
                                            grad_suffix)
         ti.trace("Compiling kernel {}...".format(kernel_name))
 
-        src = _remove_indent(oinspect.getsource(self.func))
+        src = textwrap.dedent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]

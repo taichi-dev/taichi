@@ -25,10 +25,6 @@ if util.has_pytorch():
     import torch
 
 
-def _remove_indent(lines):
-    return textwrap.dedent(lines)
-
-
 def func(fn):
     """Marks a function as callable in Taichi-scope.
 
@@ -155,7 +151,7 @@ class Func:
                 self.taichi_functions[key.instance_id], non_template_args))
 
     def do_compile(self, key, args):
-        src = _remove_indent(oinspect.getsource(self.func))
+        src = textwrap.dedent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]
@@ -420,7 +416,7 @@ class Kernel:
                                            grad_suffix)
         ti.trace("Compiling kernel {}...".format(kernel_name))
 
-        src = _remove_indent(oinspect.getsource(self.func))
+        src = textwrap.dedent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]

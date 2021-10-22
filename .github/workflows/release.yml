@@ -39,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Create Python Wheel
         run: |
@@ -114,18 +114,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
 
       - name: Download Pre-Built LLVM 10.0.0
-        run: |
-          python misc/ci_download.py
-          mkdir taichi-llvm
-          cd taichi-llvm
-          unzip ../taichi-llvm.zip
+        run: python misc/ci_download.py
         env:
           CI_PLATFORM: macos-latest
 
@@ -183,7 +179,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Build
         run: |
@@ -237,7 +233,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Build
         run: |
@@ -292,7 +288,6 @@ jobs:
           if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
           elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
 
-
   build_and_upload_windows:
     name: Build and Upload (Windows only)
     needs: matrix_prep
@@ -307,7 +302,7 @@ jobs:
 
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - uses: actions/setup-python@v2
         with:

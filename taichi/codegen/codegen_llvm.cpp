@@ -778,10 +778,10 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
   } else if (val.dt->is_primitive(PrimitiveTypeID::u64)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(64, val.val_uint64(), false));
-  } else if (val.dt->is_primitive(PrimitiveTypeID::u16)){
+  } else if (val.dt->is_primitive(PrimitiveTypeID::u16)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(16, (uint64)val.val_uint16(), false));
-  } else if (val.dt->is_primitive(PrimitiveTypeID::i16)){
+  } else if (val.dt->is_primitive(PrimitiveTypeID::i16)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(16, (uint64)val.val_uint16(), true));
   } else {

@@ -503,7 +503,6 @@ void EmbeddedVulkanDevice::create_logical_device() {
     {
       features2.pNext = &shader_atomic_float_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
-
       if (shader_atomic_float_feature.shaderBufferFloat32AtomicAdd) {
         ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float_add, true);
       } else if (shader_atomic_float_feature.shaderBufferFloat64AtomicAdd) {

@@ -18,7 +18,7 @@ std::string get_cuda_error_message(uint32 err) {
 bool CUDADriver::detected() {
   if (get_environ_config("TI_ENABLE_CUDA", 1) == 0)
     return false;
-  return cuda_version_valid && loader_->loaded();
+  return cuda_version_valid_ && loader_->loaded();
 }
 
 CUDADriver::CUDADriver() {
@@ -44,10 +44,9 @@ CUDADriver::CUDADriver() {
 
     // CUDA versions should >= 10.
     if (version < 10000) {
-      cuda_version_valid = false;
-      TI_WARN(
-          "CUDA driver version < 10.0. Taichi requires at least installed CUDA "
-          "10.0.");
+      cuda_version_valid_ = false;
+      TI_WARN("The Taichi CUDA backend requires at least CUDA 10.0, got {}",
+              version);
     } else {
 #define PER_CUDA_FUNCTION(name, symbol_name, ...) \
   name.set(loader_->load_function(#symbol_name)); \

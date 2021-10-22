@@ -122,7 +122,7 @@ class CUDADriver {
 
   std::mutex lock_;
 
-  bool cuda_version_valid = true;
+  bool cuda_version_valid_{true};
 };
 
 TLANG_NAMESPACE_END

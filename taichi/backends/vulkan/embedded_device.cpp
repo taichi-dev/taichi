@@ -529,6 +529,7 @@ void EmbeddedVulkanDevice::create_logical_device() {
         ti_device_->set_cap(DeviceCapability::spirv_has_int8, true);
       }
 #ifdef __APPLE__
+      // TODO: investigate why MoltenVK isn't reporting int8 caps. See #3252
       ti_device_->set_cap(DeviceCapability::spirv_has_int8, true);
 #endif
       *pNextEnd = &shader_f16_i8_feature;

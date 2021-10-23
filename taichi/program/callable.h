@@ -30,7 +30,8 @@ class Callable {
   struct Ret {
     PrimitiveTypeID ptid;
 
-    explicit Ret(const PrimitiveTypeID &ptid = PrimitiveTypeID::unknown) : ptid(ptid) {
+    explicit Ret(const PrimitiveTypeID &ptid = PrimitiveTypeID::unknown)
+        : ptid(ptid) {
     }
   };
 

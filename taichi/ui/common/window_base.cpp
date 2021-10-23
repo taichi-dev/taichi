@@ -16,17 +16,27 @@ void WindowBase::set_callbacks() {
   glfwSetMouseButtonCallback(glfw_window_, mouse_button_callback);
 
   input_handler_.add_key_callback([&](int key, int action) {
-    if (action == GLFW_PRESS) {
-      events_.push_back({EventType::Press, button_id_to_name(key)});
-    } else if (action == GLFW_RELEASE) {
-      events_.push_back({EventType::Release, button_id_to_name(key)});
+    // Catch exception from button_id_to_name().
+    try {
+      if (action == GLFW_PRESS) {
+        events_.push_back({EventType::Press, button_id_to_name(key)});
+      } else if (action == GLFW_RELEASE) {
+        events_.push_back({EventType::Release, button_id_to_name(key)});
+      }
+    } catch (const std::runtime_error &e) {
+      TI_TRACE("Input: {}.", e.what());
     }
   });
   input_handler_.add_mouse_button_callback([&](int key, int action) {
-    if (action == GLFW_PRESS) {
-      events_.push_back({EventType::Press, button_id_to_name(key)});
-    } else if (action == GLFW_RELEASE) {
-      events_.push_back({EventType::Release, button_id_to_name(key)});
+    // Catch exception from button_id_to_name().
+    try {
+      if (action == GLFW_PRESS) {
+        events_.push_back({EventType::Press, button_id_to_name(key)});
+      } else if (action == GLFW_RELEASE) {
+        events_.push_back({EventType::Release, button_id_to_name(key)});
+      }
+    } catch (const std::runtime_error &e) {
+      TI_TRACE("Input: {}.", e.what());
     }
   });
 }
@@ -55,7 +65,14 @@ void WindowBase::show() {
 }
 
 bool WindowBase::is_pressed(std::string button) {
-  int button_id = buttom_name_to_id(button);
+  int button_id;
+  // Catch exception from buttom_name_to_id().
+  try {
+    button_id = buttom_name_to_id(button);
+  } catch (const std::runtime_error &e) {
+    TI_TRACE("Pressed: {}.", e.what());
+    return false;
+  }
   return input_handler_.is_pressed(button_id) > 0;
 }
 

@@ -4,13 +4,13 @@
 namespace taichi {
 namespace lang {
 
-int Callable::insert_arg(const DataType &dt, bool is_external_array) {
-  args.emplace_back(dt->get_compute_type(), is_external_array, /*size=*/0);
+int Callable::insert_arg(const PrimitiveTypeID &ptid, bool is_external_array) {
+  args.emplace_back(ptid->get_compute_type(), is_external_array, /*size=*/0);
   return (int)args.size() - 1;
 }
 
-int Callable::insert_ret(const DataType &dt) {
-  rets.emplace_back(dt->get_compute_type());
+int Callable::insert_ret(const PrimitiveTypeID &ptid) {
+  rets.emplace_back(ptid->get_compute_type());
   return (int)rets.size() - 1;
 }
 

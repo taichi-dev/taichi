@@ -16,21 +16,21 @@ class Callable {
   std::unique_ptr<FrontendContext> context;
 
   struct Arg {
-    DataType dt;
+    PrimitiveTypeID ptid;
     bool is_external_array;
     std::size_t size;
 
-    explicit Arg(const DataType &dt = PrimitiveType::unknown,
+    explicit Arg(const PrimitiveTypeID &ptid = PrimitiveTypeID::unknown,
                  bool is_external_array = false,
                  std::size_t size = 0)
-        : dt(dt), is_external_array(is_external_array), size(size) {
+        : ptid(ptid), is_external_array(is_external_array), size(size) {
     }
   };
 
   struct Ret {
-    DataType dt;
+    PrimitiveTypeID ptid;
 
-    explicit Ret(const DataType &dt = PrimitiveType::unknown) : dt(dt) {
+    explicit Ret(const PrimitiveTypeID &ptid = PrimitiveTypeID::unknown) : ptid(ptid) {
     }
   };
 
@@ -39,9 +39,9 @@ class Callable {
 
   virtual ~Callable() = default;
 
-  int insert_arg(const DataType &dt, bool is_external_array);
+  int insert_arg(const PrimitiveTypeID &ptid, bool is_external_array);
 
-  int insert_ret(const DataType &dt);
+  int insert_ret(const PrimitiveTypeID &ptid);
 
   [[nodiscard]] virtual std::string get_name() const = 0;
 

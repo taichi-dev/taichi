@@ -31,7 +31,8 @@ class SpirvSNodeCompiler {
                             SNodeSTypeTbl *snode_id_array_stype_tbl_) {
     const auto &sn = sn_desc.snode;
     if (sn->is_place()) {
-      return ir_->get_primitive_buffer_type(true, sn->dt);
+      return ir_->get_primitive_buffer_type(
+          ir_->get_primitive_type_size(sn->dt));
     } else {
       SType sn_type = ir_->get_null_type();
       sn_type.snode_desc = sn_desc;

@@ -61,6 +61,8 @@ class TaskCodegen : public IRVisitor {
     int task_id_in_kernel;
   };
 
+  const bool use_64bit_pointers = false;
+
   explicit TaskCodegen(const Params &params)
       : task_ir_(params.task_ir),
         compiled_structs_(params.compiled_structs),
@@ -206,16 +208,10 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(GetRootStmt *stmt) override {
-    // Should we assert |root_stmt_| is assigned only once?
     const int root_id = snode_to_root_.at(stmt->root()->id);
     root_stmts_[root_id] = stmt;
     get_buffer_value({BufferType::Root, root_id});
-    spirv::SType root_ptr = ir_->get_pointer_type(
-        spirv_snodes_.at(root_id).root_stype, spv::StorageClassStorageBuffer);
-    spirv::Value root_val =
-        ir_->make_value(spv::OpAccessChain, root_ptr,
-                        get_buffer_value({BufferType::Root, root_id}),
-                        ir_->const_i32_zero_, ir_->const_i32_zero_);
+    spirv::Value root_val = make_pointer(0);
     ir_->register_value(stmt->raw_name(), root_val);
   }
 
@@ -228,27 +224,17 @@ class TaskCodegen : public IRVisitor {
     TI_ASSERT(snode_descs.at(stmt->input_snode->id).get_child(stmt->chid) ==
               out_snode);
 
+    const auto &desc = snode_descs.at(out_snode->id);
+
     spirv::Value input_ptr_val = ir_->query_value(stmt->input_ptr->raw_name());
-    spirv::Value offset =
-        ir_->int_immediate_number(ir_->i32_type(), stmt->chid);
-    spirv::Value val;
+    spirv::Value offset = make_pointer(desc.mem_offset_in_parent_cell);
+    spirv::Value val = ir_->add(input_ptr_val, offset);
+    ir_->register_value(stmt->raw_name(), val);
+
     if (out_snode->is_place()) {
       TI_ASSERT(ptr_to_buffers_.count(stmt) == 0);
       ptr_to_buffers_[stmt] = BufferInfo(BufferType::Root, root);
-
-      spirv::SType dt_ptr = ir_->get_pointer_type(
-          ir_->get_primitive_buffer_type(true, out_snode->dt),
-          spv::StorageClassStorageBuffer);
-      val = ir_->make_value(spv::OpAccessChain, dt_ptr, input_ptr_val, offset);
-    } else {
-      spirv::SType snode_array =
-          spirv_snodes_[root].query_snode_array_stype(out_snode->id);
-      spirv::SType snode_array_ptr =
-          ir_->get_pointer_type(snode_array, spv::StorageClassStorageBuffer);
-      val = ir_->make_value(spv::OpAccessChain, snode_array_ptr, input_ptr_val,
-                            offset);
     }
-    ir_->register_value(stmt->raw_name(), val);
   }
 
   void visit(SNodeLookupStmt *stmt) override {
@@ -256,21 +242,12 @@ class TaskCodegen : public IRVisitor {
     bool is_root{false};  // Eliminate first root snode access
     const int root_id = snode_to_root_.at(stmt->snode->id);
     std::string parent;
-    spirv::SType snode_struct;
+
     if (stmt->input_snode) {
       parent = stmt->input_snode->raw_name();
-      if (stmt->snode->id == compiled_structs_[root_id].root->id) {
-        is_root = true;
-        snode_struct = spirv_snodes_.at(root_id).root_stype;
-      } else if (!is_root) {
-        snode_struct =
-            spirv_snodes_.at(root_id).query_snode_struct_stype(stmt->snode->id);
-      }
     } else {
       TI_ASSERT(root_stmts_.at(root_id) != nullptr);
       parent = root_stmts_.at(root_id)->raw_name();
-      snode_struct = spirv_snodes_.at(root_id).root_stype;
-      is_root = true;
     }
     const auto *sn = stmt->snode;
 
@@ -278,17 +255,20 @@ class TaskCodegen : public IRVisitor {
       // Sparse SNode not supported yet.
       TI_NOT_IMPLEMENTED;
     }
+
     spirv::Value parent_val = ir_->query_value(parent);
     spirv::Value val;
     if (is_root) {
       val = parent_val;  // Assert Root[0] access at first time
     } else {
-      spirv::Value input_index_val =
-          ir_->query_value(stmt->input_index->raw_name());
-      spirv::SType snode_struct_ptr =
-          ir_->get_pointer_type(snode_struct, spv::StorageClassStorageBuffer);
-      val = ir_->make_value(spv::OpAccessChain, snode_struct_ptr, parent_val,
-                            input_index_val);
+      const auto &snode_descs = compiled_structs_[root_id].snode_descriptors;
+      const auto &desc = snode_descs.at(sn->id);
+
+      spirv::Value input_index_val = ir_->cast(
+          parent_val.stype, ir_->query_value(stmt->input_index->raw_name()));
+      spirv::Value stride = make_pointer(desc.cell_stride);
+      spirv::Value offset = ir_->mul(input_index_val, stride);
+      val = ir_->add(parent_val, offset);
     }
     ir_->register_value(stmt->raw_name(), val);
   }
@@ -361,55 +341,36 @@ class TaskCodegen : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     const auto dt = stmt->val->element_type();
-    bool struct_compiled = false;
-    spirv::Value buffer_ptr;
-    spirv::Value val = ir_->query_value(stmt->val->raw_name());
-    if (ptr_to_buffers_.at(stmt->dest).type == BufferType::Root) {
-      buffer_ptr = ir_->query_value(stmt->dest->raw_name());
-      buffer_ptr.flag =
-          spirv::ValueKind::kVariablePtr;  // make this value could store/load
-      struct_compiled = true;
-    } else {
-      buffer_ptr = at_buffer(stmt->dest, dt);
-    }
-
     const auto &primitive_buffer_type =
-        ir_->get_primitive_buffer_type(struct_compiled, dt);
-    if (buffer_ptr.stype.element_type_id == val.stype.id) {
-      // No bit cast
-      ir_->store_variable(buffer_ptr, val);
-    } else {
-      ir_->store_variable(
-          buffer_ptr,
-          ir_->make_value(spv::OpBitcast, primitive_buffer_type, val));
-    }
+        ir_->get_primitive_buffer_type(ir_->get_primitive_type_size(dt));
+
+    spirv::Value buffer_ptr = at_buffer(stmt->dest, dt);
+    spirv::Value val = ir_->query_value(stmt->val->raw_name());
+
+    auto buffer_typed_value =
+        primitive_buffer_type.id == val.stype.id
+            ? val
+            : ir_->make_value(spv::OpBitcast, primitive_buffer_type, val);
+
+    ir_->store_variable(buffer_ptr, buffer_typed_value);
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->element_type();
-    bool struct_compiled = false;
-    spirv::Value buffer_ptr;
-    spirv::Value val;
-    if (ptr_to_buffers_.at(stmt->src).type == BufferType::Root) {
-      buffer_ptr = ir_->query_value(stmt->src->raw_name());
-      buffer_ptr.flag =
-          spirv::ValueKind::kVariablePtr;  // make this value could store/load
-      struct_compiled = true;
-    } else {
-      buffer_ptr = at_buffer(stmt->src, dt);
-    }
-
     const auto &primitive_buffer_type =
-        ir_->get_primitive_buffer_type(struct_compiled, dt);
-    if (buffer_ptr.stype.element_type_id == val.stype.id) {
-      // No bit cast
-      val = ir_->load_variable(buffer_ptr, primitive_buffer_type);
-    } else {
-      val = ir_->make_value(
-          spv::OpBitcast, ir_->get_primitive_type(dt),
-          ir_->load_variable(buffer_ptr, primitive_buffer_type));
-    }
+        ir_->get_primitive_buffer_type(ir_->get_primitive_type_size(dt));
+
+    spirv::Value buffer_ptr = at_buffer(stmt->src, dt);
+    spirv::Value buffer_typed_value =
+        ir_->load_variable(buffer_ptr, primitive_buffer_type);
+
+    auto value_type = ir_->get_primitive_type(dt);
+
+    auto val =
+        value_type.id == buffer_typed_value.stype.id
+            ? buffer_typed_value
+            : ir_->make_value(spv::OpBitcast, value_type, buffer_typed_value);
 
     ir_->register_value(stmt->raw_name(), val);
   }
@@ -812,27 +773,28 @@ class TaskCodegen : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     const auto dt = stmt->dest->element_type().ptr_removed();
 
-    spirv::Value addr_ptr;
-    bool is_compiled_struct = false;
+    spirv::Value addr_ptr = at_buffer(stmt->dest, dt);
     auto ret_type = ir_->get_primitive_type(dt);
-    if (ptr_to_buffers_.at(stmt->dest).type == BufferType::Root) {
-      addr_ptr = ir_->query_value(stmt->dest->raw_name());
-      addr_ptr.flag =
-          spirv::ValueKind::kVariablePtr;  // make this value could store/load
-      is_compiled_struct = true;
-    } else {
-      addr_ptr = at_buffer(stmt->dest, dt);
-      ret_type = ir_->get_primitive_buffer_type(false, dt);
-    }
     spirv::Value data = ir_->query_value(stmt->val->raw_name());
+
     spirv::Value val;
-    if (dt->is_primitive(PrimitiveTypeID::f32)) {
+    if (dt->is_primitive(PrimitiveTypeID::f64)) {
+      if (device_->get_cap(DeviceCapability::spirv_has_atomic_float64_add) &&
+          stmt->op_type == AtomicOpType::add) {
+        val = ir_->make_value(spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt),
+                              addr_ptr,
+                              /*scope=*/ir_->const_i32_one_,
+                              /*semantics=*/ir_->const_i32_zero_, data);
+      } else {
+        val = ir_->float_atomic(stmt->op_type, addr_ptr, data);
+      }
+    } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
       if (device_->get_cap(DeviceCapability::spirv_has_atomic_float_add) &&
-          stmt->op_type == AtomicOpType::add && is_compiled_struct) {
-        val = ir_->make_value(
-            spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt), addr_ptr,
-            ir_->uint_immediate_number(ir_->u32_type(), 1),
-            ir_->uint_immediate_number(ir_->u32_type(), 0), data);
+          stmt->op_type == AtomicOpType::add) {
+        val = ir_->make_value(spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt),
+                              addr_ptr,
+                              /*scope=*/ir_->const_i32_one_,
+                              /*semantics=*/ir_->const_i32_zero_, data);
       } else {
         val = ir_->float_atomic(stmt->op_type, addr_ptr, data);
       }
@@ -861,16 +823,14 @@ class TaskCodegen : public IRVisitor {
                      addr_ptr.stype.element_type_id);
 
       if (data.stype.element_type_id != ret_type.id) {
-        // gtmp / context uses int32 under the hood
         data = ir_->cast(ret_type, data);
       }
 
-      val =
-          ir_->make_value(op, ret_type, addr_ptr,
-                          ir_->uint_immediate_number(ir_->u32_type(), 1),
-                          ir_->uint_immediate_number(ir_->u32_type(), 0), data);
+      val = ir_->make_value(op, ret_type, addr_ptr,
+                            /*scope=*/ir_->const_i32_one_,
+                            /*semantics=*/ir_->const_i32_zero_, data);
     } else {
-      TI_ERROR("Vulkan only supports 32-bit atomic data types");
+      TI_NOT_IMPLEMENTED
     }
     ir_->register_value(stmt->raw_name(), val);
   }
@@ -1213,37 +1173,24 @@ class TaskCodegen : public IRVisitor {
 
   spirv::Value at_buffer(const Stmt *ptr, DataType dt) {
     spirv::Value buffer = get_buffer_value(ptr_to_buffers_.at(ptr));
-    // Hardcoded ">> 2" because we only support 32-bit for now.
-    // return fmt::format("({} >> 2)", s->raw_name());
     spirv::Value ptr_val = ir_->query_value(ptr->raw_name());
+    size_t width = ir_->get_primitive_type_size(dt);
     spirv::Value idx_val =
-        ir_->make_value(spv::OpShiftRightArithmetic, ir_->i32_type(), ptr_val,
-                        ir_->int_immediate_number(ir_->i32_type(), 2));
+        ir_->make_value(spv::OpShiftRightArithmetic, ptr_val.stype, ptr_val,
+                        make_pointer(size_t(std::log2(width))));
     spirv::Value ret = ir_->struct_array_access(
-        ir_->get_primitive_buffer_type(
-            ptr_to_buffers_.at(ptr).type == BufferType::Root, dt),
-        buffer, idx_val);
+        ir_->get_primitive_buffer_type(width), buffer, idx_val);
     return ret;
   }
 
-  spirv::Value get_buffer_value(BufferInfo buffer) {
+  spirv::Value get_buffer_value(BufferInfo buffer, size_t stride = 4) {
     const auto it = buffer_value_map_.find(buffer);
     if (it != buffer_value_map_.end()) {
       return it->second;
     }
 
-    spirv::Value buffer_value;
-    if (buffer.type == BufferType::Root) {
-      spirv_snodes_[buffer.root_id] = compile_spirv_snode_structs(
-          ir_.get(), &compiled_structs_[buffer.root_id]);  // Support native
-                                                           // SNode structure
-      buffer_value =
-          ir_->buffer_argument(spirv_snodes_.at(buffer.root_id).root_stype, 0,
-                               buffer_binding_map_[buffer]);
-    } else {
-      buffer_value =
-          ir_->buffer_argument(ir_->i32_type(), 0, buffer_binding_map_[buffer]);
-    }
+    spirv::Value buffer_value = ir_->buffer_argument(
+        ir_->get_primitive_buffer_type(stride), 0, buffer_binding_map_[buffer]);
     ir_->debug(spv::OpName, buffer_value, buffer_instance_name(buffer));
     buffer_value_map_[buffer] = buffer_value;
     TI_TRACE("buffer name = {}, value = {}", buffer_instance_name(buffer),
@@ -1251,6 +1198,17 @@ class TaskCodegen : public IRVisitor {
 
     return buffer_value;
   }
+
+  spirv::Value make_pointer(size_t offset) {
+    if (use_64bit_pointers) {
+      // This is hacky, should check out how to encode uint64 values in spirv
+      return ir_->cast(ir_->u64_type(), ir_->uint_immediate_number(
+                                            ir_->u32_type(), uint32_t(offset)));
+    } else {
+      return ir_->uint_immediate_number(ir_->u32_type(), uint32_t(offset));
+    }
+  }
+
   std::vector<BufferBind> get_common_buffer_binds() {
     std::vector<BufferBind> result;
     int binding = 0;
@@ -1305,8 +1263,11 @@ class TaskCodegen : public IRVisitor {
   spirv::Value kernel_function_;
   spirv::Label kernel_return_label_;
   bool gen_label_{false};
+
+  /*
   std::unordered_map<int, spirv::CompiledSpirvSNode>
       spirv_snodes_;  // maps root id to spirv snode
+      */
 
   OffloadedStmt *const task_ir_;  // not owned
   std::vector<CompiledSNodeStructs> compiled_structs_;

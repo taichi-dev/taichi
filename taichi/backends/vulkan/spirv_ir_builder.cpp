@@ -248,26 +248,30 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
   }
 }
 
-SType IRBuilder::get_primitive_buffer_type(const bool struct_compiled,
-                                           const DataType &dt) const {
-  if (struct_compiled) {
-    if (dt->is_primitive(PrimitiveTypeID::f32) &&
-        device_->get_cap(cap::spirv_has_atomic_float_add)) {
-      return t_fp32_;
-    } else if (dt->is_primitive(PrimitiveTypeID::f64) &&
-               device_->get_cap(cap::spirv_has_atomic_float64_add)) {
-      return t_fp64_;
-    } else if (dt->is_primitive(PrimitiveTypeID::i64) &&
-               device_->get_cap(cap::spirv_has_atomic_i64)) {
-      return t_int64_;
-    } else if (dt->is_primitive(PrimitiveTypeID::u8) &&
-               device_->get_cap(cap::spirv_has_int8)) {
-      return t_uint8_;
-    } else {
-      return get_primitive_type(dt);
-    }
+SType IRBuilder::get_primitive_buffer_type(size_t width) const {
+  if (width == 8) {
+    return t_int64_;
+  } else if (width == 4) {
+    return t_int32_;
+  } else if (width == 2) {
+    return t_int16_;
+  } else {
+    return t_int8_;
   }
-  return t_int32_;
+}
+
+size_t IRBuilder::get_primitive_type_size(const DataType &dt) const {
+  if (dt == PrimitiveType::i64 || dt == PrimitiveType::u64 ||
+      dt == PrimitiveType::f64) {
+    return 8;
+  } else if (dt == PrimitiveType::i32 || dt == PrimitiveType::u32 ||
+             dt == PrimitiveType::f32) {
+    return 4;
+  } else if (dt == PrimitiveType::i16 || dt == PrimitiveType::u16) {
+    return 2;
+  } else {
+    return 1;
+  }
 }
 
 SType IRBuilder::get_pointer_type(const SType &value_type,
@@ -668,7 +672,7 @@ Value IRBuilder::query_value(std::string name) const {
   if (it != value_name_tbl_.end()) {
     return it->second;
   }
-  TI_ERROR("{} is not existed.", name);
+  TI_ERROR("Value \"{}\" does not yet exist.", name);
 }
 
 Value IRBuilder::float_atomic(AtomicOpType op_type,

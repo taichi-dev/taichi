@@ -130,7 +130,6 @@ def test_python_scope_print_field():
 
 @ti.test(arch=ti.cpu)
 def test_print_string_format():
-
     @ti.kernel
     def func(k: ti.f32):
         print(123)

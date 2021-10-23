@@ -248,7 +248,8 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
   }
 }
 
-SType IRBuilder::get_primitive_buffer_type(size_t width) const {
+SType IRBuilder::get_primitive_buffer_type(const DataType &dt) const {
+  size_t width = get_primitive_type_size(dt);
   if (width == 8) {
     return t_int64_;
   } else if (width == 4) {

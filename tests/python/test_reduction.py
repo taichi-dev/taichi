@@ -75,6 +75,11 @@ def _test_reduction_single(dtype, criterion, op):
     np_arr = a.to_numpy()
     ground_truth = np_ops[op](np_arr)
 
+    print(np_arr)
+    print(tot[None])
+    print(tot2)
+    print(ground_truth)
+
     assert criterion(tot[None], ground_truth)
     assert criterion(tot2, ground_truth)
 

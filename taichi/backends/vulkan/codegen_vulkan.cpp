@@ -845,7 +845,8 @@ class TaskCodegen : public IRVisitor {
       }
       */
 
-      val = ir_->make_value(op, ret_type, addr_ptr,
+      auto ptr_elem_type = ir_->get_primitive_buffer_type(dt);
+      val = ir_->make_value(op, ptr_elem_type, addr_ptr,
                             /*scope=*/ir_->const_i32_one_,
                             /*semantics=*/ir_->const_i32_zero_, data);
     } else {

@@ -104,8 +104,7 @@ GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
     spirv_cross::CompilerGLSL::Options options;
     options.version = 430;
     glsl.set_common_options(options);
-    glsl.add_header_line("#define buffer volatile buffer");
-    glsl.add_header_line("#define struct volatile struct");
+    glsl.add_header_line("#define buffer coherent buffer");
 
     std::string source = glsl.compile();
 
@@ -484,7 +483,7 @@ void GLCommandList::CmdBindBufferToIndex::execute() {
 }
 
 void GLCommandList::CmdBufferBarrier::execute() {
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
   check_opengl_error("glMemoryBarrier");
 }
 

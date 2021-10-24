@@ -487,7 +487,9 @@ def render():
 @ti.kernel
 def tonemap(accumulated: ti.f32) -> ti.f32:
     for i, j in tonemapped_buffer:
-        tonemapped_buffer[i, j] = ti.sqrt(color_buffer[i, j] / accumulated * 20.0)
+        tonemapped_buffer[i,
+                          j] = ti.sqrt(color_buffer[i, j] / accumulated * 20.0)
+
 
 gui = ti.GUI('Cornell Box', res, fast_gui=True)
 gui.fps_limit = 300

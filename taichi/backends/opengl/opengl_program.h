@@ -32,7 +32,7 @@ class OpenglProgramImpl : public ProgramImpl {
                            uint64 **result_buffer_ptr) override;
 
   void compile_snode_tree_types(SNodeTree *tree) override {
-    TI_NOT_IMPLEMENTED 
+    TI_NOT_IMPLEMENTED
   }
 
   void materialize_snode_tree(
@@ -44,7 +44,7 @@ class OpenglProgramImpl : public ProgramImpl {
   }
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
-    TI_NOT_IMPLEMENTED 
+    TI_NOT_IMPLEMENTED
   }
 
   virtual void destroy_snode_tree(SNodeTree *snode_tree) override {

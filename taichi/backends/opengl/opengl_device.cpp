@@ -99,14 +99,14 @@ GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
   } else {
     std::vector<uint32_t> spirv_binary(
         (uint32_t *)desc.data, (uint32_t *)((uint8_t *)desc.data + desc.size));
-    
+
     spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
     spirv_cross::CompilerGLSL::Options options;
     options.version = 430;
     glsl.set_common_options(options);
     glsl.add_header_line("#define buffer volatile buffer");
     glsl.add_header_line("#define struct volatile struct");
-    
+
     std::string source = glsl.compile();
 
     TI_TRACE("glsl source: \n{}", source);

@@ -114,8 +114,8 @@ std::unique_ptr<Device> get_opengl_device() {
   auto device = std::make_unique<GLDevice>();
 
   device->set_cap(DeviceCapability::spirv_version, 0x10300);
-  //device->set_cap(DeviceCapability::spirv_has_atomic_float, 1);
-  //device->set_cap(DeviceCapability::spirv_has_atomic_float_add, 1);
+  // device->set_cap(DeviceCapability::spirv_has_atomic_float, 1);
+  // device->set_cap(DeviceCapability::spirv_has_atomic_float_add, 1);
 
   return std::move(device);
 }

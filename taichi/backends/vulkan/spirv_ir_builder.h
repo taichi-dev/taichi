@@ -446,7 +446,7 @@ class IRBuilder {
   SType u16_type() const {
     return t_uint16_;
   }
-  
+
   SType i8_type() const {
     return t_int8_;
   }

@@ -88,9 +88,6 @@ list(REMOVE_ITEM TAICHI_CORE_SOURCE ${BYTECODE_SOURCE})
 # guarded by TI_WITH_VULKAN macro at the source code level.
 file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
   "taichi/backends/opengl/opengl_program.*"
-  "taichi/backends/opengl/opengl_api.*"
-  "taichi/backends/opengl/codegen_opengl.*"
-  "taichi/backends/opengl/struct_opengl.*"
 )
 file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE
   "taichi/backends/vulkan/runtime.h"

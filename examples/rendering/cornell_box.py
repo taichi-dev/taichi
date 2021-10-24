@@ -486,19 +486,8 @@ def render():
 
 @ti.kernel
 def tonemap(accumulated: ti.f32) -> ti.f32:
-    sum = 0.0
-    sum_sq = 0.0
-    for i, j in color_buffer:
-        luma = color_buffer[i, j][0] * 0.2126 + color_buffer[
-            i, j][1] * 0.7152 + color_buffer[i, j][2] * 0.0722
-        sum += luma
-        sum_sq += ti.pow(luma / accumulated, 2.0)
-    mean = sum / (res[0] * res[1])
-    var = sum_sq / (res[0] * res[1]) - ti.pow(mean / accumulated, 2.0)
     for i, j in tonemapped_buffer:
-        tonemapped_buffer[i, j] = ti.sqrt(color_buffer[i, j] / mean * 0.6)
-    return var
-
+        tonemapped_buffer[i, j] = ti.sqrt(color_buffer[i, j] / accumulated * 20.0)
 
 gui = ti.GUI('Cornell Box', res, fast_gui=True)
 gui.fps_limit = 300
@@ -508,9 +497,9 @@ while gui.running:
     render()
     interval = 10
     if i % interval == 0:
-        var = tonemap(i)
-        print("{:.2f} samples/s ({} iters, var={})".format(
-            interval / (time.time() - last_t), i, var))
+        tonemap(i)
+        print("{:.2f} samples/s ({} iters)".format(
+            interval / (time.time() - last_t), i))
         last_t = time.time()
         gui.set_image(tonemapped_buffer)
         gui.show()

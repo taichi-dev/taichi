@@ -16,6 +16,7 @@ class OffloadedStmt;
 namespace opengl {
 
 bool initialize_opengl(bool error_tolerance = false);
+
 bool is_opengl_api_available();
 
 std::unique_ptr<Device> get_opengl_device();

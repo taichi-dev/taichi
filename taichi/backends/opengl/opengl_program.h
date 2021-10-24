@@ -58,5 +58,7 @@ class OpenglProgramImpl : public ProgramImpl {
   std::unique_ptr<vulkan::VkRuntime> runtime_;
 };
 
+bool is_opengl_api_available();
+
 }  // namespace lang
 }  // namespace taichi

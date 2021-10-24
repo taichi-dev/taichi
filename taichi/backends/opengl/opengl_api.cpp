@@ -7,8 +7,6 @@
 #include "taichi/util/environ_config.h"
 #include "taichi/ir/transforms.h"
 
-#include "taichi/backends/opengl/opengl_device.h"
-
 #ifdef TI_WITH_OPENGL
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"

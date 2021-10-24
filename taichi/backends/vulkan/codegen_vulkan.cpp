@@ -12,7 +12,6 @@
 #include "taichi/backends/vulkan/runtime.h"
 #include "taichi/backends/opengl/opengl_data_types.h"
 #include "taichi/backends/vulkan/spirv_ir_builder.h"
-#include "taichi/backends/vulkan/spirv_snode_compiler.h"
 #include "taichi/ir/transforms.h"
 
 #include <spirv-tools/libspirv.hpp>

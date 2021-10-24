@@ -214,6 +214,18 @@ i64 floordiv_i64(i64 a, i64 b) {
   return ifloordiv(a, b);
 }
 
+u16 min_u16(u16 a, u16 b) {
+  return a < b ? a : b;
+}
+
+i16 min_i16(i16 a, i16 b) {
+  return a < b ? a : b;
+}
+
+u32 min_u32(u32 a, u32 b) {
+  return a < b ? a : b;
+}
+
 int min_i32(i32 a, i32 b) {
   return a < b ? a : b;
 }
@@ -222,12 +234,16 @@ int min_i64(i64 a, i64 b) {
   return a < b ? a : b;
 }
 
-int max_i32(i32 a, i32 b) {
+u16 max_u16(u16 a, u16 b) {
   return a > b ? a : b;
 }
 
-u32 min_u32(u32 a, u32 b) {
-  return a < b ? a : b;
+i16 max_i16(i16 a, i16 b) {
+  return a > b ? a : b;
+}
+
+int max_i32(i32 a, i32 b) {
+  return a > b ? a : b;
 }
 
 u32 max_u32(u32 a, u32 b) {

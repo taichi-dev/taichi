@@ -480,6 +480,15 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(ret_type)) {
       llvm_val[stmt] =
           builder->CreateMaxNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+    } else if (ret_type->is_primitive(PrimitiveTypeID::u16)) {
+      llvm_val[stmt] =
+          create_call("max_u16", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+    } else if (ret_type->is_primitive(PrimitiveTypeID::i16)) {
+      llvm_val[stmt] =
+          create_call("max_i16", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+    } else if (ret_type->is_primitive(PrimitiveTypeID::u32)) {
+      llvm_val[stmt] =
+          create_call("max_u32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
     } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
       llvm_val[stmt] =
           create_call("max_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
@@ -555,6 +564,15 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(ret_type)) {
       llvm_val[stmt] =
           builder->CreateMinNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+    } else if (ret_type->is_primitive(PrimitiveTypeID::u16)) {
+      llvm_val[stmt] =
+          create_call("min_u16", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+    } else if (ret_type->is_primitive(PrimitiveTypeID::i16)) {
+      llvm_val[stmt] =
+          create_call("min_i16", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+    } else if (ret_type->is_primitive(PrimitiveTypeID::u32)) {
+      llvm_val[stmt] =
+          create_call("min_u32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
     } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
       llvm_val[stmt] =
           create_call("min_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
@@ -766,6 +784,12 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
   } else if (val.dt->is_primitive(PrimitiveTypeID::f64)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float64()));
+  } else if (val.dt->is_primitive(PrimitiveTypeID::i16)) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(16, (uint64)val.val_int16(), true));
+  } else if (val.dt->is_primitive(PrimitiveTypeID::u16)) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(16, (uint64)val.val_uint16(), false));
   } else if (val.dt->is_primitive(PrimitiveTypeID::i32)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(32, (uint64)val.val_int32(), true));
@@ -778,12 +802,6 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
   } else if (val.dt->is_primitive(PrimitiveTypeID::u64)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(64, val.val_uint64(), false));
-  } else if (val.dt->is_primitive(PrimitiveTypeID::u16)) {
-    llvm_val[stmt] = llvm::ConstantInt::get(
-        *llvm_context, llvm::APInt(16, (uint64)val.val_uint16(), false));
-  } else if (val.dt->is_primitive(PrimitiveTypeID::i16)) {
-    llvm_val[stmt] = llvm::ConstantInt::get(
-        *llvm_context, llvm::APInt(16, (uint64)val.val_int16(), true));
   } else {
     TI_P(data_type_name(val.dt));
     TI_NOT_IMPLEMENTED;

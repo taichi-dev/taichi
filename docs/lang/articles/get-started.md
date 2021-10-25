@@ -32,13 +32,6 @@ There are a few of extra requirements depend on which operating system you are u
     {label: 'Windows', value: 'windows'},
   ]}>
 
-  <TabItem value="ubuntu">
-
-  On Ubuntu 19.04+, you need to install `libtinfo5`:
-
-  ```sudo apt install libtinfo5```
-
-  </TabItem>
   <TabItem value="arch-linux">
 
   On Arch Linux, you need to install `ncurses5-compat-libs` package from the Arch User Repository:

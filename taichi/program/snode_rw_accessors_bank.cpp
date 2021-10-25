@@ -40,9 +40,6 @@ void SNodeRwAccessorsBank::Accessors::write_float(const std::vector<int> &I,
                                                   float64 val) {
   auto launch_ctx = writer_->make_launch_context();
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
-  for (int i = 0; i < snode_->num_active_indices; i++) {
-    launch_ctx.set_arg_int(i, I[i]);
-  }
   launch_ctx.set_arg_float(snode_->num_active_indices, val);
   prog_->synchronize();
   (*writer_)(launch_ctx);

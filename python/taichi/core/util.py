@@ -1,21 +1,15 @@
-import ctypes
 import datetime
-import multiprocessing
 import os
 import platform
 import random
-import shutil
 import sys
-import time
 
-from colorama import Back, Fore, Style
+from colorama import Fore, Style
 
 if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
     raise RuntimeError(
         "\nPlease restart with Python 3.6+\n" + "Current Python version:",
         sys.version_info)
-
-ti_core = None
 
 
 def in_docker():
@@ -39,15 +33,14 @@ def get_os_name():
 
 
 def import_ti_core():
-    global ti_core
     if get_os_name() != 'win':
         old_flags = sys.getdlopenflags()
         sys.setdlopenflags(2 | 8)  # RTLD_NOW | RTLD_DEEPBIND
     else:
         pyddir = os.path.join(package_root(), 'lib')
-        os.environ['PATH'] += ';' + pyddir
+        os.environ['PATH'] += os.pathsep + pyddir
     try:
-        import taichi_core as core  # pylint: disable=C0415
+        from taichi.lib import taichi_core as core  # pylint: disable=C0415
     except Exception as e:
         if isinstance(e, ImportError):
             print(Fore.YELLOW + "Share object taichi_core import failed, "
@@ -56,27 +49,26 @@ def import_ti_core():
                   Fore.RESET)
             if get_os_name() == 'win':
                 e.msg += '\nConsider installing Microsoft Visual C++ Redistributable: https://aka.ms/vs/16/release/vc_redist.x64.exe'
-            elif get_os_name() == 'linux':
-                e.msg += '\nConsider installing libtinfo5: sudo apt-get install libtinfo5'
         raise e from None
-    ti_core = core
+
     if get_os_name() != 'win':
         sys.setdlopenflags(old_flags)
     lib_dir = os.path.join(package_root(), 'lib')
     core.set_lib_dir(locale_encode(lib_dir))
+    return core
 
 
 def locale_encode(path):
     try:
         import locale  # pylint: disable=C0415
         return path.encode(locale.getdefaultlocale()[1])
-    except:
+    except (UnicodeEncodeError, TypeError):
         try:
             return path.encode(sys.getfilesystemencoding())
-        except:
+        except UnicodeEncodeError:
             try:
                 return path.encode()
-            except:
+            except UnicodeEncodeError:
                 return path
 
 
@@ -85,7 +77,8 @@ def is_ci():
 
 
 def package_root():
-    return os.path.join(os.path.dirname(os.path.realpath(__file__)), '../')
+    return os.path.join(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 
 def get_core_shared_object():
@@ -111,8 +104,7 @@ def get_unique_task_id():
         '%05d' % random.randint(0, 10000))
 
 
-sys.path.append(os.path.join(package_root(), 'lib'))
-import_ti_core()
+ti_core = import_ti_core()
 
 ti_core.set_python_package_dir(package_root())
 os.makedirs(ti_core.get_repo_dir(), exist_ok=True)

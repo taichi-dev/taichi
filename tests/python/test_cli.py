@@ -185,13 +185,6 @@ def test_cli_video():
         assert args.output_file.name == "video.mp4"
 
 
-def test_cli_format():
-    with patch_sys_argv_helper(["ti", "format", "51fff7af"]) as custom_argv:
-        cli = TaichiMain(test_mode=True)
-        args = cli()
-        assert args.diff == "51fff7af"
-
-
 def test_cli_regression():
     with patch_sys_argv_helper(["ti", "regression", "a.py", "b.py",
                                 "-g"]) as custom_argv:

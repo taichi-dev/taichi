@@ -1,0 +1,110 @@
+#include "taichi/program/ndarray_rw_accessors_bank.h"
+#include "taichi/program/program.h"
+
+namespace taichi {
+namespace lang {
+
+namespace {
+void set_kernel_args(const std::vector<int> &I,
+                     int num_active_indices,
+                     Kernel::LaunchContextBuilder *launch_ctx) {
+  for (int i = 0; i < num_active_indices; i++) {
+    launch_ctx->set_arg_int(i, I[i]);
+  }
+}
+void set_kernel_extra_args(const Ndarray *ndarray,
+                           int arg_id,
+                           Kernel::LaunchContextBuilder *launch_ctx) {
+  for (int i = 0; i < ndarray->num_active_indices; i++) {
+    launch_ctx->set_extra_arg_int(arg_id, i, ndarray->shape[i]);
+  }
+}
+}  // namespace
+
+NdarrayRwAccessorsBank::Accessors NdarrayRwAccessorsBank::get(
+    Ndarray *ndarray) {
+  auto &kernels = ndarray_to_kernels_[ndarray];
+  if (kernels.reader == nullptr) {
+    kernels.reader = &(program_->get_ndarray_reader(ndarray));
+  }
+  if (kernels.writer == nullptr) {
+    kernels.writer = &(program_->get_ndarray_writer(ndarray));
+  }
+  return Accessors(ndarray, kernels, program_);
+}
+
+NdarrayRwAccessorsBank::Accessors::Accessors(const Ndarray *ndarray,
+                                             const RwKernels &kernels,
+                                             Program *prog)
+    : ndarray_(ndarray),
+      prog_(prog),
+      reader_(kernels.reader),
+      writer_(kernels.writer) {
+  TI_ASSERT(reader_ != nullptr);
+  TI_ASSERT(writer_ != nullptr);
+}
+
+void NdarrayRwAccessorsBank::Accessors::write_float(const std::vector<int> &I,
+                                                    float64 val) {
+  auto launch_ctx = writer_->make_launch_context();
+  set_kernel_args(I, ndarray_->num_active_indices, &launch_ctx);
+  launch_ctx.set_arg_float(ndarray_->num_active_indices, val);
+  launch_ctx.set_arg_external_array(
+      ndarray_->num_active_indices + 1, ndarray_->get_data_ptr_as_int(),
+      ndarray_->get_nelement() * ndarray_->get_element_size());
+  set_kernel_extra_args(ndarray_, ndarray_->num_active_indices + 1,
+                        &launch_ctx);
+  prog_->synchronize();
+  (*writer_)(launch_ctx);
+}
+
+float64 NdarrayRwAccessorsBank::Accessors::read_float(
+    const std::vector<int> &I) {
+  prog_->synchronize();
+  auto launch_ctx = reader_->make_launch_context();
+  set_kernel_args(I, ndarray_->num_active_indices, &launch_ctx);
+  launch_ctx.set_arg_external_array(
+      ndarray_->num_active_indices, ndarray_->get_data_ptr_as_int(),
+      ndarray_->get_nelement() * ndarray_->get_element_size());
+  set_kernel_extra_args(ndarray_, ndarray_->num_active_indices, &launch_ctx);
+  (*reader_)(launch_ctx);
+  prog_->synchronize();
+  auto ret = reader_->get_ret_float(0);
+  return ret;
+}
+
+// for int32 and int64
+void NdarrayRwAccessorsBank::Accessors::write_int(const std::vector<int> &I,
+                                                  int64 val) {
+  auto launch_ctx = writer_->make_launch_context();
+  set_kernel_args(I, ndarray_->num_active_indices, &launch_ctx);
+  launch_ctx.set_arg_int(ndarray_->num_active_indices, val);
+  launch_ctx.set_arg_external_array(
+      ndarray_->num_active_indices + 1, ndarray_->get_data_ptr_as_int(),
+      ndarray_->get_nelement() * ndarray_->get_element_size());
+  set_kernel_extra_args(ndarray_, ndarray_->num_active_indices + 1,
+                        &launch_ctx);
+  prog_->synchronize();
+  (*writer_)(launch_ctx);
+}
+
+int64 NdarrayRwAccessorsBank::Accessors::read_int(const std::vector<int> &I) {
+  prog_->synchronize();
+  auto launch_ctx = reader_->make_launch_context();
+  set_kernel_args(I, ndarray_->num_active_indices, &launch_ctx);
+  launch_ctx.set_arg_external_array(
+      ndarray_->num_active_indices, ndarray_->get_data_ptr_as_int(),
+      ndarray_->get_nelement() * ndarray_->get_element_size());
+  set_kernel_extra_args(ndarray_, ndarray_->num_active_indices, &launch_ctx);
+  (*reader_)(launch_ctx);
+  prog_->synchronize();
+  auto ret = reader_->get_ret_int(0);
+  return ret;
+}
+
+uint64 NdarrayRwAccessorsBank::Accessors::read_uint(const std::vector<int> &I) {
+  return (uint64)read_int(I);
+}
+
+}  // namespace lang
+}  // namespace taichi

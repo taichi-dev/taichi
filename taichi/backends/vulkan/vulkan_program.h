@@ -8,10 +8,22 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/program_impl.h"
 
+#include "taichi/backends/vulkan/embedded_device.h"
+#include "taichi/backends/vulkan/vulkan_utils.h"
+#include "taichi/backends/vulkan/loader.h"
+
+#include "vk_mem_alloc.h"
+#include "taichi/backends/vulkan/vulkan_device.h"
+
 #include <optional>
 
 namespace taichi {
 namespace lang {
+
+namespace vulkan {
+class EmbeddedVulkanDevice;
+}
+
 class VulkanProgramImpl : public ProgramImpl {
  public:
   VulkanProgramImpl(CompileConfig &config) : ProgramImpl(config) {
@@ -30,7 +42,6 @@ class VulkanProgramImpl : public ProgramImpl {
 
   void materialize_snode_tree(SNodeTree *tree,
                               std::vector<std::unique_ptr<SNodeTree>> &,
-                              std::unordered_map<int, SNode *> &,
                               uint64 *result_buffer) override;
 
   void synchronize() override {
@@ -46,10 +57,28 @@ class VulkanProgramImpl : public ProgramImpl {
     vulkan_runtime_->destroy_snode_tree(snode_tree);
   }
 
-  ~VulkanProgramImpl() {
+  Device *get_compute_device() override {
+    if (embedded_device_) {
+      return embedded_device_->device();
+    }
+    return nullptr;
   }
 
+  Device *get_graphics_device() override {
+    if (embedded_device_) {
+      return embedded_device_->device();
+    }
+    return nullptr;
+  }
+
+  DevicePtr get_snode_tree_device_ptr(int tree_id) override {
+    return vulkan_runtime_->get_snode_tree_device_ptr(tree_id);
+  }
+
+  ~VulkanProgramImpl();
+
  private:
+  std::unique_ptr<vulkan::EmbeddedVulkanDevice> embedded_device_{nullptr};
   std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
 };
 }  // namespace lang

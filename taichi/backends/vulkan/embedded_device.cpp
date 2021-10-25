@@ -162,7 +162,7 @@ bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
     // this means we need ui
     VkPhysicalDeviceFeatures features{};
     vkGetPhysicalDeviceFeatures(device, &features);
-    return indices.is_complete_for_ui() && features.wideLines == VK_TRUE;
+    return indices.is_complete_for_ui();
   } else {
     return indices.is_complete();
   }
@@ -187,8 +187,6 @@ EmbeddedVulkanDevice::EmbeddedVulkanDevice(
   pick_physical_device();
   create_logical_device();
 
-  // TODO: Change the ownership hierarchy, the taichi Device class should be at
-  // the top level
   {
     VulkanDevice::Params params;
     params.instance = instance_;
@@ -215,10 +213,6 @@ EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
   }
   vkDestroyDevice(device_, kNoVkAllocCallbacks);
   vkDestroyInstance(instance_, kNoVkAllocCallbacks);
-}
-
-Device *EmbeddedVulkanDevice::get_ti_device() const {
-  return ti_device_.get();
 }
 
 void EmbeddedVulkanDevice::create_instance() {
@@ -381,10 +375,10 @@ void EmbeddedVulkanDevice::create_logical_device() {
   vkGetPhysicalDeviceProperties(physical_device_, &physical_device_properties);
   ti_device_->set_cap(DeviceCapability::vk_api_version,
                       physical_device_properties.apiVersion);
-  ti_device_->set_cap(DeviceCapability::vk_spirv_version, 0x10000);
+  ti_device_->set_cap(DeviceCapability::spirv_version, 0x10000);
 
   if (physical_device_properties.apiVersion >= VK_API_VERSION_1_1) {
-    ti_device_->set_cap(DeviceCapability::vk_spirv_version, 0x10300);
+    ti_device_->set_cap(DeviceCapability::spirv_version, 0x10300);
   }
 
   // Detect extensions
@@ -399,6 +393,8 @@ void EmbeddedVulkanDevice::create_logical_device() {
 
   bool has_surface = false, has_swapchain = false;
 
+  bool portability_subset_enabled = false;
+
   for (auto &ext : extension_properties) {
     TI_TRACE("Vulkan device extension {} ({})", ext.extensionName,
              ext.specVersion);
@@ -409,6 +405,7 @@ void EmbeddedVulkanDevice::create_logical_device() {
       TI_WARN(
           "Potential non-conformant Vulkan implementation, enabling "
           "VK_KHR_portability_subset");
+      portability_subset_enabled = true;
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SWAPCHAIN_EXTENSION_NAME) {
       has_swapchain = true;
@@ -427,7 +424,7 @@ void EmbeddedVulkanDevice::create_logical_device() {
     } else if (name == VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SPIRV_1_4_EXTENSION_NAME) {
-      ti_device_->set_cap(DeviceCapability::vk_spirv_version, 0x10400);
+      ti_device_->set_cap(DeviceCapability::spirv_version, 0x10400);
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME) {
       ti_device_->set_cap(DeviceCapability::vk_has_external_memory, true);
@@ -454,15 +451,15 @@ void EmbeddedVulkanDevice::create_logical_device() {
 
   if (device_supported_features.shaderInt16) {
     device_features.shaderInt16 = true;
-    ti_device_->set_cap(DeviceCapability::vk_has_int16, true);
+    ti_device_->set_cap(DeviceCapability::spirv_has_int16, true);
   }
   if (device_supported_features.shaderInt64) {
     device_features.shaderInt64 = true;
-    ti_device_->set_cap(DeviceCapability::vk_has_int64, true);
+    ti_device_->set_cap(DeviceCapability::spirv_has_int64, true);
   }
   if (device_supported_features.shaderFloat64) {
     device_features.shaderFloat64 = true;
-    ti_device_->set_cap(DeviceCapability::vk_has_float64, true);
+    ti_device_->set_cap(DeviceCapability::spirv_has_float64, true);
   }
   if (device_supported_features.wideLines) {
     device_features.wideLines = true;
@@ -499,7 +496,7 @@ void EmbeddedVulkanDevice::create_logical_device() {
 
       if (variable_ptr_feature.variablePointers &&
           variable_ptr_feature.variablePointersStorageBuffer) {
-        ti_device_->set_cap(DeviceCapability::vk_has_spv_variable_ptr, true);
+        ti_device_->set_cap(DeviceCapability::spirv_has_variable_ptr, true);
       }
       *pNextEnd = &variable_ptr_feature;
       pNextEnd = &variable_ptr_feature.pNext;
@@ -509,15 +506,15 @@ void EmbeddedVulkanDevice::create_logical_device() {
     {
       features2.pNext = &shader_atomic_float_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
-
       if (shader_atomic_float_feature.shaderBufferFloat32AtomicAdd) {
-        ti_device_->set_cap(DeviceCapability::vk_has_atomic_float_add, true);
+        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float_add, true);
       } else if (shader_atomic_float_feature.shaderBufferFloat64AtomicAdd) {
-        ti_device_->set_cap(DeviceCapability::vk_has_atomic_float64_add, true);
+        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float64_add,
+                            true);
       } else if (shader_atomic_float_feature.shaderBufferFloat32Atomics) {
-        ti_device_->set_cap(DeviceCapability::vk_has_atomic_float, true);
+        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float, true);
       } else if (shader_atomic_float_feature.shaderBufferFloat64Atomics) {
-        ti_device_->set_cap(DeviceCapability::vk_has_atomic_float64, true);
+        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float64, true);
       }
       *pNextEnd = &shader_atomic_float_feature;
       pNextEnd = &shader_atomic_float_feature.pNext;
@@ -529,9 +526,13 @@ void EmbeddedVulkanDevice::create_logical_device() {
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
       if (shader_f16_i8_feature.shaderFloat16) {
-        ti_device_->set_cap(DeviceCapability::vk_has_float16, true);
+        ti_device_->set_cap(DeviceCapability::spirv_has_float16, true);
       } else if (shader_f16_i8_feature.shaderInt8) {
-        ti_device_->set_cap(DeviceCapability::vk_has_int8, true);
+        ti_device_->set_cap(DeviceCapability::spirv_has_int8, true);
+      }
+      if (portability_subset_enabled) {
+        // TODO: investigate why MoltenVK isn't reporting int8 caps. See #3252
+        ti_device_->set_cap(DeviceCapability::spirv_has_int8, true);
       }
       *pNextEnd = &shader_f16_i8_feature;
       pNextEnd = &shader_f16_i8_feature.pNext;
@@ -554,8 +555,6 @@ void EmbeddedVulkanDevice::create_logical_device() {
   if (params_.is_for_ui) {
     vkGetDeviceQueue(device_, queue_family_indices_.graphics_family.value(), 0,
                      &graphics_queue_);
-    vkGetDeviceQueue(device_, queue_family_indices_.graphics_family.value(), 0,
-                     &present_queue_);
   }
 
   vkGetDeviceQueue(device_, queue_family_indices_.compute_family.value(), 0,

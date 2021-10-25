@@ -34,7 +34,7 @@ if (WIN32)
 endif()
 
 set(TI_WITH_GGUI OFF)
-if(TI_WITH_CUDA AND TI_WITH_VULKAN)
+if(TI_WITH_VULKAN)
     set(TI_WITH_GGUI ON)
 endif()
 
@@ -58,7 +58,7 @@ file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/
 file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal/*.cpp" "taichi/backends/metal/shaders/*")
 file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/opengl/*.cpp" "taichi/backends/opengl/shaders/*")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
-file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "taichi/backends/vulkan/shaders/*" "external/SPIRV-Reflect/spirv_reflect.c")
+file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "external/SPIRV-Reflect/spirv_reflect.c")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
 
 
@@ -92,7 +92,12 @@ file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
   "taichi/backends/opengl/codegen_opengl.*"
   "taichi/backends/opengl/struct_opengl.*"
 )
-file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE "taichi/backends/vulkan/runtime.h" "taichi/backends/vulkan/runtime.cpp")
+file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE
+  "taichi/backends/vulkan/runtime.h"
+  "taichi/backends/vulkan/runtime.cpp"
+  "taichi/backends/vulkan/snode_struct_compiler.cpp"
+  "taichi/backends/vulkan/snode_struct_compiler.h"
+)
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
@@ -181,7 +186,7 @@ endif()
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
-if (TI_WITH_OPENGL)
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
   set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -255,6 +260,10 @@ if (TI_WITH_CUDA_TOOLKIT)
 else()
     message(STATUS "TI_WITH_CUDA_TOOLKIT = OFF")
 endif()
+
+add_subdirectory(external/SPIRV-Cross)
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
+target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl spirv-cross-core)
 
 if (TI_WITH_VULKAN)
     # Vulkan libs

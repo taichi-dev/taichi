@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -257,7 +258,14 @@ class StructCompiler {
       emit("struct {} {{", node_name);
       const auto snty_name = snode_type_name(snty);
       emit("  // {}", snty_name);
-      const int n = snode.num_cells_per_container;
+      const int64 n = snode.num_cells_per_container;
+      // There's no assert in metal shading language yet so we have to warn
+      // outside.
+      if (n > std::numeric_limits<int>::max()) {
+        TI_WARN(
+            "Snode index might be out of int32 boundary but int64 is not "
+            "supported on metal backend.");
+      }
       emit("  constant static constexpr int n = {};", n);
       emit_snode_stride(snty, ch_name, n);
       emit_snode_constructor(snode);

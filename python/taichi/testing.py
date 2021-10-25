@@ -4,7 +4,6 @@ import itertools
 import os
 from tempfile import mkstemp
 
-import pytest
 from taichi.core import ti_core as _ti_core
 
 import taichi as ti
@@ -40,6 +39,7 @@ def approx(expected, **kwargs):
 
     kwargs['rel'] = max(kwargs.get('rel', 1e-6), get_rel_eps())
 
+    import pytest  # pylint: disable=C0415
     return pytest.approx(expected, **kwargs)
 
 
@@ -107,12 +107,14 @@ def test(arch=None, exclude=None, require=None, **options):
         arch = supported_archs
     else:
         arch = list(filter(lambda x: x in supported_archs, arch))
-    if len(arch) == 0:
-        return lambda x: print('No supported arch found. Skipping')
 
     def decorator(foo):
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
+            if len(arch) == 0:
+                print('No supported arch found. Skipping.')
+                return
+
             arch_params_sets = [arch, *_test_features.values()]
             arch_params_combinations = list(
                 itertools.product(*arch_params_sets))

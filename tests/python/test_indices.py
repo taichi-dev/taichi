@@ -18,6 +18,21 @@ def test_indices():
     # Note that b is column-major:
     # the virtual first index exposed to the user comes second in memory layout.
 
+    @ti.kernel
+    def fill():
+        for i, j in b:
+            b[i, j] = i * 10 + j
+
+    @ti.kernel
+    def get_field_addr(i: ti.i32, j: ti.i32) -> ti.u64:
+        return ti.get_addr(b, [i, j])
+
+    fill()
+    for i in range(16):
+        for j in range(32):
+            assert b[i, j] == i * 10 + j
+    assert get_field_addr(0, 1) + 4 == get_field_addr(1, 1)
+
 
 @ti.test(arch=ti.get_host_arch_list())
 def test_float_as_index():

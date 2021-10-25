@@ -18,18 +18,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
 
       - name: Download Pre-Built LLVM 10.0.0
-        run: |
-          python misc/ci_download.py
-          mkdir taichi-llvm
-          cd taichi-llvm
-          unzip ../taichi-llvm.zip
+        run: python misc/ci_download.py
         env:
           CI_PLATFORM: ${{ matrix.os }}
 
@@ -65,18 +61,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
 
       - name: Download Pre-Built LLVM 10.0.0
-        run: |
-          python misc/ci_download.py
-          mkdir taichi-llvm
-          cd taichi-llvm
-          unzip ../taichi-llvm.zip
+        run: python misc/ci_download.py
         env:
           CI_PLATFORM: ${{ matrix.os }}
 
@@ -103,7 +95,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Build
         run: |
@@ -128,14 +120,13 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
-
       - name: Install 7Zip PowerShell
         shell: powershell
         run: Install-Module 7Zip4PowerShell -Force -Verbose
 
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - uses: actions/setup-python@v2
         with:
@@ -205,7 +196,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Build
         run: |
@@ -231,3 +222,29 @@ jobs:
           TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
           TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
           ti test -vr2 -t4 -x
+    
+  performance_monitoring:
+    name: Performance monitoring (NVGPU)
+    timeout-minutes: 60
+    runs-on: [self-hosted, x64, cuda, linux, benchmark]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Build & Install
+        run: |
+          export PATH=$PATH:/usr/local/cuda/bin
+          .github/workflows/scripts/unix_build.sh
+        env:
+          LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
+          LLVM_PATH: /opt/taichi-llvm-10.0.0/bin
+          LLVM_DIR: /opt/taichi-llvm-10.0.0/lib/cmake/llvm
+          CUDA_TOOLKIT_ROOT_DIR: /usr/local/cuda/
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_CUDA_TOOLKIT:BOOL=ON
+          BUILD_NUM_THREADS: 8
+          CXX: clang++-10
+
+      - name: Run benchmark
+        run: |
+          python3 benchmarks/misc/run.py /home/benchmarkbot/benchmark/

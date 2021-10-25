@@ -34,7 +34,7 @@ def expr_init(rhs):
     if rhs is None:
         return Expr(_ti_core.expr_alloca())
     if is_taichi_class(rhs):
-        if rhs.local_tensor_proxy != None:
+        if rhs.local_tensor_proxy is not None:
             return rhs
         else:
             return rhs.variable()
@@ -309,15 +309,21 @@ class PyTaichi:
         if self.prog is None:
             self.prog = _ti_core.Program()
 
-    def materialize_root_fb(self, first):
+    def materialize_root_fb(self, is_first_call):
         if not root.finalized and not root.empty:
             root.finalize()
-        elif first:
+        elif is_first_call:
             root.finalize(raise_warning=False)
 
         if root.finalized:
             global _root_fb
             _root_fb = FieldsBuilder()
+
+    def _finalize_root_fb_for_aot(self):
+        if _root_fb.finalized:
+            raise RuntimeError(
+                'AOT: can only finalize the root FieldsBuilder once')
+        _root_fb._finalize_for_aot()
 
     def materialize(self):
         self.materialize_root_fb(not self.materialized)
@@ -385,6 +391,14 @@ def _clamp_unsigned_to_range(npty, val):
         f'Constant {val} has exceeded the range of {iif.bits} int, clamped to {new_val}'
     )
     return new_val
+
+
+@taichi_scope
+def make_constant_expr_i32(val):
+    _taichi_skip_traceback = 1
+    assert isinstance(val, (int, np.integer))
+    return Expr(
+        _ti_core.make_const_expr_i32(_clamp_unsigned_to_range(np.int32, val)))
 
 
 @taichi_scope
@@ -590,8 +604,8 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
             offset
         ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
-    assert (offset is not None and shape is None
-            ) == False, f'The shape cannot be None when offset is being set'
+    assert (offset is None or shape
+            is not None), f'The shape cannot be None when offset is being set'
 
     del _taichi_skip_traceback
 
@@ -688,10 +702,11 @@ def ti_print(*vars, sep=' ', end='\n'):
 
 
 @taichi_scope
-def ti_format(*args):
+def ti_format(*args, **kwargs):
     content = args[0]
     mixed = args[1:]
     new_mixed = []
+    new_mixed_kwargs = {}
     args = []
     for x in mixed:
         if isinstance(x, ti.Expr):
@@ -699,9 +714,14 @@ def ti_format(*args):
             args.append(x)
         else:
             new_mixed.append(x)
-
+    for k, v in kwargs.items():
+        if isinstance(v, ti.Expr):
+            new_mixed_kwargs[k] = '{}'
+            args.append(v)
+        else:
+            new_mixed_kwargs[k] = v
     try:
-        content = content.format(*new_mixed)
+        content = content.format(*new_mixed, **new_mixed_kwargs)
     except ValueError:
         print('Number formatting is not supported with Taichi fields')
         exit(1)

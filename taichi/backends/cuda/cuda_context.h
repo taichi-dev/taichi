@@ -33,6 +33,7 @@ class CUDAContext {
 
   std::size_t get_total_memory();
   std::size_t get_free_memory();
+  std::string get_device_name();
 
   bool detected() const {
     return dev_count_ != 0;
@@ -43,7 +44,7 @@ class CUDAContext {
               std::vector<void *> arg_pointers,
               unsigned grid_dim,
               unsigned block_dim,
-              std::size_t shared_mem_bytes);
+              std::size_t dynamic_shared_mem_bytes);
 
   void set_profiler(KernelProfilerBase *profiler) {
     profiler_ = profiler;

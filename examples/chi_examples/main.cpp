@@ -52,7 +52,7 @@ void run_snode() {
   auto *pointer = &root->pointer(Index(0), n);
   auto *place = &pointer->insert_children(SNodeType::place);
   place->dt = PrimitiveType::i32;
-  program.add_snode_tree(std::unique_ptr<SNode>(root));
+  program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/false);
 
   std::unique_ptr<Kernel> kernel_init, kernel_ret, kernel_ext;
 
@@ -220,7 +220,7 @@ void autograd() {
     return snode;
   };
   auto *a = get_snode_grad(), *b = get_snode_grad(), *c = get_snode_grad();
-  program.add_snode_tree(std::unique_ptr<SNode>(root));
+  program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/false);
 
   std::unique_ptr<Kernel> kernel_init, kernel_forward, kernel_backward,
       kernel_ext;

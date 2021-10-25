@@ -18,6 +18,7 @@ def _test_scalar_ndarray(dtype, shape):
         assert x.shape == shape
     else:
         assert x.shape == (shape, )
+    assert x.element_shape == ()
 
     assert x.dtype == dtype
 
@@ -44,6 +45,7 @@ def _test_vector_ndarray(n, dtype, shape):
         assert x.shape == shape
     else:
         assert x.shape == (shape, )
+    assert x.element_shape == (n, )
 
     assert x.dtype == dtype
     assert x.n == n
@@ -73,6 +75,7 @@ def _test_matrix_ndarray(n, m, dtype, shape):
         assert x.shape == shape
     else:
         assert x.shape == (shape, )
+    assert x.element_shape == (n, m)
 
     assert x.dtype == dtype
     assert x.n == n

@@ -103,6 +103,7 @@ class IRBuilder(Builder):
     def build_Index(ctx, node):
         node.value = build_ir(ctx, node.value)
         node.ptr = node.value.ptr
+        return node
 
     @staticmethod
     def build_Constant(ctx, node):
@@ -254,7 +255,6 @@ class IRBuilder(Builder):
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value
         else:
-            print(f"return data: {node.value.ptr}")
             ctx.return_data = node.value.ptr
         return node
 

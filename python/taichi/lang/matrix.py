@@ -1458,7 +1458,7 @@ class MatrixNdarray(Ndarray):
     @property
     def element_shape(self):
         arr_shape = tuple(self.arr.shape)
-        return arr_shape[0:2] if self.layout == Layout.SOA else arr_shape[-2:]
+        return arr_shape[:2] if self.layout == Layout.SOA else arr_shape[-2:]
 
     @python_scope
     def __setitem__(self, key, value):

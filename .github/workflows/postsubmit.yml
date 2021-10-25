@@ -18,18 +18,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
 
       - name: Download Pre-Built LLVM 10.0.0
-        run: |
-          python misc/ci_download.py
-          mkdir taichi-llvm
-          cd taichi-llvm
-          unzip ../taichi-llvm.zip
+        run: python misc/ci_download.py
         env:
           CI_PLATFORM: ${{ matrix.os }}
 
@@ -65,18 +61,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
 
       - name: Download Pre-Built LLVM 10.0.0
-        run: |
-          python misc/ci_download.py
-          mkdir taichi-llvm
-          cd taichi-llvm
-          unzip ../taichi-llvm.zip
+        run: python misc/ci_download.py
         env:
           CI_PLATFORM: ${{ matrix.os }}
 
@@ -103,7 +95,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Build
         run: |
@@ -128,14 +120,13 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
-
       - name: Install 7Zip PowerShell
         shell: powershell
         run: Install-Module 7Zip4PowerShell -Force -Verbose
 
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - uses: actions/setup-python@v2
         with:
@@ -205,7 +196,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Build
         run: |

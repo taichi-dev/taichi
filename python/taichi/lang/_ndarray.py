@@ -162,6 +162,10 @@ class ScalarNdarray(Ndarray):
     def shape(self):
         return tuple(self.arr.shape)
 
+    @property
+    def element_shape(self):
+        return ()
+
     @python_scope
     def __setitem__(self, key, value):
         if impl.current_cfg().ndarray_use_torch:

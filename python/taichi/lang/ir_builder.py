@@ -111,6 +111,21 @@ class IRBuilder(Builder):
         return node
 
     @staticmethod
+    def build_Num(ctx, node):
+        node.ptr = node.n
+        return node
+
+    @staticmethod
+    def build_Str(ctx, node):
+        node.ptr = node.s
+        return node
+
+    @staticmethod
+    def build_Bytes(ctx, node):
+        node.ptr = node.s
+        return node
+
+    @staticmethod
     def build_keyword(ctx, node):
         node.value = build_ir(ctx, node.value)
         if node.arg is None:

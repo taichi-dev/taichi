@@ -56,7 +56,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     aa.dt = ka.dt;
     const size_t dt_bytes = vk_data_type_size(aa.dt);
     if (dt_bytes != 4) {
-      TI_ERROR("Vulakn kernel only supports 32-bit data, got {}",
+      TI_ERROR("Vulkan kernel only supports 32-bit data, got {}",
                data_type_name(aa.dt));
     }
     aa.is_array = ka.is_external_array;
@@ -71,7 +71,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     const size_t dt_bytes = vk_data_type_size(ra.dt);
     if (dt_bytes != 4) {
       // Metal doesn't support 64bit data buffers.
-      TI_ERROR("Vulakn kernel only supports 32-bit data, got {}",
+      TI_ERROR("Vulkan kernel only supports 32-bit data, got {}",
                data_type_name(ra.dt));
     }
     ra.is_array = false;  // TODO(#909): this is a temporary limitation

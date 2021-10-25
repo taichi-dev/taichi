@@ -57,7 +57,9 @@ class LlvmProgramImpl : public ProgramImpl {
 
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
-  void compile_snode_tree_types(SNodeTree *tree, std::vector<std::unique_ptr<SNodeTree>> &snode_trees) override;
+  void compile_snode_tree_types(
+      SNodeTree *tree,
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees) override;
 
   void materialize_snode_tree(
       SNodeTree *tree,

@@ -31,7 +31,9 @@ void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 #endif
 }
 
-void OpenglProgramImpl::compile_snode_tree_types(SNodeTree *tree, std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+void OpenglProgramImpl::compile_snode_tree_types(
+    SNodeTree *tree,
+    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
   // TODO: support materializing multiple snode trees
   opengl::OpenglStructCompiler scomp;
   opengl_struct_compiled_ = scomp.run(*(tree->root()));

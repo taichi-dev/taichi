@@ -215,22 +215,22 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 }
 
-void LlvmProgramImpl::compile_snode_tree_types(SNodeTree *tree, std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+void LlvmProgramImpl::compile_snode_tree_types(
+    SNodeTree *tree,
+    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
   auto *const root = tree->root();
   if (arch_is_cpu(config->arch)) {
     auto host_module = clone_struct_compiler_initial_context(
         snode_trees, llvm_context_host.get());
-    struct_compiler_ =
-        std::make_unique<StructCompilerLLVM>(host_arch(), this,
-                                             std::move(host_module));
+    struct_compiler_ = std::make_unique<StructCompilerLLVM>(
+        host_arch(), this, std::move(host_module));
 
   } else {
     TI_ASSERT(config->arch == Arch::cuda);
     auto device_module = clone_struct_compiler_initial_context(
         snode_trees, llvm_context_device.get());
-    struct_compiler_ =
-        std::make_unique<StructCompilerLLVM>(Arch::cuda, this,
-                                             std::move(device_module));
+    struct_compiler_ = std::make_unique<StructCompilerLLVM>(
+        Arch::cuda, this, std::move(device_module));
   }
   struct_compiler_->run(*root);
 }

@@ -393,6 +393,8 @@ void EmbeddedVulkanDevice::create_logical_device() {
 
   bool has_surface = false, has_swapchain = false;
 
+  bool portability_subset_enabled = false;
+
   for (auto &ext : extension_properties) {
     TI_TRACE("Vulkan device extension {} ({})", ext.extensionName,
              ext.specVersion);
@@ -403,6 +405,7 @@ void EmbeddedVulkanDevice::create_logical_device() {
       TI_WARN(
           "Potential non-conformant Vulkan implementation, enabling "
           "VK_KHR_portability_subset");
+      portability_subset_enabled = true;
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SWAPCHAIN_EXTENSION_NAME) {
       has_swapchain = true;
@@ -525,6 +528,10 @@ void EmbeddedVulkanDevice::create_logical_device() {
       if (shader_f16_i8_feature.shaderFloat16) {
         ti_device_->set_cap(DeviceCapability::spirv_has_float16, true);
       } else if (shader_f16_i8_feature.shaderInt8) {
+        ti_device_->set_cap(DeviceCapability::spirv_has_int8, true);
+      }
+      if (portability_subset_enabled) {
+        // TODO: investigate why MoltenVK isn't reporting int8 caps. See #3252
         ti_device_->set_cap(DeviceCapability::spirv_has_int8, true);
       }
       *pNextEnd = &shader_f16_i8_feature;

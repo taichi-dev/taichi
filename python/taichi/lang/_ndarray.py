@@ -39,6 +39,15 @@ class Ndarray:
         raise NotImplementedError()
 
     @property
+    def element_shape(self):
+        """Gets ndarray element shape.
+
+        Returns:
+            Tuple[Int]: Ndarray element shape.
+        """
+        raise NotImplementedError()
+
+    @property
     def dtype(self):
         """Gets data type of each individual value.
 

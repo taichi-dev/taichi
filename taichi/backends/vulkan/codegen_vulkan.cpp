@@ -586,9 +586,8 @@ class TaskCodegen : public IRVisitor {
     const uint32_t instruction = instruction_id;                               \
     if (is_real(src_dt)) {                                                     \
       if (data_type_bits(src_dt) > max_bits) {                                 \
-        TI_ERROR(                                                              \
-            "[glsl450] the operand type of instruction {}({}) must <= {}bits", \
-            #instruction, instruction_id, max_bits);                           \
+        TI_ERROR("Instruction {}({}) does not {}bits operation", #instruction, \
+                 instruction_id, data_type_bits(src_dt));                      \
       }                                                                        \
       val = ir_->call_glsl450(src_type, instruction, operand_val);             \
     } else {                                                                   \
@@ -845,7 +844,8 @@ class TaskCodegen : public IRVisitor {
       }
       */
 
-      val = ir_->make_value(op, ret_type, addr_ptr,
+      auto ptr_elem_type = ir_->get_primitive_buffer_type(dt);
+      val = ir_->make_value(op, ptr_elem_type, addr_ptr,
                             /*scope=*/ir_->const_i32_one_,
                             /*semantics=*/ir_->const_i32_zero_, data);
     } else {

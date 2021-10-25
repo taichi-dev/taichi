@@ -229,7 +229,7 @@ exclude them from the test in order to move forward:
 
 ```python
 # Run this test on all backends except for OpenGL
-@ti.test(excludes=[ti.opengl])
+@ti.test(exclude=[ti.opengl])
 def test_sparse_field():
     # ... (some tests that requires sparse feature which is not supported by OpenGL)
 ```

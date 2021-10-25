@@ -126,3 +126,19 @@ def test_python_scope_print_field():
     print(x)
     print(y)
     print(z)
+
+
+@ti.test(arch=ti.cpu)
+def test_print_string_format():
+    @ti.kernel
+    def func(k: ti.f32):
+        print(123)
+        print("{} abc".format(123))
+        print("{} {} {}".format(1, 2, 3))
+        print("{} {name} {value}".format(k, name=999, value=123))
+        name = 123.4
+        value = 456.7
+        print("{} {name} {value}".format(k, name=name, value=value))
+
+    func(233.3)
+    ti.sync()

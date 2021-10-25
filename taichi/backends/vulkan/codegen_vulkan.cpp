@@ -1408,8 +1408,8 @@ class KernelCodegen {
 
       std::ofstream fout((params_.ti_kernel_name).c_str(),
                          std::ios::binary | std::ios::out);
-      fout.write(reinterpret_cast<const char *>(task_res.spirv_code.data()),
-                 task_res.spirv_code.size() * sizeof(uint32_t));
+      fout.write(reinterpret_cast<const char *>(optimized_spv.data()),
+                 optimized_spv.size() * sizeof(uint32_t));
       fout.close();
 #endif
 

@@ -20,15 +20,6 @@ namespace vulkan {
  * Per offloaded task attributes.
  */
 struct TaskAttributes {
-  enum class OpaqueObjectType {
-    Queue,
-  };
-
-  struct OpaqueObjectInfo {
-    OpaqueObjectType type;
-    DeviceAllocation object{kDeviceNullAllocation};
-  };
-
   enum class BufferType {
     Root,
     GlobalTmps,

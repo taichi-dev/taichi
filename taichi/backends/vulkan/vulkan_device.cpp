@@ -1144,16 +1144,29 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
 #endif
 
+  bool export_sharing = params.export_sharing &&
+                        this->get_cap(DeviceCapability::vk_has_external_memory);
+
   VmaAllocationCreateInfo alloc_info{};
-  if (params.export_sharing) {
+  if (export_sharing) {
     buffer_info.pNext = &external_mem_buffer_create_info;
   }
-
+#ifdef __APPLE__
+  // weird behavior on apple: these flags are needed even if either read or
+  // write is required
+  if (params.host_read || params.host_write) {
+#else
   if (params.host_read && params.host_write) {
+#endif  //__APPLE__
     // This should be the unified memory on integrated GPUs
     alloc_info.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
     alloc_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                 VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+#ifdef __APPLE__
+    // weird behavior on apple: if coherent bit is not set, then the memory
+    // writes between map() and unmap() cannot be seen by gpu
+    alloc_info.preferredFlags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+#endif  //__APPLE__
   } else if (params.host_read) {
     alloc_info.usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
   } else if (params.host_write) {
@@ -1163,8 +1176,8 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   }
 
   alloc.buffer = vkapi::create_buffer(
-      device_, params.export_sharing ? allocator_export_ : allocator_,
-      &buffer_info, &alloc_info);
+      device_, export_sharing ? allocator_export_ : allocator_, &buffer_info,
+      &alloc_info);
   vmaGetAllocationInfo(alloc.buffer->allocator, alloc.buffer->allocation,
                        &alloc.alloc_info);
 
@@ -1472,8 +1485,11 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
 
   alloc.format = image_info.format;
 
+  bool export_sharing = params.export_sharing &&
+                        this->get_cap(DeviceCapability::vk_has_external_memory);
+
   VkExternalMemoryImageCreateInfo external_mem_image_create_info = {};
-  if (params.export_sharing) {
+  if (export_sharing) {
     external_mem_image_create_info.sType =
         VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
     external_mem_image_create_info.pNext = NULL;
@@ -1494,8 +1510,8 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
   alloc.image = vkapi::create_image(
-      device_, params.export_sharing ? allocator_export_ : allocator_,
-      &image_info, &alloc_info);
+      device_, export_sharing ? allocator_export_ : allocator_, &image_info,
+      &alloc_info);
   vmaGetAllocationInfo(alloc.image->allocator, alloc.image->allocation,
                        &alloc.alloc_info);
 

@@ -162,7 +162,7 @@ bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
     // this means we need ui
     VkPhysicalDeviceFeatures features{};
     vkGetPhysicalDeviceFeatures(device, &features);
-    return indices.is_complete_for_ui() && features.wideLines == VK_TRUE;
+    return indices.is_complete_for_ui();
   } else {
     return indices.is_complete();
   }
@@ -393,6 +393,8 @@ void EmbeddedVulkanDevice::create_logical_device() {
 
   bool has_surface = false, has_swapchain = false;
 
+  bool portability_subset_enabled = false;
+
   for (auto &ext : extension_properties) {
     TI_TRACE("Vulkan device extension {} ({})", ext.extensionName,
              ext.specVersion);
@@ -403,6 +405,7 @@ void EmbeddedVulkanDevice::create_logical_device() {
       TI_WARN(
           "Potential non-conformant Vulkan implementation, enabling "
           "VK_KHR_portability_subset");
+      portability_subset_enabled = true;
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SWAPCHAIN_EXTENSION_NAME) {
       has_swapchain = true;
@@ -503,7 +506,6 @@ void EmbeddedVulkanDevice::create_logical_device() {
     {
       features2.pNext = &shader_atomic_float_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
-
       if (shader_atomic_float_feature.shaderBufferFloat32AtomicAdd) {
         ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float_add, true);
       } else if (shader_atomic_float_feature.shaderBufferFloat64AtomicAdd) {
@@ -526,6 +528,10 @@ void EmbeddedVulkanDevice::create_logical_device() {
       if (shader_f16_i8_feature.shaderFloat16) {
         ti_device_->set_cap(DeviceCapability::spirv_has_float16, true);
       } else if (shader_f16_i8_feature.shaderInt8) {
+        ti_device_->set_cap(DeviceCapability::spirv_has_int8, true);
+      }
+      if (portability_subset_enabled) {
+        // TODO: investigate why MoltenVK isn't reporting int8 caps. See #3252
         ti_device_->set_cap(DeviceCapability::spirv_has_int8, true);
       }
       *pNextEnd = &shader_f16_i8_feature;

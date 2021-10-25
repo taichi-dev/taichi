@@ -2,7 +2,6 @@
 
 // Driver
 PER_CUDA_FUNCTION(init, cuInit, int);
-PER_CUDA_FUNCTION(driver_get_version, cuDriverGetVersion, int*);
 
 // Device management
 PER_CUDA_FUNCTION(device_get_count, cuDeviceGetCount, int *);

@@ -814,6 +814,7 @@ class TaskCodegen : public IRVisitor {
 
     spirv::Value addr_ptr;
     bool is_compiled_struct = false;
+    auto ret_type = ir_->get_primitive_type(dt);
     if (ptr_to_buffers_.at(stmt->dest).type == BufferType::Root) {
       addr_ptr = ir_->query_value(stmt->dest->raw_name());
       addr_ptr.flag =
@@ -821,6 +822,7 @@ class TaskCodegen : public IRVisitor {
       is_compiled_struct = true;
     } else {
       addr_ptr = at_buffer(stmt->dest, dt);
+      ret_type = ir_->get_primitive_buffer_type(false, dt);
     }
     spirv::Value data = ir_->query_value(stmt->val->raw_name());
     spirv::Value val;
@@ -854,8 +856,17 @@ class TaskCodegen : public IRVisitor {
         TI_NOT_IMPLEMENTED
       }
 
+      TI_ASSERT_INFO(addr_ptr.stype.element_type_id == ret_type.id,
+                     "Type id mismatch {} ptr:{}", ret_type.id,
+                     addr_ptr.stype.element_type_id);
+
+      if (data.stype.element_type_id != ret_type.id) {
+        // gtmp / context uses int32 under the hood
+        data = ir_->cast(ret_type, data);
+      }
+
       val =
-          ir_->make_value(op, ir_->get_primitive_type(dt), addr_ptr,
+          ir_->make_value(op, ret_type, addr_ptr,
                           ir_->uint_immediate_number(ir_->u32_type(), 1),
                           ir_->uint_immediate_number(ir_->u32_type(), 0), data);
     } else {
@@ -1397,8 +1408,8 @@ class KernelCodegen {
 
       std::ofstream fout((params_.ti_kernel_name).c_str(),
                          std::ios::binary | std::ios::out);
-      fout.write(reinterpret_cast<const char *>(task_res.spirv_code.data()),
-                 task_res.spirv_code.size() * sizeof(uint32_t));
+      fout.write(reinterpret_cast<const char *>(optimized_spv.data()),
+                 optimized_spv.size() * sizeof(uint32_t));
       fout.close();
 #endif
 

@@ -125,6 +125,8 @@ class Ndarray:
             )
         if impl.current_cfg().ndarray_use_torch:
             self.arr = torch.from_numpy(arr).to(self.arr.dtype)
+            if impl.current_cfg().arch == _ti_core.Arch.cuda:
+                self.arr = self.arr.cuda()
         else:
             if hasattr(arr, 'contiguous'):
                 arr = arr.contiguous()

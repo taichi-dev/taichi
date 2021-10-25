@@ -260,6 +260,11 @@ SType IRBuilder::get_primitive_buffer_type(const bool struct_compiled,
     } else if (dt->is_primitive(PrimitiveTypeID::i64) &&
                device_->get_cap(cap::spirv_has_atomic_i64)) {
       return t_int64_;
+    } else if (dt->is_primitive(PrimitiveTypeID::u8) &&
+               device_->get_cap(cap::spirv_has_int8)) {
+      return t_uint8_;
+    } else {
+      return get_primitive_type(dt);
     }
   }
   return t_int32_;

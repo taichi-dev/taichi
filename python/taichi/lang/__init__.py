@@ -559,14 +559,7 @@ def block_local(*args):
 
     Args:
         *args (List[Field]): A list of sparse Taichi fields.
-
-    Raises:
-        InvalidOperationError: If the ``dynamic_index`` feature (experimental)
-            is enabled.
     """
-    if ti.current_cfg().dynamic_index:
-        raise InvalidOperationError(
-            'dynamic_index is not allowed when block_local is turned on.')
     for a in args:
         for v in a.get_field_members():
             _ti_core.insert_snode_access_flag(
@@ -1004,8 +997,8 @@ def is_arch_supported(arch):
         arch = _ti_core.arch_name(arch)
         _ti_core.warn(
             f"{e.__class__.__name__}: '{e}' occurred when detecting "
-            f"{arch}, consider add `export TI_WITH_{arch.upper()}=0` "
-            f" to environment variables to depress this warning message.")
+            f"{arch}, consider adding `TI_ENABLE_{arch.upper()}=0` "
+            f" to environment variables to suppress this warning message.")
         return False
 
 

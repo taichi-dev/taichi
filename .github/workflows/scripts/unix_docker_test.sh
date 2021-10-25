@@ -10,13 +10,14 @@ source /home/dev/miniconda/etc/profile.d/conda.sh
 conda activate $PY
 
 python3 -m pip install ./taichi.whl
+[[ $GPU_TEST == "OFF" ]] && python3 -m pip install requirements_test.txt
 
 export TI_IN_DOCKER=true
 python3 examples/algorithm/laplace.py
 ti diagnose
 ti changelog
 
-[ -z $GPU_TEST ] && ti test -vr2 -t2
+[[ $GPU_TEST == "OFF" ]] && ti test -vr2 -t2
 
-[ -z $GPU_TEST ] || ti test -vr2 -t2 -k "not ndarray and not torch"
-[ -z $GPU_TEST ] || ti test -vr2 -t1 -k "ndarray or torch"
+[[ $GPU_TEST == "ON" ]] && ti test -vr2 -t2 -k "not ndarray and not torch"
+[[ $GPU_TEST == "ON" ]] && ti test -vr2 -t1 -k "ndarray or torch"

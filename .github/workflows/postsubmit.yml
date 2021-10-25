@@ -222,3 +222,29 @@ jobs:
           TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
           TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
           ti test -vr2 -t4 -x
+    
+  performance_monitoring:
+    name: Performance monitoring (NVGPU)
+    timeout-minutes: 60
+    runs-on: [self-hosted, x64, cuda, linux, benchmark]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Build & Install
+        run: |
+          export PATH=$PATH:/usr/local/cuda/bin
+          .github/workflows/scripts/unix_build.sh
+        env:
+          LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
+          LLVM_PATH: /opt/taichi-llvm-10.0.0/bin
+          LLVM_DIR: /opt/taichi-llvm-10.0.0/lib/cmake/llvm
+          CUDA_TOOLKIT_ROOT_DIR: /usr/local/cuda/
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_CUDA_TOOLKIT:BOOL=ON
+          BUILD_NUM_THREADS: 8
+          CXX: clang++-10
+
+      - name: Run benchmark
+        run: |
+          python3 benchmarks/misc/run.py /home/benchmarkbot/benchmark/

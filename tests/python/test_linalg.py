@@ -402,7 +402,7 @@ def test_min_max():
             assert c[None] == min(i, j)
 
 
-@ti.test()
+@ti.test(excludes=[ti.vulkan])
 def test_min():
     @ti.kernel
     def func_u16(a: ti.u16, b: ti.u16) -> ti.u16:

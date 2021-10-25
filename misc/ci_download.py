@@ -1,6 +1,6 @@
 import os
+import sys
 import urllib.request
-import zipfile
 
 platform = os.environ['CI_PLATFORM']
 if platform.startswith('macos'):
@@ -20,5 +20,5 @@ print(f'Extract zip to local dir {target_dir}...')
 if not os.path.exists(target_dir):
     os.makedirs(target_dir)
 
-with zipfile.ZipFile("taichi-llvm.zip") as zf:
-    zf.extractall(target_dir)
+retcode = os.system(f"unzip taichi-llvm.zip -d {target_dir}")
+sys.exit(retcode)

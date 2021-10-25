@@ -83,30 +83,43 @@ jobs:
           - os: ubuntu-latest
             python: py36
     runs-on: ${{ matrix.os }}
+    permissions:
+      packages: read
+      contents: read
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: "recursive"
 
-      - name: Build & Install
+      - name: Get docker images
         run: |
-          docker pull ghcr.io/taichi-dev/taichidev-ubuntu20.04:v0.1.1
-          docker create --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-ubuntu20.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY "$CI_SETUP_CMAKE_ARGS"
+          # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
+          echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu20.04:v0.1.0
+        env:
+          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        run: |
+          docker create --user root --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu20.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD "$CI_SETUP_CMAKE_ARGS"
           docker cp ../${{ github.event.repository.name }} taichi_build:/home/dev/taichi
           docker start -a taichi_build
         env:
           PY: ${{ matrix.python }}
+          GPU_BUILD: OFF
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Test
         run: |
           docker cp taichi_build:/home/dev/taichi/dist/*.whl ./taichi.whl
-          docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-ubuntu20.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST
+          docker create --user root --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu20.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp ./taichi.whl taichi_test:/home/dev/taichi.whl
+          docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker start -a taichi_test
         env:
           PY: ${{ matrix.python }}
+          GPU_TEST: OFF
 
   build_and_test_cpu:
     name: Build and Test (CPU)
@@ -170,11 +183,12 @@ jobs:
 
       - name: Build & Install
         run: |
-          docker create --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu20.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY "$CI_SETUP_CMAKE_ARGS"
+          docker create --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu20.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD "$CI_SETUP_CMAKE_ARGS"
           docker cp ../${{ github.event.repository.name }} taichi_build:/home/dev/taichi
           docker start -a taichi_build
         env:
           PY: py38
+          GPU_BUILD: ON
           DISPLAY: :1
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
 

@@ -48,7 +48,7 @@ class ASTTransformerTotal(object):
 
             tree = build_ir(ctx, tree)
             ast.fix_missing_locations(tree)
-            self.pass_Checks.visit(tree)  # does not modify the AST
+            self.pass_checks.visit(tree)  # does not modify the AST
             return ctx.return_data
         self.print_ast(tree, 'Initial AST')
         self.rename_module.visit(tree)

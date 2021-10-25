@@ -120,7 +120,7 @@ class Func:
             return self.func(*args)
 
         if impl.get_runtime().experimental_ast_refactor:
-            src = _remove_indent(oinspect.getsource(self.func))
+            src = textwrap.dedent(oinspect.getsource(self.func))
             tree = ast.parse(src)
 
             func_body = tree.body[0]
@@ -534,7 +534,7 @@ class Kernel:
                                            grad_suffix)
         ti.trace("Compiling kernel {}...".format(kernel_name))
 
-        src = _remove_indent(oinspect.getsource(self.func))
+        src = textwrap.dedent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]

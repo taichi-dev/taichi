@@ -1509,7 +1509,7 @@ class VectorNdarray(Ndarray):
     @property
     def element_shape(self):
         arr_shape = tuple(self.arr.shape)
-        return arr_shape[0] if self.layout == Layout.SOA else arr_shape[-1]
+        return arr_shape[:1] if self.layout == Layout.SOA else arr_shape[-1:]
 
     @python_scope
     def __setitem__(self, key, value):

@@ -1,3 +1,7 @@
+import datetime
+
+from taichi.core import ti_core as _ti_core
+
 import taichi as ti
 
 kibibyte = 1024
@@ -13,19 +17,18 @@ size_subsection = [(0.0, 'B'), (1024.0, 'KB'), (1048576.0, 'MB'),
                    (1073741824.0, 'GB'), (float('inf'), 'INF')]  #B KB MB GB
 
 
+def arch_name(arch):
+    return _ti_core.arch_name(arch)
+
+
+def datatime_with_format():
+    return datetime.datetime.now().isoformat()
+
+
 def size2str(size_in_byte):
     for dsize, units in reversed(size_subsection):
         if size_in_byte >= dsize:
             return str(round(size_in_byte / dsize, 4)) + units
-
-
-def scale_repeat(arch, datasize, repeat=10):
-    scaled = repeat
-    if (arch == ti.gpu) | (arch == ti.opengl) | (arch == ti.cuda):
-        scaled *= 10
-    if datasize <= 4 * 1024 * 1024:
-        scaled *= 10
-    return scaled
 
 
 def geometric_mean(data_array):
@@ -33,6 +36,14 @@ def geometric_mean(data_array):
     for data in data_array:
         product *= data
     return pow(product, 1.0 / len(data_array))
+
+
+def repeat_times(arch, datasize, repeat=1):
+    if (arch == ti.gpu) | (arch == ti.opengl) | (arch == ti.cuda):
+        repeat *= 10
+    if datasize <= 4 * 1024 * 1024:
+        repeat *= 10
+    return repeat
 
 
 def md_table_header(suite_name, arch, test_dsize, test_repeat,
@@ -51,7 +62,7 @@ def md_table_header(suite_name, arch, test_dsize, test_repeat,
 
     repeat = '|**repeat**|'
     repeat += ''.join(
-        str(scale_repeat(arch, size, test_repeat)) + '|'
+        str(repeat_times(arch, size, test_repeat)) + '|'
         for size in test_dsize)
     repeat += ''.join('|' for i in range(len(results_evaluation)))
 

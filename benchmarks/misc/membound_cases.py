@@ -1,4 +1,4 @@
-from utils import dtype_size, scale_repeat, size2str
+from utils import dtype_size, repeat_times
 
 import taichi as ti
 
@@ -25,7 +25,7 @@ def membound_benchmark(func, num_elements, repeat):
 
 def fill(arch, dtype, dsize, repeat=10):
 
-    repeat = scale_repeat(arch, dsize, repeat)
+    repeat = repeat_times(arch, dsize, repeat)
     num_elements = dsize // dtype_size[dtype]
 
     x = ti.field(dtype, shape=num_elements)
@@ -40,7 +40,7 @@ def fill(arch, dtype, dsize, repeat=10):
 
 def saxpy(arch, dtype, dsize, repeat=10):
 
-    repeat = scale_repeat(arch, dsize, repeat)
+    repeat = repeat_times(arch, dsize, repeat)
     num_elements = dsize // dtype_size[dtype] // 3  #z=x+y
 
     x = ti.field(dtype, shape=num_elements)
@@ -60,7 +60,7 @@ def saxpy(arch, dtype, dsize, repeat=10):
 
 def reduction(arch, dtype, dsize, repeat=10):
 
-    repeat = scale_repeat(arch, dsize, repeat)
+    repeat = repeat_times(arch, dsize, repeat)
     num_elements = dsize // dtype_size[dtype]
 
     x = ti.field(dtype, shape=num_elements)

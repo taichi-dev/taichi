@@ -1,4 +1,5 @@
 import os
+import warnings
 
 from membound import MemoryBound
 from taichi.core import ti_core as _ti_core
@@ -10,15 +11,15 @@ benchmark_suites = [MemoryBound]
 benchmark_archs = [ti.cpu, ti.cuda]
 
 
-class BenchmarkInfo:
+class CommitInfo:
     def __init__(self, pull_request_id, commit_hash):
-        self.pull_request_id = pull_request_id  #int
+        self.pull_request_id = pull_request_id
         self.commit_hash = commit_hash  #str
-        self.archs = []  #list ['x64','CUDA','Vulkan', ...]
-        self.datetime = []  #list [begin, end]
+        self.archs = []  #['x64','cuda','vulkan', ...]
+        self.datetime = []  #[start, end]
 
 
-class PerformanceMonitoring:
+class BenchmarkSuites:
     def __init__(self, arch):
         self.suites = []
         self.arch = arch
@@ -30,28 +31,29 @@ class PerformanceMonitoring:
         if arch in suite.supported_archs:
             return True
         else:
-            RuntimeWarning(
-                'arch[' + arch_name(arch) +
-                '] does not exist in SuiteInfo.supported_archs of class ' +
-                suite.__name__)
+            warnings.warn(
+                f'Arch [{arch_name(arch)}] does not exist in {suite.__name__}.supported_archs.',
+                UserWarning,
+                stacklevel=2)
             return False
 
     def run(self):
-        print(f'Arch : {arch_name(self.arch)} Running...')
+        print(f'Arch [{arch_name(self.arch)}] Running...')
         for suite in self.suites:
             suite.run()
 
     def save_to_markdown(self, arch_dir='./'):
         current_time = datatime_with_format()
         commit_hash = _ti_core.get_commit_hash()  #[:8]
-        for s in self.suites:
-            file_name = f'{s.suite_name}.md'
+        for suite in self.suites:
+            file_name = f'{suite.suite_name}.md'
             path = os.path.join(arch_dir, file_name)
             with open(path, 'w') as f:
                 lines = [
                     f'commit_hash: {commit_hash}\n',
                     f'datatime: {current_time}\n'
-                ] + s.get_markdown_str()
+                ]
+                lines += suite.get_markdown_lines()
                 for line in lines:
                     print(line, file=f)
 
@@ -66,10 +68,10 @@ def main():
         arch_dir = os.path.join(benchmark_dir, arch_name(arch))
         os.makedirs(arch_dir)
         #init & run
-        impl = PerformanceMonitoring(arch)
-        impl.run()
+        suites = BenchmarkSuites(arch)
+        suites.run()
         #save result
-        impl.save_to_markdown(arch_dir)
+        suites.save_to_markdown(arch_dir)
 
 
 if __name__ == '__main__':

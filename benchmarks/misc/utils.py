@@ -1,7 +1,5 @@
 import datetime
 
-from taichi.core import ti_core as _ti_core
-
 import taichi as ti
 
 kibibyte = 1024
@@ -18,7 +16,7 @@ size_subsection = [(0.0, 'B'), (1024.0, 'KB'), (1048576.0, 'MB'),
 
 
 def arch_name(arch):
-    return _ti_core.arch_name(arch)
+    return str(arch).replace('Arch.', '')
 
 
 def datatime_with_format():
@@ -38,7 +36,7 @@ def geometric_mean(data_array):
     return pow(product, 1.0 / len(data_array))
 
 
-def repeat_times(arch, datasize, repeat=1):
+def scaled_repeat_times(arch, datasize, repeat=1):
     if (arch == ti.gpu) | (arch == ti.opengl) | (arch == ti.cuda):
         repeat *= 10
     if datasize <= 4 * 1024 * 1024:
@@ -62,7 +60,7 @@ def md_table_header(suite_name, arch, test_dsize, test_repeat,
 
     repeat = '|**repeat**|'
     repeat += ''.join(
-        str(repeat_times(arch, size, test_repeat)) + '|'
+        str(scaled_repeat_times(arch, size, test_repeat)) + '|'
         for size in test_dsize)
     repeat += ''.join('|' for i in range(len(results_evaluation)))
 

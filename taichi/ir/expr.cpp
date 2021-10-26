@@ -67,8 +67,8 @@ Expr &Expr::operator=(const Expr &o) {
     if (expr == nullptr) {
       set(o.eval());
     } else if (expr->is_lvalue()) {
-      current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-          *this, load_if_ptr(o)));
+      current_ast_builder().insert(
+          std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
     } else {
       // set(o.eval());
       TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
@@ -140,8 +140,8 @@ Expr Expr::eval() const {
 
 void Expr::operator+=(const Expr &o) {
   if (this->atomic) {
-    (*this) = Expr::make<AtomicOpExpression>(
-        AtomicOpType::add, *this, load_if_ptr(o));
+    (*this) = Expr::make<AtomicOpExpression>(AtomicOpType::add, *this,
+                                             load_if_ptr(o));
   } else {
     (*this) = (*this) + o;
   }
@@ -149,8 +149,8 @@ void Expr::operator+=(const Expr &o) {
 
 void Expr::operator-=(const Expr &o) {
   if (this->atomic) {
-    (*this) = Expr::make<AtomicOpExpression>(
-        AtomicOpType::sub, *this, load_if_ptr(o));
+    (*this) = Expr::make<AtomicOpExpression>(AtomicOpType::sub, *this,
+                                             load_if_ptr(o));
   } else {
     (*this) = (*this) - o;
   }

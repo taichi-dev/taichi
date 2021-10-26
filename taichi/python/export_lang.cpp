@@ -608,23 +608,19 @@ void export_lang(py::module &m) {
         static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
 
   m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::add, a,
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::add, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_sub", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a,
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_min", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::min, a,
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::min, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_max", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::max, a,
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::max, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_bit_and", [&](const Expr &a, const Expr &b) {

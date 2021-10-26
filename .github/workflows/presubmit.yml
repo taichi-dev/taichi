@@ -101,8 +101,8 @@ jobs:
 
       - name: Build
         run: |
-          docker create --user $USER --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu20.04:v0.1.0 /home/$USER/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD "$CI_SETUP_CMAKE_ARGS"
-          docker cp ../${{ github.event.repository.name }} taichi_build:/home/$USER/taichi
+          docker create --user root --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu20.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD "$CI_SETUP_CMAKE_ARGS"
+          docker cp ../${{ github.event.repository.name }} taichi_build:/home/dev/taichi
           docker start -a taichi_build
         env:
           PY: ${{ matrix.python }}
@@ -111,11 +111,11 @@ jobs:
 
       - name: Test
         run: |
-          docker cp taichi_build:/home/$USER/taichi/dist/*.whl ./taichi.whl
-          docker create --user $USER --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu20.04:v0.1.0 /home/$USER/unix_docker_test.sh $PY $GPU_TEST
-          docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/$USER/unix_docker_test.sh
-          docker cp ./taichi.whl taichi_test:/home/$USER/taichi.whl
-          docker cp ./requirements_test.txt taichi_test:/home/$USER/requirements_test.txt
+          docker cp taichi_build:/home/dev/taichi/dist/*.whl ./taichi.whl
+          docker create --user root --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu20.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST
+          docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
+          docker cp ./taichi.whl taichi_test:/home/dev/taichi.whl
+          docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker start -a taichi_test
         env:
           PY: ${{ matrix.python }}

@@ -10,7 +10,7 @@ CI_SETUP_CMAKE_ARGS=$3
 source /home/dev/miniconda/etc/profile.d/conda.sh
 conda activate $PY
 
-sudo apt-get install zlib1g-dev
+apt-get install zlib1g-dev
 
 cd taichi
 [[ $GPU_BUILD == "OFF" ]] && python3 -m pip install -r requirements_dev.txt

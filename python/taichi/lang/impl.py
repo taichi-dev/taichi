@@ -310,9 +310,8 @@ class PyTaichi:
 
     def materialize_root_fb(self, is_first_call):
         if not root.finalized and not root.empty:
-            root.finalize()
-        elif is_first_call:
-            root.finalize(raise_warning=False)
+            if is_first_call or not root.empty:
+                root.finalize(raise_warning=not is_first_call)
 
         if root.finalized:
             global _root_fb

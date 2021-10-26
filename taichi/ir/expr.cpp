@@ -29,6 +29,10 @@ std::string Expr::get_attribute(const std::string &key) const {
   return expr->get_attribute(key);
 }
 
+DataType Expr::get_ret_type() const {
+  return expr->ret_type;
+}
+
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
   return Expr::make<TernaryOpExpression>(TernaryOpType::select, cond, true_val,
                                          false_val);

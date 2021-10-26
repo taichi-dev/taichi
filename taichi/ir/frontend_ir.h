@@ -677,6 +677,7 @@ class ConstExpression : public Expression {
 
   template <typename T>
   ConstExpression(const T &x) : val(x) {
+    ret_type = val.dt;
   }
 
   void serialize(std::ostream &ss) override {

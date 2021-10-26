@@ -17,6 +17,6 @@ TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python3 build.py build
 # Run basic cpp tests
 cd ..
 CUR_DIR=`pwd`
-TI_LIB_DIR=$CUR_DIR/python/taichi/lib ./build/taichi_cpp_tests
+#TI_LIB_DIR=$CUR_DIR/python/taichi/lib ./build/taichi_cpp_tests
 
 cp dist/*.whl /wheel/

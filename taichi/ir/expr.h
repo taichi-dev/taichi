@@ -131,11 +131,6 @@ Expr bit_cast(const Expr &input) {
 }
 
 Expr load_if_ptr(const Expr &ptr);
-Expr ptr_if_global(const Expr &var);
-
-inline Expr smart_load(const Expr &var) {
-  return load_if_ptr(ptr_if_global(var));
-}
 
 // Begin: legacy frontend functions
 Expr Var(const Expr &x);

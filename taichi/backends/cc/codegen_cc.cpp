@@ -264,11 +264,7 @@ class CCTransformer : public IRVisitor {
 
   static std::string get_libc_function_name(std::string name, DataType dt) {
     std::string ret;
-    if (dt->is_primitive(PrimitiveTypeID::u16))
-      ret = "u" + name;
-    else if (dt->is_primitive(PrimitiveTypeID::i16))
-      ret = name;
-    else if (dt->is_primitive(PrimitiveTypeID::i32))
+    if (dt->is_primitive(PrimitiveTypeID::i32))
       ret = name;
     else if (dt->is_primitive(PrimitiveTypeID::i64))
       ret = "ll" + name;

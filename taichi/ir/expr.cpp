@@ -196,6 +196,7 @@ Expr Var(const Expr &x) {
       std::static_pointer_cast<IdExpression>(var.expr)->id,
       PrimitiveType::unknown));
   var = x;
+  var->ret_type = x->ret_type;
   return var;
 }
 

@@ -72,9 +72,7 @@ class Matrix(TaichiOperations):
                                 elif isinstance(n[0], float):
                                     dt = impl.get_runtime().default_fp
                                 elif isinstance(n[0], expr.Expr):
-                                    print(n[0].ptr.get_ret_type().to_string())
-                                    from taichi.core import ti_core
-                                    print(n[0].ptr.get_ret_type() == ti_core.DataType_unknown)
+                                    dt = n[0].ptr.get_ret_type()
                                 else:
                                     raise Exception(
                                         'dt required when using dynamic_index for local tensor'

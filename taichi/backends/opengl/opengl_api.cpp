@@ -7,7 +7,6 @@
 #include "taichi/program/py_print_buffer.h"
 #include "taichi/util/environ_config.h"
 #include "taichi/backends/opengl/shaders/runtime.h"
-#include "taichi/backends/opengl/shaders/listman.h"
 #include "taichi/ir/transforms.h"
 
 #ifdef TI_WITH_OPENGL
@@ -50,7 +49,6 @@ static std::string add_line_markers(std::string x) {
 struct OpenGlRuntimeImpl {
   struct {
     DeviceAllocation runtime = kDeviceNullAllocation;
-    DeviceAllocation listman = kDeviceNullAllocation;
     DeviceAllocation root = kDeviceNullAllocation;
     DeviceAllocation gtmp = kDeviceNullAllocation;
   } core_bufs;
@@ -58,9 +56,7 @@ struct OpenGlRuntimeImpl {
   OpenGlRuntimeImpl() {
   }
 
-  std::unique_ptr<GLSLRuntime> runtime;
-  std::unique_ptr<GLSLListman> listman;
-
+  std::unique_ptr<GLSLRuntime> runtime{nullptr};
   std::vector<std::unique_ptr<DeviceCompiledProgram>> programs;
 };
 
@@ -319,7 +315,6 @@ void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
     auto binder = compiled_pipeline_[i]->resource_binder();
     auto &core_bufs = runtime->impl->core_bufs;
     binder->buffer(0, int(GLBufId::Runtime), core_bufs.runtime);
-    binder->buffer(0, int(GLBufId::Listman), core_bufs.listman);
     binder->buffer(0, int(GLBufId::Root), core_bufs.root);
     binder->buffer(0, int(GLBufId::Gtmp), core_bufs.gtmp);
     if (program_.args_buf_size)
@@ -408,16 +403,11 @@ OpenGlRuntime::OpenGlRuntime() {
   impl->core_bufs.runtime = device->allocate_memory(
       {sizeof(GLSLRuntime), /*host_write=*/false, /*host_read=*/true});
 
-  impl->listman = std::make_unique<GLSLListman>();
-  impl->core_bufs.listman = device->allocate_memory({sizeof(GLSLListman)});
-
   impl->core_bufs.gtmp =
       device->allocate_memory({taichi_global_tmp_buffer_size});
 
   auto cmdlist = device->get_compute_stream()->new_command_list();
   cmdlist->buffer_fill(impl->core_bufs.runtime.get_ptr(0), sizeof(GLSLRuntime),
-                       0);
-  cmdlist->buffer_fill(impl->core_bufs.listman.get_ptr(0), sizeof(GLSLListman),
                        0);
   cmdlist->buffer_fill(impl->core_bufs.gtmp.get_ptr(0),
                        taichi_global_tmp_buffer_size, 0);

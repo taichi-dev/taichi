@@ -22,7 +22,6 @@ namespace shaders {
 #define TI_INSIDE_OPENGL_CODEGEN
 #include "taichi/backends/opengl/shaders/atomics_macro_f32.glsl.h"
 #include "taichi/backends/opengl/shaders/runtime.h"
-#include "taichi/backends/opengl/shaders/listman.h"
 #include "taichi/backends/opengl/shaders/random.glsl.h"
 #include "taichi/backends/opengl/shaders/fast_pow.glsl.h"
 #include "taichi/backends/opengl/shaders/print.glsl.h"
@@ -148,8 +147,6 @@ class KernelGen : public IRVisitor {
     // clang-format off
     if (used.print)  // the runtime buffer is only used for print now..
       line_appender_header_.append_raw(shaders::kOpenGlRuntimeSourceCode);
-    if (used.listman)
-      line_appender_header_.append_raw(shaders::kOpenGLListmanSourceCode);
 
     std::string kernel_header;
 #define DEFINE_LAYOUT(layout, restype, name, id, dt, dtype) \
@@ -949,24 +946,6 @@ class KernelGen : public IRVisitor {
     emit("}}\n");
   }
 
-  void generate_struct_for_kernel(OffloadedStmt *stmt) {
-    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::struct_for);
-    used.listman = true;
-    const std::string glsl_kernel_name = make_kernel_name();
-    emit("void {}()", glsl_kernel_name);
-    this->glsl_kernel_name_ = glsl_kernel_name;
-    emit("{{ // struct for {}", stmt->snode->node_type_name);
-    {
-      ScopedIndent _s(line_appender_);
-      workgroup_size_ = stmt->block_dim;
-      num_workgroups_ = stmt->grid_dim;
-      ScopedGridStrideLoop _gsl(this, "_list_len_");
-      emit("int _itv = _list_[_sid];");
-      stmt->body->accept(this);
-    }
-    emit("}}\n");
-  }
-
   size_t get_snode_base_address(const SNode *snode) {
     if (snode->type == SNodeType::root)
       return 0;
@@ -982,57 +961,6 @@ class KernelGen : public IRVisitor {
     addr += struct_compiled_->snode_map.at(snode->node_type_name).stride;
     addr -= opengl_get_snode_meta_size(*snode);
     return addr;
-  }
-
-  void generate_listgen_for_dynamic(const SNode *snode) {
-    TI_ASSERT(snode->type == SNodeType::dynamic);
-    // the `length` field of a dynamic SNode is at it's end:
-    // | x[0] | x[1] | x[2] | x[3] | ... | len |
-    TI_ASSERT_INFO(snode->parent->type == SNodeType::root,
-                   "Non-top-level dynamic not supported yet on OpenGL");
-    size_t addr = get_snode_meta_address(snode);
-    used.int32 = true;
-    emit("_list_len_ = _data_i32_[{} >> 2];", addr);
-    emit("for (int i = 0; i < _list_len_; i++) {{");
-    {
-      ScopedIndent _s(line_appender_);
-      emit("_list_[i] = i;");
-    }
-    emit("}}");
-  }
-
-  void generate_listgen_for_dense(const SNode *snode) {
-    TI_ASSERT(snode->type == SNodeType::dense);
-    // the `length` field of a dynamic SNode is at it's end:
-    // | x[0] | x[1] | x[2] | x[3] | ... | len |
-    emit("_list_len_ = {};",
-         struct_compiled_->snode_map.at(snode->node_type_name).length);
-    emit("for (int i = 0; i < _list_len_; i++) {{");
-    {
-      ScopedIndent _s(line_appender_);
-      emit("_list_[i] = i;");
-    }
-    emit("}}");
-  }
-
-  void generate_listgen_kernel(OffloadedStmt *stmt) {
-    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::listgen);
-    const std::string glsl_kernel_name = make_kernel_name();
-    emit("void {}()", glsl_kernel_name);
-    this->glsl_kernel_name_ = glsl_kernel_name;
-    used.listman = true;
-    emit("{{ // listgen {}", stmt->snode->node_type_name);
-    {
-      ScopedIndent _s(line_appender_);
-      if (stmt->snode->type == SNodeType::dense) {
-        generate_listgen_for_dense(stmt->snode);
-      } else if (stmt->snode->type == SNodeType::dynamic) {
-        generate_listgen_for_dynamic(stmt->snode);
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
-    }
-    emit("}}\n");
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
@@ -1113,10 +1041,6 @@ class KernelGen : public IRVisitor {
       generate_serial_kernel(stmt);
     } else if (stmt->task_type == Type::range_for) {
       generate_range_for_kernel(stmt);
-    } else if (stmt->task_type == Type::struct_for) {
-      generate_struct_for_kernel(stmt);
-    } else if (stmt->task_type == Type::listgen) {
-      generate_listgen_kernel(stmt);
     } else {
       // struct_for is automatically lowered to ranged_for for dense snodes
       // (#378). So we only need to support serial and range_for tasks.
@@ -1129,12 +1053,6 @@ class KernelGen : public IRVisitor {
 
   void visit(StructForStmt *) override {
     TI_ERROR("[glsl] Struct for cannot be nested under OpenGL for now");
-  }
-
-  void visit(ClearListStmt *stmt) override {
-    used.listman = true;
-    emit("// clear list {}", stmt->snode->node_type_name);
-    emit("_list_len_ = 0;");
   }
 
   void visit(IfStmt *if_stmt) override {

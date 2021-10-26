@@ -7,7 +7,6 @@ PY=$1
 GPU_BUILD=$2
 CI_SETUP_CMAKE_ARGS=$3
 
-chown -R dev:dev taichi
 ls -al
 
 source /home/dev/miniconda/etc/profile.d/conda.sh

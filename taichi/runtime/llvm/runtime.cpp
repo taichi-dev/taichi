@@ -919,22 +919,23 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
   runtime->roots[snode_tree_id] = ptr;
   // runtime->request_allocate_aligned ready to use
   // initialize the root node element list
-  if (!all_dense) {
-    for (int i = root_id; i < root_id + num_snodes; i++) {
-      // TODO: some SNodes do not actually need an element list.
-      runtime->element_lists[i] =
-          runtime->create<ListManager>(runtime, sizeof(Element), 1024 * 64);
-    }
-    Element elem;
-    elem.loop_bounds[0] = 0;
-    elem.loop_bounds[1] = 1;
-    elem.element = runtime->roots[snode_tree_id];
-    for (int i = 0; i < taichi_max_num_indices; i++) {
-      elem.pcoord.val[i] = 0;
-    }
-
-    runtime->element_lists[root_id]->append(&elem);
+  if (all_dense) {
+    return;
   }
+  for (int i = root_id; i < root_id + num_snodes; i++) {
+    // TODO: some SNodes do not actually need an element list.
+    runtime->element_lists[i] =
+        runtime->create<ListManager>(runtime, sizeof(Element), 1024 * 64);
+  }
+  Element elem;
+  elem.loop_bounds[0] = 0;
+  elem.loop_bounds[1] = 1;
+  elem.element = runtime->roots[snode_tree_id];
+  for (int i = 0; i < taichi_max_num_indices; i++) {
+    elem.pcoord.val[i] = 0;
+  }
+
+  runtime->element_lists[root_id]->append(&elem);
 }
 
 void LLVMRuntime_initialize_thread_pool(LLVMRuntime *runtime,

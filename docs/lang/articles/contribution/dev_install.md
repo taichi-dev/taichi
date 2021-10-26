@@ -135,10 +135,10 @@ shipped with .NET).
 :::note
 `python setup.py develop` command (recommended for developers) works very similarly to
 `setup.py install` command (recommended for users) except
-that it doesn't actually install anything. It fits developer need better since edits
-on python file take effect immediately without rebuilding. You only need to rerun `develop`
-commands when you change a project’s C extensions or similarly compiled files. See
-[development mode](https://setuptools.pypa.io/en/stable/userguide/development_mode.html) for more details.
+that it doesn't actually install anything, but only adds a symbolic link in the deployment directory that links to the source code. It fits developers' needs better since edits
+on python files take effect immediately without rebuilding. You only need to rerun `develop`
+commands when you modify a project’s C extensions or similarly compiled files. In comparison `install` deep copies the source code so you need to rerun it after any modification.
+See [development mode](https://setuptools.pypa.io/en/stable/userguide/development_mode.html) for more details.
 :::
 
 2. Check out the `examples` folder for runnable examples. Run them with commands

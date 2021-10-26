@@ -75,7 +75,7 @@ class StructCompiler {
 
 }  // namespace
 
-int SNodeDescriptor::cells_per_container_pot() const {
+size_t SNodeDescriptor::cells_per_container_pot() const {
   return snode->num_cells_per_container;
 }
 

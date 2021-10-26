@@ -95,7 +95,7 @@ jobs:
         run: |
           # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu20.04:v0.1.0
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
 

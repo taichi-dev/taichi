@@ -477,22 +477,21 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateLShr(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
   } else if (op == BinaryOpType::max) {
+#define BINARYOP_MAX(x)                                                     \
+  else if (ret_type->is_primitive(PrimitiveTypeID::x)) {                    \
+    llvm_val[stmt] =                                                        \
+        create_call("max_" #x, {llvm_val[stmt->lhs], llvm_val[stmt->rhs]}); \
+  }
+
     if (is_real(ret_type)) {
       llvm_val[stmt] =
           builder->CreateMaxNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-    } else if (ret_type->is_primitive(PrimitiveTypeID::u16)) {
-      llvm_val[stmt] =
-          create_call("max_u16", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-    } else if (ret_type->is_primitive(PrimitiveTypeID::i16)) {
-      llvm_val[stmt] =
-          create_call("max_i16", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-    } else if (ret_type->is_primitive(PrimitiveTypeID::u32)) {
-      llvm_val[stmt] =
-          create_call("max_u32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-    } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
-      llvm_val[stmt] =
-          create_call("max_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-    } else {
+    }
+    BINARYOP_MAX(u16)
+    BINARYOP_MAX(i16)
+    BINARYOP_MAX(u32)
+    BINARYOP_MAX(i32)
+    else {
       TI_P(data_type_name(ret_type));
       TI_NOT_IMPLEMENTED
     }
@@ -561,22 +560,21 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
       TI_NOT_IMPLEMENTED
     }
   } else if (op == BinaryOpType::min) {
+#define BINARYOP_MIN(x)                                                     \
+  else if (ret_type->is_primitive(PrimitiveTypeID::x)) {                    \
+    llvm_val[stmt] =                                                        \
+        create_call("min_" #x, {llvm_val[stmt->lhs], llvm_val[stmt->rhs]}); \
+  }
+
     if (is_real(ret_type)) {
       llvm_val[stmt] =
           builder->CreateMinNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-    } else if (ret_type->is_primitive(PrimitiveTypeID::u16)) {
-      llvm_val[stmt] =
-          create_call("min_u16", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-    } else if (ret_type->is_primitive(PrimitiveTypeID::i16)) {
-      llvm_val[stmt] =
-          create_call("min_i16", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-    } else if (ret_type->is_primitive(PrimitiveTypeID::u32)) {
-      llvm_val[stmt] =
-          create_call("min_u32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-    } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
-      llvm_val[stmt] =
-          create_call("min_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-    } else {
+    }
+    BINARYOP_MIN(u16)
+    BINARYOP_MIN(i16)
+    BINARYOP_MIN(u32)
+    BINARYOP_MIN(i32)
+    else {
       TI_P(data_type_name(ret_type));
       TI_NOT_IMPLEMENTED
     }

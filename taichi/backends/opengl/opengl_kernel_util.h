@@ -6,7 +6,8 @@
 
 #include "taichi/ir/snode.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 class SNode;
 
@@ -33,7 +34,6 @@ struct UsedFeature {
 
   // utilties:
   bool fast_pow{false};
-  bool listman{false};
   bool random{false};
   bool print{false};
   bool reduction{false};
@@ -46,19 +46,18 @@ struct UsedFeature {
 
 enum class GLBufId {
   Root = 0,
-  Runtime = 6,
-  Listman = 7,
   Gtmp = 1,
   Args = 2,
   Retr = 3,
   Extr = 4,
+  Runtime = 5,
 };
 
 struct IOV {
-  void *base;
-  size_t size;
+  void *base{nullptr};
+  size_t size{0};
 };
 
 }  // namespace opengl
-
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

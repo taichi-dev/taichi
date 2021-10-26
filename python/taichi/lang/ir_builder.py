@@ -34,8 +34,7 @@ class IRBuilder(Builder):
             if isinstance(node_target, ast.Tuple):
                 IRBuilder.build_assign_unpack(ctx, node_target, node.value.ptr)
             else:
-                IRBuilder.build_assign_basic(ctx, node_target,
-                                             node.value.ptr)
+                IRBuilder.build_assign_basic(ctx, node_target, node.value.ptr)
         return node
 
     @staticmethod

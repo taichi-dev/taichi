@@ -188,8 +188,8 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
 
   bool all_dense = config->demote_dense_struct_fors;
   for (int i = 0; i < (int)snodes.size(); i++) {
-    if (snodes[i]->type != SNodeType::dense && 
-        snodes[i]->type != SNodeType::place && 
+    if (snodes[i]->type != SNodeType::dense &&
+        snodes[i]->type != SNodeType::place &&
         snodes[i]->type != SNodeType::root) {
       all_dense = false;
       break;

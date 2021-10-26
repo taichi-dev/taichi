@@ -120,7 +120,7 @@ After Vulkan is successfully installed. You can build Taichi with Vulkan by addi
   git clone --recursive https://github.com/taichi-dev/taichi
   cd taichi
   python3 -m pip install --user -r requirements_dev.txt
-  # export CXX=/path/to/clang  # Uncomment if clang is not system default compiler.
+  # export CXX=/path/to/clang++  # Uncomment if clang++ is not system default compiler, some submodules may require clang++ to complie rather than clang
   python3 setup.py develop --user  # Optionally add DEBUG=1 to keep debug information.
   ```
 

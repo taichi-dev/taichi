@@ -13,7 +13,6 @@ python3 -m pip install ./*.whl
 [[ $GPU_TEST == "OFF" ]] && python3 -m pip install -r requirements_test.txt
 
 export TI_IN_DOCKER=true
-python3 examples/algorithm/laplace.py
 ti diagnose
 ti changelog
 

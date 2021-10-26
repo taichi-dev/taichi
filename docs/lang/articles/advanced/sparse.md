@@ -178,7 +178,7 @@ print('use_bitmask = {}'.format(use_bitmask))
 sparse_struct_for()
 ```
 
-When `bitmask = True`, the program above outputs
+When `use_bitmask = True`, the program above outputs
 ```
 field x[2, 3] = 2
 field x[5, 6] = 3
@@ -186,7 +186,7 @@ Active block: [1, 1]
 Active block: [2, 3]
 ```
 
-When `bitmask = False`, we get
+When `use_bitmask = False`, we get
 ```
 field x[2, 2] = 0
 field x[2, 3] = 2

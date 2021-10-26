@@ -22,4 +22,4 @@ cd ..
 CUR_DIR=`pwd`
 TI_LIB_DIR=$CUR_DIR/python/taichi/lib ./build/taichi_cpp_tests
 
-tail -f /dev/null
+cp dist/*.whl /wheel/taichi.whl

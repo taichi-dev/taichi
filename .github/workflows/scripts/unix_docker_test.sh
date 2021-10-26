@@ -9,7 +9,7 @@ GPU_TEST=$2
 source /home/dev/miniconda/etc/profile.d/conda.sh
 conda activate $PY
 
-python3 -m pip install ./taichi.whl
+python3 -m pip install ./*.whl
 [[ $GPU_TEST == "OFF" ]] && python3 -m pip install requirements_test.txt
 
 export TI_IN_DOCKER=true

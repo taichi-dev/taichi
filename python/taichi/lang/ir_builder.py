@@ -32,41 +32,37 @@ class IRBuilder(Builder):
         # Ref https://github.com/taichi-dev/taichi/issues/2659.
         for node_target in node.targets:
             if isinstance(node_target, ast.Tuple):
-                IRBuilder.build_assign_unpack(ctx, node, node_target)
+                IRBuilder.build_assign_unpack(ctx, node_target, node.value.ptr)
             else:
-                IRBuilder.build_assign_basic(ctx, node, node_target,
+                IRBuilder.build_assign_basic(ctx, node_target,
                                              node.value.ptr)
         return node
 
     @staticmethod
-    def build_assign_unpack(ctx, node, node_target):
+    def build_assign_unpack(ctx, node_target, value):
         """Build the unpack assignments like this: (target1, target2) = (value1, value2).
         The function should be called only if the node target is a tuple.
 
         Args:
             ctx (ast_builder_utils.BuilderContext): The builder context.
-            node (ast.Assign): An assignment. targets is a list of nodes,
-            and value is a single node.
-            node_target (ast.Tuple): A list or tuple object. elts holds a
+            node_target (ast.Tuple): A list or tuple object. `node_target.elts` holds a
             list of nodes representing the elements.
+            value: A node/list representing the values.
         """
 
         targets = node_target.elts
-        tmp_tuple = ti.expr_init_list(node.value.ptr, len(targets))
+        tmp_tuple = ti.expr_init_list(value, len(targets))
 
         for i, target in enumerate(targets):
-            IRBuilder.build_assign_basic(ctx, node, target, tmp_tuple[i])
-        return node
+            IRBuilder.build_assign_basic(ctx, target, tmp_tuple[i])
 
     @staticmethod
-    def build_assign_basic(ctx, node, target, value):
+    def build_assign_basic(ctx, target, value):
         """Build basic assginment like this: target = value.
 
          Args:
             ctx (ast_builder_utils.BuilderContext): The builder context.
-            node (ast.Assign): An assignment. targets is a list of nodes,
-            and value is a single node.
-            target (ast.Name): A variable name. id holds the name as
+            target (ast.Name): A variable name. `target.id` holds the name as
             a string.
             value: A node representing the value.
         """
@@ -76,7 +72,6 @@ class IRBuilder(Builder):
         else:
             var = target.ptr
             var.assign(value)
-        return node
 
     @staticmethod
     def build_Subscript(ctx, node):

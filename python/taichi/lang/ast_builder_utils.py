@@ -57,11 +57,11 @@ class BuilderContext:
         self.returns = None
 
     # e.g.: FunctionDef, Module, Global
-    def variable_scope(self, *args):
+    def variable_scope_guard(self, *args):
         return ScopeGuard(self.local_scopes, *args)
 
     # e.g.: For, While
-    def control_scope(self):
+    def control_scope_guard(self):
         return ScopeGuard(self.control_scopes)
 
     def current_scope(self):
@@ -70,14 +70,14 @@ class BuilderContext:
     def current_control_scope(self):
         return self.control_scopes[-1]
 
-    def var_declared(self, name):
+    def is_var_declared(self, name):
         for s in self.local_scopes:
             if name in s:
                 return True
         return False
 
     def is_creation(self, name):
-        return not self.var_declared(name)
+        return not self.is_var_declared(name)
 
     def create_variable(self, name):
         assert name not in self.current_scope(
@@ -85,7 +85,7 @@ class BuilderContext:
         self.current_scope().append(name)
 
     def check_loop_var(self, loop_var):
-        if self.var_declared(loop_var):
+        if self.is_var_declared(loop_var):
             raise TaichiSyntaxError(
                 "Variable '{}' is already declared in the outer scope and cannot be used as loop variable"
                 .format(loop_var))

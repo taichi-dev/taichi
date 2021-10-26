@@ -67,8 +67,8 @@ Expr &Expr::operator=(const Expr &o) {
     if (expr == nullptr) {
       set(o.eval());
     } else if (expr->is_lvalue()) {
-      current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-          ptr_if_global(*this), load_if_ptr(o)));
+      current_ast_builder().insert(
+          std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
     } else {
       // set(o.eval());
       TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
@@ -140,8 +140,8 @@ Expr Expr::eval() const {
 
 void Expr::operator+=(const Expr &o) {
   if (this->atomic) {
-    (*this) = Expr::make<AtomicOpExpression>(
-        AtomicOpType::add, ptr_if_global(*this), load_if_ptr(o));
+    (*this) = Expr::make<AtomicOpExpression>(AtomicOpType::add, *this,
+                                             load_if_ptr(o));
   } else {
     (*this) = (*this) + o;
   }
@@ -149,8 +149,8 @@ void Expr::operator+=(const Expr &o) {
 
 void Expr::operator-=(const Expr &o) {
   if (this->atomic) {
-    (*this) = Expr::make<AtomicOpExpression>(
-        AtomicOpType::sub, ptr_if_global(*this), load_if_ptr(o));
+    (*this) = Expr::make<AtomicOpExpression>(AtomicOpType::sub, *this,
+                                             load_if_ptr(o));
   } else {
     (*this) = (*this) - o;
   }
@@ -184,19 +184,6 @@ Expr load_if_ptr(const Expr &ptr) {
     }
   } else
     return ptr;
-}
-
-Expr ptr_if_global(const Expr &var) {
-  if (var.is<GlobalVariableExpression>()) {
-    // singleton global variable
-    TI_ASSERT_INFO(var.snode()->num_active_indices == 0,
-                   "Please always use 'x[None]' (instead of simply 'x') to "
-                   "access any 0-D field.");
-    return var[ExprGroup()];
-  } else {
-    // may be any local or global expr
-    return var;
-  }
 }
 
 Expr Var(const Expr &x) {

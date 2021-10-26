@@ -270,7 +270,7 @@ class UnaryOpExpression : public Expression {
   DataType cast_type;
 
   UnaryOpExpression(UnaryOpType type, const Expr &operand)
-      : type(type), operand(smart_load(operand)) {
+      : type(type), operand(load_if_ptr(operand)) {
     cast_type = PrimitiveType::unknown;
   }
 
@@ -288,8 +288,8 @@ class BinaryOpExpression : public Expression {
 
   BinaryOpExpression(const BinaryOpType &type, const Expr &lhs, const Expr &rhs)
       : type(type) {
-    this->lhs.set(smart_load(lhs));
-    this->rhs.set(smart_load(rhs));
+    this->lhs.set(load_if_ptr(lhs));
+    this->rhs.set(load_if_ptr(rhs));
   }
 
   void serialize(std::ostream &ss) override {

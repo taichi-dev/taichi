@@ -5,7 +5,7 @@ from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver, ModuleResolver
 from taichi.lang.ast_builder_utils import BuilderContext, IRBuilderContext
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.ir_builder import build_ir
+from taichi.lang.ir_builder import IRBuilder
 from taichi.lang.stmt_builder import build_stmt
 
 import taichi as ti
@@ -37,6 +37,9 @@ class ASTTransformerTotal(object):
 
     def visit(self, tree, *arguments):
         if impl.get_runtime().experimental_ast_refactor:
+            self.print_ast(tree, 'Initial AST')
+            self.rename_module.visit(tree)
+            self.print_ast(tree, 'AST with module renamed')
             ctx = IRBuilderContext(
                 func=self.func,
                 excluded_parameters=self.excluded_parameters,
@@ -46,8 +49,9 @@ class ASTTransformerTotal(object):
                 argument_data=arguments)
             # Convert Python AST to Python code that generates Taichi C++ AST.
 
-            tree = build_ir(ctx, tree)
+            tree = IRBuilder()(ctx, tree)
             ast.fix_missing_locations(tree)
+            self.print_ast(tree, 'Preprocessed')
             self.pass_checks.visit(tree)  # does not modify the AST
             return ctx.return_data
         self.print_ast(tree, 'Initial AST')

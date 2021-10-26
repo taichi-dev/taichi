@@ -18,8 +18,8 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_Assign(ctx, node):
-        node.value = build_ir(ctx, node.value)
-        node.targets = build_irs(ctx, node.targets)
+        node.value = build_stmt(ctx, node.value)
+        node.targets = build_stmts(ctx, node.targets)
 
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
@@ -71,7 +71,7 @@ class IRBuilder(Builder):
             value: A node representing the value.
         """
         is_local = isinstance(target, ast.Name)
-        if is_local and ctx.is_creation(target.id):
+        if is_local and not ctx.is_var_declared(target.id):
             ctx.create_variable(target.id, ti.expr_init(value))
         else:
             var = target.ptr
@@ -80,8 +80,8 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_Subscript(ctx, node):
-        node.value = build_ir(ctx, node.value)
-        node.slice = build_ir(ctx, node.slice)
+        node.value = build_stmt(ctx, node.value)
+        node.slice = build_stmt(ctx, node.slice)
         if not isinstance(node.slice, ast.Tuple):
             node.slice.ptr = [node.slice.ptr]
         node.ptr = ti.subscript(node.value.ptr, *node.slice.ptr)
@@ -89,19 +89,19 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_Tuple(ctx, node):
-        node.elts = build_irs(ctx, node.elts)
+        node.elts = build_stmts(ctx, node.elts)
         node.ptr = tuple(elt.ptr for elt in node.elts)
         return node
 
     @staticmethod
     def build_List(ctx, node):
-        node.elts = build_irs(ctx, node.elts)
+        node.elts = build_stmts(ctx, node.elts)
         node.ptr = [elt.ptr for elt in node.elts]
         return node
 
     @staticmethod
     def build_Index(ctx, node):
-        node.value = build_ir(ctx, node.value)
+        node.value = build_stmt(ctx, node.value)
         node.ptr = node.value.ptr
         return node
 
@@ -127,7 +127,7 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_keyword(ctx, node):
-        node.value = build_ir(ctx, node.value)
+        node.value = build_stmt(ctx, node.value)
         if node.arg is None:
             node.ptr = node.value.ptr
         else:
@@ -136,15 +136,15 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_Starred(ctx, node):
-        node.value = build_ir(ctx, node.value)
+        node.value = build_stmt(ctx, node.value)
         node.ptr = node.value.ptr
         return node
 
     @staticmethod
     def build_Call(ctx, node):
-        node.func = build_ir(ctx, node.func)
-        node.args = build_irs(ctx, node.args)
-        node.keywords = build_irs(ctx, node.keywords)
+        node.func = build_stmt(ctx, node.func)
+        node.args = build_stmts(ctx, node.args)
+        node.keywords = build_stmts(ctx, node.keywords)
         args = []
         for arg in node.args:
             if isinstance(arg, ast.Starred):
@@ -168,7 +168,7 @@ class IRBuilder(Builder):
         def transform_as_kernel():
             # Treat return type
             if node.returns is not None:
-                node.returns = build_ir(ctx, node.returns)
+                node.returns = build_stmt(ctx, node.returns)
                 ti.lang.kernel_arguments.decl_scalar_ret(node.returns.ptr)
                 ctx.returns = node.returns.ptr
 
@@ -207,7 +207,7 @@ class IRBuilder(Builder):
                 if isinstance(ctx.func.argument_annotations[i], ti.template):
                     continue
                 else:
-                    arg.annotation = build_ir(ctx, arg.annotation)
+                    arg.annotation = build_stmt(ctx, arg.annotation)
                     ctx.create_variable(
                         arg.arg,
                         ti.lang.kernel_arguments.decl_scalar_arg(
@@ -248,14 +248,14 @@ class IRBuilder(Builder):
                     # so that they are passed by value.
                     ctx.create_variable(arg.arg, ti.expr_init_func(data))
 
-        with ctx.variable_scope():
-            build_irs(ctx, node.body)
+        with ctx.variable_scope_guard():
+            build_stmts(ctx, node.body)
 
         return node
 
     @staticmethod
     def build_Return(ctx, node):
-        node.value = build_ir(ctx, node.value)
+        node.value = build_stmt(ctx, node.value)
         if ctx.is_kernel:
             # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
             if node.value is not None:
@@ -275,22 +275,22 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_Module(ctx, node):
-        with ctx.variable_scope():
+        with ctx.variable_scope_guard():
             # Do NOT use |build_stmts| which inserts 'del' statements to the
             # end and deletes parameters passed into the module
-            node.body = [build_ir(ctx, stmt) for stmt in list(node.body)]
+            node.body = [build_stmt(ctx, stmt) for stmt in list(node.body)]
         return node
 
     @staticmethod
     def build_Attribute(ctx, node):
-        node.value = build_ir(ctx, node.value)
+        node.value = build_stmt(ctx, node.value)
         node.ptr = getattr(node.value.ptr, node.attr)
         return node
 
     @staticmethod
     def build_BinOp(ctx, node):
-        node.left = build_ir(ctx, node.left)
-        node.right = build_ir(ctx, node.right)
+        node.left = build_stmt(ctx, node.left)
+        node.right = build_stmt(ctx, node.right)
         op = {
             ast.Add: lambda l, r: l + r,
             ast.Sub: lambda l, r: l - r,
@@ -311,7 +311,7 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_UnaryOp(ctx, node):
-        node.operand = build_ir(ctx, node.operand)
+        node.operand = build_stmt(ctx, node.operand)
         op = {
             ast.UAdd: lambda l: l,
             ast.USub: lambda l: -l,
@@ -351,15 +351,15 @@ class IRBuilder(Builder):
         if is_grouped:
             pass
         else:
-            node.iter = build_ir(ctx, node.iter)
+            node.iter = build_stmt(ctx, node.iter)
             targets = IRBuilder.get_for_loop_targets(node)
             for target_values in node.iter.ptr:
                 if not isinstance(target_values, collections.abc.Sequence):
                     target_values = [target_values]
-                with ctx.variable_scope():
+                with ctx.variable_scope_guard():
                     for target, target_value in zip(targets, target_values):
                         ctx.create_variable(target, target_value)
-                    node.body = build_irs_wo_scope(ctx, node.body)
+                    node.body = build_stmts_wo_scope(ctx, node.body)
         return node
 #         # for i in ti.static(range(n))
 #         # for i, j in ti.static(ti.ndrange(n))
@@ -524,15 +524,15 @@ class IRBuilder(Builder):
 #             t.body[0].value = node.iter
 #             t.body = t.body[:cut] + node.body + t.body[cut:]
         else:
-            with ctx.variable_scope():
+            with ctx.variable_scope_guard():
                 for name in targets:
                     ctx.create_variable(name,
                                         ti.Expr(ti.core.make_id_expr("")))
                 vars = [ctx.get_var_by_name(name) for name in targets]
-                node.iter = build_ir(ctx, node.iter)
+                node.iter = build_stmt(ctx, node.iter)
                 ti.begin_frontend_struct_for(
                     ti.lang.expr.make_expr_group(*vars), node.iter.ptr)
-                node.body = build_irs_wo_scope(ctx, node.body)
+                node.body = build_stmts_wo_scope(ctx, node.body)
                 ti.core.end_frontend_range_for()
         return node
 
@@ -542,7 +542,7 @@ class IRBuilder(Builder):
             raise TaichiSyntaxError(
                 "'else' clause for 'for' not supported in Taichi kernels")
 
-        with ctx.control_scope():
+        with ctx.control_scope_guard():
             ctx.current_control_scope().append('for')
 
             decorator = IRBuilder.get_decorator(node.iter)
@@ -581,43 +581,43 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_If(ctx, node):
-        node.test = build_ir(ctx, node.test)
+        node.test = build_stmt(ctx, node.test)
         is_static_if = (IRBuilder.get_decorator(node.test) == "static")
 
         if is_static_if:
             if node.test.ptr:
-                node.body = build_irs(ctx, node.body)
+                node.body = build_stmts(ctx, node.body)
             else:
-                node.orelse = build_irs(ctx, node.orelse)
+                node.orelse = build_stmts(ctx, node.orelse)
             return node
 
         ti.begin_frontend_if(node.test.ptr)
         ti.core.begin_frontend_if_true()
-        node.body = build_irs(ctx, node.body)
+        node.body = build_stmts(ctx, node.body)
         ti.core.pop_scope()
         ti.core.begin_frontend_if_false()
-        node.orelse = build_irs(ctx, node.orelse)
+        node.orelse = build_stmts(ctx, node.orelse)
         ti.core.pop_scope()
         return node
 
     @staticmethod
     def build_Expr(ctx, node):
-        node.value = build_ir(ctx, node.value)
+        node.value = build_stmt(ctx, node.value)
         return node
 
-build_ir = IRBuilder()
+build_stmt = IRBuilder()
 
 
-def build_irs(ctx, stmts):
+def build_stmts(ctx, stmts):
     result = []
-    with ctx.variable_scope(result):
+    with ctx.variable_scope_guard(result):
         for stmt in list(stmts):
-            result.append(build_ir(ctx, stmt))
+            result.append(build_stmt(ctx, stmt))
     return result
 
 
-def build_irs_wo_scope(ctx, stmts):
+def build_stmts_wo_scope(ctx, stmts):
     result = []
     for stmt in list(stmts):
-        result.append(build_ir(ctx, stmt))
+        result.append(build_stmt(ctx, stmt))
     return result

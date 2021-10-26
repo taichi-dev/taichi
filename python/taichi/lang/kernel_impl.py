@@ -87,6 +87,33 @@ def pyfunc(fn):
     return decorated
 
 
+def _get_tree_and_global_vars(self, args):
+    src = textwrap.dedent(oinspect.getsource(self.func))
+    tree = ast.parse(src)
+
+    func_body = tree.body[0]
+    func_body.decorator_list = []
+
+    local_vars = {}
+    global_vars = _get_global_vars(self.func)
+
+    for i, arg in enumerate(func_body.args.args):
+        anno = arg.annotation
+        if isinstance(anno, ast.Name):
+            global_vars[anno.id] = self.argument_annotations[i]
+
+    if isinstance(func_body.returns, ast.Name):
+        global_vars[func_body.returns.id] = self.return_type
+
+    # inject template parameters into globals
+    for i in self.template_slot_locations:
+        template_var_name = self.argument_names[i]
+        global_vars[template_var_name] = args[i]
+
+    global_vars["ti"] = ti
+    return tree, global_vars
+
+
 class Func:
     function_counter = 0
 
@@ -120,30 +147,7 @@ class Func:
             return self.func(*args)
 
         if impl.get_runtime().experimental_ast_refactor:
-            src = textwrap.dedent(oinspect.getsource(self.func))
-            tree = ast.parse(src)
-
-            func_body = tree.body[0]
-            func_body.decorator_list = []
-
-            local_vars = {}
-            global_vars = _get_global_vars(self.func)
-
-            for i, arg in enumerate(func_body.args.args):
-                anno = arg.annotation
-                if isinstance(anno, ast.Name):
-                    global_vars[anno.id] = self.argument_annotations[i]
-
-            if isinstance(func_body.returns, ast.Name):
-                global_vars[func_body.returns.id] = self.return_type
-
-            # inject template parameters into globals
-            for i in self.template_slot_locations:
-                template_var_name = self.argument_names[i]
-                global_vars[template_var_name] = args[i]
-
-            global_vars["ti"] = ti
-
+            tree, global_vars = _get_tree_and_global_vars(self, args)
             visitor = ASTTransformerTotal(is_kernel=False,
                                           func=self,
                                           globals=global_vars)
@@ -534,31 +538,10 @@ class Kernel:
                                            grad_suffix)
         ti.trace("Compiling kernel {}...".format(kernel_name))
 
-        src = textwrap.dedent(oinspect.getsource(self.func))
-        tree = ast.parse(src)
-
-        func_body = tree.body[0]
-        func_body.decorator_list = []
-
-        local_vars = {}
-        global_vars = _get_global_vars(self.func)
-
-        for i, arg in enumerate(func_body.args.args):
-            anno = arg.annotation
-            if isinstance(anno, ast.Name):
-                global_vars[anno.id] = self.argument_annotations[i]
-
-        if isinstance(func_body.returns, ast.Name):
-            global_vars[func_body.returns.id] = self.return_type
+        tree, global_vars = _get_tree_and_global_vars(self, args)
 
         if self.is_grad:
             KernelSimplicityASTChecker(self.func).visit(tree)
-        # inject template parameters into globals
-        for i in self.template_slot_locations:
-            template_var_name = self.argument_names[i]
-            global_vars[template_var_name] = args[i]
-
-        global_vars["ti"] = ti
         visitor = ASTTransformerTotal(
             excluded_parameters=self.template_slot_locations,
             func=self,

@@ -309,7 +309,7 @@ class PyTaichi:
             self.prog = _ti_core.Program()
 
     def materialize_root_fb(self, is_first_call):
-        if not root.finalized and not root.empty:
+        if not root.finalized:
             if is_first_call or not root.empty:
                 root.finalize(raise_warning=not is_first_call)
 

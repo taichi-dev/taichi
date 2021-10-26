@@ -9,7 +9,7 @@ bool ContinueStmt::as_return() const {
   if (auto *offl = scope->cast<OffloadedStmt>(); offl) {
     TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||
               offl->task_type == OffloadedStmt::TaskType::struct_for);
-    return true;
+    return offl->task_type == OffloadedStmt::TaskType::range_for;
   }
   return false;
 }

@@ -1644,6 +1644,9 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto func_exit = BasicBlock::Create(*llvm_context, "func_exit", func);
     auto struct_for_body_bb =
         BasicBlock::Create(*llvm_context, "struct_for_body_body", func);
+    
+    auto lrg = make_loop_reentry_guard(this);
+    current_loop_reentry = body_tail_bb;
 
     builder->CreateBr(loop_test_bb);
 

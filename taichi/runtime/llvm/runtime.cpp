@@ -911,27 +911,30 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
                                const int num_snodes,
                                const int snode_tree_id,
                                std::size_t rounded_size,
-                               Ptr ptr) {
+                               Ptr ptr,
+                               bool all_dense) {
   // For Metal runtime, we have to make sure that both the beginning address
   // and the size of the root buffer memory are aligned to page size.
   runtime->root_mem_sizes[snode_tree_id] = rounded_size;
   runtime->roots[snode_tree_id] = ptr;
   // runtime->request_allocate_aligned ready to use
   // initialize the root node element list
-  for (int i = root_id; i < root_id + num_snodes; i++) {
-    // TODO: some SNodes do not actually need an element list.
-    runtime->element_lists[i] =
-        runtime->create<ListManager>(runtime, sizeof(Element), 1024 * 64);
-  }
-  Element elem;
-  elem.loop_bounds[0] = 0;
-  elem.loop_bounds[1] = 1;
-  elem.element = runtime->roots[snode_tree_id];
-  for (int i = 0; i < taichi_max_num_indices; i++) {
-    elem.pcoord.val[i] = 0;
-  }
+  if (!all_dense) {
+    for (int i = root_id; i < root_id + num_snodes; i++) {
+      // TODO: some SNodes do not actually need an element list.
+      runtime->element_lists[i] =
+          runtime->create<ListManager>(runtime, sizeof(Element), 1024 * 64);
+    }
+    Element elem;
+    elem.loop_bounds[0] = 0;
+    elem.loop_bounds[1] = 1;
+    elem.element = runtime->roots[snode_tree_id];
+    for (int i = 0; i < taichi_max_num_indices; i++) {
+      elem.pcoord.val[i] = 0;
+    }
 
-  runtime->element_lists[root_id]->append(&elem);
+    runtime->element_lists[root_id]->append(&elem);
+  }
 }
 
 void LLVMRuntime_initialize_thread_pool(LLVMRuntime *runtime,

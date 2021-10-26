@@ -186,9 +186,19 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
 
   snode_tree_allocs_[tree->id()] = alloc;
 
+  bool all_dense = config->demote_dense_struct_fors;
+  for (int i = 0; i < (int)snodes.size(); i++) {
+    if (snodes[i]->type != SNodeType::dense && 
+        snodes[i]->type != SNodeType::place && 
+        snodes[i]->type != SNodeType::root) {
+      all_dense = false;
+      break;
+    }
+  }
+
   runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
-      (int)snodes.size(), tree->id(), rounded_size, root_buffer);
+      (int)snodes.size(), tree->id(), rounded_size, root_buffer, all_dense);
 
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {

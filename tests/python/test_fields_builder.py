@@ -186,10 +186,10 @@ def test_fields_builder_exceeds_max():
         fb.dense(ti.ij, (sz, sz)).place(x)
         fb.finalize()
 
-    # kMaxNumSnodeTreesLlvm=32 in taichi/inc/constants.h
-    for _ in range(32):
+    # kMaxNumSnodeTreesLlvm=512 in taichi/inc/constants.h
+    for _ in range(512):
         create_fb()
 
     with pytest.raises(RuntimeError) as e:
         create_fb()
-    assert 'LLVM backend supports up to 32 snode trees' in e.value.args[0]
+    assert 'LLVM backend supports up to 512 snode trees' in e.value.args[0]

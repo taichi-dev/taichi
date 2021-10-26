@@ -271,7 +271,7 @@ build_expr = ExprBuilder()
 def build_exprs(ctx, exprs):
     result = []
     # TODO(#2495): check if we really need this variable scope
-    with ctx.variable_scope(result):
+    with ctx.variable_scope_guard(result):
         for expr in list(exprs):
             result.append(build_expr(ctx, expr))
     return result

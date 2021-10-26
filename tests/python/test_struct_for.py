@@ -280,6 +280,7 @@ def test_struct_for_quant():
 
     assert count() == 28
 
+
 @ti.test(require=ti.extension.sparse)
 def test_struct_for_continue():
     # Related issue: https://github.com/taichi-dev/taichi/issues/3272

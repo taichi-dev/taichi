@@ -402,56 +402,6 @@ def test_min_max():
             assert c[None] == min(i, j)
 
 
-@ti.test(exclude=[ti.vulkan, ti.opengl, ti.cc])
-def test_min():
-    @ti.kernel
-    def min_u16(a: ti.u16, b: ti.u16) -> ti.u16:
-        return ti.min(a, b)
-
-    @ti.kernel
-    def min_i16(a: ti.i16, b: ti.i16) -> ti.i16:
-        return ti.min(a, b)
-
-    @ti.kernel
-    def min_u32(a: ti.u32, b: ti.u32) -> ti.u32:
-        return ti.min(a, b)
-
-    @ti.kernel
-    def min_i32(a: ti.i32, b: ti.i32) -> ti.i32:
-        return ti.min(a, b)
-
-    a, b = 1, 2
-    assert min_u16(a, b) == min(a, b)
-    assert min_i16(a, b) == min(a, b)
-    assert min_u32(a, b) == min(a, b)
-    assert min_i32(a, b) == min(a, b)
-
-
-@ti.test(exclude=[ti.vulkan, ti.opengl, ti.cc])
-def test_max():
-    @ti.kernel
-    def max_u16(a: ti.u16, b: ti.u16) -> ti.u16:
-        return ti.max(a, b)
-
-    @ti.kernel
-    def max_i16(a: ti.i16, b: ti.i16) -> ti.i16:
-        return ti.max(a, b)
-
-    @ti.kernel
-    def max_u32(a: ti.u32, b: ti.u32) -> ti.u32:
-        return ti.max(a, b)
-
-    @ti.kernel
-    def max_i32(a: ti.i32, b: ti.i32) -> ti.i32:
-        return ti.max(a, b)
-
-    a, b = 4, 2
-    assert max_u16(a, b) == max(a, b)
-    assert max_i16(a, b) == max(a, b)
-    assert max_u32(a, b) == max(a, b)
-    assert max_i32(a, b) == max(a, b)
-
-
 # must not throw any error:
 @ti.test()
 def test_matrix_list_assign():

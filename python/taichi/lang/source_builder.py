@@ -36,11 +36,7 @@ class SourceBuilder:
             raise TaichiSyntaxError('Only support bc, so or asm modes.')
 
         def cleanup():
-            if self.mode == 'bc':
-                os.remove(self.source_file)
-                os.remove(self.compiled_file)
-                os.removedirs(self.td)
-            if self.mode == 'so':
+            if self.mode == 'bc' or self.mode == "so":
                 os.remove(self.source_file)
                 os.remove(self.compiled_file)
                 os.removedirs(self.td)

@@ -124,7 +124,7 @@ jobs:
           CI_PLATFORM: macos-latest
 
       - name: Download And Install Vulkan
-        run: .github/workflows/scripts/macos_vk.sh
+        run: sudo bash .github/workflows/scripts/macos_vk.sh
         env:
           CI_PLATFORM: macos-latest
 

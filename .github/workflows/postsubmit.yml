@@ -245,6 +245,19 @@ jobs:
           BUILD_NUM_THREADS: 8
           CXX: clang++-10
 
-      - name: Run benchmark
+      - name: Run performance-monitoring
         run: |
-          python3 benchmarks/misc/run.py /home/benchmarkbot/benchmark/
+          export BENCHMARK_CODE_DIR=`pwd`/benchmarks/misc/
+          cd ..
+          # clone repo
+          rm -rf performance-monitoring
+          git clone git@github.com:taichi-dev/performance-monitoring.git
+          cd performance-monitoring
+          # update repo (benchmarks code)
+          cp -r $BENCHMARK_CODE_DIR/* ./benchmarks/
+          # run benchmark & store results
+          ./run.sh
+          # update repo (push reslut)
+          ./scripts/push.sh
+        env:
+          PULL_REQUEST_NUMBER: ${{github.event.number}}

@@ -11,8 +11,15 @@ source /home/dev/miniconda/etc/profile.d/conda.sh
 conda activate $PY
 
 cd taichi
-[[ $GPU_BUILD == "OFF" ]] && python3 -m pip install -r requirements_dev.txt
+
+if [[ $GPU_BUILD == "OFF" ]]
+then 
+    python3 -m pip install -r requirements_dev.txt
+fi
+
 cd python
+# This is for changelog
+git fetch origin master
 TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python3 build.py build
 # Run basic cpp tests
 cd ..

@@ -112,7 +112,6 @@ jobs:
 
       - name: Test
         run: |
-          #docker cp taichi_build:/home/dev/taichi/dist/*.whl ./taichi.whl
           docker create --user root --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
@@ -130,10 +129,10 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            python: 3.9
+            python: py38
             with_cc: OFF
           - os: ubuntu-latest
-            python: 3.8
+            python: py39
             with_cc: ON
     runs-on: ${{ matrix.os }}
     steps:
@@ -233,12 +232,11 @@ jobs:
         env:
           PY: py38
           GPU_BUILD: ON
-          DISPLAY: :1
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
+          DISPLAY: :1
 
       - name: Test
         run: |
-          #docker cp taichi_build:/home/dev/taichi/dist/*.whl ./taichi.whl
           docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
@@ -246,10 +244,12 @@ jobs:
         env:
           PY: py38
           GPU_TEST: ON
+          DISPLAY: :1
 
       - name: clean docker container
         if: always()
-        run: docker rm taichi_build taichi_test -f
+        run: |
+          docker rm taichi_build taichi_test -f
 
   build_and_test_windows:
     name: Build and Test (Windows)

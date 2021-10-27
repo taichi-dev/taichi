@@ -1,13 +1,8 @@
 name: Publishing Release
 on:
-  release:
-    # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#release
-    types: [published]
-  # When triggered by schedule and workflow_dispatch, github.event.action is an empty string.
-  # We use this to distinguish which taichi to release.
-  schedule:
-    - cron: "0 0 * * *"
-  workflow_dispatch:
+  push:
+    branches:
+      - master
 
 jobs:
   # This job set environment matrix with respect to production release and nightly release.
@@ -126,6 +121,11 @@ jobs:
         env:
           CI_PLATFORM: macos-latest
 
+      - name: Download And Install Python
+        run: .github/workflows/scripts/macos_vk.sh
+        env:
+          CI_PLATFORM: macos-latest
+
       - name: Create Python Wheel
         run: |
           TAICHI_REPO_DIR=`pwd`
@@ -141,7 +141,7 @@ jobs:
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           pip install dist/*.whl
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
           PROJECT_NAME: ${{ matrix.name }}
 
       - name: Archive Wheel Artifacts

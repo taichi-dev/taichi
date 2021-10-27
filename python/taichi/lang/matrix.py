@@ -75,7 +75,9 @@ class Matrix(TaichiOperations):
                                 elif isinstance(n[0], expr.Expr):
                                     dt = n[0].ptr.get_ret_type()
                                     if dt == ti_core.DataType_unknown:
-                                        raise TypeError('Element type of the matrix cannot be inferred. Please set dt instead for now.')
+                                        raise TypeError(
+                                            'Element type of the matrix cannot be inferred. Please set dt instead for now.'
+                                        )
                                 else:
                                     raise Exception(
                                         'dt required when using dynamic_index for local tensor'

@@ -288,7 +288,9 @@ class BinaryOpExpression : public Expression {
   BinaryOpType type;
   Expr lhs, rhs;
 
-  BinaryOpExpression(const BinaryOpType &type, const Expr &lhs, const Expr &rhs);
+  BinaryOpExpression(const BinaryOpType &type,
+                     const Expr &lhs,
+                     const Expr &rhs);
 
   void serialize(std::ostream &ss) override {
     ss << '(';

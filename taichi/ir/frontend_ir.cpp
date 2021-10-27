@@ -128,7 +128,9 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(unary));
 }
 
-BinaryOpExpression::BinaryOpExpression(const BinaryOpType &type, const Expr &lhs, const Expr &rhs)
+BinaryOpExpression::BinaryOpExpression(const BinaryOpType &type,
+                                       const Expr &lhs,
+                                       const Expr &rhs)
     : type(type) {
   this->lhs.set(load_if_ptr(lhs));
   this->rhs.set(load_if_ptr(rhs));
@@ -139,7 +141,8 @@ BinaryOpExpression::BinaryOpExpression(const BinaryOpType &type, const Expr &lhs
     return;
   if (lhs_type == PrimitiveType::unknown || rhs_type == PrimitiveType::unknown)
     return;
-  if (binary_is_bitwise(type) && (!is_integral(lhs_type) || !is_integral(rhs_type)))
+  if (binary_is_bitwise(type) &&
+      (!is_integral(lhs_type) || !is_integral(rhs_type)))
     return;
   if (is_comparison(type)) {
     ret_type = PrimitiveType::i32;

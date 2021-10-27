@@ -491,6 +491,8 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     BINARYOP_MAX(i16)
     BINARYOP_MAX(u32)
     BINARYOP_MAX(i32)
+    BINARYOP_MAX(u64)
+    BINARYOP_MAX(i64)
     else {
       TI_P(data_type_name(ret_type));
       TI_NOT_IMPLEMENTED
@@ -574,6 +576,8 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     BINARYOP_MIN(i16)
     BINARYOP_MIN(u32)
     BINARYOP_MIN(i32)
+    BINARYOP_MIN(u64)
+    BINARYOP_MIN(i64)
     else {
       TI_P(data_type_name(ret_type));
       TI_NOT_IMPLEMENTED

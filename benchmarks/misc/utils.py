@@ -1,4 +1,7 @@
 import datetime
+import json
+
+import jsbeautifier
 
 import taichi as ti
 
@@ -21,6 +24,16 @@ def arch_name(arch):
 
 def datatime_with_format():
     return datetime.datetime.now().isoformat()
+
+
+def dump2json(obj):
+    if type(obj) is dict:
+        obj2dict = obj
+    else:
+        obj2dict = obj.__dict__
+    options = jsbeautifier.default_options()
+    options.indent_size = 4
+    return jsbeautifier.beautify(json.dumps(obj2dict), options)
 
 
 def size2str(size_in_byte):

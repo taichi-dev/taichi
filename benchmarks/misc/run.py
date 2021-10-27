@@ -3,7 +3,7 @@ import warnings
 
 from membound import MemoryBound
 from taichi.core import ti_core as _ti_core
-from utils import arch_name, datatime_with_format
+from utils import arch_name, datatime_with_format, dump2json
 
 import taichi as ti
 
@@ -57,21 +57,57 @@ class BenchmarkSuites:
                 for line in lines:
                     print(line, file=f)
 
+    def save_to_json(self, file_dir='./'):
+        #arch info
+        arch_dict = {}
+        arch_dict['arch_name'] = arch_name(self.arch)
+        arch_dict['suites'] = [suite.suite_name for suite in self.suites]
+        info_path = os.path.join(file_dir, '_info.json')
+        info_str = dump2json(arch_dict)
+        with open(info_path, 'w') as f:
+            print(info_str, file=f)
+        #suite info
+        for suite in self.suites:
+            #suite folder
+            suite_path = os.path.join(file_dir, suite.suite_name)
+            os.makedirs(suite_path)
+            #suite info
+            info_path = os.path.join(suite_path, '_info.json')
+            info_str = suite.get_suite_info()
+            with open(info_path, 'w') as f:
+                print(info_str, file=f)
+            #cases info
+            suite.save_to_json(suite_path)
+
 
 def main():
 
     benchmark_dir = os.path.join(os.getcwd(), 'results')
     os.makedirs(benchmark_dir)
 
+    pull_request_id = os.environ.get('PULL_REQUEST_NUMBER')
+    commit_hash = _ti_core.get_commit_hash()  #[:8]
+    print(f'pull_request_id = {pull_request_id}')
+    print(f'commit_hash = {commit_hash}')
+    info = CommitInfo(pull_request_id, commit_hash)
+    info.datetime.append(datatime_with_format())  #start time
+
     for arch in benchmark_archs:
-        #make dir
-        arch_dir = os.path.join(benchmark_dir, arch_name(arch))
-        os.makedirs(arch_dir)
         #init & run
         suites = BenchmarkSuites(arch)
         suites.run()
+        #make dir
+        arch_dir = os.path.join(benchmark_dir, arch_name(arch))
+        os.makedirs(arch_dir)
         #save result
         suites.save_to_markdown(arch_dir)
+        suites.save_to_json(arch_dir)
+    info.datetime.append(datatime_with_format())  #end time
+    #save commit and benchmark info
+    info_path = os.path.join(benchmark_dir, '_info.json')
+    info_str = dump2json(info)
+    with open(info_path, 'w') as f:
+        print(info_str, file=f)
 
 
 if __name__ == '__main__':

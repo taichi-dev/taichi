@@ -283,7 +283,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
         zero->repeat(result->width());
         replace_with(i, std::move(zero), true);
       } else {
-        stmt->replace_with(result);
+        stmt->replace_usages_with(result);
         erase(i);  // This causes end_location--
         i--;       // to cancel i++ in the for loop
         modified = true;

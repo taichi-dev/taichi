@@ -171,7 +171,7 @@ Stmt *Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
   return ret;
 }
 
-void Stmt::replace_with(Stmt *new_stmt) {
+void Stmt::replace_usages_with(Stmt *new_stmt) {
   irpass::replace_all_usages_with(nullptr, this, new_stmt);
 }
 
@@ -391,7 +391,7 @@ void Block::replace_with(Stmt *old_statement,
   }
   TI_ASSERT(location != -1);
   if (replace_usages && !new_statements.stmts.empty())
-    old_statement->replace_with(new_statements.back().get());
+    old_statement->replace_usages_with(new_statements.back().get());
   trash_bin.push_back(std::move(statements[location]));
   if (new_statements.size() == 1) {
     // Keep all std::vector::iterator valid in this case.

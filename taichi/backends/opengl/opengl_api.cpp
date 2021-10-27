@@ -175,7 +175,7 @@ void CompiledProgram::add(
       kernel_source_code.substr(layout_pos);
 
   TI_DEBUG("[glsl]\ncompiling kernel {}<<<{}, {}>>>:\n{}", kernel_name,
-             num_workgroups, workgroup_size, kernel_source_code);
+           num_workgroups, workgroup_size, kernel_source_code);
   kernels.push_back({kernel_name, source, workgroup_size, num_workgroups});
 
   if (ext_ptr_access) {

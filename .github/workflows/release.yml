@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - master
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   # This job set environment matrix with respect to production release and nightly release.

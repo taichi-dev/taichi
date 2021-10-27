@@ -385,10 +385,12 @@ class ExternalFuncCallExpression : public Expression {
   }
 
   void serialize(std::ostream &ss) override {
-    if (func) {
-      ss << fmt::format("call {:x} (", (uint64)func);
+    if (so_func != nullptr) {
+      ss << fmt::format("so {:x} (", (uint64)so_func);
+    } else if (!asm_source.empty()) {
+      ss << fmt::format("asm \"{}\" (", asm_source);
     } else {
-      ss << fmt::format("asm \"{}\" (", source);
+      ss << fmt::format("bc {}:{} (", bc_filename, bc_funcname);
     }
 
     ss << "inputs=";

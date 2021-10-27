@@ -162,9 +162,7 @@ class IRBuilder(Builder):
         def transform_as_kernel():
             # Treat return type
             if node.returns is not None:
-                node.returns = build_stmt(ctx, node.returns)
-                ti.lang.kernel_arguments.decl_scalar_ret(node.returns.ptr)
-                ctx.returns = node.returns.ptr
+                ti.lang.kernel_arguments.decl_scalar_ret(ctx.func.return_type)
 
             for i, arg in enumerate(args.args):
                 # Directly pass in template arguments,
@@ -201,11 +199,10 @@ class IRBuilder(Builder):
                 if isinstance(ctx.func.argument_annotations[i], ti.template):
                     continue
                 else:
-                    arg.annotation = build_stmt(ctx, arg.annotation)
                     ctx.create_variable(
                         arg.arg,
                         ti.lang.kernel_arguments.decl_scalar_arg(
-                            arg.annotation.ptr))
+                            ctx.func.argument_annotations[i]))
             # remove original args
             node.args.args = []
 
@@ -253,13 +250,13 @@ class IRBuilder(Builder):
         if ctx.is_kernel:
             # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
             if node.value is not None:
-                if ctx.returns is None:
+                if ctx.func.return_type is None:
                     raise TaichiSyntaxError(
                         f'A {"kernel" if ctx.is_kernel else "function"} '
                         'with a return value must be annotated '
                         'with a return type, e.g. def func() -> ti.f32')
                 ti.core.create_kernel_return(
-                    ti.cast(ti.Expr(node.value.ptr), ctx.returns).ptr)
+                    ti.cast(ti.Expr(node.value.ptr), ctx.func.return_type).ptr)
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value

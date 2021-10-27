@@ -4,8 +4,8 @@ import os
 import tempfile
 
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.ops import asm, bitcode_func_call, external_func_call
 from taichi.lang.util import get_clangpp, has_clangpp
+from taichi.lang.expr import make_expr_group
 from taichi.core.util import ti_core as _ti_core
 
 class SourceBuilder:

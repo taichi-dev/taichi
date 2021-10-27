@@ -445,7 +445,7 @@ def test_max():
     def max_i32(a: ti.i32, b: ti.i32) -> ti.i32:
         return ti.max(a, b)
 
-    a, b = 1, 2
+    a, b = 4, 2
     assert max_u16(a, b) == max(a, b)
     assert max_i16(a, b) == max(a, b)
     assert max_u32(a, b) == max(a, b)

@@ -6,7 +6,7 @@ import tempfile
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.ops import asm, bitcode_func_call, external_func_call
 from taichi.lang.util import get_clangpp, has_clangpp
-
+from taichi.core.util import ti_core as _ti_core
 
 class SourceBuilder:
     def __init__(self, source, mode='bc'):
@@ -45,19 +45,28 @@ class SourceBuilder:
 
     def __call__(self, inputs=[], outputs=[]):
         if self.mode == 'asm':
-            asm(self.asm, inputs, outputs)
+            _ti_core.insert_external_func_call(0, self.asm, '', '',
+                                            make_expr_group(inputs),
+                                            make_expr_group(outputs))
             return
         raise TaichiSyntaxError('Error occurs when calling external function.')
 
     def __getattr__(self, item):
         def bitcode_func_call_wrapper(*args):
-            bitcode_func_call(self.bc, item, *args)
+            _ti_core.insert_external_func_call(0, '', self.bc, item,
+                                            make_expr_group(args),
+                                            make_expr_group([]))
+
 
         if self.mode == 'bc':
             return bitcode_func_call_wrapper
 
         def external_func_call_wrapper(args=[], outputs=[]):
-            external_func_call(self.so.__getattr__(item), args, outputs)
+            func_addr = ctypes.cast(self.so.__getattr__(item), ctypes.c_void_p).value
+            _ti_core.insert_external_func_call(func_addr, '', '', '',
+                                            make_expr_group(args),
+                                            make_expr_group(outputs))
+
 
         if self.mode == 'so':
             return external_func_call_wrapper

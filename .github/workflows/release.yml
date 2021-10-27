@@ -1,7 +1,8 @@
 name: Publishing Release
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - master
 
 jobs:
   # This job set environment matrix with respect to production release and nightly release.

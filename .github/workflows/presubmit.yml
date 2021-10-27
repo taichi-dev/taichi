@@ -135,6 +135,9 @@ jobs:
             python: py39
             with_cc: ON
     runs-on: ${{ matrix.os }}
+    permissions:
+      packages: read
+      contents: read
     steps:
       - uses: actions/checkout@v2
         with:
@@ -161,7 +164,6 @@ jobs:
 
       - name: Test
         run: |
-          #docker cp taichi_build:/home/dev/taichi/dist/*.whl ./taichi.whl
           docker create --user root --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
@@ -348,6 +350,7 @@ jobs:
       - name: Test
         run: |
           export PATH=$PATH:$HOME/Library/Python/3.8/bin
+          python3 -m pip install -r requirements_test.txt
           python3 examples/algorithm/laplace.py
           TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
           TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests

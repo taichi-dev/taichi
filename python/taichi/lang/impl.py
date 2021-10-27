@@ -310,14 +310,14 @@ class PyTaichi:
 
     def materialize_root_fb(self, is_first_call):
         if root.finalized:
-          return
+            return
         if not is_first_call and root.empty:
-          # We have to forcefully finalize when `is_first_call` is True (even
-          # if the root itself is empty), so that there is a valid struct
-          # llvm::Module, if no field has been declared before the first kernel
-          # invocation. Example case:
-          # https://github.com/taichi-dev/taichi/blob/27bb1dc3227d9273a79fcb318fdb06fd053068f5/tests/python/test_ad_basics.py#L260-L266
-          return
+            # We have to forcefully finalize when `is_first_call` is True (even
+            # if the root itself is empty), so that there is a valid struct
+            # llvm::Module, if no field has been declared before the first kernel
+            # invocation. Example case:
+            # https://github.com/taichi-dev/taichi/blob/27bb1dc3227d9273a79fcb318fdb06fd053068f5/tests/python/test_ad_basics.py#L260-L266
+            return
         root.finalize(raise_warning=not is_first_call)
         global _root_fb
         _root_fb = FieldsBuilder()

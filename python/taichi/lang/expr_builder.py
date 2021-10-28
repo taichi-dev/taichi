@@ -23,7 +23,8 @@ class ExprBuilder(Builder):
         args.insert(0, ast.copy_location(ast.Constant(value=str_spec), node))
 
         call = ast.Call(func=parse_expr('ti.ti_format'),
-                        args=args, keywords=[])
+                        args=args,
+                        keywords=[])
         return ast.copy_location(call, node)
 
     @staticmethod

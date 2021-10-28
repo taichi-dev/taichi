@@ -6,6 +6,7 @@
 
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/type.h"
+#include "taichi/backends/device.h"
 
 namespace taichi {
 namespace lang {
@@ -55,7 +56,7 @@ struct TaskAttributes {
       using std::size_t;
       using std::string;
 
-      return hash<BufferType>()(buf.type);
+      return hash<BufferType>()(buf.type) ^ buf.root_id;
     }
   };
 

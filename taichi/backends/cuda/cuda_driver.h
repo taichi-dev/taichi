@@ -105,6 +105,8 @@ class CUDADriver {
 
   void (*get_error_string)(uint32, const char **);
 
+  void (*driver_get_version)(int *);
+
   bool detected();
 
   ~CUDADriver() = default;
@@ -119,6 +121,9 @@ class CUDADriver {
   std::unique_ptr<DynamicLoader> loader_;
 
   std::mutex lock_;
+
+  bool disabled_by_env_{false};
+  bool cuda_version_valid_{false};
 };
 
 TLANG_NAMESPACE_END

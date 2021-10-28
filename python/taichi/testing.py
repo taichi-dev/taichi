@@ -107,12 +107,14 @@ def test(arch=None, exclude=None, require=None, **options):
         arch = supported_archs
     else:
         arch = list(filter(lambda x: x in supported_archs, arch))
-    if len(arch) == 0:
-        return lambda x: print('No supported arch found. Skipping')
 
     def decorator(foo):
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
+            if len(arch) == 0:
+                print('No supported arch found. Skipping.')
+                return
+
             arch_params_sets = [arch, *_test_features.values()]
             arch_params_combinations = list(
                 itertools.product(*arch_params_sets))

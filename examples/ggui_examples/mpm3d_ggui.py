@@ -292,7 +292,7 @@ def show_options():
             "snow color", material_colors[SNOW])
         material_colors[JELLY] = window.GUI.color_edit_3(
             "jelly color", material_colors[JELLY])
-        set_color_by_material(np.array(material_colors))
+        set_color_by_material(np.array(material_colors, dtype=np.float32))
     particles_radius = window.GUI.slider_float("particles radius ",
                                                particles_radius, 0, 0.1)
     if window.GUI.button("restart"):

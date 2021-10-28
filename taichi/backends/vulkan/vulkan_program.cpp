@@ -97,7 +97,6 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 void VulkanProgramImpl::materialize_snode_tree(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &,
-    std::unordered_map<int, SNode *> &,
     uint64 *result_buffer) {
   vulkan_runtime_->materialize_snode_tree(tree);
 }

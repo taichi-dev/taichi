@@ -98,7 +98,6 @@ class DeviceCompiledProgram {
   std::vector<std::unique_ptr<Pipeline>> compiled_pipeline_;
 
   DeviceAllocation args_buf_{kDeviceNullAllocation};
-  DeviceAllocation ext_arr_buf_{kDeviceNullAllocation};
   DeviceAllocation ret_buf_{kDeviceNullAllocation};
 };
 

@@ -57,11 +57,11 @@ class BuilderContext:
         self.returns = None
 
     # e.g.: FunctionDef, Module, Global
-    def variable_scope(self, *args):
+    def variable_scope_guard(self, *args):
         return ScopeGuard(self.local_scopes, *args)
 
     # e.g.: For, While
-    def control_scope(self):
+    def control_scope_guard(self):
         return ScopeGuard(self.control_scopes)
 
     def current_scope(self):
@@ -70,14 +70,14 @@ class BuilderContext:
     def current_control_scope(self):
         return self.control_scopes[-1]
 
-    def var_declared(self, name):
+    def is_var_declared(self, name):
         for s in self.local_scopes:
             if name in s:
                 return True
         return False
 
     def is_creation(self, name):
-        return not self.var_declared(name)
+        return not self.is_var_declared(name)
 
     def create_variable(self, name):
         assert name not in self.current_scope(
@@ -85,7 +85,77 @@ class BuilderContext:
         self.current_scope().append(name)
 
     def check_loop_var(self, loop_var):
-        if self.var_declared(loop_var):
+        if self.is_var_declared(loop_var):
             raise TaichiSyntaxError(
                 "Variable '{}' is already declared in the outer scope and cannot be used as loop variable"
                 .format(loop_var))
+
+
+class IRScopeGuard:
+    def __init__(self, scopes, stmt_block=None):
+        self.scopes = scopes
+        self.stmt_block = stmt_block
+
+    def __enter__(self):
+        self.scopes.append({})
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        local = self.scopes[-1]
+        self.scopes.pop()
+
+
+class IRBuilderContext:
+    def __init__(self,
+                 excluded_parameters=(),
+                 is_kernel=True,
+                 func=None,
+                 arg_features=None,
+                 globals=None,
+                 argument_data=None):
+        self.func = func
+        self.local_scopes = []
+        self.control_scopes = []
+        self.excluded_parameters = excluded_parameters
+        self.is_kernel = is_kernel
+        self.arg_features = arg_features
+        self.returns = None
+        self.globals = globals
+        self.argument_data = argument_data
+        self.return_data = None
+
+    # e.g.: FunctionDef, Module, Global
+    def variable_scope_guard(self, *args):
+        return IRScopeGuard(self.local_scopes, *args)
+
+    # e.g.: For, While
+    def control_scope_guard(self):
+        return ScopeGuard(self.control_scopes)
+
+    def current_scope(self):
+        return self.local_scopes[-1]
+
+    def current_control_scope(self):
+        return self.control_scopes[-1]
+
+    def is_var_declared(self, name):
+        for s in self.local_scopes:
+            if name in s:
+                return True
+        return False
+
+    def create_variable(self, name, var):
+        assert name not in self.current_scope(
+        ), "Recreating variables is not allowed"
+        self.current_scope()[name] = var
+
+    def check_loop_var(self, loop_var):
+        if self.is_var_declared(loop_var):
+            raise TaichiSyntaxError(
+                "Variable '{}' is already declared in the outer scope and cannot be used as loop variable"
+                .format(loop_var))
+
+    def get_var_by_name(self, name):
+        for s in reversed(self.local_scopes):
+            if name in s:
+                return s[name]
+        return self.globals.get(name)

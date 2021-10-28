@@ -138,7 +138,7 @@ Program::Program(Arch desired_arch)
     TI_WARN("Running in async mode. This is experimental.");
     TI_ASSERT(is_extension_supported(config.arch, Extension::async_mode));
     async_engine = std::make_unique<AsyncEngine>(
-        &config, snodes, [this](Kernel &kernel, OffloadedStmt *offloaded) {
+        &config, [this](Kernel &kernel, OffloadedStmt *offloaded) {
           return this->compile(kernel, offloaded);
         });
   }
@@ -199,9 +199,9 @@ SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root,
   auto tree = std::make_unique<SNodeTree>(id, std::move(root));
   tree->root()->set_snode_tree_id(id);
   if (compile_only) {
-    program_impl_->compile_snode_tree_types(tree.get());
+    program_impl_->compile_snode_tree_types(tree.get(), snode_trees_);
   } else {
-    program_impl_->materialize_snode_tree(tree.get(), snode_trees_, snodes,
+    program_impl_->materialize_snode_tree(tree.get(), snode_trees_,
                                           result_buffer);
   }
   snode_trees_.push_back(std::move(tree));

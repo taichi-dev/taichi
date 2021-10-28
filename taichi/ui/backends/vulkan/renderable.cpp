@@ -54,8 +54,8 @@ void Renderable::update_data(const RenderableInfo &info) {
   } else {
     num_indices = 1;
   }
-  if (num_vertices > config_.vertices_count ||
-      num_indices > config_.indices_count) {
+  if (num_vertices != config_.vertices_count ||
+      num_indices != config_.indices_count) {
     free_buffers();
     config_.vertices_count = num_vertices;
     config_.indices_count = num_indices;

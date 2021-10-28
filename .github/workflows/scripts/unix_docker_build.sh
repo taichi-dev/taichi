@@ -10,6 +10,8 @@ CI_SETUP_CMAKE_ARGS=$3
 source /home/dev/miniconda/etc/profile.d/conda.sh
 conda activate $PY
 
+python3 -m pip uninstall taichi taichi-nightly -y
+
 cd taichi
 
 if [[ $GPU_BUILD == "OFF" ]]

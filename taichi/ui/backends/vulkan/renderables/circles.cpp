@@ -20,6 +20,8 @@ void Circles::init_circles(AppContext *app_context, int vertices_count) {
   RenderableConfig config = {
       vertices_count,
       1,
+      vertices_count,
+      1,
       sizeof(UniformBufferObject),
       0,
       app_context->config.package_path + "/shaders/Circles_vk_vert.spv",

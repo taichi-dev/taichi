@@ -103,7 +103,7 @@ jobs:
         run: |
           mkdir -m777 wheel
           docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD "$CI_SETUP_CMAKE_ARGS"
-          # Docker cp preserves the ownership in the host machine. However, the user in the host machine won't be recgnized
+          # Docker cp preserves the ownership in the host machine. However, the user in the host machine won't be recognized
           # by the docker image we set ahead of time. Therefore, we use tar to set the user of the folder that is copied to the container.
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build

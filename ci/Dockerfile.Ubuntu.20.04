@@ -39,7 +39,8 @@ RUN apt-get update && \
                        libglfw3 \
                        libglfw3-dev \
                        libjpeg-dev \
-                       libvulkan-dev
+                       libvulkan-dev \
+                       vulkan-validationlayers-dev
 
 # Install the latest version of CMAKE v3.20.5 from source
 WORKDIR /

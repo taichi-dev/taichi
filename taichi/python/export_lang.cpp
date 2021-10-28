@@ -51,8 +51,7 @@ Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
 }
 
-void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
-  auto lhs = ptr_if_global(lhs_);
+void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {
   TI_ASSERT(lhs->is_lvalue());
   auto stmt = std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs));
   stmt->set_tb(tb);
@@ -130,6 +129,8 @@ void export_lang(py::module &m) {
       .def_readwrite("arch", &CompileConfig::arch)
       .def_readwrite("packed", &CompileConfig::packed)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
+      .def_readwrite("print_preprocessed_ir",
+                     &CompileConfig::print_preprocessed_ir)
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
       .def_readwrite("check_out_of_bound", &CompileConfig::check_out_of_bound)
@@ -609,38 +610,34 @@ void export_lang(py::module &m) {
         static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
 
   m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::add, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::add, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_sub", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_min", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::min, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::min, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_max", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::max, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::max, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_bit_and", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and,
-                                          ptr_if_global(a), load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and, a,
+                                          load_if_ptr(b));
   });
 
   m.def("expr_atomic_bit_or", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or,
-                                          ptr_if_global(a), load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or, a,
+                                          load_if_ptr(b));
   });
 
   m.def("expr_atomic_bit_xor", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor,
-                                          ptr_if_global(a), load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a,
+                                          load_if_ptr(b));
   });
 
   m.def("expr_add", expr_add);

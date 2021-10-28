@@ -3,8 +3,9 @@ import ast
 import astor
 from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver, ModuleResolver
-from taichi.lang.ast_builder_utils import BuilderContext
+from taichi.lang.ast_builder_utils import BuilderContext, IRBuilderContext
 from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.ir_builder import IRBuilder
 from taichi.lang.stmt_builder import build_stmt
 
 import taichi as ti
@@ -16,13 +17,15 @@ class ASTTransformerTotal(object):
                  func=None,
                  excluded_parameters=(),
                  is_kernel=True,
-                 arg_features=None):
+                 arg_features=None,
+                 globals=None):
         self.func = func
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
         self.arg_features = arg_features
         self.pass_checks = ASTTransformerChecks(func=func)
         self.rename_module = ASTTransformerUnifyModule(func=func)
+        self.globals = globals
 
     @staticmethod
     def print_ast(tree, title=None):
@@ -32,7 +35,25 @@ class ASTTransformerTotal(object):
             ti.info(f'{title}:')
         print(astor.to_source(tree.body[0], indent_with='    '), flush=True)
 
-    def visit(self, tree):
+    def visit(self, tree, *arguments):
+        if impl.get_runtime().experimental_ast_refactor:
+            self.print_ast(tree, 'Initial AST')
+            self.rename_module.visit(tree)
+            self.print_ast(tree, 'AST with module renamed')
+            ctx = IRBuilderContext(
+                func=self.func,
+                excluded_parameters=self.excluded_parameters,
+                is_kernel=self.is_kernel,
+                arg_features=self.arg_features,
+                globals=self.globals,
+                argument_data=arguments)
+            # Convert Python AST to Python code that generates Taichi C++ AST.
+
+            tree = IRBuilder()(ctx, tree)
+            ast.fix_missing_locations(tree)
+            self.print_ast(tree, 'Preprocessed')
+            self.pass_checks.visit(tree)  # does not modify the AST
+            return ctx.return_data
         self.print_ast(tree, 'Initial AST')
         self.rename_module.visit(tree)
         self.print_ast(tree, 'AST with module renamed')

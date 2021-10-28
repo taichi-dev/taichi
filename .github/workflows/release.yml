@@ -74,6 +74,7 @@ jobs:
         with:
           name: ${{ matrix.name }}-py${{ matrix.python }}-linux.whl
           path: dist/*.whl
+          retention-days: 20
 
       - name: Test
         run: |
@@ -148,6 +149,7 @@ jobs:
         with:
           name: ${{ matrix.name }}-py${{ matrix.python }}-macos.whl
           path: dist/*.whl
+          retention-days: 20
 
       - name: Test
         run: |
@@ -209,6 +211,7 @@ jobs:
         with:
           name: ${{ matrix.name }}-py${{ matrix.python }}-macos-m1.whl
           path: dist/*.whl
+          retention-days: 20
 
       - name: Upload PyPI
         env:
@@ -265,6 +268,7 @@ jobs:
         with:
           name: ${{ matrix.name }}-py${{ matrix.python }}-macos-1014.whl
           path: dist/*.whl
+          retention-days: 20
 
       - name: Test
         run: |
@@ -349,6 +353,7 @@ jobs:
         with:
           name: ${{ matrix.name }}-py${{ matrix.python }}-windows.whl
           path: dist/*.whl
+          retention-days: 20
 
       - name: Test
         shell: powershell

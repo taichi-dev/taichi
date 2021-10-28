@@ -14,12 +14,11 @@ class ExprBuilder(Builder):
         str_spec = ''
         args = []
         for sub_node in node.values:
-            if isinstance(sub_node, ast.Constant):
-                str_spec += sub_node.value
-            else:
-                # must be a ast.FormattedValue
+            if isinstance(sub_node, ast.FormattedValue):
                 str_spec += '{}'
                 args.append(build_expr(ctx, sub_node.value))
+            else:
+                str_spec += sub_node.value
 
         args.insert(0, ast.copy_location(ast.Constant(value=str_spec), node))
 

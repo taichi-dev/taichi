@@ -73,9 +73,6 @@ if(TI_WITH_GGUI)
     add_definitions(-DTI_WITH_GGUI)
 
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GGUI_SOURCE})
-
-    include_directories(SYSTEM external/glm)
-
 endif()
 
 # These files are compiled into .bc and loaded as LLVM module dynamically. They should not be compiled into libtaichi. So they're removed here
@@ -181,7 +178,7 @@ include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/include)
 include_directories(external/spdlog/include)
 if (TI_WITH_OPENGL)
-  include_directories(external/glad/include)
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glad/include)
 endif()
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
@@ -194,6 +191,7 @@ if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
   message("Building with GLFW")
   add_subdirectory(external/glfw)
   target_link_libraries(${LIBRARY_NAME} glfw)
+  target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glfw/include)
 endif()
 
 if(DEFINED ENV{LLVM_DIR})
@@ -261,25 +259,13 @@ else()
     message(STATUS "TI_WITH_CUDA_TOOLKIT = OFF")
 endif()
 
-add_subdirectory(external/SPIRV-Cross)
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
-target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl spirv-cross-core)
+if (TI_WITH_OPENGL)
+    add_subdirectory(external/SPIRV-Cross)
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
+    target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl spirv-cross-core)
+endif()
 
 if (TI_WITH_VULKAN)
-    # Vulkan libs
-    # https://cmake.org/cmake/help/latest/module/FindVulkan.html
-    # https://github.com/PacktPublishing/Learning-Vulkan/blob/master/Chapter%2003/HandShake/CMakeLists.txt
-    find_package(Vulkan REQUIRED)
-
-    if(NOT Vulkan_FOUND)
-        message(FATAL_ERROR "TI_WITH_VULKAN is ON but Vulkan could not be found")
-    endif()
-
-    message(STATUS "Vulkan_INCLUDE_DIR=${Vulkan_INCLUDE_DIR}")
-    message(STATUS "Vulkan_LIBRARY=${Vulkan_LIBRARY}")
-
-    include_directories(external/SPIRV-Headers/include)
-
     set(SPIRV_SKIP_EXECUTABLES true)
     set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
     add_subdirectory(external/SPIRV-Tools)
@@ -287,12 +273,8 @@ if (TI_WITH_VULKAN)
     # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
     target_link_libraries(${CORE_LIBRARY_NAME} SPIRV-Tools-opt ${SPIRV_TOOLS})
 
-    # No longer link against vulkan, using volk instead
-    #target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
-    include_directories(${Vulkan_INCLUDE_DIR})
-    include_directories(external/volk)
-
-    # Is this the best way to include the SPIRV-Headers?
+    include_directories(SYSTEM external/Vulkan-Headers/include)
+    include_directories(SYSTEM external/volk)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/VulkanMemoryAllocator/include)
@@ -356,6 +338,7 @@ endif ()
 
 
 if(TI_WITH_GGUI)
+    include_directories(SYSTEM PRIVATE external/glm)
 
     # Dear ImGui
     add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)

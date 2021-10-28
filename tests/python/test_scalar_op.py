@@ -100,8 +100,6 @@ def test_python_scope_linalg():
 
 @ti.test(exclude=[ti.vulkan, ti.opengl, ti.cc])
 def test_min():
-    ti.init()
-
     @ti.kernel
     def min_u16(a: ti.u16, b: ti.u16) -> ti.u16:
         return ti.min(a, b)

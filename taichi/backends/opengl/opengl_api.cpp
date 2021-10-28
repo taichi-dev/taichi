@@ -158,10 +158,10 @@ void CompiledProgram::init_args(Kernel *kernel) {
 void CompiledProgram::add(
     const std::string &kernel_name,
     const std::string &kernel_source_code,
-    int num_workgrpus,
+    int num_workgroups,
     int workgroup_size,
     std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
-  num_workgrpus = std::min(num_workgrpus, opengl_max_grid_dim);
+  num_workgroups = std::min(num_workgroups, opengl_max_grid_dim);
   workgroup_size = std::min(workgroup_size, opengl_max_block_dim);
 
   size_t layout_pos = kernel_source_code.find("precision highp float;\n");
@@ -174,7 +174,9 @@ void CompiledProgram::add(
           workgroup_size) +
       kernel_source_code.substr(layout_pos);
 
-  kernels.push_back({kernel_name, source, workgroup_size, num_workgrpus});
+  TI_DEBUG("[glsl]\ncompiling kernel {}<<<{}, {}>>>:\n{}", kernel_name,
+           num_workgroups, workgroup_size, kernel_source_code);
+  kernels.push_back({kernel_name, source, workgroup_size, num_workgroups});
 
   if (ext_ptr_access) {
     for (auto pair : *ext_ptr_access) {

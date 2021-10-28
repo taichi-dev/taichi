@@ -17,8 +17,12 @@ class ExprBuilder(Builder):
             if isinstance(sub_node, ast.FormattedValue):
                 str_spec += '{}'
                 args.append(build_expr(ctx, sub_node.value))
-            else:
+            elif isinstance(sub_node, ast.Constant):
                 str_spec += sub_node.value
+            elif isinstance(sub_node, ast.Str):
+                # ast.Str has been deprecated in Python 3.8,
+                # but constant string is a ast.Str node in Python 3.6
+                str_spec += sub_node.s
 
         args.insert(0, ast.copy_location(ast.Constant(value=str_spec), node))
 

@@ -8,6 +8,8 @@ on:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   # This job set environment matrix with respect to production release and nightly release.
@@ -126,11 +128,6 @@ jobs:
         env:
           CI_PLATFORM: macos-latest
 
-      - name: Download And Install Vulkan
-        run: sudo bash .github/workflows/scripts/macos_vk.sh
-        env:
-          CI_PLATFORM: macos-latest
-
       - name: Create Python Wheel
         run: |
           TAICHI_REPO_DIR=`pwd`
@@ -160,7 +157,7 @@ jobs:
         run: |
           python examples/algorithm/laplace.py
           ti diagnose
-          ti test -vr2 -t2 -a cpu,metal
+          ti test -vr2 -t2 -a cpu,meta
 
       - name: Upload PyPI
         env:
@@ -207,7 +204,7 @@ jobs:
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           python3 -m pip install dist/*.whl
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_TESTS:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
 
@@ -264,7 +261,7 @@ jobs:
           if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
           python3 -m pip install dist/*.whl
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_TESTS:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
 

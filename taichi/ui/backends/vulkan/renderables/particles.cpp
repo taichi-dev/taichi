@@ -52,9 +52,9 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
 void Particles::init_particles(AppContext *app_context, int vertices_count) {
   RenderableConfig config = {
       vertices_count,
+      1,
       vertices_count,
-      vertices_count,
-      vertices_count,
+      1,
       sizeof(UniformBufferObject),
       1,
       app_context->config.package_path + "/shaders/Particles_vk_vert.spv",

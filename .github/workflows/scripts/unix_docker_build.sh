@@ -12,8 +12,7 @@ conda activate $PY
 
 python3 -m pip uninstall taichi taichi-nightly -y
 
-ls -al
-sudo chown -R dev taichi
+ls /wheel -al
 ls -al
 
 cd taichi

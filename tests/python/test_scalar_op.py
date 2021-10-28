@@ -135,8 +135,6 @@ def test_min():
 
 @ti.test(exclude=[ti.vulkan, ti.opengl, ti.cc])
 def test_max():
-    ti.init()
-
     @ti.kernel
     def max_u16(a: ti.u16, b: ti.u16) -> ti.u16:
         return ti.max(a, b)

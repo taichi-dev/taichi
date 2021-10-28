@@ -176,24 +176,24 @@ class KernelGen : public IRVisitor {
 
     if (used.simulated_atomic_float) {
       line_appender_header_.append_raw(shaders::kOpenGLAtomicF32SourceCode);
-      kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(data);\n");
+      kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(data)\n");
       if (used.buf_gtmp) {
-        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(gtmp);\n");
+        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(gtmp)\n");
       }
     }
 
     if (used.reduction) {
       line_appender_header_.append_raw(shaders::kOpenGLReductionCommon);
       line_appender_header_.append_raw(shaders::kOpenGLReductionSourceCode);
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, float);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, float);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, float);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, int);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, int);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, int);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, uint);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, uint);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, uint);\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, float)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, float)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, float)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, int)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, int)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, int)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, uint)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, uint)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, uint)\n");
     }
 
     line_appender_header_.append_raw(kernel_header);

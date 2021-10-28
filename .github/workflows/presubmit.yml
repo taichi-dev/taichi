@@ -103,7 +103,8 @@ jobs:
         run: |
           mkdir wheel
           docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD "$CI_SETUP_CMAKE_ARGS"
-          docker cp ../${{ github.event.repository.name }} taichi_build:/home/dev/taichi
+          #docker cp ../${{ github.event.repository.name }} taichi_build:/home/dev/taichi
+          tar -cf - ../${{ github.event.repository.name }} --owner dev --group owner | docker cp - taichi_build:/home/dev/taichi
           docker start -a taichi_build
         env:
           PY: ${{ matrix.python }}

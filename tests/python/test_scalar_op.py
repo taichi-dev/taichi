@@ -99,7 +99,7 @@ def test_python_scope_linalg():
 
 
 @ti.test(arch=[ti.x64, ti.cuda, ti.metal])
-def test_16_min_maxmin():
+def test_16_min_max():
     @ti.kernel
     def min_u16(a: ti.u16, b: ti.u16) -> ti.u16:
         return ti.min(a, b)

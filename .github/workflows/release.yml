@@ -155,7 +155,7 @@ jobs:
         run: |
           python examples/algorithm/laplace.py
           ti diagnose
-          ti test -vr2 -t2 -a cpu,meta
+          ti test -vr2 -t2 -a cpu,metal
 
       - name: Upload PyPI
         env:

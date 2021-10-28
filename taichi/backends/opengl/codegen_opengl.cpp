@@ -166,26 +166,9 @@ class KernelGen : public IRVisitor {
     if (used.buf_gtmp)
       REGISTER_BUFFER(std430, buffer, gtmp, GLBufId::Gtmp);
     if (used.buf_args)
-      REGISTER_BUFFER(std430, readonly buffer, args, GLBufId::Args);
+      REGISTER_BUFFER(std430, buffer, args, GLBufId::Args);
     if (used.buf_retr)
       REGISTER_BUFFER(std430, writeonly buffer, retr, GLBufId::Retr);
-    if (used.buf_extr) {
-      bool write = false;
-      bool read = false;
-
-      for (auto pair : this->extptr_access) {
-        write |= (pair.second & irpass::ExternalPtrAccess::WRITE) != irpass::ExternalPtrAccess::NONE;
-        read |= (pair.second & irpass::ExternalPtrAccess::WRITE) != irpass::ExternalPtrAccess::NONE;
-      }
-
-      if (write && !read) {
-        REGISTER_BUFFER(std430, writeonly buffer, extr, GLBufId::Extr);
-      } else if (!write && read) {
-        REGISTER_BUFFER(std430, readonly buffer, extr, GLBufId::Extr);
-      } else {
-        REGISTER_BUFFER(std430, buffer, extr, GLBufId::Extr);
-      }
-    }
 
 #undef REGISTER_BUFFER
 #undef DEFINE_LAYOUT
@@ -196,9 +179,6 @@ class KernelGen : public IRVisitor {
       kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(data);\n");
       if (used.buf_gtmp) {
         kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(gtmp);\n");
-      }
-      if (used.buf_extr) {
-        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(extr);\n");
       }
     }
 
@@ -485,8 +465,7 @@ class KernelGen : public IRVisitor {
     emit("int {} = {} + ({} << {});", stmt->short_name(),
          stmt->base_ptrs[0]->short_name(), linear_index_name,
          opengl_data_address_shifter(stmt->base_ptrs[0]->element_type()));
-    used.buf_extr = true;
-    ptr_signats[stmt->id] = "extr";
+    ptr_signats[stmt->id] = "args";
   }
 
   void visit(UnaryOpStmt *stmt) override {

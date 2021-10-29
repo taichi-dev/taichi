@@ -219,7 +219,9 @@ void export_lang(py::module &m) {
       .def_readwrite("optimize_mesh_reordered_mapping",
                      &CompileConfig::optimize_mesh_reordered_mapping)
       .def_readwrite("mesh_localize_all_attr_mappings",
-                     &CompileConfig::mesh_localize_all_attr_mappings);
+                     &CompileConfig::mesh_localize_all_attr_mappings)
+      .def_readwrite("demote_no_access_mesh_fors",
+                     &CompileConfig::demote_no_access_mesh_fors);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -1168,12 +1170,6 @@ void export_lang(py::module &m) {
       .value("CE", mesh::MeshRelationType::CE)
       .value("CF", mesh::MeshRelationType::CF)
       .value("CC", mesh::MeshRelationType::CC)
-      .export_values();
-
-  py::enum_<mesh::MeshElementReorderingType>(m, "MeshElementReorderingType",
-                                             py::arithmetic())
-      .value("NonReordering", mesh::MeshElementReorderingType::NonReordering)
-      .value("Reordering", mesh::MeshElementReorderingType::Reordering)
       .export_values();
 
   py::enum_<mesh::ConvType>(m, "ConvType", py::arithmetic())

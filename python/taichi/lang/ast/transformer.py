@@ -75,6 +75,8 @@ class ASTTransformerBase(ast.NodeTransformer):
 
     @staticmethod
     def get_decorator(global_vars, node):
+        if not impl.get_runtime().experimental_ast_refactor:
+            global_vars = globals()
         if not isinstance(node, ast.Call):
             return ''
         for wanted, name in [

@@ -48,10 +48,10 @@ class HostDeviceContextBlitter {
                            DeviceAllocation *host_shadow_buffer)
       : ctx_attribs_(ctx_attribs),
         host_ctx_(host_ctx),
-        device_(device),
         host_result_buffer_(host_result_buffer),
         device_buffer_(device_buffer),
-        host_shadow_buffer_(host_shadow_buffer) {
+        host_shadow_buffer_(host_shadow_buffer),
+        device_(device) {
   }
 
   void host_to_device() {
@@ -227,7 +227,6 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
   }
   const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
   if (!ti_kernel_attribs_.ctx_attribs.empty()) {
-    Device::AllocParams params;
     ctx_buffer_ = ti_params.device->allocate_memory_unique(
         {size_t(ctx_sz),
          /*host_write=*/true, /*host_read=*/false,
@@ -298,7 +297,7 @@ void CompiledTaichiKernel::command_list(CommandList *cmdlist) const {
 }
 
 VkRuntime::VkRuntime(const Params &params)
-    : host_result_buffer_(params.host_result_buffer), device_(params.device) {
+    :  device_(params.device), host_result_buffer_(params.host_result_buffer) {
   TI_ASSERT(host_result_buffer_ != nullptr);
   init_buffers();
 }
@@ -349,9 +348,7 @@ VkRuntime::KernelHandle VkRuntime::register_taichi_kernel(
   params.global_tmps_buffer = global_tmps_buffer_.get();
 
   for (int i = 0; i < reg_params.task_spirv_source_codes.size(); ++i) {
-    const auto &attribs = reg_params.kernel_attribs.tasks_attribs[i];
     const auto &spirv_src = reg_params.task_spirv_source_codes[i];
-    const auto &task_name = attribs.name;
 
     // If we can reach here, we have succeeded. Otherwise
     // std::optional::value() would have killed us.

@@ -31,21 +31,6 @@ int opengl_max_grid_dim = 1024;
 
 #ifdef TI_WITH_OPENGL
 
-static std::string add_line_markers(std::string x) {
-  std::string marker;
-  size_t pos = 0, npos;
-  int line = 0;
-  while (1) {
-    npos = x.find_first_of('\n', pos);
-    marker = fmt::format("{:3d} ", ++line);
-    if (npos == std::string::npos)
-      break;
-    x.insert(pos, marker);
-    pos = npos + 1 + marker.size();
-  }
-  return x;
-}
-
 struct OpenGlRuntimeImpl {
   struct {
     DeviceAllocation runtime = kDeviceNullAllocation;
@@ -374,7 +359,7 @@ void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
 
 DeviceCompiledProgram::DeviceCompiledProgram(CompiledProgram &&program,
                                              Device *device)
-    : program_(std::move(program)), device_(device) {
+    :  device_(device), program_(std::move(program)) {
   if (program_.args_buf_size || program_.total_ext_arr_size ||
       program_.ret_buf_size) {
     args_buf_ = device->allocate_memory(

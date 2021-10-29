@@ -106,6 +106,7 @@ class RootIdsExtractor : public BasicStmtVisitor {
   }
 
  private:
+  using BasicStmtVisitor::visit;
   std::unordered_set<int> roots_;
 };
 

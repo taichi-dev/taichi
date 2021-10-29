@@ -64,8 +64,8 @@ class KernelGen : public IRVisitor {
             const StructCompiledResult *struct_compiled,
             const std::string &kernel_name)
       : kernel_(kernel),
-        kernel_name_(kernel_name),
         struct_compiled_(struct_compiled),
+        kernel_name_(kernel_name),
         root_snode_type_name_(struct_compiled->root_snode_type_name),
         glsl_kernel_prefix_(kernel_name) {
     compiled_program_.init_args(kernel);

@@ -53,6 +53,7 @@ jobs:
           export CXX=clang++-8
           python3 -m pip uninstall taichi taichi-nightly -y
           python3 -m pip install -r requirements_dev.txt
+          python3 -m pip install -r requirements_test.txt
           python3 -m pip install twine
           cd python
           git fetch origin master
@@ -132,6 +133,7 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
           python -m pip install -r requirements_dev.txt
+          python -m pip install -r requirements_test.txt
           cd python
           git fetch origin master
           export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
@@ -193,6 +195,7 @@ jobs:
           git --version
           export CXX=clang++
           python3 -m pip install -r requirements_dev.txt
+          python3 -m pip install -r requirements_test.txt
           cd python
           git fetch origin master
           export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
@@ -250,6 +253,7 @@ jobs:
           git --version
           export CXX=clang++
           python3 -m pip install -r requirements_dev.txt
+          python3 -m pip install -r requirements_test.txt
           cd python
           git fetch origin master
           export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
@@ -336,6 +340,7 @@ jobs:
           clang --version
           cd D:\a\taichi\taichi
           python -m pip install -r requirements_dev.txt
+          python -m pip install -r requirements_test.txt
           cd python
           git fetch origin master
           $env:TAICHI_CMAKE_ARGS = $env:CI_SETUP_CMAKE_ARGS

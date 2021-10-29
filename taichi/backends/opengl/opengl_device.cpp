@@ -480,8 +480,8 @@ void GLCommandList::CmdBufferCopy::execute() {
 void GLCommandList::CmdBufferFill::execute() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
   check_opengl_error("glBindBuffer");
-  glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, offset, size, GL_RED,
-                       GL_UNSIGNED_INT, &data);
+  glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32F, offset, size, GL_RED,
+                       GL_FLOAT, &data);
   check_opengl_error("glClearBufferSubData");
 }
 

@@ -21,8 +21,8 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
 }
 
 void AotModuleBuilderImpl::write_metal_file(const std::string &dir,
-                                    const std::string &filename,
-                                    const CompiledKernelData &k) const {
+                                            const std::string &filename,
+                                            const CompiledKernelData &k) const {
   const std::string mtl_path =
       fmt::format("{}/{}_{}.metal", dir, filename, k.kernel_name);
   std::ofstream fs{mtl_path};

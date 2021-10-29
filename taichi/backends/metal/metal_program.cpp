@@ -23,7 +23,7 @@ std::unordered_set<const SNode *> find_all_dense_snodes(
 bool all_fields_are_dense(
     const std::unordered_set<const SNode *> &placed_snodes) {
   for (const auto *sn : placed_snodes) {
-    for (const auto& ch : sn->ch) {
+    for (const auto &ch : sn->ch) {
       if (ch->type != SNodeType::place) {
         return false;
       }
@@ -90,7 +90,7 @@ void MetalProgramImpl::materialize_snode_tree(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &,
     uint64 *result_buffer) {
-  const auto& csnode_tree = compile_snode_tree_types_impl(tree);
+  const auto &csnode_tree = compile_snode_tree_types_impl(tree);
   metal_kernel_mgr_->add_compiled_snode_tree(csnode_tree);
 }
 

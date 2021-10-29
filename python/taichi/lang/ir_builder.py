@@ -600,7 +600,7 @@ class IRBuilder(Builder):
     @staticmethod
     def build_IfExp(ctx, node):
         node.test = build_stmt(ctx, node.test)
-        is_static_if = (IRBuilder.get_decorator(node.test) == "static")
+        is_static_if = (IRBuilder.get_decorator(ctx, node.test) == "static")
 
         if is_static_if:
             if node.test.ptr:

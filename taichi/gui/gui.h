@@ -9,7 +9,7 @@
 #include <numeric>
 #include <unordered_map>
 
-#if defined(TI_PLATFORM_LINUX)
+#if defined(TI_PLATFORM_LINUX) || (defined(TI_PLATFORM_UNIX) && !defined(TI_PLATFORM_OSX))
 #define TI_GUI_X11
 #endif
 

@@ -118,7 +118,8 @@ class ASTTransformerChecks(ASTTransformerBase):
         node.test = self.visit(node.test)
 
         old_in_static_if = self.in_static_if
-        self.in_static_if = self.get_decorator(self.globals, node.test) == 'static'
+        self.in_static_if = self.get_decorator(self.globals,
+                                               node.test) == 'static'
 
         node.body = list(map(self.visit, node.body))
         if node.orelse is not None:

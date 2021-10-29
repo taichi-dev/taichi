@@ -539,7 +539,8 @@ class IRBuilder(Builder):
             decorator = IRBuilder.get_decorator(ctx, node.iter)
             double_decorator = ''
             if decorator != '' and len(node.iter.args) == 1:
-                double_decorator = IRBuilder.get_decorator(ctx, node.iter.args[0])
+                double_decorator = IRBuilder.get_decorator(
+                    ctx, node.iter.args[0])
             ast.fix_missing_locations(node)
 
             if decorator == 'static':
@@ -624,7 +625,6 @@ class IRBuilder(Builder):
 
         node.ptr = val
         return node
-
 
 build_stmt = IRBuilder()
 

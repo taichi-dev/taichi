@@ -182,3 +182,23 @@ def test_func_in_python_func():
 
     for i in range(10):
         assert foo(i) == fib[i]
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_ifexp():
+    @ti.kernel
+    def foo(x: ti.i32) -> ti.i32:
+        return 1 if x else 0
+
+    assert foo(1) == 1
+    assert foo(0) == 0
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_static_ifexp():
+    @ti.kernel
+    def foo(x: ti.template()) -> ti.i32:
+        return 1 if ti.static(x) else 0
+
+    assert foo(1) == 1
+    assert foo(0) == 0

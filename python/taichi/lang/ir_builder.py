@@ -596,6 +596,36 @@ class IRBuilder(Builder):
         node.value = build_stmt(ctx, node.value)
         return node
 
+    @staticmethod
+    def build_IfExp(ctx, node):
+        node.test = build_stmt(ctx, node.test)
+        is_static_if = (IRBuilder.get_decorator(node.test) == "static")
+
+        if is_static_if:
+            if node.test.ptr:
+                node.body = build_stmt(ctx, node.body)
+                node.ptr = node.body.ptr
+            else:
+                node.orelse = build_stmt(ctx, node.orelse)
+                node.ptr = node.orelse.ptr
+            return node
+
+        val = ti.expr_init(None)
+
+        ti.begin_frontend_if(node.test.ptr)
+        ti.core.begin_frontend_if_true()
+        node.body = build_stmt(ctx, node.body)
+        val.assign(node.body.ptr)
+        ti.core.pop_scope()
+        ti.core.begin_frontend_if_false()
+        node.orelse = build_stmt(ctx, node.orelse)
+        val.assign(node.orelse.ptr)
+        ti.core.pop_scope()
+
+        node.ptr = val
+        return node
+
+
 build_stmt = IRBuilder()
 
 

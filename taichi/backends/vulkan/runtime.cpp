@@ -297,7 +297,7 @@ void CompiledTaichiKernel::command_list(CommandList *cmdlist) const {
 }
 
 VkRuntime::VkRuntime(const Params &params)
-    :  device_(params.device), host_result_buffer_(params.host_result_buffer) {
+    : device_(params.device), host_result_buffer_(params.host_result_buffer) {
   TI_ASSERT(host_result_buffer_ != nullptr);
   init_buffers();
 }

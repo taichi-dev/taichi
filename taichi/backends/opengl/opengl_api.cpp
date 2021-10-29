@@ -359,7 +359,7 @@ void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
 
 DeviceCompiledProgram::DeviceCompiledProgram(CompiledProgram &&program,
                                              Device *device)
-    :  device_(device), program_(std::move(program)) {
+    : device_(device), program_(std::move(program)) {
   if (program_.args_buf_size || program_.total_ext_arr_size ||
       program_.ret_buf_size) {
     args_buf_ = device->allocate_memory(

@@ -313,7 +313,7 @@ class IRBuilder(Builder):
         return node
 
     @staticmethod
-    def get_decorator(node):
+    def get_decorator(ctx, node):
         if not isinstance(node, ast.Call):
             return ''
         for wanted, name in [
@@ -321,7 +321,7 @@ class IRBuilder(Builder):
             (ti.grouped, 'grouped'),
             (ti.ndrange, 'ndrange'),
         ]:
-            if ASTResolver.resolve_to(node.func, wanted, globals()):
+            if ASTResolver.resolve_to(node.func, wanted, ctx.globals):
                 return name
         return ''
 
@@ -536,10 +536,10 @@ class IRBuilder(Builder):
         with ctx.control_scope_guard():
             ctx.current_control_scope().append('for')
 
-            decorator = IRBuilder.get_decorator(node.iter)
+            decorator = IRBuilder.get_decorator(ctx, node.iter)
             double_decorator = ''
             if decorator != '' and len(node.iter.args) == 1:
-                double_decorator = IRBuilder.get_decorator(node.iter.args[0])
+                double_decorator = IRBuilder.get_decorator(ctx, node.iter.args[0])
             ast.fix_missing_locations(node)
 
             if decorator == 'static':
@@ -573,7 +573,7 @@ class IRBuilder(Builder):
     @staticmethod
     def build_If(ctx, node):
         node.test = build_stmt(ctx, node.test)
-        is_static_if = (IRBuilder.get_decorator(node.test) == "static")
+        is_static_if = (IRBuilder.get_decorator(ctx, node.test) == "static")
 
         if is_static_if:
             if node.test.ptr:

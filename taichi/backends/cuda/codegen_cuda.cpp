@@ -549,6 +549,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           int grid_dim = ((num_threads % stmt->block_dim) == 0)
                              ? (num_threads / stmt->block_dim)
                              : (num_threads / stmt->block_dim) + 1;
+          grid_dim = std::max(grid_dim, 1);
           current_task->grid_dim = std::min(stmt->grid_dim, grid_dim);
         }
       }

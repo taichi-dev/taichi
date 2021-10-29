@@ -828,6 +828,18 @@ void export_lang(py::module &m) {
   m.def("bit_vectorize", BitVectorize);
   m.def("block_dim", BlockDim);
 
+  m.def("insert_thread_idx_expr", [&](){
+    TI_ERROR_IF(get_current_program().config.arch != Arch::cuda,
+            "ti.thread_idx() is only available in cuda context.");
+    auto loop = scope_stack.size() ? scope_stack.back()->list->parent_stmt : nullptr;
+    if(!(loop && loop->is<FrontendForStmt>()))
+      TI_NOT_IMPLEMENTED;
+    auto tid_stmt = Stmt::make<LoopLinearIndexStmt>(loop);
+    auto tid_expr = Expr::make<EvalExpression>(tid_stmt.get());   
+    current_ast_builder().insert(std::move(tid_stmt));
+    return tid_expr; 
+  });
+  
   py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())
       .value("block_local", SNodeAccessFlag::block_local)
       .value("read_only", SNodeAccessFlag::read_only)

@@ -190,6 +190,11 @@ class LowerAST : public IRVisitor {
     // do nothing
   }
 
+  void visit(LoopLinearIndexStmt *stmt) override {
+    TI_ASSERT(capturing_loop != nullptr);
+    stmt->loop = capturing_loop;
+  }
+
   void visit(BinaryOpStmt *stmt) override {
     // do nothing
   }

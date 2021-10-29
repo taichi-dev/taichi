@@ -34,6 +34,11 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
       loop_unique_[stmt] = stmt->index;
   }
 
+  void visit(LoopLinearIndexStmt *stmt) override {
+    if (stmt->loop->is<OffloadedStmt>())
+      loop_unique_[stmt] = -1;
+  }
+
   void visit(LoopUniqueStmt *stmt) override {
     loop_unique_[stmt] = -1;
   }

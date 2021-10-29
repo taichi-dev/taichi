@@ -1839,13 +1839,7 @@ void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
-  if (stmt->loop->is<OffloadedStmt>() &&
-      stmt->loop->as<OffloadedStmt>()->task_type ==
-          OffloadedStmt::TaskType::struct_for) {
-    llvm_val[stmt] = create_call("thread_idx");
-  } else {
-    TI_NOT_IMPLEMENTED;
-  }
+  llvm_val[stmt] = create_call("thread_idx");
 }
 
 void CodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {

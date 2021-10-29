@@ -507,7 +507,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           // Only perform identical load elimination within a CFGNode.
           auto next_load_stmt = live_load_in_this_node[load_ptr];
           TI_ASSERT(irpass::analysis::same_statements(stmt, next_load_stmt));
-          next_load_stmt->replace_with(stmt);
+          next_load_stmt->replace_usages_with(stmt);
           erase(block->locate(next_load_stmt));
           modified = true;
         }

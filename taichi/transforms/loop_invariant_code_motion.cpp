@@ -73,7 +73,7 @@ class LoopInvariantCodeMotion : public BasicStmtVisitor {
   void visit(BinaryOpStmt *stmt) override {
     if (stmt_can_be_moved(stmt)) {
       auto replacement = stmt->clone();
-      stmt->replace_with(replacement.get());
+      stmt->replace_usages_with(replacement.get());
 
       modifier.insert_before(stmt->parent->parent_stmt, std::move(replacement));
       modifier.erase(stmt);
@@ -83,7 +83,7 @@ class LoopInvariantCodeMotion : public BasicStmtVisitor {
   void visit(UnaryOpStmt *stmt) override {
     if (stmt_can_be_moved(stmt)) {
       auto replacement = stmt->clone();
-      stmt->replace_with(replacement.get());
+      stmt->replace_usages_with(replacement.get());
 
       modifier.insert_before(stmt->parent->parent_stmt, std::move(replacement));
       modifier.erase(stmt);

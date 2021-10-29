@@ -46,6 +46,53 @@ def test_binop():
 
 
 @ti.test(experimental_ast_refactor=True)
+def test_augassign():
+    @ti.kernel
+    def foo(x: ti.i32, y: ti.i32, a: ti.template(), b: ti.template()):
+        for i in a:
+            a[i] = x
+        a[0] += y
+        a[1] -= y
+        a[2] *= y
+        a[3] //= y
+        a[4] %= y
+        a[5] **= y
+        a[6] <<= y
+        a[7] >>= y
+        a[8] |= y
+        a[9] ^= y
+        a[10] &= y
+        b[0] = x
+        b[0] /= y
+
+    x = 37
+    y = 5
+    a = ti.field(ti.i32, shape=(11, ))
+    b = ti.field(ti.i32, shape=(11, ))
+    c = ti.field(ti.f32, shape=(1, ))
+    d = ti.field(ti.f32, shape=(1, ))
+
+    a[0] = x + y
+    a[1] = x - y
+    a[2] = x * y
+    a[3] = x // y
+    a[4] = x % y
+    a[5] = x**y
+    a[6] = x << y
+    a[7] = x >> y
+    a[8] = x | y
+    a[9] = x ^ y
+    a[10] = x & y
+    c[0] = x / y
+
+    foo(x, y, b, d)
+
+    for i in range(11):
+        assert a[i] == b[i]
+    assert c[0] == approx(d[0])
+
+
+@ti.test(experimental_ast_refactor=True)
 def test_unaryop():
     @ti.kernel
     def foo(x: ti.i32, a: ti.template()):
@@ -202,3 +249,20 @@ def test_static_ifexp():
 
     assert foo(1) == 1
     assert foo(0) == 0
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_static_assign():
+    a = ti.field(ti.i32, shape=(1, ))
+    b = ti.field(ti.i32, shape=(1, ))
+
+    @ti.kernel
+    def foo(xx: ti.template(), yy: ti.template()) -> ti.i32:
+        x, y = ti.static(xx, yy)
+        x[0] -= 1
+        y[0] -= 1
+        return x[0] + y[0]
+
+    a[0] = 2
+    b[0] = 3
+    assert foo(a, b) == 3

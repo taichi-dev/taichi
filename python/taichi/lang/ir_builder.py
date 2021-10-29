@@ -24,21 +24,21 @@ class IRBuilder(Builder):
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
                 node.value.func, ti.static, globals())
-        if is_static_assign:
-            return node
 
         # Keep all generated assign statements and compose single one at last.
         # The variable is introduced to support chained assignments.
         # Ref https://github.com/taichi-dev/taichi/issues/2659.
         for node_target in node.targets:
             if isinstance(node_target, ast.Tuple):
-                IRBuilder.build_assign_unpack(ctx, node_target, node.value.ptr)
+                IRBuilder.build_assign_unpack(ctx, node_target, node.value.ptr,
+                                              is_static_assign)
             else:
-                IRBuilder.build_assign_basic(ctx, node_target, node.value.ptr)
+                IRBuilder.build_assign_basic(ctx, node_target, node.value.ptr,
+                                             is_static_assign)
         return node
 
     @staticmethod
-    def build_assign_unpack(ctx, node_target, value):
+    def build_assign_unpack(ctx, node_target, values, is_static_assign):
         """Build the unpack assignments like this: (target1, target2) = (value1, value2).
         The function should be called only if the node target is a tuple.
 
@@ -46,17 +46,20 @@ class IRBuilder(Builder):
             ctx (ast_builder_utils.BuilderContext): The builder context.
             node_target (ast.Tuple): A list or tuple object. `node_target.elts` holds a
             list of nodes representing the elements.
-            value: A node/list representing the values.
+            values: A node/list representing the values.
+            is_static_assign: A boolean value indicating whether this is a static assignment
         """
 
         targets = node_target.elts
-        tmp_tuple = ti.expr_init_list(value, len(targets))
+        tmp_tuple = values if is_static_assign else ti.expr_init_list(
+            values, len(targets))
 
         for i, target in enumerate(targets):
-            IRBuilder.build_assign_basic(ctx, target, tmp_tuple[i])
+            IRBuilder.build_assign_basic(ctx, target, tmp_tuple[i],
+                                         is_static_assign)
 
     @staticmethod
-    def build_assign_basic(ctx, target, value):
+    def build_assign_basic(ctx, target, value, is_static_assign):
         """Build basic assginment like this: target = value.
 
          Args:
@@ -64,9 +67,15 @@ class IRBuilder(Builder):
             target (ast.Name): A variable name. `target.id` holds the name as
             a string.
             value: A node representing the value.
+            is_static_assign: A boolean value indicating whether this is a static assignment
         """
         is_local = isinstance(target, ast.Name)
-        if is_local and not ctx.is_var_declared(target.id):
+        if is_static_assign:
+            if not is_local:
+                raise TaichiSyntaxError(
+                    "Static assign cannot be used on elements in arrays")
+            ctx.create_variable(target.id, value)
+        elif is_local and not ctx.is_var_declared(target.id):
             ctx.create_variable(target.id, ti.expr_init(value))
         else:
             var = target.ptr
@@ -298,6 +307,14 @@ class IRBuilder(Builder):
             ast.MatMult: lambda l, r: l @ r,
         }.get(type(node.op))
         node.ptr = op(node.left.ptr, node.right.ptr)
+        return node
+
+    @staticmethod
+    def build_AugAssign(ctx, node):
+        node.target = build_stmt(ctx, node.target)
+        node.value = build_stmt(ctx, node.value)
+        node.ptr = node.target.ptr.augassign(node.value.ptr,
+                                             type(node.op).__name__)
         return node
 
     @staticmethod

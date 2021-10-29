@@ -7,7 +7,6 @@
 #include "taichi/program/py_print_buffer.h"
 #include "taichi/util/environ_config.h"
 #include "taichi/backends/opengl/shaders/runtime.h"
-#include "taichi/backends/opengl/shaders/listman.h"
 #include "taichi/ir/transforms.h"
 
 #ifdef TI_WITH_OPENGL
@@ -50,7 +49,6 @@ static std::string add_line_markers(std::string x) {
 struct OpenGlRuntimeImpl {
   struct {
     DeviceAllocation runtime = kDeviceNullAllocation;
-    DeviceAllocation listman = kDeviceNullAllocation;
     DeviceAllocation root = kDeviceNullAllocation;
     DeviceAllocation gtmp = kDeviceNullAllocation;
   } core_bufs;
@@ -58,9 +56,7 @@ struct OpenGlRuntimeImpl {
   OpenGlRuntimeImpl() {
   }
 
-  std::unique_ptr<GLSLRuntime> runtime;
-  std::unique_ptr<GLSLListman> listman;
-
+  std::unique_ptr<GLSLRuntime> runtime{nullptr};
   std::vector<std::unique_ptr<DeviceCompiledProgram>> programs;
 };
 
@@ -152,7 +148,7 @@ void CompiledProgram::init_args(Kernel *kernel) {
 
   args_buf_size = arg_count * sizeof(uint64_t);
   if (ext_arr_map.size()) {
-    args_buf_size = taichi_opengl_earg_base +
+    args_buf_size = taichi_opengl_extra_args_base +
                     arg_count * taichi_max_num_indices * sizeof(int);
   }
 
@@ -162,10 +158,10 @@ void CompiledProgram::init_args(Kernel *kernel) {
 void CompiledProgram::add(
     const std::string &kernel_name,
     const std::string &kernel_source_code,
-    int num_workgrpus,
+    int num_workgroups,
     int workgroup_size,
     std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
-  num_workgrpus = std::min(num_workgrpus, opengl_max_grid_dim);
+  num_workgroups = std::min(num_workgroups, opengl_max_grid_dim);
   workgroup_size = std::min(workgroup_size, opengl_max_block_dim);
 
   size_t layout_pos = kernel_source_code.find("precision highp float;\n");
@@ -178,7 +174,9 @@ void CompiledProgram::add(
           workgroup_size) +
       kernel_source_code.substr(layout_pos);
 
-  kernels.push_back({kernel_name, source, workgroup_size, num_workgrpus});
+  TI_DEBUG("[glsl]\ncompiling kernel {}<<<{}, {}>>>:\n{}", kernel_name,
+           num_workgroups, workgroup_size, source);
+  kernels.push_back({kernel_name, source, workgroup_size, num_workgroups});
 
   if (ext_ptr_access) {
     for (auto pair : *ext_ptr_access) {
@@ -271,22 +269,34 @@ void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
 
   uint8_t *args_buf_mapped = nullptr;
 
-  // Prepare external array
+  // clang-format off
+  // Prepare external array: copy from ctx.args[i] (which is a host pointer
+  // pointing to the external array) to device, and save the accumulated copied
+  // size information. Note here we copy external array to Arg buffer in
+  // runtime. Its layout is shown below:
+  // |              args               |  shape of ext arr  |  ret |  ext arr   |
+  // baseptr
+  // |..taichi_opengl_extra_args_base..|
+  // |...............taichi_opengl_ret_base.................|
+  // |................taichi_opengl_external_arr_base..............|
+  // |............................ctx.args[i]............................|
+  //                                                           i-th arg (ext arr)
+  // We save each external array's offset from args_buf_ baseptr back to ctx.args[i].
+  // clang-format on
   if (program_.total_ext_arr_size) {
-    void *baseptr = device_->map(ext_arr_buf_);
-
+    void *baseptr = device_->map(args_buf_);
     size_t accum_size = 0;
     for (const auto &[i, size] : program_.ext_arr_map) {
       auto ptr = (void *)ctx.args[i];
-      ctx.args[i] = accum_size;
+      ctx.args[i] = accum_size + taichi_opengl_external_arr_base;
       ext_arr_host_ptrs[i] = ptr;
       if (program_.check_ext_arr_read(i)) {
-        std::memcpy((char *)baseptr + accum_size, ptr, size);
+        std::memcpy((char *)baseptr + ctx.args[i], ptr, size);
       }
       accum_size += size;
     }
 
-    device_->unmap(ext_arr_buf_);
+    device_->unmap(args_buf_);
   }
 
   // Prepare argument buffer
@@ -296,7 +306,8 @@ void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
                 program_.arg_count * sizeof(uint64_t));
     if (program_.ext_arr_map.size()) {
       std::memcpy(
-          args_buf_mapped + size_t(taichi_opengl_earg_base), ctx.extra_args,
+          args_buf_mapped + size_t(taichi_opengl_extra_args_base),
+          ctx.extra_args,
           size_t(program_.arg_count * taichi_max_num_indices) * sizeof(int));
     }
     device_->unmap(args_buf_);
@@ -319,15 +330,11 @@ void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
     auto binder = compiled_pipeline_[i]->resource_binder();
     auto &core_bufs = runtime->impl->core_bufs;
     binder->buffer(0, int(GLBufId::Runtime), core_bufs.runtime);
-    binder->buffer(0, int(GLBufId::Listman), core_bufs.listman);
     binder->buffer(0, int(GLBufId::Root), core_bufs.root);
     binder->buffer(0, int(GLBufId::Gtmp), core_bufs.gtmp);
-    if (program_.args_buf_size)
+    if (program_.args_buf_size || program_.ret_buf_size ||
+        program_.total_ext_arr_size)
       binder->buffer(0, int(GLBufId::Args), args_buf_);
-    if (program_.ret_buf_size)
-      binder->buffer(0, int(GLBufId::Retr), ret_buf_);
-    if (program_.total_ext_arr_size)
-      binder->buffer(0, int(GLBufId::Extr), ext_arr_buf_);
 
     cmdlist->bind_pipeline(compiled_pipeline_[i].get());
     cmdlist->bind_resources(binder);
@@ -350,43 +357,31 @@ void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
   }
 
   if (program_.total_ext_arr_size) {
-    uint8_t *baseptr = (uint8_t *)device_->map(ext_arr_buf_);
+    uint8_t *baseptr = (uint8_t *)device_->map(args_buf_);
     for (const auto &[i, size] : program_.ext_arr_map) {
       memcpy(ext_arr_host_ptrs[i], baseptr + size_t(ctx.args[i]), size);
     }
-    device_->unmap(ext_arr_buf_);
+    device_->unmap(args_buf_);
   }
 
   if (program_.ret_buf_size) {
-    memcpy(runtime->result_buffer, device_->map(ret_buf_),
+    uint8_t *baseptr = (uint8_t *)device_->map(args_buf_);
+    memcpy(runtime->result_buffer, baseptr + taichi_opengl_ret_base,
            program_.ret_buf_size);
-    device_->unmap(ret_buf_);
+    device_->unmap(args_buf_);
   }
 }
 
 DeviceCompiledProgram::DeviceCompiledProgram(CompiledProgram &&program,
                                              Device *device)
     : program_(std::move(program)), device_(device) {
-  if (program_.args_buf_size) {
-    args_buf_ =
-        device->allocate_memory({program_.args_buf_size, /*host_write=*/true,
-                                 /*host_read=*/false,
-                                 /*export_sharing=*/false});
-  }
-
-  if (program_.total_ext_arr_size) {
-    // Set both host write & host read for now
-    ext_arr_buf_ = device->allocate_memory({program_.total_ext_arr_size,
-                                            /*host_write=*/true,
-                                            /*host_read=*/true,
-                                            /*export_sharing=*/false});
-  }
-
-  if (program_.ret_buf_size) {
-    ret_buf_ =
-        device->allocate_memory({program_.ret_buf_size, /*host_write=*/false,
-                                 /*host_read=*/true,
-                                 /*export_sharing=*/false});
+  if (program_.args_buf_size || program_.total_ext_arr_size ||
+      program_.ret_buf_size) {
+    args_buf_ = device->allocate_memory(
+        {taichi_opengl_external_arr_base + program_.total_ext_arr_size,
+         /*host_write=*/true,
+         /*host_read=*/true,
+         /*export_sharing=*/false});
   }
 
   for (auto &k : program_.kernels) {
@@ -408,16 +403,11 @@ OpenGlRuntime::OpenGlRuntime() {
   impl->core_bufs.runtime = device->allocate_memory(
       {sizeof(GLSLRuntime), /*host_write=*/false, /*host_read=*/true});
 
-  impl->listman = std::make_unique<GLSLListman>();
-  impl->core_bufs.listman = device->allocate_memory({sizeof(GLSLListman)});
-
   impl->core_bufs.gtmp =
       device->allocate_memory({taichi_global_tmp_buffer_size});
 
   auto cmdlist = device->get_compute_stream()->new_command_list();
   cmdlist->buffer_fill(impl->core_bufs.runtime.get_ptr(0), sizeof(GLSLRuntime),
-                       0);
-  cmdlist->buffer_fill(impl->core_bufs.listman.get_ptr(0), sizeof(GLSLListman),
                        0);
   cmdlist->buffer_fill(impl->core_bufs.gtmp.get_ptr(0),
                        taichi_global_tmp_buffer_size, 0);

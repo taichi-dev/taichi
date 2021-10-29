@@ -16,12 +16,16 @@ std::string get_cuda_error_message(uint32 err) {
 }
 
 bool CUDADriver::detected() {
-  if (get_environ_config("TI_ENABLE_CUDA", 1) == 0)
-    return false;
-  return loader_->loaded();
+  return !disabled_by_env_ && cuda_version_valid_ && loader_->loaded();
 }
 
 CUDADriver::CUDADriver() {
+  disabled_by_env_ = (get_environ_config("TI_ENABLE_CUDA", 1) == 0);
+  if (disabled_by_env_) {
+    TI_TRACE("CUDA driver disabled by enviroment variable \"TI_ENABLE_CUDA\".");
+    return;
+  }
+
 #if defined(TI_PLATFORM_LINUX)
   loader_ = std::make_unique<DynamicLoader>("libcuda.so");
 #elif defined(TI_PLATFORM_WINDOWS)
@@ -30,25 +34,34 @@ CUDADriver::CUDADriver() {
   static_assert(false, "Taichi CUDA driver supports only Windows and Linux.");
 #endif
 
-  if (detected()) {
-    loader_->load_function("cuGetErrorName", get_error_name);
-    loader_->load_function("cuGetErrorString", get_error_string);
+  if (!loader_->loaded()) {
+    TI_WARN("CUDA driver not found.");
+    return;
+  }
 
+  loader_->load_function("cuGetErrorName", get_error_name);
+  loader_->load_function("cuGetErrorString", get_error_string);
+  loader_->load_function("cuDriverGetVersion", driver_get_version);
+
+  int version;
+  driver_get_version(&version);
+  TI_TRACE("CUDA driver API (v{}.{}) loaded.", version / 1000,
+           version % 1000 / 10);
+
+  // CUDA versions should >= 10.
+  if (version < 10000) {
+    TI_WARN("The Taichi CUDA backend requires at least CUDA 10.0, got v{}.{}.",
+            version / 1000, version % 1000 / 10);
+    return;
+  }
+
+  cuda_version_valid_ = true;
 #define PER_CUDA_FUNCTION(name, symbol_name, ...) \
   name.set(loader_->load_function(#symbol_name)); \
   name.set_lock(&lock_);                          \
   name.set_names(#name, #symbol_name);
 #include "taichi/backends/cuda/cuda_driver_functions.inc.h"
 #undef PER_CUDA_FUNCTION
-
-    int version;
-    driver_get_version(&version);
-
-    TI_TRACE("CUDA driver API (v{}.{}) loaded.", version / 1000,
-             version % 1000 / 10);
-  } else {
-    TI_TRACE("CUDA driver not found.");
-  }
 }
 
 // This is for initializing the CUDA driver itself

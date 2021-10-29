@@ -10,6 +10,7 @@ CompileConfig::CompileConfig() {
   external_optimization_level = 3;
   packed = false;
   print_ir = false;
+  print_preprocessed_ir = false;
   print_accessor_ir = false;
   print_evaluator_ir = false;
   print_benchmark_stat = false;
@@ -42,6 +43,7 @@ CompileConfig::CompileConfig() {
   make_thread_local = true;
   make_block_local = true;
   detect_read_only = true;
+  ndarray_use_torch = true;
 
   saturating_grid_dim = 0;
   max_block_dim = 0;

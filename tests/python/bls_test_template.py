@@ -197,7 +197,7 @@ def bls_particle_grid(N,
             u0 = ti.assume_in_range(u_[0], Im[0], 0, 1)
             u1 = ti.assume_in_range(u_[1], Im[1], 0, 1)
 
-            u = ti.Vector([u0, u1])
+            u = ti.Vector([u0, u1], dt=ti.i32)
 
             for offset in ti.static(ti.grouped(ti.ndrange(extend, extend))):
                 m[u + offset] += scatter_weight
@@ -230,7 +230,7 @@ def bls_particle_grid(N,
             u0 = ti.assume_in_range(u_[0], Im[0], 0, 1)
             u1 = ti.assume_in_range(u_[1], Im[1], 0, 1)
 
-            u = ti.Vector([u0, u1])
+            u = ti.Vector([u0, u1], dt=ti.i32)
 
             tot = 0.0
 

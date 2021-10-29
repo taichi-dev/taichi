@@ -366,19 +366,6 @@ class VulkanSurface : public Surface {
   std::vector<DeviceAllocation> swapchain_images_;
 };
 
-struct VulkanMemoryPool {
-  VmaPool pool;
-
-  // the lifetime of these needs to == the lifetime of the vmapool.
-  // because these are needed for allocating memory, which happens multiple
-  // times.
-  VkExportMemoryAllocateInfoKHR export_mem_alloc_info{};
-#ifdef _WIN64
-  WindowsSecurityAttributes win_security_attribs;
-  VkExportMemoryWin32HandleInfoKHR export_mem_win32_handle_info{};
-#endif
-};
-
 struct DescPool {
   VkDescriptorPool pool;
   // Threads share descriptor sets
@@ -519,7 +506,7 @@ class VulkanDevice : public GraphicsDevice {
   VkDevice device_;
   VkPhysicalDevice physical_device_;
   VmaAllocator allocator_;
-  VulkanMemoryPool export_pool_;
+  VmaAllocator allocator_export_{nullptr};
 
   VkQueue compute_queue_;
   uint32_t compute_queue_family_index_;

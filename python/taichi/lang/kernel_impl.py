@@ -1,8 +1,8 @@
 import ast
-import copy
 import functools
 import inspect
 import re
+import textwrap
 
 import numpy as np
 import taichi.lang
@@ -22,25 +22,6 @@ import taichi as ti
 
 if util.has_pytorch():
     import torch
-
-
-def _remove_indent(lines):
-    lines = lines.split('\n')
-    to_remove = 0
-    for i in range(len(lines[0])):
-        if lines[0][i] == ' ':
-            to_remove = i + 1
-        else:
-            break
-
-    cleaned = []
-    for l in lines:
-        cleaned.append(l[to_remove:])
-        if len(l) >= to_remove:
-            for i in range(to_remove):
-                assert l[i] == ' '
-
-    return '\n'.join(cleaned)
 
 
 def func(fn):
@@ -106,6 +87,33 @@ def pyfunc(fn):
     return decorated
 
 
+def _get_tree_and_global_vars(self, args):
+    src = textwrap.dedent(oinspect.getsource(self.func))
+    tree = ast.parse(src)
+
+    func_body = tree.body[0]
+    func_body.decorator_list = []
+
+    local_vars = {}
+    global_vars = _get_global_vars(self.func)
+
+    for i, arg in enumerate(func_body.args.args):
+        anno = arg.annotation
+        if isinstance(anno, ast.Name):
+            global_vars[anno.id] = self.argument_annotations[i]
+
+    if isinstance(func_body.returns, ast.Name):
+        global_vars[func_body.returns.id] = self.return_type
+
+    # inject template parameters into globals
+    for i in self.template_slot_locations:
+        template_var_name = self.argument_names[i]
+        global_vars[template_var_name] = args[i]
+
+    global_vars["ti"] = ti
+    return tree, global_vars
+
+
 class Func:
     function_counter = 0
 
@@ -138,6 +146,13 @@ class Func:
                     "from both Python-scope and Taichi-scope.")
             return self.func(*args)
 
+        if impl.get_runtime().experimental_ast_refactor:
+            tree, global_vars = _get_tree_and_global_vars(self, args)
+            visitor = ASTTransformerTotal(is_kernel=False,
+                                          func=self,
+                                          globals=global_vars)
+            return visitor.visit(tree, *args)
+
         if impl.get_runtime().experimental_real_function:
             if impl.get_runtime().current_kernel.is_grad:
                 raise TaichiSyntaxError(
@@ -169,7 +184,7 @@ class Func:
                 self.taichi_functions[key.instance_id], non_template_args))
 
     def do_compile(self, key, args):
-        src = _remove_indent(oinspect.getsource(self.func))
+        src = textwrap.dedent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]
@@ -333,6 +348,12 @@ class KernelArgError(Exception):
 
 def _get_global_vars(func):
     closure_vars = inspect.getclosurevars(func)
+    if impl.get_runtime().experimental_ast_refactor:
+        return {
+            **closure_vars.globals,
+            **closure_vars.nonlocals,
+            **closure_vars.builtins
+        }
     return {**closure_vars.globals, **closure_vars.nonlocals}
 
 
@@ -420,6 +441,10 @@ class Kernel:
             self.argument_names.append(param.name)
 
     def materialize(self, key=None, args=None, arg_features=None):
+        if impl.get_runtime().experimental_ast_refactor:
+            return self.materialize_ast_refactor(key=key,
+                                                 args=args,
+                                                 arg_features=arg_features)
         _taichi_skip_traceback = 1
         if key is None:
             key = (self.func, 0)
@@ -434,7 +459,7 @@ class Kernel:
                                            grad_suffix)
         ti.trace("Compiling kernel {}...".format(kernel_name))
 
-        src = _remove_indent(oinspect.getsource(self.func))
+        src = textwrap.dedent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]
@@ -498,6 +523,57 @@ class Kernel:
         assert key not in self.compiled_functions
         self.compiled_functions[key] = self.get_function_body(taichi_kernel)
 
+    def materialize_ast_refactor(self, key=None, args=None, arg_features=None):
+        _taichi_skip_traceback = 1
+        if key is None:
+            key = (self.func, 0)
+        self.runtime.materialize()
+        if key in self.compiled_functions:
+            return
+        grad_suffix = ""
+        if self.is_grad:
+            grad_suffix = "_grad"
+        kernel_name = "{}_c{}_{}{}".format(self.func.__name__,
+                                           self.kernel_counter, key[1],
+                                           grad_suffix)
+        ti.trace("Compiling kernel {}...".format(kernel_name))
+
+        tree, global_vars = _get_tree_and_global_vars(self, args)
+
+        if self.is_grad:
+            KernelSimplicityASTChecker(self.func).visit(tree)
+        visitor = ASTTransformerTotal(
+            excluded_parameters=self.template_slot_locations,
+            func=self,
+            arg_features=arg_features,
+            globals=global_vars)
+
+        ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
+
+        # Do not change the name of 'taichi_ast_generator'
+        # The warning system needs this identifier to remove unnecessary messages
+        def taichi_ast_generator():
+            _taichi_skip_traceback = 1
+            if self.runtime.inside_kernel:
+                raise TaichiSyntaxError(
+                    "Kernels cannot call other kernels. I.e., nested kernels are not allowed. Please check if you have direct/indirect invocation of kernels within kernels. Note that some methods provided by the Taichi standard library may invoke kernels, and please move their invocations to Python-scope."
+                )
+            self.runtime.inside_kernel = True
+            self.runtime.current_kernel = self
+            try:
+                visitor.visit(tree)
+            finally:
+                self.runtime.inside_kernel = False
+                self.runtime.current_kernel = None
+
+        taichi_kernel = _ti_core.create_kernel(taichi_ast_generator,
+                                               kernel_name, self.is_grad)
+
+        self.kernel_cpp = taichi_kernel
+
+        assert key not in self.compiled_functions
+        self.compiled_functions[key] = self.get_function_body(taichi_kernel)
+
     def get_function_body(self, t_kernel):
         # The actual function body
         def func__(*args):
@@ -532,9 +608,13 @@ class Kernel:
                 elif isinstance(needed, any_arr) and (
                         self.match_ext_arr(v)
                         or isinstance(v, taichi.lang._ndarray.Ndarray)):
+                    is_ndarray = False
                     if isinstance(v, taichi.lang._ndarray.Ndarray):
                         v = v.arr
+                        is_ndarray = True
                     has_external_arrays = True
+                    ndarray_use_torch = self.runtime.prog.config.ndarray_use_torch
+                    has_torch = util.has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
@@ -543,6 +623,12 @@ class Kernel:
                         launch_ctx.set_arg_external_array(
                             actual_argument_slot, int(tmp.ctypes.data),
                             tmp.nbytes)
+                    elif is_ndarray and not ndarray_use_torch:
+                        # Use ndarray's own memory allocator
+                        tmp = v
+                        launch_ctx.set_arg_external_array(
+                            actual_argument_slot, int(tmp.data_ptr()),
+                            tmp.element_size() * tmp.nelement())
                     else:
 
                         def get_call_back(u, v):
@@ -572,6 +658,7 @@ class Kernel:
                         launch_ctx.set_arg_external_array(
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement())
+
                     shape = v.shape
                     max_num_indices = _ti_core.get_max_num_indices()
                     assert len(

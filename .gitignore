@@ -80,3 +80,5 @@ _build
 *.dot
 *.json
 !docs/**/*.json
+imgui.ini
+/venv/

@@ -38,7 +38,8 @@ class Matrix(TaichiOperations):
                  m=1,
                  dt=None,
                  keep_raw=False,
-                 disable_local_tensor=False):
+                 disable_local_tensor=False,
+                 suppress_warning=False):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
@@ -83,7 +84,8 @@ class Matrix(TaichiOperations):
                                 mat.append(
                                     list([
                                         ti.local_subscript_with_offset(
-                                            self.local_tensor_proxy, (i, ),
+                                            self.local_tensor_proxy,
+                                            (impl.make_constant_expr_i32(i), ),
                                             (len(n), ))
                                     ]))
                 else:
@@ -117,7 +119,9 @@ class Matrix(TaichiOperations):
                         for j in range(len(n[0])):
                             mat[i].append(
                                 ti.local_subscript_with_offset(
-                                    self.local_tensor_proxy, (i, j),
+                                    self.local_tensor_proxy,
+                                    (impl.make_constant_expr_i32(i),
+                                     impl.make_constant_expr_i32(j)),
                                     (len(n), len(n[0]))))
             self.n = len(mat)
             if len(mat) > 0:
@@ -137,7 +141,7 @@ class Matrix(TaichiOperations):
                     "Declaring matrix fields using `ti.Matrix(n, m, dt, shape)` is no longer supported. Use `ti.Matrix.field(n, m, dtype, shape)` instead."
                 )
 
-        if self.n * self.m > 32:
+        if self.n * self.m > 32 and not suppress_warning:
             warning(
                 f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
                 ' Matrices/vectors will be automatically unrolled at compile-time for performance.'
@@ -1452,6 +1456,11 @@ class MatrixNdarray(Ndarray):
         arr_shape = tuple(self.arr.shape)
         return arr_shape[2:] if self.layout == Layout.SOA else arr_shape[:-2]
 
+    @property
+    def element_shape(self):
+        arr_shape = tuple(self.arr.shape)
+        return arr_shape[:2] if self.layout == Layout.SOA else arr_shape[-2:]
+
     @python_scope
     def __setitem__(self, key, value):
         if not isinstance(value, (list, tuple)):
@@ -1497,6 +1506,11 @@ class VectorNdarray(Ndarray):
     def shape(self):
         arr_shape = tuple(self.arr.shape)
         return arr_shape[1:] if self.layout == Layout.SOA else arr_shape[:-1]
+
+    @property
+    def element_shape(self):
+        arr_shape = tuple(self.arr.shape)
+        return arr_shape[:1] if self.layout == Layout.SOA else arr_shape[-1:]
 
     @python_scope
     def __setitem__(self, key, value):

@@ -20,6 +20,8 @@ def get_field_info(field):
         info.field_source = _ti_core.FieldSource.TaichiCuda
     elif default_cfg().arch == _ti_core.x64:
         info.field_source = _ti_core.FieldSource.TaichiX64
+    elif default_cfg().arch == _ti_core.vulkan:
+        info.field_source = _ti_core.FieldSource.TaichiVulkan
     else:
         raise Exception("unsupported taichi backend")
     info.shape = [n for n in field.shape]

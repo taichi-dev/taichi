@@ -42,7 +42,6 @@ class VulkanProgramImpl : public ProgramImpl {
 
   void materialize_snode_tree(SNodeTree *tree,
                               std::vector<std::unique_ptr<SNodeTree>> &,
-                              std::unordered_map<int, SNode *> &,
                               uint64 *result_buffer) override;
 
   void synchronize() override {
@@ -58,7 +57,25 @@ class VulkanProgramImpl : public ProgramImpl {
     vulkan_runtime_->destroy_snode_tree(snode_tree);
   }
 
-  ~VulkanProgramImpl() override;
+  Device *get_compute_device() override {
+    if (embedded_device_) {
+      return embedded_device_->device();
+    }
+    return nullptr;
+  }
+
+  Device *get_graphics_device() override {
+    if (embedded_device_) {
+      return embedded_device_->device();
+    }
+    return nullptr;
+  }
+
+  DevicePtr get_snode_tree_device_ptr(int tree_id) override {
+    return vulkan_runtime_->get_snode_tree_device_ptr(tree_id);
+  }
+
+  ~VulkanProgramImpl();
 
  private:
   std::unique_ptr<vulkan::EmbeddedVulkanDevice> embedded_device_{nullptr};

@@ -57,10 +57,13 @@ class LlvmProgramImpl : public ProgramImpl {
 
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
+  void compile_snode_tree_types(
+      SNodeTree *tree,
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees) override;
+
   void materialize_snode_tree(
       SNodeTree *tree,
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      std::unordered_map<int, SNode *> &snodes,
       uint64 *result_buffer) override;
 
   template <typename T>
@@ -144,6 +147,7 @@ class LlvmProgramImpl : public ProgramImpl {
   std::unique_ptr<ThreadPool> thread_pool{nullptr};
   std::unique_ptr<Runtime> runtime_mem_info{nullptr};
   std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
+  std::unique_ptr<StructCompiler> struct_compiler_{nullptr};
   void *llvm_runtime{nullptr};
   void *preallocated_device_buffer{nullptr};  // TODO: move to memory allocator
 

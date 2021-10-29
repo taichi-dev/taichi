@@ -188,11 +188,10 @@ ExecutionQueue::ExecutionQueue(
 }
 
 AsyncEngine::AsyncEngine(const CompileConfig *const config,
-                         const std::unordered_map<int, SNode *> &snodes,
                          const BackendExecCompilationFunc &compile_to_backend)
     : queue(&ir_bank_, compile_to_backend),
       config_(config),
-      sfg(std::make_unique<StateFlowGraph>(this, &ir_bank_, config, snodes)) {
+      sfg(std::make_unique<StateFlowGraph>(this, &ir_bank_, config)) {
   Timeline::get_this_thread_instance().set_name("host");
   ir_bank_.set_sfg(sfg.get());
 }

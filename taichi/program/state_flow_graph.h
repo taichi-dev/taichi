@@ -227,8 +227,7 @@ class StateFlowGraph {
 
   StateFlowGraph(AsyncEngine *engine,
                  IRBank *ir_bank,
-                 const CompileConfig *const config,
-                 const std::unordered_map<int, SNode *> &snodes);
+                 const CompileConfig *const config);
 
   std::vector<Node *> get_pending_tasks() const;
 

@@ -94,6 +94,14 @@ void Kernel::lower(bool to_executable) {
       (is_evaluator && !config.print_evaluator_ir))
     verbose = false;
 
+  if (config.print_preprocessed_ir) {
+    TI_INFO("[{}] {}:", get_name(), "Preprocessed IR");
+    std::cout << std::flush;
+    irpass::re_id(ir.get());
+    irpass::print(ir.get());
+    std::cout << std::flush;
+  }
+
   if (to_executable) {
     irpass::compile_to_executable(
         ir.get(), config, this, /*vectorize*/ arch_is_cpu(arch), grad,

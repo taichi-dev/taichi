@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taichi/util/str.h"
 #include "taichi/ir/type_utils.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -77,6 +78,7 @@ class Expr {
   Expr operator[](const ExprGroup &indices) const;
 
   std::string serialize() const;
+  void serialize(std::ostream &ss) const;
 
   void operator+=(const Expr &o);
   void operator-=(const Expr &o);
@@ -129,11 +131,6 @@ Expr bit_cast(const Expr &input) {
 }
 
 Expr load_if_ptr(const Expr &ptr);
-Expr ptr_if_global(const Expr &var);
-
-inline Expr smart_load(const Expr &var) {
-  return load_if_ptr(ptr_if_global(var));
-}
 
 // Begin: legacy frontend functions
 Expr Var(const Expr &x);

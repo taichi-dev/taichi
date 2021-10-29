@@ -15,6 +15,7 @@ struct CompileConfig {
   int external_optimization_level;
   int max_vector_width;
   bool packed;
+  bool print_preprocessed_ir;
   bool print_ir;
   bool print_accessor_ir;
   bool print_evaluator_ir;
@@ -39,6 +40,7 @@ struct CompileConfig {
   bool make_thread_local;
   bool make_block_local;
   bool detect_read_only;
+  bool ndarray_use_torch;
   DataType default_fp;
   DataType default_ip;
   std::string extra_flags;

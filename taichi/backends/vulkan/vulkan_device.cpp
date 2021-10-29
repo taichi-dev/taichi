@@ -1077,8 +1077,8 @@ VulkanDevice::~VulkanDevice() {
   framebuffer_pools_.clear();
   renderpass_pools_.clear();
 
-  vmaDestroyPool(allocator_, export_pool_.pool);
   vmaDestroyAllocator(allocator_);
+  vmaDestroyAllocator(allocator_export_);
 }
 
 std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(
@@ -1144,17 +1144,29 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
 #endif
 
-  VmaAllocationCreateInfo alloc_info{};
-  if (params.export_sharing) {
-    buffer_info.pNext = &external_mem_buffer_create_info;
-    alloc_info.pool = export_pool_.pool;
-  }
+  bool export_sharing = params.export_sharing &&
+                        this->get_cap(DeviceCapability::vk_has_external_memory);
 
+  VmaAllocationCreateInfo alloc_info{};
+  if (export_sharing) {
+    buffer_info.pNext = &external_mem_buffer_create_info;
+  }
+#ifdef __APPLE__
+  // weird behavior on apple: these flags are needed even if either read or
+  // write is required
+  if (params.host_read || params.host_write) {
+#else
   if (params.host_read && params.host_write) {
+#endif  //__APPLE__
     // This should be the unified memory on integrated GPUs
     alloc_info.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
     alloc_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                 VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+#ifdef __APPLE__
+    // weird behavior on apple: if coherent bit is not set, then the memory
+    // writes between map() and unmap() cannot be seen by gpu
+    alloc_info.preferredFlags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+#endif  //__APPLE__
   } else if (params.host_read) {
     alloc_info.usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
   } else if (params.host_write) {
@@ -1163,9 +1175,11 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
   }
 
-  alloc.buffer =
-      vkapi::create_buffer(device_, allocator_, &buffer_info, &alloc_info);
-  vmaGetAllocationInfo(allocator_, alloc.buffer->allocation, &alloc.alloc_info);
+  alloc.buffer = vkapi::create_buffer(
+      device_, export_sharing ? allocator_export_ : allocator_, &buffer_info,
+      &alloc_info);
+  vmaGetAllocationInfo(alloc.buffer->allocator, alloc.buffer->allocation,
+                       &alloc.alloc_info);
 
 #ifdef TI_VULKAN_DEBUG_ALLOCATIONS
   TI_TRACE("Allocate VK buffer {}, alloc_id={}", (void *)alloc.buffer,
@@ -1312,9 +1326,8 @@ void VulkanStream::submit_synced(CommandList *cmdlist) {
                                       /*fence=*/cmd_sync_fence_->fence),
                         "failed to submit command buffer");
 
-  // Timeout is in nanoseconds, 60s = 60,000ms = 60,000,000ns
   vkWaitForFences(device_.vk_device(), 1, &cmd_sync_fence_->fence, true,
-                  (60 * 1000 * 1000));
+                  UINT64_MAX);
   vkResetFences(device_.vk_device(), 1, &cmd_sync_fence_->fence);
 }
 
@@ -1472,8 +1485,11 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
 
   alloc.format = image_info.format;
 
+  bool export_sharing = params.export_sharing &&
+                        this->get_cap(DeviceCapability::vk_has_external_memory);
+
   VkExternalMemoryImageCreateInfo external_mem_image_create_info = {};
-  if (params.export_sharing) {
+  if (export_sharing) {
     external_mem_image_create_info.sType =
         VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
     external_mem_image_create_info.pNext = NULL;
@@ -1490,13 +1506,14 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
 
   VmaAllocationCreateInfo alloc_info{};
   if (params.export_sharing) {
-    alloc_info.pool = export_pool_.pool;
   }
   alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-  alloc.image =
-      vkapi::create_image(device_, allocator_, &image_info, &alloc_info);
-  vmaGetAllocationInfo(allocator_, alloc.image->allocation, &alloc.alloc_info);
+  alloc.image = vkapi::create_image(
+      device_, export_sharing ? allocator_export_ : allocator_, &image_info,
+      &alloc_info);
+  vmaGetAllocationInfo(alloc.image->allocator, alloc.image->allocation,
+                       &alloc.alloc_info);
 
   VkImageViewCreateInfo view_info{};
   view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -1717,52 +1734,28 @@ void VulkanDevice::create_vma_allocator() {
 
   vmaCreateAllocator(&allocatorInfo, &allocator_);
 
-  {
-    VkBufferCreateInfo export_buf_create_info = {
-        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    export_buf_create_info.size = 1024;  // Whatever.
-    export_buf_create_info.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                   VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+  VkPhysicalDeviceMemoryProperties properties;
+  vkGetPhysicalDeviceMemoryProperties(physical_device_, &properties);
 
-    VmaAllocationCreateInfo alloc_create_info = {};
-    alloc_create_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+  std::vector<VkExternalMemoryHandleTypeFlags> flags(
+      properties.memoryTypeCount);
 
-    uint32_t memTypeIndex;
-    vmaFindMemoryTypeIndexForBufferInfo(allocator_, &export_buf_create_info,
-                                        &alloc_create_info, &memTypeIndex);
-
-    export_pool_.export_mem_alloc_info.sType =
-        VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR;
+  for (int i = 0; i < properties.memoryTypeCount; i++) {
+    auto flag = properties.memoryTypes[i].propertyFlags;
+    if (flag & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
 #ifdef _WIN64
-
-    export_pool_.export_mem_win32_handle_info.sType =
-        VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR;
-    export_pool_.export_mem_win32_handle_info.pNext = NULL;
-    export_pool_.export_mem_win32_handle_info.pAttributes =
-        &export_pool_.win_security_attribs;
-    export_pool_.export_mem_win32_handle_info.dwAccess =
-        DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
-    export_pool_.export_mem_win32_handle_info.name = (LPCWSTR)NULL;
-
-    export_pool_.export_mem_alloc_info.pNext =
-        &export_pool_.export_mem_win32_handle_info;
-    export_pool_.export_mem_alloc_info.handleTypes =
-        VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+      flags[i] = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 #else
-    export_pool_.export_mem_alloc_info.pNext = NULL;
-    export_pool_.export_mem_alloc_info.handleTypes =
-        VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
+      flags[i] = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
 #endif
-
-    VmaPoolCreateInfo pool_info{};
-    pool_info.memoryTypeIndex = memTypeIndex;
-    pool_info.blockSize = kMemoryBlockSize;  // 128MB
-    pool_info.maxBlockCount = 16;
-    pool_info.pMemoryAllocateNext = &export_pool_.export_mem_alloc_info;
-
-    vmaCreatePool(allocator_, &pool_info, &export_pool_.pool);
+    } else {
+      flags[i] = 0;
+    }
   }
+
+  allocatorInfo.pTypeExternalMemoryHandleTypes = flags.data();
+
+  vmaCreateAllocator(&allocatorInfo, &allocator_export_);
 }
 
 void VulkanDevice::new_descriptor_pool() {

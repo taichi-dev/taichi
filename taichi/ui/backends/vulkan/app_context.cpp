@@ -1,6 +1,7 @@
 #include "taichi/ui/utils/utils.h"
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
+#include "taichi/program/program.h"
 
 #include <string_view>
 
@@ -9,6 +10,7 @@ TI_UI_NAMESPACE_BEGIN
 namespace vulkan {
 
 using namespace taichi::lang::vulkan;
+using namespace taichi::lang;
 
 namespace {
 std::vector<std::string> get_required_instance_extensions() {
@@ -52,32 +54,47 @@ std::vector<std::string> get_required_device_extensions() {
 void AppContext::init(GLFWwindow *glfw_window, const AppConfig &config) {
   glfw_window_ = glfw_window;
   this->config = config;
-  EmbeddedVulkanDevice::Params evd_params;
-  evd_params.additional_instance_extensions =
-      get_required_instance_extensions();
-  evd_params.additional_device_extensions = get_required_device_extensions();
-  evd_params.is_for_ui = true;
-  evd_params.surface_creator = [&](VkInstance instance) -> VkSurfaceKHR {
-    VkSurfaceKHR surface = VK_NULL_HANDLE;
-    if (glfwCreateWindowSurface(instance, glfw_window, nullptr, &surface) !=
-        VK_SUCCESS) {
-      throw std::runtime_error("failed to create window surface!");
-    }
-    return surface;
-  };
-  vulkan_device_ = std::make_unique<EmbeddedVulkanDevice>(evd_params);
+
+  if (config.ti_arch != Arch::vulkan) {
+    EmbeddedVulkanDevice::Params evd_params;
+    evd_params.additional_instance_extensions =
+        get_required_instance_extensions();
+    evd_params.additional_device_extensions = get_required_device_extensions();
+    evd_params.is_for_ui = true;
+    evd_params.surface_creator = [&](VkInstance instance) -> VkSurfaceKHR {
+      VkSurfaceKHR surface = VK_NULL_HANDLE;
+      if (glfwCreateWindowSurface(instance, glfw_window, nullptr, &surface) !=
+          VK_SUCCESS) {
+        throw std::runtime_error("failed to create window surface!");
+      }
+      return surface;
+    };
+    embedded_vulkan_device_ =
+        std::make_unique<EmbeddedVulkanDevice>(evd_params);
+  } else {
+    vulkan_device_ = static_cast<VulkanDevice *>(
+        get_current_program().get_graphics_device());
+  }
 }
 
 taichi::lang::vulkan::VulkanDevice &AppContext::device() {
-  return *(vulkan_device_->device());
+  if (vulkan_device_) {
+    return *vulkan_device_;
+  }
+  return *(embedded_vulkan_device_->device());
 }
 
 const taichi::lang::vulkan::VulkanDevice &AppContext::device() const {
-  return *(vulkan_device_->device());
+  if (vulkan_device_) {
+    return *vulkan_device_;
+  }
+  return *(embedded_vulkan_device_->device());
 }
 
 void AppContext::cleanup() {
-  vulkan_device_.reset();
+  if (embedded_vulkan_device_) {
+    embedded_vulkan_device_.reset();
+  }
 }
 
 GLFWwindow *AppContext::glfw_window() const {

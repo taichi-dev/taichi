@@ -18,15 +18,19 @@ ExprGroup ExprGroup::loaded() const {
   return indices_loaded;
 }
 
-std::string ExprGroup::serialize() const {
-  std::string ret;
+void ExprGroup::serialize(std::ostream &ss) const {
   for (int i = 0; i < (int)exprs.size(); i++) {
-    ret += exprs[i].serialize();
+    exprs[i].serialize(ss);
     if (i + 1 < (int)exprs.size()) {
-      ret += ", ";
+      ss << ", ";
     }
   }
-  return ret;
+}
+
+std::string ExprGroup::serialize() const {
+  std::stringstream ss;
+  serialize(ss);
+  return ss.str();
 }
 
 }  // namespace lang

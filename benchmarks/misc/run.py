@@ -1,33 +1,78 @@
-from membound import Membound
+import os
+import warnings
+
+from membound import MemoryBound
+from taichi.core import ti_core as _ti_core
+from utils import arch_name, datatime_with_format
 
 import taichi as ti
 
-test_suites = [Membound]
-test_archs = [ti.cuda]
+benchmark_suites = [MemoryBound]
+benchmark_archs = [ti.cpu, ti.cuda]
 
 
-class PerformanceMonitoring:
-    suites = []
+class CommitInfo:
+    def __init__(self, pull_request_id, commit_hash):
+        self.pull_request_id = pull_request_id
+        self.commit_hash = commit_hash  #str
+        self.archs = []  #['x64','cuda','vulkan', ...]
+        self.datetime = []  #[start, end]
 
-    def __init__(self):
-        for s in test_suites:
-            self.suites.append(s())
+
+class BenchmarkSuites:
+    def __init__(self, arch):
+        self.suites = []
+        self.arch = arch
+        for suite in benchmark_suites:
+            if self.check_supported(arch, suite):
+                self.suites.append(suite(arch))
+
+    def check_supported(self, arch, suite):
+        if arch in suite.supported_archs:
+            return True
+        else:
+            warnings.warn(
+                f'Arch [{arch_name(arch)}] does not exist in {suite.__name__}.supported_archs.',
+                UserWarning,
+                stacklevel=2)
+            return False
 
     def run(self):
-        print("Running...")
-        for s in self.suites:
-            s.run()
+        print(f'Arch [{arch_name(self.arch)}] Running...')
+        for suite in self.suites:
+            suite.run()
 
-    def write_md(self):
-        filename = f'performance_result.md'
-        with open(filename, 'w') as f:
-            for arch in test_archs:
-                for s in self.suites:
-                    lines = s.mdlines(arch)
-                    for line in lines:
-                        print(line, file=f)
+    def save_to_markdown(self, arch_dir='./'):
+        current_time = datatime_with_format()
+        commit_hash = _ti_core.get_commit_hash()  #[:8]
+        for suite in self.suites:
+            file_name = f'{suite.suite_name}.md'
+            path = os.path.join(arch_dir, file_name)
+            with open(path, 'w') as f:
+                lines = [
+                    f'commit_hash: {commit_hash}\n',
+                    f'datatime: {current_time}\n'
+                ]
+                lines += suite.get_markdown_lines()
+                for line in lines:
+                    print(line, file=f)
 
 
-p = PerformanceMonitoring()
-p.run()
-p.write_md()
+def main():
+
+    benchmark_dir = os.path.join(os.getcwd(), 'results')
+    os.makedirs(benchmark_dir)
+
+    for arch in benchmark_archs:
+        #make dir
+        arch_dir = os.path.join(benchmark_dir, arch_name(arch))
+        os.makedirs(arch_dir)
+        #init & run
+        suites = BenchmarkSuites(arch)
+        suites.run()
+        #save result
+        suites.save_to_markdown(arch_dir)
+
+
+if __name__ == '__main__':
+    main()

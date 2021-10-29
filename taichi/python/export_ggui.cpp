@@ -381,6 +381,7 @@ void export_ggui(py::module &m) {
   py::enum_<FieldSource>(m, "FieldSource")
       .value("TaichiCuda", FieldSource::TaichiCuda)
       .value("TaichiX64", FieldSource::TaichiX64)
+      .value("TaichiVulkan", FieldSource::TaichiVulkan)
       .export_values();
 
   py::enum_<FieldType>(m, "FieldType")

@@ -285,6 +285,7 @@ class PyTaichi:
         self.global_vars = []
         self.print_preprocessed = False
         self.experimental_real_function = False
+        self.experimental_ast_refactor = False
         self.default_fp = f32
         self.default_ip = i32
         self.target_tape = None
@@ -308,15 +309,25 @@ class PyTaichi:
         if self.prog is None:
             self.prog = _ti_core.Program()
 
-    def materialize_root_fb(self, first):
-        if not root.finalized and not root.empty:
-            root.finalize()
-        elif first:
-            root.finalize(raise_warning=False)
-
+    def materialize_root_fb(self, is_first_call):
         if root.finalized:
-            global _root_fb
-            _root_fb = FieldsBuilder()
+            return
+        if not is_first_call and root.empty:
+            # We have to forcefully finalize when `is_first_call` is True (even
+            # if the root itself is empty), so that there is a valid struct
+            # llvm::Module, if no field has been declared before the first kernel
+            # invocation. Example case:
+            # https://github.com/taichi-dev/taichi/blob/27bb1dc3227d9273a79fcb318fdb06fd053068f5/tests/python/test_ad_basics.py#L260-L266
+            return
+        root.finalize(raise_warning=not is_first_call)
+        global _root_fb
+        _root_fb = FieldsBuilder()
+
+    def _finalize_root_fb_for_aot(self):
+        if _root_fb.finalized:
+            raise RuntimeError(
+                'AOT: can only finalize the root FieldsBuilder once')
+        _root_fb._finalize_for_aot()
 
     def materialize(self):
         self.materialize_root_fb(not self.materialized)
@@ -384,6 +395,14 @@ def _clamp_unsigned_to_range(npty, val):
         f'Constant {val} has exceeded the range of {iif.bits} int, clamped to {new_val}'
     )
     return new_val
+
+
+@taichi_scope
+def make_constant_expr_i32(val):
+    _taichi_skip_traceback = 1
+    assert isinstance(val, (int, np.integer))
+    return Expr(
+        _ti_core.make_const_expr_i32(_clamp_unsigned_to_range(np.int32, val)))
 
 
 @taichi_scope
@@ -687,10 +706,11 @@ def ti_print(*vars, sep=' ', end='\n'):
 
 
 @taichi_scope
-def ti_format(*args):
+def ti_format(*args, **kwargs):
     content = args[0]
     mixed = args[1:]
     new_mixed = []
+    new_mixed_kwargs = {}
     args = []
     for x in mixed:
         if isinstance(x, ti.Expr):
@@ -698,9 +718,14 @@ def ti_format(*args):
             args.append(x)
         else:
             new_mixed.append(x)
-
+    for k, v in kwargs.items():
+        if isinstance(v, ti.Expr):
+            new_mixed_kwargs[k] = '{}'
+            args.append(v)
+        else:
+            new_mixed_kwargs[k] = v
     try:
-        content = content.format(*new_mixed)
+        content = content.format(*new_mixed, **new_mixed_kwargs)
     except ValueError:
         print('Number formatting is not supported with Taichi fields')
         exit(1)

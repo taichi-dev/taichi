@@ -46,11 +46,11 @@ class Expr(TaichiOperations):
         return '<ti.Expr>'
 
 
-def make_var_vector(size):
+def make_var_list(size):
     exprs = []
     for _ in range(size):
         exprs.append(_ti_core.make_id_expr(''))
-    return ti.Vector(exprs, disable_local_tensor=True)
+    return exprs
 
 
 def make_expr_group(*exprs):

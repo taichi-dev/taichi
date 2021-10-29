@@ -110,8 +110,8 @@ def main(all=False, diff=None):
             # Finds all modified files from upstream/master to working tree
             # 1. diffs between the index and upstream/master. Also inclulde
             # origin/master for repo owners.
-            files = find_diff_or_empty('taichi/master')
-            files += find_diff_or_empty('upstream/meshtaichi')
+            files = find_diff_or_empty('upstream/master')
+            files += find_diff_or_empty('origin/master')
             # 2. diffs between the index and the working tree
             # https://gitpython.readthedocs.io/en/stable/tutorial.html#obtaining-diff-information
             files += repo.index.diff(None)

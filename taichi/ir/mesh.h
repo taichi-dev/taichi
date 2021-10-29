@@ -42,8 +42,6 @@ enum class MeshRelationType {
 
 std::string relation_type_name(MeshRelationType type);
 
-enum class MeshElementReorderingType { NonReordering, Reordering };
-
 enum class ConvType { l2g, l2r, g2r };
 
 std::string conv_type_name(ConvType type);

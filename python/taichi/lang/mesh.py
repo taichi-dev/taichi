@@ -10,14 +10,12 @@ from taichi.lang.struct import Struct, StructField
 from taichi.lang.types import CompoundType
 from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
                               python_scope, taichi_scope, to_pytorch_type)
-from taichi.misc.mesh_loader import *
 
 import taichi as ti
 
 MeshTopology = _ti_core.MeshTopology
 MeshElementType = _ti_core.MeshElementType
 MeshRelationType = _ti_core.MeshRelationType
-MeshElementReorderingType = _ti_core.MeshElementReorderingType
 ConvType = _ti_core.ConvType
 element_order = _ti_core.element_order
 from_end_element_order = _ti_core.from_end_element_order
@@ -27,10 +25,10 @@ inverse_relation = _ti_core.inverse_relation
 
 
 class MeshAttrType:
-    def __init__(self, name, dtype, reordering, needs_grad):
+    def __init__(self, name, dtype, reorder, needs_grad):
         self.name = name
         self.dtype = dtype
-        self.reordering = reordering
+        self.reorder = reorder
         self.needs_grad = needs_grad
 
 
@@ -110,8 +108,7 @@ class MeshElementField:
     def make_getter(key):
         def getter(self):
             if key not in self.getter_dict:
-                if self.attr_dict[
-                        key].reordering == MeshElementReorderingType.Reordering:
+                if self.attr_dict[key].reorder:
                     if isinstance(self.field_dict[key], ScalarField):
                         self.getter_dict[key] = MeshReorderedScalarFieldProxy(
                             self.field_dict[key], self.mesh.mesh_ptr,
@@ -202,13 +199,12 @@ class MeshElement:
     def place(
         self,
         members,
-        reordering=MeshElementReorderingType.NonReordering,
+        reorder=False,
         needs_grad=False,
     ):
         self.builder.elements.add(self.type)
         for key, dtype in members.items():
-            self.attr_dict[key] = MeshAttrType(key, dtype, reordering,
-                                               needs_grad)
+            self.attr_dict[key] = MeshAttrType(key, dtype, reorder, needs_grad)
 
     def build(self, mesh_instance, size, g2r_field):
         field_dict = {}
@@ -287,9 +283,9 @@ class MeshInstance:
                                       value.vars[0].ptr.snode(),
                                       offset.vars[0].ptr.snode())
 
-    def add_mesh_attribute(self, element_type, snode, reordering_type):
+    def add_mesh_attribute(self, element_type, snode, reorder_type):
         _ti_core.add_mesh_attribute(self.mesh_ptr, element_type, snode,
-                                    reordering_type)
+                                    reorder_type)
 
 
 # Define the Mesh Type, stores the field type info
@@ -427,9 +423,6 @@ class Mesh:
     def __init__(self):
         pass
 
-    non_reordering = MeshElementReorderingType.NonReordering
-    reordering = MeshElementReorderingType.Reordering
-
     @staticmethod
     def Tet():
         return MeshBuilder(MeshTopology.Tetrahedron)
@@ -459,9 +452,8 @@ class MeshElementFieldProxy:
             global_entry_expr = impl.Expr(
                 _ti_core.get_index_conversion(
                     self.mesh.mesh_ptr, element_type, entry_expr,
-                    ConvType.l2g if element_field.attr_dict[key].reordering
-                    == MeshElementReorderingType.NonReordering else
-                    ConvType.l2r))  # transform index space
+                    ConvType.l2r if element_field.attr_dict[key].reorder else
+                    ConvType.l2g))  # transform index space
             global_entry_expr_group = impl.make_expr_group(
                 *tuple([global_entry_expr]))
             if isinstance(attr, MatrixField):

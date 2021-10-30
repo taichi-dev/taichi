@@ -54,6 +54,8 @@ bool KernelProfilerCUDA::reinit_with_metrics(
              metric_list_.size());
     return true;
   }
+
+  TI_NOT_IMPLEMENTED;
 }
 
 // deprecated, move to trace()

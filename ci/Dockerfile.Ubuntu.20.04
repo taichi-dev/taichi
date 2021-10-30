@@ -38,6 +38,7 @@ RUN apt-get update && \
                        qt5-default \
                        libglfw3 \
                        libglfw3-dev \
+                       libjpeg-dev \
                        vulkan-tools \
                        libvulkan-dev \
                        vulkan-validationlayers-dev

@@ -2098,6 +2098,7 @@ DeviceAllocation VulkanSurface::get_image_data() {
                             ImageLayout::transfer_src);
 
   auto cmd_list = stream->new_command_list();
+  // TODO: check if blit is suppoted, and use copy_image if not
   cmd_list->blit_image(screenshot_image_, img_alloc, ImageLayout::transfer_dst,
                        ImageLayout::transfer_src, {w, h, 1});
   cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_dst,
@@ -2108,6 +2109,7 @@ DeviceAllocation VulkanSurface::get_image_data() {
   copy_params.image_extent.x = w;
   copy_params.image_extent.y = h;
   cmd_list = stream->new_command_list();
+  // TODO: directly map the image to cpu memory
   cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), screenshot_image_,
                             ImageLayout::transfer_src, copy_params);
   cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_src,

@@ -41,4 +41,4 @@ def test_save():
         m = ti.aot.Module(ti.opengl)
         m.add_field('density', density)
         m.add_kernel(init)
-        m.save('./', 'taichi_aot_example.tcb')
+        m.save(tmpdir, 'taichi_aot_example.tcb')

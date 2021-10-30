@@ -144,7 +144,8 @@ void Renderable::create_graphics_pipeline() {
 void Renderable::create_vertex_buffer() {
   size_t buffer_size = sizeof(Vertex) * config_.max_vertices_count;
 
-  Device::AllocParams vb_params{buffer_size, false, false, true,
+  Device::AllocParams vb_params{buffer_size, false, false,
+                                app_context_->requires_export_sharing(),
                                 AllocUsage::Vertex};
   vertex_buffer_ = app_context_->device().allocate_memory(vb_params);
 
@@ -157,7 +158,8 @@ void Renderable::create_vertex_buffer() {
 void Renderable::create_index_buffer() {
   size_t buffer_size = sizeof(int) * config_.max_indices_count;
 
-  Device::AllocParams ib_params{buffer_size, false, false, true,
+  Device::AllocParams ib_params{buffer_size, false, false,
+                                app_context_->requires_export_sharing(),
                                 AllocUsage::Index};
   index_buffer_ = app_context_->device().allocate_memory(ib_params);
 

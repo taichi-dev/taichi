@@ -80,6 +80,9 @@ class Module:
         Args:
           arch: Target backend architecture. This is ignored for now. The AOT
             backend still uses the one specified in :func:`~taichi.lang.init`.
+          preprocess_kernel (bool): if set to `True`, kernel source code is preprocessed
+            by `glslc` before saving to file. Currently only supported on `ti.opengl` backend.
+            Default is `False`.
         """
         self._arch = arch
         self._kernels = []

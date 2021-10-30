@@ -295,8 +295,8 @@ endif ()
 
 if (NOT WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} pthread stdc++)
-    if (APPLE)
-        # OS X
+    if (UNIX AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	# OS X or BSD
     else()
         # Linux
         target_link_libraries(${CORE_LIBRARY_NAME} stdc++fs X11)

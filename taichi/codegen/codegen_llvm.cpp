@@ -1225,7 +1225,7 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     auto val_type = ptr_type->get_pointee_type();
     if (val_type->is<CustomIntType>()) {
       llvm_val[stmt] = load_as_custom_int(llvm_val[stmt->src], val_type);
-    } else if (auto cft = val_type->cast<CustomFloatType>()) {
+    } else if (val_type->cast<CustomFloatType>()) {
       TI_ASSERT(stmt->src->is<GetChStmt>());
       llvm_val[stmt] = load_custom_float(stmt->src);
     } else {

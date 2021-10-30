@@ -17,7 +17,7 @@ class StmtSearcher : public BasicStmtVisitor {
     invoke_default_visitor = true;
   }
 
-  void visit(Stmt *stmt) {
+  void visit(Stmt *stmt) override {
     if (test(stmt))
       results.push_back(stmt);
   }

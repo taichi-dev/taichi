@@ -295,7 +295,7 @@ endif ()
 
 if (NOT WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} pthread stdc++)
-    if (UNIX)
+    if (UNIX AND NOT LINUX)
 	# OS X or BSD
     else()
         # Linux

@@ -62,10 +62,12 @@ class KernelGen : public IRVisitor {
  public:
   KernelGen(Kernel *kernel,
             const StructCompiledResult *struct_compiled,
-            const std::string &kernel_name)
+            const std::string &kernel_name,
+            bool allows_nv_shader_ext)
       : kernel_(kernel),
         struct_compiled_(struct_compiled),
         kernel_name_(kernel_name),
+        allows_nv_shader_ext_(allows_nv_shader_ext),
         root_snode_type_name_(struct_compiled->root_snode_type_name),
         glsl_kernel_prefix_(kernel_name) {
     compiled_program_.init_args(kernel);
@@ -76,9 +78,10 @@ class KernelGen : public IRVisitor {
  private:
   const Kernel *kernel_;
   const StructCompiledResult *struct_compiled_;
-  std::string kernel_name_;
-  std::string root_snode_type_name_;
-  std::string glsl_kernel_prefix_;
+  const std::string kernel_name_;
+  const bool allows_nv_shader_ext_;
+  const std::string root_snode_type_name_;
+  const std::string glsl_kernel_prefix_;
 
   GetRootStmt *root_stmt_;
   int glsl_kernel_count_{0};
@@ -653,19 +656,8 @@ class KernelGen : public IRVisitor {
 
     emit("{{ // Begin Atomic Op");
 
-    if (dt->is_primitive(PrimitiveTypeID::i32) ||
-        (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_int64) &&
-         dt->is_primitive(PrimitiveTypeID::i64)) ||
-        ((stmt->op_type == AtomicOpType::add ||
-          stmt->op_type == AtomicOpType::sub) &&
-         ((TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float) &&
-           dt->is_primitive(PrimitiveTypeID::f32)) ||
-          (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float64) &&
-           dt->is_primitive(PrimitiveTypeID::f64))))) {
-      emit("{} = {}(_{}_{}_[{} >> {}], {});", stmt->short_name(),
-           opengl_atomic_op_type_cap_name(stmt->op_type),
-           ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
-           stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
+    if (maybe_generate_fatomics_using_nv_ext(stmt, dt, val_name)) {
+      // Do nothing
     } else {
       if (dt != PrimitiveType::f32) {
         TI_ERROR(
@@ -683,6 +675,33 @@ class KernelGen : public IRVisitor {
     }
 
     emit("}} // End Atomic Op");
+  }
+
+  bool maybe_generate_fatomics_using_nv_ext(AtomicOpStmt *stmt,
+                                            DataType dt,
+                                            const std::string &val_name) {
+    if (!allows_nv_shader_ext_) {
+      return false;
+    }
+    const bool check_int =
+        (dt->is_primitive(PrimitiveTypeID::i32) ||
+         (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_int64) &&
+          dt->is_primitive(PrimitiveTypeID::i64)));
+    const bool check_add = (stmt->op_type == AtomicOpType::add ||
+                            stmt->op_type == AtomicOpType::sub);
+    const bool check_float =
+        ((TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float) &&
+          dt->is_primitive(PrimitiveTypeID::f32)) ||
+         (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float64) &&
+          dt->is_primitive(PrimitiveTypeID::f64)));
+    if (check_int || (check_add && check_float)) {
+      emit("{} = {}(_{}_{}_[{} >> {}], {});", stmt->short_name(),
+           opengl_atomic_op_type_cap_name(stmt->op_type),
+           ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
+           stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
+      return true;
+    }
+    return false;
   }
 
   void visit(TernaryOpStmt *tri) override {
@@ -1062,7 +1081,8 @@ class KernelGen : public IRVisitor {
 
 CompiledProgram OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
-  KernelGen codegen(kernel_, struct_compiled_, kernel_name_);
+  KernelGen codegen(kernel_, struct_compiled_, kernel_name_,
+                    allows_nv_shader_ext_);
   codegen.run();
   return codegen.get_compiled_program();
 #else

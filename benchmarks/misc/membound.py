@@ -11,7 +11,7 @@ import taichi as ti
 
 class MemoryBound:
     suite_name = 'memorybound'
-    supported_archs = [ti.x64]
+    supported_archs = [ti.x64, ti.cuda]
     test_cases = memory_bound_cases_list
     test_dtype_list = [ti.i32, ti.i64, ti.f32, ti.f64]
     test_dsize_list = [

@@ -319,7 +319,7 @@ class VulkanCommandList : public CommandList {
                   ImageLayout dst_img_layout,
                   ImageLayout src_img_layout,
                   const ImageCopyParams &params) override;
-  
+
   void blit_image(DeviceAllocation dst_img,
                   DeviceAllocation src_img,
                   ImageLayout dst_img_layout,

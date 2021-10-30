@@ -1092,11 +1092,11 @@ void VulkanCommandList::blit_image(DeviceAllocation dst_img,
 
   vkCmdBlitImage(buffer_->buffer, src_vk_image->image,
                  image_layout_ti_to_vk(src_img_layout), dst_vk_image->image,
-                 image_layout_ti_to_vk(dst_img_layout), 1, &blit,VK_FILTER_NEAREST);
+                 image_layout_ti_to_vk(dst_img_layout), 1, &blit,
+                 VK_FILTER_NEAREST);
 
   buffer_->refs.push_back(dst_vk_image);
   buffer_->refs.push_back(src_vk_image);
-
 }
 
 void VulkanCommandList::set_line_width(float width) {
@@ -2029,7 +2029,7 @@ VulkanSurface::~VulkanSurface() {
   if (screenshot_buffer_ != kDeviceNullAllocation) {
     device_->dealloc_memory(screenshot_buffer_);
   }
-  if(screenshot_image_ != kDeviceNullAllocation){
+  if (screenshot_image_ != kDeviceNullAllocation) {
     device_->destroy_image(screenshot_image_);
   }
 }
@@ -2100,10 +2100,9 @@ DeviceAllocation VulkanSurface::get_image_data() {
   auto cmd_list = stream->new_command_list();
   cmd_list->blit_image(screenshot_image_, img_alloc, ImageLayout::transfer_dst,
                        ImageLayout::transfer_src, {w, h, 1});
+  cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_dst,
+                             ImageLayout::transfer_src);
   stream->submit_synced(cmd_list.get());
-
-  device_->image_transition(screenshot_image_, ImageLayout::transfer_dst,
-                            ImageLayout::transfer_src);
 
   BufferImageCopyParams copy_params;
   copy_params.image_extent.x = w;
@@ -2111,12 +2110,11 @@ DeviceAllocation VulkanSurface::get_image_data() {
   cmd_list = stream->new_command_list();
   cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), screenshot_image_,
                             ImageLayout::transfer_src, copy_params);
+  cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_src,
+                             ImageLayout::transfer_dst);
+  cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
+                             ImageLayout::present_src);
   stream->submit_synced(cmd_list.get());
-
-  device_->image_transition(screenshot_image_, ImageLayout::transfer_src,
-                            ImageLayout::transfer_dst);
-  device_->image_transition(img_alloc, ImageLayout::transfer_src,
-                            ImageLayout::present_src);
 
   return screenshot_buffer_;
 }

@@ -20,7 +20,7 @@ void Window::init(const AppConfig &config) {
 }
 
 void Window::show() {
-  if(!drawn_frame_){
+  if (!drawn_frame_) {
     draw_frame();
   }
   present_frame();
@@ -84,7 +84,7 @@ Window::~Window() {
 }
 
 void Window::write_image(const std::string &filename) {
-  if(!drawn_frame_){
+  if (!drawn_frame_) {
     draw_frame();
   }
   renderer_->swap_chain().write_image(filename);

@@ -29,6 +29,10 @@ class AotModuleBuilder {
   virtual void dump(const std::string &output_dir,
                     const std::string &filename) const = 0;
 
+  void enable_preprocess_kernel() {
+    preprocess_kernel_ = true;
+  }
+
  protected:
   /**
    * Intended to be overriden by each backend's implementation.
@@ -44,6 +48,7 @@ class AotModuleBuilder {
   virtual void add_per_backend_tmpl(const std::string &identifier,
                                     const std::string &key,
                                     Kernel *kernel) = 0;
+  bool preprocess_kernel_ = false;
 };
 
 }  // namespace lang

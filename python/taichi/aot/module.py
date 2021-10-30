@@ -1,3 +1,4 @@
+import shutil
 from contextlib import contextmanager
 
 from taichi.lang import impl, kernel_impl
@@ -73,7 +74,7 @@ class Module:
         # Now the module file '/path/to/module' contains the Metal kernels
         # for running ``foo`` and ``bar``.
     """
-    def __init__(self, arch):
+    def __init__(self, arch, preprocess_kernel=False):
         """Creates a new AOT module instance
 
         Args:
@@ -85,7 +86,13 @@ class Module:
         self._fields = {}
         rtm = impl.get_runtime()
         rtm._finalize_root_fb_for_aot()
-        self._aot_builder = rtm.prog.make_aot_module_builder(arch)
+        if preprocess_kernel and shutil.which('glslc') is None:
+            raise RuntimeError(
+                "glslc is required to preprocess kernels, please either install it or use preprocess_kernel=False."
+            )
+
+        self._aot_builder = rtm.prog.make_aot_module_builder(
+            arch, preprocess_kernel)
 
     def add_field(self, name, field):
         """Add a taichi field to the AOT module.

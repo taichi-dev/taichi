@@ -1,4 +1,5 @@
 #include "taichi/backends/opengl/aot_module_builder_impl.h"
+#include <stdio.h>
 #include "glad/glad.h"
 
 namespace taichi {
@@ -24,10 +25,34 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   ts.write_to_file(txt_path);
 }
 
+std::string preprocess(std::string command) {
+  command = "echo \"" + command + "\" | glslc -E /dev/stdin";
+  char buffer[128];
+  std::string result = "";
+
+  FILE *pipe = popen(command.c_str(), "r");
+  if (!pipe) {
+    return "popen failed!";
+  }
+
+  while (!feof(pipe)) {
+    if (fgets(buffer, 128, pipe) != NULL)
+      result += buffer;
+  }
+
+  pclose(pipe);
+  return result;
+}
+
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
   opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_);
   auto compiled = codegen.compile(*kernel);
+  if (preprocess_kernel_) {
+    for (auto &ker : compiled.kernels) {
+      ker.kernel_src = preprocess(ker.kernel_src);
+    }
+  }
   aot_data_.kernels.push_back({compiled, identifier});
 }
 
@@ -72,6 +97,12 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 Kernel *kernel) {
   opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_);
   auto compiled = codegen.compile(*kernel);
+
+  if (preprocess_kernel_) {
+    for (auto &ker : compiled.kernels) {
+      ker.kernel_src = preprocess(ker.kernel_src);
+    }
+  }
 
   for (auto &k : aot_data_.kernel_tmpls) {
     if (k.identifier == identifier) {

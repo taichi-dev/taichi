@@ -77,7 +77,7 @@ If you use Taichi in your research, please cite related papers:
 
 ## Security
 
-Please disclose security issues responsibly to contact@taichi.graphics.
+Please disclose security issues responsibly to <a href = "mailto:security@taichi.graphics?subject = Security Problems">security@taichi.graphics</a>.
 
 ---
 

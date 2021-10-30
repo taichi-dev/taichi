@@ -20,7 +20,11 @@ std::string data_type_name(DataType t) {
 }
 
 std::string data_type_format(DataType dt) {
-  if (dt->is_primitive(PrimitiveTypeID::i32)) {
+  if (dt->is_primitive(PrimitiveTypeID::i16)) {
+    return "%hd";
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+    return "%hu";
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return "%d";
   } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return "%u";

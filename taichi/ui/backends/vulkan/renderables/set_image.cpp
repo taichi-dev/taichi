@@ -86,6 +86,8 @@ void SetImage::init_set_image(AppContext *app_context,
   RenderableConfig config = {
       6,
       6,
+      6,
+      6,
       sizeof(UniformBufferObject),
       0,
       app_context->config.package_path + "/shaders/SetImage_vk_vert.spv",

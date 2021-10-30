@@ -38,7 +38,8 @@ class Matrix(TaichiOperations):
                  m=1,
                  dt=None,
                  keep_raw=False,
-                 disable_local_tensor=False):
+                 disable_local_tensor=False,
+                 suppress_warning=False):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
@@ -140,7 +141,7 @@ class Matrix(TaichiOperations):
                     "Declaring matrix fields using `ti.Matrix(n, m, dt, shape)` is no longer supported. Use `ti.Matrix.field(n, m, dtype, shape)` instead."
                 )
 
-        if self.n * self.m > 32:
+        if self.n * self.m > 32 and not suppress_warning:
             warning(
                 f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
                 ' Matrices/vectors will be automatically unrolled at compile-time for performance.'

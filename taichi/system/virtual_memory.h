@@ -23,7 +23,7 @@ class VirtualMemoryAllocator {
     ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS | MAP_NONREVERSE, -1, 0);
 #else
-// BSD does not have MAP_NONREVERSE
+    // BSD does not have MAP_NONREVERSE
     ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #endif

@@ -39,6 +39,8 @@ class WindowBase {
 
   virtual void show();
 
+  virtual void write_image(const std::string &filename) = 0;
+
   virtual GuiBase *GUI();
 
   virtual ~WindowBase();

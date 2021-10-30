@@ -219,7 +219,8 @@ enum class ImageLayout {
   depth_attachment,
   depth_attachment_read,
   transfer_dst,
-  transfer_src
+  transfer_src,
+  present_src
 };
 
 struct BufferImageCopyParams {
@@ -238,6 +239,12 @@ struct BufferImageCopyParams {
   } image_extent;
   uint32_t image_base_layer{0};
   uint32_t image_layer_count{1};
+};
+
+struct ImageCopyParams {
+  uint32_t width;
+  uint32_t height;
+  uint32_t depth;
 };
 
 class CommandList {
@@ -301,6 +308,20 @@ class CommandList {
                                DeviceAllocation src_img,
                                ImageLayout img_layout,
                                const BufferImageCopyParams &params) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void copy_image(DeviceAllocation dst_img,
+                          DeviceAllocation src_img,
+                          ImageLayout dst_img_layout,
+                          ImageLayout src_img_layout,
+                          const ImageCopyParams &params) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void blit_image(DeviceAllocation dst_img,
+                          DeviceAllocation src_img,
+                          ImageLayout dst_img_layout,
+                          ImageLayout src_img_layout,
+                          const ImageCopyParams &params) {
     TI_NOT_IMPLEMENTED
   }
 };
@@ -421,6 +442,9 @@ class Surface {
   virtual std::pair<uint32_t, uint32_t> get_size() = 0;
   virtual BufferFormat image_format() = 0;
   virtual void resize(uint32_t width, uint32_t height) = 0;
+  virtual DeviceAllocation get_image_data() {
+    TI_NOT_IMPLEMENTED
+  }
 };
 
 struct VertexInputBinding {

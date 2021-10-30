@@ -97,7 +97,7 @@ void AppContext::cleanup() {
   }
 }
 
-bool requires_export_sharing() const {
+bool AppContext::requires_export_sharing() const {
   // only the cuda backends needs export_sharing to interop with vk
   // with other backends (e.g. vulkan backend on mac), turning export_sharing to
   // true leads to crashes

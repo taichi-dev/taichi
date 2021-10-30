@@ -35,7 +35,8 @@ class OpenglProgramImpl : public ProgramImpl {
 
   void compile_snode_tree_types(
       SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees) override;
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees,
+      uint64 *result_buffer) override;
 
   void materialize_snode_tree(
       SNodeTree *tree,

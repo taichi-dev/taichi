@@ -37,7 +37,8 @@ class ProgramImpl {
    */
   virtual void compile_snode_tree_types(
       SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees);
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees,
+      uint64 *result_buffer);
 
   /**
    * Compiles the @param tree types and allocates runtime buffer for it.

@@ -227,7 +227,8 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
 
 void LlvmProgramImpl::compile_snode_tree_types(
     SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+    std::vector<std::unique_ptr<SNodeTree>> &snode_trees,
+    uint64 *result_buffer) {
   auto *const root = tree->root();
   if (arch_is_cpu(config->arch)) {
     auto host_module = clone_struct_compiler_initial_context(
@@ -249,7 +250,7 @@ void LlvmProgramImpl::materialize_snode_tree(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
     uint64 *result_buffer) {
-  compile_snode_tree_types(tree, snode_trees_);
+  compile_snode_tree_types(tree, snode_trees_, result_buffer);
   initialize_llvm_runtime_snodes(tree, struct_compiler_.get(), result_buffer);
 }
 

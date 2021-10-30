@@ -64,8 +64,8 @@ class KernelGen : public IRVisitor {
             const StructCompiledResult *struct_compiled,
             const std::string &kernel_name)
       : kernel_(kernel),
-        kernel_name_(kernel_name),
         struct_compiled_(struct_compiled),
+        kernel_name_(kernel_name),
         root_snode_type_name_(struct_compiled->root_snode_type_name),
         glsl_kernel_prefix_(kernel_name) {
     compiled_program_.init_args(kernel);
@@ -167,8 +167,6 @@ class KernelGen : public IRVisitor {
       REGISTER_BUFFER(std430, buffer, gtmp, GLBufId::Gtmp);
     if (used.buf_args)
       REGISTER_BUFFER(std430, buffer, args, GLBufId::Args);
-    if (used.buf_retr)
-      REGISTER_BUFFER(std430, writeonly buffer, retr, GLBufId::Retr);
 
 #undef REGISTER_BUFFER
 #undef DEFINE_LAYOUT
@@ -451,7 +449,7 @@ class KernelGen : public IRVisitor {
         used.int32 = true;
         std::string var_name = fmt::format("_s{}_{}", i, stmt->short_name());
         emit("int {} = _args_i32_[{} + {} * {} + {}];", var_name,
-             taichi_opengl_earg_base / sizeof(int), arg_id,
+             taichi_opengl_extra_args_base / sizeof(int), arg_id,
              taichi_max_num_indices, i);
         size_var_names.push_back(std::move(var_name));
       }
@@ -729,10 +727,12 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(ReturnStmt *stmt) override {
-    used.buf_retr = true;
+    used.buf_args = true;
     // TODO: use stmt->ret_id instead of 0 as index
-    emit("_retr_{}_[0] = {};",
+    emit("_args_{}_[{} >> {} + 0] = {};",
          opengl_data_type_short_name(stmt->element_type()),
+         taichi_opengl_ret_base,
+         opengl_data_address_shifter(stmt->element_type()),
          stmt->value->short_name());
   }
 
@@ -787,8 +787,8 @@ class KernelGen : public IRVisitor {
     used.buf_args = true;
     used.int32 = true;
     emit("int {} = _args_i32_[{} + {} * {} + {}];", name,
-         taichi_opengl_earg_base / sizeof(int), arg_id, taichi_max_num_indices,
-         axis);
+         taichi_opengl_extra_args_base / sizeof(int), arg_id,
+         taichi_max_num_indices, axis);
   }
 
   std::string make_kernel_name() {

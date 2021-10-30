@@ -25,9 +25,8 @@ import TabItem from '@theme/TabItem';
 There are a few of extra requirements depend on which operating system you are using:
 
 <Tabs
-  defaultValue="ubuntu"
+  defaultValue="arch-linux"
   values={[
-    {label: 'Ubuntu', value: 'ubuntu'},
     {label: 'Arch Linux', value: 'arch-linux'},
     {label: 'Windows', value: 'windows'},
   ]}>

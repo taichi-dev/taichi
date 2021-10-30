@@ -487,7 +487,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
             auto data = create_intrinsic_load(dtype, data_ptr);
             llvm_val[stmt] = extract_custom_int(data, bit_offset, int_in_mem);
-          } else if (auto cft = val_type->cast<CustomFloatType>()) {
+          } else if (val_type->cast<CustomFloatType>()) {
             // TODO: support __ldg
             llvm_val[stmt] = load_custom_float(stmt->src);
           } else {

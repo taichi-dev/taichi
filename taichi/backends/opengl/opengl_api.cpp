@@ -31,21 +31,6 @@ int opengl_max_grid_dim = 1024;
 
 #ifdef TI_WITH_OPENGL
 
-static std::string add_line_markers(std::string x) {
-  std::string marker;
-  size_t pos = 0, npos;
-  int line = 0;
-  while (1) {
-    npos = x.find_first_of('\n', pos);
-    marker = fmt::format("{:3d} ", ++line);
-    if (npos == std::string::npos)
-      break;
-    x.insert(pos, marker);
-    pos = npos + 1 + marker.size();
-  }
-  return x;
-}
-
 struct OpenGlRuntimeImpl {
   struct {
     DeviceAllocation runtime = kDeviceNullAllocation;
@@ -148,7 +133,7 @@ void CompiledProgram::init_args(Kernel *kernel) {
 
   args_buf_size = arg_count * sizeof(uint64_t);
   if (ext_arr_map.size()) {
-    args_buf_size = taichi_opengl_earg_base +
+    args_buf_size = taichi_opengl_extra_args_base +
                     arg_count * taichi_max_num_indices * sizeof(int);
   }
 
@@ -269,27 +254,26 @@ void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
 
   uint8_t *args_buf_mapped = nullptr;
 
+  // clang-format off
   // Prepare external array: copy from ctx.args[i] (which is a host pointer
   // pointing to the external array) to device, and save the accumulated copied
   // size information. Note here we copy external array to Arg buffer in
   // runtime. Its layout is shown below:
-  // |           args            |    shape of ext arr        |   ext arr   |
+  // |              args               |  shape of ext arr  |  ret |  ext arr   |
   // baseptr
-  // |..taichi_opengl_earg_base..|
-  // |.................ext_arr_offset.........................|
-  // |.......................ctx.args[i]............................|
-  //                                                     i-th arg (ext arr)
-  // We save each external array's offset from args_buf_ baseptr back to
-  // ctx.args[i].
+  // |..taichi_opengl_extra_args_base..|
+  // |...............taichi_opengl_ret_base.................|
+  // |................taichi_opengl_external_arr_base..............|
+  // |............................ctx.args[i]............................|
+  //                                                           i-th arg (ext arr)
+  // We save each external array's offset from args_buf_ baseptr back to ctx.args[i].
+  // clang-format on
   if (program_.total_ext_arr_size) {
     void *baseptr = device_->map(args_buf_);
-    size_t ext_arr_offset =
-        size_t(taichi_opengl_earg_base) +
-        sizeof(int) * size_t(program_.arg_count * taichi_max_num_indices);
     size_t accum_size = 0;
     for (const auto &[i, size] : program_.ext_arr_map) {
       auto ptr = (void *)ctx.args[i];
-      ctx.args[i] = accum_size + ext_arr_offset;
+      ctx.args[i] = accum_size + taichi_opengl_external_arr_base;
       ext_arr_host_ptrs[i] = ptr;
       if (program_.check_ext_arr_read(i)) {
         std::memcpy((char *)baseptr + ctx.args[i], ptr, size);
@@ -307,7 +291,8 @@ void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
                 program_.arg_count * sizeof(uint64_t));
     if (program_.ext_arr_map.size()) {
       std::memcpy(
-          args_buf_mapped + size_t(taichi_opengl_earg_base), ctx.extra_args,
+          args_buf_mapped + size_t(taichi_opengl_extra_args_base),
+          ctx.extra_args,
           size_t(program_.arg_count * taichi_max_num_indices) * sizeof(int));
     }
     device_->unmap(args_buf_);
@@ -332,10 +317,9 @@ void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
     binder->buffer(0, int(GLBufId::Runtime), core_bufs.runtime);
     binder->buffer(0, int(GLBufId::Root), core_bufs.root);
     binder->buffer(0, int(GLBufId::Gtmp), core_bufs.gtmp);
-    if (program_.args_buf_size)
+    if (program_.args_buf_size || program_.ret_buf_size ||
+        program_.total_ext_arr_size)
       binder->buffer(0, int(GLBufId::Args), args_buf_);
-    if (program_.ret_buf_size)
-      binder->buffer(0, int(GLBufId::Retr), ret_buf_);
 
     cmdlist->bind_pipeline(compiled_pipeline_[i].get());
     cmdlist->bind_resources(binder);
@@ -366,28 +350,23 @@ void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
   }
 
   if (program_.ret_buf_size) {
-    memcpy(runtime->result_buffer, device_->map(ret_buf_),
+    uint8_t *baseptr = (uint8_t *)device_->map(args_buf_);
+    memcpy(runtime->result_buffer, baseptr + taichi_opengl_ret_base,
            program_.ret_buf_size);
-    device_->unmap(ret_buf_);
+    device_->unmap(args_buf_);
   }
 }
 
 DeviceCompiledProgram::DeviceCompiledProgram(CompiledProgram &&program,
                                              Device *device)
-    : program_(std::move(program)), device_(device) {
-  if (program_.args_buf_size || program_.total_ext_arr_size) {
+    : device_(device), program_(std::move(program)) {
+  if (program_.args_buf_size || program_.total_ext_arr_size ||
+      program_.ret_buf_size) {
     args_buf_ = device->allocate_memory(
-        {program_.args_buf_size + program_.total_ext_arr_size,
+        {taichi_opengl_external_arr_base + program_.total_ext_arr_size,
          /*host_write=*/true,
          /*host_read=*/true,
          /*export_sharing=*/false});
-  }
-
-  if (program_.ret_buf_size) {
-    ret_buf_ =
-        device->allocate_memory({program_.ret_buf_size, /*host_write=*/false,
-                                 /*host_read=*/true,
-                                 /*export_sharing=*/false});
   }
 
   for (auto &k : program_.kernels) {

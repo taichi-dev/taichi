@@ -59,6 +59,8 @@ void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
     gl_dtype_enum = GL_DOUBLE;
   } else if (dt == PrimitiveType::f32) {
     gl_dtype_enum = GL_FLOAT;
+  } else {
+    TI_NOT_IMPLEMENTED
   }
 
   aot_data_.fields.push_back({identifier, gl_dtype_enum, dt.to_string(), shape,

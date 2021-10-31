@@ -16,6 +16,9 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
 }
 
 void AotModuleBuilderImpl::preprocess_kernels() {
+  // TODO (#3334): Ideally this should be moved to AotModuleBuilder.
+  // This depends on a larger task which unifies AOT serialization
+  // related data structures.
   for (auto &aot_compiled_kernel : aot_data_.kernels) {
     for (auto &compiled_kernel : aot_compiled_kernel.program.kernels) {
       preprocess_kernel(compiled_kernel);

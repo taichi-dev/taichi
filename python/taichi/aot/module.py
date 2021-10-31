@@ -1,5 +1,8 @@
+import shutil
+import warnings
 from contextlib import contextmanager
 
+from taichi.core import ti_core as _ti_core
 from taichi.lang import impl, kernel_impl
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField
@@ -183,5 +186,26 @@ class Module:
         kt = KernelTemplate(kernel_fn, self)
         yield kt
 
+    def preprocess_kernels(self):
+        """
+        Preprocess kernel source code before saving to file.
+        Currently it's only supported on `ti.opengl` backend.
+        """
+        if self._arch != _ti_core.Arch.opengl:
+            warnings.warn(
+                "Preprocessing kernels is ignored since it's only supported on opengl backend for now."
+            )
+        if shutil.which('glslc') is None:
+            raise RuntimeError(
+                "Could not find glslc which is required to preprocess kernels."
+            )
+
+        self._aot_builder.preprocess_kernels()
+
     def save(self, filepath, filename):
+        """
+        Args:
+          filepath (str): path to a folder to store aot files.
+          filename (str): filename prefix for stored aot files.
+        """
         self._aot_builder.dump(filepath, filename)

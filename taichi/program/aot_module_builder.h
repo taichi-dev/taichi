@@ -29,6 +29,9 @@ class AotModuleBuilder {
   virtual void dump(const std::string &output_dir,
                     const std::string &filename) const = 0;
 
+  virtual void preprocess_kernels() {
+  }
+
  protected:
   /**
    * Intended to be overriden by each backend's implementation.

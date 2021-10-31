@@ -37,8 +37,17 @@ def test_save():
         for i, j in density:
             density[i, j] = 1
 
+    @ti.kernel
+    def foo(n: ti.template()):
+        for i in range(n):
+            density[0, 0] += 1
+
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module(ti.opengl)
         m.add_field('density', density)
         m.add_kernel(init)
+        with m.add_kernel_template(foo) as kt:
+            kt.instantiate(n=6)
+            kt.instantiate(n=8)
+        m.preprocess_kernels()
         m.save(tmpdir, 'taichi_aot_example.tcb')

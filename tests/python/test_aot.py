@@ -26,3 +26,19 @@ def test_record():
         # Make sure kernel info is in the file
         with open(recorded_file, 'r') as f:
             assert 'compute_loss' in ''.join(f.readlines())
+
+
+@ti.test(arch=ti.opengl)
+def test_save():
+    density = ti.field(float, shape=(4, 4))
+
+    @ti.kernel
+    def init():
+        for i, j in density:
+            density[i, j] = 1
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m = ti.aot.Module(ti.opengl)
+        m.add_field('density', density)
+        m.add_kernel(init)
+        m.save(tmpdir, 'taichi_aot_example.tcb')

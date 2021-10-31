@@ -59,8 +59,7 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void compile_snode_tree_types(
       SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees,
-      uint64 *result_buffer) override;
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees) override;
 
   void materialize_snode_tree(
       SNodeTree *tree,

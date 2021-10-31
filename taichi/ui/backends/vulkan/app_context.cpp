@@ -97,6 +97,14 @@ void AppContext::cleanup() {
   }
 }
 
+bool AppContext::requires_export_sharing() const {
+  // only the cuda backends needs export_sharing to interop with vk
+  // with other backends (e.g. vulkan backend on mac), turning export_sharing to
+  // true leads to crashes
+  // TODO: investigate this, and think of a more universal solution.
+  return config.ti_arch == Arch::cuda;
+}
+
 GLFWwindow *AppContext::glfw_window() const {
   return glfw_window_;
 }

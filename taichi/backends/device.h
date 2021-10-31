@@ -242,9 +242,9 @@ struct BufferImageCopyParams {
 };
 
 struct ImageCopyParams {
-  uint32_t width;
-  uint32_t height;
-  uint32_t depth;
+  uint32_t width{1};
+  uint32_t height{1};
+  uint32_t depth{1};
 };
 
 class CommandList {

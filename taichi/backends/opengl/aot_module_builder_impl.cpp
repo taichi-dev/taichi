@@ -8,6 +8,9 @@
 namespace taichi {
 namespace lang {
 namespace opengl {
+namespace {
+constexpr bool kAllowsNvShaderExt = false;
+}  // namespace
 
 AotModuleBuilderImpl::AotModuleBuilderImpl(
     StructCompiledResult &compiled_structs)
@@ -75,7 +78,8 @@ void AotModuleBuilderImpl::preprocess_kernel(CompiledKernel &ker) {
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_);
+  opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_,
+                                kAllowsNvShaderExt);
   auto compiled = codegen.compile(*kernel);
   aot_data_.kernels.push_back({compiled, identifier});
 }
@@ -119,7 +123,8 @@ void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
-  opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_);
+  opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_,
+                                kAllowsNvShaderExt);
   auto compiled = codegen.compile(*kernel);
 
   for (auto &k : aot_data_.kernel_tmpls) {

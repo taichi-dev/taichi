@@ -199,8 +199,7 @@ SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root,
   auto tree = std::make_unique<SNodeTree>(id, std::move(root));
   tree->root()->set_snode_tree_id(id);
   if (compile_only) {
-    program_impl_->compile_snode_tree_types(tree.get(), snode_trees_,
-                                            result_buffer);
+    program_impl_->compile_snode_tree_types(tree.get(), snode_trees_);
   } else {
     program_impl_->materialize_snode_tree(tree.get(), snode_trees_,
                                           result_buffer);
@@ -522,9 +521,7 @@ Program::~Program() {
     finalize();
 }
 
-std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
-    Arch arch,
-    bool preprocess_kernel) {
+std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
   // FIXME: This couples the runtime backend with the target AOT backend. E.g.
   // If we want to build a Metal AOT module, we have to be on the macOS
   // platform. Consider decoupling this part
@@ -534,14 +531,7 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
   }
   if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
       config.arch == Arch::vulkan || config.arch == Arch::opengl) {
-    auto aot_module_builder = program_impl_->make_aot_module_builder();
-    if (preprocess_kernel) {
-      TI_ASSERT_INFO(config.arch == Arch::opengl,
-                     "Preprocessing source file is only supported on opengl "
-                     "backend for now.");
-      aot_module_builder->enable_preprocess_kernel();
-    }
-    return aot_module_builder;
+    return program_impl_->make_aot_module_builder();
   }
   return nullptr;
 }

@@ -276,9 +276,7 @@ class Program {
    */
   SNode *get_snode_root(int tree_id);
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
-      Arch arch,
-      bool preprocess_kernel = false);
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 
   LlvmProgramImpl *get_llvm_program_impl();
 

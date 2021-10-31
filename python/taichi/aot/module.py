@@ -1,6 +1,8 @@
 import shutil
+import warnings
 from contextlib import contextmanager
 
+from taichi.core import ti_core as _ti_core
 from taichi.lang import impl, kernel_impl
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField
@@ -74,28 +76,19 @@ class Module:
         # Now the module file '/path/to/module' contains the Metal kernels
         # for running ``foo`` and ``bar``.
     """
-    def __init__(self, arch, preprocess_kernel=False):
+    def __init__(self, arch):
         """Creates a new AOT module instance
 
         Args:
           arch: Target backend architecture. This is ignored for now. The AOT
             backend still uses the one specified in :func:`~taichi.lang.init`.
-          preprocess_kernel (bool): if set to `True`, kernel source code is preprocessed
-            by `glslc` before saving to file. Currently only supported on `ti.opengl` backend.
-            Default is `False`.
         """
         self._arch = arch
         self._kernels = []
         self._fields = {}
         rtm = impl.get_runtime()
         rtm._finalize_root_fb_for_aot()
-        if preprocess_kernel and shutil.which('glslc') is None:
-            raise RuntimeError(
-                "glslc is required to preprocess kernels, please either install it or use preprocess_kernel=False."
-            )
-
-        self._aot_builder = rtm.prog.make_aot_module_builder(
-            arch, preprocess_kernel)
+        self._aot_builder = rtm.prog.make_aot_module_builder(arch)
 
     def add_field(self, name, field):
         """Add a taichi field to the AOT module.
@@ -193,5 +186,26 @@ class Module:
         kt = KernelTemplate(kernel_fn, self)
         yield kt
 
+    def preprocess_kernels(self):
+        """
+        Preprocess kernel source code before saving to file.
+        Currently it's only supported on `ti.opengl` backend.
+        """
+        if self._arch != _ti_core.Arch.opengl:
+            warnings.warn(
+                "Preprocessing kernels is ignored since it's only supported on opengl backend for now."
+            )
+        if shutil.which('glslc') is None:
+            raise RuntimeError(
+                "Could not find glslc which is required to preprocess kernels."
+            )
+
+        self._aot_builder.preprocess_kernels()
+
     def save(self, filepath, filename):
+        """
+        Args:
+          filepath (str): path to a folder to store aot files.
+          filename (str): filename prefix for stored aot files.
+        """
         self._aot_builder.dump(filepath, filename)

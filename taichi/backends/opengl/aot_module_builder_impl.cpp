@@ -1,5 +1,8 @@
 #include "taichi/backends/opengl/aot_module_builder_impl.h"
+#if !defined(TI_PLATFORM_WINDOWS)
 #include <stdio.h>
+#endif
+
 #include "glad/glad.h"
 
 namespace taichi {
@@ -10,6 +13,23 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
     StructCompiledResult &compiled_structs)
     : compiled_structs_(compiled_structs) {
   aot_data_.root_buffer_size = compiled_structs_.root_size;
+}
+
+void AotModuleBuilderImpl::preprocess_kernels() {
+  for (auto &aot_compiled_kernel : aot_data_.kernels) {
+    for (auto &compiled_kernel : aot_compiled_kernel.program.kernels) {
+      preprocess_kernel(compiled_kernel);
+    }
+  }
+
+  for (auto &aot_compiled_kernel_tmpl : aot_data_.kernel_tmpls) {
+    for (auto it = aot_compiled_kernel_tmpl.program.begin();
+         it != aot_compiled_kernel_tmpl.program.end(); ++it) {
+      for (auto &compiled_kernel : it->second.kernels) {
+        preprocess_kernel(compiled_kernel);
+      }
+    }
+  }
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
@@ -25,15 +45,18 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   ts.write_to_file(txt_path);
 }
 
-std::string preprocess(std::string command) {
-  command = "echo \"" + command + "\" | glslc -E /dev/stdin";
+void AotModuleBuilderImpl::preprocess_kernel(CompiledKernel &ker) {
+#if !defined(TI_PLATFORM_WINDOWS)
+  // For debugging only
+  // ker.kernel_src =
+  //   "#version 430 core\n#define DEFINE(NAME) add_##NAME##_f32\nDEFINE(TEST)";
+  std::string command = "echo \"" + ker.kernel_src + "\" | glslc -E /dev/stdin";
   char buffer[128];
   std::string result = "";
 
   FILE *pipe = popen(command.c_str(), "r");
-  if (!pipe) {
-    return "popen failed!";
-  }
+
+  TI_ASSERT_INFO(pipe, "popen failed!");
 
   while (!feof(pipe)) {
     if (fgets(buffer, 128, pipe) != NULL)
@@ -41,18 +64,16 @@ std::string preprocess(std::string command) {
   }
 
   pclose(pipe);
-  return result;
+  ker.kernel_src = result;
+#else
+  TI_NOT_IMPLEMENTED
+#endif
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
   opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_);
   auto compiled = codegen.compile(*kernel);
-  if (preprocess_kernel_) {
-    for (auto &ker : compiled.kernels) {
-      ker.kernel_src = preprocess(ker.kernel_src);
-    }
-  }
   aot_data_.kernels.push_back({compiled, identifier});
 }
 
@@ -97,12 +118,6 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 Kernel *kernel) {
   opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_);
   auto compiled = codegen.compile(*kernel);
-
-  if (preprocess_kernel_) {
-    for (auto &ker : compiled.kernels) {
-      ker.kernel_src = preprocess(ker.kernel_src);
-    }
-  }
 
   for (auto &k : aot_data_.kernel_tmpls) {
     if (k.identifier == identifier) {

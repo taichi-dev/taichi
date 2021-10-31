@@ -798,7 +798,7 @@ void CodeGenLLVM::visit(WhileControlStmt *stmt) {
 
 void CodeGenLLVM::visit(ContinueStmt *stmt) {
   using namespace llvm;
-  auto stmt_in_off_range_for = [&]() {
+  auto stmt_in_offl_range_for = [stmt]() {
     TI_ASSERT(stmt->scope != nullptr);
     if (auto *offl = stmt->scope->cast<OffloadedStmt>(); offl) {
       TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||

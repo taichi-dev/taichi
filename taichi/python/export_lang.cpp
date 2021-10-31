@@ -1186,6 +1186,7 @@ void export_lang(py::module &m) {
   m.def("to_end_element_order", mesh::to_end_element_order);
   m.def("relation_by_orders", mesh::relation_by_orders);
   m.def("inverse_relation", mesh::inverse_relation);
+  m.def("element_type_name", mesh::element_type_name);
 
   m.def(
       "create_mesh",

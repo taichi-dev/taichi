@@ -91,7 +91,6 @@ class ContinueStmt : public Stmt {
   //
   // If run_foo_kernel() is directly inlined within foo_kernel(), `return`
   // could prematurely terminate the entire kernel.
-  bool as_return() const;
 
   TI_STMT_DEF_FIELDS(scope);
   TI_DEFINE_ACCEPT_AND_CLONE;

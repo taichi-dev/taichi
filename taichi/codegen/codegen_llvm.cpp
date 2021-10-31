@@ -798,11 +798,16 @@ void CodeGenLLVM::visit(WhileControlStmt *stmt) {
 
 void CodeGenLLVM::visit(ContinueStmt *stmt) {
   using namespace llvm;
-  auto stmt_in_range_for = [&](){
-    auto *offl = stmt->scope->cast<OffloadedStmt>();
-    return offl->task_type == OffloadedStmt::TaskType::range_for;
+  auto stmt_in_off_range_for = [&](){
+    TI_ASSERT(stmt->scope != nullptr);
+    if (auto *offl = stmt->scope->cast<OffloadedStmt>(); offl) {
+      TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||
+                offl->task_type == OffloadedStmt::TaskType::struct_for);
+      return offl->task_type == OffloadedStmt::TaskType::range_for;
+    }
+    return false;
   };
-  if (stmt->as_return() && stmt_in_range_for()) {
+  if (stmt_in_off_range_for()) {
     builder->CreateRetVoid();
   } else {
     TI_ASSERT(current_loop_reentry != nullptr);

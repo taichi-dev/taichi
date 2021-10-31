@@ -22,6 +22,7 @@ from_end_element_order = _ti_core.from_end_element_order
 to_end_element_order = _ti_core.to_end_element_order
 relation_by_orders = _ti_core.relation_by_orders
 inverse_relation = _ti_core.inverse_relation
+element_type_name = _ti_core.element_type_name
 
 
 class MeshAttrType:
@@ -288,6 +289,78 @@ class MeshInstance:
                                     reorder_type)
 
 
+class MeshMetadata:
+    def __init__(self, filename):
+        with open(filename, "r") as fi:
+            data = json.loads(fi.read())
+
+        self.num_patches = data["num_patches"]
+
+        self.element_fields = {}
+        self.relation_fields = {}
+        self.num_elements = {}
+        self.max_num_per_patch = {}
+
+        for element in data["elements"]:
+            element_type = MeshElementType(element["order"])
+            self.num_elements[element_type] = element["num"]
+            self.max_num_per_patch[element_type] = element["max_num_per_patch"]
+
+            element["l2g_mapping"] = np.array(element["l2g_mapping"])
+            element["l2r_mapping"] = np.array(element["l2r_mapping"])
+            element["g2r_mapping"] = np.array(element["g2r_mapping"])
+            self.element_fields[element_type] = {}
+            self.element_fields[element_type]["owned"] = impl.field(
+                dtype=ti.u32, shape=self.num_patches + 1)
+            self.element_fields[element_type]["total"] = impl.field(
+                dtype=ti.u32, shape=self.num_patches + 1)
+            self.element_fields[element_type]["l2g"] = impl.field(
+                dtype=ti.u32, shape=element["l2g_mapping"].shape[0])
+            self.element_fields[element_type]["l2r"] = impl.field(
+                dtype=ti.u32, shape=element["l2r_mapping"].shape[0])
+            self.element_fields[element_type]["g2r"] = impl.field(
+                dtype=ti.i32, shape=element["g2r_mapping"].shape[0])
+
+        for relation in data["relations"]:
+            from_order = relation["from_order"]
+            to_order = relation["to_order"]
+            rel_type = MeshRelationType(
+                relation_by_orders(from_order, to_order))
+            self.relation_fields[rel_type] = {}
+            self.relation_fields[rel_type]["value"] = impl.field(
+                dtype=ti.u32, shape=len(relation["value"]))
+            if from_order <= to_order:
+                self.relation_fields[rel_type]["offset"] = impl.field(
+                    dtype=ti.u32, shape=len(relation["offset"]))
+
+        for element in data["elements"]:
+            element_type = MeshElementType(element["order"])
+            self.element_fields[element_type]["owned"].from_numpy(
+                np.array(element["owned_offsets"]))
+            self.element_fields[element_type]["total"].from_numpy(
+                np.array(element["total_offsets"]))
+            self.element_fields[element_type]["l2g"].from_numpy(
+                element["l2g_mapping"])
+            self.element_fields[element_type]["l2r"].from_numpy(
+                element["l2r_mapping"])
+            self.element_fields[element_type]["g2r"].from_numpy(
+                element["g2r_mapping"])
+
+        for relation in data["relations"]:
+            from_order = relation["from_order"]
+            to_order = relation["to_order"]
+            rel_type = MeshRelationType(
+                relation_by_orders(from_order, to_order))
+            self.relation_fields[rel_type]["value"].from_numpy(
+                np.array(relation["value"]))
+            if from_order <= to_order:
+                self.relation_fields[rel_type]["offset"].from_numpy(
+                    np.array(relation["offset"]))
+
+        self.attrs = {}
+        self.attrs["x"] = np.array(data["attrs"]["x"]).reshape(-1, 3)
+
+
 # Define the Mesh Type, stores the field type info
 class MeshBuilder:
     def __init__(self, topology):
@@ -305,115 +378,52 @@ class MeshBuilder:
         self.elements = set()
         self.relations = set()
 
-    def build(self, filename):
+    def build(self, metadata: MeshMetadata):
         instance = MeshInstance(self)
         instance.fields = {}
 
-        inv_map = {
-            MeshElementType.Vertex: "verts",
-            MeshElementType.Edge: "edges",
-            MeshElementType.Face: "faces",
-            MeshElementType.Cell: "cells"
-        }
+        instance.set_num_patches(metadata.num_patches)
 
-        with open(filename, "r") as fi:
-            data = json.loads(fi.read())
+        for element in self.elements:
+            _ti_core.set_num_elements(instance.mesh_ptr, element,
+                                      metadata.num_elements[element])
+            instance.set_patch_max_element_num(
+                element, metadata.max_num_per_patch[element])
 
-        num_patches = data["num_patches"]
-        instance.set_num_patches(num_patches)
-        element_fields = {}
-        relation_fields = {}
-        for element in data["elements"]:
-            element_type = MeshElementType(element["order"])
-            num_elements = element["num"]
-            _ti_core.set_num_elements(instance.mesh_ptr, element_type,
-                                      num_elements)
-            instance.set_patch_max_element_num(element_type,
-                                               element["max_num_per_patch"])
-
-            element["l2g_mapping"] = np.array(element["l2g_mapping"])
-            element["l2r_mapping"] = np.array(element["l2r_mapping"])
-            element["g2r_mapping"] = np.array(element["g2r_mapping"])
-            element_fields[element_type] = {}
-            element_fields[element_type]["owned"] = impl.field(
-                dtype=ti.u32, shape=num_patches + 1)
-            element_fields[element_type]["total"] = impl.field(
-                dtype=ti.u32, shape=num_patches + 1)
-            element_fields[element_type]["l2g"] = impl.field(
-                dtype=ti.u32, shape=element["l2g_mapping"].shape[0])
-            element_fields[element_type]["l2r"] = impl.field(
-                dtype=ti.u32, shape=element["l2r_mapping"].shape[0])
-            element_fields[element_type]["g2r"] = impl.field(
-                dtype=ti.i32, shape=element["g2r_mapping"].shape[0])
-
-            element_name = inv_map[element_type]
+            element_name = element_type_name(element)
             setattr(
                 instance, element_name,
                 getattr(self, element_name).build(
-                    instance, num_elements,
-                    element_fields[element_type]["g2r"]))
-            instance.fields[element_type] = getattr(instance, element_name)
+                    instance, metadata.num_elements[element],
+                    metadata.element_fields[element]["g2r"]))
+            instance.fields[element] = getattr(instance, element_name)
 
-            instance.set_owned_offset(element_type,
-                                      element_fields[element_type]["owned"])
-            instance.set_total_offset(element_type,
-                                      element_fields[element_type]["total"])
-            instance.set_index_mapping(element_type, ConvType.l2g,
-                                       element_fields[element_type]["l2g"])
-            instance.set_index_mapping(element_type, ConvType.l2r,
-                                       element_fields[element_type]["l2r"])
-            instance.set_index_mapping(element_type, ConvType.g2r,
-                                       element_fields[element_type]["g2r"])
+            instance.set_owned_offset(
+                element, metadata.element_fields[element]["owned"])
+            instance.set_total_offset(
+                element, metadata.element_fields[element]["total"])
+            instance.set_index_mapping(element, ConvType.l2g,
+                                       metadata.element_fields[element]["l2g"])
+            instance.set_index_mapping(element, ConvType.l2r,
+                                       metadata.element_fields[element]["l2r"])
+            instance.set_index_mapping(element, ConvType.g2r,
+                                       metadata.element_fields[element]["g2r"])
 
-        for relation in data["relations"]:
-            from_order = relation["from_order"]
-            to_order = relation["to_order"]
+        for relation in self.relations:
+            from_order = element_order(relation[0])
+            to_order = element_order(relation[1])
             rel_type = MeshRelationType(
                 relation_by_orders(from_order, to_order))
-            relation_fields[rel_type] = {}
             if from_order <= to_order:
-                relation_fields[rel_type]["offset"] = impl.field(
-                    dtype=ti.u32, shape=len(relation["offset"]))
-                relation_fields[rel_type]["value"] = impl.field(
-                    dtype=ti.u32, shape=len(relation["value"]))
                 instance.set_relation_dynamic(
-                    rel_type, relation_fields[rel_type]["value"],
-                    relation_fields[rel_type]["offset"])
+                    rel_type, metadata.relation_fields[rel_type]["value"],
+                    metadata.relation_fields[rel_type]["offset"])
             else:
-                relation_fields[rel_type]["value"] = impl.field(
-                    dtype=ti.u32, shape=len(relation["value"]))
-                instance.set_relation_fixed(rel_type,
-                                            relation_fields[rel_type]["value"])
-                relation_fields[rel_type]["value"].from_numpy(
-                    np.array(relation["value"]))
-
-        for element in data["elements"]:
-            element_type = MeshElementType(element["order"])
-            element_fields[element_type]["owned"].from_numpy(
-                np.array(element["owned_offsets"]))
-            element_fields[element_type]["total"].from_numpy(
-                np.array(element["total_offsets"]))
-            element_fields[element_type]["l2g"].from_numpy(
-                element["l2g_mapping"])
-            element_fields[element_type]["l2r"].from_numpy(
-                element["l2r_mapping"])
-            element_fields[element_type]["g2r"].from_numpy(
-                element["g2r_mapping"])
-
-        for relation in data["relations"]:
-            from_order = relation["from_order"]
-            to_order = relation["to_order"]
-            rel_type = MeshRelationType(
-                relation_by_orders(from_order, to_order))
-            relation_fields[rel_type]["value"].from_numpy(
-                np.array(relation["value"]))
-            if from_order <= to_order:
-                relation_fields[rel_type]["offset"].from_numpy(
-                    np.array(relation["offset"]))
+                instance.set_relation_fixed(
+                    rel_type, metadata.relation_fields[rel_type]["value"])
 
         if "x" in instance.verts.attr_dict:
-            x = np.array(data["attrs"]["x"]).reshape(-1, 3)
-            instance.verts.x.from_numpy(x)
+            instance.verts.x.from_numpy(metadata.attrs["x"])
 
         return instance
 
@@ -430,6 +440,10 @@ class Mesh:
     @staticmethod
     def Tri():
         return MeshBuilder(MeshTopology.Triangle)
+
+    @staticmethod
+    def load_meta(filename):
+        return MeshMetadata(filename)
 
 
 def TriMesh():

@@ -6,13 +6,13 @@ namespace mesh {
 
 std::string element_type_name(MeshElementType type) {
   if (type == MeshElementType::Vertex)
-    return "Vertex";
+    return "verts";
   else if (type == MeshElementType::Edge)
-    return "Edge";
+    return "edges";
   else if (type == MeshElementType::Face)
-    return "Face";
+    return "faces";
   else if (type == MeshElementType::Cell)
-    return "Cell";
+    return "cells";
   else {
     TI_NOT_IMPLEMENTED;
   }

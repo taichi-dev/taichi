@@ -15,7 +15,7 @@ from taichi.lang.mesh import (ConvType, MeshElementField,
                               MeshElementFieldProxy, MeshElementType,
                               MeshInstance, MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
-                              MeshReorderedScalarFieldProxy)
+                              MeshReorderedScalarFieldProxy, element_type_name)
 from taichi.lang.snode import SNode
 from taichi.lang.struct import StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
@@ -122,13 +122,7 @@ def wrap_scalar(x):
 def mesh_relation_access(mesh, from_index, to_element_type):
     # to support ti.mesh_local and access mesh attribute as field
     if isinstance(from_index, MeshInstance):
-        inv_map = {
-            MeshElementType.Vertex: "verts",
-            MeshElementType.Edge: "edges",
-            MeshElementType.Face: "faces",
-            MeshElementType.Cell: "cells"
-        }
-        return getattr(from_index, inv_map[to_element_type])
+        return getattr(from_index, element_type_name(to_element_type))
     if isinstance(mesh, MeshInstance):
         return MeshRelationAccessProxy(mesh, from_index, to_element_type)
     else:

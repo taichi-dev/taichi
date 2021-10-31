@@ -995,7 +995,7 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(ContinueStmt *stmt) override {
-    auto stmt_in_off_for = [&](){
+    auto stmt_in_off_for = [&]() {
       TI_ASSERT(stmt->scope != nullptr);
       if (auto *offl = stmt->scope->cast<OffloadedStmt>(); offl) {
         TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||

@@ -88,10 +88,20 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
   loop_var_id[0] = loop_var.cast<IdExpression>()->id;
 }
 
+void ArgLoadExpression::type_check() {
+  TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown, "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
+  ret_type = dt;
+}
+
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
   auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt);
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
+}
+
+void RandExpression::type_check() {
+  TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown, "Invalid dt [{}] for RandExpression", dt->to_string());
+  ret_type = dt;
 }
 
 void RandExpression::flatten(FlattenContext *ctx) {
@@ -128,22 +138,21 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(unary));
 }
 
-BinaryOpExpression::BinaryOpExpression(const BinaryOpType &type,
-                                       const Expr &lhs,
-                                       const Expr &rhs)
-    : type(type) {
-  this->lhs.set(load_if_ptr(lhs));
-  this->rhs.set(load_if_ptr(rhs));
-  auto lhs_type = this->lhs->ret_type;
-  auto rhs_type = this->rhs->ret_type;
-  // TODO: report error messages for unsuccessful inference
-  if (!lhs_type->is<PrimitiveType>() || !rhs_type->is<PrimitiveType>())
-    return;
+void BinaryOpExpression::type_check() {
+  auto lhs_type = lhs->ret_type;
+  auto rhs_type = rhs->ret_type;
+  // TODO: assert no unknowns after type_check for all expressions are implemented
   if (lhs_type == PrimitiveType::unknown || rhs_type == PrimitiveType::unknown)
     return;
+  auto error = [&]() {
+    throw std::runtime_error(fmt::format("TypeError: unsupported operand type(s) for {}: '{}' and '{}'",
+                                         binary_op_type_symbol(type), lhs->ret_type->to_string(), rhs->ret_type->to_string()));
+  };
+  if (!lhs_type->is<PrimitiveType>() || !rhs_type->is<PrimitiveType>())
+    error();
   if (binary_is_bitwise(type) &&
       (!is_integral(lhs_type) || !is_integral(rhs_type)))
-    return;
+    error();
   if (is_comparison(type)) {
     ret_type = PrimitiveType::i32;
     return;
@@ -485,6 +494,11 @@ void GlobalLoadExpression::flatten(FlattenContext *ctx) {
   ptr->flatten(ctx);
   ctx->push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
   stmt = ctx->back_stmt();
+}
+
+void ConstExpression::type_check() {
+  TI_ASSERT_INFO(val.dt->is<PrimitiveType>() && val.dt != PrimitiveType::unknown, "Invalid dt [{}] for ConstExpression", val.dt->to_string());
+  ret_type = val.dt;
 }
 
 void ConstExpression::flatten(FlattenContext *ctx) {

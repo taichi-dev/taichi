@@ -12,7 +12,8 @@ namespace opengl {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
-  explicit AotModuleBuilderImpl(StructCompiledResult &compiled_structs);
+  explicit AotModuleBuilderImpl(StructCompiledResult &compiled_structs,
+                                bool allow_nv_shader_extension);
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
@@ -37,6 +38,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   StructCompiledResult &compiled_structs_;
 
   AotData aot_data_;
+  bool allow_nv_shader_extension_ = false;
 };
 
 }  // namespace opengl

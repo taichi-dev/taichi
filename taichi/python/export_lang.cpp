@@ -205,7 +205,9 @@ void export_lang(py::module &m) {
       .def_readwrite("quant_opt_store_fusion",
                      &CompileConfig::quant_opt_store_fusion)
       .def_readwrite("quant_opt_atomic_demotion",
-                     &CompileConfig::quant_opt_atomic_demotion);
+                     &CompileConfig::quant_opt_atomic_demotion)
+      .def_readwrite("allow_nv_shader_extension",
+                     &CompileConfig::allow_nv_shader_extension);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

@@ -89,7 +89,8 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
 }
 
 void ArgLoadExpression::type_check() {
-  TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown, "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
+  TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
+                 "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
   ret_type = dt;
 }
 
@@ -100,7 +101,8 @@ void ArgLoadExpression::flatten(FlattenContext *ctx) {
 }
 
 void RandExpression::type_check() {
-  TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown, "Invalid dt [{}] for RandExpression", dt->to_string());
+  TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
+                 "Invalid dt [{}] for RandExpression", dt->to_string());
   ret_type = dt;
 }
 
@@ -141,12 +143,15 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
 void BinaryOpExpression::type_check() {
   auto lhs_type = lhs->ret_type;
   auto rhs_type = rhs->ret_type;
-  // TODO: assert no unknowns after type_check for all expressions are implemented
+  // TODO: assert no unknowns after type_check for all expressions are
+  // implemented
   if (lhs_type == PrimitiveType::unknown || rhs_type == PrimitiveType::unknown)
     return;
   auto error = [&]() {
-    throw std::runtime_error(fmt::format("TypeError: unsupported operand type(s) for {}: '{}' and '{}'",
-                                         binary_op_type_symbol(type), lhs->ret_type->to_string(), rhs->ret_type->to_string()));
+    throw std::runtime_error(fmt::format(
+        "TypeError: unsupported operand type(s) for {}: '{}' and '{}'",
+        binary_op_type_symbol(type), lhs->ret_type->to_string(),
+        rhs->ret_type->to_string()));
   };
   if (!lhs_type->is<PrimitiveType>() || !rhs_type->is<PrimitiveType>())
     error();
@@ -497,7 +502,9 @@ void GlobalLoadExpression::flatten(FlattenContext *ctx) {
 }
 
 void ConstExpression::type_check() {
-  TI_ASSERT_INFO(val.dt->is<PrimitiveType>() && val.dt != PrimitiveType::unknown, "Invalid dt [{}] for ConstExpression", val.dt->to_string());
+  TI_ASSERT_INFO(
+      val.dt->is<PrimitiveType>() && val.dt != PrimitiveType::unknown,
+      "Invalid dt [{}] for ConstExpression", val.dt->to_string());
   ret_type = val.dt;
 }
 

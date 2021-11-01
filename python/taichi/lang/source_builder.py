@@ -30,9 +30,8 @@ class SourceBuilder:
         self = cls()
         self.td = _temp_dir
         if filename.endswith((".cpp", ".c", ".cc")):
-            assert impl.current_cfg().arch in [
-                _ti_core.Arch.x64, _ti_core.Arch.cuda
-            ]
+            if impl.current_cfg().arch not in [_ti_core.Arch.x64, _ti_core.Arch.cuda]:
+                raise TaichiSyntaxError("Unsupported arch for external function call")
             if compile_fn is None:
                 if self.td is None:
                     self.td = tempfile.mkdtemp()
@@ -55,7 +54,8 @@ class SourceBuilder:
             self.bc = compile_fn(filename)
             self.mode = 'bc'
         elif filename.endswith(".cu"):
-            assert impl.current_cfg().arch in [_ti_core.Arch.cuda]
+            if impl.current_cfg().arch not in [_ti_core.Arch.cuda]:
+                raise TaichiSyntaxError("Unsupported arch for external function call")
             if compile_fn is None:
                 if self.td is None:
                     self.td = tempfile.mkdtemp()
@@ -80,13 +80,13 @@ class SourceBuilder:
             self.bc = compile_fn(filename)
             self.mode = 'bc'
         elif filename.endswith((".so", ".dylib", ".dll")):
-            assert impl.current_cfg().arch in [_ti_core.Arch.x64]
+            if impl.current_cfg().arch not in [_ti_core.Arch.x64]:
+                raise TaichiSyntaxError("Unsupported arch for external function call")
             self.so = ctypes.CDLL(filename)
             self.mode = 'so'
         elif filename.endswith(".ll"):
-            assert impl.current_cfg().arch in [
-                _ti_core.Arch.x64, _ti_core.Arch.cuda
-            ]
+            if impl.current_cfg().arch not in [_ti_core.Arch.x64, _ti_core.Arch.cuda]:
+                raise TaichiSyntaxError("Unsupported arch for external function call")
             if self.td is None:
                 self.td = tempfile.mkdtemp()
             subprocess.call('llvm-as ' + filename + ' -o ' +
@@ -95,9 +95,8 @@ class SourceBuilder:
             self.bc = os.path.join(self.td, 'source.bc')
             self.mode = 'bc'
         elif filename.endswith(".bc"):
-            assert impl.current_cfg().arch in [
-                _ti_core.Arch.x64, _ti_core.Arch.cuda
-            ]
+            if impl.current_cfg().arch not in [_ti_core.Arch.x64, _ti_core.Arch.cuda]:
+                raise TaichiSyntaxError("Unsupported arch for external function call")
             self.bc = filename
             self.mode = 'bc'
         else:
@@ -107,9 +106,8 @@ class SourceBuilder:
 
     @classmethod
     def from_source(cls, source_code, compile_fn=None):
-        assert impl.current_cfg().arch in [
-            _ti_core.Arch.x64, _ti_core.Arch.cuda
-        ]
+        if impl.current_cfg().arch not in [_ti_core.Arch.x64, _ti_core.Arch.cuda]:
+            raise TaichiSyntaxError("Unsupported arch for external function call")
         _temp_dir = tempfile.mkdtemp()
         _temp_source = os.path.join(_temp_dir, '_temp_source.cpp')
         with open(_temp_source, 'w') as f:

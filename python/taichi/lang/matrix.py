@@ -4,6 +4,7 @@ from collections.abc import Iterable
 
 import numpy as np
 import taichi.lang
+from taichi.core import ti_core
 from taichi.lang import expr, impl
 from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod
@@ -38,7 +39,8 @@ class Matrix(TaichiOperations):
                  m=1,
                  dt=None,
                  keep_raw=False,
-                 disable_local_tensor=False):
+                 disable_local_tensor=False,
+                 suppress_warning=False):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
@@ -70,6 +72,12 @@ class Matrix(TaichiOperations):
                                     dt = impl.get_runtime().default_ip
                                 elif isinstance(n[0], float):
                                     dt = impl.get_runtime().default_fp
+                                elif isinstance(n[0], expr.Expr):
+                                    dt = n[0].ptr.get_ret_type()
+                                    if dt == ti_core.DataType_unknown:
+                                        raise TypeError(
+                                            'Element type of the matrix cannot be inferred. Please set dt instead for now.'
+                                        )
                                 else:
                                     raise Exception(
                                         'dt required when using dynamic_index for local tensor'
@@ -140,7 +148,7 @@ class Matrix(TaichiOperations):
                     "Declaring matrix fields using `ti.Matrix(n, m, dt, shape)` is no longer supported. Use `ti.Matrix.field(n, m, dtype, shape)` instead."
                 )
 
-        if self.n * self.m > 32:
+        if self.n * self.m > 32 and not suppress_warning:
             warning(
                 f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
                 ' Matrices/vectors will be automatically unrolled at compile-time for performance.'

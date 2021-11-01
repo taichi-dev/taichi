@@ -75,7 +75,7 @@ def test_random_2d_dist():
     @ti.kernel
     def gen():
         for i in range(n):
-            x[i] = ti.Vector([ti.random(), ti.random()], dt=ti.f32)
+            x[i] = ti.Vector([ti.random(), ti.random()])
 
     gen()
 

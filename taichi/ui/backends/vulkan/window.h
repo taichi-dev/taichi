@@ -34,12 +34,15 @@ class Window final : public WindowBase {
   virtual CanvasBase *get_canvas() override;
   virtual GuiBase *GUI() override;
 
+  void write_image(const std::string &filename) override;
+
   ~Window();
 
  private:
   std::unique_ptr<Canvas> canvas_;
   std::unique_ptr<Gui> gui_;
   std::unique_ptr<Renderer> renderer_;
+  bool drawn_frame_{false};
 
  private:
   void init(const AppConfig &config);

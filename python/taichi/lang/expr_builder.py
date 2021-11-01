@@ -10,6 +10,28 @@ import taichi as ti
 
 class ExprBuilder(Builder):
     @staticmethod
+    def build_JoinedStr(ctx, node):
+        str_spec = ''
+        args = []
+        for sub_node in node.values:
+            if isinstance(sub_node, ast.FormattedValue):
+                str_spec += '{}'
+                args.append(build_expr(ctx, sub_node.value))
+            elif isinstance(sub_node, ast.Constant):
+                str_spec += sub_node.value
+            elif isinstance(sub_node, ast.Str):
+                # ast.Str has been deprecated in Python 3.8,
+                # but constant string is a ast.Str node in Python 3.6
+                str_spec += sub_node.s
+
+        args.insert(0, ast.copy_location(ast.Constant(value=str_spec), node))
+
+        call = ast.Call(func=parse_expr('ti.ti_format'),
+                        args=args,
+                        keywords=[])
+        return ast.copy_location(call, node)
+
+    @staticmethod
     def build_Subscript(ctx, node):
         def get_subscript_index(node):
             assert isinstance(node, ast.Subscript), type(node)

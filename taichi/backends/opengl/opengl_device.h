@@ -127,6 +127,8 @@ class GLCommandList : public CommandList {
   struct Cmd {
     virtual void execute() {
     }
+    virtual ~Cmd() {
+    }
   };
 
   struct CmdBindPipeline : public Cmd {

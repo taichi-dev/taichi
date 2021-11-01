@@ -62,10 +62,12 @@ class KernelGen : public IRVisitor {
  public:
   KernelGen(Kernel *kernel,
             const StructCompiledResult *struct_compiled,
-            const std::string &kernel_name)
+            const std::string &kernel_name,
+            bool allows_nv_shader_ext)
       : kernel_(kernel),
-        kernel_name_(kernel_name),
         struct_compiled_(struct_compiled),
+        kernel_name_(kernel_name),
+        allows_nv_shader_ext_(allows_nv_shader_ext),
         root_snode_type_name_(struct_compiled->root_snode_type_name),
         glsl_kernel_prefix_(kernel_name) {
     compiled_program_.init_args(kernel);
@@ -76,9 +78,10 @@ class KernelGen : public IRVisitor {
  private:
   const Kernel *kernel_;
   const StructCompiledResult *struct_compiled_;
-  std::string kernel_name_;
-  std::string root_snode_type_name_;
-  std::string glsl_kernel_prefix_;
+  const std::string kernel_name_;
+  const bool allows_nv_shader_ext_;
+  const std::string root_snode_type_name_;
+  const std::string glsl_kernel_prefix_;
 
   GetRootStmt *root_stmt_;
   int glsl_kernel_count_{0};
@@ -166,26 +169,7 @@ class KernelGen : public IRVisitor {
     if (used.buf_gtmp)
       REGISTER_BUFFER(std430, buffer, gtmp, GLBufId::Gtmp);
     if (used.buf_args)
-      REGISTER_BUFFER(std430, readonly buffer, args, GLBufId::Args);
-    if (used.buf_retr)
-      REGISTER_BUFFER(std430, writeonly buffer, retr, GLBufId::Retr);
-    if (used.buf_extr) {
-      bool write = false;
-      bool read = false;
-
-      for (auto pair : this->extptr_access) {
-        write |= (pair.second & irpass::ExternalPtrAccess::WRITE) != irpass::ExternalPtrAccess::NONE;
-        read |= (pair.second & irpass::ExternalPtrAccess::WRITE) != irpass::ExternalPtrAccess::NONE;
-      }
-
-      if (write && !read) {
-        REGISTER_BUFFER(std430, writeonly buffer, extr, GLBufId::Extr);
-      } else if (!write && read) {
-        REGISTER_BUFFER(std430, readonly buffer, extr, GLBufId::Extr);
-      } else {
-        REGISTER_BUFFER(std430, buffer, extr, GLBufId::Extr);
-      }
-    }
+      REGISTER_BUFFER(std430, buffer, args, GLBufId::Args);
 
 #undef REGISTER_BUFFER
 #undef DEFINE_LAYOUT
@@ -193,27 +177,24 @@ class KernelGen : public IRVisitor {
 
     if (used.simulated_atomic_float) {
       line_appender_header_.append_raw(shaders::kOpenGLAtomicF32SourceCode);
-      kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(data);\n");
+      kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(data)\n");
       if (used.buf_gtmp) {
-        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(gtmp);\n");
-      }
-      if (used.buf_extr) {
-        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(extr);\n");
+        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(gtmp)\n");
       }
     }
 
     if (used.reduction) {
       line_appender_header_.append_raw(shaders::kOpenGLReductionCommon);
       line_appender_header_.append_raw(shaders::kOpenGLReductionSourceCode);
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, float);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, float);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, float);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, int);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, int);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, int);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, uint);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, uint);\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, uint);\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, float)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, float)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, float)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, int)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, int)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, int)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, uint)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, uint)\n");
+      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, uint)\n");
     }
 
     line_appender_header_.append_raw(kernel_header);
@@ -471,7 +452,7 @@ class KernelGen : public IRVisitor {
         used.int32 = true;
         std::string var_name = fmt::format("_s{}_{}", i, stmt->short_name());
         emit("int {} = _args_i32_[{} + {} * {} + {}];", var_name,
-             taichi_opengl_earg_base / sizeof(int), arg_id,
+             taichi_opengl_extra_args_base / sizeof(int), arg_id,
              taichi_max_num_indices, i);
         size_var_names.push_back(std::move(var_name));
       }
@@ -485,8 +466,7 @@ class KernelGen : public IRVisitor {
     emit("int {} = {} + ({} << {});", stmt->short_name(),
          stmt->base_ptrs[0]->short_name(), linear_index_name,
          opengl_data_address_shifter(stmt->base_ptrs[0]->element_type()));
-    used.buf_extr = true;
-    ptr_signats[stmt->id] = "extr";
+    ptr_signats[stmt->id] = "args";
   }
 
   void visit(UnaryOpStmt *stmt) override {
@@ -676,19 +656,8 @@ class KernelGen : public IRVisitor {
 
     emit("{{ // Begin Atomic Op");
 
-    if (dt->is_primitive(PrimitiveTypeID::i32) ||
-        (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_int64) &&
-         dt->is_primitive(PrimitiveTypeID::i64)) ||
-        ((stmt->op_type == AtomicOpType::add ||
-          stmt->op_type == AtomicOpType::sub) &&
-         ((TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float) &&
-           dt->is_primitive(PrimitiveTypeID::f32)) ||
-          (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float64) &&
-           dt->is_primitive(PrimitiveTypeID::f64))))) {
-      emit("{} = {}(_{}_{}_[{} >> {}], {});", stmt->short_name(),
-           opengl_atomic_op_type_cap_name(stmt->op_type),
-           ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
-           stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
+    if (maybe_generate_fatomics_using_nv_ext(stmt, dt, val_name)) {
+      // Do nothing
     } else {
       if (dt != PrimitiveType::f32) {
         TI_ERROR(
@@ -706,6 +675,33 @@ class KernelGen : public IRVisitor {
     }
 
     emit("}} // End Atomic Op");
+  }
+
+  bool maybe_generate_fatomics_using_nv_ext(AtomicOpStmt *stmt,
+                                            DataType dt,
+                                            const std::string &val_name) {
+    if (!allows_nv_shader_ext_) {
+      return false;
+    }
+    const bool check_int =
+        (dt->is_primitive(PrimitiveTypeID::i32) ||
+         (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_int64) &&
+          dt->is_primitive(PrimitiveTypeID::i64)));
+    const bool check_add = (stmt->op_type == AtomicOpType::add ||
+                            stmt->op_type == AtomicOpType::sub);
+    const bool check_float =
+        ((TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float) &&
+          dt->is_primitive(PrimitiveTypeID::f32)) ||
+         (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float64) &&
+          dt->is_primitive(PrimitiveTypeID::f64)));
+    if (check_int || (check_add && check_float)) {
+      emit("{} = {}(_{}_{}_[{} >> {}], {});", stmt->short_name(),
+           opengl_atomic_op_type_cap_name(stmt->op_type),
+           ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
+           stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
+      return true;
+    }
+    return false;
   }
 
   void visit(TernaryOpStmt *tri) override {
@@ -750,10 +746,12 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(ReturnStmt *stmt) override {
-    used.buf_retr = true;
+    used.buf_args = true;
     // TODO: use stmt->ret_id instead of 0 as index
-    emit("_retr_{}_[0] = {};",
+    emit("_args_{}_[{} >> {} + 0] = {};",
          opengl_data_type_short_name(stmt->element_type()),
+         taichi_opengl_ret_base,
+         opengl_data_address_shifter(stmt->element_type()),
          stmt->value->short_name());
   }
 
@@ -808,8 +806,8 @@ class KernelGen : public IRVisitor {
     used.buf_args = true;
     used.int32 = true;
     emit("int {} = _args_i32_[{} + {} * {} + {}];", name,
-         taichi_opengl_earg_base / sizeof(int), arg_id, taichi_max_num_indices,
-         axis);
+         taichi_opengl_extra_args_base / sizeof(int), arg_id,
+         taichi_max_num_indices, axis);
   }
 
   std::string make_kernel_name() {
@@ -1083,7 +1081,8 @@ class KernelGen : public IRVisitor {
 
 CompiledProgram OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
-  KernelGen codegen(kernel_, struct_compiled_, kernel_name_);
+  KernelGen codegen(kernel_, struct_compiled_, kernel_name_,
+                    allows_nv_shader_ext_);
   codegen.run();
   return codegen.get_compiled_program();
 #else

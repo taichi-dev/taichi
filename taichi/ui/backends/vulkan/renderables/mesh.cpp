@@ -48,6 +48,8 @@ void Mesh::init_mesh(AppContext *app_context,
   RenderableConfig config = {
       vertices_count,
       indices_count,
+      vertices_count,
+      indices_count,
       sizeof(UniformBufferObject),
       1,
       app_context->config.package_path + "/shaders/Mesh_vk_vert.spv",

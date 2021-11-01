@@ -31,14 +31,25 @@ This section documents how to configure the Taichi development environment and b
 On Linux, `clang` is the **only** supported compiler for compiling the Taichi package.
 :::
 
+:::danger
+Taichi doesn't support building with `clang++-12` and above yet.
+`clang++-10` is highly recommended but if you're on a newer (>=11) macOS,
+building with `clang++-11` also works through `brew install llvm@11` and `export CXX=/opt/homebrew/opt/llvm@11/bin/clang++`.
+:::
+
 :::note
 On Linux, some additional packages might be required to build Taichi. E.g., on Ubuntu 20.04, you may need `libxi-dev` `libxcursor-dev` `libxinerama-dev` `libxrandr-dev` `libx11-dev` `libgl-dev`. please check the output of of CMake when building from source.
 :::
 
 3. LLVM: Make sure you have version 10.0.0 installed. Taichi uses a **customized LLVM**, which we provided as binaries depending on your system environment. Note that the pre-built binaries from the LLVM official website or other sources may not work.
    - [LLVM 10.0.0 for Linux](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_linux_patch2/taichi-llvm-10.0.0-linux.zip)
-   - [LLVM 10.0.0 for macOS](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip)
+   - [LLVM 10.0.0 for macOS (excluding M1)](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip)
    - [LLVM 10.0.0 for Windows MSVC 2019](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip)
+
+
+:::caution
+If you are building on using Apple M1 chip, you'll have to build LLVM from source following the steps below. Note the `-DLLVM_TARGETS_TO_BUILD="AArch64"` is required.
+:::
 
 :::note
 When using the above pre-built LLVM for Taichi, please add `$LLVM_FOLDER/bin` to `PATH`, e.g., `export PATH=<path_to_llvm_folder>/bin:$PATH` on Linux.

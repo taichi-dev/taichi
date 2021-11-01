@@ -88,6 +88,9 @@ void Window::write_image(const std::string &filename) {
     draw_frame();
   }
   renderer_->swap_chain().write_image(filename);
+  if(!renderer_->app_context().config.show_window){
+    prepare_for_next_frame();
+  }
 }
 
 }  // namespace vulkan

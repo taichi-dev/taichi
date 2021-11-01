@@ -73,13 +73,12 @@ class MemoryBound:
     def _save_cases_info_as_json(self, suite_path='./'):
         for case in self.test_cases:  #for case [fill,saxpy,reduction]
             results_dict = {}
-            case_name = case.__name__
-            case_path = os.path.join(suite_path, (case_name + '.json'))
             for impl in self._cases_impl:  #find [ti.i32, ti.i64, ti.f32, ti.f64]
-                if impl._name == case_name:
+                if impl._name != case.__name__:
                     continue
                 result_name = dtype2str(impl._test_dtype)
                 results_dict[result_name] = impl.get_results_dict()
+            case_path = os.path.join(suite_path, (case.__name__ + '.json'))
             with open(case_path, 'w') as f:
                 case_str = dump2json(results_dict)
                 print(case_str, file=f)

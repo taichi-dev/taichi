@@ -16,6 +16,8 @@ class SwapChain {
 
   void resize(uint32_t width, uint32_t height);
 
+  void write_image(const std::string &filename);
+
   void cleanup();
 
  private:

@@ -68,15 +68,19 @@ def test_unaryop():
     for i in range(4):
         assert a[i] == b[i]
 
+
 @ti.test(experimental_ast_refactor=True)
 def test_compare_fail():
     with pytest.raises(ti.TaichiSyntaxError) as e:
+
         @ti.kernel
         def foo():
             1 in [1]
+
         foo()
 
     assert e.value.args[0] == '"In" is not supported in Taichi kernels.'
+
 
 @ti.test(experimental_ast_refactor=True)
 def test_single_compare():
@@ -92,8 +96,8 @@ def test_single_compare():
 
     a = ti.Vector([1, 1, 2])
     b = ti.Vector([2, 1, 1])
-    c = ti.field(ti.i32, shape=(18,))
-    d = ti.field(ti.i32, shape=(18,))
+    c = ti.field(ti.i32, shape=(18, ))
+    d = ti.field(ti.i32, shape=(18, ))
 
     for i in range(3):
         c[i * 6] = a[i] == b[i]
@@ -106,6 +110,7 @@ def test_single_compare():
     foo(a, b, d)
     for i in range(18):
         assert c[i] == d[i]
+
 
 @ti.test(experimental_ast_refactor=True)
 def test_chain_compare():
@@ -125,25 +130,25 @@ def test_chain_compare():
 
     a = 1
     b = 2
-    c = ti.field(ti.i32, shape=(11,))
-    d = ti.field(ti.i32, shape=(11,))
+    c = ti.field(ti.i32, shape=(11, ))
+    d = ti.field(ti.i32, shape=(11, ))
 
-    for i in range(3):
-        c[0] = a == b == a
-        c[1] = a == b != a
-        c[2] = a != b == a
-        c[3] = a < b > a
-        c[4] = a > b < a
-        c[5] = a < b < a
-        c[6] = a > b > a
-        c[7] = a == a == a == a
-        c[8] = a == a == a != a
-        c[9] = a < b > a < b
-        c[10] = a > b > a < b
+    c[0] = a == b == a
+    c[1] = a == b != a
+    c[2] = a != b == a
+    c[3] = a < b > a
+    c[4] = a > b < a
+    c[5] = a < b < a
+    c[6] = a > b > a
+    c[7] = a == a == a == a
+    c[8] = a == a == a != a
+    c[9] = a < b > a < b
+    c[10] = a > b > a < b
 
     foo(a, b, d)
     for i in range(11):
         assert c[i] == d[i]
+
 
 @ti.test(experimental_ast_refactor=True)
 def test_return():

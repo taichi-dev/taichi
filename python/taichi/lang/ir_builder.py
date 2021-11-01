@@ -166,8 +166,7 @@ class IRBuilder(Builder):
 
         if isinstance(node.func, ast.Attribute):
             attr_name = node.func.attr
-            if attr_name == 'format':
-                assert isinstance(node.func.value.ptr, str)
+            if attr_name == 'format' and isinstance(node.func.value.ptr, str):
                 args.insert(0, node.func.value.ptr)
                 node.ptr = ti.ti_format(*args, **keywords)
             else:

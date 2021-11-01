@@ -145,8 +145,7 @@ class IRBuilder(Builder):
             elif isinstance(sub_node, ast.Constant):
                 str_spec += sub_node.value
             else:
-                raise TaichiSyntaxError(
-                    "Invalid value for fstring.")
+                raise TaichiSyntaxError("Invalid value for fstring.")
 
         args.insert(0, str_spec)
         node.ptr = ti.ti_format(*args)

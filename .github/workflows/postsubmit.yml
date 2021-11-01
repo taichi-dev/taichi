@@ -333,4 +333,4 @@ jobs:
           # update repo (push results)
           ./scripts/push.sh
         env:
-          PULL_REQUEST_NUMBER: ${{github.event.number}}
+          GITHUB_CONTEXT: ${{ toJson(github) }}

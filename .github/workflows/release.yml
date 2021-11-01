@@ -68,7 +68,7 @@ jobs:
           docker cp wheel/*.whl taichi_test:/home/dev/
           docker start -a taichi_test
         env:
-          PY: py38
+          PY: ${{ matrix.conda_python }}
           GPU_TEST: ON
           DISPLAY: :1
 
@@ -78,7 +78,6 @@ jobs:
           PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
-          PYTHON: ${{ matrix.python }}
         run: |
           mkdir dist
           cp wheel/*.whl dist/

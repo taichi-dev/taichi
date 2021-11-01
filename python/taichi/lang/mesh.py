@@ -311,13 +311,13 @@ class MeshMetadata:
             element["g2r_mapping"] = np.array(element["g2r_mapping"])
             self.element_fields[element_type] = {}
             self.element_fields[element_type]["owned"] = impl.field(
-                dtype=ti.u32, shape=self.num_patches + 1)
+                dtype=ti.i32, shape=self.num_patches + 1)
             self.element_fields[element_type]["total"] = impl.field(
-                dtype=ti.u32, shape=self.num_patches + 1)
+                dtype=ti.i32, shape=self.num_patches + 1)
             self.element_fields[element_type]["l2g"] = impl.field(
-                dtype=ti.u32, shape=element["l2g_mapping"].shape[0])
+                dtype=ti.i32, shape=element["l2g_mapping"].shape[0])
             self.element_fields[element_type]["l2r"] = impl.field(
-                dtype=ti.u32, shape=element["l2r_mapping"].shape[0])
+                dtype=ti.i32, shape=element["l2r_mapping"].shape[0])
             self.element_fields[element_type]["g2r"] = impl.field(
                 dtype=ti.i32, shape=element["g2r_mapping"].shape[0])
 
@@ -328,10 +328,10 @@ class MeshMetadata:
                 relation_by_orders(from_order, to_order))
             self.relation_fields[rel_type] = {}
             self.relation_fields[rel_type]["value"] = impl.field(
-                dtype=ti.u32, shape=len(relation["value"]))
+                dtype=ti.i32, shape=len(relation["value"]))
             if from_order <= to_order:
                 self.relation_fields[rel_type]["offset"] = impl.field(
-                    dtype=ti.u32, shape=len(relation["offset"]))
+                    dtype=ti.i32, shape=len(relation["offset"]))
 
         for element in data["elements"]:
             element_type = MeshElementType(element["order"])

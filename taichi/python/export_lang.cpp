@@ -1206,15 +1206,14 @@ void export_lang(py::module &m) {
         [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
           mesh_ptr.ptr->total_offset.insert(std::pair(type, snode));
         });
-  m.def("set_num_patches", [](mesh::MeshPtr &mesh_ptr, uint32_t num_patches) {
+  m.def("set_num_patches", [](mesh::MeshPtr &mesh_ptr, int num_patches) {
     mesh_ptr.ptr->num_patches = num_patches;
   });
 
-  m.def("set_num_elements",
-        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type,
-           uint32_t num_elements) {
-          mesh_ptr.ptr->num_elements.insert(std::pair(type, num_elements));
-        });
+  m.def("set_num_elements", [](mesh::MeshPtr &mesh_ptr,
+                               mesh::MeshElementType type, int num_elements) {
+    mesh_ptr.ptr->num_elements.insert(std::pair(type, num_elements));
+  });
 
   m.def("get_num_elements",
         [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type) {
@@ -1223,7 +1222,7 @@ void export_lang(py::module &m) {
 
   m.def("set_patch_max_element_num",
         [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type,
-           uint32_t max_element_num) {
+           int max_element_num) {
           mesh_ptr.ptr->patch_max_element_num.insert(
               std::pair(type, max_element_num));
         });

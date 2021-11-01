@@ -74,9 +74,9 @@ class Mesh {
   template <typename T>
   using MeshMapping = std::unordered_map<MeshElementType, T>;
 
-  uint32_t num_patches{0};
-  MeshMapping<uint32_t> num_elements{};
-  MeshMapping<uint32_t>
+  int num_patches{0};
+  MeshMapping<int> num_elements{};
+  MeshMapping<int>
       patch_max_element_num{};  // the max number of mesh element in each patch
 
   MeshMapping<SNode *> owned_offset{};  // prefix of owned element

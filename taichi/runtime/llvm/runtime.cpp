@@ -1432,14 +1432,14 @@ void gpu_parallel_range_for(RuntimeContext *context,
 }
 
 void gpu_parallel_mesh_for(RuntimeContext *context,
-                           uint32_t num_patches,
+                           int num_patches,
                            mesh_for_xlogue prologue,
                            MeshForTaskFunc *func,
                            mesh_for_xlogue epilogue,
                            const std::size_t tls_size) {
   alignas(8) char tls_buffer[tls_size];
   auto tls_ptr = &tls_buffer[0];
-  for (uint32_t idx = block_idx(); idx < num_patches; idx += grid_dim()) {
+  for (int idx = block_idx(); idx < num_patches; idx += grid_dim()) {
     if (prologue)
       prologue(context, tls_ptr, idx);
     func(context, tls_ptr, idx);

@@ -1599,7 +1599,7 @@ class MeshRelationAccessStmt : public Stmt {
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(neighbor_idx) {
-    this->ret_type = PrimitiveType::u32;
+    this->ret_type = PrimitiveType::i32;
     TI_STMT_REG_FIELDS;
   }
 
@@ -1610,7 +1610,7 @@ class MeshRelationAccessStmt : public Stmt {
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(nullptr) {
-    this->ret_type = PrimitiveType::u32;
+    this->ret_type = PrimitiveType::i32;
     TI_STMT_REG_FIELDS;
   }
 
@@ -1654,7 +1654,7 @@ class MeshIndexConversionStmt : public Stmt {
                           Stmt *idx,
                           mesh::ConvType conv_type)
       : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
-    this->ret_type = PrimitiveType::u32;
+    this->ret_type = PrimitiveType::i32;
     TI_STMT_REG_FIELDS;
   }
 
@@ -1675,7 +1675,7 @@ class MeshPatchIndexStmt : public Stmt {
 
   MeshPatchIndexStmt(OffloadedStmt *loop) : loop(loop) {
     TI_ASSERT(loop->task_type == OffloadedStmt::TaskType::mesh_for);
-    this->ret_type = PrimitiveType::u32;
+    this->ret_type = PrimitiveType::i32;
     TI_STMT_REG_FIELDS;
   }
 

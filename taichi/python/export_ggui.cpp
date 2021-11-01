@@ -244,6 +244,10 @@ struct PyWindow {
     window = new vulkan::Window(config);
   }
 
+  void write_image(const std::string &filename) {
+    window->write_image(filename);
+  }
+
   void show() {
     window->show();
   }
@@ -305,6 +309,7 @@ void export_ggui(py::module &m) {
       .def(py::init<std::string, py::tuple, bool, std::string, Arch, bool>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
+      .def("write_image", &PyWindow::write_image)
       .def("is_pressed", &PyWindow::is_pressed)
       .def("get_cursor_pos", &PyWindow::py_get_cursor_pos)
       .def("is_running", &PyWindow::is_running)

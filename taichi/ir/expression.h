@@ -14,6 +14,7 @@ class Expression {
   Stmt *stmt;
   std::string tb;
   std::map<std::string, std::string> attributes;
+  DataType ret_type;
 
   struct FlattenContext {
     VecStatement stmts;

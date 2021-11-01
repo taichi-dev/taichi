@@ -40,7 +40,7 @@ def test_random_vector_dup_eval():
 
     @ti.kernel
     def func():
-        a[None] = ti.Vector([ti.random(), 1], dt=ti.f32).normalized()
+        a[None] = ti.Vector([ti.random(), 1]).normalized()
 
     for i in range(4):
         func()

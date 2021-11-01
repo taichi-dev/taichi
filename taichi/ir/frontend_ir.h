@@ -240,6 +240,7 @@ class ArgLoadExpression : public Expression {
   DataType dt;
 
   ArgLoadExpression(int arg_id, DataType dt) : arg_id(arg_id), dt(dt) {
+    ret_type = dt;
   }
 
   void serialize(std::ostream &ss) override {
@@ -254,6 +255,7 @@ class RandExpression : public Expression {
   DataType dt;
 
   RandExpression(DataType dt) : dt(dt) {
+    ret_type = dt;
   }
 
   void serialize(std::ostream &ss) override {
@@ -286,11 +288,9 @@ class BinaryOpExpression : public Expression {
   BinaryOpType type;
   Expr lhs, rhs;
 
-  BinaryOpExpression(const BinaryOpType &type, const Expr &lhs, const Expr &rhs)
-      : type(type) {
-    this->lhs.set(load_if_ptr(lhs));
-    this->rhs.set(load_if_ptr(rhs));
-  }
+  BinaryOpExpression(const BinaryOpType &type,
+                     const Expr &lhs,
+                     const Expr &rhs);
 
   void serialize(std::ostream &ss) override {
     ss << '(';
@@ -677,6 +677,7 @@ class ConstExpression : public Expression {
 
   template <typename T>
   ConstExpression(const T &x) : val(x) {
+    ret_type = val.dt;
   }
 
   void serialize(std::ostream &ss) override {

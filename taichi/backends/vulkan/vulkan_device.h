@@ -314,6 +314,18 @@ class VulkanCommandList : public CommandList {
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
 
+  void copy_image(DeviceAllocation dst_img,
+                  DeviceAllocation src_img,
+                  ImageLayout dst_img_layout,
+                  ImageLayout src_img_layout,
+                  const ImageCopyParams &params) override;
+
+  void blit_image(DeviceAllocation dst_img,
+                  DeviceAllocation src_img,
+                  ImageLayout dst_img_layout,
+                  ImageLayout src_img_layout,
+                  const ImageCopyParams &params) override;
+
   vkapi::IVkRenderPass current_renderpass();
 
   // Vulkan specific functions
@@ -348,6 +360,8 @@ class VulkanSurface : public Surface {
   BufferFormat image_format() override;
   virtual void resize(uint32_t width, uint32_t height);
 
+  DeviceAllocation get_image_data() override;
+
  private:
   void create_swap_chain();
   void destroy_swap_chain();
@@ -364,6 +378,9 @@ class VulkanSurface : public Surface {
   uint32_t image_index_{0};
 
   std::vector<DeviceAllocation> swapchain_images_;
+
+  DeviceAllocation screenshot_image_{kDeviceNullAllocation};
+  DeviceAllocation screenshot_buffer_{kDeviceNullAllocation};
 };
 
 struct DescPool {

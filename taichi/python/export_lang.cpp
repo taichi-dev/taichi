@@ -287,6 +287,7 @@ void export_lang(py::module &m) {
       .def("add_field", &AotModuleBuilder::add_field)
       .def("add", &AotModuleBuilder::add)
       .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
+      .def("preprocess_kernels", &AotModuleBuilder::preprocess_kernels)
       .def("dump", &AotModuleBuilder::dump);
 
   m.def("get_current_program", get_current_program,
@@ -464,6 +465,7 @@ void export_lang(py::module &m) {
            })
       .def("set_grad", &Expr::set_grad)
       .def("set_attribute", &Expr::set_attribute)
+      .def("get_ret_type", &Expr::get_ret_type)
       .def("get_expr_name",
            [](Expr *expr) {
              return expr->cast<GlobalVariableExpression>()->name;

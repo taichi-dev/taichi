@@ -154,9 +154,11 @@ void memcpy_cuda_to_vulkan(DevicePtr dst, DevicePtr src, uint64_t size) {
   if (alloc_base_ptrs.find(dst_alloc.alloc_id) == alloc_base_ptrs.end()) {
     auto [base_mem, alloc_offset, alloc_size] =
         vk_dev->get_vkmemory_offset_size(dst_alloc);
-    auto block_size = VulkanDevice::kMemoryBlockSize;
+    // this might be smaller than the actual size of the VkDeviceMemory, but it
+    // is big enough to cover the region of this buffer, so it's fine.
+    size_t mem_size = alloc_offset + alloc_size;
     void *alloc_base_ptr = get_cuda_memory_pointer(
-        base_mem, /*mem_size=*/block_size, /*offset=*/alloc_offset,
+        base_mem, /*mem_size=*/mem_size, /*offset=*/alloc_offset,
         /*buffer_size=*/alloc_size, vk_dev->vk_device());
     alloc_base_ptrs[dst_alloc.alloc_id] = (unsigned char *)alloc_base_ptr;
   }

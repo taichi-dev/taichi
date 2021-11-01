@@ -22,7 +22,7 @@ def test_binop():
         a[11] = x & y
 
     x = 37
-    y = 5
+    y = 3
     a = ti.field(ti.f32, shape=(12, ))
     b = ti.field(ti.f32, shape=(12, ))
 
@@ -66,7 +66,7 @@ def test_augassign():
         b[0] /= y
 
     x = 37
-    y = 5
+    y = 3
     a = ti.field(ti.i32, shape=(11, ))
     b = ti.field(ti.i32, shape=(11, ))
     c = ti.field(ti.f32, shape=(1, ))

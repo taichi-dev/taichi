@@ -23,7 +23,7 @@ fi
 cd python
 # This is for changelog
 git fetch origin master
-TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python3 build.py build --project_name $PEOJECT_NAME
+TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python3 build.py build --project_name $PROJECT_NAME
 # Run basic cpp tests
 cd ..
 CUR_DIR=`pwd`

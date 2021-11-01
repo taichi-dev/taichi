@@ -27,7 +27,7 @@ class SourceBuilder:
     def from_file(cls, filename, compile_fn=None, _temp_dir=None):
         self = cls()
         self.td = _temp_dir
-        if filename.endswith(".cpp") or filename.endswith(".c") or filename.endswith(".cc"):
+        if filename.endswith((".cpp", ".c", ".cc")):
             assert impl.current_cfg().arch in [_ti_core.Arch.x64, _ti_core.Arch.cuda]
             if compile_fn is None:
                 if self.td is None:
@@ -55,7 +55,7 @@ class SourceBuilder:
                 compile_fn = compile_fn_impl
             self.bc = compile_fn(filename)
             self.mode = 'bc'
-        elif filename.endswith(".so") or filename.endswith(".dylib") or filename.endswith(".dll"):
+        elif filename.endswith((".so", ".dylib", ".dll")):
             assert impl.current_cfg().arch in [_ti_core.Arch.x64]
             self.so = ctypes.CDLL(filename)
             self.mode = 'so'

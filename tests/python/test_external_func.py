@@ -85,4 +85,3 @@ def test_source_builder_from_file():
     assert func_bc() == 11**8
 
     shutil.rmtree(td)
-

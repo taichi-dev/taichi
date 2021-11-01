@@ -23,6 +23,7 @@ from taichi.lang.ndrange import GroupedNDRange, ndrange
 from taichi.lang.ops import *
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
+from taichi.lang.source_builder import SourceBuilder
 from taichi.lang.struct import Struct
 from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (has_clangpp, has_pytorch, is_taichi_class,
@@ -34,7 +35,6 @@ from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
 from taichi.type.annotations import any_arr, ext_arr, template
-from taichi.lang.source_builder import SourceBuilder
 
 import taichi as ti
 

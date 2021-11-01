@@ -2033,7 +2033,8 @@ void CodeGenLLVM::visit_call_bitcode(ExternalFuncCallStmt *stmt) {
     auto *func_ptr = external_module->getFunction(stmt->bc_funcname);
     TI_ASSERT_INFO(func_ptr != nullptr, "{} is not found in {}.",
                    stmt->bc_funcname, stmt->bc_filename);
-    auto link_error = llvm::Linker::linkModules(*module, std::move(external_module));
+    auto link_error =
+        llvm::Linker::linkModules(*module, std::move(external_module));
     TI_ASSERT(!link_error);
   }
   // Retrieve function again. Do it here to detect name conflicting.

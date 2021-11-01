@@ -2031,7 +2031,7 @@ void CodeGenLLVM::visit_call_bitcode(ExternalFuncCallStmt *stmt) {
     std::unique_ptr<llvm::Module> cpp_module =
         module_from_bitcode_file(stmt->bc_filename, llvm_context);
     auto *func_ptr = cpp_module->getFunction(stmt->bc_funcname);
-    TI_ASSERT_INFO(func_ptr != nullptr, "{} is not founded in {}.",
+    TI_ASSERT_INFO(func_ptr != nullptr, "{} is not found in {}.",
                    stmt->bc_funcname, stmt->bc_filename);
     auto link_error = llvm::Linker::linkModules(*module, std::move(cpp_module));
     TI_ASSERT(!link_error);

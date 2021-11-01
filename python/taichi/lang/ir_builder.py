@@ -190,6 +190,8 @@ class IRBuilder(Builder):
                 node.ptr = ti.ti_all(*args, **keywords)
             else:
                 node.ptr = node.func.ptr(*args, **keywords)
+        else:
+            node.ptr = node.func.ptr(*args, **keywords)
 
         return node
 

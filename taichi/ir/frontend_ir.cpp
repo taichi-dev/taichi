@@ -128,6 +128,38 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(unary));
 }
 
+BinaryOpExpression::BinaryOpExpression(const BinaryOpType &type,
+                                       const Expr &lhs,
+                                       const Expr &rhs)
+    : type(type) {
+  this->lhs.set(load_if_ptr(lhs));
+  this->rhs.set(load_if_ptr(rhs));
+  auto lhs_type = this->lhs->ret_type;
+  auto rhs_type = this->rhs->ret_type;
+  // TODO: report error messages for unsuccessful inference
+  if (!lhs_type->is<PrimitiveType>() || !rhs_type->is<PrimitiveType>())
+    return;
+  if (lhs_type == PrimitiveType::unknown || rhs_type == PrimitiveType::unknown)
+    return;
+  if (binary_is_bitwise(type) &&
+      (!is_integral(lhs_type) || !is_integral(rhs_type)))
+    return;
+  if (is_comparison(type)) {
+    ret_type = PrimitiveType::i32;
+    return;
+  }
+  if (type == BinaryOpType::truediv) {
+    auto default_fp = get_current_program().config.default_fp;
+    if (!is_real(lhs_type)) {
+      lhs_type = default_fp;
+    }
+    if (!is_real(rhs_type)) {
+      rhs_type = default_fp;
+    }
+  }
+  ret_type = promoted_type(lhs_type, rhs_type);
+}
+
 void BinaryOpExpression::flatten(FlattenContext *ctx) {
   // if (stmt)
   //  return;

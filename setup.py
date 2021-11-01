@@ -65,6 +65,8 @@ def get_os_name():
         return 'win'
     elif name.lower().startswith('linux'):
         return 'linux'
+    elif 'bsd' in name.lower():
+        return 'unix'
     assert False, "Unknown platform name %s" % name
 
 
@@ -173,7 +175,7 @@ class CMakeBuild(build_ext):
             os.makedirs(target)
             with open(os.path.join(target, "__init__.py"), "w") as f:
                 pass
-            if get_os_name() == 'linux':
+            if get_os_name() == 'linux' or get_os_name() == 'unix':
                 shutil.copy(os.path.join(self.build_temp, 'libtaichi_core.so'),
                             os.path.join(target, 'taichi_core.so'))
             elif get_os_name() == 'osx':

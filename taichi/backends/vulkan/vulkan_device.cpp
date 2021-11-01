@@ -95,7 +95,8 @@ const std::unordered_map<ImageLayout, VkImageLayout> image_layout_ti_2_vk = {
     {ImageLayout::depth_attachment_read,
      VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL},
     {ImageLayout::transfer_dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL},
-    {ImageLayout::transfer_src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL}};
+    {ImageLayout::transfer_src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL},
+    {ImageLayout::present_src, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR}};
 
 VkImageLayout image_layout_ti_to_vk(ImageLayout layout) {
   if (image_layout_ti_2_vk.find(layout) == image_layout_ti_2_vk.end()) {
@@ -956,17 +957,21 @@ void VulkanCommandList::image_transition(DeviceAllocation img,
   static std::unordered_map<VkImageLayout, VkPipelineStageFlagBits> stages;
   stages[VK_IMAGE_LAYOUT_UNDEFINED] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
   stages[VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL] = VK_PIPELINE_STAGE_TRANSFER_BIT;
+  stages[VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL] = VK_PIPELINE_STAGE_TRANSFER_BIT;
   stages[VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL] =
       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
   stages[VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL] =
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  stages[VK_IMAGE_LAYOUT_PRESENT_SRC_KHR] = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
   static std::unordered_map<VkImageLayout, VkAccessFlagBits> access;
   access[VK_IMAGE_LAYOUT_UNDEFINED] = (VkAccessFlagBits)0;
   access[VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL] = VK_ACCESS_TRANSFER_WRITE_BIT;
+  access[VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL] = VK_ACCESS_TRANSFER_READ_BIT;
   access[VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL] = VK_ACCESS_SHADER_READ_BIT;
   access[VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL] =
       VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  access[VK_IMAGE_LAYOUT_PRESENT_SRC_KHR] = VK_ACCESS_MEMORY_READ_BIT;
 
   if (stages.find(old_layout) == stages.end() ||
       stages.find(new_layout) == stages.end()) {
@@ -1038,6 +1043,60 @@ void VulkanCommandList::image_to_buffer(DevicePtr dst_buf,
                          &copy_info);
   buffer_->refs.push_back(image);
   buffer_->refs.push_back(buffer);
+}
+
+void VulkanCommandList::copy_image(DeviceAllocation dst_img,
+                                   DeviceAllocation src_img,
+                                   ImageLayout dst_img_layout,
+                                   ImageLayout src_img_layout,
+                                   const ImageCopyParams &params) {
+  VkImageCopy copy{};
+  copy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  copy.srcSubresource.layerCount = 1;
+  copy.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  copy.dstSubresource.layerCount = 1;
+  copy.extent.width = params.width;
+  copy.extent.height = params.height;
+  copy.extent.depth = params.depth;
+
+  auto [dst_vk_image, dst_view, dst_format] = ti_device_->get_vk_image(dst_img);
+  auto [src_vk_image, src_view, src_format] = ti_device_->get_vk_image(src_img);
+
+  vkCmdCopyImage(buffer_->buffer, src_vk_image->image,
+                 image_layout_ti_to_vk(src_img_layout), dst_vk_image->image,
+                 image_layout_ti_to_vk(dst_img_layout), 1, &copy);
+
+  buffer_->refs.push_back(dst_vk_image);
+  buffer_->refs.push_back(src_vk_image);
+}
+
+void VulkanCommandList::blit_image(DeviceAllocation dst_img,
+                                   DeviceAllocation src_img,
+                                   ImageLayout dst_img_layout,
+                                   ImageLayout src_img_layout,
+                                   const ImageCopyParams &params) {
+  VkOffset3D blit_size;
+  blit_size.x = params.width;
+  blit_size.y = params.height;
+  blit_size.z = params.depth;
+  VkImageBlit blit{};
+  blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  blit.srcSubresource.layerCount = 1;
+  blit.srcOffsets[1] = blit_size;
+  blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  blit.dstSubresource.layerCount = 1;
+  blit.dstOffsets[1] = blit_size;
+
+  auto [dst_vk_image, dst_view, dst_format] = ti_device_->get_vk_image(dst_img);
+  auto [src_vk_image, src_view, src_format] = ti_device_->get_vk_image(src_img);
+
+  vkCmdBlitImage(buffer_->buffer, src_vk_image->image,
+                 image_layout_ti_to_vk(src_img_layout), dst_vk_image->image,
+                 image_layout_ti_to_vk(dst_img_layout), 1, &blit,
+                 VK_FILTER_NEAREST);
+
+  buffer_->refs.push_back(dst_vk_image);
+  buffer_->refs.push_back(src_vk_image);
 }
 
 void VulkanCommandList::set_line_width(float width) {
@@ -1902,7 +1961,8 @@ void VulkanSurface::create_swap_chain() {
   createInfo.imageColorSpace = surface_format.colorSpace;
   createInfo.imageExtent = extent;
   createInfo.imageArrayLayers = 1;
-  createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+  createInfo.imageUsage =
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
   createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
   createInfo.queueFamilyIndexCount = 0;
   createInfo.pQueueFamilyIndices = nullptr;
@@ -1966,6 +2026,12 @@ VulkanSurface::~VulkanSurface() {
   destroy_swap_chain();
   vkDestroySemaphore(device_->vk_device(), image_available_, nullptr);
   vkDestroySurfaceKHR(device_->vk_instance(), surface_, nullptr);
+  if (screenshot_buffer_ != kDeviceNullAllocation) {
+    device_->dealloc_memory(screenshot_buffer_);
+  }
+  if (screenshot_image_ != kDeviceNullAllocation) {
+    device_->destroy_image(screenshot_image_);
+  }
 }
 
 void VulkanSurface::resize(uint32_t width, uint32_t height) {
@@ -2004,6 +2070,55 @@ void VulkanSurface::present_image() {
   presentInfo.pResults = nullptr;
 
   vkQueuePresentKHR(device_->graphics_queue(), &presentInfo);
+}
+
+DeviceAllocation VulkanSurface::get_image_data() {
+  auto *stream = device_->get_graphics_stream();
+  DeviceAllocation &img_alloc = swapchain_images_[image_index_];
+  auto [w, h] = get_size();
+  size_t size_bytes = w * h * 4;
+  if (screenshot_image_ == kDeviceNullAllocation) {
+    ImageParams params = {ImageDimension::d2D,
+                          BufferFormat::rgba8,
+                          ImageLayout::transfer_dst,
+                          w,
+                          h,
+                          1,
+                          false};
+    screenshot_image_ = device_->create_image(params);
+  }
+  if (screenshot_buffer_ == kDeviceNullAllocation) {
+    Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
+                               /*host_read*/ true, /*export_sharing*/ false,
+                               AllocUsage::Uniform};
+    screenshot_buffer_ = device_->allocate_memory(params);
+  }
+
+  device_->image_transition(img_alloc, ImageLayout::present_src,
+                            ImageLayout::transfer_src);
+
+  auto cmd_list = stream->new_command_list();
+  // TODO: check if blit is suppoted, and use copy_image if not
+  cmd_list->blit_image(screenshot_image_, img_alloc, ImageLayout::transfer_dst,
+                       ImageLayout::transfer_src, {w, h, 1});
+  cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_dst,
+                             ImageLayout::transfer_src);
+  stream->submit_synced(cmd_list.get());
+
+  BufferImageCopyParams copy_params;
+  copy_params.image_extent.x = w;
+  copy_params.image_extent.y = h;
+  cmd_list = stream->new_command_list();
+  // TODO: directly map the image to cpu memory
+  cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), screenshot_image_,
+                            ImageLayout::transfer_src, copy_params);
+  cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_src,
+                             ImageLayout::transfer_dst);
+  cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
+                             ImageLayout::present_src);
+  stream->submit_synced(cmd_list.get());
+
+  return screenshot_buffer_;
 }
 
 VulkanStream::VulkanStream(VulkanDevice &device,

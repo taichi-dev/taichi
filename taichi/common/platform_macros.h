@@ -28,6 +28,7 @@ static_assert(false, "32-bit Windows systems are not supported")
 #define TI_PLATFORM_OSX
 #endif
 
-#if (defined(TI_PLATFORM_LINUX) || defined(TI_PLATFORM_OSX))
+#if (defined(TI_PLATFORM_LINUX) || defined(TI_PLATFORM_OSX) || \
+     defined(__unix__))
 #define TI_PLATFORM_UNIX
 #endif

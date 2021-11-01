@@ -4,6 +4,7 @@ from collections.abc import Iterable
 
 import numpy as np
 import taichi.lang
+from taichi.core import ti_core
 from taichi.lang import expr, impl
 from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod
@@ -71,6 +72,12 @@ class Matrix(TaichiOperations):
                                     dt = impl.get_runtime().default_ip
                                 elif isinstance(n[0], float):
                                     dt = impl.get_runtime().default_fp
+                                elif isinstance(n[0], expr.Expr):
+                                    dt = n[0].ptr.get_ret_type()
+                                    if dt == ti_core.DataType_unknown:
+                                        raise TypeError(
+                                            'Element type of the matrix cannot be inferred. Please set dt instead for now.'
+                                        )
                                 else:
                                     raise Exception(
                                         'dt required when using dynamic_index for local tensor'

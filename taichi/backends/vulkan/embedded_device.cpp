@@ -426,7 +426,8 @@ void EmbeddedVulkanDevice::create_logical_device() {
     } else if (name == VK_KHR_SPIRV_1_4_EXTENSION_NAME) {
       ti_device_->set_cap(DeviceCapability::spirv_version, 0x10400);
       enabled_extensions.push_back(ext.extensionName);
-    } else if (name == VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME) {
+    } else if (name == VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME ||
+               name == VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) {
       ti_device_->set_cap(DeviceCapability::vk_has_external_memory, true);
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME) {

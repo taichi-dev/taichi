@@ -23,7 +23,7 @@ def _test_block_gc():
         for i in x:
             x[i] = ti.Vector(
                 [ti.random() * 0.1 + 0.5,
-                 ti.random() * 0.1 + 0.5], dt=ti.f32)
+                 ti.random() * 0.1 + 0.5])
 
     init()
 

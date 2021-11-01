@@ -3,7 +3,7 @@ import taichi as ti
 
 
 @ti.test(arch=ti.cpu)
-def test_():
+def test_binary_op():
     @ti.kernel
     def bitwise_float():
         a = 1

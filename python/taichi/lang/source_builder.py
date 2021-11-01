@@ -78,13 +78,10 @@ class SourceBuilder:
     def from_source(cls, source_code, compile_fn=None):
         assert impl.current_cfg().arch in [_ti_core.Arch.x64, _ti_core.Arch.cuda]
         _temp_dir = tempfile.mkdtemp()
-        if impl.current_cfg().arch == _ti_core.Arch.x64:
-            source_file = os.path.join(_temp_dir, 'source.cpp')
-        else:
-            source_file = os.path.join(_temp_dir, 'source.cu')
-        with open(source_file, 'w') as f:
+        _temp_source = os.path.join(_temp_dir, '_temp_source.cpp')
+        with open(_temp_source, 'w') as f:
             f.write(source_code)
-        return SourceBuilder.from_file(source_file, compile_fn, _temp_dir)
+        return SourceBuilder.from_file(_temp_source, compile_fn, _temp_dir)
 
     def __getattr__(self, item):
         def bitcode_func_call_wrapper(*args):

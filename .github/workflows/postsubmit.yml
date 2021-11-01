@@ -189,7 +189,7 @@ jobs:
   build_and_test_windows:
     name: Build and Test (Windows)
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Install 7Zip PowerShell
         shell: powershell
@@ -295,7 +295,7 @@ jobs:
           TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
           TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
           ti test -vr2 -t4 -x
-    
+
   performance_monitoring:
     name: Performance monitoring (NVGPU)
     timeout-minutes: 60

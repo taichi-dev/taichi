@@ -196,9 +196,8 @@ class Module:
                 "Preprocessing kernels is ignored since it's only supported on opengl backend for now."
             )
         if shutil.which('glslc') is None:
-            raise RuntimeError(
-                "Could not find glslc which is required to preprocess kernels."
-            )
+            warnings.warn("Could not find glslc, preprocessing is skipped.")
+            return
 
         self._aot_builder.preprocess_kernels()
 

@@ -381,6 +381,8 @@ class VulkanSurface : public Surface {
 
   DeviceAllocation screenshot_image_{kDeviceNullAllocation};
   DeviceAllocation screenshot_buffer_{kDeviceNullAllocation};
+
+  DeviceAllocation headless_render_target_{kDeviceNullAllocation};
 };
 
 struct DescPool {

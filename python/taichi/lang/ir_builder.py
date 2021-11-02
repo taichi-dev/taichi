@@ -431,10 +431,14 @@ class IRBuilder(Builder):
             ndrange_arg = build_stmt(ctx, node.iter.args[0].args[0]).ptr
             from taichi.lang.exception import TaichiSyntaxError
             if not isinstance(ndrange_arg, ti.ndrange):
-                raise TaichiSyntaxError("Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'.")
+                raise TaichiSyntaxError(
+                    "Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'."
+                )
             targets = IRBuilder.get_for_loop_targets(node)
             if len(targets) != 1:
-                raise TaichiSyntaxError(f"Group for should have 1 loop target, found {len(targets)}")
+                raise TaichiSyntaxError(
+                    f"Group for should have 1 loop target, found {len(targets)}"
+                )
             target = targets[0]
             for value in ndrange_arg:
                 with ctx.variable_scope_guard():

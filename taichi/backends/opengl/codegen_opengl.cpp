@@ -63,6 +63,8 @@ std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
 #endif
 
 std::string preprocess_kernel(std::string src) {
+  if (!is_gles()) return src;
+
 #if !defined(TI_PLATFORM_WINDOWS)
   int child_status;
   auto child_pid = fork();

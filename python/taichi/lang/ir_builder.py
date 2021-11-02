@@ -83,10 +83,18 @@ class IRBuilder(Builder):
             var.assign(value)
 
     @staticmethod
+    def is_tuple(node):
+        if isinstance(node, ast.Tuple):
+            return True
+        if isinstance(node, ast.Index) and isinstance(node.value, ast.Tuple):
+            return True
+        return False
+
+    @staticmethod
     def build_Subscript(ctx, node):
         node.value = build_stmt(ctx, node.value)
         node.slice = build_stmt(ctx, node.slice)
-        if not isinstance(node.slice, ast.Tuple):
+        if not IRBuilder.is_tuple(node.slice):
             node.slice.ptr = [node.slice.ptr]
         node.ptr = ti.subscript(node.value.ptr, *node.slice.ptr)
         return node

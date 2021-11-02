@@ -13,6 +13,7 @@
 #include "taichi/backends/opengl/opengl_data_types.h"
 #include "taichi/backends/vulkan/spirv_ir_builder.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/math/arithmetic.h"
 
 #include <spirv-tools/libspirv.hpp>
 #include <spirv-tools/optimizer.hpp>
@@ -25,6 +26,7 @@ namespace {
 constexpr char kRootBufferName[] = "root_buffer";
 constexpr char kGlobalTmpsBufferName[] = "global_tmps_buffer";
 constexpr char kContextBufferName[] = "context_buffer";
+constexpr char kListgenBufferName[] = "listgen_buffer";
 
 constexpr int kMaxNumThreadsGridStrideLoop = 65536;
 
@@ -42,6 +44,8 @@ std::string buffer_instance_name(BufferInfo b) {
       return kGlobalTmpsBufferName;
     case BufferType::Context:
       return kContextBufferName;
+    case BufferType::ListGen:
+      return kListgenBufferName;
     default:
       TI_NOT_IMPLEMENTED;
       break;
@@ -100,6 +104,10 @@ class TaskCodegen : public IRVisitor {
     } else if (task_ir_->task_type == OffloadedTaskType::range_for) {
       // struct_for is automatically lowered to ranged_for for dense snodes
       generate_range_for_kernel(task_ir_);
+    } else if (task_ir_->task_type == OffloadedTaskType::listgen) {
+      generate_listgen_kernel(task_ir_);
+    } else if (task_ir_->task_type == OffloadedTaskType::struct_for) {
+      generate_struct_for_kernel(task_ir_);
     } else {
       TI_ERROR("Unsupported offload type={} on Vulkan arch",
                task_ir_->task_name());
@@ -250,12 +258,43 @@ class TaskCodegen : public IRVisitor {
     }
     const auto *sn = stmt->snode;
 
-    if (stmt->activate && !(sn->type == SNodeType::dense)) {
-      // Sparse SNode not supported yet.
-      TI_NOT_IMPLEMENTED;
+    spirv::Value parent_val = ir_->query_value(parent);
+
+    if (stmt->activate) {
+      if (sn->type == SNodeType::dense) {
+        // Do nothing
+      } else if (sn->type == SNodeType::bitmasked) {
+        const auto &snode_descs = compiled_structs_[root_id].snode_descriptors;
+        const auto &desc = snode_descs.at(sn->id);
+
+        auto ptr_dt = parent_val.stype;
+        spirv::Value input_index_val =
+            ir_->cast(ptr_dt, ir_->query_value(stmt->input_index->raw_name()));
+        auto bitmask_word_index =
+            ir_->make_value(spv::OpShiftRightLogical, ptr_dt, input_index_val,
+                            ir_->uint_immediate_number(ptr_dt, 5));
+        auto bitmask_bit_index =
+            ir_->make_value(spv::OpBitwiseAnd, ptr_dt, input_index_val,
+                            ir_->uint_immediate_number(ptr_dt, 31));
+        auto bitmask_mask =
+            ir_->make_value(spv::OpShiftLeftLogical, ptr_dt,
+                            ir_->const_i32_one_, bitmask_bit_index);
+
+        auto buffer = get_buffer_value(BufferInfo(BufferType::Root, root_id),
+                                       PrimitiveType::u32);
+        auto bitmask_word_ptr = ir_->struct_array_access(
+            ir_->u32_type(), buffer,
+            ir_->add(bitmask_word_index,
+                     make_pointer(desc.cell_stride *
+                                  desc.cells_per_container_pot())));
+        ir_->make_value(spv::OpAtomicOr, ir_->u32_type(), bitmask_word_ptr,
+                        /*scope=*/ir_->const_i32_one_,
+                        /*semantics=*/ir_->const_i32_zero_, bitmask_mask);
+      } else {
+        TI_NOT_IMPLEMENTED;
+      }
     }
 
-    spirv::Value parent_val = ir_->query_value(parent);
     spirv::Value val;
     if (is_root) {
       val = parent_val;  // Assert Root[0] access at first time
@@ -1222,6 +1261,77 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpFunctionEnd);
   }
 
+  void generate_listgen_kernel(OffloadedStmt *stmt) {
+    task_attribs_.name = task_name_;
+    task_attribs_.task_type = OffloadedTaskType::listgen;
+    task_attribs_.buffer_binds = get_common_buffer_binds();
+    task_attribs_.advisory_total_num_threads = 1;
+    task_attribs_.advisory_num_threads_per_group = 1;
+
+    auto snode = stmt->snode;
+
+    TI_TRACE("Listgen for {}", snode->get_name());
+
+    std::vector<SNode *> snode_path;
+    int total_num_cells = 1;
+    {
+      // Construct the SNode path to the chosen node
+      auto snode_head = snode;
+      do {
+        snode_path.push_back(snode_head);
+        total_num_cells *= snode_head->num_cells_per_container;
+      } while (snode_head = snode_head->parent);
+      for (int i = snode_path.size() - 1; i >= 0; i--) {
+        TI_TRACE("- {} ({})", snode_path[i]->get_name(), snode_path[i]->type_name());
+        TI_TRACE("  is_place: {}, num_axis: {}", snode_path[i]->is_place(), snode_path[i]->num_active_indices);
+      }
+    }
+
+    // The computation for a single work is wrapped inside a function, so that
+    // we can do grid-strided loop.
+    ir_->start_function(kernel_function_);
+
+    if (snode->type == SNodeType::bitmasked) {
+      int num_cells = snode->num_cells_per_container;
+      int num_masks = iroundup(num_cells, 32);
+
+      int upper_level_cells = total_num_cells / num_cells;
+      int curr_level_masks_count_ = iroundup(num_cells, 32) / 32;
+      auto curr_level_masks_count = ir_->uint_immediate_number(ir_->u32_type(), curr_level_masks_count_);
+
+      TI_INFO("ListGen {} * {} ({} masks)", total_num_cells / num_cells, num_cells, curr_level_masks_count_);
+
+      auto listgen_buffer = get_buffer_value(BufferInfo(BufferType::ListGen), PrimitiveType::i32);
+      auto invoc_index = ir_->get_global_invocation_id(0);
+
+      auto mask_index = ir_->mod(invoc_index, curr_level_masks_count);
+      auto upper_level_cell_index = ir_->div(invoc_index, curr_level_masks_count);
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
+
+    ir_->make_inst(spv::OpReturn);       // return;
+    ir_->make_inst(spv::OpFunctionEnd);  // } Close kernel
+  }
+
+  void generate_struct_for_kernel(OffloadedStmt *stmt) {
+    task_attribs_.name = task_name_;
+    task_attribs_.task_type = OffloadedTaskType::struct_for;
+    task_attribs_.buffer_binds = get_common_buffer_binds();
+    task_attribs_.advisory_total_num_threads = 1;
+    task_attribs_.advisory_num_threads_per_group = 1;
+
+    // The computation for a single work is wrapped inside a function, so that
+    // we can do grid-strided loop.
+    ir_->start_function(kernel_function_);
+
+    auto snode = stmt->snode;
+
+
+    ir_->make_inst(spv::OpReturn);       // return;
+    ir_->make_inst(spv::OpFunctionEnd);  // } Close kernel
+  }
+
   spirv::Value at_buffer(const Stmt *ptr, DataType dt) {
     size_t width = ir_->get_primitive_type_size(dt);
     spirv::Value buffer = get_buffer_value(ptr_to_buffers_.at(ptr), dt);
@@ -1454,7 +1564,7 @@ class KernelCodegen {
                task_res.spirv_code.size(), optimized_spv.size());
 
       // Enable to dump SPIR-V assembly of kernels
-#if 0
+#if 1
       std::string spirv_asm;
       spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
       TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", params_.ti_kernel_name,

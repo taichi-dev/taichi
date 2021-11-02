@@ -39,8 +39,17 @@ class StructCompiler {
             ->second.mem_offset_in_parent_cell = child_offset;
       }
       sn_desc.cell_stride = cell_stride;
-      sn_desc.container_stride =
-          cell_stride * sn_desc.cells_per_container_pot();
+
+      if (sn->type == SNodeType::bitmasked) {
+        size_t num_cells = sn_desc.cells_per_container_pot();
+        size_t bitmask_num_words =
+            num_cells % 32 == 0 ? (num_cells / 32) : (num_cells / 32 + 1);
+        sn_desc.container_stride =
+            cell_stride * num_cells + bitmask_num_words * 4;
+      } else {
+        sn_desc.container_stride =
+            cell_stride * sn_desc.cells_per_container_pot();
+      }
     }
 
     sn->cell_size_bytes = sn_desc.cell_stride;

@@ -195,6 +195,13 @@ if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
   target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glfw/include)
 endif()
 
+if (TI_WITH_OPENGL AND LINUX)
+  find_package(OpenGL)
+  if (OpenGL_EGL_FOUND)
+    target_link_libraries(${LIBRARY_NAME} OpenGL::EGL)
+  endif()
+endif()
+
 if(DEFINED ENV{LLVM_DIR})
     set(LLVM_DIR $ENV{LLVM_DIR})
     message("Getting LLVM_DIR=${LLVM_DIR} from the environment variable")

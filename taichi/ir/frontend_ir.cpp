@@ -131,7 +131,8 @@ void UnaryOpExpression::type_check() {
   if (operand->ret_type == PrimitiveType::unknown)
     return;
   if ((type == UnaryOpType::floor || type == UnaryOpType::ceil ||
-       is_trigonometric(type)) && !is_real(operand->ret_type))
+       is_trigonometric(type)) &&
+      !is_real(operand->ret_type))
     throw std::runtime_error(fmt::format(
         "TypeError: '{}' takes real inputs only, however '{}' is provided",
         unary_op_type_name(type), operand->ret_type->to_string()));

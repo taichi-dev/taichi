@@ -31,6 +31,7 @@ def has_pytorch():
 from distutils.spawn import find_executable
 
 # Taichi itself uses llvm-10.0.0 to compile.
+# There will be some issues compiling CUDA with other clang++ version.
 _clangpp_candidates = ['clang++-10']
 _clangpp_presence = None
 for c in _clangpp_candidates:

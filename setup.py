@@ -213,10 +213,9 @@ class Clean(clean):
             if os.path.exists(d):
                 remove_tree(d, dry_run=self.dry_run)
         generated_files = [
-            'taichi/common/commit_hash.h', 'taichi/common/version.h'
+            glob.glob('taichi/runtime/llvm/runtime_*.bc'),
+            glob.glob('taichi/runtime/llvm/runtime_*.ll'),
         ]
-        generated_files += glob.glob('taichi/runtime/llvm/runtime_*.bc')
-        generated_files += glob.glob('taichi/runtime/llvm/runtime_*.ll')
         for f in generated_files:
             if os.path.exists(f):
                 print(f'removing generated file {f}')

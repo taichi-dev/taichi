@@ -2023,7 +2023,7 @@ void CodeGenLLVM::visit(LoopUniqueStmt *stmt) {
 void CodeGenLLVM::visit_call_bitcode(ExternalFuncCallStmt *stmt) {
   TI_ASSERT(stmt->type == ExternalFuncCallStmt::BITCODE);
   std::vector<llvm::Value *> arg_values;
-  for (auto s : stmt->arg_stmts)
+  for (const auto& s : stmt->arg_stmts)
     arg_values.push_back(llvm_val[s]);
   // Link external module to the core module
   if (linked_modules.find(stmt->bc_filename) == linked_modules.end()) {

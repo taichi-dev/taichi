@@ -330,6 +330,31 @@ class IRBuilder(Builder):
         return node
 
     @staticmethod
+    def build_Compare(ctx, node):
+        node.left = build_stmt(ctx, node.left)
+        node.comparators = build_stmts(ctx, node.comparators)
+        op_dict = {
+            ast.Eq: "Eq",
+            ast.NotEq: "NotEq",
+            ast.Lt: "Lt",
+            ast.LtE: "LtE",
+            ast.Gt: "Gt",
+            ast.GtE: "GtE",
+        }
+        operands = [node.left.ptr
+                    ] + [comparator.ptr for comparator in node.comparators]
+        ops = []
+        for node_op in node.ops:
+            op = op_dict.get(type(node_op))
+            if op is None:
+                raise TaichiSyntaxError(
+                    f'"{type(node_op).__name__}" is not supported in Taichi kernels.'
+                )
+            ops.append(op)
+        node.ptr = ti.chain_compare(operands, ops)
+        return node
+
+    @staticmethod
     def get_decorator(ctx, node):
         if not isinstance(node, ast.Call):
             return ''

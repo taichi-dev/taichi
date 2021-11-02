@@ -39,7 +39,8 @@ class Expression {
   }
 
   virtual void type_check() {
-    // TODO: make it pure virtual after type_check for all expressions are implemented
+    // TODO: make it pure virtual after type_check for all expressions are
+    // implemented
   }
 
   virtual void serialize(std::ostream &ss) = 0;

@@ -290,9 +290,7 @@ class BinaryOpExpression : public Expression {
   BinaryOpType type;
   Expr lhs, rhs;
 
-  BinaryOpExpression(const BinaryOpType &type,
-                     const Expr &lhs,
-                     const Expr &rhs)
+  BinaryOpExpression(const BinaryOpType &type, const Expr &lhs, const Expr &rhs)
       : type(type), lhs(load_if_ptr(lhs)), rhs(load_if_ptr(rhs)) {
   }
 

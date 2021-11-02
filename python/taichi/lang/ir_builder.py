@@ -427,7 +427,19 @@ class IRBuilder(Builder):
     @staticmethod
     def build_static_for(ctx, node, is_grouped):
         if is_grouped:
-            pass
+            assert len(node.iter.args[0].args) == 1
+            ndrange_arg = build_stmt(ctx, node.iter.args[0].args[0]).ptr
+            from taichi.lang.exception import TaichiSyntaxError
+            if not isinstance(ndrange_arg, ti.ndrange):
+                raise TaichiSyntaxError("Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'.")
+            targets = IRBuilder.get_for_loop_targets(node)
+            if len(targets) != 1:
+                raise TaichiSyntaxError(f"Group for should have 1 loop target, found {len(targets)}")
+            target = targets[0]
+            for value in ndrange_arg:
+                with ctx.variable_scope_guard():
+                    ctx.create_variable(target, value)
+                    node.body = build_stmts_wo_scope(ctx, node.body)
         else:
             node.iter = build_stmt(ctx, node.iter)
             targets = IRBuilder.get_for_loop_targets(node)
@@ -439,37 +451,6 @@ class IRBuilder(Builder):
                         ctx.create_variable(target, target_value)
                     node.body = build_stmts_wo_scope(ctx, node.body)
         return node
-#         # for i in ti.static(range(n))
-#         # for i, j in ti.static(ti.ndrange(n))
-#         # for I in ti.static(ti.grouped(ti.ndrange(n, m)))
-#
-#         ctx.current_control_scope().append('static')
-#         node.body = build_stmts(ctx, node.body)
-#         if is_grouped:
-#             assert len(node.iter.args[0].args) == 1
-#             template = '''
-# if 1:
-#     __ndrange_arg = 0
-#     from taichi.lang.exception import TaichiSyntaxError
-#     if not isinstance(__ndrange_arg, ti.ndrange):
-#         raise TaichiSyntaxError("Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'.")
-#     pass
-#     del a
-#             '''
-#             t = ast.parse(template).body[0]
-#             t.body[0].value = node.iter.args[0].args[0]
-#             t.body[3] = node
-#             t.body[3].iter.args[0].args[0] = parse_expr('__ndrange_arg')
-#         else:
-#             t = parse_stmt('if 1: pass; del a')
-#             t.body[0] = node
-#         target = copy.deepcopy(node.target)
-#         target.ctx = ast.Del()
-#         if isinstance(target, ast.Tuple):
-#             for tar in target.elts:
-#                 tar.ctx = ast.Del()
-#         t.body[-1].targets = [target]
-#         return t
 
     @staticmethod
     def build_range_for(ctx, node):

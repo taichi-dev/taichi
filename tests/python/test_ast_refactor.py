@@ -280,6 +280,25 @@ def test_static_for():
 
 
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_static_group_for():
+    a = ti.field(ti.i32, shape=(4, 4))
+
+    @ti.kernel
+    def foo(x: ti.i32):
+        for i in ti.static(ti.grouped(ti.ndrange((1, 3), (1, 3)))):
+            a[i] = x
+
+    x = 5
+    foo(x)
+    for i in range(4):
+        for j in range(4):
+            if 1 <= i < 3 and 1 <= j < 3:
+                assert a[i, j] == 5
+            else:
+                assert a[i, j] == 0
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
 def test_func():
     @ti.func
     def bar(x):

@@ -6,6 +6,7 @@ from collections import ChainMap
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.ast_builder_utils import *
 from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.util import to_taichi_type
 
 import taichi as ti
 
@@ -219,39 +220,19 @@ class IRBuilder(Builder):
                 ti.lang.kernel_arguments.decl_scalar_ret(ctx.func.return_type)
 
             for i, arg in enumerate(args.args):
-                # Directly pass in template arguments,
-                # such as class instances ("self"), fields, SNodes, etc.
-                # if isinstance(ctx.func.argument_annotations[i], ti.template):
-                #     continue
-                # if isinstance(ctx.func.argument_annotations[i],
-                #               ti.sparse_matrix_builder):
-                #     arg_init = parse_stmt(
-                #         'x = ti.lang.kernel_arguments.decl_sparse_matrix()')
-                #     arg_init.targets[0].id = arg.arg
-                #     ctx.create_variable(arg.arg)
-                #     arg_decls.append(arg_init)
-                # elif isinstance(ctx.func.argument_annotations[i], ti.any_arr):
-                #     arg_init = parse_stmt(
-                #         'x = ti.lang.kernel_arguments.decl_any_arr_arg(0, 0, 0, 0)'
-                #     )
-                #     arg_init.targets[0].id = arg.arg
-                #     ctx.create_variable(arg.arg)
-                #     array_dt = ctx.arg_features[i][0]
-                #     array_dim = ctx.arg_features[i][1]
-                #     array_element_shape = ctx.arg_features[i][2]
-                #     array_layout = ctx.arg_features[i][3]
-                #     array_dt = to_taichi_type(array_dt)
-                #     dt_expr = 'ti.' + ti.core.data_type_name(array_dt)
-                #     dt = parse_expr(dt_expr)
-                #     arg_init.value.args[0] = dt
-                #     arg_init.value.args[1] = parse_expr("{}".format(array_dim))
-                #     arg_init.value.args[2] = parse_expr(
-                #         "{}".format(array_element_shape))
-                #     arg_init.value.args[3] = parse_expr(
-                #         "ti.{}".format(array_layout))
-                #     arg_decls.append(arg_init)
                 if isinstance(ctx.func.argument_annotations[i], ti.template):
                     continue
+                elif isinstance(ctx.func.argument_annotations[i],
+                                ti.linalg.sparse_matrix_builder):
+                    ctx.create_variable(
+                        arg.arg, ti.lang.kernel_arguments.decl_sparse_matrix())
+                elif isinstance(ctx.func.argument_annotations[i], ti.any_arr):
+                    ctx.create_variable(
+                        arg.arg,
+                        ti.lang.kernel_arguments.decl_any_arr_arg(
+                            to_taichi_type(ctx.arg_features[i][0]),
+                            ctx.arg_features[i][1], ctx.arg_features[i][2],
+                            ctx.arg_features[i][3]))
                 else:
                     ctx.create_variable(
                         arg.arg,

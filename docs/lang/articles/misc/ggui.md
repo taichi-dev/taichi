@@ -167,3 +167,24 @@ while window.running:
     if window.is_pressed(ti.ui.RMB):
         attractor_strength[None] = -1
 ```
+
+
+## Image I/O
+
+To write the current screen content into an image file:
+
+```python
+window.write_image(filename)
+```
+
+Notice that, when the window is showing, you have to call `window.write_image()` before the `window.show()` call.
+
+
+## Off-screen rendering
+
+GGUI supports rendering contents off-screen, that is, writing the results into image files without showing the window at all. This is sometimes referred to as "headless" rendering. To enable this mode, initialize the window with the argument `show_window=False`:
+
+```python
+window = ti.ui.Window('Window Title', (640, 360), show_window = False)
+```
+Then, you can use `window.write_image()` as normal, and remove the `window.show()` call at the end.

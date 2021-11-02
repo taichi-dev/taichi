@@ -15,7 +15,8 @@ void SwapChain::init(class AppContext *app_context) {
   SurfaceConfig config;
   config.vsync = app_context_->config.vsync;
   config.window_handle = app_context_->glfw_window();
-
+  config.width = app_context_->config.width;
+  config.height = app_context_->config.height;
   surface_ = app_context_->device().create_surface(config);
   auto [w, h] = surface_->get_size();
   curr_width_ = w;

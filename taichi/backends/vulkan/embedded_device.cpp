@@ -348,11 +348,11 @@ void EmbeddedVulkanDevice::create_logical_device() {
   std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
   std::unordered_set<uint32_t> unique_families;
 
-  if (params_.is_for_ui) {
-    unique_families = {queue_family_indices_.graphics_family.value(),
-                       queue_family_indices_.present_family.value()};
-  } else {
-    unique_families = {queue_family_indices_.compute_family.value()};
+  if (queue_family_indices_.compute_family.has_value()) {
+    unique_families.insert(queue_family_indices_.compute_family.value());
+  }
+  if (queue_family_indices_.graphics_family.has_value()) {
+    unique_families.insert(queue_family_indices_.graphics_family.value());
   }
 
   float queue_priority = 1.0f;
@@ -553,13 +553,15 @@ void EmbeddedVulkanDevice::create_logical_device() {
                         "failed to create logical device");
   VulkanLoader::instance().load_device(device_);
 
-  if (params_.is_for_ui) {
+  if (queue_family_indices_.compute_family.has_value()) {
+    vkGetDeviceQueue(device_, queue_family_indices_.compute_family.value(), 0,
+                     &compute_queue_);
+  }
+  if (queue_family_indices_.graphics_family.has_value()) {
     vkGetDeviceQueue(device_, queue_family_indices_.graphics_family.value(), 0,
                      &graphics_queue_);
   }
 
-  vkGetDeviceQueue(device_, queue_family_indices_.compute_family.value(), 0,
-                   &compute_queue_);
 }  // namespace vulkan
 
 }  // namespace vulkan

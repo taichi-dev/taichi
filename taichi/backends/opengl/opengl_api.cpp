@@ -14,11 +14,6 @@
 #include "glad/egl.h"
 #include "GLFW/glfw3.h"
 #include "taichi/backends/opengl/opengl_device.h"
-
-//#include "glad/glad_egl.h"
-#include <dlfcn.h>
-#include <EGL/egl.h>
-
 #endif
 
 #include <list>

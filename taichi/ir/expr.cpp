@@ -33,6 +33,10 @@ DataType Expr::get_ret_type() const {
   return expr->ret_type;
 }
 
+void Expr::type_check() {
+  expr->type_check();
+}
+
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
   return Expr::make<TernaryOpExpression>(TernaryOpType::select, cond, true_val,
                                          false_val);

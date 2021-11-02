@@ -109,6 +109,8 @@ class Expr {
   std::string get_attribute(const std::string &key) const;
 
   DataType get_ret_type() const;
+
+  void type_check();
 };
 
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val);

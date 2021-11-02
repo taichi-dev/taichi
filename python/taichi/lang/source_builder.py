@@ -29,6 +29,9 @@ class SourceBuilder:
     def from_file(cls, filename, compile_fn=None, _temp_dir=None):
         self = cls()
         self.td = _temp_dir
+        if self.td is None:
+            self.td = tempfile.mkdtemp()
+
         if filename.endswith((".cpp", ".c", ".cc")):
             if impl.current_cfg().arch not in [
                     _ti_core.Arch.x64, _ti_core.Arch.cuda
@@ -36,8 +39,6 @@ class SourceBuilder:
                 raise TaichiSyntaxError(
                     "Unsupported arch for external function call")
             if compile_fn is None:
-                if self.td is None:
-                    self.td = tempfile.mkdtemp()
 
                 def compile_fn_impl(filename):
                     if impl.current_cfg().arch == _ti_core.Arch.x64:
@@ -61,8 +62,6 @@ class SourceBuilder:
                 raise TaichiSyntaxError(
                     "Unsupported arch for external function call")
             if compile_fn is None:
-                if self.td is None:
-                    self.td = tempfile.mkdtemp()
                 shutil.copy(filename, os.path.join(self.td, 'source.cu'))
 
                 def compile_fn_impl(filename):
@@ -95,8 +94,6 @@ class SourceBuilder:
             ]:
                 raise TaichiSyntaxError(
                     "Unsupported arch for external function call")
-            if self.td is None:
-                self.td = tempfile.mkdtemp()
             subprocess.call('llvm-as ' + filename + ' -o ' +
                             os.path.join(self.td, 'source.bc'),
                             shell=True)

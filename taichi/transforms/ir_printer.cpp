@@ -62,7 +62,7 @@ class IRPrinter : public IRVisitor {
 
   void print_raw(std::string f) {
     for (int i = 0; i < current_indent; i++)
-      f = f.insert(0, "  ");
+      f.insert(0, "  ");
     f += "\n";
     if (output) {
       ss << f;

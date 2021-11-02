@@ -266,3 +266,30 @@ def test_static_assign():
     a[0] = 2
     b[0] = 3
     assert foo(a, b) == 3
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_static_assign_element():
+    with pytest.raises(ti.TaichiSyntaxError) as e:
+
+        @ti.kernel
+        def foo():
+            a = ti.static([1, 2, 3])
+            a[0] = ti.static(2)
+
+        foo()
+    assert e.value.args[
+        0] == "Static assign cannot be used on elements in arrays"
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_recreate_variable():
+    with pytest.raises(ti.TaichiSyntaxError) as e:
+
+        @ti.kernel
+        def foo():
+            a = 1
+            a = ti.static(2)
+
+        foo()
+    assert e.value.args[0] == "Recreating variables is not allowed"

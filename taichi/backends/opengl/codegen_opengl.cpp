@@ -58,6 +58,47 @@ std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
   return type_names[type];
 }
 
+#if !defined(TI_PLATFORM_WINDOWS)
+#include<sys/wait.h>
+#endif
+
+std::string preprocess_kernel(std::string src) {
+#if !defined(TI_PLATFORM_WINDOWS)
+  int child_status;
+  auto child_pid = fork();
+  if(child_pid == 0) {
+    char* const argv[] = {"glslc", "--version", nullptr};
+    execvp("glslc", argv);
+  } else {
+    pid_t tpid = waitpid(child_pid, &child_status, 0);
+  }
+  if (!child_status) {
+    // For debugging only
+    // ker.kernel_src =
+    //   "#version 430 core\n#define DEFINE(NAME) add_##NAME##_f32\nDEFINE(TEST)";
+    std::string command = "echo \"" + src + "\" | glslc -E /dev/stdin";
+    char buffer[128];
+    std::string result = "";
+
+    FILE *pipe = popen(command.c_str(), "r");
+
+    TI_ASSERT_INFO(pipe, "popen failed!");
+
+    while (!feof(pipe)) {
+      if (fgets(buffer, 128, pipe) != NULL)
+        result += buffer;
+    }
+
+    pclose(pipe);
+    return result;
+  } else {
+    return src;
+  }
+#else
+  return src;
+#endif
+}
+
 class KernelGen : public IRVisitor {
  public:
   KernelGen(Kernel *kernel,
@@ -217,9 +258,9 @@ class KernelGen : public IRVisitor {
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
     auto kernel_src_code =
-        "#version 430 core\n" + extensions + "precision highp float;\n" +
+        (is_gles() ? "#version 310 es\n" : "#version 430 core\n") + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
-    compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
+    compiled_program_.add(std::move(glsl_kernel_name_), preprocess_kernel(kernel_src_code),
                           num_workgroups_, workgroup_size_,
                           &this->extptr_access);
     auto &config = kernel_->program->config;

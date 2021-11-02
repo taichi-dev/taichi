@@ -9,7 +9,7 @@ Window::Window(const AppConfig &config) : WindowBase(config) {
 }
 
 void Window::init(const AppConfig &config) {
-  if(config_.show_window){
+  if (config_.show_window) {
     glfwSetFramebufferSizeCallback(glfw_window_, framebuffer_resize_callback);
   }
 
@@ -82,7 +82,7 @@ void Window::present_frame() {
 Window::~Window() {
   gui_->cleanup();
   renderer_->cleanup();
-  if(config_.show_window){
+  if (config_.show_window) {
     glfwTerminate();
   }
 }
@@ -92,7 +92,7 @@ void Window::write_image(const std::string &filename) {
     draw_frame();
   }
   renderer_->swap_chain().write_image(filename);
-  if(!config_.show_window){
+  if (!config_.show_window) {
     prepare_for_next_frame();
   }
 }

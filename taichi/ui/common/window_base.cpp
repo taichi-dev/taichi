@@ -2,13 +2,14 @@
 
 TI_UI_NAMESPACE_BEGIN
 
-
-#define CHECK_WINDOW_SHOWING TI_ERROR_IF(!config_.show_window,"show_window must be True to use this method")
+#define CHECK_WINDOW_SHOWING        \
+  TI_ERROR_IF(!config_.show_window, \
+              "show_window must be True to use this method")
 
 WindowBase ::WindowBase(AppConfig config) : config_(config) {
-  if(config_.show_window){
+  if (config_.show_window) {
     glfw_window_ = create_glfw_window_(config_.name, config_.width,
-                                     config_.height, config_.vsync);
+                                       config_.height, config_.vsync);
     glfwSetWindowUserPointer(glfw_window_, this);
     set_callbacks();
     last_record_time_ = glfwGetTime();
@@ -83,14 +84,14 @@ bool WindowBase::is_pressed(std::string button) {
 }
 
 bool WindowBase::is_running() {
-  if(config_.show_window){
+  if (config_.show_window) {
     return !glfwWindowShouldClose(glfw_window_);
   }
   return true;
 }
 
 void WindowBase::set_is_running(bool value) {
-  if(config_.show_window){
+  if (config_.show_window) {
     glfwSetWindowShouldClose(glfw_window_, !value);
   }
 }
@@ -155,7 +156,7 @@ void WindowBase::set_current_event(const Event &event) {
 }
 
 WindowBase::~WindowBase() {
-  if(config_.show_window){
+  if (config_.show_window) {
     glfwDestroyWindow(glfw_window_);
   }
 }

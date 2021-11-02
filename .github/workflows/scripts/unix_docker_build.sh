@@ -5,7 +5,8 @@ set -ex
 # Parse ARGs
 PY=$1
 GPU_BUILD=$2
-CI_SETUP_CMAKE_ARGS=$3
+PROJECT_NAME=$3
+CI_SETUP_CMAKE_ARGS=$4
 
 source /home/dev/miniconda/etc/profile.d/conda.sh
 conda activate $PY
@@ -22,7 +23,7 @@ fi
 cd python
 # This is for changelog
 git fetch origin master
-TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python3 build.py build
+TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python3 build.py build --project_name $PROJECT_NAME
 # Run basic cpp tests
 cd ..
 CUR_DIR=`pwd`

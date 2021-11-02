@@ -513,8 +513,6 @@ class VulkanDevice : public GraphicsDevice {
       VulkanResourceBinder::Set &set);
   vkapi::IVkDescriptorSet alloc_desc_set(vkapi::IVkDescriptorSetLayout layout);
 
-  static constexpr size_t kMemoryBlockSize = 128ull * 1024 * 1024;
-
  private:
   void create_vma_allocator();
   void new_descriptor_pool();

@@ -135,6 +135,23 @@ class IRBuilder(Builder):
         return node
 
     @staticmethod
+    def build_JoinedStr(ctx, node):
+        str_spec = ''
+        args = []
+        for sub_node in node.values:
+            if isinstance(sub_node, ast.FormattedValue):
+                str_spec += '{}'
+                args.append(build_stmt(ctx, sub_node.value).ptr)
+            elif isinstance(sub_node, ast.Constant):
+                str_spec += sub_node.value
+            else:
+                raise TaichiSyntaxError("Invalid value for fstring.")
+
+        args.insert(0, str_spec)
+        node.ptr = ti.ti_format(*args)
+        return node
+
+    @staticmethod
     def build_Call(ctx, node):
         node.func = build_stmt(ctx, node.func)
         node.args = build_stmts(ctx, node.args)
@@ -146,7 +163,35 @@ class IRBuilder(Builder):
             else:
                 args.append(arg.ptr)
         keywords = dict(ChainMap(*[keyword.ptr for keyword in node.keywords]))
-        node.ptr = node.func.ptr(*args, **keywords)
+
+        if isinstance(node.func, ast.Attribute):
+            attr_name = node.func.attr
+            if attr_name == 'format' and isinstance(node.func.value.ptr, str):
+                args.insert(0, node.func.value.ptr)
+                node.ptr = ti.ti_format(*args, **keywords)
+            else:
+                node.ptr = node.func.ptr(*args, **keywords)
+        if isinstance(node.func, ast.Name):
+            func_name = node.func.id
+            if func_name == 'print':
+                node.ptr = ti.ti_print(*args, **keywords)
+            elif func_name == 'min':
+                node.ptr = ti.ti_min(*args, **keywords)
+            elif func_name == 'max':
+                node.ptr = ti.ti_max(*args, **keywords)
+            elif func_name == 'int':
+                node.ptr = ti.ti_int(*args, **keywords)
+            elif func_name == 'float':
+                node.ptr = ti.ti_float(*args, **keywords)
+            elif func_name == 'any':
+                node.ptr = ti.ti_any(*args, **keywords)
+            elif func_name == 'all':
+                node.ptr = ti.ti_all(*args, **keywords)
+            else:
+                node.ptr = node.func.ptr(*args, **keywords)
+        else:
+            node.ptr = node.func.ptr(*args, **keywords)
+
         return node
 
     @staticmethod

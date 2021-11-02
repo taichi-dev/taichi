@@ -159,6 +159,19 @@ def test_return():
     assert foo(1) == 2
 
 
+@ti.test(experimental_ast_refactor=True)
+def test_format_print():
+    a = ti.field(ti.i32, shape=(10, ))
+
+    @ti.kernel
+    def foo():
+        a[0] = 1.0
+        a[5] = 2.0
+        print('Test if the string.format and fstring print works')
+        print('string.format: a[0]={}, a[5]={}'.format(a[0], a[5]))
+        print(f'fstring: a[0]={a[0]}, a[5]={a[5]}')
+
+
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
 def test_if():
     @ti.kernel

@@ -385,6 +385,24 @@ class TypedConstant {
   TypedConstant(float64 x) : dt(PrimitiveType::f64), val_f64(x) {
   }
 
+  TypedConstant(int8 x) : dt(PrimitiveType::i8), val_i8(x) {
+  }
+
+  TypedConstant(int16 x) : dt(PrimitiveType::i16), val_i16(x) {
+  }
+
+  TypedConstant(uint8 x) : dt(PrimitiveType::u8), val_u8(x) {
+  }
+
+  TypedConstant(uint16 x) : dt(PrimitiveType::u16), val_u16(x) {
+  }
+
+  TypedConstant(uint32 x) : dt(PrimitiveType::u32), val_u32(x) {
+  }
+
+  TypedConstant(uint64 x) : dt(PrimitiveType::u64), val_u64(x) {
+  }
+
   template <typename T>
   TypedConstant(DataType dt, const T &value) : dt(dt) {
     // TODO: loud failure on pointers

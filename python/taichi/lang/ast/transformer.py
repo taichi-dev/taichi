@@ -38,8 +38,6 @@ class ASTTransformerTotal(object):
     def visit(self, tree, *arguments):
         if impl.get_runtime().experimental_ast_refactor:
             self.print_ast(tree, 'Initial AST')
-            # self.rename_module.visit(tree)
-            self.print_ast(tree, 'AST with module renamed')
             ctx = IRBuilderContext(
                 func=self.func,
                 excluded_parameters=self.excluded_parameters,

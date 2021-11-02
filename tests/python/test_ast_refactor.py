@@ -374,3 +374,31 @@ def test_recreate_variable():
 
         foo()
     assert e.value.args[0] == "Recreating variables is not allowed"
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_taichi_other_than_ti():
+    import taichi as np
+
+    @np.func
+    def bar(x: np.template()):
+        if np.static(x):
+            mat = bar(x // 2)
+            mat = mat @ mat
+            if np.static(x % 2):
+                mat = mat @ np.Matrix([[1, 1], [1, 0]])
+            return mat
+        else:
+            return np.Matrix([[1, 0], [0, 1]])
+
+    def fibonacci(x):
+        return np.subscript(bar(x), 1, 0)
+
+    @np.kernel
+    def foo(x: np.template()) -> np.i32:
+        return fibonacci(x)
+
+    fib = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+
+    for i in range(10):
+        assert foo(i) == fib[i]

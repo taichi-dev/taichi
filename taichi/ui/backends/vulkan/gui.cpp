@@ -26,7 +26,9 @@ Gui::Gui(AppContext *app_context, GLFWwindow *window) {
 
   ImGui::StyleColorsDark();
 
-  ImGui_ImplGlfw_InitForVulkan(window, true);
+  if (app_context->config.show_window) {
+    ImGui_ImplGlfw_InitForVulkan(window, true);
+  }
 }
 
 void Gui::init_render_resources(VkRenderPass render_pass) {
@@ -95,7 +97,9 @@ void Gui::prepare_for_next_frame() {
     return;
   }
   ImGui_ImplVulkan_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
+  if (app_context_->config.show_window) {
+    ImGui_ImplGlfw_NewFrame();
+  }
   ImGui::NewFrame();
   is_empty_ = true;
 }
@@ -183,7 +187,9 @@ void Gui::cleanup_render_resources() {
 }
 
 void Gui::cleanup() {
-  ImGui_ImplGlfw_Shutdown();
+  if (app_context_->config.show_window) {
+    ImGui_ImplGlfw_Shutdown();
+  }
   cleanup_render_resources();
   ImGui::DestroyContext();
 }

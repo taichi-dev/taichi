@@ -47,5 +47,17 @@ TEST(FrontendTypeInference, BinaryOp) {
   EXPECT_EQ(truediv_f64->ret_type, PrimitiveType::f64);
 }
 
+TEST(FrontendTypeInference, UnaryOp) {
+  auto const_i16 = Expr::make<ConstExpression, int16>(-(1 << 10));
+  const_i16->type_check();
+  EXPECT_EQ(const_i16->ret_type, PrimitiveType::i16);
+  auto cast_i8 = cast(const_i16, PrimitiveType::i8);
+  cast_i8->type_check();
+  EXPECT_EQ(cast_i8->ret_type, PrimitiveType::i8);
+  auto bit_not_i16 = ~const_i16;
+  bit_not_i16->type_check();
+  EXPECT_EQ(bit_not_i16->ret_type, PrimitiveType::i16);
+}
+
 }  // namespace lang
 }  // namespace taichi

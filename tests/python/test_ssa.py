@@ -65,7 +65,7 @@ def test_func_argument_dup_eval():
 def test_func_random_argument_dup_eval():
     @ti.func
     def func(a):
-        return ti.Vector([ti.cos(a), ti.sin(a)], dt=ti.f32)
+        return ti.Vector([ti.cos(a), ti.sin(a)])
 
     @ti.kernel
     def kern() -> ti.f32:

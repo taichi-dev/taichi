@@ -51,16 +51,11 @@ Expr operator~(const Expr &expr) {
 }
 
 Expr cast(const Expr &input, DataType dt) {
-  auto ret =
-      std::make_shared<UnaryOpExpression>(UnaryOpType::cast_value, input);
-  ret->cast_type = dt;
-  return Expr(ret);
+  return Expr::make<UnaryOpExpression>(UnaryOpType::cast_value, input, dt);
 }
 
 Expr bit_cast(const Expr &input, DataType dt) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast_bits, input);
-  ret->cast_type = dt;
-  return Expr(ret);
+  return Expr::make<UnaryOpExpression>(UnaryOpType::cast_bits, input, dt);
 }
 
 Expr Expr::operator[](const ExprGroup &indices) const {

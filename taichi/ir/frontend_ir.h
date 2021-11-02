@@ -278,6 +278,12 @@ class UnaryOpExpression : public Expression {
     cast_type = PrimitiveType::unknown;
   }
 
+  UnaryOpExpression(UnaryOpType type, const Expr &operand, DataType cast_type)
+      : type(type), operand(load_if_ptr(operand)), cast_type(cast_type) {
+  }
+
+  void type_check() override;
+
   bool is_cast() const;
 
   void serialize(std::ostream &ss) override;

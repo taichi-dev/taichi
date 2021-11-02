@@ -2023,7 +2023,7 @@ void CodeGenLLVM::visit(LoopUniqueStmt *stmt) {
 void CodeGenLLVM::visit_call_bitcode(ExternalFuncCallStmt *stmt) {
   TI_ASSERT(stmt->type == ExternalFuncCallStmt::BITCODE);
   std::vector<llvm::Value *> arg_values;
-  for (const auto& s : stmt->arg_stmts)
+  for (const auto &s : stmt->arg_stmts)
     arg_values.push_back(llvm_val[s]);
   // Link external module to the core module
   if (linked_modules.find(stmt->bc_filename) == linked_modules.end()) {
@@ -2058,13 +2058,13 @@ void CodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {
   std::vector<llvm::Type *> arg_types;
   std::vector<llvm::Value *> arg_values;
 
-  for (const auto& s : stmt->arg_stmts) {
+  for (const auto &s : stmt->arg_stmts) {
     TI_ASSERT(s->width() == 1);
     arg_types.push_back(tlctx->get_data_type(s->ret_type));
     arg_values.push_back(llvm_val[s]);
   }
 
-  for (const auto& s : stmt->output_stmts) {
+  for (const auto &s : stmt->output_stmts) {
     TI_ASSERT(s->width() == 1);
     auto t = tlctx->get_data_type(s->ret_type);
     auto ptr = llvm::PointerType::get(t, 0);

@@ -14,9 +14,9 @@
 #include "GLFW/glfw3.h"
 #include "taichi/backends/opengl/opengl_device.h"
 
-#ifdef __linux__
+//#include "glad/glad_egl.h"
+#include <dlfcn.h>
 #include <EGL/egl.h>
-#endif
 
 #endif
 
@@ -92,6 +92,42 @@ bool initialize_opengl(bool error_tolerance) {
   glfwMakeContextCurrent(window);
    */
 
+  typedef EGLDisplay (*PfnEglGetDisplay)( 	NativeDisplayType);
+  typedef EGLBoolean (*PfnEglInitialize)(EGLDisplay,EGLint*,EGLint*);
+  typedef EGLBoolean (*PfnEglChooseConfig)(EGLDisplay,EGLint const *,
+                                           EGLConfig *,
+                                           EGLint,
+                                           EGLint *);
+  typedef EGLSurface (*PfnEglCreatePbufferSurface)(EGLDisplay,
+                                             EGLConfig,
+                                             EGLint const *);
+  typedef EGLBoolean (*PfnEglBindAPI)( 	EGLenum);
+  typedef EGLContext (*PfnEglCreateContext)( 	EGLDisplay,
+                                      EGLConfig,
+                                      EGLContext,
+                                      EGLint const *);
+  typedef EGLBoolean (*PfnEglMakeCurrent)( 	EGLDisplay,
+                                    EGLSurface,
+                                    EGLSurface,
+                                    EGLContext);
+
+  void *libegl = dlopen("libEGL.so", RTLD_NOW);
+
+  if (!libegl) {
+    TI_WARN("Failed to dlopen libEGL");
+    supported = std::make_optional<bool>(false);
+    return false;
+  }
+
+  GLADloadproc loader = (GLADloadproc) dlsym(libegl, "eglGetProcAddress");
+  auto egl_get_display = (PfnEglGetDisplay) dlsym(libegl, "eglGetDisplay");
+  auto egl_initialize = (PfnEglInitialize) dlsym(libegl, "eglInitialize");
+  auto egl_choose_config = (PfnEglChooseConfig) dlsym(libegl, "eglChooseConfig");
+  auto egl_create_pbuffer_surface = (PfnEglCreatePbufferSurface) dlsym(libegl, "eglCreatePbufferSurface");
+  auto egl_bind_api = (PfnEglBindAPI) dlsym(libegl, "eglBindAPI");
+  auto egl_create_context = (PfnEglCreateContext) dlsym(libegl, "eglCreateContext");
+  auto egl_make_current = (PfnEglMakeCurrent) dlsym(libegl, "eglMakeCurrent");
+
   static const EGLint configAttribs[] = {
       EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
       EGL_BLUE_SIZE, 8,
@@ -112,31 +148,32 @@ bool initialize_opengl(bool error_tolerance) {
   };
 
   // 1. Initialize EGL
-  EGLDisplay eglDpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+  EGLDisplay eglDpy = egl_get_display(EGL_DEFAULT_DISPLAY);
   EGLint major, minor;
-  eglInitialize(eglDpy, &major, &minor);
+  egl_initialize(eglDpy, &major, &minor);
 
   // 2. Select an appropriate configuration
   EGLint numConfigs;
   EGLConfig eglCfg;
 
-  eglChooseConfig(eglDpy, configAttribs, &eglCfg, 1, &numConfigs);
+  egl_choose_config(eglDpy, configAttribs, &eglCfg, 1, &numConfigs);
 
   // 3. Create a surface
-  EGLSurface eglSurf = eglCreatePbufferSurface(eglDpy, eglCfg,
+  EGLSurface eglSurf = egl_create_pbuffer_surface(eglDpy, eglCfg,
                                                pbufferAttribs);
 
   // 4. Bind the API
-  eglBindAPI(EGL_OPENGL_API);
+  egl_bind_api(EGL_OPENGL_API);
 
   // 5. Create a context and make it current
-  EGLContext eglCtx = eglCreateContext(eglDpy, eglCfg, EGL_NO_CONTEXT,
+  EGLContext eglCtx = egl_create_context(eglDpy, eglCfg, EGL_NO_CONTEXT,
                                        NULL);
 
-  eglMakeCurrent(eglDpy, eglSurf, eglSurf, eglCtx);
+  egl_make_current(eglDpy, eglSurf, eglSurf, eglCtx);
 
-//  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-  if (!gladLoadGLLoader((GLADloadproc)eglGetProcAddress)) {
+  // 6. Load OpenGL API
+  // if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+  if (!gladLoadGLLoader(loader)) {
     if (error_tolerance) {
       TI_WARN("[glsl] cannot initialize GLAD");
       supported = std::make_optional<bool>(false);

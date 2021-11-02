@@ -29,7 +29,7 @@ class Ndarray {
 
  private:
   DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
-  LlvmProgramImpl *llvm_prog_impl_{nullptr};
+  LlvmProgramImpl *prog_impl_{nullptr};
   std::size_t nelement_{1};
   std::size_t element_size_{1};
 };

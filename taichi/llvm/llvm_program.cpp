@@ -473,6 +473,13 @@ void LlvmProgramImpl::finalize() {
     cuda_device()->dealloc_memory(preallocated_device_buffer_alloc);
   }
 #endif
+  for (auto alloc : ndarray_allocs_) {
+    if (config->arch == Arch::cuda) {
+      cuda_device()->dealloc_memory(alloc);
+    } else {
+      cpu_device()->dealloc_memory(alloc);
+    }
+  }
 }
 
 void LlvmProgramImpl::print_memory_profiler_info(
@@ -569,16 +576,21 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(std::size_t alloc_size
 #if defined(TI_WITH_CUDA)
     Device::AllocParams device_buffer_alloc_params;
     device_buffer_alloc_params.size = alloc_size;
-    return cuda_device()->allocate_memory(device_buffer_alloc_params);
+    DeviceAllocation alloc = cuda_device()->allocate_memory(device_buffer_alloc_params);
+    ndarray_allocs_.push_back(alloc);
+    return alloc;
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else {
     Device::AllocParams device_buffer_alloc_params;
     device_buffer_alloc_params.size = alloc_size;
-    return cpu_device()->allocate_memory(device_buffer_alloc_params);
+    DeviceAllocation alloc = cpu_device()->allocate_memory(device_buffer_alloc_params);
+    ndarray_allocs_.push_back(alloc);
+    return alloc;
   }
 }
+
 void* LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation handle) {
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)

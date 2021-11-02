@@ -70,6 +70,87 @@ def test_unaryop():
 
 
 @ti.test(experimental_ast_refactor=True)
+def test_compare_fail():
+    with pytest.raises(ti.TaichiSyntaxError) as e:
+
+        @ti.kernel
+        def foo():
+            1 in [1]
+
+        foo()
+
+    assert e.value.args[0] == '"In" is not supported in Taichi kernels.'
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_single_compare():
+    @ti.kernel
+    def foo(a: ti.template(), b: ti.template(), c: ti.template()):
+        for i in ti.static(range(3)):
+            c[i * 6] = a[i] == b[i]
+            c[i * 6 + 1] = a[i] != b[i]
+            c[i * 6 + 2] = a[i] < b[i]
+            c[i * 6 + 3] = a[i] <= b[i]
+            c[i * 6 + 4] = a[i] > b[i]
+            c[i * 6 + 5] = a[i] >= b[i]
+
+    a = ti.Vector([1, 1, 2])
+    b = ti.Vector([2, 1, 1])
+    c = ti.field(ti.i32, shape=(18, ))
+    d = ti.field(ti.i32, shape=(18, ))
+
+    for i in range(3):
+        c[i * 6] = a[i] == b[i]
+        c[i * 6 + 1] = a[i] != b[i]
+        c[i * 6 + 2] = a[i] < b[i]
+        c[i * 6 + 3] = a[i] <= b[i]
+        c[i * 6 + 4] = a[i] > b[i]
+        c[i * 6 + 5] = a[i] >= b[i]
+
+    foo(a, b, d)
+    for i in range(18):
+        assert c[i] == d[i]
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_chain_compare():
+    @ti.kernel
+    def foo(a: ti.i32, b: ti.i32, c: ti.template()):
+        c[0] = a == b == a
+        c[1] = a == b != a
+        c[2] = a != b == a
+        c[3] = a < b > a
+        c[4] = a > b < a
+        c[5] = a < b < a
+        c[6] = a > b > a
+        c[7] = a == a == a == a
+        c[8] = a == a == a != a
+        c[9] = a < b > a < b
+        c[10] = a > b > a < b
+
+    a = 1
+    b = 2
+    c = ti.field(ti.i32, shape=(11, ))
+    d = ti.field(ti.i32, shape=(11, ))
+
+    c[0] = a == b == a
+    c[1] = a == b != a
+    c[2] = a != b == a
+    c[3] = a < b > a
+    c[4] = a > b < a
+    c[5] = a < b < a
+    c[6] = a > b > a
+    c[7] = a == a == a == a
+    c[8] = a == a == a != a
+    c[9] = a < b > a < b
+    c[10] = a > b > a < b
+
+    foo(a, b, d)
+    for i in range(11):
+        assert c[i] == d[i]
+
+
+@ti.test(experimental_ast_refactor=True)
 def test_return():
     @ti.kernel
     def foo(x: ti.i32) -> ti.i32:

@@ -212,9 +212,7 @@ class Clean(clean):
         for d in generated_folders:
             if os.path.exists(d):
                 remove_tree(d, dry_run=self.dry_run)
-        generated_files = [
-            'taichi/common/commit_hash.h', 'taichi/common/version.h'
-        ]
+        generated_files = []
         generated_files += glob.glob('taichi/runtime/llvm/runtime_*.bc')
         generated_files += glob.glob('taichi/runtime/llvm/runtime_*.ll')
         for f in generated_files:

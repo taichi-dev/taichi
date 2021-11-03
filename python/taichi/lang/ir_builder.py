@@ -429,7 +429,6 @@ class IRBuilder(Builder):
         if is_grouped:
             assert len(node.iter.args[0].args) == 1
             ndrange_arg = build_stmt(ctx, node.iter.args[0].args[0]).ptr
-            from taichi.lang.exception import TaichiSyntaxError
             if not isinstance(ndrange_arg, ti.ndrange):
                 raise TaichiSyntaxError(
                     "Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'."

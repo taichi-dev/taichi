@@ -91,8 +91,8 @@ foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
   add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${arch}")
 endforeach()
 
-configure_file(taichi/common/version.h.in version.h)
-configure_file(taichi/common/commit_hash.h.in commit_hash.h)
+configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
+configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
 
 option(TI_EXPORT_CORE "export taichi core" OFF)
 

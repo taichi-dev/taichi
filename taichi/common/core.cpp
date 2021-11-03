@@ -5,8 +5,8 @@
 
 #include "taichi/common/core.h"
 
-#include "version.h"
-#include "commit_hash.h"
+#include "taichi/common/version.h"
+#include "taichi/common/commit_hash.h"
 
 #if defined(TI_PLATFORM_WINDOWS)
 #include "taichi/platform/windows/windows.h"

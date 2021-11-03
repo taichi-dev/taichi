@@ -42,5 +42,4 @@ static_assert(false, "Do not include");
         const TYPE result = _reduction_temp_##TYPE[0];                         \
         barrier();                                                             \
         return result;                                                         \
-      } \
-\n);
+      });

@@ -35,5 +35,4 @@ static_assert(false, "Do not include");
           new = floatBitsToInt(min(intBitsToFloat(old), rhs));           \
         } while (old != atomicCompSwap(_##NAME##_i32_[addr], old, new)); \
         return intBitsToFloat(old);                                      \
-      } \
-\n);
+      });

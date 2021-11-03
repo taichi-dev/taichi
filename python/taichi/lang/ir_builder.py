@@ -475,46 +475,39 @@ class IRBuilder(Builder):
             end = ti.cast(ti.Expr(build_stmt(ctx, node.iter.args[0]).ptr),
                           ti.i32)
         ti.core.begin_frontend_range_for(loop_var.ptr, begin.ptr, end.ptr)
-        node.body = build_stmts(ctx, node.body)
+        node.body = build_stmts_wo_scope(ctx, node.body)
         ti.core.end_frontend_range_for()
         return node
 
     @staticmethod
     def build_ndrange_for(ctx, node):
-        pass
-#         # for i, j in ti.ndrange(n)
-#         template = f'''
-# if ti.static(1):
-#     __ndrange{id(node)} = 0
-#     for __ndrange_I{id(node)} in range(0):
-#         __I = __ndrange_I{id(node)}
-#         '''
-#         t = ast.parse(template).body[0]
-#         t.body[0].value = node.iter
-#         t_loop = t.body[1]
-#         t_loop.iter.args[0] = parse_expr(
-#             f'__ndrange{id(node)}.acc_dimensions[0]')
-#         targets = StmtBuilder.get_for_loop_targets(node)
-#         targets_tmp = ['__' + name for name in targets]
-#         loop_body = t_loop.body
-#         for i in range(len(targets)):
-#             if i + 1 < len(targets):
-#                 stmt = '{} = __I // __ndrange{}.acc_dimensions[{}]'.format(
-#                     targets_tmp[i], id(node), i + 1)
-#             else:
-#                 stmt = '{} = __I'.format(targets_tmp[i])
-#             loop_body.append(parse_stmt(stmt))
-#             stmt = '{} = {} + __ndrange{}.bounds[{}][0]'.format(
-#                 targets[i], targets_tmp[i], id(node), i)
-#             loop_body.append(parse_stmt(stmt))
-#             if i + 1 < len(targets):
-#                 stmt = '__I = __I - {} * __ndrange{}.acc_dimensions[{}]'.format(
-#                     targets_tmp[i], id(node), i + 1)
-#                 loop_body.append(parse_stmt(stmt))
-#         loop_body += node.body
-#
-#         node = ast.copy_location(t, node)
-#         return build_stmt(ctx, node)  # further translate as a range for
+        ndrange_var = ti.expr_init(build_stmt(ctx, node.iter).ptr)
+        ndrange_begin = ti.cast(ti.Expr(0), ti.i32)
+        ndrange_end = ti.cast(
+            ti.Expr(ti.subscript(ndrange_var.acc_dimensions, 0)), ti.i32)
+        ndrange_loop_var = ti.Expr(ti.core.make_id_expr(''))
+        ti.core.begin_frontend_range_for(ndrange_loop_var.ptr,
+                                         ndrange_begin.ptr, ndrange_end.ptr)
+        I = ti.expr_init(ndrange_loop_var)
+        targets = IRBuilder.get_for_loop_targets(node)
+        targets_tmp = []
+        for i in range(len(targets)):
+            if i + 1 < len(targets):
+                targets_tmp.append(
+                    ti.expr_init(I // ndrange_var.acc_dimensions[i + 1]))
+            else:
+                targets_tmp.append(ti.expr_init(I))
+            ctx.create_variable(
+                targets[i],
+                ti.expr_init(
+                    targets_tmp[i] +
+                    ti.subscript(ti.subscript(ndrange_var.bounds, i), 0)))
+            if i + 1 < len(targets):
+                I.assign(I -
+                         targets_tmp[i] * ndrange_var.acc_dimensions[i + 1])
+        node.body = build_stmts_wo_scope(ctx, node.body)
+        ti.core.end_frontend_range_for()
+        return node
 
     @staticmethod
     def build_grouped_ndrange_for(ctx, node):

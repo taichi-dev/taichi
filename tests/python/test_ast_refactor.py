@@ -352,6 +352,25 @@ def test_range_for_three_arguments():
 
 
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_ndrange_for():
+    x = ti.field(ti.f32, shape=(16, 32, 64))
+
+    @ti.kernel
+    def func():
+        for i, j, k in ti.ndrange((4, 10), (3, 8), 17):
+            x[i, j, k] = i + j * 10 + k * 100
+
+    func()
+    for i in range(16):
+        for j in range(32):
+            for k in range(64):
+                if 4 <= i < 10 and 3 <= j < 8 and k < 17:
+                    assert x[i, j, k] == i + j * 10 + k * 100
+                else:
+                    assert x[i, j, k] == 0
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
 def test_func():
     @ti.func
     def bar(x):

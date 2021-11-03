@@ -439,7 +439,7 @@ def test_any_arr():
     run(a, b)
     for i in range(n):
         for j in range(m):
-            assert a[i, j] == i * j + i + j + 1
+            assert a[i, j][0, 0] == i * j + i + j + 1
 
 
 @ti.test(experimental_ast_refactor=True, arch=ti.cpu)

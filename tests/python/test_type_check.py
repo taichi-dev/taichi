@@ -4,6 +4,17 @@ import taichi as ti
 
 
 @ti.test(arch=ti.cpu)
+def test_unary_op():
+    @ti.kernel
+    def floor():
+        a = 1
+        b = ti.floor(a)
+
+    with pytest.raises(SystemExit):
+        floor()
+
+
+@ti.test(arch=ti.cpu)
 def test_binary_op():
     @ti.kernel
     def bitwise_float():

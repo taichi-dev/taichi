@@ -125,6 +125,20 @@ void UnaryOpExpression::serialize(std::ostream &ss) {
   ss << ')';
 }
 
+void UnaryOpExpression::type_check() {
+  // TODO: assert no unknowns after type_check for all expressions are
+  // implemented
+  if (operand->ret_type == PrimitiveType::unknown)
+    return;
+  if ((type == UnaryOpType::floor || type == UnaryOpType::ceil ||
+       is_trigonometric(type)) &&
+      !is_real(operand->ret_type))
+    throw std::runtime_error(fmt::format(
+        "TypeError: '{}' takes real inputs only, however '{}' is provided",
+        unary_op_type_name(type), operand->ret_type->to_string()));
+  ret_type = is_cast() ? cast_type : operand->ret_type;
+}
+
 bool UnaryOpExpression::is_cast() const {
   return unary_op_is_cast(type);
 }
@@ -149,7 +163,7 @@ void BinaryOpExpression::type_check() {
     return;
   auto error = [&]() {
     throw std::runtime_error(fmt::format(
-        "TypeError: unsupported operand type(s) for {}: '{}' and '{}'",
+        "TypeError: unsupported operand type(s) for '{}': '{}' and '{}'",
         binary_op_type_symbol(type), lhs->ret_type->to_string(),
         rhs->ret_type->to_string()));
   };

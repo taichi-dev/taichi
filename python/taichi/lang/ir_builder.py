@@ -467,8 +467,8 @@ class IRBuilder(Builder):
                     f"Range should have 1 or 2 arguments, found {len(node.iter.args)}"
                 )
             if len(node.iter.args) == 2:
-                begin = ti.cast(ti.Expr(build_stmt(ctx, node.iter.args[0]).ptr),
-                                ti.i32)
+                begin = ti.cast(
+                    ti.Expr(build_stmt(ctx, node.iter.args[0]).ptr), ti.i32)
                 end = ti.cast(ti.Expr(build_stmt(ctx, node.iter.args[1]).ptr),
                               ti.i32)
             else:
@@ -489,13 +489,14 @@ class IRBuilder(Builder):
                 ti.Expr(ti.subscript(ndrange_var.acc_dimensions, 0)), ti.i32)
             ndrange_loop_var = ti.Expr(ti.core.make_id_expr(''))
             ti.core.begin_frontend_range_for(ndrange_loop_var.ptr,
-                                             ndrange_begin.ptr, ndrange_end.ptr)
+                                             ndrange_begin.ptr,
+                                             ndrange_end.ptr)
             I = ti.expr_init(ndrange_loop_var)
             targets = IRBuilder.get_for_loop_targets(node)
             for i in range(len(targets)):
                 if i + 1 < len(targets):
-                    target_tmp = ti.expr_init(I //
-                                              ndrange_var.acc_dimensions[i + 1])
+                    target_tmp = ti.expr_init(
+                        I // ndrange_var.acc_dimensions[i + 1])
                 else:
                     target_tmp = ti.expr_init(I)
                 ctx.create_variable(
@@ -504,7 +505,8 @@ class IRBuilder(Builder):
                         target_tmp +
                         ti.subscript(ti.subscript(ndrange_var.bounds, i), 0)))
                 if i + 1 < len(targets):
-                    I.assign(I - target_tmp * ndrange_var.acc_dimensions[i + 1])
+                    I.assign(I -
+                             target_tmp * ndrange_var.acc_dimensions[i + 1])
             node.body = build_stmts_wo_scope(ctx, node.body)
             ti.core.end_frontend_range_for()
         return node
@@ -518,12 +520,14 @@ class IRBuilder(Builder):
                 ti.Expr(ti.subscript(ndrange_var.acc_dimensions, 0)), ti.i32)
             ndrange_loop_var = ti.Expr(ti.core.make_id_expr(''))
             ti.core.begin_frontend_range_for(ndrange_loop_var.ptr,
-                                             ndrange_begin.ptr, ndrange_end.ptr)
+                                             ndrange_begin.ptr,
+                                             ndrange_end.ptr)
 
             targets = IRBuilder.get_for_loop_targets(node)
             if len(targets) != 1:
                 raise TaichiSyntaxError(
-                    f"Group for should have 1 loop target, found {len(targets)}")
+                    f"Group for should have 1 loop target, found {len(targets)}"
+                )
             target = targets[0]
             target_var = ti.expr_init(
                 ti.Vector([0] * len(ndrange_var.dimensions), dt=ti.i32))
@@ -537,7 +541,8 @@ class IRBuilder(Builder):
                 ti.subscript(target_var,
                              i).assign(target_tmp + ndrange_var.bounds[i][0])
                 if i + 1 < len(ndrange_var.dimensions):
-                    I.assign(I - target_tmp * ndrange_var.acc_dimensions[i + 1])
+                    I.assign(I -
+                             target_tmp * ndrange_var.acc_dimensions[i + 1])
             node.body = build_stmts_wo_scope(ctx, node.body)
             ti.core.end_frontend_range_for()
         return node
@@ -555,10 +560,12 @@ class IRBuilder(Builder):
             if is_grouped:
                 if len(targets) != 1:
                     raise TaichiSyntaxError(
-                        f"Group for should have 1 loop target, found {len(targets)}")
+                        f"Group for should have 1 loop target, found {len(targets)}"
+                    )
                 target = targets[0]
                 loop_var = build_stmt(ctx, node.iter).ptr
-                loop_indices = ti.lang.expr.make_var_list(size=len(loop_var.shape))
+                loop_indices = ti.lang.expr.make_var_list(
+                    size=len(loop_var.shape))
                 expr_group = ti.lang.expr.make_expr_group(loop_indices)
                 ti.begin_frontend_struct_for(expr_group, loop_var)
                 ctx.create_variable(target, ti.Vector(loop_indices, dt=ti.i32))
@@ -675,6 +682,7 @@ class IRBuilder(Builder):
 
         node.ptr = val
         return node
+
 
 build_stmt = IRBuilder()
 

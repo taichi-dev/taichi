@@ -473,13 +473,6 @@ void LlvmProgramImpl::finalize() {
     cuda_device()->dealloc_memory(preallocated_device_buffer_alloc);
   }
 #endif
-  for (auto alloc : ndarray_allocs_) {
-    if (config->arch == Arch::cuda) {
-      cuda_device()->dealloc_memory(alloc);
-    } else {
-      cpu_device()->dealloc_memory(alloc);
-    }
-  }
 }
 
 void LlvmProgramImpl::print_memory_profiler_info(
@@ -574,32 +567,28 @@ DevicePtr LlvmProgramImpl::get_snode_tree_device_ptr(int tree_id) {
 DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(std::size_t alloc_size) {
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    Device::AllocParams device_buffer_alloc_params;
-    device_buffer_alloc_params.size = alloc_size;
-    DeviceAllocation alloc = cuda_device()->allocate_memory(device_buffer_alloc_params);
-    ndarray_allocs_.push_back(alloc);
-    return alloc;
+     Device::AllocParams device_buffer_alloc_params;
+     device_buffer_alloc_params.size = alloc_size;
+     return cuda_device()->allocate_memory(device_buffer_alloc_params);
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    Device::AllocParams device_buffer_alloc_params;
-    device_buffer_alloc_params.size = alloc_size;
-    DeviceAllocation alloc = cpu_device()->allocate_memory(device_buffer_alloc_params);
-    ndarray_allocs_.push_back(alloc);
-    return alloc;
+     Device::AllocParams device_buffer_alloc_params;
+     device_buffer_alloc_params.size = alloc_size;
+    return cpu_device()->allocate_memory(device_buffer_alloc_params);
   }
 }
 
-void* LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation handle) {
+uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    return cuda_device()->get_alloc_info(handle).ptr;
+    return (uint64_t *)cuda_device()->get_alloc_info(alloc).ptr;
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    return cpu_device()->get_alloc_info(handle).ptr;
+    return (uint64_t *)cpu_device()->get_alloc_info(alloc).ptr;
   }
 }
 }  // namespace lang

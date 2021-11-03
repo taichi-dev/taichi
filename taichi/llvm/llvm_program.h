@@ -98,7 +98,9 @@ class LlvmProgramImpl : public ProgramImpl {
   void finalize();
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size);
-  void* get_ndarray_alloc_info_ptr(DeviceAllocation handle);
+
+  uint64_t *get_ndarray_alloc_info_ptr(DeviceAllocation &alloc);
+
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
       const std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
@@ -156,7 +158,6 @@ class LlvmProgramImpl : public ProgramImpl {
   DeviceAllocation preallocated_device_buffer_alloc{kDeviceNullAllocation};
 
   std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
-  std::vector<DeviceAllocation> ndarray_allocs_;
 
   std::unique_ptr<Device> device_;
   cuda::CudaDevice *cuda_device();

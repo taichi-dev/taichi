@@ -19,8 +19,8 @@ static_assert(false, "Do not include");
 
 #define GENERATE_OPENGL_REDUCTION_FUNCTIONS(OP, TYPE)                          \
   constexpr auto kOpenGlReductionSource_##OP##_##TYPE =                        \
-      STR(TYPE reduction_workgroup_##OP##_##TYPE##(in TYPE r) {                \
-        _reduction_temp_##TYPE##[gl_LocalInvocationIndex] = r;                 \
+      STR(TYPE reduction_workgroup_##OP##_##TYPE(in TYPE r) {                  \
+        _reduction_temp_##TYPE[gl_LocalInvocationIndex] = r;                   \
         barrier();                                                             \
         memoryBarrierShared();                                                 \
         const int group_size = int(gl_WorkGroupSize.x *                        \
@@ -32,14 +32,14 @@ static_assert(false, "Do not include");
           const int cmp_index = int(gl_LocalInvocationIndex) + stride;         \
           if (gl_LocalInvocationIndex % radix == 0 &&                          \
               cmp_index < group_size) {                                        \
-            _reduction_temp_##TYPE##[gl_LocalInvocationIndex] =                \
-                ##OP##(_reduction_temp_##TYPE##[gl_LocalInvocationIndex],      \
-                       _reduction_temp_##TYPE##[cmp_index]);                   \
+            _reduction_temp_##TYPE[gl_LocalInvocationIndex] =                  \
+                ##OP(_reduction_temp_##TYPE[gl_LocalInvocationIndex],          \
+                     _reduction_temp_##TYPE[cmp_index]);                       \
           }                                                                    \
           barrier();                                                           \
           memoryBarrierShared();                                               \
         }                                                                      \
-        const TYPE result = _reduction_temp_##TYPE##[0];                       \
+        const TYPE result = _reduction_temp_##TYPE[0];                         \
         barrier();                                                             \
         return result;                                                         \
       } \

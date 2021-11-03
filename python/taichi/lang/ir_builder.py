@@ -463,7 +463,7 @@ class IRBuilder(Builder):
         ctx.create_variable(loop_name, loop_var)
         if len(node.iter.args) not in [1, 2]:
             raise TaichiSyntaxError(
-                f"Range should have 1 or 2 arguments, {len(node.iter.args)} found"
+                f"Range should have 1 or 2 arguments, found {len(node.iter.args)}"
             )
         if len(node.iter.args) == 2:
             begin = ti.cast(ti.Expr(build_stmt(ctx, node.iter.args[0]).ptr),
@@ -490,59 +490,53 @@ class IRBuilder(Builder):
                                          ndrange_begin.ptr, ndrange_end.ptr)
         I = ti.expr_init(ndrange_loop_var)
         targets = IRBuilder.get_for_loop_targets(node)
-        targets_tmp = []
         for i in range(len(targets)):
             if i + 1 < len(targets):
-                targets_tmp.append(
-                    ti.expr_init(I // ndrange_var.acc_dimensions[i + 1]))
+                target_tmp = ti.expr_init(I //
+                                          ndrange_var.acc_dimensions[i + 1])
             else:
-                targets_tmp.append(ti.expr_init(I))
+                target_tmp = ti.expr_init(I)
             ctx.create_variable(
                 targets[i],
                 ti.expr_init(
-                    targets_tmp[i] +
+                    target_tmp +
                     ti.subscript(ti.subscript(ndrange_var.bounds, i), 0)))
             if i + 1 < len(targets):
-                I.assign(I -
-                         targets_tmp[i] * ndrange_var.acc_dimensions[i + 1])
+                I.assign(I - target_tmp * ndrange_var.acc_dimensions[i + 1])
         node.body = build_stmts_wo_scope(ctx, node.body)
         ti.core.end_frontend_range_for()
         return node
 
     @staticmethod
     def build_grouped_ndrange_for(ctx, node):
-        pass
-#         # for I in ti.grouped(ti.ndrange(n, m))
-#         node.body = build_stmts(ctx, node.body)
-#         target = node.target.id
-#         template = '''
-# if ti.static(1):
-#     __ndrange = 0
-#     {} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions), disable_local_tensor=True))
-#     ___begin = ti.Expr(0)
-#     ___end = __ndrange.acc_dimensions[0]
-#     ___begin = ti.cast(___begin, ti.i32)
-#     ___end = ti.cast(___end, ti.i32)
-#     __ndrange_I = ti.Expr(ti.core.make_id_expr(''))
-#     ti.core.begin_frontend_range_for(__ndrange_I.ptr, ___begin.ptr, ___end.ptr)
-#     __I = __ndrange_I
-#     for __grouped_I in range(len(__ndrange.dimensions)):
-#         __grouped_I_tmp = 0
-#         if __grouped_I + 1 < len(__ndrange.dimensions):
-#             __grouped_I_tmp = __I // __ndrange.acc_dimensions[__grouped_I + 1]
-#         else:
-#             __grouped_I_tmp = __I
-#         ti.subscript({}, __grouped_I).assign(__grouped_I_tmp + __ndrange.bounds[__grouped_I][0])
-#         if __grouped_I + 1 < len(__ndrange.dimensions):
-#             __I = __I - __grouped_I_tmp * __ndrange.acc_dimensions[__grouped_I + 1]
-#     ti.core.end_frontend_range_for()
-#         '''.format(target, target)
-#         t = ast.parse(template).body[0]
-#         node.iter.args[0].args = build_exprs(ctx, node.iter.args[0].args)
-#         t.body[0].value = node.iter.args[0]
-#         cut = len(t.body) - 1
-#         t.body = t.body[:cut] + node.body + t.body[cut:]
-#         return ast.copy_location(t, node)
+        ndrange_var = ti.expr_init(build_stmt(ctx, node.iter.args[0]).ptr)
+        ndrange_begin = ti.cast(ti.Expr(0), ti.i32)
+        ndrange_end = ti.cast(
+            ti.Expr(ti.subscript(ndrange_var.acc_dimensions, 0)), ti.i32)
+        ndrange_loop_var = ti.Expr(ti.core.make_id_expr(''))
+        ti.core.begin_frontend_range_for(ndrange_loop_var.ptr,
+                                         ndrange_begin.ptr, ndrange_end.ptr)
+
+        targets = IRBuilder.get_for_loop_targets(node)
+        if len(targets) != 1:
+            raise TaichiSyntaxError(
+                f"Group for should have 1 loop target, found {len(targets)}")
+        target = targets[0]
+        target_var = ti.expr_init(
+            ti.Vector([0] * len(ndrange_var.dimensions), dt=ti.i32))
+        ctx.create_variable(target, target_var)
+        I = ti.expr_init(ndrange_loop_var)
+        for i in range(len(ndrange_var.dimensions)):
+            if i + 1 < len(ndrange_var.dimensions):
+                target_tmp = I // ndrange_var.acc_dimensions[i + 1]
+            else:
+                target_tmp = I
+            ti.subscript(target_var,
+                         i).assign(target_tmp + ndrange_var.bounds[i][0])
+            if i + 1 < len(ndrange_var.dimensions):
+                I.assign(I - target_tmp * ndrange_var.acc_dimensions[i + 1])
+        node.body = build_stmts_wo_scope(ctx, node.body)
+        ti.core.end_frontend_range_for()
 
     @staticmethod
     def build_struct_for(ctx, node, is_grouped):

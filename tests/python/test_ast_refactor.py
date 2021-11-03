@@ -348,7 +348,7 @@ def test_range_for_three_arguments():
         x = 5
         foo(x)
 
-    assert e.value.args[0] == "Range should have 1 or 2 arguments, 3 found"
+    assert e.value.args[0] == "Range should have 1 or 2 arguments, found 3"
 
 
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
@@ -368,6 +368,32 @@ def test_ndrange_for():
                     assert x[i, j, k] == i + j * 10 + k * 100
                 else:
                     assert x[i, j, k] == 0
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_grouped_ndrange_for():
+    x = ti.field(ti.i32, shape=(6, 6, 6))
+    y = ti.field(ti.i32, shape=(6, 6, 6))
+
+    @ti.kernel
+    def func():
+        lower = ti.Vector([0, 1, 2])
+        upper = ti.Vector([3, 4, 5])
+        for I in ti.grouped(
+                ti.ndrange((lower[0], upper[0]), (lower[1], upper[1]),
+                           (lower[2], upper[2]))):
+            x[I] = I[0] + I[1] + I[2]
+        for i in range(0, 3):
+            for j in range(1, 4):
+                for k in range(2, 5):
+                    y[i, j, k] = i + j + k
+
+    func()
+
+    for i in range(6):
+        for j in range(6):
+            for k in range(6):
+                assert x[i, j, k] == y[i, j, k]
 
 
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)

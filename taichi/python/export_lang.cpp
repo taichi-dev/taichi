@@ -468,6 +468,7 @@ void export_lang(py::module &m) {
       .def("set_grad", &Expr::set_grad)
       .def("set_attribute", &Expr::set_attribute)
       .def("get_ret_type", &Expr::get_ret_type)
+      .def("type_check", &Expr::type_check)
       .def("get_expr_name",
            [](Expr *expr) {
              return expr->cast<GlobalVariableExpression>()->name;

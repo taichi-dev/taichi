@@ -60,7 +60,7 @@ void AppContext::init(GLFWwindow *glfw_window, const AppConfig &config) {
     evd_params.additional_instance_extensions =
         get_required_instance_extensions();
     evd_params.additional_device_extensions = get_required_device_extensions();
-    evd_params.is_for_ui = true;
+    evd_params.is_for_ui = config.show_window;
     evd_params.surface_creator = [&](VkInstance instance) -> VkSurfaceKHR {
       VkSurfaceKHR surface = VK_NULL_HANDLE;
       if (glfwCreateWindowSurface(instance, glfw_window, nullptr, &surface) !=

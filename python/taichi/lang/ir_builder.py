@@ -458,36 +458,27 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_range_for(ctx, node):
-        pass
-#         # for i in range(n)
-#         node.body = build_stmts(ctx, node.body)
-#         loop_var = node.target.id
-#         ctx.check_loop_var(loop_var)
-#         template = '''
-# if 1:
-#     {} = ti.Expr(ti.core.make_id_expr(''))
-#     ___begin = ti.Expr(0)
-#     ___end = ti.Expr(0)
-#     ___begin = ti.cast(___begin, ti.i32)
-#     ___end = ti.cast(___end, ti.i32)
-#     ti.core.begin_frontend_range_for({}.ptr, ___begin.ptr, ___end.ptr)
-#     ti.core.end_frontend_range_for()
-#         '''.format(loop_var, loop_var)
-#         t = ast.parse(template).body[0]
-#
-#         assert len(node.iter.args) in [1, 2]
-#         if len(node.iter.args) == 2:
-#             bgn = build_expr(ctx, node.iter.args[0])
-#             end = build_expr(ctx, node.iter.args[1])
-#         else:
-#             bgn = StmtBuilder.make_constant(value=0)
-#             end = build_expr(ctx, node.iter.args[0])
-#
-#         t.body[1].value.args[0] = bgn
-#         t.body[2].value.args[0] = end
-#         t.body = t.body[:6] + node.body + t.body[6:]
-#         t.body.append(parse_stmt('del {}'.format(loop_var)))
-#         return ast.copy_location(t, node)
+        loop_name = node.target.id
+        ctx.check_loop_var(loop_name)
+        loop_var = ti.Expr(ti.core.make_id_expr(''))
+        ctx.create_variable(loop_name, loop_var)
+        if len(node.iter.args) not in [1, 2]:
+            raise TaichiSyntaxError(
+                f"Range should have 1 or 2 arguments, {len(node.iter.args)} found"
+            )
+        if len(node.iter.args) == 2:
+            begin = ti.cast(ti.Expr(build_stmt(ctx, node.iter.args[0]).ptr),
+                            ti.i32)
+            end = ti.cast(ti.Expr(build_stmt(ctx, node.iter.args[1]).ptr),
+                          ti.i32)
+        else:
+            begin = ti.cast(ti.Expr(0), ti.i32)
+            end = ti.cast(ti.Expr(build_stmt(ctx, node.iter.args[0]).ptr),
+                          ti.i32)
+        ti.core.begin_frontend_range_for(loop_var.ptr, begin.ptr, end.ptr)
+        node.body = build_stmts(ctx, node.body)
+        ti.core.end_frontend_range_for()
+        return node
 
     @staticmethod
     def build_ndrange_for(ctx, node):

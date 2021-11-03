@@ -299,6 +299,59 @@ def test_static_group_for():
 
 
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_range_for_single_argument():
+    a = ti.field(ti.i32, shape=(10, ))
+
+    @ti.kernel
+    def foo(x: ti.i32):
+        for i in range(5):
+            a[i] = x
+
+    x = 5
+    foo(x)
+    for i in range(10):
+        if i < 5:
+            assert a[i] == 5
+        else:
+            assert a[i] == 0
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_range_for_two_arguments():
+    a = ti.field(ti.i32, shape=(10, ))
+
+    @ti.kernel
+    def foo(x: ti.i32):
+        for i in range(3, 7):
+            a[i] = x
+
+    x = 5
+    foo(x)
+    for i in range(10):
+        if 3 <= i < 7:
+            assert a[i] == 5
+        else:
+            assert a[i] == 0
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_range_for_three_arguments():
+    a = ti.field(ti.i32, shape=(10, ))
+
+    with pytest.raises(ti.TaichiSyntaxError) as e:
+
+        @ti.kernel
+        def foo(x: ti.i32):
+            for i in range(3, 7, 2):
+                a[i] = x
+
+        x = 5
+        foo(x)
+
+    assert e.value.args[0] == "Range should have 1 or 2 arguments, 3 found"
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
 def test_func():
     @ti.func
     def bar(x):

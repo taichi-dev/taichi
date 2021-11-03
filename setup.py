@@ -220,7 +220,6 @@ class Clean(clean):
 setup(name=project_name,
       packages=packages,
       package_dir={"": package_dir},
-      version=version,
       description='The Taichi Programming Language',
       author='Taichi developers',
       author_email='yuanmhu@gmail.com',

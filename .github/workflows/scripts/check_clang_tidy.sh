@@ -1,12 +1,12 @@
 #!/bin/bash
 
-apt install -y clang-tidy-10 libxrandr-dev
+CI_SETUP_CMAKE_ARGS=$1
 
 cd taichi
 python3 -m pip install -r requirements_dev.txt
 
 mkdir build && cd build
-cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+cmake $CI_SETUP_CMAKE_ARGS ..
 
 cd ..
-python3 ./scripts/run-clang-tidy.py $PWD/taichi -checks=-*,performance-inefficient-string-concatenation -header-filter=$PWD/taichi -p $PWD/build -j2
+python3 ./scripts/run-clang-tidy.py $PWD/taichi -clang-tidy-binary clang-tidy-10 -checks=-*,performance-inefficient-string-concatenation -header-filter=$PWD/taichi -p $PWD/build -j2

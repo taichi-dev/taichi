@@ -3,18 +3,17 @@
 #include <stdio.h>
 #endif
 
-#include "glad/glad.h"
+#include "glad/gl.h"
 
 namespace taichi {
 namespace lang {
 namespace opengl {
-namespace {
-constexpr bool kAllowsNvShaderExt = false;
-}  // namespace
 
 AotModuleBuilderImpl::AotModuleBuilderImpl(
-    StructCompiledResult &compiled_structs)
-    : compiled_structs_(compiled_structs) {
+    StructCompiledResult &compiled_structs,
+    bool allow_nv_shader_extension)
+    : compiled_structs_(compiled_structs),
+      allow_nv_shader_extension_(allow_nv_shader_extension) {
   aot_data_.root_buffer_size = compiled_structs_.root_size;
 }
 
@@ -79,7 +78,7 @@ void AotModuleBuilderImpl::preprocess_kernel(CompiledKernel &ker) {
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
   opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_,
-                                kAllowsNvShaderExt);
+                                allow_nv_shader_extension_);
   auto compiled = codegen.compile(*kernel);
   aot_data_.kernels.push_back({compiled, identifier});
 }
@@ -124,7 +123,7 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
   opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_,
-                                kAllowsNvShaderExt);
+                                allow_nv_shader_extension_);
   auto compiled = codegen.compile(*kernel);
 
   for (auto &k : aot_data_.kernel_tmpls) {

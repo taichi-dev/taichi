@@ -144,8 +144,8 @@ class IRBuilderContext:
         return False
 
     def create_variable(self, name, var):
-        assert name not in self.current_scope(
-        ), "Recreating variables is not allowed"
+        if name in self.current_scope():
+            raise TaichiSyntaxError("Recreating variables is not allowed")
         self.current_scope()[name] = var
 
     def check_loop_var(self, loop_var):

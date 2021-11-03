@@ -23,7 +23,7 @@ class ASTTransformerTotal(object):
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
         self.arg_features = arg_features
-        self.pass_checks = ASTTransformerChecks(func=func)
+        self.pass_checks = ASTTransformerChecks(func=func, global_vars=globals)
         self.rename_module = ASTTransformerUnifyModule(func=func)
         self.globals = globals
 
@@ -38,8 +38,6 @@ class ASTTransformerTotal(object):
     def visit(self, tree, *arguments):
         if impl.get_runtime().experimental_ast_refactor:
             self.print_ast(tree, 'Initial AST')
-            self.rename_module.visit(tree)
-            self.print_ast(tree, 'AST with module renamed')
             ctx = IRBuilderContext(
                 func=self.func,
                 excluded_parameters=self.excluded_parameters,
@@ -74,7 +72,9 @@ class ASTTransformerBase(ast.NodeTransformer):
         self.func = func
 
     @staticmethod
-    def get_decorator(node):
+    def get_decorator(global_vars, node):
+        if not impl.get_runtime().experimental_ast_refactor:
+            global_vars = globals()
         if not isinstance(node, ast.Call):
             return ''
         for wanted, name in [
@@ -82,7 +82,7 @@ class ASTTransformerBase(ast.NodeTransformer):
             (ti.grouped, 'grouped'),
             (ti.ndrange, 'ndrange'),
         ]:
-            if ASTResolver.resolve_to(node.func, wanted, globals()):
+            if ASTResolver.resolve_to(node.func, wanted, global_vars):
                 return name
         return ''
 
@@ -108,16 +108,18 @@ class ASTTransformerUnifyModule(ast.NodeTransformer):
 
 # Performs checks at the Python AST level. Does not modify the AST.
 class ASTTransformerChecks(ASTTransformerBase):
-    def __init__(self, func):
+    def __init__(self, func, global_vars):
         super().__init__(func)
         self.has_return = False
         self.in_static_if = False
+        self.globals = global_vars
 
     def visit_If(self, node):
         node.test = self.visit(node.test)
 
         old_in_static_if = self.in_static_if
-        self.in_static_if = self.get_decorator(node.test) == 'static'
+        self.in_static_if = self.get_decorator(self.globals,
+                                               node.test) == 'static'
 
         node.body = list(map(self.visit, node.body))
         if node.orelse is not None:

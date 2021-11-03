@@ -88,10 +88,22 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
   loop_var_id[0] = loop_var.cast<IdExpression>()->id;
 }
 
+void ArgLoadExpression::type_check() {
+  TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
+                 "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
+  ret_type = dt;
+}
+
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
   auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt);
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
+}
+
+void RandExpression::type_check() {
+  TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
+                 "Invalid dt [{}] for RandExpression", dt->to_string());
+  ret_type = dt;
 }
 
 void RandExpression::flatten(FlattenContext *ctx) {
@@ -113,6 +125,20 @@ void UnaryOpExpression::serialize(std::ostream &ss) {
   ss << ')';
 }
 
+void UnaryOpExpression::type_check() {
+  // TODO: assert no unknowns after type_check for all expressions are
+  // implemented
+  if (operand->ret_type == PrimitiveType::unknown)
+    return;
+  if ((type == UnaryOpType::floor || type == UnaryOpType::ceil ||
+       is_trigonometric(type)) &&
+      !is_real(operand->ret_type))
+    throw std::runtime_error(fmt::format(
+        "TypeError: '{}' takes real inputs only, however '{}' is provided",
+        unary_op_type_name(type), operand->ret_type->to_string()));
+  ret_type = is_cast() ? cast_type : operand->ret_type;
+}
+
 bool UnaryOpExpression::is_cast() const {
   return unary_op_is_cast(type);
 }
@@ -126,6 +152,40 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = unary.get();
   stmt->tb = tb;
   ctx->push_back(std::move(unary));
+}
+
+void BinaryOpExpression::type_check() {
+  auto lhs_type = lhs->ret_type;
+  auto rhs_type = rhs->ret_type;
+  // TODO: assert no unknowns after type_check for all expressions are
+  // implemented
+  if (lhs_type == PrimitiveType::unknown || rhs_type == PrimitiveType::unknown)
+    return;
+  auto error = [&]() {
+    throw std::runtime_error(fmt::format(
+        "TypeError: unsupported operand type(s) for '{}': '{}' and '{}'",
+        binary_op_type_symbol(type), lhs->ret_type->to_string(),
+        rhs->ret_type->to_string()));
+  };
+  if (!lhs_type->is<PrimitiveType>() || !rhs_type->is<PrimitiveType>())
+    error();
+  if (binary_is_bitwise(type) &&
+      (!is_integral(lhs_type) || !is_integral(rhs_type)))
+    error();
+  if (is_comparison(type)) {
+    ret_type = PrimitiveType::i32;
+    return;
+  }
+  if (type == BinaryOpType::truediv) {
+    auto default_fp = get_current_program().config.default_fp;
+    if (!is_real(lhs_type)) {
+      lhs_type = default_fp;
+    }
+    if (!is_real(rhs_type)) {
+      rhs_type = default_fp;
+    }
+  }
+  ret_type = promoted_type(lhs_type, rhs_type);
 }
 
 void BinaryOpExpression::flatten(FlattenContext *ctx) {
@@ -453,6 +513,13 @@ void GlobalLoadExpression::flatten(FlattenContext *ctx) {
   ptr->flatten(ctx);
   ctx->push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
   stmt = ctx->back_stmt();
+}
+
+void ConstExpression::type_check() {
+  TI_ASSERT_INFO(
+      val.dt->is<PrimitiveType>() && val.dt != PrimitiveType::unknown,
+      "Invalid dt [{}] for ConstExpression", val.dt->to_string());
+  ret_type = val.dt;
 }
 
 void ConstExpression::flatten(FlattenContext *ctx) {

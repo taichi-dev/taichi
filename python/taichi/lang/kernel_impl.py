@@ -110,7 +110,6 @@ def _get_tree_and_global_vars(self, args):
         template_var_name = self.argument_names[i]
         global_vars[template_var_name] = args[i]
 
-    global_vars["ti"] = ti
     return tree, global_vars
 
 

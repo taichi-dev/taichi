@@ -2,12 +2,18 @@
 
 TI_UI_NAMESPACE_BEGIN
 
+#define CHECK_WINDOW_SHOWING        \
+  TI_ERROR_IF(!config_.show_window, \
+              "show_window must be True to use this method")
+
 WindowBase ::WindowBase(AppConfig config) : config_(config) {
-  glfw_window_ = create_glfw_window_(config_.name, config_.width,
-                                     config_.height, config_.vsync);
-  glfwSetWindowUserPointer(glfw_window_, this);
-  set_callbacks();
-  last_record_time_ = glfwGetTime();
+  if (config_.show_window) {
+    glfw_window_ = create_glfw_window_(config_.name, config_.width,
+                                       config_.height, config_.vsync);
+    glfwSetWindowUserPointer(glfw_window_, this);
+    set_callbacks();
+    last_record_time_ = glfwGetTime();
+  }
 }
 
 void WindowBase::set_callbacks() {
@@ -46,6 +52,7 @@ CanvasBase *WindowBase::get_canvas() {
 }
 
 void WindowBase::show() {
+  CHECK_WINDOW_SHOWING;
   ++frames_since_last_record_;
 
   double current_time = glfwGetTime();
@@ -77,14 +84,20 @@ bool WindowBase::is_pressed(std::string button) {
 }
 
 bool WindowBase::is_running() {
-  return !glfwWindowShouldClose(glfw_window_);
+  if (config_.show_window) {
+    return !glfwWindowShouldClose(glfw_window_);
+  }
+  return true;
 }
 
 void WindowBase::set_is_running(bool value) {
-  glfwSetWindowShouldClose(glfw_window_, !value);
+  if (config_.show_window) {
+    glfwSetWindowShouldClose(glfw_window_, !value);
+  }
 }
 
 std::pair<float, float> WindowBase::get_cursor_pos() {
+  CHECK_WINDOW_SHOWING;
   float x = input_handler_.last_x();
   float y = input_handler_.last_y();
 
@@ -94,6 +107,7 @@ std::pair<float, float> WindowBase::get_cursor_pos() {
 }
 
 std::vector<Event> WindowBase::get_events(EventType tag) {
+  CHECK_WINDOW_SHOWING;
   glfwPollEvents();
   std::vector<Event> result;
   std::list<Event>::iterator i = events_.begin();
@@ -109,6 +123,7 @@ std::vector<Event> WindowBase::get_events(EventType tag) {
 }
 
 bool WindowBase::get_event(EventType tag) {
+  CHECK_WINDOW_SHOWING;
   glfwPollEvents();
   if (events_.size() == 0) {
     return false;
@@ -132,14 +147,18 @@ bool WindowBase::get_event(EventType tag) {
 
 // these 2 are used to export the `current_event` field to python
 Event WindowBase::get_current_event() {
+  CHECK_WINDOW_SHOWING;
   return current_event_;
 }
 void WindowBase::set_current_event(const Event &event) {
+  CHECK_WINDOW_SHOWING;
   current_event_ = event;
 }
 
 WindowBase::~WindowBase() {
-  glfwDestroyWindow(glfw_window_);
+  if (config_.show_window) {
+    glfwDestroyWindow(glfw_window_);
+  }
 }
 
 GuiBase *WindowBase::GUI() {

@@ -205,7 +205,9 @@ void export_lang(py::module &m) {
       .def_readwrite("quant_opt_store_fusion",
                      &CompileConfig::quant_opt_store_fusion)
       .def_readwrite("quant_opt_atomic_demotion",
-                     &CompileConfig::quant_opt_atomic_demotion);
+                     &CompileConfig::quant_opt_atomic_demotion)
+      .def_readwrite("allow_nv_shader_extension",
+                     &CompileConfig::allow_nv_shader_extension);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -465,6 +467,8 @@ void export_lang(py::module &m) {
            })
       .def("set_grad", &Expr::set_grad)
       .def("set_attribute", &Expr::set_attribute)
+      .def("get_ret_type", &Expr::get_ret_type)
+      .def("type_check", &Expr::type_check)
       .def("get_expr_name",
            [](Expr *expr) {
              return expr->cast<GlobalVariableExpression>()->name;

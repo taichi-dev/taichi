@@ -1878,23 +1878,34 @@ VkPresentModeKHR choose_swap_present_mode(
 
 VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     : device_(device), config_(config) {
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   window_ = (GLFWwindow *)config.window_handle;
-  VkResult err =
-      glfwCreateWindowSurface(device->vk_instance(), window_, NULL, &surface_);
-  if (err) {
-    TI_ERROR("Failed to create window surface ({})", err);
-    return;
+  if (window_) {
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    VkResult err = glfwCreateWindowSurface(device->vk_instance(), window_, NULL,
+                                           &surface_);
+    if (err) {
+      TI_ERROR("Failed to create window surface ({})", err);
+      return;
+    }
+
+    create_swap_chain();
+
+    VkSemaphoreCreateInfo sema_create_info;
+    sema_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    sema_create_info.pNext = nullptr;
+    sema_create_info.flags = 0;
+    vkCreateSemaphore(device->vk_device(), &sema_create_info,
+                      kNoVkAllocCallbacks, &image_available_);
+  } else {
+    ImageParams params = {ImageDimension::d2D,
+                          BufferFormat::rgba8,
+                          ImageLayout::present_src,
+                          config.width,
+                          config.height,
+                          1,
+                          false};
+    screenshot_image_ = device->create_image(params);
   }
-
-  create_swap_chain();
-
-  VkSemaphoreCreateInfo sema_create_info;
-  sema_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-  sema_create_info.pNext = nullptr;
-  sema_create_info.flags = 0;
-  vkCreateSemaphore(device->vk_device(), &sema_create_info, kNoVkAllocCallbacks,
-                    &image_available_);
 }
 
 void VulkanSurface::create_swap_chain() {
@@ -2023,9 +2034,11 @@ void VulkanSurface::destroy_swap_chain() {
 }
 
 VulkanSurface::~VulkanSurface() {
-  destroy_swap_chain();
-  vkDestroySemaphore(device_->vk_device(), image_available_, nullptr);
-  vkDestroySurfaceKHR(device_->vk_instance(), surface_, nullptr);
+  if (config_.window_handle) {
+    destroy_swap_chain();
+    vkDestroySemaphore(device_->vk_device(), image_available_, nullptr);
+    vkDestroySurfaceKHR(device_->vk_instance(), surface_, nullptr);
+  }
   if (screenshot_buffer_ != kDeviceNullAllocation) {
     device_->dealloc_memory(screenshot_buffer_);
   }
@@ -2040,12 +2053,18 @@ void VulkanSurface::resize(uint32_t width, uint32_t height) {
 }
 
 std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
+  if (!config_.window_handle) {
+    return std::make_pair(config_.width, config_.height);
+  }
   int width, height;
   glfwGetFramebufferSize(window_, &width, &height);
   return std::make_pair(width, height);
 }
 
 DeviceAllocation VulkanSurface::get_target_image() {
+  if (!config_.window_handle) {
+    return screenshot_image_;
+  }
   vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
                         image_available_, VK_NULL_HANDLE, &image_index_);
 
@@ -2074,7 +2093,9 @@ void VulkanSurface::present_image() {
 
 DeviceAllocation VulkanSurface::get_image_data() {
   auto *stream = device_->get_graphics_stream();
-  DeviceAllocation &img_alloc = swapchain_images_[image_index_];
+  DeviceAllocation img_alloc = config_.window_handle
+                                   ? swapchain_images_[image_index_]
+                                   : screenshot_image_;
   auto [w, h] = get_size();
   size_t size_bytes = w * h * 4;
   if (screenshot_image_ == kDeviceNullAllocation) {
@@ -2097,13 +2118,18 @@ DeviceAllocation VulkanSurface::get_image_data() {
   device_->image_transition(img_alloc, ImageLayout::present_src,
                             ImageLayout::transfer_src);
 
-  auto cmd_list = stream->new_command_list();
-  // TODO: check if blit is suppoted, and use copy_image if not
-  cmd_list->blit_image(screenshot_image_, img_alloc, ImageLayout::transfer_dst,
-                       ImageLayout::transfer_src, {w, h, 1});
-  cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_dst,
-                             ImageLayout::transfer_src);
-  stream->submit_synced(cmd_list.get());
+  std::unique_ptr<CommandList> cmd_list{nullptr};
+
+  if (config_.window_handle) {
+    // TODO: check if blit is suppoted, and use copy_image if not
+    cmd_list = stream->new_command_list();
+    cmd_list->blit_image(screenshot_image_, img_alloc,
+                         ImageLayout::transfer_dst, ImageLayout::transfer_src,
+                         {w, h, 1});
+    cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_dst,
+                               ImageLayout::transfer_src);
+    stream->submit_synced(cmd_list.get());
+  }
 
   BufferImageCopyParams copy_params;
   copy_params.image_extent.x = w;
@@ -2112,8 +2138,10 @@ DeviceAllocation VulkanSurface::get_image_data() {
   // TODO: directly map the image to cpu memory
   cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), screenshot_image_,
                             ImageLayout::transfer_src, copy_params);
-  cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_src,
-                             ImageLayout::transfer_dst);
+  if (config_.window_handle) {
+    cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_src,
+                               ImageLayout::transfer_dst);
+  }
   cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
                              ImageLayout::present_src);
   stream->submit_synced(cmd_list.get());

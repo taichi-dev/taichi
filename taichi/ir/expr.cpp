@@ -29,6 +29,14 @@ std::string Expr::get_attribute(const std::string &key) const {
   return expr->get_attribute(key);
 }
 
+DataType Expr::get_ret_type() const {
+  return expr->ret_type;
+}
+
+void Expr::type_check() {
+  expr->type_check();
+}
+
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
   return Expr::make<TernaryOpExpression>(TernaryOpType::select, cond, true_val,
                                          false_val);
@@ -43,16 +51,11 @@ Expr operator~(const Expr &expr) {
 }
 
 Expr cast(const Expr &input, DataType dt) {
-  auto ret =
-      std::make_shared<UnaryOpExpression>(UnaryOpType::cast_value, input);
-  ret->cast_type = dt;
-  return Expr(ret);
+  return Expr::make<UnaryOpExpression>(UnaryOpType::cast_value, input, dt);
 }
 
 Expr bit_cast(const Expr &input, DataType dt) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast_bits, input);
-  ret->cast_type = dt;
-  return Expr(ret);
+  return Expr::make<UnaryOpExpression>(UnaryOpType::cast_bits, input, dt);
 }
 
 Expr Expr::operator[](const ExprGroup &indices) const {
@@ -192,6 +195,7 @@ Expr Var(const Expr &x) {
       std::static_pointer_cast<IdExpression>(var.expr)->id,
       PrimitiveType::unknown));
   var = x;
+  var->ret_type = x->ret_type;
   return var;
 }
 

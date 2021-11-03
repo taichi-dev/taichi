@@ -242,6 +242,8 @@ class ArgLoadExpression : public Expression {
   ArgLoadExpression(int arg_id, DataType dt) : arg_id(arg_id), dt(dt) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override {
     ss << fmt::format("arg[{}] (dt={})", arg_id, data_type_name(dt));
   }
@@ -255,6 +257,8 @@ class RandExpression : public Expression {
 
   RandExpression(DataType dt) : dt(dt) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     ss << fmt::format("rand<{}>()", data_type_name(dt));
@@ -274,6 +278,12 @@ class UnaryOpExpression : public Expression {
     cast_type = PrimitiveType::unknown;
   }
 
+  UnaryOpExpression(UnaryOpType type, const Expr &operand, DataType cast_type)
+      : type(type), operand(load_if_ptr(operand)), cast_type(cast_type) {
+  }
+
+  void type_check() override;
+
   bool is_cast() const;
 
   void serialize(std::ostream &ss) override;
@@ -287,10 +297,10 @@ class BinaryOpExpression : public Expression {
   Expr lhs, rhs;
 
   BinaryOpExpression(const BinaryOpType &type, const Expr &lhs, const Expr &rhs)
-      : type(type) {
-    this->lhs.set(load_if_ptr(lhs));
-    this->rhs.set(load_if_ptr(rhs));
+      : type(type), lhs(load_if_ptr(lhs)), rhs(load_if_ptr(rhs)) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     ss << '(';
@@ -590,6 +600,9 @@ class IdExpression : public Expression {
   IdExpression(const Identifier &id) : id(id) {
   }
 
+  void type_check() override {
+  }
+
   void serialize(std::ostream &ss) override {
     ss << id.name();
   }
@@ -677,7 +690,10 @@ class ConstExpression : public Expression {
 
   template <typename T>
   ConstExpression(const T &x) : val(x) {
+    ret_type = val.dt;
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     ss << val.stringify();

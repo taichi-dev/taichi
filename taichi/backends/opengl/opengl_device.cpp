@@ -1,4 +1,5 @@
 #include "opengl_device.h"
+#include "opengl_api.h"
 
 namespace taichi {
 namespace lang {
@@ -92,7 +93,8 @@ GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
   shader_id = glCreateShader(GL_COMPUTE_SHADER);
 
   const GLchar *source_cstr = (const GLchar *)desc.data;
-  glShaderSource(shader_id, 1, &source_cstr, nullptr);
+  int length = desc.size;
+  glShaderSource(shader_id, 1, &source_cstr, &length);
 
   glCompileShader(shader_id);
   int status = GL_TRUE;
@@ -299,11 +301,11 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   alloc.alloc_id = buffer;
 
   if (params.host_read && params.host_write) {
-    buffer_to_access_[buffer] = GL_READ_WRITE;
+    buffer_to_access_[buffer] = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT;
   } else if (params.host_read) {
-    buffer_to_access_[buffer] = GL_READ_ONLY;
+    buffer_to_access_[buffer] = GL_MAP_READ_BIT;
   } else if (params.host_write) {
-    buffer_to_access_[buffer] = GL_WRITE_ONLY;
+    buffer_to_access_[buffer] = GL_MAP_WRITE_BIT;
   }
 
   return alloc;
@@ -333,6 +335,11 @@ void *GLDevice::map_range(DevicePtr ptr, uint64_t size) {
 }
 
 void *GLDevice::map(DeviceAllocation alloc) {
+  int size = 0;
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, alloc.alloc_id);
+  glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &size);
+  return map_range(alloc.get_ptr(0), size);
+  /*
   TI_ASSERT_INFO(
       buffer_to_access_.find(alloc.alloc_id) != buffer_to_access_.end(),
       "Buffer not created with host_read or write");
@@ -342,6 +349,7 @@ void *GLDevice::map(DeviceAllocation alloc) {
                              buffer_to_access_.at(alloc.alloc_id));
   check_opengl_error("glMapBuffer");
   return mapped;
+  */
 }
 
 void GLDevice::unmap(DevicePtr ptr) {
@@ -480,9 +488,18 @@ void GLCommandList::CmdBufferCopy::execute() {
 void GLCommandList::CmdBufferFill::execute() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
   check_opengl_error("glBindBuffer");
-  glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32F, offset, size, GL_RED,
-                       GL_FLOAT, &data);
-  check_opengl_error("glClearBufferSubData");
+  if (is_gles()) {
+    int buf_size = 0;
+    glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &buf_size);
+    TI_ASSERT(offset == 0 && data == 0 && size == buf_size &&
+              "GLES only supports full clear");
+    glBufferData(GL_SHADER_STORAGE_BUFFER, buf_size, nullptr, GL_DYNAMIC_READ);
+    check_opengl_error("glBufferData");
+  } else {
+    glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32F, offset, size,
+                         GL_RED, GL_FLOAT, &data);
+    check_opengl_error("glClearBufferSubData");
+  }
 }
 
 void GLCommandList::CmdDispatch::execute() {

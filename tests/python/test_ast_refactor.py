@@ -1,4 +1,4 @@
-import numpy as np
+# import numpy as np
 import pytest
 
 import taichi as ti
@@ -417,28 +417,28 @@ def test_taichi_other_than_ti():
     for i in range(10):
         assert foo(i) == fib[i]
 
-
-@ti.test(experimental_ast_refactor=True)
-def test_any_arr():
-    n = 4
-    m = 7
-
-    @ti.kernel
-    def run(x: ti.any_arr(element_dim=2, layout=ti.Layout.AOS),
-            y: ti.any_arr()):
-        for i in ti.static(range(n)):
-            for j in ti.static(range(m)):
-                x[i, j][0, 0] += i + j + y[i, j]
-
-    a = ti.Matrix.ndarray(1, 1, ti.i32, shape=(n, m))
-    for i in range(n):
-        for j in range(m):
-            a[i, j][0, 0] = i * j
-    b = np.ones((n, m), dtype=np.int32)
-    run(a, b)
-    for i in range(n):
-        for j in range(m):
-            assert a[i, j] == i * j + i + j + 1
+#
+# @ti.test(experimental_ast_refactor=True)
+# def test_any_arr():
+#     n = 4
+#     m = 7
+#
+#     @ti.kernel
+#     def run(x: ti.any_arr(element_dim=2, layout=ti.Layout.AOS),
+#             y: ti.any_arr()):
+#         for i in ti.static(range(n)):
+#             for j in ti.static(range(m)):
+#                 x[i, j][0, 0] += i + j + y[i, j]
+#
+#     a = ti.Matrix.ndarray(1, 1, ti.i32, shape=(n, m))
+#     for i in range(n):
+#         for j in range(m):
+#             a[i, j][0, 0] = i * j
+#     b = np.ones((n, m), dtype=np.int32)
+#     run(a, b)
+#     for i in range(n):
+#         for j in range(m):
+#             assert a[i, j] == i * j + i + j + 1
 
 
 @ti.test(experimental_ast_refactor=True, arch=ti.cpu)

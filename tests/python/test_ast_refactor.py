@@ -342,6 +342,7 @@ def test_static_ifexp():
         return 1 if ti.static(x) else 0
 
     assert foo(1) == 1
+
     assert foo(0) == 0
 
 

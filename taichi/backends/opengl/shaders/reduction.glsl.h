@@ -33,8 +33,8 @@ static_assert(false, "Do not include");
           if (gl_LocalInvocationIndex % radix == 0 &&                          \
               cmp_index < group_size) {                                        \
             _reduction_temp_##TYPE[gl_LocalInvocationIndex] =                  \
-                ##OP(_reduction_temp_##TYPE[gl_LocalInvocationIndex],          \
-                     _reduction_temp_##TYPE[cmp_index]);                       \
+                OP(_reduction_temp_##TYPE[gl_LocalInvocationIndex],            \
+                   _reduction_temp_##TYPE[cmp_index]);                         \
           }                                                                    \
           barrier();                                                           \
           memoryBarrierShared();                                               \

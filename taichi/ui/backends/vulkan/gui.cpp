@@ -99,6 +99,13 @@ void Gui::prepare_for_next_frame() {
   ImGui_ImplVulkan_NewFrame();
   if (app_context_->config.show_window) {
     ImGui_ImplGlfw_NewFrame();
+  } else {
+    // io.DisplaySize is set during ImGui_ImplGlfw_NewFrame()
+    // but since we're headless, we do it explicitly here
+    auto w = app_context_->config.width;
+    auto h = app_context_->config.height;
+    ImGuiIO &io = ImGui::GetIO();
+    io.DisplaySize = ImVec2((float)w, (float)h);
   }
   ImGui::NewFrame();
   is_empty_ = true;

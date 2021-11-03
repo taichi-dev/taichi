@@ -16,10 +16,11 @@ Ndarray::Ndarray(Program *prog,
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)) {
-          LlvmProgramImpl *prog_impl_ = prog->get_llvm_program_impl();
-          ndarray_alloc_ = prog_impl_->allocate_memory_ndarray(nelement_*element_size_);
-          data_ptr_ = prog_impl_->get_ndarray_alloc_info_ptr(ndarray_alloc_);
-      }
+  LlvmProgramImpl *prog_impl_ = prog->get_llvm_program_impl();
+  ndarray_alloc_ =
+      prog_impl_->allocate_memory_ndarray(nelement_ * element_size_);
+  data_ptr_ = prog_impl_->get_ndarray_alloc_info_ptr(ndarray_alloc_);
+}
 
 intptr_t Ndarray::get_data_ptr_as_int() const {
   return reinterpret_cast<intptr_t>(data_ptr_);

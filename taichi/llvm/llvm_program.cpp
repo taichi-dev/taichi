@@ -571,12 +571,14 @@ DevicePtr LlvmProgramImpl::get_snode_tree_device_ptr(int tree_id) {
   return tree_alloc.get_ptr();
 }
 
-DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(std::size_t alloc_size) {
+DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
+    std::size_t alloc_size) {
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     Device::AllocParams device_buffer_alloc_params;
     device_buffer_alloc_params.size = alloc_size;
-    DeviceAllocation alloc = cuda_device()->allocate_memory(device_buffer_alloc_params);
+    DeviceAllocation alloc =
+        cuda_device()->allocate_memory(device_buffer_alloc_params);
     ndarray_allocs_.push_back(alloc);
     return alloc;
 #else
@@ -585,7 +587,8 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(std::size_t alloc_size
   } else {
     Device::AllocParams device_buffer_alloc_params;
     device_buffer_alloc_params.size = alloc_size;
-    DeviceAllocation alloc = cpu_device()->allocate_memory(device_buffer_alloc_params);
+    DeviceAllocation alloc =
+        cpu_device()->allocate_memory(device_buffer_alloc_params);
     ndarray_allocs_.push_back(alloc);
     return alloc;
   }

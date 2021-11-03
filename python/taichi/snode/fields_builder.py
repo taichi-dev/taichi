@@ -159,8 +159,7 @@ class FieldsBuilder:
     def _finalize(self, raise_warning, compile_only):
         self._check_not_finalized()
         if self._empty and raise_warning:
-            pass
-            # warning("Finalizing an empty FieldsBuilder!")
+            warning("Finalizing an empty FieldsBuilder!")
         self._finalized = True
         return SNodeTree(
             _ti_core.finalize_snode_tree(_snode_registry, self._ptr,

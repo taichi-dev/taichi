@@ -387,6 +387,10 @@ class KernelGen : public IRVisitor {
     }
   }
 
+  void visit(AssertStmt *stmt) override {
+    // TODO: do the actual assert
+  }
+
   void visit(SNodeOpStmt *stmt) override {  // IAPR?
     if (stmt->op_type == SNodeOpType::activate) {
       if (stmt->snode->type == SNodeType::dense ||

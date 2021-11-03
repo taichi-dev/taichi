@@ -308,7 +308,7 @@ def _test_vector_ndarray_python_scope(layout):
     for i in range(5):
         for j in range(4):
             a[i][j * j] = j * j
-    assert a[0][6] == 0
+    assert a[0][9] == 9
     assert a[1][0] == 0
     assert a[2][1] == 1
     assert a[3][4] == 4
@@ -337,7 +337,7 @@ def _test_vector_ndarray_taichi_scope(layout):
 
     v = ti.Vector.ndarray(10, ti.i32, 5, layout=layout)
     func(v)
-    assert v[0][6] == 0
+    assert v[0][9] == 9
     assert v[1][0] == 0
     assert v[2][1] == 1
     assert v[3][4] == 4

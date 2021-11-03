@@ -490,13 +490,14 @@ void GLCommandList::CmdBufferFill::execute() {
   check_opengl_error("glBindBuffer");
   if (is_gles()) {
     int buf_size = 0;
-    glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER,  GL_BUFFER_SIZE, &buf_size);
-    TI_ASSERT(offset == 0 && data == 0 && size == buf_size && "GLES only supports full clear");
+    glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &buf_size);
+    TI_ASSERT(offset == 0 && data == 0 && size == buf_size &&
+              "GLES only supports full clear");
     glBufferData(GL_SHADER_STORAGE_BUFFER, buf_size, nullptr, GL_DYNAMIC_READ);
     check_opengl_error("glBufferData");
   } else {
-    glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32F, offset, size, GL_RED,
-                         GL_FLOAT, &data);
+    glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32F, offset, size,
+                         GL_RED, GL_FLOAT, &data);
     check_opengl_error("glClearBufferSubData");
   }
 }

@@ -68,7 +68,7 @@ bool initialize_opengl(bool error_tolerance) {
   if (glfwInit()) {
     // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
     if (use_gles) {
-      glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API) ;
+      glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     } else {
@@ -107,15 +107,19 @@ bool initialize_opengl(bool error_tolerance) {
     if (!egl_version) {
       TI_DEBUG("Failed to load EGL");
     } else {
-      static const EGLint configAttribs[] = {
-          EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
-          EGL_BLUE_SIZE, 8,
-          EGL_GREEN_SIZE, 8,
-          EGL_RED_SIZE, 8,
-          EGL_DEPTH_SIZE, 8,
-          EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
-          EGL_NONE
-      };
+      static const EGLint configAttribs[] = {EGL_SURFACE_TYPE,
+                                             EGL_PBUFFER_BIT,
+                                             EGL_BLUE_SIZE,
+                                             8,
+                                             EGL_GREEN_SIZE,
+                                             8,
+                                             EGL_RED_SIZE,
+                                             8,
+                                             EGL_DEPTH_SIZE,
+                                             8,
+                                             EGL_RENDERABLE_TYPE,
+                                             EGL_OPENGL_BIT,
+                                             EGL_NONE};
 
       // Initialize EGL
       EGLDisplay egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
@@ -125,7 +129,9 @@ bool initialize_opengl(bool error_tolerance) {
 
       egl_version = gladLoaderLoadEGL(egl_display);
 
-      TI_DEBUG("Loaded EGL {}.{} on display {}", GLAD_VERSION_MAJOR(egl_version), GLAD_VERSION_MINOR(egl_version), egl_display);
+      TI_DEBUG("Loaded EGL {}.{} on display {}",
+               GLAD_VERSION_MAJOR(egl_version), GLAD_VERSION_MINOR(egl_version),
+               egl_display);
 
       // Select an appropriate configuration
       EGLint num_configs;
@@ -134,7 +140,7 @@ bool initialize_opengl(bool error_tolerance) {
       eglChooseConfig(egl_display, configAttribs, &egl_config, 1, &num_configs);
 
       // Bind the API (EGL >= 1.2)
-      if (egl_version >= GLAD_MAKE_VERSION(1,2)) {
+      if (egl_version >= GLAD_MAKE_VERSION(1, 2)) {
         eglBindAPI(use_gles ? EGL_OPENGL_ES_API : EGL_OPENGL_API);
       }
 
@@ -142,16 +148,18 @@ bool initialize_opengl(bool error_tolerance) {
       EGLContext egl_context = EGL_NO_CONTEXT;
       if (use_gles) {
         static const EGLint gl_attribs[] = {
-            EGL_CONTEXT_MAJOR_VERSION, 3,
-            EGL_CONTEXT_MINOR_VERSION, 1,
+            EGL_CONTEXT_MAJOR_VERSION,
+            3,
+            EGL_CONTEXT_MINOR_VERSION,
+            1,
             EGL_NONE,
         };
 
         egl_context = eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT,
-                                                  gl_attribs);
+                                       gl_attribs);
       } else {
-        egl_context = eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT,
-                                                  nullptr);
+        egl_context =
+            eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT, nullptr);
       }
 
       eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, egl_context);
@@ -174,7 +182,9 @@ bool initialize_opengl(bool error_tolerance) {
     TI_ERROR("Can not create OpenGL context");
   }
 
-  TI_DEBUG("{} version {}.{}", use_gles ? "GLES" : "OpenGL", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
+  TI_DEBUG("{} version {}.{}", use_gles ? "GLES" : "OpenGL",
+           GLAD_VERSION_MAJOR(opengl_version),
+           GLAD_VERSION_MINOR(opengl_version));
 
 #define PER_OPENGL_EXTENSION(x)          \
   if ((opengl_extension_##x = GLAD_##x)) \

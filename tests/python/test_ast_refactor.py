@@ -265,6 +265,22 @@ def test_struct_for():
 
 
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_grouped_struct_for():
+    a = ti.field(ti.i32, shape=(4, 4))
+
+    @ti.kernel
+    def foo(x: ti.i32):
+        for I in ti.grouped(a):
+            a[I] = x
+
+    x = 5
+    foo(x)
+    for i in range(4):
+        for j in range(4):
+            assert a[i, j] == 5
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
 def test_static_for():
     a = ti.field(ti.i32, shape=(10, ))
 

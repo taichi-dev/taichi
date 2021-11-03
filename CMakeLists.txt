@@ -5,6 +5,9 @@
 cmake_minimum_required(VERSION 3.12)
 
 project(taichi)
+set(TI_VERSION_MAJOR 0)
+set(TI_VERSION_MINOR 8)
+set(TI_VERSION_PATCH 4)
 
 set(CMAKE_CXX_STANDARD 17)
 

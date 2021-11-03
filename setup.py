@@ -35,10 +35,6 @@ classifiers = [
 ]
 
 project_name = os.getenv('PROJECT_NAME', 'taichi')
-TI_VERSION_MAJOR = 0
-TI_VERSION_MINOR = 8
-TI_VERSION_PATCH = 4
-version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 
 data_files = glob.glob('python/lib/*')
 print(data_files)
@@ -129,9 +125,6 @@ class CMakeBuild(build_ext):
         cmake_args += [
             f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={build_directory}',
             f'-DPYTHON_EXECUTABLE={get_python_executable()}',
-            f'-DTI_VERSION_MAJOR={TI_VERSION_MAJOR}',
-            f'-DTI_VERSION_MINOR={TI_VERSION_MINOR}',
-            f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
         ]
 
         self.debug = os.getenv('DEBUG', '0') in ('1', 'ON')

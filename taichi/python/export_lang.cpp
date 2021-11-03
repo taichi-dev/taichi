@@ -512,10 +512,12 @@ void export_lang(py::module &m) {
         });
 
   m.def("insert_external_func_call",
-        [](std::size_t func_addr, std::string source, const ExprGroup &args,
+        [](std::size_t func_addr, std::string source, std::string filename,
+           std::string funcname, const ExprGroup &args,
            const ExprGroup &outputs) {
           auto expr = Expr::make<ExternalFuncCallExpression>(
-              (void *)func_addr, source, args.exprs, outputs.exprs);
+              (void *)func_addr, source, filename, funcname, args.exprs,
+              outputs.exprs);
 
           current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
         });

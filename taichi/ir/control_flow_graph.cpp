@@ -437,6 +437,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
         // After lower_access, we only analyze local variables and stacks.
         // Do not eliminate AllocaStmt and AdStackAllocaStmt here.
         if (!stmt->is<AllocaStmt>() && !stmt->is<AdStackAllocaStmt>() &&
+            !stmt->is<ExternalFuncCallStmt>() &&
             !may_contain_variable(live_in_this_node, store_ptr) &&
             (contain_variable(killed_in_this_node, store_ptr) ||
              !may_contain_variable(live_out, store_ptr))) {

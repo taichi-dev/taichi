@@ -4,6 +4,9 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
 
+#include "llvm/Bitcode/BitcodeReader.h"
+#include "llvm/Linker/Linker.h"
+
 TLANG_NAMESPACE_BEGIN
 
 // TODO: sort function definitions to match declaration order in header
@@ -2015,6 +2018,71 @@ void CodeGenLLVM::visit(RangeAssumptionStmt *stmt) {
 
 void CodeGenLLVM::visit(LoopUniqueStmt *stmt) {
   llvm_val[stmt] = llvm_val[stmt->input];
+}
+
+void CodeGenLLVM::visit_call_bitcode(ExternalFuncCallStmt *stmt) {
+  TI_ASSERT(stmt->type == ExternalFuncCallStmt::BITCODE);
+  std::vector<llvm::Value *> arg_values;
+  for (const auto &s : stmt->arg_stmts)
+    arg_values.push_back(llvm_val[s]);
+  // Link external module to the core module
+  if (linked_modules.find(stmt->bc_filename) == linked_modules.end()) {
+    linked_modules.insert(stmt->bc_filename);
+    std::unique_ptr<llvm::Module> external_module =
+        module_from_bitcode_file(stmt->bc_filename, llvm_context);
+    auto *func_ptr = external_module->getFunction(stmt->bc_funcname);
+    TI_ASSERT_INFO(func_ptr != nullptr, "{} is not found in {}.",
+                   stmt->bc_funcname, stmt->bc_filename);
+    auto link_error =
+        llvm::Linker::linkModules(*module, std::move(external_module));
+    TI_ASSERT(!link_error);
+  }
+  // Retrieve function again. Do it here to detect name conflicting.
+  auto *func_ptr = module->getFunction(stmt->bc_funcname);
+  // Convert pointer type from a[n * m] to a[n][m]
+  for (int i = 0; i < func_ptr->getFunctionType()->getNumParams(); ++i) {
+    TI_ASSERT_INFO(func_ptr->getArg(i)->getType()->getTypeID() ==
+                       arg_values[i]->getType()->getTypeID(),
+                   "TypeID {} != {} with {}",
+                   (int)func_ptr->getArg(i)->getType()->getTypeID(),
+                   (int)arg_values[i]->getType()->getTypeID(), i);
+    auto tmp_value = arg_values[i];
+    arg_values[i] =
+        builder->CreatePointerCast(tmp_value, func_ptr->getArg(i)->getType());
+  }
+  builder->CreateCall(func_ptr, arg_values);
+}
+
+void CodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {
+  TI_ASSERT(stmt->type == ExternalFuncCallStmt::SHARED_OBJECT);
+  std::vector<llvm::Type *> arg_types;
+  std::vector<llvm::Value *> arg_values;
+
+  for (const auto &s : stmt->arg_stmts) {
+    TI_ASSERT(s->width() == 1);
+    arg_types.push_back(tlctx->get_data_type(s->ret_type));
+    arg_values.push_back(llvm_val[s]);
+  }
+
+  for (const auto &s : stmt->output_stmts) {
+    TI_ASSERT(s->width() == 1);
+    auto t = tlctx->get_data_type(s->ret_type);
+    auto ptr = llvm::PointerType::get(t, 0);
+    arg_types.push_back(ptr);
+    arg_values.push_back(llvm_val[s]);
+  }
+
+  auto func_type = llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
+                                           arg_types, false);
+  auto func_ptr_type = llvm::PointerType::get(func_type, 0);
+
+  auto addr = tlctx->get_constant((std::size_t)stmt->so_func);
+  auto func = builder->CreateIntToPtr(addr, func_ptr_type);
+  builder->CreateCall(func, arg_values);
+}
+
+void CodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
+  TI_NOT_IMPLEMENTED
 }
 
 void CodeGenLLVM::eliminate_unused_functions() {

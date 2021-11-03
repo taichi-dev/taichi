@@ -373,23 +373,34 @@ class InternalFuncCallExpression : public Expression {
 
 class ExternalFuncCallExpression : public Expression {
  public:
-  void *func;
-  std::string source;
+  void *so_func;
+  std::string asm_source;
+  std::string bc_filename;
+  std::string bc_funcname;
   std::vector<Expr> args;
   std::vector<Expr> outputs;
 
-  ExternalFuncCallExpression(void *func,
-                             std::string const &source,
+  ExternalFuncCallExpression(void *so_func,
+                             const std::string &asm_source,
+                             const std::string &bc_filename,
+                             const std::string &bc_funcname,
                              const std::vector<Expr> &args,
                              const std::vector<Expr> &outputs)
-      : func(func), source(source), args(args), outputs(outputs) {
+      : so_func(so_func),
+        asm_source(asm_source),
+        bc_filename(bc_filename),
+        bc_funcname(bc_funcname),
+        args(args),
+        outputs(outputs) {
   }
 
   void serialize(std::ostream &ss) override {
-    if (func) {
-      ss << fmt::format("call {:x} (", (uint64)func);
+    if (so_func != nullptr) {
+      ss << fmt::format("so {:x} (", (uint64)so_func);
+    } else if (!asm_source.empty()) {
+      ss << fmt::format("asm \"{}\" (", asm_source);
     } else {
-      ss << fmt::format("asm \"{}\" (", source);
+      ss << fmt::format("bc {}:{} (", bc_filename, bc_funcname);
     }
 
     ss << "inputs=";

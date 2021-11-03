@@ -79,24 +79,18 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: "recursive"
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - name: Setup environments
+      - name: Get docker images
         run: |
-          sudo apt install -y clang clang-tidy libxi-dev libxcursor-dev libxinerama-dev libxrandr-dev libx11-dev libgl-dev
-          python3 -m pip install --user -r requirements_dev.txt
-          curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-linux.zip -ollvm.zip -L0
-          unzip llvm.zip -d llvm
-      - name: Generate compilation database
-        run: |
-          mkdir build && cd build
-          LLVM_DIR=$PWD/../llvm/lib/cmake/llvm PATH=$PATH:$PWD/../llvm/bin cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang ..
-          cd ..
+          # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
+          echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
+        env:
+          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
       - name: Run clang-tidy
         run: |
-          python3 ./scripts/run-clang-tidy.py $PWD/taichi -checks=-*,performance-inefficient-string-concatenation -header-filter=$PWD/taichi -p $PWD/build -j2
+          docker create --user root --name check_clang_tidy ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - check_clang_tidy:/home/dev/
+          docker start -a check_clang_tidy
 
   build_and_test_cpu_required:
     # This job will be required to pass before merging to master branch.

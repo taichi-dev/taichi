@@ -186,21 +186,6 @@ class Module:
         kt = KernelTemplate(kernel_fn, self)
         yield kt
 
-    def preprocess_kernels(self):
-        """
-        Preprocess kernel source code before saving to file.
-        Currently it's only supported on `ti.opengl` backend.
-        """
-        if self._arch != _ti_core.Arch.opengl:
-            warnings.warn(
-                "Preprocessing kernels is ignored since it's only supported on opengl backend for now."
-            )
-        if shutil.which('glslc') is None:
-            warnings.warn("Could not find glslc, preprocessing is skipped.")
-            return
-
-        self._aot_builder.preprocess_kernels()
-
     def save(self, filepath, filename):
         """
         Args:

@@ -49,5 +49,4 @@ def test_save():
         with m.add_kernel_template(foo) as kt:
             kt.instantiate(n=6)
             kt.instantiate(n=8)
-        m.preprocess_kernels()
         m.save(tmpdir, 'taichi_aot_example.tcb')

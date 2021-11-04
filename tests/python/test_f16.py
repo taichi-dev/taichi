@@ -21,7 +21,7 @@ def test_snode_read_write():
 @ti.test(arch=archs_support_f16)
 def test_to_numpy():
     n = 16
-    x = ti.field(ti.f16, shape=(n))
+    x = ti.field(ti.f16, shape=n)
 
     @ti.kernel
     def init():
@@ -37,7 +37,7 @@ def test_to_numpy():
 @ti.test(arch=archs_support_f16)
 def test_from_numpy():
     n = 16
-    y = ti.field(dtype=ti.f16, shape=(n))
+    y = ti.field(dtype=ti.f16, shape=n)
     x = np.arange(n, dtype=np.half)
     y.from_numpy(x)
 
@@ -56,7 +56,7 @@ def test_from_numpy():
 @ti.test(arch=archs_support_f16)
 def test_to_torch():
     n = 16
-    x = ti.field(ti.f16, shape=(n))
+    x = ti.field(ti.f16, shape=n)
 
     @ti.kernel
     def init():
@@ -75,7 +75,7 @@ def test_to_torch():
 def test_from_torch():
     import torch
     n = 16
-    y = ti.field(dtype=ti.f16, shape=(n))
+    y = ti.field(dtype=ti.f16, shape=n)
     # torch doesn't have rand implementation for float16 so we need to create float first and then convert
     x = torch.range(0, n - 1).to(torch.float16)
     y.from_torch(x)

@@ -567,10 +567,12 @@ DevicePtr LlvmProgramImpl::get_snode_tree_device_ptr(int tree_id) {
   return tree_alloc.get_ptr();
 }
 
-DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(std::size_t alloc_size) {
+DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
+    std::size_t alloc_size) {
   Device::AllocParams device_buffer_alloc_params;
   device_buffer_alloc_params.size = alloc_size;
-  DeviceAllocation alloc = get_compute_device()->allocate_memory(device_buffer_alloc_params);
+  DeviceAllocation alloc =
+      get_compute_device()->allocate_memory(device_buffer_alloc_params);
   ndarray_allocs_.push_back(alloc);
   return alloc;
 }

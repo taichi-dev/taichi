@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+import pytest
 
 import taichi as ti
 from taichi import approx
@@ -47,6 +48,45 @@ def test_from_numpy():
 
     init()
     z = y.to_numpy()
+    for i in range(n):
+        assert (z[i] == i * 3)
+
+
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(arch=archs_support_f16)
+def test_to_torch():
+    n = 16
+    x = ti.field(ti.f16, shape=(n))
+
+    @ti.kernel
+    def init():
+        for i in x:
+            x[i] = i * 2
+
+    init()
+    y = x.to_torch()
+    print(y)
+    for i in range(n):
+        assert (y[i] == 2 * i)
+
+
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(arch=archs_support_f16)
+def test_from_torch():
+    import torch
+    n = 16
+    y = ti.field(dtype=ti.f16, shape=(n))
+    # torch doesn't have rand implementation for float16 so we need to create float first and then convert
+    x = torch.range(0, n - 1).to(torch.float16)
+    y.from_torch(x)
+
+    @ti.kernel
+    def init():
+        for i in y:
+            y[i] = 3 * i
+
+    init()
+    z = y.to_torch()
     for i in range(n):
         assert (z[i] == i * 3)
 

@@ -18,7 +18,7 @@ f64 = float64
 float16 = ti_core.DataType_f16
 f16 = float16
 
-real_types = [f32, f64, float]
+real_types = [f16, f32, f64, float]
 real_type_ids = [id(t) for t in real_types]
 
 # Integer types
@@ -68,6 +68,7 @@ __all__ = [
     'f32',
     'float64',
     'f64',
+    'float16',
     'f16',
     'int8',
     'i8',

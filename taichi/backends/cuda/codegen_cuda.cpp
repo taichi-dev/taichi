@@ -191,7 +191,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     // functions from libdevice
     auto input = llvm_val[stmt->operand];
     auto input_taichi_type = stmt->operand->ret_type;
-    if (stmt->operand->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+    if (input_taichi_type->is_primitive(PrimitiveTypeID::f16)) {
       // Promote to f32 since we don't have f16 support for extra unary ops in
       // libdevice.
       input =

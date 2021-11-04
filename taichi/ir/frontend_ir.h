@@ -330,6 +330,8 @@ class TernaryOpExpression : public Expression {
     this->op3.set(load_if_ptr(op3));
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override {
     ss << ternary_type_name(type) << '(';
     op1->serialize(ss);

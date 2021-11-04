@@ -625,8 +625,9 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     }
     llvm_val[stmt] = builder->CreateSExt(cmp, llvm_type(PrimitiveType::i32));
   } else {
-    // This branch contains atan2 and pow which use runtime.cpp function for **real**
-    // type. We don't have f16 support there so promoting to f32 is necessary.
+    // This branch contains atan2 and pow which use runtime.cpp function for
+    // **real** type. We don't have f16 support there so promoting to f32 is
+    // necessary.
     llvm::Value *lhs = llvm_val[stmt->lhs];
     llvm::Value *rhs = llvm_val[stmt->rhs];
     if (stmt->lhs->ret_type->is_primitive(PrimitiveTypeID::f16)) {

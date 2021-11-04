@@ -127,6 +127,10 @@ class CMakeBuild(build_ext):
         cmake_args = self.parse_cmake_args_from_env()
 
         cmake_args += [
+            '-GVisual Studio 16 2019',
+            '-A x64',
+            '-DLLVM_DIR=C:\\taichi_llvm\\lib\\cmake\\llvm',
+            '-DTI_WITH_VULKAN:BOOL=OFF',
             f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={build_directory}',
             f'-DPYTHON_EXECUTABLE={get_python_executable()}',
             f'-DTI_VERSION_MAJOR={TI_VERSION_MAJOR}',

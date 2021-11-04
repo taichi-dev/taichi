@@ -20,7 +20,7 @@ def test_snode_read_write():
 @ti.test(arch=archs_support_f16)
 def test_to_numpy():
     n = 16
-    x = ti.field(ti.f16, shape=(n))
+    x = ti.field(ti.f16, shape=n)
 
     @ti.kernel
     def init():
@@ -36,7 +36,7 @@ def test_to_numpy():
 @ti.test(arch=archs_support_f16)
 def test_from_numpy():
     n = 16
-    y = ti.field(dtype=ti.f16, shape=(n))
+    y = ti.field(dtype=ti.f16, shape=n)
     x = np.arange(n, dtype=np.half)
     y.from_numpy(x)
 

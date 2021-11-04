@@ -16,7 +16,7 @@ Ndarray::Ndarray(Program *prog,
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)) {
-  LlvmProgramImpl *prog_impl_ = prog->get_llvm_program_impl();
+  LlvmProgramImpl *prog_impl = prog->get_llvm_program_impl();
   ndarray_alloc_ =
       prog_impl_->allocate_memory_ndarray(nelement_ * element_size_);
   data_ptr_ = prog_impl_->get_ndarray_alloc_info_ptr(ndarray_alloc_);

@@ -198,6 +198,25 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void TernaryOpExpression::type_check() {
+  auto op1_type = op1->ret_type;
+  auto op2_type = op2->ret_type;
+  auto op3_type = op3->ret_type;
+  if (op1_type == PrimitiveType::unknown ||
+      op2_type == PrimitiveType::unknown || op3_type == PrimitiveType::unknown)
+    return;
+  auto error = [&]() {
+    throw std::runtime_error(fmt::format(
+        "TypeError: unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
+        ternary_type_name(type), op1->ret_type->to_string(),
+        op2->ret_type->to_string(), op3->ret_type->to_string()));
+  };
+  if (!is_integral(op1_type) || !op2_type->is<PrimitiveType>() ||
+      !op3_type->is<PrimitiveType>())
+    error();
+  ret_type = promoted_type(op2_type, op3_type);
+}
+
 void TernaryOpExpression::flatten(FlattenContext *ctx) {
   // if (stmt)
   //  return;

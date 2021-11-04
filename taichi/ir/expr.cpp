@@ -72,6 +72,9 @@ Expr &Expr::operator=(const Expr &o) {
     } else if (expr->is_lvalue()) {
       current_ast_builder().insert(
           std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
+      if (this->is<IdExpression>()) {
+        expr->ret_type = current_ast_builder().get_last_stmt()->cast<FrontendAssignStmt>()->rhs->ret_type;
+      }
     } else {
       // set(o.eval());
       TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
@@ -195,7 +198,6 @@ Expr Var(const Expr &x) {
       std::static_pointer_cast<IdExpression>(var.expr)->id,
       PrimitiveType::unknown));
   var = x;
-  var->ret_type = x->ret_type;
   return var;
 }
 

@@ -150,7 +150,8 @@ def test_mpm88_numpy_and_ndarray():
             fx = x[p] * inv_dx - base.cast(float)
             w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
             stress = -dt * p_vol * (J[p] - 1) * 4 * inv_dx * inv_dx * E
-            affine = ti.Matrix([[stress, 0], [0, stress]]) + p_mass * C[p]
+            affine = ti.Matrix([[stress, 0], [0, stress]],
+                               dt=ti.f32) + p_mass * C[p]
             for i in ti.static(range(3)):
                 for j in ti.static(range(3)):
                     offset = ti.Vector([i, j])

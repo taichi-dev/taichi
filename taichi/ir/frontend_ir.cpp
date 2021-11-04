@@ -319,6 +319,19 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void TensorElementExpression::type_check() {
+  std::string invalid_msg{"Invalid TensorElementExpression: the source is neither a local tensor nor a global tensor field"};
+  if (is_local_tensor()) {
+    TI_ASSERT_INFO(var->ret_type->is<TensorType>(), invalid_msg);
+    ret_type = var->ret_type->cast<TensorType>()->get_element_type();
+  } else if (is_global_tensor()) {
+    TI_ASSERT_INFO(var.is<GlobalPtrExpression>() && var.cast<GlobalPtrExpression>()->var.is<GlobalVariableExpression>(), invalid_msg);
+    ret_type = var.cast<GlobalPtrExpression>()->var.cast<GlobalVariableExpression>()->snode->dt;
+  } else {
+    TI_ERROR(invalid_msg);
+  }
+}
+
 bool TensorElementExpression::is_local_tensor() const {
   return var.is<IdExpression>();
 }

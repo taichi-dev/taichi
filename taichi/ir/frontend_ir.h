@@ -426,6 +426,9 @@ class ExternalTensorExpression : public Expression {
     set_attribute("dim", std::to_string(dim));
   }
 
+  void type_check() override {
+  }
+
   void serialize(std::ostream &ss) override {
     ss << fmt::format("{}d_ext_arr", dim);
   }
@@ -455,6 +458,9 @@ class GlobalVariableExpression : public Expression {
     dt = snode->dt;
     has_ambient = false;
     is_primal = true;
+  }
+
+  void type_check() override {
   }
 
   void set_snode(SNode *snode) {
@@ -507,6 +513,8 @@ class TensorElementExpression : public Expression {
                           int layout_stride)
       : var(var), indices(indices), shape(shape), layout_stride(layout_stride) {
   }
+
+  void type_check() override;
 
   bool is_local_tensor() const;
 
@@ -662,6 +670,11 @@ class LocalLoadExpression : public Expression {
  public:
   Expr ptr;
   LocalLoadExpression(const Expr &ptr) : ptr(ptr) {
+    // Now it is only constructed by load_if_ptr. No type_check will be called.
+    ret_type = ptr->ret_type;
+  }
+
+  void type_check() override {
   }
 
   void serialize(std::ostream &ss) override {
@@ -677,7 +690,10 @@ class GlobalLoadExpression : public Expression {
   Expr ptr;
   GlobalLoadExpression(const Expr &ptr) : ptr(ptr) {
     // Now it is only constructed by load_if_ptr. No type_check will be called.
-    ret_type = ptr->ret_type;
+    ret_type = ptr->ret_type->get_compute_type();
+  }
+
+  void type_check() override {
   }
 
   void serialize(std::ostream &ss) override {

@@ -715,6 +715,7 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
         std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
         element_type));
+    var->ret_type = current_ast_builder().get_last_stmt()->ret_type;
     for (int i = 0; i < (int)elements.exprs.size(); ++i) {
       ExprGroup reversed_indices;
       int linearized_index = i;

@@ -483,6 +483,8 @@ class GlobalPtrExpression : public Expression {
       : snode(snode), indices(indices) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
@@ -674,6 +676,8 @@ class GlobalLoadExpression : public Expression {
  public:
   Expr ptr;
   GlobalLoadExpression(const Expr &ptr) : ptr(ptr) {
+    // Now it is only constructed by load_if_ptr. No type_check will be called.
+    ret_type = ptr->ret_type;
   }
 
   void serialize(std::ostream &ss) override {

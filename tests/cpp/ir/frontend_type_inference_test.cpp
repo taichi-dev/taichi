@@ -59,5 +59,24 @@ TEST(FrontendTypeInference, UnaryOp) {
   EXPECT_EQ(bit_not_i16->ret_type, PrimitiveType::i16);
 }
 
+TEST(FrontendTypeInference, GlobalPtr_GlobalVariable) {
+  auto snode = std::make_unique<SNode>(0, SNodeType::root);
+  snode->dt = PrimitiveType::u8;
+  auto global_var = Expr::make<GlobalVariableExpression>(snode.get());
+  auto index = Expr::make<ConstExpression, float32>(2);
+  index->type_check();
+  auto global_ptr = Expr::make<GlobalPtrExpression>(global_var, ExprGroup(index));
+  global_ptr->type_check();
+  auto load_global_ptr = load_if_ptr(global_ptr);
+  EXPECT_EQ(load_global_ptr->ret_type, PrimitiveType::u8);
+}
+
+TEST(FrontendTypeInference, GlobalPtr_ExternalTensor) {
+  auto index = Expr::make<ConstExpression, float32>(2);
+  auto external_tensor = Expr::make<ExternalTensorExpression>(PrimitiveType::u16, 1, 0, 0);
+  auto global_ptr = Expr::make<GlobalPtrExpression>(external_tensor, ExprGroup(index));
+  EXPECT_THROW(global_ptr->type_check(), std::runtime_error);
+}
+
 }  // namespace lang
 }  // namespace taichi

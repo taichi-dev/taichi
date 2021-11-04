@@ -26,6 +26,20 @@ namespace shaders {
 #include "taichi/backends/opengl/shaders/fast_pow.glsl.h"
 #include "taichi/backends/opengl/shaders/print.glsl.h"
 #include "taichi/backends/opengl/shaders/reduction.glsl.h"
+
+GENERATE_OPENGL_ATOMIC_F32(data);
+GENERATE_OPENGL_ATOMIC_F32(gtmp);
+
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(add, float);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(max, float);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(min, float);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(add, int);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(max, int);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(min, int);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(add, uint);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(max, uint);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(min, uint);
+
 #undef TI_INSIDE_OPENGL_CODEGEN
 }  // namespace shaders
 
@@ -221,25 +235,23 @@ class KernelGen : public IRVisitor {
     // clang-format on
 
     if (used.simulated_atomic_float) {
-      line_appender_header_.append_raw(shaders::kOpenGLAtomicF32SourceCode);
-      kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(data)\n");
+      kernel_header += shaders::kOpenGlAtomicF32Source_data;
       if (used.buf_gtmp) {
-        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(gtmp)\n");
+        kernel_header += shaders::kOpenGlAtomicF32Source_gtmp;
       }
     }
 
     if (used.reduction) {
       line_appender_header_.append_raw(shaders::kOpenGLReductionCommon);
-      line_appender_header_.append_raw(shaders::kOpenGLReductionSourceCode);
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, float)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, float)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, float)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, int)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, int)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, int)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, uint)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, uint)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, uint)\n");
+      kernel_header += shaders::kOpenGlReductionSource_add_float;
+      kernel_header += shaders::kOpenGlReductionSource_max_float;
+      kernel_header += shaders::kOpenGlReductionSource_min_float;
+      kernel_header += shaders::kOpenGlReductionSource_add_int;
+      kernel_header += shaders::kOpenGlReductionSource_max_int;
+      kernel_header += shaders::kOpenGlReductionSource_min_int;
+      kernel_header += shaders::kOpenGlReductionSource_add_uint;
+      kernel_header += shaders::kOpenGlReductionSource_max_uint;
+      kernel_header += shaders::kOpenGlReductionSource_min_uint;
     }
 
     line_appender_header_.append_raw(kernel_header);

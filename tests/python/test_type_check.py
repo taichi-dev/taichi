@@ -25,6 +25,7 @@ def test_binary_op():
     with pytest.raises(SystemExit):
         bitwise_float()
 
+
 @ti.test(arch=ti.cpu)
 def test_ternary_op():
     @ti.kernel
@@ -36,4 +37,3 @@ def test_ternary_op():
 
     with pytest.raises(SystemExit):
         select()
-

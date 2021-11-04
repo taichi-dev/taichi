@@ -162,7 +162,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
         auto value_type = tlctx->get_data_type(arg_stmt->ret_type);
         auto value = llvm_val[arg_stmt];
-        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
+            arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
           value_type = tlctx->get_data_type(PrimitiveType::f64);
           value = builder->CreateFPExt(value, value_type);
         }
@@ -190,6 +191,14 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     // functions from libdevice
     auto input = llvm_val[stmt->operand];
     auto input_taichi_type = stmt->operand->ret_type;
+    if (stmt->operand->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      // Promote to f32 since we don't have f16 support for extra unary ops in
+      // libdevice.
+      input =
+          builder->CreateFPExt(input, llvm::Type::getFloatTy(*llvm_context));
+      input_taichi_type = PrimitiveType::f32;
+    }
+
     auto op = stmt->op_type;
 
 #define UNARY_STD(x)                                                         \
@@ -251,6 +260,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       TI_NOT_IMPLEMENTED
     }
 #undef UNARY_STD
+    if (stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      // Convert back to f16.
+      llvm_val[stmt] = builder->CreateFPTrunc(
+          llvm_val[stmt], llvm::Type::getHalfTy(*llvm_context));
+    }
   }
 
   // Not all reduction statements can be optimized.

@@ -87,6 +87,8 @@ def to_numpy_type(dt):
         return np.uint32
     elif dt == ti.u64:
         return np.uint64
+    elif dt == ti.f16:
+        return np.half
     else:
         assert False
 
@@ -158,6 +160,8 @@ def to_taichi_type(dt):
         return ti.u32
     elif dt == np.uint64:
         return ti.u64
+    elif dt == np.half:
+        return ti.f16
 
     if has_pytorch():
         if dt == torch.float32:

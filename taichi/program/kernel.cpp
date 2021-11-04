@@ -195,6 +195,9 @@ void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
     ctx_->set_arg(arg_id, (uint32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     ctx_->set_arg(arg_id, (uint64)d);
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    // use f32 to interact with python
+    ctx_->set_arg(arg_id, (float32)d);
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -301,6 +304,9 @@ float64 Kernel::get_ret_float(int i) {
     return (float64)program->fetch_result<uint32>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return (float64)program->fetch_result<uint64>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    // use f32 to interact with python
+    return (float64)program->fetch_result<float32>(i);
   } else {
     TI_NOT_IMPLEMENTED
   }

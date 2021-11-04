@@ -162,13 +162,28 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(RandStmt *stmt) {
-  llvm_val[stmt] = create_call(
-      fmt::format("rand_{}", data_type_name(stmt->ret_type)), {get_context()});
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+    // Promoting to f32 since there's no rand_f16 support in runtime.cpp.
+    auto val_f32 = create_call("rand_f32", {get_context()});
+    llvm_val[stmt] =
+        builder->CreateFPTrunc(val_f32, llvm::Type::getHalfTy(*llvm_context));
+  } else {
+    llvm_val[stmt] =
+        create_call(fmt::format("rand_{}", data_type_name(stmt->ret_type)),
+                    {get_context()});
+  }
 }
 
 void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   auto input = llvm_val[stmt->operand];
   auto input_taichi_type = stmt->operand->ret_type;
+  if (input_taichi_type->is_primitive(PrimitiveTypeID::f16)) {
+    // Promote to f32 since we don't have f16 support for extra unary ops in in
+    // runtime.cpp.
+    input = builder->CreateFPExt(input, llvm::Type::getFloatTy(*llvm_context));
+    input_taichi_type = PrimitiveType::f32;
+  }
+
   auto op = stmt->op_type;
   auto input_type = input->getType();
 
@@ -209,6 +224,11 @@ void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
     TI_NOT_IMPLEMENTED
   }
 #undef UNARY_STD
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+    // Convert back to f16
+    llvm_val[stmt] = builder->CreateFPTrunc(
+        llvm_val[stmt], llvm::Type::getHalfTy(*llvm_context));
+  }
 }
 
 std::unique_ptr<RuntimeObject> CodeGenLLVM::emit_struct_meta_object(
@@ -363,16 +383,29 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
         TI_P(data_type_name(to));
         TI_NOT_IMPLEMENTED;
       }
-      llvm_val[stmt] =
-          builder->CreateCast(cast_op, llvm_val[stmt->operand],
-                              tlctx->get_data_type(stmt->cast_type));
+      auto cast_type = to->is_primitive(PrimitiveTypeID::f16)
+                           ? PrimitiveType::f32
+                           : stmt->cast_type;
+
+      llvm_val[stmt] = builder->CreateCast(cast_op, llvm_val[stmt->operand],
+                                           tlctx->get_data_type(cast_type));
+
+      if (to->is_primitive(PrimitiveTypeID::f16)) {
+        llvm_val[stmt] = builder->CreateFPTrunc(
+            llvm_val[stmt], llvm::Type::getHalfTy(*llvm_context));
+      }
     } else if (is_real(from) && is_real(to)) {
       if (data_type_size(from) < data_type_size(to)) {
         llvm_val[stmt] = builder->CreateFPExt(
             llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
       } else {
-        llvm_val[stmt] = builder->CreateFPTrunc(
-            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+        if (to->is_primitive(PrimitiveTypeID::f16)) {
+          llvm_val[stmt] = builder->CreateFPTrunc(
+              llvm_val[stmt->operand], llvm::Type::getHalfTy(*llvm_context));
+        } else {
+          llvm_val[stmt] = builder->CreateFPTrunc(
+              llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+        }
       }
     } else if (!is_real(from) && !is_real(to)) {
       // TODO: implement casting into custom integer type
@@ -407,13 +440,16 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
   }
   UNARY_INTRINSIC(floor)
   UNARY_INTRINSIC(ceil)
-  else emit_extra_unary(stmt);
+  else {
+    emit_extra_unary(stmt);
+  }
 #undef UNARY_INTRINSIC
 }
 
 void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
   auto op = stmt->op_type;
   auto ret_type = stmt->ret_type;
+
   if (op == BinaryOpType::add) {
     if (is_real(stmt->ret_type)) {
       llvm_val[stmt] =
@@ -498,70 +534,6 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     BINARYOP_MAX(i64)
     else {
       TI_P(data_type_name(ret_type));
-      TI_NOT_IMPLEMENTED
-    }
-  } else if (op == BinaryOpType::atan2) {
-    if (arch_is_cpu(current_arch())) {
-      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        llvm_val[stmt] = create_call(
-            "atan2_f32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        llvm_val[stmt] = create_call(
-            "atan2_f64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else {
-        TI_P(data_type_name(ret_type));
-        TI_NOT_IMPLEMENTED
-      }
-    } else if (current_arch() == Arch::cuda) {
-      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        llvm_val[stmt] = create_call(
-            "__nv_atan2f", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        llvm_val[stmt] = create_call(
-            "__nv_atan2", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else {
-        TI_P(data_type_name(ret_type));
-        TI_NOT_IMPLEMENTED
-      }
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
-  } else if (op == BinaryOpType::pow) {
-    if (arch_is_cpu(current_arch())) {
-      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        llvm_val[stmt] =
-            create_call("pow_f32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        llvm_val[stmt] =
-            create_call("pow_f64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] =
-            create_call("pow_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
-        llvm_val[stmt] =
-            create_call("pow_i64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else {
-        TI_P(data_type_name(ret_type));
-        TI_NOT_IMPLEMENTED
-      }
-    } else if (current_arch() == Arch::cuda) {
-      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        llvm_val[stmt] = create_call(
-            "__nv_powf", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        llvm_val[stmt] =
-            create_call("__nv_pow", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] =
-            create_call("pow_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
-        llvm_val[stmt] =
-            create_call("pow_i64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else {
-        TI_P(data_type_name(ret_type));
-        TI_NOT_IMPLEMENTED
-      }
-    } else {
       TI_NOT_IMPLEMENTED
     }
   } else if (op == BinaryOpType::min) {
@@ -653,8 +625,83 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     }
     llvm_val[stmt] = builder->CreateSExt(cmp, llvm_type(PrimitiveType::i32));
   } else {
-    TI_P(binary_op_type_name(op));
-    TI_NOT_IMPLEMENTED
+    // This branch contains atan2 and pow which use runtime.cpp function for
+    // **real** type. We don't have f16 support there so promoting to f32 is
+    // necessary.
+    llvm::Value *lhs = llvm_val[stmt->lhs];
+    llvm::Value *rhs = llvm_val[stmt->rhs];
+    if (stmt->lhs->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      lhs = builder->CreateFPExt(lhs, llvm::Type::getFloatTy(*llvm_context));
+    }
+    if (stmt->rhs->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      rhs = builder->CreateFPExt(rhs, llvm::Type::getFloatTy(*llvm_context));
+    }
+    if (ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      ret_type = PrimitiveType::f32;
+    }
+
+    if (op == BinaryOpType::atan2) {
+      if (arch_is_cpu(current_arch())) {
+        if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
+          llvm_val[stmt] = create_call("atan2_f32", {lhs, rhs});
+        } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
+          llvm_val[stmt] = create_call("atan2_f64", {lhs, rhs});
+        } else {
+          TI_P(data_type_name(ret_type));
+          TI_NOT_IMPLEMENTED
+        }
+      } else if (current_arch() == Arch::cuda) {
+        if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
+          llvm_val[stmt] = create_call("__nv_atan2f", {lhs, rhs});
+        } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
+          llvm_val[stmt] = create_call("__nv_atan2", {lhs, rhs});
+        } else {
+          TI_P(data_type_name(ret_type));
+          TI_NOT_IMPLEMENTED
+        }
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+    } else if (op == BinaryOpType::pow) {
+      if (arch_is_cpu(current_arch())) {
+        if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
+          llvm_val[stmt] = create_call("pow_f32", {lhs, rhs});
+        } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
+          llvm_val[stmt] = create_call("pow_f64", {lhs, rhs});
+        } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
+          llvm_val[stmt] = create_call("pow_i32", {lhs, rhs});
+        } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
+          llvm_val[stmt] = create_call("pow_i64", {lhs, rhs});
+        } else {
+          TI_P(data_type_name(ret_type));
+          TI_NOT_IMPLEMENTED
+        }
+      } else if (current_arch() == Arch::cuda) {
+        if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
+          llvm_val[stmt] = create_call("__nv_powf", {lhs, rhs});
+        } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
+          llvm_val[stmt] = create_call("__nv_pow", {lhs, rhs});
+        } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
+          llvm_val[stmt] = create_call("pow_i32", {lhs, rhs});
+        } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
+          llvm_val[stmt] = create_call("pow_i64", {lhs, rhs});
+        } else {
+          TI_P(data_type_name(ret_type));
+          TI_NOT_IMPLEMENTED
+        }
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+    } else {
+      TI_P(binary_op_type_name(op));
+      TI_NOT_IMPLEMENTED
+    }
+
+    // Convert back to f16 if applicable.
+    if (stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      llvm_val[stmt] = builder->CreateFPTrunc(
+          llvm_val[stmt], llvm::Type::getHalfTy(*llvm_context));
+    }
   }
 }
 
@@ -677,6 +724,8 @@ llvm::Type *CodeGenLLVM::llvm_type(DataType dt) {
     return llvm::Type::getFloatTy(*llvm_context);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return llvm::Type::getDoubleTy(*llvm_context);
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    return llvm::Type::getHalfTy(*llvm_context);
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -749,6 +798,23 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag, llvm::Value *value) {
         tag,
         TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
         value);
+  else if (value->getType() == llvm::Type::getHalfTy(*llvm_context)) {
+    auto extended =
+        builder->CreateFPExt(value, llvm::Type::getFloatTy(*llvm_context));
+    return create_print(
+        tag,
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32),
+        extended);
+  } else if (value->getType() == llvm::Type::getInt64Ty(*llvm_context))
+    return create_print(
+        tag,
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i64),
+        value);
+  else if (value->getType() == llvm::Type::getInt16Ty(*llvm_context))
+    return create_print(
+        tag,
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i16),
+        value);
   else
     TI_NOT_IMPLEMENTED
 }
@@ -761,7 +827,8 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
-      if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32))
+      if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
+          arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16))
         value = builder->CreateFPExt(value,
                                      tlctx->get_data_type(PrimitiveType::f64));
       args.push_back(value);
@@ -786,6 +853,9 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
   if (val.dt->is_primitive(PrimitiveTypeID::f32)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float32()));
+  } else if (val.dt->is_primitive(PrimitiveTypeID::f16)) {
+    llvm_val[stmt] = llvm::ConstantFP::get(llvm::Type::getHalfTy(*llvm_context),
+                                           val.val_float32());
   } else if (val.dt->is_primitive(PrimitiveTypeID::f64)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float64()));
@@ -989,9 +1059,22 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
       dest_ty = tlctx->get_data_type(stmt->ret_type);
     }
     auto dest_bits = dest_ty->getPrimitiveSizeInBits();
-    auto truncated = builder->CreateTrunc(
-        raw_arg, llvm::Type::getIntNTy(*llvm_context, dest_bits));
-    llvm_val[stmt] = builder->CreateBitCast(truncated, dest_ty);
+    if (dest_ty == llvm::Type::getHalfTy(*llvm_context)) {
+      // if dest_ty == half, CreateTrunc will only keep low 16bits of mantissa
+      // which doesn't mean anything.
+      // So we truncate to 32 bits first and then fptrunc to half if applicable
+      auto truncated = builder->CreateTrunc(
+          raw_arg, llvm::Type::getIntNTy(*llvm_context, 32));
+      auto casted = builder->CreateBitCast(
+          truncated, llvm::Type::getFloatTy(*llvm_context));
+      llvm_val[stmt] =
+          builder->CreateFPTrunc(casted, llvm::Type::getHalfTy(*llvm_context));
+    } else {
+      auto truncated = builder->CreateTrunc(
+          raw_arg, llvm::Type::getIntNTy(*llvm_context, dest_bits));
+
+      llvm_val[stmt] = builder->CreateBitCast(truncated, dest_ty);
+    }
   }
 }
 
@@ -1006,9 +1089,17 @@ void CodeGenLLVM::visit(ReturnStmt *stmt) {
       intermediate_bits =
           tlctx->get_data_type(stmt->value->ret_type)->getPrimitiveSizeInBits();
     }
-    llvm::Type *intermediate_type =
-        llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
     llvm::Type *dest_ty = tlctx->get_data_type<int64>();
+    llvm::Type *intermediate_type = nullptr;
+    if (llvm_val[stmt->value]->getType() ==
+        llvm::Type::getHalfTy(*llvm_context)) {
+      llvm_val[stmt->value] = builder->CreateFPExt(
+          llvm_val[stmt->value], tlctx->get_data_type<float>());
+      intermediate_type = tlctx->get_data_type<int32>();
+    } else {
+      intermediate_type =
+          llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
+    }
     auto extended = builder->CreateZExt(
         builder->CreateBitCast(llvm_val[stmt->value], intermediate_type),
         dest_ty);

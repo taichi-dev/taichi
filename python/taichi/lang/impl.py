@@ -19,7 +19,7 @@ from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
                               python_scope, taichi_scope, to_pytorch_type)
 from taichi.misc.util import deprecated, get_traceback, warning
 from taichi.snode.fields_builder import FieldsBuilder
-from taichi.type.primitive_types import f32, f64, i32, i64, u32, u64
+from taichi.type.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 import taichi as ti
 
@@ -296,7 +296,7 @@ class PyTaichi:
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
 
     def set_default_fp(self, fp):
-        assert fp in [f32, f64]
+        assert fp in [f16, f32, f64]
         self.default_fp = fp
         default_cfg().default_fp = self.default_fp
 
@@ -427,6 +427,9 @@ def make_constant_expr(val):
             return Expr(_ti_core.make_const_expr_f32(val))
         elif pytaichi.default_fp == f64:
             return Expr(_ti_core.make_const_expr_f64(val))
+        elif pytaichi.default_fp == f16:
+            # Use f32 to interact with python
+            return Expr(_ti_core.make_const_expr_f32(val))
         else:
             assert False
     else:

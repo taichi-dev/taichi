@@ -190,7 +190,8 @@ class HostDeviceContextBlitter {
         }
         if (device_->get_cap(DeviceCapability::spirv_has_float16)) {
           if (dt->is_primitive(PrimitiveTypeID::f16)) {
-            const float d = fp16_ieee_to_fp32_value(*reinterpret_cast<uint16 *>(device_ptr));
+            const float d = fp16_ieee_to_fp32_value(
+                *reinterpret_cast<uint16 *>(device_ptr));
             host_result_buffer_[i] =
                 taichi_union_cast_with_different_sizes<uint64>(d);
             break;

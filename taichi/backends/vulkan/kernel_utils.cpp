@@ -71,8 +71,9 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     const size_t dt_bytes = vk_data_type_size(ra.dt);
     if (dt_bytes > 4) {
       // Metal doesn't support 64bit data buffers.
-      TI_ERROR("Vulkan kernel only supports less than 32-bit return value, got {}",
-               data_type_name(ra.dt));
+      TI_ERROR(
+          "Vulkan kernel only supports less than 32-bit return value, got {}",
+          data_type_name(ra.dt));
     }
     ra.is_array = false;  // TODO(#909): this is a temporary limitation
     ra.stride = dt_bytes;

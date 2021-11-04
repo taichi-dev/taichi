@@ -424,7 +424,7 @@ def init(arch=None,
     Args:
         arch: Backend to use. This is usually :const:`~taichi.lang.cpu` or :const:`~taichi.lang.gpu`.
         default_fp (Optional[type]): Default floating-point type.
-        default_fp (Optional[type]): Default integral type.
+        default_ip (Optional[type]): Default integral type.
         **kwargs: Taichi provides highly customizable compilation through
             ``kwargs``, which allows for fine grained control of Taichi compiler
             behavior. Below we list some of the most frequently used ones. For a

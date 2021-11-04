@@ -77,9 +77,9 @@ if (TI_WITH_CUDA)
     set(CUDA_ARCH "cuda")
 endif()
 
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  set(CLANG_CANDIDATE ${CMAKE_CXX_COMPILER})
-  message("Use CMAKE_CXX_COMPILER=${CLANG_CANDIDATE} as clang executable")
+if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+  set(CLANG_CANDIDATE ${CMAKE_C_COMPILER})
+  message("Use CMAKE_C_COMPILER=${CLANG_CANDIDATE} as clang executable")
 endif()
 
 find_program(CLANG_EXECUTABLE NAMES ${CLANG_CANDIDATE} clang clang-7 clang-8 clang-9 clang-10 clang-11)
@@ -89,9 +89,17 @@ endif()
 
 execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
 message(${CLANG_VERSION_OUTPUT})
-string(REGEX MATCH "[0-9]+\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
-if (${CLANG_VERSION} VERSION_GREATER_EQUAL "12")
-  message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=11. Condider setting envionment variable CXX=/path/to/clang to use a specific clang.")
+string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
+set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
+
+if (APPLE)
+  set(CLANG_HIGHEST_VERSION "12")
+else ()
+  set(CLANG_HIGHEST_VERSION "11")
+endif ()
+
+if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
+  message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Condider setting envionment variable CC=/path/to/clang or passing -DCMAKE_C_COMPILER=/path/to/clang to cmake to use a specific clang.")
 endif()
 
 find_program(LLVM_AS_EXECUTABLE NAMES llvm-as)

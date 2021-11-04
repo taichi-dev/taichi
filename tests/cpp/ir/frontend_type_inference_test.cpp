@@ -65,7 +65,8 @@ TEST(FrontendTypeInference, GlobalPtr_GlobalVariable) {
   auto global_var = Expr::make<GlobalVariableExpression>(snode.get());
   auto index = Expr::make<ConstExpression, float32>(2);
   index->type_check();
-  auto global_ptr = Expr::make<GlobalPtrExpression>(global_var, ExprGroup(index));
+  auto global_ptr =
+      Expr::make<GlobalPtrExpression>(global_var, ExprGroup(index));
   global_ptr->type_check();
   auto load_global_ptr = load_if_ptr(global_ptr);
   EXPECT_EQ(load_global_ptr->ret_type, PrimitiveType::u8);
@@ -74,8 +75,10 @@ TEST(FrontendTypeInference, GlobalPtr_GlobalVariable) {
 TEST(FrontendTypeInference, GlobalPtr_ExternalTensor) {
   auto index = Expr::make<ConstExpression, float32>(2);
   index->type_check();
-  auto external_tensor = Expr::make<ExternalTensorExpression>(PrimitiveType::u16, 1, 0, 0);
-  auto global_ptr = Expr::make<GlobalPtrExpression>(external_tensor, ExprGroup(index));
+  auto external_tensor =
+      Expr::make<ExternalTensorExpression>(PrimitiveType::u16, 1, 0, 0);
+  auto global_ptr =
+      Expr::make<GlobalPtrExpression>(external_tensor, ExprGroup(index));
   EXPECT_THROW(global_ptr->type_check(), std::runtime_error);
 }
 
@@ -86,11 +89,14 @@ TEST(FrontendTypeInference, TensorElement) {
   Callable::CurrentCallableGuard _(kernel->program, kernel.get());
   const std::vector<int> shape{3};
   auto var = Expr(std::make_shared<IdExpression>());
-  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(std::static_pointer_cast<IdExpression>(var.expr)->id, shape, PrimitiveType::u32));
+  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
+      std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
+      PrimitiveType::u32));
   var->ret_type = current_ast_builder().get_last_stmt()->ret_type;
   auto index = Expr::make<ConstExpression, int32>(2);
   index->type_check();
-  auto tensor_element = Expr::make<TensorElementExpression>(var, ExprGroup(index), shape, 1);
+  auto tensor_element =
+      Expr::make<TensorElementExpression>(var, ExprGroup(index), shape, 1);
   tensor_element->type_check();
   auto load_tensor_element = load_if_ptr(tensor_element);
   EXPECT_EQ(load_tensor_element->ret_type, PrimitiveType::u32);

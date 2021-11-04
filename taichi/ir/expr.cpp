@@ -73,7 +73,10 @@ Expr &Expr::operator=(const Expr &o) {
       current_ast_builder().insert(
           std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
       if (this->is<IdExpression>()) {
-        expr->ret_type = current_ast_builder().get_last_stmt()->cast<FrontendAssignStmt>()->rhs->ret_type;
+        expr->ret_type = current_ast_builder()
+                             .get_last_stmt()
+                             ->cast<FrontendAssignStmt>()
+                             ->rhs->ret_type;
       }
     } else {
       // set(o.eval());

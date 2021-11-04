@@ -89,6 +89,36 @@ void Device::memcpy_via_host(DevicePtr dst,
   TI_NOT_IMPLEMENTED;
 }
 
+void Device::print_all_cap() const {
+  const std::unordered_map<DeviceCapability, std::string> names {
+    {DeviceCapability::vk_api_version, "vk_api_version"},
+    {DeviceCapability::vk_has_physical_features2, "vk_has_physical_features2"},
+    {DeviceCapability::vk_has_external_memory, "vk_has_external_memory"},
+    {DeviceCapability::vk_has_surface, "vk_has_surface"},
+    {DeviceCapability::vk_has_presentation, "vk_has_presentation"},
+    {DeviceCapability::spirv_version, "spirv_version"},
+    {DeviceCapability::spirv_has_int8, "spirv_has_int8"},
+    {DeviceCapability::spirv_has_int16, "spirv_has_int16"},
+    {DeviceCapability::spirv_has_int64, "spirv_has_int64"},
+    {DeviceCapability::spirv_has_float16, "spirv_has_float16"},
+    {DeviceCapability::spirv_has_float64, "spirv_has_float64"},
+    {DeviceCapability::spirv_has_atomic_i64, "spirv_has_atomic_i64"},
+    {DeviceCapability::spirv_has_atomic_float16, "spirv_has_atomic_float16"},
+    {DeviceCapability::spirv_has_atomic_float16_add, "spirv_has_atomic_float16_add"},
+    {DeviceCapability::spirv_has_atomic_float16_minmax, "spirv_has_atomic_float16_minmax"},
+    {DeviceCapability::spirv_has_atomic_float, "spirv_has_atomic_float"},
+    {DeviceCapability::spirv_has_atomic_float_add, "spirv_has_atomic_float_add"},
+    {DeviceCapability::spirv_has_atomic_float_minmax, "spirv_has_atomic_float_minmax"},
+    {DeviceCapability::spirv_has_atomic_float64, "spirv_has_atomic_float64"},
+    {DeviceCapability::spirv_has_atomic_float64_add, "spirv_has_atomic_float64_add"},
+    {DeviceCapability::spirv_has_atomic_float64_minmax, "spirv_has_atomic_float64_minmax"},
+    {DeviceCapability::spirv_has_variable_ptr, "spirv_has_variable_ptr"},
+  };
+  for (auto &pair : caps_) {
+    TI_TRACE("DeviceCapability::{} ({}) = {}", names.at(pair.first), int(pair.first), pair.second);
+  }
+}
+
 void GraphicsDevice::image_transition(DeviceAllocation img,
                                       ImageLayout old_layout,
                                       ImageLayout new_layout) {

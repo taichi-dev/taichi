@@ -141,10 +141,10 @@ class VulkanResourceBinder : public ResourceBinder {
 
   std::unique_ptr<Bindings> materialize() override;
 
-  void rw_buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size);
-  void rw_buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
-  void buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size);
-  void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc);
+  void rw_buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size) override;
+  void rw_buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override;
+  void buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size) override;
+  void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override;
   void image(uint32_t set,
              uint32_t binding,
              DeviceAllocation alloc,
@@ -358,7 +358,7 @@ class VulkanSurface : public Surface {
   void present_image() override;
   std::pair<uint32_t, uint32_t> get_size() override;
   BufferFormat image_format() override;
-  virtual void resize(uint32_t width, uint32_t height);
+  void resize(uint32_t width, uint32_t height) override;
 
   DeviceAllocation get_image_data() override;
 

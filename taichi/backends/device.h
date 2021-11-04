@@ -26,6 +26,9 @@ enum class DeviceCapability : uint32_t {
   spirv_has_float16,
   spirv_has_float64,
   spirv_has_atomic_i64,
+  spirv_has_atomic_float16,  // load, store, exchange
+  spirv_has_atomic_float16_add,
+  spirv_has_atomic_float16_minmax,
   spirv_has_atomic_float,  // load, store, exchange
   spirv_has_atomic_float_add,
   spirv_has_atomic_float_minmax,
@@ -362,15 +365,17 @@ class Device {
  public:
   virtual ~Device(){};
 
-  virtual uint32_t get_cap(DeviceCapability capability_id) const {
+  uint32_t get_cap(DeviceCapability capability_id) const {
     if (caps_.find(capability_id) == caps_.end())
       return 0;
     return caps_.at(capability_id);
   }
 
-  virtual void set_cap(DeviceCapability capability_id, uint32_t val) {
+  void set_cap(DeviceCapability capability_id, uint32_t val) {
     caps_[capability_id] = val;
   }
+
+  void print_all_cap() const;
 
   struct AllocParams {
     uint64_t size{0};

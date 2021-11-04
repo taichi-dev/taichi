@@ -18,6 +18,15 @@ def test_snode_read_write():
 
 
 @ti.test(arch=archs_support_f16)
+def test_float16():
+    dtype = ti.float16
+    x = ti.field(dtype, shape=())
+    x[None] = 0.3
+    print(x[None])
+    assert (x[None] == approx(0.3, rel=1e-3))
+
+
+@ti.test(arch=archs_support_f16)
 def test_to_numpy():
     n = 16
     x = ti.field(ti.f16, shape=n)
@@ -131,6 +140,21 @@ def test_binary_extra_promote():
     x[None] = 0.1
     foo()
     assert (z[None] == approx(math.atan2(0.1**2, 0.3), rel=1e-3))
+
+
+@ti.test(arch=archs_support_f16)
+def test_arg_f16():
+    dtype = ti.f16
+    x = ti.field(dtype, shape=())
+    y = ti.field(dtype, shape=())
+
+    @ti.kernel
+    def foo(a: ti.f16):
+        x[None] = y[None] + a
+
+    y[None] = -0.3
+    foo(1.2)
+    assert (x[None] == approx(0.9, rel=1e-3))
 
 
 @ti.test(arch=archs_support_f16)

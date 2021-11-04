@@ -633,7 +633,7 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (stmt->lhs->ret_type->is_primitive(PrimitiveTypeID::f16)) {
       lhs = builder->CreateFPExt(lhs, llvm::Type::getFloatTy(*llvm_context));
     }
-    if (stmt->lhs->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+    if (stmt->rhs->ret_type->is_primitive(PrimitiveTypeID::f16)) {
       rhs = builder->CreateFPExt(rhs, llvm::Type::getFloatTy(*llvm_context));
     }
     if (ret_type->is_primitive(PrimitiveTypeID::f16)) {

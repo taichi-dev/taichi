@@ -164,9 +164,9 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
 void CodeGenLLVM::visit(RandStmt *stmt) {
   if (stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
     // Promoting to f32 since there's no rand_f16 support in runtime.cpp.
-    llvm_val[stmt] = create_call("rand_f32", {get_context()});
-    llvm_val[stmt] = builder->CreateFPTrunc(
-        llvm_val[stmt], llvm::Type::getHalfTy(*llvm_context));
+    auto val_f32 = create_call("rand_f32", {get_context()});
+    llvm_val[stmt] =
+        builder->CreateFPTrunc(val_f32, llvm::Type::getHalfTy(*llvm_context));
   } else {
     llvm_val[stmt] =
         create_call(fmt::format("rand_{}", data_type_name(stmt->ret_type)),
@@ -177,7 +177,7 @@ void CodeGenLLVM::visit(RandStmt *stmt) {
 void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   auto input = llvm_val[stmt->operand];
   auto input_taichi_type = stmt->operand->ret_type;
-  if (stmt->operand->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+  if (input_taichi_type->is_primitive(PrimitiveTypeID::f16)) {
     // Promote to f32 since we don't have f16 support for extra unary ops in in
     // runtime.cpp.
     input = builder->CreateFPExt(input, llvm::Type::getFloatTy(*llvm_context));

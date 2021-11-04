@@ -530,16 +530,19 @@ void EmbeddedVulkanDevice::create_logical_device() {
         ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float_add, true);
       }
       if (shader_atomic_float_2_feature.shaderBufferFloat16AtomicMinMax) {
-        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float16_minmax, true);
+        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float16_minmax,
+                            true);
       }
       if (shader_atomic_float_2_feature.shaderBufferFloat16Atomics) {
         ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float16, true);
       }
       if (shader_atomic_float_2_feature.shaderBufferFloat32AtomicMinMax) {
-        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float_minmax, true);
+        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float_minmax,
+                            true);
       }
       if (shader_atomic_float_2_feature.shaderBufferFloat64AtomicMinMax) {
-        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float64_minmax, true);
+        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float64_minmax,
+                            true);
       }
       *pNextEnd = &shader_atomic_float_2_feature;
       pNextEnd = &shader_atomic_float_2_feature.pNext;

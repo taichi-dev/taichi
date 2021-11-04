@@ -141,9 +141,17 @@ class VulkanResourceBinder : public ResourceBinder {
 
   std::unique_ptr<Bindings> materialize() override;
 
-  void rw_buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size) override;
-  void rw_buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override;
-  void buffer(uint32_t set, uint32_t binding, DevicePtr ptr, size_t size) override;
+  void rw_buffer(uint32_t set,
+                 uint32_t binding,
+                 DevicePtr ptr,
+                 size_t size) override;
+  void rw_buffer(uint32_t set,
+                 uint32_t binding,
+                 DeviceAllocation alloc) override;
+  void buffer(uint32_t set,
+              uint32_t binding,
+              DevicePtr ptr,
+              size_t size) override;
   void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override;
   void image(uint32_t set,
              uint32_t binding,

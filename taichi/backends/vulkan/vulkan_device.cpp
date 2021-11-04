@@ -870,11 +870,12 @@ void VulkanCommandList::begin_renderpass(int x0,
     fb_desc.attachments.push_back(view);
     clear_values[i].color =
         VkClearColorValue{{clear_colors[i][0], clear_colors[i][1],
-          clear_colors[i][2], clear_colors[i][3]}};
+                           clear_colors[i][2], clear_colors[i][3]}};
   }
 
   if (has_depth) {
-    auto [depth_image, depth_view, depth_format] = ti_device_->get_vk_image(*depth_attachment);
+    auto [depth_image, depth_view, depth_format] =
+        ti_device_->get_vk_image(*depth_attachment);
     clear_values[num_color_attachments].depthStencil =
         VkClearDepthStencilValue{0.0, 0};
     fb_desc.attachments.push_back(depth_view);

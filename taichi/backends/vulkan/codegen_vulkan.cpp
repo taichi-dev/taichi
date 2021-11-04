@@ -824,10 +824,10 @@ class TaskCodegen : public IRVisitor {
       }
 
       if (use_native_atomics) {
-        val = ir_->make_value(atomic_fp_op, ir_->get_primitive_type(dt),
-                              addr_ptr,
-                              /*scope=*/ir_->const_i32_one_,
-                              /*semantics=*/ir_->const_i32_zero_, data);
+        val =
+            ir_->make_value(atomic_fp_op, ir_->get_primitive_type(dt), addr_ptr,
+                            /*scope=*/ir_->const_i32_one_,
+                            /*semantics=*/ir_->const_i32_zero_, data);
       } else {
         val = ir_->float_atomic(stmt->op_type, addr_ptr, data);
       }

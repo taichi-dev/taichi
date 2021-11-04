@@ -28,6 +28,7 @@ class Ndarray {
   std::size_t get_nelement() const;
 
  private:
+  DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
   uint64_t *data_ptr_{nullptr};
   std::size_t nelement_{1};
   std::size_t element_size_{1};

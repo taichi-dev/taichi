@@ -26,6 +26,20 @@ namespace shaders {
 #include "taichi/backends/opengl/shaders/fast_pow.glsl.h"
 #include "taichi/backends/opengl/shaders/print.glsl.h"
 #include "taichi/backends/opengl/shaders/reduction.glsl.h"
+
+GENERATE_OPENGL_ATOMIC_F32(data);
+GENERATE_OPENGL_ATOMIC_F32(gtmp);
+
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(add, float);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(max, float);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(min, float);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(add, int);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(max, int);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(min, int);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(add, uint);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(max, uint);
+GENERATE_OPENGL_REDUCTION_FUNCTIONS(min, uint);
+
 #undef TI_INSIDE_OPENGL_CODEGEN
 }  // namespace shaders
 
@@ -61,47 +75,6 @@ std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
 #if !defined(TI_PLATFORM_WINDOWS)
 #include <sys/wait.h>
 #endif
-
-std::string preprocess_kernel(std::string src) {
-  if (!is_gles())
-    return src;
-
-#if !defined(TI_PLATFORM_WINDOWS)
-  int child_status;
-  auto child_pid = fork();
-  if (child_pid == 0) {
-    char *const argv[] = {"glslc", "--version", nullptr};
-    execvp("glslc", argv);
-  } else {
-    pid_t tpid = waitpid(child_pid, &child_status, 0);
-  }
-  if (!child_status) {
-    // For debugging only
-    // ker.kernel_src =
-    //   "#version 430 core\n#define DEFINE(NAME)
-    //   add_##NAME##_f32\nDEFINE(TEST)";
-    std::string command = "echo \"" + src + "\" | glslc -E /dev/stdin";
-    char buffer[128];
-    std::string result = "";
-
-    FILE *pipe = popen(command.c_str(), "r");
-
-    TI_ASSERT_INFO(pipe, "popen failed!");
-
-    while (!feof(pipe)) {
-      if (fgets(buffer, 128, pipe) != NULL)
-        result += buffer;
-    }
-
-    pclose(pipe);
-    return result;
-  } else {
-    return src;
-  }
-#else
-  return src;
-#endif
-}
 
 class KernelGen : public IRVisitor {
  public:
@@ -221,25 +194,23 @@ class KernelGen : public IRVisitor {
     // clang-format on
 
     if (used.simulated_atomic_float) {
-      line_appender_header_.append_raw(shaders::kOpenGLAtomicF32SourceCode);
-      kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(data)\n");
+      kernel_header += shaders::kOpenGlAtomicF32Source_data;
       if (used.buf_gtmp) {
-        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(gtmp)\n");
+        kernel_header += shaders::kOpenGlAtomicF32Source_gtmp;
       }
     }
 
     if (used.reduction) {
       line_appender_header_.append_raw(shaders::kOpenGLReductionCommon);
-      line_appender_header_.append_raw(shaders::kOpenGLReductionSourceCode);
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, float)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, float)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, float)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, int)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, int)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, int)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(add, uint)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(max, uint)\n");
-      kernel_header += ("DEFINE_REDUCTION_FUNCTIONS(min, uint)\n");
+      kernel_header += shaders::kOpenGlReductionSource_add_float;
+      kernel_header += shaders::kOpenGlReductionSource_max_float;
+      kernel_header += shaders::kOpenGlReductionSource_min_float;
+      kernel_header += shaders::kOpenGlReductionSource_add_int;
+      kernel_header += shaders::kOpenGlReductionSource_max_int;
+      kernel_header += shaders::kOpenGlReductionSource_min_int;
+      kernel_header += shaders::kOpenGlReductionSource_add_uint;
+      kernel_header += shaders::kOpenGlReductionSource_max_uint;
+      kernel_header += shaders::kOpenGlReductionSource_min_uint;
     }
 
     line_appender_header_.append_raw(kernel_header);
@@ -265,9 +236,9 @@ class KernelGen : public IRVisitor {
         (is_gles() ? "#version 310 es\n" : "#version 430 core\n") + extensions +
         "precision highp float;\n" + line_appender_header_.lines() +
         line_appender_.lines();
-    compiled_program_.add(std::move(glsl_kernel_name_),
-                          preprocess_kernel(kernel_src_code), num_workgroups_,
-                          workgroup_size_, &this->extptr_access);
+    compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
+                          num_workgroups_, workgroup_size_,
+                          &this->extptr_access);
     auto &config = kernel_->program->config;
     if (config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer("shader{:04d}.comp",
@@ -816,8 +787,8 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(ExternalFuncCallStmt *stmt) override {
-    TI_ASSERT(!stmt->func);
-    auto format = stmt->source;
+    TI_ASSERT(stmt->type == ExternalFuncCallStmt::ASSEMBLY);
+    auto format = stmt->asm_source;
     std::string source;
 
     for (int i = 0; i < format.size(); i++) {

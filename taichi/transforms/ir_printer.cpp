@@ -131,7 +131,15 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(ExternalFuncCallStmt *stmt) override {
-    std::string extras = "inputs=";
+    std::string extras;
+    if (stmt->so_func != nullptr) {
+      extras += fmt::format("so {:x} ", (uint64)stmt->so_func);
+    } else if (!stmt->asm_source.empty()) {
+      extras += fmt::format("asm \"{}\" ", stmt->asm_source);
+    } else {
+      extras += fmt::format("bc {}:{} ", stmt->bc_filename, stmt->bc_funcname);
+    }
+    extras += "inputs=";
     for (auto &arg : stmt->arg_stmts) {
       extras += ", ";
       extras += arg->name();
@@ -141,8 +149,7 @@ class IRPrinter : public IRVisitor {
       extras += ", ";
       extras += output->name();
     }
-    print("{} : func_call {:x}, {}", stmt->name(), (std::size_t)stmt->func,
-          extras);
+    print("{} : {}", stmt->name(), extras);
   }
 
   void visit(FrontendSNodeOpStmt *stmt) override {

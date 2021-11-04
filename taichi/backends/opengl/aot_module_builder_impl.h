@@ -18,8 +18,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
 
-  void preprocess_kernels() override;
-
  protected:
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
   void add_per_backend_field(const std::string &identifier,
@@ -33,8 +31,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                             Kernel *kernel) override;
 
  private:
-  void preprocess_kernel(CompiledKernel &ker);
-
   StructCompiledResult &compiled_structs_;
 
   AotData aot_data_;

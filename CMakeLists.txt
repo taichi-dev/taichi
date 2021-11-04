@@ -78,8 +78,8 @@ if (TI_WITH_CUDA)
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  set(CLANG_CANDIDATE $ENV{CXX})
-  message("Get clang excutable by CXX=${CLANG_CANDIDATE}")
+  set(CLANG_CANDIDATE ${CMAKE_CXX_COMPILER})
+  message("Use CMAKE_CXX_COMPILER=${CLANG_CANDIDATE} as clang executable")
 endif()
 
 find_program(CLANG_EXECUTABLE NAMES ${CLANG_CANDIDATE} clang clang-7 clang-8 clang-9 clang-10 clang-11)

@@ -69,7 +69,7 @@ TEST(FrontendTypeInference, TernaryOp) {
   auto const_f32 = Expr::make<ConstExpression, float32>(5.0);
   const_f32->type_check();
   EXPECT_EQ(const_f32->ret_type, PrimitiveType::f32);
-  auto ternary_f32 = expr_select(const_i16, const_i8, const_f32);
+  auto ternary_f32 = expr_select(const_i16, cast_i8, const_f32);
   ternary_f32->type_check();
   EXPECT_EQ(ternary_f32->ret_type, PrimitiveType::f32);
 }

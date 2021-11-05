@@ -430,7 +430,6 @@ def test_recreate_variable():
     assert e.value.args[0] == "Recreating variables is not allowed"
 
 
-
 @ti.test(experimental_ast_refactor=True)
 def test_taichi_other_than_ti():
     import taichi as np
@@ -517,6 +516,7 @@ def test_dict():
 
 
 if version_info >= (3, 8):
+
     @ti.test(experimental_ast_refactor=True)
     def test_namedexpr():
         @ti.kernel

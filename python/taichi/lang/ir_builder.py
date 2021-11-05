@@ -726,4 +726,3 @@ def build_stmts(ctx, stmts):
             else:
                 result.append(stmt)
     return result
-

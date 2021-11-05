@@ -415,6 +415,7 @@ def test_grouped_ndrange_for():
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
 def test_static_for_break():
     n = 10
+
     @ti.kernel
     def foo(a: ti.template()):
         for i in ti.static(range(n)):
@@ -438,6 +439,7 @@ def test_static_for_break():
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
 def test_static_grouped_for_break():
     n = 4
+
     @ti.kernel
     def foo(a: ti.template()):
         for I in ti.static(ti.grouped(ti.ndrange(n, n))):
@@ -462,6 +464,7 @@ def test_static_grouped_for_break():
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
 def test_static_for_continue():
     n = 10
+
     @ti.kernel
     def foo(a: ti.template()):
         for i in ti.static(range(n)):
@@ -483,6 +486,7 @@ def test_static_for_continue():
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
 def test_static_grouped_for_continue():
     n = 4
+
     @ti.kernel
     def foo(a: ti.template()):
         for I in ti.static(ti.grouped(ti.ndrange(n, n))):
@@ -505,6 +509,7 @@ def test_static_grouped_for_continue():
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
 def test_for_break():
     n = 4
+
     @ti.kernel
     def foo(a: ti.template()):
         for i in range(n):
@@ -530,6 +535,7 @@ def test_for_break():
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
 def test_for_continue():
     n = 4
+
     @ti.kernel
     def foo(a: ti.template()):
         for i in range(n):

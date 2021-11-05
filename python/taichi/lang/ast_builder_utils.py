@@ -1,7 +1,7 @@
 import ast
+from enum import Enum
 
 from taichi.lang.exception import TaichiSyntaxError
-from enum import Enum
 
 
 class Builder(object):

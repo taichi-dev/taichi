@@ -230,6 +230,10 @@ void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
     ctx_->set_arg(arg_id, (uint32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     ctx_->set_arg(arg_id, (uint64)d);
+  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
+    ctx_->set_arg(arg_id, (float32)d);
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+    ctx_->set_arg(arg_id, (float64)d);
   } else {
     TI_INFO(dt->to_string());
     TI_NOT_IMPLEMENTED

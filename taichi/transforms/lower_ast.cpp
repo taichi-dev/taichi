@@ -190,7 +190,7 @@ class LowerAST : public IRVisitor {
     // do nothing
   }
 
-  void visit(LoopLinearIndexStmt *stmt) override {
+  void visit(GlobalThreadIndexStmt *stmt) override {
     TI_ASSERT(capturing_loop != nullptr);
     stmt->loop = capturing_loop;
   }

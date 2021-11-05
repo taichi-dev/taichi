@@ -835,7 +835,7 @@ void export_lang(py::module &m) {
             "ti.thread_idx() is only available in cuda or cpu context.");
     TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
             "ti.thread_idx() is only valid within loops.");
-    auto tid_stmt = Stmt::make<LoopLinearIndexStmt>(loop);
+    auto tid_stmt = Stmt::make<GlobalThreadIndexStmt>(loop);
     auto tid_expr = Expr::make<EvalExpression>(tid_stmt.get());   
     current_ast_builder().insert(std::move(tid_stmt));
     return tid_expr; 

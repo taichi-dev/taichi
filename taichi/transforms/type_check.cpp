@@ -448,6 +448,11 @@ class TypeCheck : public IRVisitor {
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
+  void visit(GlobalThreadIndexStmt *stmt) override {
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+  }
+
   void visit(BlockCornerIndexStmt *stmt) override {
     stmt->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);

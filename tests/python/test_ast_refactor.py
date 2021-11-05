@@ -415,3 +415,41 @@ def test_taichi_other_than_ti():
 
     for i in range(10):
         assert foo(i) == fib[i]
+
+
+@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False, experimental_ast_refactor=True)
+def test_assert_message():
+    @ti.kernel
+    def func():
+        x = 20
+        assert 10 <= x < 20, 'Foo bar'
+
+    with pytest.raises(RuntimeError, match='Foo bar'):
+        func()
+
+
+@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False, experimental_ast_refactor=True)
+def test_assert_message_formatted():
+    x = ti.field(dtype=int, shape=16)
+    x[10] = 42
+
+    @ti.kernel
+    def assert_formatted():
+        for i in x:
+            assert x[i] == 0, 'x[%d] expect=%d got=%d' % (i, 0, x[i])
+
+    @ti.kernel
+    def assert_float():
+        y = 0.5
+        assert y < 0, 'y = %f' % y
+
+    with pytest.raises(RuntimeError, match=r'x\[10\] expect=0 got=42'):
+        assert_formatted()
+    # TODO: note that we are not fully polished to be able to recover from
+    # assertion failures...
+    with pytest.raises(RuntimeError, match=r'y = 0.5'):
+        assert_float()
+
+    # success case
+    x[10] = 0
+    assert_formatted()

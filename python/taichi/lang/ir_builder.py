@@ -3,6 +3,8 @@ import collections.abc
 import warnings
 from collections import ChainMap
 
+import astor
+
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.ast_builder_utils import *
 from taichi.lang.exception import TaichiSyntaxError
@@ -711,6 +713,48 @@ class IRBuilder(Builder):
         ti.core.pop_scope()
 
         node.ptr = val
+        return node
+
+    @staticmethod
+    def _is_string_mod_args(msg):
+        # 1. str % (a, b, c, ...)
+        # 2. str % single_item
+        # Note that |msg.right| may not be a tuple.
+        if not isinstance(msg, ast.BinOp):
+            return False
+        if not isinstance(msg.op, ast.Mod):
+            return False
+        if isinstance(msg.left, ast.Str):
+            return True
+        if isinstance(msg.left, ast.Constant) and isinstance(msg.left.value, str):
+            return True
+        return False
+
+    @staticmethod
+    def _handle_string_mod_args(ctx, node):
+        msg = build_stmt(ctx, node.left).ptr
+        args = build_stmt(ctx, node.right).ptr
+        if not isinstance(args, collections.abc.Sequence):
+            args = (args,)
+        return msg, args
+
+    @staticmethod
+    def build_Assert(ctx, node):
+        extra_args = []
+        if node.msg is not None:
+            if isinstance(node.msg, ast.Constant):
+                msg = node.msg.value
+            elif isinstance(node.msg, ast.Str):
+                msg = node.msg.s
+            elif IRBuilder._is_string_mod_args(node.msg):
+                msg, extra_args = IRBuilder._handle_string_mod_args(ctx, node.msg)
+            else:
+                raise ValueError(
+                    f"assert info must be constant, not {ast.dump(node.msg)}")
+        else:
+            msg = astor.to_source(node.test)
+        test = build_stmt(ctx, node.test).ptr
+        ti.ti_assert(test, msg.strip(), extra_args)
         return node
 
 build_stmt = IRBuilder()

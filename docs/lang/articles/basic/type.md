@@ -86,7 +86,7 @@ Boolean types are represented using `ti.i32`.
 | `a / b`   | quotient of `a` and `b`         |
 | `a // b`  | floored quotient of `a` and `b` |
 | `a % b`   | remainder of `a` / `b`          |
-| `a ** b`  | `a` to the power `b`            |
+| `a ** b`  | `a` to the power of `b`         |
 
 :::note
 
@@ -126,27 +126,27 @@ default numerical types.
 
 #### Logic operators
 
-| Operation          | Result                                                  |
-| ------------------ | ------------------------------------------------------- |
-| `a == b`           | if `a` equal `b`, then True, else False                 |
-| `a != b`           | if `a` not equal `b`, then True, else False             |
-| `a > b`            | if `a` strictly greater than `b`, then True, else False |
-| `a < b`            | if `a` strictly less than `b`, then True, else False    |
-| `a >= b`           | if `a` greater than or equal `b`, then True, else False |
-| `a <= b`           | if `a` less than or equal `b`, then True, else False    |
-| `not a`            | if `a` is False, then True, else False                  |
-| `a or b`           | if `a` is False, then `b`, else `a`                     |
-| `a and b`          | if `a` is False, then `a`, else `b`                     |
-| `a if cond else b` | if `cond` is True, then `a`, else `b`                   |
+| Operation          | Result                                                        |
+| ------------------ | ------------------------------------------------------------- |
+| `a == b`           | if `a` is equal to `b`, then True, else False                 |
+| `a != b`           | if `a` is not equal to `b`, then True, else False             |
+| `a > b`            | if `a` is strictly greater than `b`, then True, else False    |
+| `a < b`            | if `a` is strictly less than `b`, then True, else False       |
+| `a >= b`           | if `a` is greater than or equal to `b`, then True, else False |
+| `a <= b`           | if `a` is less than or equal to `b`, then True, else False    |
+| `not a`            | if `a` is False, then True, else False                        |
+| `a or b`           | if `a` is False, then `b`, else `a`                           |
+| `a and b`          | if `a` is False, then `a`, else `b`                           |
+| `a if cond else b` | if `cond` is True, then `a`, else `b`                         |
 
 #### Bitwise operators
 
-| Operation | Result                              |
-| --------- | ----------------------------------- |
-| `~a`      | the bits of `a` inverted            |
-| `a & b`   | bitwise and of `a` and `b`          |
-| `a ^ b`   | bitwise exclusive or of `a` and `b` |
-| `a | b`   | bitwise or of `a` and `b`           |
+| Operation               | Result                              |
+| ----------------------- | ----------------------------------- |
+| `~a`                    | the bits of `a` inverted            |
+| `a & b`                 | bitwise and of `a` and `b`          |
+| `a ^ b`                 | bitwise exclusive or of `a` and `b` |
+| <code>a &#124; b</code> | bitwise or of `a` and `b`           |
 
 #### Trigonometric functions
 

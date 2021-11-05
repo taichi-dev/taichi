@@ -514,3 +514,16 @@ def test_assert_message_formatted():
     # success case
     x[10] = 0
     assert_formatted()
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_dict():
+    @ti.kernel
+    def foo(x: ti.template()) -> ti.i32:
+        a = {1: 2, 3: 4}
+        b = {5: 6, **a}
+        return b[x]
+
+    assert foo(1) == 2
+    with pytest.raises(KeyError):
+        foo(2)

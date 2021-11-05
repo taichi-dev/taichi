@@ -119,6 +119,17 @@ class IRBuilder(Builder):
         return node
 
     @staticmethod
+    def build_Dict(ctx, node):
+        dic = {}
+        for key, value in zip(node.keys, node.values):
+            if key is None:
+                dic.update(build_stmt(ctx, value).ptr)
+            else:
+                dic[build_stmt(ctx, key).ptr] = build_stmt(ctx, value).ptr
+        node.ptr = dic
+        return node
+
+    @staticmethod
     def build_Index(ctx, node):
         node.value = build_stmt(ctx, node.value)
         node.ptr = node.value.ptr

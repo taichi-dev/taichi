@@ -430,19 +430,6 @@ def test_recreate_variable():
     assert e.value.args[0] == "Recreating variables is not allowed"
 
 
-@pytest.mark.skipif(version_info < (3, 8),
-                    reason='NamedExpr is not available in versions before 3.8.'
-                    )
-@ti.test(experimental_ast_refactor=True)
-def test_namedexpr():
-    @ti.kernel
-    def foo() -> ti.i32:
-        b = 2 + (a := 5)
-        b += a
-        return b
-
-    assert foo() == 12
-
 
 @ti.test(experimental_ast_refactor=True)
 def test_taichi_other_than_ti():
@@ -527,3 +514,15 @@ def test_dict():
     assert foo(1) == 2
     with pytest.raises(KeyError):
         foo(2)
+
+
+if version_info >= (3, 8):
+    @ti.test(experimental_ast_refactor=True)
+    def test_namedexpr():
+        @ti.kernel
+        def foo() -> ti.i32:
+            b = 2 + (a := 5)
+            b += a
+            return b
+
+        assert foo() == 12

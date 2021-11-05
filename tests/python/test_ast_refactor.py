@@ -1,3 +1,5 @@
+from sys import version_info
+
 import pytest
 
 import taichi as ti
@@ -113,6 +115,45 @@ def test_unaryop():
     foo(x, b)
 
     for i in range(4):
+        assert a[i] == b[i]
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_boolop():
+    @ti.kernel
+    def foo(a: ti.template()):
+        a[0] = 0 and 0
+        a[1] = 0 and 1
+        a[2] = 1 and 0
+        a[3] = 1 and 1
+        a[4] = 0 or 0
+        a[5] = 0 or 1
+        a[6] = 1 or 0
+        a[7] = 1 or 1
+        a[8] = 1 and 1 and 1 and 1
+        a[9] = 1 and 1 and 1 and 0
+        a[10] = 0 or 0 or 0 or 0
+        a[11] = 0 or 0 or 1 or 0
+
+    a = ti.field(ti.i32, shape=(12, ))
+    b = ti.field(ti.i32, shape=(12, ))
+
+    a[0] = 0 and 0
+    a[1] = 0 and 1
+    a[2] = 1 and 0
+    a[3] = 1 and 1
+    a[4] = 0 or 0
+    a[5] = 0 or 1
+    a[6] = 1 or 0
+    a[7] = 1 or 1
+    a[8] = 1 and 1 and 1 and 1
+    a[9] = 1 and 1 and 1 and 0
+    a[10] = 0 or 0 or 0 or 0
+    a[11] = 0 or 0 or 1 or 0
+
+    foo(b)
+
+    for i in range(12):
         assert a[i] == b[i]
 
 
@@ -389,6 +430,20 @@ def test_recreate_variable():
     assert e.value.args[0] == "Recreating variables is not allowed"
 
 
+@pytest.mark.skipif(version_info < (3, 8),
+                    reason='NamedExpr is not available in versions before 3.8.'
+                    )
+@ti.test(experimental_ast_refactor=True)
+def test_namedexpr():
+    @ti.kernel
+    def foo() -> ti.i32:
+        b = 2 + (a := 5)
+        b += a
+        return b
+
+    assert foo() == 12
+
+
 @ti.test(experimental_ast_refactor=True)
 def test_taichi_other_than_ti():
     import taichi as np
@@ -417,7 +472,10 @@ def test_taichi_other_than_ti():
         assert foo(i) == fib[i]
 
 
-@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False, experimental_ast_refactor=True)
+@ti.test(require=ti.extension.assertion,
+         debug=True,
+         gdb_trigger=False,
+         experimental_ast_refactor=True)
 def test_assert_message():
     @ti.kernel
     def func():
@@ -428,7 +486,10 @@ def test_assert_message():
         func()
 
 
-@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False, experimental_ast_refactor=True)
+@ti.test(require=ti.extension.assertion,
+         debug=True,
+         gdb_trigger=False,
+         experimental_ast_refactor=True)
 def test_assert_message_formatted():
     x = ti.field(dtype=int, shape=16)
     x[10] = 42

@@ -4,7 +4,6 @@ import warnings
 from collections import ChainMap
 
 import astor
-
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.ast_builder_utils import *
 from taichi.lang.exception import TaichiSyntaxError
@@ -77,11 +76,26 @@ class IRBuilder(Builder):
                 raise TaichiSyntaxError(
                     "Static assign cannot be used on elements in arrays")
             ctx.create_variable(target.id, value)
+            var = value
         elif is_local and not ctx.is_var_declared(target.id):
-            ctx.create_variable(target.id, ti.expr_init(value))
+            var = ti.expr_init(value)
+            ctx.create_variable(target.id, var)
         else:
             var = target.ptr
             var.assign(value)
+        return var
+
+    @staticmethod
+    def build_NamedExpr(ctx, node):
+        node.value = build_stmt(ctx, node.value)
+        node.target = build_stmt(ctx, node.target)
+        is_static_assign = isinstance(
+            node.value, ast.Call) and ASTResolver.resolve_to(
+                node.value.func, ti.static, globals())
+        node.ptr = IRBuilder.build_assign_basic(ctx, node.target,
+                                                node.value.ptr,
+                                                is_static_assign)
+        return node
 
     @staticmethod
     def build_Subscript(ctx, node):
@@ -374,6 +388,19 @@ class IRBuilder(Builder):
             ast.Invert: lambda l: ~l,
         }.get(type(node.op))
         node.ptr = op(node.operand.ptr)
+        return node
+
+    @staticmethod
+    def build_BoolOp(ctx, node):
+        node.values = build_stmts(ctx, node.values)
+        op = {
+            ast.And: lambda l, r: l and r,
+            ast.Or: lambda l, r: l or r,
+        }.get(type(node.op))
+        result = op(node.values[0].ptr, node.values[1].ptr)
+        for i in range(2, len(node.values)):
+            result = op(result, node.values[i].ptr)
+        node.ptr = result
         return node
 
     @staticmethod
@@ -726,7 +753,8 @@ class IRBuilder(Builder):
             return False
         if isinstance(msg.left, ast.Str):
             return True
-        if isinstance(msg.left, ast.Constant) and isinstance(msg.left.value, str):
+        if isinstance(msg.left, ast.Constant) and isinstance(
+                msg.left.value, str):
             return True
         return False
 
@@ -735,7 +763,7 @@ class IRBuilder(Builder):
         msg = build_stmt(ctx, node.left).ptr
         args = build_stmt(ctx, node.right).ptr
         if not isinstance(args, collections.abc.Sequence):
-            args = (args,)
+            args = (args, )
         return msg, args
 
     @staticmethod
@@ -747,7 +775,8 @@ class IRBuilder(Builder):
             elif isinstance(node.msg, ast.Str):
                 msg = node.msg.s
             elif IRBuilder._is_string_mod_args(node.msg):
-                msg, extra_args = IRBuilder._handle_string_mod_args(ctx, node.msg)
+                msg, extra_args = IRBuilder._handle_string_mod_args(
+                    ctx, node.msg)
             else:
                 raise ValueError(
                     f"assert info must be constant, not {ast.dump(node.msg)}")

@@ -595,6 +595,61 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
                             {get_context(), tlctx->get_constant(arg_id),
                              tlctx->get_constant(axis)});
   }
+
+  void visit(BinaryOpStmt *stmt) override {
+    auto op = stmt->op_type;
+    if (op != BinaryOpType::atan2 && op != BinaryOpType::pow) {
+      return CodeGenLLVM::visit(stmt);
+    }
+
+    auto ret_type = stmt->ret_type;
+
+    llvm::Value *lhs = llvm_val[stmt->lhs];
+    llvm::Value *rhs = llvm_val[stmt->rhs];
+
+    // This branch contains atan2 and pow which use runtime.cpp function for
+    // **real** type. We don't have f16 support there so promoting to f32 is
+    // necessary.
+    if (stmt->lhs->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      lhs = builder->CreateFPExt(lhs, llvm::Type::getFloatTy(*llvm_context));
+    }
+    if (stmt->rhs->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      rhs = builder->CreateFPExt(rhs, llvm::Type::getFloatTy(*llvm_context));
+    }
+    if (ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      ret_type = PrimitiveType::f32;
+    }
+
+    if (op == BinaryOpType::atan2) {
+      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
+        llvm_val[stmt] = create_call("__nv_atan2f", {lhs, rhs});
+      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
+        llvm_val[stmt] = create_call("__nv_atan2", {lhs, rhs});
+      } else {
+        TI_P(data_type_name(ret_type));
+        TI_NOT_IMPLEMENTED
+      }
+    } else {
+      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
+        llvm_val[stmt] = create_call("__nv_powf", {lhs, rhs});
+      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
+        llvm_val[stmt] = create_call("__nv_pow", {lhs, rhs});
+      } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
+        llvm_val[stmt] = create_call("pow_i32", {lhs, rhs});
+      } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
+        llvm_val[stmt] = create_call("pow_i64", {lhs, rhs});
+      } else {
+        TI_P(data_type_name(ret_type));
+        TI_NOT_IMPLEMENTED
+      }
+    }
+
+    // Convert back to f16 if applicable.
+    if (stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      llvm_val[stmt] = builder->CreateFPTrunc(
+          llvm_val[stmt], llvm::Type::getHalfTy(*llvm_context));
+    }
+  }
 };
 
 FunctionType CodeGenCUDA::codegen() {

@@ -650,15 +650,6 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
           TI_P(data_type_name(ret_type));
           TI_NOT_IMPLEMENTED
         }
-      } else if (current_arch() == Arch::cuda) {
-        if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
-          llvm_val[stmt] = create_call("__nv_atan2f", {lhs, rhs});
-        } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
-          llvm_val[stmt] = create_call("__nv_atan2", {lhs, rhs});
-        } else {
-          TI_P(data_type_name(ret_type));
-          TI_NOT_IMPLEMENTED
-        }
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -668,19 +659,6 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
           llvm_val[stmt] = create_call("pow_f32", {lhs, rhs});
         } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
           llvm_val[stmt] = create_call("pow_f64", {lhs, rhs});
-        } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
-          llvm_val[stmt] = create_call("pow_i32", {lhs, rhs});
-        } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
-          llvm_val[stmt] = create_call("pow_i64", {lhs, rhs});
-        } else {
-          TI_P(data_type_name(ret_type));
-          TI_NOT_IMPLEMENTED
-        }
-      } else if (current_arch() == Arch::cuda) {
-        if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
-          llvm_val[stmt] = create_call("__nv_powf", {lhs, rhs});
-        } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
-          llvm_val[stmt] = create_call("__nv_pow", {lhs, rhs});
         } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
           llvm_val[stmt] = create_call("pow_i32", {lhs, rhs});
         } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {

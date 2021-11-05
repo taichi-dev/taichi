@@ -129,6 +129,11 @@ class IRBuilder(Builder):
         return node
 
     @staticmethod
+    def build_NameConstant(ctx, node):
+        node.ptr = node.value
+        return node
+
+    @staticmethod
     def build_keyword(ctx, node):
         node.value = build_stmt(ctx, node.value)
         if node.arg is None:
@@ -637,6 +642,25 @@ class IRBuilder(Builder):
                 return IRBuilder.build_range_for(ctx, node)
             else:  # Struct for
                 return IRBuilder.build_struct_for(ctx, node, is_grouped=False)
+
+    @staticmethod
+    def build_While(ctx, node):
+        if node.orelse:
+            raise TaichiSyntaxError(
+                "'else' clause for 'while' not supported in Taichi kernels")
+
+        with ctx.control_scope_guard():
+            ti.core.begin_frontend_while(ti.Expr(1).ptr)
+            while_cond = build_stmt(ctx, node.test).ptr
+            ti.begin_frontend_if(while_cond)
+            ti.core.begin_frontend_if_true()
+            ti.core.pop_scope()
+            ti.core.begin_frontend_if_false()
+            ti.core.insert_break_stmt()
+            ti.core.pop_scope()
+            node.body = build_stmts(ctx, node.body)
+            ti.core.pop_scope()
+        return node
 
     @staticmethod
     def build_If(ctx, node):

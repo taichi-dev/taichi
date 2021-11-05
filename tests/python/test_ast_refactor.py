@@ -296,7 +296,7 @@ def test_static_for():
 
 
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
-def test_static_group_for():
+def test_static_grouped_for():
     a = ti.field(ti.i32, shape=(4, 4))
 
     @ti.kernel
@@ -410,6 +410,144 @@ def test_grouped_ndrange_for():
         for j in range(6):
             for k in range(6):
                 assert x[i, j, k] == y[i, j, k]
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_static_for_break():
+    n = 10
+    @ti.kernel
+    def foo(a: ti.template()):
+        for i in ti.static(range(n)):
+            a[i] = 3
+            if ti.static(i >= 5):
+                break
+                a[i] = 10
+            a[i] = 5
+
+    a = ti.field(ti.i32, shape=(n, ))
+    foo(a)
+    for i in range(n):
+        if i < 5:
+            assert a[i] == 5
+        elif i == 5:
+            assert a[i] == 3
+        else:
+            assert a[i] == 0
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_static_grouped_for_break():
+    n = 4
+    @ti.kernel
+    def foo(a: ti.template()):
+        for I in ti.static(ti.grouped(ti.ndrange(n, n))):
+            a[I] = 3
+            if ti.static(I[0] >= 3):
+                break
+                a[I] = 10
+            a[I] = 5
+
+    a = ti.field(ti.i32, shape=(n, n))
+    foo(a)
+    for i in range(n):
+        for j in range(n):
+            if i < 3:
+                assert a[i, j] == 5
+            elif i == 3 and j == 0:
+                assert a[i, j] == 3
+            else:
+                assert a[i, j] == 0
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_static_for_continue():
+    n = 10
+    @ti.kernel
+    def foo(a: ti.template()):
+        for i in ti.static(range(n)):
+            a[i] = 3
+            if ti.static(i >= 5):
+                continue
+                a[i] = 10
+            a[i] = 5
+
+    a = ti.field(ti.i32, shape=(n, ))
+    foo(a)
+    for i in range(n):
+        if i < 5:
+            assert a[i] == 5
+        else:
+            assert a[i] == 3
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_static_grouped_for_continue():
+    n = 4
+    @ti.kernel
+    def foo(a: ti.template()):
+        for I in ti.static(ti.grouped(ti.ndrange(n, n))):
+            a[I] = 3
+            if ti.static(I[0] >= 3):
+                continue
+                a[I] = 10
+            a[I] = 5
+
+    a = ti.field(ti.i32, shape=(n, n))
+    foo(a)
+    for i in range(n):
+        for j in range(n):
+            if i < 3:
+                assert a[i, j] == 5
+            else:
+                assert a[i, j] == 3
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_for_break():
+    n = 4
+    @ti.kernel
+    def foo(a: ti.template()):
+        for i in range(n):
+            for j in range(n):
+                a[i, j] = 3
+                if i >= 3:
+                    break
+                    a[i, j] = 10
+                a[i, j] = 5
+
+    a = ti.field(ti.i32, shape=(n, n))
+    foo(a)
+    for i in range(n):
+        for j in range(n):
+            if i < 3:
+                assert a[i, j] == 5
+            elif i == 3 and j == 0:
+                assert a[i, j] == 3
+            else:
+                assert a[i, j] == 0
+
+
+@ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
+def test_for_continue():
+    n = 4
+    @ti.kernel
+    def foo(a: ti.template()):
+        for i in range(n):
+            for j in range(n):
+                a[i, j] = 3
+                if i >= 3:
+                    continue
+                    a[i, j] = 10
+                a[i, j] = 5
+
+    a = ti.field(ti.i32, shape=(n, n))
+    foo(a)
+    for i in range(n):
+        for j in range(n):
+            if i < 3:
+                assert a[i, j] == 5
+            else:
+                assert a[i, j] == 3
 
 
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)

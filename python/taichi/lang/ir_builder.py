@@ -426,6 +426,7 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_static_for(ctx, node, is_grouped):
+        ctx.set_static_loop()
         if is_grouped:
             assert len(node.iter.args[0].args) == 1
             ndrange_arg = build_stmt(ctx, node.iter.args[0].args[0]).ptr
@@ -442,7 +443,12 @@ class IRBuilder(Builder):
             for value in ndrange_arg:
                 with ctx.variable_scope_guard():
                     ctx.create_variable(target, value)
-                    node.body = build_stmts_wo_scope(ctx, node.body)
+                    node.body = build_stmts(ctx, node.body)
+                    status = ctx.loop_status()
+                    if status == LoopStatus.Break:
+                        break
+                    elif status == LoopStatus.Continue:
+                        ctx.set_loop_status(LoopStatus.Normal)
         else:
             node.iter = build_stmt(ctx, node.iter)
             targets = IRBuilder.get_for_loop_targets(node)
@@ -452,7 +458,12 @@ class IRBuilder(Builder):
                 with ctx.variable_scope_guard():
                     for target, target_value in zip(targets, target_values):
                         ctx.create_variable(target, target_value)
-                    node.body = build_stmts_wo_scope(ctx, node.body)
+                    node.body = build_stmts(ctx, node.body)
+                    status = ctx.loop_status()
+                    if status == LoopStatus.Break:
+                        break
+                    elif status == LoopStatus.Continue:
+                        ctx.set_loop_status(LoopStatus.Normal)
         return node
 
     @staticmethod
@@ -476,7 +487,7 @@ class IRBuilder(Builder):
                 end = ti.cast(ti.Expr(build_stmt(ctx, node.iter.args[0]).ptr),
                               ti.i32)
             ti.core.begin_frontend_range_for(loop_var.ptr, begin.ptr, end.ptr)
-            node.body = build_stmts_wo_scope(ctx, node.body)
+            node.body = build_stmts(ctx, node.body)
             ti.core.end_frontend_range_for()
         return node
 
@@ -507,7 +518,7 @@ class IRBuilder(Builder):
                 if i + 1 < len(targets):
                     I.assign(I -
                              target_tmp * ndrange_var.acc_dimensions[i + 1])
-            node.body = build_stmts_wo_scope(ctx, node.body)
+            node.body = build_stmts(ctx, node.body)
             ti.core.end_frontend_range_for()
         return node
 
@@ -543,7 +554,7 @@ class IRBuilder(Builder):
                 if i + 1 < len(ndrange_var.dimensions):
                     I.assign(I -
                              target_tmp * ndrange_var.acc_dimensions[i + 1])
-            node.body = build_stmts_wo_scope(ctx, node.body)
+            node.body = build_stmts(ctx, node.body)
             ti.core.end_frontend_range_for()
         return node
 
@@ -569,7 +580,7 @@ class IRBuilder(Builder):
                 expr_group = ti.lang.expr.make_expr_group(loop_indices)
                 ti.begin_frontend_struct_for(expr_group, loop_var)
                 ctx.create_variable(target, ti.Vector(loop_indices, dt=ti.i32))
-                node.body = build_stmts_wo_scope(ctx, node.body)
+                node.body = build_stmts(ctx, node.body)
                 ti.core.end_frontend_range_for()
             else:
                 vars = []
@@ -580,7 +591,7 @@ class IRBuilder(Builder):
                 loop_var = build_stmt(ctx, node.iter).ptr
                 expr_group = ti.lang.expr.make_expr_group(*vars)
                 ti.begin_frontend_struct_for(expr_group, loop_var)
-                node.body = build_stmts_wo_scope(ctx, node.body)
+                node.body = build_stmts(ctx, node.body)
                 ti.core.end_frontend_range_for()
         return node
 
@@ -591,7 +602,6 @@ class IRBuilder(Builder):
                 "'else' clause for 'for' not supported in Taichi kernels")
 
         with ctx.control_scope_guard():
-            ctx.current_control_scope().append('for')
 
             decorator = IRBuilder.get_decorator(ctx, node.iter)
             double_decorator = ''
@@ -683,6 +693,26 @@ class IRBuilder(Builder):
         node.ptr = val
         return node
 
+    @staticmethod
+    def build_Break(ctx, node):
+        if ctx.is_in_static():
+            ctx.set_loop_status(LoopStatus.Break)
+        else:
+            ti.core.insert_break_stmt()
+        return node
+
+    @staticmethod
+    def build_Continue(ctx, node):
+        if ctx.is_in_static():
+            ctx.set_loop_status(LoopStatus.Continue)
+        else:
+            ti.core.insert_continue_stmt()
+        return node
+
+    @staticmethod
+    def build_Pass(ctx, node):
+        return node
+
 
 build_stmt = IRBuilder()
 
@@ -691,12 +721,9 @@ def build_stmts(ctx, stmts):
     result = []
     with ctx.variable_scope_guard(result):
         for stmt in list(stmts):
-            result.append(build_stmt(ctx, stmt))
+            if ctx.loop_status() == LoopStatus.Normal:
+                result.append(build_stmt(ctx, stmt))
+            else:
+                result.append(stmt)
     return result
 
-
-def build_stmts_wo_scope(ctx, stmts):
-    result = []
-    for stmt in list(stmts):
-        result.append(build_stmt(ctx, stmt))
-    return result

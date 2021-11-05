@@ -77,12 +77,14 @@ if (TI_WITH_CUDA)
     set(CUDA_ARCH "cuda")
 endif()
 
-find_program(CLANG_EXECUTABLE NAMES clang clang-7 clang-8 clang-9 clang-10 clang-11)
+if (CLANG_PATH) 
+  message("Using CLANG_PATH=${CLANG_PATH} as clang executable")
+endif()
+
+find_program(CLANG_EXECUTABLE NAMES ${CLANG_PATH} clang clang-7 clang-8 clang-9 clang-10 clang-11)
 if (NOT CLANG_EXECUTABLE)
     message(FATAL_ERROR "Cannot find any clang executable.")
 endif()
-
-message("Use ${CLANG_EXECUTABLE} as clang executable")
 
 execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
 message(${CLANG_VERSION_OUTPUT})
@@ -91,9 +93,9 @@ set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
 
 if (APPLE)
   set(CLANG_HIGHEST_VERSION "12")
-else ()
+else()
   set(CLANG_HIGHEST_VERSION "11")
-endif ()
+endif()
 
 if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
   message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Condider setting envionment variable CC=/path/to/clang or passing -DCMAKE_C_COMPILER=/path/to/clang to cmake to use a specific clang.")

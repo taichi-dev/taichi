@@ -8,5 +8,5 @@ assignees: ''
 ---
 
 <!--
-Please describe any errors, ambiguities, and any areas that you think can be improved in the documentation.
+Please describe any errors, ambiguities, or other improvement opportunities that you can find in the documentation.
 -->

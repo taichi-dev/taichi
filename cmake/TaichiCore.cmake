@@ -180,6 +180,7 @@ include_directories(external/spdlog/include)
 if (TI_WITH_OPENGL)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glad/include)
 endif()
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 

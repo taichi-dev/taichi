@@ -31,15 +31,20 @@ DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
   return alloc;
 }
 
-DeviceAllocation CudaDevice::allocate_memory_runtime(const AllocParams &params, JITModule *runtime_jit, LLVMRuntime *runtime, uint64 *result_buffer) {
+DeviceAllocation CudaDevice::allocate_memory_runtime(const AllocParams &params,
+                                                     JITModule *runtime_jit,
+                                                     LLVMRuntime *runtime,
+                                                     uint64 *result_buffer) {
   AllocInfo info;
   if (params.host_read || params.host_write) {
     TI_NOT_IMPLEMENTED
   } else {
     runtime_jit->call<void *, std::size_t, std::size_t>(
-      "runtime_memory_allocate_aligned", runtime, params.size, taichi_page_size);
-    info.ptr = taichi_union_cast_with_different_sizes<uint64_t *>(
-        fetch_result_uint64(taichi_result_buffer_runtime_query_id, result_buffer));
+        "runtime_memory_allocate_aligned", runtime, params.size,
+        taichi_page_size);
+    info.ptr =
+        taichi_union_cast_with_different_sizes<uint64_t *>(fetch_result_uint64(
+            taichi_result_buffer_runtime_query_id, result_buffer));
   }
 
   info.size = params.size;
@@ -81,7 +86,8 @@ DeviceAllocation CudaDevice::import_memory(void *ptr, size_t size) {
 uint64 CudaDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
   CUDADriver::get_instance().stream_synchronize(nullptr);
   uint64 ret;
-  CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i, sizeof(uint64));
+  CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
+                                                   sizeof(uint64));
   return ret;
 }
 }  // namespace cuda

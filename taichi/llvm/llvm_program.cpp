@@ -564,7 +564,9 @@ DevicePtr LlvmProgramImpl::get_snode_tree_device_ptr(int tree_id) {
   return tree_alloc.get_ptr();
 }
 
-DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(std::size_t alloc_size, uint64 *result_buffer) {
+DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
+    std::size_t alloc_size,
+    uint64 *result_buffer) {
   TaichiLLVMContext *tlctx = nullptr;
   if (llvm_context_device) {
     tlctx = llvm_context_device.get();
@@ -576,10 +578,12 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(std::size_t alloc_size
   device_buffer_alloc_params.size = alloc_size;
   if (config->arch == Arch::cuda) {
     return cuda_device()->allocate_memory_runtime(
-        device_buffer_alloc_params, tlctx->runtime_jit_module, get_llvm_runtime(), result_buffer);
+        device_buffer_alloc_params, tlctx->runtime_jit_module,
+        get_llvm_runtime(), result_buffer);
   } else {
     return cpu_device()->allocate_memory_runtime(
-        device_buffer_alloc_params, tlctx->runtime_jit_module, get_llvm_runtime(), result_buffer);
+        device_buffer_alloc_params, tlctx->runtime_jit_module,
+        get_llvm_runtime(), result_buffer);
   }
 }
 

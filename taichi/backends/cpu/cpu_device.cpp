@@ -26,12 +26,17 @@ DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
   return alloc;
 }
 
-DeviceAllocation CpuDevice::allocate_memory_runtime(const AllocParams &params, JITModule *runtime_jit, LLVMRuntime *runtime, uint64 *result_buffer) {
+DeviceAllocation CpuDevice::allocate_memory_runtime(const AllocParams &params,
+                                                    JITModule *runtime_jit,
+                                                    LLVMRuntime *runtime,
+                                                    uint64 *result_buffer) {
   AllocInfo info;
   runtime_jit->call<void *, std::size_t, std::size_t>(
-    "runtime_memory_allocate_aligned", runtime, params.size, taichi_page_size);
-  info.ptr = taichi_union_cast_with_different_sizes<uint64_t *>(
-      fetch_result_uint64(taichi_result_buffer_runtime_query_id, result_buffer));
+      "runtime_memory_allocate_aligned", runtime, params.size,
+      taichi_page_size);
+  info.ptr =
+      taichi_union_cast_with_different_sizes<uint64_t *>(fetch_result_uint64(
+          taichi_result_buffer_runtime_query_id, result_buffer));
 
   info.size = params.size;
 

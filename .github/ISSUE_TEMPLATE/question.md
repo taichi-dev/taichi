@@ -10,8 +10,8 @@ assignees: ''
 <!--
 Before asking a question, please first consider:
 
-- Searched Google
-- Searched [existing issues](https://github.com/taichi-dev/taichi/issues)
-- Searched [Taichi Doc](https://docs.taichi.graphics/)
-- Searched [Taichi forum](https://forum.taichi.graphics/)
+- Searching Google
+- Searching [existing issues](https://github.com/taichi-dev/taichi/issues)
+- Searching [Taichi Doc](https://docs.taichi.graphics/)
+- Searching [Taichi Forum](https://forum.taichi.graphics/)
 -->

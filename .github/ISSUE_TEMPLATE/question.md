@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 <!--
-Before asking a question, Please first consider:
+Before asking a question, please first consider:
 
 - Searched Google
 - Searched [existing issues](https://github.com/taichi-dev/taichi/issues)

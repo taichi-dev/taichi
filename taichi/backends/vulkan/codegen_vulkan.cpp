@@ -282,6 +282,9 @@ class TaskCodegen : public IRVisitor {
       val = ir_->rand_u32(global_tmp);
     } else if (stmt->element_type()->is_primitive(PrimitiveTypeID::f32)) {
       val = ir_->rand_f32(global_tmp);
+    } else if (stmt->element_type()->is_primitive(PrimitiveTypeID::f16)) {
+      auto highp_val = ir_->rand_f32(global_tmp);
+      val = ir_->cast(ir_->f16_type(), highp_val);
     } else {
       TI_ERROR("rand only support 32-bit type");
     }
@@ -469,9 +472,11 @@ class TaskCodegen : public IRVisitor {
         linear_offset = ir_->mul(linear_offset, size_var);
         linear_offset = ir_->add(linear_offset, indices);
       }
-      linear_offset = ir_->make_value(
-          spv::OpShiftLeftLogical, ir_->i32_type(), linear_offset,
-          ir_->int_immediate_number(ir_->i32_type(), 2));
+      linear_offset = ir_->mul(
+          linear_offset,
+          ir_->int_immediate_number(
+              ir_->i32_type(),
+              ir_->get_primitive_type_size(argload->ret_type.ptr_removed())));
     }
     spirv::Value val = ir_->add(
         ir_->query_value(stmt->base_ptrs[0]->raw_name()), linear_offset);

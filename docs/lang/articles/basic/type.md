@@ -146,7 +146,7 @@ default numerical types.
 | `~a`      | the bits of `a` inverted            |
 | `a & b`   | bitwise and of `a` and `b`          |
 | `a ^ b`   | bitwise exclusive or of `a` and `b` |
-| `a \| b`  | bitwise or of `a` and `b`           |
+| `a | b`   | bitwise or of `a` and `b`           |
 
 #### Trigonometric functions
 
@@ -175,8 +175,8 @@ ti.ceil(x)
 
 ```python
 abs(x)
-max(x, y, \...)
-min(x, y, \...)
+max(x, y, ...)
+min(x, y, ...)
 pow(x, y)  # Same as `x ** y`.
 ```
 

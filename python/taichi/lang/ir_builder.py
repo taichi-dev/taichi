@@ -29,12 +29,7 @@ class IRBuilder(Builder):
         # The variable is introduced to support chained assignments.
         # Ref https://github.com/taichi-dev/taichi/issues/2659.
         for node_target in node.targets:
-            if isinstance(node_target, ast.Tuple):
-                IRBuilder.build_assign_unpack(ctx, node_target, node.value.ptr,
-                                              is_static_assign)
-            else:
-                IRBuilder.build_assign_basic(ctx, node_target, node.value.ptr,
-                                             is_static_assign)
+            IRBuilder.build_assign_unpack(ctx, node_target, node.value.ptr, is_static_assign)
         return node
 
     @staticmethod
@@ -49,7 +44,9 @@ class IRBuilder(Builder):
             values: A node/list representing the values.
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
-
+        if not isinstance(node_target, ast.Tuple):
+            IRBuilder.build_assign_basic(ctx, node_target, values, is_static_assign)
+            return
         targets = node_target.elts
         tmp_tuple = values if is_static_assign else ti.expr_init_list(
             values, len(targets))
@@ -101,6 +98,67 @@ class IRBuilder(Builder):
         node.elts = build_stmts(ctx, node.elts)
         node.ptr = [elt.ptr for elt in node.elts]
         return node
+
+    @staticmethod
+    def process_listcomp(ctx, node, result):
+        result.append(build_stmt(ctx, node.elt).ptr)
+
+    @staticmethod
+    def process_dictcomp(ctx, node, result):
+        key = build_stmt(ctx, node.key).ptr
+        value = build_stmt(ctx, node.value).ptr
+        result[key] = value
+
+    @staticmethod
+    def process_generators(ctx, node, now_comp, func, result):
+        if now_comp >= len(node.generators):
+            return func(ctx, node, result)
+        comp = node.generators[now_comp] = build_stmt(ctx, node.generators[now_comp])
+        for value in comp.iter.ptr:
+            with ctx.variable_scope_guard:
+                IRBuilder.build_assign_unpack(ctx, comp.target, value, True)
+                IRBuilder.process_ifs(ctx, node, now_comp, 0, func, result)
+
+    @staticmethod
+    def process_ifs(ctx, node, now_comp, now_if, func, result):
+        if now_if >= len(node.generators[now_comp].ifs):
+            return IRBuilder.process_generators(ctx, node, now_comp + 1, func, result)
+        cond = node.generators[now_comp].ifs[now_if].ptr
+        ti.begin_frontend_if(cond)
+        ti.core.begin_frontend_if_true()
+        IRBuilder.process_ifs(ctx, node, now_comp, now_if + 1, func, result)
+        ti.core.pop_scope()
+        ti.core.begin_frontend_if_false()
+        ti.core.pop_scope()
+
+    @staticmethod
+    def build_comprehension(ctx, node):
+        node.target = build_stmt(ctx, node.target)
+        node.iter = build_stmt(ctx, node.iter)
+        node.ifs = build_stmts(ctx, node.ifs)
+        return node
+
+    @staticmethod
+    def build_ListComp(ctx, node):
+        result = []
+        IRBuilder.process_generators(ctx, node, 0, IRBuilder.process_listcomp, result)
+        node.ptr = result
+        return node
+
+    @staticmethod
+    def build_DictComp(ctx, node):
+        result = []
+        IRBuilder.process_generators(ctx, node, 0, IRBuilder.process_dictcomp, result)
+        node.ptr = result
+        return node
+'''
+comp0=node.generators[0]
+for tar0 in comp0.iter:
+    ctx.create_variable(comp0.target, tar0)
+    for tar1 in comp1.iter:
+        ctx.create_variable(comp1.target, tar1)
+        
+'''
 
     @staticmethod
     def build_Index(ctx, node):

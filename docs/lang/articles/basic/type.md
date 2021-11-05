@@ -120,7 +120,7 @@ For example, `1.0 / 2.0 = 0.5`, `1 / 2 = 0.5`, `1 // 2 = 0`,
 
 To avoid such implicit casting, you can manually cast your operands to
 desired types, using `ti.cast`. Please see
-[Default precisions](../articles/basic/type.md#default-precisions) for more details on
+[Default precisions](#default-precisions) for more details on
 default numerical types.
 :::
 

@@ -77,6 +77,11 @@ if (TI_WITH_CUDA)
     set(CUDA_ARCH "cuda")
 endif()
 
+if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+  set(CLANG_CANDIDATE ${CMAKE_C_COMPILER})
+  message("Use CMAKE_C_COMPILER=${CLANG_CANDIDATE} as clang executable")
+endif()
+
 find_program(CLANG_EXECUTABLE NAMES ${CLANG_CANDIDATE} clang clang-7 clang-8 clang-9 clang-10 clang-11)
 if (NOT CLANG_EXECUTABLE)
     message(FATAL_ERROR "Cannot find any clang executable.")

@@ -596,7 +596,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
                              tlctx->get_constant(axis)});
   }
 
-  void visit(BinaryOpStmt *stmt) {
+  void visit(BinaryOpStmt *stmt) override {
     auto op = stmt->op_type;
     if (op != BinaryOpType::atan2 && op != BinaryOpType::pow) {
       return CodeGenLLVM::visit(stmt);

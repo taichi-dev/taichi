@@ -419,7 +419,7 @@ def test_taichi_other_than_ti():
 
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=ti.opengl)
+@ti.test(exclude=ti.opengl, experimental_ast_refactor=True)
 def test_ndarray():
     n = 4
     m = 7

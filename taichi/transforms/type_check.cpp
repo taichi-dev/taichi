@@ -66,8 +66,10 @@ class TypeCheck : public IRVisitor {
       dst_type = cft->get_compute_type();
     }
     if (stmt->val->ret_type != dst_type) {
-      TI_WARN("[{}] Atomic {} ({} to {}) may lose precision, at\n{}", stmt->name(), atomic_op_type_name(stmt->op_type),
-              data_type_name(stmt->val->ret_type), data_type_name(dst_type), stmt->tb);
+      TI_WARN("[{}] Atomic {} ({} to {}) may lose precision, at\n{}",
+              stmt->name(), atomic_op_type_name(stmt->op_type),
+              data_type_name(stmt->val->ret_type), data_type_name(dst_type),
+              stmt->tb);
       stmt->val = insert_type_cast_before(stmt, stmt->val, dst_type);
     }
     stmt->ret_type = dst_type;
@@ -118,7 +120,8 @@ class TypeCheck : public IRVisitor {
       }
       if (dst_value_type != promoted && dst_value_type != stmt->val->ret_type) {
         TI_WARN("[{}] Local store may lose precision: {} <- {}, at\n{}",
-                stmt->name(), dst_value_type->to_string(), input_type, stmt->tb);
+                stmt->name(), dst_value_type->to_string(), input_type,
+                stmt->tb);
       }
       stmt->ret_type = dst_value_type;
       return;
@@ -138,7 +141,8 @@ class TypeCheck : public IRVisitor {
     }
     if (stmt->dest->ret_type != common_container_type) {
       TI_WARN(
-          "[{}] Local store may lose precision (target = {}, value = {}), at\n{}",
+          "[{}] Local store may lose precision (target = {}, value = {}), "
+          "at\n{}",
           stmt->name(), stmt->dest->ret_data_type_name(),
           old_data->ret_data_type_name(), stmt->id, stmt->tb);
     }
@@ -296,7 +300,8 @@ class TypeCheck : public IRVisitor {
     auto error = [&](std::string comment = "") {
       if (comment == "") {
         TI_WARN(
-            "[{}] Error: type mismatch (left = {}, right = {}, stmt_id = {}), at\n{}",
+            "[{}] Error: type mismatch (left = {}, right = {}, stmt_id = {}), "
+            "at\n{}",
             stmt->name(), stmt->lhs->ret_data_type_name(),
             stmt->rhs->ret_data_type_name(), stmt->id, stmt->tb);
       } else {

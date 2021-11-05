@@ -418,8 +418,9 @@ def test_taichi_other_than_ti():
         assert foo(i) == fib[i]
 
 
-@ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=False)
-def test_any_arr():
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
+def test_ndarray():
     n = 4
     m = 7
 

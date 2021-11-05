@@ -29,7 +29,8 @@ class IRBuilder(Builder):
         # The variable is introduced to support chained assignments.
         # Ref https://github.com/taichi-dev/taichi/issues/2659.
         for node_target in node.targets:
-            IRBuilder.build_assign_unpack(ctx, node_target, node.value.ptr, is_static_assign)
+            IRBuilder.build_assign_unpack(ctx, node_target, node.value.ptr,
+                                          is_static_assign)
         return node
 
     @staticmethod
@@ -45,8 +46,8 @@ class IRBuilder(Builder):
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
         if not isinstance(node_target, ast.Tuple):
-            IRBuilder.build_assign_basic(ctx, node_target, values, is_static_assign)
-            return
+            return IRBuilder.build_assign_basic(ctx, node_target, values,
+                                                is_static_assign)
         targets = node_target.elts
         tmp_tuple = values if is_static_assign else ti.expr_init_list(
             values, len(targets))
@@ -113,7 +114,8 @@ class IRBuilder(Builder):
     def process_generators(ctx, node, now_comp, func, result):
         if now_comp >= len(node.generators):
             return func(ctx, node, result)
-        comp = node.generators[now_comp] = build_stmt(ctx, node.generators[now_comp])
+        comp = node.generators[now_comp] = build_stmt(
+            ctx, node.generators[now_comp])
         for value in comp.iter.ptr:
             with ctx.variable_scope_guard:
                 IRBuilder.build_assign_unpack(ctx, comp.target, value, True)
@@ -122,7 +124,8 @@ class IRBuilder(Builder):
     @staticmethod
     def process_ifs(ctx, node, now_comp, now_if, func, result):
         if now_if >= len(node.generators[now_comp].ifs):
-            return IRBuilder.process_generators(ctx, node, now_comp + 1, func, result)
+            return IRBuilder.process_generators(ctx, node, now_comp + 1, func,
+                                                result)
         cond = node.generators[now_comp].ifs[now_if].ptr
         ti.begin_frontend_if(cond)
         ti.core.begin_frontend_if_true()
@@ -141,24 +144,18 @@ class IRBuilder(Builder):
     @staticmethod
     def build_ListComp(ctx, node):
         result = []
-        IRBuilder.process_generators(ctx, node, 0, IRBuilder.process_listcomp, result)
+        IRBuilder.process_generators(ctx, node, 0, IRBuilder.process_listcomp,
+                                     result)
         node.ptr = result
         return node
 
     @staticmethod
     def build_DictComp(ctx, node):
-        result = []
-        IRBuilder.process_generators(ctx, node, 0, IRBuilder.process_dictcomp, result)
+        result = {}
+        IRBuilder.process_generators(ctx, node, 0, IRBuilder.process_dictcomp,
+                                     result)
         node.ptr = result
         return node
-'''
-comp0=node.generators[0]
-for tar0 in comp0.iter:
-    ctx.create_variable(comp0.target, tar0)
-    for tar1 in comp1.iter:
-        ctx.create_variable(comp1.target, tar1)
-        
-'''
 
     @staticmethod
     def build_Index(ctx, node):

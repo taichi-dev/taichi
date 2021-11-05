@@ -82,6 +82,8 @@ if (NOT CLANG_EXECUTABLE)
     message(FATAL_ERROR "Cannot find any clang executable.")
 endif()
 
+message("Use ${CLANG_EXECUTABLE} as clang executable")
+
 execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
 message(${CLANG_VERSION_OUTPUT})
 string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")

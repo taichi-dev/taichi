@@ -596,6 +596,25 @@ def test_while_break():
     assert ret[None] == 55
 
 
+@ti.test(experimental_ast_refactor=True)
+def test_while_continue():
+    ret = ti.field(ti.i32, shape=())
+
+    @ti.kernel
+    def func():
+        i = 0
+        s = 0
+        while i < 10:
+            i += 1
+            if i % 2 == 0:
+                continue
+            s += i
+        ret[None] = s
+
+    func()
+    assert ret[None] == 25
+
+
 @ti.test(experimental_ast_refactor=True, print_preprocessed_ir=True)
 def test_func():
     @ti.func

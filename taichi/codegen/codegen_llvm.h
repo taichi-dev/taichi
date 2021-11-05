@@ -137,10 +137,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void emit_gc(OffloadedStmt *stmt);
 
   llvm::Value *create_call(llvm::Value *func,
-                           std::vector<llvm::Value *> args = {});
+                           llvm::ArrayRef<llvm::Value *> args = {});
 
   llvm::Value *create_call(std::string func_name,
-                           std::vector<llvm::Value *> args = {});
+                           llvm::ArrayRef<llvm::Value *> args = {});
   llvm::Value *call(SNode *snode,
                     llvm::Value *node_ptr,
                     const std::string &method,

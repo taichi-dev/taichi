@@ -798,23 +798,36 @@ class TaskCodegen : public IRVisitor {
     spirv::Value data = ir_->query_value(stmt->val->raw_name());
 
     spirv::Value val;
-    if (dt->is_primitive(PrimitiveTypeID::f64)) {
-      if (device_->get_cap(DeviceCapability::spirv_has_atomic_float64_add) &&
-          stmt->op_type == AtomicOpType::add) {
-        val = ir_->make_value(spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt),
-                              addr_ptr,
-                              /*scope=*/ir_->const_i32_one_,
-                              /*semantics=*/ir_->const_i32_zero_, data);
-      } else {
-        val = ir_->float_atomic(stmt->op_type, addr_ptr, data);
+    if (is_real(dt)) {
+      spv::Op atomic_fp_op;
+      if (stmt->op_type == AtomicOpType::add) {
+        atomic_fp_op = spv::OpAtomicFAddEXT;
       }
-    } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      if (device_->get_cap(DeviceCapability::spirv_has_atomic_float_add) &&
-          stmt->op_type == AtomicOpType::add) {
-        val = ir_->make_value(spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt),
-                              addr_ptr,
-                              /*scope=*/ir_->const_i32_one_,
-                              /*semantics=*/ir_->const_i32_zero_, data);
+
+      bool use_native_atomics = false;
+
+      if (dt->is_primitive(PrimitiveTypeID::f64)) {
+        if (device_->get_cap(DeviceCapability::spirv_has_atomic_float64_add) &&
+            stmt->op_type == AtomicOpType::add) {
+          use_native_atomics = true;
+        }
+      } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
+        if (device_->get_cap(DeviceCapability::spirv_has_atomic_float_add) &&
+            stmt->op_type == AtomicOpType::add) {
+          use_native_atomics = true;
+        }
+      } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+        if (device_->get_cap(DeviceCapability::spirv_has_atomic_float16_add) &&
+            stmt->op_type == AtomicOpType::add) {
+          use_native_atomics = true;
+        }
+      }
+
+      if (use_native_atomics) {
+        val =
+            ir_->make_value(atomic_fp_op, ir_->get_primitive_type(dt), addr_ptr,
+                            /*scope=*/ir_->const_i32_one_,
+                            /*semantics=*/ir_->const_i32_zero_, data);
       } else {
         val = ir_->float_atomic(stmt->op_type, addr_ptr, data);
       }

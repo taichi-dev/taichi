@@ -362,7 +362,7 @@ ray2 = my_ray3f(ro=vec1, rd=vec2, l=1.0)
 
 ### Supported operations
 
-Supported operations on primitive types can also be applied on compound types. In these cases, they are applied in an element-wise manner. For example:
+[Supported operations on primitive types](#supported-operations) can also be applied on compound types. In these cases, they are applied in an element-wise manner. For example:
 
 ```python
 B = ti.Matrix([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])

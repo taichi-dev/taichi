@@ -85,7 +85,7 @@ Boolean types are represented using `ti.i32`.
 | `a * b`   | product of `a` and `b`          |
 | `a / b`   | quotient of `a` and `b`         |
 | `a // b`  | floored quotient of `a` and `b` |
-| `a % b`   | remainder of `a` / `b`          |
+| `a % b`   | remainder of `a / b`          |
 | `a ** b`  | `a` to the power of `b`         |
 
 :::note

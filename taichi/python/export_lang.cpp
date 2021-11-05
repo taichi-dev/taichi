@@ -829,11 +829,12 @@ void export_lang(py::module &m) {
   m.def("block_dim", BlockDim);
 
   m.def("insert_thread_idx_expr", [&](){
-    TI_ERROR_IF(get_current_program().config.arch != Arch::cuda,
-            "ti.thread_idx() is only available in cuda context.");
+    auto arch = get_current_program().config.arch;
     auto loop = scope_stack.size() ? scope_stack.back()->list->parent_stmt : nullptr;
-    if(!(loop && loop->is<FrontendForStmt>()))
-      TI_NOT_IMPLEMENTED;
+    TI_ERROR_IF(arch != Arch::cuda && !arch_is_cpu(arch),
+            "ti.thread_idx() is only available in cuda or cpu context.");
+    TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
+            "ti.thread_idx() is only valid within loops.");
     auto tid_stmt = Stmt::make<LoopLinearIndexStmt>(loop);
     auto tid_expr = Expr::make<EvalExpression>(tid_stmt.get());   
     current_ast_builder().insert(std::move(tid_stmt));

@@ -1839,7 +1839,7 @@ void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
-  llvm_val[stmt] = create_call("thread_idx");
+  llvm_val[stmt] = create_call("linear_thread_idx", {get_context()}); 
 }
 
 void CodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {

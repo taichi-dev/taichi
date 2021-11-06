@@ -51,10 +51,14 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         sys.stdout.write(str(sys.version_info[1]))"
         OUTPUT_VARIABLE PYTHON_MINOR_VERSION)
 
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+        "import sys;sys.stdout.write(sys.base_prefix.replace('\\\\', '/'))"
+        OUTPUT_VARIABLE PYTHON_BASE_PREFIX)
+
 if (WIN32)
-  link_directories(${PYTHON_LIBRARY_DIR}/../../libs)
-  set(PYTHON_LIBRARIES ${PYTHON_LIBRARY_DIR}/../../libs/python3.lib)
-  set(PYTHON_LIBRARIES ${PYTHON_LIBRARY_DIR}/../../libs/python3${PYTHON_MINOR_VERSION}.lib)
+  link_directories(${PYTHON_BASE_PREFIX}/libs)
+  set(PYTHON_LIBRARIES ${PYTHON_BASE_PREFIX}/libs/python3.lib)
+  set(PYTHON_LIBRARIES ${PYTHON_BASE_PREFIX}/libs/python3${PYTHON_MINOR_VERSION}.lib)
 else()
   find_library(PYTHON_LIBRARY NAMES python${PYTHON_VERSION} python${PYTHON_VERSION}m PATHS ${PYTHON_LIBRARY_DIR}
           NO_DEFAULT_PATH NO_SYSTEM_ENVIRONMENT_PATH PATH_SUFFIXES x86_64-linux-gnu)

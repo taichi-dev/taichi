@@ -90,7 +90,10 @@ class CpuDevice : public Device {
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
-  DeviceAllocation allocate_memory_runtime(const AllocParams &params, JITModule *runtime_jit_module, LLVMRuntime *runtime, uint64 *result_buffer);
+  DeviceAllocation allocate_memory_runtime(const AllocParams &params,
+                                           JITModule *runtime_jit_module,
+                                           LLVMRuntime *runtime,
+                                           uint64 *result_buffer);
 
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,

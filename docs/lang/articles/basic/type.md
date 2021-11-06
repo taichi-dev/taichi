@@ -33,7 +33,7 @@ For example, the two most commonly used types:
 - `i32` represents a 32-bit signed integer.
 - `f32` represents a 32-bit floating point number.
 
-## Supported primitive types
+### Supported primitive types
 
 Currently, supported primitive types in Taichi are
 
@@ -72,7 +72,120 @@ Supported types on each backend:
 Boolean types are represented using `ti.i32`.
 :::
 
-## Type promotion
+### Supported operations
+
+#### Arithmetic operators
+
+| Operation | Result                          |
+| --------- | ------------------------------- |
+| `-a`      | `a` negated                     |
+| `+a`      | `a` unchanged                   |
+| `a + b`   | sum of `a` and `b`              |
+| `a - b`   | difference of `a` and `b`       |
+| `a * b`   | product of `a` and `b`          |
+| `a / b`   | quotient of `a` and `b`         |
+| `a // b`  | floored quotient of `a` and `b` |
+| `a % b`   | remainder of `a / b`          |
+| `a ** b`  | `a` to the power of `b`         |
+
+:::note
+
+The `%` operator in Taichi follows the Python style instead of C style,
+e.g.,
+
+```python
+# In Taichi-scope or Python-scope:
+print(2 % 3)   # 2
+print(-2 % 3)  # 1
+```
+
+For C-style mod (`%`), please use `ti.raw_mod`:
+
+```python
+print(ti.raw_mod(2, 3))   # 2
+print(ti.raw_mod(-2, 3))  # -2
+```
+:::
+
+:::note
+
+Python 3 distinguishes `/` (true division) and `//` (floor division), e.g., `1.0 / 2.0 = 0.5`, `1 / 2 = 0.5`, `1 // 2 = 0`,
+`4.2 // 2 = 2`. Taichi follows the same design:
+
+- **True divisions** on integral types will first cast their
+  operands to the default floating point type.
+- **Floor divisions** on floating point types will first cast their
+  operands to the default integral type.
+
+To avoid such implicit casting, you can manually cast your operands to
+desired types, using `ti.cast`. Please see
+[Default precisions](#default-precisions) for more details on
+default numerical types.
+:::
+
+#### Logic operators
+
+| Operation          | Result                                                        |
+| ------------------ | ------------------------------------------------------------- |
+| `a == b`           | if `a` is equal to `b`, then True, else False                 |
+| `a != b`           | if `a` is not equal to `b`, then True, else False             |
+| `a > b`            | if `a` is strictly greater than `b`, then True, else False    |
+| `a < b`            | if `a` is strictly less than `b`, then True, else False       |
+| `a >= b`           | if `a` is greater than or equal to `b`, then True, else False |
+| `a <= b`           | if `a` is less than or equal to `b`, then True, else False    |
+| `not a`            | if `a` is False, then True, else False                        |
+| `a or b`           | if `a` is False, then `b`, else `a`                           |
+| `a and b`          | if `a` is False, then `a`, else `b`                           |
+| `a if cond else b` | if `cond` is True, then `a`, else `b`                         |
+
+#### Bitwise operators
+
+| Operation               | Result                              |
+| ----------------------- | ----------------------------------- |
+| `~a`                    | the bits of `a` inverted            |
+| `a & b`                 | bitwise and of `a` and `b`          |
+| `a ^ b`                 | bitwise exclusive or of `a` and `b` |
+| <code>a &#124; b</code> | bitwise or of `a` and `b`           |
+
+#### Trigonometric functions
+
+```python
+ti.sin(x)
+ti.cos(x)
+ti.tan(x)
+ti.asin(x)
+ti.acos(x)
+ti.atan2(x, y)
+ti.tanh(x)
+```
+
+#### Other arithmetic functions
+
+```python
+ti.sqrt(x)
+ti.rsqrt(x)  # A fast version for `1 / ti.sqrt(x)`.
+ti.exp(x)
+ti.log(x)
+ti.floor(x)
+ti.ceil(x)
+```
+
+#### Builtin-alike functions
+
+```python
+abs(x)
+max(x, y, ...)
+min(x, y, ...)
+pow(x, y)  # Same as `x ** y`.
+```
+
+#### Random number generator
+
+```python
+ti.random(dtype=float)
+```
+
+### Type promotion
 
 Binary operations on different types will give you a promoted type,
 following the C programming language convention, e.g.:
@@ -83,7 +196,7 @@ following the C programming language convention, e.g.:
 Basically it will try to choose the more precise type to contain the
 result value.
 
-## Default precisions
+### Default precisions
 
 By default, all numerical literals have 32-bit precisions. For example,
 `42` has type `ti.i32` and `3.14` has type `ti.f32`.
@@ -119,11 +232,11 @@ def func(a: ti.f32) -> ti.i64:
     ...
 ```
 
-## Type casts
+### Type casts
 
 All data types are static in the **Taichi scope**. Therefore, casts are needed when you want to assign a certain type of data to another one.
 
-### Implicit casts
+#### Implicit casts
 
 :::caution
 The type of a variable is **determined on its initialization**.
@@ -153,7 +266,7 @@ def foo():
     print(a)  # 3
 ```
 
-### Explicit casts
+#### Explicit casts
 
 You may use `ti.cast` to explicitly cast scalar values between different
 types:
@@ -177,7 +290,7 @@ def foo():
     c = float(b)  # 3.0
 ```
 
-### Casting vectors and matrices
+#### Casting vectors and matrices
 
 Type casts applied to vectors/matrices are element-wise:
 
@@ -190,7 +303,7 @@ def foo():
     v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
 ```
 
-### Bit-casts
+#### Bit-casts
 
 Use `ti.bit_cast` to bit-cast a value into another data type. The
 underlying bits will be preserved in this cast. The new type must have
@@ -236,6 +349,7 @@ ray3 = ti.Struct.field({'ro': my_vec3f, 'rd': my_vec3f, 'l': ti.f32}, shape=(102
 ```
 
 ### Creating local variables
+
 Compound types can be directly called to create vector, matrix or struct instances. Vectors, matrices and structs can be created using GLSL-like broadcast syntax since their shapes are already known:
 ```python
 ray1 = my_ray3f(0.0)            # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
@@ -243,4 +357,43 @@ vec1 = my_vec3f(0.0)            # ti.Vector([0.0, 0.0, 0.0])
 mat1 = my_mat2f(1.0)            # ti.Matrix([[1.0, 1.0], [1.0, 1.0]])
 vec2 = my_vec3f(my_vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]), will perform implicit cast
 ray2 = my_ray3f(ro=vec1, rd=vec2, l=1.0)
+```
+
+### Supported operations
+
+[Supported operations on primitive types](#supported-operations) can also be applied on compound types. In these cases, they are applied in an element-wise manner. For example:
+
+```python
+B = ti.Matrix([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+C = ti.Matrix([[3.0, 4.0, 5.0], [6.0, 7.0, 8.0]])
+
+A = ti.sin(B)
+# is equivalent to
+for i in ti.static(range(2)):
+    for j in ti.static(range(3)):
+        A[i, j] = ti.sin(B[i, j])
+
+A = B ** 2
+# is equivalent to
+for i in ti.static(range(2)):
+    for j in ti.static(range(3)):
+        A[i, j] = B[i, j] ** 2
+
+A = B ** C
+# is equivalent to
+for i in ti.static(range(2)):
+    for j in ti.static(range(3)):
+        A[i, j] = B[i, j] ** C[i, j]
+
+A += 2
+# is equivalent to
+for i in ti.static(range(2)):
+    for j in ti.static(range(3)):
+        A[i, j] += 2
+
+A += B
+# is equivalent to
+for i in ti.static(range(2)):
+    for j in ti.static(range(3)):
+        A[i, j] += B[i, j]
 ```

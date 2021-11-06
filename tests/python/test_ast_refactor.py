@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 import taichi as ti
@@ -391,27 +392,68 @@ def test_recreate_variable():
 
 @ti.test(experimental_ast_refactor=True)
 def test_taichi_other_than_ti():
-    import taichi as np
+    import taichi as tc
 
-    @np.func
-    def bar(x: np.template()):
-        if np.static(x):
+    @tc.func
+    def bar(x: tc.template()):
+        if tc.static(x):
             mat = bar(x // 2)
             mat = mat @ mat
-            if np.static(x % 2):
-                mat = mat @ np.Matrix([[1, 1], [1, 0]])
+            if tc.static(x % 2):
+                mat = mat @ tc.Matrix([[1, 1], [1, 0]])
             return mat
         else:
-            return np.Matrix([[1, 0], [0, 1]])
+            return tc.Matrix([[1, 0], [0, 1]])
 
     def fibonacci(x):
-        return np.subscript(bar(x), 1, 0)
+        return tc.subscript(bar(x), 1, 0)
 
-    @np.kernel
-    def foo(x: np.template()) -> np.i32:
+    @tc.kernel
+    def foo(x: tc.template()) -> tc.i32:
         return fibonacci(x)
 
     fib = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
 
     for i in range(10):
         assert foo(i) == fib[i]
+
+
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl, experimental_ast_refactor=True)
+def test_ndarray():
+    n = 4
+    m = 7
+
+    @ti.kernel
+    def run(x: ti.any_arr(element_dim=2, layout=ti.Layout.AOS),
+            y: ti.any_arr()):
+        for i in ti.static(range(n)):
+            for j in ti.static(range(m)):
+                x[i, j][0, 0] += i + j + y[i, j]
+
+    a = ti.Matrix.ndarray(1, 1, ti.i32, shape=(n, m))
+    for i in range(n):
+        for j in range(m):
+            a[i, j][0, 0] = i * j
+    b = np.ones((n, m), dtype=np.int32)
+    run(a, b)
+    for i in range(n):
+        for j in range(m):
+            assert a[i, j][0, 0] == i * j + i + j + 1
+
+
+@ti.test(experimental_ast_refactor=True, arch=ti.cpu)
+def test_sparse_matrix_builder():
+    n = 8
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
+
+    @ti.kernel
+    def fill(Abuilder: ti.linalg.sparse_matrix_builder()):
+        for i, j in ti.static(ti.ndrange(n, n)):
+            Abuilder[i, j] += i + j
+
+    fill(Abuilder)
+    A = Abuilder.build()
+    for i in range(n):
+        for j in range(n):
+            assert A[i, j] == i + j

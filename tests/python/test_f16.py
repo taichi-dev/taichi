@@ -6,7 +6,7 @@ import pytest
 import taichi as ti
 from taichi import approx
 
-archs_support_f16 = [ti.cpu, ti.cuda]
+archs_support_f16 = [ti.cpu, ti.cuda, ti.vulkan]
 
 
 @ti.test(arch=archs_support_f16)

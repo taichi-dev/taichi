@@ -7,5 +7,6 @@ CheckOptions:
   - { key: readability-identifier-naming.PublicMethodSuffix,     value: ""         }
   - { key: readability-identifier-naming.PublicMethodCase,       value: lower_case }
   - { key: readability-identifier-naming.PublicMemberSuffix,     value: ""         }
+  - { key: readability-identifier-naming.ParameterCase,          value: lower_case }
 ...
 

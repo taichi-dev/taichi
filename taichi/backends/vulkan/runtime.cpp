@@ -26,7 +26,7 @@ class StopWatch {
   StopWatch() : begin_(std::chrono::system_clock::now()) {
   }
 
-  int GetMicros() {
+  int get_micros() {
     typedef std::chrono::duration<float> fsec;
 
     auto now = std::chrono::system_clock::now();

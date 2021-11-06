@@ -7,8 +7,8 @@ TI_NAMESPACE_BEGIN
 class MemoryMonitor {
   // avoid including py::dict
   // py::dict locals;
-  void *locals;
-  std::ofstream log;
+  void *locals_;
+  std::ofstream log_;
 
  public:
   MemoryMonitor(int pid, std::string output_fn);

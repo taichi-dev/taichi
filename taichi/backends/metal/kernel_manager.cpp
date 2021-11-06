@@ -626,7 +626,7 @@ class KernelManager::Impl {
 
   void add_compiled_snode_tree(const CompiledStructs &compiled_tree) {
     SNodesRootBuffer rtbuf{};
-    rtbuf.desc = BufferDescriptor::Root(compiled_tree.root_id);
+    rtbuf.desc = BufferDescriptor::root(compiled_tree.root_id);
     if (compiled_tree.root_size > 0) {
       rtbuf.mem = std::make_unique<BufferMemoryView>(compiled_tree.root_size,
                                                      mem_pool_);
@@ -689,13 +689,13 @@ class KernelManager::Impl {
     for (auto &rb : root_buffers_) {
       input_buffers[rb.desc] = rb.buffer.get();
     }
-    input_buffers[BufferDescriptor::GlobalTmps()] = global_tmps_buffer_.get();
-    input_buffers[BufferDescriptor::Runtime()] = runtime_buffer_.get();
-    input_buffers[BufferDescriptor::Print()] = print_buffer_.get();
+    input_buffers[BufferDescriptor::global_tmps()] = global_tmps_buffer_.get();
+    input_buffers[BufferDescriptor::runtime()] = runtime_buffer_.get();
+    input_buffers[BufferDescriptor::print()] = print_buffer_.get();
 
     if (ctx_blitter) {
       ctx_blitter->host_to_metal();
-      input_buffers[BufferDescriptor::Context()] = ctk.ctx_buffer.get();
+      input_buffers[BufferDescriptor::context()] = ctk.ctx_buffer.get();
     }
 
     for (const auto &mk : ctk.compiled_mtl_kernels) {

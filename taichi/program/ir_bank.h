@@ -45,7 +45,7 @@ class IRBank {
   StateFlowGraph *sfg_;
   std::unordered_map<IRNode *, uint64> hash_bank_;
   std::unordered_map<IRHandle, std::unique_ptr<IRNode>> ir_bank_;
-  std::vector<std::unique_ptr<IRNode>> trash_bin;  // prevent IR from deleted
+  std::vector<std::unique_ptr<IRNode>> trash_bin_;  // prevent IR from deleted
   std::unordered_map<std::pair<IRHandle, IRHandle>, IRHandle> fuse_bank_;
   std::unordered_map<IRHandle, IRHandle> demote_activation_bank_;
 

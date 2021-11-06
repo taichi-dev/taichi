@@ -22,9 +22,9 @@ class FileSequenceWriter {
   std::string write(const std::string &str);
 
  private:
-  int counter;
-  std::string filename_template;
-  std::string file_type;
+  int counter_;
+  std::string filename_template_;
+  std::string file_type_;
 
   std::pair<std::ofstream, std::string> create_new_file();
 };

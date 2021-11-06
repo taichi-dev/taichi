@@ -35,10 +35,10 @@ TLANG_NAMESPACE_BEGIN
 #if defined(TI_WITH_CUDA)
 class JITModuleCUDA : public JITModule {
  private:
-  void *module;
+  void *module_;
 
  public:
-  explicit JITModuleCUDA(void *module) : module(module) {
+  explicit JITModuleCUDA(void *module) : module_(module) {
   }
 
   void *lookup_function(const std::string &name) override {
@@ -48,7 +48,7 @@ class JITModuleCUDA : public JITModule {
     void *func = nullptr;
     auto t = Time::get_time();
     auto err = CUDADriver::get_instance().module_get_function.call_with_warning(
-        &func, module, name.c_str());
+        &func, module_, name.c_str());
     if (err) {
       TI_ERROR("Cannot look up function {}", name);
     }
@@ -63,11 +63,11 @@ class JITModuleCUDA : public JITModule {
     launch(name, 1, 1, 0, arg_pointers);
   }
 
-  virtual void launch(const std::string &name,
-                      std::size_t grid_dim,
-                      std::size_t block_dim,
-                      std::size_t dynamic_shared_mem_bytes,
-                      const std::vector<void *> &arg_pointers) override {
+  void launch(const std::string &name,
+              std::size_t grid_dim,
+              std::size_t block_dim,
+              std::size_t dynamic_shared_mem_bytes,
+              const std::vector<void *> &arg_pointers) override {
     auto func = lookup_function(name);
     CUDAContext::get_instance().launch(func, name, arg_pointers, grid_dim,
                                        block_dim, dynamic_shared_mem_bytes);
@@ -86,10 +86,9 @@ class JITSessionCUDA : public JITSession {
       : data_layout(data_layout) {
   }
 
-  virtual JITModule *add_module(std::unique_ptr<llvm::Module> M,
-                                int max_reg) override;
+  JITModule *add_module(std::unique_ptr<llvm::Module> M, int max_reg) override;
 
-  virtual llvm::DataLayout get_data_layout() override {
+  llvm::DataLayout get_data_layout() override {
     return data_layout;
   }
 

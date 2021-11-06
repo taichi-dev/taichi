@@ -45,23 +45,23 @@ struct BufferDescriptor {
 
   BufferDescriptor() = default;
 
-  static BufferDescriptor Root(int root_id) {
+  static BufferDescriptor root(int root_id) {
     return BufferDescriptor{Type::Root, root_id};
   }
 
-  static BufferDescriptor GlobalTmps() {
+  static BufferDescriptor global_tmps() {
     return BufferDescriptor{Type::GlobalTmps};
   }
 
-  static BufferDescriptor Context() {
+  static BufferDescriptor context() {
     return BufferDescriptor{Type::Context};
   }
 
-  static BufferDescriptor Runtime() {
+  static BufferDescriptor runtime() {
     return BufferDescriptor{Type::Runtime};
   }
 
-  static BufferDescriptor Print() {
+  static BufferDescriptor print() {
     return BufferDescriptor{Type::Print};
   }
 

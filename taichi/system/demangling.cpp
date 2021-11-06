@@ -28,7 +28,7 @@ std::string cpp_demangle(const std::string &mangled_name) {
 }
 
 class Demangling : public Task {
-  virtual std::string run(const std::vector<std::string> &parameters) {
+  std::string run(const std::vector<std::string> &parameters) override {
     if (parameters.size() == 0) {
       printf("There should be at least one parameter for demangling.\n");
     }

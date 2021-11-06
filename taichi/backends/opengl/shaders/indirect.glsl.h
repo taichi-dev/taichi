@@ -1,5 +1,6 @@
 // vim: ft=glsl
 // clang-format off
+// NOLINTBEGIN(*)
 #include "taichi/util/macros.h"
 "#version 430 core\nprecision highp float;\n"
 #define TI_INSIDE_OPENGL_CODEGEN
@@ -39,3 +40,4 @@ void _compute_indirect(
 
 // get_indirect_evaluator() will prepend a main here, with template arguments
 )
+// NOLINTEND(*)

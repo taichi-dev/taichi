@@ -9,7 +9,9 @@ TLANG_NAMESPACE_BEGIN
 
 FileSequenceWriter::FileSequenceWriter(std::string filename_template,
                                        std::string file_type)
-    : counter(0), filename_template(filename_template), file_type(file_type) {
+    : counter_(0),
+      filename_template_(filename_template),
+      file_type_(file_type) {
 }
 
 #ifdef TI_WITH_LLVM
@@ -34,9 +36,9 @@ std::string FileSequenceWriter::write(IRNode *irnode) {
 }
 
 std::pair<std::ofstream, std::string> FileSequenceWriter::create_new_file() {
-  auto fn = fmt::format(filename_template, counter);
-  TI_INFO("Saving {} to {}", file_type, fn);
-  counter++;
+  auto fn = fmt::format(filename_template_, counter_);
+  TI_INFO("Saving {} to {}", file_type_, fn);
+  counter_++;
   return {std::ofstream(fn), fn};
 }
 

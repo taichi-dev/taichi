@@ -39,17 +39,17 @@ uint64 get_memory_usage(int pid) {
 }
 
 MemoryMonitor::MemoryMonitor(int pid, std::string output_fn) {
-  log.open(output_fn, std::ios_base::out);
-  locals = new py::dict;
-  (*reinterpret_cast<py::dict *>(locals))["pid"] = pid;
+  log_.open(output_fn, std::ios_base::out);
+  locals_ = new py::dict;
+  (*reinterpret_cast<py::dict *>(locals_))["pid"] = pid;
   py::exec(R"(
         import os, psutil
         process = psutil.Process(pid))",
-           py::globals(), *reinterpret_cast<py::dict *>(locals));
+           py::globals(), *reinterpret_cast<py::dict *>(locals_));
 }
 
 MemoryMonitor::~MemoryMonitor() {
-  delete reinterpret_cast<py::dict *>(locals);
+  delete reinterpret_cast<py::dict *>(locals_);
 }
 
 uint64 MemoryMonitor::get_usage() const {
@@ -59,17 +59,17 @@ uint64 MemoryMonitor::get_usage() const {
           mem = process.memory_info().rss
         except:
           mem = -1)",
-           py::globals(), *reinterpret_cast<py::dict *>(locals));
-  return (*reinterpret_cast<py::dict *>(locals))["mem"].cast<uint64>();
+           py::globals(), *reinterpret_cast<py::dict *>(locals_));
+  return (*reinterpret_cast<py::dict *>(locals_))["mem"].cast<uint64>();
 }
 
 void MemoryMonitor::append_sample() {
   auto t = std::chrono::system_clock::now();
-  log << fmt::format(
+  log_ << fmt::format(
       "{:.5f} {}\n",
       (t.time_since_epoch() / std::chrono::nanoseconds(1)) / 1e9_f64,
       get_usage());
-  log.flush();
+  log_.flush();
 }
 
 void start_memory_monitoring(std::string output_fn, int pid, real interval) {

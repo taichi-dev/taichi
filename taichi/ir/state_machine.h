@@ -9,7 +9,7 @@ TLANG_NAMESPACE_BEGIN
 // State machine for AllocaStmt/GlobalTemporaryStmt/GlobalPtrStmt.
 class StateMachine {
  private:
-  Stmt *var;
+  Stmt *var_;
   static std::unique_ptr<std::unordered_set<AtomicOpStmt *>> used_atomics;
 
   bool same_data(Stmt *store_stmt1, Stmt *store_stmt2);

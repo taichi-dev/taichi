@@ -8,4 +8,4 @@ cmake .. -DCMAKE_CXX_COMPILER=clang -DCMAKE_C_COMPILER=clang -DCMAKE_EXPORT_COMP
 cd ..
 TAICHI_SRC=$PWD/taichi
 VAR=${1:-${TAICHI_SRC}}
-python3 scripts/run-clang-tidy.py $PWD/taichi -header-filter="$PWD/taichi/" -p build_clang_tidy -j16 -fix
+python3 scripts/run_clang_tidy.py $PWD/taichi -header-filter="$PWD/taichi/" -p build_clang_tidy -j16 -fix

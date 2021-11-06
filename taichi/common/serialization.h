@@ -625,9 +625,9 @@ class TextSerializer : public Serializer {
   }
 
  private:
-  int indent;
+  int indent_;
   static constexpr int indent_width = 2;
-  bool first_line;
+  bool first_line_;
 
   template <typename T>
   inline static constexpr bool is_elementary_type_v =
@@ -636,8 +636,8 @@ class TextSerializer : public Serializer {
 
  public:
   TextSerializer() {
-    indent = 0;
-    first_line = false;
+    indent_ = 0;
+    first_line_ = false;
   }
 
   template <typename T>
@@ -695,7 +695,7 @@ class TextSerializer : public Serializer {
   std::enable_if_t<!is_compact<T, n>::value, void> process(
       const TArray<T, n> &val) {
     add_raw("{");
-    indent++;
+    indent_++;
     for (std::size_t i = 0; i < n; i++) {
       add_key(std::to_string(i).c_str());
       process(val[i]);
@@ -703,7 +703,7 @@ class TextSerializer : public Serializer {
         add_raw(",");
       }
     }
-    indent--;
+    indent_--;
     add_raw("}");
   }
 
@@ -728,7 +728,7 @@ class TextSerializer : public Serializer {
   std::enable_if_t<!is_compact<T, n>::value, void> process(
       const StdTArray<T, n> &val) {
     add_raw("{");
-    indent++;
+    indent_++;
     for (std::size_t i = 0; i < n; i++) {
       add_key(std::to_string(i).c_str());
       process(val[i]);
@@ -736,7 +736,7 @@ class TextSerializer : public Serializer {
         add_raw(",");
       }
     }
-    indent--;
+    indent_--;
     add_raw("}");
   }
 
@@ -752,18 +752,18 @@ class TextSerializer : public Serializer {
   template <typename T>
   std::enable_if_t<has_io<T>::value, void> process(const T &val) {
     add_raw("{");
-    indent++;
+    indent_++;
     val.io(*this);
-    indent--;
+    indent_--;
     add_raw("}");
   }
 
   template <typename T>
   std::enable_if_t<has_free_io<T>::value, void> process(const T &val) {
     add_raw("{");
-    indent++;
+    indent_++;
     IO<typename type::remove_cvref_t<T>, decltype(*this)>()(*this, val);
-    indent--;
+    indent_--;
     add_raw("}");
   }
 
@@ -776,25 +776,25 @@ class TextSerializer : public Serializer {
   template <typename T>
   void process(const std::vector<T> &val) {
     add_raw("[");
-    indent++;
+    indent_++;
     for (std::size_t i = 0; i < val.size(); i++) {
       process(val[i]);
       if (i < val.size() - 1) {
         add_raw(",");
       }
     }
-    indent--;
+    indent_--;
     add_raw("]");
   }
 
   template <typename T, typename G>
   void process(const std::pair<T, G> &val) {
     add_raw("[");
-    indent++;
+    indent_++;
     process("first", val.first);
     add_raw(", ");
     process("second", val.second);
-    indent--;
+    indent_--;
     add_raw("]");
   }
 
@@ -814,21 +814,21 @@ class TextSerializer : public Serializer {
   template <typename T>
   void process(const std::optional<T> &val) {
     add_raw("{");
-    indent++;
+    indent_++;
     add_key("has_value");
     process(val.has_value());
     if (val.has_value()) {
       add_key("value");
       process(val.value());
     }
-    indent--;
+    indent_--;
     add_raw("}");
   }
 
   template <typename M>
   void handle_associative_container(const M &val) {
     add_raw("{");
-    indent++;
+    indent_++;
     for (auto iter = val.begin(); iter != val.end(); iter++) {
       auto first = iter->first;
       bool is_string = typeid(first) == typeid(std::string);
@@ -846,7 +846,7 @@ class TextSerializer : public Serializer {
         add_raw(",");
       }
     }
-    indent--;
+    indent_--;
     add_raw("}");
   }
 
@@ -855,12 +855,12 @@ class TextSerializer : public Serializer {
   }
 
   void add_key(const std::string &key) {
-    if (first_line) {
-      first_line = false;
+    if (first_line_) {
+      first_line_ = false;
     } else {
       data += "\n";
     }
-    data += std::string(indent_width * indent, ' ') + "\"" + key + "\"";
+    data += std::string(indent_width * indent_, ' ') + "\"" + key + "\"";
 
     add_raw(": ");
   }

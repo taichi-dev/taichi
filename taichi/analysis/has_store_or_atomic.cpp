@@ -8,14 +8,14 @@ TLANG_NAMESPACE_BEGIN
 // Find if there is a store (or AtomicOpStmt).
 class LocalStoreSearcher : public BasicStmtVisitor {
  private:
-  const std::vector<Stmt *> &vars;
-  bool result;
+  const std::vector<Stmt *> &vars_;
+  bool result_;
 
  public:
   using BasicStmtVisitor::visit;
 
   explicit LocalStoreSearcher(const std::vector<Stmt *> &vars)
-      : vars(vars), result(false) {
+      : vars_(vars), result_(false) {
     for (auto var : vars) {
       TI_ASSERT(var->is<AllocaStmt>());
     }
@@ -24,18 +24,18 @@ class LocalStoreSearcher : public BasicStmtVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    for (auto var : vars) {
+    for (auto var : vars_) {
       if (stmt->dest == var) {
-        result = true;
+        result_ = true;
         break;
       }
     }
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    for (auto var : vars) {
+    for (auto var : vars_) {
       if (stmt->dest == var) {
-        result = true;
+        result_ = true;
         break;
       }
     }
@@ -44,7 +44,7 @@ class LocalStoreSearcher : public BasicStmtVisitor {
   static bool run(IRNode *root, const std::vector<Stmt *> &vars) {
     LocalStoreSearcher searcher(vars);
     root->accept(&searcher);
-    return searcher.result;
+    return searcher.result_;
   }
 };
 

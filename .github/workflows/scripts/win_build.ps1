@@ -55,6 +55,7 @@ clang --version
 WriteInfo("Setting up Python environment")
 python -m venv venv
 . venv\Scripts\activate.ps1
+python -m pip install wheel
 python -m pip install -r requirements_dev.txt
 python -m pip install -r requirements_test.txt
 WriteInfo("Building Taichi")

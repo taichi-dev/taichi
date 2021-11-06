@@ -650,15 +650,6 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
           TI_P(data_type_name(ret_type));
           TI_NOT_IMPLEMENTED
         }
-      } else if (current_arch() == Arch::cuda) {
-        if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
-          llvm_val[stmt] = create_call("__nv_atan2f", {lhs, rhs});
-        } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
-          llvm_val[stmt] = create_call("__nv_atan2", {lhs, rhs});
-        } else {
-          TI_P(data_type_name(ret_type));
-          TI_NOT_IMPLEMENTED
-        }
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -668,19 +659,6 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
           llvm_val[stmt] = create_call("pow_f32", {lhs, rhs});
         } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
           llvm_val[stmt] = create_call("pow_f64", {lhs, rhs});
-        } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
-          llvm_val[stmt] = create_call("pow_i32", {lhs, rhs});
-        } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
-          llvm_val[stmt] = create_call("pow_i64", {lhs, rhs});
-        } else {
-          TI_P(data_type_name(ret_type));
-          TI_NOT_IMPLEMENTED
-        }
-      } else if (current_arch() == Arch::cuda) {
-        if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
-          llvm_val[stmt] = create_call("__nv_powf", {lhs, rhs});
-        } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
-          llvm_val[stmt] = create_call("__nv_pow", {lhs, rhs});
         } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
           llvm_val[stmt] = create_call("pow_i32", {lhs, rhs});
         } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
@@ -897,7 +875,16 @@ void CodeGenLLVM::visit(WhileControlStmt *stmt) {
 
 void CodeGenLLVM::visit(ContinueStmt *stmt) {
   using namespace llvm;
-  if (stmt->as_return()) {
+  auto stmt_in_off_range_for = [stmt]() {
+    TI_ASSERT(stmt->scope != nullptr);
+    if (auto *offl = stmt->scope->cast<OffloadedStmt>(); offl) {
+      TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||
+                offl->task_type == OffloadedStmt::TaskType::struct_for);
+      return offl->task_type == OffloadedStmt::TaskType::range_for;
+    }
+    return false;
+  };
+  if (stmt_in_off_range_for()) {
     builder->CreateRetVoid();
   } else {
     TI_ASSERT(current_loop_reentry != nullptr);
@@ -1764,6 +1751,9 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto func_exit = BasicBlock::Create(*llvm_context, "func_exit", func);
     auto struct_for_body_bb =
         BasicBlock::Create(*llvm_context, "struct_for_body_body", func);
+
+    auto lrg = make_loop_reentry_guard(this);
+    current_loop_reentry = body_tail_bb;
 
     builder->CreateBr(loop_test_bb);
 

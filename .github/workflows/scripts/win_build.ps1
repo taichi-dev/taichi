@@ -21,7 +21,9 @@ if ($clone) {
     git clone --recurse-submodules $RepoURL
     Set-Location .\taichi
 }
-New-Item -ItemType Directory -Force -Path $build
+if (-not (Test-Path $build)) {
+    New-Item -ItemType Directory -Path $build
+}
 Push-Location $build
 WriteInfo("Download and extract LLVM")
 if (-not (Test-Path "taichi_llvm")) {

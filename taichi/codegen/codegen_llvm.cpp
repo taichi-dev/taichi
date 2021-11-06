@@ -875,7 +875,16 @@ void CodeGenLLVM::visit(WhileControlStmt *stmt) {
 
 void CodeGenLLVM::visit(ContinueStmt *stmt) {
   using namespace llvm;
-  if (stmt->as_return()) {
+  auto stmt_in_off_range_for = [stmt]() {
+    TI_ASSERT(stmt->scope != nullptr);
+    if (auto *offl = stmt->scope->cast<OffloadedStmt>(); offl) {
+      TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||
+                offl->task_type == OffloadedStmt::TaskType::struct_for);
+      return offl->task_type == OffloadedStmt::TaskType::range_for;
+    }
+    return false;
+  };
+  if (stmt_in_off_range_for()) {
     builder->CreateRetVoid();
   } else {
     TI_ASSERT(current_loop_reentry != nullptr);
@@ -1742,6 +1751,9 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto func_exit = BasicBlock::Create(*llvm_context, "func_exit", func);
     auto struct_for_body_bb =
         BasicBlock::Create(*llvm_context, "struct_for_body_body", func);
+
+    auto lrg = make_loop_reentry_guard(this);
+    current_loop_reentry = body_tail_bb;
 
     builder->CreateBr(loop_test_bb);
 

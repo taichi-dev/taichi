@@ -282,6 +282,9 @@ class TaskCodegen : public IRVisitor {
       val = ir_->rand_u32(global_tmp);
     } else if (stmt->element_type()->is_primitive(PrimitiveTypeID::f32)) {
       val = ir_->rand_f32(global_tmp);
+    } else if (stmt->element_type()->is_primitive(PrimitiveTypeID::f16)) {
+      auto highp_val = ir_->rand_f32(global_tmp);
+      val = ir_->cast(ir_->f16_type(), highp_val);
     } else {
       TI_ERROR("rand only support 32-bit type");
     }
@@ -469,9 +472,11 @@ class TaskCodegen : public IRVisitor {
         linear_offset = ir_->mul(linear_offset, size_var);
         linear_offset = ir_->add(linear_offset, indices);
       }
-      linear_offset = ir_->make_value(
-          spv::OpShiftLeftLogical, ir_->i32_type(), linear_offset,
-          ir_->int_immediate_number(ir_->i32_type(), 2));
+      linear_offset = ir_->mul(
+          linear_offset,
+          ir_->int_immediate_number(
+              ir_->i32_type(),
+              ir_->get_primitive_type_size(argload->ret_type.ptr_removed())));
     }
     spirv::Value val = ir_->add(
         ir_->query_value(stmt->base_ptrs[0]->raw_name()), linear_offset);
@@ -798,23 +803,36 @@ class TaskCodegen : public IRVisitor {
     spirv::Value data = ir_->query_value(stmt->val->raw_name());
 
     spirv::Value val;
-    if (dt->is_primitive(PrimitiveTypeID::f64)) {
-      if (device_->get_cap(DeviceCapability::spirv_has_atomic_float64_add) &&
-          stmt->op_type == AtomicOpType::add) {
-        val = ir_->make_value(spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt),
-                              addr_ptr,
-                              /*scope=*/ir_->const_i32_one_,
-                              /*semantics=*/ir_->const_i32_zero_, data);
-      } else {
-        val = ir_->float_atomic(stmt->op_type, addr_ptr, data);
+    if (is_real(dt)) {
+      spv::Op atomic_fp_op;
+      if (stmt->op_type == AtomicOpType::add) {
+        atomic_fp_op = spv::OpAtomicFAddEXT;
       }
-    } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      if (device_->get_cap(DeviceCapability::spirv_has_atomic_float_add) &&
-          stmt->op_type == AtomicOpType::add) {
-        val = ir_->make_value(spv::OpAtomicFAddEXT, ir_->get_primitive_type(dt),
-                              addr_ptr,
-                              /*scope=*/ir_->const_i32_one_,
-                              /*semantics=*/ir_->const_i32_zero_, data);
+
+      bool use_native_atomics = false;
+
+      if (dt->is_primitive(PrimitiveTypeID::f64)) {
+        if (device_->get_cap(DeviceCapability::spirv_has_atomic_float64_add) &&
+            stmt->op_type == AtomicOpType::add) {
+          use_native_atomics = true;
+        }
+      } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
+        if (device_->get_cap(DeviceCapability::spirv_has_atomic_float_add) &&
+            stmt->op_type == AtomicOpType::add) {
+          use_native_atomics = true;
+        }
+      } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+        if (device_->get_cap(DeviceCapability::spirv_has_atomic_float16_add) &&
+            stmt->op_type == AtomicOpType::add) {
+          use_native_atomics = true;
+        }
+      }
+
+      if (use_native_atomics) {
+        val =
+            ir_->make_value(atomic_fp_op, ir_->get_primitive_type(dt), addr_ptr,
+                            /*scope=*/ir_->const_i32_one_,
+                            /*semantics=*/ir_->const_i32_zero_, data);
       } else {
         val = ir_->float_atomic(stmt->op_type, addr_ptr, data);
       }
@@ -995,7 +1013,16 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(ContinueStmt *stmt) override {
-    if (stmt->as_return()) {
+    auto stmt_in_off_for = [stmt]() {
+      TI_ASSERT(stmt->scope != nullptr);
+      if (auto *offl = stmt->scope->cast<OffloadedStmt>(); offl) {
+        TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||
+                  offl->task_type == OffloadedStmt::TaskType::struct_for);
+        return true;
+      }
+      return false;
+    };
+    if (stmt_in_off_for()) {
       // Return means end THIS main loop and start next loop, not exit kernel
       ir_->make_inst(spv::OpBranch, return_label());
     } else {

@@ -4,16 +4,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-bool ContinueStmt::as_return() const {
-  TI_ASSERT(scope != nullptr);
-  if (auto *offl = scope->cast<OffloadedStmt>(); offl) {
-    TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||
-              offl->task_type == OffloadedStmt::TaskType::struct_for);
-    return true;
-  }
-  return false;
-}
-
 UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
     : op_type(op_type), operand(operand) {
   TI_ASSERT(!operand->is<AllocaStmt>());

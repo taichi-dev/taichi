@@ -93,30 +93,13 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
   }
 
   void visit(ExternalFuncCallStmt *stmt) override {
-    std::vector<llvm::Type *> arg_types;
-    std::vector<llvm::Value *> arg_values;
-
-    for (auto s : stmt->arg_stmts) {
-      TI_ASSERT(s->width() == 1);
-      arg_types.push_back(tlctx->get_data_type(s->ret_type));
-      arg_values.push_back(llvm_val[s]);
+    if (stmt->type == ExternalFuncCallStmt::BITCODE) {
+      CodeGenLLVM::visit_call_bitcode(stmt);
+    } else if (stmt->type == ExternalFuncCallStmt::SHARED_OBJECT) {
+      CodeGenLLVM::visit_call_shared_object(stmt);
+    } else {
+      TI_NOT_IMPLEMENTED
     }
-
-    for (auto s : stmt->output_stmts) {
-      TI_ASSERT(s->width() == 1);
-      auto t = tlctx->get_data_type(s->ret_type);
-      auto ptr = llvm::PointerType::get(t, 0);
-      arg_types.push_back(ptr);
-      arg_values.push_back(llvm_val[s]);
-    }
-
-    auto func_type = llvm::FunctionType::get(
-        llvm::Type::getVoidTy(*llvm_context), arg_types, false);
-    auto func_ptr_type = llvm::PointerType::get(func_type, 0);
-
-    auto addr = tlctx->get_constant((std::size_t)stmt->func);
-    auto func = builder->CreateIntToPtr(addr, func_ptr_type);
-    builder->CreateCall(func, arg_values);
   }
 };
 

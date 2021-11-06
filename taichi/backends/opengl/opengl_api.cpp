@@ -10,7 +10,8 @@
 #include "taichi/ir/transforms.h"
 
 #ifdef TI_WITH_OPENGL
-#include "glad/glad.h"
+#include "glad/gl.h"
+#include "glad/egl.h"
 #include "GLFW/glfw3.h"
 #include "taichi/backends/opengl/opengl_device.h"
 #endif
@@ -28,6 +29,8 @@ namespace opengl {
 // value according to OpenGL spec in case glGetIntegerv didn't work properly
 int opengl_max_block_dim = 1024;
 int opengl_max_grid_dim = 1024;
+
+constexpr bool use_gles = false;
 
 #ifdef TI_WITH_OPENGL
 
@@ -60,45 +63,136 @@ bool initialize_opengl(bool error_tolerance) {
     }
   }
 
-  glfwInit();
-  // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-  glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
-  // GL context needs a window (There's no true headless GL)
-  GLFWwindow *window =
-      glfwCreateWindow(1, 1, "Make OpenGL Context", nullptr, nullptr);
-  if (!window) {
-    const char *desc = nullptr;
-    int status = glfwGetError(&desc);
-    if (!desc)
-      desc = "Unknown Error";
-    if (error_tolerance) {
-      // error tolerated, returning false
-      TI_DEBUG("[glsl] cannot create GLFW window: error {}: {}", status, desc);
-      supported = std::make_optional<bool>(false);
-      return false;
-    }
-    TI_ERROR("[glsl] cannot create GLFW window: error {}: {}", status, desc);
-  }
-  glfwMakeContextCurrent(window);
+  int opengl_version = 0;
 
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+  if (glfwInit()) {
+    // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
+    if (use_gles) {
+      glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    } else {
+      glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    }
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
+    // GL context needs a window (when using GLFW)
+    GLFWwindow *window =
+        glfwCreateWindow(1, 1, "Make OpenGL Context", nullptr, nullptr);
+    if (!window) {
+      const char *desc = nullptr;
+      int status = glfwGetError(&desc);
+      if (!desc)
+        desc = "Unknown Error";
+      TI_DEBUG("[glsl] cannot create GLFW window: error {}: {}", status, desc);
+    } else {
+      glfwMakeContextCurrent(window);
+      if (use_gles) {
+        opengl_version = gladLoadGLES2(glfwGetProcAddress);
+      } else {
+        opengl_version = gladLoadGL(glfwGetProcAddress);
+      }
+      TI_DEBUG("OpenGL context loaded through GLFW");
+    }
+  }
+
+  if (!opengl_version) {
+    TI_TRACE("Attempting to load with EGL");
+
+    // Try EGL instead
+    int egl_version = gladLoaderLoadEGL(nullptr);
+
+    if (!egl_version) {
+      TI_DEBUG("Failed to load EGL");
+    } else {
+      static const EGLint configAttribs[] = {EGL_SURFACE_TYPE,
+                                             EGL_PBUFFER_BIT,
+                                             EGL_BLUE_SIZE,
+                                             8,
+                                             EGL_GREEN_SIZE,
+                                             8,
+                                             EGL_RED_SIZE,
+                                             8,
+                                             EGL_DEPTH_SIZE,
+                                             8,
+                                             EGL_RENDERABLE_TYPE,
+                                             EGL_OPENGL_BIT,
+                                             EGL_NONE};
+
+      // Initialize EGL
+      EGLDisplay egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+
+      EGLint major, minor;
+      eglInitialize(egl_display, &major, &minor);
+
+      egl_version = gladLoaderLoadEGL(egl_display);
+
+      TI_DEBUG("Loaded EGL {}.{} on display {}",
+               GLAD_VERSION_MAJOR(egl_version), GLAD_VERSION_MINOR(egl_version),
+               egl_display);
+
+      // Select an appropriate configuration
+      EGLint num_configs;
+      EGLConfig egl_config;
+
+      eglChooseConfig(egl_display, configAttribs, &egl_config, 1, &num_configs);
+
+      // Bind the API (EGL >= 1.2)
+      if (egl_version >= GLAD_MAKE_VERSION(1, 2)) {
+        eglBindAPI(use_gles ? EGL_OPENGL_ES_API : EGL_OPENGL_API);
+      }
+
+      // Create a context and make it current
+      EGLContext egl_context = EGL_NO_CONTEXT;
+      if (use_gles) {
+        static const EGLint gl_attribs[] = {
+            EGL_CONTEXT_MAJOR_VERSION,
+            3,
+            EGL_CONTEXT_MINOR_VERSION,
+            1,
+            EGL_NONE,
+        };
+
+        egl_context = eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT,
+                                       gl_attribs);
+      } else {
+        egl_context =
+            eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT, nullptr);
+      }
+
+      eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, egl_context);
+
+      if (use_gles) {
+        opengl_version = gladLoadGLES2(glad_eglGetProcAddress);
+      } else {
+        opengl_version = gladLoadGL(glad_eglGetProcAddress);
+      }
+    }
+  }
+
+  // Load OpenGL API
+  if (!opengl_version) {
     if (error_tolerance) {
-      TI_WARN("[glsl] cannot initialize GLAD");
+      TI_WARN("Can not create OpenGL context");
       supported = std::make_optional<bool>(false);
       return false;
     }
-    TI_ERROR("[glsl] cannot initialize GLAD");
+    TI_ERROR("Can not create OpenGL context");
   }
+
+  TI_DEBUG("{} version {}.{}", use_gles ? "GLES" : "OpenGL",
+           GLAD_VERSION_MAJOR(opengl_version),
+           GLAD_VERSION_MINOR(opengl_version));
+
 #define PER_OPENGL_EXTENSION(x)          \
   if ((opengl_extension_##x = GLAD_##x)) \
     TI_TRACE("[glsl] Found " #x);
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
-  if (!opengl_extension_GL_ARB_compute_shader) {
+
+  if (!use_gles && !opengl_extension_GL_ARB_compute_shader) {
     if (error_tolerance) {
       TI_INFO("Your OpenGL does not support GL_ARB_compute_shader extension");
       supported = std::make_optional<bool>(false);
@@ -451,6 +545,10 @@ bool initialize_opengl(bool error_tolerance) {
 }
 
 #endif  // TI_WITH_OPENGL
+
+bool is_gles() {
+  return use_gles;
+}
 
 }  // namespace opengl
 TLANG_NAMESPACE_END

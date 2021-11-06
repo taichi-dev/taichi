@@ -446,6 +446,9 @@ class IRBuilder {
   SType u16_type() const {
     return t_uint16_;
   }
+  SType f16_type() const {
+    return t_fp16_;
+  }
 
   SType i8_type() const {
     return t_int8_;
@@ -503,6 +506,7 @@ class IRBuilder {
   SType t_uint16_;
   SType t_uint32_;
   SType t_uint64_;
+  SType t_fp16_;
   SType t_fp32_;
   SType t_fp64_;
   SType t_void_;

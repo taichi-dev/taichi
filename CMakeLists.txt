@@ -5,10 +5,9 @@
 cmake_minimum_required(VERSION 3.12)
 
 project(taichi)
-
-SET(TI_VERSION_MAJOR ${TI_VERSION_MAJOR})
-SET(TI_VERSION_MINOR ${TI_VERSION_MINOR})
-SET(TI_VERSION_PATCH ${TI_VERSION_PATCH})
+set(TI_VERSION_MAJOR 0)
+set(TI_VERSION_MINOR 8)
+set(TI_VERSION_PATCH 4)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -70,14 +69,6 @@ if (NOT TI_WITH_CUDA)
     set(CUDA_TOOLKIT_ROOT_DIR "")
 endif()
 
-message("python=${PYTHON_EXECUTABLE}")
-
-add_custom_target(
-    generate_commit_hash
-    COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_LIST_DIR}/misc/generate_commit_hash.py"
-)
-add_dependencies(${CORE_LIBRARY_NAME} generate_commit_hash)
-
 if (TI_WITH_CUDA)
     set(CUDA_ARCH "cuda")
 endif()
@@ -103,14 +94,8 @@ foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
   add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${arch}")
 endforeach()
 
-
-FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
-        "#pragma once\n"
-        "#define TI_VERSION_MAJOR \"${TI_VERSION_MAJOR}\"\n"
-        "#define TI_VERSION_MINOR \"${TI_VERSION_MINOR}\"\n"
-        "#define TI_VERSION_PATCH \"${TI_VERSION_PATCH}\"\n"
-        "#define TI_CUDAVERSION \"${CUDA_VERSION}\"\n"
-        )
+configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
+configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
 
 option(TI_EXPORT_CORE "export taichi core" OFF)
 

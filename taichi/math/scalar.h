@@ -165,9 +165,9 @@ inline int64 get_largest_pot(int64 a) noexcept {
   /* This code was copied from https://stackoverflow.com/a/20207950 and edited
   It uses loop unrolling, which all compilers will do.*/
   for (int64 i = 1; i < 64; i *= 2){
-    x |= (x >> i);
+    a |= (a >> i);
   }
-  return x - (x >> 1);  
+  return a - (a >> 1);  
 }
 
 TI_NAMESPACE_END

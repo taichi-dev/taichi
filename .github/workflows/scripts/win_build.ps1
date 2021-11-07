@@ -2,7 +2,7 @@
 
 param (
     [switch]$clone = $false,
-    [switch]$vulkan = $false,
+    [switch]$installVulkan = $false,
     [switch]$develop = $false,
     [switch]$install = $false,
     [string]$build = "_build"
@@ -38,7 +38,7 @@ if (-not (Test-Path "taichi_clang")) {
 }
 $env:PATH = "$build\taichi_llvm\bin;$build\taichi_clang\bin;$env:PATH"
 $env:TAICHI_CMAKE_ARGS = "-G 'Visual Studio 16 2019' -A x64 -DLLVM_DIR=$build\taichi_llvm\lib\cmake\llvm"
-if ($vulkan) {
+if ($installVulkan) {
     WriteInfo("Download and install Vulkan")
     if (-not (Test-Path "VulkanSDK.exe")) {
         curl.exe --retry 10 --retry-delay 5 https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe -Lo VulkanSDK.exe

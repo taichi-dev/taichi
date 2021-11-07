@@ -208,7 +208,7 @@ jobs:
       - name: Build
         shell: powershell
         run: |
-          .\.github\workflows\scripts\win_build.ps1 -vulkan -install -build C:\
+          .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -build C:\
 
       - name: Test
         shell: powershell
@@ -274,7 +274,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Build & Install
         run: |

@@ -46,7 +46,7 @@ if ($vulkan) {
     $installer.WaitForExit();
     $env:VULKAN_SDK = "$build\VulkanSDK\1.2.189.0"
     $env:PATH += ";$env:VULKAN_SDK\Bin"
-    $env:TAICHI_CMAKE_ARGS += "_DTI_WITH_VULKAN:BOOL=ON"
+    $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_VULKAN:BOOL=ON"
 }
 
 Pop-Location

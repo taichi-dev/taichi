@@ -5,122 +5,122 @@ import taichi as ti
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_with_shape():
-    n = 5
-    x = ti.field(ti.f32, [n])
+    shape_size_1d = 5
+    x = ti.field(ti.f32, [shape_size_1d])
 
     @ti.kernel
     def func():
-        for i in range(n):
+        for i in range(shape_size_1d):
             x[i] = i
 
     func()
 
-    for i in range(n):
+    for i in range(shape_size_1d):
         assert x[i] == i
 
-    y = ti.field(ti.f32, [n])
+    y = ti.field(ti.f32, [shape_size_1d])
 
     @ti.kernel
     def func2():
-        for i in range(n):
+        for i in range(shape_size_1d):
             y[i] = i * 2
-        for i in range(n):
+        for i in range(shape_size_1d):
             x[i] = i * 3
 
     func2()
 
-    for i in range(n):
+    for i in range(shape_size_1d):
         assert x[i] == i * 3
         assert y[i] == i * 2
 
     func()
 
-    for i in range(n):
+    for i in range(shape_size_1d):
         assert x[i] == i
 
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_dense():
-    n = 5
+    shape_size_1d = 5
 
     fb1 = ti.FieldsBuilder()
     x = ti.field(ti.f32)
-    fb1.dense(ti.i, n).place(x)
+    fb1.dense(ti.i, shape_size_1d).place(x)
     fb1.finalize()
 
     @ti.kernel
     def func1():
-        for i in range(n):
+        for i in range(shape_size_1d):
             x[i] = i * 3
 
     func1()
-    for i in range(n):
+    for i in range(shape_size_1d):
         assert x[i] == i * 3
 
     fb2 = ti.FieldsBuilder()
     y = ti.field(ti.f32)
-    fb2.dense(ti.i, n).place(y)
+    fb2.dense(ti.i, shape_size_1d).place(y)
     z = ti.field(ti.f32)
-    fb2.dense(ti.i, n).place(z)
+    fb2.dense(ti.i, shape_size_1d).place(z)
     fb2.finalize()
 
     @ti.kernel
     def func2():
-        for i in range(n):
+        for i in range(shape_size_1d):
             x[i] = i * 2
-        for i in range(n):
+        for i in range(shape_size_1d):
             y[i] = i + 5
-        for i in range(n):
+        for i in range(shape_size_1d):
             z[i] = i + 10
 
     func2()
-    for i in range(n):
+    for i in range(shape_size_1d):
         assert x[i] == i * 2
         assert y[i] == i + 5
         assert z[i] == i + 10
 
     func1()
-    for i in range(n):
+    for i in range(shape_size_1d):
         assert x[i] == i * 3
 
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.metal])
 def test_fields_builder_pointer():
-    n = 5
+    shape_size_1d = 5
 
     fb1 = ti.FieldsBuilder()
     x = ti.field(ti.f32)
-    fb1.pointer(ti.i, n).place(x)
+    fb1.pointer(ti.i, shape_size_1d).place(x)
     fb1.finalize()
 
     @ti.kernel
     def func1():
-        for i in range(n):
+        for i in range(shape_size_1d):
             x[i] = i * 3
 
     func1()
-    for i in range(n):
+    for i in range(shape_size_1d):
         assert x[i] == i * 3
 
     fb2 = ti.FieldsBuilder()
     y = ti.field(ti.f32)
-    fb2.pointer(ti.i, n).place(y)
+    fb2.pointer(ti.i, shape_size_1d).place(y)
     z = ti.field(ti.f32)
-    fb2.pointer(ti.i, n).place(z)
+    fb2.pointer(ti.i, shape_size_1d).place(z)
     fb2.finalize()
 
     # test range-for
     @ti.kernel
     def func2():
-        for i in range(n):
+        for i in range(shape_size_1d):
             x[i] = i * 2
-        for i in range(n):
+        for i in range(shape_size_1d):
             y[i] = i + 5
-        for i in range(n):
+        for i in range(shape_size_1d):
             z[i] = i + 10
 
     func2()
-    for i in range(n):
+    for i in range(shape_size_1d):
         assert x[i] == i * 2
         assert y[i] == i + 5
         assert z[i] == i + 10
@@ -134,12 +134,12 @@ def test_fields_builder_pointer():
             z[i] -= 5
 
     func3()
-    for i in range(n):
+    for i in range(shape_size_1d):
         assert y[i] == i + 10
         assert z[i] == i + 5
 
     func1()
-    for i in range(n):
+    for i in range(shape_size_1d):
         assert x[i] == i * 3
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
@@ -179,35 +179,30 @@ def test_fields_builder_destroy():
         fb0 = ti.FieldsBuilder()
         a0 = ti.field(ti.f64)
         fb0.dense(ti.i, size_1d_0).place(a0)
-        c0 = fb0.finalize()
+        fb0_snode_tree = fb0.finalize()
 
         # create 2nd field using 2nd field builder
         fb1 = ti.FieldsBuilder()
         a1 = ti.field(ti.f64)
         fb1.pointer(ti.i, size_1d_1).place(a1)
-        c1 = fb1.finalize()
+        fb1_snode_tree = fb1.finalize()
 
         # destroy
-        c0.destroy()
-        c1.destroy()
+        fb0_snode_tree.destroy()
+        fb1_snode_tree.destroy()
 
     def test_for_raise_twice_destroy(size_1d):
         fb = ti.FieldsBuilder()
         a = ti.field(ti.f32)
         fb.dense(ti.i, size_1d).place(a)
-        print(11111)
         c = fb.finalize()
-        print(22222)
         c.destroy()
-        print(33333)
         c.destroy()
-        print(444444)
         try:
             c.destroy()
-            print(55555)
         except InvalidOperationError:
+            # NOTE(ysh329): Strange! can't catch exception!!!!
             print("catched ")
-        print(66666)
 
     # [destroy] 2. test for multiple destroy for multiple fields
 #    for size_idx in range(FOR_LOOP_RANGE):
@@ -227,15 +222,17 @@ def test_fields_builder_destroy():
 
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_fields_builder_exceeds_max():
-    sz = 4
+    shape_size = (4, 4)
 
     def create_fb():
         fb = ti.FieldsBuilder()
         x = ti.field(ti.f32)
-        fb.dense(ti.ij, (sz, sz)).place(x)
+        fb.dense(ti.ij, shape_size).place(x)
         fb.finalize()
 
     # kMaxNumSnodeTreesLlvm=32 in taichi/inc/constants.h
+    # TODO(ysh329): kMaxNumSnodeTreesLlvm=512 not 32 in `taichi/inc/constants.h`.
+    #               Can this value `kMaxNumSnodeTreesLlvm` load from `.h` file?
     for _ in range(32):
         create_fb()
 

@@ -311,7 +311,8 @@ void CompiledTaichiKernel::command_list(CommandList *cmdlist) const {
       for (auto &bind : attribs.buffer_binds) {
         if (bind.buffer.type == BufferType::ListGen) {
           // FIXME: properlly support multiple list
-          cmdlist->buffer_fill(input_buffers_.at(bind.buffer)->get_ptr(0), kListGenBufferSize,
+          cmdlist->buffer_fill(input_buffers_.at(bind.buffer)->get_ptr(0),
+                               kListGenBufferSize,
                                /*data=*/0);
           cmdlist->buffer_barrier(*input_buffers_.at(bind.buffer));
         }

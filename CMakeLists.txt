@@ -91,8 +91,9 @@ if (NOT CLANG_EXECUTABLE)
 endif()
 
 execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
-message(${CLANG_VERSION_OUTPUT})
 string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
+message("clang --version: ${CLANG_VERSION}")
+
 set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
 
 if (APPLE)

@@ -67,13 +67,13 @@ class TaskCodegen : public IRVisitor {
   const bool use_64bit_pointers = false;
 
   explicit TaskCodegen(const Params &params)
-      : task_ir_(params.task_ir),
+      : device_(params.device),
+        task_ir_(params.task_ir),
         compiled_structs_(params.compiled_structs),
         ctx_attribs_(params.ctx_attribs),
         task_name_(fmt::format("{}_t{:02d}",
                                params.ti_kernel_name,
-                               params.task_id_in_kernel)),
-        device_(params.device) {
+                               params.task_id_in_kernel)) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
 
@@ -244,6 +244,81 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
+  enum class ActivationOp {
+    activate,
+    deactivate,
+    query
+  };
+
+  spirv::Value bitmasked_activation(ActivationOp op, spirv::Value parent_ptr, int root_id, const SNode *sn, spirv::Value input_index) {
+    spirv::SType ptr_dt = parent_ptr.stype;
+    const auto &snode_descs = compiled_structs_[root_id].snode_descriptors;
+    const auto &desc = snode_descs.at(sn->id);
+
+    auto bitmask_word_index =
+        ir_->make_value(spv::OpShiftRightLogical, ptr_dt, input_index,
+                        ir_->uint_immediate_number(ptr_dt, 5));
+    auto bitmask_bit_index =
+        ir_->make_value(spv::OpBitwiseAnd, ptr_dt, input_index,
+                        ir_->uint_immediate_number(ptr_dt, 31));
+    auto bitmask_mask =
+        ir_->make_value(spv::OpShiftLeftLogical, ptr_dt,
+                        ir_->const_i32_one_, bitmask_bit_index);
+
+    auto buffer = get_buffer_value(BufferInfo(BufferType::Root, root_id),
+                                   PrimitiveType::u32);
+    auto bitmask_word_ptr = ir_->make_value(spv::OpShiftLeftLogical, ptr_dt, bitmask_word_index, ir_->uint_immediate_number(ir_->u32_type(), 2));
+    bitmask_word_ptr = ir_->add(bitmask_word_ptr,
+                                     make_pointer(desc.cell_stride *
+                                                  desc.cells_per_container_pot()));
+    bitmask_word_ptr = ir_->add(parent_ptr, bitmask_word_ptr);
+    bitmask_word_ptr = ir_->make_value(spv::OpShiftRightLogical, ir_->u32_type(), bitmask_word_ptr, ir_->uint_immediate_number(ir_->u32_type(), 2));
+    bitmask_word_ptr = ir_->struct_array_access(
+        ir_->u32_type(), buffer, bitmask_word_ptr);
+
+    if (op == ActivationOp::activate) {
+      return ir_->make_value(spv::OpAtomicOr, ir_->u32_type(), bitmask_word_ptr,
+                      /*scope=*/ir_->const_i32_one_,
+                      /*semantics=*/ir_->const_i32_zero_, bitmask_mask);
+    } else if (op == ActivationOp::deactivate) {
+      bitmask_mask = ir_->make_value(spv::OpNot, ir_->u32_type(), bitmask_mask);
+      return ir_->make_value(spv::OpAtomicAnd, ir_->u32_type(), bitmask_word_ptr,
+                             /*scope=*/ir_->const_i32_one_,
+                             /*semantics=*/ir_->const_i32_zero_, bitmask_mask);
+    } else {
+      auto bitmask_val = ir_->load_variable(bitmask_word_ptr, ir_->u32_type());
+      auto bit = ir_->make_value(spv::OpShiftRightLogical, ir_->u32_type(), bitmask_val, bitmask_bit_index);
+      bit = ir_->make_value(spv::OpBitwiseAnd, ir_->u32_type(), bit, ir_->uint_immediate_number(ir_->u32_type(), 1));
+      return ir_->make_value(spv::OpUGreaterThan, ir_->bool_type(), bit, ir_->uint_immediate_number(ir_->u32_type(), 0));
+    }
+  }
+
+  void visit(SNodeOpStmt *stmt) override {
+    const int root_id = snode_to_root_.at(stmt->snode->id);
+    std::string parent = stmt->ptr->raw_name();
+    spirv::Value parent_val = ir_->query_value(parent);
+
+    if (stmt->snode->type == SNodeType::bitmasked) {
+      spirv::Value input_index_val = ir_->cast(
+          parent_val.stype, ir_->query_value(stmt->val->raw_name()));
+
+      if (stmt->op_type == SNodeOpType::is_active) {
+        auto is_active = bitmasked_activation(ActivationOp::query, parent_val, root_id, stmt->snode, input_index_val);
+        is_active = ir_->cast(ir_->get_primitive_type(stmt->ret_type), is_active);
+        is_active = ir_->make_value(spv::OpSNegate, is_active.stype, is_active);
+        ir_->register_value(stmt->raw_name(), is_active);
+      } else if (stmt->op_type == SNodeOpType::deactivate) {
+        bitmasked_activation(ActivationOp::deactivate, parent_val, root_id, stmt->snode, input_index_val);
+      } else if (stmt->op_type == SNodeOpType::activate) {
+        bitmasked_activation(ActivationOp::activate, parent_val, root_id, stmt->snode, input_index_val);
+      } else {
+        TI_NOT_IMPLEMENTED;
+      }
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
+  }
+
   void visit(SNodeLookupStmt *stmt) override {
     // TODO: SNodeLookupStmt -> GetSNodeCellStmt ?
     bool is_root{false};  // Eliminate first root snode access
@@ -264,32 +339,8 @@ class TaskCodegen : public IRVisitor {
       if (sn->type == SNodeType::dense) {
         // Do nothing
       } else if (sn->type == SNodeType::bitmasked) {
-        const auto &snode_descs = compiled_structs_[root_id].snode_descriptors;
-        const auto &desc = snode_descs.at(sn->id);
-
-        auto ptr_dt = parent_val.stype;
-        spirv::Value input_index_val =
-            ir_->cast(ptr_dt, ir_->query_value(stmt->input_index->raw_name()));
-        auto bitmask_word_index =
-            ir_->make_value(spv::OpShiftRightLogical, ptr_dt, input_index_val,
-                            ir_->uint_immediate_number(ptr_dt, 5));
-        auto bitmask_bit_index =
-            ir_->make_value(spv::OpBitwiseAnd, ptr_dt, input_index_val,
-                            ir_->uint_immediate_number(ptr_dt, 31));
-        auto bitmask_mask =
-            ir_->make_value(spv::OpShiftLeftLogical, ptr_dt,
-                            ir_->const_i32_one_, bitmask_bit_index);
-
-        auto buffer = get_buffer_value(BufferInfo(BufferType::Root, root_id),
-                                       PrimitiveType::u32);
-        auto bitmask_word_ptr = ir_->struct_array_access(
-            ir_->u32_type(), buffer,
-            ir_->add(bitmask_word_index,
-                     make_pointer(desc.cell_stride *
-                                  desc.cells_per_container_pot())));
-        ir_->make_value(spv::OpAtomicOr, ir_->u32_type(), bitmask_word_ptr,
-                        /*scope=*/ir_->const_i32_one_,
-                        /*semantics=*/ir_->const_i32_zero_, bitmask_mask);
+        spirv::Value input_index_val = ir_->query_value(stmt->input_index->raw_name());
+        bitmasked_activation(ActivationOp::activate, parent_val, root_id, sn, input_index_val);
       } else {
         TI_NOT_IMPLEMENTED;
       }
@@ -358,7 +409,6 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
     const auto stmt_name = stmt->raw_name();
     if (stmt->loop->is<OffloadedStmt>()) {
       const auto type = stmt->loop->as<OffloadedStmt>()->task_type;
@@ -366,6 +416,15 @@ class TaskCodegen : public IRVisitor {
         TI_ASSERT(stmt->index == 0);
         spirv::Value loop_var = ir_->query_value("ii");
         spirv::Value val = ir_->add(loop_var, ir_->const_i32_zero_);
+        ir_->register_value(stmt_name, val);
+      } else if (type == OffloadedTaskType::struct_for) {
+        const SNode *snode = stmt->loop->as<OffloadedStmt>()->snode;
+        const AxisExtractor &extractor = snode->extractors[stmt->index];
+        spirv::Value val = ir_->query_value("ii");
+        // FIXME: packed layout (non POT)
+        val = ir_->make_value(spv::OpShiftRightLogical, ir_->u32_type(), val, ir_->uint_immediate_number(ir_->u32_type(), extractor.acc_offset));
+        val = ir_->make_value(spv::OpBitwiseAnd, ir_->u32_type(), val, ir_->uint_immediate_number(ir_->u32_type(), (1 << extractor.num_bits) - 1));
+        val = ir_->cast(ir_->i32_type(), val);
         ir_->register_value(stmt_name, val);
       } else {
         TI_NOT_IMPLEMENTED;
@@ -1266,7 +1325,7 @@ class TaskCodegen : public IRVisitor {
     task_attribs_.task_type = OffloadedTaskType::listgen;
     task_attribs_.buffer_binds = get_common_buffer_binds();
     task_attribs_.advisory_total_num_threads = 1;
-    task_attribs_.advisory_num_threads_per_group = 1;
+    task_attribs_.advisory_num_threads_per_group = 32;
 
     auto snode = stmt->snode;
 
@@ -1274,38 +1333,75 @@ class TaskCodegen : public IRVisitor {
 
     std::vector<SNode *> snode_path;
     int total_num_cells = 1;
+    int root_id = 0;
     {
       // Construct the SNode path to the chosen node
       auto snode_head = snode;
       do {
         snode_path.push_back(snode_head);
         total_num_cells *= snode_head->num_cells_per_container;
-      } while (snode_head = snode_head->parent);
+        root_id = snode_head->id;
+      } while ((snode_head = snode_head->parent));
       for (int i = snode_path.size() - 1; i >= 0; i--) {
         TI_TRACE("- {} ({})", snode_path[i]->get_name(), snode_path[i]->type_name());
         TI_TRACE("  is_place: {}, num_axis: {}", snode_path[i]->is_place(), snode_path[i]->num_active_indices);
       }
     }
 
+    const auto &snode_descs = compiled_structs_[root_id].snode_descriptors;
+
     // The computation for a single work is wrapped inside a function, so that
     // we can do grid-strided loop.
     ir_->start_function(kernel_function_);
 
     if (snode->type == SNodeType::bitmasked) {
+      task_attribs_.advisory_total_num_threads = total_num_cells;
       int num_cells = snode->num_cells_per_container;
-      int num_masks = iroundup(num_cells, 32);
 
       int upper_level_cells = total_num_cells / num_cells;
-      int curr_level_masks_count_ = iroundup(num_cells, 32) / 32;
-      auto curr_level_masks_count = ir_->uint_immediate_number(ir_->u32_type(), curr_level_masks_count_);
 
-      TI_INFO("ListGen {} * {} ({} masks)", total_num_cells / num_cells, num_cells, curr_level_masks_count_);
+      TI_INFO("ListGen {} * {}", total_num_cells / num_cells, num_cells);
 
       auto listgen_buffer = get_buffer_value(BufferInfo(BufferType::ListGen), PrimitiveType::i32);
       auto invoc_index = ir_->get_global_invocation_id(0);
 
-      auto mask_index = ir_->mod(invoc_index, curr_level_masks_count);
-      auto upper_level_cell_index = ir_->div(invoc_index, curr_level_masks_count);
+      auto input_index = ir_->mod(invoc_index, ir_->uint_immediate_number(ir_->u32_type(), num_cells));
+      auto upper_level_cell_index = ir_->div(invoc_index, ir_->uint_immediate_number(ir_->u32_type(), num_cells));
+
+      auto container_ptr = make_pointer(0);
+      for (int i = snode_path.size() - 1; i > 0; i--) {
+        // Offset the ptr to the cell on layer up
+        SNode *this_snode = snode_path[i];
+        const auto &next_snode_desc = snode_descs.at(snode_path[i - 1]->id);
+        if (this_snode->num_active_indices) {
+        }
+        container_ptr = ir_->add(container_ptr, make_pointer(next_snode_desc.mem_offset_in_parent_cell));
+      }
+
+      // Check current bitmask mask within the cell
+      auto index_is_active = bitmasked_activation(ActivationOp::query, container_ptr, root_id, snode, input_index);
+
+      auto if_then_label = ir_->new_label();
+      auto if_merge_label = ir_->new_label();
+
+      ir_->make_inst(spv::OpSelectionMerge, if_merge_label, spv::SelectionControlMaskNone);
+      ir_->make_inst(spv::OpBranchConditional, index_is_active, if_then_label, if_merge_label);
+      // if (is_active)
+      {
+        ir_->start_label(if_then_label);
+        auto listgen_count_ptr = ir_->struct_array_access(
+            ir_->u32_type(), listgen_buffer, ir_->const_i32_zero_);
+        auto index_count = ir_->make_value(spv::OpAtomicIAdd, ir_->u32_type(), listgen_count_ptr,
+                                          /*scope=*/ir_->const_i32_one_,
+                                          /*semantics=*/ir_->const_i32_zero_, ir_->uint_immediate_number(ir_->u32_type(), 1));
+        auto listgen_index_ptr = ir_->struct_array_access(
+            ir_->u32_type(), listgen_buffer, ir_->add(ir_->uint_immediate_number(ir_->u32_type(), 1), index_count));
+        ir_->store_variable(listgen_index_ptr, invoc_index);
+        ir_->make_inst(spv::OpBranch, if_merge_label);
+      }
+      ir_->start_label(if_merge_label);
+    } else if (snode->type == SNodeType::dense) {
+      // Why??
     } else {
       TI_NOT_IMPLEMENTED;
     }
@@ -1318,15 +1414,51 @@ class TaskCodegen : public IRVisitor {
     task_attribs_.name = task_name_;
     task_attribs_.task_type = OffloadedTaskType::struct_for;
     task_attribs_.buffer_binds = get_common_buffer_binds();
-    task_attribs_.advisory_total_num_threads = 1;
-    task_attribs_.advisory_num_threads_per_group = 1;
+    task_attribs_.advisory_total_num_threads = 65536;
+    task_attribs_.advisory_num_threads_per_group = 128;
 
     // The computation for a single work is wrapped inside a function, so that
     // we can do grid-strided loop.
     ir_->start_function(kernel_function_);
+    const spirv::Label func_label = ir_->current_label();
 
     auto snode = stmt->snode;
 
+    auto listgen_buffer = get_buffer_value(BufferType::ListGen, PrimitiveType::u32);
+    auto listgen_count_ptr = ir_->struct_array_access(ir_->u32_type(), listgen_buffer, ir_->const_i32_zero_);
+    auto listgen_count = ir_->load_variable(listgen_count_ptr, ir_->u32_type());
+
+    auto invoc_index = ir_->get_global_invocation_id(0);
+
+    spirv::Label loop_head = ir_->new_label();
+    spirv::Label loop_body = ir_->new_label();
+    spirv::Label loop_merge = ir_->new_label();
+
+    auto loop_index_var = ir_->alloca_variable(ir_->u32_type());
+    ir_->store_variable(loop_index_var, invoc_index);
+
+    ir_->make_inst(spv::OpBranch, loop_head);
+    ir_->start_label(loop_head);
+    // for (; index < list_size; index += gl_NumWorkGroups.x * gl_WorkGroupSize.x)
+    auto loop_index = ir_->load_variable(loop_index_var, ir_->u32_type());
+    auto loop_cond = ir_->make_value(spv::OpULessThan, ir_->bool_type(), loop_index, listgen_count);
+    ir_->make_inst(spv::OpLoopMerge, loop_merge, loop_body, spv::LoopControlMaskNone);
+    ir_->make_inst(spv::OpBranchConditional, loop_cond, loop_body, loop_merge);
+    {
+      ir_->start_label(loop_body);
+      auto listgen_index_ptr = ir_->struct_array_access(ir_->u32_type(), listgen_buffer, ir_->add(ir_->uint_immediate_number(ir_->u32_type(), 1), loop_index));
+      auto listgen_index = ir_->load_variable(listgen_index_ptr, ir_->u32_type());
+
+      // kernel
+      ir_->register_value("ii", listgen_index);
+      stmt->body->accept(this);
+
+      // continue
+      auto next_index = ir_->add(loop_index, ir_->uint_immediate_number(ir_->u32_type(), task_attribs_.advisory_total_num_threads));
+      ir_->store_variable(loop_index_var, next_index);
+      ir_->make_inst(spv::OpBranch, loop_head);
+    }
+    ir_->start_label(loop_merge);
 
     ir_->make_inst(spv::OpReturn);       // return;
     ir_->make_inst(spv::OpFunctionEnd);  // } Close kernel
@@ -1422,6 +1554,9 @@ class TaskCodegen : public IRVisitor {
     if (!ctx_attribs_->empty()) {
       bind_buffer(BufferType::Context);
     }
+
+    bind_buffer(BufferType::ListGen);
+
     return result;
   }
 

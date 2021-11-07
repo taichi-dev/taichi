@@ -103,7 +103,7 @@ else()
 endif()
 
 if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
-  message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Condider setting envionment variable CC=/path/to/clang or passing -DCMAKE_C_COMPILER=/path/to/clang to cmake to use a specific clang.")
+  message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Condider passing -DCLANG_PATH=/path/to/clang to cmake to use a specific clang.")
 endif()
 
 find_program(LLVM_AS_EXECUTABLE NAMES llvm-as)

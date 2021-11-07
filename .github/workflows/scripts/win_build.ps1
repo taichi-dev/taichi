@@ -4,6 +4,7 @@ param (
     [switch]$clone = $false,
     [switch]$vulkan = $false,
     [switch]$develop = $false,
+    [switch]$install = $false,
     [string]$build = "_build"
 )
 
@@ -60,10 +61,14 @@ python -m pip install -r requirements_dev.txt
 python -m pip install -r requirements_test.txt
 WriteInfo("Building Taichi")
 $env:CXX = "$build\taichi_clang\bin\clang++.exe"
-if ($develop) {
-    python -m pip install -e .
+if ($install) {
+    if ($develop) {
+        python -m pip install -e .
+    } else {
+        python -m pip install .
+    }
+    WriteInfo("Build and install finished")
+} else {
+    python setup.py bdist_wheel
+    WriteInfo("Build finished")
 }
-else {
-    python -m pip install .
-}
-WriteInfo("Build finished")

@@ -208,7 +208,7 @@ jobs:
       - name: Build
         shell: powershell
         run: |
-          .\.github\workflows\scripts\win_build.ps1 -vulkan -build C:\
+          .\.github\workflows\scripts\win_build.ps1 -vulkan -install -build C:\
 
       - name: Test
         shell: powershell

@@ -200,6 +200,10 @@ if(DEFINED ENV{LLVM_DIR})
     message("Getting LLVM_DIR=${LLVM_DIR} from the environment variable")
 endif()
 
+if(WIN)
+list(APPEND CMAKE_PREFIX_PATH "C:/Program Files(x86)/LLVM")
+endif()
+
 # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")

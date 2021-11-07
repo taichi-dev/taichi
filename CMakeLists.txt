@@ -79,7 +79,7 @@ if (NOT CLANG_EXECUTABLE)
 endif()
 
 find_program(LLVM_AS_EXECUTABLE NAMES llvm-as)
-if (NOT LLVM_AS_EXECUTABLE)
+if (NOT TARGET llvm-as)
     message(FATAL_ERROR "Cannot find llvm-as executable.")
 endif()
 

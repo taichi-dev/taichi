@@ -5,44 +5,46 @@ import taichi as ti
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_with_shape():
+
+    # Initialize common variables for tests below
     shape_size_1d = 5
     x = ti.field(ti.f32, [shape_size_1d])
+    y = ti.field(ti.f32, [shape_size_1d])
 
+    # [shape] 1. Test and validation for assign once kernel function
     @ti.kernel
-    def func():
+    def assign_once_kernel_func():
         for i in range(shape_size_1d):
             x[i] = i
 
-    func()
-
+    assign_once_kernel_func()
     for i in range(shape_size_1d):
         assert x[i] == i
 
-    y = ti.field(ti.f32, [shape_size_1d])
-
+    # [shape] 2. Test and validation for assign twice kernel function
     @ti.kernel
-    def func2():
+    def assign_twice_kernel_func():
         for i in range(shape_size_1d):
             y[i] = i * 2
         for i in range(shape_size_1d):
             x[i] = i * 3
 
-    func2()
-
+    assign_twice_kernel_func()
     for i in range(shape_size_1d):
         assert x[i] == i * 3
         assert y[i] == i * 2
 
-    func()
-
+    # [shape] 3. Test and validation for Re-assign variable of field
+    assign_once_kernel_func()
     for i in range(shape_size_1d):
         assert x[i] == i
 
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_dense():
-    shape_size_1d = 5
 
+    # Initialize common variables for tests below
+    shape_size_1d = 5
     fb1 = ti.FieldsBuilder()
     x = ti.field(ti.f32)
     fb1.dense(ti.i, shape_size_1d).place(x)

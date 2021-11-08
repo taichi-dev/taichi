@@ -44,5 +44,4 @@ float __wrap_pow(float x, float y) {
 #endif
 }
 
-
 TI_NAMESPACE_END

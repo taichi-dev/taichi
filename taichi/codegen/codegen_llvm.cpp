@@ -190,14 +190,11 @@ void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
 #define UNARY_STD(x)                                                    \
   else if (op == UnaryOpType::x) {                                      \
     if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {        \
-      llvm_val[stmt] =                                                  \
-          create_call("_f32", input);  \
+      llvm_val[stmt] = create_call("_f32", input);                      \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) { \
-      llvm_val[stmt] =                                                  \
-          create_call("_f64", input);  \
+      llvm_val[stmt] = create_call("_f64", input);                      \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) { \
-      llvm_val[stmt] =                                                  \
-          create_call("_i32", input);  \
+      llvm_val[stmt] = create_call("_i32", input);                      \
     } else {                                                            \
       TI_NOT_IMPLEMENTED                                                \
     }                                                                   \
@@ -1090,8 +1087,7 @@ void CodeGenLLVM::visit(ReturnStmt *stmt) {
     auto extended = builder->CreateZExt(
         builder->CreateBitCast(llvm_val[stmt->value], intermediate_type),
         dest_ty);
-    create_call("LLVMRuntime_store_result",
-                        {get_runtime(), extended});
+    create_call("LLVMRuntime_store_result", {get_runtime(), extended});
   }
 }
 
@@ -1210,12 +1206,10 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
             llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        old_value =
-            create_call("atomic_min_f32",
+        old_value = create_call("atomic_min_f32",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        old_value =
-            create_call("atomic_min_f64",
+        old_value = create_call("atomic_min_f64",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else {
         TI_NOT_IMPLEMENTED
@@ -1226,12 +1220,10 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
             llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        old_value =
-            create_call("atomic_max_f32",
+        old_value = create_call("atomic_max_f32",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        old_value =
-            create_call("atomic_max_f64",
+        old_value = create_call("atomic_max_f64",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else {
         TI_NOT_IMPLEMENTED
@@ -1527,7 +1519,8 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   std::vector<llvm::Value *> sizes(num_indices);
 
   for (int i = 0; i < num_indices; i++) {
-    auto raw_arg = create_call("Context_get_extra_args",
+    auto raw_arg = create_call(
+        "Context_get_extra_args",
         {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(i)});
     sizes[i] = raw_arg;
   }
@@ -1549,7 +1542,8 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 void CodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
-  llvm_val[stmt] = create_call("Context_get_extra_args",
+  llvm_val[stmt] = create_call(
+      "Context_get_extra_args",
       {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(axis)});
 }
 

@@ -39,7 +39,8 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(const AllocParams &params,
   if (params.host_read || params.host_write) {
     TI_NOT_IMPLEMENTED
   } else {
-    info.ptr = allocate_llvm_runtime_memory_jit(runtime_jit, runtime, params.size, result_buffer);
+    info.ptr = allocate_llvm_runtime_memory_jit(runtime_jit, runtime,
+                                                params.size, result_buffer);
   }
   info.size = params.size;
   info.is_imported = false;

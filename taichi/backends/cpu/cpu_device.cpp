@@ -31,7 +31,8 @@ DeviceAllocation CpuDevice::allocate_memory_runtime(const AllocParams &params,
                                                     LLVMRuntime *runtime,
                                                     uint64 *result_buffer) {
   AllocInfo info;
-  info.ptr = allocate_llvm_runtime_memory_jit(runtime_jit, runtime, params.size, result_buffer);
+  info.ptr = allocate_llvm_runtime_memory_jit(runtime_jit, runtime, params.size,
+                                              result_buffer);
   info.size = params.size;
 
   DeviceAllocation alloc;

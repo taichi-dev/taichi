@@ -1,6 +1,7 @@
 #pragma once
 #include "taichi/lang_util.h"
 
+#include "taichi/jit/jit_module.h"
 #include "taichi/program/compile_config.h"
 #include <string>
 #include <vector>
@@ -41,6 +42,7 @@ enum class DeviceCapability : uint32_t {
 class Device;
 struct DeviceAllocation;
 struct DevicePtr;
+struct LLVMRuntime;
 
 // TODO: Figure out how to support images. Temporary solutions is to have all
 // opque types such as images work as an allocation
@@ -386,6 +388,12 @@ class Device {
   };
 
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
+  virtual DeviceAllocation allocate_memory_runtime(const AllocParams &params,
+                                                     JITModule *runtime_jit,
+                                                     LLVMRuntime *runtime,
+                                                     uint64 *result_buffer) {
+    TI_NOT_IMPLEMENTED
+  }
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
@@ -396,6 +404,10 @@ class Device {
       const AllocParams &params) {
     return std::make_unique<DeviceAllocationGuard>(
         this->allocate_memory(params));
+  }
+
+  virtual uint64 fetch_result_uint64(int i, uint64 *result_buffer) {
+    TI_NOT_IMPLEMENTED
   }
 
   // Mapping can fail and will return nullptr

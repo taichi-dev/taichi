@@ -576,19 +576,9 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
 
   Device::AllocParams device_buffer_alloc_params;
   device_buffer_alloc_params.size = alloc_size;
-  if (config->arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    return cuda_device()->allocate_memory_runtime(
-        device_buffer_alloc_params, tlctx->runtime_jit_module,
-        get_llvm_runtime(), result_buffer);
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    return cpu_device()->allocate_memory_runtime(
-        device_buffer_alloc_params, tlctx->runtime_jit_module,
-        get_llvm_runtime(), result_buffer);
-  }
+  return get_compute_device()->allocate_memory_runtime(
+      device_buffer_alloc_params, tlctx->runtime_jit_module,
+      get_llvm_runtime(), result_buffer);
 }
 
 uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {

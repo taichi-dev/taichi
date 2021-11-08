@@ -12,12 +12,14 @@ void AotModuleBuilder::add(const std::string &identifier, Kernel *kernel) {
 }
 
 void AotModuleBuilder::add_field(const std::string &identifier,
+                                 const SNode *rep_snode,
                                  bool is_scalar,
                                  DataType dt,
                                  std::vector<int> shape,
                                  int row_num,
                                  int column_num) {
-  add_per_backend_field(identifier, is_scalar, dt, shape, row_num, column_num);
+  add_field_per_backend(identifier, rep_snode, is_scalar, dt, shape, row_num,
+                        column_num);
 }
 
 void AotModuleBuilder::add_kernel_template(const std::string &identifier,

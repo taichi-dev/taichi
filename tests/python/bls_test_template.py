@@ -177,8 +177,7 @@ def bls_particle_grid(N,
             base = ti.Vector([
                 int(ti.floor(x[i][0] * N) - grid_offset[0]),
                 int(ti.floor(x[i][1] * N) - grid_offset[1])
-            ],
-                             dt=ti.i32)
+            ])
             base_p = ti.rescale_index(m1, pid, base)
             ti.append(pid.parent(), base_p, i)
 

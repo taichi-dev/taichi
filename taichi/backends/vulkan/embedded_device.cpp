@@ -412,15 +412,10 @@ void EmbeddedVulkanDevice::create_logical_device() {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
-    } else if (name == "VK_EXT_shader_atomic_float2") {
-      // FIXME: This feature requires vulkan headers with
-      // VK_EXT_shader_atomic_float2
-      /*
+    } else if (name == VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
-      */
     } else if (name == VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME) {
-      // ti_device_->set_cap(DeviceCapability::vk_has_atomic_i64, true);
-      // enabled_extensions.push_back(ext.extensionName);
+      enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SPIRV_1_4_EXTENSION_NAME) {
@@ -482,6 +477,9 @@ void EmbeddedVulkanDevice::create_logical_device() {
   VkPhysicalDeviceShaderAtomicFloatFeaturesEXT shader_atomic_float_feature{};
   shader_atomic_float_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
+  VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float_2_feature{};
+  shader_atomic_float_2_feature.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT;
   VkPhysicalDeviceFloat16Int8FeaturesKHR shader_f16_i8_feature{};
   shader_f16_i8_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
@@ -509,16 +507,45 @@ void EmbeddedVulkanDevice::create_logical_device() {
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
       if (shader_atomic_float_feature.shaderBufferFloat32AtomicAdd) {
         ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float_add, true);
-      } else if (shader_atomic_float_feature.shaderBufferFloat64AtomicAdd) {
+      }
+      if (shader_atomic_float_feature.shaderBufferFloat64AtomicAdd) {
         ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float64_add,
                             true);
-      } else if (shader_atomic_float_feature.shaderBufferFloat32Atomics) {
+      }
+      if (shader_atomic_float_feature.shaderBufferFloat32Atomics) {
         ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float, true);
-      } else if (shader_atomic_float_feature.shaderBufferFloat64Atomics) {
+      }
+      if (shader_atomic_float_feature.shaderBufferFloat64Atomics) {
         ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float64, true);
       }
       *pNextEnd = &shader_atomic_float_feature;
       pNextEnd = &shader_atomic_float_feature.pNext;
+    }
+
+    // Atomic float 2
+    {
+      features2.pNext = &shader_atomic_float_2_feature;
+      vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
+      if (shader_atomic_float_2_feature.shaderBufferFloat16AtomicAdd) {
+        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float_add, true);
+      }
+      if (shader_atomic_float_2_feature.shaderBufferFloat16AtomicMinMax) {
+        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float16_minmax,
+                            true);
+      }
+      if (shader_atomic_float_2_feature.shaderBufferFloat16Atomics) {
+        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float16, true);
+      }
+      if (shader_atomic_float_2_feature.shaderBufferFloat32AtomicMinMax) {
+        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float_minmax,
+                            true);
+      }
+      if (shader_atomic_float_2_feature.shaderBufferFloat64AtomicMinMax) {
+        ti_device_->set_cap(DeviceCapability::spirv_has_atomic_float64_minmax,
+                            true);
+      }
+      *pNextEnd = &shader_atomic_float_2_feature;
+      pNextEnd = &shader_atomic_float_2_feature.pNext;
     }
 
     // F16 / I8
@@ -528,7 +555,8 @@ void EmbeddedVulkanDevice::create_logical_device() {
 
       if (shader_f16_i8_feature.shaderFloat16) {
         ti_device_->set_cap(DeviceCapability::spirv_has_float16, true);
-      } else if (shader_f16_i8_feature.shaderInt8) {
+      }
+      if (shader_f16_i8_feature.shaderInt8) {
         ti_device_->set_cap(DeviceCapability::spirv_has_int8, true);
       }
       if (portability_subset_enabled) {
@@ -561,6 +589,9 @@ void EmbeddedVulkanDevice::create_logical_device() {
     vkGetDeviceQueue(device_, queue_family_indices_.graphics_family.value(), 0,
                      &graphics_queue_);
   }
+
+  // Dump capabilities
+  ti_device_->print_all_cap();
 
 }  // namespace vulkan
 

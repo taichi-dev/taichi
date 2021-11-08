@@ -125,6 +125,20 @@ void UnaryOpExpression::serialize(std::ostream &ss) {
   ss << ')';
 }
 
+void UnaryOpExpression::type_check() {
+  // TODO: assert no unknowns after type_check for all expressions are
+  // implemented
+  if (operand->ret_type == PrimitiveType::unknown)
+    return;
+  if ((type == UnaryOpType::floor || type == UnaryOpType::ceil ||
+       is_trigonometric(type)) &&
+      !is_real(operand->ret_type))
+    throw std::runtime_error(fmt::format(
+        "TypeError: '{}' takes real inputs only, however '{}' is provided",
+        unary_op_type_name(type), operand->ret_type->to_string()));
+  ret_type = is_cast() ? cast_type : operand->ret_type;
+}
+
 bool UnaryOpExpression::is_cast() const {
   return unary_op_is_cast(type);
 }
@@ -149,7 +163,7 @@ void BinaryOpExpression::type_check() {
     return;
   auto error = [&]() {
     throw std::runtime_error(fmt::format(
-        "TypeError: unsupported operand type(s) for {}: '{}' and '{}'",
+        "TypeError: unsupported operand type(s) for '{}': '{}' and '{}'",
         binary_op_type_symbol(type), lhs->ret_type->to_string(),
         rhs->ret_type->to_string()));
   };
@@ -184,6 +198,25 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void TernaryOpExpression::type_check() {
+  auto op1_type = op1->ret_type;
+  auto op2_type = op2->ret_type;
+  auto op3_type = op3->ret_type;
+  if (op1_type == PrimitiveType::unknown ||
+      op2_type == PrimitiveType::unknown || op3_type == PrimitiveType::unknown)
+    return;
+  auto error = [&]() {
+    throw std::runtime_error(fmt::format(
+        "TypeError: unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
+        ternary_type_name(type), op1->ret_type->to_string(),
+        op2->ret_type->to_string(), op3->ret_type->to_string()));
+  };
+  if (!is_integral(op1_type) || !op2_type->is<PrimitiveType>() ||
+      !op3_type->is<PrimitiveType>())
+    error();
+  ret_type = promoted_type(op2_type, op3_type);
+}
+
 void TernaryOpExpression::flatten(FlattenContext *ctx) {
   // if (stmt)
   //  return;
@@ -206,18 +239,36 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
 }
 
 void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
+  TI_ASSERT((int)(so_func != nullptr) + (int)(!asm_source.empty()) +
+                (int)(!bc_filename.empty()) ==
+            1)
   std::vector<Stmt *> arg_statements, output_statements;
-  for (auto &s : args) {
-    s.set(load_if_ptr(s));
-    s->flatten(ctx);
-    arg_statements.push_back(s->stmt);
+  if (so_func != nullptr || !asm_source.empty()) {
+    for (auto &s : args) {
+      s.set(load_if_ptr(s));
+      s->flatten(ctx);
+      arg_statements.push_back(s->stmt);
+    }
+    for (auto &s : outputs) {
+      output_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
+    }
+    ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
+        (so_func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT
+                             : ExternalFuncCallStmt::ASSEMBLY,
+        so_func, asm_source, "", "", arg_statements, output_statements));
+    stmt = ctx->back_stmt();
+  } else {
+    for (auto &s : args) {
+      TI_ASSERT_INFO(
+          s.is<IdExpression>(),
+          "external func call via bitcode must pass in local variables.")
+      arg_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
+    }
+    ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
+        ExternalFuncCallStmt::BITCODE, nullptr, "", bc_filename, bc_funcname,
+        arg_statements, output_statements));
+    stmt = ctx->back_stmt();
   }
-  for (auto &s : outputs) {
-    output_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
-  }
-  ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
-      func, source, arg_statements, output_statements));
-  stmt = ctx->back_stmt();
 }
 
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {
@@ -231,6 +282,31 @@ void GlobalVariableExpression::flatten(FlattenContext *ctx) {
   auto ptr = Stmt::make<GlobalPtrStmt>(LaneAttribute<SNode *>(snode),
                                        std::vector<Stmt *>());
   ctx->push_back(std::move(ptr));
+}
+
+void GlobalPtrExpression::type_check() {
+  // Currently, dimension compatibility check happens in Python
+  if (snode != nullptr) {
+    ret_type = snode->dt;
+  } else if (var.is<GlobalVariableExpression>()) {
+    ret_type = var.cast<GlobalVariableExpression>()->snode->dt;
+  } else if (var.is<ExternalTensorExpression>()) {
+    for (int i = 0; i < indices.exprs.size(); i++) {
+      auto &expr = indices.exprs[i];
+      // TODO: assert no unknowns after type_check for all expressions are
+      // implemented
+      if (expr->ret_type == PrimitiveType::unknown)
+        return;
+      if (!is_integral(expr->ret_type))
+        throw std::runtime_error(
+            fmt::format("TypeError: indices must be integers, however '{}' is "
+                        "provided as index {}",
+                        expr->ret_type->to_string(), i));
+    }
+    ret_type = var.cast<ExternalTensorExpression>()->dt;
+  } else {
+    TI_ERROR("Invalid GlobalPtrExpression");
+  }
 }
 
 void GlobalPtrExpression::serialize(std::ostream &ss) {
@@ -279,6 +355,26 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
         var.cast<ExternalTensorExpression>()->stmt, index_stmts));
   }
   stmt = ctx->back_stmt();
+}
+
+void TensorElementExpression::type_check() {
+  std::string invalid_msg{
+      "Invalid TensorElementExpression: the source is neither a local tensor "
+      "nor a global tensor field"};
+  if (is_local_tensor()) {
+    TI_ASSERT_INFO(var->ret_type->is<TensorType>(), invalid_msg);
+    ret_type = var->ret_type->cast<TensorType>()->get_element_type();
+  } else if (is_global_tensor()) {
+    TI_ASSERT_INFO(
+        var.is<GlobalPtrExpression>() &&
+            var.cast<GlobalPtrExpression>()->var.is<GlobalVariableExpression>(),
+        invalid_msg);
+    ret_type = var.cast<GlobalPtrExpression>()
+                   ->var.cast<GlobalVariableExpression>()
+                   ->snode->dt;
+  } else {
+    TI_ERROR(invalid_msg);
+  }
 }
 
 bool TensorElementExpression::is_local_tensor() const {

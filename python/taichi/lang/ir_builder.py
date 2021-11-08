@@ -6,6 +6,7 @@ from collections import ChainMap
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.ast_builder_utils import *
 from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.util import to_taichi_type
 
 import taichi as ti
 
@@ -80,10 +81,18 @@ class IRBuilder(Builder):
             var.assign(value)
 
     @staticmethod
+    def is_tuple(node):
+        if isinstance(node, ast.Tuple):
+            return True
+        if isinstance(node, ast.Index) and isinstance(node.value, ast.Tuple):
+            return True
+        return False
+
+    @staticmethod
     def build_Subscript(ctx, node):
         node.value = build_stmt(ctx, node.value)
         node.slice = build_stmt(ctx, node.slice)
-        if not isinstance(node.slice, ast.Tuple):
+        if not IRBuilder.is_tuple(node.slice):
             node.slice.ptr = [node.slice.ptr]
         node.ptr = ti.subscript(node.value.ptr, *node.slice.ptr)
         return node
@@ -185,6 +194,11 @@ class IRBuilder(Builder):
         return node
 
     @staticmethod
+    def build_NameConstant(ctx, node):
+        node.ptr = node.value
+        return node
+
+    @staticmethod
     def build_keyword(ctx, node):
         node.value = build_stmt(ctx, node.value)
         if node.arg is None:
@@ -275,39 +289,19 @@ class IRBuilder(Builder):
                 ti.lang.kernel_arguments.decl_scalar_ret(ctx.func.return_type)
 
             for i, arg in enumerate(args.args):
-                # Directly pass in template arguments,
-                # such as class instances ("self"), fields, SNodes, etc.
-                # if isinstance(ctx.func.argument_annotations[i], ti.template):
-                #     continue
-                # if isinstance(ctx.func.argument_annotations[i],
-                #               ti.sparse_matrix_builder):
-                #     arg_init = parse_stmt(
-                #         'x = ti.lang.kernel_arguments.decl_sparse_matrix()')
-                #     arg_init.targets[0].id = arg.arg
-                #     ctx.create_variable(arg.arg)
-                #     arg_decls.append(arg_init)
-                # elif isinstance(ctx.func.argument_annotations[i], ti.any_arr):
-                #     arg_init = parse_stmt(
-                #         'x = ti.lang.kernel_arguments.decl_any_arr_arg(0, 0, 0, 0)'
-                #     )
-                #     arg_init.targets[0].id = arg.arg
-                #     ctx.create_variable(arg.arg)
-                #     array_dt = ctx.arg_features[i][0]
-                #     array_dim = ctx.arg_features[i][1]
-                #     array_element_shape = ctx.arg_features[i][2]
-                #     array_layout = ctx.arg_features[i][3]
-                #     array_dt = to_taichi_type(array_dt)
-                #     dt_expr = 'ti.' + ti.core.data_type_name(array_dt)
-                #     dt = parse_expr(dt_expr)
-                #     arg_init.value.args[0] = dt
-                #     arg_init.value.args[1] = parse_expr("{}".format(array_dim))
-                #     arg_init.value.args[2] = parse_expr(
-                #         "{}".format(array_element_shape))
-                #     arg_init.value.args[3] = parse_expr(
-                #         "ti.{}".format(array_layout))
-                #     arg_decls.append(arg_init)
                 if isinstance(ctx.func.argument_annotations[i], ti.template):
                     continue
+                elif isinstance(ctx.func.argument_annotations[i],
+                                ti.linalg.sparse_matrix_builder):
+                    ctx.create_variable(
+                        arg.arg, ti.lang.kernel_arguments.decl_sparse_matrix())
+                elif isinstance(ctx.func.argument_annotations[i], ti.any_arr):
+                    ctx.create_variable(
+                        arg.arg,
+                        ti.lang.kernel_arguments.decl_any_arr_arg(
+                            to_taichi_type(ctx.arg_features[i][0]),
+                            ctx.arg_features[i][1], ctx.arg_features[i][2],
+                            ctx.arg_features[i][3]))
                 else:
                     ctx.create_variable(
                         arg.arg,
@@ -482,8 +476,29 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_static_for(ctx, node, is_grouped):
+        ctx.set_static_loop()
         if is_grouped:
-            pass
+            assert len(node.iter.args[0].args) == 1
+            ndrange_arg = build_stmt(ctx, node.iter.args[0].args[0]).ptr
+            if not isinstance(ndrange_arg, ti.ndrange):
+                raise TaichiSyntaxError(
+                    "Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'."
+                )
+            targets = IRBuilder.get_for_loop_targets(node)
+            if len(targets) != 1:
+                raise TaichiSyntaxError(
+                    f"Group for should have 1 loop target, found {len(targets)}"
+                )
+            target = targets[0]
+            for value in ndrange_arg:
+                with ctx.variable_scope_guard():
+                    ctx.create_variable(target, value)
+                    node.body = build_stmts(ctx, node.body)
+                    status = ctx.loop_status()
+                    if status == LoopStatus.Break:
+                        break
+                    elif status == LoopStatus.Continue:
+                        ctx.set_loop_status(LoopStatus.Normal)
         else:
             node.iter = build_stmt(ctx, node.iter)
             targets = IRBuilder.get_for_loop_targets(node)
@@ -493,144 +508,105 @@ class IRBuilder(Builder):
                 with ctx.variable_scope_guard():
                     for target, target_value in zip(targets, target_values):
                         ctx.create_variable(target, target_value)
-                    node.body = build_stmts_wo_scope(ctx, node.body)
+                    node.body = build_stmts(ctx, node.body)
+                    status = ctx.loop_status()
+                    if status == LoopStatus.Break:
+                        break
+                    elif status == LoopStatus.Continue:
+                        ctx.set_loop_status(LoopStatus.Normal)
         return node
-#         # for i in ti.static(range(n))
-#         # for i, j in ti.static(ti.ndrange(n))
-#         # for I in ti.static(ti.grouped(ti.ndrange(n, m)))
-#
-#         ctx.current_control_scope().append('static')
-#         node.body = build_stmts(ctx, node.body)
-#         if is_grouped:
-#             assert len(node.iter.args[0].args) == 1
-#             template = '''
-# if 1:
-#     __ndrange_arg = 0
-#     from taichi.lang.exception import TaichiSyntaxError
-#     if not isinstance(__ndrange_arg, ti.ndrange):
-#         raise TaichiSyntaxError("Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'.")
-#     pass
-#     del a
-#             '''
-#             t = ast.parse(template).body[0]
-#             t.body[0].value = node.iter.args[0].args[0]
-#             t.body[3] = node
-#             t.body[3].iter.args[0].args[0] = parse_expr('__ndrange_arg')
-#         else:
-#             t = parse_stmt('if 1: pass; del a')
-#             t.body[0] = node
-#         target = copy.deepcopy(node.target)
-#         target.ctx = ast.Del()
-#         if isinstance(target, ast.Tuple):
-#             for tar in target.elts:
-#                 tar.ctx = ast.Del()
-#         t.body[-1].targets = [target]
-#         return t
 
     @staticmethod
     def build_range_for(ctx, node):
-        pass
-#         # for i in range(n)
-#         node.body = build_stmts(ctx, node.body)
-#         loop_var = node.target.id
-#         ctx.check_loop_var(loop_var)
-#         template = '''
-# if 1:
-#     {} = ti.Expr(ti.core.make_id_expr(''))
-#     ___begin = ti.Expr(0)
-#     ___end = ti.Expr(0)
-#     ___begin = ti.cast(___begin, ti.i32)
-#     ___end = ti.cast(___end, ti.i32)
-#     ti.core.begin_frontend_range_for({}.ptr, ___begin.ptr, ___end.ptr)
-#     ti.core.end_frontend_range_for()
-#         '''.format(loop_var, loop_var)
-#         t = ast.parse(template).body[0]
-#
-#         assert len(node.iter.args) in [1, 2]
-#         if len(node.iter.args) == 2:
-#             bgn = build_expr(ctx, node.iter.args[0])
-#             end = build_expr(ctx, node.iter.args[1])
-#         else:
-#             bgn = StmtBuilder.make_constant(value=0)
-#             end = build_expr(ctx, node.iter.args[0])
-#
-#         t.body[1].value.args[0] = bgn
-#         t.body[2].value.args[0] = end
-#         t.body = t.body[:6] + node.body + t.body[6:]
-#         t.body.append(parse_stmt('del {}'.format(loop_var)))
-#         return ast.copy_location(t, node)
+        with ctx.variable_scope_guard():
+            loop_name = node.target.id
+            ctx.check_loop_var(loop_name)
+            loop_var = ti.Expr(ti.core.make_id_expr(''))
+            ctx.create_variable(loop_name, loop_var)
+            if len(node.iter.args) not in [1, 2]:
+                raise TaichiSyntaxError(
+                    f"Range should have 1 or 2 arguments, found {len(node.iter.args)}"
+                )
+            if len(node.iter.args) == 2:
+                begin = ti.cast(
+                    ti.Expr(build_stmt(ctx, node.iter.args[0]).ptr), ti.i32)
+                end = ti.cast(ti.Expr(build_stmt(ctx, node.iter.args[1]).ptr),
+                              ti.i32)
+            else:
+                begin = ti.cast(ti.Expr(0), ti.i32)
+                end = ti.cast(ti.Expr(build_stmt(ctx, node.iter.args[0]).ptr),
+                              ti.i32)
+            ti.core.begin_frontend_range_for(loop_var.ptr, begin.ptr, end.ptr)
+            node.body = build_stmts(ctx, node.body)
+            ti.core.end_frontend_range_for()
+        return node
 
     @staticmethod
     def build_ndrange_for(ctx, node):
-        pass
-#         # for i, j in ti.ndrange(n)
-#         template = f'''
-# if ti.static(1):
-#     __ndrange{id(node)} = 0
-#     for __ndrange_I{id(node)} in range(0):
-#         __I = __ndrange_I{id(node)}
-#         '''
-#         t = ast.parse(template).body[0]
-#         t.body[0].value = node.iter
-#         t_loop = t.body[1]
-#         t_loop.iter.args[0] = parse_expr(
-#             f'__ndrange{id(node)}.acc_dimensions[0]')
-#         targets = StmtBuilder.get_for_loop_targets(node)
-#         targets_tmp = ['__' + name for name in targets]
-#         loop_body = t_loop.body
-#         for i in range(len(targets)):
-#             if i + 1 < len(targets):
-#                 stmt = '{} = __I // __ndrange{}.acc_dimensions[{}]'.format(
-#                     targets_tmp[i], id(node), i + 1)
-#             else:
-#                 stmt = '{} = __I'.format(targets_tmp[i])
-#             loop_body.append(parse_stmt(stmt))
-#             stmt = '{} = {} + __ndrange{}.bounds[{}][0]'.format(
-#                 targets[i], targets_tmp[i], id(node), i)
-#             loop_body.append(parse_stmt(stmt))
-#             if i + 1 < len(targets):
-#                 stmt = '__I = __I - {} * __ndrange{}.acc_dimensions[{}]'.format(
-#                     targets_tmp[i], id(node), i + 1)
-#                 loop_body.append(parse_stmt(stmt))
-#         loop_body += node.body
-#
-#         node = ast.copy_location(t, node)
-#         return build_stmt(ctx, node)  # further translate as a range for
+        with ctx.variable_scope_guard():
+            ndrange_var = ti.expr_init(build_stmt(ctx, node.iter).ptr)
+            ndrange_begin = ti.cast(ti.Expr(0), ti.i32)
+            ndrange_end = ti.cast(
+                ti.Expr(ti.subscript(ndrange_var.acc_dimensions, 0)), ti.i32)
+            ndrange_loop_var = ti.Expr(ti.core.make_id_expr(''))
+            ti.core.begin_frontend_range_for(ndrange_loop_var.ptr,
+                                             ndrange_begin.ptr,
+                                             ndrange_end.ptr)
+            I = ti.expr_init(ndrange_loop_var)
+            targets = IRBuilder.get_for_loop_targets(node)
+            for i in range(len(targets)):
+                if i + 1 < len(targets):
+                    target_tmp = ti.expr_init(
+                        I // ndrange_var.acc_dimensions[i + 1])
+                else:
+                    target_tmp = ti.expr_init(I)
+                ctx.create_variable(
+                    targets[i],
+                    ti.expr_init(
+                        target_tmp +
+                        ti.subscript(ti.subscript(ndrange_var.bounds, i), 0)))
+                if i + 1 < len(targets):
+                    I.assign(I -
+                             target_tmp * ndrange_var.acc_dimensions[i + 1])
+            node.body = build_stmts(ctx, node.body)
+            ti.core.end_frontend_range_for()
+        return node
 
     @staticmethod
     def build_grouped_ndrange_for(ctx, node):
-        pass
-#         # for I in ti.grouped(ti.ndrange(n, m))
-#         node.body = build_stmts(ctx, node.body)
-#         target = node.target.id
-#         template = '''
-# if ti.static(1):
-#     __ndrange = 0
-#     {} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions), disable_local_tensor=True))
-#     ___begin = ti.Expr(0)
-#     ___end = __ndrange.acc_dimensions[0]
-#     ___begin = ti.cast(___begin, ti.i32)
-#     ___end = ti.cast(___end, ti.i32)
-#     __ndrange_I = ti.Expr(ti.core.make_id_expr(''))
-#     ti.core.begin_frontend_range_for(__ndrange_I.ptr, ___begin.ptr, ___end.ptr)
-#     __I = __ndrange_I
-#     for __grouped_I in range(len(__ndrange.dimensions)):
-#         __grouped_I_tmp = 0
-#         if __grouped_I + 1 < len(__ndrange.dimensions):
-#             __grouped_I_tmp = __I // __ndrange.acc_dimensions[__grouped_I + 1]
-#         else:
-#             __grouped_I_tmp = __I
-#         ti.subscript({}, __grouped_I).assign(__grouped_I_tmp + __ndrange.bounds[__grouped_I][0])
-#         if __grouped_I + 1 < len(__ndrange.dimensions):
-#             __I = __I - __grouped_I_tmp * __ndrange.acc_dimensions[__grouped_I + 1]
-#     ti.core.end_frontend_range_for()
-#         '''.format(target, target)
-#         t = ast.parse(template).body[0]
-#         node.iter.args[0].args = build_exprs(ctx, node.iter.args[0].args)
-#         t.body[0].value = node.iter.args[0]
-#         cut = len(t.body) - 1
-#         t.body = t.body[:cut] + node.body + t.body[cut:]
-#         return ast.copy_location(t, node)
+        with ctx.variable_scope_guard():
+            ndrange_var = ti.expr_init(build_stmt(ctx, node.iter.args[0]).ptr)
+            ndrange_begin = ti.cast(ti.Expr(0), ti.i32)
+            ndrange_end = ti.cast(
+                ti.Expr(ti.subscript(ndrange_var.acc_dimensions, 0)), ti.i32)
+            ndrange_loop_var = ti.Expr(ti.core.make_id_expr(''))
+            ti.core.begin_frontend_range_for(ndrange_loop_var.ptr,
+                                             ndrange_begin.ptr,
+                                             ndrange_end.ptr)
+
+            targets = IRBuilder.get_for_loop_targets(node)
+            if len(targets) != 1:
+                raise TaichiSyntaxError(
+                    f"Group for should have 1 loop target, found {len(targets)}"
+                )
+            target = targets[0]
+            target_var = ti.expr_init(
+                ti.Vector([0] * len(ndrange_var.dimensions), dt=ti.i32))
+            ctx.create_variable(target, target_var)
+            I = ti.expr_init(ndrange_loop_var)
+            for i in range(len(ndrange_var.dimensions)):
+                if i + 1 < len(ndrange_var.dimensions):
+                    target_tmp = I // ndrange_var.acc_dimensions[i + 1]
+                else:
+                    target_tmp = I
+                ti.subscript(target_var,
+                             i).assign(target_tmp + ndrange_var.bounds[i][0])
+                if i + 1 < len(ndrange_var.dimensions):
+                    I.assign(I -
+                             target_tmp * ndrange_var.acc_dimensions[i + 1])
+            node.body = build_stmts(ctx, node.body)
+            ti.core.end_frontend_range_for()
+        return node
 
     @staticmethod
     def build_struct_for(ctx, node, is_grouped):
@@ -638,35 +614,34 @@ class IRBuilder(Builder):
         # for I in ti.grouped(x)
         targets = IRBuilder.get_for_loop_targets(node)
 
-        for loop_var in targets:
-            ctx.check_loop_var(loop_var)
+        for target in targets:
+            ctx.check_loop_var(target)
 
-        if is_grouped:
-            pass
-
-
-#             template = '''
-# if 1:
-#     ___loop_var = 0
-#     {} = ti.lang.expr.make_var_vector(size=len(___loop_var.shape))
-#     ___expr_group = ti.lang.expr.make_expr_group({})
-#     ti.begin_frontend_struct_for(___expr_group, ___loop_var)
-#     ti.core.end_frontend_range_for()
-#             '''.format(vars, vars)
-#             t = ast.parse(template).body[0]
-#             cut = 4
-#             t.body[0].value = node.iter
-#             t.body = t.body[:cut] + node.body + t.body[cut:]
-        else:
-            with ctx.variable_scope_guard():
+        with ctx.variable_scope_guard():
+            if is_grouped:
+                if len(targets) != 1:
+                    raise TaichiSyntaxError(
+                        f"Group for should have 1 loop target, found {len(targets)}"
+                    )
+                target = targets[0]
+                loop_var = build_stmt(ctx, node.iter).ptr
+                loop_indices = ti.lang.expr.make_var_list(
+                    size=len(loop_var.shape))
+                expr_group = ti.lang.expr.make_expr_group(loop_indices)
+                ti.begin_frontend_struct_for(expr_group, loop_var)
+                ctx.create_variable(target, ti.Vector(loop_indices, dt=ti.i32))
+                node.body = build_stmts(ctx, node.body)
+                ti.core.end_frontend_range_for()
+            else:
+                vars = []
                 for name in targets:
-                    ctx.create_variable(name,
-                                        ti.Expr(ti.core.make_id_expr("")))
-                vars = [ctx.get_var_by_name(name) for name in targets]
-                node.iter = build_stmt(ctx, node.iter)
-                ti.begin_frontend_struct_for(
-                    ti.lang.expr.make_expr_group(*vars), node.iter.ptr)
-                node.body = build_stmts_wo_scope(ctx, node.body)
+                    var = ti.Expr(ti.core.make_id_expr(""))
+                    vars.append(var)
+                    ctx.create_variable(name, var)
+                loop_var = build_stmt(ctx, node.iter).ptr
+                expr_group = ti.lang.expr.make_expr_group(*vars)
+                ti.begin_frontend_struct_for(expr_group, loop_var)
+                node.body = build_stmts(ctx, node.body)
                 ti.core.end_frontend_range_for()
         return node
 
@@ -677,7 +652,6 @@ class IRBuilder(Builder):
                 "'else' clause for 'for' not supported in Taichi kernels")
 
         with ctx.control_scope_guard():
-            ctx.current_control_scope().append('for')
 
             decorator = IRBuilder.get_decorator(ctx, node.iter)
             double_decorator = ''
@@ -713,6 +687,25 @@ class IRBuilder(Builder):
                 return IRBuilder.build_range_for(ctx, node)
             else:  # Struct for
                 return IRBuilder.build_struct_for(ctx, node, is_grouped=False)
+
+    @staticmethod
+    def build_While(ctx, node):
+        if node.orelse:
+            raise TaichiSyntaxError(
+                "'else' clause for 'while' not supported in Taichi kernels")
+
+        with ctx.control_scope_guard():
+            ti.core.begin_frontend_while(ti.Expr(1).ptr)
+            while_cond = build_stmt(ctx, node.test).ptr
+            ti.begin_frontend_if(while_cond)
+            ti.core.begin_frontend_if_true()
+            ti.core.pop_scope()
+            ti.core.begin_frontend_if_false()
+            ti.core.insert_break_stmt()
+            ti.core.pop_scope()
+            node.body = build_stmts(ctx, node.body)
+            ti.core.pop_scope()
+        return node
 
     @staticmethod
     def build_If(ctx, node):
@@ -769,6 +762,27 @@ class IRBuilder(Builder):
         node.ptr = val
         return node
 
+    @staticmethod
+    def build_Break(ctx, node):
+        if ctx.is_in_static():
+            ctx.set_loop_status(LoopStatus.Break)
+        else:
+            ti.core.insert_break_stmt()
+        return node
+
+    @staticmethod
+    def build_Continue(ctx, node):
+        if ctx.is_in_static():
+            ctx.set_loop_status(LoopStatus.Continue)
+        else:
+            ti.core.insert_continue_stmt()
+        return node
+
+    @staticmethod
+    def build_Pass(ctx, node):
+        return node
+
+
 build_stmt = IRBuilder()
 
 
@@ -776,12 +790,8 @@ def build_stmts(ctx, stmts):
     result = []
     with ctx.variable_scope_guard(result):
         for stmt in list(stmts):
-            result.append(build_stmt(ctx, stmt))
-    return result
-
-
-def build_stmts_wo_scope(ctx, stmts):
-    result = []
-    for stmt in list(stmts):
-        result.append(build_stmt(ctx, stmt))
+            if ctx.loop_status() == LoopStatus.Normal:
+                result.append(build_stmt(ctx, stmt))
+            else:
+                result.append(stmt)
     return result

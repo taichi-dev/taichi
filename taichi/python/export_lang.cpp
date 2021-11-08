@@ -103,6 +103,7 @@ void export_lang(py::module &m) {
       .def(py::self == py::self)
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
+      .def("__str__", &DataType::to_string)
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
           py::return_value_policy::reference)
@@ -289,7 +290,6 @@ void export_lang(py::module &m) {
       .def("add_field", &AotModuleBuilder::add_field)
       .def("add", &AotModuleBuilder::add)
       .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
-      .def("preprocess_kernels", &AotModuleBuilder::preprocess_kernels)
       .def("dump", &AotModuleBuilder::dump);
 
   m.def("get_current_program", get_current_program,
@@ -512,10 +512,12 @@ void export_lang(py::module &m) {
         });
 
   m.def("insert_external_func_call",
-        [](std::size_t func_addr, std::string source, const ExprGroup &args,
+        [](std::size_t func_addr, std::string source, std::string filename,
+           std::string funcname, const ExprGroup &args,
            const ExprGroup &outputs) {
           auto expr = Expr::make<ExternalFuncCallExpression>(
-              (void *)func_addr, source, args.exprs, outputs.exprs);
+              (void *)func_addr, source, filename, funcname, args.exprs,
+              outputs.exprs);
 
           current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
         });
@@ -715,6 +717,7 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
         std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
         element_type));
+    var->ret_type = current_ast_builder().get_last_stmt()->ret_type;
     for (int i = 0; i < (int)elements.exprs.size(); ++i) {
       ExprGroup reversed_indices;
       int linearized_index = i;

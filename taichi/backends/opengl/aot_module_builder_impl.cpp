@@ -3,7 +3,7 @@
 #include <stdio.h>
 #endif
 
-#include "glad/glad.h"
+#include "glad/gl.h"
 
 namespace taichi {
 namespace lang {
@@ -17,62 +17,44 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
   aot_data_.root_buffer_size = compiled_structs_.root_size;
 }
 
-void AotModuleBuilderImpl::preprocess_kernels() {
-  // TODO (#3334): Ideally this should be moved to AotModuleBuilder.
-  // This depends on a larger task which unifies AOT serialization
-  // related data structures.
-  for (auto &aot_compiled_kernel : aot_data_.kernels) {
-    for (auto &compiled_kernel : aot_compiled_kernel.program.kernels) {
-      preprocess_kernel(compiled_kernel);
-    }
-  }
-
-  for (auto &aot_compiled_kernel_tmpl : aot_data_.kernel_tmpls) {
-    for (auto it = aot_compiled_kernel_tmpl.program.begin();
-         it != aot_compiled_kernel_tmpl.program.end(); ++it) {
-      for (auto &compiled_kernel : it->second.kernels) {
-        preprocess_kernel(compiled_kernel);
-      }
-    }
-  }
+namespace {
+void write_glsl_file(const std::string &output_dir,
+                     const std::string &filename,
+                     CompiledKernel &k) {
+  const std::string glsl_path =
+      fmt::format("{}/{}_{}.glsl", output_dir, filename, k.kernel_name);
+  std::ofstream fs{glsl_path};
+  fs << k.kernel_src;
+  k.kernel_src = glsl_path;
+  fs.close();
 }
+}  // namespace
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
   const std::string bin_path =
       fmt::format("{}/{}_metadata.tcb", output_dir, filename);
   write_to_binary_file(aot_data_, bin_path);
-  // The txt file is mostly for debugging purpose.
-  const std::string txt_path =
-      fmt::format("{}/{}_metadata.txt", output_dir, filename);
-  TextSerializer ts;
-  ts("taichi aot data", aot_data_);
-  ts.write_to_file(txt_path);
-}
-
-void AotModuleBuilderImpl::preprocess_kernel(CompiledKernel &ker) {
-#if !defined(TI_PLATFORM_WINDOWS)
-  // For debugging only
-  // ker.kernel_src =
-  //   "#version 430 core\n#define DEFINE(NAME) add_##NAME##_f32\nDEFINE(TEST)";
-  std::string command = "echo \"" + ker.kernel_src + "\" | glslc -E /dev/stdin";
-  char buffer[128];
-  std::string result = "";
-
-  FILE *pipe = popen(command.c_str(), "r");
-
-  TI_ASSERT_INFO(pipe, "popen failed!");
-
-  while (!feof(pipe)) {
-    if (fgets(buffer, 128, pipe) != NULL)
-      result += buffer;
+  // Json format doesn't support multiple line strings.
+  AotData new_aot_data = aot_data_;
+  for (auto &k : new_aot_data.kernels) {
+    for (auto &ki : k.program.kernels) {
+      write_glsl_file(output_dir, filename, ki);
+    }
+  }
+  for (auto &k : new_aot_data.kernel_tmpls) {
+    for (auto &ki : k.program) {
+      for (auto &kij : ki.second.kernels) {
+        write_glsl_file(output_dir, filename, kij);
+      }
+    }
   }
 
-  pclose(pipe);
-  ker.kernel_src = result;
-#else
-  TI_NOT_IMPLEMENTED
-#endif
+  const std::string txt_path =
+      fmt::format("{}/{}_metadata.json", output_dir, filename);
+  TextSerializer ts;
+  ts.serialize_to_json("aot_data", new_aot_data);
+  ts.write_to_file(txt_path);
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
@@ -83,7 +65,8 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   aot_data_.kernels.push_back({compiled, identifier});
 }
 
-void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
+void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
+                                                 const SNode *rep_snode,
                                                  bool is_scalar,
                                                  DataType dt,
                                                  std::vector<int> shape,

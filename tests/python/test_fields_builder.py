@@ -227,9 +227,11 @@ def test_fields_builder_destroy():
         a = ti.field(ti.f32)
         fb.dense(ti.i, size_1d).place(a)
         c = fb.finalize()
+        id0 = c.id()
         c.destroy()
 
-        with pytest.raise(InvalidOperationError) as e:
+        with pytest.raises(InvalidOperationError) as e:
+            id_1 = c.id()
             c.destroy()
 
     test_for_raise_twice_destroy(10)

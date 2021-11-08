@@ -26,6 +26,22 @@ __asm__(".symver log2f,log2f@GLIBC_2.2.5");
 float __wrap_log2f(float x) {
   return log2f(x);
 }
+__asm__(".symver log2,log2@GLIBC_2.2.5");
+float __wrap_log2(float x) {
+  return log2(x);
+}
+__asm__(".symver exp,exp@GLIBC_2.2.5");
+float __wrap_exp(float x) {
+  return exp(x);
+}
+__asm__(".symver log,log@GLIBC_2.2.5");
+float __wrap_log(float x) {
+  return log(x);
+}
+__asm__(".symver pow,pow@GLIBC_2.2.5");
+float __wrap_pow(float x, float y) {
+  return pow(x, y);
+}
 #endif
 }
 

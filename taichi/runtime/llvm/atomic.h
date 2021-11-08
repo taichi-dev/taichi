@@ -40,19 +40,18 @@ DEFINE_ATOMIC_OP_INTRINSIC(max, i64)
 DEFINE_ATOMIC_OP_INTRINSIC(min, i32)
 DEFINE_ATOMIC_OP_INTRINSIC(min, i64)
 
-#define DEFINE_ADD(T) \
+#define DEFINE_ADD(T)   \
   T add_##T(T a, T b) { \
-    return a + b; \
+    return a + b;       \
   }
 
-
-#define DEFINE_MIN(T) \
-  T min_##T(T a, T b) { \
+#define DEFINE_MIN(T)     \
+  T min_##T(T a, T b) {   \
     return b > a ? a : b; \
   }
 
-#define DEFINE_MAX(T) \
-  T max_##T(T a, T b) { \
+#define DEFINE_MAX(T)     \
+  T max_##T(T a, T b) {   \
     return b < a ? a : b; \
   }
 

@@ -63,15 +63,15 @@ std::string get_version_string() {
 }
 
 int get_version_major() {
-  return std::atoi(TI_VERSION_MAJOR);
+  return TI_VERSION_MAJOR;
 }
 
 int get_version_minor() {
-  return std::atoi(TI_VERSION_MINOR);
+  return TI_VERSION_MINOR;
 }
 
 int get_version_patch() {
-  return std::atoi(TI_VERSION_PATCH);
+  return TI_VERSION_PATCH;
 }
 
 std::string get_commit_hash() {
@@ -79,7 +79,7 @@ std::string get_commit_hash() {
 }
 
 std::string get_cuda_version_string() {
-  return TI_CUDAVERSION;
+  return CUDA_VERSION;
 }
 
 int PID::get_pid() {

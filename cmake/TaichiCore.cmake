@@ -39,7 +39,7 @@ if(TI_WITH_VULKAN)
 endif()
 
 
-if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/glad.c")
+if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/gl.c")
     set(TI_WITH_OPENGL OFF)
     message(WARNING "external/glad submodule not detected. Settings TI_WITH_OPENGL to OFF.")
 endif()
@@ -119,7 +119,7 @@ if (TI_WITH_OPENGL)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
   # Q: Why not external/glad/src/*.c?
   # A: To ensure glad submodule exists when TI_WITH_OPENGL is ON.
-  file(GLOB TAICHI_GLAD_SOURCE "external/glad/src/glad.c")
+  file(GLOB TAICHI_GLAD_SOURCE "external/glad/src/gl.c" "external/glad/src/egl.c")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GLAD_SOURCE})
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_SOURCE})
 endif()
@@ -180,6 +180,7 @@ include_directories(external/spdlog/include)
 if (TI_WITH_OPENGL)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glad/include)
 endif()
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 

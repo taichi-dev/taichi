@@ -42,7 +42,7 @@ this retrieves a `Canvas` object that covers the entire window.
 ### Drawing on the canvas
 
 ```python
-canvas.set_back_ground_color(color)
+canvas.set_background_color(color)
 canvas.triangles(vertices, color, indices, per_vertex_color)
 canvas.circles(vertices, radius, color, per_vertex_color)
 canvas.lines(vertices, width, indices, color, per_vertex_color)

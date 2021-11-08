@@ -28,6 +28,25 @@ def has_pytorch():
     return _has_pytorch
 
 
+from distutils.spawn import find_executable
+
+# Taichi itself uses llvm-10.0.0 to compile.
+# There will be some issues compiling CUDA with other clang++ version.
+_clangpp_candidates = ['clang++-10']
+_clangpp_presence = None
+for c in _clangpp_candidates:
+    if find_executable(c) is not None:
+        _clangpp_presence = find_executable(c)
+
+
+def has_clangpp():
+    return _clangpp_presence is not None
+
+
+def get_clangpp():
+    return _clangpp_presence
+
+
 def is_taichi_class(rhs):
     taichi_class = False
     try:
@@ -68,6 +87,8 @@ def to_numpy_type(dt):
         return np.uint32
     elif dt == ti.u64:
         return np.uint64
+    elif dt == ti.f16:
+        return np.half
     else:
         assert False
 
@@ -96,12 +117,11 @@ def to_pytorch_type(dt):
         return torch.int16
     elif dt == ti.u8:
         return torch.uint8
-    elif dt == ti.u16:
-        return torch.uint16
-    elif dt == ti.u32:
-        return torch.uint32
-    elif dt == ti.u64:
-        return torch.uint64
+    elif dt == ti.f16:
+        return torch.float16
+    elif dt in (ti.u16, ti.u32, ti.u64):
+        raise RuntimeError(
+            f'PyTorch doesn\'t support {dt.to_string()} data type.')
     else:
         assert False
 
@@ -139,6 +159,8 @@ def to_taichi_type(dt):
         return ti.u32
     elif dt == np.uint64:
         return ti.u64
+    elif dt == np.half:
+        return ti.f16
 
     if has_pytorch():
         if dt == torch.float32:
@@ -155,12 +177,11 @@ def to_taichi_type(dt):
             return ti.i16
         elif dt == torch.uint8:
             return ti.u8
-        elif dt == torch.uint16:
-            return ti.u16
-        elif dt == torch.uint32:
-            return ti.u32
-        elif dt == torch.uint64:
-            return ti.u64
+        elif dt == torch.float16:
+            return ti.f16
+        elif dt in (ti.u16, ti.u32, ti.u64):
+            raise RuntimeError(
+                f'PyTorch doesn\'t support {dt.to_string()} data type.')
 
     raise AssertionError("Unknown type {}".format(dt))
 

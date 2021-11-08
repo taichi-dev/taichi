@@ -18,6 +18,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
+#include <regex>
 
 #ifdef TI_INCLUDED
 TI_NAMESPACE_BEGIN
@@ -595,6 +596,7 @@ class BinarySerializer : public Serializer {
 using BinaryOutputSerializer = BinarySerializer<true>;
 using BinaryInputSerializer = BinarySerializer<false>;
 
+// Serialize to JSON format
 class TextSerializer : public Serializer {
  public:
   std::string data;
@@ -636,9 +638,25 @@ class TextSerializer : public Serializer {
     this->process(key, t);
   }
 
+  // Entry to make an AOT json file
+  template <typename T>
+  void serialize_to_json(const char *key, const T &t) {
+    add_line("{");
+    (*this)(key, t);
+    add_line("}");
+    this->post_process();
+  }
+
  private:
+  void post_process() {
+    std::regex trailing_comma_re(",[ \t\r\n]+}");
+    data = std::regex_replace(data, trailing_comma_re, "}");
+  }
+
   void process(const char *key, const std::string &val) {
-    add_line(std::string(key) + ": " + val);
+    std::regex newlines_re("\n+");
+    auto new_val = std::regex_replace(val, newlines_re, "");
+    add_line("\"" + std::string(key) + "\" : \"" + new_val + "\",");
   }
 
   template <typename T, std::size_t n>
@@ -652,14 +670,14 @@ class TextSerializer : public Serializer {
       const char *key,
       const TArray<T, n> &val) {
     std::stringstream ss;
-    ss << "[";
+    ss << "{";
     for (std::size_t i = 0; i < n; i++) {
       ss << val[i];
       if (i != n - 1) {
         ss << ", ";
       }
     }
-    ss << "]";
+    ss << "},";
     add_line(key, ss.str());
   }
 
@@ -668,13 +686,13 @@ class TextSerializer : public Serializer {
   std::enable_if_t<!is_compact<T, n>::value, void> process(
       const char *key,
       const TArray<T, n> &val) {
-    add_line(key, "[");
+    add_line(key, "{");
     indent++;
     for (std::size_t i = 0; i < n; i++) {
-      this->process(("[" + std::to_string(i) + "]").c_str(), val[i]);
+      this->process(std::to_string(i).c_str(), val[i]);
     }
     indent--;
-    add_line("]");
+    add_line("},");
   }
 
   // std::array
@@ -683,14 +701,14 @@ class TextSerializer : public Serializer {
       const char *key,
       const StdTArray<T, n> &val) {
     std::stringstream ss;
-    ss << "[";
+    ss << "{";
     for (std::size_t i = 0; i < n; i++) {
       ss << val[i];
       if (i != n - 1) {
         ss << ", ";
       }
     }
-    ss << "]";
+    ss << "},";
     add_line(key, ss.str());
   }
 
@@ -699,13 +717,13 @@ class TextSerializer : public Serializer {
   std::enable_if_t<!is_compact<T, n>::value, void> process(
       const char *key,
       const StdTArray<T, n> &val) {
-    add_line(key, "[");
+    add_line(key, "{");
     indent++;
     for (std::size_t i = 0; i < n; i++) {
-      this->process(("[" + std::to_string(i) + "]").c_str(), val[i]);
+      this->process(std::to_string(i).c_str(), val[i]);
     }
     indent--;
-    add_line("]");
+    add_line("},");
   }
 
   // Elementary data types
@@ -714,7 +732,7 @@ class TextSerializer : public Serializer {
                                                           const T &val) {
     static_assert(!has_io<T>::value, "");
     std::stringstream ss;
-    ss << std::boolalpha << val;
+    ss << std::boolalpha << "\"" << val << "\",";
     add_line(key, ss.str());
   }
 
@@ -722,6 +740,15 @@ class TextSerializer : public Serializer {
   std::enable_if_t<has_io<T>::value, void> process(const char *key,
                                                    const T &val) {
     add_line(key, "{");
+    indent++;
+    val.io(*this);
+    indent--;
+    add_line("},");
+  }
+
+  template <typename T>
+  std::enable_if_t<has_io<T>::value, void> process(const T &val) {
+    add_line("{");
     indent++;
     val.io(*this);
     indent--;
@@ -735,7 +762,7 @@ class TextSerializer : public Serializer {
     indent++;
     IO<typename type::remove_cvref_t<T>, decltype(*this)>()(*this, val);
     indent--;
-    add_line("}");
+    add_line("},");
   }
 
   template <typename T>
@@ -747,23 +774,23 @@ class TextSerializer : public Serializer {
 
   template <typename T>
   void process(const char *key, const std::vector<T> &val) {
-    add_line(key, "[");
+    add_line(key, "{");
     indent++;
     for (std::size_t i = 0; i < val.size(); i++) {
-      this->process(("[" + std::to_string(i) + "]").c_str(), val[i]);
+      this->process(std::to_string(i).c_str(), val[i]);
     }
     indent--;
-    add_line("]");
+    add_line("},");
   }
 
   template <typename T, typename G>
   void process(const char *key, const std::pair<T, G> &val) {
-    add_line(key, "(");
+    add_line(key, "{");
     indent++;
     this->process("first", val.first);
     this->process("second", val.second);
     indent--;
-    add_line(")");
+    add_line("}");
   }
 
   // std::map
@@ -788,7 +815,7 @@ class TextSerializer : public Serializer {
       this->process("value", val.value());
     }
     indent--;
-    add_line("}");
+    add_line("},");
   }
 
   template <typename M>
@@ -801,7 +828,7 @@ class TextSerializer : public Serializer {
       this->process("value", iter.second);
     }
     indent--;
-    add_line("}");
+    add_line("},");
   }
 
   void add_line(const std::string &str) {
@@ -814,7 +841,7 @@ class TextSerializer : public Serializer {
   }
 
   void add_line(const std::string &key, const std::string &value) {
-    add_line(key + ": " + value);
+    add_line("\"" + key + "\"" + ": " + value);
   }
 };
 

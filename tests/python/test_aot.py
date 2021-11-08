@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 
@@ -49,4 +50,8 @@ def test_save():
         with m.add_kernel_template(foo) as kt:
             kt.instantiate(n=6)
             kt.instantiate(n=8)
-        m.save(tmpdir, 'taichi_aot_example.tcb')
+        filename = 'taichi_aot_example'
+        m.save(tmpdir, filename)
+        with open(os.path.join(tmpdir,
+                               f'{filename}_metadata.json')) as json_file:
+            json.load(json_file)

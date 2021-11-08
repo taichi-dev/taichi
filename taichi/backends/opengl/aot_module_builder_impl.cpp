@@ -17,16 +17,43 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
   aot_data_.root_buffer_size = compiled_structs_.root_size;
 }
 
+namespace {
+void write_glsl_file(const std::string &output_dir,
+                     const std::string &filename,
+                     CompiledKernel &k) {
+  const std::string glsl_path =
+      fmt::format("{}/{}_{}.glsl", output_dir, filename, k.kernel_name);
+  std::ofstream fs{glsl_path};
+  fs << k.kernel_src;
+  k.kernel_src = glsl_path;
+  fs.close();
+}
+}  // namespace
+
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
   const std::string bin_path =
       fmt::format("{}/{}_metadata.tcb", output_dir, filename);
   write_to_binary_file(aot_data_, bin_path);
-  // The txt file is mostly for debugging purpose.
+  // Json format doesn't support multiple line strings.
+  AotData new_aot_data = aot_data_;
+  for (auto &k : new_aot_data.kernels) {
+    for (auto &ki : k.program.kernels) {
+      write_glsl_file(output_dir, filename, ki);
+    }
+  }
+  for (auto &k : new_aot_data.kernel_tmpls) {
+    for (auto &ki : k.program) {
+      for (auto &kij : ki.second.kernels) {
+        write_glsl_file(output_dir, filename, kij);
+      }
+    }
+  }
+
   const std::string txt_path =
-      fmt::format("{}/{}_metadata.txt", output_dir, filename);
+      fmt::format("{}/{}_metadata.json", output_dir, filename);
   TextSerializer ts;
-  ts("taichi aot data", aot_data_);
+  ts.serialize_to_json("aot_data", new_aot_data);
   ts.write_to_file(txt_path);
 }
 

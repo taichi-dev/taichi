@@ -1174,6 +1174,29 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
+llvm::Value* CodeGenLLVM::cas(llvm::Value* dest, llvm::Value* val, std::function<llvm::Value*(llvm::Value*, llvm::Value*)> op) {
+  using namespace llvm;
+  BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
+  BasicBlock *after_loop =BasicBlock::Create(*llvm_context, "after_while", func);
+
+  builder->CreateBr(body);
+  builder->SetInsertPoint(body);
+
+  {
+    auto old_val = builder->CreateLoad(dest);
+    auto new_val = op(old_val, val);
+    dest = builder->CreateBitCast(dest, llvm::Type::getInt16PtrTy(*llvm_context));
+    auto atomicCmpXchg = builder->CreateAtomicCmpXchg(dest, builder->CreateBitCast(old_val, llvm::Type::getInt16Ty(*llvm_context)), builder->CreateBitCast(new_val, llvm::Type::getInt16Ty(*llvm_context)), AtomicOrdering::SequentiallyConsistent, AtomicOrdering::SequentiallyConsistent);
+    // Check whether CAS was succussful
+    auto ok = builder->CreateExtractValue(atomicCmpXchg, 1);
+    builder->CreateCondBr(builder->CreateNot(ok), body, after_loop);
+  }
+
+  builder->SetInsertPoint(after_loop);
+
+  return dest;
+}
+
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   // auto mask = stmt->parent->mask();
   // TODO: deal with mask when vectorized
@@ -1181,6 +1204,10 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   for (int l = 0; l < stmt->width(); l++) {
     llvm::Value *old_value;
+    if (is_real(stmt->val->ret_type) && stmt->op_type == AtomicOpType::add) {
+      llvm_val[stmt] = cas(llvm_val[stmt->dest], llvm_val[stmt->val], [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
+      return;
+    }
     if (stmt->op_type == AtomicOpType::add) {
       auto dst_type =
           stmt->dest->ret_type->as<PointerType>()->get_pointee_type();

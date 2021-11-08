@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <set>
+#include <functional>
 
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
@@ -330,15 +331,35 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         llvm::AtomicOrdering::SequentiallyConsistent);
   }
 
+  llvm::Value* cas(llvm::Value* dest, llvm::Value* val, std::function<llvm::Value*(llvm::Value*, llvm::Value*)> op) {
+    BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
+    BasicBlock *after_loop =BasicBlock::Create(*llvm_context, "after_while", func);
+
+    builder->CreateBr(body);
+    builder->SetInsertPoint(body);
+
+    {
+      auto old_val = builder->CreateLoad(dest);
+      auto new_val = op(old_val, val);
+      dest = builder->CreateBitCast(dest, llvm::Type::getInt16PtrTy(*llvm_context));
+      auto atomicCmpXchg = builder->CreateAtomicCmpXchg(dest, builder->CreateBitCast(old_val, llvm::Type::getInt16Ty(*llvm_context)), builder->CreateBitCast(new_val, llvm::Type::getInt16Ty(*llvm_context)), AtomicOrdering::SequentiallyConsistent, AtomicOrdering::SequentiallyConsistent);
+      // Check whether CAS was succussful
+      auto ok = builder->CreateExtractValue(atomicCmpXchg, 1);
+      builder->CreateCondBr(ok, body, after_loop);
+    }
+
+    builder->SetInsertPoint(after_loop);
+
+    return dest;
+  }
+
   llvm::Value *real_type_atomic(AtomicOpStmt *stmt) {
     if (!stmt->val->ret_type->is<PrimitiveType>()) {
       return nullptr;
     }
     AtomicOpType op = stmt->op_type;
     if (is_real(stmt->val->ret_type) && op == AtomicOpType::add) {
-      return builder->CreateAtomicRMW(llvm::AtomicRMWInst::FAdd,
-                                      llvm_val[stmt->dest], llvm_val[stmt->val],
-                                      AtomicOrdering::SequentiallyConsistent);
+      return cas(llvm_val[stmt->dest], llvm_val[stmt->val], [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
     }
 
     PrimitiveTypeID prim_type =

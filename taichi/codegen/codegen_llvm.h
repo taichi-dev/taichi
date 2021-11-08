@@ -362,6 +362,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *get_exponent_offset(llvm::Value *exponent, CustomFloatType *cft);
 
+  llvm::Value *cas(llvm::Value* dest, llvm::Value* val, std::function<llvm::Value*(llvm::Value*, llvm::Value*)> op);
+
   ~CodeGenLLVM() = default;
 };
 

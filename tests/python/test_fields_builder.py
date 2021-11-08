@@ -3,6 +3,9 @@ from taichi.lang.exception import InvalidOperationError
 
 import taichi as ti
 
+'''
+Test fields with shape.
+'''
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_with_shape():
 
@@ -39,7 +42,9 @@ def test_fields_with_shape():
     for i in range(shape_size_1d):
         assert x[i] == i
 
-
+'''
+Test fields with builder dense.
+'''
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_dense():
 
@@ -50,15 +55,17 @@ def test_fields_builder_dense():
     fb1.dense(ti.i, shape_size_1d).place(x)
     fb1.finalize()
 
+    # [dense] 1. Test and validation for one field assign
     @ti.kernel
-    def func1():
+    def assign_single_field_kernel_func():
         for i in range(shape_size_1d):
             x[i] = i * 3
 
-    func1()
+    assign_single_field_kernel_func()
     for i in range(shape_size_1d):
         assert x[i] == i * 3
 
+    # [dense] 2.  Test and validation for multiple fields assign
     fb2 = ti.FieldsBuilder()
     y = ti.field(ti.f32)
     fb2.dense(ti.i, shape_size_1d).place(y)
@@ -67,7 +74,7 @@ def test_fields_builder_dense():
     fb2.finalize()
 
     @ti.kernel
-    def func2():
+    def assign_mutliple_field_kernel_func():
         for i in range(shape_size_1d):
             x[i] = i * 2
         for i in range(shape_size_1d):
@@ -75,32 +82,36 @@ def test_fields_builder_dense():
         for i in range(shape_size_1d):
             z[i] = i + 10
 
-    func2()
+    # [dense] 3. Test and validation for Re-assign variable of field
+    assign_mutliple_field_kernel_func()
     for i in range(shape_size_1d):
         assert x[i] == i * 2
         assert y[i] == i + 5
         assert z[i] == i + 10
 
-    func1()
+    assign_single_field_kernel_func()
     for i in range(shape_size_1d):
         assert x[i] == i * 3
 
-
+'''
+Test fields with builder pointer.
+'''
 @ti.test(arch=[ti.cpu, ti.cuda, ti.metal])
 def test_fields_builder_pointer():
-    shape_size_1d = 5
 
+    # Initialize common variables for tests below
+    shape_size_1d = 5
     fb1 = ti.FieldsBuilder()
     x = ti.field(ti.f32)
     fb1.pointer(ti.i, shape_size_1d).place(x)
     fb1.finalize()
 
     @ti.kernel
-    def func1():
+    def assign_single_field_kernel_func():
         for i in range(shape_size_1d):
             x[i] = i * 3
 
-    func1()
+    assign_single_field_kernel_func()
     for i in range(shape_size_1d):
         assert x[i] == i * 3
 
@@ -113,7 +124,7 @@ def test_fields_builder_pointer():
 
     # test range-for
     @ti.kernel
-    def func2():
+    def assign_mutliple_field_kernel_func0(a=2, b=5, c=10):
         for i in range(shape_size_1d):
             x[i] = i * 2
         for i in range(shape_size_1d):
@@ -121,7 +132,7 @@ def test_fields_builder_pointer():
         for i in range(shape_size_1d):
             z[i] = i + 10
 
-    func2()
+    assign_mutliple_field_kernel_func0(2, 5, 10)
     for i in range(shape_size_1d):
         assert x[i] == i * 2
         assert y[i] == i + 5
@@ -129,21 +140,24 @@ def test_fields_builder_pointer():
 
     # test struct-for
     @ti.kernel
-    def func3():
+    def assign_mutliple_field_kernel_func1(a, b):
         for i in y:
-            y[i] += 5
+            y[i] += a
         for i in z:
-            z[i] -= 5
+            z[i] -= b
 
-    func3()
+    assign_mutliple_field_kernel_func1(5, 5)
     for i in range(shape_size_1d):
         assert y[i] == i + 10
         assert z[i] == i + 5
 
-    func1()
+    assign_single_field_kernel_func()
     for i in range(shape_size_1d):
         assert x[i] == i * 3
 
+'''
+Test fields with builder destory.
+'''
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_fields_builder_destroy():
 
@@ -222,6 +236,10 @@ def test_fields_builder_destroy():
             # start
 #            test_for_raise_twice_destroy(size_1d)
 
+
+'''
+Test fields with builder exceeds max.
+'''
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_fields_builder_exceeds_max():
     shape_size = (4, 4)

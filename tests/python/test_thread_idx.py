@@ -1,9 +1,9 @@
 import taichi as ti
 
 
-@ti.test(arch=ti.cuda)
+@ti.test(arch=[ti.cuda, ti.cpu])
 def test_thread_idx():
-    x = ti.field(ti.i32, shape=(32, 8))
+    x = ti.field(ti.i32, shape=(256))
 
     @ti.kernel
     def func():

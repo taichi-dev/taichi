@@ -66,9 +66,9 @@ WriteInfo("Building Taichi")
 $env:CXX = "$libsDir\taichi_clang\bin\clang++.exe"
 if ($install) {
     if ($develop) {
-        python -m pip install -e .
+        python -m pip install -v -e .
     } else {
-        python -m pip install .
+        python -m pip install -v .
     }
     WriteInfo("Build and install finished")
 } else {

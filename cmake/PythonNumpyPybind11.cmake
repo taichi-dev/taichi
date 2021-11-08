@@ -51,11 +51,11 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         sys.stdout.write(str(sys.version_info[1]))"
         OUTPUT_VARIABLE PYTHON_MINOR_VERSION)
 
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-        "import sys;sys.stdout.write(sys.base_prefix.replace('\\\\', '/'))"
-        OUTPUT_VARIABLE PYTHON_BASE_PREFIX)
 
 if (WIN32)
+  execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+          "import sys;sys.stdout.write(sys.base_prefix.replace('\\\\', '/'))"
+          OUTPUT_VARIABLE PYTHON_BASE_PREFIX)
   link_directories(${PYTHON_BASE_PREFIX}/libs)
   set(PYTHON_LIBRARIES ${PYTHON_BASE_PREFIX}/libs/python3.lib)
   set(PYTHON_LIBRARIES ${PYTHON_BASE_PREFIX}/libs/python3${PYTHON_MINOR_VERSION}.lib)

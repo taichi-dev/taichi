@@ -114,11 +114,15 @@ class IRBuilder(Builder):
     def process_generators(ctx, node, now_comp, func, result):
         if now_comp >= len(node.generators):
             return func(ctx, node, result)
-        comp = node.generators[now_comp] = build_stmt(
-            ctx, node.generators[now_comp])
-        for value in comp.iter.ptr:
-            with ctx.variable_scope_guard:
-                IRBuilder.build_assign_unpack(ctx, comp.target, value, True)
+        target = node.generators[now_comp].target = build_stmt(
+            ctx, node.generators[now_comp].target)
+        iter = node.generators[now_comp].iter = build_stmt(
+            ctx, node.generators[now_comp].iter)
+        for value in iter.ptr:
+            with ctx.variable_scope_guard():
+                IRBuilder.build_assign_unpack(ctx, target, value, True)
+                node.generators[now_comp].ifs = build_stmts(
+                    ctx, node.generators[now_comp].ifs)
                 IRBuilder.process_ifs(ctx, node, now_comp, 0, func, result)
 
     @staticmethod
@@ -127,12 +131,9 @@ class IRBuilder(Builder):
             return IRBuilder.process_generators(ctx, node, now_comp + 1, func,
                                                 result)
         cond = node.generators[now_comp].ifs[now_if].ptr
-        ti.begin_frontend_if(cond)
-        ti.core.begin_frontend_if_true()
-        IRBuilder.process_ifs(ctx, node, now_comp, now_if + 1, func, result)
-        ti.core.pop_scope()
-        ti.core.begin_frontend_if_false()
-        ti.core.pop_scope()
+        if cond:
+            IRBuilder.process_ifs(ctx, node, now_comp, now_if + 1, func,
+                                  result)
 
     @staticmethod
     def build_comprehension(ctx, node):

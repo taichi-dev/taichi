@@ -389,9 +389,9 @@ class Device {
 
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
   virtual DeviceAllocation allocate_memory_runtime(const AllocParams &params,
-                                                     JITModule *runtime_jit,
-                                                     LLVMRuntime *runtime,
-                                                     uint64 *result_buffer) {
+                                                   JITModule *runtime_jit,
+                                                   LLVMRuntime *runtime,
+                                                   uint64 *result_buffer) {
     TI_NOT_IMPLEMENTED
   }
   virtual void dealloc_memory(DeviceAllocation handle) = 0;

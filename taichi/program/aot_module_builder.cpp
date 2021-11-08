@@ -31,5 +31,31 @@ void AotModuleBuilder::add_kernel_template(const std::string &identifier,
   add_per_backend_tmpl(identifier, key, kernel);
 }
 
+bool AotModuleBuilder::all_fields_are_dense_in_container(
+    const SNode *container) {
+  for (const auto &ch : container->ch) {
+    if (ch->type != SNodeType::place) {
+      return false;
+    }
+  }
+  const auto *parent = container->parent;
+  if (!parent) {
+    return false;
+  }
+  if (parent->type != SNodeType::root) {
+    return false;
+  }
+  return true;
+}
+
+int AotModuleBuilder::find_children_id(const SNode *snode) {
+  auto parent = snode->parent;
+  for (int i = 0; i < parent->ch.size(); i++) {
+    if (parent->ch[i].get() == snode)
+      return i;
+  }
+  TI_ERROR("Child not found in parent!");
+}
+
 }  // namespace lang
 }  // namespace taichi

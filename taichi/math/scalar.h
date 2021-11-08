@@ -161,12 +161,13 @@ TI_FORCE_INLINE bool abnormal(T m) noexcept {
 inline int64 get_largest_pot(int64 a) noexcept {
   TI_ASSERT_INFO(a > 0,
                  "a should be positive, instead of " + std::to_string(a));
-  // TODO: optimize
-  int64 i = 1;
-  while (i <= a / 2) {
-    i *= 2;
+
+  /* This code was copied from https://stackoverflow.com/a/20207950 and edited
+  It uses loop unrolling, which all (modern) compilers will do. */
+  for (int64 i = 1; i < 64; i *= 2) {
+    a |= (a >> i);
   }
-  return i;
+  return a - (a >> 1);
 }
 
 TI_NAMESPACE_END

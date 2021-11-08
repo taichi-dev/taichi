@@ -201,47 +201,39 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
     auto op = stmt->op_type;
 
-#define UNARY_STD(x)                                                         \
-  else if (op == UnaryOpType::x) {                                           \
-    if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {             \
-      llvm_val[stmt] =                                                       \
-          builder->CreateCall(get_runtime_function("__nv_" #x "f"), input);  \
-    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {      \
-      llvm_val[stmt] =                                                       \
-          builder->CreateCall(get_runtime_function("__nv_" #x), input);      \
-    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {      \
-      llvm_val[stmt] = builder->CreateCall(get_runtime_function(#x), input); \
-    } else {                                                                 \
-      TI_NOT_IMPLEMENTED                                                     \
-    }                                                                        \
+#define UNARY_STD(x)                                                    \
+  else if (op == UnaryOpType::x) {                                      \
+    if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {        \
+      llvm_val[stmt] = create_call("__nv_" #x "f", input);              \
+    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) { \
+      llvm_val[stmt] = create_call("__nv_" #x, input);                  \
+    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) { \
+      llvm_val[stmt] = create_call(#x, input);                          \
+    } else {                                                            \
+      TI_NOT_IMPLEMENTED                                                \
+    }                                                                   \
   }
     if (op == UnaryOpType::abs) {
       if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
-        llvm_val[stmt] =
-            builder->CreateCall(get_runtime_function("__nv_fabsf"), input);
+        llvm_val[stmt] = create_call("__nv_fabsf", input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
-        llvm_val[stmt] =
-            builder->CreateCall(get_runtime_function("__nv_fabs"), input);
+        llvm_val[stmt] = create_call("__nv_fabs", input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] =
-            builder->CreateCall(get_runtime_function("__nv_abs"), input);
+        llvm_val[stmt] = create_call("__nv_abs", input);
       } else {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == UnaryOpType::sqrt) {
       if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
-        llvm_val[stmt] =
-            builder->CreateCall(get_runtime_function("__nv_sqrtf"), input);
+        llvm_val[stmt] = create_call("__nv_sqrtf", input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
-        llvm_val[stmt] =
-            builder->CreateCall(get_runtime_function("__nv_sqrt"), input);
+        llvm_val[stmt] = create_call("__nv_sqrt", input);
       } else {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == UnaryOpType::logic_not) {
       if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] =
-            builder->CreateCall(get_runtime_function("logic_not_i32"), input);
+        llvm_val[stmt] = create_call("logic_not_i32", input);
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -366,11 +358,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     }
     TI_ASSERT(atomics.at(prim_type).find(op) != atomics.at(prim_type).end());
 
-    return builder->CreateCall(
-        get_runtime_function(atomics.at(prim_type).at(op)),
-        {llvm_val[stmt->dest], llvm_val[stmt->val]});
-
-    return nullptr;
+    return create_call(atomics.at(prim_type).at(op),
+                       {llvm_val[stmt->dest], llvm_val[stmt->val]});
   }
 
   void visit(AtomicOpStmt *stmt) override {
@@ -590,10 +579,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
     const auto arg_id = stmt->arg_id;
     const auto axis = stmt->axis;
-    llvm_val[stmt] =
-        builder->CreateCall(get_runtime_function("Context_get_extra_args"),
-                            {get_context(), tlctx->get_constant(arg_id),
-                             tlctx->get_constant(axis)});
+    llvm_val[stmt] = create_call("Context_get_extra_args",
+                                 {get_context(), tlctx->get_constant(arg_id),
+                                  tlctx->get_constant(axis)});
   }
 
   void visit(BinaryOpStmt *stmt) override {

@@ -240,13 +240,13 @@ class Matrix(TaichiOperations):
         assert isinstance(other, Matrix), "rhs of `@` is not a matrix / vector"
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         del _taichi_skip_traceback
-        ret = Matrix.new(self.n, other.m)
+        ret = Matrix.empty(self.n, other.m)
         for i in range(self.n):
             for j in range(other.m):
                 acc = self(i, 0) * other(0, j)
                 for k in range(1, other.n):
                     acc = acc + self(i, k) * other(k, j)
-                ret.set_entry(i, j, acc)
+                ret.entries[i * other.m + j] = acc
         return ret
 
     def linearize_entry_id(self, *args):
@@ -1121,13 +1121,6 @@ class Matrix(TaichiOperations):
         mat = cls.empty(n, m)
         mat.entries = entries
         return mat
-
-    @classmethod
-    def new(cls, n, m):
-        if impl.inside_kernel():
-            return cls(n, m)
-        else:
-            return cls.empty(n, m)
 
     def __hash__(self):
         # TODO: refactor KernelTemplateMapper

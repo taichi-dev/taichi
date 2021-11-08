@@ -44,11 +44,14 @@ On Linux, some additional packages might be required to build Taichi. E.g., on U
 3. LLVM: Make sure you have version 10.0.0 installed. Taichi uses a **customized LLVM**, which we provided as binaries depending on your system environment. Note that the pre-built binaries from the LLVM official website or other sources may not work.
    - [LLVM 10.0.0 for Linux](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_linux_patch2/taichi-llvm-10.0.0-linux.zip)
    - [LLVM 10.0.0 for macOS (excluding M1)](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip)
+   - [LLVM 10.0.0 for macOS (M1 chip)](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_m1/llvm-10.0.0-m1.zip)
    - [LLVM 10.0.0 for Windows MSVC 2019](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip)
 
 
 :::caution
-If you are building on using Apple M1 chip, you'll have to build LLVM from source following the steps below. Note the `-DLLVM_TARGETS_TO_BUILD="AArch64"` is required.
+If you encounter `llvm-as can’t be opened because Apple cannot check it for malicious software on macOS`, you have two options to work around this:
+  - (One-off) `System Preferences` -> `Security & Privacy` -> `General` -> `Allow anyway`
+  - (Permanent) Run `sudo spctl --master-disable` in your terminal to allow your MacBook to download apps from anywhere by default.
 :::
 
 :::note

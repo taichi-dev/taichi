@@ -2,6 +2,7 @@
 
 #include "taichi/lang_util.h"
 #include "taichi/backends/device.h"
+#include "taichi/ir/snode.h"
 
 #include <vector>
 
@@ -30,6 +31,7 @@ struct OpenGlRuntime {
 using SNodeId = std::string;
 
 struct SNodeInfo {
+  const SNode *snode;
   size_t stride;
   size_t length;
   std::vector<size_t> children_offsets;

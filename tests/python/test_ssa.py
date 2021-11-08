@@ -21,7 +21,7 @@ def test_matrix_self_assign():
     def func():
         a[None] = a[None].normalized()
         b[None] = b[None].transpose()
-        c[None] = ti.Vector([c[None][1], c[None][0]], dt=ti.f32)
+        c[None] = ti.Vector([c[None][1], c[None][0]])
 
     inv_sqrt2 = 1 / math.sqrt(2)
 

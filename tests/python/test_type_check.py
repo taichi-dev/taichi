@@ -37,3 +37,16 @@ def test_ternary_op():
 
     with pytest.raises(SystemExit):
         select()
+
+
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(arch=ti.cpu)
+def test_subscript():
+    a = ti.ndarray(ti.i32, shape=(10, 10))
+
+    @ti.kernel
+    def any_array(x: ti.any_arr()):
+        b = x[3, 1.1]
+
+    with pytest.raises(SystemExit):
+        any_array(a)

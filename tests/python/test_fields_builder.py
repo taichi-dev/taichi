@@ -106,6 +106,7 @@ def test_fields_builder_pointer():
     fb1.pointer(ti.i, shape_size_1d).place(x)
     fb1.finalize()
 
+    # [pointer] 1. Test and validation for one field assign
     @ti.kernel
     def assign_single_field_kernel_func():
         for i in range(shape_size_1d):
@@ -115,6 +116,8 @@ def test_fields_builder_pointer():
     for i in range(shape_size_1d):
         assert x[i] == i * 3
 
+    # [pointer] 2. Test and validation for multiple fields assign with
+    #              range-for
     fb2 = ti.FieldsBuilder()
     y = ti.field(ti.f32)
     fb2.pointer(ti.i, shape_size_1d).place(y)
@@ -122,9 +125,9 @@ def test_fields_builder_pointer():
     fb2.pointer(ti.i, shape_size_1d).place(z)
     fb2.finalize()
 
-    # test range-for
     @ti.kernel
     def assign_mutliple_field_kernel_func0(a=2, b=5, c=10):
+        # test range-for
         for i in range(shape_size_1d):
             x[i] = i * 2
         for i in range(shape_size_1d):
@@ -138,9 +141,11 @@ def test_fields_builder_pointer():
         assert y[i] == i + 5
         assert z[i] == i + 10
 
-    # test struct-for
+    # [pointer] 3.  Test and validation for multiple field assign with
+    #               struct-for
     @ti.kernel
     def assign_mutliple_field_kernel_func1(a, b):
+        # test struct-for
         for i in y:
             y[i] += a
         for i in z:
@@ -161,6 +166,15 @@ Test fields with builder destory.
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_fields_builder_destroy():
 
+    # [destroy] Args of main body
+    test_sizes = [1] # [1, 2, 3]
+    size_extend_factor = 1 # 10 ** 3
+    # note: currently only consider preicison all paltform supported,
+    # more detailed here: https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types
+    field_types = [ti.f32, ti.i32]
+    field_sizes = [1] # [1, 5, 10]
+
+   # [destroy] 1. test for single destroy multiple fields
     def test_for_single_destroy_multi_fields(test_sizes, size_extend_factor, field_types, field_sizes):
         fb = ti.FieldsBuilder()
         for tsize_idx in range(len(test_sizes)):
@@ -176,65 +190,53 @@ def test_fields_builder_destroy():
                         field = ti.field(field_type)
                         fb.dense(ti.i, test_1d_size).place(field)
                     fb_snode_tree = fb.finalize()
-                    fb_snode_tree.destroy()
+        fb_snode_tree.destroy()
 
-    # [destroy] Args of main body
-    test_sizes = [1] # [1, 2, 3]
-    size_extend_factor = 1 # 10 ** 3
-    # note: currently only consider preicison all paltform supported,
-    # more detailed here: https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types
-    field_types = [ti.f32, ti.i32]
-    field_sizes = [1] # [1, 5, 10]
-
-    # [destroy] 1. test for single destroy multiple fields
     test_for_single_destroy_multi_fields(test_sizes, size_extend_factor, field_types, field_sizes)
 
-
-    def test_for_multi_destroy_multi_fields(size_1d_0, size_1d_1):
-        # create 1st field using 1st field builder
+    # [destroy] 2. test for multiple destroy for multiple fields
+    def test_for_multi_destroy_multi_fields(test_sizes, size_extend_factor, field_types, field_sizes): #size_1d_0, size_1d_1):
         fb0 = ti.FieldsBuilder()
-        a0 = ti.field(ti.f64)
-        fb0.dense(ti.i, size_1d_0).place(a0)
-        fb0_snode_tree = fb0.finalize()
-
-        # create 2nd field using 2nd field builder
         fb1 = ti.FieldsBuilder()
-        a1 = ti.field(ti.f64)
-        fb1.pointer(ti.i, size_1d_1).place(a1)
-        fb1_snode_tree = fb1.finalize()
+
+        for tsize_idx in range(len(test_sizes)):
+            for ftype_idx in range(len(field_types)):
+                for fsize_idx in range(len(field_sizes)):
+                    test_1d_size = test_sizes[tsize_idx] * size_extend_factor
+                    field_type = field_types[ftype_idx]
+                    field_size = field_sizes[fsize_idx]
+
+                    for create_field_idx in range(field_size):
+                        field0 = ti.field(field_type)
+                        field1 = ti.field(field_type)
+
+                        fb0.dense(ti.i, test_1d_size).place(field0)
+                        fb1.pointer(ti.i, test_1d_size).place(field1)
+
+                        fb0_snode_tree = fb0.finalize()
+                        fb1_snode_tree = fb1.finalize()
 
         # destroy
         fb0_snode_tree.destroy()
         fb1_snode_tree.destroy()
 
+    test_for_multi_destroy_multi_fields(size_1d_0, size_1d_1)
+
+    # [destroy] 3. test for raising second destroy
     def test_for_raise_twice_destroy(size_1d):
         fb = ti.FieldsBuilder()
         a = ti.field(ti.f32)
         fb.dense(ti.i, size_1d).place(a)
         c = fb.finalize()
         c.destroy()
-        c.destroy()
+
         try:
             c.destroy()
         except InvalidOperationError:
             # NOTE(ysh329): Strange! can't catch exception!!!!
             print("catched ")
 
-    # [destroy] 2. test for multiple destroy for multiple fields
-#    for size_idx in range(FOR_LOOP_RANGE):
-#        size_1d_0 = size_idx * SIZE_EXTEND_FACTOR
-#        size_1d_1 = size_idx * SIZE_EXTEND_FACTOR
-#        test_for_multi_destroy_multi_fields(size_1d_0, size_1d_1)
-
-    # [destroy] 3. test for raising second destroy
-#    for size_idx in range(len(SIZE_CASES)):
-#        for field_idx in range(len(SIZE_FIELDS)):
-#            # init
-#            size_1d = SIZE_CASES[size_idx]
-#            size_fields = SIZE_FIELDS[field_idx]
-
-            # start
-#            test_for_raise_twice_destroy(size_1d)
+    test_for_raise_twice_destroy(10)
 
 
 '''

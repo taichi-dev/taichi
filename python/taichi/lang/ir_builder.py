@@ -790,6 +790,7 @@ class IRBuilder(Builder):
         ti.ti_assert(test, msg.strip(), extra_args)
         return node
 
+    @staticmethod
     def build_Break(ctx, node):
         if ctx.is_in_static():
             ctx.set_loop_status(LoopStatus.Break)

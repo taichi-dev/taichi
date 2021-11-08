@@ -5,7 +5,7 @@ param (
     [switch]$installVulkan = $false,
     [switch]$develop = $false,
     [switch]$install = $false,
-    [string]$build = "_build"
+    [string]$libdir = "_build"
 )
 
 $RepoURL = 'https://github.com/taichi-dev/taichi'
@@ -22,10 +22,10 @@ if ($clone) {
     git clone --recurse-submodules $RepoURL
     Set-Location .\taichi
 }
-if (-not (Test-Path $build)) {
-    New-Item -ItemType Directory -Path $build
+if (-not (Test-Path $libdir)) {
+    New-Item -ItemType Directory -Path $libdir
 }
-Push-Location $build
+Push-Location $libdir
 WriteInfo("Download and extract LLVM")
 if (-not (Test-Path "taichi_llvm")) {
     curl.exe --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO
@@ -36,8 +36,8 @@ if (-not (Test-Path "taichi_clang")) {
     curl.exe --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip -LO
     7z x clang-10.0.0-win.zip -otaichi_clang
 }
-$env:PATH = "$build\taichi_llvm\bin;$build\taichi_clang\bin;$env:PATH"
-$env:TAICHI_CMAKE_ARGS = "-G 'Visual Studio 16 2019' -A x64 -DLLVM_DIR=$build\taichi_llvm\lib\cmake\llvm"
+$env:PATH = "$libdir\taichi_llvm\bin;$libdir\taichi_clang\bin;$env:PATH"
+$env:TAICHI_CMAKE_ARGS = "-G 'Visual Studio 16 2019' -A x64 -DLLVM_DIR=$libdir\taichi_llvm\lib\cmake\llvm"
 if ($installVulkan) {
     WriteInfo("Download and install Vulkan")
     if (-not (Test-Path "VulkanSDK.exe")) {
@@ -45,7 +45,7 @@ if ($installVulkan) {
     }
     $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
     $installer.WaitForExit();
-    $env:VULKAN_SDK = "$build\VulkanSDK\1.2.189.0"
+    $env:VULKAN_SDK = "$libdir\VulkanSDK\1.2.189.0"
     $env:PATH += ";$env:VULKAN_SDK\Bin"
     $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_VULKAN:BOOL=ON"
 }
@@ -60,7 +60,7 @@ python -m pip install wheel
 python -m pip install -r requirements_dev.txt
 python -m pip install -r requirements_test.txt
 WriteInfo("Building Taichi")
-$env:CXX = "$build\taichi_clang\bin\clang++.exe"
+$env:CXX = "$libdir\taichi_clang\bin\clang++.exe"
 if ($install) {
     if ($develop) {
         python -m pip install -e .

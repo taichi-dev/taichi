@@ -396,6 +396,11 @@ class Device {
   }
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
 
+  uint64_t *allocate_llvm_runtime_memory_jit(JITModule *runtime_jit,
+                                             LLVMRuntime *runtime,
+                                             size_t size,
+                                             uint64 *result_buffer);
+
   virtual std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") = 0;

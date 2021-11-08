@@ -186,7 +186,6 @@ def test_fields_builder_destroy():
                     field_size = field_sizes[fsize_idx]
 
                     for create_field_idx in range(field_size):
-                        # TODO: Consider Vector/Matrix, here is Scalar field only.
                         field = ti.field(field_type)
                         fb.dense(ti.i, test_1d_size).place(field)
                     fb_snode_tree = fb.finalize()
@@ -230,11 +229,8 @@ def test_fields_builder_destroy():
         c = fb.finalize()
         c.destroy()
 
-        try:
+        with pytest.raise(InvalidOperationError) as e:
             c.destroy()
-        except InvalidOperationError:
-            # NOTE(ysh329): Strange! can't catch exception!!!!
-            print("catched ")
 
     test_for_raise_twice_destroy(10)
 

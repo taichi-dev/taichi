@@ -284,6 +284,31 @@ void GlobalVariableExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(ptr));
 }
 
+void GlobalPtrExpression::type_check() {
+  // Currently, dimension compatibility check happens in Python
+  if (snode != nullptr) {
+    ret_type = snode->dt;
+  } else if (var.is<GlobalVariableExpression>()) {
+    ret_type = var.cast<GlobalVariableExpression>()->snode->dt;
+  } else if (var.is<ExternalTensorExpression>()) {
+    for (int i = 0; i < indices.exprs.size(); i++) {
+      auto &expr = indices.exprs[i];
+      // TODO: assert no unknowns after type_check for all expressions are
+      // implemented
+      if (expr->ret_type == PrimitiveType::unknown)
+        return;
+      if (!is_integral(expr->ret_type))
+        throw std::runtime_error(
+            fmt::format("TypeError: indices must be integers, however '{}' is "
+                        "provided as index {}",
+                        expr->ret_type->to_string(), i));
+    }
+    ret_type = var.cast<ExternalTensorExpression>()->dt;
+  } else {
+    TI_ERROR("Invalid GlobalPtrExpression");
+  }
+}
+
 void GlobalPtrExpression::serialize(std::ostream &ss) {
   if (snode) {
     ss << snode->get_node_type_name_hinted();
@@ -330,6 +355,26 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
         var.cast<ExternalTensorExpression>()->stmt, index_stmts));
   }
   stmt = ctx->back_stmt();
+}
+
+void TensorElementExpression::type_check() {
+  std::string invalid_msg{
+      "Invalid TensorElementExpression: the source is neither a local tensor "
+      "nor a global tensor field"};
+  if (is_local_tensor()) {
+    TI_ASSERT_INFO(var->ret_type->is<TensorType>(), invalid_msg);
+    ret_type = var->ret_type->cast<TensorType>()->get_element_type();
+  } else if (is_global_tensor()) {
+    TI_ASSERT_INFO(
+        var.is<GlobalPtrExpression>() &&
+            var.cast<GlobalPtrExpression>()->var.is<GlobalVariableExpression>(),
+        invalid_msg);
+    ret_type = var.cast<GlobalPtrExpression>()
+                   ->var.cast<GlobalVariableExpression>()
+                   ->snode->dt;
+  } else {
+    TI_ERROR(invalid_msg);
+  }
 }
 
 bool TensorElementExpression::is_local_tensor() const {

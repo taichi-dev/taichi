@@ -850,6 +850,56 @@ def test_dict():
         foo(2)
 
 
+@ti.test(experimental_ast_refactor=True)
+def test_listcomp():
+    @ti.func
+    def identity(dt, n: ti.template()):
+        return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
+                          for i in range(n)],
+                         disable_local_tensor=1)
+
+    @ti.kernel
+    def foo(n: ti.template()) -> ti.i32:
+        a = identity(ti.i32, n)
+        b = [j for i in a for j in i]
+        ret = 0
+        for i in ti.static(range(n)):
+            for j in ti.static(range(n)):
+                ret += i * j * b[i * n + j]
+        return ret
+
+    assert foo(5) == 1 + 4 + 9 + 16
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_dictcomp():
+    @ti.kernel
+    def foo(n: ti.template()) -> ti.i32:
+        a = {i: i * i for i in range(n) if i % 3 if i % 2}
+        ret = 0
+        for i in ti.static(range(n)):
+            if ti.static(i % 3):
+                if ti.static(i % 2):
+                    ret += a[i]
+        return ret
+
+    assert foo(10) == 1 * 1 + 5 * 5 + 7 * 7
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_dictcomp_fail():
+    @ti.kernel
+    def foo(n: ti.template(), m: ti.template()) -> ti.i32:
+        a = {i: i * i for i in range(n) if i % 3 if i % 2}
+        return a[m]
+
+    with pytest.raises(KeyError):
+        foo(5, 2)
+
+    with pytest.raises(KeyError):
+        foo(5, 3)
+
+
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(exclude=ti.opengl, experimental_ast_refactor=True)
 def test_ndarray():

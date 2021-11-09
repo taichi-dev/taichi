@@ -1024,6 +1024,10 @@ void CodeGenLLVM::visit(LocalLoadStmt *stmt) {
 
 void CodeGenLLVM::visit(LocalStoreStmt *stmt) {
   auto mask = stmt->parent->mask();
+  // This is redundant local store.
+  if (stmt->val->is<AtomicOpStmt>()) {
+    return;
+  }
   if (mask && stmt->width() != 1) {
     TI_NOT_IMPLEMENTED
   } else {

@@ -23,7 +23,7 @@ def write_temp_image(window):
 
 
 def verify_image(window, image_name):
-    ground_truth_name = f"tests/python/images/truth_{image_name}_truth.png"
+    ground_truth_name = f"tests/python/images/{image_name}_truth.png"
     if REGENERATE_GROUNDTRUTH_IMAGES:
         window.write_image(ground_truth_name)
     else:

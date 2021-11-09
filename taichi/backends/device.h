@@ -37,6 +37,8 @@ enum class DeviceCapability : uint32_t {
   spirv_has_atomic_float64_add,
   spirv_has_atomic_float64_minmax,
   spirv_has_variable_ptr,
+  // Graphics Caps,
+  wide_lines
 };
 
 class Device;

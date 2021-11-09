@@ -120,6 +120,7 @@ void Device::print_all_cap() const {
       {DeviceCapability::spirv_has_atomic_float64_minmax,
        "spirv_has_atomic_float64_minmax"},
       {DeviceCapability::spirv_has_variable_ptr, "spirv_has_variable_ptr"},
+      {DeviceCapability::wide_lines, "wide_lines"},
   };
   for (auto &pair : caps_) {
     TI_TRACE("DeviceCapability::{} ({}) = {}", names.at(pair.first),

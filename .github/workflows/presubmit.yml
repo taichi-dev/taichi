@@ -138,7 +138,7 @@ jobs:
         include:
           - os: ubuntu-latest
             python: py36
-    runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, cpu, aws]
     permissions:
       packages: read
       contents: read

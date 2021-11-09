@@ -32,6 +32,9 @@ struct SNodeDescriptor {
   // starts at a fixed offset in its parent cell's memory.
   size_t mem_offset_in_parent_cell = 0;
 
+  int axis_bits_sum[taichi_max_num_indices] = {0};
+  int axis_start_bit[taichi_max_num_indices] = {0};
+
   SNode *get_child(int ch_i) const {
     return snode->ch[ch_i].get();
   }

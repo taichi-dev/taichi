@@ -226,12 +226,14 @@ def test_atomic_add_f16():
 
     @ti.kernel
     def foo():
+        # Parallel sum
         for i in range(1000):
             f[0] += 1.12
 
-        if True:
-            for i in range(1000):
-                f[1] += 1.12
+        # Serial sum
+        for _ in range(1):
+                for i in range(1000):
+                    f[1] = f[1] + 1.12
 
     foo()
     assert (f[0] == f[1])
@@ -243,10 +245,12 @@ def test_atomic_max_f16():
 
     @ti.kernel
     def foo():
+        # Parallel max
         for i in range(1000):
-            f[0] = ti.atomic_max(1.12 * i, f[0])
+            ti.atomic_max(f[0], 1.12 * i)
 
-        if True:
+        # Serial max
+        for _ in range(1):
             for i in range(1000):
                 f[1] = ti.max(1.12 * i, f[1])
 
@@ -260,12 +264,14 @@ def test_atomic_min_f16():
 
     @ti.kernel
     def foo():
+        # Parallel min
         for i in range(1000):
-            f[0] = ti.atomic_max(-3.13 * i, f[0])
+            ti.atomic_min(f[0], -3.13 * i)
 
-        if True:
+        # Serial min
+        for _ in range(1):
             for i in range(1000):
-                f[1] = ti.max(-3.13 * i, f[1])
+                f[1] = ti.min(-3.13 * i, f[1])
 
     foo()
     assert (f[0] == f[1])

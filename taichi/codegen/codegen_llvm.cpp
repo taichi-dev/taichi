@@ -1217,12 +1217,15 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         case AtomicOpType::add:
           cas(llvm_val[stmt->dest], llvm_val[stmt->val],
               [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
+          return;
         case AtomicOpType::max:
           cas(llvm_val[stmt->dest], llvm_val[stmt->val],
               [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
+          return;
         case AtomicOpType::min:
           cas(llvm_val[stmt->dest], llvm_val[stmt->val],
               [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
+          return;
         default:
           break;
       }

@@ -189,6 +189,11 @@ jobs:
           PY: ${{ matrix.python }}
           GPU_TEST: OFF
 
+      - name: clean docker container
+        if: always()
+        run: |
+          docker rm taichi_build taichi_test -f
+
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
     needs: [build_and_test_cpu_required, check_files]

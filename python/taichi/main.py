@@ -587,6 +587,7 @@ class TaichiMain:
         root_dir = ti.package_root()
         test_dir = os.path.join(root_dir, 'tests')
         test_dir_38 = os.path.join(root_dir, 'tests38')
+        assert os.path.exists(test_dir_38), f"test38 path {test_dir_38} does not exist"
         pytest_args = []
 
         # TODO: use pathlib to deal with suffix and stem name manipulation

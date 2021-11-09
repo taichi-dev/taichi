@@ -1026,8 +1026,11 @@ void CodeGenLLVM::visit(LocalStoreStmt *stmt) {
   auto mask = stmt->parent->mask();
   // This is redundant local store.
   if (stmt->val->is<AtomicOpStmt>()) {
-    auto atomic_dst_type = stmt->val->cast<AtomicOpStmt>()->dest->ret_type->as<PointerType>()->get_pointee_type();
-    if (atomic_dst_type->is<CustomIntType>() || atomic_dst_type->is<CustomFloatType>()) {
+    auto atomic_dst_type = stmt->val->cast<AtomicOpStmt>()
+                               ->dest->ret_type->as<PointerType>()
+                               ->get_pointee_type();
+    if (atomic_dst_type->is<CustomIntType>() ||
+        atomic_dst_type->is<CustomFloatType>()) {
       TI_WARN("AtomicOp for CustomInt/CustomFloat should be used alone.");
       return;
     }

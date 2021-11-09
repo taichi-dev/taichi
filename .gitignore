@@ -57,7 +57,6 @@ __pycache__
 *.jpg
 !docs/**/*.jpg
 !docs/**/*.png
-!tests/python/images/*.png
 !tests/python/expected/*.png
 *.egg-info
 .tlang_cache

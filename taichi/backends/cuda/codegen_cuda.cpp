@@ -447,7 +447,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       return nullptr;
     }
     AtomicOpType op = stmt->op_type;
-    if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16) && op == AtomicOpType::add) {
+    if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
       switch (op) {
         case AtomicOpType::add:
           return cas(llvm_val[stmt->dest], llvm_val[stmt->val], [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });

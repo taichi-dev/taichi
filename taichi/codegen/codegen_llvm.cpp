@@ -1174,7 +1174,7 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
-llvm::Value* CodeGenLLVM::cas(llvm::Value* dest, llvm::Value* val, std::function<llvm::Value*(llvm::Value*, llvm::Value*)> op) {
+void CodeGenLLVM::cas(llvm::Value* dest, llvm::Value* val, std::function<llvm::Value*(llvm::Value*, llvm::Value*)> op) {
   using namespace llvm;
   BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
   BasicBlock *after_loop =BasicBlock::Create(*llvm_context, "after_while", func);
@@ -1193,8 +1193,6 @@ llvm::Value* CodeGenLLVM::cas(llvm::Value* dest, llvm::Value* val, std::function
   }
 
   builder->SetInsertPoint(after_loop);
-
-  return dest;
 }
 
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
@@ -1204,9 +1202,17 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   for (int l = 0; l < stmt->width(); l++) {
     llvm::Value *old_value;
-    if (is_real(stmt->val->ret_type) && stmt->op_type == AtomicOpType::add) {
-      llvm_val[stmt] = cas(llvm_val[stmt->dest], llvm_val[stmt->val], [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
-      return;
+    if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      switch (stmt->op_type) {
+        case AtomicOpType::add:
+          cas(llvm_val[stmt->dest], llvm_val[stmt->val], [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
+        case AtomicOpType::max:
+          cas(llvm_val[stmt->dest], llvm_val[stmt->val], [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
+        case AtomicOpType::min:
+          cas(llvm_val[stmt->dest], llvm_val[stmt->val], [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
+        default:
+          break;
+      }
     }
     if (stmt->op_type == AtomicOpType::add) {
       auto dst_type =

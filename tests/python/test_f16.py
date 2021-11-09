@@ -219,6 +219,7 @@ def test_fractal_f16():
 
     paint(0.03)
 
+
 @ti.test(arch=archs_support_f16)
 def test_atomic_add_f16():
     f = ti.field(dtype=ti.f16, shape=(2))
@@ -233,7 +234,8 @@ def test_atomic_add_f16():
                 f[1] += 1.12
 
     foo()
-    assert(f[0] == f[1])
+    assert (f[0] == f[1])
+
 
 @ti.test(arch=archs_support_f16)
 def test_atomic_max_f16():
@@ -249,7 +251,8 @@ def test_atomic_max_f16():
                 f[1] = ti.max(1.12 * i, f[1])
 
     foo()
-    assert(f[0] == f[1])
+    assert (f[0] == f[1])
+
 
 @ti.test(arch=archs_support_f16)
 def test_atomic_min_f16():
@@ -265,4 +268,4 @@ def test_atomic_min_f16():
                 f[1] = ti.max(-3.13 * i, f[1])
 
     foo()
-    assert(f[0] == f[1])
+    assert (f[0] == f[1])

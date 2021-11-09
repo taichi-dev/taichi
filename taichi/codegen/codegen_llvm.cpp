@@ -1174,10 +1174,14 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
-void CodeGenLLVM::cas(llvm::Value* dest, llvm::Value* val, std::function<llvm::Value*(llvm::Value*, llvm::Value*)> op) {
+void CodeGenLLVM::cas(
+    llvm::Value *dest,
+    llvm::Value *val,
+    std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
   using namespace llvm;
   BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
-  BasicBlock *after_loop =BasicBlock::Create(*llvm_context, "after_while", func);
+  BasicBlock *after_loop =
+      BasicBlock::Create(*llvm_context, "after_while", func);
 
   builder->CreateBr(body);
   builder->SetInsertPoint(body);
@@ -1185,8 +1189,14 @@ void CodeGenLLVM::cas(llvm::Value* dest, llvm::Value* val, std::function<llvm::V
   {
     auto old_val = builder->CreateLoad(dest);
     auto new_val = op(old_val, val);
-    dest = builder->CreateBitCast(dest, llvm::Type::getInt16PtrTy(*llvm_context));
-    auto atomicCmpXchg = builder->CreateAtomicCmpXchg(dest, builder->CreateBitCast(old_val, llvm::Type::getInt16Ty(*llvm_context)), builder->CreateBitCast(new_val, llvm::Type::getInt16Ty(*llvm_context)), AtomicOrdering::SequentiallyConsistent, AtomicOrdering::SequentiallyConsistent);
+    dest =
+        builder->CreateBitCast(dest, llvm::Type::getInt16PtrTy(*llvm_context));
+    auto atomicCmpXchg = builder->CreateAtomicCmpXchg(
+        dest,
+        builder->CreateBitCast(old_val, llvm::Type::getInt16Ty(*llvm_context)),
+        builder->CreateBitCast(new_val, llvm::Type::getInt16Ty(*llvm_context)),
+        AtomicOrdering::SequentiallyConsistent,
+        AtomicOrdering::SequentiallyConsistent);
     // Check whether CAS was succussful
     auto ok = builder->CreateExtractValue(atomicCmpXchg, 1);
     builder->CreateCondBr(builder->CreateNot(ok), body, after_loop);
@@ -1205,11 +1215,14 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
     if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
       switch (stmt->op_type) {
         case AtomicOpType::add:
-          cas(llvm_val[stmt->dest], llvm_val[stmt->val], [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
+          cas(llvm_val[stmt->dest], llvm_val[stmt->val],
+              [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
         case AtomicOpType::max:
-          cas(llvm_val[stmt->dest], llvm_val[stmt->val], [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
+          cas(llvm_val[stmt->dest], llvm_val[stmt->val],
+              [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
         case AtomicOpType::min:
-          cas(llvm_val[stmt->dest], llvm_val[stmt->val], [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
+          cas(llvm_val[stmt->dest], llvm_val[stmt->val],
+              [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
         default:
           break;
       }

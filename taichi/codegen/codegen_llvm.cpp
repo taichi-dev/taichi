@@ -1174,7 +1174,7 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
-void CodeGenLLVM::cas(
+void CodeGenLLVM::atomic_op_using_cas(
     llvm::Value *dest,
     llvm::Value *val,
     std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
@@ -1216,15 +1216,15 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
       // Use CAS for f16 atomic add/max/min
       switch (stmt->op_type) {
         case AtomicOpType::add:
-          cas(llvm_val[stmt->dest], llvm_val[stmt->val],
+          atomic_op_using_cas(llvm_val[stmt->dest], llvm_val[stmt->val],
               [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
           return;
         case AtomicOpType::max:
-          cas(llvm_val[stmt->dest], llvm_val[stmt->val],
+          atomic_op_using_cas(llvm_val[stmt->dest], llvm_val[stmt->val],
               [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
           return;
         case AtomicOpType::min:
-          cas(llvm_val[stmt->dest], llvm_val[stmt->val],
+          atomic_op_using_cas(llvm_val[stmt->dest], llvm_val[stmt->val],
               [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
           return;
         default:

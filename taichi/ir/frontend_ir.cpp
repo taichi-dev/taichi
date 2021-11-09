@@ -441,12 +441,15 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
 void RangeAssumptionExpression::type_check() {
   // TODO: assert no unknowns after type_check for all expressions are
   // implemented
-  if (input->ret_type == PrimitiveType::unknown || base->ret_type == PrimitiveType::unknown)
+  if (input->ret_type == PrimitiveType::unknown ||
+      base->ret_type == PrimitiveType::unknown)
     return;
-  if (!input->ret_type->is<PrimitiveType>() || !base->ret_type->is<PrimitiveType>() || input->ret_type != base->ret_type)
-    throw std::runtime_error(fmt::format(
-        "TypeError: unsupported operand type(s) for 'range_assumption': '{}' and '{}'",
-        input->ret_type->to_string(), base->ret_type->to_string()));
+  if (!input->ret_type->is<PrimitiveType>() ||
+      !base->ret_type->is<PrimitiveType>() || input->ret_type != base->ret_type)
+    throw std::runtime_error(
+        fmt::format("TypeError: unsupported operand type(s) for "
+                    "'range_assumption': '{}' and '{}'",
+                    input->ret_type->to_string(), base->ret_type->to_string()));
   ret_type = input->ret_type;
 }
 
@@ -635,7 +638,8 @@ void ConstExpression::flatten(FlattenContext *ctx) {
 
 void ExternalTensorShapeAlongAxisExpression::type_check() {
   TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
-      "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression", ptr.serialize());
+                 "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression",
+                 ptr.serialize());
   ret_type = PrimitiveType::i32;
 }
 

@@ -136,7 +136,7 @@ TEST(FrontendTypeInference, RangeAssumption) {
   auto const_f64 = Expr::make<ConstExpression, float64>(5.0);
   const_f64->type_check();
   auto invalid = Expr::make<RangeAssumptionExpression>(const_f32_a, const_f64, 0, 1);
-  EXPECT_THROW(  invalid->type_check();, std::runtime_error);
+  EXPECT_THROW(invalid->type_check(), std::runtime_error);
 }
 
 TEST(FrontendTypeInference, LoopUnique) {
@@ -144,7 +144,7 @@ TEST(FrontendTypeInference, LoopUnique) {
   const_i64->type_check();
   auto loop_unique = Expr::make<LoopUniqueExpression>(const_i64, std::vector<SNode *>{});
   loop_unique->type_check();
-  EXPECT_EQ(  loop_unique->ret_type, PrimitiveType::i64);
+  EXPECT_EQ(loop_unique->ret_type, PrimitiveType::i64);
 }
 
 }  // namespace lang

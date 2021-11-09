@@ -53,6 +53,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   loop_var_id.resize(loop_var.size());
   for (int i = 0; i < (int)loop_var.size(); i++) {
     loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+    loop_var[i].expr->ret_type = PrimitiveType::i32;
   }
 }
 
@@ -86,6 +87,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     vectorize = 1;
   loop_var_id.resize(1);
   loop_var_id[0] = loop_var.cast<IdExpression>()->id;
+  loop_var.expr->ret_type = PrimitiveType::i32;
 }
 
 void ArgLoadExpression::type_check() {

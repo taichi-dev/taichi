@@ -6,6 +6,8 @@ import taichi as ti
 '''
 Test fields with shape.
 '''
+
+
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_with_shape():
 
@@ -42,9 +44,12 @@ def test_fields_with_shape():
     for i in range(shape_size_1d):
         assert x[i] == i
 
+
 '''
 Test fields with builder dense.
 '''
+
+
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_dense():
 
@@ -93,9 +98,12 @@ def test_fields_builder_dense():
     for i in range(shape_size_1d):
         assert x[i] == i * 3
 
+
 '''
 Test fields with builder pointer.
 '''
+
+
 @ti.test(arch=[ti.cpu, ti.cuda, ti.metal])
 def test_fields_builder_pointer():
 
@@ -160,22 +168,26 @@ def test_fields_builder_pointer():
     for i in range(shape_size_1d):
         assert x[i] == i * 3
 
+
 '''
 Test fields with builder destory.
 '''
+
+
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_fields_builder_destroy():
 
     # [destroy] Args of main body
-    test_sizes = [1] # [1, 2, 3]
-    size_extend_factor = 1 # 10 ** 3
+    test_sizes = [1]  # [1, 2, 3]
+    size_extend_factor = 1  # 10 ** 3
     # note: currently only consider preicison all paltform supported,
     # more detailed here: https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types
     field_types = [ti.f32, ti.i32]
-    field_sizes = [1] # [1, 5, 10]
+    field_sizes = [1]  # [1, 5, 10]
 
-   # [destroy] 1. test for single destroy multiple fields
-    def test_for_single_destroy_multi_fields(test_sizes, size_extend_factor, field_types, field_sizes):
+    # [destroy] 1. test for single destroy multiple fields
+    def test_for_single_destroy_multi_fields(test_sizes, size_extend_factor,
+                                             field_types, field_sizes):
         fb = ti.FieldsBuilder()
         for tsize_idx in range(len(test_sizes)):
             for ftype_idx in range(len(field_types)):
@@ -191,10 +203,13 @@ def test_fields_builder_destroy():
                     fb_snode_tree = fb.finalize()
         fb_snode_tree.destroy()
 
-    test_for_single_destroy_multi_fields(test_sizes, size_extend_factor, field_types, field_sizes)
+    test_for_single_destroy_multi_fields(test_sizes, size_extend_factor,
+                                         field_types, field_sizes)
 
     # [destroy] 2. test for multiple destroy for multiple fields
-    def test_for_multi_destroy_multi_fields(test_sizes, size_extend_factor, field_types, field_sizes): #size_1d_0, size_1d_1):
+    def test_for_multi_destroy_multi_fields(
+            test_sizes, size_extend_factor, field_types,
+            field_sizes):  #size_1d_0, size_1d_1):
         fb0 = ti.FieldsBuilder()
         fb1 = ti.FieldsBuilder()
 
@@ -240,6 +255,8 @@ def test_fields_builder_destroy():
 '''
 Test fields with builder exceeds max.
 '''
+
+
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_fields_builder_exceeds_max():
     shape_size = (4, 4)

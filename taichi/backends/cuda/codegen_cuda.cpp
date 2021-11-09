@@ -332,12 +332,14 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   // A huge hack for supporting f16 atomic add/max/min!
-  // The reason is that LLVM10 does not support generating atomicCAS for f16 on NVPTX backend.
+  // The reason is that LLVM10 does not support generating atomicCAS for f16 on
+  // NVPTX backend.
   //
-  // int32 is used for the atomicCAS operation. So atomicCAS reads and writes 32 bit values from
-  // the memory, which is larger than the memory size required by the original
-  // atomic binary operation. We mask off the last two bits of the output_address
-  // and use the result as an address to read the 32 bit values from the memory.
+  // int32 is used for the atomicCAS operation. So atomicCAS reads and writes 32
+  // bit values from the memory, which is larger than the memory size required
+  // by the original atomic binary operation. We mask off the last two bits of
+  // the output_address and use the result as an address to read the 32 bit
+  // values from the memory.
   //
   // This can avoid out of bound memory accesses, based on the assumption:
   // All buffers are 4 byte aligned and have a size of 4N.
@@ -358,8 +360,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   //       *cas_new_output_address);
   //   } while (!success);
   //
-  // TODO(sjwsl): Try to rewrite this after upgrading LLVM or supporting raw NVPTX
-  
+  // TODO(sjwsl): Try to rewrite this after upgrading LLVM or supporting raw
+  // NVPTX
+
   llvm::Value *cas(
       llvm::Value *output_address,
       llvm::Value *val,

@@ -717,6 +717,11 @@ class Kernel:
     # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
     @_shell_pop_print
     def __call__(self, *args, **kwargs):
+        if self.is_grad and impl.current_cfg().opt_level == 0:
+            warning(
+                """opt_level = 1 is enforced to enable gradient computation."""
+            )
+            impl.current_cfg().opt_level = 1
         _taichi_skip_traceback = 1
         assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
         key = self.ensure_compiled(*args)

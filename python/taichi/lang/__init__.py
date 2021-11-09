@@ -565,6 +565,11 @@ def block_local(*args):
     Args:
         *args (List[Field]): A list of sparse Taichi fields.
     """
+    if impl.current_cfg().opt_level == 0:
+        warning(
+            """opt_level = 1 is enforced to enable bls analysis."""
+        )
+        impl.current_cfg().opt_level = 1
     for a in args:
         for v in a.get_field_members():
             _ti_core.insert_snode_access_flag(

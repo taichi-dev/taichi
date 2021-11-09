@@ -1213,6 +1213,7 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   for (int l = 0; l < stmt->width(); l++) {
     llvm::Value *old_value;
     if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      // Use CAS for f16 atomic add/max/min
       switch (stmt->op_type) {
         case AtomicOpType::add:
           cas(llvm_val[stmt->dest], llvm_val[stmt->val],

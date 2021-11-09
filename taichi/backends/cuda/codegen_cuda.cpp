@@ -331,6 +331,35 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         llvm::AtomicOrdering::SequentiallyConsistent);
   }
 
+  // A huge hack for supporting f16 atomic add/max/min!
+  // The reason is that LLVM10 does not support generating atomicCAS for f16 on NVPTX backend.
+  //
+  // int32 is used for the atomicCAS operation. So atomicCAS reads and writes 32 bit values from
+  // the memory, which is larger than the memory size required by the original
+  // atomic binary operation. We mask off the last two bits of the output_address
+  // and use the result as an address to read the 32 bit values from the memory.
+  //
+  // This can avoid out of bound memory accesses, based on the assumption:
+  // All buffers are 4 byte aligned and have a size of 4N.
+  //
+  // The pseudo code is shown below.
+  //
+  //   cas_new_output_address = alloca(32);
+  //   cas_old_output_address = alloca(32);
+  //   atomic_address = output_address & ((int64)(-4));
+  //   new_output_address = cas_new_output_address + (output_address & 3);
+  //
+  //   *cas_old_output_address = *atomic_address;
+  //   do {
+  //     *cas_new_output_address = *cas_old_output_address;
+  //     *new_output_address = operation(*new_output_address, *source_address);
+  //     (*cas_old_output_address, success) =
+  //       atomicCAS(atomic_address, *cas_old_output_address,
+  //       *cas_new_output_address);
+  //   } while (!success);
+  //
+  // TODO(sjwsl): Try to rewrite this after upgrading LLVM or supporting raw NVPTX
+  
   llvm::Value *cas(
       llvm::Value *output_address,
       llvm::Value *val,
@@ -341,7 +370,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
     // element_type is the data type for the binary operation.
     llvm::Type *element_type = output_address_type->getPointerElementType();
-    int element_size = 16;
     llvm::Type *element_address_type = element_type->getPointerTo();
 
     int atomic_size = 32;
@@ -361,29 +389,23 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     // binop_output_address points to the scratch memory that stores the
     // result of the binary operation.
     llvm::Value *binop_output_address;
-    if (element_size < 32) {
-      // Assume the element size is an integer number of bytes.
-      llvm::Type *address_int_type =
-          module->getDataLayout().getIntPtrType(output_address_type);
-      atomic_memory_address =
-          builder->CreatePtrToInt(output_address, address_int_type);
-      llvm::Value *mask = llvm::ConstantInt::get(address_int_type, 3);
-      llvm::Value *offset = builder->CreateAnd(atomic_memory_address, mask);
-      mask = llvm::ConstantInt::get(address_int_type, -4);
-      atomic_memory_address = builder->CreateAnd(atomic_memory_address, mask);
-      atomic_memory_address =
-          builder->CreateIntToPtr(atomic_memory_address, atomic_address_type);
-      binop_output_address = builder->CreateAdd(
-          builder->CreatePtrToInt(cas_new_output_address, address_int_type),
-          offset);
-      binop_output_address =
-          builder->CreateIntToPtr(binop_output_address, element_address_type);
-    } else {
-      atomic_memory_address =
-          builder->CreateBitCast(output_address, atomic_address_type);
-      binop_output_address =
-          builder->CreateBitCast(cas_new_output_address, element_address_type);
-    }
+
+    // Calculate bin_output_address output_address
+    llvm::Type *address_int_type =
+        module->getDataLayout().getIntPtrType(output_address_type);
+    atomic_memory_address =
+        builder->CreatePtrToInt(output_address, address_int_type);
+    llvm::Value *mask = llvm::ConstantInt::get(address_int_type, 3);
+    llvm::Value *offset = builder->CreateAnd(atomic_memory_address, mask);
+    mask = llvm::ConstantInt::get(address_int_type, -4);
+    atomic_memory_address = builder->CreateAnd(atomic_memory_address, mask);
+    atomic_memory_address =
+        builder->CreateIntToPtr(atomic_memory_address, atomic_address_type);
+    binop_output_address = builder->CreateAdd(
+        builder->CreatePtrToInt(cas_new_output_address, address_int_type),
+        offset);
+    binop_output_address =
+        builder->CreateIntToPtr(binop_output_address, element_address_type);
 
     // Use the value from the memory that atomicCAS operates on to initialize
     // cas_old_output.

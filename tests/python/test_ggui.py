@@ -24,11 +24,11 @@ def write_temp_image(window):
 
 def verify_image(window, image_name):
     if REGENERATE_GROUNDTRUTH_IMAGES:
-        ground_truth_name = f"tests/python/images/{image_name}_truth.png"
+        ground_truth_name = f"tests/python/expected/{image_name}.png"
         window.write_image(ground_truth_name)
     else:
         ground_truth_name = str(
-            pathlib.Path(__file__).parent) + f"/images/{image_name}_truth.png"
+            pathlib.Path(__file__).parent) + f"/expected/{image_name}.png"
         actual_name = get_temp_png()
         window.write_image(actual_name)
         ground_truth_np = ti.imread(ground_truth_name)

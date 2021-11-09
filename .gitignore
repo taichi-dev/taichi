@@ -58,6 +58,7 @@ __pycache__
 !docs/**/*.jpg
 !docs/**/*.png
 !tests/python/images/*.png
+!tests/python/expected/*.png
 *.egg-info
 .tlang_cache
 /taichi/common/version.h

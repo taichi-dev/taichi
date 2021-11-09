@@ -1174,7 +1174,7 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
-llvm::Value* CodeGenLLVM::atomic_op_using_cas(
+llvm::Value *CodeGenLLVM::atomic_op_using_cas(
     llvm::Value *dest,
     llvm::Value *val,
     std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
@@ -1186,7 +1186,7 @@ llvm::Value* CodeGenLLVM::atomic_op_using_cas(
   builder->CreateBr(body);
   builder->SetInsertPoint(body);
 
-  llvm::Value* old_val;
+  llvm::Value *old_val;
 
   {
     old_val = builder->CreateLoad(dest);
@@ -1241,7 +1241,9 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
             llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
-        old_value = atomic_op_using_cas(llvm_val[stmt->dest], llvm_val[stmt->val], [&](auto v1, auto v2){ return builder->CreateMinNum(v1, v2); });
+        old_value = atomic_op_using_cas(
+            llvm_val[stmt->dest], llvm_val[stmt->val],
+            [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
         old_value = create_call("atomic_min_f32",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -1257,7 +1259,9 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
             llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
-        old_value = atomic_op_using_cas(llvm_val[stmt->dest], llvm_val[stmt->val], [&](auto v1, auto v2){ return builder->CreateMaxNum(v1, v2); });
+        old_value = atomic_op_using_cas(
+            llvm_val[stmt->dest], llvm_val[stmt->val],
+            [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
         old_value = create_call("atomic_max_f32",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});

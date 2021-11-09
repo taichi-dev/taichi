@@ -451,8 +451,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           cas_old_output_address);
       // Extract the success bit returned from atomicCAS and generate a
       // conditional branch on the success bit.
-      builder->CreateCondBr(builder->CreateExtractValue(ret_value, 1, "success"),
-                            loop_exit_bb, loop_body_bb);
+      builder->CreateCondBr(
+          builder->CreateExtractValue(ret_value, 1, "success"), loop_exit_bb,
+          loop_body_bb);
     }
 
     builder->SetInsertPoint(loop_exit_bb);

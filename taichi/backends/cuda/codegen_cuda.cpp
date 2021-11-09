@@ -363,7 +363,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   // TODO(sjwsl): Try to rewrite this after upgrading LLVM or supporting raw
   // NVPTX
 
-  llvm::Value *cas(
+  llvm::Value *atomic_op_using_cas(
       llvm::Value *output_address,
       llvm::Value *val,
       std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
@@ -423,73 +423,41 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     builder->CreateBr(loop_body_bb);
     builder->SetInsertPoint(loop_body_bb);
 
-    // Emit the body of the loop that repeatedly invokes atomicCAS.
-    //
-    // Use cas_old_output to initialize cas_new_output.
-    cas_old_output =
-        builder->CreateLoad(cas_old_output_address, "cas_old_output");
-    builder->CreateStore(cas_old_output, cas_new_output_address);
-    // Emits code to calculate new_output = operation(old_output, source);
+    // loop body for one atomicCAS
+    {
+      // Use cas_old_output to initialize cas_new_output.
+      cas_old_output =
+          builder->CreateLoad(cas_old_output_address, "cas_old_output");
+      builder->CreateStore(cas_old_output, cas_new_output_address);
 
-    auto binop_output = op(builder->CreateLoad(binop_output_address), val);
-    builder->CreateStore(binop_output, binop_output_address);
+      auto binop_output = op(builder->CreateLoad(binop_output_address), val);
+      builder->CreateStore(binop_output, binop_output_address);
 
-    llvm::Value *cas_new_output =
-        builder->CreateLoad(cas_new_output_address, "cas_new_output");
+      llvm::Value *cas_new_output =
+          builder->CreateLoad(cas_new_output_address, "cas_new_output");
 
-    // Emit code to perform the atomicCAS operation
-    // (cas_old_output, success) = atomicCAS(memory_address, cas_old_output,
-    //                                       cas_new_output);
-    llvm::Value *ret_value = builder->CreateAtomicCmpXchg(
-        atomic_memory_address, cas_old_output, cas_new_output,
-        llvm::AtomicOrdering::SequentiallyConsistent,
-        llvm::AtomicOrdering::SequentiallyConsistent);
+      // Emit code to perform the atomicCAS operation
+      // (cas_old_output, success) = atomicCAS(memory_address, cas_old_output,
+      //                                       cas_new_output);
+      llvm::Value *ret_value = builder->CreateAtomicCmpXchg(
+          atomic_memory_address, cas_old_output, cas_new_output,
+          llvm::AtomicOrdering::SequentiallyConsistent,
+          llvm::AtomicOrdering::SequentiallyConsistent);
 
-    // Extract the memory value returned from atomicCAS and store it as
-    // cas_old_output.
-    builder->CreateStore(
-        builder->CreateExtractValue(ret_value, 0, "cas_old_output"),
-        cas_old_output_address);
-    // Extract the success bit returned from atomicCAS and generate a
-    // conditional branch on the success bit.
-    builder->CreateCondBr(builder->CreateExtractValue(ret_value, 1, "success"),
-                          loop_exit_bb, loop_body_bb);
+      // Extract the memory value returned from atomicCAS and store it as
+      // cas_old_output.
+      builder->CreateStore(
+          builder->CreateExtractValue(ret_value, 0, "cas_old_output"),
+          cas_old_output_address);
+      // Extract the success bit returned from atomicCAS and generate a
+      // conditional branch on the success bit.
+      builder->CreateCondBr(builder->CreateExtractValue(ret_value, 1, "success"),
+                            loop_exit_bb, loop_body_bb);
+    }
 
     builder->SetInsertPoint(loop_exit_bb);
 
     return output_address;
-
-    // BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body",
-    // func); BasicBlock *after_loop =BasicBlock::Create(*llvm_context,
-    // "after_while", func);
-    //
-    // builder->CreateBr(body);
-    // builder->SetInsertPoint(body);
-    //
-    // {
-    //   auto old_val = builder->CreateLoad(dest);
-    //   auto int_new_val = builder->CreateBitCast(op(old_val, val),
-    //   llvm::Type::getInt32Ty(*llvm_context)); auto int_old_val =
-    //   builder->CreateBitCast(old_val, llvm::Type::getInt32Ty(*llvm_context));
-    //   dest = builder->CreateBitCast(dest,
-    //   llvm::Type::getInt32PtrTy(*llvm_context)); auto tmp =
-    //   builder->CreateIntrinsic(Intrinsic::nvvm_atomic_cas_gen_i_sys,
-    //   {int_new_val->getType(), dest->getType()}, {dest, int_new_val,
-    //   int_old_val}); builder->CreatePtrToInt();
-    //   // auto atomicCmpXchg = builder->CreateAtomicCmpXchg(dest,
-    //   builder->CreateBitCast(old_val, llvm::Type::getInt16Ty(*llvm_context)),
-    //   builder->CreateBitCast(new_val, llvm::Type::getInt16Ty(*llvm_context)),
-    //   AtomicOrdering::SequentiallyConsistent,
-    //   AtomicOrdering::SequentiallyConsistent);
-    //   // Check whether CAS was succussfukkkl
-    //   // auto ok = builder->CreateExtractValue(atomicCmpXchg, 1);
-    //   builder->CreateCondBr(builder->CreateICmpNE(tmp, int_new_val), body,
-    //   after_loop);
-    // }
-    //
-    // builder->SetInsertPoint(after_loop);
-    //
-    // return dest;
   }
 
   llvm::Value *real_type_atomic(AtomicOpStmt *stmt) {
@@ -500,15 +468,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
       switch (op) {
         case AtomicOpType::add:
-          return cas(
+          return atomic_op_using_cas(
               llvm_val[stmt->dest], llvm_val[stmt->val],
               [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
         case AtomicOpType::max:
-          return cas(
+          return atomic_op_using_cas(
               llvm_val[stmt->dest], llvm_val[stmt->val],
               [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
         case AtomicOpType::min:
-          return cas(
+          return atomic_op_using_cas(
               llvm_val[stmt->dest], llvm_val[stmt->val],
               [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
         default:
@@ -523,6 +491,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
                        std::unordered_map<AtomicOpType, std::string>>
         atomics;
 
+    atomics[PrimitiveTypeID::f32][AtomicOpType::add] = "atomic_add_f32";
+    atomics[PrimitiveTypeID::f64][AtomicOpType::add] = "atomic_add_f64";
     atomics[PrimitiveTypeID::f32][AtomicOpType::min] = "atomic_min_f32";
     atomics[PrimitiveTypeID::f64][AtomicOpType::min] = "atomic_min_f64";
     atomics[PrimitiveTypeID::f32][AtomicOpType::max] = "atomic_max_f32";

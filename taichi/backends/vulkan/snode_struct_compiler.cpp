@@ -76,11 +76,13 @@ class StructCompiler {
     // Find the start bit
     sn_desc.axis_start_bit[0] = 0;
     for (int i = 1; i < taichi_max_num_indices; i++) {
-      sn_desc.axis_start_bit[i] = sn_desc.axis_bits_sum[i - 1] +  sn_desc.axis_start_bit[i - 1];
+      sn_desc.axis_start_bit[i] =
+          sn_desc.axis_bits_sum[i - 1] + sn_desc.axis_start_bit[i - 1];
     }
     TI_TRACE("Indices at SNode {}", sn->get_name());
     for (int i = 0; i < taichi_max_num_indices; i++) {
-      TI_TRACE("Index {}: {}..{}", i, sn_desc.axis_start_bit[i], sn_desc.axis_start_bit[i] + sn_desc.axis_bits_sum[i]);
+      TI_TRACE("Index {}: {}..{}", i, sn_desc.axis_start_bit[i],
+               sn_desc.axis_start_bit[i] + sn_desc.axis_bits_sum[i]);
     }
 
     TI_TRACE("SNodeDescriptor");

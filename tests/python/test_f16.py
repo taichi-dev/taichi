@@ -220,7 +220,8 @@ def test_fractal_f16():
     paint(0.03)
 
 
-@ti.test(arch=archs_support_f16)
+# TODO(): Vulkan support
+@ti.test(arch=[ti.cpu, ti.cuda])
 def test_atomic_add_f16():
     f = ti.field(dtype=ti.f16, shape=(2))
 
@@ -239,7 +240,8 @@ def test_atomic_add_f16():
     assert (f[0] == f[1])
 
 
-@ti.test(arch=archs_support_f16)
+# TODO(): Vulkan support
+@ti.test(arch=[ti.cpu, ti.cuda])
 def test_atomic_max_f16():
     f = ti.field(dtype=ti.f16, shape=(2))
 
@@ -257,8 +259,8 @@ def test_atomic_max_f16():
     foo()
     assert (f[0] == f[1])
 
-
-@ti.test(arch=archs_support_f16)
+# TODO(): Vulkan support
+@ti.test(arch=[ti.cpu, ti.cuda])
 def test_atomic_min_f16():
     f = ti.field(dtype=ti.f16, shape=(2))
 

@@ -26,6 +26,23 @@ DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
   return alloc;
 }
 
+DeviceAllocation CpuDevice::allocate_memory_runtime(const AllocParams &params,
+                                                    JITModule *runtime_jit,
+                                                    LLVMRuntime *runtime,
+                                                    uint64 *result_buffer) {
+  AllocInfo info;
+  info.ptr = allocate_llvm_runtime_memory_jit(runtime_jit, runtime, params.size,
+                                              result_buffer);
+  info.size = params.size;
+
+  DeviceAllocation alloc;
+  alloc.alloc_id = allocations_.size();
+  alloc.device = this;
+
+  allocations_.push_back(info);
+  return alloc;
+}
+
 void CpuDevice::dealloc_memory(DeviceAllocation handle) {
   validate_device_alloc(handle);
   AllocInfo &info = allocations_[handle.alloc_id];
@@ -48,6 +65,11 @@ DeviceAllocation CpuDevice::import_memory(void *ptr, size_t size) {
 
   allocations_.push_back(info);
   return alloc;
+}
+
+uint64 CpuDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
+  uint64 ret = result_buffer[i];
+  return ret;
 }
 
 }  // namespace cpu

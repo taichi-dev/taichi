@@ -804,8 +804,8 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
                         if tb.tb_frame.f_code.co_name == 'taichi_ast_generator':
                             tb = tb.tb_next
                             if sys.version_info < (3, 7):
-                                # traceback object is read-only on Python <= 3.7,
-                                # print the traceback only
+                                # The traceback object is read-only on Python < 3.7,
+                                # print the traceback and raise
                                 traceback.print_tb(tb,
                                                    limit=1,
                                                    file=sys.stderr)

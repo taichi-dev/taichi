@@ -408,7 +408,7 @@ class IRBuilder(Builder):
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value
-                return ast.Pass()
+            return ast.Pass()
         else:
             ctx.return_data = node.value.ptr
         return node

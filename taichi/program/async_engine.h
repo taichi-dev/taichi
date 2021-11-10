@@ -138,7 +138,6 @@ class AsyncEngine {
   std::unique_ptr<StateFlowGraph> sfg;
 
   explicit AsyncEngine(const CompileConfig *const config,
-                       const std::unordered_map<int, SNode *> &snodes,
                        const BackendExecCompilationFunc &compile_to_backend);
 
   void clear_cache() {

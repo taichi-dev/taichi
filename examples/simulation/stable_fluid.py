@@ -12,13 +12,13 @@ import taichi as ti
 
 # How to run:
 #   `python stable_fluid.py`: use the jacobi iteration to solve the linear system.
-#   `python stable_fluid.py -s`: use a sparse matrix to do so.
+#   `python stable_fluid.py -S`: use a sparse matrix to do so.
 parser = argparse.ArgumentParser()
-parser.add_argument('-s',
+parser.add_argument('-S',
                     '--use-sp-mat',
                     action='store_true',
                     help='Solve Poisson\'s equation by using a sparse matrix')
-args = parser.parse_args()
+args, unknowns = parser.parse_known_args()
 
 res = 512
 dt = 0.03
@@ -69,7 +69,7 @@ dyes_pair = TexPair(_dye_buffer, _new_dye_buffer)
 if use_sparse_matrix:
     # use a sparse matrix to solve Poisson's pressure equation.
     @ti.kernel
-    def fill_laplacian_matrix(A: ti.sparse_matrix_builder()):
+    def fill_laplacian_matrix(A: ti.linalg.sparse_matrix_builder()):
         for i, j in ti.ndrange(res, res):
             row = i * res + j
             center = 0.0
@@ -88,12 +88,12 @@ if use_sparse_matrix:
             A[row, row] += center
 
     N = res * res
-    K = ti.SparseMatrixBuilder(N, N, max_num_triplets=N * 6)
+    K = ti.linalg.SparseMatrixBuilder(N, N, max_num_triplets=N * 6)
     b = ti.field(ti.f32, shape=N)
 
     fill_laplacian_matrix(K)
     L = K.build()
-    solver = ti.SparseSolver(solver_type="LLT")
+    solver = ti.linalg.SparseSolver(solver_type="LLT")
     solver.analyze_pattern(L)
     solver.factorize(L)
 

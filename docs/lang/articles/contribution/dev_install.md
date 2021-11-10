@@ -31,14 +31,28 @@ This section documents how to configure the Taichi development environment and b
 On Linux, `clang` is the **only** supported compiler for compiling the Taichi package.
 :::
 
+:::danger
+Taichi doesn't support building with `clang++-12` and above yet.
+`clang++-10` is highly recommended but if you're on a newer (>=11) macOS,
+building with `clang++-11` also works through `brew install llvm@11` and `export CXX=/opt/homebrew/opt/llvm@11/bin/clang++`.
+:::
+
 :::note
-On Linux, some additional packages might be required to build Taichi. E.g., on Ubuntu 20.04, you may need `libxi-dev` `libxcursor-dev` `libxinerama-dev` `libxrandr-dev` `libx11-dev` `libgl-dev` `libtinfo5`. please check the output of of CMake when building from source.
+On Linux, some additional packages might be required to build Taichi. E.g., on Ubuntu 20.04, you may need `libxi-dev` `libxcursor-dev` `libxinerama-dev` `libxrandr-dev` `libx11-dev` `libgl-dev`. please check the output of of CMake when building from source.
 :::
 
 3. LLVM: Make sure you have version 10.0.0 installed. Taichi uses a **customized LLVM**, which we provided as binaries depending on your system environment. Note that the pre-built binaries from the LLVM official website or other sources may not work.
    - [LLVM 10.0.0 for Linux](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_linux_patch2/taichi-llvm-10.0.0-linux.zip)
-   - [LLVM 10.0.0 for macOS](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip)
+   - [LLVM 10.0.0 for macOS (excluding M1)](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip)
+   - [LLVM 10.0.0 for macOS (M1 chip)](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_m1/llvm-10.0.0-m1.zip)
    - [LLVM 10.0.0 for Windows MSVC 2019](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip)
+
+
+:::caution
+If you encounter `llvm-as can’t be opened because Apple cannot check it for malicious software on macOS`, you have two options to work around this:
+  - (One-off) `System Preferences` -> `Security & Privacy` -> `General` -> `Allow anyway`
+  - (Permanent) Run `sudo spctl --master-disable` in your terminal to allow your MacBook to download apps from anywhere by default.
+:::
 
 :::note
 When using the above pre-built LLVM for Taichi, please add `$LLVM_FOLDER/bin` to `PATH`, e.g., `export PATH=<path_to_llvm_folder>/bin:$PATH` on Linux.
@@ -120,7 +134,7 @@ After Vulkan is successfully installed. You can build Taichi with Vulkan by addi
   git clone --recursive https://github.com/taichi-dev/taichi
   cd taichi
   python3 -m pip install --user -r requirements_dev.txt
-  # export CXX=/path/to/clang  # Uncomment if clang is not system default compiler.
+  # export CXX=/path/to/clang++  # Uncomment if clang++ is not system default compiler. Note that clang is not acceptable due to requirements of some submodules.
   python3 setup.py develop --user  # Optionally add DEBUG=1 to keep debug information.
   ```
 
@@ -135,10 +149,10 @@ shipped with .NET).
 :::note
 `python setup.py develop` command (recommended for developers) works very similarly to
 `setup.py install` command (recommended for users) except
-that it doesn't actually install anything. It fits developer need better since edits
-on python file take effect immediately without rebuilding. You only need to rerun `develop`
-commands when you change a project’s C extensions or similarly compiled files. See
-[development mode](https://setuptools.pypa.io/en/stable/userguide/development_mode.html) for more details.
+that it doesn't actually install anything, but only adds a symbolic link in the deployment directory that links to the source code. It fits developers' needs better since edits
+on python files take effect immediately without rebuilding. You only need to rerun `develop`
+commands when you modify a project's C extensions or similarly compiled files. In comparison `install` deep copies the source code so you need to rerun it after any modification.
+See [development mode](https://setuptools.pypa.io/en/stable/userguide/development_mode.html) for more details.
 :::
 
 2. Check out the `examples` folder for runnable examples. Run them with commands

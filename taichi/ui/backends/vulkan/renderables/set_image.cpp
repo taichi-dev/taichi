@@ -25,6 +25,9 @@ void SetImage::update_ubo(float x_factor, float y_factor) {
 }
 
 void SetImage::update_data(const SetImageInfo &info) {
+  Program &program = get_current_program();
+  program.synchronize();
+
   const FieldInfo &img = info.img;
 
   int new_width = get_correct_dimension(img.shape[0]);
@@ -43,7 +46,6 @@ void SetImage::update_data(const SetImageInfo &info) {
   app_context_->device().image_transition(texture_, ImageLayout::shader_read,
                                           ImageLayout::transfer_dst);
 
-  Program &program = get_current_program();
   DevicePtr img_dev_ptr = get_device_ptr(&program, img.snode);
   uint64_t img_size = pixels * 4;
 
@@ -82,6 +84,8 @@ void SetImage::init_set_image(AppContext *app_context,
                               int img_width,
                               int img_height) {
   RenderableConfig config = {
+      6,
+      6,
       6,
       6,
       sizeof(UniformBufferObject),
@@ -124,8 +128,9 @@ void SetImage::create_texture() {
   cpu_staging_buffer_ =
       app_context_->device().allocate_memory(cpu_staging_buffer_params);
 
-  Device::AllocParams gpu_staging_buffer_params{image_size, false, false, true,
-                                                AllocUsage::Uniform};
+  Device::AllocParams gpu_staging_buffer_params{
+      image_size, false, false, app_context_->requires_export_sharing(),
+      AllocUsage::Uniform};
   gpu_staging_buffer_ =
       app_context_->device().allocate_memory(gpu_staging_buffer_params);
 }

@@ -1,13 +1,10 @@
-from dataclasses import dataclass
-
 from taichi.core import ti_core as _ti_core
 
 
-@dataclass
 class CuptiMetric:
-    """A data class to add CUPTI metric for :class:`~taichi.lang.KernelProfiler`.
+    """A class to add CUPTI metric for :class:`~taichi.lang.KernelProfiler`.
 
-    This data class is designed to add user selected CUPTI metrics.
+    This class is designed to add user selected CUPTI metrics.
     Only available for the CUDA backend now, i.e. you need ``ti.init(kernel_profiler=True, arch=ti.cuda)``.
     For usage of this class, see examples in func :func:`~taichi.lang.set_kernel_profile_metrics` and :func:`~taichi.lang.collect_kernel_profile_metrics`.
 
@@ -49,10 +46,15 @@ class CuptiMetric:
     Note:
         For details about using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
     """
-    name: str = ''
-    header: str = ''
-    format: str = ''
-    scale: float = 1.0
+    def __init__(self,
+                 name='',
+                 header='unnamed_header',
+                 format='     {:8.0f} ',
+                 scale=1.0):
+        self.name = name
+        self.header = header
+        self.format = format
+        self.scale = scale
 
 
 # Global Memory Metrics
@@ -166,7 +168,6 @@ achieved_occupancy = CuptiMetric(
 
 # metric suite: global load & store
 global_access = [
-    dram_utilization,
     dram_bytes_sum,
     dram_bytes_throughput,
     dram_bytes_read,
@@ -177,7 +178,6 @@ global_access = [
 
 # metric suite: shared load & store
 shared_access = [
-    shared_utilization,
     shared_transactions_load,
     shared_transactions_store,
     shared_bank_conflicts_store,

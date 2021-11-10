@@ -174,22 +174,3 @@ def test_fields_builder_destroy():
         A(5)
     B(2)
     A(4)
-
-
-@ti.test(arch=[ti.cpu, ti.cuda])
-def test_fields_builder_exceeds_max():
-    sz = 4
-
-    def create_fb():
-        fb = ti.FieldsBuilder()
-        x = ti.field(ti.f32)
-        fb.dense(ti.ij, (sz, sz)).place(x)
-        fb.finalize()
-
-    # kMaxNumSnodeTreesLlvm=32 in taichi/inc/constants.h
-    for _ in range(32):
-        create_fb()
-
-    with pytest.raises(RuntimeError) as e:
-        create_fb()
-    assert 'LLVM backend supports up to 32 snode trees' in e.value.args[0]

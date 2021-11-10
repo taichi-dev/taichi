@@ -241,3 +241,22 @@ def test_oop_with_portery_decorator():
     assert a.kernel_property == 42
 
     assert a.raw_proterty == 3
+
+
+@ti.test()
+def test_oop_with_static_decorator():
+    @ti.data_oriented
+    class TestStatic:
+        @staticmethod
+        @ti.kernel
+        def kernel_static() -> ti.i32:
+            return 42
+
+        @staticmethod
+        def raw_static():
+            return 3
+
+    a = TestStatic()
+    assert a.kernel_static() == 42
+
+    assert a.raw_static() == 3

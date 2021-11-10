@@ -1,3 +1,6 @@
+import sys
+import traceback
+
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
@@ -35,6 +38,20 @@ class Expr(TaichiOperations):
             assert False
         if self.tb:
             self.ptr.set_tb(self.tb)
+        try:
+            self.ptr.type_check()
+        except RuntimeError as e:
+            if str(e).startswith('TypeError: '):
+                s = traceback.extract_stack()
+                for i, l in enumerate(s):
+                    if 'taichi_ast_generator' in l:
+                        s = s[i + 1:]
+                        break
+                print('[Taichi] Compilation failed', file=sys.stderr)
+                print(traceback.format_list(s[:1])[0], end='', file=sys.stderr)
+                print(f'TaichiTypeError: {str(e)[11:]}', file=sys.stderr)
+                sys.exit(1)
+            raise e
 
     def __hash__(self):
         return self.ptr.get_raw_address()
@@ -46,11 +63,11 @@ class Expr(TaichiOperations):
         return '<ti.Expr>'
 
 
-def make_var_vector(size):
+def make_var_list(size):
     exprs = []
     for _ in range(size):
         exprs.append(_ti_core.make_id_expr(''))
-    return ti.Vector(exprs, disable_local_tensor=True)
+    return exprs
 
 
 def make_expr_group(*exprs):
@@ -63,5 +80,9 @@ def make_expr_group(*exprs):
             exprs = mat.entries
     expr_group = _ti_core.ExprGroup()
     for i in exprs:
-        expr_group.push_back(Expr(i).ptr)
+        if isinstance(i, ti.Matrix):
+            assert i.local_tensor_proxy is not None
+            expr_group.push_back(i.local_tensor_proxy)
+        else:
+            expr_group.push_back(Expr(i).ptr)
     return expr_group

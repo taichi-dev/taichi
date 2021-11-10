@@ -261,15 +261,10 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
       bool regular = true;
       auto alloca = local_load->src[0].var;
-      // TODO: store-to-load forwarding with TensorType Alloca
-      if (alloca->is<PtrOffsetStmt>()) {
-        regular = false;
-      } else {
-        for (int l = 0; l < stmt->width(); l++) {
-          if (local_load->src[l].offset != l ||
-              local_load->src[l].var != alloca) {
-            regular = false;
-          }
+      for (int l = 0; l < stmt->width(); l++) {
+        if (local_load->src[l].offset != l ||
+            local_load->src[l].var != alloca) {
+          regular = false;
         }
       }
       if (regular) {
@@ -442,6 +437,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
         // After lower_access, we only analyze local variables and stacks.
         // Do not eliminate AllocaStmt and AdStackAllocaStmt here.
         if (!stmt->is<AllocaStmt>() && !stmt->is<AdStackAllocaStmt>() &&
+            !stmt->is<ExternalFuncCallStmt>() &&
             !may_contain_variable(live_in_this_node, store_ptr) &&
             (contain_variable(killed_in_this_node, store_ptr) ||
              !may_contain_variable(live_out, store_ptr))) {
@@ -709,6 +705,10 @@ void ControlFlowGraph::live_variable_analysis(
 
   auto in_final_node_live_gen = [&config_opt](const Stmt *stmt) -> bool {
     if (stmt->is<AllocaStmt>() || stmt->is<AdStackAllocaStmt>()) {
+      return false;
+    }
+    if (stmt->is<PtrOffsetStmt>() &&
+        stmt->cast<PtrOffsetStmt>()->origin->is<AllocaStmt>()) {
       return false;
     }
     if (auto *gptr = stmt->cast<GlobalPtrStmt>();

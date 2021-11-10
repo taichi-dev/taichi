@@ -38,6 +38,9 @@ void Renderable::init_buffers() {
 }
 
 void Renderable::update_data(const RenderableInfo &info) {
+  Program &program = get_current_program();
+  program.synchronize();
+
   int num_vertices = info.vbo.shape[0];
   int num_indices;
   if (info.indices.valid) {
@@ -51,23 +54,25 @@ void Renderable::update_data(const RenderableInfo &info) {
   } else {
     num_indices = 1;
   }
-  if (num_vertices > config_.vertices_count ||
-      num_indices > config_.indices_count) {
+
+  config_.vertices_count = num_vertices;
+  config_.indices_count = num_indices;
+
+  if (num_vertices > config_.max_vertices_count ||
+      num_indices > config_.max_indices_count) {
     free_buffers();
-    config_.vertices_count = num_vertices;
-    config_.indices_count = num_indices;
+    config_.max_vertices_count = num_vertices;
+    config_.max_indices_count = num_indices;
     init_buffers();
   }
 
-  Program &program = get_current_program();
   DevicePtr vbo_dev_ptr = get_device_ptr(&program, info.vbo.snode);
   uint64_t vbo_size = sizeof(Vertex) * num_vertices;
 
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
       vertex_buffer_.get_ptr(), vbo_dev_ptr, vbo_size);
   if (memcpy_cap == Device::MemcpyCapability::Direct) {
-    Device::memcpy_direct(vertex_buffer_.get_ptr(), vbo_dev_ptr.get_ptr(),
-                          vbo_size);
+    Device::memcpy_direct(vertex_buffer_.get_ptr(), vbo_dev_ptr, vbo_size);
   } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
     Device::memcpy_via_staging(vertex_buffer_.get_ptr(),
                                staging_vertex_buffer_.get_ptr(), vbo_dev_ptr,
@@ -137,9 +142,10 @@ void Renderable::create_graphics_pipeline() {
 }
 
 void Renderable::create_vertex_buffer() {
-  size_t buffer_size = sizeof(Vertex) * config_.vertices_count;
+  size_t buffer_size = sizeof(Vertex) * config_.max_vertices_count;
 
-  Device::AllocParams vb_params{buffer_size, false, false, true,
+  Device::AllocParams vb_params{buffer_size, false, false,
+                                app_context_->requires_export_sharing(),
                                 AllocUsage::Vertex};
   vertex_buffer_ = app_context_->device().allocate_memory(vb_params);
 
@@ -150,9 +156,10 @@ void Renderable::create_vertex_buffer() {
 }
 
 void Renderable::create_index_buffer() {
-  size_t buffer_size = sizeof(int) * config_.indices_count;
+  size_t buffer_size = sizeof(int) * config_.max_indices_count;
 
-  Device::AllocParams ib_params{buffer_size, false, false, true,
+  Device::AllocParams ib_params{buffer_size, false, false,
+                                app_context_->requires_export_sharing(),
                                 AllocUsage::Index};
   index_buffer_ = app_context_->device().allocate_memory(ib_params);
 

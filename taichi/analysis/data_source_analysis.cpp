@@ -42,7 +42,7 @@ std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
 
 Stmt *get_store_data(Stmt *store_stmt) {
   // If store_stmt provides one data source, return the data.
-  if (store_stmt->is<AllocaStmt>()) {
+  if (store_stmt->is<AllocaStmt>() && !store_stmt->ret_type->is<TensorType>()) {
     // For convenience, return store_stmt instead of the const [0] it actually
     // stores.
     return store_stmt;
@@ -67,7 +67,12 @@ std::vector<Stmt *> get_store_destination(Stmt *store_stmt) {
   } else if (auto atomic = store_stmt->cast<AtomicOpStmt>()) {
     return std::vector<Stmt *>(1, atomic->dest);
   } else if (auto external_func = store_stmt->cast<ExternalFuncCallStmt>()) {
-    return external_func->output_stmts;
+    if (store_stmt->cast<ExternalFuncCallStmt>()->type ==
+        ExternalFuncCallStmt::BITCODE) {
+      return external_func->arg_stmts;
+    } else {
+      return external_func->output_stmts;
+    }
   } else {
     return std::vector<Stmt *>();
   }

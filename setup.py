@@ -35,10 +35,6 @@ classifiers = [
 ]
 
 project_name = os.getenv('PROJECT_NAME', 'taichi')
-TI_VERSION_MAJOR = 0
-TI_VERSION_MINOR = 8
-TI_VERSION_PATCH = 3
-version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 
 data_files = glob.glob('python/lib/*')
 print(data_files)
@@ -65,6 +61,8 @@ def get_os_name():
         return 'win'
     elif name.lower().startswith('linux'):
         return 'linux'
+    elif 'bsd' in name.lower():
+        return 'unix'
     assert False, "Unknown platform name %s" % name
 
 
@@ -127,9 +125,6 @@ class CMakeBuild(build_ext):
         cmake_args += [
             f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={build_directory}',
             f'-DPYTHON_EXECUTABLE={get_python_executable()}',
-            f'-DTI_VERSION_MAJOR={TI_VERSION_MAJOR}',
-            f'-DTI_VERSION_MINOR={TI_VERSION_MINOR}',
-            f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
         ]
 
         self.debug = os.getenv('DEBUG', '0') in ('1', 'ON')
@@ -171,7 +166,9 @@ class CMakeBuild(build_ext):
         ):
             shutil.rmtree(target, ignore_errors=True)
             os.makedirs(target)
-            if get_os_name() == 'linux':
+            with open(os.path.join(target, "__init__.py"), "w") as f:
+                pass
+            if get_os_name() == 'linux' or get_os_name() == 'unix':
                 shutil.copy(os.path.join(self.build_temp, 'libtaichi_core.so'),
                             os.path.join(target, 'taichi_core.so'))
             elif get_os_name() == 'osx':
@@ -223,11 +220,11 @@ class Clean(clean):
 setup(name=project_name,
       packages=packages,
       package_dir={"": package_dir},
-      version=version,
       description='The Taichi Programming Language',
       author='Taichi developers',
       author_email='yuanmhu@gmail.com',
       url='https://github.com/taichi-dev/taichi',
+      python_requires=">=3.6,<3.10",
       install_requires=[
           'numpy',
           'pybind11>=2.5.0',

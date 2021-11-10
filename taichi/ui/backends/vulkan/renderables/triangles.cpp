@@ -21,6 +21,8 @@ void Triangles::init_triangles(AppContext *app_context,
   RenderableConfig config = {
       vertices_count,
       indices_count,
+      vertices_count,
+      indices_count,
       sizeof(UniformBufferObject),
       0,
       app_context->config.package_path + "/shaders/Triangles_vk_vert.spv",

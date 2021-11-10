@@ -34,12 +34,12 @@ if (WIN32)
 endif()
 
 set(TI_WITH_GGUI OFF)
-if(TI_WITH_CUDA AND TI_WITH_VULKAN)
+if(TI_WITH_VULKAN)
     set(TI_WITH_GGUI ON)
 endif()
 
 
-if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/glad.c")
+if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/gl.c")
     set(TI_WITH_OPENGL OFF)
     message(WARNING "external/glad submodule not detected. Settings TI_WITH_OPENGL to OFF.")
 endif()
@@ -58,7 +58,7 @@ file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/
 file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal/*.cpp" "taichi/backends/metal/shaders/*")
 file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/opengl/*.cpp" "taichi/backends/opengl/shaders/*")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
-file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "taichi/backends/vulkan/shaders/*" "external/SPIRV-Reflect/spirv_reflect.c")
+file(GLOB TAICHI_VULKAN_SOURCE "taichi/backends/vulkan/*.h" "taichi/backends/vulkan/*.cpp" "external/SPIRV-Reflect/spirv_reflect.c")
 file(GLOB TAICHI_INTEROP_SOURCE "taichi/backends/interop/*.cpp" "taichi/backends/interop/*.h")
 
 
@@ -73,9 +73,6 @@ if(TI_WITH_GGUI)
     add_definitions(-DTI_WITH_GGUI)
 
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GGUI_SOURCE})
-
-    include_directories(SYSTEM external/glm)
-
 endif()
 
 # These files are compiled into .bc and loaded as LLVM module dynamically. They should not be compiled into libtaichi. So they're removed here
@@ -92,7 +89,12 @@ file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
   "taichi/backends/opengl/codegen_opengl.*"
   "taichi/backends/opengl/struct_opengl.*"
 )
-file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE "taichi/backends/vulkan/runtime.h" "taichi/backends/vulkan/runtime.cpp")
+file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE
+  "taichi/backends/vulkan/runtime.h"
+  "taichi/backends/vulkan/runtime.cpp"
+  "taichi/backends/vulkan/snode_struct_compiler.cpp"
+  "taichi/backends/vulkan/snode_struct_compiler.h"
+)
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
@@ -117,7 +119,7 @@ if (TI_WITH_OPENGL)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
   # Q: Why not external/glad/src/*.c?
   # A: To ensure glad submodule exists when TI_WITH_OPENGL is ON.
-  file(GLOB TAICHI_GLAD_SOURCE "external/glad/src/glad.c")
+  file(GLOB TAICHI_GLAD_SOURCE "external/glad/src/gl.c" "external/glad/src/egl.c")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GLAD_SOURCE})
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENGL_SOURCE})
 endif()
@@ -176,12 +178,13 @@ include_directories(${CMAKE_SOURCE_DIR})
 include_directories(external/include)
 include_directories(external/spdlog/include)
 if (TI_WITH_OPENGL)
-  include_directories(external/glad/include)
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glad/include)
 endif()
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
-if (TI_WITH_OPENGL)
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
   set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -189,6 +192,7 @@ if (TI_WITH_OPENGL)
   message("Building with GLFW")
   add_subdirectory(external/glfw)
   target_link_libraries(${LIBRARY_NAME} glfw)
+  target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/glfw/include)
 endif()
 
 if(DEFINED ENV{LLVM_DIR})
@@ -256,21 +260,13 @@ else()
     message(STATUS "TI_WITH_CUDA_TOOLKIT = OFF")
 endif()
 
+if (TI_WITH_OPENGL)
+    add_subdirectory(external/SPIRV-Cross)
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
+    target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl spirv-cross-core)
+endif()
+
 if (TI_WITH_VULKAN)
-    # Vulkan libs
-    # https://cmake.org/cmake/help/latest/module/FindVulkan.html
-    # https://github.com/PacktPublishing/Learning-Vulkan/blob/master/Chapter%2003/HandShake/CMakeLists.txt
-    find_package(Vulkan REQUIRED)
-
-    if(NOT Vulkan_FOUND)
-        message(FATAL_ERROR "TI_WITH_VULKAN is ON but Vulkan could not be found")
-    endif()
-
-    message(STATUS "Vulkan_INCLUDE_DIR=${Vulkan_INCLUDE_DIR}")
-    message(STATUS "Vulkan_LIBRARY=${Vulkan_LIBRARY}")
-
-    include_directories(external/SPIRV-Headers/include)
-
     set(SPIRV_SKIP_EXECUTABLES true)
     set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
     add_subdirectory(external/SPIRV-Tools)
@@ -278,12 +274,8 @@ if (TI_WITH_VULKAN)
     # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
     target_link_libraries(${CORE_LIBRARY_NAME} SPIRV-Tools-opt ${SPIRV_TOOLS})
 
-    # No longer link against vulkan, using volk instead
-    #target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
-    include_directories(${Vulkan_INCLUDE_DIR})
-    include_directories(external/volk)
-
-    # Is this the best way to include the SPIRV-Headers?
+    include_directories(SYSTEM external/Vulkan-Headers/include)
+    include_directories(SYSTEM external/volk)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/VulkanMemoryAllocator/include)
@@ -304,8 +296,8 @@ endif ()
 
 if (NOT WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} pthread stdc++)
-    if (APPLE)
-        # OS X
+    if (UNIX AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	# OS X or BSD
     else()
         # Linux
         target_link_libraries(${CORE_LIBRARY_NAME} stdc++fs X11)
@@ -347,6 +339,7 @@ endif ()
 
 
 if(TI_WITH_GGUI)
+    include_directories(SYSTEM PRIVATE external/glm)
 
     # Dear ImGui
     add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)

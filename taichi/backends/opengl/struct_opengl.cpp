@@ -67,7 +67,7 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   } else if (snode.type == SNodeType::dense ||
              snode.type == SNodeType::dynamic ||
              snode.type == SNodeType::root) {
-    int n = snode.num_cells_per_container;
+    int64 n = snode.num_cells_per_container;
     // the `length` field of a dynamic SNode is at it's end:
     // | x[0] | x[1] | x[2] | x[3] | ... | len |
     int extension = opengl_get_snode_meta_size(snode);

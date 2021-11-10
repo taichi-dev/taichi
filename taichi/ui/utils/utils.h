@@ -66,6 +66,7 @@ inline GLFWwindow *create_glfw_window_(const std::string &name,
   GLFWwindow *window;
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
 
   window = glfwCreateWindow(screenWidth, screenHeight, name.c_str(), nullptr,
                             nullptr);
@@ -169,7 +170,7 @@ inline std::string button_id_to_name(int id) {
   if (keys.find(id) != keys.end()) {
     return keys.at(id);
   } else {
-    throw std::runtime_error(std::string("unrecognized id: \n") +
+    throw std::runtime_error(std::string("unrecognized id: ") +
                              std::to_string(id));
   }
 }

@@ -2,7 +2,6 @@
 
 // Driver
 PER_CUDA_FUNCTION(init, cuInit, int);
-PER_CUDA_FUNCTION(driver_get_version, cuDriverGetVersion, int*);
 
 // Device management
 PER_CUDA_FUNCTION(device_get_count, cuDeviceGetCount, int *);
@@ -39,6 +38,8 @@ PER_CUDA_FUNCTION(module_load_data_ex, cuModuleLoadDataEx, void **, const char *
                   uint32, uint32 *, void **)
 PER_CUDA_FUNCTION(launch_kernel, cuLaunchKernel, void *, uint32, uint32, uint32,
                   uint32, uint32, uint32, uint32, void *, void **, void **);
+PER_CUDA_FUNCTION(kernel_get_attribute, cuFuncGetAttribute, int *, uint32, void *);
+PER_CUDA_FUNCTION(kernel_get_occupancy, cuOccupancyMaxActiveBlocksPerMultiprocessor, int *, void *, int, size_t);
 
 // Stream management
 PER_CUDA_FUNCTION(stream_synchronize, cuStreamSynchronize, void *);

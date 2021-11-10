@@ -24,7 +24,8 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   void add_per_backend_tmpl(const std::string &identifier,
                             const std::string &key,
                             Kernel *kernel) override;
-  void add_per_backend_field(const std::string &Identifier,
+  void add_field_per_backend(const std::string &Identifier,
+                             const SNode *rep_snode,
                              bool is_scalar,
                              DataType dt,
                              std::vector<int> shape,

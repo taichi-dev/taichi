@@ -33,10 +33,14 @@ class Cloth:
         self.gravity = ti.Vector([0.0, -2.0])
         self.init_pos()
         self.init_edges()
-        self.MassBuilder = ti.SparseMatrixBuilder(2 * self.NV,
-                                                  2 * self.NV,
-                                                  max_num_triplets=10000)
-
+        self.MassBuilder = ti.linalg.SparseMatrixBuilder(
+            2 * self.NV, 2 * self.NV, max_num_triplets=10000)
+        self.DBuilder = ti.linalg.SparseMatrixBuilder(2 * self.NV,
+                                                      2 * self.NV,
+                                                      max_num_triplets=10000)
+        self.KBuilder = ti.linalg.SparseMatrixBuilder(2 * self.NV,
+                                                      2 * self.NV,
+                                                      max_num_triplets=10000)
         self.init_mass_sp(self.MassBuilder)
         self.M = self.MassBuilder.build()
         self.fix_vertex = [self.N, self.NV - 1]
@@ -83,7 +87,7 @@ class Cloth:
             rest_len[idx] = (pos[idx1] - pos[idx2]).norm()
 
     @ti.kernel
-    def init_mass_sp(self, M: ti.sparse_matrix_builder()):
+    def init_mass_sp(self, M: ti.linalg.sparse_matrix_builder()):
         for i in range(self.NV):
             if self.invMass[i] != 0.0:
                 mass = 1.0 / self.invMass[i]
@@ -137,7 +141,7 @@ class Cloth:
         self.Jf[1] = ti.Matrix([[self.kf, 0], [0, self.kf]])
 
     @ti.kernel
-    def assemble_K(self, K: ti.sparse_matrix_builder()):
+    def assemble_K(self, K: ti.linalg.sparse_matrix_builder()):
         for i in self.spring:
             idx1, idx2 = self.spring[i][0], self.spring[i][1]
             for m, n in ti.static(ti.ndrange(2, 2)):
@@ -150,7 +154,7 @@ class Cloth:
             K[2 * (self.NV - 1) + m, 2 * (self.NV - 1) + n] += self.Jf[1][m, n]
 
     @ti.kernel
-    def assemble_D(self, D: ti.sparse_matrix_builder()):
+    def assemble_D(self, D: ti.linalg.sparse_matrix_builder()):
         for i in self.spring:
             idx1, idx2 = self.spring[i][0], self.spring[i][1]
             for m, n in ti.static(ti.ndrange(2, 2)):
@@ -171,17 +175,12 @@ class Cloth:
 
         self.compute_Jacobians()
         # Assemble global system
-        DBuilder = ti.SparseMatrixBuilder(2 * self.NV,
-                                          2 * self.NV,
-                                          max_num_triplets=10000)
-        self.assemble_D(DBuilder)
-        D = DBuilder.build()
 
-        KBuilder = ti.SparseMatrixBuilder(2 * self.NV,
-                                          2 * self.NV,
-                                          max_num_triplets=10000)
-        self.assemble_K(KBuilder)
-        K = KBuilder.build()
+        self.assemble_D(self.DBuilder)
+        D = self.DBuilder.build()
+
+        self.assemble_K(self.KBuilder)
+        K = self.KBuilder.build()
 
         A = self.M - h * D - h**2 * K
 
@@ -189,7 +188,7 @@ class Cloth:
         force = self.force.to_numpy().reshape(2 * self.NV)
         b = (force + h * K @ vel) * h
         # Sparse solver
-        solver = ti.SparseSolver(solver_type="LDLT")
+        solver = ti.linalg.SparseSolver(solver_type="LDLT")
         solver.analyze_pattern(A)
         solver.factorize(A)
         # Solve the linear system
@@ -234,7 +233,7 @@ if __name__ == "__main__":
                         '--use-ggui',
                         action='store_true',
                         help='Display with GGUI')
-    args = parser.parse_args()
+    args, unknowns = parser.parse_known_args()
     use_ggui = False
     use_ggui = args.use_ggui
 

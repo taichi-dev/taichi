@@ -171,7 +171,7 @@ class StmtBuilder(Builder):
             value: A node representing the value.
         """
         is_local = isinstance(target, ast.Name)
-        if is_local and ctx.is_creation(target.id):
+        if is_local and not ctx.is_var_declared(target.id):
             var_name = target.id
             target.ctx = ast.Store()
             # Create, no AST resolution needed
@@ -205,7 +205,7 @@ class StmtBuilder(Builder):
             raise TaichiSyntaxError(
                 "'else' clause for 'while' not supported in Taichi kernels")
 
-        with ctx.control_scope():
+        with ctx.control_scope_guard():
             ctx.current_control_scope().append('while')
 
             template = '''
@@ -396,13 +396,13 @@ if ti.static(1):
         template = '''
 if ti.static(1):
     __ndrange = 0
-    {} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions), disable_local_tensor=True))
     ___begin = ti.Expr(0)
     ___end = __ndrange.acc_dimensions[0]
     ___begin = ti.cast(___begin, ti.i32)
     ___end = ti.cast(___end, ti.i32)
     __ndrange_I = ti.Expr(ti.core.make_id_expr(''))
     ti.core.begin_frontend_range_for(__ndrange_I.ptr, ___begin.ptr, ___end.ptr)
+    {} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions), dt=ti.i32))
     __I = __ndrange_I
     for __grouped_I in range(len(__ndrange.dimensions)):
         __grouped_I_tmp = 0
@@ -440,13 +440,14 @@ if ti.static(1):
             template = '''
 if 1:
     ___loop_var = 0
-    {} = ti.lang.expr.make_var_vector(size=len(___loop_var.shape))
-    ___expr_group = ti.lang.expr.make_expr_group({})
+    ___loop_indices = ti.lang.expr.make_var_list(size=len(___loop_var.shape))
+    ___expr_group = ti.lang.expr.make_expr_group(___loop_indices)
     ti.begin_frontend_struct_for(___expr_group, ___loop_var)
+    {} = ti.Vector(___loop_indices, dt=ti.i32)
     ti.core.end_frontend_range_for()
             '''.format(vars, vars)
             t = ast.parse(template).body[0]
-            cut = 4
+            cut = 5
             t.body[0].value = node.iter
             t.body = t.body[:cut] + node.body + t.body[cut:]
         else:
@@ -472,7 +473,7 @@ if 1:
             raise TaichiSyntaxError(
                 "'else' clause for 'for' not supported in Taichi kernels")
 
-        with ctx.control_scope():
+        with ctx.control_scope_guard():
             ctx.current_control_scope().append('for')
 
             decorator = StmtBuilder.get_decorator(node.iter)
@@ -551,7 +552,7 @@ if 1:
                 if isinstance(ctx.func.argument_annotations[i], ti.template):
                     continue
                 if isinstance(ctx.func.argument_annotations[i],
-                              ti.sparse_matrix_builder):
+                              ti.linalg.sparse_matrix_builder):
                     arg_init = parse_stmt(
                         'x = ti.lang.kernel_arguments.decl_sparse_matrix()')
                     arg_init.targets[0].id = arg.arg
@@ -622,7 +623,7 @@ if 1:
                     args.args[i].arg += '_by_value__'
                     arg_decls.append(arg_init)
 
-        with ctx.variable_scope():
+        with ctx.variable_scope_guard():
             node.body = build_stmts(ctx, node.body)
 
         node.body = arg_decls + node.body
@@ -653,7 +654,7 @@ if 1:
 
     @staticmethod
     def build_Module(ctx, node):
-        with ctx.variable_scope():
+        with ctx.variable_scope_guard():
             # Do NOT use |build_stmts| which inserts 'del' statements to the
             # end and deletes parameters passed into the module
             node.body = [build_stmt(ctx, stmt) for stmt in list(node.body)]
@@ -711,7 +712,7 @@ build_stmt = StmtBuilder()
 
 def build_stmts(ctx, stmts):
     result = []
-    with ctx.variable_scope(result):
+    with ctx.variable_scope_guard(result):
         for stmt in list(stmts):
             result.append(build_stmt(ctx, stmt))
     return result

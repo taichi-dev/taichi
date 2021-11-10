@@ -95,7 +95,8 @@ const std::unordered_map<ImageLayout, VkImageLayout> image_layout_ti_2_vk = {
     {ImageLayout::depth_attachment_read,
      VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL},
     {ImageLayout::transfer_dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL},
-    {ImageLayout::transfer_src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL}};
+    {ImageLayout::transfer_src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL},
+    {ImageLayout::present_src, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR}};
 
 VkImageLayout image_layout_ti_to_vk(ImageLayout layout) {
   if (image_layout_ti_2_vk.find(layout) == image_layout_ti_2_vk.end()) {
@@ -868,15 +869,16 @@ void VulkanCommandList::begin_renderpass(int x0,
     rp_desc.color_attachments.emplace_back(format, color_clear[i]);
     fb_desc.attachments.push_back(view);
     clear_values[i].color =
-        VkClearColorValue{clear_colors[i][0], clear_colors[i][1],
-                          clear_colors[i][2], clear_colors[i][3]};
+        VkClearColorValue{{clear_colors[i][0], clear_colors[i][1],
+                           clear_colors[i][2], clear_colors[i][3]}};
   }
 
   if (has_depth) {
-    auto [image, view, format] = ti_device_->get_vk_image(*depth_attachment);
+    auto [depth_image, depth_view, depth_format] =
+        ti_device_->get_vk_image(*depth_attachment);
     clear_values[num_color_attachments].depthStencil =
         VkClearDepthStencilValue{0.0, 0};
-    fb_desc.attachments.push_back(view);
+    fb_desc.attachments.push_back(depth_view);
   }
 
   current_renderpass_ = ti_device_->get_renderpass(rp_desc);
@@ -956,17 +958,21 @@ void VulkanCommandList::image_transition(DeviceAllocation img,
   static std::unordered_map<VkImageLayout, VkPipelineStageFlagBits> stages;
   stages[VK_IMAGE_LAYOUT_UNDEFINED] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
   stages[VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL] = VK_PIPELINE_STAGE_TRANSFER_BIT;
+  stages[VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL] = VK_PIPELINE_STAGE_TRANSFER_BIT;
   stages[VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL] =
       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
   stages[VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL] =
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  stages[VK_IMAGE_LAYOUT_PRESENT_SRC_KHR] = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
   static std::unordered_map<VkImageLayout, VkAccessFlagBits> access;
   access[VK_IMAGE_LAYOUT_UNDEFINED] = (VkAccessFlagBits)0;
   access[VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL] = VK_ACCESS_TRANSFER_WRITE_BIT;
+  access[VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL] = VK_ACCESS_TRANSFER_READ_BIT;
   access[VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL] = VK_ACCESS_SHADER_READ_BIT;
   access[VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL] =
       VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  access[VK_IMAGE_LAYOUT_PRESENT_SRC_KHR] = VK_ACCESS_MEMORY_READ_BIT;
 
   if (stages.find(old_layout) == stages.end() ||
       stages.find(new_layout) == stages.end()) {
@@ -1040,6 +1046,60 @@ void VulkanCommandList::image_to_buffer(DevicePtr dst_buf,
   buffer_->refs.push_back(buffer);
 }
 
+void VulkanCommandList::copy_image(DeviceAllocation dst_img,
+                                   DeviceAllocation src_img,
+                                   ImageLayout dst_img_layout,
+                                   ImageLayout src_img_layout,
+                                   const ImageCopyParams &params) {
+  VkImageCopy copy{};
+  copy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  copy.srcSubresource.layerCount = 1;
+  copy.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  copy.dstSubresource.layerCount = 1;
+  copy.extent.width = params.width;
+  copy.extent.height = params.height;
+  copy.extent.depth = params.depth;
+
+  auto [dst_vk_image, dst_view, dst_format] = ti_device_->get_vk_image(dst_img);
+  auto [src_vk_image, src_view, src_format] = ti_device_->get_vk_image(src_img);
+
+  vkCmdCopyImage(buffer_->buffer, src_vk_image->image,
+                 image_layout_ti_to_vk(src_img_layout), dst_vk_image->image,
+                 image_layout_ti_to_vk(dst_img_layout), 1, &copy);
+
+  buffer_->refs.push_back(dst_vk_image);
+  buffer_->refs.push_back(src_vk_image);
+}
+
+void VulkanCommandList::blit_image(DeviceAllocation dst_img,
+                                   DeviceAllocation src_img,
+                                   ImageLayout dst_img_layout,
+                                   ImageLayout src_img_layout,
+                                   const ImageCopyParams &params) {
+  VkOffset3D blit_size;
+  blit_size.x = params.width;
+  blit_size.y = params.height;
+  blit_size.z = params.depth;
+  VkImageBlit blit{};
+  blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  blit.srcSubresource.layerCount = 1;
+  blit.srcOffsets[1] = blit_size;
+  blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  blit.dstSubresource.layerCount = 1;
+  blit.dstOffsets[1] = blit_size;
+
+  auto [dst_vk_image, dst_view, dst_format] = ti_device_->get_vk_image(dst_img);
+  auto [src_vk_image, src_view, src_format] = ti_device_->get_vk_image(src_img);
+
+  vkCmdBlitImage(buffer_->buffer, src_vk_image->image,
+                 image_layout_ti_to_vk(src_img_layout), dst_vk_image->image,
+                 image_layout_ti_to_vk(dst_img_layout), 1, &blit,
+                 VK_FILTER_NEAREST);
+
+  buffer_->refs.push_back(dst_vk_image);
+  buffer_->refs.push_back(src_vk_image);
+}
+
 void VulkanCommandList::set_line_width(float width) {
   vkCmdSetLineWidth(buffer_->buffer, width);
 }
@@ -1077,8 +1137,8 @@ VulkanDevice::~VulkanDevice() {
   framebuffer_pools_.clear();
   renderpass_pools_.clear();
 
-  vmaDestroyPool(allocator_, export_pool_.pool);
   vmaDestroyAllocator(allocator_);
+  vmaDestroyAllocator(allocator_export_);
 }
 
 std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(
@@ -1144,17 +1204,29 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
 #endif
 
-  VmaAllocationCreateInfo alloc_info{};
-  if (params.export_sharing) {
-    buffer_info.pNext = &external_mem_buffer_create_info;
-    alloc_info.pool = export_pool_.pool;
-  }
+  bool export_sharing = params.export_sharing &&
+                        this->get_cap(DeviceCapability::vk_has_external_memory);
 
+  VmaAllocationCreateInfo alloc_info{};
+  if (export_sharing) {
+    buffer_info.pNext = &external_mem_buffer_create_info;
+  }
+#ifdef __APPLE__
+  // weird behavior on apple: these flags are needed even if either read or
+  // write is required
+  if (params.host_read || params.host_write) {
+#else
   if (params.host_read && params.host_write) {
+#endif  //__APPLE__
     // This should be the unified memory on integrated GPUs
     alloc_info.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
     alloc_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                 VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+#ifdef __APPLE__
+    // weird behavior on apple: if coherent bit is not set, then the memory
+    // writes between map() and unmap() cannot be seen by gpu
+    alloc_info.preferredFlags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+#endif  //__APPLE__
   } else if (params.host_read) {
     alloc_info.usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
   } else if (params.host_write) {
@@ -1163,9 +1235,11 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
   }
 
-  alloc.buffer =
-      vkapi::create_buffer(device_, allocator_, &buffer_info, &alloc_info);
-  vmaGetAllocationInfo(allocator_, alloc.buffer->allocation, &alloc.alloc_info);
+  alloc.buffer = vkapi::create_buffer(
+      device_, export_sharing ? allocator_export_ : allocator_, &buffer_info,
+      &alloc_info);
+  vmaGetAllocationInfo(alloc.buffer->allocator, alloc.buffer->allocation,
+                       &alloc.alloc_info);
 
 #ifdef TI_VULKAN_DEBUG_ALLOCATIONS
   TI_TRACE("Allocate VK buffer {}, alloc_id={}", (void *)alloc.buffer,
@@ -1312,9 +1386,8 @@ void VulkanStream::submit_synced(CommandList *cmdlist) {
                                       /*fence=*/cmd_sync_fence_->fence),
                         "failed to submit command buffer");
 
-  // Timeout is in nanoseconds, 60s = 60,000ms = 60,000,000ns
   vkWaitForFences(device_.vk_device(), 1, &cmd_sync_fence_->fence, true,
-                  (60 * 1000 * 1000));
+                  UINT64_MAX);
   vkResetFences(device_.vk_device(), 1, &cmd_sync_fence_->fence);
 }
 
@@ -1345,11 +1418,11 @@ std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(
     } else if (src_desc.stage == PipelineStageType::vertex) {
       code.stage = VK_SHADER_STAGE_VERTEX_BIT;
     } else if (src_desc.stage == PipelineStageType::geometry) {
-      code.stage == VK_SHADER_STAGE_GEOMETRY_BIT;
+      code.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
     } else if (src_desc.stage == PipelineStageType::tesselation_control) {
-      code.stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+      code.stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
     } else if (src_desc.stage == PipelineStageType::tesselation_eval) {
-      code.stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+      code.stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
     }
   }
 
@@ -1472,8 +1545,11 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
 
   alloc.format = image_info.format;
 
+  bool export_sharing = params.export_sharing &&
+                        this->get_cap(DeviceCapability::vk_has_external_memory);
+
   VkExternalMemoryImageCreateInfo external_mem_image_create_info = {};
-  if (params.export_sharing) {
+  if (export_sharing) {
     external_mem_image_create_info.sType =
         VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
     external_mem_image_create_info.pNext = NULL;
@@ -1490,13 +1566,14 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
 
   VmaAllocationCreateInfo alloc_info{};
   if (params.export_sharing) {
-    alloc_info.pool = export_pool_.pool;
   }
   alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-  alloc.image =
-      vkapi::create_image(device_, allocator_, &image_info, &alloc_info);
-  vmaGetAllocationInfo(allocator_, alloc.image->allocation, &alloc.alloc_info);
+  alloc.image = vkapi::create_image(
+      device_, export_sharing ? allocator_export_ : allocator_, &image_info,
+      &alloc_info);
+  vmaGetAllocationInfo(alloc.image->allocator, alloc.image->allocation,
+                       &alloc.alloc_info);
 
   VkImageViewCreateInfo view_info{};
   view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -1717,52 +1794,28 @@ void VulkanDevice::create_vma_allocator() {
 
   vmaCreateAllocator(&allocatorInfo, &allocator_);
 
-  {
-    VkBufferCreateInfo export_buf_create_info = {
-        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    export_buf_create_info.size = 1024;  // Whatever.
-    export_buf_create_info.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                   VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+  VkPhysicalDeviceMemoryProperties properties;
+  vkGetPhysicalDeviceMemoryProperties(physical_device_, &properties);
 
-    VmaAllocationCreateInfo alloc_create_info = {};
-    alloc_create_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+  std::vector<VkExternalMemoryHandleTypeFlags> flags(
+      properties.memoryTypeCount);
 
-    uint32_t memTypeIndex;
-    vmaFindMemoryTypeIndexForBufferInfo(allocator_, &export_buf_create_info,
-                                        &alloc_create_info, &memTypeIndex);
-
-    export_pool_.export_mem_alloc_info.sType =
-        VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR;
+  for (int i = 0; i < properties.memoryTypeCount; i++) {
+    auto flag = properties.memoryTypes[i].propertyFlags;
+    if (flag & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
 #ifdef _WIN64
-
-    export_pool_.export_mem_win32_handle_info.sType =
-        VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR;
-    export_pool_.export_mem_win32_handle_info.pNext = NULL;
-    export_pool_.export_mem_win32_handle_info.pAttributes =
-        &export_pool_.win_security_attribs;
-    export_pool_.export_mem_win32_handle_info.dwAccess =
-        DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
-    export_pool_.export_mem_win32_handle_info.name = (LPCWSTR)NULL;
-
-    export_pool_.export_mem_alloc_info.pNext =
-        &export_pool_.export_mem_win32_handle_info;
-    export_pool_.export_mem_alloc_info.handleTypes =
-        VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+      flags[i] = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 #else
-    export_pool_.export_mem_alloc_info.pNext = NULL;
-    export_pool_.export_mem_alloc_info.handleTypes =
-        VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
+      flags[i] = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
 #endif
-
-    VmaPoolCreateInfo pool_info{};
-    pool_info.memoryTypeIndex = memTypeIndex;
-    pool_info.blockSize = kMemoryBlockSize;  // 128MB
-    pool_info.maxBlockCount = 16;
-    pool_info.pMemoryAllocateNext = &export_pool_.export_mem_alloc_info;
-
-    vmaCreatePool(allocator_, &pool_info, &export_pool_.pool);
+    } else {
+      flags[i] = 0;
+    }
   }
+
+  allocatorInfo.pTypeExternalMemoryHandleTypes = flags.data();
+
+  vmaCreateAllocator(&allocatorInfo, &allocator_export_);
 }
 
 void VulkanDevice::new_descriptor_pool() {
@@ -1825,24 +1878,35 @@ VkPresentModeKHR choose_swap_present_mode(
 }
 
 VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
-    : device_(device), config_(config) {
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    : config_(config), device_(device) {
   window_ = (GLFWwindow *)config.window_handle;
-  VkResult err =
-      glfwCreateWindowSurface(device->vk_instance(), window_, NULL, &surface_);
-  if (err) {
-    TI_ERROR("Failed to create window surface ({})", err);
-    return;
+  if (window_) {
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    VkResult err = glfwCreateWindowSurface(device->vk_instance(), window_, NULL,
+                                           &surface_);
+    if (err) {
+      TI_ERROR("Failed to create window surface ({})", err);
+      return;
+    }
+
+    create_swap_chain();
+
+    VkSemaphoreCreateInfo sema_create_info;
+    sema_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    sema_create_info.pNext = nullptr;
+    sema_create_info.flags = 0;
+    vkCreateSemaphore(device->vk_device(), &sema_create_info,
+                      kNoVkAllocCallbacks, &image_available_);
+  } else {
+    ImageParams params = {ImageDimension::d2D,
+                          BufferFormat::rgba8,
+                          ImageLayout::present_src,
+                          config.width,
+                          config.height,
+                          1,
+                          false};
+    screenshot_image_ = device->create_image(params);
   }
-
-  create_swap_chain();
-
-  VkSemaphoreCreateInfo sema_create_info;
-  sema_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-  sema_create_info.pNext = nullptr;
-  sema_create_info.flags = 0;
-  vkCreateSemaphore(device->vk_device(), &sema_create_info, kNoVkAllocCallbacks,
-                    &image_available_);
 }
 
 void VulkanSurface::create_swap_chain() {
@@ -1909,7 +1973,8 @@ void VulkanSurface::create_swap_chain() {
   createInfo.imageColorSpace = surface_format.colorSpace;
   createInfo.imageExtent = extent;
   createInfo.imageArrayLayers = 1;
-  createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+  createInfo.imageUsage =
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
   createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
   createInfo.queueFamilyIndexCount = 0;
   createInfo.pQueueFamilyIndices = nullptr;
@@ -1970,9 +2035,17 @@ void VulkanSurface::destroy_swap_chain() {
 }
 
 VulkanSurface::~VulkanSurface() {
-  destroy_swap_chain();
-  vkDestroySemaphore(device_->vk_device(), image_available_, nullptr);
-  vkDestroySurfaceKHR(device_->vk_instance(), surface_, nullptr);
+  if (config_.window_handle) {
+    destroy_swap_chain();
+    vkDestroySemaphore(device_->vk_device(), image_available_, nullptr);
+    vkDestroySurfaceKHR(device_->vk_instance(), surface_, nullptr);
+  }
+  if (screenshot_buffer_ != kDeviceNullAllocation) {
+    device_->dealloc_memory(screenshot_buffer_);
+  }
+  if (screenshot_image_ != kDeviceNullAllocation) {
+    device_->destroy_image(screenshot_image_);
+  }
 }
 
 void VulkanSurface::resize(uint32_t width, uint32_t height) {
@@ -1981,12 +2054,18 @@ void VulkanSurface::resize(uint32_t width, uint32_t height) {
 }
 
 std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
+  if (!config_.window_handle) {
+    return std::make_pair(config_.width, config_.height);
+  }
   int width, height;
   glfwGetFramebufferSize(window_, &width, &height);
   return std::make_pair(width, height);
 }
 
 DeviceAllocation VulkanSurface::get_target_image() {
+  if (!config_.window_handle) {
+    return screenshot_image_;
+  }
   vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
                         image_available_, VK_NULL_HANDLE, &image_index_);
 
@@ -2011,6 +2090,64 @@ void VulkanSurface::present_image() {
   presentInfo.pResults = nullptr;
 
   vkQueuePresentKHR(device_->graphics_queue(), &presentInfo);
+}
+
+DeviceAllocation VulkanSurface::get_image_data() {
+  auto *stream = device_->get_graphics_stream();
+  DeviceAllocation img_alloc = config_.window_handle
+                                   ? swapchain_images_[image_index_]
+                                   : screenshot_image_;
+  auto [w, h] = get_size();
+  size_t size_bytes = w * h * 4;
+  if (screenshot_image_ == kDeviceNullAllocation) {
+    ImageParams params = {ImageDimension::d2D,
+                          BufferFormat::rgba8,
+                          ImageLayout::transfer_dst,
+                          w,
+                          h,
+                          1,
+                          false};
+    screenshot_image_ = device_->create_image(params);
+  }
+  if (screenshot_buffer_ == kDeviceNullAllocation) {
+    Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
+                               /*host_read*/ true, /*export_sharing*/ false,
+                               AllocUsage::Uniform};
+    screenshot_buffer_ = device_->allocate_memory(params);
+  }
+
+  device_->image_transition(img_alloc, ImageLayout::present_src,
+                            ImageLayout::transfer_src);
+
+  std::unique_ptr<CommandList> cmd_list{nullptr};
+
+  if (config_.window_handle) {
+    // TODO: check if blit is suppoted, and use copy_image if not
+    cmd_list = stream->new_command_list();
+    cmd_list->blit_image(screenshot_image_, img_alloc,
+                         ImageLayout::transfer_dst, ImageLayout::transfer_src,
+                         {w, h, 1});
+    cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_dst,
+                               ImageLayout::transfer_src);
+    stream->submit_synced(cmd_list.get());
+  }
+
+  BufferImageCopyParams copy_params;
+  copy_params.image_extent.x = w;
+  copy_params.image_extent.y = h;
+  cmd_list = stream->new_command_list();
+  // TODO: directly map the image to cpu memory
+  cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), screenshot_image_,
+                            ImageLayout::transfer_src, copy_params);
+  if (config_.window_handle) {
+    cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_src,
+                               ImageLayout::transfer_dst);
+  }
+  cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
+                             ImageLayout::present_src);
+  stream->submit_synced(cmd_list.get());
+
+  return screenshot_buffer_;
 }
 
 VulkanStream::VulkanStream(VulkanDevice &device,

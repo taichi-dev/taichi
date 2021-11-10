@@ -240,8 +240,7 @@ void StateFlowGraph::Node::disconnect_with(StateFlowGraph::Node *other) {
 
 StateFlowGraph::StateFlowGraph(AsyncEngine *engine,
                                IRBank *ir_bank,
-                               const CompileConfig *const config,
-                               const std::unordered_map<int, SNode *> &snodes)
+                               const CompileConfig *const config)
     : first_pending_task_index_(1 /*after initial node*/),
       ir_bank_(ir_bank),
       engine_(engine),
@@ -255,10 +254,6 @@ StateFlowGraph::StateFlowGraph(AsyncEngine *engine,
   initial_node_->input_edges.node_id = 0;
   initial_node_->output_edges.node_id = 0;
   initial_node_->mark_executed();
-
-  for (const auto snode : snodes) {
-    list_up_to_date_[snode.second] = false;
-  }
 }
 
 std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks() const {

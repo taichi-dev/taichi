@@ -91,7 +91,6 @@ class ContinueStmt : public Stmt {
   //
   // If run_foo_kernel() is directly inlined within foo_kernel(), `return`
   // could prematurely terminate the entire kernel.
-  bool as_return() const;
 
   TI_STMT_DEF_FIELDS(scope);
   TI_DEFINE_ACCEPT_AND_CLONE;
@@ -408,23 +407,40 @@ class AssertStmt : public Stmt {
  */
 class ExternalFuncCallStmt : public Stmt {
  public:
-  void *func;
-  std::string source;
-  std::vector<Stmt *> arg_stmts;
-  std::vector<Stmt *> output_stmts;
+  enum Type { SHARED_OBJECT = 0, ASSEMBLY = 1, BITCODE = 2 };
 
-  ExternalFuncCallStmt(void *func,
-                       const std::string &source,
+  Type type;
+  void *so_func;            // SHARED_OBJECT
+  std::string asm_source;   // ASM
+  std::string bc_filename;  // BITCODE
+  std::string bc_funcname;  // BITCODE
+  std::vector<Stmt *> arg_stmts;
+  std::vector<Stmt *> output_stmts;  // BITCODE doesn't use this
+
+  ExternalFuncCallStmt(Type type,
+                       void *so_func,
+                       std::string asm_source,
+                       std::string bc_filename,
+                       std::string bc_funcname,
                        const std::vector<Stmt *> &arg_stmts,
                        const std::vector<Stmt *> &output_stmts)
-      : func(func),
-        source(source),
+      : type(type),
+        so_func(so_func),
+        asm_source(asm_source),
+        bc_filename(bc_filename),
+        bc_funcname(bc_funcname),
         arg_stmts(arg_stmts),
         output_stmts(output_stmts) {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(func, arg_stmts, output_stmts);
+  TI_STMT_DEF_FIELDS(type,
+                     so_func,
+                     asm_source,
+                     bc_filename,
+                     bc_funcname,
+                     arg_stmts,
+                     output_stmts);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

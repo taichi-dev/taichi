@@ -272,6 +272,11 @@ class TaichiOperations:
         self.assign(ti.bit_shr(self, other))
         return self
 
+    def __ipow__(self, other):
+        _taichi_skip_traceback = 1
+        self.assign(ti.pow(self, other))
+        return self
+
     def assign(self, other):
         """Assign the expression of the given operand to self.
 
@@ -312,6 +317,8 @@ class TaichiOperations:
             self >>= x
         elif op == 'LShift':
             self <<= x
+        elif op == 'Pow':
+            self **= x
         else:
             assert False, op
 

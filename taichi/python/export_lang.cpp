@@ -17,6 +17,8 @@
 #include "taichi/program/async_engine.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/snode_rw_accessors_bank.h"
+#include "taichi/program/ndarray.h"
+#include "taichi/program/ndarray_rw_accessors_bank.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"
 #include "taichi/gui/gui.h"
@@ -49,8 +51,7 @@ Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
 }
 
-void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
-  auto lhs = ptr_if_global(lhs_);
+void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {
   TI_ASSERT(lhs->is_lvalue());
   auto stmt = std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs));
   stmt->set_tb(tb);
@@ -63,6 +64,10 @@ std::string libdevice_path();
 
 SNodeRwAccessorsBank::Accessors get_snode_rw_accessors(SNode *snode) {
   return get_current_program().get_snode_rw_accessors_bank().get(snode);
+}
+
+NdarrayRwAccessorsBank::Accessors get_ndarray_rw_accessors(Ndarray *ndarray) {
+  return get_current_program().get_ndarray_rw_accessors_bank().get(ndarray);
 }
 
 TLANG_NAMESPACE_END
@@ -98,6 +103,7 @@ void export_lang(py::module &m) {
       .def(py::self == py::self)
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
+      .def("__str__", &DataType::to_string)
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
           py::return_value_policy::reference)
@@ -124,6 +130,8 @@ void export_lang(py::module &m) {
       .def_readwrite("arch", &CompileConfig::arch)
       .def_readwrite("packed", &CompileConfig::packed)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
+      .def_readwrite("print_preprocessed_ir",
+                     &CompileConfig::print_preprocessed_ir)
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
       .def_readwrite("check_out_of_bound", &CompileConfig::check_out_of_bound)
@@ -177,6 +185,7 @@ void export_lang(py::module &m) {
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
+      .def_readwrite("ndarray_use_torch", &CompileConfig::ndarray_use_torch)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
@@ -197,7 +206,9 @@ void export_lang(py::module &m) {
       .def_readwrite("quant_opt_store_fusion",
                      &CompileConfig::quant_opt_store_fusion)
       .def_readwrite("quant_opt_atomic_demotion",
-                     &CompileConfig::quant_opt_atomic_demotion);
+                     &CompileConfig::quant_opt_atomic_demotion)
+      .def_readwrite("allow_nv_shader_extension",
+                     &CompileConfig::allow_nv_shader_extension);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -214,10 +225,19 @@ void export_lang(py::module &m) {
       .def_readwrite("avg", &Program::KernelProfilerQueryResult::avg);
 
   py::class_<KernelProfileTracedRecord>(m, "KernelProfileTracedRecord")
-      .def_readwrite("name", &KernelProfileTracedRecord::name)
+      .def_readwrite("register_per_thread",
+                     &KernelProfileTracedRecord::register_per_thread)
+      .def_readwrite("shared_mem_per_block",
+                     &KernelProfileTracedRecord::shared_mem_per_block)
+      .def_readwrite("grid_size", &KernelProfileTracedRecord::grid_size)
+      .def_readwrite("block_size", &KernelProfileTracedRecord::block_size)
+      .def_readwrite(
+          "active_blocks_per_multiprocessor",
+          &KernelProfileTracedRecord::active_blocks_per_multiprocessor)
       .def_readwrite("kernel_time",
                      &KernelProfileTracedRecord::kernel_elapsed_time_in_ms)
       .def_readwrite("base_time", &KernelProfileTracedRecord::time_since_base)
+      .def_readwrite("name", &KernelProfileTracedRecord::name)
       .def_readwrite("metric_values",
                      &KernelProfileTracedRecord::metric_values);
 
@@ -232,6 +252,9 @@ void export_lang(py::module &m) {
            [](Program *program) {
              return program->profiler->get_traced_records();
            })
+      .def(
+          "get_kernel_profiler_device_name",
+          [](Program *program) { return program->profiler->get_device_name(); })
       .def("reinit_kernel_profiler_with_metrics",
            [](Program *program, const std::vector<std::string> metrics) {
              return program->profiler->reinit_with_metrics(metrics);
@@ -369,6 +392,34 @@ void export_lang(py::module &m) {
         program->destroy_snode_tree(snode_tree);
       });
 
+  py::class_<Ndarray>(m, "Ndarray")
+      .def(py::init<Program *, const DataType &, const std::vector<int> &>())
+      .def("data_ptr", &Ndarray::get_data_ptr_as_int)
+      .def("element_size", &Ndarray::get_element_size)
+      .def("nelement", &Ndarray::get_nelement)
+      .def("read_int",
+           [](Ndarray *ndarray, const std::vector<int> &I) -> int64 {
+             return get_ndarray_rw_accessors(ndarray).read_int(I);
+           })
+      .def("read_uint",
+           [](Ndarray *ndarray, const std::vector<int> &I) -> uint64 {
+             return get_ndarray_rw_accessors(ndarray).read_uint(I);
+           })
+      .def("read_float",
+           [](Ndarray *ndarray, const std::vector<int> &I) -> float64 {
+             return get_ndarray_rw_accessors(ndarray).read_float(I);
+           })
+      .def("write_int",
+           [](Ndarray *ndarray, const std::vector<int> &I, int64 val) {
+             get_ndarray_rw_accessors(ndarray).write_int(I, val);
+           })
+      .def("write_float",
+           [](Ndarray *ndarray, const std::vector<int> &I, float64 val) {
+             get_ndarray_rw_accessors(ndarray).write_float(I, val);
+           })
+      .def_readonly("dtype", &Ndarray::dtype)
+      .def_readonly("shape", &Ndarray::shape);
+
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_float", &Kernel::get_ret_float)
@@ -393,7 +444,7 @@ void export_lang(py::module &m) {
                &Function::set_function_body));
 
   py::class_<Expr> expr(m, "Expr");
-  expr.def("serialize", &Expr::serialize)
+  expr.def("serialize", [](Expr *expr) { return expr->serialize(); })
       .def("snode", &Expr::snode, py::return_value_policy::reference)
       .def("is_global_var",
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
@@ -416,6 +467,8 @@ void export_lang(py::module &m) {
            })
       .def("set_grad", &Expr::set_grad)
       .def("set_attribute", &Expr::set_attribute)
+      .def("get_ret_type", &Expr::get_ret_type)
+      .def("type_check", &Expr::type_check)
       .def("get_expr_name",
            [](Expr *expr) {
              return expr->cast<GlobalVariableExpression>()->name;
@@ -437,7 +490,7 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def("size", [](ExprGroup *eg) { return eg->exprs.size(); })
       .def("push_back", &ExprGroup::push_back)
-      .def("serialize", &ExprGroup::serialize);
+      .def("serialize", [](ExprGroup *eg) { eg->serialize(); });
 
   py::class_<Stmt>(m, "Stmt");
 
@@ -459,10 +512,12 @@ void export_lang(py::module &m) {
         });
 
   m.def("insert_external_func_call",
-        [](std::size_t func_addr, std::string source, const ExprGroup &args,
+        [](std::size_t func_addr, std::string source, std::string filename,
+           std::string funcname, const ExprGroup &args,
            const ExprGroup &outputs) {
           auto expr = Expr::make<ExternalFuncCallExpression>(
-              (void *)func_addr, source, args.exprs, outputs.exprs);
+              (void *)func_addr, source, filename, funcname, args.exprs,
+              outputs.exprs);
 
           current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
         });
@@ -562,38 +617,34 @@ void export_lang(py::module &m) {
         static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
 
   m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::add, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::add, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_sub", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_min", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::min, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::min, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_max", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::max, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::max, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_bit_and", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and,
-                                          ptr_if_global(a), load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and, a,
+                                          load_if_ptr(b));
   });
 
   m.def("expr_atomic_bit_or", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or,
-                                          ptr_if_global(a), load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or, a,
+                                          load_if_ptr(b));
   });
 
   m.def("expr_atomic_bit_xor", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor,
-                                          ptr_if_global(a), load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a,
+                                          load_if_ptr(b));
   });
 
   m.def("expr_add", expr_add);
@@ -666,6 +717,7 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
         std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
         element_type));
+    var->ret_type = current_ast_builder().get_last_stmt()->ret_type;
     for (int i = 0; i < (int)elements.exprs.size(); ++i) {
       ExprGroup reversed_indices;
       int linearized_index = i;
@@ -975,9 +1027,9 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference);
   m.def(
       "finalize_snode_tree",
-      [](SNodeRegistry *registry, const SNode *root,
-         Program *program) -> SNodeTree * {
-        return program->add_snode_tree(registry->finalize(root));
+      [](SNodeRegistry *registry, const SNode *root, Program *program,
+         bool compile_only) -> SNodeTree * {
+        return program->add_snode_tree(registry->finalize(root), compile_only);
       },
       py::return_value_policy::reference);
 

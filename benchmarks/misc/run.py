@@ -1,33 +1,94 @@
-from membound import Membound
+import os
+import warnings
+
+from membound import MemoryBound
+from utils import arch_name, datatime_with_format, dump2json
 
 import taichi as ti
 
-test_suites = [Membound]
-test_archs = [ti.cuda]
+benchmark_suites = [MemoryBound]
+benchmark_archs = [ti.x64, ti.cuda]
 
 
-class PerformanceMonitoring:
-    suites = []
+class BenchmarksInfo:
+    def __init__(self, pull_request_id: str, commit_hash: str):
+        """init with commit info"""
+        self.pull_request_id = pull_request_id
+        self.commit_hash = commit_hash
+        self.datetime = []  #[start, end]
+        self.archs = {}
+        # "archs": {
+        #     "x64": ["memorybound"], #arch:[suites name]
+        #     "cuda": ["memorybound"]
+        # }
+    def add_suites_info(self, arch, suites):
+        self.archs[arch_name(arch)] = suites.get_suites_name()
 
-    def __init__(self):
-        for s in test_suites:
-            self.suites.append(s())
+
+class BenchmarkSuites:
+    def __init__(self, arch):
+        self._suites = []
+        self._arch = arch
+        for suite in benchmark_suites:
+            if self._check_supported(arch, suite):
+                self._suites.append(suite(arch))
 
     def run(self):
-        print("Running...")
-        for s in self.suites:
-            s.run()
+        print(f'Arch [{arch_name(self._arch)}] Running...')
+        for suite in self._suites:
+            suite.run()
 
-    def write_md(self):
-        filename = f'performance_result.md'
-        with open(filename, 'w') as f:
-            for arch in test_archs:
-                for s in self.suites:
-                    lines = s.mdlines(arch)
-                    for line in lines:
-                        print(line, file=f)
+    def save(self, benchmark_dir='./'):
+        #folder of archs
+        arch_dir = os.path.join(benchmark_dir, arch_name(self._arch))
+        os.makedirs(arch_dir)
+        for suite in self._suites:
+            suite.save_as_json(arch_dir)
+            suite.save_as_markdown(arch_dir)
+
+    def get_suites_name(self):
+        return [suite.suite_name for suite in self._suites]
+
+    def _check_supported(self, arch, suite):
+        if arch in suite.supported_archs:
+            return True
+        else:
+            warnings.warn(
+                f'Arch [{arch_name(arch)}] does not exist in {suite.__name__}.supported_archs.',
+                UserWarning,
+                stacklevel=2)
+            return False
 
 
-p = PerformanceMonitoring()
-p.run()
-p.write_md()
+def main():
+
+    benchmark_dir = os.path.join(os.getcwd(), 'results')
+    os.makedirs(benchmark_dir)
+
+    pull_request_id = os.environ.get('PULL_REQUEST_NUMBER')
+    commit_hash = ti.core.get_commit_hash()  #[:8]
+    info = BenchmarksInfo(pull_request_id, commit_hash)
+    info.datetime.append(datatime_with_format())  #start time
+
+    print(f'pull_request_id = {pull_request_id}')
+    print(f'commit_hash = {commit_hash}')
+
+    for arch in benchmark_archs:
+        #init & run
+        suites = BenchmarkSuites(arch)
+        suites.run()
+        #save result
+        suites.save(benchmark_dir)
+        #add benchmark info
+        info.add_suites_info(arch, suites)
+
+    info.datetime.append(datatime_with_format())  #end time
+    #save commit and benchmark info
+    info_path = os.path.join(benchmark_dir, '_info.json')
+    info_str = dump2json(info)
+    with open(info_path, 'w') as f:
+        print(info_str, file=f)
+
+
+if __name__ == '__main__':
+    main()

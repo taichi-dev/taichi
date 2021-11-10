@@ -82,6 +82,7 @@ def get_tidy_invocation(f, clang_tidy_binary, checks, tmpdir, build_path,
                         config):
     """Gets a command line for clang-tidy."""
     start = [clang_tidy_binary]
+    start.append('-warnings-as-errors=*')
     if header_filter is not None:
         start.append('-header-filter=' + header_filter)
     if checks:

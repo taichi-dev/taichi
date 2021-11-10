@@ -16,7 +16,6 @@ from taichi.lang.ast.transformer import TaichiSyntaxError
 from taichi.lang.enums import Layout
 from taichi.lang.exception import InvalidOperationError
 from taichi.lang.impl import *
-from taichi.lang.kernel_arguments import sparse_matrix_builder
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, Vector
@@ -24,12 +23,12 @@ from taichi.lang.ndrange import GroupedNDRange, ndrange
 from taichi.lang.ops import *
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
+from taichi.lang.source_builder import SourceBuilder
 from taichi.lang.struct import Struct
 from taichi.lang.type_factory_impl import type_factory
-from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
-                              taichi_scope, to_numpy_type, to_pytorch_type,
-                              to_taichi_type)
-from taichi.linalg import SparseMatrix, SparseMatrixBuilder, SparseSolver
+from taichi.lang.util import (has_clangpp, has_pytorch, is_taichi_class,
+                              python_scope, taichi_scope, to_numpy_type,
+                              to_pytorch_type, to_taichi_type)
 from taichi.misc.util import deprecated
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
@@ -397,6 +396,7 @@ class _SpecialConfig:
         self.gdb_trigger = False
         self.excepthook = False
         self.experimental_real_function = False
+        self.experimental_ast_refactor = False
 
 
 def prepare_sandbox():
@@ -424,7 +424,7 @@ def init(arch=None,
     Args:
         arch: Backend to use. This is usually :const:`~taichi.lang.cpu` or :const:`~taichi.lang.gpu`.
         default_fp (Optional[type]): Default floating-point type.
-        default_fp (Optional[type]): Default integral type.
+        default_ip (Optional[type]): Default integral type.
         **kwargs: Taichi provides highly customizable compilation through
             ``kwargs``, which allows for fine grained control of Taichi compiler
             behavior. Below we list some of the most frequently used ones. For a
@@ -489,6 +489,7 @@ def init(arch=None,
     env_spec.add('gdb_trigger')
     env_spec.add('excepthook')
     env_spec.add('experimental_real_function')
+    env_spec.add('experimental_ast_refactor')
 
     # compiler configurations (ti.cfg):
     for key in dir(ti.cfg):
@@ -518,6 +519,8 @@ def init(arch=None,
         impl.get_runtime().print_preprocessed = spec_cfg.print_preprocessed
         impl.get_runtime().experimental_real_function = \
             spec_cfg.experimental_real_function
+        impl.get_runtime(
+        ).experimental_ast_refactor = spec_cfg.experimental_ast_refactor
         ti.set_logging_level(spec_cfg.log_level.lower())
         if spec_cfg.excepthook:
             # TODO(#1405): add a way to restore old excepthook
@@ -561,14 +564,7 @@ def block_local(*args):
 
     Args:
         *args (List[Field]): A list of sparse Taichi fields.
-
-    Raises:
-        InvalidOperationError: If the ``dynamic_index`` feature (experimental)
-            is enabled.
     """
-    if ti.current_cfg().dynamic_index:
-        raise InvalidOperationError(
-            'dynamic_index is not allowed when block_local is turned on.')
     for a in args:
         for v in a.get_field_members():
             _ti_core.insert_snode_access_flag(
@@ -1007,8 +1003,8 @@ def is_arch_supported(arch):
         arch = _ti_core.arch_name(arch)
         _ti_core.warn(
             f"{e.__class__.__name__}: '{e}' occurred when detecting "
-            f"{arch}, consider add `export TI_WITH_{arch.upper()}=0` "
-            f" to environment variables to depress this warning message.")
+            f"{arch}, consider adding `TI_ENABLE_{arch.upper()}=0` "
+            f" to environment variables to suppress this warning message.")
         return False
 
 

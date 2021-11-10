@@ -120,6 +120,8 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     return llvm::Type::getInt32Ty(*ctx);
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return llvm::Type::getInt64Ty(*ctx);
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    return llvm::Type::getHalfTy(*ctx);
   } else {
     TI_INFO(data_type_name(dt));
     TI_NOT_IMPLEMENTED
@@ -460,6 +462,8 @@ llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
   auto ctx = get_this_thread_context();
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float32)t));
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    return llvm::ConstantFP::get(llvm::Type::getHalfTy(*ctx), (float32)t);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float64)t));
   } else if (is_integral(dt)) {

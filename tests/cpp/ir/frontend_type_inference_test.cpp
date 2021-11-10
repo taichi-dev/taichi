@@ -122,7 +122,8 @@ TEST(FrontendTypeInference, AtomicOp) {
   const_i32->type_check();
   auto const_f32 = Expr::make<ConstExpression, float32>(5.0);
   const_f32->type_check();
-  auto atomic_add_i32 = Expr::make<AtomicOpExpression>(AtomicOpType::add, const_i32, const_f32);
+  auto atomic_add_i32 =
+      Expr::make<AtomicOpExpression>(AtomicOpType::add, const_i32, const_f32);
   atomic_add_i32->type_check();
   EXPECT_EQ(atomic_add_i32->ret_type, PrimitiveType::i32);
 }
@@ -132,7 +133,8 @@ TEST(FrontendTypeInference, SNodeOp) {
   snode->dt = PrimitiveType::u8;
   auto index = Expr::make<ConstExpression, int32>(2);
   index->type_check();
-  auto snode_op = Expr::make<SNodeOpExpression>(snode.get(), SNodeOpType::get_addr, ExprGroup(index));
+  auto snode_op = Expr::make<SNodeOpExpression>(
+      snode.get(), SNodeOpType::get_addr, ExprGroup(index));
   snode_op->type_check();
   EXPECT_EQ(snode_op->ret_type, PrimitiveType::u64);
 }

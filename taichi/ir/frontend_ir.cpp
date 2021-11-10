@@ -489,7 +489,8 @@ void IdExpression::flatten(FlattenContext *ctx) {
 void AtomicOpExpression::type_check() {
   // TODO: assert no unknowns after type_check for all expressions are
   // implemented
-  if (dest->ret_type == PrimitiveType::unknown || val->ret_type == PrimitiveType::unknown)
+  if (dest->ret_type == PrimitiveType::unknown ||
+      val->ret_type == PrimitiveType::unknown)
     return;
   auto error = [&]() {
     throw std::runtime_error(fmt::format(

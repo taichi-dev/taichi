@@ -78,7 +78,9 @@ DeviceObjVkBufferView::~DeviceObjVkBufferView() {
 
 DeviceObjVkAccelerationStructureKHR::~DeviceObjVkAccelerationStructureKHR() {
   PFN_vkDestroyAccelerationStructureKHR destroy_raytracing_pipeline_khr =
-  PFN_vkDestroyAccelerationStructureKHR(vkGetInstanceProcAddr(taichi::lang::vulkan::VulkanLoader::instance().get_instance(), "vkDestroyAccelerationStructureKHR"));
+      PFN_vkDestroyAccelerationStructureKHR(vkGetInstanceProcAddr(
+          taichi::lang::vulkan::VulkanLoader::instance().get_instance(),
+          "vkDestroyAccelerationStructureKHR"));
 
   destroy_raytracing_pipeline_khr(device, accel, nullptr);
 }
@@ -348,7 +350,9 @@ IVkPipeline create_raytracing_pipeline(
   }
 
   PFN_vkCreateRayTracingPipelinesKHR create_raytracing_pipeline_khr =
-  PFN_vkCreateRayTracingPipelinesKHR(vkGetInstanceProcAddr(taichi::lang::vulkan::VulkanLoader::instance().get_instance(), "vkCreateRayTracingPipelinesKHR"));
+      PFN_vkCreateRayTracingPipelinesKHR(vkGetInstanceProcAddr(
+          taichi::lang::vulkan::VulkanLoader::instance().get_instance(),
+          "vkCreateRayTracingPipelinesKHR"));
 
   create_raytracing_pipeline_khr(device, deferredOperation,
                                  cache ? cache->cache : VK_NULL_HANDLE, 1,
@@ -509,9 +513,12 @@ IVkAccelerationStructureKHR create_acceleration_structure(
   info.deviceAddress = 0;
 
   PFN_vkCreateAccelerationStructureKHR create_acceleration_structure_khr =
-  PFN_vkCreateAccelerationStructureKHR(vkGetInstanceProcAddr(taichi::lang::vulkan::VulkanLoader::instance().get_instance(), "vkCreateAccelerationStructureKHR"));
-  
-  create_acceleration_structure_khr(buffer->device, &info, nullptr, &obj->accel);
+      PFN_vkCreateAccelerationStructureKHR(vkGetInstanceProcAddr(
+          taichi::lang::vulkan::VulkanLoader::instance().get_instance(),
+          "vkCreateAccelerationStructureKHR"));
+
+  create_acceleration_structure_khr(buffer->device, &info, nullptr,
+                                    &obj->accel);
 
   return obj;
 }

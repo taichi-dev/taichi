@@ -86,10 +86,11 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     evd_params.is_for_ui = true;
     evd_params.surface_creator = [&](VkInstance instance) -> VkSurfaceKHR {
       VkSurfaceKHR surface = VK_NULL_HANDLE;
-      TI_TRACE("before glfwCreateWindowSurface {} {}", (void*) glfw_window, (void*) instance);
+      TI_TRACE("before glfwCreateWindowSurface {} {}", (void *)glfw_window,
+               (void *)instance);
       uint status = VK_SUCCESS;
-      if ((status = glfwCreateWindowSurface(instance, glfw_window, nullptr, &surface)) !=
-          VK_SUCCESS) {
+      if ((status = glfwCreateWindowSurface(instance, glfw_window, nullptr,
+                                            &surface)) != VK_SUCCESS) {
         TI_ERROR("Failed to create window surface! err: {}", status);
         throw std::runtime_error("failed to create window surface!");
       }

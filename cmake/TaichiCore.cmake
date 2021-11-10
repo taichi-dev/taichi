@@ -188,7 +188,7 @@ if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
   set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-  
+
   if (APPLE)
     set(GLFW_VULKAN_STATIC ON CACHE BOOL "" FORCE)
   endif()
@@ -279,11 +279,11 @@ if (TI_WITH_VULKAN)
     target_link_libraries(${CORE_LIBRARY_NAME} SPIRV-Tools-opt ${SPIRV_TOOLS})
 
     include_directories(SYSTEM external/Vulkan-Headers/include)
-    
+
     if (NOT APPLE)
         include_directories(SYSTEM external/volk)
     endif()
-    
+
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/VulkanMemoryAllocator/include)

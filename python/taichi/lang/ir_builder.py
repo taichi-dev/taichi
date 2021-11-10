@@ -250,6 +250,8 @@ class IRBuilder(Builder):
                 args.append(build_stmt(ctx, sub_node.value).ptr)
             elif isinstance(sub_node, ast.Constant):
                 str_spec += sub_node.value
+            elif isinstance(sub_node, ast.Str):
+                str_spec += sub_node.s
             else:
                 raise TaichiSyntaxError("Invalid value for fstring.")
 

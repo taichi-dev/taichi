@@ -582,8 +582,11 @@ class TaichiMain:
     def _test_python(args):
         print("\nRunning Python tests...\n")
 
+        test_38 = sys.version_info >= (3, 8)
+
         root_dir = ti.package_root()
         test_dir = os.path.join(root_dir, 'tests')
+        test_dir_38 = os.path.join(root_dir, 'tests38')
         pytest_args = []
 
         # TODO: use pathlib to deal with suffix and stem name manipulation
@@ -595,10 +598,21 @@ class TaichiMain:
                     f = 'test_' + f
                 if not f.endswith('.py'):
                     f = f + '.py'
-                pytest_args.append(os.path.join(test_dir, f))
+                file = os.path.join(test_dir, f)
+                file_38 = os.path.join(test_dir_38, f)
+                has_tests = False
+                if os.path.exists(file):
+                    pytest_args.append(file)
+                    has_tests = True
+                if os.path.exists(file_38) and test_38:
+                    pytest_args.append(file_38)
+                    has_tests = True
+                assert has_tests, f"Test {f} does not exist."
         else:
             # run all the tests
             pytest_args = [test_dir]
+            if test_38:
+                pytest_args += [test_dir_38]
         if args.verbose:
             pytest_args += ['-v']
         if args.rerun:

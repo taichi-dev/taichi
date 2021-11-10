@@ -53,6 +53,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   loop_var_id.resize(loop_var.size());
   for (int i = 0; i < (int)loop_var.size(); i++) {
     loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+    loop_var[i].expr->ret_type = PrimitiveType::i32;
   }
 }
 
@@ -86,6 +87,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     vectorize = 1;
   loop_var_id.resize(1);
   loop_var_id[0] = loop_var.cast<IdExpression>()->id;
+  loop_var.expr->ret_type = PrimitiveType::i32;
 }
 
 void ArgLoadExpression::type_check() {
@@ -438,12 +440,39 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void RangeAssumptionExpression::type_check() {
+  // TODO: assert no unknowns after type_check for all expressions are
+  // implemented
+  if (input->ret_type == PrimitiveType::unknown ||
+      base->ret_type == PrimitiveType::unknown)
+    return;
+  if (!input->ret_type->is<PrimitiveType>() ||
+      !base->ret_type->is<PrimitiveType>() || input->ret_type != base->ret_type)
+    throw std::runtime_error(
+        fmt::format("TypeError: unsupported operand type(s) for "
+                    "'range_assumption': '{}' and '{}'",
+                    input->ret_type->to_string(), base->ret_type->to_string()));
+  ret_type = input->ret_type;
+}
+
 void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   input->flatten(ctx);
   base->flatten(ctx);
   ctx->push_back(
       Stmt::make<RangeAssumptionStmt>(input->stmt, base->stmt, low, high));
   stmt = ctx->back_stmt();
+}
+
+void LoopUniqueExpression::type_check() {
+  // TODO: assert no unknowns after type_check for all expressions are
+  // implemented
+  if (input->ret_type == PrimitiveType::unknown)
+    return;
+  if (!input->ret_type->is<PrimitiveType>())
+    throw std::runtime_error(fmt::format(
+        "TypeError: unsupported operand type(s) for 'loop_unique': '{}'",
+        input->ret_type->to_string()));
+  ret_type = input->ret_type;
 }
 
 void LoopUniqueExpression::serialize(std::ostream &ss) {
@@ -640,6 +669,13 @@ void ConstExpression::type_check() {
 void ConstExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(Stmt::make<ConstStmt>(val));
   stmt = ctx->back_stmt();
+}
+
+void ExternalTensorShapeAlongAxisExpression::type_check() {
+  TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
+                 "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression",
+                 ptr.serialize());
+  ret_type = PrimitiveType::i32;
 }
 
 void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {

@@ -190,14 +190,11 @@ void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
 #define UNARY_STD(x)                                                    \
   else if (op == UnaryOpType::x) {                                      \
     if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {        \
-      llvm_val[stmt] =                                                  \
-          builder->CreateCall(get_runtime_function(#x "_f32"), input);  \
+      llvm_val[stmt] = create_call(#x "_f32", input);                   \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) { \
-      llvm_val[stmt] =                                                  \
-          builder->CreateCall(get_runtime_function(#x "_f64"), input);  \
+      llvm_val[stmt] = create_call(#x "_f64", input);                   \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) { \
-      llvm_val[stmt] =                                                  \
-          builder->CreateCall(get_runtime_function(#x "_i32"), input);  \
+      llvm_val[stmt] = create_call(#x "_i32", input);                   \
     } else {                                                            \
       TI_NOT_IMPLEMENTED                                                \
     }                                                                   \
@@ -762,7 +759,7 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
     value =
         builder->CreateFPExt(value, tlctx->get_data_type(PrimitiveType::f64));
   args.push_back(value);
-  return builder->CreateCall(runtime_printf, args);
+  return create_call(runtime_printf, args);
 }
 
 llvm::Value *CodeGenLLVM::create_print(std::string tag, llvm::Value *value) {
@@ -822,7 +819,7 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
   args.insert(args.begin(),
               builder->CreateGlobalStringPtr(formats.c_str(), "format_string"));
 
-  llvm_val[stmt] = builder->CreateCall(runtime_printf, args);
+  llvm_val[stmt] = create_call(runtime_printf, args);
 }
 
 void CodeGenLLVM::visit(ConstStmt *stmt) {
@@ -944,12 +941,12 @@ void CodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
 }
 
 llvm::Value *CodeGenLLVM::create_call(llvm::Value *func,
-                                      std::vector<llvm::Value *> args) {
+                                      llvm::ArrayRef<llvm::Value *> args) {
   check_func_call_signature(func, args);
   return builder->CreateCall(func, args);
 }
 llvm::Value *CodeGenLLVM::create_call(std::string func_name,
-                                      std::vector<llvm::Value *> args) {
+                                      llvm::ArrayRef<llvm::Value *> args) {
   auto func = get_runtime_function(func_name);
   return create_call(func, args);
 }
@@ -1090,8 +1087,7 @@ void CodeGenLLVM::visit(ReturnStmt *stmt) {
     auto extended = builder->CreateZExt(
         builder->CreateBitCast(llvm_val[stmt->value], intermediate_type),
         dest_ty);
-    builder->CreateCall(get_runtime_function("LLVMRuntime_store_result"),
-                        {get_runtime(), extended});
+    create_call("LLVMRuntime_store_result", {get_runtime(), extended});
   }
 }
 
@@ -1178,6 +1174,41 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
+llvm::Value *CodeGenLLVM::atomic_op_using_cas(
+    llvm::Value *dest,
+    llvm::Value *val,
+    std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
+  using namespace llvm;
+  BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
+  BasicBlock *after_loop =
+      BasicBlock::Create(*llvm_context, "after_while", func);
+
+  builder->CreateBr(body);
+  builder->SetInsertPoint(body);
+
+  llvm::Value *old_val;
+
+  {
+    old_val = builder->CreateLoad(dest);
+    auto new_val = op(old_val, val);
+    dest =
+        builder->CreateBitCast(dest, llvm::Type::getInt16PtrTy(*llvm_context));
+    auto atomicCmpXchg = builder->CreateAtomicCmpXchg(
+        dest,
+        builder->CreateBitCast(old_val, llvm::Type::getInt16Ty(*llvm_context)),
+        builder->CreateBitCast(new_val, llvm::Type::getInt16Ty(*llvm_context)),
+        AtomicOrdering::SequentiallyConsistent,
+        AtomicOrdering::SequentiallyConsistent);
+    // Check whether CAS was succussful
+    auto ok = builder->CreateExtractValue(atomicCmpXchg, 1);
+    builder->CreateCondBr(builder->CreateNot(ok), body, after_loop);
+  }
+
+  builder->SetInsertPoint(after_loop);
+
+  return old_val;
+}
+
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   // auto mask = stmt->parent->mask();
   // TODO: deal with mask when vectorized
@@ -1209,13 +1240,15 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+        old_value = atomic_op_using_cas(
+            llvm_val[stmt->dest], llvm_val[stmt->val],
+            [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        old_value =
-            builder->CreateCall(get_runtime_function("atomic_min_f32"),
+        old_value = create_call("atomic_min_f32",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        old_value =
-            builder->CreateCall(get_runtime_function("atomic_min_f64"),
+        old_value = create_call("atomic_min_f64",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else {
         TI_NOT_IMPLEMENTED
@@ -1225,13 +1258,15 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+        old_value = atomic_op_using_cas(
+            llvm_val[stmt->dest], llvm_val[stmt->val],
+            [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        old_value =
-            builder->CreateCall(get_runtime_function("atomic_max_f32"),
+        old_value = create_call("atomic_max_f32",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        old_value =
-            builder->CreateCall(get_runtime_function("atomic_max_f64"),
+        old_value = create_call("atomic_max_f64",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else {
         TI_NOT_IMPLEMENTED
@@ -1527,8 +1562,8 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   std::vector<llvm::Value *> sizes(num_indices);
 
   for (int i = 0; i < num_indices; i++) {
-    auto raw_arg = builder->CreateCall(
-        get_runtime_function("Context_get_extra_args"),
+    auto raw_arg = create_call(
+        "Context_get_extra_args",
         {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(i)});
     sizes[i] = raw_arg;
   }
@@ -1550,8 +1585,8 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 void CodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
-  llvm_val[stmt] = builder->CreateCall(
-      get_runtime_function("Context_get_extra_args"),
+  llvm_val[stmt] = create_call(
+      "Context_get_extra_args",
       {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(axis)});
 }
 
@@ -2131,7 +2166,7 @@ void CodeGenLLVM::visit_call_bitcode(ExternalFuncCallStmt *stmt) {
     arg_values[i] =
         builder->CreatePointerCast(tmp_value, func_ptr->getArg(i)->getType());
   }
-  builder->CreateCall(func_ptr, arg_values);
+  create_call(func_ptr, arg_values);
 }
 
 void CodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {
@@ -2159,7 +2194,7 @@ void CodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {
 
   auto addr = tlctx->get_constant((std::size_t)stmt->so_func);
   auto func = builder->CreateIntToPtr(addr, func_ptr_type);
-  builder->CreateCall(func, arg_values);
+  create_call(func, arg_values);
 }
 
 void CodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {

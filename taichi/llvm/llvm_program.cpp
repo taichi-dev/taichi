@@ -473,9 +473,6 @@ void LlvmProgramImpl::finalize() {
     cuda_device()->dealloc_memory(preallocated_device_buffer_alloc);
   }
 #endif
-  for (auto &alloc : ndarray_allocs_) {
-    get_compute_device()->dealloc_memory(alloc);
-  }
 }
 
 void LlvmProgramImpl::print_memory_profiler_info(
@@ -568,13 +565,20 @@ DevicePtr LlvmProgramImpl::get_snode_tree_device_ptr(int tree_id) {
 }
 
 DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
-    std::size_t alloc_size) {
+    std::size_t alloc_size,
+    uint64 *result_buffer) {
+  TaichiLLVMContext *tlctx = nullptr;
+  if (llvm_context_device) {
+    tlctx = llvm_context_device.get();
+  } else {
+    tlctx = llvm_context_host.get();
+  }
+
   Device::AllocParams device_buffer_alloc_params;
   device_buffer_alloc_params.size = alloc_size;
-  DeviceAllocation alloc =
-      get_compute_device()->allocate_memory(device_buffer_alloc_params);
-  ndarray_allocs_.push_back(alloc);
-  return alloc;
+  return get_compute_device()->allocate_memory_runtime(
+      device_buffer_alloc_params, tlctx->runtime_jit_module, get_llvm_runtime(),
+      result_buffer);
 }
 
 uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {

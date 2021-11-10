@@ -4,22 +4,6 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  title_format:
-    name: Check PR Title
-    if: ${{ github.event.pull_request }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-
-      - name: Run PR Title Checker
-        run: |
-          pip install semver GitPython
-          python misc/ci_check_pr_title.py "$PR_TITLE"
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
   check_files:
     name: Check files
     outputs:
@@ -36,7 +20,7 @@ jobs:
         run: |
           echo "=============== list modified files ==============="
           git diff --name-only @^
-          
+
           echo "========== check paths of modified files =========="
           git diff --name-only @^ > files.txt
           while IFS= read -r file
@@ -50,7 +34,6 @@ jobs:
               echo "::set-output name=run_job::true"
             fi
           done < files.txt
-
   check_code_format:
     name: Check Code Format
     runs-on: ubuntu-latest
@@ -155,7 +138,7 @@ jobs:
         include:
           - os: ubuntu-latest
             python: py36
-    runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, cpu, aws]
     permissions:
       packages: read
       contents: read
@@ -205,6 +188,11 @@ jobs:
         env:
           PY: ${{ matrix.python }}
           GPU_TEST: OFF
+
+      - name: clean docker container
+        if: always()
+        run: |
+          docker rm taichi_build taichi_test -f
 
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
@@ -376,10 +364,6 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 90
     steps:
-      - name: Install 7Zip PowerShell
-        shell: powershell
-        run: Install-Module 7Zip4PowerShell -Force -Verbose
-
       - uses: actions/checkout@v2
         with:
           submodules: "recursive"
@@ -391,45 +375,13 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
 
-      - name: Download And Install Vulkan
-        shell: powershell
-        run: |
-          if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
-            exit 0
-          }
-          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe" -OutFile VulkanSDK.exe
-          $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
-          $installer.WaitForExit();
-
       - name: Build
         shell: powershell
         run: |
           if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
             exit 0
           }
-          $env:Path += ";C:/VulkanSDK/1.2.189.0/Bin"
-          cd C:\
-          Remove-item alias:curl
-          curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO
-          7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi_llvm
-          curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip -LO
-          7z x clang-10.0.0-win.zip -otaichi_clang
-          $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
-          clang --version
-          cd D:\a\taichi\taichi
-          python -m pip install -r requirements_dev.txt
-          python -m pip install -r requirements_test.txt
-          cd python
-          git fetch origin master
-          $env:TAICHI_CMAKE_ARGS = $env:CI_SETUP_CMAKE_ARGS
-          python build.py build
-          cd ..\dist
-          $env:WHL = $(dir *.whl)
-          python -m pip install $env:WHL
-        env:
-          PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
-          CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm -DTI_WITH_VULKAN:BOOL=ON
-          VULKAN_SDK: C:/VulkanSDK/1.2.189.0
+          .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
 
       - name: Test
         shell: powershell
@@ -438,11 +390,12 @@ jobs:
             exit 0
           }
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
+          . venv\Scripts\activate.ps1
           python -c "import taichi"
           python examples/algorithm/laplace.py
-          python bin/taichi diagnose
-          python bin/taichi changelog
-          python bin/taichi test -vr2 -t2
+          ti diagnose
+          ti changelog
+          ti test -vr2 -t2
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
 

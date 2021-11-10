@@ -65,6 +65,16 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   aot_data_.kernels.push_back({compiled, identifier});
 }
 
+size_t AotModuleBuilderImpl::get_snode_base_address(const SNode *snode) {
+  if (snode->type == SNodeType::root)
+    return 0;
+  int chid = find_children_id(snode);
+  const auto &parent_meta =
+      compiled_structs_.snode_map.at(snode->parent->node_type_name);
+  auto choff = parent_meta.children_offsets[chid];
+  return choff + get_snode_base_address(snode->parent);
+}
+
 void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
                                                  const SNode *rep_snode,
                                                  bool is_scalar,
@@ -98,7 +108,15 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
     TI_NOT_IMPLEMENTED
   }
 
-  aot_data_.fields.push_back({identifier, gl_dtype_enum, dt.to_string(), shape,
+  // Note that currently we only support adding dense fields in AOT for all
+  // backends. In opengl backend we only error out when a non dense field is
+  // added to the aot module, but in metal backend we error out earlier when
+  // constructing aot module. Ideally we will unify this behavior but it doesn't
+  // matter too much for now.
+  TI_ERROR_IF(!all_fields_are_dense_in_container(rep_snode->parent),
+              "AOT: only supports dense field");
+  aot_data_.fields.push_back({identifier, gl_dtype_enum, dt.to_string(),
+                              get_snode_base_address(rep_snode), shape,
                               is_scalar, row_num, column_num});
 }
 

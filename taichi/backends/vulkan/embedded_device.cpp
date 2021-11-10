@@ -459,6 +459,7 @@ void EmbeddedVulkanDevice::create_logical_device() {
   }
   if (device_supported_features.wideLines) {
     device_features.wideLines = true;
+    ti_device_->set_cap(DeviceCapability::wide_lines, true);
   } else if (params_.is_for_ui) {
     TI_WARN_IF(!device_features.wideLines,
                "Taichi GPU GUI requires wide lines support");

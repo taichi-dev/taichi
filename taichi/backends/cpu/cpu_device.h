@@ -87,11 +87,17 @@ class CpuDevice : public Device {
   ~CpuDevice() override{};
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
+  DeviceAllocation allocate_memory_runtime(const AllocParams &params,
+                                           JITModule *runtime_jit_module,
+                                           LLVMRuntime *runtime,
+                                           uint64 *result_buffer) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") override{TI_NOT_IMPLEMENTED};
+
+  uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
   void *map_range(DevicePtr ptr, uint64_t size) override{TI_NOT_IMPLEMENTED};
   void *map(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};

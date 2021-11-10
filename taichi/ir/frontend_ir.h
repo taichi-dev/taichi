@@ -676,6 +676,8 @@ class SNodeOpExpression : public Expression {
       : snode(snode), op_type(op_type), indices(indices), value(value) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;

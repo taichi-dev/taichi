@@ -127,5 +127,15 @@ TEST(FrontendTypeInference, AtomicOp) {
   EXPECT_EQ(atomic_add_i32->ret_type, PrimitiveType::i32);
 }
 
+TEST(FrontendTypeInference, SNodeOp) {
+  auto snode = std::make_unique<SNode>(0, SNodeType::root);
+  snode->dt = PrimitiveType::u8;
+  auto index = Expr::make<ConstExpression, int32>(2);
+  index->type_check();
+  auto snode_op = Expr::make<SNodeOpExpression>(snode.get(), SNodeOpType::get_addr, ExprGroup(index));
+  snode_op->type_check();
+  EXPECT_EQ(snode_op->ret_type, PrimitiveType::u64);
+}
+
 }  // namespace lang
 }  // namespace taichi

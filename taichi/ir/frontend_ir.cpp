@@ -561,6 +561,14 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void SNodeOpExpression::type_check() {
+  if (op_type == SNodeOpType::get_addr) {
+    ret_type = PrimitiveType::u64;
+  } else {
+    ret_type = PrimitiveType::i32;
+  }
+}
+
 void SNodeOpExpression::serialize(std::ostream &ss) {
   ss << snode_op_type_name(op_type);
   ss << '(';

@@ -801,7 +801,8 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
                         if tb.tb_frame.f_code.co_name == 'taichi_ast_generator':
                             tb = tb.tb_next
                             tb.tb_next = None
-                            raise TypeError(str(e)[11:]).with_traceback(tb) from None
+                            raise TypeError(
+                                str(e)[11:]).with_traceback(tb) from None
                         tb = tb.tb_next
                 raise
 

@@ -3,6 +3,7 @@ import collections.abc
 import warnings
 from collections import ChainMap
 
+import astor
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.ast_builder_utils import *
 from taichi.lang.exception import TaichiSyntaxError
@@ -74,11 +75,26 @@ class IRBuilder(Builder):
                 raise TaichiSyntaxError(
                     "Static assign cannot be used on elements in arrays")
             ctx.create_variable(target.id, value)
+            var = value
         elif is_local and not ctx.is_var_declared(target.id):
-            ctx.create_variable(target.id, ti.expr_init(value))
+            var = ti.expr_init(value)
+            ctx.create_variable(target.id, var)
         else:
             var = target.ptr
             var.assign(value)
+        return var
+
+    @staticmethod
+    def build_NamedExpr(ctx, node):
+        node.value = build_stmt(ctx, node.value)
+        node.target = build_stmt(ctx, node.target)
+        is_static_assign = isinstance(
+            node.value, ast.Call) and ASTResolver.resolve_to(
+                node.value.func, ti.static, globals())
+        node.ptr = IRBuilder.build_assign_basic(ctx, node.target,
+                                                node.value.ptr,
+                                                is_static_assign)
+        return node
 
     @staticmethod
     def is_tuple(node):
@@ -107,6 +123,17 @@ class IRBuilder(Builder):
     def build_List(ctx, node):
         node.elts = build_stmts(ctx, node.elts)
         node.ptr = [elt.ptr for elt in node.elts]
+        return node
+
+    @staticmethod
+    def build_Dict(ctx, node):
+        dic = {}
+        for key, value in zip(node.keys, node.values):
+            if key is None:
+                dic.update(build_stmt(ctx, value).ptr)
+            else:
+                dic[build_stmt(ctx, key).ptr] = build_stmt(ctx, value).ptr
+        node.ptr = dic
         return node
 
     @staticmethod
@@ -422,6 +449,19 @@ class IRBuilder(Builder):
             ast.Invert: lambda l: ~l,
         }.get(type(node.op))
         node.ptr = op(node.operand.ptr)
+        return node
+
+    @staticmethod
+    def build_BoolOp(ctx, node):
+        node.values = build_stmts(ctx, node.values)
+        op = {
+            ast.And: lambda l, r: l and r,
+            ast.Or: lambda l, r: l or r,
+        }.get(type(node.op))
+        result = op(node.values[0].ptr, node.values[1].ptr)
+        for i in range(2, len(node.values)):
+            result = op(result, node.values[i].ptr)
+        node.ptr = result
         return node
 
     @staticmethod
@@ -760,6 +800,50 @@ class IRBuilder(Builder):
         ti.core.pop_scope()
 
         node.ptr = val
+        return node
+
+    @staticmethod
+    def _is_string_mod_args(msg):
+        # 1. str % (a, b, c, ...)
+        # 2. str % single_item
+        # Note that |msg.right| may not be a tuple.
+        if not isinstance(msg, ast.BinOp):
+            return False
+        if not isinstance(msg.op, ast.Mod):
+            return False
+        if isinstance(msg.left, ast.Str):
+            return True
+        if isinstance(msg.left, ast.Constant) and isinstance(
+                msg.left.value, str):
+            return True
+        return False
+
+    @staticmethod
+    def _handle_string_mod_args(ctx, node):
+        msg = build_stmt(ctx, node.left).ptr
+        args = build_stmt(ctx, node.right).ptr
+        if not isinstance(args, collections.abc.Sequence):
+            args = (args, )
+        return msg, args
+
+    @staticmethod
+    def build_Assert(ctx, node):
+        extra_args = []
+        if node.msg is not None:
+            if isinstance(node.msg, ast.Constant):
+                msg = node.msg.value
+            elif isinstance(node.msg, ast.Str):
+                msg = node.msg.s
+            elif IRBuilder._is_string_mod_args(node.msg):
+                msg, extra_args = IRBuilder._handle_string_mod_args(
+                    ctx, node.msg)
+            else:
+                raise ValueError(
+                    f"assert info must be constant, not {ast.dump(node.msg)}")
+        else:
+            msg = astor.to_source(node.test)
+        test = build_stmt(ctx, node.test).ptr
+        ti.ti_assert(test, msg.strip(), extra_args)
         return node
 
     @staticmethod

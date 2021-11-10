@@ -118,6 +118,45 @@ def test_unaryop():
 
 
 @ti.test(experimental_ast_refactor=True)
+def test_boolop():
+    @ti.kernel
+    def foo(a: ti.template()):
+        a[0] = 0 and 0
+        a[1] = 0 and 1
+        a[2] = 1 and 0
+        a[3] = 1 and 1
+        a[4] = 0 or 0
+        a[5] = 0 or 1
+        a[6] = 1 or 0
+        a[7] = 1 or 1
+        a[8] = 1 and 1 and 1 and 1
+        a[9] = 1 and 1 and 1 and 0
+        a[10] = 0 or 0 or 0 or 0
+        a[11] = 0 or 0 or 1 or 0
+
+    a = ti.field(ti.i32, shape=(12, ))
+    b = ti.field(ti.i32, shape=(12, ))
+
+    a[0] = 0 and 0
+    a[1] = 0 and 1
+    a[2] = 1 and 0
+    a[3] = 1 and 1
+    a[4] = 0 or 0
+    a[5] = 0 or 1
+    a[6] = 1 or 0
+    a[7] = 1 or 1
+    a[8] = 1 and 1 and 1 and 1
+    a[9] = 1 and 1 and 1 and 0
+    a[10] = 0 or 0 or 0 or 0
+    a[11] = 0 or 0 or 1 or 0
+
+    foo(b)
+
+    for i in range(12):
+        assert a[i] == b[i]
+
+
+@ti.test(experimental_ast_refactor=True)
 def test_compare_fail():
     with pytest.raises(ti.TaichiSyntaxError) as e:
 
@@ -752,6 +791,63 @@ def test_taichi_other_than_ti():
 
     for i in range(10):
         assert foo(i) == fib[i]
+
+
+@ti.test(require=ti.extension.assertion,
+         debug=True,
+         gdb_trigger=False,
+         experimental_ast_refactor=True)
+def test_assert_message():
+    @ti.kernel
+    def func():
+        x = 20
+        assert 10 <= x < 20, 'Foo bar'
+
+    with pytest.raises(RuntimeError, match='Foo bar'):
+        func()
+
+
+@ti.test(require=ti.extension.assertion,
+         debug=True,
+         gdb_trigger=False,
+         experimental_ast_refactor=True)
+def test_assert_message_formatted():
+    x = ti.field(dtype=int, shape=16)
+    x[10] = 42
+
+    @ti.kernel
+    def assert_formatted():
+        for i in x:
+            assert x[i] == 0, 'x[%d] expect=%d got=%d' % (i, 0, x[i])
+
+    @ti.kernel
+    def assert_float():
+        y = 0.5
+        assert y < 0, 'y = %f' % y
+
+    with pytest.raises(RuntimeError, match=r'x\[10\] expect=0 got=42'):
+        assert_formatted()
+    # TODO: note that we are not fully polished to be able to recover from
+    # assertion failures...
+    with pytest.raises(RuntimeError, match=r'y = 0.5'):
+        assert_float()
+
+    # success case
+    x[10] = 0
+    assert_formatted()
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_dict():
+    @ti.kernel
+    def foo(x: ti.template()) -> ti.i32:
+        a = {1: 2, 3: 4}
+        b = {5: 6, **a}
+        return b[x]
+
+    assert foo(1) == 2
+    with pytest.raises(KeyError):
+        foo(2)
 
 
 @ti.test(experimental_ast_refactor=True)

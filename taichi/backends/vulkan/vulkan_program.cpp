@@ -60,12 +60,20 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
   GLFWwindow *glfw_window = nullptr;
+#ifdef __APPLE__
+  glfwInitVulkanLoader(vkGetInstanceProcAddr);
+#endif
+
   if (glfwInit()) {
     // glfw init success
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
     glfw_window = glfwCreateWindow(1, 1, "Dummy Window", nullptr, nullptr);
+
+    if (glfwVulkanSupported() != GLFW_TRUE) {
+      TI_WARN("GLFW reports no Vulkan support");
+    }
   }
 
   EmbeddedVulkanDevice::Params evd_params;
@@ -78,8 +86,11 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     evd_params.is_for_ui = true;
     evd_params.surface_creator = [&](VkInstance instance) -> VkSurfaceKHR {
       VkSurfaceKHR surface = VK_NULL_HANDLE;
-      if (glfwCreateWindowSurface(instance, glfw_window, nullptr, &surface) !=
+      TI_TRACE("before glfwCreateWindowSurface {} {}", (void*) glfw_window, (void*) instance);
+      uint status = VK_SUCCESS;
+      if ((status = glfwCreateWindowSurface(instance, glfw_window, nullptr, &surface)) !=
           VK_SUCCESS) {
+        TI_ERROR("Failed to create window surface! err: {}", status);
         throw std::runtime_error("failed to create window surface!");
       }
       return surface;

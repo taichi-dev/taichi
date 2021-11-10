@@ -188,6 +188,10 @@ if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
   set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+  
+  if (APPLE)
+    set(GLFW_VULKAN_STATIC ON CACHE BOOL "" FORCE)
+  endif()
 
   message("Building with GLFW")
   add_subdirectory(external/glfw)
@@ -275,7 +279,11 @@ if (TI_WITH_VULKAN)
     target_link_libraries(${CORE_LIBRARY_NAME} SPIRV-Tools-opt ${SPIRV_TOOLS})
 
     include_directories(SYSTEM external/Vulkan-Headers/include)
-    include_directories(SYSTEM external/volk)
+    
+    if (NOT APPLE)
+        include_directories(SYSTEM external/volk)
+    endif()
+    
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/VulkanMemoryAllocator/include)
@@ -285,6 +293,12 @@ if (TI_WITH_VULKAN)
         set(THREADS_PREFER_PTHREAD_FLAG ON)
         find_package(Threads REQUIRED)
         target_link_libraries(${CORE_LIBRARY_NAME} Threads::Threads)
+    endif()
+
+    if (APPLE)
+        find_library(MOLTEN_VK libMoltenVK.a /opt/homebrew/Cellar/molten-vk)
+        target_link_libraries(${CORE_LIBRARY_NAME} ${MOLTEN_VK})
+        message(STATUS "MoltenVK library ${MOLTEN_VK}")
     endif()
 endif ()
 

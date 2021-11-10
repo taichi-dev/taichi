@@ -344,12 +344,12 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   //     operation and stores the result in new_output.
   //   3. Calls atomicCAS which implements compare-and-swap as an atomic
   //     operation. In particular, atomicCAS reads the value from the memory
-  //     pointed to by output_address, and compares the value with old_output. If
-  //     the two values equal, new_output is written to the same memory location
-  //     and true is returned to indicate that the atomic operation succeeds.
-  //     Otherwise, the new value read from the memory is returned. In this case,
-  //     the new value is copied to old_output, and steps 2. and 3. are repeated
-  //     until atomicCAS succeeds.
+  //     pointed to by output_address, and compares the value with old_output.
+  //     If the two values equal, new_output is written to the same memory
+  //     location and true is returned to indicate that the atomic operation
+  //     succeeds. Otherwise, the new value read from the memory is returned. In
+  //     this case, the new value is copied to old_output, and steps 2. and 3.
+  //     are repeated until atomicCAS succeeds.
   //
   // int32 is used for the atomicCAS operation. So atomicCAS reads and writes 32
   // bit values from the memory, which is larger than the memory size required

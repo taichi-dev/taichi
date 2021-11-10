@@ -4,6 +4,7 @@ import warnings
 from collections import ChainMap
 
 import astor
+from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.ast_builder_utils import *
 from taichi.lang.exception import TaichiSyntaxError
@@ -351,10 +352,8 @@ class IRBuilder(Builder):
                 if ASTResolver.resolve_to(decorator, ti.func, globals()):
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.func'.")
-            # if impl.get_runtime().experimental_real_function:
-            #     transform_as_kernel()
-            if False:
-                pass
+            if impl.get_runtime().experimental_real_function:
+                transform_as_kernel()
             else:
                 len_args = len(args.args)
                 len_default = len(args.defaults)
@@ -396,7 +395,7 @@ class IRBuilder(Builder):
     @staticmethod
     def build_Return(ctx, node):
         node.value = build_stmt(ctx, node.value)
-        if ctx.is_kernel:
+        if ctx.is_kernel or impl.get_runtime().experimental_real_function:
             # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
             if node.value is not None:
                 if ctx.func.return_type is None:
@@ -409,6 +408,7 @@ class IRBuilder(Builder):
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value
+                return ast.Pass()
         else:
             ctx.return_data = node.value.ptr
         return node
@@ -790,7 +790,16 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_Expr(ctx, node):
-        node.value = build_stmt(ctx, node.value)
+        if not isinstance(
+                node.value,
+                ast.Call) or not impl.get_runtime().experimental_real_function:
+            node.value = build_stmt(ctx, node.value)
+            return node
+
+        args = [build_stmt(ctx, node.value.func).ptr
+                ] + [arg.ptr for arg in build_stmts(ctx, node.value.args)]
+        ti.insert_expr_stmt_if_ti_func(*args)
+
         return node
 
     @staticmethod

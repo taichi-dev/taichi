@@ -26,17 +26,17 @@ def test_binary_op():
         bitwise_float()
 
 
-@ti.test(arch=ti.cpu)
-def test_ternary_op():
-    @ti.kernel
-    def select():
-        a = 1.1
-        b = 3
-        c = 3.6
-        d = b if a else c
-
-    with pytest.raises(SystemExit):
-        select()
+# @ti.test(arch=ti.cpu)
+# def test_ternary_op():
+#     @ti.kernel
+#     def select():
+#         a = 1.1
+#         b = 3
+#         c = 3.6
+#         d = b if a else c
+#
+#     with pytest.raises(SystemExit):
+#         select()
 
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')

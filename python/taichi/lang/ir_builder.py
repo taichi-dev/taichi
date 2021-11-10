@@ -360,9 +360,13 @@ class IRBuilder(Builder):
                 len_minimum = len_args - len_default
                 if len_args < len_provided or len_args - len_default > len_provided:
                     if len(args.defaults):
-                        raise TaichiSyntaxError(f"Function receives {len_minimum} to {len_args} argument(s) and {len_provided} provided.")
+                        raise TaichiSyntaxError(
+                            f"Function receives {len_minimum} to {len_args} argument(s) and {len_provided} provided."
+                        )
                     else:
-                        raise TaichiSyntaxError(f"Function receives {len_args} argument(s) and {len_provided} provided.")
+                        raise TaichiSyntaxError(
+                            f"Function receives {len_args} argument(s) and {len_provided} provided."
+                        )
                 # Transform as force-inlined func
                 default_start = len_provided - len_minimum
                 ctx.argument_data = list(ctx.argument_data)
@@ -555,7 +559,9 @@ class IRBuilder(Builder):
             node.iter = build_stmt(ctx, node.iter)
             targets = IRBuilder.get_for_loop_targets(node)
             for target_values in node.iter.ptr:
-                if not isinstance(target_values, collections.abc.Sequence) or len(targets) == 1:
+                if not isinstance(
+                        target_values,
+                        collections.abc.Sequence) or len(targets) == 1:
                     target_values = [target_values]
                 with ctx.variable_scope_guard():
                     for target, target_value in zip(targets, target_values):
@@ -791,7 +797,8 @@ class IRBuilder(Builder):
         node.body = build_stmt(ctx, node.body)
         node.orelse = build_stmt(ctx, node.orelse)
 
-        if ti.is_taichi_class(node.test.ptr) or ti.is_taichi_class(node.body.ptr) or ti.is_taichi_class(node.orelse.ptr):
+        if ti.is_taichi_class(node.test.ptr) or ti.is_taichi_class(
+                node.body.ptr) or ti.is_taichi_class(node.orelse.ptr):
             node.ptr = ti.select(node.test.ptr, node.body.ptr, node.orelse.ptr)
             return node
 

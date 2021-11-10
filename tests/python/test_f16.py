@@ -237,7 +237,7 @@ def test_atomic_add_f16():
                 f[1] = f[1] + 1.12
 
     foo()
-    assert (f[0] == f[1])
+    assert (f[0] == approx(f[1], rel=1e-3))
 
 
 # TODO(): Vulkan support
@@ -257,7 +257,7 @@ def test_atomic_max_f16():
                 f[1] = ti.max(1.12 * i, f[1])
 
     foo()
-    assert (f[0] == f[1])
+    assert (f[0] == approx(f[1], rel=1e-3))
 
 # TODO(): Vulkan support
 @ti.test(arch=[ti.cpu, ti.cuda])
@@ -276,4 +276,4 @@ def test_atomic_min_f16():
                 f[1] = ti.min(-3.13 * i, f[1])
 
     foo()
-    assert (f[0] == f[1])
+    assert (f[0] == approx(f[1], rel=1e-3))

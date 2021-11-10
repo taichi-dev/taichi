@@ -1,5 +1,8 @@
+import json
 import os
 import tempfile
+
+import pytest
 
 import taichi as ti
 
@@ -49,5 +52,23 @@ def test_save():
         with m.add_kernel_template(foo) as kt:
             kt.instantiate(n=6)
             kt.instantiate(n=8)
-        m.preprocess_kernels()
-        m.save(tmpdir, 'taichi_aot_example.tcb')
+        filename = 'taichi_aot_example'
+        m.save(tmpdir, filename)
+        with open(os.path.join(tmpdir,
+                               f'{filename}_metadata.json')) as json_file:
+            json.load(json_file)
+
+
+@ti.test(arch=ti.opengl)
+def test_non_dense_snode():
+    n = 8
+    x = ti.field(dtype=ti.f32)
+    y = ti.field(dtype=ti.f32)
+    blk = ti.root.dense(ti.i, n)
+    blk.place(x)
+    blk.dense(ti.i, n).place(y)
+
+    with pytest.raises(RuntimeError, match='AOT: only supports dense field'):
+        m = ti.aot.Module(ti.opengl)
+        m.add_field('x', x)
+        m.add_field('y', y)

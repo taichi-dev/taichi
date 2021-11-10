@@ -135,6 +135,9 @@ void IRBuilder::init_pre_defs() {
     t_uint64_ = declare_primitive_type(get_data_type<uint64>());
   }
   t_fp32_ = declare_primitive_type(get_data_type<float32>());
+  if (device_->get_cap(cap::spirv_has_float16)) {
+    t_fp16_ = declare_primitive_type(PrimitiveType::f16);
+  }
   if (device_->get_cap(cap::spirv_has_float64)) {
     t_fp64_ = declare_primitive_type(get_data_type<float64>());
   }
@@ -209,6 +212,10 @@ SType IRBuilder::get_null_type() {
 SType IRBuilder::get_primitive_type(const DataType &dt) const {
   if (dt->is_primitive(PrimitiveTypeID::u1)) {
     return t_bool_;
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    if (!device_->get_cap(cap::spirv_has_float16))
+      TI_ERROR("Type {} not supported.", dt->to_string());
+    return t_fp16_;
   } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return t_fp32_;
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
@@ -268,7 +275,8 @@ size_t IRBuilder::get_primitive_type_size(const DataType &dt) const {
   } else if (dt == PrimitiveType::i32 || dt == PrimitiveType::u32 ||
              dt == PrimitiveType::f32) {
     return 4;
-  } else if (dt == PrimitiveType::i16 || dt == PrimitiveType::u16) {
+  } else if (dt == PrimitiveType::i16 || dt == PrimitiveType::u16 ||
+             dt == PrimitiveType::f16) {
     return 2;
   } else {
     return 1;

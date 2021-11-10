@@ -8,9 +8,8 @@ namespace lang {
 FunctionType OpenglProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
 #ifdef TI_WITH_OPENGL
-  // TODO(#3298): Provide an option to enable/disable NV shader extensions.
   opengl::OpenglCodeGen codegen(kernel->name, &opengl_struct_compiled_.value(),
-                                /*allows_nv_shader_ext=*/true);
+                                config->allow_nv_shader_extension);
   auto ptr = opengl_runtime_->keep(codegen.compile(*kernel));
 
   return [ptr, runtime = opengl_runtime_.get()](Context &ctx) {
@@ -60,7 +59,7 @@ std::unique_ptr<AotModuleBuilder> OpenglProgramImpl::make_aot_module_builder() {
   // fine to JIT to GLSL on systems without the OpenGL runtime.
 #ifdef TI_WITH_OPENGL
   return std::make_unique<AotModuleBuilderImpl>(
-      opengl_struct_compiled_.value());
+      opengl_struct_compiled_.value(), config->allow_nv_shader_extension);
 #else
   TI_NOT_IMPLEMENTED;
   return nullptr;

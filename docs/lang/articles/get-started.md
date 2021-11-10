@@ -33,9 +33,7 @@ There are a few of extra requirements depend on which operating system you are u
 
   <TabItem value="arch-linux">
 
-  On Arch Linux, you need to install `ncurses5-compat-libs` package from the Arch User Repository:
-
-  ```yaourt -S ncurses5-compat-libs```
+  On Arch Linux, you need to install `ncurses5-compat-libs` package from the Arch User Repository: `yaourt -S ncurses5-compat-libs`
 
   </TabItem>
   <TabItem value="windows">

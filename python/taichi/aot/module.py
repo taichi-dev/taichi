@@ -118,8 +118,9 @@ class Module:
             column_num = field.n
         else:
             assert isinstance(field, ScalarField)
-        self._aot_builder.add_field(name, is_scalar, field.dtype,
-                                    field.snode.shape, row_num, column_num)
+        self._aot_builder.add_field(name, field.snode.ptr, is_scalar,
+                                    field.dtype, field.snode.shape, row_num,
+                                    column_num)
 
     def add_kernel(self, kernel_fn, name=None):
         """Add a taichi kernel to the AOT module.
@@ -185,22 +186,6 @@ class Module:
         """
         kt = KernelTemplate(kernel_fn, self)
         yield kt
-
-    def preprocess_kernels(self):
-        """
-        Preprocess kernel source code before saving to file.
-        Currently it's only supported on `ti.opengl` backend.
-        """
-        if self._arch != _ti_core.Arch.opengl:
-            warnings.warn(
-                "Preprocessing kernels is ignored since it's only supported on opengl backend for now."
-            )
-        if shutil.which('glslc') is None:
-            raise RuntimeError(
-                "Could not find glslc which is required to preprocess kernels."
-            )
-
-        self._aot_builder.preprocess_kernels()
 
     def save(self, filepath, filename):
         """

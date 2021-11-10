@@ -885,17 +885,6 @@ def append(l, indices, val):
     return a
 
 
-def external_func_call(func, args=[], outputs=[]):
-    func_addr = ctypes.cast(func, ctypes.c_void_p).value
-    _ti_core.insert_external_func_call(func_addr, '', make_expr_group(args),
-                                       make_expr_group(outputs))
-
-
-def asm(source, inputs=[], outputs=[]):
-    _ti_core.insert_external_func_call(0, source, make_expr_group(inputs),
-                                       make_expr_group(outputs))
-
-
 def is_active(l, indices):
     return Expr(
         _ti_core.insert_is_active(l.snode.ptr, make_expr_group(indices)))

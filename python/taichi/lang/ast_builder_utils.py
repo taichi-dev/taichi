@@ -1,4 +1,5 @@
 import ast
+from enum import Enum
 
 from taichi.lang.exception import TaichiSyntaxError
 
@@ -91,7 +92,7 @@ class BuilderContext:
                 .format(loop_var))
 
 
-class IRScopeGuard:
+class VariableScopeGuard:
     def __init__(self, scopes, stmt_block=None):
         self.scopes = scopes
         self.stmt_block = stmt_block
@@ -101,6 +102,29 @@ class IRScopeGuard:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         local = self.scopes[-1]
+        self.scopes.pop()
+
+
+class LoopStatus(Enum):
+    Normal = 0
+    Break = 1
+    Continue = 2
+
+
+class ControlScopeAttribute:
+    def __init__(self):
+        self.is_static = False
+        self.status = LoopStatus.Normal
+
+
+class ControlScopeGuard:
+    def __init__(self, scopes):
+        self.scopes = scopes
+
+    def __enter__(self):
+        self.scopes.append(ControlScopeAttribute())
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.scopes.pop()
 
 
@@ -125,17 +149,33 @@ class IRBuilderContext:
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope_guard(self, *args):
-        return IRScopeGuard(self.local_scopes, *args)
+        return VariableScopeGuard(self.local_scopes, *args)
 
     # e.g.: For, While
     def control_scope_guard(self):
-        return ScopeGuard(self.control_scopes)
+        return ControlScopeGuard(self.control_scopes)
 
     def current_scope(self):
         return self.local_scopes[-1]
 
     def current_control_scope(self):
         return self.control_scopes[-1]
+
+    def loop_status(self):
+        if len(self.control_scopes):
+            return self.control_scopes[-1].status
+        return LoopStatus.Normal
+
+    def set_loop_status(self, status):
+        self.control_scopes[-1].status = status
+
+    def set_static_loop(self):
+        self.control_scopes[-1].is_static = True
+
+    def is_in_static(self):
+        if len(self.control_scopes):
+            return self.control_scopes[-1].is_static
+        return False
 
     def is_var_declared(self, name):
         for s in self.local_scopes:
@@ -144,8 +184,8 @@ class IRBuilderContext:
         return False
 
     def create_variable(self, name, var):
-        assert name not in self.current_scope(
-        ), "Recreating variables is not allowed"
+        if name in self.current_scope():
+            raise TaichiSyntaxError("Recreating variables is not allowed")
         self.current_scope()[name] = var
 
     def check_loop_var(self, loop_var):

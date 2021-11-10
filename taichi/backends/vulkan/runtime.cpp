@@ -9,6 +9,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "fp16.h"
+
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
@@ -97,6 +99,13 @@ class HostDeviceContextBlitter {
         if (device_->get_cap(DeviceCapability::spirv_has_float64)) {
           TO_DEVICE(f64, float64)
         }
+        if (device_->get_cap(DeviceCapability::spirv_has_float16)) {
+          if (dt->is_primitive(PrimitiveTypeID::f16)) {
+            auto d = fp16_ieee_from_fp32_value(host_ctx_->get_arg<float>(i));
+            reinterpret_cast<uint16 *>(device_ptr)[0] = d;
+            break;
+          }
+        }
         TI_ERROR("Vulkan does not support arg type={}", data_type_name(arg.dt));
       } while (0);
     }
@@ -178,6 +187,15 @@ class HostDeviceContextBlitter {
         }
         if (device_->get_cap(DeviceCapability::spirv_has_float64)) {
           TO_HOST(f64, float64)
+        }
+        if (device_->get_cap(DeviceCapability::spirv_has_float16)) {
+          if (dt->is_primitive(PrimitiveTypeID::f16)) {
+            const float d = fp16_ieee_to_fp32_value(
+                *reinterpret_cast<uint16 *>(device_ptr));
+            host_result_buffer_[i] =
+                taichi_union_cast_with_different_sizes<uint64>(d);
+            break;
+          }
         }
         TI_ERROR("Vulkan does not support return value type={}",
                  data_type_name(ret.dt));

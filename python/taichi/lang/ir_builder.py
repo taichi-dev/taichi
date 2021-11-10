@@ -277,7 +277,7 @@ class IRBuilder(Builder):
                 node.ptr = ti.ti_format(*args, **keywords)
             else:
                 node.ptr = node.func.ptr(*args, **keywords)
-        if isinstance(node.func, ast.Name):
+        elif isinstance(node.func, ast.Name):
             func_name = node.func.id
             if func_name == 'print':
                 node.ptr = ti.ti_print(*args, **keywords)
@@ -354,9 +354,21 @@ class IRBuilder(Builder):
             if False:
                 pass
             else:
-                if len(args.args) != len(ctx.argument_data):
-                    raise TaichiSyntaxError("Function argument of ")
+                len_args = len(args.args)
+                len_default = len(args.defaults)
+                len_provided = len(ctx.argument_data)
+                len_minimum = len_args - len_default
+                if len_args < len_provided or len_args - len_default > len_provided:
+                    if len(args.defaults):
+                        raise TaichiSyntaxError(f"Function receives {len_minimum} to {len_args} argument(s) and {len_provided} provided.")
+                    else:
+                        raise TaichiSyntaxError(f"Function receives {len_args} argument(s) and {len_provided} provided.")
                 # Transform as force-inlined func
+                default_start = len_provided - len_minimum
+                ctx.argument_data = list(ctx.argument_data)
+                for arg in args.defaults[default_start:]:
+                    ctx.argument_data.append(build_stmt(ctx, arg).ptr)
+                assert len(args.args) == len(ctx.argument_data)
                 for i, (arg,
                         data) in enumerate(zip(args.args, ctx.argument_data)):
                     # Remove annotations because they are not used.
@@ -543,7 +555,7 @@ class IRBuilder(Builder):
             node.iter = build_stmt(ctx, node.iter)
             targets = IRBuilder.get_for_loop_targets(node)
             for target_values in node.iter.ptr:
-                if not isinstance(target_values, collections.abc.Sequence):
+                if not isinstance(target_values, collections.abc.Sequence) or len(targets) == 1:
                     target_values = [target_values]
                 with ctx.variable_scope_guard():
                     for target, target_value in zip(targets, target_values):
@@ -776,6 +788,13 @@ class IRBuilder(Builder):
     @staticmethod
     def build_IfExp(ctx, node):
         node.test = build_stmt(ctx, node.test)
+        node.body = build_stmt(ctx, node.body)
+        node.orelse = build_stmt(ctx, node.orelse)
+
+        if ti.is_taichi_class(node.test.ptr) or ti.is_taichi_class(node.body.ptr) or ti.is_taichi_class(node.orelse.ptr):
+            node.ptr = ti.select(node.test.ptr, node.body.ptr, node.orelse.ptr)
+            return node
+
         is_static_if = (IRBuilder.get_decorator(ctx, node.test) == "static")
 
         if is_static_if:
@@ -791,11 +810,9 @@ class IRBuilder(Builder):
 
         ti.begin_frontend_if(node.test.ptr)
         ti.core.begin_frontend_if_true()
-        node.body = build_stmt(ctx, node.body)
         val.assign(node.body.ptr)
         ti.core.pop_scope()
         ti.core.begin_frontend_if_false()
-        node.orelse = build_stmt(ctx, node.orelse)
         val.assign(node.orelse.ptr)
         ti.core.pop_scope()
 

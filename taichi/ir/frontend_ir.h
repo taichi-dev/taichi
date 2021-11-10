@@ -587,6 +587,8 @@ class RangeAssumptionExpression : public Expression {
       : input(input), base(base), low(low), high(high) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override {
     ss << "assume_in_range({";
     base.serialize(ss);
@@ -609,6 +611,8 @@ class LoopUniqueExpression : public Expression {
   LoopUniqueExpression(const Expr &input, const std::vector<SNode *> &covers)
       : input(input), covers(covers) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override;
 
@@ -749,6 +753,8 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   ExternalTensorShapeAlongAxisExpression(const Expr &ptr, int axis)
       : ptr(ptr), axis(axis) {
   }
+
+  void type_check() override;
 
   void flatten(FlattenContext *ctx) override;
 };

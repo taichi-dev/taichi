@@ -117,5 +117,39 @@ TEST(FrontendTypeInference, TensorElement) {
   EXPECT_EQ(load_tensor_element->ret_type, PrimitiveType::u32);
 }
 
+TEST(FrontendTypeInference, ExternalTensorShapeAlongAxis) {
+  auto external_tensor =
+      Expr::make<ExternalTensorExpression>(PrimitiveType::u64, 1, 0, 0);
+  auto shape =
+      Expr::make<ExternalTensorShapeAlongAxisExpression>(external_tensor, 0);
+  shape->type_check();
+  EXPECT_EQ(shape->ret_type, PrimitiveType::i32);
+}
+
+TEST(FrontendTypeInference, RangeAssumption) {
+  auto const_f32_a = Expr::make<ConstExpression, float32>(5.0);
+  const_f32_a->type_check();
+  auto const_f32_b = Expr::make<ConstExpression, float32>(5.0);
+  const_f32_b->type_check();
+  auto valid =
+      Expr::make<RangeAssumptionExpression>(const_f32_a, const_f32_b, 0, 1);
+  valid->type_check();
+  EXPECT_EQ(valid->ret_type, PrimitiveType::f32);
+  auto const_f64 = Expr::make<ConstExpression, float64>(5.0);
+  const_f64->type_check();
+  auto invalid =
+      Expr::make<RangeAssumptionExpression>(const_f32_a, const_f64, 0, 1);
+  EXPECT_THROW(invalid->type_check(), std::runtime_error);
+}
+
+TEST(FrontendTypeInference, LoopUnique) {
+  auto const_i64 = Expr::make<ConstExpression, int64>(5);
+  const_i64->type_check();
+  auto loop_unique =
+      Expr::make<LoopUniqueExpression>(const_i64, std::vector<SNode *>{});
+  loop_unique->type_check();
+  EXPECT_EQ(loop_unique->ret_type, PrimitiveType::i64);
+}
+
 }  // namespace lang
 }  // namespace taichi

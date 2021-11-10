@@ -806,7 +806,9 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
                             if sys.version_info < (3, 7):
                                 # traceback object is read-only on Python <= 3.7,
                                 # print the traceback only
-                                traceback.print_tb(tb, limit=1, file=sys.stderr)
+                                traceback.print_tb(tb,
+                                                   limit=1,
+                                                   file=sys.stderr)
                                 raise TypeError(str(e)[11:]) from None
                             # Otherwise, modify the traceback object
                             tb.tb_next = None

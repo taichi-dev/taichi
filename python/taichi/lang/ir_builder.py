@@ -100,7 +100,7 @@ class IRBuilder(Builder):
     def is_tuple(node):
         if isinstance(node, ast.Tuple):
             return True
-        if isinstance(node, ast.Index) and isinstance(node.value, ast.Tuple):
+        if isinstance(node, ast.Index) and isinstance(node.value.ptr, tuple):
             return True
         return False
 

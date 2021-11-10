@@ -1,3 +1,4 @@
+from typing import Type
 import taichi.lang
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.util import python_scope, to_numpy_type, to_pytorch_type
@@ -156,8 +157,11 @@ class Field:
         Args:
             other (Field): The source field.
         """
-        assert isinstance(other, Field)
-        assert len(self.shape) == len(other.shape)
+        if not isinstance(other, Field):
+            raise TypeError('Cannot copy from a non-field object')
+        if self.shape != other.shape:
+            raise ValueError(f"ti.field shape {self.shape} does not match"
+                             f" the source field shape {other.shape}")
         taichi.lang.meta.tensor_to_tensor(self, other)
 
     @python_scope

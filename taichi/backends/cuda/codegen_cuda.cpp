@@ -331,9 +331,25 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         llvm::AtomicOrdering::SequentiallyConsistent);
   }
 
-  // A huge hack for supporting f16 atomic add/max/min!
+  // A huge hack for supporting f16 atomic add/max/min! Borrowed from
+  // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/service/gpu/ir_emitter.cc#L378-L490
   // The reason is that LLVM10 does not support generating atomicCAS for f16 on
   // NVPTX backend.
+  //
+  // Implements atomic binary operations using atomic compare-and-swap
+  // (atomicCAS) as follows:
+  //   1. Reads the value from the memory pointed to by output_address and
+  //     records it as old_output.
+  //   2. Uses old_output as one of the source operand to perform the binary
+  //     operation and stores the result in new_output.
+  //   3. Calls atomicCAS which implements compare-and-swap as an atomic
+  //     operation. In particular, atomicCAS reads the value from the memory
+  //     pointed to by output_address, and compares the value with old_output. If
+  //     the two values equal, new_output is written to the same memory location
+  //     and true is returned to indicate that the atomic operation succeeds.
+  //     Otherwise, the new value read from the memory is returned. In this case,
+  //     the new value is copied to old_output, and steps 2. and 3. are repeated
+  //     until atomicCAS succeeds.
   //
   // int32 is used for the atomicCAS operation. So atomicCAS reads and writes 32
   // bit values from the memory, which is larger than the memory size required

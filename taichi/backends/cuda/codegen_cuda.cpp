@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <set>
+#include <functional>
 
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
@@ -330,15 +331,174 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         llvm::AtomicOrdering::SequentiallyConsistent);
   }
 
+  // A huge hack for supporting f16 atomic add/max/min! Borrowed from
+  // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/service/gpu/ir_emitter.cc#L378-L490
+  // The reason is that LLVM10 does not support generating atomicCAS for f16 on
+  // NVPTX backend.
+  //
+  // Implements atomic binary operations using atomic compare-and-swap
+  // (atomicCAS) as follows:
+  //   1. Reads the value from the memory pointed to by output_address and
+  //     records it as old_output.
+  //   2. Uses old_output as one of the source operand to perform the binary
+  //     operation and stores the result in new_output.
+  //   3. Calls atomicCAS which implements compare-and-swap as an atomic
+  //     operation. In particular, atomicCAS reads the value from the memory
+  //     pointed to by output_address, and compares the value with old_output.
+  //     If the two values equal, new_output is written to the same memory
+  //     location and true is returned to indicate that the atomic operation
+  //     succeeds. Otherwise, the new value read from the memory is returned. In
+  //     this case, the new value is copied to old_output, and steps 2. and 3.
+  //     are repeated until atomicCAS succeeds.
+  //
+  // int32 is used for the atomicCAS operation. So atomicCAS reads and writes 32
+  // bit values from the memory, which is larger than the memory size required
+  // by the original atomic binary operation. We mask off the last two bits of
+  // the output_address and use the result as an address to read the 32 bit
+  // values from the memory.
+  //
+  // This can avoid out of bound memory accesses, based on the assumption:
+  // All buffers are 4 byte aligned and have a size of 4N.
+  //
+  // The pseudo code is shown below.
+  //
+  //   cas_new_output_address = alloca(32);
+  //   cas_old_output_address = alloca(32);
+  //   atomic_address = output_address & ((int64)(-4));
+  //   new_output_address = cas_new_output_address + (output_address & 3);
+  //
+  //   *cas_old_output_address = *atomic_address;
+  //   do {
+  //     *cas_new_output_address = *cas_old_output_address;
+  //     *new_output_address = operation(*new_output_address, *source_address);
+  //     (*cas_old_output_address, success) =
+  //       atomicCAS(atomic_address, *cas_old_output_address,
+  //       *cas_new_output_address);
+  //   } while (!success);
+  //
+  // TODO(sjwsl): Try to rewrite this after upgrading LLVM or supporting raw
+  // NVPTX
+
+  llvm::Value *atomic_op_using_cas(
+      llvm::Value *output_address,
+      llvm::Value *val,
+      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
+    llvm::PointerType *output_address_type =
+        llvm::dyn_cast<llvm::PointerType>(output_address->getType());
+    TI_ASSERT(output_address_type != nullptr);
+
+    // element_type is the data type for the binary operation.
+    llvm::Type *element_type = output_address_type->getPointerElementType();
+    llvm::Type *element_address_type = element_type->getPointerTo();
+
+    int atomic_size = 32;
+    llvm::Type *atomic_type = builder->getIntNTy(atomic_size);
+    llvm::Type *atomic_address_type = atomic_type->getPointerTo(
+        output_address_type->getPointerAddressSpace());
+
+    // cas_old_output_address and cas_new_output_address point to the scratch
+    // memory where we store the old and new values for the repeated atomicCAS
+    // operations.
+    llvm::Value *cas_old_output_address =
+        builder->CreateAlloca(atomic_type, nullptr);
+    llvm::Value *cas_new_output_address =
+        builder->CreateAlloca(atomic_type, nullptr);
+
+    llvm::Value *atomic_memory_address;
+    // binop_output_address points to the scratch memory that stores the
+    // result of the binary operation.
+    llvm::Value *binop_output_address;
+
+    // Calculate bin_output_address output_address
+    llvm::Type *address_int_type =
+        module->getDataLayout().getIntPtrType(output_address_type);
+    atomic_memory_address =
+        builder->CreatePtrToInt(output_address, address_int_type);
+    llvm::Value *mask = llvm::ConstantInt::get(address_int_type, 3);
+    llvm::Value *offset = builder->CreateAnd(atomic_memory_address, mask);
+    mask = llvm::ConstantInt::get(address_int_type, -4);
+    atomic_memory_address = builder->CreateAnd(atomic_memory_address, mask);
+    atomic_memory_address =
+        builder->CreateIntToPtr(atomic_memory_address, atomic_address_type);
+    binop_output_address = builder->CreateAdd(
+        builder->CreatePtrToInt(cas_new_output_address, address_int_type),
+        offset);
+    binop_output_address =
+        builder->CreateIntToPtr(binop_output_address, element_address_type);
+
+    // Use the value from the memory that atomicCAS operates on to initialize
+    // cas_old_output.
+    llvm::Value *cas_old_output =
+        builder->CreateLoad(atomic_memory_address, "cas_old_output");
+    builder->CreateStore(cas_old_output, cas_old_output_address);
+
+    llvm::BasicBlock *loop_body_bb =
+        BasicBlock::Create(*llvm_context, "atomic_op_loop_body", func);
+    llvm::BasicBlock *loop_exit_bb =
+        BasicBlock::Create(*llvm_context, "loop_exit_bb", func);
+    builder->CreateBr(loop_body_bb);
+    builder->SetInsertPoint(loop_body_bb);
+
+    // loop body for one atomicCAS
+    {
+      // Use cas_old_output to initialize cas_new_output.
+      cas_old_output =
+          builder->CreateLoad(cas_old_output_address, "cas_old_output");
+      builder->CreateStore(cas_old_output, cas_new_output_address);
+
+      auto binop_output = op(builder->CreateLoad(binop_output_address), val);
+      builder->CreateStore(binop_output, binop_output_address);
+
+      llvm::Value *cas_new_output =
+          builder->CreateLoad(cas_new_output_address, "cas_new_output");
+
+      // Emit code to perform the atomicCAS operation
+      // (cas_old_output, success) = atomicCAS(memory_address, cas_old_output,
+      //                                       cas_new_output);
+      llvm::Value *ret_value = builder->CreateAtomicCmpXchg(
+          atomic_memory_address, cas_old_output, cas_new_output,
+          llvm::AtomicOrdering::SequentiallyConsistent,
+          llvm::AtomicOrdering::SequentiallyConsistent);
+
+      // Extract the memory value returned from atomicCAS and store it as
+      // cas_old_output.
+      builder->CreateStore(
+          builder->CreateExtractValue(ret_value, 0, "cas_old_output"),
+          cas_old_output_address);
+      // Extract the success bit returned from atomicCAS and generate a
+      // conditional branch on the success bit.
+      builder->CreateCondBr(
+          builder->CreateExtractValue(ret_value, 1, "success"), loop_exit_bb,
+          loop_body_bb);
+    }
+
+    builder->SetInsertPoint(loop_exit_bb);
+
+    return output_address;
+  }
+
   llvm::Value *real_type_atomic(AtomicOpStmt *stmt) {
     if (!stmt->val->ret_type->is<PrimitiveType>()) {
       return nullptr;
     }
     AtomicOpType op = stmt->op_type;
-    if (is_real(stmt->val->ret_type) && op == AtomicOpType::add) {
-      return builder->CreateAtomicRMW(llvm::AtomicRMWInst::FAdd,
-                                      llvm_val[stmt->dest], llvm_val[stmt->val],
-                                      AtomicOrdering::SequentiallyConsistent);
+    if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+      switch (op) {
+        case AtomicOpType::add:
+          return atomic_op_using_cas(
+              llvm_val[stmt->dest], llvm_val[stmt->val],
+              [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
+        case AtomicOpType::max:
+          return atomic_op_using_cas(
+              llvm_val[stmt->dest], llvm_val[stmt->val],
+              [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
+        case AtomicOpType::min:
+          return atomic_op_using_cas(
+              llvm_val[stmt->dest], llvm_val[stmt->val],
+              [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
+        default:
+          break;
+      }
     }
 
     PrimitiveTypeID prim_type =
@@ -348,6 +508,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
                        std::unordered_map<AtomicOpType, std::string>>
         atomics;
 
+    atomics[PrimitiveTypeID::f32][AtomicOpType::add] = "atomic_add_f32";
+    atomics[PrimitiveTypeID::f64][AtomicOpType::add] = "atomic_add_f64";
     atomics[PrimitiveTypeID::f32][AtomicOpType::min] = "atomic_min_f32";
     atomics[PrimitiveTypeID::f64][AtomicOpType::min] = "atomic_min_f64";
     atomics[PrimitiveTypeID::f32][AtomicOpType::max] = "atomic_max_f32";

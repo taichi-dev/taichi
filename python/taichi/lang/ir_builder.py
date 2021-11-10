@@ -103,6 +103,8 @@ class IRBuilder(Builder):
             return True
         if isinstance(node, ast.Index) and isinstance(node.value.ptr, tuple):
             return True
+        if isinstance(node.ptr, tuple):
+            return True
         return False
 
     @staticmethod

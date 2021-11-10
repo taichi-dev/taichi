@@ -486,6 +486,30 @@ void IdExpression::flatten(FlattenContext *ctx) {
   }
 }
 
+void AtomicOpExpression::type_check() {
+  // TODO: assert no unknowns after type_check for all expressions are
+  // implemented
+  if (dest->ret_type == PrimitiveType::unknown || val->ret_type == PrimitiveType::unknown)
+    return;
+  auto error = [&]() {
+    throw std::runtime_error(fmt::format(
+        "TypeError: unsupported operand type(s) for 'atomic_{}': '{}' and '{}'",
+        atomic_op_type_name(op_type), dest->ret_type->to_string(),
+        val->ret_type->to_string()));
+  };
+  if (!val->ret_type->is<PrimitiveType>())
+    error();
+  if (auto cit = dest->ret_type->cast<CustomIntType>()) {
+    ret_type = cit->get_compute_type();
+  } else if (auto cft = dest->ret_type->cast<CustomFloatType>()) {
+    ret_type = cft->get_compute_type();
+  } else if (dest->ret_type->is<PrimitiveType>()) {
+    ret_type = dest->ret_type;
+  } else {
+    error();
+  }
+}
+
 void AtomicOpExpression::serialize(std::ostream &ss) {
   if (op_type == AtomicOpType::add) {
     ss << "atomic_add(";

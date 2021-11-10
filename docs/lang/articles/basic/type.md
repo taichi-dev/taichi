@@ -193,20 +193,21 @@ In Taichi, augmented assignments (e.g., `x[i] += 1`) are automatically
 :::caution
 
 When modifying global variables in parallel, make sure you use atomic
-operations. For example, to sum up all the elements in `x`, :
+operations. For example, to sum up all the elements in `x`,
 
-    @ti.kernel
-    def sum():
-        for i in x:
-            # Approach 1: OK
-            total[None] += x[i]
+```python
+@ti.kernel
+def sum():
+    for i in x:
+        # Approach 1: OK
+        total[None] += x[i]
 
-            # Approach 2: OK
-            ti.atomic_add(total[None], x[i])
+        # Approach 2: OK
+        ti.atomic_add(total[None], x[i])
 
-            # Approach 3: Wrong result since the operation is not atomic.
-            total[None] = total[None] + x[i]
-
+        # Approach 3: Wrong result since the operation is not atomic.
+        total[None] = total[None] + x[i]
+```
 :::
 
 :::note

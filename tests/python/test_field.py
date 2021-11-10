@@ -147,28 +147,31 @@ def test_field_name():
         d.append(ti.field(dtype=ti.f32, shape=(2, 3), name=f'd{i}'))
         assert d[i].name == f'd{i}'
 
+
 @ti.test()
 @pytest.mark.parametrize('shape', field_shapes)
 def test_field_copy_from(shape):
-    shapes = [ti.i32, ti.f32] # Metal kernel only supports <= 32-bit data
+    shapes = [ti.i32, ti.f32]  # Metal kernel only supports <= 32-bit data
     x = ti.field(dtype=ti.f32, shape=shape)
     for other_dtype in shapes:
         other = ti.field(dtype=other_dtype, shape=shape)
         other.fill(1)
         x.copy_from(other)
-        convert = lambda arr: arr[0] if len(arr)==1 else arr
-        assert(convert(x.shape) == shape)
-        assert(x.dtype == ti.f32)
-        assert((x.to_numpy() == 1).all())
+        convert = lambda arr: arr[0] if len(arr) == 1 else arr
+        assert (convert(x.shape) == shape)
+        assert (x.dtype == ti.f32)
+        assert ((x.to_numpy() == 1).all())
+
 
 @ti.test()
 def test_field_copy_from_with_mismatch_shape():
     x = ti.field(dtype=ti.f32, shape=(2, 3))
-    for other_shape in [(2,), (2, 2), (2, 3, 4)]:
-        other = ti.field(dtype=ti.f16, shape=other_shape)        
+    for other_shape in [(2, ), (2, 2), (2, 3, 4)]:
+        other = ti.field(dtype=ti.f16, shape=other_shape)
         with pytest.raises(ValueError):
             x.copy_from(other)
-    
+
+
 @ti.test()
 def test_field_copy_from_with_non_filed_object():
     import numpy as np

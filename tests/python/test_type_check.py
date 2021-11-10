@@ -48,5 +48,5 @@ def test_subscript():
     def any_array(x: ti.any_arr()):
         b = x[3, 1.1]
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(TypeError):
         any_array(a)

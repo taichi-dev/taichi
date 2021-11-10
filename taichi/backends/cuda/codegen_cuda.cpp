@@ -332,7 +332,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   // A huge hack for supporting f16 atomic add/max/min! Borrowed from
-  // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/service/gpu/ir_emitter.cc#L378-L490
+  // https://github.com/tensorflow/tensorflow/blob/470d58a83470f8ede3beaa584e6992bc71b7baa6/tensorflow/compiler/xla/service/gpu/ir_emitter.cc#L378-L490
   // The reason is that LLVM10 does not support generating atomicCAS for f16 on
   // NVPTX backend.
   //

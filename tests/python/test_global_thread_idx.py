@@ -9,7 +9,7 @@ def test_thread_idx():
     def func():
         for i in range(32):
             for j in range(8):
-                t = ti.thread_idx()
+                t = ti.global_thread_idx()
                 x[t] += 1
 
     func()

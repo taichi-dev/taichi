@@ -125,7 +125,6 @@ class FrontendPrintStmt : public Stmt {
 class FrontendEvalStmt : public Stmt {
  public:
   Expr expr;
-  Expr eval_expr;
 
   FrontendEvalStmt(const Expr &expr) : expr(load_if_ptr(expr)) {
   }
@@ -555,23 +554,6 @@ class TensorElementExpression : public Expression {
 
   bool is_lvalue() const override {
     return true;
-  }
-};
-
-class EvalExpression : public Expression {
- public:
-  Stmt *stmt_ptr;
-  int stmt_id;
-  EvalExpression(Stmt *stmt) : stmt_ptr(stmt), stmt_id(stmt_ptr->id) {
-    // cache stmt->id since it may be released later
-  }
-
-  void serialize(std::ostream &ss) override {
-    ss << '%' << stmt_id;
-  }
-
-  void flatten(FlattenContext *ctx) override {
-    stmt = stmt_ptr;
   }
 };
 

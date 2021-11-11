@@ -1,5 +1,6 @@
-import taichi as ti
 import numpy as np
+
+import taichi as ti
 
 
 @ti.test(arch=[ti.cuda, ti.cpu])
@@ -16,6 +17,7 @@ def test_thread_idx():
     func()
     assert x.to_numpy().sum() == 256
 
+
 @ti.test(arch=ti.cuda)
 def test_global_thread_idx():
     n = 2048
@@ -26,6 +28,6 @@ def test_global_thread_idx():
         for i in range(n):
             tid = ti.global_thread_idx()
             x[tid] = tid
-    
+
     func()
     assert np.arange(n).sum() == x.to_numpy().sum()

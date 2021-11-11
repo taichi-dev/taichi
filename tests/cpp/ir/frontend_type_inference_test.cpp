@@ -173,5 +173,11 @@ TEST(FrontendTypeInference, LoopUnique) {
   EXPECT_EQ(loop_unique->ret_type, PrimitiveType::i64);
 }
 
+TEST(FrontendTypeInference, InternalFuncCall) {
+  auto internal_func_call = Expr::make<InternalFuncCallExpression>("do_nothing", std::vector<Expr>{});
+  internal_func_call->type_check();
+  EXPECT_EQ(internal_func_call->ret_type, PrimitiveType::i32);
+}
+
 }  // namespace lang
 }  // namespace taichi

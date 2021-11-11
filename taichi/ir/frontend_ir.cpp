@@ -230,6 +230,19 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void InternalFuncCallExpression::type_check() {
+  for (auto &arg : args) {
+    // TODO: assert no unknowns after type_check for all expressions are
+    // implemented
+    if (arg->ret_type == PrimitiveType::unknown)
+      return;
+    // There are no specifications for internal func calls for now,
+    // so arg types are not checked.
+  }
+  // Internal func calls will have default i32 return type.
+  ret_type = PrimitiveType::i32;
+}
+
 void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> args_stmts(args.size());
   for (int i = 0; i < (int)args.size(); ++i) {
@@ -238,6 +251,26 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
   }
   ctx->push_back<InternalFuncStmt>(func_name, args_stmts);
   stmt = ctx->back_stmt();
+}
+
+void ExternalFuncCallExpression::type_check() {
+  for (auto &arg : args) {
+    // TODO: assert no unknowns after type_check for all expressions are
+    // implemented
+    if (arg->ret_type == PrimitiveType::unknown)
+      return;
+    // There are no specifications for external func calls for now,
+    // so arg types are not checked.
+  }
+  for (auto &output : outputs) {
+    // TODO: assert no unknowns after type_check for all expressions are
+    // implemented
+    if (output->ret_type == PrimitiveType::unknown)
+      return;
+    // There are no specifications for external func calls for now,
+    // so output types are not checked.
+  }
+  // External func calls have no return type.
 }
 
 void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
@@ -683,6 +716,20 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   TI_ASSERT(0 <= axis && axis < temp->dim);
   ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id);
   stmt = ctx->back_stmt();
+}
+
+void FuncCallExpression::type_check() {
+  for (auto &arg : args.exprs) {
+    // TODO: assert no unknowns after type_check for all expressions are
+    // implemented
+    if (arg->ret_type == PrimitiveType::unknown)
+      return;
+    // There are no specifications for external func calls for now,
+    // so arg types are not checked.
+  }
+  if (func->rets.size() == 1) {
+    ret_type = func->rets[0].dt;
+  }
 }
 
 void FuncCallExpression::flatten(FlattenContext *ctx) {

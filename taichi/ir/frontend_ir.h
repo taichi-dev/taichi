@@ -357,6 +357,8 @@ class InternalFuncCallExpression : public Expression {
     }
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override {
     ss << "internal call " << func_name << '(';
     std::string args_str;
@@ -394,6 +396,8 @@ class ExternalFuncCallExpression : public Expression {
         args(args),
         outputs(outputs) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     if (so_func != nullptr) {
@@ -749,6 +753,8 @@ class FuncCallExpression : public Expression {
  public:
   Function *func;
   ExprGroup args;
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override;
 

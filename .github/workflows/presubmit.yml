@@ -331,7 +331,7 @@ jobs:
   build_and_test_windows:
     name: Build and Test (Windows)
     needs: [check_code_format, check_files]
-    runs-on: windows-latest
+    runs-on: windows
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v2

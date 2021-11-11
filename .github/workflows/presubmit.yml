@@ -6,10 +6,10 @@ on:
 jobs:
   build_and_test_windows:
     name: Build and Test (Windows)
-    needs: [check_code_format, check_files]
+    #needs: [check_code_format, check_files]
     runs-on: [self-hosted,windows]
     timeout-minutes: 90
-    steps:
+    steps:S
       - uses: actions/checkout@v2
         with:
           submodules: "recursive"

@@ -1,7 +1,6 @@
 #pragma once
 
-#define VOLK_IMPLEMENTATION
-#include <volk.h>
+#include "taichi/backends/vulkan/vulkan_common.h"
 
 #include "taichi/backends/vulkan/loader.h"
 #include "taichi/common/logging.h"
@@ -18,19 +17,29 @@ bool VulkanLoader::init() {
     if (initialized) {
       return;
     }
+#ifdef __APPLE__
+    initialized = true;
+#else
     VkResult result = volkInitialize();
     initialized = result == VK_SUCCESS;
+#endif
   });
   return initialized;
 }
 
 void VulkanLoader::load_instance(VkInstance instance) {
   vulkan_instance_ = instance;
+#ifdef __APPLE__
+#else
   volkLoadInstance(instance);
+#endif
 }
 void VulkanLoader::load_device(VkDevice device) {
   vulkan_device_ = device;
+#ifdef __APPLE__
+#else
   volkLoadDevice(device);
+#endif
 }
 
 PFN_vkVoidFunction VulkanLoader::load_function(const char *name) {

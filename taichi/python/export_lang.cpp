@@ -51,10 +51,6 @@ Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
 }
 
-Expr expr_eval_expression(Stmt *stmt) {
-  return Expr::make<EvalExpression>(stmt);
-}
-
 void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {
   TI_ASSERT(lhs->is_lvalue());
   auto stmt = std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs));
@@ -892,10 +888,7 @@ void export_lang(py::module &m) {
                 "ti.thread_idx() is only available in cuda or cpu context.");
     TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
                 "ti.thread_idx() is only valid within loops.");
-    auto tid_stmt = Stmt::make<GlobalThreadIndexStmt>(loop);
-    auto tid_expr = expr_eval_expression(tid_stmt.get());
-    current_ast_builder().insert(std::move(tid_stmt));
-    return tid_expr;
+    return Expr::make<GlobalThreadIndexExpression>(loop);
   });
 
   py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())

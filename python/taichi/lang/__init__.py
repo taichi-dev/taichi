@@ -396,7 +396,7 @@ class _SpecialConfig:
         self.gdb_trigger = False
         self.excepthook = False
         self.experimental_real_function = False
-        self.experimental_ast_refactor = True
+        self.experimental_ast_refactor = False
 
 
 def prepare_sandbox():

@@ -637,6 +637,8 @@ class AtomicOpExpression : public Expression {
       : op_type(op_type), dest(dest), val(val) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
@@ -659,6 +661,8 @@ class SNodeOpExpression : public Expression {
                     const Expr &value)
       : snode(snode), op_type(op_type), indices(indices), value(value) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override;
 

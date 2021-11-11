@@ -199,6 +199,51 @@ def test_ndarray_2d():
     _test_ndarray_2d()
 
 
+def _test_ndarray_copy_from_ndarray():
+    n = 16
+    x = ti.ndarray(ti.i32, shape=n)
+    y = ti.ndarray(ti.i32, shape=n)
+    x[0] = 1
+    x[4] = 2
+    y[0] = 4
+    y[4] = 5
+    x.copy_from(y)
+    assert x[0] == 4
+    assert x[4] == 5
+
+    a = ti.Vector.ndarray(10, ti.i32, 5, layout=ti.Layout.SOA)
+    b = ti.Vector.ndarray(10, ti.i32, 5, layout=ti.Layout.SOA)
+    a[1][0] = 1
+    a[2][4] = 2
+    b[1][0] = 4
+    b[2][4] = 5
+    a.copy_from(b)
+    assert a[1][0] == 4
+    assert a[2][4] == 5
+
+    a = ti.Matrix.ndarray(2, 2, ti.i32, 5, layout=ti.Layout.AOS)
+    b = ti.Matrix.ndarray(2, 2, ti.i32, 5, layout=ti.Layout.AOS)
+    a[0][0,0] = 1
+    a[4][1,0] = 3
+    b[0][0,0] = 4
+    b[4][1,0] = 6
+    a.copy_from(b)
+    assert a[0][0,0] == 4
+    assert a[4][1,0] == 6
+
+
+
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(exclude=ti.opengl)
+def test_ndarray_copy_from_ndarray_torch():
+    _test_ndarray_copy_from_ndarray()
+
+
+@ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=False)
+def test_ndarray_copy_from_ndarray():
+    _test_ndarray_copy_from_ndarray()
+
+
 def _test_ndarray_numpy_io():
     n = 7
     m = 4

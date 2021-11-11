@@ -939,3 +939,31 @@ def test_sparse_matrix_builder():
     for i in range(n):
         for j in range(n):
             assert A[i, j] == i + j
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_func_default_value():
+    @ti.func
+    def bar(s, t=1):
+        return s + t
+
+    @ti.kernel
+    def foo() -> ti.i32:
+        return bar(1)
+
+    assert foo() == 2
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_func_default_value_fail():
+    with pytest.raises(ti.TaichiSyntaxError):
+
+        @ti.func
+        def bar(s, t=1):
+            return s + t
+
+        @ti.kernel
+        def foo() -> ti.i32:
+            return bar(1, 2, 3)
+
+        foo()

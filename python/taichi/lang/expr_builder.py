@@ -234,7 +234,7 @@ class ExprBuilder(Builder):
 
     @staticmethod
     def build_DictComp(ctx, node):
-        node.key = build_expr(ctx, node.value)
+        node.key = build_expr(ctx, node.key)
         node.value = build_expr(ctx, node.value)
         node.generators = build_exprs(ctx, node.generators)
         return node

@@ -10,7 +10,7 @@ import taichi as ti
 
 def _escape_path_for_win(json_str):
     return json_str.replace(os.sep,
-                            '\\\\') if ti.get_os_name() == 'win' else json_str
+                            r'\\') if ti.get_os_name() == 'win' else json_str
 
 
 @ti.test(arch=ti.cc)

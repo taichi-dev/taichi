@@ -652,14 +652,14 @@ class SNodeOpExpression : public Expression {
   Expr value;
 
   SNodeOpExpression(SNode *snode, SNodeOpType op_type, const ExprGroup &indices)
-      : snode(snode), op_type(op_type), indices(indices) {
+      : snode(snode), op_type(op_type), indices(indices.loaded()) {
   }
 
   SNodeOpExpression(SNode *snode,
                     SNodeOpType op_type,
                     const ExprGroup &indices,
                     const Expr &value)
-      : snode(snode), op_type(op_type), indices(indices), value(value) {
+      : snode(snode), op_type(op_type), indices(indices.loaded()), value(value) {
   }
 
   void type_check() override;

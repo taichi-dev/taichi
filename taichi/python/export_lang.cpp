@@ -51,7 +51,7 @@ Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
 }
 
-Expr expr_eval_expression(Stmt *stmt){
+Expr expr_eval_expression(Stmt *stmt) {
   return Expr::make<EvalExpression>(stmt);
 }
 

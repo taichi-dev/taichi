@@ -1174,6 +1174,41 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
+llvm::Value *CodeGenLLVM::atomic_op_using_cas(
+    llvm::Value *dest,
+    llvm::Value *val,
+    std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
+  using namespace llvm;
+  BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
+  BasicBlock *after_loop =
+      BasicBlock::Create(*llvm_context, "after_while", func);
+
+  builder->CreateBr(body);
+  builder->SetInsertPoint(body);
+
+  llvm::Value *old_val;
+
+  {
+    old_val = builder->CreateLoad(dest);
+    auto new_val = op(old_val, val);
+    dest =
+        builder->CreateBitCast(dest, llvm::Type::getInt16PtrTy(*llvm_context));
+    auto atomicCmpXchg = builder->CreateAtomicCmpXchg(
+        dest,
+        builder->CreateBitCast(old_val, llvm::Type::getInt16Ty(*llvm_context)),
+        builder->CreateBitCast(new_val, llvm::Type::getInt16Ty(*llvm_context)),
+        AtomicOrdering::SequentiallyConsistent,
+        AtomicOrdering::SequentiallyConsistent);
+    // Check whether CAS was succussful
+    auto ok = builder->CreateExtractValue(atomicCmpXchg, 1);
+    builder->CreateCondBr(builder->CreateNot(ok), body, after_loop);
+  }
+
+  builder->SetInsertPoint(after_loop);
+
+  return old_val;
+}
+
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   // auto mask = stmt->parent->mask();
   // TODO: deal with mask when vectorized
@@ -1205,6 +1240,10 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+        old_value = atomic_op_using_cas(
+            llvm_val[stmt->dest], llvm_val[stmt->val],
+            [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
         old_value = create_call("atomic_min_f32",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -1219,6 +1258,10 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+        old_value = atomic_op_using_cas(
+            llvm_val[stmt->dest], llvm_val[stmt->val],
+            [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
         old_value = create_call("atomic_max_f32",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});

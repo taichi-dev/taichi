@@ -125,7 +125,6 @@ class FrontendPrintStmt : public Stmt {
 class FrontendEvalStmt : public Stmt {
  public:
   Expr expr;
-  Expr eval_expr;
 
   FrontendEvalStmt(const Expr &expr) : expr(load_if_ptr(expr)) {
   }
@@ -558,23 +557,6 @@ class TensorElementExpression : public Expression {
   }
 };
 
-class EvalExpression : public Expression {
- public:
-  Stmt *stmt_ptr;
-  int stmt_id;
-  EvalExpression(Stmt *stmt) : stmt_ptr(stmt), stmt_id(stmt_ptr->id) {
-    // cache stmt->id since it may be released later
-  }
-
-  void serialize(std::ostream &ss) override {
-    ss << '%' << stmt_id;
-  }
-
-  void flatten(FlattenContext *ctx) override {
-    stmt = stmt_ptr;
-  }
-};
-
 class RangeAssumptionExpression : public Expression {
  public:
   Expr input, base;
@@ -586,6 +568,8 @@ class RangeAssumptionExpression : public Expression {
                             int high)
       : input(input), base(base), low(low), high(high) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     ss << "assume_in_range({";
@@ -609,6 +593,8 @@ class LoopUniqueExpression : public Expression {
   LoopUniqueExpression(const Expr &input, const std::vector<SNode *> &covers)
       : input(input), covers(covers) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override;
 
@@ -651,6 +637,8 @@ class AtomicOpExpression : public Expression {
       : op_type(op_type), dest(dest), val(val) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
@@ -673,6 +661,8 @@ class SNodeOpExpression : public Expression {
                     const Expr &value)
       : snode(snode), op_type(op_type), indices(indices), value(value) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override;
 
@@ -749,6 +739,8 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   ExternalTensorShapeAlongAxisExpression(const Expr &ptr, int axis)
       : ptr(ptr), axis(axis) {
   }
+
+  void type_check() override;
 
   void flatten(FlattenContext *ctx) override;
 };

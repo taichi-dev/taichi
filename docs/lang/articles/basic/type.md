@@ -185,6 +185,75 @@ pow(x, y)  # Same as `x ** y`.
 ti.random(dtype=float)
 ```
 
+### Supported atomic operations
+
+In Taichi, augmented assignments (e.g., `x[i] += 1`) are automatically
+[atomic](https://en.wikipedia.org/wiki/Fetch-and-add).
+
+:::caution
+
+When modifying global variables in parallel, make sure you use atomic
+operations. For example, to sum up all the elements in `x`,
+
+```python
+@ti.kernel
+def sum():
+    for i in x:
+        # Approach 1: OK
+        total[None] += x[i]
+
+        # Approach 2: OK
+        ti.atomic_add(total[None], x[i])
+
+        # Approach 3: Wrong result since the operation is not atomic.
+        total[None] = total[None] + x[i]
+```
+:::
+
+:::note
+
+When atomic operations are applied to local values, the Taichi compiler
+will try to demote these operations into their non-atomic counterparts.
+:::
+
+Apart from the augmented assignments, explicit atomic operations, such
+as `ti.atomic_add`, also do read-modify-write atomically. These
+operations additionally return the **old value** of the first argument.
+For example,
+
+```python
+x[i] = 3
+y[i] = 4
+z[i] = ti.atomic_add(x[i], y[i])
+# now x[i] = 7, y[i] = 4, z[i] = 3
+```
+
+Below is a list of all explicit atomic operations:
+
+| Operation             | Behavior                                                                                             |
+| --------------------- | ---------------------------------------------------------------------------------------------------- |
+| `ti.atomic_add(x, y)` | atomically compute `x + y`, store the result in `x`, and return the old value of `x`                 |
+| `ti.atomic_sub(x, y)` | atomically compute `x - y`, store the result in `x`, and return the old value of `x`                 |
+| `ti.atomic_and(x, y)` | atomically compute `x & y`, store the result in `x`, and return the old value of `x`                 |
+| `ti.atomic_or(x, y)`  | atomically compute <code>x &#124; y</code>, store the result in `x`, and return the old value of `x` |
+| `ti.atomic_xor(x, y)` | atomically compute `x ^ y`, store the result in `x`, and return the old value of `x`                 |
+| `ti.atomic_max(x, y)` | atomically compute `max(x, y)`, store the result in `x`, and return the old value of `x`             |
+| `ti.atomic_min(x, y)` | atomically compute `min(x, y)`, store the result in `x`, and return the old value of `x`             |
+
+:::note
+
+Supported atomic operations on each backend:
+
+| type | CPU/CUDA | OpenGL | Metal | C source |
+| ---- | -------- | ------ | ----- | -------- |
+| i32  | > OK     | > OK   | > OK  | > OK     |
+| f32  | > OK     | > OK   | > OK  | > OK     |
+| i64  | > OK     | > EXT  | > N/A | > OK     |
+| f64  | > OK     | > EXT  | > N/A | > OK     |
+
+(OK: supported; EXT: require extension; N/A: not available)
+:::
+
 ### Type promotion
 
 Binary operations on different types will give you a promoted type,

@@ -48,6 +48,10 @@ class AotModuleBuilder {
   virtual void add_per_backend_tmpl(const std::string &identifier,
                                     const std::string &key,
                                     Kernel *kernel) = 0;
+
+  static bool all_fields_are_dense_in_container(const SNode *container);
+
+  static int find_children_id(const SNode *snode);
 };
 
 }  // namespace lang

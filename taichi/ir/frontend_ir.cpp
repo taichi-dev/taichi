@@ -53,6 +53,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   loop_var_id.resize(loop_var.size());
   for (int i = 0; i < (int)loop_var.size(); i++) {
     loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+    loop_var[i].expr->ret_type = PrimitiveType::i32;
   }
 }
 
@@ -86,6 +87,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     vectorize = 1;
   loop_var_id.resize(1);
   loop_var_id[0] = loop_var.cast<IdExpression>()->id;
+  loop_var.expr->ret_type = PrimitiveType::i32;
 }
 
 void ArgLoadExpression::type_check() {
@@ -438,12 +440,39 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void RangeAssumptionExpression::type_check() {
+  // TODO: assert no unknowns after type_check for all expressions are
+  // implemented
+  if (input->ret_type == PrimitiveType::unknown ||
+      base->ret_type == PrimitiveType::unknown)
+    return;
+  if (!input->ret_type->is<PrimitiveType>() ||
+      !base->ret_type->is<PrimitiveType>() || input->ret_type != base->ret_type)
+    throw std::runtime_error(
+        fmt::format("TypeError: unsupported operand type(s) for "
+                    "'range_assumption': '{}' and '{}'",
+                    input->ret_type->to_string(), base->ret_type->to_string()));
+  ret_type = input->ret_type;
+}
+
 void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   input->flatten(ctx);
   base->flatten(ctx);
   ctx->push_back(
       Stmt::make<RangeAssumptionStmt>(input->stmt, base->stmt, low, high));
   stmt = ctx->back_stmt();
+}
+
+void LoopUniqueExpression::type_check() {
+  // TODO: assert no unknowns after type_check for all expressions are
+  // implemented
+  if (input->ret_type == PrimitiveType::unknown)
+    return;
+  if (!input->ret_type->is<PrimitiveType>())
+    throw std::runtime_error(fmt::format(
+        "TypeError: unsupported operand type(s) for 'loop_unique': '{}'",
+        input->ret_type->to_string()));
+  ret_type = input->ret_type;
 }
 
 void LoopUniqueExpression::serialize(std::ostream &ss) {
@@ -483,6 +512,31 @@ void IdExpression::flatten(FlattenContext *ctx) {
     // The loop index may have a coordinate offset.
     TI_ASSERT(var_stmt->is<LoopIndexStmt>() || var_stmt->is<BinaryOpStmt>());
     stmt = var_stmt;
+  }
+}
+
+void AtomicOpExpression::type_check() {
+  // TODO: assert no unknowns after type_check for all expressions are
+  // implemented
+  if (dest->ret_type == PrimitiveType::unknown ||
+      val->ret_type == PrimitiveType::unknown)
+    return;
+  auto error = [&]() {
+    throw std::runtime_error(fmt::format(
+        "TypeError: unsupported operand type(s) for 'atomic_{}': '{}' and '{}'",
+        atomic_op_type_name(op_type), dest->ret_type->to_string(),
+        val->ret_type->to_string()));
+  };
+  if (!val->ret_type->is<PrimitiveType>())
+    error();
+  if (auto cit = dest->ret_type->cast<CustomIntType>()) {
+    ret_type = cit->get_compute_type();
+  } else if (auto cft = dest->ret_type->cast<CustomFloatType>()) {
+    ret_type = cft->get_compute_type();
+  } else if (dest->ret_type->is<PrimitiveType>()) {
+    ret_type = dest->ret_type;
+  } else {
+    error();
   }
 }
 
@@ -535,6 +589,14 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     ctx->push_back<AtomicOpStmt>(op_type, ctx->back_stmt(), expr->stmt);
   }
   stmt = ctx->back_stmt();
+}
+
+void SNodeOpExpression::type_check() {
+  if (op_type == SNodeOpType::get_addr) {
+    ret_type = PrimitiveType::u64;
+  } else {
+    ret_type = PrimitiveType::i32;
+  }
 }
 
 void SNodeOpExpression::serialize(std::ostream &ss) {
@@ -607,6 +669,13 @@ void ConstExpression::type_check() {
 void ConstExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(Stmt::make<ConstStmt>(val));
   stmt = ctx->back_stmt();
+}
+
+void ExternalTensorShapeAlongAxisExpression::type_check() {
+  TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
+                 "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression",
+                 ptr.serialize());
+  ret_type = PrimitiveType::i32;
 }
 
 void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {

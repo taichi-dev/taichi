@@ -3,6 +3,7 @@ import collections.abc
 import warnings
 from collections import ChainMap
 
+import astor
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.ast_builder_utils import *
 from taichi.lang.exception import TaichiSyntaxError
@@ -30,12 +31,8 @@ class IRBuilder(Builder):
         # The variable is introduced to support chained assignments.
         # Ref https://github.com/taichi-dev/taichi/issues/2659.
         for node_target in node.targets:
-            if isinstance(node_target, ast.Tuple):
-                IRBuilder.build_assign_unpack(ctx, node_target, node.value.ptr,
-                                              is_static_assign)
-            else:
-                IRBuilder.build_assign_basic(ctx, node_target, node.value.ptr,
-                                             is_static_assign)
+            IRBuilder.build_assign_unpack(ctx, node_target, node.value.ptr,
+                                          is_static_assign)
         return node
 
     @staticmethod
@@ -50,7 +47,9 @@ class IRBuilder(Builder):
             values: A node/list representing the values.
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
-
+        if not isinstance(node_target, ast.Tuple):
+            return IRBuilder.build_assign_basic(ctx, node_target, values,
+                                                is_static_assign)
         targets = node_target.elts
         tmp_tuple = values if is_static_assign else ti.expr_init_list(
             values, len(targets))
@@ -76,11 +75,26 @@ class IRBuilder(Builder):
                 raise TaichiSyntaxError(
                     "Static assign cannot be used on elements in arrays")
             ctx.create_variable(target.id, value)
+            var = value
         elif is_local and not ctx.is_var_declared(target.id):
-            ctx.create_variable(target.id, ti.expr_init(value))
+            var = ti.expr_init(value)
+            ctx.create_variable(target.id, var)
         else:
             var = target.ptr
             var.assign(value)
+        return var
+
+    @staticmethod
+    def build_NamedExpr(ctx, node):
+        node.value = build_stmt(ctx, node.value)
+        node.target = build_stmt(ctx, node.target)
+        is_static_assign = isinstance(
+            node.value, ast.Call) and ASTResolver.resolve_to(
+                node.value.func, ti.static, globals())
+        node.ptr = IRBuilder.build_assign_basic(ctx, node.target,
+                                                node.value.ptr,
+                                                is_static_assign)
+        return node
 
     @staticmethod
     def is_tuple(node):
@@ -109,6 +123,75 @@ class IRBuilder(Builder):
     def build_List(ctx, node):
         node.elts = build_stmts(ctx, node.elts)
         node.ptr = [elt.ptr for elt in node.elts]
+        return node
+
+    @staticmethod
+    def build_Dict(ctx, node):
+        dic = {}
+        for key, value in zip(node.keys, node.values):
+            if key is None:
+                dic.update(build_stmt(ctx, value).ptr)
+            else:
+                dic[build_stmt(ctx, key).ptr] = build_stmt(ctx, value).ptr
+        node.ptr = dic
+        return node
+
+    @staticmethod
+    def process_listcomp(ctx, node, result):
+        result.append(build_stmt(ctx, node.elt).ptr)
+
+    @staticmethod
+    def process_dictcomp(ctx, node, result):
+        key = build_stmt(ctx, node.key).ptr
+        value = build_stmt(ctx, node.value).ptr
+        result[key] = value
+
+    @staticmethod
+    def process_generators(ctx, node, now_comp, func, result):
+        if now_comp >= len(node.generators):
+            return func(ctx, node, result)
+        target = node.generators[now_comp].target = build_stmt(
+            ctx, node.generators[now_comp].target)
+        iter = node.generators[now_comp].iter = build_stmt(
+            ctx, node.generators[now_comp].iter)
+        for value in iter.ptr:
+            with ctx.variable_scope_guard():
+                IRBuilder.build_assign_unpack(ctx, target, value, True)
+                node.generators[now_comp].ifs = build_stmts(
+                    ctx, node.generators[now_comp].ifs)
+                IRBuilder.process_ifs(ctx, node, now_comp, 0, func, result)
+
+    @staticmethod
+    def process_ifs(ctx, node, now_comp, now_if, func, result):
+        if now_if >= len(node.generators[now_comp].ifs):
+            return IRBuilder.process_generators(ctx, node, now_comp + 1, func,
+                                                result)
+        cond = node.generators[now_comp].ifs[now_if].ptr
+        if cond:
+            IRBuilder.process_ifs(ctx, node, now_comp, now_if + 1, func,
+                                  result)
+
+    @staticmethod
+    def build_comprehension(ctx, node):
+        node.target = build_stmt(ctx, node.target)
+        node.iter = build_stmt(ctx, node.iter)
+        node.ifs = build_stmts(ctx, node.ifs)
+        return node
+
+    @staticmethod
+    def build_ListComp(ctx, node):
+        result = []
+        IRBuilder.process_generators(ctx, node, 0, IRBuilder.process_listcomp,
+                                     result)
+        node.ptr = result
+        return node
+
+    @staticmethod
+    def build_DictComp(ctx, node):
+        result = {}
+        IRBuilder.process_generators(ctx, node, 0, IRBuilder.process_dictcomp,
+                                     result)
+        node.ptr = result
         return node
 
     @staticmethod
@@ -366,6 +449,19 @@ class IRBuilder(Builder):
             ast.Invert: lambda l: ~l,
         }.get(type(node.op))
         node.ptr = op(node.operand.ptr)
+        return node
+
+    @staticmethod
+    def build_BoolOp(ctx, node):
+        node.values = build_stmts(ctx, node.values)
+        op = {
+            ast.And: lambda l, r: l and r,
+            ast.Or: lambda l, r: l or r,
+        }.get(type(node.op))
+        result = op(node.values[0].ptr, node.values[1].ptr)
+        for i in range(2, len(node.values)):
+            result = op(result, node.values[i].ptr)
+        node.ptr = result
         return node
 
     @staticmethod
@@ -704,6 +800,50 @@ class IRBuilder(Builder):
         ti.core.pop_scope()
 
         node.ptr = val
+        return node
+
+    @staticmethod
+    def _is_string_mod_args(msg):
+        # 1. str % (a, b, c, ...)
+        # 2. str % single_item
+        # Note that |msg.right| may not be a tuple.
+        if not isinstance(msg, ast.BinOp):
+            return False
+        if not isinstance(msg.op, ast.Mod):
+            return False
+        if isinstance(msg.left, ast.Str):
+            return True
+        if isinstance(msg.left, ast.Constant) and isinstance(
+                msg.left.value, str):
+            return True
+        return False
+
+    @staticmethod
+    def _handle_string_mod_args(ctx, node):
+        msg = build_stmt(ctx, node.left).ptr
+        args = build_stmt(ctx, node.right).ptr
+        if not isinstance(args, collections.abc.Sequence):
+            args = (args, )
+        return msg, args
+
+    @staticmethod
+    def build_Assert(ctx, node):
+        extra_args = []
+        if node.msg is not None:
+            if isinstance(node.msg, ast.Constant):
+                msg = node.msg.value
+            elif isinstance(node.msg, ast.Str):
+                msg = node.msg.s
+            elif IRBuilder._is_string_mod_args(node.msg):
+                msg, extra_args = IRBuilder._handle_string_mod_args(
+                    ctx, node.msg)
+            else:
+                raise ValueError(
+                    f"assert info must be constant, not {ast.dump(node.msg)}")
+        else:
+            msg = astor.to_source(node.test)
+        test = build_stmt(ctx, node.test).ptr
+        ti.ti_assert(test, msg.strip(), extra_args)
         return node
 
     @staticmethod

@@ -1101,7 +1101,9 @@ void VulkanCommandList::blit_image(DeviceAllocation dst_img,
 }
 
 void VulkanCommandList::set_line_width(float width) {
-  vkCmdSetLineWidth(buffer_->buffer, width);
+  if (ti_device_->get_cap(DeviceCapability::wide_lines)) {
+    vkCmdSetLineWidth(buffer_->buffer, width);
+  }
 }
 
 vkapi::IVkRenderPass VulkanCommandList::current_renderpass() {

@@ -17,15 +17,6 @@ Expr global_new(DataType dt, std::string name) {
   return Expr::make<GlobalVariableExpression>(dt, id_expr->id);
 }
 
-Expr copy(const Expr &expr) {
-  auto e = expr.eval();
-  auto stmt = Stmt::make<ElementShuffleStmt>(
-      VectorElement(e.cast<EvalExpression>()->stmt_ptr, 0));
-  auto eval_expr = std::make_shared<EvalExpression>(stmt.get());
-  current_ast_builder().insert(std::move(stmt));
-  return Expr(eval_expr);
-}
-
 void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field) {
   dec.mem_access_opt.add_flag(field.snode(), v);
 }

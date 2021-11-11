@@ -18,7 +18,6 @@
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
-#include <regex>
 
 #ifdef TI_INCLUDED
 TI_NAMESPACE_BEGIN
@@ -59,7 +58,7 @@ template <typename T>
 using is_unit_t = typename is_unit<T>::type;
 
 }  // namespace type
-
+class TextSerializer;
 namespace detail {
 
 template <size_t N>
@@ -110,13 +109,28 @@ void serialize_kv_impl(SER &ser,
 }
 
 template <typename SER, size_t N, typename T, typename... Args>
-void serialize_kv_impl(SER &ser,
-                       const std::array<std::string_view, N> &keys,
-                       T &&head,
-                       Args &&... rest) {
+typename std::enable_if<!std::is_same<SER, TextSerializer>::value, void>::type
+serialize_kv_impl(SER &ser,
+                  const std::array<std::string_view, N> &keys,
+                  T &&head,
+                  Args &&... rest) {
   constexpr auto i = (N - 1 - sizeof...(Args));
   std::string key{keys[i]};
   ser(key.c_str(), head);
+  serialize_kv_impl(ser, keys, rest...);
+}
+
+// Specialize for TextSerializer since we need to append comma in the end for
+// non-last object.
+template <typename SER, size_t N, typename T, typename... Args>
+typename std::enable_if<std::is_same<SER, TextSerializer>::value, void>::type
+serialize_kv_impl(SER &ser,
+                  const std::array<std::string_view, N> &keys,
+                  T &&head,
+                  Args &&... rest) {
+  constexpr auto i = (N - 1 - sizeof...(Args));
+  std::string key{keys[i]};
+  ser(key.c_str(), head, true);
   serialize_kv_impl(ser, keys, rest...);
 }
 
@@ -634,8 +648,11 @@ class TextSerializer : public Serializer {
   }
 
   template <typename T>
-  void operator()(const char *key, const T &t) {
+  void operator()(const char *key, const T &t, bool append_comma = false) {
     this->process(key, t);
+    if (append_comma) {
+      data += ",";
+    }
   }
 
   // Entry to make an AOT json file
@@ -644,19 +661,11 @@ class TextSerializer : public Serializer {
     add_line("{");
     (*this)(key, t);
     add_line("}");
-    this->post_process();
   }
 
  private:
-  void post_process() {
-    std::regex trailing_comma_re(",[ \t\r\n]+}");
-    data = std::regex_replace(data, trailing_comma_re, "}");
-  }
-
   void process(const char *key, const std::string &val) {
-    std::regex newlines_re("\n+");
-    auto new_val = std::regex_replace(val, newlines_re, "");
-    add_line("\"" + std::string(key) + "\" : \"" + new_val + "\",");
+    add_line(std::string(key), val);
   }
 
   template <typename T, std::size_t n>
@@ -677,7 +686,7 @@ class TextSerializer : public Serializer {
         ss << ", ";
       }
     }
-    ss << "},";
+    ss << "}";
     add_line(key, ss.str());
   }
 
@@ -686,13 +695,17 @@ class TextSerializer : public Serializer {
   std::enable_if_t<!is_compact<T, n>::value, void> process(
       const char *key,
       const TArray<T, n> &val) {
-    add_line(key, "{");
+    add_key(key);
+    add_line("{");
     indent++;
     for (std::size_t i = 0; i < n; i++) {
       this->process(std::to_string(i).c_str(), val[i]);
+      if (i != n - 1) {
+        data += ",";
+      }
     }
     indent--;
-    add_line("},");
+    add_line("}");
   }
 
   // std::array
@@ -708,7 +721,7 @@ class TextSerializer : public Serializer {
         ss << ", ";
       }
     }
-    ss << "},";
+    ss << "}";
     add_line(key, ss.str());
   }
 
@@ -717,13 +730,17 @@ class TextSerializer : public Serializer {
   std::enable_if_t<!is_compact<T, n>::value, void> process(
       const char *key,
       const StdTArray<T, n> &val) {
-    add_line(key, "{");
+    add_key(key);
+    add_line("{");
     indent++;
     for (std::size_t i = 0; i < n; i++) {
       this->process(std::to_string(i).c_str(), val[i]);
+      if (i != n - 1) {
+        data += ",";
+      }
     }
     indent--;
-    add_line("},");
+    add_line("}");
   }
 
   // Elementary data types
@@ -732,18 +749,19 @@ class TextSerializer : public Serializer {
                                                           const T &val) {
     static_assert(!has_io<T>::value, "");
     std::stringstream ss;
-    ss << std::boolalpha << "\"" << val << "\",";
+    ss << std::boolalpha << val;
     add_line(key, ss.str());
   }
 
   template <typename T>
   std::enable_if_t<has_io<T>::value, void> process(const char *key,
                                                    const T &val) {
-    add_line(key, "{");
+    add_key(key);
+    add_line("{");
     indent++;
     val.io(*this);
     indent--;
-    add_line("},");
+    add_line("}");
   }
 
   template <typename T>
@@ -758,11 +776,12 @@ class TextSerializer : public Serializer {
   template <typename T>
   std::enable_if_t<has_free_io<T>::value, void> process(const char *key,
                                                         const T &val) {
-    add_line(key, "{");
+    add_key(key);
+    add_line("{");
     indent++;
     IO<typename type::remove_cvref_t<T>, decltype(*this)>()(*this, val);
     indent--;
-    add_line("},");
+    add_line("}");
   }
 
   template <typename T>
@@ -774,18 +793,23 @@ class TextSerializer : public Serializer {
 
   template <typename T>
   void process(const char *key, const std::vector<T> &val) {
-    add_line(key, "{");
+    add_key(key);
+    add_line("{");
     indent++;
     for (std::size_t i = 0; i < val.size(); i++) {
       this->process(std::to_string(i).c_str(), val[i]);
+      if (i < val.size() - 1) {
+        data += ",";
+      }
     }
     indent--;
-    add_line("},");
+    add_line("}");
   }
 
   template <typename T, typename G>
   void process(const char *key, const std::pair<T, G> &val) {
-    add_line(key, "{");
+    add_key(key);
+    add_line("{");
     indent++;
     this->process("first", val.first);
     this->process("second", val.second);
@@ -808,27 +832,33 @@ class TextSerializer : public Serializer {
   // std::optional
   template <typename T>
   void process(const char *key, const std::optional<T> &val) {
-    add_line(key, "{");
+    add_key(key);
+    add_line("{");
     indent++;
     this->process("has_value", val.has_value());
     if (val.has_value()) {
       this->process("value", val.value());
     }
     indent--;
-    add_line("},");
+    add_line("}");
   }
 
   template <typename M>
   void handle_associative_container(const char *key, const M &val) {
-    add_line(key, "{");
+    add_key(key);
+    add_line("{");
     indent++;
-    for (auto iter : val) {
-      auto first = iter.first;
+    for (auto iter = val.begin(); iter != val.end(); iter++) {
+      auto first = iter->first;
       this->process("key", first);
-      this->process("value", iter.second);
+      data += ",";
+      this->process("value", iter->second);
+      if (std::next(iter) != val.end()) {
+        data += ",";
+      }
     }
     indent--;
-    add_line("},");
+    add_line("}");
   }
 
   void add_line(const std::string &str) {
@@ -841,7 +871,11 @@ class TextSerializer : public Serializer {
   }
 
   void add_line(const std::string &key, const std::string &value) {
-    add_line("\"" + key + "\"" + ": " + value);
+    add_line("\"" + key + "\"" + ": " + "\"" + value + "\"");
+  }
+
+  void add_key(const std::string &key) {
+    add_line("\"" + key + "\"" + ": ");
   }
 };
 

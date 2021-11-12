@@ -3,8 +3,6 @@ import sys
 
 import numpy as np
 
-import taichi as ti
-
 
 class PLYWriter:
     def __init__(self,

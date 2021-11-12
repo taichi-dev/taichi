@@ -1,7 +1,4 @@
-import numbers
-
 import taichi.lang.matrix
-from taichi.lang.exception import TaichiSyntaxError
 
 
 class CompoundType:

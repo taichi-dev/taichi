@@ -4,7 +4,7 @@ if _ti_core.GGUI_AVAILABLE:
 
     from .camera import Camera # pylint: disable=unused-import
     from .canvas import Canvas # pylint: disable=unused-import
-    from .constants import * # pylint: disable=unused-import
+    from .constants import * # pylint: disable=unused-import,wildcard-import
     from .gui import Gui # pylint: disable=unused-import
     from .scene import Scene # pylint: disable=unused-import
     from .window import Window # pylint: disable=unused-import

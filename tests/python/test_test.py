@@ -130,6 +130,7 @@ def test_disable_fallback():
     os.environ['TI_WANTED_ARCHS'] = "metal"
 
     with pytest.raises(RuntimeError):
+
         @ti.test(ti.metal)
         def test():
             pass

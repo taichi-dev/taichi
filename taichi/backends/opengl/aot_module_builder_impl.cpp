@@ -21,15 +21,8 @@ namespace {
 void write_glsl_file(const std::string &output_dir,
                      const std::string &filename,
                      CompiledKernel &k) {
-// Hack to assemble readable windows/unix path.
-// Ideally we could use std::filesystem but it's not available on MacOS 10.14.
-#if defined(TI_PLATFORM_WINDOWS)
-  const std::string path_delim = "\\";
-#else
-  const std::string path_delim = "/";
-#endif
-  const std::string glsl_path = fmt::format(
-      "{}{}{}_{}.glsl", output_dir, path_delim, filename, k.kernel_name);
+  const std::string glsl_path =
+      fmt::format("{}/{}_{}.glsl", output_dir, filename, k.kernel_name);
   std::ofstream fs{glsl_path};
   fs << k.kernel_src;
   k.kernel_src = glsl_path;

@@ -1,6 +1,7 @@
 import shutil
 import warnings
 from contextlib import contextmanager
+from pathlib import Path, PurePosixPath
 
 from taichi.core import ti_core as _ti_core
 from taichi.lang import impl, kernel_impl
@@ -193,4 +194,5 @@ class Module:
           filepath (str): path to a folder to store aot files.
           filename (str): filename prefix for stored aot files.
         """
+        filepath = str(PurePosixPath(Path(filepath).resolve()))
         self._aot_builder.dump(filepath, filename)

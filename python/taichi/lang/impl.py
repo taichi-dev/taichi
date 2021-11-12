@@ -1,5 +1,4 @@
 import numbers
-import warnings
 from types import FunctionType, MethodType
 from typing import Iterable
 
@@ -7,7 +6,7 @@ import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
+from taichi.lang.exception import InvalidOperationError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -15,8 +14,8 @@ from taichi.lang.matrix import MatrixField
 from taichi.lang.snode import SNode
 from taichi.lang.struct import StructField
 from taichi.lang.tape import TapeImpl
-from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
-                              python_scope, taichi_scope, to_pytorch_type)
+from taichi.lang.util import (cook_dtype, is_taichi_class,
+                              python_scope, taichi_scope)
 from taichi.misc.util import deprecated, get_traceback, warning
 from taichi.snode.fields_builder import FieldsBuilder
 from taichi.type.primitive_types import f16, f32, f64, i32, i64, u32, u64

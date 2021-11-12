@@ -158,7 +158,7 @@ jobs:
         env:
           PY: ${{ matrix.python }}
           GPU_TEST: OFF
-          TI_WANTED_ARCHS: "cpu, cc"
+          TI_WANTED_ARCHS: "cpu,cc"
 
       - name: clean docker container
         if: always()
@@ -179,7 +179,7 @@ jobs:
           - os: ubuntu-latest
             python: py39
             with_cc: ON
-            wanted_archs: "cpu, cc"
+            wanted_archs: "cpu,cc"
     runs-on: ${{ matrix.os }}
     permissions:
       packages: read
@@ -241,6 +241,7 @@ jobs:
             python: 3.7
             with_cc: OFF
             with_cpp_tests: ON
+            wanted_archs: "cpu"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -283,7 +284,7 @@ jobs:
           .github/workflows/scripts/unix_test.sh
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
-          TI_WANTED_ARCHS: "cpu"
+          TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
 
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
@@ -324,7 +325,7 @@ jobs:
           PY: py38
           GPU_TEST: ON
           DISPLAY: :1
-          TI_WANTED_ARCHS: "cuda, metal, vulkan, opengl"
+          TI_WANTED_ARCHS: "cuda,metal,vulkan,opengl"
 
       - name: clean docker container
         if: always()
@@ -416,6 +417,6 @@ jobs:
           python3 examples/algorithm/laplace.py
           TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
           TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
-          ti test -vr2 -t4 -x
+          ti test -vr2 -t4 -x -a "$TI_WANTED_ARCHS"
         env:
           TI_WANTED_ARCHS: "metal"

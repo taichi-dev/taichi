@@ -22,8 +22,8 @@ ti changelog
 
 if [[ $GPU_TEST == "OFF" ]]
 then
-    ti test -vr2 -t2
+    ti test -vr2 -t2 -a "$TI_WANTED_ARCHS"
 else
-    ti test -vr2 -t2 -k "not ndarray and not torch"
-    ti test -vr2 -t1 -k "ndarray or torch"
+    ti test -vr2 -t2 -k "not ndarray and not torch" -a "$TI_WANTED_ARCHS"
+    ti test -vr2 -t1 -k "ndarray or torch" -a "$TI_WANTED_ARCHS"
 fi

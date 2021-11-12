@@ -126,13 +126,14 @@ def test_allclose_rel_reordered2(x, allclose):
 @pytest.mark.skipif(ti.core.with_metal(),
                     reason="Skip metal because metal is used as the example")
 def test_disable_fallback():
-    with pytest.raises(RuntimeError):
-        old_environ = os.environ.get('TI_WANTED_ARCHS', '')
-        os.environ['TI_WANTED_ARCHS'] = "metal"
+    old_environ = os.environ.get('TI_WANTED_ARCHS', '')
+    os.environ['TI_WANTED_ARCHS'] = "metal"
 
+    with pytest.raises(RuntimeError):
         @ti.test(ti.metal)
         def test():
             pass
 
         test()
         os.environ['TI_WANTED_ARCHS'] = old_environ
+    os.environ['TI_WANTED_ARCHS'] = old_environ

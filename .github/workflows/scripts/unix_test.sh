@@ -10,7 +10,7 @@ hash -r
 python3 examples/algorithm/laplace.py
 ti diagnose
 ti changelog
-[ -z $GPU_TEST ] && ti test -vr2 -t2
+[ -z $GPU_TEST ] && ti test -vr2 -t2 -a "$TI_WANTED_ARCHS"
 
-[ -z $GPU_TEST ] || ti test -vr2 -t2 -k "not ndarray and not torch"
-[ -z $GPU_TEST ] || ti test -vr2 -t1 -k "ndarray or torch"
+[ -z $GPU_TEST ] || ti test -vr2 -t2 -k "not ndarray and not torch" -a "$TI_WANTED_ARCHS"
+[ -z $GPU_TEST ] || ti test -vr2 -t1 -k "ndarray or torch" -a "$TI_WANTED_ARCHS"

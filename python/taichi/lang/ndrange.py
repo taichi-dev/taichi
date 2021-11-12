@@ -9,7 +9,7 @@ class ndrange:
                 args[i] = tuple(arg)
             if not isinstance(arg, tuple):
                 args[i] = (0, arg)
-            assert len(arg) == 2
+            assert len(args[i]) == 2
         self.bounds = args
 
         self.dimensions = [None] * len(args)

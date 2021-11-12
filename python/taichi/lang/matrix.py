@@ -1488,7 +1488,8 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def deepcopy(self):
-        ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape, self.layout)
+        ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape,
+                                self.layout)
         ret_arr.copy_from(self)
         return ret_arr
 

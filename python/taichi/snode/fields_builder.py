@@ -1,5 +1,3 @@
-import functools
-import types
 from typing import Any, Optional, Sequence, Union
 
 from taichi.core.util import ti_core as _ti_core

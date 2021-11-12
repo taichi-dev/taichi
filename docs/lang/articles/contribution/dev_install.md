@@ -20,7 +20,7 @@ This section documents how to configure the Taichi development environment and b
    - On Arch Linux, download `llvm == 10.0.0` prebuilt binary for `ubuntu 18.04` from [here](https://releases.llvm.org/download.html#10.0.1). Then update environment variables `TAICHI_CMAKE_ARGS` and  `PATH`:
 
      ```bash
-     export TAICHI_CMAKE_ARGS="-DCMAKE_CXX_COMPILER=<path_to_llvm_folder>/bin/clang++:$TAICHI_CMAKE_ARGS"
+     export TAICHI_CMAKE_ARGS="-DCMAKE_CXX_COMPILER=<path_to_llvm_folder>/bin/clang++ $TAICHI_CMAKE_ARGS"
      export PATH=<path_to_llvm_folder>/bin:$PATH
      ```
 
@@ -135,7 +135,7 @@ After Vulkan is successfully installed. You can build Taichi with Vulkan by addi
   cd taichi
   python3 -m pip install --user -r requirements_dev.txt
   # export CXX=/path/to/clang++  # Uncomment if clang++ is not system default compiler. Note that clang is not acceptable due to requirements of some submodules.
-  python3 setup.py develop --user  # Optionally add DEBUG=1 to keep debug information.
+  python3 setup.py develop --user  # Optionally export DEBUG=1 to keep debug information.
   ```
 
 :::note

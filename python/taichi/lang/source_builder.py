@@ -9,7 +9,7 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import make_expr_group
-from taichi.lang.util import get_clangpp, has_clangpp
+from taichi.lang.util import get_clangpp
 
 
 class SourceBuilder:

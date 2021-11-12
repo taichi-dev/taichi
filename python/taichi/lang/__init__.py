@@ -415,6 +415,7 @@ def init(arch=None,
          default_fp=None,
          default_ip=None,
          _test_mode=False,
+         enable_fallback=True,
          **kwargs):
     """Initializes the Taichi runtime.
 
@@ -531,7 +532,7 @@ def init(arch=None,
     if env_arch is not None:
         ti.info(f'Following TI_ARCH setting up for arch={env_arch}')
         arch = _ti_core.arch_from_name(env_arch)
-    ti.cfg.arch = adaptive_arch_select(arch)
+    ti.cfg.arch = adaptive_arch_select(arch, enable_fallback)
     if ti.cfg.arch == cc:
         _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(ti.cfg.arch)}')
@@ -1041,7 +1042,7 @@ def supported_archs():
     return list(supported)
 
 
-def adaptive_arch_select(arch):
+def adaptive_arch_select(arch, enable_fallback):
     if arch is None:
         return cpu
     if not isinstance(arch, (list, tuple)):
@@ -1049,6 +1050,8 @@ def adaptive_arch_select(arch):
     for a in arch:
         if is_arch_supported(a):
             return a
+    if not enable_fallback:
+        raise RuntimeError(f'Arch={arch} is not supported')
     ti.warn(f'Arch={arch} is not supported, falling back to CPU')
     return cpu
 

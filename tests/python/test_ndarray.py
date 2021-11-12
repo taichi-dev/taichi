@@ -201,17 +201,17 @@ def test_ndarray_2d():
 
 def _test_ndarray_copy_from_ndarray():
     n = 16
-    x = ti.ndarray(ti.i32, shape=n)
-    y = ti.ndarray(ti.i32, shape=n)
-    x[0] = 1
-    x[4] = 2
-    y[0] = 4
-    y[4] = 5
+    a = ti.ndarray(ti.i32, shape=n)
+    b = ti.ndarray(ti.i32, shape=n)
+    a[0] = 1
+    a[4] = 2
+    b[0] = 4
+    b[4] = 5
 
-    x.copy_from(y)
+    a.copy_from(b)
 
-    assert x[0] == 4
-    assert x[4] == 5
+    assert a[0] == 4
+    assert a[4] == 5
 
     x = ti.Vector.ndarray(10, ti.i32, 5, layout=ti.Layout.SOA)
     y = ti.Vector.ndarray(10, ti.i32, 5, layout=ti.Layout.SOA)

@@ -22,7 +22,7 @@ class EventToolkit;
 // A CUDA kernel profiler
 class KernelProfilerCUDA : public KernelProfilerBase {
  public:
-  KernelProfilerCUDA(bool enable);
+  KernelProfilerCUDA(bool enabled);
 
   std::string get_device_name() override;
 

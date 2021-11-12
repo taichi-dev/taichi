@@ -84,7 +84,7 @@ void CUDAContext::launch(void *func,
 
   KernelProfilerBase::TaskHandle task_handle;
   // Kernel launch
-  if (profiler_) {
+  if (profiler_ && profiler_->is_enabled()) {
     KernelProfilerCUDA *profiler_cuda =
         dynamic_cast<KernelProfilerCUDA *>(profiler_);
     profiler_cuda->trace(task_handle, task_name, func, grid_dim, block_dim, 0);
@@ -111,7 +111,7 @@ void CUDAContext::launch(void *func,
                           dynamic_shared_mem_bytes, nullptr,
                           arg_pointers.data(), nullptr);
   }
-  if (profiler_)
+  if (profiler_ && profiler_->is_enabled())
     profiler_->stop(task_handle);
 
   if (debug_) {

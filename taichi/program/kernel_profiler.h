@@ -48,10 +48,23 @@ class KernelProfilerBase {
   std::vector<KernelProfileTracedRecord> traced_records_;
   std::vector<KernelProfileStatisticalResult> statistical_results_;
   double total_time_ms_{0};
+  bool enabled_{false};
 
  public:
   // Needed for the CUDA backend since we need to know which task to "stop"
   using TaskHandle = void *;
+
+  KernelProfilerBase(bool enabled) {
+    enabled_ = enabled;
+  }
+
+  void set_kernel_profiler_mode(bool enabled) {
+    enabled_ = enabled;
+  }
+
+  bool is_enabled() {
+    return enabled_;
+  }
 
   virtual bool reinit_with_metrics(const std::vector<std::string> metrics) {
     return false;

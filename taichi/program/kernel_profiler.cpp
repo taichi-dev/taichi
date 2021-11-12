@@ -72,8 +72,10 @@ class DefaultProfiler : public KernelProfilerBase {
   void sync() override {
   }
 
+  DefaultProfiler(bool enabled) : KernelProfilerBase(enabled) {}
+
   void clear() override {
-    // sync(); //decoupled: trigger from the foront end
+    //trigger sync(); from the foront end
     total_time_ms_ = 0;
     traced_records_.clear();
     statistical_results_.clear();
@@ -114,6 +116,9 @@ class DefaultProfiler : public KernelProfilerBase {
 }  // namespace
 
 std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable) {
+  if (!enable)
+    return nullptr;
+
   if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     return std::make_unique<KernelProfilerCUDA>(enable);
@@ -121,7 +126,7 @@ std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable) {
     TI_NOT_IMPLEMENTED;
 #endif
   } else {
-    return std::make_unique<DefaultProfiler>();
+    return std::make_unique<DefaultProfiler>(enable);
   }
 }
 

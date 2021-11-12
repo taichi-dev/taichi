@@ -9,9 +9,9 @@ TLANG_NAMESPACE_BEGIN
 
 // The init logic here is temporarily set up for test CUPTI
 // will not affect default toolkit (cuEvent)
-KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
+KernelProfilerCUDA::KernelProfilerCUDA(bool enabled): KernelProfilerBase(enabled) {
   metric_list_.clear();
-  if (enable) {
+  if (enabled) {
     tool_ = ProfilingToolkit::event;
 #if defined(TI_WITH_CUDA_TOOLKIT)
     // if Taichi was compiled with CUDA toolit, then use CUPTI

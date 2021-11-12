@@ -175,7 +175,7 @@ def run_tidy(args, tmpdir, build_path, queue, lock, failed_files):
             failed_files.append(name)
             with lock:
                 sys.stdout.write(' '.join(invocation) + '\n' +
-                                output.decode('utf-8'))
+                                 output.decode('utf-8'))
                 if len(err) > 0:
                     sys.stdout.flush()
                     sys.stderr.write(err.decode('utf-8'))

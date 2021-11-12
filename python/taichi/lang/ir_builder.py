@@ -1,6 +1,5 @@
 import ast
 import collections.abc
-import warnings
 from collections import ChainMap
 
 import astor

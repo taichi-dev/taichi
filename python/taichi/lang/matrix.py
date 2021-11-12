@@ -1435,7 +1435,7 @@ class MatrixType(CompoundType):
 
 
 class MatrixNdarray(Ndarray):
-    """Taichi ndarray with matrix elements implemented with a torch tensor.
+    """Taichi ndarray with matrix elements.
 
     Args:
         n (int): Number of rows of the matrix.
@@ -1486,12 +1486,18 @@ class MatrixNdarray(Ndarray):
             for j in range(self.m)
         ])
 
+    @python_scope
+    def deepcopy(self):
+        ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape, self.layout)
+        ret_arr.copy_from(self)
+        return ret_arr
+
     def __repr__(self):
         return f'<{self.n}x{self.m} {self.layout} ti.Matrix.ndarray>'
 
 
 class VectorNdarray(Ndarray):
-    """Taichi ndarray with vector elements implemented with a torch tensor.
+    """Taichi ndarray with vector elements.
 
     Args:
         n (int): Size of the vector.
@@ -1532,6 +1538,12 @@ class VectorNdarray(Ndarray):
         return Matrix.with_entries(
             self.n, 1,
             [NdarrayHostAccess(self, key, (i, )) for i in range(self.n)])
+
+    @python_scope
+    def deepcopy(self):
+        ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)
+        ret_arr.copy_from(self)
+        return ret_arr
 
     def __repr__(self):
         return f'<{self.n} {self.layout} ti.Vector.ndarray>'

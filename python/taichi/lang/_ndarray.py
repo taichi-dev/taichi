@@ -154,6 +154,15 @@ class Ndarray:
         taichi.lang.meta.ndarray_to_ndarray(self, other)
         impl.get_runtime().sync()
 
+    @python_scope
+    def deepcopy(self):
+        """Copies all elements to a new ndarray.
+
+        Returns:
+            ndarray: The result ndarray.
+        """
+        raise NotImplementedError()
+
     def pad_key(self, key):
         if key is None:
             key = ()
@@ -170,7 +179,7 @@ class Ndarray:
 
 
 class ScalarNdarray(Ndarray):
-    """Taichi ndarray with scalar elements implemented with a torch tensor.
+    """Taichi ndarray with scalar elements.
 
     Args:
         dtype (DataType): Data type of each value.
@@ -202,6 +211,12 @@ class ScalarNdarray(Ndarray):
         else:
             self.initialize_host_accessor()
             return self.host_accessor.getter(*self.pad_key(key))
+
+    @python_scope
+    def deepcopy(self):
+        ret_arr = ScalarNdarray(self.dtype, self.shape)
+        ret_arr.copy_from(self)
+        return ret_arr
 
     def __repr__(self):
         return '<ti.ndarray>'

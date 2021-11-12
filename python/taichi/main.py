@@ -1,7 +1,6 @@
 import argparse
 import math
 import os
-import random
 import runpy
 import shutil
 import subprocess
@@ -14,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import taichi.cc_compose
 import taichi.diagnose
-from colorama import Back, Fore, Style
+from colorama import Fore
 from taichi.core import ti_core as _ti_core
 from taichi.tools import video
 

@@ -1,7 +1,6 @@
 import copy
 import numbers
 
-from numpy import broadcast
 from taichi.lang import expr, impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout

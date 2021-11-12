@@ -1,9 +1,6 @@
-import shutil
-import warnings
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
-from taichi.core import ti_core as _ti_core
 from taichi.lang import impl, kernel_impl
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField

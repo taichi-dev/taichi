@@ -911,6 +911,7 @@ class _BoundedDifferentiableMethod:
         self._primal = wrapped_kernel_func._primal
         self._adjoint = wrapped_kernel_func._adjoint
         self._is_staticmethod = wrapped_kernel_func._is_staticmethod
+        self.__name__ = None
 
     def __call__(self, *args, **kwargs):
         _taichi_skip_traceback = 1

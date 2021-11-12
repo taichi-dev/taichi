@@ -86,11 +86,13 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
     def visit_For(self, node):
         # TODO: since autodiff is enhanced, AST checker rules should be relaxed. This part should be updated.
         return
-        is_static = bool(isinstance(node.iter, ast.Call)
-                            and isinstance(node.iter.func, ast.Attribute)
-                            and isinstance(node.iter.func.value, ast.Name)
-                            and node.iter.func.value.id == 'ti'
-                            and node.iter.func.attr == 'static')
+        is_static = (
+                        isinstance(node.iter, ast.Call) 
+                        and isinstance(node.iter.func, ast.Attribute) 
+                        and isinstance(node.iter.func.value, ast.Name) 
+                        and node.iter.func.value.id == 'ti' 
+                        and node.iter.func.attr == 'static'
+                    )
         if not (self.top_level or self.current_scope.allows_for_loop
                 or is_static):
             raise taichi.lang.kernel_impl.KernelDefError(

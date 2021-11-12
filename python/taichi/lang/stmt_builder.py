@@ -236,7 +236,7 @@ if 1:
             node.test.func, ast.Attribute)
         if is_static_if:
             attr = node.test.func
-            is_static_if = bool(attr.attr == 'static')
+            is_static_if = (attr.attr == 'static')
 
         if is_static_if:
             # Do nothing

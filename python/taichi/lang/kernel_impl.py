@@ -372,8 +372,7 @@ class TaichiCallableTemplateMapper:
 
 
 class KernelDefError(Exception):
-    def __init__(self, msg):
-        super().__init__(msg)
+    pass
 
 
 class KernelArgError(Exception):

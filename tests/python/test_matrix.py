@@ -190,7 +190,7 @@ def test_matrix_non_constant_index_numpy():
     assert v[9][1] == 9
 
 
-@ti.test(require=ti.extension.dynamic_index, dynamic_index=True)
+@ti.test(require=ti.extension.dynamic_index, dynamic_index=True, debug=True)
 def test_matrix_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
     v = ti.Vector.field(10, ti.i32, 5)
@@ -221,10 +221,10 @@ def test_matrix_non_constant_index():
 
     @ti.kernel
     def func3():
-        tmp = ti.Vector([1, 2, 3], dt=ti.i32)
+        tmp = ti.Vector([1, 2, 3])
         for i in range(3):
             tmp[i] = i * i
-            vec = ti.Vector([4, 5, 6], dt=ti.i32)
+            vec = ti.Vector([4, 5, 6])
             for j in range(3):
                 vec[tmp[i] % 3] += vec[j % 3]
         assert tmp[0] == 0
@@ -236,9 +236,11 @@ def test_matrix_non_constant_index():
     @ti.kernel
     def func4(k: ti.i32):
         tmp = ti.Vector([k, k * 2, k * 3])
+        assert tmp[0] == k
+        assert tmp[1] == k * 2
+        assert tmp[2] == k * 3
 
-    with pytest.raises(Exception):
-        func4(10)
+    func4(10)
 
 
 @ti.test(arch=ti.cpu)

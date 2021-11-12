@@ -10,6 +10,7 @@ CompileConfig::CompileConfig() {
   external_optimization_level = 3;
   packed = false;
   print_ir = false;
+  print_preprocessed_ir = false;
   print_accessor_ir = false;
   print_evaluator_ir = false;
   print_benchmark_stat = false;
@@ -62,6 +63,9 @@ CompileConfig::CompileConfig() {
   // C backend options:
   cc_compile_cmd = "gcc -Wc99-c11-compat -c -o '{}' '{}' -O3";
   cc_link_cmd = "gcc -shared -fPIC -o '{}' '{}'";
+
+  // Opengl backend options:
+  allow_nv_shader_extension = true;
 }
 
 TLANG_NAMESPACE_END

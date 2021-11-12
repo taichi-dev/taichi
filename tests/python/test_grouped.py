@@ -16,7 +16,7 @@ def test_vector_index():
         for i in range(n):
             for j in range(m):
                 for k in range(p):
-                    I = ti.Vector([i, j, k], dt=ti.i32)
+                    I = ti.Vector([i, j, k])
                     val[I] = i + j * 2 + k * 3
 
     test()

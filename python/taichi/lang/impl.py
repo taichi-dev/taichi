@@ -19,7 +19,7 @@ from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
                               python_scope, taichi_scope, to_pytorch_type)
 from taichi.misc.util import deprecated, get_traceback, warning
 from taichi.snode.fields_builder import FieldsBuilder
-from taichi.type.primitive_types import f32, f64, i32, i64, u32, u64
+from taichi.type.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 import taichi as ti
 
@@ -285,6 +285,7 @@ class PyTaichi:
         self.global_vars = []
         self.print_preprocessed = False
         self.experimental_real_function = False
+        self.experimental_ast_refactor = False
         self.default_fp = f32
         self.default_ip = i32
         self.target_tape = None
@@ -295,7 +296,7 @@ class PyTaichi:
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
 
     def set_default_fp(self, fp):
-        assert fp in [f32, f64]
+        assert fp in [f16, f32, f64]
         self.default_fp = fp
         default_cfg().default_fp = self.default_fp
 
@@ -309,14 +310,18 @@ class PyTaichi:
             self.prog = _ti_core.Program()
 
     def materialize_root_fb(self, is_first_call):
-        if not root.finalized and not root.empty:
-            root.finalize()
-        elif is_first_call:
-            root.finalize(raise_warning=False)
-
         if root.finalized:
-            global _root_fb
-            _root_fb = FieldsBuilder()
+            return
+        if not is_first_call and root.empty:
+            # We have to forcefully finalize when `is_first_call` is True (even
+            # if the root itself is empty), so that there is a valid struct
+            # llvm::Module, if no field has been declared before the first kernel
+            # invocation. Example case:
+            # https://github.com/taichi-dev/taichi/blob/27bb1dc3227d9273a79fcb318fdb06fd053068f5/tests/python/test_ad_basics.py#L260-L266
+            return
+        root.finalize(raise_warning=not is_first_call)
+        global _root_fb
+        _root_fb = FieldsBuilder()
 
     def _finalize_root_fb_for_aot(self):
         if _root_fb.finalized:
@@ -422,6 +427,9 @@ def make_constant_expr(val):
             return Expr(_ti_core.make_const_expr_f32(val))
         elif pytaichi.default_fp == f64:
             return Expr(_ti_core.make_const_expr_f64(val))
+        elif pytaichi.default_fp == f16:
+            # Use f32 to interact with python
+            return Expr(_ti_core.make_const_expr_f32(val))
         else:
             assert False
     else:

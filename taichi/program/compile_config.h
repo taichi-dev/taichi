@@ -15,6 +15,7 @@ struct CompileConfig {
   int external_optimization_level;
   int max_vector_width;
   bool packed;
+  bool print_preprocessed_ir;
   bool print_ir;
   bool print_accessor_ir;
   bool print_evaluator_ir;
@@ -69,6 +70,9 @@ struct CompileConfig {
   // C backend options:
   std::string cc_compile_cmd;
   std::string cc_link_cmd;
+
+  // Opengl backend options:
+  bool allow_nv_shader_extension;
 
   // Async options
   int async_opt_passes{3};

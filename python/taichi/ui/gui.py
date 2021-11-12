@@ -7,8 +7,6 @@ from taichi.lang.kernel_impl import kernel
 from taichi.lang.ops import get_addr
 from taichi.type.annotations import ext_arr, template
 
-from .utils import *
-
 
 class Gui:
     def __init__(self, gui) -> None:

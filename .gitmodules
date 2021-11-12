@@ -50,3 +50,9 @@
 [submodule "external/SPIRV-Cross"]
 	path = external/SPIRV-Cross
 	url = https://github.com/KhronosGroup/SPIRV-Cross
+[submodule "external/Vulkan-Headers"]
+	path = external/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers
+[submodule "external/FP16"]
+	path = external/FP16
+	url = https://github.com/Maratyszcza/FP16

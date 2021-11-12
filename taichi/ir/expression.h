@@ -14,6 +14,7 @@ class Expression {
   Stmt *stmt;
   std::string tb;
   std::map<std::string, std::string> attributes;
+  DataType ret_type;
 
   struct FlattenContext {
     VecStatement stmts;
@@ -35,6 +36,11 @@ class Expression {
 
   Expression() {
     stmt = nullptr;
+  }
+
+  virtual void type_check() {
+    // TODO: make it pure virtual after type_check for all expressions are
+    // implemented
   }
 
   virtual void serialize(std::ostream &ss) = 0;

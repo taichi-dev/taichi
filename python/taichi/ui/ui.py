@@ -10,7 +10,6 @@ if _ti_core.GGUI_AVAILABLE:
 
     from .camera import Camera
     from .canvas import Canvas
-    from .constants import *
     from .gui import Gui
     from .scene import Scene
     from .window import Window

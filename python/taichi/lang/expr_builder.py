@@ -2,13 +2,35 @@ import ast
 import warnings
 
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.ast_builder_utils import *
+from taichi.lang.ast_builder_utils import Builder, parse_expr
 from taichi.lang.exception import TaichiSyntaxError
 
 import taichi as ti
 
 
 class ExprBuilder(Builder):
+    @staticmethod
+    def build_JoinedStr(ctx, node):
+        str_spec = ''
+        args = []
+        for sub_node in node.values:
+            if isinstance(sub_node, ast.FormattedValue):
+                str_spec += '{}'
+                args.append(build_expr(ctx, sub_node.value))
+            elif isinstance(sub_node, ast.Constant):
+                str_spec += sub_node.value
+            elif isinstance(sub_node, ast.Str):
+                # ast.Str has been deprecated in Python 3.8,
+                # but constant string is a ast.Str node in Python 3.6
+                str_spec += sub_node.s
+
+        args.insert(0, ast.copy_location(ast.Constant(value=str_spec), node))
+
+        call = ast.Call(func=parse_expr('ti.ti_format'),
+                        args=args,
+                        keywords=[])
+        return ast.copy_location(call, node)
+
     @staticmethod
     def build_Subscript(ctx, node):
         def get_subscript_index(node):
@@ -212,7 +234,7 @@ class ExprBuilder(Builder):
 
     @staticmethod
     def build_DictComp(ctx, node):
-        node.key = build_expr(ctx, node.value)
+        node.key = build_expr(ctx, node.key)
         node.value = build_expr(ctx, node.value)
         node.generators = build_exprs(ctx, node.generators)
         return node
@@ -271,7 +293,7 @@ build_expr = ExprBuilder()
 def build_exprs(ctx, exprs):
     result = []
     # TODO(#2495): check if we really need this variable scope
-    with ctx.variable_scope(result):
+    with ctx.variable_scope_guard(result):
         for expr in list(exprs):
             result.append(build_expr(ctx, expr))
     return result

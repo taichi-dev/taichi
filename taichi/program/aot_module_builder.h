@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "taichi/ir/snode.h"
+
 namespace taichi {
 namespace lang {
 
@@ -16,6 +18,7 @@ class AotModuleBuilder {
   void add(const std::string &identifier, Kernel *kernel);
 
   void add_field(const std::string &identifier,
+                 const SNode *rep_snode,
                  bool is_scalar,
                  DataType dt,
                  std::vector<int> shape,
@@ -35,7 +38,8 @@ class AotModuleBuilder {
    */
   virtual void add_per_backend(const std::string &identifier,
                                Kernel *kernel) = 0;
-  virtual void add_per_backend_field(const std::string &identifier,
+  virtual void add_field_per_backend(const std::string &identifier,
+                                     const SNode *rep_snode,
                                      bool is_scalar,
                                      DataType dt,
                                      std::vector<int> shape,
@@ -44,6 +48,10 @@ class AotModuleBuilder {
   virtual void add_per_backend_tmpl(const std::string &identifier,
                                     const std::string &key,
                                     Kernel *kernel) = 0;
+
+  static bool all_fields_are_dense_in_container(const SNode *container);
+
+  static int find_children_id(const SNode *snode);
 };
 
 }  // namespace lang

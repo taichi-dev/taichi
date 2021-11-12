@@ -51,8 +51,7 @@ Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
 }
 
-void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
-  auto lhs = ptr_if_global(lhs_);
+void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {
   TI_ASSERT(lhs->is_lvalue());
   auto stmt = std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs));
   stmt->set_tb(tb);
@@ -104,6 +103,7 @@ void export_lang(py::module &m) {
       .def(py::self == py::self)
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
+      .def("__str__", &DataType::to_string)
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
           py::return_value_policy::reference)
@@ -130,6 +130,8 @@ void export_lang(py::module &m) {
       .def_readwrite("arch", &CompileConfig::arch)
       .def_readwrite("packed", &CompileConfig::packed)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
+      .def_readwrite("print_preprocessed_ir",
+                     &CompileConfig::print_preprocessed_ir)
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
       .def_readwrite("check_out_of_bound", &CompileConfig::check_out_of_bound)
@@ -204,7 +206,9 @@ void export_lang(py::module &m) {
       .def_readwrite("quant_opt_store_fusion",
                      &CompileConfig::quant_opt_store_fusion)
       .def_readwrite("quant_opt_atomic_demotion",
-                     &CompileConfig::quant_opt_atomic_demotion);
+                     &CompileConfig::quant_opt_atomic_demotion)
+      .def_readwrite("allow_nv_shader_extension",
+                     &CompileConfig::allow_nv_shader_extension);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -463,6 +467,8 @@ void export_lang(py::module &m) {
            })
       .def("set_grad", &Expr::set_grad)
       .def("set_attribute", &Expr::set_attribute)
+      .def("get_ret_type", &Expr::get_ret_type)
+      .def("type_check", &Expr::type_check)
       .def("get_expr_name",
            [](Expr *expr) {
              return expr->cast<GlobalVariableExpression>()->name;
@@ -506,10 +512,12 @@ void export_lang(py::module &m) {
         });
 
   m.def("insert_external_func_call",
-        [](std::size_t func_addr, std::string source, const ExprGroup &args,
+        [](std::size_t func_addr, std::string source, std::string filename,
+           std::string funcname, const ExprGroup &args,
            const ExprGroup &outputs) {
           auto expr = Expr::make<ExternalFuncCallExpression>(
-              (void *)func_addr, source, args.exprs, outputs.exprs);
+              (void *)func_addr, source, filename, funcname, args.exprs,
+              outputs.exprs);
 
           current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
         });
@@ -609,38 +617,34 @@ void export_lang(py::module &m) {
         static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
 
   m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::add, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::add, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_sub", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_min", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::min, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::min, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_max", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::max, ptr_if_global(a),
-                                          load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::max, a, load_if_ptr(b));
   });
 
   m.def("expr_atomic_bit_and", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and,
-                                          ptr_if_global(a), load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and, a,
+                                          load_if_ptr(b));
   });
 
   m.def("expr_atomic_bit_or", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or,
-                                          ptr_if_global(a), load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or, a,
+                                          load_if_ptr(b));
   });
 
   m.def("expr_atomic_bit_xor", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor,
-                                          ptr_if_global(a), load_if_ptr(b));
+    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a,
+                                          load_if_ptr(b));
   });
 
   m.def("expr_add", expr_add);
@@ -713,6 +717,7 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
         std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
         element_type));
+    var->ret_type = current_ast_builder().get_last_stmt()->ret_type;
     for (int i = 0; i < (int)elements.exprs.size(); ++i) {
       ExprGroup reversed_indices;
       int linearized_index = i;

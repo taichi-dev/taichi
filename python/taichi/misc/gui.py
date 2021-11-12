@@ -196,7 +196,7 @@ class GUI:
     def cook_image(self, img):
         if img.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
             img = img.astype(np.float32) * (1 / np.iinfo(img.dtype).max)
-        elif img.dtype in [np.float32, np.float64]:
+        elif img.dtype in [np.float16, np.float32, np.float64]:
             img = img.astype(np.float32)
         else:
             raise ValueError(

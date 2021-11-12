@@ -89,6 +89,55 @@ void Device::memcpy_via_host(DevicePtr dst,
   TI_NOT_IMPLEMENTED;
 }
 
+void Device::print_all_cap() const {
+  const std::unordered_map<DeviceCapability, std::string> names{
+      {DeviceCapability::vk_api_version, "vk_api_version"},
+      {DeviceCapability::vk_has_physical_features2,
+       "vk_has_physical_features2"},
+      {DeviceCapability::vk_has_external_memory, "vk_has_external_memory"},
+      {DeviceCapability::vk_has_surface, "vk_has_surface"},
+      {DeviceCapability::vk_has_presentation, "vk_has_presentation"},
+      {DeviceCapability::spirv_version, "spirv_version"},
+      {DeviceCapability::spirv_has_int8, "spirv_has_int8"},
+      {DeviceCapability::spirv_has_int16, "spirv_has_int16"},
+      {DeviceCapability::spirv_has_int64, "spirv_has_int64"},
+      {DeviceCapability::spirv_has_float16, "spirv_has_float16"},
+      {DeviceCapability::spirv_has_float64, "spirv_has_float64"},
+      {DeviceCapability::spirv_has_atomic_i64, "spirv_has_atomic_i64"},
+      {DeviceCapability::spirv_has_atomic_float16, "spirv_has_atomic_float16"},
+      {DeviceCapability::spirv_has_atomic_float16_add,
+       "spirv_has_atomic_float16_add"},
+      {DeviceCapability::spirv_has_atomic_float16_minmax,
+       "spirv_has_atomic_float16_minmax"},
+      {DeviceCapability::spirv_has_atomic_float, "spirv_has_atomic_float"},
+      {DeviceCapability::spirv_has_atomic_float_add,
+       "spirv_has_atomic_float_add"},
+      {DeviceCapability::spirv_has_atomic_float_minmax,
+       "spirv_has_atomic_float_minmax"},
+      {DeviceCapability::spirv_has_atomic_float64, "spirv_has_atomic_float64"},
+      {DeviceCapability::spirv_has_atomic_float64_add,
+       "spirv_has_atomic_float64_add"},
+      {DeviceCapability::spirv_has_atomic_float64_minmax,
+       "spirv_has_atomic_float64_minmax"},
+      {DeviceCapability::spirv_has_variable_ptr, "spirv_has_variable_ptr"},
+      {DeviceCapability::wide_lines, "wide_lines"},
+  };
+  for (auto &pair : caps_) {
+    TI_TRACE("DeviceCapability::{} ({}) = {}", names.at(pair.first),
+             int(pair.first), pair.second);
+  }
+}
+
+uint64_t *Device::allocate_llvm_runtime_memory_jit(JITModule *runtime_jit,
+                                                   LLVMRuntime *runtime,
+                                                   size_t size,
+                                                   uint64 *result_buffer) {
+  runtime_jit->call<void *, std::size_t, std::size_t>(
+      "runtime_memory_allocate_aligned", runtime, size, taichi_page_size);
+  return taichi_union_cast_with_different_sizes<uint64_t *>(fetch_result_uint64(
+      taichi_result_buffer_runtime_query_id, result_buffer));
+}
+
 void GraphicsDevice::image_transition(DeviceAllocation img,
                                       ImageLayout old_layout,
                                       ImageLayout new_layout) {

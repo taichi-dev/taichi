@@ -3,15 +3,7 @@ import pytest
 import taichi as ti
 
 
-def ti_support_dynamic(test):
-    return ti.archs_excluding(ti.cc, ti.vulkan)(test)
-
-
-def ti_support_non_top_dynamic(test):
-    return ti.archs_excluding(ti.opengl, ti.cc, ti.vulkan)(test)
-
-
-@ti.test(exclude=[ti.cc, ti.vulkan])
+@ti.test(require=ti.extension.sparse)
 def test_dynamic():
     x = ti.field(ti.f32)
     n = 128
@@ -29,7 +21,7 @@ def test_dynamic():
         assert x[i] == i
 
 
-@ti.test(exclude=[ti.cc, ti.vulkan])
+@ti.test(require=ti.extension.sparse)
 def test_dynamic2():
     x = ti.field(ti.f32)
     n = 128
@@ -47,7 +39,7 @@ def test_dynamic2():
         assert x[i] == i
 
 
-@ti.test(exclude=[ti.cc, ti.vulkan])
+@ti.test(require=ti.extension.sparse)
 def test_dynamic_matrix():
     x = ti.Matrix.field(2, 1, dtype=ti.i32)
     n = 8192
@@ -70,7 +62,7 @@ def test_dynamic_matrix():
             assert b == 0
 
 
-@ti.test(exclude=[ti.cc, ti.vulkan])
+@ti.test(require=ti.extension.sparse)
 def test_append():
     x = ti.field(ti.i32)
     n = 128
@@ -92,7 +84,7 @@ def test_append():
         assert elements[i] == i
 
 
-@ti.test(exclude=[ti.cc, ti.vulkan])
+@ti.test(require=ti.extension.sparse)
 def test_length():
     x = ti.field(ti.i32)
     y = ti.field(ti.f32, shape=())
@@ -116,7 +108,7 @@ def test_length():
     assert y[None] == n
 
 
-@ti.test(exclude=[ti.cc, ti.vulkan])
+@ti.test(require=ti.extension.sparse)
 def test_append_ret_value():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -141,7 +133,7 @@ def test_append_ret_value():
         assert x[i] + 3 == z[i]
 
 
-@ti.test(exclude=[ti.opengl, ti.cc, ti.vulkan])
+@ti.test(require=ti.extension.sparse)
 def test_dense_dynamic():
     # The spin lock implementation has triggered a bug in CUDA, the end result
     # being that appending to Taichi's dynamic node messes up its length. See
@@ -172,7 +164,7 @@ def test_dense_dynamic():
         assert l[i] == n
 
 
-@ti.test(exclude=[ti.opengl, ti.cc, ti.vulkan])
+@ti.test(require=ti.extension.sparse)
 def test_dense_dynamic_len():
     n = 128
     x = ti.field(ti.i32)
@@ -191,7 +183,7 @@ def test_dense_dynamic_len():
         assert l[i] == 0
 
 
-@ti.test(exclude=[ti.cc, ti.vulkan])
+@ti.test(require=ti.extension.sparse)
 def test_dynamic_activate():
     ti.init(arch=ti.metal)
     # record the lengths

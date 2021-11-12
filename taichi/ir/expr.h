@@ -107,6 +107,10 @@ class Expr {
   void set_attribute(const std::string &key, const std::string &value);
 
   std::string get_attribute(const std::string &key) const;
+
+  DataType get_ret_type() const;
+
+  void type_check();
 };
 
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val);
@@ -131,11 +135,6 @@ Expr bit_cast(const Expr &input) {
 }
 
 Expr load_if_ptr(const Expr &ptr);
-Expr ptr_if_global(const Expr &var);
-
-inline Expr smart_load(const Expr &var) {
-  return load_if_ptr(ptr_if_global(var));
-}
 
 // Begin: legacy frontend functions
 Expr Var(const Expr &x);

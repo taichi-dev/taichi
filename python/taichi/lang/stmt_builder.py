@@ -4,7 +4,7 @@ import copy
 import astor
 from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.ast_builder_utils import *
+from taichi.lang.ast_builder_utils import Builder, parse_expr, parse_stmt
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr_builder import build_expr, build_exprs
 from taichi.lang.util import to_taichi_type
@@ -171,7 +171,7 @@ class StmtBuilder(Builder):
             value: A node representing the value.
         """
         is_local = isinstance(target, ast.Name)
-        if is_local and ctx.is_creation(target.id):
+        if is_local and not ctx.is_var_declared(target.id):
             var_name = target.id
             target.ctx = ast.Store()
             # Create, no AST resolution needed
@@ -205,7 +205,7 @@ class StmtBuilder(Builder):
             raise TaichiSyntaxError(
                 "'else' clause for 'while' not supported in Taichi kernels")
 
-        with ctx.control_scope():
+        with ctx.control_scope_guard():
             ctx.current_control_scope().append('while')
 
             template = '''
@@ -473,7 +473,7 @@ if 1:
             raise TaichiSyntaxError(
                 "'else' clause for 'for' not supported in Taichi kernels")
 
-        with ctx.control_scope():
+        with ctx.control_scope_guard():
             ctx.current_control_scope().append('for')
 
             decorator = StmtBuilder.get_decorator(node.iter)
@@ -623,7 +623,7 @@ if 1:
                     args.args[i].arg += '_by_value__'
                     arg_decls.append(arg_init)
 
-        with ctx.variable_scope():
+        with ctx.variable_scope_guard():
             node.body = build_stmts(ctx, node.body)
 
         node.body = arg_decls + node.body
@@ -654,7 +654,7 @@ if 1:
 
     @staticmethod
     def build_Module(ctx, node):
-        with ctx.variable_scope():
+        with ctx.variable_scope_guard():
             # Do NOT use |build_stmts| which inserts 'del' statements to the
             # end and deletes parameters passed into the module
             node.body = [build_stmt(ctx, stmt) for stmt in list(node.body)]
@@ -712,7 +712,7 @@ build_stmt = StmtBuilder()
 
 def build_stmts(ctx, stmts):
     result = []
-    with ctx.variable_scope(result):
+    with ctx.variable_scope_guard(result):
         for stmt in list(stmts):
             result.append(build_stmt(ctx, stmt))
     return result

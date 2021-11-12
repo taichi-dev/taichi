@@ -57,6 +57,10 @@ class LlvmProgramImpl : public ProgramImpl {
 
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
+  void compile_snode_tree_types(
+      SNodeTree *tree,
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees) override;
+
   void materialize_snode_tree(
       SNodeTree *tree,
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
@@ -92,6 +96,11 @@ class LlvmProgramImpl : public ProgramImpl {
   void check_runtime_error(uint64 *result_buffer);
 
   void finalize();
+
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer);
+
+  uint64_t *get_ndarray_alloc_info_ptr(DeviceAllocation &alloc);
 
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
@@ -143,6 +152,7 @@ class LlvmProgramImpl : public ProgramImpl {
   std::unique_ptr<ThreadPool> thread_pool{nullptr};
   std::unique_ptr<Runtime> runtime_mem_info{nullptr};
   std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
+  std::unique_ptr<StructCompiler> struct_compiler_{nullptr};
   void *llvm_runtime{nullptr};
   void *preallocated_device_buffer{nullptr};  // TODO: move to memory allocator
 

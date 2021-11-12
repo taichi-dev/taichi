@@ -6,7 +6,7 @@ from taichi.type.annotations import ext_arr, template
 
 from .staging_buffer import (copy_colors_to_vbo, copy_vertices_to_vbo,
                              get_vbo_field, to_u8_rgba)
-from .utils import *
+from .utils import get_field_info
 
 
 class Canvas:

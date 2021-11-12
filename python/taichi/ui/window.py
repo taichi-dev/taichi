@@ -7,7 +7,7 @@ from taichi.lang.ops import get_addr
 from taichi.type.annotations import ext_arr, template
 
 from .canvas import Canvas
-from .constants import *
+from .constants import PRESS, RELEASE
 from .gui import Gui
 from .utils import get_field_info
 
@@ -20,12 +20,13 @@ class Window(_ti_core.PyWindow):
         res (Tuple[Int]): resolution (width, height) of the window, in pixels.
         layout (vsync): whether or not vertical sync should be enabled.
     """
-    def __init__(self, name, res, vsync=False):
+    def __init__(self, name, res, vsync=False, show_window=True):
         package_path = str(pathlib.Path(__file__).parent.parent)
 
         ti_arch = default_cfg().arch
         is_packed = default_cfg().packed
-        super().__init__(name, res, vsync, package_path, ti_arch, is_packed)
+        super().__init__(name, res, vsync, show_window, package_path, ti_arch,
+                         is_packed)
 
     @property
     def running(self):

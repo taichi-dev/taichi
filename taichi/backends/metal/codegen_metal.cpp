@@ -106,6 +106,7 @@ class RootIdsExtractor : public BasicStmtVisitor {
   }
 
  private:
+  using BasicStmtVisitor::visit;
   std::unordered_set<int> roots_;
 };
 
@@ -679,7 +680,16 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void visit(ContinueStmt *stmt) override {
-    if (stmt->as_return()) {
+    auto stmt_in_off_for = [stmt]() {
+      TI_ASSERT(stmt->scope != nullptr);
+      if (auto *offl = stmt->scope->cast<OffloadedStmt>(); offl) {
+        TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||
+                  offl->task_type == OffloadedStmt::TaskType::struct_for);
+        return true;
+      }
+      return false;
+    };
+    if (stmt_in_off_for()) {
       emit("return;");
     } else {
       emit("continue;");

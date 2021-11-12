@@ -8,7 +8,7 @@ def _test_dimensionality(d):
     @ti.kernel
     def fill():
         for I in ti.grouped(x):
-            x[I] += ti.Vector([I.sum(), I[0]], dt=ti.i32)
+            x[I] += ti.Vector([I.sum(), I[0]])
 
     for i in range(2**d):
         indices = []

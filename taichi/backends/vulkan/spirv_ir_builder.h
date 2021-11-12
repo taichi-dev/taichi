@@ -312,8 +312,9 @@ class IRBuilder {
   // Get the spirv type for a given Taichi data type
   SType get_primitive_type(const DataType &dt) const;
   // Get the spirv type for the buffer for a given Taichi data type
-  SType get_primitive_buffer_type(const bool struct_compiled,
-                                  const DataType &dt) const;
+  SType get_primitive_buffer_type(const DataType &dt) const;
+  // Get the size in bytes of a given Taichi data type
+  size_t get_primitive_type_size(const DataType &dt) const;
   // Get the pointer type that points to value_type
   SType get_pointer_type(const SType &value_type,
                          spv::StorageClass storage_class);
@@ -419,6 +420,16 @@ class IRBuilder {
   Value query_value(std::string name) const;
 
   // Support easy access to trivial data types
+  SType i64_type() const {
+    return t_int64_;
+  }
+  SType u64_type() const {
+    return t_uint64_;
+  }
+  SType f64_type() const {
+    return t_fp64_;
+  }
+
   SType i32_type() const {
     return t_int32_;
   }
@@ -428,6 +439,24 @@ class IRBuilder {
   SType f32_type() const {
     return t_fp32_;
   }
+
+  SType i16_type() const {
+    return t_int16_;
+  }
+  SType u16_type() const {
+    return t_uint16_;
+  }
+  SType f16_type() const {
+    return t_fp16_;
+  }
+
+  SType i8_type() const {
+    return t_int8_;
+  }
+  SType u8_type() const {
+    return t_uint8_;
+  }
+
   SType bool_type() const {
     return t_bool_;
   }
@@ -477,6 +506,7 @@ class IRBuilder {
   SType t_uint16_;
   SType t_uint32_;
   SType t_uint64_;
+  SType t_fp16_;
   SType t_fp32_;
   SType t_fp64_;
   SType t_void_;

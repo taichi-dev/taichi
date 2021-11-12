@@ -29,6 +29,14 @@ std::string Expr::get_attribute(const std::string &key) const {
   return expr->get_attribute(key);
 }
 
+DataType Expr::get_ret_type() const {
+  return expr->ret_type;
+}
+
+void Expr::type_check() {
+  expr->type_check();
+}
+
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
   return Expr::make<TernaryOpExpression>(TernaryOpType::select, cond, true_val,
                                          false_val);
@@ -43,16 +51,11 @@ Expr operator~(const Expr &expr) {
 }
 
 Expr cast(const Expr &input, DataType dt) {
-  auto ret =
-      std::make_shared<UnaryOpExpression>(UnaryOpType::cast_value, input);
-  ret->cast_type = dt;
-  return Expr(ret);
+  return Expr::make<UnaryOpExpression>(UnaryOpType::cast_value, input, dt);
 }
 
 Expr bit_cast(const Expr &input, DataType dt) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast_bits, input);
-  ret->cast_type = dt;
-  return Expr(ret);
+  return Expr::make<UnaryOpExpression>(UnaryOpType::cast_bits, input, dt);
 }
 
 Expr Expr::operator[](const ExprGroup &indices) const {
@@ -65,12 +68,17 @@ Expr &Expr::operator=(const Expr &o) {
     // Inside a kernel or a function
     // Create an assignment in the IR
     if (expr == nullptr) {
-      set(o.eval());
+      set(o);
     } else if (expr->is_lvalue()) {
-      current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-          ptr_if_global(*this), load_if_ptr(o)));
+      current_ast_builder().insert(
+          std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
+      if (this->is<IdExpression>()) {
+        expr->ret_type = current_ast_builder()
+                             .get_last_stmt()
+                             ->cast<FrontendAssignStmt>()
+                             ->rhs->ret_type;
+      }
     } else {
-      // set(o.eval());
       TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
     }
   } else {
@@ -124,24 +132,10 @@ Expr::Expr(const Identifier &id) : Expr() {
   expr = std::make_shared<IdExpression>(id);
 }
 
-Expr Expr::eval() const {
-  TI_ASSERT(expr != nullptr);
-  if (is<EvalExpression>()) {
-    return *this;
-  }
-  auto eval_stmt = Stmt::make<FrontendEvalStmt>(*this);
-  auto eval_expr = Expr::make<EvalExpression>(eval_stmt.get());
-  eval_stmt->as<FrontendEvalStmt>()->eval_expr.set(eval_expr);
-  // needed in lower_ast to replace the statement itself with the
-  // lowered statement
-  current_ast_builder().insert(std::move(eval_stmt));
-  return eval_expr;
-}
-
 void Expr::operator+=(const Expr &o) {
   if (this->atomic) {
-    (*this) = Expr::make<AtomicOpExpression>(
-        AtomicOpType::add, ptr_if_global(*this), load_if_ptr(o));
+    (*this) = Expr::make<AtomicOpExpression>(AtomicOpType::add, *this,
+                                             load_if_ptr(o));
   } else {
     (*this) = (*this) + o;
   }
@@ -149,8 +143,8 @@ void Expr::operator+=(const Expr &o) {
 
 void Expr::operator-=(const Expr &o) {
   if (this->atomic) {
-    (*this) = Expr::make<AtomicOpExpression>(
-        AtomicOpType::sub, ptr_if_global(*this), load_if_ptr(o));
+    (*this) = Expr::make<AtomicOpExpression>(AtomicOpType::sub, *this,
+                                             load_if_ptr(o));
   } else {
     (*this) = (*this) - o;
   }
@@ -184,19 +178,6 @@ Expr load_if_ptr(const Expr &ptr) {
     }
   } else
     return ptr;
-}
-
-Expr ptr_if_global(const Expr &var) {
-  if (var.is<GlobalVariableExpression>()) {
-    // singleton global variable
-    TI_ASSERT_INFO(var.snode()->num_active_indices == 0,
-                   "Please always use 'x[None]' (instead of simply 'x') to "
-                   "access any 0-D field.");
-    return var[ExprGroup()];
-  } else {
-    // may be any local or global expr
-    return var;
-  }
 }
 
 Expr Var(const Expr &x) {

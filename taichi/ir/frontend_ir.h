@@ -125,7 +125,6 @@ class FrontendPrintStmt : public Stmt {
 class FrontendEvalStmt : public Stmt {
  public:
   Expr expr;
-  Expr eval_expr;
 
   FrontendEvalStmt(const Expr &expr) : expr(load_if_ptr(expr)) {
   }
@@ -242,6 +241,8 @@ class ArgLoadExpression : public Expression {
   ArgLoadExpression(int arg_id, DataType dt) : arg_id(arg_id), dt(dt) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override {
     ss << fmt::format("arg[{}] (dt={})", arg_id, data_type_name(dt));
   }
@@ -255,6 +256,8 @@ class RandExpression : public Expression {
 
   RandExpression(DataType dt) : dt(dt) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     ss << fmt::format("rand<{}>()", data_type_name(dt));
@@ -270,9 +273,15 @@ class UnaryOpExpression : public Expression {
   DataType cast_type;
 
   UnaryOpExpression(UnaryOpType type, const Expr &operand)
-      : type(type), operand(smart_load(operand)) {
+      : type(type), operand(load_if_ptr(operand)) {
     cast_type = PrimitiveType::unknown;
   }
+
+  UnaryOpExpression(UnaryOpType type, const Expr &operand, DataType cast_type)
+      : type(type), operand(load_if_ptr(operand)), cast_type(cast_type) {
+  }
+
+  void type_check() override;
 
   bool is_cast() const;
 
@@ -287,10 +296,10 @@ class BinaryOpExpression : public Expression {
   Expr lhs, rhs;
 
   BinaryOpExpression(const BinaryOpType &type, const Expr &lhs, const Expr &rhs)
-      : type(type) {
-    this->lhs.set(smart_load(lhs));
-    this->rhs.set(smart_load(rhs));
+      : type(type), lhs(load_if_ptr(lhs)), rhs(load_if_ptr(rhs)) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     ss << '(';
@@ -319,6 +328,8 @@ class TernaryOpExpression : public Expression {
     this->op2.set(load_if_ptr(op2));
     this->op3.set(load_if_ptr(op3));
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     ss << ternary_type_name(type) << '(';
@@ -363,23 +374,34 @@ class InternalFuncCallExpression : public Expression {
 
 class ExternalFuncCallExpression : public Expression {
  public:
-  void *func;
-  std::string source;
+  void *so_func;
+  std::string asm_source;
+  std::string bc_filename;
+  std::string bc_funcname;
   std::vector<Expr> args;
   std::vector<Expr> outputs;
 
-  ExternalFuncCallExpression(void *func,
-                             std::string const &source,
+  ExternalFuncCallExpression(void *so_func,
+                             const std::string &asm_source,
+                             const std::string &bc_filename,
+                             const std::string &bc_funcname,
                              const std::vector<Expr> &args,
                              const std::vector<Expr> &outputs)
-      : func(func), source(source), args(args), outputs(outputs) {
+      : so_func(so_func),
+        asm_source(asm_source),
+        bc_filename(bc_filename),
+        bc_funcname(bc_funcname),
+        args(args),
+        outputs(outputs) {
   }
 
   void serialize(std::ostream &ss) override {
-    if (func) {
-      ss << fmt::format("call {:x} (", (uint64)func);
+    if (so_func != nullptr) {
+      ss << fmt::format("so {:x} (", (uint64)so_func);
+    } else if (!asm_source.empty()) {
+      ss << fmt::format("asm \"{}\" (", asm_source);
     } else {
-      ss << fmt::format("asm \"{}\" (", source);
+      ss << fmt::format("bc {}:{} (", bc_filename, bc_funcname);
     }
 
     ss << "inputs=";
@@ -416,6 +438,9 @@ class ExternalTensorExpression : public Expression {
     set_attribute("dim", std::to_string(dim));
   }
 
+  void type_check() override {
+  }
+
   void serialize(std::ostream &ss) override {
     ss << fmt::format("{}d_ext_arr", dim);
   }
@@ -447,6 +472,9 @@ class GlobalVariableExpression : public Expression {
     is_primal = true;
   }
 
+  void type_check() override {
+  }
+
   void set_snode(SNode *snode) {
     this->snode = snode;
     set_attribute("dim", std::to_string(snode->num_active_indices));
@@ -473,6 +501,8 @@ class GlobalPtrExpression : public Expression {
       : snode(snode), indices(indices) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
@@ -495,6 +525,8 @@ class TensorElementExpression : public Expression {
                           int layout_stride)
       : var(var), indices(indices), shape(shape), layout_stride(layout_stride) {
   }
+
+  void type_check() override;
 
   bool is_local_tensor() const;
 
@@ -525,23 +557,6 @@ class TensorElementExpression : public Expression {
   }
 };
 
-class EvalExpression : public Expression {
- public:
-  Stmt *stmt_ptr;
-  int stmt_id;
-  EvalExpression(Stmt *stmt) : stmt_ptr(stmt), stmt_id(stmt_ptr->id) {
-    // cache stmt->id since it may be released later
-  }
-
-  void serialize(std::ostream &ss) override {
-    ss << '%' << stmt_id;
-  }
-
-  void flatten(FlattenContext *ctx) override {
-    stmt = stmt_ptr;
-  }
-};
-
 class RangeAssumptionExpression : public Expression {
  public:
   Expr input, base;
@@ -553,6 +568,8 @@ class RangeAssumptionExpression : public Expression {
                             int high)
       : input(input), base(base), low(low), high(high) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     ss << "assume_in_range({";
@@ -577,6 +594,8 @@ class LoopUniqueExpression : public Expression {
       : input(input), covers(covers) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
@@ -588,6 +607,9 @@ class IdExpression : public Expression {
   IdExpression(const std::string &name = "") : id(name) {
   }
   IdExpression(const Identifier &id) : id(id) {
+  }
+
+  void type_check() override {
   }
 
   void serialize(std::ostream &ss) override {
@@ -615,6 +637,8 @@ class AtomicOpExpression : public Expression {
       : op_type(op_type), dest(dest), val(val) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
@@ -628,15 +652,20 @@ class SNodeOpExpression : public Expression {
   Expr value;
 
   SNodeOpExpression(SNode *snode, SNodeOpType op_type, const ExprGroup &indices)
-      : snode(snode), op_type(op_type), indices(indices) {
+      : snode(snode), op_type(op_type), indices(indices.loaded()) {
   }
 
   SNodeOpExpression(SNode *snode,
                     SNodeOpType op_type,
                     const ExprGroup &indices,
                     const Expr &value)
-      : snode(snode), op_type(op_type), indices(indices), value(value) {
+      : snode(snode),
+        op_type(op_type),
+        indices(indices.loaded()),
+        value(value) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override;
 
@@ -647,6 +676,11 @@ class LocalLoadExpression : public Expression {
  public:
   Expr ptr;
   LocalLoadExpression(const Expr &ptr) : ptr(ptr) {
+    // Now it is only constructed by load_if_ptr. No type_check will be called.
+    ret_type = ptr->ret_type;
+  }
+
+  void type_check() override {
   }
 
   void serialize(std::ostream &ss) override {
@@ -661,6 +695,11 @@ class GlobalLoadExpression : public Expression {
  public:
   Expr ptr;
   GlobalLoadExpression(const Expr &ptr) : ptr(ptr) {
+    // Now it is only constructed by load_if_ptr. No type_check will be called.
+    ret_type = ptr->ret_type->get_compute_type();
+  }
+
+  void type_check() override {
   }
 
   void serialize(std::ostream &ss) override {
@@ -677,7 +716,10 @@ class ConstExpression : public Expression {
 
   template <typename T>
   ConstExpression(const T &x) : val(x) {
+    ret_type = val.dt;
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     ss << val.stringify();
@@ -700,6 +742,8 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   ExternalTensorShapeAlongAxisExpression(const Expr &ptr, int axis)
       : ptr(ptr), axis(axis) {
   }
+
+  void type_check() override;
 
   void flatten(FlattenContext *ctx) override;
 };

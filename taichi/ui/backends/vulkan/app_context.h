@@ -19,6 +19,7 @@ class AppContext {
 
   taichi::lang::vulkan::VulkanDevice &device();
   const taichi::lang::vulkan::VulkanDevice &device() const;
+  bool requires_export_sharing() const;
 
   AppConfig config;
 

@@ -12,13 +12,13 @@ namespace vulkan {
 struct SNodeDescriptor {
   const SNode *snode = nullptr;
   // Stride (bytes) of a single cell.
-  int cell_stride = 0;
+  size_t cell_stride = 0;
 
   // Number of cells per container, padded to Power of Two (pot).
-  int cells_per_container_pot() const;
+  size_t cells_per_container_pot() const;
 
   // Bytes of a single container.
-  int container_stride = 0;
+  size_t container_stride = 0;
 
   // Total number of CELLS of this SNode, NOT padded to PoT.
   // For example, for a layout of
@@ -27,10 +27,13 @@ struct SNodeDescriptor {
   //   .dense(ti.ij, (5, 3))  // S2
   // |total_num_cells_from_root| for S2 is 3x2x5x3 = 90. That is, S2 has a total
   // of 90 cells. Note that the number of S2 (container) itself is 3x2=6!
-  int total_num_cells_from_root = 0;
+  size_t total_num_cells_from_root = 0;
   // An SNode can have multiple number of components, where each component
   // starts at a fixed offset in its parent cell's memory.
-  int mem_offset_in_parent_cell = 0;
+  size_t mem_offset_in_parent_cell = 0;
+
+  int axis_bits_sum[taichi_max_num_indices] = {0};
+  int axis_start_bit[taichi_max_num_indices] = {0};
 
   SNode *get_child(int ch_i) const {
     return snode->ch[ch_i].get();

@@ -60,7 +60,7 @@ void AppContext::init(GLFWwindow *glfw_window, const AppConfig &config) {
     evd_params.additional_instance_extensions =
         get_required_instance_extensions();
     evd_params.additional_device_extensions = get_required_device_extensions();
-    evd_params.is_for_ui = true;
+    evd_params.is_for_ui = config.show_window;
     evd_params.surface_creator = [&](VkInstance instance) -> VkSurfaceKHR {
       VkSurfaceKHR surface = VK_NULL_HANDLE;
       if (glfwCreateWindowSurface(instance, glfw_window, nullptr, &surface) !=
@@ -95,6 +95,14 @@ void AppContext::cleanup() {
   if (embedded_vulkan_device_) {
     embedded_vulkan_device_.reset();
   }
+}
+
+bool AppContext::requires_export_sharing() const {
+  // only the cuda backends needs export_sharing to interop with vk
+  // with other backends (e.g. vulkan backend on mac), turning export_sharing to
+  // true leads to crashes
+  // TODO: investigate this, and think of a more universal solution.
+  return config.ti_arch == Arch::cuda;
 }
 
 GLFWwindow *AppContext::glfw_window() const {

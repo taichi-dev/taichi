@@ -39,8 +39,17 @@ class StructCompiler {
             ->second.mem_offset_in_parent_cell = child_offset;
       }
       sn_desc.cell_stride = cell_stride;
-      sn_desc.container_stride =
-          cell_stride * sn_desc.cells_per_container_pot();
+
+      if (sn->type == SNodeType::bitmasked) {
+        size_t num_cells = sn_desc.cells_per_container_pot();
+        size_t bitmask_num_words =
+            num_cells % 32 == 0 ? (num_cells / 32) : (num_cells / 32 + 1);
+        sn_desc.container_stride =
+            cell_stride * num_cells + bitmask_num_words * 4;
+      } else {
+        sn_desc.container_stride =
+            cell_stride * sn_desc.cells_per_container_pot();
+      }
     }
 
     sn->cell_size_bytes = sn_desc.cell_stride;
@@ -52,6 +61,28 @@ class StructCompiler {
       // 2. StructCompiler::infer_snode_properties()
       // The second step is the finalized result.
       sn_desc.total_num_cells_from_root *= e.num_elements_from_root;
+    }
+
+    // Sum the bits per axis
+    SNode *snode_head = sn;
+    do {
+      for (int i = 0; i < taichi_max_num_indices; i++) {
+        const AxisExtractor &extractor = snode_head->extractors[i];
+        if (extractor.active) {
+          sn_desc.axis_bits_sum[i] += extractor.num_bits;
+        }
+      }
+    } while ((snode_head = snode_head->parent));
+    // Find the start bit
+    sn_desc.axis_start_bit[0] = 0;
+    for (int i = 1; i < taichi_max_num_indices; i++) {
+      sn_desc.axis_start_bit[i] =
+          sn_desc.axis_bits_sum[i - 1] + sn_desc.axis_start_bit[i - 1];
+    }
+    TI_TRACE("Indices at SNode {}", sn->get_name());
+    for (int i = 0; i < taichi_max_num_indices; i++) {
+      TI_TRACE("Index {}: {}..{}", i, sn_desc.axis_start_bit[i],
+               sn_desc.axis_start_bit[i] + sn_desc.axis_bits_sum[i]);
     }
 
     TI_TRACE("SNodeDescriptor");
@@ -75,7 +106,7 @@ class StructCompiler {
 
 }  // namespace
 
-int SNodeDescriptor::cells_per_container_pot() const {
+size_t SNodeDescriptor::cells_per_container_pot() const {
   return snode->num_cells_per_container;
 }
 

@@ -199,7 +199,7 @@ SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root,
   auto tree = std::make_unique<SNodeTree>(id, std::move(root));
   tree->root()->set_snode_tree_id(id);
   if (compile_only) {
-    program_impl_->compile_snode_tree_types(tree.get());
+    program_impl_->compile_snode_tree_types(tree.get(), snode_trees_);
   } else {
     program_impl_->materialize_snode_tree(tree.get(), snode_trees_,
                                           result_buffer);
@@ -390,7 +390,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 
 Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
   auto kernel_name = fmt::format("ndarray_reader");
-  auto &ker = kernel([ndarray, this] {
+  auto &ker = kernel([ndarray] {
     ExprGroup indices;
     for (int i = 0; i < ndarray->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
@@ -413,7 +413,7 @@ Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
 
 Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
   auto kernel_name = fmt::format("ndarray_writer");
-  auto &ker = kernel([ndarray, this] {
+  auto &ker = kernel([ndarray] {
     ExprGroup indices;
     for (int i = 0; i < ndarray->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));

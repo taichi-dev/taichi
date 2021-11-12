@@ -1,5 +1,9 @@
+import shutil
+import warnings
 from contextlib import contextmanager
+from pathlib import Path, PurePosixPath
 
+from taichi.core import ti_core as _ti_core
 from taichi.lang import impl, kernel_impl
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField
@@ -115,8 +119,9 @@ class Module:
             column_num = field.n
         else:
             assert isinstance(field, ScalarField)
-        self._aot_builder.add_field(name, is_scalar, field.dtype,
-                                    field.snode.shape, row_num, column_num)
+        self._aot_builder.add_field(name, field.snode.ptr, is_scalar,
+                                    field.dtype, field.snode.shape, row_num,
+                                    column_num)
 
     def add_kernel(self, kernel_fn, name=None):
         """Add a taichi kernel to the AOT module.
@@ -184,4 +189,10 @@ class Module:
         yield kt
 
     def save(self, filepath, filename):
+        """
+        Args:
+          filepath (str): path to a folder to store aot files.
+          filename (str): filename prefix for stored aot files.
+        """
+        filepath = str(PurePosixPath(Path(filepath).resolve()))
         self._aot_builder.dump(filepath, filename)

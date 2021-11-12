@@ -2,7 +2,9 @@ import ast
 import functools
 import inspect
 import re
+import sys
 import textwrap
+import traceback
 
 import numpy as np
 import taichi.lang
@@ -830,7 +832,28 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
         @functools.wraps(func)
         def wrapped(*args, **kwargs):
             _taichi_skip_traceback = 1
-            return primal(*args, **kwargs)
+            try:
+                return primal(*args, **kwargs)
+            except RuntimeError as e:
+                if str(e).startswith("TypeError: "):
+                    tb = e.__traceback__
+
+                    while tb:
+                        if tb.tb_frame.f_code.co_name == 'taichi_ast_generator':
+                            tb = tb.tb_next
+                            if sys.version_info < (3, 7):
+                                # The traceback object is read-only on Python < 3.7,
+                                # print the traceback and raise
+                                traceback.print_tb(tb,
+                                                   limit=1,
+                                                   file=sys.stderr)
+                                raise TypeError(str(e)[11:]) from None
+                            # Otherwise, modify the traceback object
+                            tb.tb_next = None
+                            raise TypeError(
+                                str(e)[11:]).with_traceback(tb) from None
+                        tb = tb.tb_next
+                raise
 
         wrapped.grad = adjoint
 

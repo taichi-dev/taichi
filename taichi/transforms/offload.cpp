@@ -323,6 +323,13 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     TI_ASSERT(current_offloaded);
   }
 
+  void visit(RangeForStmt *stmt) override {
+    test_and_allocate(stmt->begin);
+    test_and_allocate(stmt->end);
+    if (stmt->body)
+      stmt->body->accept(this);
+  }
+
   void test_and_allocate(Stmt *stmt) {
     if (stmt == nullptr)
       return;

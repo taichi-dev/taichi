@@ -4,7 +4,7 @@ import copy
 import astor
 from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.ast_builder_utils import *
+from taichi.lang.ast_builder_utils import Builder, parse_expr, parse_stmt
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr_builder import build_expr, build_exprs
 from taichi.lang.util import to_taichi_type

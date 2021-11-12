@@ -1,13 +1,8 @@
-import pathlib
-from math import acos, asin, cos, pi, sin
+from math import acos, asin, cos, sin
 
 from taichi.core import ti_core as _ti_core
 from taichi.lang.impl import default_cfg
-from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
-from taichi.lang.ops import get_addr
-from taichi.type.annotations import ext_arr, template
-from taichi.type.primitive_types import u64
 
 
 def get_field_info(field):

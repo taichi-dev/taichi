@@ -33,7 +33,12 @@ class GUI:
 
     """
     class Event:
-        pass
+        def __init__(self):
+            self.type = None
+            self.modifier = None
+            self.pos = None
+            self.key = None
+            self.delta = None
 
     # Event keys
     SHIFT = 'Shift'

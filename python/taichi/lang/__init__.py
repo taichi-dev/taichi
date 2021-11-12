@@ -869,8 +869,7 @@ def benchmark_plot(fn=None,
     figure.suptitle(title, fontweight="bold")
     for col_id in range(len(columns)):
         subfigures[0][col_id].set_title(column_titles[col_id])
-    for case_id in range(len(cases)):
-        case = cases[case_id]
+    for case_id, case in enumerate(cases):
         subfigures[case_id][0].annotate(
             case,
             xy=(0, 0.5),
@@ -880,8 +879,7 @@ def benchmark_plot(fn=None,
             size='large',
             ha='right',
             va='center')
-        for col_id in range(len(columns)):
-            col = columns[col_id]
+        for col_id, col in enumerate(columns):
             if archs is None:
                 current_archs = data[case][col].keys()
             else:

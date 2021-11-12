@@ -616,14 +616,14 @@ class IRBuilder(Builder):
                                              ndrange_end.ptr)
             I = ti.expr_init(ndrange_loop_var)
             targets = IRBuilder.get_for_loop_targets(node)
-            for i in range(len(targets)):
+            for i, target in enumerate(targets):
                 if i + 1 < len(targets):
                     target_tmp = ti.expr_init(
                         I // ndrange_var.acc_dimensions[i + 1])
                 else:
                     target_tmp = ti.expr_init(I)
                 ctx.create_variable(
-                    targets[i],
+                    target,
                     ti.expr_init(
                         target_tmp +
                         ti.subscript(ti.subscript(ndrange_var.bounds, i), 0)))

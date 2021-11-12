@@ -173,12 +173,12 @@ def run_tidy(args, tmpdir, build_path, queue, lock, failed_files):
         output, err = proc.communicate()
         if proc.returncode != 0:
             failed_files.append(name)
-        with lock:
-            sys.stdout.write(' '.join(invocation) + '\n' +
-                             output.decode('utf-8'))
-            if len(err) > 0:
-                sys.stdout.flush()
-                sys.stderr.write(err.decode('utf-8'))
+            with lock:
+                sys.stdout.write(' '.join(invocation) + '\n' +
+                                 output.decode('utf-8'))
+                if len(err) > 0:
+                    sys.stdout.flush()
+                    sys.stderr.write(err.decode('utf-8'))
         queue.task_done()
 
 
@@ -325,6 +325,8 @@ def main():
         task_queue.join()
         if len(failed_files):
             return_code = 1
+        else:
+            print("No errors detected, congratulations!")
 
     except KeyboardInterrupt:
         # This is a sad hack. Unfortunately subprocess goes

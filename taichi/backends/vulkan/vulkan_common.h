@@ -4,8 +4,11 @@
 #define VK_USE_PLATFORM_WIN32_KHR 1
 #endif
 
+#ifndef __APPLE__
 #include <volk.h>
 #define VK_NO_PROTOTYPES
+#endif
+
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 

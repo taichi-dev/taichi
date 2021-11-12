@@ -1,10 +1,16 @@
 import json
 import os
+import sys
 import tempfile
 
 import pytest
 
 import taichi as ti
+
+
+def _escape_path_for_win(json_str):
+    return json_str.replace(os.sep,
+                            r'\\') if ti.get_os_name() == 'win' else json_str
 
 
 @ti.test(arch=ti.cc)
@@ -56,7 +62,9 @@ def test_save():
         m.save(tmpdir, filename)
         with open(os.path.join(tmpdir,
                                f'{filename}_metadata.json')) as json_file:
-            json.load(json_file)
+            json_str = ''.join(json_file.readlines())
+            json_str = _escape_path_for_win(json_str)
+            json.loads(json_str)
 
 
 @ti.test(arch=ti.opengl)
@@ -167,4 +175,6 @@ def test_mpm88_aot():
         m.save(tmpdir, filename)
         with open(os.path.join(tmpdir,
                                f'{filename}_metadata.json')) as json_file:
-            json.load(json_file)
+            json_str = ''.join(json_file.readlines())
+            json_str = _escape_path_for_win(json_str)
+            json.loads(json_str)

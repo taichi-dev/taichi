@@ -304,6 +304,7 @@ void EmbeddedVulkanDevice::create_instance() {
   if (res != VK_SUCCESS) {
     throw std::runtime_error("failed to create instance");
   }
+
   VulkanLoader::instance().load_instance(instance_);
 }
 

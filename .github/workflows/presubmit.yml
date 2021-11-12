@@ -99,6 +99,7 @@ jobs:
           fi
 
   check_clang_tidy:
+    # TODO: Move installation of clang-tidy to docker image
     name: Check clang-tidy
     runs-on: ubuntu-latest
     needs: check_files

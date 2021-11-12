@@ -68,7 +68,7 @@ class Matrix(TaichiOperations):
                                     'Backend ' + str(ti.cfg.arch) +
                                     ' doesn\'t support dynamic index')
                             if dt is None:
-                                if isinstance(n[0], int):
+                                if isinstance(n[0], (int, np.integer)):
                                     dt = impl.get_runtime().default_ip
                                 elif isinstance(n[0], float):
                                     dt = impl.get_runtime().default_fp
@@ -108,7 +108,7 @@ class Matrix(TaichiOperations):
                         raise Exception('Backend ' + str(ti.cfg.arch) +
                                         ' doesn\'t support dynamic index')
                     if dt is None:
-                        if isinstance(n[0][0], int):
+                        if isinstance(n[0][0], (int, np.integer)):
                             dt = impl.get_runtime().default_ip
                         elif isinstance(n[0][0], float):
                             dt = impl.get_runtime().default_fp
@@ -168,36 +168,25 @@ class Matrix(TaichiOperations):
 
     def element_wise_binary(self, foo, other):
         _taichi_skip_traceback = 1
-        ret = self.empty_copy()
-        if isinstance(other, (list, tuple)):
-            other = Matrix(other)
-        if isinstance(other, Matrix):
-            assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-            for i in range(self.n * self.m):
-                ret.entries[i] = foo(self.entries[i], other.entries[i])
-        else:  # assumed to be scalar
-            for i in range(self.n * self.m):
-                ret.entries[i] = foo(self.entries[i], other)
-        return ret
+        other = self.broadcast_copy(other)
+        return Matrix([[foo(self(i, j), other(i, j)) for j in range(self.m)]
+                       for i in range(self.n)])
 
     def broadcast_copy(self, other):
         if isinstance(other, (list, tuple)):
             other = Matrix(other)
         if not isinstance(other, Matrix):
-            ret = self.empty_copy()
-            ret.entries = [other for _ in ret.entries]
-            other = ret
+            other = Matrix([[other for _ in range(self.m)]
+                            for _ in range(self.n)])
         assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         return other
 
     def element_wise_ternary(self, foo, other, extra):
-        ret = self.empty_copy()
         other = self.broadcast_copy(other)
         extra = self.broadcast_copy(extra)
-        for i in range(self.n * self.m):
-            ret.entries[i] = foo(self.entries[i], other.entries[i],
-                                 extra.entries[i])
-        return ret
+        return Matrix([[
+            foo(self(i, j), other(i, j), extra(i, j)) for j in range(self.m)
+        ] for i in range(self.n)])
 
     def element_wise_writeback_binary(self, foo, other):
         ret = self.empty_copy()
@@ -221,10 +210,8 @@ class Matrix(TaichiOperations):
 
     def element_wise_unary(self, foo):
         _taichi_skip_traceback = 1
-        ret = self.empty_copy()
-        for i in range(self.n * self.m):
-            ret.entries[i] = foo(self.entries[i])
-        return ret
+        return Matrix([[foo(self(i, j)) for j in range(self.m)]
+                       for i in range(self.n)])
 
     def __matmul__(self, other):
         """Matrix-matrix or matrix-vector multiply.
@@ -240,14 +227,15 @@ class Matrix(TaichiOperations):
         assert isinstance(other, Matrix), "rhs of `@` is not a matrix / vector"
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         del _taichi_skip_traceback
-        ret = Matrix.empty(self.n, other.m)
+        entries = []
         for i in range(self.n):
+            entries.append([])
             for j in range(other.m):
                 acc = self(i, 0) * other(0, j)
                 for k in range(1, other.n):
                     acc = acc + self(i, k) * other(k, j)
-                ret.entries[i * other.m + j] = acc
-        return ret
+                entries[i].append(acc)
+        return Matrix(entries)
 
     def linearize_entry_id(self, *args):
         assert 1 <= len(args) <= 2

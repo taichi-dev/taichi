@@ -7,7 +7,7 @@ from taichi.lang.ops import get_addr
 from taichi.type.annotations import ext_arr, template
 
 from .canvas import Canvas
-from .constants import *
+from .constants import PRESS, RELEASE
 from .gui import Gui
 from .utils import get_field_info
 

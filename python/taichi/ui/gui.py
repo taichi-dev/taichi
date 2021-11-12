@@ -1,7 +1,5 @@
 from contextlib import contextmanager
 
-from .utils import *
-
 
 class Gui:
     def __init__(self, gui) -> None:

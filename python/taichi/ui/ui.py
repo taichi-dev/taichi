@@ -3,7 +3,6 @@ from taichi.core import ti_core as _ti_core
 if _ti_core.GGUI_AVAILABLE:
 
     from .camera import Camera
-    from .constants import *
 
     def make_camera():
         return Camera(_ti_core.PyCamera())

@@ -102,11 +102,11 @@ def test(arch=None, exclude=None, require=None, **options):
         exclude = [exclude]
     if not isinstance(require, (list, tuple)):
         require = [require]
-    supported_archs = ti.supported_archs()
+    expected_archs = ti.expected_archs()
     if len(arch) == 0:
-        arch = supported_archs
+        arch = expected_archs
     else:
-        arch = list(filter(lambda x: x in supported_archs, arch))
+        arch = list(filter(lambda x: x in expected_archs, arch))
 
     def decorator(foo):
         @functools.wraps(foo)

@@ -24,6 +24,7 @@ struct TaskAttributes {
     Root,
     GlobalTmps,
     Context,
+    ListGen,
   };
 
   struct BufferInfo {

@@ -218,3 +218,63 @@ def test_fractal_f16():
             pixels[i, j] = 1 - iterations * 0.02
 
     paint(0.03)
+
+
+# TODO(): Vulkan support
+@ti.test(arch=[ti.cpu, ti.cuda])
+def test_atomic_add_f16():
+    f = ti.field(dtype=ti.f16, shape=(2))
+
+    @ti.kernel
+    def foo():
+        # Parallel sum
+        for i in range(1000):
+            f[0] += 1.12
+
+        # Serial sum
+        for _ in range(1):
+            for i in range(1000):
+                f[1] = f[1] + 1.12
+
+    foo()
+    assert (f[0] == approx(f[1], rel=1e-3))
+
+
+# TODO(): Vulkan support
+@ti.test(arch=[ti.cpu, ti.cuda])
+def test_atomic_max_f16():
+    f = ti.field(dtype=ti.f16, shape=(2))
+
+    @ti.kernel
+    def foo():
+        # Parallel max
+        for i in range(1000):
+            ti.atomic_max(f[0], 1.12 * i)
+
+        # Serial max
+        for _ in range(1):
+            for i in range(1000):
+                f[1] = ti.max(1.12 * i, f[1])
+
+    foo()
+    assert (f[0] == approx(f[1], rel=1e-3))
+
+
+# TODO(): Vulkan support
+@ti.test(arch=[ti.cpu, ti.cuda])
+def test_atomic_min_f16():
+    f = ti.field(dtype=ti.f16, shape=(2))
+
+    @ti.kernel
+    def foo():
+        # Parallel min
+        for i in range(1000):
+            ti.atomic_min(f[0], -3.13 * i)
+
+        # Serial min
+        for _ in range(1):
+            for i in range(1000):
+                f[1] = ti.min(-3.13 * i, f[1])
+
+    foo()
+    assert (f[0] == approx(f[1], rel=1e-3))

@@ -3,6 +3,8 @@ import collections.abc
 import warnings
 from collections import ChainMap
 
+import astor
+from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.ast_builder_utils import *
 from taichi.lang.exception import TaichiSyntaxError
@@ -74,17 +76,34 @@ class IRBuilder(Builder):
                 raise TaichiSyntaxError(
                     "Static assign cannot be used on elements in arrays")
             ctx.create_variable(target.id, value)
+            var = value
         elif is_local and not ctx.is_var_declared(target.id):
-            ctx.create_variable(target.id, ti.expr_init(value))
+            var = ti.expr_init(value)
+            ctx.create_variable(target.id, var)
         else:
             var = target.ptr
             var.assign(value)
+        return var
+
+    @staticmethod
+    def build_NamedExpr(ctx, node):
+        node.value = build_stmt(ctx, node.value)
+        node.target = build_stmt(ctx, node.target)
+        is_static_assign = isinstance(
+            node.value, ast.Call) and ASTResolver.resolve_to(
+                node.value.func, ti.static, globals())
+        node.ptr = IRBuilder.build_assign_basic(ctx, node.target,
+                                                node.value.ptr,
+                                                is_static_assign)
+        return node
 
     @staticmethod
     def is_tuple(node):
         if isinstance(node, ast.Tuple):
             return True
-        if isinstance(node, ast.Index) and isinstance(node.value, ast.Tuple):
+        if isinstance(node, ast.Index) and isinstance(node.value.ptr, tuple):
+            return True
+        if isinstance(node.ptr, tuple):
             return True
         return False
 
@@ -107,6 +126,17 @@ class IRBuilder(Builder):
     def build_List(ctx, node):
         node.elts = build_stmts(ctx, node.elts)
         node.ptr = [elt.ptr for elt in node.elts]
+        return node
+
+    @staticmethod
+    def build_Dict(ctx, node):
+        dic = {}
+        for key, value in zip(node.keys, node.values):
+            if key is None:
+                dic.update(build_stmt(ctx, value).ptr)
+            else:
+                dic[build_stmt(ctx, key).ptr] = build_stmt(ctx, value).ptr
+        node.ptr = dic
         return node
 
     @staticmethod
@@ -223,6 +253,8 @@ class IRBuilder(Builder):
                 args.append(build_stmt(ctx, sub_node.value).ptr)
             elif isinstance(sub_node, ast.Constant):
                 str_spec += sub_node.value
+            elif isinstance(sub_node, ast.Str):
+                str_spec += sub_node.s
             else:
                 raise TaichiSyntaxError("Invalid value for fstring.")
 
@@ -250,7 +282,7 @@ class IRBuilder(Builder):
                 node.ptr = ti.ti_format(*args, **keywords)
             else:
                 node.ptr = node.func.ptr(*args, **keywords)
-        if isinstance(node.func, ast.Name):
+        elif isinstance(node.func, ast.Name):
             func_name = node.func.id
             if func_name == 'print':
                 node.ptr = ti.ti_print(*args, **keywords)
@@ -322,14 +354,28 @@ class IRBuilder(Builder):
                 if ASTResolver.resolve_to(decorator, ti.func, globals()):
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.func'.")
-            # if impl.get_runtime().experimental_real_function:
-            #     transform_as_kernel()
-            if False:
-                pass
+            if impl.get_runtime().experimental_real_function:
+                transform_as_kernel()
             else:
-                if len(args.args) != len(ctx.argument_data):
-                    raise TaichiSyntaxError("Function argument of ")
+                len_args = len(args.args)
+                len_default = len(args.defaults)
+                len_provided = len(ctx.argument_data)
+                len_minimum = len_args - len_default
+                if len_args < len_provided or len_args - len_default > len_provided:
+                    if len(args.defaults):
+                        raise TaichiSyntaxError(
+                            f"Function receives {len_minimum} to {len_args} argument(s) and {len_provided} provided."
+                        )
+                    else:
+                        raise TaichiSyntaxError(
+                            f"Function receives {len_args} argument(s) and {len_provided} provided."
+                        )
                 # Transform as force-inlined func
+                default_start = len_provided - len_minimum
+                ctx.argument_data = list(ctx.argument_data)
+                for arg in args.defaults[default_start:]:
+                    ctx.argument_data.append(build_stmt(ctx, arg).ptr)
+                assert len(args.args) == len(ctx.argument_data)
                 for i, (arg,
                         data) in enumerate(zip(args.args, ctx.argument_data)):
                     # Remove annotations because they are not used.
@@ -351,7 +397,7 @@ class IRBuilder(Builder):
     @staticmethod
     def build_Return(ctx, node):
         node.value = build_stmt(ctx, node.value)
-        if ctx.is_kernel:
+        if ctx.is_kernel or impl.get_runtime().experimental_real_function:
             # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
             if node.value is not None:
                 if ctx.func.return_type is None:
@@ -364,6 +410,7 @@ class IRBuilder(Builder):
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value
+            return ast.Pass()
         else:
             ctx.return_data = node.value.ptr
         return node
@@ -418,10 +465,23 @@ class IRBuilder(Builder):
         op = {
             ast.UAdd: lambda l: l,
             ast.USub: lambda l: -l,
-            ast.Not: lambda l: not l,
+            ast.Not: lambda l: ti.logical_not(l),
             ast.Invert: lambda l: ~l,
         }.get(type(node.op))
         node.ptr = op(node.operand.ptr)
+        return node
+
+    @staticmethod
+    def build_BoolOp(ctx, node):
+        node.values = build_stmts(ctx, node.values)
+        op = {
+            ast.And: lambda l, r: ti.logical_and(l, r),
+            ast.Or: lambda l, r: ti.logical_or(l, r),
+        }.get(type(node.op))
+        result = op(node.values[0].ptr, node.values[1].ptr)
+        for i in range(2, len(node.values)):
+            result = op(result, node.values[i].ptr)
+        node.ptr = result
         return node
 
     @staticmethod
@@ -503,7 +563,9 @@ class IRBuilder(Builder):
             node.iter = build_stmt(ctx, node.iter)
             targets = IRBuilder.get_for_loop_targets(node)
             for target_values in node.iter.ptr:
-                if not isinstance(target_values, collections.abc.Sequence):
+                if not isinstance(
+                        target_values,
+                        collections.abc.Sequence) or len(targets) == 1:
                     target_values = [target_values]
                 with ctx.variable_scope_guard():
                     for target, target_value in zip(targets, target_values):
@@ -730,12 +792,29 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_Expr(ctx, node):
-        node.value = build_stmt(ctx, node.value)
+        if not isinstance(
+                node.value,
+                ast.Call) or not impl.get_runtime().experimental_real_function:
+            node.value = build_stmt(ctx, node.value)
+            return node
+
+        args = [build_stmt(ctx, node.value.func).ptr
+                ] + [arg.ptr for arg in build_stmts(ctx, node.value.args)]
+        ti.insert_expr_stmt_if_ti_func(*args)
+
         return node
 
     @staticmethod
     def build_IfExp(ctx, node):
         node.test = build_stmt(ctx, node.test)
+        node.body = build_stmt(ctx, node.body)
+        node.orelse = build_stmt(ctx, node.orelse)
+
+        if ti.is_taichi_class(node.test.ptr) or ti.is_taichi_class(
+                node.body.ptr) or ti.is_taichi_class(node.orelse.ptr):
+            node.ptr = ti.select(node.test.ptr, node.body.ptr, node.orelse.ptr)
+            return node
+
         is_static_if = (IRBuilder.get_decorator(ctx, node.test) == "static")
 
         if is_static_if:
@@ -751,15 +830,57 @@ class IRBuilder(Builder):
 
         ti.begin_frontend_if(node.test.ptr)
         ti.core.begin_frontend_if_true()
-        node.body = build_stmt(ctx, node.body)
         val.assign(node.body.ptr)
         ti.core.pop_scope()
         ti.core.begin_frontend_if_false()
-        node.orelse = build_stmt(ctx, node.orelse)
         val.assign(node.orelse.ptr)
         ti.core.pop_scope()
 
         node.ptr = val
+        return node
+
+    @staticmethod
+    def _is_string_mod_args(msg):
+        # 1. str % (a, b, c, ...)
+        # 2. str % single_item
+        # Note that |msg.right| may not be a tuple.
+        if not isinstance(msg, ast.BinOp):
+            return False
+        if not isinstance(msg.op, ast.Mod):
+            return False
+        if isinstance(msg.left, ast.Str):
+            return True
+        if isinstance(msg.left, ast.Constant) and isinstance(
+                msg.left.value, str):
+            return True
+        return False
+
+    @staticmethod
+    def _handle_string_mod_args(ctx, node):
+        msg = build_stmt(ctx, node.left).ptr
+        args = build_stmt(ctx, node.right).ptr
+        if not isinstance(args, collections.abc.Sequence):
+            args = (args, )
+        return msg, args
+
+    @staticmethod
+    def build_Assert(ctx, node):
+        extra_args = []
+        if node.msg is not None:
+            if isinstance(node.msg, ast.Constant):
+                msg = node.msg.value
+            elif isinstance(node.msg, ast.Str):
+                msg = node.msg.s
+            elif IRBuilder._is_string_mod_args(node.msg):
+                msg, extra_args = IRBuilder._handle_string_mod_args(
+                    ctx, node.msg)
+            else:
+                raise ValueError(
+                    f"assert info must be constant, not {ast.dump(node.msg)}")
+        else:
+            msg = astor.to_source(node.test)
+        test = build_stmt(ctx, node.test).ptr
+        ti.ti_assert(test, msg.strip(), extra_args)
         return node
 
     @staticmethod

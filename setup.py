@@ -35,6 +35,10 @@ classifiers = [
 ]
 
 project_name = os.getenv('PROJECT_NAME', 'taichi')
+TI_VERSION_MAJOR = 0
+TI_VERSION_MINOR = 8
+TI_VERSION_PATCH = 6
+version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 
 data_files = glob.glob('python/lib/*')
 print(data_files)
@@ -70,6 +74,7 @@ def remove_tmp(taichi_dir):
     shutil.rmtree(os.path.join(taichi_dir, 'assets'), ignore_errors=True)
     shutil.rmtree(os.path.join(taichi_dir, 'examples'), ignore_errors=True)
     shutil.rmtree(os.path.join(taichi_dir, 'tests'), ignore_errors=True)
+    shutil.rmtree(os.path.join(taichi_dir, 'tests38'), ignore_errors=True)
 
 
 class CMakeExtension(Extension):
@@ -83,6 +88,7 @@ class EggInfo(egg_info):
         remove_tmp(taichi_dir)
 
         shutil.copytree('tests/python', os.path.join(taichi_dir, 'tests'))
+        shutil.copytree('tests/python38', os.path.join(taichi_dir, 'tests38'))
         shutil.copytree('examples', os.path.join(taichi_dir, 'examples'))
         shutil.copytree('external/assets', os.path.join(taichi_dir, 'assets'))
 
@@ -125,6 +131,9 @@ class CMakeBuild(build_ext):
         cmake_args += [
             f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={build_directory}',
             f'-DPYTHON_EXECUTABLE={get_python_executable()}',
+            f'-DTI_VERSION_MAJOR={TI_VERSION_MAJOR}',
+            f'-DTI_VERSION_MINOR={TI_VERSION_MINOR}',
+            f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
         ]
 
         self.debug = os.getenv('DEBUG', '0') in ('1', 'ON')
@@ -201,7 +210,8 @@ class Clean(clean):
             remove_tree(self.build_temp, dry_run=self.dry_run)
         generated_folders = ('bin', 'dist', 'python/taichi/assets',
                              'python/taichi/lib', 'python/taichi/examples',
-                             'python/taichi/tests', 'python/taichi.egg-info')
+                             'python/taichi/tests', 'python/taichi/tests38',
+                             'python/taichi.egg-info')
         for d in generated_folders:
             if os.path.exists(d):
                 remove_tree(d, dry_run=self.dry_run)
@@ -220,6 +230,7 @@ class Clean(clean):
 setup(name=project_name,
       packages=packages,
       package_dir={"": package_dir},
+      version=version,
       description='The Taichi Programming Language',
       author='Taichi developers',
       author_email='yuanmhu@gmail.com',

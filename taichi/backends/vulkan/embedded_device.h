@@ -4,10 +4,7 @@
 #define VK_USE_PLATFORM_WIN32_KHR 1
 #endif
 
-#include <volk.h>
-#define VK_NO_PROTOTYPES
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
+#include "taichi/backends/vulkan/vulkan_common.h"
 
 #include <taichi/backends/device.h>
 

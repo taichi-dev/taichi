@@ -3,7 +3,7 @@
 #include <thread>
 #include <mutex>
 
-#include <volk.h>
+#include "taichi/backends/vulkan/vulkan_common.h"
 
 namespace taichi {
 namespace lang {
@@ -24,6 +24,9 @@ class VulkanLoader {
   void load_device(VkDevice device_);
   bool init();
   PFN_vkVoidFunction load_function(const char *name);
+  VkInstance get_instance() {
+    return vulkan_instance_;
+  }
 
  private:
   std::once_flag init_flag_;

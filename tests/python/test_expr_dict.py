@@ -35,7 +35,7 @@ def test_dictcomp_multiple_ifs():
         # Taichi doesn't support global fields appearing anywhere after "for"
         # here.
         a = {x[j]: x[j] + j for j in range(100) if j > 2 if j < 5}
-        return sum(a)
+        return sum(a.values())
 
     for i in range(n):
         x[i] = i * 2

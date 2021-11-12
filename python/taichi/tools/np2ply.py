@@ -3,6 +3,7 @@ import sys
 
 import numpy as np
 
+
 class PLYWriter:
     def __init__(self,
                  num_vertices: int,

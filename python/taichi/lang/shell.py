@@ -6,14 +6,14 @@ from taichi._logging import info, warn
 from taichi.core.util import ti_core as _ti_core
 
 try:
-    import sourceinspect as oinspect # pylint: disable=unused-import
+    import sourceinspect as oinspect  # pylint: disable=unused-import
 except ImportError:
     warn('`sourceinspect` not installed!')
     warn(
         'Without this package Taichi may not function well in Python IDLE interactive shell, '
         'Blender scripting module and Python native shell.')
     warn('Please run `python3 -m pip install sourceinspect` to install.')
-    import inspect as oinspect # pylint: disable=unused-import
+    import inspect as oinspect  # pylint: disable=unused-import
 
 pybuf_enabled = False
 _env_enable_pybuf = os.environ.get('TI_ENABLE_PYBUF', '1')

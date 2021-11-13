@@ -83,11 +83,15 @@ class DefaultProfiler : public KernelProfilerBase {
   }
 
   void start(const std::string &kernel_name) override {
+    if (!enabled_)
+      return;
     start_t_ = Time::get_time();
     event_name_ = kernel_name;
   }
 
   void stop() override {
+    if (!enabled_)
+      return;
     auto t = Time::get_time() - start_t_;
     auto ms = t * 1000.0;
     // trace record

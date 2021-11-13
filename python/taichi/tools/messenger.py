@@ -32,9 +32,7 @@ def send_crash_report(message, receiver=None):
     server.login(gmail_sender, gmail_passwd)
 
     BODY = '\r\n'.join([
-        f'To: {TO}',
-        f'From: {gmail_sender}',
-        f'Subject: {SUBJECT}', '', TEXT
+        f'To: {TO}', f'From: {gmail_sender}', f'Subject: {SUBJECT}', '', TEXT
     ])
 
     try:

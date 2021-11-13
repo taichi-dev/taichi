@@ -40,4 +40,5 @@ def test_unary():
     ti.core.print_profile_info()
     print("Total time {:.3f}s".format(time.time() - t))
 
+
 test_unary()

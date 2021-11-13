@@ -45,6 +45,7 @@ def get_shell_rc_name():
     else:
         assert False, 'No shell rc file specified for shell "{}"'.format(shell)
 
+
 def get_username():
     if build_type == 'ci':
         os.environ['TI_CI'] = '1'
@@ -58,6 +59,7 @@ def get_username():
 
 def check_command_existence(cmd):
     return os.system('type {}'.format(cmd)) == 0
+
 
 def execute_command(line, allow_nonzero_output=0):
     print('Executing command:', line)

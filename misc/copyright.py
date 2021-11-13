@@ -51,6 +51,7 @@ Examples:
 {file} --exts "cpp,py" benchmarks cmake docs examples misc python taichi tests""".format(
     file=os.path.relpath(__file__))
 
+
 class CommentStyle(Enum):
     C_STYLE = 1  # /* .. */
     CPP_STYLE = 2  # // .. => seems to be used in *.cu only
@@ -109,7 +110,7 @@ def make_notice(comment_style: CommentStyle, ctime_year: str) -> List[str]:
     elif comment_style == CommentStyle.PY_STYLE:
         line_start = "#"
     lines.append(
-         "{0} Copyright (c) {1} The Taichi Authors. All rights reserved.\n".
+        "{0} Copyright (c) {1} The Taichi Authors. All rights reserved.\n".
         format(line_start, ctime_year))
     lines.append(
         "{0} Use of this software is governed by the LICENSE file.\n".format(
@@ -171,7 +172,7 @@ def check_and_modify(filepath: str, comment_style: CommentStyle,
             # This is how cs.chromium.org writes the notice, and I think the lawyers
             # should be confident :)
             correct_line = (" " * notice_match_start) \
-                           + "Copyright (c) %s The Taichi Authors. All rights reserved.\n" % year_1st
+                + "Copyright (c) %s The Taichi Authors. All rights reserved.\n" % year_1st
             body_lines[to_replace_line_index] = correct_line
         return_state = FileActionResult.MODIFIED_NOTICE
     if not check_only:
@@ -232,7 +233,8 @@ def is_interested_ext(ext: str, selected_stripped_exts: List[str]) -> bool:
          do not, e.g. [ "cpp", "sh" ]
     """
     return (ext in FILE_EXT_TO_COMMENT_STYLES) \
-           and ((not selected_stripped_exts) or (ext.lstrip(".") in selected_stripped_exts))
+        and ((not selected_stripped_exts) or (ext.lstrip(".") in selected_stripped_exts))
+
 
 def work(args) -> bool:
     """
@@ -265,7 +267,7 @@ def work(args) -> bool:
         print("\t{}".format("\n\t".join(sorted(stats.problematic_files))))
         print(
             "{} out of {} files do not have correctly-formatted copyright notices."
-                .format(problematic_num, stats.opened_file_num))
+            .format(problematic_num, stats.opened_file_num))
     else:
         print("Copyright notices in the given paths are ok.")
     return problematic_num == 0

@@ -493,7 +493,7 @@ class Kernel:
         grad_suffix = ""
         if self.is_grad:
             grad_suffix = "_grad"
-        kernel_name = f"{self.func.__name__}_c{ self.kernel_counter}_{ key[1]}{grad_suffix}"
+        kernel_name = f"{self.func.__name__}_c{ self.kernel_counter}_{key[1]}{grad_suffix}"
         ti.trace(f"Compiling kernel {kernel_name}...")
 
         src = textwrap.dedent(oinspect.getsource(self.func))

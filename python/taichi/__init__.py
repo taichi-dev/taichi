@@ -25,9 +25,10 @@ else:
 
     def __getattr__(attr):
         if attr in deprecated_names:
-            warning(f'ti.{attr} is deprecated. Please use ti.{deprecated_names[attr]} instead.'),
-                    DeprecationWarning,
-                    stacklevel=2)
+            warning(
+                f'ti.{attr} is deprecated. Please use ti.{deprecated_names[attr]} instead.',
+                DeprecationWarning,
+                stacklevel=2)
             exec(f'{attr} = {deprecated_names[attr]}')
             return locals()[attr]
         raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")

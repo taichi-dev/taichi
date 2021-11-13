@@ -7,21 +7,24 @@ from taichi.misc.image import imwrite
 FRAME_FN_TEMPLATE = '%06d.png'
 FRAME_DIR = 'frames'
 
-
 # Write the frames to the disk and then make videos (mp4 or gif) if necessary
 
 
 def scale_video(input, output, ratiow, ratioh):
-    os.system(f'ffmpeg -i {input}  -vf "scale=iw*{ratiow:.4f}:ih*{ratioh:.4f}" {output}')
+    os.system(
+        f'ffmpeg -i {input}  -vf "scale=iw*{ratiow:.4f}:ih*{ratioh:.4f}" {output}'
+    )
 
 
 def crop_video(input, output, x_begin, x_end, y_begin, y_end):
-    os.system(f'ffmpeg -i {input} -filter:v "crop=iw*{x_end - x_begin:.4f}:ih*{y_end - y_begin:.4f}:iw*{x_begin:0.4f}' \
-              f':ih*{1 - y_end:0.4f}" {output}')
+    os.system(
+        f'ffmpeg -i {input} -filter:v "crop=iw*{x_end - x_begin:.4f}:ih*{y_end - y_begin:.4f}:iw*{x_begin:0.4f}:ih*{1 - y_end:0.4f}" {output}'
+    )
 
 
 def accelerate_video(input, output, speed):
-    os.system(f'ffmpeg -i {input} -filter:v "setpts={1 / speed:.4f}*PTS" {output}')
+    os.system(
+        f'ffmpeg -i {input} -filter:v "setpts={1 / speed:.4f}*PTS" {output}')
 
 
 def get_ffmpeg_path():
@@ -37,13 +40,13 @@ def mp4_to_gif(input_fn, output_fn, framerate):
     else:
         command = get_ffmpeg_path(
         ) + f" -loglevel panic -i {input_fn} -vf 'fps={framerate}," \
-            f"scale=320:640:flags=lanczos,palettegen' -y {palette_name} "
+            f"scale=320:640:flags=lanczos,palettegen' -y {palette_name}"
     # print command
     os.system(command)
 
     # Generate the GIF
     command = get_ffmpeg_path(
-    ) + f" -loglevel panic -i {input_fn} -i %{palette_name} -lavfi paletteuse -y %{output_fn}"
+    ) + f" -loglevel panic -i {input_fn} -i {palette_name} -lavfi paletteuse -y {output_fn}"
     # print command
     os.system(command)
     os.remove(palette_name)

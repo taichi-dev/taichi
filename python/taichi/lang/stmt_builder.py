@@ -429,9 +429,8 @@ if ti.static(1):
         for loop_var in targets:
             ctx.check_loop_var(loop_var)
 
-        var_decl = ''.join(
-            f'    {name} = ti.Expr(ti.core.make_id_expr(""))\n'
-            for name in targets)  # indent: 4 spaces
+        var_decl = ''.join(f'    {name} = ti.Expr(ti.core.make_id_expr(""))\n'
+                           for name in targets)  # indent: 4 spaces
         vars = ', '.join(targets)
         if is_grouped:
             template = f'''
@@ -572,8 +571,7 @@ if 1:
                     arg_init.value.args[1] = parse_expr(f"{array_dim}")
                     arg_init.value.args[2] = parse_expr(
                         f"{array_element_shape}")
-                    arg_init.value.args[3] = parse_expr(
-                        f"ti.{array_layout}")
+                    arg_init.value.args[3] = parse_expr(f"ti.{array_layout}")
                     arg_decls.append(arg_init)
                 else:
                     arg_init = parse_stmt(

@@ -187,8 +187,7 @@ class Field:
             return self.__repr__()  # make pybind11 happy, see Matrix.__str__
         if self.snode.ptr is None:
             return '<Field: Definition of this field is incomplete>'
-        else:
-            return str(self.to_numpy())
+        return str(self.to_numpy())
 
     def pad_key(self, key):
         if key is None:

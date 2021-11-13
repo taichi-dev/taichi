@@ -19,8 +19,7 @@ def get_vbo_field(vertices):
         vbo = Vector.field(vertex_stride, f32, shape=(N, ))
         vbo_field_cache[vertices] = vbo
         return vbo
-    else:
-        return vbo_field_cache[vertices]
+    return vbo_field_cache[vertices]
 
 
 @kernel

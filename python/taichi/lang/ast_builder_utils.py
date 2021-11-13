@@ -4,7 +4,7 @@ from enum import Enum
 from taichi.lang.exception import TaichiSyntaxError
 
 
-class Builder(object):
+class Builder:
     def __call__(self, ctx, node):
         method = getattr(self, 'build_' + node.__class__.__name__, None)
         if method is None:

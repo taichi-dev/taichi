@@ -86,19 +86,19 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
     def visit_For(self, node):
         # TODO: since autodiff is enhanced, AST checker rules should be relaxed. This part should be updated.
         return
-        is_static = (isinstance(node.iter, ast.Call)
-                     and isinstance(node.iter.func, ast.Attribute)
-                     and isinstance(node.iter.func.value, ast.Name)
-                     and node.iter.func.value.id == 'ti'
-                     and node.iter.func.attr == 'static')
-        if not (self.top_level or self.current_scope.allows_for_loop
-                or is_static):
-            raise taichi.lang.kernel_impl.KernelDefError(
-                f'No more for loops allowed, at {self.get_error_location(node)}'
-            )
-
-        with self.new_scope():
-            super().generic_visit(node)
-
-        if not (self.top_level or is_static):
-            self.current_scope.mark_no_more_stmt()
+        # is_static = (isinstance(node.iter, ast.Call)
+        #              and isinstance(node.iter.func, ast.Attribute)
+        #              and isinstance(node.iter.func.value, ast.Name)
+        #              and node.iter.func.value.id == 'ti'
+        #              and node.iter.func.attr == 'static')
+        # if not (self.top_level or self.current_scope.allows_for_loop
+        #         or is_static):
+        #     raise taichi.lang.kernel_impl.KernelDefError(
+        #         f'No more for loops allowed, at {self.get_error_location(node)}'
+        #     )
+        #
+        # with self.new_scope():
+        #     super().generic_visit(node)
+        #
+        # if not (self.top_level or is_static):
+        #     self.current_scope.mark_no_more_stmt()

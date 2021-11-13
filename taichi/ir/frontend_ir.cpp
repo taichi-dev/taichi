@@ -5,7 +5,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
-#define TI_ASSERT_TYPE_CHECKED(x) TI_ASSERT_INFO(x->ret_type != PrimitiveType::unknown, "[{}] was not type-checked", x.serialize())
+#define TI_ASSERT_TYPE_CHECKED(x)                       \
+  TI_ASSERT_INFO(x->ret_type != PrimitiveType::unknown, \
+                 "[{}] was not type-checked", x.serialize())
 
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,

@@ -88,7 +88,8 @@ class TaichiMain:
 
         return getattr(self, args.command)(sys.argv[2:])
 
-    def _get_friend_links(self):
+    @staticmethod
+    def _get_friend_links():
         return '\n' \
                'Docs:   https://docs.taichi.graphics/\n' \
                'GitHub: https://github.com/taichi-dev/taichi/\n' \
@@ -212,14 +213,16 @@ class TaichiMain:
         runpy.run_path(target, run_name='__main__')
 
     @register
-    def changelog(self, arguments: list = sys.argv[2:]):
+    @staticmethod
+    def changelog(arguments: list = sys.argv[2:]):
         """Display changelog of current version"""
         changelog_md = os.path.join(ti.package_root(), 'CHANGELOG.md')
         with open(changelog_md) as f:
             print(f.read())
 
     @register
-    def release(self, arguments: list = sys.argv[2:]):
+    @staticmethod
+    def release(arguments: list = sys.argv[2:]):
         """Make source code release"""
         raise RuntimeError('TBD')
 
@@ -418,17 +421,20 @@ class TaichiMain:
         ti.info(f'Done! Output video file = {args.output_file}')
 
     @register
-    def doc(self, arguments: list = sys.argv[2:]):
+    @staticmethod
+    def doc(arguments: list = sys.argv[2:]):
         """Build documentation"""
         raise RuntimeError('TBD')
 
     @register
-    def format(self, arguments: list = sys.argv[2:]):
+    @staticmethod
+    def format(arguments: list = sys.argv[2:]):
         """Reformat modified source files"""
         raise RuntimeError('Please run python misc/code_format.py instead')
 
     @register
-    def format_all(self, arguments: list = sys.argv[2:]):
+    @staticmethod
+    def format_all(arguments: list = sys.argv[2:]):
         """Reformat all source files"""
         raise RuntimeError('Please run python misc/code_format.py instead')
 

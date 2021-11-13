@@ -212,16 +212,16 @@ class TaichiMain:
 
         runpy.run_path(target, run_name='__main__')
 
-    @register
     @staticmethod
+    @register
     def changelog(arguments: list = sys.argv[2:]):
         """Display changelog of current version"""
         changelog_md = os.path.join(ti.package_root(), 'CHANGELOG.md')
         with open(changelog_md) as f:
             print(f.read())
 
-    @register
     @staticmethod
+    @register
     def release(arguments: list = sys.argv[2:]):
         """Make source code release"""
         raise RuntimeError('TBD')
@@ -420,20 +420,20 @@ class TaichiMain:
                          frame_rate=args.framerate)
         ti.info(f'Done! Output video file = {args.output_file}')
 
-    @register
     @staticmethod
+    @register
     def doc(arguments: list = sys.argv[2:]):
         """Build documentation"""
         raise RuntimeError('TBD')
 
-    @register
     @staticmethod
+    @register
     def format(arguments: list = sys.argv[2:]):
         """Reformat modified source files"""
         raise RuntimeError('Please run python misc/code_format.py instead')
 
-    @register
     @staticmethod
+    @register
     def format_all(arguments: list = sys.argv[2:]):
         """Reformat all source files"""
         raise RuntimeError('Please run python misc/code_format.py instead')

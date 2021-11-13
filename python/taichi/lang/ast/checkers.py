@@ -55,7 +55,8 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
         lineno = self._func_lineno + node.lineno - 1
         return f'file={self._func_file} kernel={self._func_name} line={lineno}'
 
-    def should_check(self, node):
+    @staticmethod
+    def should_check(node):
         if not isinstance(node, ast.stmt):
             return False
         # TODO(#536): Frontend pass should help make sure |func| is a valid AST for

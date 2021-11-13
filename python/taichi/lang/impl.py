@@ -301,7 +301,8 @@ class PyTaichi:
         if self.prog is None:
             self.prog = _ti_core.Program()
 
-    def materialize_root_fb(self, is_first_call):
+    @staticmethod
+    def materialize_root_fb(is_first_call):
         if root.finalized:
             return
         if not is_first_call and root.empty:
@@ -315,7 +316,8 @@ class PyTaichi:
         global _root_fb
         _root_fb = FieldsBuilder()
 
-    def _finalize_root_fb_for_aot(self):
+    @staticmethod
+    def _finalize_root_fb_for_aot():
         if _root_fb.finalized:
             raise RuntimeError(
                 'AOT: can only finalize the root FieldsBuilder once')
@@ -483,20 +485,24 @@ _root_fb = _UninitializedRootFieldsBuilder()
 
 class _Root:
     """Wrapper around the default root FieldsBuilder instance."""
-    def parent(self, n=1):
+    @staticmethod
+    def parent(n=1):
         """Same as :func:`taichi.SNode.parent`"""
         return _root_fb.root.parent(n)
 
-    def loop_range(self):
+    @staticmethod
+    def loop_range():
         """Same as :func:`taichi.SNode.loop_range`"""
         return _root_fb.root.loop_range()
 
-    def get_children(self):
+    @staticmethod
+    def get_children():
         """Same as :func:`taichi.SNode.get_children`"""
         return _root_fb.root.get_children()
 
     # TODO: Record all of the SNodeTrees that finalized under 'ti.root'
-    def deactivate_all(self):
+    @staticmethod
+    def deactivate_all():
         warning(
             """'ti.root.deactivate_all()' would deactivate all finalized snodes."""
         )

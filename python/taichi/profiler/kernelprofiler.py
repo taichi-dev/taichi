@@ -202,7 +202,8 @@ class KernelProfiler:
                                reverse=True)
         }
 
-    def _make_table_header(self, mode):
+    @staticmethod
+    def _make_table_header(mode):
         header_str = f'Kernel Profiler({mode})'
         arch_name = f' @ {_ti_core.arch_name(ti.cfg.arch).upper()}'
         device_name = impl.get_runtime().prog.get_kernel_profiler_device_name()

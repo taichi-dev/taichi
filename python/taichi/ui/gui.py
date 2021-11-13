@@ -1,11 +1,4 @@
-import pathlib
 from contextlib import contextmanager
-
-from taichi.core import ti_core as _ti_core
-from taichi.lang.impl import default_cfg
-from taichi.lang.kernel_impl import kernel
-from taichi.lang.ops import get_addr
-from taichi.type.annotations import ext_arr, template
 
 
 class Gui:

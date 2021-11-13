@@ -740,7 +740,8 @@ class Kernel:
 
         return func__
 
-    def match_ext_arr(self, v):
+    @staticmethod
+    def match_ext_arr(v):
         has_array = isinstance(v, np.ndarray)
         if not has_array and util.has_pytorch():
             has_array = isinstance(v, torch.Tensor)

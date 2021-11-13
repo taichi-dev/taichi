@@ -127,7 +127,8 @@ class GUI:
         def value(self, value):
             self.gui.core.set_widget_value(self.wid, value)
 
-    def get_bool_environ(self, key, default):
+    @staticmethod
+    def get_bool_environ(key, default):
         """Get an environment variable and cast to bool.
         Args:
             key (str): The environment variable key.

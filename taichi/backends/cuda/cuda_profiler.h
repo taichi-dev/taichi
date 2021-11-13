@@ -26,6 +26,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
 
   std::string get_device_name() override;
 
+  void set_kernel_profiler_mode(bool enabled) override;
   bool reinit_with_metrics(const std::vector<std::string> metrics) override;
   void trace(KernelProfilerBase::TaskHandle &task_handle,
              const std::string &kernel_name,

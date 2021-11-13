@@ -72,10 +72,11 @@ class DefaultProfiler : public KernelProfilerBase {
   void sync() override {
   }
 
-  DefaultProfiler(bool enabled) : KernelProfilerBase(enabled) {}
+  DefaultProfiler(bool enabled) : KernelProfilerBase(enabled) {
+  }
 
   void clear() override {
-    //trigger sync(); from the foront end
+    // trigger sync(); from the foront end
     total_time_ms_ = 0;
     traced_records_.clear();
     statistical_results_.clear();

@@ -108,6 +108,10 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
 type_factory_ = _ti_core.get_type_factory_instance()
 
 
+def set_kernel_profiler_mode(mode: bool):
+    get_default_kernel_profiler().set_kernel_profiler_mode(mode)
+
+
 @deprecated('kernel_profiler_print()', 'print_kernel_profile_info()')
 def kernel_profiler_print():
     return print_kernel_profile_info()

@@ -58,7 +58,7 @@ class KernelProfilerBase {
     enabled_ = enabled;
   }
 
-  void set_kernel_profiler_mode(bool enabled) {
+  virtual void set_kernel_profiler_mode(bool enabled) {
     enabled_ = enabled;
   }
 

@@ -33,7 +33,12 @@ class GUI:
 
     """
     class Event:
-        pass
+        def __init__(self):
+            self.type = None
+            self.modifier = None
+            self.pos = None
+            self.key = None
+            self.delta = None
 
     # Event keys
     SHIFT = 'Shift'
@@ -813,8 +818,7 @@ class GUI:
         """
         if self.core.frame_delta_limit == 0:
             return None
-        else:
-            return 1 / self.core.frame_delta_limit
+        return 1 / self.core.frame_delta_limit
 
     @fps_limit.setter
     def fps_limit(self, value):

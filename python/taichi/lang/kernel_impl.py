@@ -179,11 +179,10 @@ class Func:
             if key.instance_id not in self.compiled:
                 self.do_compile(key=key, args=args)
             return self.func_call_rvalue(key=key, args=args)
-        else:
-            if self.compiled is None:
-                self.do_compile(key=None, args=args)
-            ret = self.compiled(*args)
-            return ret
+        if self.compiled is None:
+            self.do_compile(key=None, args=args)
+        ret = self.compiled(*args)
+        return ret
 
     def func_call_rvalue(self, key, args):
         # Skip the template args, e.g., |self|
@@ -323,7 +322,7 @@ class TaichiCallableTemplateMapper:
                     TaichiCallableTemplateMapper.extract_arg(item, anno)
                     for item in arg)
             return arg
-        elif isinstance(anno, any_arr):
+        if isinstance(anno, any_arr):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_element_dim(arg, 0)
                 return arg.dtype, len(arg.shape), (), Layout.AOS
@@ -911,6 +910,7 @@ class _BoundedDifferentiableMethod:
         self._primal = wrapped_kernel_func._primal
         self._adjoint = wrapped_kernel_func._adjoint
         self._is_staticmethod = wrapped_kernel_func._is_staticmethod
+        self.__name__ = None
 
     def __call__(self, *args, **kwargs):
         _taichi_skip_traceback = 1

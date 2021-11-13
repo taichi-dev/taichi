@@ -167,8 +167,7 @@ class KernelProfiler:
                 f'use \'ti.init(kernel_profiler = True)\' to turn on KernelProfiler.'
             )
             return True
-        else:
-            return False
+        return False
 
     def _sync_backend(self):
         impl.get_runtime().prog.sync_kernel_profiler()

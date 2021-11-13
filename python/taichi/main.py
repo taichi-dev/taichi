@@ -1,7 +1,6 @@
 import argparse
 import math
 import os
-import random
 import runpy
 import shutil
 import subprocess
@@ -14,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import taichi.cc_compose
 import taichi.diagnose
-from colorama import Back, Fore, Style
+from colorama import Fore
 from taichi.core import ti_core as _ti_core
 from taichi.tools import video
 
@@ -135,8 +134,7 @@ class TaichiMain:
             if choice.endswith('.py') and choice.split('.')[0] in choices:
                 # try to find and remove python file extension
                 return choice.split('.')[0]
-            else:
-                return choice
+            return choice
 
         return support_choice_with_dot_py
 
@@ -453,10 +451,9 @@ class TaichiMain:
         def parse_name(file):
             if file[0:5] == 'test_':
                 return file[5:-4].replace('__test_', '::', 1)
-            elif file[0:10] == 'benchmark_':
+            if file[0:10] == 'benchmark_':
                 return '::'.join(reversed(file[10:-4].split('__arch_')))
-            else:
-                raise Exception(f'bad benchmark file name {file}')
+            raise Exception(f'bad benchmark file name {file}')
 
         def get_dats(dir):
             list = []
@@ -834,17 +831,15 @@ class TaichiMain:
         if args.files:
             if args.cpp:
                 return TaichiMain._test_cpp(args)
-            else:
-                return TaichiMain._test_python(args)
-        elif args.cpp:
+            return TaichiMain._test_python(args)
+        if args.cpp:
             # Only run C++ tests
             return TaichiMain._test_cpp(args)
-        else:
-            # Run both C++ and Python tests
-            ret = TaichiMain._test_python(args)
-            if ret != 0:
-                return ret
-            return TaichiMain._test_cpp(args)
+        # Run both C++ and Python tests
+        ret = TaichiMain._test_python(args)
+        if ret != 0:
+            return ret
+        return TaichiMain._test_cpp(args)
 
     @register
     def run(self, arguments: list = sys.argv[2:]):

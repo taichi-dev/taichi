@@ -71,10 +71,9 @@ class SparseSolver:
         """
         if isinstance(b, taichi.lang.Field):
             return self.solver.solve(b.to_numpy())
-        elif isinstance(b, np.ndarray):
+        if isinstance(b, np.ndarray):
             return self.solver.solve(b)
-        else:
-            assert False, f"The parameter type: {type(b)} is not supported in linear solvers for now."
+        assert False, f"The parameter type: {type(b)} is not supported in linear solvers for now."
 
     def info(self):
         """Check if the linear systems are solved successfully.

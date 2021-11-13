@@ -61,10 +61,10 @@ class SNode:
     def hash(self, axes, dimensions):
         """Not supported."""
         raise RuntimeError('hash not yet supported')
-        if isinstance(dimensions, int):
-            dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.hash(axes, dimensions,
-                                   impl.current_cfg().packed))
+        # if isinstance(dimensions, int):
+        #     dimensions = [dimensions] * len(axes)
+        # return SNode(self.ptr.hash(axes, dimensions,
+        #                            impl.current_cfg().packed))
 
     def dynamic(self, axis, dimension, chunk_size=None):
         """Adds a dynamic SNode as a child component of `self`.

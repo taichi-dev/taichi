@@ -7,6 +7,7 @@ from taichi.misc.image import imwrite
 FRAME_FN_TEMPLATE = '%06d.png'
 FRAME_DIR = 'frames'
 
+
 # Write the frames to the disk and then make videos (mp4 or gif) if necessary
 
 
@@ -15,15 +16,8 @@ def scale_video(input, output, ratiow, ratioh):
 
 
 def crop_video(input, output, x_begin, x_end, y_begin, y_end):
-    os.system(
-        f"""
-            ffmpeg -i {input} 
-            -filter:v "crop=iw*{x_end - x_begin:.4f}
-            :ih*{y_end - y_begin:.4f}:iw*{x_begin:0.4f}
-            :ih*{1 - y_end:0.4f}" {output}
-        """
-    )
-
+    os.system(f'ffmpeg -i {input} -filter:v "crop=iw*{x_end - x_begin:.4f}:ih*{y_end - y_begin:.4f}:iw*{x_begin:0.4f}' \
+              f':ih*{1 - y_end:0.4f}" {output}')
 
 
 def accelerate_video(input, output, speed):
@@ -118,7 +112,8 @@ class VideoManager:
 
     def make_video(self, mp4=True, gif=True):
         fn = self.get_output_filename('.mp4')
-        command = (get_ffmpeg_path() + f" -loglevel panic -framerate {self.framerate} -i ") + os.path.join(self.frame_directory, FRAME_FN_TEMPLATE) + \
+        command = (get_ffmpeg_path() + f" -loglevel panic -framerate {self.framerate} -i ") + os.path.join(
+            self.frame_directory, FRAME_FN_TEMPLATE) + \
                   " -s:v " + str(self.width) + 'x' + str(self.height) + \
                   " -c:v libx264 -profile:v high -crf 1 -pix_fmt yuv420p -y " + fn
 
@@ -158,7 +153,7 @@ def interpolate_frames(frame_dir, mul=4):
 
 def ffmpeg_common_args(frame_rate, input, width, height, crf, output_path):
     return f"{get_ffmpeg_path()} -y -loglevel panic -framerate {frame_rate} -i {input} -s:v {width}x{height} " + \
-                         f"-c:v libx264 -profile:v high -crf {crf} -pix_fmt yuv420p {output_path}"
+           f"-c:v libx264 -profile:v high -crf {crf} -pix_fmt yuv420p {output_path}"
 
 
 def make_video(input_files,
@@ -180,7 +175,7 @@ def make_video(input_files,
             print(f"Height ({width}) not divisible by 2")
             height -= 1
         for i, inp in enumerate(input_files):
-            shutil.copy(inp, os.path.join(tmp_dir, f'{i:06d}.png' ))
+            shutil.copy(inp, os.path.join(tmp_dir, f'{i:06d}.png'))
         inputs = f'{tmp_dir}/%06d.png'
         command = ffmpeg_common_args(frame_rate, inputs, width, height, crf,
                                      output_path)

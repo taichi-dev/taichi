@@ -190,7 +190,7 @@ class IRBuilderContext:
     def check_loop_var(self, loop_var):
         if self.is_var_declared(loop_var):
             raise TaichiSyntaxError(
-                "Variable '{loop_var}' is already declared in the outer scope and cannot be used as loop variable")
+                f"Variable '{loop_var}' is already declared in the outer scope and cannot be used as loop variable")
 
     def get_var_by_name(self, name):
         for s in reversed(self.local_scopes):

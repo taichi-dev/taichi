@@ -364,19 +364,19 @@ if ti.static(1):
         targets = StmtBuilder.get_for_loop_targets(node)
         targets_tmp = ['__' + name for name in targets]
         loop_body = t_loop.body
-        for i in range(len(targets)):
+        for i, (target, target_tmp) in enumerate(zip(targets, targets_tmp)):
             if i + 1 < len(targets):
                 stmt = '{} = __I // __ndrange{}.acc_dimensions[{}]'.format(
-                    targets_tmp[i], id(node), i + 1)
+                    target_tmp, id(node), i + 1)
             else:
-                stmt = '{} = __I'.format(targets_tmp[i])
+                stmt = '{} = __I'.format(target_tmp)
             loop_body.append(parse_stmt(stmt))
             stmt = '{} = {} + __ndrange{}.bounds[{}][0]'.format(
-                targets[i], targets_tmp[i], id(node), i)
+                target, target_tmp, id(node), i)
             loop_body.append(parse_stmt(stmt))
             if i + 1 < len(targets):
                 stmt = '__I = __I - {} * __ndrange{}.acc_dimensions[{}]'.format(
-                    targets_tmp[i], id(node), i + 1)
+                    target_tmp, id(node), i + 1)
                 loop_body.append(parse_stmt(stmt))
         loop_body += node.body
 

@@ -109,6 +109,29 @@ type_factory_ = _ti_core.get_type_factory_instance()
 
 
 def set_kernel_profiler_mode(mode: bool):
+    """Temporarily turn ON or OFF kernel profiler.
+
+    Args:
+        mode (bool): Temporarily turn ON or OFF.
+
+    Example::
+
+        >>> import taichi as ti
+
+        >>> ti.init(ti.cpu, kernel_profiler=True)
+        >>> ti.set_kernel_profiler_mode(False)
+        >>> var = ti.field(ti.f32, shape=1)
+
+        >>> @ti.kernel
+        >>> def compute():
+        >>>     var[0] = 1.0
+
+        >>> compute() # The first call has JIT compilation overhead.
+        >>> ti.set_kernel_profiler_mode(True)
+        >>> for i in range(128):
+        >>>     compute()
+        >>> ti.print_kernel_profile_info()
+    """
     get_default_kernel_profiler().set_kernel_profiler_mode(mode)
 
 

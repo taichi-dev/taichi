@@ -93,7 +93,7 @@ class KernelProfiler:
         if self._check_not_turned_on_with_warning_message():
             return None
         #sync first
-        impl.get_runtime().sync()
+        self._sync_backend()
         #then clear backend & frontend info
         impl.get_runtime().prog.clear_kernel_profile_info()
         self._clear_frontend()
@@ -166,6 +166,9 @@ class KernelProfiler:
             return True
         return False
 
+    def _sync_backend(self):
+        impl.get_runtime().prog.sync_kernel_profiler()
+
     def _clear_frontend(self):
         """Clear member variables in :class:`~taichi.profiler.kernelprofiler.KernelProfiler`.
 
@@ -178,7 +181,7 @@ class KernelProfiler:
 
     def _update_records(self):
         """Acquires kernel records from a backend."""
-        impl.get_runtime().sync()
+        self._sync_backend()
         self._clear_frontend()
         self._traced_records = impl.get_runtime(
         ).prog.get_kernel_profiler_records()

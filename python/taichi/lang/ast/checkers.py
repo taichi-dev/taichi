@@ -84,8 +84,10 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
         if old_top_level:
             self._scope_guards.pop()
 
-    def visit_For(self, node):
+    @staticmethod
+    def visit_for(node):
         # TODO: since autodiff is enhanced, AST checker rules should be relaxed. This part should be updated.
+        # original code is #def visit_For(self, node) without #@staticmethod  before fix pylint R0201
         return
         # is_static = (isinstance(node.iter, ast.Call)
         #              and isinstance(node.iter.func, ast.Attribute)

@@ -58,7 +58,9 @@ class SNode:
             self.ptr.pointer(axes, dimensions,
                              impl.current_cfg().packed))
 
-    def hash(self, axes, dimensions):
+    @staticmethod
+    def hash(axes, dimensions):
+        # original code is #def hash(self,axes, dimensions) without #@staticmethod   before fix pylint R0201
         """Not supported."""
         raise RuntimeError('hash not yet supported')
 

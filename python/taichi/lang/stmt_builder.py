@@ -187,12 +187,11 @@ class StmtBuilder(Builder):
             return ast.copy_location(
                 ast.Assign(targets=[target], value=rhs, type_comment=None),
                 node)
-        else:
-            # Assign
-            target.ctx = ast.Load()
-            func = ast.Attribute(value=target, attr='assign', ctx=ast.Load())
-            call = ast.Call(func=func, args=[value], keywords=[])
-            return ast.copy_location(ast.Expr(value=call), node)
+        # Assign
+        target.ctx = ast.Load()
+        func = ast.Attribute(value=target, attr='assign', ctx=ast.Load())
+        call = ast.Call(func=func, args=[value], keywords=[])
+        return ast.copy_location(ast.Expr(value=call), node)
 
     @staticmethod
     def build_Try(ctx, node):
@@ -266,9 +265,8 @@ if 1:
         """
         if isinstance(node.target, ast.Name):
             return [node.target.id]
-        else:
-            assert isinstance(node.target, ast.Tuple)
-            return [name.id for name in node.target.elts]
+        assert isinstance(node.target, ast.Tuple)
+        return [name.id for name in node.target.elts]
 
     @staticmethod
     def get_decorator(node):
@@ -484,12 +482,12 @@ if 1:
                     raise TaichiSyntaxError("'ti.static' cannot be nested")
                 return StmtBuilder.build_static_for(
                     ctx, node, double_decorator == 'grouped')
-            elif decorator == 'ndrange':
+            if decorator == 'ndrange':
                 if double_decorator != '':
                     raise TaichiSyntaxError(
                         "No decorator is allowed inside 'ti.ndrange")
                 return StmtBuilder.build_ndrange_for(ctx, node)
-            elif decorator == 'grouped':
+            if decorator == 'grouped':
                 if double_decorator == 'static':
                     raise TaichiSyntaxError(
                         "'ti.static' is not allowed inside 'ti.grouped'")
@@ -501,27 +499,23 @@ if 1:
                     return StmtBuilder.build_struct_for(ctx,
                                                         node,
                                                         is_grouped=True)
-            elif isinstance(node.iter, ast.Call) and isinstance(
+            if isinstance(node.iter, ast.Call) and isinstance(
                     node.iter.func, ast.Name) and node.iter.func.id == 'range':
                 return StmtBuilder.build_range_for(ctx, node)
-            else:  # Struct for
-                return StmtBuilder.build_struct_for(ctx,
-                                                    node,
-                                                    is_grouped=False)
+            # Struct for
+            return StmtBuilder.build_struct_for(ctx, node, is_grouped=False)
 
     @staticmethod
     def build_Break(ctx, node):
         if 'static' in ctx.current_control_scope():
             return node
-        else:
-            return parse_stmt('ti.core.insert_break_stmt()')
+        return parse_stmt('ti.core.insert_break_stmt()')
 
     @staticmethod
     def build_Continue(ctx, node):
         if 'static' in ctx.current_control_scope():
             return node
-        else:
-            return parse_stmt('ti.core.insert_continue_stmt()')
+        return parse_stmt('ti.core.insert_continue_stmt()')
 
     @staticmethod
     def build_FunctionDef(ctx, node):

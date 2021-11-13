@@ -15,8 +15,7 @@ if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
 def in_docker():
     if os.environ.get("TI_IN_DOCKER", "") == "":
         return False
-    else:
-        return True
+    return True
 
 
 def get_os_name():
@@ -25,11 +24,11 @@ def get_os_name():
     # it will return 'macOS-XXXX' instead of 'Darwin-XXXX'
     if name.lower().startswith('darwin') or name.lower().startswith('macos'):
         return 'osx'
-    elif name.lower().startswith('windows'):
+    if name.lower().startswith('windows'):
         return 'win'
-    elif name.lower().startswith('linux'):
+    if name.lower().startswith('linux'):
         return 'linux'
-    elif 'bsd' in name.lower():
+    if 'bsd' in name.lower():
         return 'unix'
     assert False, "Unknown platform name %s" % name
 
@@ -119,12 +118,11 @@ if log_level:
 def get_dll_name(name):
     if get_os_name() == 'linux':
         return 'libtaichi_%s.so' % name
-    elif get_os_name() == 'osx':
+    if get_os_name() == 'osx':
         return 'libtaichi_%s.dylib' % name
-    elif get_os_name() == 'win':
+    if get_os_name() == 'win':
         return 'taichi_%s.dll' % name
-    else:
-        raise Exception(f"Unknown OS: {get_os_name()}")
+    raise Exception(f"Unknown OS: {get_os_name()}")
 
 
 def at_startup():
@@ -141,11 +139,10 @@ def require_version(major, minor=None, patch=None):
         minor < versions[1] or minor == versions[1] and patch <= versions[2])
     if match:
         return
-    else:
-        print("Taichi version mismatch. required >= {}.{}.{}".format(
-            major, minor, patch))
-        print("Installed =", ti_core.get_version_string())
-        raise Exception("Taichi version mismatch")
+    print("Taichi version mismatch. required >= {}.{}.{}".format(
+        major, minor, patch))
+    print("Installed =", ti_core.get_version_string())
+    raise Exception("Taichi version mismatch")
 
 
 at_startup()

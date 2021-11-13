@@ -221,8 +221,7 @@ def get_predefined_cupti_metrics(name=''):
         for key in predefined_cupti_metrics:
             _ti_core.warn(f"    '{key}'")
         return None
-    else:
-        return predefined_cupti_metrics[name]
+    return predefined_cupti_metrics[name]
 
 
 # Default metrics list

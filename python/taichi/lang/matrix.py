@@ -258,9 +258,9 @@ class Matrix(TaichiOperations):
                     'See https://docs.taichi.graphics/lang/articles/advanced/meta#when-to-use-for-loops-with-tistatic for more details.'
                 )
         assert 0 <= args[0] < self.n, \
-                f"The 0-th matrix index is out of range: 0 <= {args[0]} < {self.n}"
+            f"The 0-th matrix index is out of range: 0 <= {args[0]} < {self.n}"
         assert 0 <= args[1] < self.m, \
-                f"The 1-th matrix index is out of range: 0 <= {args[1]} < {self.m}"
+            f"The 1-th matrix index is out of range: 0 <= {args[1]} < {self.m}"
         return args[0] * self.m + args[1]
 
     def __call__(self, *args, **kwargs):
@@ -294,22 +294,20 @@ class Matrix(TaichiOperations):
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
-        elif self.local_tensor_proxy is not None:
+        if self.local_tensor_proxy is not None:
             if len(indices) == 1:
                 return ti.local_subscript_with_offset(self.local_tensor_proxy,
                                                       (i, ), (self.n, ))
-            else:
-                return ti.local_subscript_with_offset(self.local_tensor_proxy,
-                                                      (i, j), (self.n, self.m))
+            return ti.local_subscript_with_offset(self.local_tensor_proxy,
+                                                  (i, j), (self.n, self.m))
         # ptr.is_global_ptr() will check whether it's an element in the field (which is different from ptr.is_global_var()).
-        elif isinstance(self.entries[0],
-                        ti.Expr) and self.entries[0].ptr.is_global_ptr(
-                        ) and ti.current_cfg().dynamic_index:
+        if isinstance(self.entries[0],
+                      ti.Expr) and self.entries[0].ptr.is_global_ptr(
+                      ) and ti.current_cfg().dynamic_index:
             # TODO: Add API to query whether AOS or SOA
             return ti.global_subscript_with_offset(self.entries[0], (i, j),
                                                    (self.n, self.m), True)
-        else:
-            return self(i, j)
+        return self(i, j)
 
     @property
     def x(self):
@@ -317,8 +315,7 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(0)
-        else:
-            return self[0]
+        return self[0]
 
     @property
     def y(self):
@@ -326,8 +323,7 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(1)
-        else:
-            return self[1]
+        return self[1]
 
     @property
     def z(self):
@@ -335,8 +331,7 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(2)
-        else:
-            return self[2]
+        return self[2]
 
     @property
     def w(self):
@@ -344,8 +339,7 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(3)
-        else:
-            return self[3]
+        return self[3]
 
     # since Taichi-scope use v.x.assign() instead
     @x.setter
@@ -427,8 +421,7 @@ class Matrix(TaichiOperations):
     def __iter__(self):
         if self.m == 1:
             return (self(i) for i in range(self.n))
-        else:
-            return ([self(i, j) for j in range(self.m)] for i in range(self.n))
+        return ([self(i, j) for j in range(self.m)] for i in range(self.n))
 
     @python_scope
     def set_entries(self, value):
@@ -501,13 +494,13 @@ class Matrix(TaichiOperations):
         assert self.n == self.m, 'Only square matrices are invertible'
         if self.n == 1:
             return Matrix([1 / self(0, 0)], disable_local_tensor=True)
-        elif self.n == 2:
+        if self.n == 2:
             inv_det = impl.expr_init(1.0 / self.determinant())
             # Discussion: https://github.com/taichi-dev/taichi/pull/943#issuecomment-626344323
             return inv_det * Matrix([[self(1, 1), -self(0, 1)],
                                      [-self(1, 0), self(0, 0)]],
                                     disable_local_tensor=True).variable()
-        elif self.n == 3:
+        if self.n == 3:
             n = 3
             inv_determinant = impl.expr_init(1.0 / self.determinant())
             entries = [[0] * n for _ in range(n)]
@@ -521,7 +514,7 @@ class Matrix(TaichiOperations):
                         inv_determinant * (E(i + 1, j + 1) * E(i + 2, j + 2) -
                                            E(i + 2, j + 1) * E(i + 1, j + 2)))
             return Matrix(entries, disable_local_tensor=True)
-        elif self.n == 4:
+        if self.n == 4:
             n = 4
             inv_determinant = impl.expr_init(1.0 / self.determinant())
             entries = [[0] * n for _ in range(n)]
@@ -543,9 +536,8 @@ class Matrix(TaichiOperations):
                           (E(i + 1, j + 2) * E(i + 2, j + 3) -
                            E(i + 2, j + 2) * E(i + 1, j + 3)))))
             return Matrix(entries, disable_local_tensor=True)
-        else:
-            raise Exception(
-                "Inversions of matrices with sizes >= 5 are not supported")
+        raise Exception(
+            "Inversions of matrices with sizes >= 5 are not supported")
 
     inversed = deprecated('a.inversed()', 'a.inverse()')(inverse)
 
@@ -610,11 +602,11 @@ class Matrix(TaichiOperations):
         """
         if a.n == 2 and a.m == 2:
             return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
-        elif a.n == 3 and a.m == 3:
+        if a.n == 3 and a.m == 3:
             return a(0, 0) * (a(1, 1) * a(2, 2) - a(2, 1) * a(1, 2)) - a(
                 1, 0) * (a(0, 1) * a(2, 2) - a(2, 1) * a(0, 2)) + a(
                     2, 0) * (a(0, 1) * a(1, 2) - a(1, 1) * a(0, 2))
-        elif a.n == 4 and a.m == 4:
+        if a.n == 4 and a.m == 4:
             n = 4
 
             def E(x, y):
@@ -631,9 +623,8 @@ class Matrix(TaichiOperations):
                      E(i + 3, 1) *
                      (E(i + 1, 2) * E(i + 2, 3) - E(i + 2, 2) * E(i + 1, 3))))
             return det
-        else:
-            raise Exception(
-                "Determinants of matrices with sizes >= 5 are not supported")
+        raise Exception(
+            "Determinants of matrices with sizes >= 5 are not supported")
 
     @staticmethod
     def diag(dim, val):
@@ -793,8 +784,7 @@ class Matrix(TaichiOperations):
             So we have to make it happy with a dummy string...
             '''
             return f'<{self.n}x{self.m} ti.Matrix>'
-        else:
-            return str(self.to_numpy())
+        return str(self.to_numpy())
 
     def __repr__(self):
         return str(self.to_numpy())
@@ -816,10 +806,8 @@ class Matrix(TaichiOperations):
         if m is None:
             return Vector([ti.cast(0, dt) for _ in range(n)],
                           disable_local_tensor=True)
-        else:
-            return Matrix([[ti.cast(0, dt) for _ in range(m)]
-                           for _ in range(n)],
-                          disable_local_tensor=True)
+        return Matrix([[ti.cast(0, dt) for _ in range(m)] for _ in range(n)],
+                      disable_local_tensor=True)
 
     @staticmethod
     @taichi_scope
@@ -838,10 +826,8 @@ class Matrix(TaichiOperations):
         if m is None:
             return Vector([ti.cast(1, dt) for _ in range(n)],
                           disable_local_tensor=True)
-        else:
-            return Matrix([[ti.cast(1, dt) for _ in range(m)]
-                           for _ in range(n)],
-                          disable_local_tensor=True)
+        return Matrix([[ti.cast(1, dt) for _ in range(m)] for _ in range(n)],
+                      disable_local_tensor=True)
 
     @staticmethod
     @taichi_scope
@@ -1161,13 +1147,11 @@ class Matrix(TaichiOperations):
         if self.n == 3 and self.m == 1 and other.n == 3 and other.m == 1:
             return self._cross3d(other)
 
-        elif self.n == 2 and self.m == 1 and other.n == 2 and other.m == 1:
+        if self.n == 2 and self.m == 1 and other.n == 2 and other.m == 1:
             return self._cross2d(other)
 
-        else:
-            raise ValueError(
-                "Cross product is only supported between pairs of 2D/3D vectors"
-            )
+        raise ValueError(
+            "Cross product is only supported between pairs of 2D/3D vectors")
 
     @kern_mod.pyfunc
     def outer_product(self, other):

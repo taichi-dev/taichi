@@ -1180,8 +1180,7 @@ def torch_test(func):
     if ti.has_pytorch():
         # OpenGL somehow crashes torch test without a reason, unforturnately
         return ti.test(exclude=[opengl])(func)
-    else:
-        return lambda: None
+    return lambda: None
 
 
 def get_host_arch_list():

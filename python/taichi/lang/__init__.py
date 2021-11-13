@@ -351,12 +351,12 @@ def reset():
 
 
 class _EnvironmentConfigurator:
-    def __init__(self, kwargs, cfg): # pylint: disable=W0621
+    def __init__(self, kwargs, cfg):  # pylint: disable=W0621
         self.cfg = cfg
         self.kwargs = kwargs
         self.keys = []
 
-    def add(self, key, cast=None): # pylint: disable=W0621
+    def add(self, key, cast=None):  # pylint: disable=W0621
         cast = cast or self.bool_int
 
         self.keys.append(key)
@@ -495,7 +495,7 @@ def init(arch=None,
     for key in dir(ti.cfg):
         if key in ['arch', 'default_fp', 'default_ip']:
             continue
-        cast = type(getattr(ti.cfg, key)) # pylint: disable=W0621
+        cast = type(getattr(ti.cfg, key))  # pylint: disable=W0621
         if cast is bool:
             cast = None
         env_comp.add(key, cast)
@@ -758,7 +758,7 @@ def clear_all_gradients():
 
     def visit(node):
         places = []
-        for i in range(node.ptr.get_num_ch()): # pylint: disable=W0621
+        for i in range(node.ptr.get_num_ch()):  # pylint: disable=W0621
             ch = node.ptr.get_ch(i)
             if not ch.is_place():
                 visit(SNode(ch))
@@ -780,7 +780,7 @@ def deactivate_all_snodes():
         root_fb.deactivate_all()
 
 
-def benchmark(func, repeat=300, args=()): # pylint: disable=W0621
+def benchmark(func, repeat=300, args=()):  # pylint: disable=W0621
     def run_benchmark():
         compile_time = time.time()
         func(*args)  # compile the kernel first
@@ -918,7 +918,7 @@ def benchmark_plot(fn=None,
             else:
                 raise RuntimeError('Unknown bars type')
             if normalize_to_lowest(col):
-                for i in range(len(current_archs)): # pylint: disable=W0621
+                for i in range(len(current_archs)):  # pylint: disable=W0621
                     maximum = max(y_left[i], y_right[i])
                     y_left[i] = y_left[i] / maximum if y_left[i] != 0 else 1
                     y_right[i] = y_right[i] / maximum if y_right[i] != 0 else 1
@@ -1067,7 +1067,7 @@ _tests_arch_checkers_argname = '_tests_arch_checkers'
 
 
 def _get_or_make_arch_checkers(kwargs):
-    k = _tests_arch_checkers_argname # pylint: disable=W0621
+    k = _tests_arch_checkers_argname  # pylint: disable=W0621
     if k not in kwargs:
         kwargs[k] = _ArchCheckers()
     return kwargs[k]
@@ -1176,7 +1176,7 @@ def archs_support_sparse(test, **kwargs):
     return require(extension.sparse)(wrapped)
 
 
-def torch_test(func): # pylint: disable=W0621
+def torch_test(func):  # pylint: disable=W0621
     if ti.has_pytorch():
         # OpenGL somehow crashes torch test without a reason, unforturnately
         return ti.test(exclude=[opengl])(func)
@@ -1188,7 +1188,7 @@ def get_host_arch_list():
 
 
 # test with host arch only
-def host_arch_only(func): # pylint: disable=W0621
+def host_arch_only(func):  # pylint: disable=W0621
     @functools.wraps(func)
     def test(*args, **kwargs):
         archs = [_ti_core.host_arch()]
@@ -1220,7 +1220,7 @@ def archs_with(archs, **init_kwags):
 
 
 def must_throw(ex):
-    def decorator(func): # pylint: disable=W0621
+    def decorator(func):  # pylint: disable=W0621
         def func__(*args, **kwargs):
             finishes = False
             try:

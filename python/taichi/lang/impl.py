@@ -112,7 +112,7 @@ def wrap_scalar(x):
 
 
 @taichi_scope
-def subscript(value, *indices): # pylint: disable=W0621
+def subscript(value, *indices):  # pylint: disable=W0621
     _taichi_skip_traceback = 1
     if isinstance(value, np.ndarray):
         return value.__getitem__(*indices)
@@ -122,7 +122,7 @@ def subscript(value, *indices): # pylint: disable=W0621
         return value[indices[0]]
 
     flattened_indices = []
-    for index in indices: # pylint: disable=W0621
+    for index in indices:  # pylint: disable=W0621
         if is_taichi_class(index):
             ind = index.entries
         else:
@@ -139,7 +139,7 @@ def subscript(value, *indices): # pylint: disable=W0621
     if isinstance(value, SparseMatrixProxy):
         return value.subscript(*indices)
     if isinstance(value, Field):
-        var = value.get_field_members()[0].ptr # pylint: disable=W0621
+        var = value.get_field_members()[0].ptr  # pylint: disable=W0621
         if var.snode() is None:
             if var.is_primal():
                 raise RuntimeError(
@@ -195,14 +195,14 @@ def subscript(value, *indices): # pylint: disable=W0621
 
 
 @taichi_scope
-def local_subscript_with_offset(var, indices, shape): # pylint: disable=W0621
+def local_subscript_with_offset(var, indices, shape):  # pylint: disable=W0621
     return Expr(
         _ti_core.local_subscript_with_offset(var, make_expr_group(*indices),
                                              shape))
 
 
 @taichi_scope
-def global_subscript_with_offset(var, indices, shape, is_aos): # pylint: disable=W0621
+def global_subscript_with_offset(var, indices, shape, is_aos):  # pylint: disable=W0621
     return Expr(
         _ti_core.global_subscript_with_offset(var.ptr,
                                               make_expr_group(*indices), shape,
@@ -331,7 +331,7 @@ class PyTaichi:
 
         self.materialized = True
         not_placed = []
-        for var in self.global_vars: # pylint: disable=W0621
+        for var in self.global_vars:  # pylint: disable=W0621
             if var.ptr.snode() is None:
                 tb = getattr(var, 'declaration_tb', str(var.ptr))
                 not_placed.append(tb)
@@ -644,12 +644,12 @@ def ndarray(dtype, shape):
 
 @taichi_scope
 def ti_print(*vars, sep=' ', end='\n'):
-    def entry2content(var): # pylint: disable=W0621
+    def entry2content(var):  # pylint: disable=W0621
         if isinstance(var, str):
             return var
         return Expr(var).ptr
 
-    def list_ti_repr(var): # pylint: disable=W0621
+    def list_ti_repr(var):  # pylint: disable=W0621
         yield '['  # distinguishing tuple & list will increase maintainance cost
         for i, v in enumerate(var):
             if i:
@@ -658,7 +658,7 @@ def ti_print(*vars, sep=' ', end='\n'):
         yield ']'
 
     def vars2entries(vars):
-        for var in vars: # pylint: disable=W0621
+        for var in vars:  # pylint: disable=W0621
             if hasattr(var, '__ti_repr__'):
                 res = var.__ti_repr__()
             elif isinstance(var, (list, tuple)):
@@ -677,7 +677,7 @@ def ti_print(*vars, sep=' ', end='\n'):
                 yield v
 
     def add_separators(vars):
-        for i, var in enumerate(vars): # pylint: disable=W0621
+        for i, var in enumerate(vars):  # pylint: disable=W0621
             if i:
                 yield sep
             yield var
@@ -747,7 +747,7 @@ def ti_assert(cond, msg, extra_args):
 
 
 @taichi_scope
-def ti_int(var): # pylint: disable=W0621
+def ti_int(var):  # pylint: disable=W0621
     _taichi_skip_traceback = 1
     if hasattr(var, '__ti_int__'):
         return var.__ti_int__()
@@ -755,7 +755,7 @@ def ti_int(var): # pylint: disable=W0621
 
 
 @taichi_scope
-def ti_float(var): # pylint: disable=W0621
+def ti_float(var):  # pylint: disable=W0621
     _taichi_skip_traceback = 1
     if hasattr(var, '__ti_float__'):
         return var.__ti_float__()

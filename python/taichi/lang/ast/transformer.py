@@ -12,7 +12,7 @@ import taichi as ti
 
 
 # Total transform
-class ASTTransformerTotal(object):
+class ASTTransformerTotal:
     def __init__(self,
                  func=None,
                  excluded_parameters=(),

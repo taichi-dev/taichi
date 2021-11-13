@@ -5,7 +5,7 @@ CI_SETUP_CMAKE_ARGS=$1
 cd taichi
 python3 -m pip install -r requirements_dev.txt
 
-mkdir build && cd build
+rm -rf build && mkdir build && cd build
 cmake $CI_SETUP_CMAKE_ARGS ..
 
 cd ..

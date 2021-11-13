@@ -255,8 +255,7 @@ class Struct(TaichiOperations):
             item_str = ", ".join(
                 [str(k) + "=" + str(v) for k, v in self.items])
             return f'<ti.Struct {item_str}>'
-        else:
-            return str(self.to_dict())
+        return str(self.to_dict())
 
     def __repr__(self):
         return str(self.to_dict())

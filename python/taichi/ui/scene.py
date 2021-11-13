@@ -20,8 +20,7 @@ def get_normals_field(vertices):
         normal_weights = field(f32, shape=(N, ))
         normals_field_cache[vertices] = (normals, normal_weights)
         return (normals, normal_weights)
-    else:
-        return normals_field_cache[vertices]
+    return normals_field_cache[vertices]
 
 
 @kernel

@@ -109,15 +109,13 @@ class Ndarray:
         """
         if impl.current_cfg().ndarray_use_torch:
             return self.arr.cpu().numpy()
-        else:
-            import numpy as np  # pylint: disable=C0415
-            arr = np.zeros(shape=self.arr.shape,
-                           dtype=to_numpy_type(self.dtype))
-            from taichi.lang.meta import \
-                ndarray_to_ext_arr  # pylint: disable=C0415
-            ndarray_to_ext_arr(self, arr)
-            impl.get_runtime().sync()
-            return arr
+        import numpy as np  # pylint: disable=C0415
+        arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
+        from taichi.lang.meta import \
+            ndarray_to_ext_arr  # pylint: disable=C0415
+        ndarray_to_ext_arr(self, arr)
+        impl.get_runtime().sync()
+        return arr
 
     @python_scope
     def from_numpy(self, arr):
@@ -186,9 +184,8 @@ class ScalarNdarray(Ndarray):
     def __getitem__(self, key):
         if impl.current_cfg().ndarray_use_torch:
             return self.arr.__getitem__(key)
-        else:
-            self.initialize_host_accessor()
-            return self.host_accessor.getter(*self.pad_key(key))
+        self.initialize_host_accessor()
+        return self.host_accessor.getter(*self.pad_key(key))
 
     def __repr__(self):
         return '<ti.ndarray>'

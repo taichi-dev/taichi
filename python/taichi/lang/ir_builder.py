@@ -410,8 +410,7 @@ class IRBuilder(Builder):
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value
             return ast.Pass()
-        else:
-            ctx.return_data = node.value.ptr
+        ctx.return_data = node.value.ptr
         return node
 
     @staticmethod
@@ -529,9 +528,8 @@ class IRBuilder(Builder):
         """
         if isinstance(node.target, ast.Name):
             return [node.target.id]
-        else:
-            assert isinstance(node.target, ast.Tuple)
-            return [name.id for name in node.target.elts]
+        assert isinstance(node.target, ast.Tuple)
+        return [name.id for name in node.target.elts]
 
     @staticmethod
     def build_static_for(ctx, node, is_grouped):
@@ -726,12 +724,12 @@ class IRBuilder(Builder):
                     raise TaichiSyntaxError("'ti.static' cannot be nested")
                 return IRBuilder.build_static_for(
                     ctx, node, double_decorator == 'grouped')
-            elif decorator == 'ndrange':
+            if decorator == 'ndrange':
                 if double_decorator != '':
                     raise TaichiSyntaxError(
                         "No decorator is allowed inside 'ti.ndrange")
                 return IRBuilder.build_ndrange_for(ctx, node)
-            elif decorator == 'grouped':
+            if decorator == 'grouped':
                 if double_decorator == 'static':
                     raise TaichiSyntaxError(
                         "'ti.static' is not allowed inside 'ti.grouped'")

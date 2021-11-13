@@ -19,7 +19,7 @@ from typing import List
 
 # Sync with implementation
 # Do not use color sequences or hyperlink sequences so as to be portable on Windows.
-DOC_STRING = f"""Copyright notice checker and rewriter.
+DOC_STRING = """Copyright notice checker and rewriter.
 
 Arguments:
 
@@ -45,11 +45,11 @@ The scripts checks a file and modifies it if necessary.
 
 Examples:
 
-{os.path.relpath(__file__)} .
-{os.path.relpath(__file__)} --check taichi/common/core.cpp taichi/ir/transforms.h
-{os.path.relpath(__file__)} benchmarks cmake docs examples misc python taichi tests
-{os.path.relpath(__file__)} --exts "cpp,py" benchmarks cmake docs examples misc python taichi tests"""
-
+{file} .
+{file} --check taichi/common/core.cpp taichi/ir/transforms.h
+{file} benchmarks cmake docs examples misc python taichi tests
+{file} --exts "cpp,py" benchmarks cmake docs examples misc python taichi tests""".format(
+    file=os.path.relpath(__file__))
 
 class CommentStyle(Enum):
     C_STYLE = 1  # /* .. */
@@ -84,7 +84,8 @@ def get_ctime_year(filepath: str) -> str:
     using git-log.
     """
     # %aI: author date as an YYYY-MM-DDTHH:MM:SS-HH:MM string (git 2.21).
-    command = f"git --no-pager log --reverse --format=\"%aI\" {filepath}"
+    command = "git --no-pager log --reverse --format=\"%aI\" {}".format(
+        filepath)
     try:
         out = subprocess.check_output(command.split())
     except subprocess.CalledProcessError as e:
@@ -108,9 +109,11 @@ def make_notice(comment_style: CommentStyle, ctime_year: str) -> List[str]:
     elif comment_style == CommentStyle.PY_STYLE:
         line_start = "#"
     lines.append(
-        f"{line_start} Copyright (c) {ctime_year} The Taichi Authors. All rights reserved.\n")
+         "{0} Copyright (c) {1} The Taichi Authors. All rights reserved.\n".
+        format(line_start, ctime_year))
     lines.append(
-        f"{line_start} Use of this software is governed by the LICENSE file.\n")
+        "{0} Use of this software is governed by the LICENSE file.\n".format(
+            line_start))
     if comment_style == CommentStyle.C_STYLE:
         lines.append("*" * 78 + "*/\n")
     lines.append("\n")
@@ -198,11 +201,12 @@ PLAYFUL_BRAILLE = ["⠃", "⠆", "⠤", "⠰", "⠘", "⠉"]
 
 
 def print_progress(stats: WorkStats, check_only: bool):
-    content = f"""{PLAYFUL_BRAILLE[stats.opened_file_num % len(PLAYFUL_BRAILLE)]} 
-                    Opened {stats.opened_file_num}, {"will" if check_only else "did"}
-                    insert notice: {stats.inserted_notice_file_num},
-                    {"will" if check_only else "did"} 
-                    modify notice: {stats.modified_notice_file_num}"""
+    content = "{dots} Opened {opened}, {tense} insert notice: {insert}, {tense} modify notice: {modify}".format(
+        opened=stats.opened_file_num,
+        tense="will" if check_only else "did",
+        insert=stats.inserted_notice_file_num,
+        modify=stats.modified_notice_file_num,
+        dots=PLAYFUL_BRAILLE[stats.opened_file_num % len(PLAYFUL_BRAILLE)])
     # 1A, 2K: move cursor one line up and clear the entire line.
     sys.stdout.write(("\x1b[1A\x1b[2K" if LINE_ELIDING else "") + content +
                      "\n")
@@ -229,7 +233,6 @@ def is_interested_ext(ext: str, selected_stripped_exts: List[str]) -> bool:
     """
     return (ext in FILE_EXT_TO_COMMENT_STYLES) \
            and ((not selected_stripped_exts) or (ext.lstrip(".") in selected_stripped_exts))
-
 
 def work(args) -> bool:
     """
@@ -260,8 +263,9 @@ def work(args) -> bool:
     problematic_num = len(stats.problematic_files)
     if problematic_num > 0:
         print("\t{}".format("\n\t".join(sorted(stats.problematic_files))))
-        print(f"""{problematic_num} out of {stats.opened_file_num} files do not have correctly-formatted copyright 
-notices.""")
+        print(
+            "{} out of {} files do not have correctly-formatted copyright notices."
+                .format(problematic_num, stats.opened_file_num))
     else:
         print("Copyright notices in the given paths are ok.")
     return problematic_num == 0

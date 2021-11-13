@@ -4,7 +4,7 @@ import taichi as ti
 
 
 def _test_op(dt, taichi_op, np_op):
-    print(f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp}')
+    print('arch={} default_fp={}'.format(ti.cfg.arch, ti.cfg.default_fp))
     n = 4
     val = ti.field(dt, shape=n)
 

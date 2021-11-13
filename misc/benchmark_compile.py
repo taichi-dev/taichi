@@ -38,7 +38,6 @@ def test_unary():
     grad_test(lambda x: ti.exp(x), lambda x: np.exp(x))
     grad_test(lambda x: ti.log(x), lambda x: np.log(x))
     ti.core.print_profile_info()
-    print(f"Total time {time.time() - t:.3f}s")
-
+    print("Total time {:.3f}s".format(time.time() - t))
 
 test_unary()

@@ -500,7 +500,8 @@ while gui.running:
     interval = 10
     if i % interval == 0:
         tonemap(i)
-        print(f"{interval / (time.time() - last_t):.2f} samples/s ({i} iters)")
+        print("{:.2f} samples/s ({} iters)".format(
+            interval / (time.time() - last_t), i))
         last_t = time.time()
         gui.set_image(tonemapped_buffer)
         gui.show()

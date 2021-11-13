@@ -15,7 +15,7 @@ def sparse_api_demo():
     ti.activate(block2, [1, 2])
 
     for i, j in x:
-        print(f'field x[{i}, {j}] = {x[i, j]}')
+        print('field x[{}, {}] = {}'.format(i, j, x[i, j]))
     # outputs:
     # field x[2, 4] = 0
     # field x[2, 5] = 0
@@ -23,28 +23,28 @@ def sparse_api_demo():
     # field x[3, 5] = 0
 
     for i, j in block2:
-        print(f'Active block2: [{i}, {j}]')
+        print('Active block2: [{}, {}]'.format(i, j))
     # output: Active block2: [1, 2]
 
     for i, j in block1:
-        print(f'Active block1: [{i}, {j}]')
+        print('Active block1: [{}, {}]'.format(i, j))
     # output: Active block1: [0, 1]
 
     for j in range(4):
-        print(f'Activity of block2[2, {j}] = {ti.is_active(block2, [1, j])}')
+        print('Activity of block2[2, {}] = {}'.format(
+            j, ti.is_active(block2, [1, j])))
 
     ti.deactivate(block2, [1, 2])
 
     for i, j in block2:
-        print(f'Active block2: [{i}, {j}]')
+        print('Active block2: [{}, {}]'.format(i, j))
     # output: nothing
 
     for i, j in block1:
-        print(f'Active block1: [{i}, {j}]')
+        print('Active block1: [{}, {}]'.format(i, j))
     # output: Active block1: [0, 1]
 
     print(ti.rescale_index(x, block1, ti.Vector([9, 17])))
-    # output = [2, 4]
 
     # Note: ti.Vector is optional in ti.rescale_index.
     print(ti.rescale_index(x, block1, [9, 17]))

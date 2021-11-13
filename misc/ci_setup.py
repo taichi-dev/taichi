@@ -15,7 +15,8 @@ import struct
 
 assert struct.calcsize(
     'P'
-) * 8 == 64, f"Only 64-bit platforms are supported. Current platform: {struct.calcsize('P') * 8}"
+) * 8 == 64, "Only 64-bit platforms are supported. Current platform: {}".format(
+    struct.calcsize('P') * 8)
 
 if sys.version_info[0] < 3 or sys.version_info[1] < 6:
     print("\nPlease restart with python3. \n(Taichi supports Python 3.6+)\n")
@@ -42,8 +43,7 @@ def get_shell_rc_name():
     elif shell == 'zsh':
         return '~/.zshrc'
     else:
-        assert False, f'No shell rc file specified for shell "{shell}"'
-
+        assert False, 'No shell rc file specified for shell "{}"'.format(shell)
 
 def get_username():
     if build_type == 'ci':
@@ -57,8 +57,7 @@ def get_username():
 
 
 def check_command_existence(cmd):
-    return os.system(f'type {cmd}') == 0
-
+    return os.system('type {}'.format(cmd)) == 0
 
 def execute_command(line, allow_nonzero_output=0):
     print('Executing command:', line)
@@ -99,7 +98,7 @@ def get_default_directory_name():
 
 def append_to_shell_rc(line):
     if get_os_name() != 'win':
-        execute_command(f'echo "{line}" >> {get_shell_rc_name()}')
+        execute_command('echo "{}" >> {}'.format(line, get_shell_rc_name()))
     else:
         print(
             "Warning: Windows environment variable persistent edits are not supported"
@@ -111,7 +110,7 @@ def set_env(key, val, val_now=None):
         val_now = val
     val = str(val)
     val_now = str(val_now)
-    append_to_shell_rc(f"export {key}={val}")
+    append_to_shell_rc("export {}={}".format(key, val))
     os.environ[key] = val_now
 
 
@@ -144,7 +143,8 @@ class Installer:
 
     def run(self):
         assert get_os_name() in ['linux', 'osx', 'win'], \
-          f'Platform {get_os_name()} is not currently supported by this script. Please install manually.'
+          'Platform {} is not currently supported by this script. Please install manually.'.format(
+            get_os_name())
         if len(sys.argv) > 1:
             self.build_type = sys.argv[1]
             print('Build type: ', self.build_type)

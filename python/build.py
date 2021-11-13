@@ -12,9 +12,9 @@ def get_os_name():
     # it will return 'macOS-XXXX' instead of 'Darwin-XXXX'
     if name.lower().startswith('darwin') or name.lower().startswith('macos'):
         return 'osx'
-    elif name.lower().startswith('windows'):
+    if name.lower().startswith('windows'):
         return 'win'
-    elif name.lower().startswith('linux'):
+    if name.lower().startswith('linux'):
         return 'linux'
     assert False, "Unknown platform name %s" % name
 
@@ -114,7 +114,7 @@ def main():
 
     if mode == 'build':
         return
-    elif mode == 'upload':
+    if mode == 'upload':
         if os.system('{} -m twine upload {} ../dist/* --verbose -u {}'.format(
                 get_python_executable(), pypi_repo, pypi_user)) != 0:
             raise SystemExit(1)

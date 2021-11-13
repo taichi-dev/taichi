@@ -30,13 +30,12 @@ def core_veci(*args):
         args = tuple(*args)
     if len(args) == 2:
         return _ti_core.Vector2i(int(args[0]), int(args[1]))
-    elif len(args) == 3:
+    if len(args) == 3:
         return _ti_core.Vector3i(int(args[0]), int(args[1]), int(args[2]))
-    elif len(args) == 4:
+    if len(args) == 4:
         return _ti_core.Vector4i(int(args[0]), int(args[1]), int(args[2]),
                                  int(args[3]))
-    else:
-        assert False, type(args[0])
+    assert False, type(args[0])
 
 
 def core_vec(*args):
@@ -57,25 +56,23 @@ def core_vec(*args):
     if _ti_core.get_default_float_size() == 4:
         if len(args) == 2:
             return _ti_core.Vector2f(float(args[0]), float(args[1]))
-        elif len(args) == 3:
+        if len(args) == 3:
             return _ti_core.Vector3f(float(args[0]), float(args[1]),
                                      float(args[2]))
-        elif len(args) == 4:
+        if len(args) == 4:
             return _ti_core.Vector4f(float(args[0]), float(args[1]),
                                      float(args[2]), float(args[3]))
-        else:
-            assert False, type(args[0])
+        assert False, type(args[0])
     else:
         if len(args) == 2:
             return _ti_core.Vector2d(float(args[0]), float(args[1]))
-        elif len(args) == 3:
+        if len(args) == 3:
             return _ti_core.Vector3d(float(args[0]), float(args[1]),
                                      float(args[2]))
-        elif len(args) == 4:
+        if len(args) == 4:
             return _ti_core.Vector4d(float(args[0]), float(args[1]),
                                      float(args[2]), float(args[3]))
-        else:
-            assert False, type(args[0])
+        assert False, type(args[0])
 
 
 class Tee():

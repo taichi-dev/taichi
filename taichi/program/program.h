@@ -141,10 +141,6 @@ class Program {
     return query_result;
   }
 
-  // void set_kernel_profiler_mode(bool enabled) {
-  //   profiler->set_kernel_profiler_mode(enabled);
-  // }
-
   void clear_kernel_profile_info() {
     profiler->clear();
   }

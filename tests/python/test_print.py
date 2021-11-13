@@ -133,12 +133,12 @@ def test_print_string_format():
     @ti.kernel
     def func(k: ti.f32):
         print(123)
-        print("{} abc".format(123))
-        print("{} {} {}".format(1, 2, 3))
-        print("{} {name} {value}".format(k, name=999, value=123))
+        print(f"{123} abc")
+        print("{1} {2} {3}")
+        print(f"{k} {999} {123}")
         name = 123.4
         value = 456.7
-        print("{} {name} {value}".format(k, name=name, value=value))
+        print(f"{k} {name} {value}")
 
     func(233.3)
     ti.sync()

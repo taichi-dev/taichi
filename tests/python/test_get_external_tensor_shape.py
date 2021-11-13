@@ -17,8 +17,7 @@ def test_get_external_tensor_shape_access_numpy(size):
     x_hat = np.ones(size, dtype=np.int32)
     for idx, y_ref in enumerate(size):
         y_hat = func(x_hat, idx)
-        assert y_ref == y_hat, "Size of axis {} should equal {} and not {}.".format(
-            idx, y_ref, y_hat)
+        assert y_ref == y_hat, f"Size of axis {idx} should equal {y_ref} and not {y_hat}."
 
 
 @pytest.mark.parametrize('size', [[1, 1], [2, 2]])

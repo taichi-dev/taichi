@@ -178,7 +178,7 @@ class ExprBuilder(Builder):
         node.values = build_exprs(ctx, node.values)
 
         def make_node(a, b, token):
-            new_node = parse_expr('ti.logical_{}(0, 0)'.format(token))
+            new_node = parse_expr(f'ti.logical_{token}(0, 0)')
             new_node.args[0] = a
             new_node.args[1] = b
             return new_node

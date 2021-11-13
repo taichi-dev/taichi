@@ -80,14 +80,11 @@ def core_vec(*args):
 
 class Tee():
     def __init__(self, name):
-        self.file = open(name, 'w')
-        self.stdout = sys.stdout
-        self.stderr = sys.stderr
-        sys.stdout = self
-        sys.stderr = self
-
-    def __del__(self):
-        self.file.close()
+        with open(name, 'w') as self.file:
+            self.stdout = sys.stdout
+            self.stderr = sys.stderr
+            sys.stdout = self
+            sys.stderr = self
 
     def write(self, data):
         self.file.write(data)
@@ -224,12 +221,12 @@ def dump_dot(filepath=None, rankdir=None, embed_states_threshold=0):
 
 def dot_to_pdf(dot, filepath):
     assert filepath.endswith('.pdf')
-    p = subprocess.Popen(['dot', '-Tpdf'],
-                         stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE)
-    pdf_contents = p.communicate(input=dot.encode())[0]
-    with open(filepath, 'wb') as fh:
-        fh.write(pdf_contents)
+    with subprocess.Popen(['dot', '-Tpdf'],
+                          stdin=subprocess.PIPE,
+                          stdout=subprocess.PIPE) as p:
+        pdf_contents = p.communicate(input=dot.encode())[0]
+        with open(filepath, 'wb') as fh:
+            fh.write(pdf_contents)
 
 
 def get_kernel_stats():

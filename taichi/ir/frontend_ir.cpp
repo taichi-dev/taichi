@@ -5,6 +5,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+#define TI_ASSERT_TYPE_CHECKED(x) TI_ASSERT_INFO(x->ret_type != PrimitiveType::unknown, "[{}] was not type-checked", x.serialize())
+
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,
                                          const ExprGroup &indices,
@@ -131,8 +133,7 @@ void UnaryOpExpression::serialize(std::ostream &ss) {
 }
 
 void UnaryOpExpression::type_check() {
-  TI_ASSERT_INFO(operand->ret_type != PrimitiveType::unknown,
-                 "[{}] was not type-checked", operand.serialize());
+  TI_ASSERT_TYPE_CHECKED(operand);
   if (!operand->ret_type->is<PrimitiveType>())
     throw std::runtime_error(
         fmt::format("TypeError: unsupported operand type(s) for '{}': '{}'",
@@ -162,12 +163,10 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
 }
 
 void BinaryOpExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(lhs);
+  TI_ASSERT_TYPE_CHECKED(rhs);
   auto lhs_type = lhs->ret_type;
   auto rhs_type = rhs->ret_type;
-  TI_ASSERT_INFO(lhs_type != PrimitiveType::unknown,
-                 "[{}] was not type-checked", lhs.serialize());
-  TI_ASSERT_INFO(rhs_type != PrimitiveType::unknown,
-                 "[{}] was not type-checked", rhs.serialize());
   auto error = [&]() {
     throw std::runtime_error(fmt::format(
         "TypeError: unsupported operand type(s) for '{}': '{}' and '{}'",
@@ -206,15 +205,12 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
 }
 
 void TernaryOpExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(op1);
+  TI_ASSERT_TYPE_CHECKED(op2);
+  TI_ASSERT_TYPE_CHECKED(op3);
   auto op1_type = op1->ret_type;
   auto op2_type = op2->ret_type;
   auto op3_type = op3->ret_type;
-  TI_ASSERT_INFO(op1_type != PrimitiveType::unknown,
-                 "[{}] was not type-checked", op1.serialize());
-  TI_ASSERT_INFO(op2_type != PrimitiveType::unknown,
-                 "[{}] was not type-checked", op2.serialize());
-  TI_ASSERT_INFO(op3_type != PrimitiveType::unknown,
-                 "[{}] was not type-checked", op3.serialize());
   auto error = [&]() {
     throw std::runtime_error(fmt::format(
         "TypeError: unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
@@ -240,8 +236,7 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
 
 void InternalFuncCallExpression::type_check() {
   for (auto &arg : args) {
-    TI_ASSERT_INFO(arg->ret_type != PrimitiveType::unknown,
-                   "[{}] was not type-checked", arg.serialize());
+    TI_ASSERT_TYPE_CHECKED(arg);
     // no arg type compatibility check for now due to lack of specification
   }
   // internal func calls have default return type
@@ -260,13 +255,11 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
 
 void ExternalFuncCallExpression::type_check() {
   for (auto &arg : args) {
-    TI_ASSERT_INFO(arg->ret_type != PrimitiveType::unknown,
-                   "[{}] was not type-checked", arg.serialize());
+    TI_ASSERT_TYPE_CHECKED(arg);
     // no arg type compatibility check for now due to lack of specification
   }
   for (auto &output : outputs) {
-    TI_ASSERT_INFO(output->ret_type != PrimitiveType::unknown,
-                   "[{}] was not type-checked", output.serialize());
+    TI_ASSERT_TYPE_CHECKED(output);
     // no output type compatibility check for now due to lack of specification
   }
   // external func calls have no return type for now
@@ -327,8 +320,7 @@ void GlobalPtrExpression::type_check() {
   } else if (var.is<ExternalTensorExpression>()) {
     for (int i = 0; i < indices.exprs.size(); i++) {
       auto &expr = indices.exprs[i];
-      TI_ASSERT_INFO(expr->ret_type != PrimitiveType::unknown,
-                     "[{}] was not type-checked", expr.serialize());
+      TI_ASSERT_TYPE_CHECKED(expr);
       if (!is_integral(expr->ret_type))
         throw std::runtime_error(
             fmt::format("TypeError: indices must be integers, however '{}' is "
@@ -471,10 +463,8 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
 }
 
 void RangeAssumptionExpression::type_check() {
-  TI_ASSERT_INFO(input->ret_type != PrimitiveType::unknown,
-                 "[{}] was not type-checked", input.serialize());
-  TI_ASSERT_INFO(base->ret_type != PrimitiveType::unknown,
-                 "[{}] was not type-checked", base.serialize());
+  TI_ASSERT_TYPE_CHECKED(input);
+  TI_ASSERT_TYPE_CHECKED(base);
   if (!input->ret_type->is<PrimitiveType>() ||
       !base->ret_type->is<PrimitiveType>() || input->ret_type != base->ret_type)
     throw std::runtime_error(
@@ -493,8 +483,7 @@ void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
 }
 
 void LoopUniqueExpression::type_check() {
-  TI_ASSERT_INFO(input->ret_type != PrimitiveType::unknown,
-                 "[{}] was not type-checked", input.serialize());
+  TI_ASSERT_TYPE_CHECKED(input);
   if (!input->ret_type->is<PrimitiveType>())
     throw std::runtime_error(fmt::format(
         "TypeError: unsupported operand type(s) for 'loop_unique': '{}'",
@@ -543,10 +532,8 @@ void IdExpression::flatten(FlattenContext *ctx) {
 }
 
 void AtomicOpExpression::type_check() {
-  TI_ASSERT_INFO(dest->ret_type != PrimitiveType::unknown,
-                 "[{}] was not type-checked", dest.serialize());
-  TI_ASSERT_INFO(val->ret_type != PrimitiveType::unknown,
-                 "[{}] was not type-checked", val.serialize());
+  TI_ASSERT_TYPE_CHECKED(dest);
+  TI_ASSERT_TYPE_CHECKED(val);
   auto error = [&]() {
     throw std::runtime_error(fmt::format(
         "TypeError: unsupported operand type(s) for 'atomic_{}': '{}' and '{}'",
@@ -713,8 +700,7 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
 
 void FuncCallExpression::type_check() {
   for (auto &arg : args.exprs) {
-    TI_ASSERT_INFO(arg->ret_type != PrimitiveType::unknown,
-                   "[{}] was not type-checked", arg.serialize());
+    TI_ASSERT_TYPE_CHECKED(arg);
     // no arg type compatibility check for now due to lack of specification
   }
   TI_ASSERT_INFO(func->rets.size() <= 1,

@@ -101,8 +101,8 @@ cpu = _ti_core.host_arch()
 
 When this is used, Taichi automatically picks the matching CPU backend.
 """
-timeline_clear = lambda: impl.get_runtime().prog.timeline_clear() # pylint: disable=unnecessary-lambda
-timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn) # pylint: disable=unnecessary-lambda
+timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()  # pylint: disable=unnecessary-lambda
+timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: disable=unnecessary-lambda
 
 # Legacy API
 type_factory_ = _ti_core.get_type_factory_instance()

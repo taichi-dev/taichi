@@ -463,7 +463,7 @@ class IRBuilder(Builder):
         op = {
             ast.UAdd: lambda l: l,
             ast.USub: lambda l: -l,
-            ast.Not: lambda l: ti.logical_not(l),
+            ast.Not: ti.logical_not,
             ast.Invert: lambda l: ~l,
         }.get(type(node.op))
         node.ptr = op(node.operand.ptr)
@@ -473,8 +473,8 @@ class IRBuilder(Builder):
     def build_BoolOp(ctx, node):
         node.values = build_stmts(ctx, node.values)
         op = {
-            ast.And: lambda l, r: ti.logical_and(l, r),
-            ast.Or: lambda l, r: ti.logical_or(l, r),
+            ast.And: ti.logical_and,
+            ast.Or: ti.logical_or,
         }.get(type(node.op))
         result = op(node.values[0].ptr, node.values[1].ptr)
         for i in range(2, len(node.values)):

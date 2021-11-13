@@ -23,9 +23,8 @@ class PLYWriter:
             np.float32, np.float64
         ]
         self.type_map = {}
-        for i in range(len(self.ply_supported_types)):
-            self.type_map[self.ply_supported_types[
-                i]] = self.corresponding_numpy_types[i]
+        for i, ply_type in enumerate(self.ply_supported_types):
+            self.type_map[ply_type] = self.corresponding_numpy_types[i]
 
         self.num_vertices = num_vertices
         self.num_vertex_channels = 0

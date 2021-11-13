@@ -131,8 +131,8 @@ class Func:
         self.return_type = None
         self.extract_arguments()
         self.template_slot_locations = []
-        for i in range(len(self.argument_annotations)):
-            if isinstance(self.argument_annotations[i], template):
+        for i, anno in enumerate(self.argument_annotations):
+            if isinstance(anno, template):
                 self.template_slot_locations.append(i)
         self.mapper = TaichiCallableTemplateMapper(
             self.argument_annotations, self.template_slot_locations)
@@ -179,18 +179,17 @@ class Func:
             if key.instance_id not in self.compiled:
                 self.do_compile(key=key, args=args)
             return self.func_call_rvalue(key=key, args=args)
-        else:
-            if self.compiled is None:
-                self.do_compile(key=None, args=args)
-            ret = self.compiled(*args)
-            return ret
+        if self.compiled is None:
+            self.do_compile(key=None, args=args)
+        ret = self.compiled(*args)
+        return ret
 
     def func_call_rvalue(self, key, args):
         # Skip the template args, e.g., |self|
         assert impl.get_runtime().experimental_real_function
         non_template_args = []
-        for i in range(len(self.argument_annotations)):
-            if not isinstance(self.argument_annotations[i], template):
+        for i, anno in enumerate(self.argument_annotations):
+            if not isinstance(anno, template):
                 non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
         return ti.Expr(
@@ -323,7 +322,7 @@ class TaichiCallableTemplateMapper:
                     TaichiCallableTemplateMapper.extract_arg(item, anno)
                     for item in arg)
             return arg
-        elif isinstance(anno, any_arr):
+        if isinstance(anno, any_arr):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_element_dim(arg, 0)
                 return arg.dtype, len(arg.shape), (), Layout.AOS
@@ -413,8 +412,8 @@ class Kernel:
         self.extract_arguments()
         del _taichi_skip_traceback
         self.template_slot_locations = []
-        for i in range(len(self.argument_annotations)):
-            if isinstance(self.argument_annotations[i], template):
+        for i, anno in enumerate(self.argument_annotations):
+            if isinstance(anno, template):
                 self.template_slot_locations.append(i)
         self.mapper = TaichiCallableTemplateMapper(
             self.argument_annotations, self.template_slot_locations)

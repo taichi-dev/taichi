@@ -164,8 +164,7 @@ class KernelProfiler:
                 f'use \'ti.init(kernel_profiler = True)\' to turn on KernelProfiler.'
             )
             return True
-        else:
-            return False
+        return False
 
     def _clear_frontend(self):
         """Clear member variables in :class:`~taichi.profiler.kernelprofiler.KernelProfiler`.

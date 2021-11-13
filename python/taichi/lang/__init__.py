@@ -1051,7 +1051,7 @@ def adaptive_arch_select(arch):
     return cpu
 
 
-class _ArchCheckers(object):
+class _ArchCheckers:
     def __init__(self):
         self._checkers = []
 

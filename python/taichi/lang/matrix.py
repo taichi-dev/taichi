@@ -460,8 +460,8 @@ class Matrix(TaichiOperations):
         """
         _taichi_skip_traceback = 1
         ret = self.copy()
-        for i in range(len(self.entries)):
-            ret.entries[i] = ops_mod.cast(ret.entries[i], dtype)
+        for i, entry in enumerate(ret.entries):
+            ret.entries[i] = ops_mod.cast(entry, dtype)
         return ret
 
     def trace(self):

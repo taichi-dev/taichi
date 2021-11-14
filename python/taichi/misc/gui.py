@@ -33,7 +33,12 @@ class GUI:
 
     """
     class Event:
-        pass
+        def __init__(self):
+            self.type = None
+            self.modifier = None
+            self.pos = None
+            self.key = None
+            self.delta = None
 
     # Event keys
     SHIFT = 'Shift'
@@ -122,7 +127,8 @@ class GUI:
         def value(self, value):
             self.gui.core.set_widget_value(self.wid, value)
 
-    def get_bool_environ(self, key, default):
+    @staticmethod
+    def get_bool_environ(key, default):
         """Get an environment variable and cast to bool.
         Args:
             key (str): The environment variable key.
@@ -813,8 +819,7 @@ class GUI:
         """
         if self.core.frame_delta_limit == 0:
             return None
-        else:
-            return 1 / self.core.frame_delta_limit
+        return 1 / self.core.frame_delta_limit
 
     @fps_limit.setter
     def fps_limit(self, value):

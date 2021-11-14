@@ -3,6 +3,7 @@ FROM nvidia/cudagl:11.2.2-devel-ubuntu20.04
 # Use 11.2 instead of 11.4 to avoid forward compatibility issue on Nvidia driver 460
 
 ENV NVIDIA_DRIVER_CAPABILITIES compute,graphics,utility
+
 ENV DEBIAN_FRONTEND=noninteractive
 LABEL maintainer="https://github.com/taichi-dev"
 
@@ -39,10 +40,10 @@ RUN apt-get update && \
                        libglfw3 \
                        libglfw3-dev \
                        libjpeg-dev \
+                       libvulkan-dev
+ \
                        vulkan-tools \
-                       libvulkan-dev \
                        vulkan-validationlayers-dev
-
 # Install the latest version of CMAKE v3.20.5 from source
 WORKDIR /
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-x86_64.tar.gz

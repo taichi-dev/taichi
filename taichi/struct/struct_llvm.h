@@ -7,6 +7,8 @@
 
 namespace taichi {
 namespace lang {
+
+class LlvmProgramImpl;
 class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
  public:
   StructCompilerLLVM(Arch arch,

@@ -68,7 +68,6 @@ class SNode:
         # return SNode(self.ptr.hash(axes, dimensions,
         #                            impl.current_cfg().packed))
 
-
     def dynamic(self, axis, dimension, chunk_size=None):
         """Adds a dynamic SNode as a child component of `self`.
 

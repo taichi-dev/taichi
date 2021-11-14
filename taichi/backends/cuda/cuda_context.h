@@ -95,8 +95,8 @@ class CUDAContext {
     return ContextGuard(this);
   }
 
-  std::lock_guard<std::mutex> &&get_lock_guard() {
-    return std::move(std::lock_guard<std::mutex>(lock_));
+  std::lock_guard<std::mutex> get_lock_guard() {
+    return std::lock_guard<std::mutex>(lock_);
   }
 
   static CUDAContext &get_instance();

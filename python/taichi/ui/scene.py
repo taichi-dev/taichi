@@ -75,9 +75,6 @@ def gen_normals(vertices, indices):
 class Scene(_ti_core.PyScene):
     """A 3D scene, which can contain meshes and particles, and can be rendered on a canvas
     """
-    def __init__(self):
-        super().__init__()
-
     def set_camera(self, camera):
         super().set_camera(camera.ptr)
 
@@ -132,9 +129,3 @@ class Scene(_ti_core.PyScene):
             copy_colors_to_vbo(vbo, per_vertex_color)
         vbo_info = get_field_info(vbo)
         super().particles(vbo_info, has_per_vertex_color, color, radius)
-
-    def point_light(self, pos, color):
-        super().point_light(pos, color)
-
-    def ambient_light(self, color):
-        super().ambient_light(color)

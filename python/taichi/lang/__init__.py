@@ -20,7 +20,7 @@ from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, Vector
 from taichi.lang.ndrange import GroupedNDRange, ndrange
-from taichi.lang.ops import *
+from taichi.lang.ops import *  # pylint: disable=W0622
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.source_builder import SourceBuilder
@@ -550,6 +550,8 @@ def init(arch=None,
 
     impl._root_fb = FieldsBuilder()
 
+    return None
+
 
 def no_activate(*args):
     for v in args:
@@ -805,12 +807,12 @@ def benchmark(func, repeat=300, args=()):
         # Use 3 initial iterations to warm up
         # instruction/data caches. Discussion:
         # https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
-        for i in range(3):
+        for _ in range(3):
             func(*args)
             ti.sync()
         ti.clear_kernel_profile_info()
         t = time.time()
-        for n in range(repeat):
+        for _ in range(repeat):
             func(*args)
             ti.sync()
         elapsed = time.time() - t
@@ -1097,11 +1099,11 @@ def all_archs_with(**kwargs):
 
             for arch in ti.supported_archs():
                 if can_run_on(arch):
-                    print('Running test on arch={}'.format(arch))
+                    print(f'Running test on arch={arch}')
                     ti.init(arch=arch, **kwargs)
                     test(*test_args, **test_kwargs)
                 else:
-                    print('Skipped test on arch={}'.format(arch))
+                    print(f'Skipped test on arch={arch}')
 
         return wrapped
 
@@ -1230,11 +1232,9 @@ def must_throw(ex):
                 # throws. test passed
                 pass
             except Exception as err_actual:
-                assert False, 'Exception {} instead of {} thrown'.format(
-                    str(type(err_actual)), str(ex))
+                assert False, f'Exception {str(type(err_actual))} instead of {str(ex)} thrown'
             if finishes:
-                assert False, 'Test successfully finished instead of throwing {}'.format(
-                    str(ex))
+                assert False, f'Test successfully finished instead of throwing {str(ex)}'
 
         return func__
 

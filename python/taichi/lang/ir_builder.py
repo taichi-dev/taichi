@@ -58,6 +58,8 @@ class IRBuilder(Builder):
             IRBuilder.build_assign_basic(ctx, target, tmp_tuple[i],
                                          is_static_assign)
 
+        return None
+
     @staticmethod
     def build_assign_basic(ctx, target, value, is_static_assign):
         """Build basic assginment like this: target = value.
@@ -154,14 +156,16 @@ class IRBuilder(Builder):
             return func(ctx, node, result)
         target = node.generators[now_comp].target = build_stmt(
             ctx, node.generators[now_comp].target)
-        iter = node.generators[now_comp].iter = build_stmt(
+        _iter = node.generators[now_comp].iter = build_stmt(
             ctx, node.generators[now_comp].iter)
-        for value in iter.ptr:
+        for value in _iter.ptr:
             with ctx.variable_scope_guard():
                 IRBuilder.build_assign_unpack(ctx, target, value, True)
                 node.generators[now_comp].ifs = build_stmts(
                     ctx, node.generators[now_comp].ifs)
                 IRBuilder.process_ifs(ctx, node, now_comp, 0, func, result)
+
+        return None
 
     @staticmethod
     def process_ifs(ctx, node, now_comp, now_if, func, result):
@@ -172,6 +176,8 @@ class IRBuilder(Builder):
         if cond:
             IRBuilder.process_ifs(ctx, node, now_comp, now_if + 1, func,
                                   result)
+
+        return None
 
     @staticmethod
     def build_comprehension(ctx, node):
@@ -311,8 +317,6 @@ class IRBuilder(Builder):
         assert args.kwonlyargs == []
         assert args.kw_defaults == []
         assert args.kwarg is None
-
-        arg_decls = []
 
         def transform_as_kernel():
             # Treat return type
@@ -516,7 +520,7 @@ class IRBuilder(Builder):
             (ti.grouped, 'grouped'),
             (ti.ndrange, 'ndrange'),
         ]:
-            if ASTResolver.resolve_to(node.func, wanted, ctx.globals):
+            if ASTResolver.resolve_to(node.func, wanted, ctx.global_vars):
                 return name
         return ''
 
@@ -692,13 +696,13 @@ class IRBuilder(Builder):
                 node.body = build_stmts(ctx, node.body)
                 ti.core.end_frontend_range_for()
             else:
-                vars = []
+                _vars = []
                 for name in targets:
                     var = ti.Expr(ti.core.make_id_expr(""))
-                    vars.append(var)
+                    _vars.append(var)
                     ctx.create_variable(name, var)
                 loop_var = build_stmt(ctx, node.iter).ptr
-                expr_group = ti.lang.expr.make_expr_group(*vars)
+                expr_group = ti.lang.expr.make_expr_group(*_vars)
                 ti.begin_frontend_struct_for(expr_group, loop_var)
                 node.body = build_stmts(ctx, node.body)
                 ti.core.end_frontend_range_for()

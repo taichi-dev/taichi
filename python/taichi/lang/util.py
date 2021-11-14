@@ -183,7 +183,7 @@ def to_taichi_type(dt):
             raise RuntimeError(
                 f'PyTorch doesn\'t support {dt.to_string()} data type.')
 
-    raise AssertionError("Unknown type {}".format(dt))
+    raise AssertionError(f"Unknown type {dt}")
 
 
 def cook_dtype(dtype):

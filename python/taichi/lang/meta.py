@@ -119,9 +119,9 @@ def ext_arr_to_matrix(arr: ext_arr(), mat: template(), as_vector: template()):
 
 
 @kernel
-def clear_gradients(vars: template()):
-    for I in ti.grouped(ScalarField(Expr(vars[0]))):
-        for s in ti.static(vars):
+def clear_gradients(_vars: template()):
+    for I in ti.grouped(ScalarField(Expr(_vars[0]))):
+        for s in ti.static(_vars):
             ScalarField(Expr(s))[I] = 0
 
 

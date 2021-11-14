@@ -24,7 +24,6 @@ class ComposerBase:
         self.launches = []
 
     def do_group_end(self, e):
-        name = e['content']
         self.groups[self.current_group] = list(self.launches)
         self.current_group = None
         self.launches = []
@@ -77,7 +76,6 @@ class ComposerCC(ComposerBase):
         self.emit('')
 
     def do_allocate_buffer(self, e):
-        root_size = e['root_size']
         gtmp_size = e['gtmp_size']
         extr_size = 4 * 1024 * 1024  # pinpoint: 4 MB
 
@@ -106,7 +104,6 @@ class ComposerCC(ComposerBase):
         self.emit('')
 
     def do_compile_kernel(self, e):
-        name = e['kernel_name']
         source = e['kernel_source']
 
         if self.emscripten:

@@ -371,8 +371,7 @@ class TaichiCallableTemplateMapper:
 
 
 class KernelDefError(Exception):
-    def __init__(self, msg):
-        super().__init__(msg)
+    pass
 
 
 class KernelArgError(Exception):
@@ -734,7 +733,8 @@ class Kernel:
 
         return func__
 
-    def match_ext_arr(self, v):
+    @staticmethod
+    def match_ext_arr(v):
         has_array = isinstance(v, np.ndarray)
         if not has_array and util.has_pytorch():
             has_array = isinstance(v, torch.Tensor)

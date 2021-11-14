@@ -101,8 +101,8 @@ cpu = _ti_core.host_arch()
 
 When this is used, Taichi automatically picks the matching CPU backend.
 """
-timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()
-timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
+timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()  # pylint: disable=unnecessary-lambda
+timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: disable=unnecessary-lambda
 
 # Legacy API
 type_factory_ = _ti_core.get_type_factory_instance()
@@ -989,7 +989,7 @@ def is_arch_supported(arch):
         metal: _ti_core.with_metal,
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
-        vulkan: lambda: _ti_core.with_vulkan(),
+        vulkan: _ti_core.with_vulkan,
         wasm: lambda: True,
         cpu: lambda: True,
     }
@@ -1012,7 +1012,7 @@ def supported_archs():
         List[taichi_core.Arch]: All supported archs on the machine.
     """
     archs = set([cpu, cuda, metal, vulkan, opengl, cc])
-    archs = set(filter(lambda x: is_arch_supported(x), archs))
+    archs = set(filter(is_arch_supported, archs))
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')

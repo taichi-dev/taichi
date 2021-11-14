@@ -516,7 +516,7 @@ class IRBuilder(Builder):
             (ti.grouped, 'grouped'),
             (ti.ndrange, 'ndrange'),
         ]:
-            if ASTResolver.resolve_to(node.func, wanted, ctx.globals):
+            if ASTResolver.resolve_to(node.func, wanted, ctx.global_vars):
                 return name
         return ''
 

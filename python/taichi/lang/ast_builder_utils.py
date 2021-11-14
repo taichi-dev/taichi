@@ -198,4 +198,4 @@ class IRBuilderContext:
         for s in reversed(self.local_scopes):
             if name in s:
                 return s[name]
-        return self.globals.get(name)
+        return self.global_vars.get(name)

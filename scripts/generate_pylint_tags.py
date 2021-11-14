@@ -24,6 +24,5 @@ TAGS = {
 }
 
 if __name__ == '__main__':
-    enabled = tuple(
-        map(lambda kv: kv[0], filter(lambda kv: kv[1], TAGS.items())))
+    enabled = [kv[0] for kv in TAGS.items() if kv[1]]
     print(','.join(enabled))

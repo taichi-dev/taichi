@@ -32,8 +32,10 @@ struct UsedFeature {
   bool float64{false};
 
   // buffers:
+  bool buf_data{false};
   bool buf_args{false};
   bool buf_gtmp{false};
+  std::unordered_map<int, int> buf_arr;
 
   // utilties:
   bool fast_pow{false};
@@ -52,6 +54,7 @@ enum class GLBufId {
   Gtmp = 1,
   Args = 2,
   Runtime = 3,
+  Arr = 4,
 };
 
 struct IOV {

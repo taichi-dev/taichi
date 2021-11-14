@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 
+import numpy as np
 import pytest
 
 import taichi as ti
@@ -169,3 +170,66 @@ def test_mpm88_aot():
         with open(os.path.join(tmpdir,
                                f'{filename}_metadata.json')) as json_file:
             json.load(json_file)
+
+
+@ti.test(arch=ti.opengl)
+def test_opengl_8_ssbo():
+    # 6 ndarrays + gtmp + args
+    n = 4
+    density1 = ti.ndarray(dtype=ti.f32, shape=(4, 4))
+    density2 = ti.ndarray(dtype=ti.f32, shape=(4, 4))
+    density3 = ti.ndarray(dtype=ti.f32, shape=(4, 4))
+    density4 = ti.ndarray(dtype=ti.f32, shape=(4, 4))
+    density5 = ti.ndarray(dtype=ti.f32, shape=(4, 4))
+    density6 = ti.ndarray(dtype=ti.f32, shape=(4, 4))
+
+    @ti.kernel
+    def init(d: ti.i32, density1: ti.any_arr(), density2: ti.any_arr(),
+             density3: ti.any_arr(), density4: ti.any_arr(),
+             density5: ti.any_arr(), density6: ti.any_arr()):
+        for i, j in density1:
+            density1[i, j] = d + 1
+            density2[i, j] = d + 2
+            density3[i, j] = d + 3
+            density4[i, j] = d + 4
+            density5[i, j] = d + 5
+            density6[i, j] = d + 6
+
+    init(0, density1, density2, density3, density4, density5, density6)
+    assert (density1.to_numpy() == (np.zeros(shape=(n, n)) + 1)).all()
+    assert (density2.to_numpy() == (np.zeros(shape=(n, n)) + 2)).all()
+    assert (density3.to_numpy() == (np.zeros(shape=(n, n)) + 3)).all()
+    assert (density4.to_numpy() == (np.zeros(shape=(n, n)) + 4)).all()
+    assert (density5.to_numpy() == (np.zeros(shape=(n, n)) + 5)).all()
+    assert (density6.to_numpy() == (np.zeros(shape=(n, n)) + 6)).all()
+
+
+@ti.must_throw(Exception)
+@ti.test(arch=ti.opengl)
+def test_opengl_exceed_max_ssbo():
+    # 7 ndarrays + gtmp + args > 8 (maximum allowed)
+    n = 4
+    density1 = ti.ndarray(dtype=ti.f32, shape=(n, n))
+    density2 = ti.ndarray(dtype=ti.f32, shape=(n, n))
+    density3 = ti.ndarray(dtype=ti.f32, shape=(n, n))
+    density4 = ti.ndarray(dtype=ti.f32, shape=(n, n))
+    density5 = ti.ndarray(dtype=ti.f32, shape=(n, n))
+    density6 = ti.ndarray(dtype=ti.f32, shape=(n, n))
+    density7 = ti.ndarray(dtype=ti.f32, shape=(n, n))
+
+    @ti.kernel
+    def init(d: ti.i32, density1: ti.any_arr(), density2: ti.any_arr(),
+             density3: ti.any_arr(), density4: ti.any_arr(),
+             density5: ti.any_arr(), density6: ti.any_arr(),
+             density7: ti.any_arr()):
+        for i, j in density1:
+            density1[i, j] = d + 1
+            density2[i, j] = d + 2
+            density3[i, j] = d + 3
+            density4[i, j] = d + 4
+            density5[i, j] = d + 5
+            density6[i, j] = d + 6
+            density7[i, j] = d + 7
+
+    init(0, density1, density2, density3, density4, density5, density6,
+         density7)

@@ -100,6 +100,7 @@ class DeviceCompiledProgram {
 
   DeviceAllocation args_buf_{kDeviceNullAllocation};
   DeviceAllocation ret_buf_{kDeviceNullAllocation};
+  DeviceAllocation arr_bufs_[taichi_max_num_args]{kDeviceNullAllocation};
 };
 
 }  // namespace opengl

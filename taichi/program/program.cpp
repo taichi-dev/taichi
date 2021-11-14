@@ -70,8 +70,11 @@ Program::Program(Arch desired_arch)
 
   profiler = make_profiler(config.arch, config.kernel_profiler);
   if (arch_uses_llvm(config.arch)) {
+#ifdef TI_WITH_LLVM
     program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
-
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   } else if (config.arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {
       TI_WARN("No Metal API detected.");
@@ -126,7 +129,11 @@ Program::Program(Arch desired_arch)
   TI_ASSERT(current_program == nullptr);
   current_program = this;
   if (arch_uses_llvm(config.arch)) {
+#if TI_WITH_LLVM
     static_cast<LlvmProgramImpl *>(program_impl_.get())->initialize_host();
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   }
 
   result_buffer = nullptr;
@@ -214,9 +221,13 @@ SNode *Program::get_snode_root(int tree_id) {
 }
 
 void Program::check_runtime_error() {
+#ifdef TI_WITH_LLVM
   TI_ASSERT(arch_uses_llvm(config.arch));
   static_cast<LlvmProgramImpl *>(program_impl_.get())
       ->check_runtime_error(result_buffer);
+#else
+  TI_NOT_IMPLEMENTED
+#endif
 }
 
 void Program::synchronize() {
@@ -436,8 +447,12 @@ Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
 
 uint64 Program::fetch_result_uint64(int i) {
   if (arch_uses_llvm(config.arch)) {
+#ifdef TI_WITH_LLVM
     return static_cast<LlvmProgramImpl *>(program_impl_.get())
         ->fetch_result<uint64>(i, result_buffer);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   }
   return result_buffer[i];
 }
@@ -487,7 +502,11 @@ void Program::finalize() {
   memory_pool_->terminate();
 
   if (arch_uses_llvm(config.arch)) {
+#if TI_WITH_LLVM
     static_cast<LlvmProgramImpl *>(program_impl_.get())->finalize();
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   }
 
   finalized_ = true;
@@ -504,9 +523,13 @@ int Program::default_block_dim(const CompileConfig &config) {
 }
 
 void Program::print_memory_profiler_info() {
+#ifdef TI_WITH_LLVM
   TI_ASSERT(arch_uses_llvm(config.arch));
   static_cast<LlvmProgramImpl *>(program_impl_.get())
       ->print_memory_profiler_info(snode_trees_, result_buffer);
+#else
+  TI_NOT_IMPLEMENTED
+#endif
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
@@ -527,7 +550,11 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
   // platform. Consider decoupling this part
   if (arch == Arch::wasm) {
     // Have to check WASM first, or it dispatches to the LlvmProgramImpl.
+#ifdef TI_WITH_LLVM
     return std::make_unique<wasm::AotModuleBuilderImpl>();
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   }
   if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
       config.arch == Arch::vulkan || config.arch == Arch::opengl) {
@@ -537,7 +564,11 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
 }
 
 LlvmProgramImpl *Program::get_llvm_program_impl() {
+#ifdef TI_WITH_LLVM
   return static_cast<LlvmProgramImpl *>(program_impl_.get());
+#else
+  TI_NOT_IMPLEMENTED
+#endif
 }
 
 }  // namespace lang

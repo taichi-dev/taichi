@@ -1,4 +1,5 @@
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
+option(TI_WITH_LLVM "Build with LLVM backends" OFF)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_CUDA_TOOLKIT "Build with the CUDA toolkit" OFF)
 option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
@@ -42,6 +43,10 @@ endif()
 if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/gl.c")
     set(TI_WITH_OPENGL OFF)
     message(WARNING "external/glad submodule not detected. Settings TI_WITH_OPENGL to OFF.")
+endif()
+
+if(NOT TI_WITH_LLVM)
+    set(TI_WITH_CUDA OFF)
 endif()
 
 
@@ -98,8 +103,15 @@ file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CPU_SOURCE})
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_WASM_SOURCE})
+if(TI_WITH_LLVM)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
+    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CPU_SOURCE})
+    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_WASM_SOURCE})
+else()
+    file(GLOB TAICHI_LLVM_SOURCE "taichi/llvm/*.cpp" "taichi/llvm/*.h")
+    list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_LLVM_SOURCE})
+endif()
+
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_INTEROP_SOURCE})
 
 

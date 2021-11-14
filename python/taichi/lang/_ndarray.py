@@ -117,7 +117,6 @@ class Ndarray:
         impl.get_runtime().sync()
         return arr
 
-
     @python_scope
     def from_numpy(self, arr):
         """Loads all values from a numpy array.

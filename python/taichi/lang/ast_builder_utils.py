@@ -101,7 +101,6 @@ class VariableScopeGuard:
         self.scopes.append({})
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        local = self.scopes[-1]
         self.scopes.pop()
 
 

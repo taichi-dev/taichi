@@ -96,7 +96,6 @@ def _get_tree_and_global_vars(self, args):
     func_body = tree.body[0]
     func_body.decorator_list = []
 
-    local_vars = {}
     global_vars = _get_global_vars(self.func)
 
     for i, arg in enumerate(func_body.args.args):
@@ -153,7 +152,7 @@ class Func:
                 if impl.get_runtime().current_kernel.is_grad:
                     raise TaichiSyntaxError(
                         "Real function in gradient kernels unsupported.")
-                instance_id, arg_features = self.mapper.lookup(args)
+                instance_id, _ = self.mapper.lookup(args)
                 key = _ti_core.FunctionKey(self.func.__name__, self.func_id,
                                            instance_id)
                 if self.compiled is None:
@@ -171,7 +170,7 @@ class Func:
             if impl.get_runtime().current_kernel.is_grad:
                 raise TaichiSyntaxError(
                     "Real function in gradient kernels unsupported.")
-            instance_id, arg_features = self.mapper.lookup(args)
+            instance_id, _ = self.mapper.lookup(args)
             key = _ti_core.FunctionKey(self.func.__name__, self.func_id,
                                        instance_id)
             if self.compiled is None:
@@ -240,7 +239,6 @@ class Func:
 
         ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
 
-        local_vars = {}
         global_vars = _get_global_vars(self.func)
         # inject template parameters into globals
         for i in self.template_slot_locations:
@@ -669,7 +667,7 @@ class Kernel:
 
                             return call_back
 
-                        assert util.has_pytorch()
+                        assert has_torch
                         assert isinstance(v, torch.Tensor)
                         tmp = v
                         taichi_arch = self.runtime.prog.config.arch

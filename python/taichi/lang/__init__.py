@@ -805,12 +805,12 @@ def benchmark(func, repeat=300, args=()):
         # Use 3 initial iterations to warm up
         # instruction/data caches. Discussion:
         # https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
-        for i in range(3):
+        for _ in range(3):
             func(*args)
             ti.sync()
         ti.clear_kernel_profile_info()
         t = time.time()
-        for n in range(repeat):
+        for _ in range(repeat):
             func(*args)
             ti.sync()
         elapsed = time.time() - t

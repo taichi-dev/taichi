@@ -90,7 +90,7 @@ class StmtBuilder(Builder):
 
         new_node = parse_stmt('ti.ti_assert(0, 0, [])')
         new_node.value.args[0] = node.test
-        new_node.value.args[1] = parse_expr("'{}'".format(msg.strip()))
+        new_node.value.args[1] = parse_expr(f"'{msg.strip()}'")
         new_node.value.args[2] = extra_args
         new_node = ast.copy_location(new_node, node)
         return new_node
@@ -321,16 +321,16 @@ if 1:
         node.body = build_stmts(ctx, node.body)
         loop_var = node.target.id
         ctx.check_loop_var(loop_var)
-        template = '''
+        template = f'''
 if 1:
-    {} = ti.Expr(ti.core.make_id_expr(''))
+    {loop_var} = ti.Expr(ti.core.make_id_expr(''))
     ___begin = ti.Expr(0)
     ___end = ti.Expr(0)
     ___begin = ti.cast(___begin, ti.i32)
     ___end = ti.cast(___end, ti.i32)
-    ti.core.begin_frontend_range_for({}.ptr, ___begin.ptr, ___end.ptr)
+    ti.core.begin_frontend_range_for({loop_var}.ptr, ___begin.ptr, ___end.ptr)
     ti.core.end_frontend_range_for()
-        '''.format(loop_var, loop_var)
+        '''
         t = ast.parse(template).body[0]
 
         assert len(node.iter.args) in [1, 2]
@@ -344,7 +344,7 @@ if 1:
         t.body[1].value.args[0] = bgn
         t.body[2].value.args[0] = end
         t.body = t.body[:6] + node.body + t.body[6:]
-        t.body.append(parse_stmt('del {}'.format(loop_var)))
+        t.body.append(parse_stmt(f'del {loop_var}'))
         return ast.copy_location(t, node)
 
     @staticmethod
@@ -366,17 +366,14 @@ if ti.static(1):
         loop_body = t_loop.body
         for i, (target, target_tmp) in enumerate(zip(targets, targets_tmp)):
             if i + 1 < len(targets):
-                stmt = '{} = __I // __ndrange{}.acc_dimensions[{}]'.format(
-                    target_tmp, id(node), i + 1)
+                stmt = f'{target_tmp} = __I // __ndrange{id(node)}.acc_dimensions[{i + 1}]'
             else:
-                stmt = '{} = __I'.format(target_tmp)
+                stmt = f'{target_tmp} = __I'
             loop_body.append(parse_stmt(stmt))
-            stmt = '{} = {} + __ndrange{}.bounds[{}][0]'.format(
-                target, target_tmp, id(node), i)
+            stmt = f'{target} = {target_tmp} + __ndrange{id(node)}.bounds[{i}][0]'
             loop_body.append(parse_stmt(stmt))
             if i + 1 < len(targets):
-                stmt = '__I = __I - {} * __ndrange{}.acc_dimensions[{}]'.format(
-                    target_tmp, id(node), i + 1)
+                stmt = f'__I = __I - {target_tmp} * __ndrange{id(node)}.acc_dimensions[{i + 1}]'
                 loop_body.append(parse_stmt(stmt))
         loop_body += node.body
 
@@ -388,7 +385,7 @@ if ti.static(1):
         # for I in ti.grouped(ti.ndrange(n, m))
         node.body = build_stmts(ctx, node.body)
         target = node.target.id
-        template = '''
+        template = f'''
 if ti.static(1):
     __ndrange = 0
     ___begin = ti.Expr(0)
@@ -397,7 +394,7 @@ if ti.static(1):
     ___end = ti.cast(___end, ti.i32)
     __ndrange_I = ti.Expr(ti.core.make_id_expr(''))
     ti.core.begin_frontend_range_for(__ndrange_I.ptr, ___begin.ptr, ___end.ptr)
-    {} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions), dt=ti.i32))
+    {target} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions), dt=ti.i32))
     __I = __ndrange_I
     for __grouped_I in range(len(__ndrange.dimensions)):
         __grouped_I_tmp = 0
@@ -405,11 +402,11 @@ if ti.static(1):
             __grouped_I_tmp = __I // __ndrange.acc_dimensions[__grouped_I + 1]
         else:
             __grouped_I_tmp = __I
-        ti.subscript({}, __grouped_I).assign(__grouped_I_tmp + __ndrange.bounds[__grouped_I][0])
+        ti.subscript({target}, __grouped_I).assign(__grouped_I_tmp + __ndrange.bounds[__grouped_I][0])
         if __grouped_I + 1 < len(__ndrange.dimensions):
             __I = __I - __grouped_I_tmp * __ndrange.acc_dimensions[__grouped_I + 1]
     ti.core.end_frontend_range_for()
-        '''.format(target, target)
+        '''
         t = ast.parse(template).body[0]
         node.iter.args[0].args = build_exprs(ctx, node.iter.args[0].args)
         t.body[0].value = node.iter.args[0]
@@ -427,39 +424,41 @@ if ti.static(1):
         for loop_var in targets:
             ctx.check_loop_var(loop_var)
 
-        var_decl = ''.join(
-            '    {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(name)
-            for name in targets)  # indent: 4 spaces
+
+        var_decl = ''.join(f'    {name} = ti.Expr(ti.core.make_id_expr(""))\n'
+                           for name in targets)  # indent: 4 spaces
         _vars = ', '.join(targets)
         if is_grouped:
-            template = '''
+            template = f'''
 if 1:
     ___loop_var = 0
     ___loop_indices = ti.lang.expr.make_var_list(size=len(___loop_var.shape))
     ___expr_group = ti.lang.expr.make_expr_group(___loop_indices)
     ti.begin_frontend_struct_for(___expr_group, ___loop_var)
-    {} = ti.Vector(___loop_indices, dt=ti.i32)
+    {_vars} = ti.Vector(___loop_indices, dt=ti.i32)
     ti.core.end_frontend_range_for()
-            '''.format(_vars, _vars)
+            '''
+
             t = ast.parse(template).body[0]
             cut = 5
             t.body[0].value = node.iter
             t.body = t.body[:cut] + node.body + t.body[cut:]
         else:
-            template = '''
+            template = f'''
 if 1:
-{}
+{var_decl}
     ___loop_var = 0
-    ___expr_group = ti.lang.expr.make_expr_group({})
+    ___expr_group = ti.lang.expr.make_expr_group({_vars})
     ti.begin_frontend_struct_for(___expr_group, ___loop_var)
     ti.core.end_frontend_range_for()
-            '''.format(var_decl, _vars)
+            '''
+
             t = ast.parse(template).body[0]
             cut = len(targets) + 3
             t.body[cut - 3].value = node.iter
             t.body = t.body[:cut] + node.body + t.body[cut:]
         for loop_var in reversed(targets):
-            t.body.append(parse_stmt('del {}'.format(loop_var)))
+            t.body.append(parse_stmt(f'del {loop_var}'))
         return ast.copy_location(t, node)
 
     @staticmethod
@@ -563,11 +562,10 @@ if 1:
                     dt_expr = 'ti.' + ti.core.data_type_name(array_dt)
                     dt = parse_expr(dt_expr)
                     arg_init.value.args[0] = dt
-                    arg_init.value.args[1] = parse_expr("{}".format(array_dim))
+                    arg_init.value.args[1] = parse_expr(f"{array_dim}")
                     arg_init.value.args[2] = parse_expr(
-                        "{}".format(array_element_shape))
-                    arg_init.value.args[3] = parse_expr(
-                        "ti.{}".format(array_layout))
+                        f"{array_element_shape}")
+                    arg_init.value.args[3] = parse_expr(f"ti.{array_layout}")
                     arg_decls.append(arg_init)
                 else:
                     arg_init = parse_stmt(

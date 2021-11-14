@@ -1097,11 +1097,11 @@ def all_archs_with(**kwargs):
 
             for arch in ti.supported_archs():
                 if can_run_on(arch):
-                    print('Running test on arch={}'.format(arch))
+                    print(f'Running test on arch={arch}')
                     ti.init(arch=arch, **kwargs)
                     test(*test_args, **test_kwargs)
                 else:
-                    print('Skipped test on arch={}'.format(arch))
+                    print(f'Skipped test on arch={arch}')
 
         return wrapped
 
@@ -1230,11 +1230,9 @@ def must_throw(ex):
                 # throws. test passed
                 pass
             except Exception as err_actual:
-                assert False, 'Exception {} instead of {} thrown'.format(
-                    str(type(err_actual)), str(ex))
+                assert False, f'Exception {str(type(err_actual))} instead of {str(ex)} thrown'
             if finishes:
-                assert False, 'Test successfully finished instead of throwing {}'.format(
-                    str(ex))
+                assert False, f'Test successfully finished instead of throwing {str(ex)}'
 
         return func__
 

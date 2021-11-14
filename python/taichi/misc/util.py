@@ -14,9 +14,9 @@ def config_from_dict(args):
     d = copy.copy(args)
     for k in d:
         if isinstance(d[k], _ti_core.Vector2f):
-            d[k] = '({}, {})'.format(d[k].x, d[k].y)
+            d[k] = f'({d[k].x}, {d[k].y})'
         if isinstance(d[k], _ti_core.Vector3f):
-            d[k] = '({}, {}, {})'.format(d[k].x, d[k].y, d[k].z)
+            d[k] = f'({d[k].x}, {d[k].y}, {d[k].z})'
         d[k] = str(d[k])
     return _ti_core.config_from_dict(d)
 

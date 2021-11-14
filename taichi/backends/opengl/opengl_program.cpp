@@ -16,7 +16,7 @@ FunctionType OpenglProgramImpl::compile(Kernel *kernel,
     ptr->launch(ctx, runtime);
   };
 #else
-  return [](Context &ctx) {};
+  return [](RuntimeContext &ctx) {};
 #endif
 }
 

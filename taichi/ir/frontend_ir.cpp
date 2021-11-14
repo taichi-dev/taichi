@@ -5,6 +5,10 @@
 
 TLANG_NAMESPACE_BEGIN
 
+#define TI_ASSERT_TYPE_CHECKED(x)                       \
+  TI_ASSERT_INFO(x->ret_type != PrimitiveType::unknown, \
+                 "[{}] was not type-checked", x.serialize())
+
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,
                                          const ExprGroup &indices,
@@ -21,6 +25,9 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
 FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
   TI_ASSERT(lhs->is_lvalue());
+  if (lhs.is<IdExpression>() && lhs->ret_type == PrimitiveType::unknown) {
+    lhs.expr->ret_type = rhs->ret_type;
+  }
 }
 
 IRNode *FrontendContext::root() {
@@ -128,10 +135,11 @@ void UnaryOpExpression::serialize(std::ostream &ss) {
 }
 
 void UnaryOpExpression::type_check() {
-  // TODO: assert no unknowns after type_check for all expressions are
-  // implemented
-  if (operand->ret_type == PrimitiveType::unknown)
-    return;
+  TI_ASSERT_TYPE_CHECKED(operand);
+  if (!operand->ret_type->is<PrimitiveType>())
+    throw std::runtime_error(
+        fmt::format("TypeError: unsupported operand type(s) for '{}': '{}'",
+                    unary_op_type_name(type), operand->ret_type->to_string()));
   if ((type == UnaryOpType::floor || type == UnaryOpType::ceil ||
        is_trigonometric(type)) &&
       !is_real(operand->ret_type))
@@ -157,12 +165,10 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
 }
 
 void BinaryOpExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(lhs);
+  TI_ASSERT_TYPE_CHECKED(rhs);
   auto lhs_type = lhs->ret_type;
   auto rhs_type = rhs->ret_type;
-  // TODO: assert no unknowns after type_check for all expressions are
-  // implemented
-  if (lhs_type == PrimitiveType::unknown || rhs_type == PrimitiveType::unknown)
-    return;
   auto error = [&]() {
     throw std::runtime_error(fmt::format(
         "TypeError: unsupported operand type(s) for '{}': '{}' and '{}'",
@@ -201,12 +207,12 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
 }
 
 void TernaryOpExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(op1);
+  TI_ASSERT_TYPE_CHECKED(op2);
+  TI_ASSERT_TYPE_CHECKED(op3);
   auto op1_type = op1->ret_type;
   auto op2_type = op2->ret_type;
   auto op3_type = op3->ret_type;
-  if (op1_type == PrimitiveType::unknown ||
-      op2_type == PrimitiveType::unknown || op3_type == PrimitiveType::unknown)
-    return;
   auto error = [&]() {
     throw std::runtime_error(fmt::format(
         "TypeError: unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
@@ -230,6 +236,15 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void InternalFuncCallExpression::type_check() {
+  for (auto &arg : args) {
+    TI_ASSERT_TYPE_CHECKED(arg);
+    // no arg type compatibility check for now due to lack of specification
+  }
+  // internal func calls have default return type
+  ret_type = PrimitiveType::i32;
+}
+
 void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> args_stmts(args.size());
   for (int i = 0; i < (int)args.size(); ++i) {
@@ -238,6 +253,18 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
   }
   ctx->push_back<InternalFuncStmt>(func_name, args_stmts);
   stmt = ctx->back_stmt();
+}
+
+void ExternalFuncCallExpression::type_check() {
+  for (auto &arg : args) {
+    TI_ASSERT_TYPE_CHECKED(arg);
+    // no arg type compatibility check for now due to lack of specification
+  }
+  for (auto &output : outputs) {
+    TI_ASSERT_TYPE_CHECKED(output);
+    // no output type compatibility check for now due to lack of specification
+  }
+  // external func calls have no return type for now
 }
 
 void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
@@ -295,10 +322,7 @@ void GlobalPtrExpression::type_check() {
   } else if (var.is<ExternalTensorExpression>()) {
     for (int i = 0; i < indices.exprs.size(); i++) {
       auto &expr = indices.exprs[i];
-      // TODO: assert no unknowns after type_check for all expressions are
-      // implemented
-      if (expr->ret_type == PrimitiveType::unknown)
-        return;
+      TI_ASSERT_TYPE_CHECKED(expr);
       if (!is_integral(expr->ret_type))
         throw std::runtime_error(
             fmt::format("TypeError: indices must be integers, however '{}' is "
@@ -441,11 +465,8 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
 }
 
 void RangeAssumptionExpression::type_check() {
-  // TODO: assert no unknowns after type_check for all expressions are
-  // implemented
-  if (input->ret_type == PrimitiveType::unknown ||
-      base->ret_type == PrimitiveType::unknown)
-    return;
+  TI_ASSERT_TYPE_CHECKED(input);
+  TI_ASSERT_TYPE_CHECKED(base);
   if (!input->ret_type->is<PrimitiveType>() ||
       !base->ret_type->is<PrimitiveType>() || input->ret_type != base->ret_type)
     throw std::runtime_error(
@@ -464,10 +485,7 @@ void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
 }
 
 void LoopUniqueExpression::type_check() {
-  // TODO: assert no unknowns after type_check for all expressions are
-  // implemented
-  if (input->ret_type == PrimitiveType::unknown)
-    return;
+  TI_ASSERT_TYPE_CHECKED(input);
   if (!input->ret_type->is<PrimitiveType>())
     throw std::runtime_error(fmt::format(
         "TypeError: unsupported operand type(s) for 'loop_unique': '{}'",
@@ -516,11 +534,8 @@ void IdExpression::flatten(FlattenContext *ctx) {
 }
 
 void AtomicOpExpression::type_check() {
-  // TODO: assert no unknowns after type_check for all expressions are
-  // implemented
-  if (dest->ret_type == PrimitiveType::unknown ||
-      val->ret_type == PrimitiveType::unknown)
-    return;
+  TI_ASSERT_TYPE_CHECKED(dest);
+  TI_ASSERT_TYPE_CHECKED(val);
   auto error = [&]() {
     throw std::runtime_error(fmt::format(
         "TypeError: unsupported operand type(s) for 'atomic_{}': '{}' and '{}'",
@@ -683,6 +698,18 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   TI_ASSERT(0 <= axis && axis < temp->dim);
   ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id);
   stmt = ctx->back_stmt();
+}
+
+void FuncCallExpression::type_check() {
+  for (auto &arg : args.exprs) {
+    TI_ASSERT_TYPE_CHECKED(arg);
+    // no arg type compatibility check for now due to lack of specification
+  }
+  TI_ASSERT_INFO(func->rets.size() <= 1,
+                 "Too many (> 1) return values for FuncCallExpression");
+  if (func->rets.size() == 1) {
+    ret_type = func->rets[0].dt;
+  }
 }
 
 void FuncCallExpression::flatten(FlattenContext *ctx) {

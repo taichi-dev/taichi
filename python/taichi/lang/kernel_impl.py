@@ -371,8 +371,7 @@ class TaichiCallableTemplateMapper:
 
 
 class KernelDefError(Exception):
-    def __init__(self, msg):
-        super().__init__(msg)
+    pass
 
 
 class KernelArgError(Exception):
@@ -492,10 +491,8 @@ class Kernel:
         grad_suffix = ""
         if self.is_grad:
             grad_suffix = "_grad"
-        kernel_name = "{}_c{}_{}{}".format(self.func.__name__,
-                                           self.kernel_counter, key[1],
-                                           grad_suffix)
-        ti.trace("Compiling kernel {}...".format(kernel_name))
+        kernel_name = f"{self.func.__name__}_c{ self.kernel_counter}_{key[1]}{grad_suffix}"
+        ti.trace(f"Compiling kernel {kernel_name}...")
 
         src = textwrap.dedent(oinspect.getsource(self.func))
         tree = ast.parse(src)
@@ -573,10 +570,8 @@ class Kernel:
         grad_suffix = ""
         if self.is_grad:
             grad_suffix = "_grad"
-        kernel_name = "{}_c{}_{}{}".format(self.func.__name__,
-                                           self.kernel_counter, key[1],
-                                           grad_suffix)
-        ti.trace("Compiling kernel {}...".format(kernel_name))
+        kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}{grad_suffix}"
+        ti.trace(f"Compiling kernel {kernel_name}...")
 
         tree, global_vars = _get_tree_and_global_vars(self, args)
 
@@ -619,8 +614,7 @@ class Kernel:
         def func__(*args):
             assert len(args) == len(
                 self.argument_annotations
-            ), '{} arguments needed but {} provided'.format(
-                len(self.argument_annotations), len(args))
+            ), f'{len(self.argument_annotations)} arguments needed but {len(args)} provided'
 
             tmps = []
             callbacks = []
@@ -703,8 +697,7 @@ class Kernel:
                     max_num_indices = _ti_core.get_max_num_indices()
                     assert len(
                         shape
-                    ) <= max_num_indices, "External array cannot have > {} indices".format(
-                        max_num_indices)
+                    ) <= max_num_indices, f"External array cannot have > {max_num_indices} indices"
                     for ii, s in enumerate(shape):
                         launch_ctx.set_extra_arg_int(actual_argument_slot, ii,
                                                      s)

@@ -12,8 +12,7 @@ RUN apt-get update && \
                        wget \
                        git \
                        unzip \
-                       libx11-xcb-dev
- \
+                       libx11-xcb-dev \
                        zlib1g-dev
 # Install the latest version of CMAKE v3.20.5 from source
 WORKDIR /

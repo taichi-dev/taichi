@@ -643,7 +643,7 @@ def ndarray(dtype, shape):
 
 
 @taichi_scope
-def ti_print(*vars, sep=' ', end='\n'):
+def ti_print(*_vars, sep=' ', end='\n'):
     def entry2content(var):
         if isinstance(var, str):
             return var
@@ -657,8 +657,8 @@ def ti_print(*vars, sep=' ', end='\n'):
             yield v
         yield ']'
 
-    def vars2entries(vars):
-        for var in vars:
+    def vars2entries(_vars):
+        for var in _vars:
             if hasattr(var, '__ti_repr__'):
                 res = var.__ti_repr__()
             elif isinstance(var, (list, tuple)):
@@ -676,8 +676,8 @@ def ti_print(*vars, sep=' ', end='\n'):
             for v in vars2entries(res):
                 yield v
 
-    def add_separators(vars):
-        for i, var in enumerate(vars):
+    def add_separators(_vars):
+        for i, var in enumerate(_vars):
             if i:
                 yield sep
             yield var
@@ -696,8 +696,8 @@ def ti_print(*vars, sep=' ', end='\n'):
         if accumated:
             yield accumated
 
-    vars = add_separators(vars)
-    entries = vars2entries(vars)
+    _vars = add_separators(_vars)
+    entries = vars2entries(_vars)
     entries = fused_string(entries)
     contentries = [entry2content(entry) for entry in entries]
     _ti_core.create_print(contentries)

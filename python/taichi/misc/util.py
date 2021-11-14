@@ -95,18 +95,18 @@ class Tee():
 
 # The builtin `warnings` module is unreliable since it may be suppressed
 # by other packages such as IPython.
-def warning(msg, type=UserWarning, stacklevel=1):
+def warning(msg, warning_type=UserWarning, stacklevel=1):
     """Print warning message
 
     Args:
         msg (str): massage to print.
-        type (builtin warning type):  type of warning.
+        warning_type (builtin warning type):  type of warning.
         stacklevel (int): warning stack level from the caller.
     """
     s = traceback.extract_stack()[:-stacklevel]
     raw = ''.join(traceback.format_list(s))
     print(Fore.YELLOW + Style.BRIGHT, end='')
-    print(f'{type.__name__}: {msg}')
+    print(f'{warning_type.__name__}: {msg}')
     print(f'\n{raw}')
     print(Style.RESET_ALL, end='')
 

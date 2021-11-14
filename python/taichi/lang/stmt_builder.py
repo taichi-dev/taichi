@@ -426,7 +426,7 @@ if ti.static(1):
 
         var_decl = ''.join(f'    {name} = ti.Expr(ti.core.make_id_expr(""))\n'
                            for name in targets)  # indent: 4 spaces
-        vars = ', '.join(targets)
+        _vars = ', '.join(targets)
         if is_grouped:
             template = f'''
 if 1:
@@ -434,9 +434,10 @@ if 1:
     ___loop_indices = ti.lang.expr.make_var_list(size=len(___loop_var.shape))
     ___expr_group = ti.lang.expr.make_expr_group(___loop_indices)
     ti.begin_frontend_struct_for(___expr_group, ___loop_var)
-    {vars} = ti.Vector(___loop_indices, dt=ti.i32)
+    {_vars} = ti.Vector(___loop_indices, dt=ti.i32)
     ti.core.end_frontend_range_for()
             '''
+
             t = ast.parse(template).body[0]
             cut = 5
             t.body[0].value = node.iter
@@ -446,10 +447,11 @@ if 1:
 if 1:
 {var_decl}
     ___loop_var = 0
-    ___expr_group = ti.lang.expr.make_expr_group({vars})
+    ___expr_group = ti.lang.expr.make_expr_group({_vars})
     ti.begin_frontend_struct_for(___expr_group, ___loop_var)
     ti.core.end_frontend_range_for()
             '''
+
             t = ast.parse(template).body[0]
             cut = len(targets) + 3
             t.body[cut - 3].value = node.iter

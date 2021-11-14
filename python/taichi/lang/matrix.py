@@ -472,10 +472,10 @@ class Matrix(TaichiOperations):
 
         """
         assert self.n == self.m
-        sum = self(0, 0)
+        _sum = self(0, 0)
         for i in range(1, self.n):
-            sum = sum + self(i, i)
-        return sum
+            _sum = _sum + self(i, i)
+        return _sum
 
     @taichi_scope
     def inverse(self):
@@ -1210,9 +1210,9 @@ class MatrixField(Field):
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
-    def __init__(self, vars, n, m):
-        assert len(vars) == n * m
-        super().__init__(vars)
+    def __init__(self, _vars, n, m):
+        assert len(_vars) == n * m
+        super().__init__(_vars)
         self.n = n
         self.m = m
 

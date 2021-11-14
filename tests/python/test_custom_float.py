@@ -8,7 +8,7 @@ import taichi as ti
 
 @ti.test(require=ti.extension.quant_basic)
 def test_custom_float():
-    cft = ti.quant.fixed(frac=32, range=2)
+    cft = ti.quant.fixed(frac=32, num_range=2)
     x = ti.field(dtype=cft)
 
     ti.root.bit_struct(num_bits=32).place(x)
@@ -29,7 +29,7 @@ def test_custom_float():
 
 @ti.test(require=ti.extension.quant_basic)
 def test_custom_matrix_rotation():
-    cft = ti.quant.fixed(frac=16, range=1.2)
+    cft = ti.quant.fixed(frac=16, num_range=1.2)
 
     x = ti.Matrix.field(2, 2, dtype=cft)
 

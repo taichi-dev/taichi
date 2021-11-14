@@ -18,14 +18,15 @@ class ASTTransformerTotal:
                  excluded_parameters=(),
                  is_kernel=True,
                  arg_features=None,
-                 globals=None):
+                 global_vars=None):
         self.func = func
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
         self.arg_features = arg_features
-        self.pass_checks = ASTTransformerChecks(func=func, global_vars=globals)
+        self.pass_checks = ASTTransformerChecks(func=func,
+                                                global_vars=global_vars)
         self.rename_module = ASTTransformerUnifyModule(func=func)
-        self.globals = globals
+        self.global_vars = global_vars
 
     @staticmethod
     def print_ast(tree, title=None):
@@ -43,7 +44,7 @@ class ASTTransformerTotal:
                 excluded_parameters=self.excluded_parameters,
                 is_kernel=self.is_kernel,
                 arg_features=self.arg_features,
-                globals=self.globals,
+                global_vars=self.global_vars,
                 argument_data=arguments)
             # Convert Python AST to Python code that generates Taichi C++ AST.
 

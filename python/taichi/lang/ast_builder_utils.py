@@ -133,7 +133,7 @@ class IRBuilderContext:
                  is_kernel=True,
                  func=None,
                  arg_features=None,
-                 globals=None,
+                 global_vars=None,
                  argument_data=None):
         self.func = func
         self.local_scopes = []
@@ -142,7 +142,7 @@ class IRBuilderContext:
         self.is_kernel = is_kernel
         self.arg_features = arg_features
         self.returns = None
-        self.globals = globals
+        self.global_vars = global_vars
         self.argument_data = argument_data
         self.return_data = None
 
@@ -197,4 +197,4 @@ class IRBuilderContext:
         for s in reversed(self.local_scopes):
             if name in s:
                 return s[name]
-        return self.globals.get(name)
+        return self.global_vars.get(name)

@@ -150,7 +150,7 @@ class SparseMatrixBuilder:
         """Print the triplets stored in the builder"""
         self.ptr.print_triplets()
 
-    def build(self, dtype=f32, format='CSR'):
+    def build(self, dtype=f32, _format='CSR'):
         """Create a sparse matrix using the triplets"""
         sm = self.ptr.build()
         return SparseMatrix(sm=sm)

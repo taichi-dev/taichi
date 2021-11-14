@@ -15,7 +15,7 @@
 namespace taichi {
 namespace lang {
 
-struct Context;
+struct RuntimeContext;
 
 namespace metal {
 

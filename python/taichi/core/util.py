@@ -30,7 +30,7 @@ def get_os_name():
         return 'linux'
     if 'bsd' in name.lower():
         return 'unix'
-    assert False, "Unknown platform name %s" % name
+    assert False, f"Unknown platform name {name}"
 
 
 def import_ti_core():
@@ -102,7 +102,7 @@ def check_exists(src):
 
 def get_unique_task_id():
     return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + (
-        '%05d' % random.randint(0, 10000))
+        f'{random.randint(0, 10000):05d}')
 
 
 ti_core = import_ti_core()
@@ -117,11 +117,11 @@ if log_level:
 
 def get_dll_name(name):
     if get_os_name() == 'linux':
-        return 'libtaichi_%s.so' % name
+        return f'libtaichi_{name}.so'
     if get_os_name() == 'osx':
-        return 'libtaichi_%s.dylib' % name
+        return f'libtaichi_{name}.dylib'
     if get_os_name() == 'win':
-        return 'taichi_%s.dll' % name
+        return f'taichi_{name}.dll'
     raise Exception(f"Unknown OS: {get_os_name()}")
 
 
@@ -139,8 +139,7 @@ def require_version(major, minor=None, patch=None):
         minor < versions[1] or minor == versions[1] and patch <= versions[2])
     if match:
         return
-    print("Taichi version mismatch. required >= {}.{}.{}".format(
-        major, minor, patch))
+    print(f"Taichi version mismatch. required >= {major}.{minor}.{patch}")
     print("Installed =", ti_core.get_version_string())
     raise Exception("Taichi version mismatch")
 

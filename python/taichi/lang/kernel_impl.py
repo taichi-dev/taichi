@@ -96,7 +96,6 @@ def _get_tree_and_global_vars(self, args):
     func_body = tree.body[0]
     func_body.decorator_list = []
 
-    local_vars = {}
     global_vars = _get_global_vars(self.func)
 
     for i, arg in enumerate(func_body.args.args):
@@ -131,8 +130,8 @@ class Func:
         self.return_type = None
         self.extract_arguments()
         self.template_slot_locations = []
-        for i in range(len(self.argument_annotations)):
-            if isinstance(self.argument_annotations[i], template):
+        for i, anno in enumerate(self.argument_annotations):
+            if isinstance(anno, template):
                 self.template_slot_locations.append(i)
         self.mapper = TaichiCallableTemplateMapper(
             self.argument_annotations, self.template_slot_locations)
@@ -153,7 +152,7 @@ class Func:
                 if impl.get_runtime().current_kernel.is_grad:
                     raise TaichiSyntaxError(
                         "Real function in gradient kernels unsupported.")
-                instance_id, arg_features = self.mapper.lookup(args)
+                instance_id, _ = self.mapper.lookup(args)
                 key = _ti_core.FunctionKey(self.func.__name__, self.func_id,
                                            instance_id)
                 if self.compiled is None:
@@ -171,7 +170,7 @@ class Func:
             if impl.get_runtime().current_kernel.is_grad:
                 raise TaichiSyntaxError(
                     "Real function in gradient kernels unsupported.")
-            instance_id, arg_features = self.mapper.lookup(args)
+            instance_id, _ = self.mapper.lookup(args)
             key = _ti_core.FunctionKey(self.func.__name__, self.func_id,
                                        instance_id)
             if self.compiled is None:
@@ -188,8 +187,8 @@ class Func:
         # Skip the template args, e.g., |self|
         assert impl.get_runtime().experimental_real_function
         non_template_args = []
-        for i in range(len(self.argument_annotations)):
-            if not isinstance(self.argument_annotations[i], template):
+        for i, anno in enumerate(self.argument_annotations):
+            if not isinstance(anno, template):
                 non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
         return ti.Expr(
@@ -240,7 +239,6 @@ class Func:
 
         ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
 
-        local_vars = {}
         global_vars = _get_global_vars(self.func)
         # inject template parameters into globals
         for i in self.template_slot_locations:
@@ -371,8 +369,7 @@ class TaichiCallableTemplateMapper:
 
 
 class KernelDefError(Exception):
-    def __init__(self, msg):
-        super().__init__(msg)
+    pass
 
 
 class KernelArgError(Exception):
@@ -412,8 +409,8 @@ class Kernel:
         self.extract_arguments()
         del _taichi_skip_traceback
         self.template_slot_locations = []
-        for i in range(len(self.argument_annotations)):
-            if isinstance(self.argument_annotations[i], template):
+        for i, anno in enumerate(self.argument_annotations):
+            if isinstance(anno, template):
                 self.template_slot_locations.append(i)
         self.mapper = TaichiCallableTemplateMapper(
             self.argument_annotations, self.template_slot_locations)
@@ -488,14 +485,12 @@ class Kernel:
             key = (self.func, 0)
         self.runtime.materialize()
         if key in self.compiled_functions:
-            return
+            return None
         grad_suffix = ""
         if self.is_grad:
             grad_suffix = "_grad"
-        kernel_name = "{}_c{}_{}{}".format(self.func.__name__,
-                                           self.kernel_counter, key[1],
-                                           grad_suffix)
-        ti.trace("Compiling kernel {}...".format(kernel_name))
+        kernel_name = f"{self.func.__name__}_c{ self.kernel_counter}_{key[1]}{grad_suffix}"
+        ti.trace(f"Compiling kernel {kernel_name}...")
 
         src = textwrap.dedent(oinspect.getsource(self.func))
         tree = ast.parse(src)
@@ -561,6 +556,8 @@ class Kernel:
         assert key not in self.compiled_functions
         self.compiled_functions[key] = self.get_function_body(taichi_kernel)
 
+        return None
+
     def materialize_ast_refactor(self, key=None, args=None, arg_features=None):
         _taichi_skip_traceback = 1
         if key is None:
@@ -571,10 +568,8 @@ class Kernel:
         grad_suffix = ""
         if self.is_grad:
             grad_suffix = "_grad"
-        kernel_name = "{}_c{}_{}{}".format(self.func.__name__,
-                                           self.kernel_counter, key[1],
-                                           grad_suffix)
-        ti.trace("Compiling kernel {}...".format(kernel_name))
+        kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}{grad_suffix}"
+        ti.trace(f"Compiling kernel {kernel_name}...")
 
         tree, global_vars = _get_tree_and_global_vars(self, args)
 
@@ -617,8 +612,7 @@ class Kernel:
         def func__(*args):
             assert len(args) == len(
                 self.argument_annotations
-            ), '{} arguments needed but {} provided'.format(
-                len(self.argument_annotations), len(args))
+            ), f'{len(self.argument_annotations)} arguments needed but {len(args)} provided'
 
             tmps = []
             callbacks = []
@@ -675,7 +669,7 @@ class Kernel:
 
                             return call_back
 
-                        assert util.has_pytorch()
+                        assert has_torch
                         assert isinstance(v, torch.Tensor)
                         tmp = v
                         taichi_arch = self.runtime.prog.config.arch
@@ -701,8 +695,7 @@ class Kernel:
                     max_num_indices = _ti_core.get_max_num_indices()
                     assert len(
                         shape
-                    ) <= max_num_indices, "External array cannot have > {} indices".format(
-                        max_num_indices)
+                    ) <= max_num_indices, f"External array cannot have > {max_num_indices} indices"
                     for ii, s in enumerate(shape):
                         launch_ctx.set_extra_arg_int(actual_argument_slot, ii,
                                                      s)
@@ -740,7 +733,8 @@ class Kernel:
 
         return func__
 
-    def match_ext_arr(self, v):
+    @staticmethod
+    def match_ext_arr(v):
         has_array = isinstance(v, np.ndarray)
         if not has_array and util.has_pytorch():
             has_array = isinstance(v, torch.Tensor)

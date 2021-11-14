@@ -460,8 +460,8 @@ class Matrix(TaichiOperations):
         """
         _taichi_skip_traceback = 1
         ret = self.copy()
-        for i in range(len(self.entries)):
-            ret.entries[i] = ops_mod.cast(ret.entries[i], dtype)
+        for i, entry in enumerate(ret.entries):
+            ret.entries[i] = ops_mod.cast(entry, dtype)
         return ret
 
     def trace(self):
@@ -1288,7 +1288,6 @@ class MatrixField(Field):
             dtype = to_numpy_type(self.dtype)
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        import numpy as np  # pylint: disable=C0415
         arr = np.zeros(self.shape + shape_ext, dtype=dtype)
         taichi.lang.meta.matrix_to_ext_arr(self, arr, as_vector)
         ti.sync()

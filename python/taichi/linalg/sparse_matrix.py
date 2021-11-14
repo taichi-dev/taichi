@@ -60,6 +60,8 @@ class SparseMatrix:
             sm = self.matrix * other.matrix
             return SparseMatrix(sm=sm)
 
+        return None
+
     def __rmul__(self, other):
         """Right scalar multiplication for sparse matrix.
 
@@ -71,6 +73,8 @@ class SparseMatrix:
         if isinstance(other, float):
             sm = other * self.matrix
             return SparseMatrix(sm=sm)
+
+        return None
 
     def transpose(self):
         """Sparse Matrix transpose.

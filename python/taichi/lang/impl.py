@@ -122,11 +122,11 @@ def subscript(value, *indices):
         return value[indices[0]]
 
     flattened_indices = []
-    for i in range(len(indices)):
-        if is_taichi_class(indices[i]):
-            ind = indices[i].entries
+    for index in indices:
+        if is_taichi_class(index):
+            ind = index.entries
         else:
-            ind = [indices[i]]
+            ind = [index]
         flattened_indices += ind
     indices = tuple(flattened_indices)
     if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
@@ -215,23 +215,23 @@ def chain_compare(comparators, ops):
     assert len(comparators) == len(ops) + 1, \
       f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
     ret = True
-    for i in range(len(ops)):
+    for i, op in enumerate(ops):
         lhs = comparators[i]
         rhs = comparators[i + 1]
-        if ops[i] == 'Lt':
+        if op == 'Lt':
             now = lhs < rhs
-        elif ops[i] == 'LtE':
+        elif op == 'LtE':
             now = lhs <= rhs
-        elif ops[i] == 'Gt':
+        elif op == 'Gt':
             now = lhs > rhs
-        elif ops[i] == 'GtE':
+        elif op == 'GtE':
             now = lhs >= rhs
-        elif ops[i] == 'Eq':
+        elif op == 'Eq':
             now = lhs == rhs
-        elif ops[i] == 'NotEq':
+        elif op == 'NotEq':
             now = lhs != rhs
         else:
-            assert False, f'Unknown operator {ops[i]}'
+            assert False, f'Unknown operator {op}'
         ret = ti.logical_and(ret, now)
     return ret
 
@@ -301,7 +301,8 @@ class PyTaichi:
         if self.prog is None:
             self.prog = _ti_core.Program()
 
-    def materialize_root_fb(self, is_first_call):
+    @staticmethod
+    def materialize_root_fb(is_first_call):
         if root.finalized:
             return
         if not is_first_call and root.empty:
@@ -315,7 +316,8 @@ class PyTaichi:
         global _root_fb
         _root_fb = FieldsBuilder()
 
-    def _finalize_root_fb_for_aot(self):
+    @staticmethod
+    def _finalize_root_fb_for_aot():
         if _root_fb.finalized:
             raise RuntimeError(
                 'AOT: can only finalize the root FieldsBuilder once')
@@ -483,20 +485,24 @@ _root_fb = _UninitializedRootFieldsBuilder()
 
 class _Root:
     """Wrapper around the default root FieldsBuilder instance."""
-    def parent(self, n=1):
+    @staticmethod
+    def parent(n=1):
         """Same as :func:`taichi.SNode.parent`"""
         return _root_fb.root.parent(n)
 
-    def loop_range(self):
+    @staticmethod
+    def loop_range():
         """Same as :func:`taichi.SNode.loop_range`"""
         return _root_fb.root.loop_range()
 
-    def get_children(self):
+    @staticmethod
+    def get_children():
         """Same as :func:`taichi.SNode.get_children`"""
         return _root_fb.root.get_children()
 
     # TODO: Record all of the SNodeTrees that finalized under 'ti.root'
-    def deactivate_all(self):
+    @staticmethod
+    def deactivate_all():
         warning(
             """'ti.root.deactivate_all()' would deactivate all finalized snodes."""
         )
@@ -726,8 +732,8 @@ def ti_format(*args, **kwargs):
         args
     ) + 1, 'Number of args is different from number of positions provided in string'
 
-    for i in range(len(args)):
-        res.insert(i * 2 + 1, args[i])
+    for i, arg in enumerate(args):
+        res.insert(i * 2 + 1, arg)
     res.insert(0, '__ti_format__')
     return res
 

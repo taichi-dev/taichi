@@ -264,7 +264,7 @@ class PLYWriter:
         if last_4_char == ".ply":
             path = path[:-4]
 
-        real_path = path + "_" + "{0:0=6d}".format(series_num) + ".ply"
+        real_path = path + "_" + f"{series_num:0=6d}" + ".ply"
         self.export_ascii(real_path)
 
     def export_frame(self, series_num: int, path: str):
@@ -273,5 +273,5 @@ class PLYWriter:
         if last_4_char == ".ply":
             path = path[:-4]
 
-        real_path = path + "_" + "{0:0=6d}".format(series_num) + ".ply"
+        real_path = path + "_" + f"{series_num:0=6d}" + ".ply"
         self.export(real_path)

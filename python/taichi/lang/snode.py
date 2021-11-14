@@ -58,13 +58,18 @@ class SNode:
             self.ptr.pointer(axes, dimensions,
                              impl.current_cfg().packed))
 
-    def hash(self, axes, dimensions):
+    @staticmethod
+    def hash(axes, dimensions):
+        # original code is #def hash(self,axes, dimensions) without #@staticmethod   before fix pylint R0201
         """Not supported."""
         raise RuntimeError('hash not yet supported')
+<<<<<<< HEAD
         # if isinstance(dimensions, int):
         #     dimensions = [dimensions] * len(axes)
         # return SNode(self.ptr.hash(axes, dimensions,
         #                            impl.current_cfg().packed))
+=======
+>>>>>>> 8662c83b4458070d05b2ed42247b8c2a09b2c3fc
 
     def dynamic(self, axis, dimension, chunk_size=None):
         """Adds a dynamic SNode as a child component of `self`.

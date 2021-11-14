@@ -58,6 +58,8 @@ class IRBuilder(Builder):
             IRBuilder.build_assign_basic(ctx, target, tmp_tuple[i],
                                          is_static_assign)
 
+        return None
+
     @staticmethod
     def build_assign_basic(ctx, target, value, is_static_assign):
         """Build basic assginment like this: target = value.
@@ -163,6 +165,8 @@ class IRBuilder(Builder):
                     ctx, node.generators[now_comp].ifs)
                 IRBuilder.process_ifs(ctx, node, now_comp, 0, func, result)
 
+        return None
+
     @staticmethod
     def process_ifs(ctx, node, now_comp, now_if, func, result):
         if now_if >= len(node.generators[now_comp].ifs):
@@ -172,6 +176,8 @@ class IRBuilder(Builder):
         if cond:
             IRBuilder.process_ifs(ctx, node, now_comp, now_if + 1, func,
                                   result)
+
+        return None
 
     @staticmethod
     def build_comprehension(ctx, node):
@@ -311,8 +317,6 @@ class IRBuilder(Builder):
         assert args.kwonlyargs == []
         assert args.kw_defaults == []
         assert args.kwarg is None
-
-        arg_decls = []
 
         def transform_as_kernel():
             # Treat return type
@@ -463,7 +467,7 @@ class IRBuilder(Builder):
         op = {
             ast.UAdd: lambda l: l,
             ast.USub: lambda l: -l,
-            ast.Not: lambda l: ti.logical_not(l),
+            ast.Not: ti.logical_not,
             ast.Invert: lambda l: ~l,
         }.get(type(node.op))
         node.ptr = op(node.operand.ptr)
@@ -473,8 +477,8 @@ class IRBuilder(Builder):
     def build_BoolOp(ctx, node):
         node.values = build_stmts(ctx, node.values)
         op = {
-            ast.And: lambda l, r: ti.logical_and(l, r),
-            ast.Or: lambda l, r: ti.logical_or(l, r),
+            ast.And: ti.logical_and,
+            ast.Or: ti.logical_or,
         }.get(type(node.op))
         result = op(node.values[0].ptr, node.values[1].ptr)
         for i in range(2, len(node.values)):

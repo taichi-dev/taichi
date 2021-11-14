@@ -10,7 +10,6 @@ FRAME_DIR = 'frames'
 # Write the frames to the disk and then make videos (mp4 or gif) if necessary
 
 
-
 def scale_video(input_fn, output_fn, ratiow, ratioh):
     os.system(
         f'ffmpeg -i {input_fn}  -vf "scale=iw*{ratiow:.4f}:ih*{ratioh:.4f}" {output_fn}'
@@ -25,7 +24,8 @@ def crop_video(input_fn, output_fn, x_begin, x_end, y_begin, y_end):
 
 def accelerate_video(input_fn, output_fn, speed):
     os.system(
-        f'ffmpeg -i {input_fn} -filter:v "setpts={1 / speed:.4f}*PTS" {output_fn}')
+        f'ffmpeg -i {input_fn} -filter:v "setpts={1 / speed:.4f}*PTS" {output_fn}'
+    )
 
 
 def get_ffmpeg_path():
@@ -153,7 +153,6 @@ def interpolate_frames(frame_dir, mul=4):
     os.makedirs('interpolated', exist_ok=True)
     for i, img in enumerate(images_interpolated):
         cv2.imwrite(f'interpolated/{i:05d}.png', img * 255.0)
-
 
 
 def ffmpeg_common_args(frame_rate, input_fn, width, height, crf, output_path):

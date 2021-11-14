@@ -424,7 +424,6 @@ if ti.static(1):
         for loop_var in targets:
             ctx.check_loop_var(loop_var)
 
-
         var_decl = ''.join(f'    {name} = ti.Expr(ti.core.make_id_expr(""))\n'
                            for name in targets)  # indent: 4 spaces
         _vars = ', '.join(targets)

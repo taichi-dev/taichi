@@ -4,7 +4,7 @@ TAGS = {
     'W0611': True,
     'W0202': True,
     'W0621': False,
-    'W0622': False,
+    'W0622': True,
     'W0401': True,
     'C0209': True,
     'W0404': True,

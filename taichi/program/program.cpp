@@ -226,7 +226,7 @@ void Program::check_runtime_error() {
   static_cast<LlvmProgramImpl *>(program_impl_.get())
       ->check_runtime_error(result_buffer);
 #else
-  TI_NOT_IMPLEMENTED
+  TI_ERROR("Llvm disabled");
 #endif
 }
 
@@ -528,7 +528,7 @@ void Program::print_memory_profiler_info() {
   static_cast<LlvmProgramImpl *>(program_impl_.get())
       ->print_memory_profiler_info(snode_trees_, result_buffer);
 #else
-  TI_NOT_IMPLEMENTED
+  TI_ERROR("Llvm disabled");
 #endif
 }
 
@@ -567,7 +567,7 @@ LlvmProgramImpl *Program::get_llvm_program_impl() {
 #ifdef TI_WITH_LLVM
   return static_cast<LlvmProgramImpl *>(program_impl_.get());
 #else
-  TI_NOT_IMPLEMENTED
+  TI_ERROR("Llvm disabled");
 #endif
 }
 

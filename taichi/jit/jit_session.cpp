@@ -19,7 +19,7 @@ std::unique_ptr<JITSession> JITSession::create(Arch arch) {
 #endif
   }
 #else
-  TI_NOT_IMPLEMENTED
+  TI_ERROR("Llvm disabled");
 #endif
 }
 

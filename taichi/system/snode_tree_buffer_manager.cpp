@@ -69,7 +69,7 @@ Ptr SNodeTreeBufferManager::allocate(JITModule *runtime_jit,
     return x.second;
   }
 #else
-  TI_NOT_IMPLEMENTED
+  TI_ERROR("Llvm disabled");
 #endif
 }
 

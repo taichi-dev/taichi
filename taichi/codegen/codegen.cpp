@@ -48,7 +48,7 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
     TI_NOT_IMPLEMENTED
   }
 #else
-  TI_NOT_IMPLEMENTED
+  TI_ERROR("Llvm disabled");
 #endif
 }
 

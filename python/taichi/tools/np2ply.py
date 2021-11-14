@@ -45,7 +45,8 @@ class PLYWriter:
 
     def add_vertex_channel(self, key: str, data_type: str, data: np.array):
         if data_type not in self.ply_supported_types:
-            print("Unknown type " + data_type + " detected, skipping this channel")
+            print("Unknown type " + data_type +
+                  " detected, skipping this channel")
             return
         if data.ndim == 1:
             assert data.size == self.num_vertices, "The dimension of the vertex channel is not correct"
@@ -163,7 +164,8 @@ class PLYWriter:
 
     def add_face_channel(self, key: str, data_type: str, data: np.array):
         if data_type not in self.ply_supported_types:
-            print("Unknown type " + data_type + " detected, skipping this channel")
+            print("Unknown type " + data_type +
+                  " detected, skipping this channel")
             return
         if data.ndim == 1:
             assert data.size == self.num_faces, "The dimension of the face channel is not correct"

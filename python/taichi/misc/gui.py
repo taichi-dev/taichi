@@ -628,7 +628,12 @@ class GUI:
         radius = radius.reshape(radius.shape[0] * radius.shape[1])
         self.circles(base, radius=radius, color=color)
 
-    def arrow_field(self, direction, radius=1, color=0xffffff, bound=0.5, **kwargs):
+    def arrow_field(self,
+                    direction,
+                    radius=1,
+                    color=0xffffff,
+                    bound=0.5,
+                    **kwargs):
         """Draw a field of arrows on canvas.
 
         Args:
@@ -640,8 +645,10 @@ class GUI:
         """
         assert len(direction.shape) == 3
         assert direction.shape[2] == 2
-        base = self._make_field_base(direction.shape[0], direction.shape[1], bound)
-        direction = direction.reshape(direction.shape[0] * direction.shape[1], 2)
+        base = self._make_field_base(direction.shape[0], direction.shape[1],
+                                     bound)
+        direction = direction.reshape(direction.shape[0] * direction.shape[1],
+                                      2)
         self.arrows(base, direction, radius=radius, color=color, **kwargs)
 
     def show(self, file=None):

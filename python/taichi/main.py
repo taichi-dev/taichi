@@ -966,7 +966,7 @@ class TaichiMain:
                 IPython.embed()
             except ImportError:
                 import code  # pylint: disable=C0415
-                __name__ = '__console__' # pylint: disable=W0622
+                __name__ = '__console__'  # pylint: disable=W0622
                 code.interact(local=locals())
 
         local_scope()

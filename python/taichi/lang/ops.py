@@ -350,7 +350,7 @@ def log(a):
 
 
 @unary
-def abs(a): # pylint: disable=W0622
+def abs(a):  # pylint: disable=W0622
     """The absolute value function.
 
     Args:
@@ -468,7 +468,7 @@ def mod(a, b):
 
 
 @binary
-def pow(a, b): # pylint: disable=W0622
+def pow(a, b):  # pylint: disable=W0622
     """The power function.
 
     Args:
@@ -511,7 +511,7 @@ def truediv(a, b):
 
 
 @binary
-def max(a, b): # pylint: disable=W0622
+def max(a, b):  # pylint: disable=W0622
     """The maxnimum function.
 
     Args:
@@ -525,7 +525,7 @@ def max(a, b): # pylint: disable=W0622
 
 
 @binary
-def min(a, b): # pylint: disable=W0622
+def min(a, b):  # pylint: disable=W0622
     """The minimum function.
 
     Args:

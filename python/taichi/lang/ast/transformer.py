@@ -23,7 +23,8 @@ class ASTTransformerTotal:
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
         self.arg_features = arg_features
-        self.pass_checks = ASTTransformerChecks(func=func, global_vars=global_vars)
+        self.pass_checks = ASTTransformerChecks(func=func,
+                                                global_vars=global_vars)
         self.rename_module = ASTTransformerUnifyModule(func=func)
         self.global_vars = global_vars
 

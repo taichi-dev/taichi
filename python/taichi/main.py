@@ -916,8 +916,9 @@ class TaichiMain:
         sys.argv.append(args.mode)
         runpy.run_path('build.py')
 
+    @staticmethod
     @register
-    def diagnose(self, arguments: list = sys.argv[2:]):
+    def diagnose(arguments: list = sys.argv[2:]):
         """System diagnose information"""
         taichi.diagnose.main()
 
@@ -948,8 +949,9 @@ class TaichiMain:
         taichi.cc_compose.main(args.fin_name, args.fout_name, args.hdrout_name,
                                args.emscripten)
 
+    @staticmethod
     @register
-    def repl(self, arguments: list = sys.argv[2:]):
+    def repl(arguments: list = sys.argv[2:]):
         """Start Taichi REPL / Python shell with 'import taichi as ti'"""
         def local_scope():
 
@@ -963,8 +965,9 @@ class TaichiMain:
 
         local_scope()
 
+    @staticmethod
     @register
-    def lint(self, arguments: list = sys.argv[2:]):
+    def lint(arguments: list = sys.argv[2:]):
         """Run pylint checker for the Python codebase of Taichi"""
         # TODO: support arguments for lint specific files
         # parser = argparse.ArgumentParser(prog='ti lint', description=f"{self.lint.__doc__}")

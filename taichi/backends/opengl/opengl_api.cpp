@@ -343,7 +343,8 @@ void CompiledProgram::set_used(const UsedFeature &used) {
 
 OpenGlRuntime::~OpenGlRuntime() = default;
 
-void DeviceCompiledProgram::launch(Context &ctx, OpenGlRuntime *runtime) const {
+void DeviceCompiledProgram::launch(RuntimeContext &ctx,
+                                   OpenGlRuntime *runtime) const {
   std::array<void *, taichi_max_num_args> ext_arr_host_ptrs;
 
   uint8_t *args_buf_mapped = nullptr;

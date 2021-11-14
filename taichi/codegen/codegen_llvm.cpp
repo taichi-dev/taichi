@@ -25,7 +25,7 @@ void OffloadedTask::end() {
   codegen->offloaded_tasks.push_back(*this);
 }
 
-void OffloadedTask::operator()(Context *context) {
+void OffloadedTask::operator()(RuntimeContext *context) {
   TI_ASSERT(func);
   func(context);
 }
@@ -326,7 +326,7 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
     this->ir = kernel->ir.get();
   initialize_context();
 
-  context_ty = get_runtime_type("Context");
+  context_ty = get_runtime_type("RuntimeContext");
   physical_coordinate_ty = get_runtime_type(kLLVMPhysicalCoordinatesName);
 
   kernel_name = kernel->name + "_kernel";
@@ -1024,7 +1024,7 @@ void CodeGenLLVM::visit(RangeForStmt *for_stmt) {
 }
 
 void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
-  auto raw_arg = call(builder.get(), "Context_get_args", get_context(),
+  auto raw_arg = call(builder.get(), "RuntimeContext_get_args", get_context(),
                       tlctx->get_constant(stmt->arg_id));
 
   llvm::Type *dest_ty = nullptr;
@@ -1563,7 +1563,7 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 
   for (int i = 0; i < num_indices; i++) {
     auto raw_arg = create_call(
-        "Context_get_extra_args",
+        "RuntimeContext_get_extra_args",
         {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(i)});
     sizes[i] = raw_arg;
   }
@@ -1586,7 +1586,7 @@ void CodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
   llvm_val[stmt] = create_call(
-      "Context_get_extra_args",
+      "RuntimeContext_get_extra_args",
       {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(axis)});
 }
 
@@ -1691,7 +1691,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   {
     // Create the loop body function
     auto guard = get_function_creation_guard({
-        llvm::PointerType::get(get_runtime_type("Context"), 0),
+        llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
         get_tls_buffer_type(),
         llvm::PointerType::get(get_runtime_type("Element"), 0),
         tlctx->get_data_type<int>(),
@@ -2223,7 +2223,7 @@ FunctionType CodeGenLLVM::compile_module_to_executable() {
   }
   auto offloaded_tasks_local = offloaded_tasks;
   auto kernel_name_ = kernel_name;
-  return [=](Context &context) {
+  return [=](RuntimeContext &context) {
     TI_TRACE("Launching kernel {}", kernel_name_);
     for (auto task : offloaded_tasks_local) {
       task(&context);
@@ -2263,7 +2263,7 @@ llvm::Type *CodeGenLLVM::get_tls_buffer_type() {
 }
 
 std::vector<llvm::Type *> CodeGenLLVM::get_xlogue_argument_types() {
-  return {llvm::PointerType::get(get_runtime_type("Context"), 0),
+  return {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
           get_tls_buffer_type()};
 }
 
@@ -2278,7 +2278,7 @@ llvm::Value *CodeGenLLVM::get_root(int snode_tree_id) {
 }
 
 llvm::Value *CodeGenLLVM::get_runtime() {
-  auto runtime_ptr = create_call("Context_get_runtime", {get_context()});
+  auto runtime_ptr = create_call("RuntimeContext_get_runtime", {get_context()});
   return builder->CreateBitCast(
       runtime_ptr, llvm::PointerType::get(get_runtime_type("LLVMRuntime"), 0));
 }

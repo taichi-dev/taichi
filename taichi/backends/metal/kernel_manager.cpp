@@ -1179,7 +1179,7 @@ class KernelManager::Impl {
   }
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
-                            Context *ctx) {
+                            RuntimeContext *ctx) {
     TI_ERROR("Metal not supported on the current OS");
   }
 
@@ -1221,7 +1221,7 @@ void KernelManager::register_taichi_kernel(
 }
 
 void KernelManager::launch_taichi_kernel(const std::string &taichi_kernel_name,
-                                         Context *ctx) {
+                                         RuntimeContext *ctx) {
   impl_->launch_taichi_kernel(taichi_kernel_name, ctx);
 }
 

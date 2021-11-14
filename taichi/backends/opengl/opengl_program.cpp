@@ -12,7 +12,7 @@ FunctionType OpenglProgramImpl::compile(Kernel *kernel,
                                 config->allow_nv_shader_extension);
   auto ptr = opengl_runtime_->keep(codegen.compile(*kernel));
 
-  return [ptr, runtime = opengl_runtime_.get()](Context &ctx) {
+  return [ptr, runtime = opengl_runtime_.get()](RuntimeContext &ctx) {
     ptr->launch(ctx, runtime);
   };
 #else

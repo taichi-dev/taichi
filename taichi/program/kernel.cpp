@@ -154,13 +154,14 @@ Kernel::LaunchContextBuilder Kernel::make_launch_context() {
   return LaunchContextBuilder(this);
 }
 
-Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel, Context *ctx)
+Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel,
+                                                   RuntimeContext *ctx)
     : kernel_(kernel), owned_ctx_(nullptr), ctx_(ctx) {
 }
 
 Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
     : kernel_(kernel),
-      owned_ctx_(std::make_unique<Context>()),
+      owned_ctx_(std::make_unique<RuntimeContext>()),
       ctx_(owned_ctx_.get()) {
 }
 
@@ -271,7 +272,7 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
   ctx_->set_arg<uint64>(arg_id, d);
 }
 
-Context &Kernel::LaunchContextBuilder::get_context() {
+RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
   if (auto *llvm_program_impl = kernel_->program->get_llvm_program_impl()) {
     ctx_->runtime = llvm_program_impl->get_llvm_runtime();
   }

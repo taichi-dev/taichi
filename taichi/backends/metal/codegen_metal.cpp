@@ -1635,7 +1635,8 @@ FunctionType compile_to_metal_executable(
   kernel_mgr->register_taichi_kernel(
       compiled_res.kernel_name, compiled_res.source_code,
       compiled_res.kernel_attribs, compiled_res.ctx_attribs);
-  return [kernel_mgr, kernel_name = compiled_res.kernel_name](Context &ctx) {
+  return [kernel_mgr,
+          kernel_name = compiled_res.kernel_name](RuntimeContext &ctx) {
     kernel_mgr->launch_taichi_kernel(kernel_name, &ctx);
   };
 }

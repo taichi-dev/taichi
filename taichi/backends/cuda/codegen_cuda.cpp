@@ -49,7 +49,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         jit->add_module(std::move(module), kernel->program->config.gpu_max_reg);
 
     return [offloaded_local, cuda_module,
-            kernel = this->kernel](Context &context) {
+            kernel = this->kernel](RuntimeContext &context) {
       CUDAContext::get_instance().make_current();
       auto args = kernel->args;
       std::vector<void *> arg_buffers(args.size(), nullptr);
@@ -559,7 +559,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     llvm::Function *body;
     {
       auto guard = get_function_creation_guard(
-          {llvm::PointerType::get(get_runtime_type("Context"), 0),
+          {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
            get_tls_buffer_type(), tlctx->get_data_type<int>()});
 
       auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
@@ -741,7 +741,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
     const auto arg_id = stmt->arg_id;
     const auto axis = stmt->axis;
-    llvm_val[stmt] = create_call("Context_get_extra_args",
+    llvm_val[stmt] = create_call("RuntimeContext_get_extra_args",
                                  {get_context(), tlctx->get_constant(arg_id),
                                   tlctx->get_constant(axis)});
   }

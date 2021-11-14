@@ -27,7 +27,7 @@ TaskLaunchRecord::TaskLaunchRecord() : kernel(nullptr), ir_handle(nullptr, 0) {
 // Initial node has rec.id == 0, so we start from rec.id == 1.
 std::atomic<int> TaskLaunchRecord::task_counter = 1;
 
-TaskLaunchRecord::TaskLaunchRecord(Context context,
+TaskLaunchRecord::TaskLaunchRecord(RuntimeContext context,
                                    Kernel *kernel,
                                    IRHandle ir_handle)
     : context(context), kernel(kernel), ir_handle(ir_handle) {

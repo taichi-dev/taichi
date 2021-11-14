@@ -463,7 +463,7 @@ class IRBuilder(Builder):
         op = {
             ast.UAdd: lambda l: l,
             ast.USub: lambda l: -l,
-            ast.Not: lambda l: ti.logical_not(l),
+            ast.Not: ti.logical_not,
             ast.Invert: lambda l: ~l,
         }.get(type(node.op))
         node.ptr = op(node.operand.ptr)
@@ -473,8 +473,8 @@ class IRBuilder(Builder):
     def build_BoolOp(ctx, node):
         node.values = build_stmts(ctx, node.values)
         op = {
-            ast.And: lambda l, r: ti.logical_and(l, r),
-            ast.Or: lambda l, r: ti.logical_or(l, r),
+            ast.And: ti.logical_and,
+            ast.Or: ti.logical_or,
         }.get(type(node.op))
         result = op(node.values[0].ptr, node.values[1].ptr)
         for i in range(2, len(node.values)):
@@ -613,14 +613,14 @@ class IRBuilder(Builder):
                                              ndrange_end.ptr)
             I = ti.expr_init(ndrange_loop_var)
             targets = IRBuilder.get_for_loop_targets(node)
-            for i in range(len(targets)):
+            for i, target in enumerate(targets):
                 if i + 1 < len(targets):
                     target_tmp = ti.expr_init(
                         I // ndrange_var.acc_dimensions[i + 1])
                 else:
                     target_tmp = ti.expr_init(I)
                 ctx.create_variable(
-                    targets[i],
+                    target,
                     ti.expr_init(
                         target_tmp +
                         ti.subscript(ti.subscript(ndrange_var.bounds, i), 0)))

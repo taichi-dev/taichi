@@ -131,8 +131,8 @@ class Func:
         self.return_type = None
         self.extract_arguments()
         self.template_slot_locations = []
-        for i in range(len(self.argument_annotations)):
-            if isinstance(self.argument_annotations[i], template):
+        for i, anno in enumerate(self.argument_annotations):
+            if isinstance(anno, template):
                 self.template_slot_locations.append(i)
         self.mapper = TaichiCallableTemplateMapper(
             self.argument_annotations, self.template_slot_locations)
@@ -188,8 +188,8 @@ class Func:
         # Skip the template args, e.g., |self|
         assert impl.get_runtime().experimental_real_function
         non_template_args = []
-        for i in range(len(self.argument_annotations)):
-            if not isinstance(self.argument_annotations[i], template):
+        for i, anno in enumerate(self.argument_annotations):
+            if not isinstance(anno, template):
                 non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
         return ti.Expr(
@@ -411,8 +411,8 @@ class Kernel:
         self.extract_arguments()
         del _taichi_skip_traceback
         self.template_slot_locations = []
-        for i in range(len(self.argument_annotations)):
-            if isinstance(self.argument_annotations[i], template):
+        for i, anno in enumerate(self.argument_annotations):
+            if isinstance(anno, template):
                 self.template_slot_locations.append(i)
         self.mapper = TaichiCallableTemplateMapper(
             self.argument_annotations, self.template_slot_locations)
@@ -739,7 +739,8 @@ class Kernel:
 
         return func__
 
-    def match_ext_arr(self, v):
+    @staticmethod
+    def match_ext_arr(v):
         has_array = isinstance(v, np.ndarray)
         if not has_array and util.has_pytorch():
             has_array = isinstance(v, torch.Tensor)

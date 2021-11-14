@@ -57,33 +57,33 @@ class ExprBuilder(Builder):
     def build_Compare(ctx, node):
         operands = build_exprs(ctx, [node.left] + list(node.comparators))
         operators = []
-        for i in range(len(node.ops)):
-            if isinstance(node.ops[i], ast.Lt):
+        for op in node.ops:
+            if isinstance(op, ast.Lt):
                 op_str = 'Lt'
-            elif isinstance(node.ops[i], ast.LtE):
+            elif isinstance(op, ast.LtE):
                 op_str = 'LtE'
-            elif isinstance(node.ops[i], ast.Gt):
+            elif isinstance(op, ast.Gt):
                 op_str = 'Gt'
-            elif isinstance(node.ops[i], ast.GtE):
+            elif isinstance(op, ast.GtE):
                 op_str = 'GtE'
-            elif isinstance(node.ops[i], ast.Eq):
+            elif isinstance(op, ast.Eq):
                 op_str = 'Eq'
-            elif isinstance(node.ops[i], ast.NotEq):
+            elif isinstance(op, ast.NotEq):
                 op_str = 'NotEq'
-            elif isinstance(node.ops[i], ast.In):
+            elif isinstance(op, ast.In):
                 raise TaichiSyntaxError(
                     '"in" is not supported in Taichi kernels.')
-            elif isinstance(node.ops[i], ast.NotIn):
+            elif isinstance(op, ast.NotIn):
                 raise TaichiSyntaxError(
                     '"not in" is not supported in Taichi kernels.')
-            elif isinstance(node.ops[i], ast.Is):
+            elif isinstance(op, ast.Is):
                 raise TaichiSyntaxError(
                     '"is" is not supported in Taichi kernels.')
-            elif isinstance(node.ops[i], ast.IsNot):
+            elif isinstance(op, ast.IsNot):
                 raise TaichiSyntaxError(
                     '"is not" is not supported in Taichi kernels.')
             else:
-                raise Exception(f'Unknown operator {node.ops[i]}')
+                raise Exception(f'Unknown operator {op}')
             operators += [
                 ast.copy_location(ast.Str(s=op_str, kind=None), node)
             ]
@@ -107,8 +107,8 @@ class ExprBuilder(Builder):
             return node
         node.func = build_expr(ctx, node.func)
         node.args = build_exprs(ctx, node.args)
-        for i in range(len(node.keywords)):
-            node.keywords[i].value = build_expr(ctx, node.keywords[i].value)
+        for i, kw in enumerate(node.keywords):
+            node.keywords[i].value = build_expr(ctx, kw.value)
         if isinstance(node.func, ast.Attribute):
             attr_name = node.func.attr
             if attr_name == 'format':

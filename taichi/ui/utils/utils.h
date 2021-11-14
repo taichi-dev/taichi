@@ -31,7 +31,8 @@
 #ifdef _WIN64
 #define VK_USE_PLATFORM_WIN32_KHR 1
 #endif
-#include <volk.h>
+
+#include "taichi/backends/vulkan/vulkan_common.h"
 #include <GLFW/glfw3.h>
 
 #include <stdarg.h>

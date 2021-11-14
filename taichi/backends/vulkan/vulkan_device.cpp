@@ -1748,6 +1748,14 @@ vkapi::IVkDescriptorSet VulkanDevice::alloc_desc_set(
 }
 
 void VulkanDevice::create_vma_allocator() {
+  VmaAllocatorCreateInfo allocatorInfo = {};
+  allocatorInfo.vulkanApiVersion =
+      this->get_cap(DeviceCapability::vk_api_version);
+  allocatorInfo.physicalDevice = physical_device_;
+  allocatorInfo.device = device_;
+  allocatorInfo.instance = instance_;
+
+#ifndef __APPLE__
   VolkDeviceTable table;
   VmaVulkanFunctions vk_vma_functions;
 
@@ -1786,13 +1794,8 @@ void VulkanDevice::create_vma_allocator() {
       PFN_vkGetPhysicalDeviceMemoryProperties2KHR(vkGetInstanceProcAddr(
           volkGetLoadedInstance(), "vkGetPhysicalDeviceMemoryProperties2KHR"));
 
-  VmaAllocatorCreateInfo allocatorInfo = {};
-  allocatorInfo.vulkanApiVersion =
-      this->get_cap(DeviceCapability::vk_api_version);
-  allocatorInfo.physicalDevice = physical_device_;
-  allocatorInfo.device = device_;
-  allocatorInfo.instance = instance_;
   allocatorInfo.pVulkanFunctions = &vk_vma_functions;
+#endif
 
   vmaCreateAllocator(&allocatorInfo, &allocator_);
 

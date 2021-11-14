@@ -34,6 +34,7 @@ class CompiledTaichiKernel {
     Device *device{nullptr};
     std::vector<DeviceAllocation *> root_buffers;
     DeviceAllocation *global_tmps_buffer{nullptr};
+    DeviceAllocation *listgen_buffer{nullptr};
   };
 
   CompiledTaichiKernel(const Params &ti_params);
@@ -109,6 +110,8 @@ class VkRuntime {
 
   std::vector<std::unique_ptr<DeviceAllocationGuard>> root_buffers_;
   std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_;
+  // FIXME: Support proper multiple lists
+  std::unique_ptr<DeviceAllocationGuard> listgen_buffer_;
 
   std::unique_ptr<CommandList> current_cmdlist_{nullptr};
 

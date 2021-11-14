@@ -2,7 +2,9 @@ import ast
 import functools
 import inspect
 import re
+import sys
 import textwrap
+import traceback
 
 import numpy as np
 import taichi.lang
@@ -126,10 +128,11 @@ class Func:
         self.argument_annotations = []
         self.argument_names = []
         _taichi_skip_traceback = 1
+        self.return_type = None
         self.extract_arguments()
         self.template_slot_locations = []
-        for i in range(len(self.argument_annotations)):
-            if isinstance(self.argument_annotations[i], template):
+        for i, anno in enumerate(self.argument_annotations):
+            if isinstance(anno, template):
                 self.template_slot_locations.append(i)
         self.mapper = TaichiCallableTemplateMapper(
             self.argument_annotations, self.template_slot_locations)
@@ -146,6 +149,18 @@ class Func:
             return self.func(*args)
 
         if impl.get_runtime().experimental_ast_refactor:
+            if impl.get_runtime().experimental_real_function:
+                if impl.get_runtime().current_kernel.is_grad:
+                    raise TaichiSyntaxError(
+                        "Real function in gradient kernels unsupported.")
+                instance_id, arg_features = self.mapper.lookup(args)
+                key = _ti_core.FunctionKey(self.func.__name__, self.func_id,
+                                           instance_id)
+                if self.compiled is None:
+                    self.compiled = {}
+                if key.instance_id not in self.compiled:
+                    self.do_compile_ast_refactor(key=key, args=args)
+                return self.func_call_rvalue(key=key, args=args)
             tree, global_vars = _get_tree_and_global_vars(self, args)
             visitor = ASTTransformerTotal(is_kernel=False,
                                           func=self,
@@ -164,18 +179,17 @@ class Func:
             if key.instance_id not in self.compiled:
                 self.do_compile(key=key, args=args)
             return self.func_call_rvalue(key=key, args=args)
-        else:
-            if self.compiled is None:
-                self.do_compile(key=None, args=args)
-            ret = self.compiled(*args)
-            return ret
+        if self.compiled is None:
+            self.do_compile(key=None, args=args)
+        ret = self.compiled(*args)
+        return ret
 
     def func_call_rvalue(self, key, args):
         # Skip the template args, e.g., |self|
         assert impl.get_runtime().experimental_real_function
         non_template_args = []
-        for i in range(len(self.argument_annotations)):
-            if not isinstance(self.argument_annotations[i], template):
+        for i, anno in enumerate(self.argument_annotations):
+            if not isinstance(anno, template):
                 non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
         return ti.Expr(
@@ -216,6 +230,31 @@ class Func:
                 self.compiled[key.instance_id])
         else:
             self.compiled = local_vars[self.func.__name__]
+
+    def do_compile_ast_refactor(self, key, args):
+        src = textwrap.dedent(oinspect.getsource(self.func))
+        tree = ast.parse(src)
+
+        func_body = tree.body[0]
+        func_body.decorator_list = []
+
+        ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
+
+        local_vars = {}
+        global_vars = _get_global_vars(self.func)
+        # inject template parameters into globals
+        for i in self.template_slot_locations:
+            template_var_name = self.argument_names[i]
+            global_vars[template_var_name] = args[i]
+
+        visitor = ASTTransformerTotal(is_kernel=False,
+                                      func=self,
+                                      globals=global_vars)
+
+        self.compiled[key.instance_id] = lambda: visitor.visit(tree)
+        self.taichi_functions[key.instance_id] = _ti_core.create_function(key)
+        self.taichi_functions[key.instance_id].set_function_body(
+            self.compiled[key.instance_id])
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
@@ -283,7 +322,7 @@ class TaichiCallableTemplateMapper:
                     TaichiCallableTemplateMapper.extract_arg(item, anno)
                     for item in arg)
             return arg
-        elif isinstance(anno, any_arr):
+        if isinstance(anno, any_arr):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_element_dim(arg, 0)
                 return arg.dtype, len(arg.shape), (), Layout.AOS
@@ -373,8 +412,8 @@ class Kernel:
         self.extract_arguments()
         del _taichi_skip_traceback
         self.template_slot_locations = []
-        for i in range(len(self.argument_annotations)):
-            if isinstance(self.argument_annotations[i], template):
+        for i, anno in enumerate(self.argument_annotations):
+            if isinstance(anno, template):
                 self.template_slot_locations.append(i)
         self.mapper = TaichiCallableTemplateMapper(
             self.argument_annotations, self.template_slot_locations)
@@ -701,7 +740,8 @@ class Kernel:
 
         return func__
 
-    def match_ext_arr(self, v):
+    @staticmethod
+    def match_ext_arr(v):
         has_array = isinstance(v, np.ndarray)
         if not has_array and util.has_pytorch():
             has_array = isinstance(v, torch.Tensor)
@@ -792,7 +832,28 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
         @functools.wraps(func)
         def wrapped(*args, **kwargs):
             _taichi_skip_traceback = 1
-            return primal(*args, **kwargs)
+            try:
+                return primal(*args, **kwargs)
+            except RuntimeError as e:
+                if str(e).startswith("TypeError: "):
+                    tb = e.__traceback__
+
+                    while tb:
+                        if tb.tb_frame.f_code.co_name == 'taichi_ast_generator':
+                            tb = tb.tb_next
+                            if sys.version_info < (3, 7):
+                                # The traceback object is read-only on Python < 3.7,
+                                # print the traceback and raise
+                                traceback.print_tb(tb,
+                                                   limit=1,
+                                                   file=sys.stderr)
+                                raise TypeError(str(e)[11:]) from None
+                            # Otherwise, modify the traceback object
+                            tb.tb_next = None
+                            raise TypeError(
+                                str(e)[11:]).with_traceback(tb) from None
+                        tb = tb.tb_next
+                raise
 
         wrapped.grad = adjoint
 
@@ -850,6 +911,7 @@ class _BoundedDifferentiableMethod:
         self._primal = wrapped_kernel_func._primal
         self._adjoint = wrapped_kernel_func._adjoint
         self._is_staticmethod = wrapped_kernel_func._is_staticmethod
+        self.__name__ = None
 
     def __call__(self, *args, **kwargs):
         _taichi_skip_traceback = 1

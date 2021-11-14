@@ -5,9 +5,13 @@
 cmake_minimum_required(VERSION 3.12)
 
 project(taichi)
-set(TI_VERSION_MAJOR 0)
-set(TI_VERSION_MINOR 8)
-set(TI_VERSION_PATCH 5)
+
+if (NOT DEFINED TI_VERSION_MAJOR)
+    message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi.graphics/lang/articles/contribution/dev_install for more details.")
+    set(TI_VERSION_MAJOR 0)
+    set(TI_VERSION_MINOR 0)
+    set(TI_VERSION_PATCH 0)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 

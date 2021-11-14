@@ -7,7 +7,6 @@ import numbers
 import taichi.lang
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
-from taichi.lang.expr import Expr
 from taichi.lang.field import Field
 from taichi.misc.util import deprecated
 
@@ -59,13 +58,11 @@ class SNode:
             self.ptr.pointer(axes, dimensions,
                              impl.current_cfg().packed))
 
-    def hash(self, axes, dimensions):
+    @staticmethod
+    def hash(axes, dimensions):
+        # original code is #def hash(self,axes, dimensions) without #@staticmethod   before fix pylint R0201
         """Not supported."""
         raise RuntimeError('hash not yet supported')
-        if isinstance(dimensions, int):
-            dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.hash(axes, dimensions,
-                                   impl.current_cfg().packed))
 
     def dynamic(self, axis, dimension, chunk_size=None):
         """Adds a dynamic SNode as a child component of `self`.

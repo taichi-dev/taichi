@@ -117,6 +117,28 @@ TEST(FrontendTypeInference, TensorElement) {
   EXPECT_EQ(load_tensor_element->ret_type, PrimitiveType::u32);
 }
 
+TEST(FrontendTypeInference, AtomicOp) {
+  auto const_i32 = Expr::make<ConstExpression, int32>(-(1 << 20));
+  const_i32->type_check();
+  auto const_f32 = Expr::make<ConstExpression, float32>(5.0);
+  const_f32->type_check();
+  auto atomic_add_i32 =
+      Expr::make<AtomicOpExpression>(AtomicOpType::add, const_i32, const_f32);
+  atomic_add_i32->type_check();
+  EXPECT_EQ(atomic_add_i32->ret_type, PrimitiveType::i32);
+}
+
+TEST(FrontendTypeInference, SNodeOp) {
+  auto snode = std::make_unique<SNode>(0, SNodeType::root);
+  snode->dt = PrimitiveType::u8;
+  auto index = Expr::make<ConstExpression, int32>(2);
+  index->type_check();
+  auto snode_op = Expr::make<SNodeOpExpression>(
+      snode.get(), SNodeOpType::get_addr, ExprGroup(index));
+  snode_op->type_check();
+  EXPECT_EQ(snode_op->ret_type, PrimitiveType::u64);
+}
+
 TEST(FrontendTypeInference, ExternalTensorShapeAlongAxis) {
   auto external_tensor =
       Expr::make<ExternalTensorExpression>(PrimitiveType::u64, 1, 0, 0);

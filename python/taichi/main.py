@@ -1,7 +1,6 @@
 import argparse
 import math
 import os
-import random
 import runpy
 import shutil
 import subprocess
@@ -14,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import taichi.cc_compose
 import taichi.diagnose
-from colorama import Back, Fore, Style
+from colorama import Fore
 from taichi.core import ti_core as _ti_core
 from taichi.tools import video
 
@@ -89,7 +88,8 @@ class TaichiMain:
 
         return getattr(self, args.command)(sys.argv[2:])
 
-    def _get_friend_links(self):
+    @staticmethod
+    def _get_friend_links():
         return '\n' \
                'Docs:   https://docs.taichi.graphics/\n' \
                'GitHub: https://github.com/taichi-dev/taichi/\n' \
@@ -135,8 +135,7 @@ class TaichiMain:
             if choice.endswith('.py') and choice.split('.')[0] in choices:
                 # try to find and remove python file extension
                 return choice.split('.')[0]
-            else:
-                return choice
+            return choice
 
         return support_choice_with_dot_py
 
@@ -213,15 +212,17 @@ class TaichiMain:
 
         runpy.run_path(target, run_name='__main__')
 
+    @staticmethod
     @register
-    def changelog(self, arguments: list = sys.argv[2:]):
+    def changelog(arguments: list = sys.argv[2:]):
         """Display changelog of current version"""
         changelog_md = os.path.join(ti.package_root(), 'CHANGELOG.md')
         with open(changelog_md) as f:
             print(f.read())
 
+    @staticmethod
     @register
-    def release(self, arguments: list = sys.argv[2:]):
+    def release(arguments: list = sys.argv[2:]):
         """Make source code release"""
         raise RuntimeError('TBD')
 
@@ -419,18 +420,21 @@ class TaichiMain:
                          frame_rate=args.framerate)
         ti.info(f'Done! Output video file = {args.output_file}')
 
+    @staticmethod
     @register
-    def doc(self, arguments: list = sys.argv[2:]):
+    def doc(arguments: list = sys.argv[2:]):
         """Build documentation"""
         raise RuntimeError('TBD')
 
+    @staticmethod
     @register
-    def format(self, arguments: list = sys.argv[2:]):
+    def format(arguments: list = sys.argv[2:]):
         """Reformat modified source files"""
         raise RuntimeError('Please run python misc/code_format.py instead')
 
+    @staticmethod
     @register
-    def format_all(self, arguments: list = sys.argv[2:]):
+    def format_all(arguments: list = sys.argv[2:]):
         """Reformat all source files"""
         raise RuntimeError('Please run python misc/code_format.py instead')
 
@@ -453,10 +457,9 @@ class TaichiMain:
         def parse_name(file):
             if file[0:5] == 'test_':
                 return file[5:-4].replace('__test_', '::', 1)
-            elif file[0:10] == 'benchmark_':
+            if file[0:10] == 'benchmark_':
                 return '::'.join(reversed(file[10:-4].split('__arch_')))
-            else:
-                raise Exception(f'bad benchmark file name {file}')
+            raise Exception(f'bad benchmark file name {file}')
 
         def get_dats(dir):
             list = []
@@ -834,17 +837,15 @@ class TaichiMain:
         if args.files:
             if args.cpp:
                 return TaichiMain._test_cpp(args)
-            else:
-                return TaichiMain._test_python(args)
-        elif args.cpp:
+            return TaichiMain._test_python(args)
+        if args.cpp:
             # Only run C++ tests
             return TaichiMain._test_cpp(args)
-        else:
-            # Run both C++ and Python tests
-            ret = TaichiMain._test_python(args)
-            if ret != 0:
-                return ret
-            return TaichiMain._test_cpp(args)
+        # Run both C++ and Python tests
+        ret = TaichiMain._test_python(args)
+        if ret != 0:
+            return ret
+        return TaichiMain._test_cpp(args)
 
     @register
     def run(self, arguments: list = sys.argv[2:]):

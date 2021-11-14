@@ -886,6 +886,13 @@ void export_lang(py::module &m) {
         scope_stack.size() ? scope_stack.back()->list->parent_stmt : nullptr;
     TI_ERROR_IF(arch != Arch::cuda && !arch_is_cpu(arch),
                 "ti.thread_idx() is only available in cuda or cpu context.");
+    if (loop != nullptr){
+      auto i = scope_stack.size()-1;
+      while(!(loop -> is<FrontendForStmt>())){
+        loop = i > 0?scope_stack[--i]:nullptr;
+        if (loop == nullptr) break;
+      }
+    }
     TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
                 "ti.thread_idx() is only valid within loops.");
     return Expr::make<GlobalThreadIndexExpression>(loop);

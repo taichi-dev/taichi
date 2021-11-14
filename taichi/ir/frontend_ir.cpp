@@ -120,6 +120,10 @@ void GlobalThreadIndexExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void GlobalThreadIndexExpression::type_check() {
+  ret_type = PrimitiveType::i32;
+}
+
 void UnaryOpExpression::serialize(std::ostream &ss) {
   ss << '(';
   if (is_cast()) {

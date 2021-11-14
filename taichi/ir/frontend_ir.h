@@ -563,8 +563,10 @@ class GlobalThreadIndexExpression : public Expression {
   GlobalThreadIndexExpression(Stmt *stmt) : loop_stmt(stmt) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override {
-    ss << fmt::format("global_thread_idx");
+    ss << fmt::format("global_thread_idx()");
   }
 
   void flatten(FlattenContext *ctx) override;

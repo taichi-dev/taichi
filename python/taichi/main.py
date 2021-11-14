@@ -441,7 +441,7 @@ class TaichiMain:
     @staticmethod
     def _display_benchmark_regression(xd, yd, args):
         def parse_dat(file):
-            dict = {}
+            _dict = {}
             with open(file) as f:
                 for line in f.readlines():
                     try:
@@ -451,8 +451,8 @@ class TaichiMain:
                     b = float(b)
                     if abs(b % 1.0) < 1e-5:  # codegen_*
                         b = int(b)
-                    dict[a.strip()] = b
-            return dict
+                    _dict[a.strip()] = b
+            return _dict
 
         def parse_name(file):
             if file[0:5] == 'test_':
@@ -461,17 +461,17 @@ class TaichiMain:
                 return '::'.join(reversed(file[10:-4].split('__arch_')))
             raise Exception(f'bad benchmark file name {file}')
 
-        def get_dats(dir):
-            list = []
-            for x in os.listdir(dir):
+        def get_dats(directory):
+            _list = []
+            for x in os.listdir(directory):
                 if x.endswith('.dat'):
-                    list.append(x)
-            dict = {}
-            for x in list:
+                    _list.append(x)
+            _dict = {}
+            for x in _list:
                 name = parse_name(x)
-                path = os.path.join(dir, x)
-                dict[name] = parse_dat(path)
-            return dict
+                path = os.path.join(directory, x)
+                _dict[name] = parse_dat(path)
+            return _dict
 
         def plot_in_gui(scatter):
 
@@ -966,7 +966,7 @@ class TaichiMain:
                 IPython.embed()
             except ImportError:
                 import code  # pylint: disable=C0415
-                __name__ = '__console__'
+                __name__ = '__console__' # pylint: disable=W0622
                 code.interact(local=locals())
 
         local_scope()

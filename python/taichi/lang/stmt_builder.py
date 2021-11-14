@@ -430,7 +430,7 @@ if ti.static(1):
         var_decl = ''.join(
             '    {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(name)
             for name in targets)  # indent: 4 spaces
-        vars = ', '.join(targets)
+        _vars = ', '.join(targets)
         if is_grouped:
             template = '''
 if 1:
@@ -440,7 +440,7 @@ if 1:
     ti.begin_frontend_struct_for(___expr_group, ___loop_var)
     {} = ti.Vector(___loop_indices, dt=ti.i32)
     ti.core.end_frontend_range_for()
-            '''.format(vars, vars)
+            '''.format(_vars, _vars)
             t = ast.parse(template).body[0]
             cut = 5
             t.body[0].value = node.iter
@@ -453,7 +453,7 @@ if 1:
     ___expr_group = ti.lang.expr.make_expr_group({})
     ti.begin_frontend_struct_for(___expr_group, ___loop_var)
     ti.core.end_frontend_range_for()
-            '''.format(var_decl, vars)
+            '''.format(var_decl, _vars)
             t = ast.parse(template).body[0]
             cut = len(targets) + 3
             t.body[cut - 3].value = node.iter

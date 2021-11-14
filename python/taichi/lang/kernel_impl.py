@@ -164,7 +164,7 @@ class Func:
             tree, global_vars = _get_tree_and_global_vars(self, args)
             visitor = ASTTransformerTotal(is_kernel=False,
                                           func=self,
-                                          globals=global_vars)
+                                          global_vars=global_vars)
             return visitor.visit(tree, *args)
 
         if impl.get_runtime().experimental_real_function:
@@ -249,7 +249,7 @@ class Func:
 
         visitor = ASTTransformerTotal(is_kernel=False,
                                       func=self,
-                                      globals=global_vars)
+                                      global_vars=global_vars)
 
         self.compiled[key.instance_id] = lambda: visitor.visit(tree)
         self.taichi_functions[key.instance_id] = _ti_core.create_function(key)
@@ -584,7 +584,7 @@ class Kernel:
             excluded_parameters=self.template_slot_locations,
             func=self,
             arg_features=arg_features,
-            globals=global_vars)
+            global_vars=global_vars)
 
         ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
 

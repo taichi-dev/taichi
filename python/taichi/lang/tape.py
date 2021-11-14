@@ -11,7 +11,7 @@ class TapeImpl:
         assert not self.entered, "Tape can be entered only once."
         self.entered = True
 
-    def __exit__(self, type, value, tb):
+    def __exit__(self, _type, value, tb):
         # print('# kernel calls', len(self.calls))
         self.runtime.target_tape = None
         if self.eval_on_exit:

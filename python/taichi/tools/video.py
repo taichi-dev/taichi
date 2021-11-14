@@ -10,21 +10,21 @@ FRAME_DIR = 'frames'
 # Write the frames to the disk and then make videos (mp4 or gif) if necessary
 
 
-def scale_video(input, output, ratiow, ratioh):
+def scale_video(input_fn, output_fn, ratiow, ratioh):
     os.system('ffmpeg -i {}  -vf "scale=iw*{:.4f}:ih*{:.4f}" {}'.format(
-        input, ratiow, ratioh, output))
+        input_fn, ratiow, ratioh, output_fn))
 
 
-def crop_video(input, output, x_begin, x_end, y_begin, y_end):
+def crop_video(input_fn, output_fn, x_begin, x_end, y_begin, y_end):
     os.system(
         'ffmpeg -i {} -filter:v "crop=iw*{:.4f}:ih*{:.4f}:iw*{:0.4f}:ih*{:0.4f}" {}'
-        .format(input, x_end - x_begin, y_end - y_begin, x_begin, 1 - y_end,
-                output))
+        .format(input_fn, x_end - x_begin, y_end - y_begin, x_begin, 1 - y_end,
+                output_fn))
 
 
-def accelerate_video(input, output, speed):
+def accelerate_video(input_fn, output_fn, speed):
     os.system('ffmpeg -i {} -filter:v "setpts={:.4f}*PTS" {}'.format(
-        input, 1 / speed, output))
+        input_fn, 1 / speed, output_fn))
 
 
 def get_ffmpeg_path():
@@ -155,8 +155,8 @@ def interpolate_frames(frame_dir, mul=4):
         cv2.imwrite('interpolated/{:05d}.png'.format(i), img * 255.0)
 
 
-def ffmpeg_common_args(frame_rate, input, width, height, crf, output_path):
-    return f"{get_ffmpeg_path()} -y -loglevel panic -framerate {frame_rate} -i {input} -s:v {width}x{height} " + \
+def ffmpeg_common_args(frame_rate, input_fn, width, height, crf, output_path):
+    return f"{get_ffmpeg_path()} -y -loglevel panic -framerate {frame_rate} -i {input_fn} -s:v {width}x{height} " + \
                          f"-c:v libx264 -profile:v high -crf {crf} -pix_fmt yuv420p {output_path}"
 
 

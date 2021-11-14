@@ -16,8 +16,8 @@ class Field:
     Args:
         vars (List[Expr]): Field members.
     """
-    def __init__(self, vars):
-        self.vars = vars
+    def __init__(self, _vars):
+        self.vars = _vars
         self.host_accessors = None
         self.grad = None
 

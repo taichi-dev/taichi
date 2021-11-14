@@ -109,7 +109,7 @@ class Ndarray:
         """
         if impl.current_cfg().ndarray_use_torch:
             return self.arr.cpu().numpy()
-        import numpy as np  # pylint: disable=C0415
+
         arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
         from taichi.lang.meta import \
             ndarray_to_ext_arr  # pylint: disable=C0415

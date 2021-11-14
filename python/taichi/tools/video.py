@@ -139,7 +139,7 @@ def interpolate_frames(frame_dir, mul=4):
     images_interpolated = []
     for f in sorted(files):
         if f.endswith('png'):
-            images.append(cv2.imread(f) / 255.0)
+            images.append(cv2.imread(f) / 255.0)  # pylint: disable=E1101
 
     for i in range(len(images) - 1):
         images_interpolated.append(images[i])
@@ -152,7 +152,7 @@ def interpolate_frames(frame_dir, mul=4):
 
     os.makedirs('interpolated', exist_ok=True)
     for i, img in enumerate(images_interpolated):
-        cv2.imwrite('interpolated/{:05d}.png'.format(i), img * 255.0)
+        cv2.imwrite('interpolated/{:05d}.png'.format(i), img * 255.0)  # pylint: disable=E1101
 
 
 def ffmpeg_common_args(frame_rate, input, width, height, crf, output_path):

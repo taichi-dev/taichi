@@ -49,6 +49,7 @@ def import_ti_core():
                   "https://docs.taichi.graphics/lang/articles/misc/install" +
                   Fore.RESET)
             if get_os_name() == 'win':
+                # pylint: disable=E1101
                 e.msg += '\nConsider installing Microsoft Visual C++ Redistributable: https://aka.ms/vs/16/release/vc_redist.x64.exe'
         raise e from None
 

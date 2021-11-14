@@ -235,9 +235,12 @@ class ScalarField(Field):
     @python_scope
     def to_torch(self, device=None):
         import torch  # pylint: disable=C0415
+
+        # pylint: disable-msg=E1101
         arr = torch.zeros(size=self.shape,
                           dtype=to_pytorch_type(self.dtype),
                           device=device)
+        # pylint: enable-msg=E1101
         taichi.lang.meta.tensor_to_ext_arr(self, arr)
         ti.sync()
         return arr

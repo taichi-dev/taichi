@@ -1308,9 +1308,11 @@ class MatrixField(Field):
         import torch  # pylint: disable=C0415
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
+        # pylint: disable-msg=E1101
         arr = torch.empty(self.shape + shape_ext,
                           dtype=to_pytorch_type(self.dtype),
                           device=device)
+        # pylint: enable-msg=E1101
         taichi.lang.meta.matrix_to_ext_arr(self, arr, as_vector)
         ti.sync()
         return arr

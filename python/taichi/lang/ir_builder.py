@@ -312,8 +312,6 @@ class IRBuilder(Builder):
         assert args.kw_defaults == []
         assert args.kwarg is None
 
-        arg_decls = []
-
         def transform_as_kernel():
             # Treat return type
             if node.returns is not None:

@@ -164,8 +164,7 @@ class KernelProfiler:
                 f'use \'ti.init(kernel_profiler = True)\' to turn on KernelProfiler.'
             )
             return True
-        else:
-            return False
+        return False
 
     def _clear_frontend(self):
         """Clear member variables in :class:`~taichi.profiler.kernelprofiler.KernelProfiler`.
@@ -203,7 +202,8 @@ class KernelProfiler:
                                reverse=True)
         }
 
-    def _make_table_header(self, mode):
+    @staticmethod
+    def _make_table_header(mode):
         header_str = f'Kernel Profiler({mode})'
         arch_name = f' @ {_ti_core.arch_name(ti.cfg.arch).upper()}'
         device_name = impl.get_runtime().prog.get_kernel_profiler_device_name()

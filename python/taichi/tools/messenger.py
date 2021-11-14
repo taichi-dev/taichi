@@ -21,7 +21,7 @@ def send_crash_report(message, receiver=None):
     if receiver is None:
         tc.warn('No receiver in $TI_MONITOR_EMAIL')
         return
-    tc.warn('Emailing {}'.format(receiver))
+    tc.warn(f'Emailing {receiver}')
     TO = receiver
     SUBJECT = 'Report'
     TEXT = message
@@ -32,9 +32,7 @@ def send_crash_report(message, receiver=None):
     server.login(gmail_sender, gmail_passwd)
 
     BODY = '\r\n'.join([
-        'To: %s' % TO,
-        'From: %s' % gmail_sender,
-        'Subject: %s' % SUBJECT, '', TEXT
+        f'To: {TO}', f'From: {gmail_sender}', f'Subject: {SUBJECT}', '', TEXT
     ])
 
     try:
@@ -56,16 +54,14 @@ keep = []
 def register_call_back(task_name):
     def at_exit():
         if not crashed:
-            message = 'Congratulations! Your task [{}] at machine [{}] has finished.'.format(
-                task_name, socket.gethostname())
+            message = f'Congratulations! Your task [{task_name}] at machine [{socket.gethostname()}] has finished.'
             send_crash_report(message)
 
     def email_call_back(_):
         global crashed
         crashed = True
         tc.warn('Task has crashed.')
-        message = 'Your task [{}] at machine [{}] has crashed.'.format(
-            task_name, socket.gethostname())
+        message = f'Your task [{task_name}] at machine [{socket.gethostname()}] has crashed.'
         send_crash_report(message)
         atexit.unregister(at_exit)
         exit(-1)

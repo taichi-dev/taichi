@@ -40,9 +40,9 @@ class Window(_ti_core.PyWindow):
         """
         if tag is None:
             return super().get_events(_ti_core.EventType.Any)
-        elif tag is PRESS:
+        if tag is PRESS:
             return super().get_events(_ti_core.EventType.Press)
-        elif tag is RELEASE:
+        if tag is RELEASE:
             return super().get_events(_ti_core.EventType.Release)
         raise Exception("unrecognized event tag")
 
@@ -54,9 +54,9 @@ class Window(_ti_core.PyWindow):
         """
         if tag is None:
             return super().get_event(_ti_core.EventType.Any)
-        elif tag is PRESS:
+        if tag is PRESS:
             return super().get_event(_ti_core.EventType.Press)
-        elif tag is RELEASE:
+        if tag is RELEASE:
             return super().get_event(_ti_core.EventType.Release)
         raise Exception("unrecognized event tag")
 

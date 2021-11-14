@@ -18,7 +18,7 @@ TAGS = {
     'R0205': True,
     'R1732': True,
     'W0101': True,
-    'R1710': False,
+    'R1710': True,
     'R1703': True,
     'W0108': True,
 }

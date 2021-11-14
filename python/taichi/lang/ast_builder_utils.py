@@ -88,8 +88,8 @@ class BuilderContext:
     def check_loop_var(self, loop_var):
         if self.is_var_declared(loop_var):
             raise TaichiSyntaxError(
-                "Variable '{}' is already declared in the outer scope and cannot be used as loop variable"
-                .format(loop_var))
+                f"Variable '{loop_var}' is already declared in the outer scope and cannot be used as loop variable"
+            )
 
 
 class VariableScopeGuard:
@@ -101,7 +101,6 @@ class VariableScopeGuard:
         self.scopes.append({})
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        local = self.scopes[-1]
         self.scopes.pop()
 
 
@@ -134,7 +133,7 @@ class IRBuilderContext:
                  is_kernel=True,
                  func=None,
                  arg_features=None,
-                 globals=None,
+                 global_vars=None,
                  argument_data=None):
         self.func = func
         self.local_scopes = []
@@ -143,7 +142,7 @@ class IRBuilderContext:
         self.is_kernel = is_kernel
         self.arg_features = arg_features
         self.returns = None
-        self.globals = globals
+        self.global_vars = global_vars
         self.argument_data = argument_data
         self.return_data = None
 
@@ -191,11 +190,11 @@ class IRBuilderContext:
     def check_loop_var(self, loop_var):
         if self.is_var_declared(loop_var):
             raise TaichiSyntaxError(
-                "Variable '{}' is already declared in the outer scope and cannot be used as loop variable"
-                .format(loop_var))
+                f"Variable '{loop_var}' is already declared in the outer scope and cannot be used as loop variable"
+            )
 
     def get_var_by_name(self, name):
         for s in reversed(self.local_scopes):
             if name in s:
                 return s[name]
-        return self.globals.get(name)
+        return self.global_vars.get(name)

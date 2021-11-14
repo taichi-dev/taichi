@@ -103,7 +103,7 @@ class GUI:
     def __enter__(self):
         return self
 
-    def __exit__(self, type, val, tb):
+    def __exit__(self, e_type, val, tb):
         self.close()
 
     def __del__(self):
@@ -538,32 +538,32 @@ class GUI:
         return [(orig, end), (end, end + minor1 * tip_scale),
                 (end, end + minor2 * tip_scale)]
 
-    def arrows(self, orig, dir, radius=1, color=0xffffff, **kwargs):
+    def arrows(self, orig, direction, radius=1, color=0xffffff, **kwargs):
         """Draw a list arrows on canvas.
 
         Args:
             orig (numpy.array): The positions where arrows start.
-            dir (numpy.array): The directions where arrows point to.
+            direction (numpy.array): The directions where arrows point to.
             radius (Union[Number, np.array], optional): The width of arrows. Default is 1.
             color (Union[int, np.array], optional): The color or colors of arrows. Default is 0xffffff.
 
         """
-        for begin, end in self._arrow_to_lines(orig, dir, **kwargs):
+        for begin, end in self._arrow_to_lines(orig, direction, **kwargs):
             self.lines(begin, end, radius, color)
 
-    def arrow(self, orig, dir, radius=1, color=0xffffff, **kwargs):
+    def arrow(self, orig, direction, radius=1, color=0xffffff, **kwargs):
         """Draw a single arrow on canvas.
 
         Args:
             orig (List[Number]): The position where arrow starts. Shape must be 2.
-            dir (List[Number]): The direction where arrow points to. Shape must be 2.
+            direction (List[Number]): The direction where arrow points to. Shape must be 2.
             radius (Number, optional): The width of arrow. Default is 1.
             color (int, optional): The color of arrow. Default is 0xFFFFFF.
 
         """
         orig = np.array([orig])
-        dir = np.array([dir])
-        for begin, end in self._arrow_to_lines(orig, dir, **kwargs):
+        direction = np.array([direction])
+        for begin, end in self._arrow_to_lines(orig, direction, **kwargs):
             self.line(begin[0], end[0], radius, color)
 
     def rect(self, topleft, bottomright, radius=1, color=0xFFFFFF):
@@ -628,21 +628,28 @@ class GUI:
         radius = radius.reshape(radius.shape[0] * radius.shape[1])
         self.circles(base, radius=radius, color=color)
 
-    def arrow_field(self, dir, radius=1, color=0xffffff, bound=0.5, **kwargs):
+    def arrow_field(self,
+                    direction,
+                    radius=1,
+                    color=0xffffff,
+                    bound=0.5,
+                    **kwargs):
         """Draw a field of arrows on canvas.
 
         Args:
-            dir (np.array): The pattern and direction of the field of arrows.
+            direction (np.array): The pattern and direction of the field of arrows.
             color (Union[int, np.array], optional): The color or colors of arrows.
                 Default is 0xFFFFFF.
             bound (Number, optional): The boundary of the field. Default is 0.5.
 
         """
-        assert len(dir.shape) == 3
-        assert dir.shape[2] == 2
-        base = self._make_field_base(dir.shape[0], dir.shape[1], bound)
-        dir = dir.reshape(dir.shape[0] * dir.shape[1], 2)
-        self.arrows(base, dir, radius=radius, color=color, **kwargs)
+        assert len(direction.shape) == 3
+        assert direction.shape[2] == 2
+        base = self._make_field_base(direction.shape[0], direction.shape[1],
+                                     bound)
+        direction = direction.reshape(direction.shape[0] * direction.shape[1],
+                                      2)
+        self.arrows(base, direction, radius=radius, color=color, **kwargs)
 
     def show(self, file=None):
         """Show the frame or save current frame as a picture.
@@ -661,12 +668,12 @@ class GUI:
     ## Event system
 
     class EventFilter:
-        def __init__(self, *filter):
+        def __init__(self, *e_filter):
             self.filter = set()
-            for ent in filter:
+            for ent in e_filter:
                 if isinstance(ent, (list, tuple)):
-                    type, key = ent
-                    ent = (type, key)
+                    e_type, key = ent
+                    ent = (e_type, key)
                 self.filter.add(ent)
 
         def match(self, e):
@@ -687,39 +694,39 @@ class GUI:
         """
         return self.core.has_key_event()
 
-    def get_event(self, *filter):
+    def get_event(self, *e_filter):
         """Check if the specific event is triggered.
 
         Args:
-            *filter (ti.GUI.EVENT): The specific event to be checked.
+            *e_filter (ti.GUI.EVENT): The specific event to be checked.
 
         Returns:
             Bool to indicate whether the specific event is triggered.
 
         """
-        for e in self.get_events(*filter):
+        for e in self.get_events(*e_filter):
             self.event = e
             return True
         else:
             return False
 
-    def get_events(self, *filter):
+    def get_events(self, *e_filter):
         """Get a list of events that are triggered.
 
         Args:
-            *filter (List[ti.GUI.EVENT]): The type of events to be filtered.
+            *e_filter (List[ti.GUI.EVENT]): The type of events to be filtered.
 
         Returns:
             :class:`~taichi.misc.gui.GUI.EVENT` :A list of events that are triggered.
 
         """
-        filter = filter and GUI.EventFilter(*filter) or None
+        e_filter = e_filter and GUI.EventFilter(*e_filter) or None
 
         while True:
             if not self.has_key_event():
                 break
             e = self.get_key_event()
-            if filter is None or filter.match(e):
+            if e_filter is None or e_filter.match(e):
                 yield e
 
     def get_key_event(self):

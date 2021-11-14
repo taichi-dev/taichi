@@ -58,6 +58,8 @@ class IRBuilder(Builder):
             IRBuilder.build_assign_basic(ctx, target, tmp_tuple[i],
                                          is_static_assign)
 
+        return None
+
     @staticmethod
     def build_assign_basic(ctx, target, value, is_static_assign):
         """Build basic assginment like this: target = value.
@@ -163,6 +165,8 @@ class IRBuilder(Builder):
                     ctx, node.generators[now_comp].ifs)
                 IRBuilder.process_ifs(ctx, node, now_comp, 0, func, result)
 
+        return None
+
     @staticmethod
     def process_ifs(ctx, node, now_comp, now_if, func, result):
         if now_if >= len(node.generators[now_comp].ifs):
@@ -172,6 +176,8 @@ class IRBuilder(Builder):
         if cond:
             IRBuilder.process_ifs(ctx, node, now_comp, now_if + 1, func,
                                   result)
+
+        return None
 
     @staticmethod
     def build_comprehension(ctx, node):

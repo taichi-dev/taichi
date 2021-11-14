@@ -550,6 +550,8 @@ def init(arch=None,
 
     impl._root_fb = FieldsBuilder()
 
+    return None
+
 
 def no_activate(*args):
     for v in args:

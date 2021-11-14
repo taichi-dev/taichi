@@ -65,6 +65,8 @@ class ASTTransformerTotal:
         self.print_ast(tree, 'Preprocessed')
         self.pass_checks.visit(tree)  # does not modify the AST
 
+        return None
+
 
 class ASTTransformerBase(ast.NodeTransformer):
     def __init__(self, func):

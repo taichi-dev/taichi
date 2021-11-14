@@ -485,7 +485,7 @@ class Kernel:
             key = (self.func, 0)
         self.runtime.materialize()
         if key in self.compiled_functions:
-            return
+            return None
         grad_suffix = ""
         if self.is_grad:
             grad_suffix = "_grad"
@@ -555,6 +555,8 @@ class Kernel:
 
         assert key not in self.compiled_functions
         self.compiled_functions[key] = self.get_function_body(taichi_kernel)
+
+        return None
 
     def materialize_ast_refactor(self, key=None, args=None, arg_features=None):
         _taichi_skip_traceback = 1

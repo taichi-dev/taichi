@@ -212,6 +212,8 @@ class TaichiMain:
 
         runpy.run_path(target, run_name='__main__')
 
+        return None
+
     @staticmethod
     @register
     def changelog(arguments: list = sys.argv[2:]):
@@ -259,6 +261,8 @@ class TaichiMain:
         if self.test_mode: return args
         video.mp4_to_gif(args.input_file, args.output_file, args.framerate)
 
+        return None
+
     @register
     def video_speed(self, arguments: list = sys.argv[2:]):
         """Speed up video in the same directory"""
@@ -288,6 +292,8 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
         video.accelerate_video(args.input_file, args.output_file, args.speed)
+
+        return None
 
     @register
     def video_crop(self, arguments: list = sys.argv[2:]):
@@ -332,6 +338,8 @@ class TaichiMain:
         video.crop_video(args.input_file, args.output_file, args.x_begin,
                          args.x_end, args.y_begin, args.y_end)
 
+        return None
+
     @register
     def video_scale(self, arguments: list = sys.argv[2:]):
         """Scale video resolution in the same directory"""
@@ -372,6 +380,8 @@ class TaichiMain:
         if self.test_mode: return args
         video.scale_video(args.input_file, args.output_file, args.ratio_width,
                           args.ratio_height)
+
+        return None
 
     @register
     def video(self, arguments: list = sys.argv[2:]):
@@ -419,6 +429,8 @@ class TaichiMain:
                          crf=args.crf,
                          frame_rate=args.framerate)
         ti.info(f'Done! Output video file = {args.output_file}')
+
+        return None
 
     @staticmethod
     @register
@@ -565,6 +577,8 @@ class TaichiMain:
         TaichiMain._display_benchmark_regression(baseline_dir, output_dir,
                                                  args)
 
+        return None
+
     @register
     def baseline(self, arguments: list = sys.argv[2:]):
         """Archive current benchmark result as baseline"""
@@ -580,6 +594,8 @@ class TaichiMain:
         shutil.rmtree(baseline_dir, True)
         shutil.copytree(output_dir, baseline_dir)
         print(f"[benchmark] baseline data saved to {baseline_dir}")
+
+        return None
 
     @staticmethod
     def _test_python(args):
@@ -720,6 +736,8 @@ class TaichiMain:
             # TODO: benchmark_python(args)
         else:
             TaichiMain._test_python(args)
+
+        return None
 
     @register
     def test(self, arguments: list = sys.argv[2:]):
@@ -862,6 +880,8 @@ class TaichiMain:
 
         runpy.run_path(args.filename)
 
+        return None
+
     @register
     def debug(self, arguments: list = sys.argv[2:]):
         """Debug a single script"""
@@ -881,6 +901,8 @@ class TaichiMain:
 
         runpy.run_path(args.filename, run_name='__main__')
 
+        return None
+
     @register
     def task(self, arguments: list = sys.argv[2:]):
         """Run a specific task"""
@@ -898,6 +920,8 @@ class TaichiMain:
 
         task = ti.Task(args.taskname)
         task.run(*args.taskargs)
+
+        return None
 
     @register
     def dist(self, arguments: list = sys.argv[2:]):

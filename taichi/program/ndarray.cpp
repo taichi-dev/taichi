@@ -23,7 +23,7 @@ Ndarray::Ndarray(Program *prog,
 
   data_ptr_ = prog_impl->get_ndarray_alloc_info_ptr(ndarray_alloc_);
 #else
-  TI_NOT_IMPLEMENTED
+  TI_ERROR("Llvm disabled");
 #endif
 }
 

@@ -1,0 +1,29 @@
+TAGS = {
+    'C0121': True,
+    'C0415': True,
+    'W0611': True,
+    'W0202': True,
+    'W0621': False,
+    'W0622': False,
+    'W0401': True,
+    'C0209': True,
+    'W0404': False,
+    'W0612': False,
+    'E1101': False,
+    'R0402': True,
+    'R0201': True,
+    'W0235': True,
+    'R1705': True,
+    'C0200': True,
+    'R0205': True,
+    'R1732': True,
+    'W0101': True,
+    'R1710': False,
+    'R1703': True,
+    'W0108': True,
+}
+
+if __name__ == '__main__':
+    enabled = tuple(
+        map(lambda kv: kv[0], filter(lambda kv: kv[1], TAGS.items())))
+    print(','.join(enabled))

@@ -288,6 +288,7 @@ class TaichiOperations:
         _taichi_skip_traceback = 1
         return ti.assign(self, other)
 
+    # pylint: disable=R0201
     def augassign(self, x, op):
         """Generate the computing expression between self and the given operand of given operator and assigned to self.
 

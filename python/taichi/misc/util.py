@@ -14,9 +14,9 @@ def config_from_dict(args):
     d = copy.copy(args)
     for k in d:
         if isinstance(d[k], _ti_core.Vector2f):
-            d[k] = '({}, {})'.format(d[k].x, d[k].y)
+            d[k] = f'({d[k].x}, {d[k].y})'
         if isinstance(d[k], _ti_core.Vector3f):
-            d[k] = '({}, {}, {})'.format(d[k].x, d[k].y, d[k].z)
+            d[k] = f'({d[k].x}, {d[k].y}, {d[k].z})'
         d[k] = str(d[k])
     return _ti_core.config_from_dict(d)
 
@@ -30,13 +30,12 @@ def core_veci(*args):
         args = tuple(*args)
     if len(args) == 2:
         return _ti_core.Vector2i(int(args[0]), int(args[1]))
-    elif len(args) == 3:
+    if len(args) == 3:
         return _ti_core.Vector3i(int(args[0]), int(args[1]), int(args[2]))
-    elif len(args) == 4:
+    if len(args) == 4:
         return _ti_core.Vector4i(int(args[0]), int(args[1]), int(args[2]),
                                  int(args[3]))
-    else:
-        assert False, type(args[0])
+    assert False, type(args[0])
 
 
 def core_vec(*args):
@@ -57,37 +56,32 @@ def core_vec(*args):
     if _ti_core.get_default_float_size() == 4:
         if len(args) == 2:
             return _ti_core.Vector2f(float(args[0]), float(args[1]))
-        elif len(args) == 3:
+        if len(args) == 3:
             return _ti_core.Vector3f(float(args[0]), float(args[1]),
                                      float(args[2]))
-        elif len(args) == 4:
+        if len(args) == 4:
             return _ti_core.Vector4f(float(args[0]), float(args[1]),
                                      float(args[2]), float(args[3]))
-        else:
-            assert False, type(args[0])
+        assert False, type(args[0])
     else:
         if len(args) == 2:
             return _ti_core.Vector2d(float(args[0]), float(args[1]))
-        elif len(args) == 3:
+        if len(args) == 3:
             return _ti_core.Vector3d(float(args[0]), float(args[1]),
                                      float(args[2]))
-        elif len(args) == 4:
+        if len(args) == 4:
             return _ti_core.Vector4d(float(args[0]), float(args[1]),
                                      float(args[2]), float(args[3]))
-        else:
-            assert False, type(args[0])
+        assert False, type(args[0])
 
 
 class Tee():
     def __init__(self, name):
-        self.file = open(name, 'w')
-        self.stdout = sys.stdout
-        self.stderr = sys.stderr
-        sys.stdout = self
-        sys.stderr = self
-
-    def __del__(self):
-        self.file.close()
+        with open(name, 'w') as self.file:
+            self.stdout = sys.stdout
+            self.stderr = sys.stderr
+            sys.stdout = self
+            sys.stderr = self
 
     def write(self, data):
         self.file.write(data)
@@ -101,18 +95,18 @@ class Tee():
 
 # The builtin `warnings` module is unreliable since it may be suppressed
 # by other packages such as IPython.
-def warning(msg, type=UserWarning, stacklevel=1):
+def warning(msg, warning_type=UserWarning, stacklevel=1):
     """Print warning message
 
     Args:
         msg (str): massage to print.
-        type (builtin warning type):  type of warning.
+        warning_type (builtin warning type):  type of warning.
         stacklevel (int): warning stack level from the caller.
     """
     s = traceback.extract_stack()[:-stacklevel]
     raw = ''.join(traceback.format_list(s))
     print(Fore.YELLOW + Style.BRIGHT, end='')
-    print(f'{type.__name__}: {msg}')
+    print(f'{warning_type.__name__}: {msg}')
     print(f'\n{raw}')
     print(Style.RESET_ALL, end='')
 
@@ -224,12 +218,12 @@ def dump_dot(filepath=None, rankdir=None, embed_states_threshold=0):
 
 def dot_to_pdf(dot, filepath):
     assert filepath.endswith('.pdf')
-    p = subprocess.Popen(['dot', '-Tpdf'],
-                         stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE)
-    pdf_contents = p.communicate(input=dot.encode())[0]
-    with open(filepath, 'wb') as fh:
-        fh.write(pdf_contents)
+    with subprocess.Popen(['dot', '-Tpdf'],
+                          stdin=subprocess.PIPE,
+                          stdout=subprocess.PIPE) as p:
+        pdf_contents = p.communicate(input=dot.encode())[0]
+        with open(filepath, 'wb') as fh:
+            fh.write(pdf_contents)
 
 
 def get_kernel_stats():

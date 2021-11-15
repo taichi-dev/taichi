@@ -1,10 +1,9 @@
 import sys
 
-import taichi.ad as ad
 from taichi._logging import *
 from taichi.core import get_os_name, package_root, require_version
 from taichi.core import ti_core as core
-from taichi.lang import *  # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
+from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.main import main
 from taichi.misc import *
 from taichi.testing import *
@@ -12,7 +11,8 @@ from taichi.tools import *
 from taichi.torch_io import from_torch, to_torch
 from taichi.type import *
 
-import taichi.ui as ui
+from taichi import ad
+from taichi.ui import ui
 
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
 from taichi import aot  # isort:skip
@@ -25,10 +25,10 @@ else:
 
     def __getattr__(attr):
         if attr in deprecated_names:
-            warning('ti.{} is deprecated. Please use ti.{} instead.'.format(
-                attr, deprecated_names[attr]),
-                    DeprecationWarning,
-                    stacklevel=2)
+            warning(
+                f'ti.{attr} is deprecated. Please use ti.{deprecated_names[attr]} instead.',
+                DeprecationWarning,
+                stacklevel=2)
             exec(f'{attr} = {deprecated_names[attr]}')
             return locals()[attr]
         raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")

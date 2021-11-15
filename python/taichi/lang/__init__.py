@@ -20,7 +20,7 @@ from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, Vector
 from taichi.lang.ndrange import GroupedNDRange, ndrange
-from taichi.lang.ops import *
+from taichi.lang.ops import *  # pylint: disable=W0622
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.source_builder import SourceBuilder
@@ -101,8 +101,8 @@ cpu = _ti_core.host_arch()
 
 When this is used, Taichi automatically picks the matching CPU backend.
 """
-timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()
-timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
+timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()  # pylint: disable=unnecessary-lambda
+timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: disable=unnecessary-lambda
 
 # Legacy API
 type_factory_ = _ti_core.get_type_factory_instance()
@@ -550,6 +550,8 @@ def init(arch=None,
 
     impl._root_fb = FieldsBuilder()
 
+    return None
+
 
 def no_activate(*args):
     for v in args:
@@ -805,12 +807,12 @@ def benchmark(func, repeat=300, args=()):
         # Use 3 initial iterations to warm up
         # instruction/data caches. Discussion:
         # https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
-        for i in range(3):
+        for _ in range(3):
             func(*args)
             ti.sync()
         ti.clear_kernel_profile_info()
         t = time.time()
-        for n in range(repeat):
+        for _ in range(repeat):
             func(*args)
             ti.sync()
         elapsed = time.time() - t
@@ -869,8 +871,7 @@ def benchmark_plot(fn=None,
     figure.suptitle(title, fontweight="bold")
     for col_id in range(len(columns)):
         subfigures[0][col_id].set_title(column_titles[col_id])
-    for case_id in range(len(cases)):
-        case = cases[case_id]
+    for case_id, case in enumerate(cases):
         subfigures[case_id][0].annotate(
             case,
             xy=(0, 0.5),
@@ -880,8 +881,7 @@ def benchmark_plot(fn=None,
             size='large',
             ha='right',
             va='center')
-        for col_id in range(len(columns)):
-            col = columns[col_id]
+        for col_id, col in enumerate(columns):
             if archs is None:
                 current_archs = data[case][col].keys()
             else:
@@ -991,7 +991,7 @@ def is_arch_supported(arch):
         metal: _ti_core.with_metal,
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
-        vulkan: lambda: _ti_core.with_vulkan(),
+        vulkan: _ti_core.with_vulkan,
         wasm: lambda: True,
         cpu: lambda: True,
     }
@@ -1014,7 +1014,7 @@ def supported_archs():
         List[taichi_core.Arch]: All supported archs on the machine.
     """
     archs = set([cpu, cuda, metal, vulkan, opengl, cc])
-    archs = set(filter(lambda x: is_arch_supported(x), archs))
+    archs = set(filter(is_arch_supported, archs))
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')
@@ -1053,7 +1053,7 @@ def adaptive_arch_select(arch):
     return cpu
 
 
-class _ArchCheckers(object):
+class _ArchCheckers:
     def __init__(self):
         self._checkers = []
 
@@ -1099,11 +1099,11 @@ def all_archs_with(**kwargs):
 
             for arch in ti.supported_archs():
                 if can_run_on(arch):
-                    print('Running test on arch={}'.format(arch))
+                    print(f'Running test on arch={arch}')
                     ti.init(arch=arch, **kwargs)
                     test(*test_args, **test_kwargs)
                 else:
-                    print('Skipped test on arch={}'.format(arch))
+                    print(f'Skipped test on arch={arch}')
 
         return wrapped
 
@@ -1182,8 +1182,7 @@ def torch_test(func):
     if ti.has_pytorch():
         # OpenGL somehow crashes torch test without a reason, unforturnately
         return ti.test(exclude=[opengl])(func)
-    else:
-        return lambda: None
+    return lambda: None
 
 
 def get_host_arch_list():
@@ -1233,11 +1232,9 @@ def must_throw(ex):
                 # throws. test passed
                 pass
             except Exception as err_actual:
-                assert False, 'Exception {} instead of {} thrown'.format(
-                    str(type(err_actual)), str(ex))
+                assert False, f'Exception {str(type(err_actual))} instead of {str(ex)} thrown'
             if finishes:
-                assert False, 'Test successfully finished instead of throwing {}'.format(
-                    str(ex))
+                assert False, f'Test successfully finished instead of throwing {str(ex)}'
 
         return func__
 

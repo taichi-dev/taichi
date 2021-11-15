@@ -1,5 +1,4 @@
 import numbers
-import warnings
 from types import FunctionType, MethodType
 from typing import Iterable
 
@@ -7,7 +6,7 @@ import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
+from taichi.lang.exception import InvalidOperationError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -15,8 +14,8 @@ from taichi.lang.matrix import MatrixField
 from taichi.lang.snode import SNode
 from taichi.lang.struct import StructField
 from taichi.lang.tape import TapeImpl
-from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
-                              python_scope, taichi_scope, to_pytorch_type)
+from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
+                              taichi_scope)
 from taichi.misc.util import deprecated, get_traceback, warning
 from taichi.snode.fields_builder import FieldsBuilder
 from taichi.type.primitive_types import f16, f32, f64, i32, i64, u32, u64
@@ -36,25 +35,22 @@ def expr_init(rhs):
     if is_taichi_class(rhs):
         if rhs.local_tensor_proxy is not None:
             return rhs
-        else:
-            return rhs.variable()
-    else:
-        if isinstance(rhs, list):
-            return [expr_init(e) for e in rhs]
-        elif isinstance(rhs, tuple):
-            return tuple(expr_init(e) for e in rhs)
-        elif isinstance(rhs, dict):
-            return dict((key, expr_init(val)) for key, val in rhs.items())
-        elif isinstance(rhs, _ti_core.DataType):
-            return rhs
-        elif isinstance(rhs, _ti_core.Arch):
-            return rhs
-        elif isinstance(rhs, ti.ndrange):
-            return rhs
-        elif hasattr(rhs, '_data_oriented'):
-            return rhs
-        else:
-            return Expr(_ti_core.expr_var(Expr(rhs).ptr))
+        return rhs.variable()
+    if isinstance(rhs, list):
+        return [expr_init(e) for e in rhs]
+    if isinstance(rhs, tuple):
+        return tuple(expr_init(e) for e in rhs)
+    if isinstance(rhs, dict):
+        return dict((key, expr_init(val)) for key, val in rhs.items())
+    if isinstance(rhs, _ti_core.DataType):
+        return rhs
+    if isinstance(rhs, _ti_core.Arch):
+        return rhs
+    if isinstance(rhs, ti.ndrange):
+        return rhs
+    if hasattr(rhs, '_data_oriented'):
+        return rhs
+    return Expr(_ti_core.expr_var(Expr(rhs).ptr))
 
 
 @taichi_scope
@@ -71,10 +67,9 @@ def expr_init_list(xs, expected):
             f'Tuple assignment size mismatch: {expected} != {len(xs)}')
     if isinstance(xs, list):
         return [expr_init(e) for e in xs]
-    elif isinstance(xs, tuple):
+    if isinstance(xs, tuple):
         return tuple(expr_init(e) for e in xs)
-    else:
-        raise ValueError(f'Cannot unpack from {type(xs)}')
+    raise ValueError(f'Cannot unpack from {type(xs)}')
 
 
 @taichi_scope
@@ -113,8 +108,7 @@ def begin_frontend_if(cond):
 def wrap_scalar(x):
     if type(x) in [int, float]:
         return Expr(x)
-    else:
-        return x
+    return x
 
 
 @taichi_scope
@@ -128,11 +122,11 @@ def subscript(value, *indices):
         return value[indices[0]]
 
     flattened_indices = []
-    for i in range(len(indices)):
-        if is_taichi_class(indices[i]):
-            ind = indices[i].entries
+    for index in indices:
+        if is_taichi_class(index):
+            ind = index.entries
         else:
-            ind = [indices[i]]
+            ind = [index]
         flattened_indices += ind
     indices = tuple(flattened_indices)
     if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
@@ -142,9 +136,9 @@ def subscript(value, *indices):
 
     if is_taichi_class(value):
         return value.subscript(*indices)
-    elif isinstance(value, SparseMatrixProxy):
+    if isinstance(value, SparseMatrixProxy):
         return value.subscript(*indices)
-    elif isinstance(value, Field):
+    if isinstance(value, Field):
         var = value.get_field_members()[0].ptr
         if var.snode() is None:
             if var.is_primal():
@@ -164,13 +158,12 @@ def subscript(value, *indices):
                 Expr(_ti_core.subscript(e.ptr, indices_expr_group))
                 for e in value.get_field_members()
             ])
-        elif isinstance(value, StructField):
+        if isinstance(value, StructField):
             return ti.Struct(
                 {k: subscript(v, *indices)
                  for k, v in value.items})
-        else:
-            return Expr(_ti_core.subscript(var, indices_expr_group))
-    elif isinstance(value, AnyArray):
+        return Expr(_ti_core.subscript(var, indices_expr_group))
+    if isinstance(value, AnyArray):
         # TODO: deprecate using get_attribute to get dim
         field_dim = int(value.ptr.get_attribute("dim"))
         element_dim = len(value.element_shape)
@@ -189,7 +182,7 @@ def subscript(value, *indices):
         ])
         ret.any_array_access = any_array_access
         return ret
-    elif isinstance(value, SNode):
+    if isinstance(value, SNode):
         # When reading bit structure we only support the 0-D case for now.
         field_dim = 0
         if field_dim != index_dim:
@@ -197,8 +190,8 @@ def subscript(value, *indices):
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
-    else:  # Directly evaluate in Python for non-Taichi types
-        return value.__getitem__(*indices)
+    # Directly evaluate in Python for non-Taichi types
+    return value.__getitem__(*indices)
 
 
 @taichi_scope
@@ -222,23 +215,23 @@ def chain_compare(comparators, ops):
     assert len(comparators) == len(ops) + 1, \
       f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
     ret = True
-    for i in range(len(ops)):
+    for i, op in enumerate(ops):
         lhs = comparators[i]
         rhs = comparators[i + 1]
-        if ops[i] == 'Lt':
+        if op == 'Lt':
             now = lhs < rhs
-        elif ops[i] == 'LtE':
+        elif op == 'LtE':
             now = lhs <= rhs
-        elif ops[i] == 'Gt':
+        elif op == 'Gt':
             now = lhs > rhs
-        elif ops[i] == 'GtE':
+        elif op == 'GtE':
             now = lhs >= rhs
-        elif ops[i] == 'Eq':
+        elif op == 'Eq':
             now = lhs == rhs
-        elif ops[i] == 'NotEq':
+        elif op == 'NotEq':
             now = lhs != rhs
         else:
-            assert False, f'Unknown operator {ops[i]}'
+            assert False, f'Unknown operator {op}'
         ret = ti.logical_and(ret, now)
     return ret
 
@@ -267,9 +260,8 @@ def insert_expr_stmt_if_ti_func(func, *args, **kwargs):
         func_call_result = func(*args, **kwargs)
         # Insert FrontendExprStmt here.
         return _ti_core.insert_expr_stmt(func_call_result.ptr)
-    else:
-        # Call the non-Taichi function directly.
-        return func(*args, **kwargs)
+    # Call the non-Taichi function directly.
+    return func(*args, **kwargs)
 
 
 class PyTaichi:
@@ -309,7 +301,8 @@ class PyTaichi:
         if self.prog is None:
             self.prog = _ti_core.Program()
 
-    def materialize_root_fb(self, is_first_call):
+    @staticmethod
+    def materialize_root_fb(is_first_call):
         if root.finalized:
             return
         if not is_first_call and root.empty:
@@ -323,7 +316,8 @@ class PyTaichi:
         global _root_fb
         _root_fb = FieldsBuilder()
 
-    def _finalize_root_fb_for_aot(self):
+    @staticmethod
+    def _finalize_root_fb_for_aot():
         if _root_fb.finalized:
             raise RuntimeError(
                 'AOT: can only finalize the root FieldsBuilder once')
@@ -416,22 +410,20 @@ def make_constant_expr(val):
             return Expr(
                 _ti_core.make_const_expr_i32(
                     _clamp_unsigned_to_range(np.int32, val)))
-        elif pytaichi.default_ip in {i64, u64}:
+        if pytaichi.default_ip in {i64, u64}:
             return Expr(
                 _ti_core.make_const_expr_i64(
                     _clamp_unsigned_to_range(np.int64, val)))
-        else:
-            assert False
+        assert False
     elif isinstance(val, (float, np.floating, np.ndarray)):
         if pytaichi.default_fp == f32:
             return Expr(_ti_core.make_const_expr_f32(val))
-        elif pytaichi.default_fp == f64:
+        if pytaichi.default_fp == f64:
             return Expr(_ti_core.make_const_expr_f64(val))
-        elif pytaichi.default_fp == f16:
+        if pytaichi.default_fp == f16:
             # Use f32 to interact with python
             return Expr(_ti_core.make_const_expr_f32(val))
-        else:
-            assert False
+        assert False
     else:
         raise ValueError(f'Invalid constant scalar expression: {type(val)}')
 
@@ -493,20 +485,24 @@ _root_fb = _UninitializedRootFieldsBuilder()
 
 class _Root:
     """Wrapper around the default root FieldsBuilder instance."""
-    def parent(self, n=1):
+    @staticmethod
+    def parent(n=1):
         """Same as :func:`taichi.SNode.parent`"""
         return _root_fb.root.parent(n)
 
-    def loop_range(self):
+    @staticmethod
+    def loop_range():
         """Same as :func:`taichi.SNode.loop_range`"""
         return _root_fb.root.loop_range()
 
-    def get_children(self):
+    @staticmethod
+    def get_children():
         """Same as :func:`taichi.SNode.get_children`"""
         return _root_fb.root.get_children()
 
     # TODO: Record all of the SNodeTrees that finalized under 'ti.root'
-    def deactivate_all(self):
+    @staticmethod
+    def deactivate_all():
         warning(
             """'ti.root.deactivate_all()' would deactivate all finalized snodes."""
         )
@@ -647,12 +643,11 @@ def ndarray(dtype, shape):
 
 
 @taichi_scope
-def ti_print(*vars, sep=' ', end='\n'):
+def ti_print(*_vars, sep=' ', end='\n'):
     def entry2content(var):
         if isinstance(var, str):
             return var
-        else:
-            return Expr(var).ptr
+        return Expr(var).ptr
 
     def list_ti_repr(var):
         yield '['  # distinguishing tuple & list will increase maintainance cost
@@ -662,8 +657,8 @@ def ti_print(*vars, sep=' ', end='\n'):
             yield v
         yield ']'
 
-    def vars2entries(vars):
-        for var in vars:
+    def vars2entries(_vars):
+        for var in _vars:
             if hasattr(var, '__ti_repr__'):
                 res = var.__ti_repr__()
             elif isinstance(var, (list, tuple)):
@@ -681,8 +676,8 @@ def ti_print(*vars, sep=' ', end='\n'):
             for v in vars2entries(res):
                 yield v
 
-    def add_separators(vars):
-        for i, var in enumerate(vars):
+    def add_separators(_vars):
+        for i, var in enumerate(_vars):
             if i:
                 yield sep
             yield var
@@ -701,8 +696,8 @@ def ti_print(*vars, sep=' ', end='\n'):
         if accumated:
             yield accumated
 
-    vars = add_separators(vars)
-    entries = vars2entries(vars)
+    _vars = add_separators(_vars)
+    entries = vars2entries(_vars)
     entries = fused_string(entries)
     contentries = [entry2content(entry) for entry in entries]
     _ti_core.create_print(contentries)
@@ -737,8 +732,8 @@ def ti_format(*args, **kwargs):
         args
     ) + 1, 'Number of args is different from number of positions provided in string'
 
-    for i in range(len(args)):
-        res.insert(i * 2 + 1, args[i])
+    for i, arg in enumerate(args):
+        res.insert(i * 2 + 1, arg)
     res.insert(0, '__ti_format__')
     return res
 
@@ -756,8 +751,7 @@ def ti_int(var):
     _taichi_skip_traceback = 1
     if hasattr(var, '__ti_int__'):
         return var.__ti_int__()
-    else:
-        return int(var)
+    return int(var)
 
 
 @taichi_scope
@@ -765,8 +759,7 @@ def ti_float(var):
     _taichi_skip_traceback = 1
     if hasattr(var, '__ti_float__'):
         return var.__ti_float__()
-    else:
-        return float(var)
+    return float(var)
 
 
 @taichi_scope
@@ -869,16 +862,15 @@ def static(x, *xs):
                   (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
                    ti.GroupedNDRange, zip, filter, map)) or x is None:
         return x
-    elif isinstance(x, AnyArray):
+    if isinstance(x, AnyArray):
         return x
-    elif isinstance(x, Field):
+    if isinstance(x, Field):
         return x
-    elif isinstance(x, (FunctionType, MethodType)):
+    if isinstance(x, (FunctionType, MethodType)):
         return x
-    else:
-        raise ValueError(
-            f'Input to ti.static must be compile-time constants or global pointers, instead of {type(x)}'
-        )
+    raise ValueError(
+        f'Input to ti.static must be compile-time constants or global pointers, instead of {type(x)}'
+    )
 
 
 @taichi_scope
@@ -895,8 +887,7 @@ def grouped(x):
     """
     if isinstance(x, ti.ndrange):
         return x.grouped()
-    else:
-        return x
+    return x
 
 
 def stop_grad(x):

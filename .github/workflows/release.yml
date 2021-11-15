@@ -52,7 +52,7 @@ jobs:
           GPU_BUILD: ON
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
-          DISPLAY: :1
+          DISPLAY: ":1"
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v2
@@ -70,7 +70,7 @@ jobs:
         env:
           PY: ${{ matrix.conda_python }}
           GPU_TEST: ON
-          DISPLAY: :1
+          DISPLAY: ":1"
 
       - name: Upload PyPI
         env:

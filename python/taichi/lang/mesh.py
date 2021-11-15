@@ -4,12 +4,12 @@ import numpy as np
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
+from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import Matrix, MatrixField
-from taichi.lang.struct import Struct, StructField
+from taichi.lang.struct import StructField
 from taichi.lang.types import CompoundType
-from taichi.lang.util import (cook_dtype, has_pytorch, is_taichi_class,
-                              python_scope, taichi_scope, to_pytorch_type)
+from taichi.lang.util import python_scope
 
 import taichi as ti
 
@@ -205,6 +205,10 @@ class MeshElement:
     ):
         self.builder.elements.add(self.type)
         for key, dtype in members.items():
+            if key in {'verts', 'edges', 'faces', 'cells'}:
+                raise TaichiSyntaxError(
+                    f"'{key}' cannot use as attribute name. It has been reserved as ti.Mesh's keyword."
+                )
             self.attr_dict[key] = MeshAttrType(key, dtype, reorder, needs_grad)
 
     def build(self, mesh_instance, size, g2r_field):
@@ -486,6 +490,10 @@ class MeshElementFieldProxy:
                     self, key,
                     impl.Expr(_ti_core.subscript(var,
                                                  global_entry_expr_group)))
+
+        for element_type in self.mesh.type.elements:
+            setattr(self, element_type_name(element_type),
+                    impl.mesh_relation_access(self.mesh, self, element_type))
 
     @property
     def ptr(self):

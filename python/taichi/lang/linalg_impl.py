@@ -231,9 +231,10 @@ def svd(A, dt):
     if ti.static(A.n == 2):
         ret = svd2d(A, dt)
         return ret
-    if ti.static(A.n == 3):
+    elif ti.static(A.n == 3):  # pylint: disable=R1705
         return svd3d(A, dt)
-    raise Exception("SVD only supports 2D and 3D matrices.")
+    else:  # pylint: disable=R1705
+        raise Exception("SVD only supports 2D and 3D matrices.")
 
 
 @func
@@ -254,6 +255,7 @@ def polar_decompose(A, dt):
     if ti.static(A.n == 2):
         ret = polar_decompose2d(A, dt)
         return ret
-    if ti.static(A.n == 3):
+    elif ti.static(A.n == 3):  # pylint: disable=R1705
         return polar_decompose3d(A, dt)
-    raise Exception("Polar decomposition only supports 2D and 3D matrices.")
+    else:  # pylint: disable=R1705
+        raise Exception("Polar decomposition only supports 2D and 3D matrices.")

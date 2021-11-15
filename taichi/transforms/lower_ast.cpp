@@ -191,8 +191,7 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(GlobalThreadIndexStmt *stmt) override {
-    TI_ASSERT(capturing_loop != nullptr);
-    stmt->loop = capturing_loop;
+    // do nothing
   }
 
   void visit(BinaryOpStmt *stmt) override {

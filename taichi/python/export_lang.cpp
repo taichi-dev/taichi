@@ -889,13 +889,13 @@ void export_lang(py::module &m) {
     if (loop != nullptr){
       auto i = scope_stack.size()-1;
       while(!(loop -> is<FrontendForStmt>())){
-        loop = i > 0?scope_stack[--i]:nullptr;
+        loop = i > 0?scope_stack[--i]->list->parent_stmt:nullptr;
         if (loop == nullptr) break;
       }
     }
     TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
                 "ti.thread_idx() is only valid within loops.");
-    return Expr::make<GlobalThreadIndexExpression>(loop);
+    return Expr::make<GlobalThreadIndexExpression>();
   });
 
   py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())

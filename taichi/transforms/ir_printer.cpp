@@ -600,8 +600,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(GlobalThreadIndexStmt *stmt) override {
-    print("{}{} = loop {} global thread index", stmt->type_hint(), stmt->name(),
-          stmt->loop->name());
+    print("{}{} = loop {} global thread index", stmt->type_hint(), stmt->name());
   }
 
   void visit(BlockCornerIndexStmt *stmt) override {

@@ -559,9 +559,8 @@ class TensorElementExpression : public Expression {
 
 class GlobalThreadIndexExpression : public Expression {
  public:
-  Stmt *loop_stmt;
-  GlobalThreadIndexExpression(Stmt *stmt) : loop_stmt(stmt) {
-  }
+
+  GlobalThreadIndexExpression() {}
 
   void type_check() override;
 

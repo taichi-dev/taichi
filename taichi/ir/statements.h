@@ -1175,9 +1175,8 @@ class LoopLinearIndexStmt : public Stmt {
  */
 class GlobalThreadIndexStmt : public Stmt {
  public:
-  Stmt *loop;
 
-  explicit GlobalThreadIndexStmt(Stmt *loop) : loop(loop) {
+  explicit GlobalThreadIndexStmt() {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1185,7 +1184,7 @@ class GlobalThreadIndexStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, loop);
+  TI_STMT_DEF_FIELDS(ret_type);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

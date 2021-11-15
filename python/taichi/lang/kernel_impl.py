@@ -797,8 +797,8 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
 
     if verbose:
         print(f'kernel={_func.__name__} is_classkernel={is_classkernel}')
-    primal = Kernel(_func, is_grad=False, classkernel=is_classkernel)
-    adjoint = Kernel(_func, is_grad=True, classkernel=is_classkernel)
+    primal = Kernel(_func, is_grad=False, _classkernel=is_classkernel)
+    adjoint = Kernel(_func, is_grad=True, _classkernel=is_classkernel)
     # Having |primal| contains |grad| makes the tape work.
     primal.grad = adjoint
 

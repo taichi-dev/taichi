@@ -334,6 +334,6 @@ jobs:
         run: |
           cd python
           if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {$env:PYPI_PWD = "$env:NIGHT_PWD"}
-          if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {venv\Scripts\python build.py upload --skip_build --testpypi --project_name $env:PROJECT_NAME}
+          if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {..\venv\Scripts\python build.py upload --skip_build --testpypi --project_name $env:PROJECT_NAME}
           if ( $env:PROJECT_NAME -eq "taichi" ) {$env:PYPI_PWD = "$env:PROD_PWD"}
-          if ( $env:PROJECT_NAME -eq "taichi" ) {venv\Scripts\python build.py upload --skip_build}
+          if ( $env:PROJECT_NAME -eq "taichi" ) {..\venv\Scripts\python build.py upload --skip_build}

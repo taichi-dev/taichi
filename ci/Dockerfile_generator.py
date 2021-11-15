@@ -242,7 +242,7 @@ def main(arguments=None):
 
             # ubuntu 18.04 needs special treatments
             if os == "ubuntu" and version == "18.04":
-                install_block += """ \\
+                install_block = install_block.rstrip() + """ \\
                        zlib1g-dev"""
 
             dockerfile = reduce(
@@ -264,7 +264,7 @@ def main(arguments=None):
 
             # ubuntu 20.04 needs special treatments
             if os == "ubuntu" and version == "20.04":
-                install_block += """ \\
+                install_block = install_block.rstrip() + """ \\
                        vulkan-tools \\
                        vulkan-validationlayers-dev"""
 

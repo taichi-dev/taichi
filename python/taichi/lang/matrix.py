@@ -54,11 +54,15 @@ class Matrix(TaichiOperations):
             elif not isinstance(n[0], Iterable):  # now init a Vector
                 if in_python_scope() or keep_raw:
                     mat = [[x] for x in n]
-                elif disable_local_tensor or not ti.current_cfg().dynamic_index:
+                elif disable_local_tensor or not ti.current_cfg(
+                ).dynamic_index:
                     mat = [[impl.expr_init(x)] for x in n]
                 else:
-                    if not ti.is_extension_supported(ti.current_cfg().arch, ti.extension.dynamic_index):
-                        raise Exception(f"Backend {ti.current_cfg().arch} doesn't support dynamic index")
+                    if not ti.is_extension_supported(
+                            ti.current_cfg().arch, ti.extension.dynamic_index):
+                        raise Exception(
+                            f"Backend {ti.current_cfg().arch} doesn't support dynamic index"
+                        )
                     if dt is None:
                         if isinstance(n[0], (int, np.integer)):
                             dt = impl.get_runtime().default_ip
@@ -76,8 +80,7 @@ class Matrix(TaichiOperations):
                             )
                     self.local_tensor_proxy = impl.expr_init_local_tensor(
                         [len(n)], dt,
-                        expr.make_expr_group([expr.Expr(x)
-                                              for x in n]))
+                        expr.make_expr_group([expr.Expr(x) for x in n]))
                     mat = []
                     for i in range(len(n)):
                         mat.append(
@@ -90,11 +93,15 @@ class Matrix(TaichiOperations):
             else:  # now init a Matrix
                 if in_python_scope() or keep_raw:
                     mat = [list(row) for row in n]
-                elif disable_local_tensor or not ti.current_cfg().dynamic_index:
+                elif disable_local_tensor or not ti.current_cfg(
+                ).dynamic_index:
                     mat = [[impl.expr_init(x) for x in row] for row in n]
                 else:
-                    if not ti.is_extension_supported(ti.current_cfg().arch, ti.extension.dynamic_index):
-                        raise Exception(f"Backend {ti.current_cfg().arch} doesn't support dynamic index")
+                    if not ti.is_extension_supported(
+                            ti.current_cfg().arch, ti.extension.dynamic_index):
+                        raise Exception(
+                            f"Backend {ti.current_cfg().arch} doesn't support dynamic index"
+                        )
                     if dt is None:
                         if isinstance(n[0][0], (int, np.integer)):
                             dt = impl.get_runtime().default_ip
@@ -177,13 +184,15 @@ class Matrix(TaichiOperations):
         ] for i in range(self.n)])
 
     def element_wise_writeback_binary(self, foo, other):
-        if foo.__name__ == 'assign' and not isinstance(other, (list, tuple, Matrix)):
+        if foo.__name__ == 'assign' and not isinstance(other,
+                                                       (list, tuple, Matrix)):
             raise TaichiSyntaxError(
                 'cannot assign scalar expr to '
                 f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
             )
         other = self.broadcast_copy(other)
-        entries = [[foo(self(i, j), other(i, j)) for j in range(self.m)] for i in range(self.n)]
+        entries = [[foo(self(i, j), other(i, j)) for j in range(self.m)]
+                   for i in range(self.n)]
         return self if foo.__name__ == 'assign' else Matrix(entries)
 
     def element_wise_unary(self, foo):

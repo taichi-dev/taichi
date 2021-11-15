@@ -94,6 +94,7 @@ message("clang --version: ${CLANG_VERSION}")
 set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
 
 if (APPLE)
+  set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
   set(CLANG_HIGHEST_VERSION "12")
 else()
   set(CLANG_HIGHEST_VERSION "11")
@@ -118,7 +119,7 @@ endif()
 foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
   add_custom_target(
       "generate_llvm_runtime_${arch}"
-      COMMAND ${CLANG_EXECUTABLE} -S runtime.cpp -o "runtime_${arch}.ll" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
+      COMMAND ${CLANG_EXECUTABLE} ${CLANG_OSX_FLAGS} -S runtime.cpp -o "runtime_${arch}.ll" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
       COMMAND ${LLVM_AS_EXECUTABLE} "runtime_${arch}.ll" -o "runtime_${arch}.bc"
       WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm"
   )

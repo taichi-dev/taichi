@@ -130,7 +130,7 @@ endif()
 
 # By default, TI_WITH_METAL is ON for all platforms.
 # As of right now, on non-macOS platforms, the metal backend won't work at all.
-# We have future plans to allow metal AOT to run on non-macOS machines.
+# We have future plans to allow metal AOT to run on non-macOS devices.
 if (TI_WITH_METAL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
     list(APPEND TAICHI_CORE_SOURCE ${TAICHI_METAL_SOURCE})

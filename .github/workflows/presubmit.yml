@@ -259,7 +259,7 @@ jobs:
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
-    # needs: [build_and_test_cpu_required, check_files]
+    needs: [check_files]
     timeout-minutes: 60
     strategy:
       matrix:

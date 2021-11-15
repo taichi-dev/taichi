@@ -9,7 +9,8 @@ TLANG_NAMESPACE_BEGIN
 
 // The init logic here is temporarily set up for test CUPTI
 // will not affect default toolkit (cuEvent)
-KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
+KernelProfilerCUDA::KernelProfilerCUDA(bool enable)
+    : KernelProfilerBase(enable) {
   metric_list_.clear();
   if (enable) {
     tool_ = ProfilingToolkit::event;

@@ -27,9 +27,9 @@ class Matrix(TaichiOperations):
     """The matrix class.
 
     Args:
-        n (int): the first dimension of a matrix.
+        n (int, list, tuple, np.ndarray): the first dimension of a matrix.
         m (int): the second dimension of a matrix.
-        dt (DataType): the elmement data type.
+        dt (DataType): the element data type.
         keep_raw (Bool, optional): Keep the contents in `n` as is.
     """
     is_taichi_class = True
@@ -142,7 +142,6 @@ class Matrix(TaichiOperations):
             else:
                 self.m = 1
             self.entries = [x for row in mat for x in row]
-
         else:
             if dt is None:
                 # create a local matrix with specific (n, m)
@@ -151,7 +150,8 @@ class Matrix(TaichiOperations):
                 self.m = m
             else:
                 raise ValueError(
-                    "Declaring matrix fields using `ti.Matrix(n, m, dt, shape)` is no longer supported. Use `ti.Matrix.field(n, m, dtype, shape)` instead."
+                    "Declaring matrix fields using `ti.Matrix(n, m, dt, shape)` is no longer supported. "
+                    "Use `ti.Matrix.field(n, m, dtype, shape)` instead."
                 )
 
         if self.n * self.m > 32 and not suppress_warning:
@@ -1125,8 +1125,7 @@ class Matrix(TaichiOperations):
             self[1] * other[2] - self[2] * other[1],
             self[2] * other[0] - self[0] * other[2],
             self[0] * other[1] - self[1] * other[0],
-        ],
-                     disable_local_tensor=True)
+        ], disable_local_tensor=True)
         return ret
 
     @kern_mod.pyfunc
@@ -1180,7 +1179,7 @@ def Vector(n, dt=None, **kwargs):
     """Construct a `Vector` instance i.e. 1-D Matrix.
 
     Args:
-        n (int): The desired number of entries of the Vector.
+        n (int, list, tuple, np.ndarray): The desired number of entries of the Vector.
         dt (DataType, optional): The desired data type of the Vector.
 
     Returns:

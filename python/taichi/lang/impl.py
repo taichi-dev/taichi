@@ -147,7 +147,7 @@ def subscript(value, *_indices):
                     f"{_var.get_expr_name()} has not been placed.")
             else:
                 raise RuntimeError(
-                    f"Gradient {var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
+                    f"Gradient {_var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                 )
         field_dim = int(_var.get_attribute("dim"))
         if field_dim != index_dim:

@@ -325,7 +325,7 @@ jobs:
           PY: py38
           GPU_TEST: ON
           DISPLAY: :1
-          TI_WANTED_ARCHS: "cuda,metal,vulkan,opengl"
+          TI_WANTED_ARCHS: "cuda,vulkan,opengl"
 
       - name: clean docker container
         if: always()
@@ -376,7 +376,7 @@ jobs:
           ti test -vr2 -t2 -a "$env:TI_WANTED_ARCHS"
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
-          TI_WANTED_ARCHS: "cpu,metal"
+          TI_WANTED_ARCHS: "cpu"
 
   build_and_test_m1:
     name: Build and Test (Apple M1)

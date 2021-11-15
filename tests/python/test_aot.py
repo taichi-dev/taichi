@@ -204,7 +204,6 @@ def test_opengl_8_ssbo():
     assert (density6.to_numpy() == (np.zeros(shape=(n, n)) + 6)).all()
 
 
-@ti.must_throw(Exception)
 @ti.test(arch=ti.opengl)
 def test_opengl_exceed_max_ssbo():
     # 7 ndarrays + gtmp + args > 8 (maximum allowed)
@@ -231,5 +230,6 @@ def test_opengl_exceed_max_ssbo():
             density6[i, j] = d + 6
             density7[i, j] = d + 7
 
-    init(0, density1, density2, density3, density4, density5, density6,
-         density7)
+    with pytest.raises(RuntimeError):
+        init(0, density1, density2, density3, density4, density5, density6,
+             density7)

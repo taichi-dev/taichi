@@ -5,6 +5,7 @@ set -ex
 # Parse ARGs
 PY=$1
 GPU_TEST=$2
+TI_WANTED_ARCHS=$3
 
 source /home/dev/miniconda/etc/profile.d/conda.sh
 conda activate $PY
@@ -19,6 +20,7 @@ fi
 export TI_IN_DOCKER=true
 ti diagnose
 ti changelog
+echo wanted archs: $TI_WANTED_ARCHS
 
 if [[ $GPU_TEST == "OFF" ]]
 then

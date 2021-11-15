@@ -6,8 +6,8 @@ from functools import reduce
 from pathlib import Path
 
 OS = {
-    "windows": (), 
-    "macos": (), 
+    "windows": (),
+    "macos": (),
     "ubuntu": (
         "18.04",
         "20.04",
@@ -160,6 +160,7 @@ class Parser(argparse.ArgumentParser):
         self.print_help()
         sys.exit(2)
 
+
 class AvailableColors(Enum):
     GRAY = 90
     RED = 91
@@ -201,13 +202,12 @@ def warn(message: str):
     """Log the warning to stdout"""
     print(_apply_color("yellow", f"[!] {message}"))
 
+
 def main(arguments=None):
-    parser = Parser(
-        description="""A CLI to generate Taichi CI Dockerfiles.
+    parser = Parser(description="""A CLI to generate Taichi CI Dockerfiles.
         Example usage:
             python3 Dockerfile_generator.py -o ubuntu -t cpu
-        """
-    )
+        """)
     parser.add_argument(
         "-o",
         "--os",
@@ -230,28 +230,32 @@ def main(arguments=None):
 
     pwd = Path(__file__).resolve().parent
 
-    if args.target=="cpu":
+    if args.target == "cpu":
         info("Generating Dockerfile(s) for CPU.")
+
         def f(os: str, version: str) -> str:
             info(f"OS: {os}, version: {version}")
             base_block = CPU_BASE_BLOCK.format(os=os, version=version)
-            scripts_block = SCRIPTS_BLOCK.format(script=f"{os}_build_test_cpu.sh")
+            scripts_block = SCRIPTS_BLOCK.format(
+                script=f"{os}_build_test_cpu.sh")
             install_block = CPU_APT_INSTALL_BLOCK
 
             # ubuntu 18.04 needs special treatments
-            if os == "ubuntu" and version =="18.04":
+            if os == "ubuntu" and version == "18.04":
                 install_block += """ \\
                        zlib1g-dev"""
 
-            dockerfile = reduce(lambda x, y: x + y, (
-                base_block, MAINTAINER_BLOCK, install_block, CMAKE_BLOCK, LLVM_BLOCK, USER_BLOCK, CONDA_BLOCK, scripts_block  
-            ))
+            dockerfile = reduce(
+                lambda x, y: x + y,
+                (base_block, MAINTAINER_BLOCK, install_block, CMAKE_BLOCK,
+                 LLVM_BLOCK, USER_BLOCK, CONDA_BLOCK, scripts_block))
             filename = pwd / f"Dockerfile.{os}.{version}.cpu"
             info(f"Storing at: {filename}")
             with filename.open("w") as fp:
                 fp.write(dockerfile)
     else:
         info("Generating Dockerfile(s) for GPU.")
+
         def f(os: str, version: str) -> str:
             info(f"OS: {os}, version: {version}")
             base_block = GPU_BASE_BLOCK.format(version=version)
@@ -259,20 +263,24 @@ def main(arguments=None):
             install_block = GPU_APT_INSTALL_BLOCK
 
             # ubuntu 20.04 needs special treatments
-            if os == "ubuntu" and version =="20.04":
+            if os == "ubuntu" and version == "20.04":
                 install_block += """ \\
                        vulkan-tools \\
                        vulkan-validationlayers-dev"""
-                
-            dockerfile = reduce(lambda x, y: x + y, (
-                base_block, NVIDIA_DRIVER_CAPABILITIES_BLOCK, MAINTAINER_BLOCK, install_block, CMAKE_BLOCK, LLVM_BLOCK, VULKAN_BLOCK, USER_BLOCK, CONDA_BLOCK, scripts_block  
-            ))
+
+            dockerfile = reduce(
+                lambda x, y: x + y,
+                (base_block, NVIDIA_DRIVER_CAPABILITIES_BLOCK,
+                 MAINTAINER_BLOCK, install_block, CMAKE_BLOCK, LLVM_BLOCK,
+                 VULKAN_BLOCK, USER_BLOCK, CONDA_BLOCK, scripts_block))
             filename = pwd / f"Dockerfile.{os}.{version}"
             info(f"Storing at: {filename}")
             with (filename).open("w") as fp:
                 fp.write(dockerfile)
+
     list(map(functools.partial(f, args.os), OS[args.os]))
     success("Dockerfile generation is complete.")
+
 
 if __name__ == "__main__":
     main()

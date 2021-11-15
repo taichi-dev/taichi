@@ -435,6 +435,7 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
       llvm_val[stmt] = builder->CreateNeg(input, "neg");
     }
   }
+  UNARY_INTRINSIC(round)
   UNARY_INTRINSIC(floor)
   UNARY_INTRINSIC(ceil)
   else {

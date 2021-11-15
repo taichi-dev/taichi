@@ -255,9 +255,10 @@ class TypeCheck : public IRVisitor {
       if (is_trigonometric(stmt->op_type)) {
         TI_ERROR("[{}] Trigonometric operator takes real inputs only, at {}",
                  stmt->name(), stmt->tb);
-      } else if (stmt->op_type == UnaryOpType::floor ||
+      } else if (stmt->op_type == UnaryOpType::round ||
+                 stmt->op_type == UnaryOpType::floor ||
                  stmt->op_type == UnaryOpType::ceil) {
-        TI_ERROR("[{}] floor/ceil takes real inputs only at {}", stmt->name(),
+        TI_ERROR("[{}] round/floor/ceil takes real inputs only at {}", stmt->name(),
                  stmt->tb);
       } else if (stmt->op_type == UnaryOpType::sqrt ||
                  stmt->op_type == UnaryOpType::exp ||

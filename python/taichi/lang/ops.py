@@ -272,6 +272,11 @@ def rsqrt(a):
 
 
 @unary
+def round(a):
+    return _unary_operation(_ti_core.expr_round, builtins.round, a)
+
+
+@unary
 def floor(a):
     """The floor function.
 

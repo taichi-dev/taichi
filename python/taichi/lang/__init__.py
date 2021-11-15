@@ -923,7 +923,8 @@ def benchmark_plot(fn=None,
                 for _i in range(len(current_archs)):
                     maximum = max(y_left[_i], y_right[_i])
                     y_left[_i] = y_left[_i] / maximum if y_left[_i] != 0 else 1
-                    y_right[_i] = y_right[_i] / maximum if y_right[_i] != 0 else 1
+                    y_right[
+                        _i] = y_right[_i] / maximum if y_right[_i] != 0 else 1
             ax = subfigures[case_id][col_id]
             bar_left = ax.bar(x=[
                 i - bar_width / 2 - bar_distance / 2

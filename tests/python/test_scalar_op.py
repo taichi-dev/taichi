@@ -41,6 +41,7 @@ unary_func_table = [
     (ti.asin, np.arcsin),
     (ti.acos, np.arccos),
     (ti.tanh, np.tanh),
+    (ti.round, np.round),
     (ti.floor, np.floor),
     (ti.ceil, np.ceil),
 ]

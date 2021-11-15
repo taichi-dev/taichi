@@ -273,6 +273,14 @@ def rsqrt(a):
 
 @unary
 def round(a):
+    """The round function.
+
+    Args:
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+
+    Returns:
+        Round of `a`.
+    """
     return _unary_operation(_ti_core.expr_round, builtins.round, a)
 
 

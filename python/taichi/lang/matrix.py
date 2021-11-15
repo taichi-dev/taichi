@@ -51,62 +51,50 @@ class Matrix(TaichiOperations):
             elif isinstance(n[0], Matrix):
                 raise Exception(
                     'cols/rows required when using list of vectors')
-            elif not isinstance(n[0], Iterable):
-                if impl.inside_kernel():
-                    # wrap potential constants with Expr
-                    if keep_raw:
-                        mat = [list([x]) for x in n]
-                    else:
-                        if in_python_scope(
-                        ) or disable_local_tensor or not ti.current_cfg(
-                        ).dynamic_index:
-                            mat = [list([expr.Expr(x)]) for x in n]
-                        else:
-                            if not ti.is_extension_supported(
-                                    ti.cfg.arch, ti.extension.dynamic_index):
-                                raise Exception(
-                                    'Backend ' + str(ti.cfg.arch) +
-                                    ' doesn\'t support dynamic index')
-                            if dt is None:
-                                if isinstance(n[0], (int, np.integer)):
-                                    dt = impl.get_runtime().default_ip
-                                elif isinstance(n[0], float):
-                                    dt = impl.get_runtime().default_fp
-                                elif isinstance(n[0], expr.Expr):
-                                    dt = n[0].ptr.get_ret_type()
-                                    if dt == ti_core.DataType_unknown:
-                                        raise TypeError(
-                                            'Element type of the matrix cannot be inferred. Please set dt instead for now.'
-                                        )
-                                else:
-                                    raise Exception(
-                                        'dt required when using dynamic_index for local tensor'
-                                    )
-                            self.local_tensor_proxy = impl.expr_init_local_tensor(
-                                [len(n)], dt,
-                                expr.make_expr_group([expr.Expr(x)
-                                                      for x in n]))
-                            mat = []
-                            for i in range(len(n)):
-                                mat.append(
-                                    list([
-                                        ti.local_subscript_with_offset(
-                                            self.local_tensor_proxy,
-                                            (impl.make_constant_expr_i32(i), ),
-                                            (len(n), ))
-                                    ]))
-                else:
+            elif not isinstance(n[0], Iterable):  # now init a Vector
+                if in_python_scope() or keep_raw:
                     mat = [[x] for x in n]
-            else:
-                if in_python_scope(
-                ) or disable_local_tensor or not ti.current_cfg(
-                ).dynamic_index:
-                    mat = [list(r) for r in n]
+                elif disable_local_tensor or not ti.current_cfg().dynamic_index:
+                    mat = [[impl.expr_init(x)] for x in n]
                 else:
-                    if not ti.is_extension_supported(
-                            ti.cfg.arch, ti.extension.dynamic_index):
-                        raise Exception('Backend ' + str(ti.cfg.arch) +
-                                        ' doesn\'t support dynamic index')
+                    if not ti.is_extension_supported(ti.current_cfg().arch, ti.extension.dynamic_index):
+                        raise Exception(f"Backend {ti.current_cfg().arch} doesn't support dynamic index")
+                    if dt is None:
+                        if isinstance(n[0], (int, np.integer)):
+                            dt = impl.get_runtime().default_ip
+                        elif isinstance(n[0], float):
+                            dt = impl.get_runtime().default_fp
+                        elif isinstance(n[0], expr.Expr):
+                            dt = n[0].ptr.get_ret_type()
+                            if dt == ti_core.DataType_unknown:
+                                raise TypeError(
+                                    'Element type of the matrix cannot be inferred. Please set dt instead for now.'
+                                )
+                        else:
+                            raise Exception(
+                                'dt required when using dynamic_index for local tensor'
+                            )
+                    self.local_tensor_proxy = impl.expr_init_local_tensor(
+                        [len(n)], dt,
+                        expr.make_expr_group([expr.Expr(x)
+                                              for x in n]))
+                    mat = []
+                    for i in range(len(n)):
+                        mat.append(
+                            list([
+                                ti.local_subscript_with_offset(
+                                    self.local_tensor_proxy,
+                                    (impl.make_constant_expr_i32(i), ),
+                                    (len(n), ))
+                            ]))
+            else:  # now init a Matrix
+                if in_python_scope() or keep_raw:
+                    mat = [list(row) for row in n]
+                elif disable_local_tensor or not ti.current_cfg().dynamic_index:
+                    mat = [[impl.expr_init(x) for x in row] for row in n]
+                else:
+                    if not ti.is_extension_supported(ti.current_cfg().arch, ti.extension.dynamic_index):
+                        raise Exception(f"Backend {ti.current_cfg().arch} doesn't support dynamic index")
                     if dt is None:
                         if isinstance(n[0][0], (int, np.integer)):
                             dt = impl.get_runtime().default_ip

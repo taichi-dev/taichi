@@ -109,12 +109,11 @@ class Ndarray:
         """
         if impl.current_cfg().ndarray_use_torch:
             return self.arr.cpu().numpy()
-        else:
-            arr = np.zeros(shape=self.arr.shape,
-                           dtype=to_numpy_type(self.dtype))
-            taichi.lang.meta.ndarray_to_ext_arr(self, arr)
-            impl.get_runtime().sync()
-            return arr
+        arr = np.zeros(shape=self.arr.shape,
+                       dtype=to_numpy_type(self.dtype))
+        taichi.lang.meta.ndarray_to_ext_arr(self, arr)
+        impl.get_runtime().sync()
+        return arr
 
     @python_scope
     def from_numpy(self, arr):

@@ -228,12 +228,12 @@ def svd(A, dt):
     Returns:
         Decomposed nxn matrices `U`, 'S' and `V`.
     """
-    if ti.static(A.n == 2):
+    if ti.static(A.n == 2):  # pylint: disable=R1705
         ret = svd2d(A, dt)
         return ret
-    elif ti.static(A.n == 3):  # pylint: disable=R1705
+    elif ti.static(A.n == 3):
         return svd3d(A, dt)
-    else:  # pylint: disable=R1705
+    else:
         raise Exception("SVD only supports 2D and 3D matrices.")
 
 
@@ -252,11 +252,11 @@ def polar_decompose(A, dt):
     Returns:
         Decomposed nxn matrices `U` and `P`.
     """
-    if ti.static(A.n == 2):
+    if ti.static(A.n == 2):  # pylint: disable=R1705
         ret = polar_decompose2d(A, dt)
         return ret
-    elif ti.static(A.n == 3):  # pylint: disable=R1705
+    elif ti.static(A.n == 3):
         return polar_decompose3d(A, dt)
-    else:  # pylint: disable=R1705
+    else:
         raise Exception(
             "Polar decomposition only supports 2D and 3D matrices.")

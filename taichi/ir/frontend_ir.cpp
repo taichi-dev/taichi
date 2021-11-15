@@ -769,6 +769,10 @@ void FuncCallExpression::serialize(std::ostream &ss) {
 
 // Mesh related.
 
+void MeshRelationAccessExpression::type_check() {
+  ret_type = PrimitiveType::i32;
+}
+
 void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
   mesh_idx->flatten(ctx);
   if (neighbor_idx) {
@@ -779,6 +783,10 @@ void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
     ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx->stmt, to_type);
   }
   stmt = ctx->back_stmt();
+}
+
+void MeshIndexConversionExpression::type_check() {
+  ret_type = PrimitiveType::i32;
 }
 
 void MeshIndexConversionExpression::flatten(FlattenContext *ctx) {

@@ -803,6 +803,8 @@ class MeshRelationAccessExpression : public Expression {
   mesh::MeshElementType to_type;
   Expr neighbor_idx;
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override {
     if (neighbor_idx) {
       ss << "mesh_relation_access(";
@@ -842,6 +844,8 @@ class MeshIndexConversionExpression : public Expression {
   mesh::MeshElementType idx_type;
   Expr idx;
   mesh::ConvType conv_type;
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     ss << "mesh_index_conversion(" << mesh::conv_type_name(conv_type) << ", "

@@ -341,6 +341,8 @@ Arch Program::get_accessor_arch() {
     return Arch::metal;
   } else if (config.arch == Arch::cc) {
     return Arch::cc;
+  } else if (config.arch == Arch::dx) {
+    return Arch::dx;
   } else {
     return get_host_arch();
   }

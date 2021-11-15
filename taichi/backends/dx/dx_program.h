@@ -1,3 +1,7 @@
+#pragma once
+
+#include "taichi/backends/vulkan/runtime.h"
+
 #include "taichi/program/program_impl.h"
 
 namespace taichi {
@@ -39,6 +43,9 @@ class DxProgramImpl : public ProgramImpl {
 
   ~DxProgramImpl() override;
 
+ private:
+  std::unique_ptr<Device> device_;
+  std::unique_ptr<vulkan::VkRuntime> runtime_;
 };
 }  // namespace lang
 }  // namespace taichi

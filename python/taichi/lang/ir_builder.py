@@ -910,7 +910,6 @@ class IRBuilder(Builder):
         raise node.exc.ptr
 
 
-
 build_stmt = IRBuilder()
 
 

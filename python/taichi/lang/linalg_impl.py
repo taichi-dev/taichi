@@ -258,4 +258,5 @@ def polar_decompose(A, dt):
     elif ti.static(A.n == 3):  # pylint: disable=R1705
         return polar_decompose3d(A, dt)
     else:  # pylint: disable=R1705
-        raise Exception("Polar decomposition only supports 2D and 3D matrices.")
+        raise Exception(
+            "Polar decomposition only supports 2D and 3D matrices.")

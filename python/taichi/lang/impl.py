@@ -129,7 +129,8 @@ def subscript(value, *_indices):
             ind = [_index]
         flattened_indices += ind
     _indices = tuple(flattened_indices)
-    if isinstance(_indices, tuple) and len(_indices) == 1 and _indices[0] is None:
+    if isinstance(_indices,
+                  tuple) and len(_indices) == 1 and _indices[0] is None:
         _indices = ()
     indices_expr_group = make_expr_group(*_indices)
     index_dim = indices_expr_group.size()
@@ -193,6 +194,7 @@ def subscript(value, *_indices):
     # Directly evaluate in Python for non-Taichi types
     return value.__getitem__(*_indices)
 
+
 @taichi_scope
 def local_subscript_with_offset(_var, _indices, shape):
     return Expr(
@@ -204,8 +206,8 @@ def local_subscript_with_offset(_var, _indices, shape):
 def global_subscript_with_offset(_var, _indices, shape, is_aos):
     return Expr(
         _ti_core.global_subscript_with_offset(_var.ptr,
-                                              make_expr_group(*_indices), shape,
-                                              is_aos))
+                                              make_expr_group(*_indices),
+                                              shape, is_aos))
 
 
 @taichi_scope

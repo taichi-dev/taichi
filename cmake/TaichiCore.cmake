@@ -47,6 +47,7 @@ endif()
 
 if(NOT TI_WITH_LLVM)
     set(TI_WITH_CUDA OFF)
+    set(TI_WITH_CUDA_TOOLKIT OFF)
 endif()
 
 

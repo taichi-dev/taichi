@@ -1,3 +1,4 @@
+#ifdef TI_WITH_LLVM
 #include "taichi/struct/struct_llvm.h"
 
 #include "llvm/IR/Verifier.h"
@@ -347,3 +348,5 @@ llvm::Type *StructCompilerLLVM::get_llvm_element_type(llvm::Module *module,
 
 }  // namespace lang
 }  // namespace taichi
+
+#endif  //#ifdef TI_WITH_LLVM

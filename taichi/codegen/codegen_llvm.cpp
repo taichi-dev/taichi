@@ -1,3 +1,4 @@
+#ifdef TI_WITH_LLVM
 #include "taichi/codegen/codegen_llvm.h"
 
 #include "taichi/ir/statements.h"
@@ -2318,3 +2319,5 @@ llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
 }
 
 TLANG_NAMESPACE_END
+
+#endif  // #ifdef TI_WITH_LLVM

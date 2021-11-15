@@ -19,6 +19,7 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
     : size(size), arch_(arch), device_(device) {
   auto t = Time::get_time();
   if (arch_ == Arch::x64) {
+#ifdef TI_WITH_LLVM
     Device::AllocParams alloc_params;
     alloc_params.size = size;
     alloc_params.host_read = true;
@@ -27,6 +28,9 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
     cpu::CpuDevice *cpu_device = static_cast<cpu::CpuDevice *>(device);
     alloc = cpu_device->allocate_memory(alloc_params);
     data = (uint8 *)cpu_device->get_alloc_info(alloc).ptr;
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   } else {
     TI_TRACE("Allocating virtual address space of size {} MB",
              size / 1024 / 1024);

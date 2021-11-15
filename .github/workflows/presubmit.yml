@@ -259,7 +259,7 @@ jobs:
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
-    needs: [check_files]
+    needs: [build_and_test_cpu_required, check_files]
     timeout-minutes: 60
     strategy:
       matrix:
@@ -296,7 +296,6 @@ jobs:
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
           CXX: clang++
-          CC: clang
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
@@ -430,7 +429,6 @@ jobs:
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
           CXX: clang++
-          CC: clang
 
       - name: Test
         run: |

@@ -80,7 +80,7 @@ endif()
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   set (CLANG_EXECUTABLE ${CMAKE_CXX_COMPILER})
 else()
-  find_program(CLANG_EXECUTABLE NAMES clang clang-7 clang-8 clang-9 clang-10 clang-11)
+  find_program(CLANG_EXECUTABLE NAMES clang clang-10 clang-11 clang-9 clang-8 clang-7)
 endif()
 
 if (NOT CLANG_EXECUTABLE)

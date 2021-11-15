@@ -291,7 +291,7 @@ def _test_ndarray_deepcopy():
 
     assert y.shape == x.shape
     assert y.dtype == x.dtype
-    assert y.m == x.n
+    assert y.m == x.m
     assert y.n == x.n
     assert y.layout == x.layout
     assert y[0][0, 0] == 7

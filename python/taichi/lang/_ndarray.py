@@ -158,7 +158,7 @@ class Ndarray:
         """Copies all elements to a new ndarray.
 
         Returns:
-            ndarray: The result ndarray.
+            Ndarray: The result ndarray.
         """
         raise NotImplementedError()
 

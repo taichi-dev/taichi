@@ -51,7 +51,7 @@ def func(fn):
     is_classfunc = _inside_class(level_of_class_stackframe=3)
 
     _taichi_skip_traceback = 1
-    fun = Func(fn, classfunc=is_classfunc)
+    fun = Func(fn, _classfunc=is_classfunc)
 
     @functools.wraps(fn)
     def decorated(*args):
@@ -78,7 +78,7 @@ def pyfunc(fn):
         Callable: The decorated function
     """
     is_classfunc = _inside_class(level_of_class_stackframe=3)
-    fun = Func(fn, classfunc=is_classfunc, pyfunc=True)
+    fun = Func(fn, _classfunc=is_classfunc, _pyfunc=True)
 
     @functools.wraps(fn)
     def decorated(*args):

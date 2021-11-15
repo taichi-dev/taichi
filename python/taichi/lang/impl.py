@@ -160,8 +160,8 @@ def subscript(value, *_indices, skip_reordered=False):
     if isinstance(value, MeshRelationAccessProxy):
         return value.subscript(*_indices)
     if isinstance(value,
-                    (MeshReorderedScalarFieldProxy,
-                     MeshReorderedMatrixFieldProxy)) and not skip_reordered:
+                  (MeshReorderedScalarFieldProxy,
+                   MeshReorderedMatrixFieldProxy)) and not skip_reordered:
         assert index_dim == 1
         reordered_index = tuple([
             Expr(

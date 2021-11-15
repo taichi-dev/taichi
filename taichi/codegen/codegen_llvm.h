@@ -357,7 +357,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit_call_shared_object(ExternalFuncCallStmt *stmt);
 
   void visit(ExternalFuncCallStmt *stmt) override;
-  
+
   // Mesh related.
 
   void visit(MeshPatchIndexStmt *stmt) override;

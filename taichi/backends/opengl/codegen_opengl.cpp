@@ -106,7 +106,7 @@ class KernelGen : public IRVisitor {
   bool is_top_level_{true};
   CompiledProgram compiled_program_;
   UsedFeature used;  // TODO: is this actually per-offload?
-  int num_arr = static_cast<int>(GLBufId::Arr);
+  int arr_bind_idx = static_cast<int>(GLBufId::Arr);
 
   // per-offload variables:
   LineAppender line_appender_;
@@ -207,7 +207,8 @@ class KernelGen : public IRVisitor {
     if (used.buf_args)
       kernel_header += gen_buffer_registration(
           used, "args", std::to_string(static_cast<int>(GLBufId::Args)));
-    for (auto iter = used.buf_arr.begin(); iter != used.buf_arr.end(); iter++) {
+    for (auto iter = used.arr_arg_to_bind_idx.begin();
+         iter != used.arr_arg_to_bind_idx.end(); iter++) {
       kernel_header +=
           gen_buffer_registration(used, "arr" + std::to_string(iter->first),
                                   std::to_string(iter->second));
@@ -796,8 +797,8 @@ class KernelGen : public IRVisitor {
   void visit(ArgLoadStmt *stmt) override {
     const auto dt = opengl_data_type_name(stmt->element_type());
     if (stmt->is_ptr) {
-      if (!used.buf_arr.count(stmt->arg_id)) {
-        used.buf_arr[stmt->arg_id] = num_arr++;
+      if (!used.arr_arg_to_bind_idx.count(stmt->arg_id)) {
+        used.arr_arg_to_bind_idx[stmt->arg_id] = arr_bind_idx++;
       }
     } else {
       used.buf_args = true;

@@ -406,7 +406,7 @@ void DeviceCompiledProgram::launch(RuntimeContext &ctx,
     // TODO: properly assert and throw if we bind more than allowed SSBOs.
     //       On most devices this number is 8. But I need to look up how
     //       to query this information so currently this is thrown from OpenGl.
-    for (const auto &[arg_id, bind_id] : program_.used.buf_arr) {
+    for (const auto &[arg_id, bind_id] : program_.used.arr_arg_to_bind_idx) {
       binder->buffer(0, bind_id, arr_bufs_[arg_id]);
     }
 

@@ -35,7 +35,7 @@ struct UsedFeature {
   bool buf_data{false};
   bool buf_args{false};
   bool buf_gtmp{false};
-  std::unordered_map<int, int> buf_arr;
+  std::unordered_map<int, int> arr_arg_to_bind_idx;
 
   // utilties:
   bool fast_pow{false};

@@ -54,8 +54,8 @@ class KernelProfilerBase {
   // Needed for the CUDA backend since we need to know which task to "stop"
   using TaskHandle = void *;
 
-  KernelProfilerBase(bool enabled) {
-    enabled_ = enabled;
+  KernelProfilerBase(bool enable) {
+    enabled_ = enable;
   }
 
   bool is_enabled() {

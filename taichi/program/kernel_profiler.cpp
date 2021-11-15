@@ -69,7 +69,7 @@ namespace {
 // A simple profiler that uses Time::get_time()
 class DefaultProfiler : public KernelProfilerBase {
  public:
-  DefaultProfiler(bool enabled) : KernelProfilerBase(enabled) {
+  DefaultProfiler(bool enable) : KernelProfilerBase(enable) {
   }
 
   void sync() override {

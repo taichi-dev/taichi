@@ -278,7 +278,6 @@ class PyTaichi:
         self.global_vars = []
         self.print_preprocessed = False
         self.experimental_real_function = False
-        self.experimental_ast_refactor = False
         self.default_fp = f32
         self.default_ip = i32
         self.target_tape = None

@@ -561,6 +561,20 @@ class TensorElementExpression : public Expression {
   }
 };
 
+class GlobalThreadIndexExpression : public Expression {
+ public:
+  GlobalThreadIndexExpression() {
+  }
+
+  void type_check() override;
+
+  void serialize(std::ostream &ss) override {
+    ss << fmt::format("global_thread_idx()");
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
 class RangeAssumptionExpression : public Expression {
  public:
   Expr input, base;

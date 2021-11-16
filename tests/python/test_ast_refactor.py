@@ -793,10 +793,7 @@ def test_taichi_other_than_ti():
         assert foo(i) == fib[i]
 
 
-@ti.test(require=ti.extension.assertion,
-         debug=True,
-         gdb_trigger=False,
-         )
+@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_message():
     @ti.kernel
     def func():
@@ -807,10 +804,7 @@ def test_assert_message():
         func()
 
 
-@ti.test(require=ti.extension.assertion,
-         debug=True,
-         gdb_trigger=False,
-         )
+@ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_message_formatted():
     x = ti.field(dtype=int, shape=16)
     x[10] = 42

@@ -726,7 +726,7 @@ class GUI:
             if not self.has_key_event():
                 break
             e = self.get_key_event()
-            if e_filter is None or e_filter.match(e):
+            if e_filter is None or e_filter.match(e):  # pylint: disable=E1101
                 yield e
 
     def get_key_event(self):

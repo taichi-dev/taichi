@@ -21,6 +21,7 @@ class Ndarray:
         if impl.current_cfg().ndarray_use_torch:
             assert has_pytorch(
             ), "PyTorch must be available if you want to create a Taichi ndarray with PyTorch as its underlying storage."
+            # pylint: disable=E1101
             self.arr = torch.zeros(shape,
                                    dtype=to_pytorch_type(cook_dtype(dtype)))
             if impl.current_cfg().arch == _ti_core.Arch.cuda:
@@ -131,7 +132,7 @@ class Ndarray:
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
         if impl.current_cfg().ndarray_use_torch:
-            self.arr = torch.from_numpy(arr).to(self.arr.dtype)
+            self.arr = torch.from_numpy(arr).to(self.arr.dtype)  # pylint: disable=E1101
             if impl.current_cfg().arch == _ti_core.Arch.cuda:
                 self.arr = self.arr.cuda()
         else:

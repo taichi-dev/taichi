@@ -77,7 +77,7 @@ class TaichiMain:
         # Parse the command
         args = self.main_parser.parse_args(sys.argv[1:2])
 
-        if args.command not in self.registered_commands:
+        if args.command not in self.registered_commands:  # pylint: disable=E1101
             # TODO: do we really need this?
             if args.command.endswith(".py"):
                 TaichiMain._exec_python_file(args.command)
@@ -100,7 +100,7 @@ class TaichiMain:
         # TODO: add some color to commands
         msg = "\n"
         space = 20
-        for command in sorted(self.registered_commands):
+        for command in sorted(self.registered_commands):  # pylint: disable=E1101
             msg += f"    {command}{' ' * (space - len(command))}|-> {getattr(self, command).__doc__}\n"
         return msg
 

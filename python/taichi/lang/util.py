@@ -102,6 +102,7 @@ def to_pytorch_type(dt):
         DataType: The counterpart data type in torch.
 
     """
+    # pylint: disable=E1101
     if dt == ti.f32:
         return torch.float32
     if dt == ti.f64:
@@ -161,6 +162,7 @@ def to_taichi_type(dt):
         return ti.f16
 
     if has_pytorch():
+        # pylint: disable=E1101
         if dt == torch.float32:
             return ti.f32
         if dt == torch.float64:

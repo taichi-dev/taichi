@@ -694,7 +694,7 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
                     tb = e.__traceback__
 
                     while tb:
-                        if tb.tb_frame.f_code.co_name == 'taichi_ast_generator':
+                        if tb.tb_frame.f_code.co_name == 'taichi_ast_generator':  # pylint: disable=E1101
                             tb = tb.tb_next
                             if sys.version_info < (3, 7):
                                 # The traceback object is read-only on Python < 3.7,

@@ -68,6 +68,7 @@ class BasicBlockSimplify : public IRVisitor {
     }
     return ir_modified;
   }
+
   void visit(ElementShuffleStmt *stmt) override {
     if (is_done(stmt))
       return;
@@ -92,7 +93,6 @@ class BasicBlockSimplify : public IRVisitor {
     set_done(stmt);
   }
 
-  /*
   void visit(GlobalLoadStmt *stmt) override {
     if (is_done(stmt))
       return;
@@ -155,6 +155,7 @@ class BasicBlockSimplify : public IRVisitor {
     }
   }
 
+  /*
   void visit(BitExtractStmt *stmt) override {
     if (is_done(stmt))
       return;

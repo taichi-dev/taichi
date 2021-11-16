@@ -96,7 +96,7 @@ class VulkanResourceBinder : public ResourceBinder {
   struct Binding {
     VkDescriptorType type;
     DevicePtr ptr;
-    size_t size;
+    VkDeviceSize size;
     VkSampler sampler{VK_NULL_HANDLE};  // used only for images
   };
 

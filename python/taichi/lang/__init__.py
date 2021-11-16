@@ -396,7 +396,6 @@ class _SpecialConfig:
         self.gdb_trigger = False
         self.excepthook = False
         self.experimental_real_function = False
-        self.experimental_ast_refactor = True
 
 
 def prepare_sandbox():
@@ -489,7 +488,6 @@ def init(arch=None,
     env_spec.add('gdb_trigger')
     env_spec.add('excepthook')
     env_spec.add('experimental_real_function')
-    env_spec.add('experimental_ast_refactor')
 
     # compiler configurations (ti.cfg):
     for key in dir(ti.cfg):
@@ -519,8 +517,6 @@ def init(arch=None,
         impl.get_runtime().print_preprocessed = spec_cfg.print_preprocessed
         impl.get_runtime().experimental_real_function = \
             spec_cfg.experimental_real_function
-        impl.get_runtime(
-        ).experimental_ast_refactor = spec_cfg.experimental_ast_refactor
         ti.set_logging_level(spec_cfg.log_level.lower())
         if spec_cfg.excepthook:
             # TODO(#1405): add a way to restore old excepthook

@@ -2,11 +2,10 @@ import ast
 
 import astor
 from taichi.lang import impl
-from taichi.lang.ast.symbol_resolver import ASTResolver, ModuleResolver
-from taichi.lang.ast_builder_utils import BuilderContext, IRBuilderContext
+from taichi.lang.ast.symbol_resolver import ASTResolver
+from taichi.lang.ast_builder_utils import IRBuilderContext
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.ir_builder import IRBuilder
-from taichi.lang.stmt_builder import build_stmt
 
 import taichi as ti
 
@@ -25,7 +24,6 @@ class ASTTransformerTotal:
         self.arg_features = arg_features
         self.pass_checks = ASTTransformerChecks(func=func,
                                                 global_vars=global_vars)
-        self.rename_module = ASTTransformerUnifyModule(func=func)
         self.global_vars = global_vars
 
     @staticmethod
@@ -37,47 +35,33 @@ class ASTTransformerTotal:
         print(astor.to_source(tree.body[0], indent_with='    '), flush=True)
 
     def visit(self, tree, *arguments):
-        if impl.get_runtime().experimental_ast_refactor:
-            self.print_ast(tree, 'Initial AST')
-            ctx = IRBuilderContext(
-                func=self.func,
-                excluded_parameters=self.excluded_parameters,
-                is_kernel=self.is_kernel,
-                arg_features=self.arg_features,
-                global_vars=self.global_vars,
-                argument_data=arguments)
-            # Convert Python AST to Python code that generates Taichi C++ AST.
-
-            tree = IRBuilder()(ctx, tree)
-            ast.fix_missing_locations(tree)
-            self.print_ast(tree, 'Preprocessed')
-            self.pass_checks.visit(tree)  # does not modify the AST
-            return ctx.return_data
         self.print_ast(tree, 'Initial AST')
-        self.rename_module.visit(tree)
-        self.print_ast(tree, 'AST with module renamed')
-        ctx = BuilderContext(func=self.func,
-                             excluded_parameters=self.excluded_parameters,
-                             is_kernel=self.is_kernel,
-                             arg_features=self.arg_features)
+        ctx = IRBuilderContext(func=self.func,
+                               excluded_parameters=self.excluded_parameters,
+                               is_kernel=self.is_kernel,
+                               arg_features=self.arg_features,
+                               global_vars=self.global_vars,
+                               argument_data=arguments)
         # Convert Python AST to Python code that generates Taichi C++ AST.
-        tree = build_stmt(ctx, tree)
+
+        tree = IRBuilder()(ctx, tree)
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Preprocessed')
         self.pass_checks.visit(tree)  # does not modify the AST
+        return ctx.return_data
 
-        return None
 
-
-class ASTTransformerBase(ast.NodeTransformer):
-    def __init__(self, func):
+# Performs checks at the Python AST level. Does not modify the AST.
+class ASTTransformerChecks(ast.NodeTransformer):
+    def __init__(self, func, global_vars):
         super().__init__()
         self.func = func
+        self.has_return = False
+        self.in_static_if = False
+        self.globals = global_vars
 
     @staticmethod
     def get_decorator(global_vars, node):
-        if not impl.get_runtime().experimental_ast_refactor:
-            global_vars = globals()
         if not isinstance(node, ast.Call):
             return ''
         for wanted, name in [
@@ -88,34 +72,6 @@ class ASTTransformerBase(ast.NodeTransformer):
             if ASTResolver.resolve_to(node.func, wanted, global_vars):
                 return name
         return ''
-
-
-class ASTTransformerUnifyModule(ast.NodeTransformer):
-    """Rename the module alias to `ti`.
-    module func calls like `<module alias>.<func-name>` will be renamed to
-    `ti.<func-name>`
-    """
-    def __init__(self, func):
-        super().__init__()
-        self.func = func
-        # Get the module alias from the global symbols table of the given func.
-        self.custom_module_name = ModuleResolver.get_module_name(func.func, ti)
-        self.default_module_name = "ti"
-
-    def visit_Name(self, node):
-        # Get the id of the ast.Name, rename if it equals to self.module_name.
-        if node.id == self.custom_module_name:
-            node.id = self.default_module_name
-        return node
-
-
-# Performs checks at the Python AST level. Does not modify the AST.
-class ASTTransformerChecks(ASTTransformerBase):
-    def __init__(self, func, global_vars):
-        super().__init__(func)
-        self.has_return = False
-        self.in_static_if = False
-        self.globals = global_vars
 
     def visit_If(self, node):
         node.test = self.visit(node.test)

@@ -15,7 +15,7 @@
 namespace taichi {
 namespace lang {
 
-struct Context;
+struct RuntimeContext;
 
 namespace metal {
 
@@ -55,7 +55,7 @@ class KernelManager {
   // Kernel launching is asynchronous, therefore the Metal memory is not valid
   // to access until after a synchronize() call.
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
-                            Context *ctx);
+                            RuntimeContext *ctx);
 
   // Synchronize the memory content from Metal to host (x86_64).
   void synchronize();

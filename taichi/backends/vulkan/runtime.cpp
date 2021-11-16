@@ -43,7 +43,7 @@ class StopWatch {
 class HostDeviceContextBlitter {
  public:
   HostDeviceContextBlitter(const KernelContextAttributes *ctx_attribs,
-                           Context *host_ctx,
+                           RuntimeContext *host_ctx,
                            Device *device,
                            uint64_t *host_result_buffer,
                            DeviceAllocation *device_buffer,
@@ -208,7 +208,7 @@ class HostDeviceContextBlitter {
 
   static std::unique_ptr<HostDeviceContextBlitter> maybe_make(
       const KernelContextAttributes *ctx_attribs,
-      Context *host_ctx,
+      RuntimeContext *host_ctx,
       Device *device,
       uint64_t *host_result_buffer,
       DeviceAllocation *device_buffer,
@@ -223,7 +223,7 @@ class HostDeviceContextBlitter {
 
  private:
   const KernelContextAttributes *const ctx_attribs_;
-  Context *const host_ctx_;
+  RuntimeContext *const host_ctx_;
   uint64_t *const host_result_buffer_;
   DeviceAllocation *const device_buffer_;
   DeviceAllocation *const host_shadow_buffer_;
@@ -398,7 +398,7 @@ VkRuntime::KernelHandle VkRuntime::register_taichi_kernel(
   return res;
 }
 
-void VkRuntime::launch_kernel(KernelHandle handle, Context *host_ctx) {
+void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   auto *ti_kernel = ti_kernels_[handle.id_].get();
   auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
       &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx, device_,

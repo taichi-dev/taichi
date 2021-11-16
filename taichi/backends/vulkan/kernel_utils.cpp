@@ -49,7 +49,7 @@ std::string TaskAttributes::BufferBind::debug_string() const {
 KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     : args_bytes_(0),
       rets_bytes_(0),
-      extra_args_bytes_(Context::extra_args_size) {
+      extra_args_bytes_(RuntimeContext::extra_args_size) {
   arg_attribs_vec_.reserve(kernel.args.size());
   for (const auto &ka : kernel.args) {
     ArgAttributes aa;

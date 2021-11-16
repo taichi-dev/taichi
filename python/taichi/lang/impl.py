@@ -112,43 +112,44 @@ def wrap_scalar(x):
 
 
 @taichi_scope
-def subscript(value, *indices):
+def subscript(value, *_indices):
     _taichi_skip_traceback = 1
     if isinstance(value, np.ndarray):
-        return value.__getitem__(*indices)
+        return value.__getitem__(*_indices)
 
     if isinstance(value, (tuple, list, dict)):
-        assert len(indices) == 1
-        return value[indices[0]]
+        assert len(_indices) == 1
+        return value[_indices[0]]
 
     flattened_indices = []
-    for index in indices:
-        if is_taichi_class(index):
-            ind = index.entries
+    for _index in _indices:
+        if is_taichi_class(_index):
+            ind = _index.entries
         else:
-            ind = [index]
+            ind = [_index]
         flattened_indices += ind
-    indices = tuple(flattened_indices)
-    if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
-        indices = ()
-    indices_expr_group = make_expr_group(*indices)
+    _indices = tuple(flattened_indices)
+    if isinstance(_indices,
+                  tuple) and len(_indices) == 1 and _indices[0] is None:
+        _indices = ()
+    indices_expr_group = make_expr_group(*_indices)
     index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
-        return value.subscript(*indices)
+        return value.subscript(*_indices)
     if isinstance(value, SparseMatrixProxy):
-        return value.subscript(*indices)
+        return value.subscript(*_indices)
     if isinstance(value, Field):
-        var = value.get_field_members()[0].ptr
-        if var.snode() is None:
-            if var.is_primal():
+        _var = value.get_field_members()[0].ptr
+        if _var.snode() is None:
+            if _var.is_primal():
                 raise RuntimeError(
-                    f"{var.get_expr_name()} has not been placed.")
+                    f"{_var.get_expr_name()} has not been placed.")
             else:
                 raise RuntimeError(
-                    f"Gradient {var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
+                    f"Gradient {_var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                 )
-        field_dim = int(var.get_attribute("dim"))
+        field_dim = int(_var.get_attribute("dim"))
         if field_dim != index_dim:
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
@@ -160,9 +161,9 @@ def subscript(value, *indices):
             ])
         if isinstance(value, StructField):
             return ti.Struct(
-                {k: subscript(v, *indices)
+                {k: subscript(v, *_indices)
                  for k, v in value.items})
-        return Expr(_ti_core.subscript(var, indices_expr_group))
+        return Expr(_ti_core.subscript(_var, indices_expr_group))
     if isinstance(value, AnyArray):
         # TODO: deprecate using get_attribute to get dim
         field_dim = int(value.ptr.get_attribute("dim"))
@@ -175,7 +176,7 @@ def subscript(value, *indices):
             return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
         n = value.element_shape[0]
         m = 1 if element_dim == 1 else value.element_shape[1]
-        any_array_access = AnyArrayAccess(value, indices)
+        any_array_access = AnyArrayAccess(value, _indices)
         ret = ti.Matrix.with_entries(n, m, [
             any_array_access.subscript(i, j) for i in range(n)
             for j in range(m)
@@ -191,22 +192,22 @@ def subscript(value, *indices):
             )
         return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
     # Directly evaluate in Python for non-Taichi types
-    return value.__getitem__(*indices)
+    return value.__getitem__(*_indices)
 
 
 @taichi_scope
-def local_subscript_with_offset(var, indices, shape):
+def local_subscript_with_offset(_var, _indices, shape):
     return Expr(
-        _ti_core.local_subscript_with_offset(var, make_expr_group(*indices),
+        _ti_core.local_subscript_with_offset(_var, make_expr_group(*_indices),
                                              shape))
 
 
 @taichi_scope
-def global_subscript_with_offset(var, indices, shape, is_aos):
+def global_subscript_with_offset(_var, _indices, shape, is_aos):
     return Expr(
-        _ti_core.global_subscript_with_offset(var.ptr,
-                                              make_expr_group(*indices), shape,
-                                              is_aos))
+        _ti_core.global_subscript_with_offset(_var.ptr,
+                                              make_expr_group(*_indices),
+                                              shape, is_aos))
 
 
 @taichi_scope
@@ -277,7 +278,6 @@ class PyTaichi:
         self.global_vars = []
         self.print_preprocessed = False
         self.experimental_real_function = False
-        self.experimental_ast_refactor = False
         self.default_fp = f32
         self.default_ip = i32
         self.target_tape = None
@@ -331,9 +331,9 @@ class PyTaichi:
 
         self.materialized = True
         not_placed = []
-        for var in self.global_vars:
-            if var.ptr.snode() is None:
-                tb = getattr(var, 'declaration_tb', str(var.ptr))
+        for _var in self.global_vars:
+            if _var.ptr.snode() is None:
+                tb = getattr(_var, 'declaration_tb', str(_var.ptr))
                 not_placed.append(tb)
 
         if len(not_placed):
@@ -644,43 +644,43 @@ def ndarray(dtype, shape):
 
 @taichi_scope
 def ti_print(*_vars, sep=' ', end='\n'):
-    def entry2content(var):
-        if isinstance(var, str):
-            return var
-        return Expr(var).ptr
+    def entry2content(_var):
+        if isinstance(_var, str):
+            return _var
+        return Expr(_var).ptr
 
-    def list_ti_repr(var):
+    def list_ti_repr(_var):
         yield '['  # distinguishing tuple & list will increase maintainance cost
-        for i, v in enumerate(var):
+        for i, v in enumerate(_var):
             if i:
                 yield ', '
             yield v
         yield ']'
 
     def vars2entries(_vars):
-        for var in _vars:
-            if hasattr(var, '__ti_repr__'):
-                res = var.__ti_repr__()
-            elif isinstance(var, (list, tuple)):
-                res = var
+        for _var in _vars:
+            if hasattr(_var, '__ti_repr__'):
+                res = _var.__ti_repr__()
+            elif isinstance(_var, (list, tuple)):
+                res = _var
                 # If the first element is '__ti_format__', this list is the result of ti_format.
-                if len(var) > 0 and isinstance(
-                        var[0], str) and var[0] == '__ti_format__':
-                    res = var[1:]
+                if len(_var) > 0 and isinstance(
+                        _var[0], str) and _var[0] == '__ti_format__':
+                    res = _var[1:]
                 else:
-                    res = list_ti_repr(var)
+                    res = list_ti_repr(_var)
             else:
-                yield var
+                yield _var
                 continue
 
             for v in vars2entries(res):
                 yield v
 
     def add_separators(_vars):
-        for i, var in enumerate(_vars):
+        for i, _var in enumerate(_vars):
             if i:
                 yield sep
-            yield var
+            yield _var
         yield end
 
     def fused_string(entries):
@@ -747,19 +747,19 @@ def ti_assert(cond, msg, extra_args):
 
 
 @taichi_scope
-def ti_int(var):
+def ti_int(_var):
     _taichi_skip_traceback = 1
-    if hasattr(var, '__ti_int__'):
-        return var.__ti_int__()
-    return int(var)
+    if hasattr(_var, '__ti_int__'):
+        return _var.__ti_int__()
+    return int(_var)
 
 
 @taichi_scope
-def ti_float(var):
+def ti_float(_var):
     _taichi_skip_traceback = 1
-    if hasattr(var, '__ti_float__'):
-        return var.__ti_float__()
-    return float(var)
+    if hasattr(_var, '__ti_float__'):
+        return _var.__ti_float__()
+    return float(_var)
 
 
 @taichi_scope

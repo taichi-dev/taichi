@@ -10,7 +10,10 @@
 #include "taichi/program/program.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/util/statistics.h"
+
+#ifdef TI_WITH_LLVM
 #include "taichi/llvm/llvm_program.h"
+#endif
 
 TLANG_NAMESPACE_BEGIN
 
@@ -22,9 +25,11 @@ Kernel::Kernel(Program &program,
                bool grad)
     : grad(grad), lowered_(false) {
   this->program = &program;
+#ifdef TI_WITH_LLVM
   if (auto *llvm_program_impl = program.get_llvm_program_impl()) {
     llvm_program_impl->maybe_initialize_cuda_llvm_context();
   }
+#endif
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;
@@ -154,13 +159,14 @@ Kernel::LaunchContextBuilder Kernel::make_launch_context() {
   return LaunchContextBuilder(this);
 }
 
-Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel, Context *ctx)
+Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel,
+                                                   RuntimeContext *ctx)
     : kernel_(kernel), owned_ctx_(nullptr), ctx_(ctx) {
 }
 
 Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
     : kernel_(kernel),
-      owned_ctx_(std::make_unique<Context>()),
+      owned_ctx_(std::make_unique<RuntimeContext>()),
       ctx_(owned_ctx_.get()) {
 }
 
@@ -271,10 +277,12 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
   ctx_->set_arg<uint64>(arg_id, d);
 }
 
-Context &Kernel::LaunchContextBuilder::get_context() {
+RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
+#ifdef TI_WITH_LLVM
   if (auto *llvm_program_impl = kernel_->program->get_llvm_program_impl()) {
     ctx_->runtime = llvm_program_impl->get_llvm_runtime();
   }
+#endif
   return *ctx_;
 }
 

@@ -1,5 +1,6 @@
 // The LLVM backend for CPUs/NVPTX/AMDGPU
 #pragma once
+#ifdef TI_WITH_LLVM
 
 #include <set>
 #include <unordered_map>
@@ -371,3 +372,5 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 };
 
 TLANG_NAMESPACE_END
+
+#endif  // #ifdef TI_WITH_LLVM

@@ -1,9 +1,12 @@
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
+option(TI_WITH_LLVM "Build with LLVM backends" ON)
+option(TI_WITH_METAL "Build with the Metal backend" ON)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_CUDA_TOOLKIT "Build with the CUDA toolkit" OFF)
 option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
+
 
 if(UNIX AND NOT APPLE)
     # Handy helper for Linux
@@ -42,6 +45,11 @@ endif()
 if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/gl.c")
     set(TI_WITH_OPENGL OFF)
     message(WARNING "external/glad submodule not detected. Settings TI_WITH_OPENGL to OFF.")
+endif()
+
+if(NOT TI_WITH_LLVM)
+    set(TI_WITH_CUDA OFF)
+    set(TI_WITH_CUDA_TOOLKIT OFF)
 endif()
 
 
@@ -98,8 +106,15 @@ file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CPU_SOURCE})
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_WASM_SOURCE})
+if(TI_WITH_LLVM)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
+    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CPU_SOURCE})
+    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_WASM_SOURCE})
+else()
+    file(GLOB TAICHI_LLVM_SOURCE "taichi/llvm/*.cpp" "taichi/llvm/*.h")
+    list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_LLVM_SOURCE})
+endif()
+
 list(APPEND TAICHI_CORE_SOURCE ${TAICHI_INTEROP_SOURCE})
 
 
@@ -112,8 +127,15 @@ if(NOT CUDA_VERSION)
     set(CUDA_VERSION 10.0)
 endif()
 
-# TODO(#529) include Metal source only on Apple MacOS, and OpenGL only when TI_WITH_OPENGL is ON
-list(APPEND TAICHI_CORE_SOURCE ${TAICHI_METAL_SOURCE})
+
+# By default, TI_WITH_METAL is ON for all platforms.
+# As of right now, on non-macOS platforms, the metal backend won't work at all.
+# We have future plans to allow metal AOT to run on non-macOS devices.
+if (TI_WITH_METAL)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
+    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_METAL_SOURCE})
+endif()
+
 
 if (TI_WITH_OPENGL)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")

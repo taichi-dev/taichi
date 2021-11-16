@@ -16,11 +16,15 @@ Ndarray::Ndarray(Program *prog,
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)) {
+#ifdef TI_WITH_LLVM
   LlvmProgramImpl *prog_impl = prog->get_llvm_program_impl();
   ndarray_alloc_ = prog_impl->allocate_memory_ndarray(nelement_ * element_size_,
                                                       prog->result_buffer);
 
   data_ptr_ = prog_impl->get_ndarray_alloc_info_ptr(ndarray_alloc_);
+#else
+  TI_ERROR("Llvm disabled");
+#endif
 }
 
 intptr_t Ndarray::get_data_ptr_as_int() const {

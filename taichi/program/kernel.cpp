@@ -10,7 +10,10 @@
 #include "taichi/program/program.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/util/statistics.h"
+
+#ifdef TI_WITH_LLVM
 #include "taichi/llvm/llvm_program.h"
+#endif
 
 TLANG_NAMESPACE_BEGIN
 
@@ -22,9 +25,11 @@ Kernel::Kernel(Program &program,
                bool grad)
     : grad(grad), lowered_(false) {
   this->program = &program;
+#ifdef TI_WITH_LLVM
   if (auto *llvm_program_impl = program.get_llvm_program_impl()) {
     llvm_program_impl->maybe_initialize_cuda_llvm_context();
   }
+#endif
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;
@@ -273,9 +278,11 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
 }
 
 RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
+#ifdef TI_WITH_LLVM
   if (auto *llvm_program_impl = kernel_->program->get_llvm_program_impl()) {
     ctx_->runtime = llvm_program_impl->get_llvm_runtime();
   }
+#endif
   return *ctx_;
 }
 

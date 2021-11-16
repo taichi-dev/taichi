@@ -51,7 +51,7 @@ def func(fn):
     is_classfunc = _inside_class(level_of_class_stackframe=3)
 
     _taichi_skip_traceback = 1
-    fun = Func(fn, classfunc=is_classfunc)
+    fun = Func(fn, _classfunc=is_classfunc)
 
     @functools.wraps(fn)
     def decorated(*args):
@@ -78,7 +78,7 @@ def pyfunc(fn):
         Callable: The decorated function
     """
     is_classfunc = _inside_class(level_of_class_stackframe=3)
-    fun = Func(fn, classfunc=is_classfunc, pyfunc=True)
+    fun = Func(fn, _classfunc=is_classfunc, _pyfunc=True)
 
     @functools.wraps(fn)
     def decorated(*args):
@@ -117,13 +117,13 @@ def _get_tree_and_global_vars(self, args):
 class Func:
     function_counter = 0
 
-    def __init__(self, func, classfunc=False, pyfunc=False):
-        self.func = func
+    def __init__(self, _func, _classfunc=False, _pyfunc=False):
+        self.func = _func
         self.func_id = Func.function_counter
         Func.function_counter += 1
         self.compiled = None
-        self.classfunc = classfunc
-        self.pyfunc = pyfunc
+        self.classfunc = _classfunc
+        self.pyfunc = _pyfunc
         self.argument_annotations = []
         self.argument_names = []
         _taichi_skip_traceback = 1
@@ -381,8 +381,8 @@ class KernelArgError(Exception):
         self.provided = provided
 
 
-def _get_global_vars(func):
-    closure_vars = inspect.getclosurevars(func)
+def _get_global_vars(_func):
+    closure_vars = inspect.getclosurevars(_func)
     if impl.get_runtime().experimental_ast_refactor:
         return {
             **closure_vars.globals,
@@ -395,8 +395,8 @@ def _get_global_vars(func):
 class Kernel:
     counter = 0
 
-    def __init__(self, func, is_grad, classkernel=False):
-        self.func = func
+    def __init__(self, _func, is_grad, _classkernel=False):
+        self.func = _func
         self.kernel_counter = Kernel.counter
         Kernel.counter += 1
         self.is_grad = is_grad
@@ -404,7 +404,7 @@ class Kernel:
         self.argument_annotations = []
         self.argument_names = []
         self.return_type = None
-        self.classkernel = classkernel
+        self.classkernel = _classkernel
         _taichi_skip_traceback = 1
         self.extract_arguments()
         del _taichi_skip_traceback
@@ -789,16 +789,16 @@ def _inside_class(level_of_class_stackframe):
     return False
 
 
-def _kernel_impl(func, level_of_class_stackframe, verbose=False):
+def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
     # Can decorators determine if a function is being defined inside a class?
     # https://stackoverflow.com/a/8793684/12003165
     is_classkernel = _inside_class(level_of_class_stackframe + 1)
     _taichi_skip_traceback = 1
 
     if verbose:
-        print(f'kernel={func.__name__} is_classkernel={is_classkernel}')
-    primal = Kernel(func, is_grad=False, classkernel=is_classkernel)
-    adjoint = Kernel(func, is_grad=True, classkernel=is_classkernel)
+        print(f'kernel={_func.__name__} is_classkernel={is_classkernel}')
+    primal = Kernel(_func, is_grad=False, _classkernel=is_classkernel)
+    adjoint = Kernel(_func, is_grad=True, _classkernel=is_classkernel)
     # Having |primal| contains |grad| makes the tape work.
     primal.grad = adjoint
 
@@ -810,7 +810,7 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
         # owning the kernel, which is not known until the kernel is accessed.
         #
         # See also: _BoundedDifferentiableMethod, data_oriented.
-        @functools.wraps(func)
+        @functools.wraps(_func)
         def wrapped(*args, **kwargs):
             _taichi_skip_traceback = 1
             # If we reach here (we should never), it means the class is not decorated
@@ -822,7 +822,7 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
             )
     else:
 
-        @functools.wraps(func)
+        @functools.wraps(_func)
         def wrapped(*args, **kwargs):
             _taichi_skip_traceback = 1
             try:

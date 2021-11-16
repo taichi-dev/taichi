@@ -130,9 +130,7 @@ class TaichiMain:
                                  json=payload)
         response_json = json.loads(response.text)
         if response_json['status'] == 1:
-            print(
-                'Your Taichi version {} is outdated. The latest version is {}, you can use pip to upgrade to the latest Taichi!'
-                .format(version, response_json['latest_version']))
+            print(f'Your Taichi version {version} is outdated. The latest version is {response_json["latest_version"]}, you can use pip to upgrade to the latest Taichi!')
         elif response_json['status'] == 0:
             print(response_json['message'])
 

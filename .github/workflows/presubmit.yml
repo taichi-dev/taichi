@@ -325,7 +325,7 @@ jobs:
           PY: py38
           GPU_TEST: ON
           DISPLAY: :1
-          TI_WANTED_ARCHS: "cuda,vulkan,opengl"
+          TI_WANTED_ARCHS: "cpu,cc,cuda,vulkan,opengl"
 
       - name: clean docker container
         if: always()

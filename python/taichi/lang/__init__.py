@@ -1008,40 +1008,6 @@ def is_arch_supported(arch):
         return False
 
 
-def expected_archs():
-    """Gets all expected archs on the machine.
-
-    Returns:
-        List[taichi_core.Arch]: All expected archs on the machine.
-    """
-    archs = set([cpu, cuda, metal, vulkan, opengl, cc])
-    archs = set(filter(lambda x: is_arch_supported(x), archs))
-
-    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
-    want_exclude = wanted_archs.startswith('^')
-    if want_exclude:
-        wanted_archs = wanted_archs[1:]
-    wanted_archs = wanted_archs.split(',')
-    # Note, ''.split(',') gives you [''], which is not an empty array.
-    expanded_wanted_archs = set([])
-    for arch in wanted_archs:
-        if arch == '':
-            continue
-        if arch == 'cpu':
-            expanded_wanted_archs.add(cpu)
-        elif arch == 'gpu':
-            expanded_wanted_archs.update(gpu)
-        else:
-            expanded_wanted_archs.add(_ti_core.arch_from_name(arch))
-    if len(expanded_wanted_archs) == 0:
-        return list(archs)
-    if want_exclude:
-        expected = archs - expanded_wanted_archs
-    else:
-        expected = expanded_wanted_archs
-    return list(expected)
-
-
 def adaptive_arch_select(arch, enable_fallback):
     if arch is None:
         return cpu
@@ -1100,7 +1066,7 @@ def all_archs_with(**kwargs):
                 can_run_on.register(lambda arch: is_extension_supported(
                     arch, extension.data64))
 
-            for arch in ti.expected_archs():
+            for arch in ti.testing.expected_archs():
                 if can_run_on(arch):
                     print('Running test on arch={}'.format(arch))
                     ti.init(arch=arch, **kwargs)

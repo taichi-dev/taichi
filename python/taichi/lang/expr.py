@@ -1,10 +1,9 @@
 import numpy as np
+import taichi as ti
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.util import is_taichi_class
-
-import taichi as ti
 
 
 # Scalar, basic data type

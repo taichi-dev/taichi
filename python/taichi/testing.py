@@ -4,9 +4,8 @@ import itertools
 import os
 from tempfile import mkstemp
 
-from taichi.core import ti_core as _ti_core
-
 import taichi as ti
+from taichi.core import ti_core as _ti_core
 
 
 # Helper functions

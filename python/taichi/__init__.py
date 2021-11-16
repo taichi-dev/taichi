@@ -1,5 +1,6 @@
 import sys
 
+from taichi import ad
 from taichi._logging import *
 from taichi.core import get_os_name, package_root, require_version
 from taichi.core import ti_core as core
@@ -10,8 +11,6 @@ from taichi.testing import *
 from taichi.tools import *
 from taichi.torch_io import from_torch, to_torch
 from taichi.type import *
-
-from taichi import ad
 from taichi.ui import ui
 
 # Issue#2223: Do not reorder, or we're busted with partially initialized module

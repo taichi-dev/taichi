@@ -3,13 +3,12 @@ import collections.abc
 from collections import ChainMap
 
 import astor
+import taichi as ti
 from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.ast_builder_utils import Builder, LoopStatus
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.util import to_taichi_type
-
-import taichi as ti
 
 
 class IRBuilder(Builder):

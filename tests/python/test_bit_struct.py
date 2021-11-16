@@ -1,7 +1,6 @@
 import numpy as np
-from pytest import approx
-
 import taichi as ti
+from pytest import approx
 
 
 @ti.test(require=ti.extension.quant_basic, debug=True)

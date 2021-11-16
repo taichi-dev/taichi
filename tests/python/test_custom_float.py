@@ -1,9 +1,8 @@
 import math
 
+import taichi as ti
 from pytest import approx
 from taichi.lang import expr, impl
-
-import taichi as ti
 
 
 @ti.test(require=ti.extension.quant_basic)

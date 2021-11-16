@@ -3,6 +3,7 @@ from types import FunctionType, MethodType
 from typing import Iterable
 
 import numpy as np
+import taichi as ti
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
@@ -19,8 +20,6 @@ from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
 from taichi.misc.util import deprecated, get_traceback, warning
 from taichi.snode.fields_builder import FieldsBuilder
 from taichi.type.primitive_types import f16, f32, f64, i32, i64, u32, u64
-
-import taichi as ti
 
 
 @taichi_scope

@@ -1,11 +1,10 @@
+import taichi as ti
 from taichi.core import get_os_name
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
 from taichi.lang.kernel_impl import kernel
 from taichi.type.annotations import any_arr, ext_arr, template
-
-import taichi as ti
 
 # A set of helper (meta)functions
 

@@ -4,7 +4,6 @@ import shutil
 import tempfile
 
 import pytest
-
 import taichi as ti
 
 

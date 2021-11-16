@@ -1,12 +1,12 @@
 import argparse
 import math
 import os
+import platform
 import runpy
 import shutil
 import subprocess
 import sys
 import timeit
-import platform
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
@@ -99,7 +99,7 @@ class TaichiMain:
         minor = _ti_core.get_version_minor()
         patch = _ti_core.get_version_patch()
         version = '{}.{}.{}'.format(major, minor, patch)
-        payload = {'version':version, 'platform':'', 'python':''}
+        payload = {'version': version, 'platform': '', 'python': ''}
 
         os = platform.system()
         if os == 'Linux':
@@ -125,11 +125,14 @@ class TaichiMain:
             payload['python'] = 'cp39'
 
         import requests
-        response = requests.post('http://54.90.48.192/check_version', json=payload)
+        response = requests.post('http://54.90.48.192/check_version',
+                                 json=payload)
         import json
         response_json = json.loads(response.text)
         if response_json['status'] == 1:
-            print('Your Taichi version {} is outdated. The latest version is {}, you can use pip to upgrade to the latest Taichi!'.format(version, response_json['latest_version']))
+            print(
+                'Your Taichi version {} is outdated. The latest version is {}, you can use pip to upgrade to the latest Taichi!'
+                .format(version, response_json['latest_version']))
         elif response_json['status'] == 0:
             print(response_json['message'])
 

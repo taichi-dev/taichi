@@ -1175,7 +1175,6 @@ class LoopLinearIndexStmt : public Stmt {
  */
 class GlobalThreadIndexStmt : public Stmt {
  public:
-
   explicit GlobalThreadIndexStmt() {
     TI_STMT_REG_FIELDS;
   }

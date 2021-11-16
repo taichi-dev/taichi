@@ -559,8 +559,8 @@ class TensorElementExpression : public Expression {
 
 class GlobalThreadIndexExpression : public Expression {
  public:
-
-  GlobalThreadIndexExpression() {}
+  GlobalThreadIndexExpression() {
+  }
 
   void type_check() override;
 

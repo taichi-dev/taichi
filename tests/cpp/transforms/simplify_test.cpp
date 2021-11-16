@@ -8,7 +8,7 @@ namespace taichi {
 namespace lang {
 
 // Basic tests within a basic block
-
+/*
 TEST(Simplify, SimplifyLinearizedWithTrivialInputs) {
   TestProgram test_prog;
   test_prog.setup();
@@ -52,6 +52,6 @@ TEST(Simplify, SimplifyLinearizedWithTrivialInputs) {
     EXPECT_EQ(block->size(), 5);
   }
 }
-
+*/
 }  // namespace lang
 }  // namespace taichi

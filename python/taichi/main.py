@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import timeit
+import platform
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
@@ -67,6 +68,8 @@ class TaichiMain:
 
         self.main_parser = parser
 
+        self._check_version()
+
     @timer
     def __call__(self):
         # Print help if no command provided
@@ -87,6 +90,48 @@ class TaichiMain:
             return 1
 
         return getattr(self, args.command)(sys.argv[2:])
+
+    @staticmethod
+    def _check_version():
+        # Check Taichi version for the user.
+        print('Checking your Taichi version...')
+        major = _ti_core.get_version_major()
+        minor = _ti_core.get_version_minor()
+        patch = _ti_core.get_version_patch()
+        version = '{}.{}.{}'.format(major, minor, patch)
+        payload = {'version':version, 'platform':'', 'python':''}
+
+        os = platform.system()
+        if os == 'Linux':
+            payload['platform'] = 'manylinux1_x86_64'
+        elif os == 'Windows':
+            payload['platform'] = 'win_amd64'
+        elif os == 'Darwin':
+            if platform.release() < '19.0.0':
+                payload['platform'] = 'macosx_10_14_x86_64'
+            elif platform.machine() == 'x86_64':
+                payload['platform'] = 'macosx_10_15_x86_64'
+            else:
+                payload['platform'] = 'macosx_11_0_arm64'
+
+        python_version = platform.python_version()
+        if python_version.startswith('3.6'):
+            payload['python'] = 'cp36'
+        elif python_version.startswith('3.7'):
+            payload['python'] = 'cp37'
+        elif python_version.startswith('3.8'):
+            payload['python'] = 'cp38'
+        elif python_version.startswith('3.9'):
+            payload['python'] = 'cp39'
+
+        import requests
+        response = requests.post('http://54.90.48.192/check_version', json=payload)
+        import json
+        response_json = json.loads(response.text)
+        if response_json['status'] == 1:
+            print('Your Taichi version {} is outdated. The latest version is {}, you can use pip to upgrade to the latest Taichi!'.format(version, response_json['latest_version']))
+        elif response_json['status'] == 0:
+            print(response_json['message'])
 
     @staticmethod
     def _get_friend_links():

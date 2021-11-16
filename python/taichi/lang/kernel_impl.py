@@ -340,8 +340,7 @@ class TaichiCallableTemplateMapper:
             if len(shape) < element_dim:
                 raise ValueError(
                     f"Invalid argument into ti.any_arr() - required element_dim={element_dim}, "
-                    f"but the argument has only {len(shape)} dimensions"
-                )
+                    f"but the argument has only {len(shape)} dimensions")
             element_shape = (
             ) if element_dim == 0 else shape[:
                                              element_dim] if layout == Layout.SOA else shape[

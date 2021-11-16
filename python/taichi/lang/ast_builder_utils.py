@@ -1,4 +1,3 @@
-import ast
 from enum import Enum
 
 from taichi.lang.exception import TaichiSyntaxError

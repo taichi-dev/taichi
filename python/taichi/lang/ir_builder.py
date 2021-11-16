@@ -1,12 +1,11 @@
 import ast
 import collections.abc
-import warnings
 from collections import ChainMap
 
 import astor
 from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.ast_builder_utils import *
+from taichi.lang.ast_builder_utils import Builder, LoopStatus
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.util import to_taichi_type
 
@@ -58,6 +57,8 @@ class IRBuilder(Builder):
         for i, target in enumerate(targets):
             IRBuilder.build_assign_basic(ctx, target, tmp_tuple[i],
                                          is_static_assign)
+
+        return None
 
     @staticmethod
     def build_assign_basic(ctx, target, value, is_static_assign):
@@ -155,14 +156,16 @@ class IRBuilder(Builder):
             return func(ctx, node, result)
         target = node.generators[now_comp].target = build_stmt(
             ctx, node.generators[now_comp].target)
-        iter = node.generators[now_comp].iter = build_stmt(
+        _iter = node.generators[now_comp].iter = build_stmt(
             ctx, node.generators[now_comp].iter)
-        for value in iter.ptr:
+        for value in _iter.ptr:
             with ctx.variable_scope_guard():
                 IRBuilder.build_assign_unpack(ctx, target, value, True)
                 node.generators[now_comp].ifs = build_stmts(
                     ctx, node.generators[now_comp].ifs)
                 IRBuilder.process_ifs(ctx, node, now_comp, 0, func, result)
+
+        return None
 
     @staticmethod
     def process_ifs(ctx, node, now_comp, now_if, func, result):
@@ -173,6 +176,8 @@ class IRBuilder(Builder):
         if cond:
             IRBuilder.process_ifs(ctx, node, now_comp, now_if + 1, func,
                                   result)
+
+        return None
 
     @staticmethod
     def build_comprehension(ctx, node):
@@ -313,8 +318,6 @@ class IRBuilder(Builder):
         assert args.kw_defaults == []
         assert args.kwarg is None
 
-        arg_decls = []
-
         def transform_as_kernel():
             # Treat return type
             if node.returns is not None:
@@ -411,8 +414,7 @@ class IRBuilder(Builder):
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value
             return ast.Pass()
-        else:
-            ctx.return_data = node.value.ptr
+        ctx.return_data = node.value.ptr
         return node
 
     @staticmethod
@@ -465,7 +467,7 @@ class IRBuilder(Builder):
         op = {
             ast.UAdd: lambda l: l,
             ast.USub: lambda l: -l,
-            ast.Not: lambda l: ti.logical_not(l),
+            ast.Not: ti.logical_not,
             ast.Invert: lambda l: ~l,
         }.get(type(node.op))
         node.ptr = op(node.operand.ptr)
@@ -475,8 +477,8 @@ class IRBuilder(Builder):
     def build_BoolOp(ctx, node):
         node.values = build_stmts(ctx, node.values)
         op = {
-            ast.And: lambda l, r: ti.logical_and(l, r),
-            ast.Or: lambda l, r: ti.logical_or(l, r),
+            ast.And: ti.logical_and,
+            ast.Or: ti.logical_or,
         }.get(type(node.op))
         result = op(node.values[0].ptr, node.values[1].ptr)
         for i in range(2, len(node.values)):
@@ -518,7 +520,7 @@ class IRBuilder(Builder):
             (ti.grouped, 'grouped'),
             (ti.ndrange, 'ndrange'),
         ]:
-            if ASTResolver.resolve_to(node.func, wanted, ctx.globals):
+            if ASTResolver.resolve_to(node.func, wanted, ctx.global_vars):
                 return name
         return ''
 
@@ -530,9 +532,8 @@ class IRBuilder(Builder):
         """
         if isinstance(node.target, ast.Name):
             return [node.target.id]
-        else:
-            assert isinstance(node.target, ast.Tuple)
-            return [name.id for name in node.target.elts]
+        assert isinstance(node.target, ast.Tuple)
+        return [name.id for name in node.target.elts]
 
     @staticmethod
     def build_static_for(ctx, node, is_grouped):
@@ -616,14 +617,14 @@ class IRBuilder(Builder):
                                              ndrange_end.ptr)
             I = ti.expr_init(ndrange_loop_var)
             targets = IRBuilder.get_for_loop_targets(node)
-            for i in range(len(targets)):
+            for i, target in enumerate(targets):
                 if i + 1 < len(targets):
                     target_tmp = ti.expr_init(
                         I // ndrange_var.acc_dimensions[i + 1])
                 else:
                     target_tmp = ti.expr_init(I)
                 ctx.create_variable(
-                    targets[i],
+                    target,
                     ti.expr_init(
                         target_tmp +
                         ti.subscript(ti.subscript(ndrange_var.bounds, i), 0)))
@@ -695,13 +696,13 @@ class IRBuilder(Builder):
                 node.body = build_stmts(ctx, node.body)
                 ti.core.end_frontend_range_for()
             else:
-                vars = []
+                _vars = []
                 for name in targets:
                     var = ti.Expr(ti.core.make_id_expr(""))
-                    vars.append(var)
+                    _vars.append(var)
                     ctx.create_variable(name, var)
                 loop_var = build_stmt(ctx, node.iter).ptr
-                expr_group = ti.lang.expr.make_expr_group(*vars)
+                expr_group = ti.lang.expr.make_expr_group(*_vars)
                 ti.begin_frontend_struct_for(expr_group, loop_var)
                 node.body = build_stmts(ctx, node.body)
                 ti.core.end_frontend_range_for()
@@ -727,12 +728,12 @@ class IRBuilder(Builder):
                     raise TaichiSyntaxError("'ti.static' cannot be nested")
                 return IRBuilder.build_static_for(
                     ctx, node, double_decorator == 'grouped')
-            elif decorator == 'ndrange':
+            if decorator == 'ndrange':
                 if double_decorator != '':
                     raise TaichiSyntaxError(
                         "No decorator is allowed inside 'ti.ndrange")
                 return IRBuilder.build_ndrange_for(ctx, node)
-            elif decorator == 'grouped':
+            if decorator == 'grouped':
                 if double_decorator == 'static':
                     raise TaichiSyntaxError(
                         "'ti.static' is not allowed inside 'ti.grouped'")
@@ -902,6 +903,11 @@ class IRBuilder(Builder):
     @staticmethod
     def build_Pass(ctx, node):
         return node
+
+    @staticmethod
+    def build_Raise(ctx, node):
+        node.exc = build_stmt(ctx, node.exc)
+        raise node.exc.ptr
 
 
 build_stmt = IRBuilder()

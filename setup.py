@@ -238,7 +238,6 @@ setup(name=project_name,
       python_requires=">=3.6,<3.10",
       install_requires=[
           'numpy',
-          'pybind11>=2.5.0',
           'sourceinspect>=0.0.4',
           'colorama',
           'astor',

@@ -1,5 +1,4 @@
 import builtins
-import ctypes
 import functools
 import math
 import operator as _bt_ops_mod  # bt for builtin
@@ -47,8 +46,7 @@ def unary(foo):
         _taichi_skip_traceback = 1
         if is_taichi_class(a):
             return a.element_wise_unary(imp_foo)
-        else:
-            return imp_foo(a)
+        return imp_foo(a)
 
     return wrapped
 
@@ -72,10 +70,9 @@ def binary(foo):
         _taichi_skip_traceback = 1
         if is_taichi_class(a):
             return a.element_wise_binary(imp_foo, b)
-        elif is_taichi_class(b):
+        if is_taichi_class(b):
             return b.element_wise_binary(rev_foo, a)
-        else:
-            return imp_foo(a, b)
+        return imp_foo(a, b)
 
     binary_ops.append(wrapped)
     return wrapped
@@ -105,12 +102,11 @@ def ternary(foo):
         _taichi_skip_traceback = 1
         if is_taichi_class(a):
             return a.element_wise_ternary(abc_foo, b, c)
-        elif is_taichi_class(b):
+        if is_taichi_class(b):
             return b.element_wise_ternary(bac_foo, a, c)
-        elif is_taichi_class(c):
+        if is_taichi_class(c):
             return c.element_wise_ternary(cab_foo, a, b)
-        else:
-            return abc_foo(a, b, c)
+        return abc_foo(a, b, c)
 
     ternary_ops.append(wrapped)
     return wrapped
@@ -130,7 +126,7 @@ def writeback_binary(foo):
         _taichi_skip_traceback = 1
         if is_taichi_class(a):
             return a.element_wise_writeback_binary(imp_foo, b)
-        elif is_taichi_class(b):
+        if is_taichi_class(b):
             raise TaichiSyntaxError(
                 f'cannot augassign taichi class {type(b)} to scalar expr')
         else:
@@ -146,8 +142,7 @@ def cast(obj, dtype):
     if is_taichi_class(obj):
         # TODO: unify with element_wise_unary
         return obj.cast(dtype)
-    else:
-        return Expr(_ti_core.value_cast(Expr(obj).ptr, dtype))
+    return Expr(_ti_core.value_cast(Expr(obj).ptr, dtype))
 
 
 def bit_cast(obj, dtype):
@@ -163,8 +158,7 @@ def _unary_operation(taichi_op, python_op, a):
     _taichi_skip_traceback = 1
     if is_taichi_expr(a):
         return Expr(taichi_op(a.ptr), tb=stack_info())
-    else:
-        return python_op(a)
+    return python_op(a)
 
 
 def _binary_operation(taichi_op, python_op, a, b):
@@ -172,8 +166,7 @@ def _binary_operation(taichi_op, python_op, a, b):
     if is_taichi_expr(a) or is_taichi_expr(b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
         return Expr(taichi_op(a.ptr, b.ptr), tb=stack_info())
-    else:
-        return python_op(a, b)
+    return python_op(a, b)
 
 
 def _ternary_operation(taichi_op, python_op, a, b, c):
@@ -181,8 +174,7 @@ def _ternary_operation(taichi_op, python_op, a, b, c):
     if is_taichi_expr(a) or is_taichi_expr(b) or is_taichi_expr(c):
         a, b, c = wrap_if_not_expr(a), wrap_if_not_expr(b), wrap_if_not_expr(c)
         return Expr(taichi_op(a.ptr, b.ptr, c.ptr), tb=stack_info())
-    else:
-        return python_op(a, b, c)
+    return python_op(a, b, c)
 
 
 @unary
@@ -358,7 +350,7 @@ def log(a):
 
 
 @unary
-def abs(a):
+def abs(a):  # pylint: disable=W0622
     """The absolute value function.
 
     Args:
@@ -476,7 +468,7 @@ def mod(a, b):
 
 
 @binary
-def pow(a, b):
+def pow(a, b):  # pylint: disable=W0622
     """The power function.
 
     Args:
@@ -519,7 +511,7 @@ def truediv(a, b):
 
 
 @binary
-def max(a, b):
+def max(a, b):  # pylint: disable=W0622
     """The maxnimum function.
 
     Args:
@@ -533,7 +525,7 @@ def max(a, b):
 
 
 @binary
-def min(a, b):
+def min(a, b):  # pylint: disable=W0622
     """The minimum function.
 
     Args:
@@ -574,8 +566,7 @@ def raw_div(a, b):
     def c_div(a, b):
         if isinstance(a, int) and isinstance(b, int):
             return a // b
-        else:
-            return a / b
+        return a / b
 
     return _binary_operation(_ti_core.expr_div, c_div, a, b)
 
@@ -853,10 +844,9 @@ def ti_max(*args):
     assert num_args >= 1
     if num_args == 1:
         return args[0]
-    elif num_args == 2:
+    if num_args == 2:
         return max(args[0], args[1])
-    else:
-        return max(args[0], ti_max(*args[1:]))
+    return max(args[0], ti_max(*args[1:]))
 
 
 def ti_min(*args):
@@ -864,10 +854,9 @@ def ti_min(*args):
     assert num_args >= 1
     if num_args == 1:
         return args[0]
-    elif num_args == 2:
+    if num_args == 2:
         return min(args[0], args[1])
-    else:
-        return min(args[0], ti_min(*args[1:]))
+    return min(args[0], ti_min(*args[1:]))
 
 
 def ti_any(a):

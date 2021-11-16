@@ -16,7 +16,7 @@ def get_rel_eps():
     arch = ti.cfg.arch
     if arch == ti.opengl:
         return 1e-3
-    elif arch == ti.metal:
+    if arch == ti.metal:
         # Debatable, different hardware could yield different precisions
         # On AMD Radeon Pro 5500M, 1e-6 works fine...
         # https://github.com/taichi-dev/taichi/pull/1779

@@ -15,9 +15,8 @@ from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.ops import cast
 from taichi.lang.types import CompoundType
-from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
-                              python_scope, taichi_scope, to_numpy_type,
-                              to_pytorch_type)
+from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
+                              taichi_scope, to_numpy_type, to_pytorch_type)
 from taichi.misc.util import deprecated, warning
 
 import taichi as ti
@@ -51,64 +50,59 @@ class Matrix(TaichiOperations):
             elif isinstance(n[0], Matrix):
                 raise Exception(
                     'cols/rows required when using list of vectors')
-            elif not isinstance(n[0], Iterable):
-                if impl.inside_kernel():
-                    # wrap potential constants with Expr
-                    if keep_raw:
-                        mat = [list([x]) for x in n]
-                    else:
-                        if in_python_scope(
-                        ) or disable_local_tensor or not ti.current_cfg(
-                        ).dynamic_index:
-                            mat = [list([expr.Expr(x)]) for x in n]
-                        else:
-                            if not ti.is_extension_supported(
-                                    ti.cfg.arch, ti.extension.dynamic_index):
-                                raise Exception(
-                                    'Backend ' + str(ti.cfg.arch) +
-                                    ' doesn\'t support dynamic index')
-                            if dt is None:
-                                if isinstance(n[0], int):
-                                    dt = impl.get_runtime().default_ip
-                                elif isinstance(n[0], float):
-                                    dt = impl.get_runtime().default_fp
-                                elif isinstance(n[0], expr.Expr):
-                                    dt = n[0].ptr.get_ret_type()
-                                    if dt == ti_core.DataType_unknown:
-                                        raise TypeError(
-                                            'Element type of the matrix cannot be inferred. Please set dt instead for now.'
-                                        )
-                                else:
-                                    raise Exception(
-                                        'dt required when using dynamic_index for local tensor'
-                                    )
-                            self.local_tensor_proxy = impl.expr_init_local_tensor(
-                                [len(n)], dt,
-                                expr.make_expr_group([expr.Expr(x)
-                                                      for x in n]))
-                            mat = []
-                            for i in range(len(n)):
-                                mat.append(
-                                    list([
-                                        ti.local_subscript_with_offset(
-                                            self.local_tensor_proxy,
-                                            (impl.make_constant_expr_i32(i), ),
-                                            (len(n), ))
-                                    ]))
-                else:
+            elif not isinstance(n[0], Iterable):  # now init a Vector
+                if in_python_scope() or keep_raw:
                     mat = [[x] for x in n]
-            else:
-                if in_python_scope(
-                ) or disable_local_tensor or not ti.current_cfg(
+                elif disable_local_tensor or not ti.current_cfg(
                 ).dynamic_index:
-                    mat = [list(r) for r in n]
+                    mat = [[impl.expr_init(x)] for x in n]
                 else:
                     if not ti.is_extension_supported(
-                            ti.cfg.arch, ti.extension.dynamic_index):
-                        raise Exception('Backend ' + str(ti.cfg.arch) +
-                                        ' doesn\'t support dynamic index')
+                            ti.current_cfg().arch, ti.extension.dynamic_index):
+                        raise Exception(
+                            f"Backend {ti.current_cfg().arch} doesn't support dynamic index"
+                        )
                     if dt is None:
-                        if isinstance(n[0][0], int):
+                        if isinstance(n[0], (int, np.integer)):
+                            dt = impl.get_runtime().default_ip
+                        elif isinstance(n[0], float):
+                            dt = impl.get_runtime().default_fp
+                        elif isinstance(n[0], expr.Expr):
+                            dt = n[0].ptr.get_ret_type()
+                            if dt == ti_core.DataType_unknown:
+                                raise TypeError(
+                                    'Element type of the matrix cannot be inferred. Please set dt instead for now.'
+                                )
+                        else:
+                            raise Exception(
+                                'dt required when using dynamic_index for local tensor'
+                            )
+                    self.local_tensor_proxy = impl.expr_init_local_tensor(
+                        [len(n)], dt,
+                        expr.make_expr_group([expr.Expr(x) for x in n]))
+                    mat = []
+                    for i in range(len(n)):
+                        mat.append(
+                            list([
+                                ti.local_subscript_with_offset(
+                                    self.local_tensor_proxy,
+                                    (impl.make_constant_expr_i32(i), ),
+                                    (len(n), ))
+                            ]))
+            else:  # now init a Matrix
+                if in_python_scope() or keep_raw:
+                    mat = [list(row) for row in n]
+                elif disable_local_tensor or not ti.current_cfg(
+                ).dynamic_index:
+                    mat = [[impl.expr_init(x) for x in row] for row in n]
+                else:
+                    if not ti.is_extension_supported(
+                            ti.current_cfg().arch, ti.extension.dynamic_index):
+                        raise Exception(
+                            f"Backend {ti.current_cfg().arch} doesn't support dynamic index"
+                        )
+                    if dt is None:
+                        if isinstance(n[0][0], (int, np.integer)):
                             dt = impl.get_runtime().default_ip
                         elif isinstance(n[0][0], float):
                             dt = impl.get_runtime().default_fp
@@ -168,63 +162,42 @@ class Matrix(TaichiOperations):
 
     def element_wise_binary(self, foo, other):
         _taichi_skip_traceback = 1
-        ret = self.empty_copy()
-        if isinstance(other, (list, tuple)):
-            other = Matrix(other)
-        if isinstance(other, Matrix):
-            assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-            for i in range(self.n * self.m):
-                ret.entries[i] = foo(self.entries[i], other.entries[i])
-        else:  # assumed to be scalar
-            for i in range(self.n * self.m):
-                ret.entries[i] = foo(self.entries[i], other)
-        return ret
+        other = self.broadcast_copy(other)
+        return Matrix([[foo(self(i, j), other(i, j)) for j in range(self.m)]
+                       for i in range(self.n)])
 
     def broadcast_copy(self, other):
         if isinstance(other, (list, tuple)):
             other = Matrix(other)
         if not isinstance(other, Matrix):
-            ret = self.empty_copy()
-            ret.entries = [other for _ in ret.entries]
-            other = ret
+            other = Matrix([[other for _ in range(self.m)]
+                            for _ in range(self.n)])
         assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         return other
 
     def element_wise_ternary(self, foo, other, extra):
-        ret = self.empty_copy()
         other = self.broadcast_copy(other)
         extra = self.broadcast_copy(extra)
-        for i in range(self.n * self.m):
-            ret.entries[i] = foo(self.entries[i], other.entries[i],
-                                 extra.entries[i])
-        return ret
+        return Matrix([[
+            foo(self(i, j), other(i, j), extra(i, j)) for j in range(self.m)
+        ] for i in range(self.n)])
 
     def element_wise_writeback_binary(self, foo, other):
-        ret = self.empty_copy()
-        if isinstance(other, (list, tuple)):
-            other = Matrix(other)
-        if is_taichi_class(other):
-            other = other.variable()
-        if foo.__name__ == 'assign' and not isinstance(other, Matrix):
+        if foo.__name__ == 'assign' and not isinstance(other,
+                                                       (list, tuple, Matrix)):
             raise TaichiSyntaxError(
                 'cannot assign scalar expr to '
                 f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
             )
-        if isinstance(other, Matrix):
-            assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-            for i in range(self.n * self.m):
-                ret.entries[i] = foo(self.entries[i], other.entries[i])
-        else:  # assumed to be scalar
-            for i in range(self.n * self.m):
-                ret.entries[i] = foo(self.entries[i], other)
-        return ret
+        other = self.broadcast_copy(other)
+        entries = [[foo(self(i, j), other(i, j)) for j in range(self.m)]
+                   for i in range(self.n)]
+        return self if foo.__name__ == 'assign' else Matrix(entries)
 
     def element_wise_unary(self, foo):
         _taichi_skip_traceback = 1
-        ret = self.empty_copy()
-        for i in range(self.n * self.m):
-            ret.entries[i] = foo(self.entries[i])
-        return ret
+        return Matrix([[foo(self(i, j)) for j in range(self.m)]
+                       for i in range(self.n)])
 
     def __matmul__(self, other):
         """Matrix-matrix or matrix-vector multiply.
@@ -240,14 +213,15 @@ class Matrix(TaichiOperations):
         assert isinstance(other, Matrix), "rhs of `@` is not a matrix / vector"
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         del _taichi_skip_traceback
-        ret = Matrix.empty(self.n, other.m)
+        entries = []
         for i in range(self.n):
+            entries.append([])
             for j in range(other.m):
                 acc = self(i, 0) * other(0, j)
                 for k in range(1, other.n):
                     acc = acc + self(i, k) * other(k, j)
-                ret.entries[i * other.m + j] = acc
-        return ret
+                entries[i].append(acc)
+        return Matrix(entries)
 
     def linearize_entry_id(self, *args):
         assert 1 <= len(args) <= 2
@@ -270,9 +244,9 @@ class Matrix(TaichiOperations):
                     'See https://docs.taichi.graphics/lang/articles/advanced/meta#when-to-use-for-loops-with-tistatic for more details.'
                 )
         assert 0 <= args[0] < self.n, \
-                f"The 0-th matrix index is out of range: 0 <= {args[0]} < {self.n}"
+            f"The 0-th matrix index is out of range: 0 <= {args[0]} < {self.n}"
         assert 0 <= args[1] < self.m, \
-                f"The 1-th matrix index is out of range: 0 <= {args[1]} < {self.m}"
+            f"The 1-th matrix index is out of range: 0 <= {args[1]} < {self.m}"
         return args[0] * self.m + args[1]
 
     def __call__(self, *args, **kwargs):
@@ -306,22 +280,20 @@ class Matrix(TaichiOperations):
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
-        elif self.local_tensor_proxy is not None:
+        if self.local_tensor_proxy is not None:
             if len(indices) == 1:
                 return ti.local_subscript_with_offset(self.local_tensor_proxy,
                                                       (i, ), (self.n, ))
-            else:
-                return ti.local_subscript_with_offset(self.local_tensor_proxy,
-                                                      (i, j), (self.n, self.m))
+            return ti.local_subscript_with_offset(self.local_tensor_proxy,
+                                                  (i, j), (self.n, self.m))
         # ptr.is_global_ptr() will check whether it's an element in the field (which is different from ptr.is_global_var()).
-        elif isinstance(self.entries[0],
-                        ti.Expr) and self.entries[0].ptr.is_global_ptr(
-                        ) and ti.current_cfg().dynamic_index:
+        if isinstance(self.entries[0],
+                      ti.Expr) and self.entries[0].ptr.is_global_ptr(
+                      ) and ti.current_cfg().dynamic_index:
             # TODO: Add API to query whether AOS or SOA
             return ti.global_subscript_with_offset(self.entries[0], (i, j),
                                                    (self.n, self.m), True)
-        else:
-            return self(i, j)
+        return self(i, j)
 
     @property
     def x(self):
@@ -329,8 +301,7 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(0)
-        else:
-            return self[0]
+        return self[0]
 
     @property
     def y(self):
@@ -338,8 +309,7 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(1)
-        else:
-            return self[1]
+        return self[1]
 
     @property
     def z(self):
@@ -347,8 +317,7 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(2)
-        else:
-            return self[2]
+        return self[2]
 
     @property
     def w(self):
@@ -356,8 +325,7 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(3)
-        else:
-            return self[3]
+        return self[3]
 
     # since Taichi-scope use v.x.assign() instead
     @x.setter
@@ -439,8 +407,7 @@ class Matrix(TaichiOperations):
     def __iter__(self):
         if self.m == 1:
             return (self(i) for i in range(self.n))
-        else:
-            return ([self(i, j) for j in range(self.m)] for i in range(self.n))
+        return ([self(i, j) for j in range(self.m)] for i in range(self.n))
 
     @python_scope
     def set_entries(self, value):
@@ -479,8 +446,8 @@ class Matrix(TaichiOperations):
         """
         _taichi_skip_traceback = 1
         ret = self.copy()
-        for i in range(len(self.entries)):
-            ret.entries[i] = ops_mod.cast(ret.entries[i], dtype)
+        for i, entry in enumerate(ret.entries):
+            ret.entries[i] = ops_mod.cast(entry, dtype)
         return ret
 
     def trace(self):
@@ -491,10 +458,10 @@ class Matrix(TaichiOperations):
 
         """
         assert self.n == self.m
-        sum = self(0, 0)
+        _sum = self(0, 0)
         for i in range(1, self.n):
-            sum = sum + self(i, i)
-        return sum
+            _sum = _sum + self(i, i)
+        return _sum
 
     @taichi_scope
     def inverse(self):
@@ -513,13 +480,13 @@ class Matrix(TaichiOperations):
         assert self.n == self.m, 'Only square matrices are invertible'
         if self.n == 1:
             return Matrix([1 / self(0, 0)], disable_local_tensor=True)
-        elif self.n == 2:
+        if self.n == 2:
             inv_det = impl.expr_init(1.0 / self.determinant())
             # Discussion: https://github.com/taichi-dev/taichi/pull/943#issuecomment-626344323
             return inv_det * Matrix([[self(1, 1), -self(0, 1)],
                                      [-self(1, 0), self(0, 0)]],
                                     disable_local_tensor=True).variable()
-        elif self.n == 3:
+        if self.n == 3:
             n = 3
             inv_determinant = impl.expr_init(1.0 / self.determinant())
             entries = [[0] * n for _ in range(n)]
@@ -533,7 +500,7 @@ class Matrix(TaichiOperations):
                         inv_determinant * (E(i + 1, j + 1) * E(i + 2, j + 2) -
                                            E(i + 2, j + 1) * E(i + 1, j + 2)))
             return Matrix(entries, disable_local_tensor=True)
-        elif self.n == 4:
+        if self.n == 4:
             n = 4
             inv_determinant = impl.expr_init(1.0 / self.determinant())
             entries = [[0] * n for _ in range(n)]
@@ -555,9 +522,8 @@ class Matrix(TaichiOperations):
                           (E(i + 1, j + 2) * E(i + 2, j + 3) -
                            E(i + 2, j + 2) * E(i + 1, j + 3)))))
             return Matrix(entries, disable_local_tensor=True)
-        else:
-            raise Exception(
-                "Inversions of matrices with sizes >= 5 are not supported")
+        raise Exception(
+            "Inversions of matrices with sizes >= 5 are not supported")
 
     inversed = deprecated('a.inversed()', 'a.inverse()')(inverse)
 
@@ -622,11 +588,11 @@ class Matrix(TaichiOperations):
         """
         if a.n == 2 and a.m == 2:
             return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
-        elif a.n == 3 and a.m == 3:
+        if a.n == 3 and a.m == 3:
             return a(0, 0) * (a(1, 1) * a(2, 2) - a(2, 1) * a(1, 2)) - a(
                 1, 0) * (a(0, 1) * a(2, 2) - a(2, 1) * a(0, 2)) + a(
                     2, 0) * (a(0, 1) * a(1, 2) - a(1, 1) * a(0, 2))
-        elif a.n == 4 and a.m == 4:
+        if a.n == 4 and a.m == 4:
             n = 4
 
             def E(x, y):
@@ -643,9 +609,8 @@ class Matrix(TaichiOperations):
                      E(i + 3, 1) *
                      (E(i + 1, 2) * E(i + 2, 3) - E(i + 2, 2) * E(i + 1, 3))))
             return det
-        else:
-            raise Exception(
-                "Determinants of matrices with sizes >= 5 are not supported")
+        raise Exception(
+            "Determinants of matrices with sizes >= 5 are not supported")
 
     @staticmethod
     def diag(dim, val):
@@ -805,8 +770,7 @@ class Matrix(TaichiOperations):
             So we have to make it happy with a dummy string...
             '''
             return f'<{self.n}x{self.m} ti.Matrix>'
-        else:
-            return str(self.to_numpy())
+        return str(self.to_numpy())
 
     def __repr__(self):
         return str(self.to_numpy())
@@ -828,10 +792,8 @@ class Matrix(TaichiOperations):
         if m is None:
             return Vector([ti.cast(0, dt) for _ in range(n)],
                           disable_local_tensor=True)
-        else:
-            return Matrix([[ti.cast(0, dt) for _ in range(m)]
-                           for _ in range(n)],
-                          disable_local_tensor=True)
+        return Matrix([[ti.cast(0, dt) for _ in range(m)] for _ in range(n)],
+                      disable_local_tensor=True)
 
     @staticmethod
     @taichi_scope
@@ -850,10 +812,8 @@ class Matrix(TaichiOperations):
         if m is None:
             return Vector([ti.cast(1, dt) for _ in range(n)],
                           disable_local_tensor=True)
-        else:
-            return Matrix([[ti.cast(1, dt) for _ in range(m)]
-                           for _ in range(n)],
-                          disable_local_tensor=True)
+        return Matrix([[ti.cast(1, dt) for _ in range(m)] for _ in range(n)],
+                      disable_local_tensor=True)
 
     @staticmethod
     @taichi_scope
@@ -1173,13 +1133,11 @@ class Matrix(TaichiOperations):
         if self.n == 3 and self.m == 1 and other.n == 3 and other.m == 1:
             return self._cross3d(other)
 
-        elif self.n == 2 and self.m == 1 and other.n == 2 and other.m == 1:
+        if self.n == 2 and self.m == 1 and other.n == 2 and other.m == 1:
             return self._cross2d(other)
 
-        else:
-            raise ValueError(
-                "Cross product is only supported between pairs of 2D/3D vectors"
-            )
+        raise ValueError(
+            "Cross product is only supported between pairs of 2D/3D vectors")
 
     @kern_mod.pyfunc
     def outer_product(self, other):
@@ -1238,9 +1196,9 @@ class MatrixField(Field):
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
-    def __init__(self, vars, n, m):
-        assert len(vars) == n * m
-        super().__init__(vars)
+    def __init__(self, _vars, n, m):
+        assert len(_vars) == n * m
+        super().__init__(_vars)
         self.n = n
         self.m = m
 
@@ -1316,7 +1274,6 @@ class MatrixField(Field):
             dtype = to_numpy_type(self.dtype)
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        import numpy as np  # pylint: disable=C0415
         arr = np.zeros(self.shape + shape_ext, dtype=dtype)
         taichi.lang.meta.matrix_to_ext_arr(self, arr, as_vector)
         ti.sync()

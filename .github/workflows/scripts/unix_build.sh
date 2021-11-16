@@ -2,6 +2,7 @@ set -ex
 export PATH=`pwd`/taichi-llvm/bin/:$LLVM_PATH:$PATH
 python3 -m pip uninstall taichi taichi-nightly -y
 python3 -m pip install -r requirements_dev.txt
+if [[ $OSTYPE == 'darwin'* ]]; then brew install molten-vk; fi
 cd python
 git fetch origin master
 TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python3 build.py build

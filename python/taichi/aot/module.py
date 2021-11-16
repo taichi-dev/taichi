@@ -1,9 +1,6 @@
-import shutil
-import warnings
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
-from taichi.core import ti_core as _ti_core
 from taichi.lang import impl, kernel_impl
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField
@@ -40,8 +37,7 @@ class KernelTemplate:
         for index, (key, value) in enumerate(kwargs.items()):
             template_args[index] = (key, value)
 
-        for i in range(len(kernel.argument_annotations)):
-            anno = kernel.argument_annotations[i]
+        for anno in kernel.argument_annotations:
             if isinstance(anno, template):
                 (k, v) = template_args[anno_index]
                 key_p += k
@@ -138,14 +134,12 @@ class Module:
         kernel = kernel_fn._primal
         assert isinstance(kernel, kernel_impl.Kernel)
         injected_args = []
-        for i in range(len(kernel.argument_annotations)):
-            anno = kernel.argument_annotations[i]
+        for anno in kernel.argument_annotations:
             if isinstance(anno, ArgAnyArray):
                 raise RuntimeError(
                     'Arg type `ext_arr`/`any_arr` not supported yet')
-            else:
-                # For primitive types, we can just inject a dummy value.
-                injected_args.append(0)
+            # For primitive types, we can just inject a dummy value.
+            injected_args.append(0)
         kernel.ensure_compiled(*injected_args)
         self._aot_builder.add(name, kernel.kernel_cpp)
 

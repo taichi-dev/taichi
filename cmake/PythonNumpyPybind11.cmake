@@ -78,17 +78,6 @@ message("    include: ${PYTHON_INCLUDE_DIRS}")
 message("    library: ${PYTHON_LIBRARIES}")
 
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-        "import git; from git import Repo; import sys;\
-        sys.stdout.write(git.__version__)"
-	OUTPUT_VARIABLE GITPYTHON_VERSION
-	RESULT_VARIABLE GITPYTHON_IMPORT_RET)
-if (NOT GITPYTHON_IMPORT_RET)
-    message("    gitpython version: ${GITPYTHON_VERSION}")
-else ()
-    message(FATAL_ERROR "Cannot import git. Please install. ([sudo] pip3 install --user gitpython)")
-endif ()
-
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         "import numpy.distutils, sys;\
         sys.stdout.write(':'.join(numpy.distutils.misc_util.get_numpy_include_dirs()))"
         OUTPUT_VARIABLE PYTHON_NUMPY_INCLUDE_DIR)

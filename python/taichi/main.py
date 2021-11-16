@@ -1,4 +1,5 @@
 import argparse
+import json
 import math
 import os
 import platform
@@ -7,13 +8,12 @@ import shutil
 import subprocess
 import sys
 import timeit
-import requests
-import json
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
 
 import numpy as np
+import requests
 import taichi.cc_compose
 import taichi.diagnose
 from colorama import Fore

@@ -83,10 +83,13 @@ _test_features = {
 
 
 def expected_archs():
-    """Gets all expected archs on the machine.
-    If environment variable `TI_WANTED_ARCHS` (which is usually set by `ti test -a`) is not set,
-    all supported archs will be returned.
-
+    """
+    Reads the environment variable `TI_WANTED_ARCHS` (usually set by option `-a` in `ti test`)
+    and gets all expected archs on the machine.
+    If `TI_WANTED_ARCHS` is set and does not start with `^`, archs specified in it will be returned.
+    If `TI_WANTED_ARCHS` starts with `^` (usually when option `-n` is specified in `ti test`),
+    all supported archs except archs specified in it will be returned.
+    If `TI_WANTED_ARCHS` is not set, all supported archs will be returned.
     Returns:
         List[taichi_core.Arch]: All expected archs on the machine.
     """
@@ -119,7 +122,8 @@ def expected_archs():
 
 
 def test(arch=None, exclude=None, require=None, **options):
-    """Performs tests on archs in `expected_archs()` which are in `arch` and not in `exclude` and satisfy `require`
+    """
+    Performs tests on archs in `expected_archs()` which are in `arch` and not in `exclude` and satisfy `require`
 .. function:: ti.test(arch=[], exclude=[], require=[], **options)
 
     :parameter arch: backends to include

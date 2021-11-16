@@ -190,10 +190,6 @@ class LowerAST : public IRVisitor {
     // do nothing
   }
 
-  void visit(GlobalThreadIndexStmt *stmt) override {
-    // do nothing
-  }
-
   void visit(BinaryOpStmt *stmt) override {
     // do nothing
   }

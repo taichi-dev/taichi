@@ -147,25 +147,6 @@ class Func:
                     "from both Python-scope and Taichi-scope.")
             return self.func(*args)
 
-        if impl.get_runtime().experimental_ast_refactor:
-            if impl.get_runtime().experimental_real_function:
-                if impl.get_runtime().current_kernel.is_grad:
-                    raise TaichiSyntaxError(
-                        "Real function in gradient kernels unsupported.")
-                instance_id, _ = self.mapper.lookup(args)
-                key = _ti_core.FunctionKey(self.func.__name__, self.func_id,
-                                           instance_id)
-                if self.compiled is None:
-                    self.compiled = {}
-                if key.instance_id not in self.compiled:
-                    self.do_compile_ast_refactor(key=key, args=args)
-                return self.func_call_rvalue(key=key, args=args)
-            tree, global_vars = _get_tree_and_global_vars(self, args)
-            visitor = ASTTransformerTotal(is_kernel=False,
-                                          func=self,
-                                          global_vars=global_vars)
-            return visitor.visit(tree, *args)
-
         if impl.get_runtime().experimental_real_function:
             if impl.get_runtime().current_kernel.is_grad:
                 raise TaichiSyntaxError(
@@ -178,10 +159,11 @@ class Func:
             if key.instance_id not in self.compiled:
                 self.do_compile(key=key, args=args)
             return self.func_call_rvalue(key=key, args=args)
-        if self.compiled is None:
-            self.do_compile(key=None, args=args)
-        ret = self.compiled(*args)
-        return ret
+        tree, global_vars = _get_tree_and_global_vars(self, args)
+        visitor = ASTTransformerTotal(is_kernel=False,
+                                      func=self,
+                                      global_vars=global_vars)
+        return visitor.visit(tree, *args)
 
     def func_call_rvalue(self, key, args):
         # Skip the template args, e.g., |self|
@@ -196,41 +178,6 @@ class Func:
                 self.taichi_functions[key.instance_id], non_template_args))
 
     def do_compile(self, key, args):
-        src = textwrap.dedent(oinspect.getsource(self.func))
-        tree = ast.parse(src)
-
-        func_body = tree.body[0]
-        func_body.decorator_list = []
-
-        visitor = ASTTransformerTotal(is_kernel=False, func=self)
-        visitor.visit(tree)
-
-        ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
-
-        local_vars = {}
-        global_vars = _get_global_vars(self.func)
-
-        if impl.get_runtime().experimental_real_function:
-            # inject template parameters into globals
-            for i in self.template_slot_locations:
-                template_var_name = self.argument_names[i]
-                global_vars[template_var_name] = args[i]
-
-        exec(
-            compile(tree,
-                    filename=oinspect.getsourcefile(self.func),
-                    mode='exec'), global_vars, local_vars)
-
-        if impl.get_runtime().experimental_real_function:
-            self.compiled[key.instance_id] = local_vars[self.func.__name__]
-            self.taichi_functions[key.instance_id] = _ti_core.create_function(
-                key)
-            self.taichi_functions[key.instance_id].set_function_body(
-                self.compiled[key.instance_id])
-        else:
-            self.compiled = local_vars[self.func.__name__]
-
-    def do_compile_ast_refactor(self, key, args):
         src = textwrap.dedent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
@@ -383,13 +330,11 @@ class KernelArgError(Exception):
 
 def _get_global_vars(_func):
     closure_vars = inspect.getclosurevars(_func)
-    if impl.get_runtime().experimental_ast_refactor:
-        return {
-            **closure_vars.globals,
-            **closure_vars.nonlocals,
-            **closure_vars.builtins
-        }
-    return {**closure_vars.globals, **closure_vars.nonlocals}
+    return {
+        **closure_vars.globals,
+        **closure_vars.nonlocals,
+        **closure_vars.builtins
+    }
 
 
 class Kernel:
@@ -476,89 +421,6 @@ class Kernel:
             self.argument_names.append(param.name)
 
     def materialize(self, key=None, args=None, arg_features=None):
-        if impl.get_runtime().experimental_ast_refactor:
-            return self.materialize_ast_refactor(key=key,
-                                                 args=args,
-                                                 arg_features=arg_features)
-        _taichi_skip_traceback = 1
-        if key is None:
-            key = (self.func, 0)
-        self.runtime.materialize()
-        if key in self.compiled_functions:
-            return None
-        grad_suffix = ""
-        if self.is_grad:
-            grad_suffix = "_grad"
-        kernel_name = f"{self.func.__name__}_c{ self.kernel_counter}_{key[1]}{grad_suffix}"
-        ti.trace(f"Compiling kernel {kernel_name}...")
-
-        src = textwrap.dedent(oinspect.getsource(self.func))
-        tree = ast.parse(src)
-
-        func_body = tree.body[0]
-        func_body.decorator_list = []
-
-        local_vars = {}
-        global_vars = _get_global_vars(self.func)
-
-        for i, arg in enumerate(func_body.args.args):
-            anno = arg.annotation
-            if isinstance(anno, ast.Name):
-                global_vars[anno.id] = self.argument_annotations[i]
-
-        if isinstance(func_body.returns, ast.Name):
-            global_vars[func_body.returns.id] = self.return_type
-
-        if self.is_grad:
-            KernelSimplicityASTChecker(self.func).visit(tree)
-
-        visitor = ASTTransformerTotal(
-            excluded_parameters=self.template_slot_locations,
-            func=self,
-            arg_features=arg_features)
-
-        visitor.visit(tree)
-
-        ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
-
-        # inject template parameters into globals
-        for i in self.template_slot_locations:
-            template_var_name = self.argument_names[i]
-            global_vars[template_var_name] = args[i]
-
-        exec(
-            compile(tree,
-                    filename=oinspect.getsourcefile(self.func),
-                    mode='exec'), global_vars, local_vars)
-        compiled = local_vars[self.func.__name__]
-
-        # Do not change the name of 'taichi_ast_generator'
-        # The warning system needs this identifier to remove unnecessary messages
-        def taichi_ast_generator():
-            _taichi_skip_traceback = 1
-            if self.runtime.inside_kernel:
-                raise TaichiSyntaxError(
-                    "Kernels cannot call other kernels. I.e., nested kernels are not allowed. Please check if you have direct/indirect invocation of kernels within kernels. Note that some methods provided by the Taichi standard library may invoke kernels, and please move their invocations to Python-scope."
-                )
-            self.runtime.inside_kernel = True
-            self.runtime.current_kernel = self
-            try:
-                compiled()
-            finally:
-                self.runtime.inside_kernel = False
-                self.runtime.current_kernel = None
-
-        taichi_kernel = _ti_core.create_kernel(taichi_ast_generator,
-                                               kernel_name, self.is_grad)
-
-        self.kernel_cpp = taichi_kernel
-
-        assert key not in self.compiled_functions
-        self.compiled_functions[key] = self.get_function_body(taichi_kernel)
-
-        return None
-
-    def materialize_ast_refactor(self, key=None, args=None, arg_features=None):
         _taichi_skip_traceback = 1
         if key is None:
             key = (self.func, 0)

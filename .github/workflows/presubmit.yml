@@ -452,4 +452,4 @@ jobs:
           echo wanted archs: $TI_WANTED_ARCHS
           ti test -vr2 -t4 -x
         env:
-          TI_WANTED_ARCHS: "metal"
+          TI_WANTED_ARCHS: "metal,cpu"

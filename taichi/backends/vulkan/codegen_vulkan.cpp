@@ -1852,7 +1852,7 @@ FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
   KernelCodegen codegen(params);
   auto res = codegen.run();
   auto handle = runtime->register_taichi_kernel(std::move(res));
-  return [runtime, handle, taichi_kernel_name](Context &ctx) {
+  return [runtime, handle, taichi_kernel_name](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
 }

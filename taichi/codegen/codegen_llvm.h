@@ -31,7 +31,7 @@ class OffloadedTask {
 
   void compile();
 
-  void operator()(Context *context);
+  void operator()(RuntimeContext *context);
 };
 
 class FunctionCreationGuard {

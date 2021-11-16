@@ -406,7 +406,7 @@ class CompiledTaichiKernel {
 class HostMetalCtxBlitter {
  public:
   HostMetalCtxBlitter(const CompiledTaichiKernel &kernel,
-                      Context *host_ctx,
+                      RuntimeContext *host_ctx,
                       uint64_t *host_result_buffer,
                       const std::string &kernel_name)
       : ti_kernel_attribs_(&kernel.ti_kernel_attribs),
@@ -538,7 +538,7 @@ class HostMetalCtxBlitter {
 
   static std::unique_ptr<HostMetalCtxBlitter> maybe_make(
       const CompiledTaichiKernel &kernel,
-      Context *ctx,
+      RuntimeContext *ctx,
       uint64_t *host_result_buffer,
       std::string name) {
     if (kernel.ctx_attribs.empty()) {
@@ -551,7 +551,7 @@ class HostMetalCtxBlitter {
  private:
   const TaichiKernelAttributes *const ti_kernel_attribs_;
   const KernelContextAttributes *const ctx_attribs_;
-  Context *const host_ctx_;
+  RuntimeContext *const host_ctx_;
   uint64_t *const host_result_buffer_;
   BufferMemoryView *const kernel_ctx_mem_;
   MTLBuffer *const kernel_ctx_buffer_;
@@ -676,7 +676,7 @@ class KernelManager::Impl {
   }
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
-                            Context *ctx) {
+                            RuntimeContext *ctx) {
     mac::ScopedAutoreleasePool pool;
     auto &ctk = *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
     auto ctx_blitter = HostMetalCtxBlitter::maybe_make(
@@ -1179,7 +1179,7 @@ class KernelManager::Impl {
   }
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
-                            Context *ctx) {
+                            RuntimeContext *ctx) {
     TI_ERROR("Metal not supported on the current OS");
   }
 
@@ -1221,7 +1221,7 @@ void KernelManager::register_taichi_kernel(
 }
 
 void KernelManager::launch_taichi_kernel(const std::string &taichi_kernel_name,
-                                         Context *ctx) {
+                                         RuntimeContext *ctx) {
   impl_->launch_taichi_kernel(taichi_kernel_name, ctx);
 }
 

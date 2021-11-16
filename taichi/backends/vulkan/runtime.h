@@ -86,7 +86,7 @@ class VkRuntime {
 
   KernelHandle register_taichi_kernel(RegisterParams params);
 
-  void launch_kernel(KernelHandle handle, Context *host_ctx);
+  void launch_kernel(KernelHandle handle, RuntimeContext *host_ctx);
 
   void materialize_snode_tree(SNodeTree *tree);
 

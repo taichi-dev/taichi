@@ -90,7 +90,7 @@ struct CompiledProgram {
 class DeviceCompiledProgram {
  public:
   DeviceCompiledProgram(CompiledProgram &&program, Device *device);
-  void launch(Context &ctx, OpenGlRuntime *runtime) const;
+  void launch(RuntimeContext &ctx, OpenGlRuntime *runtime) const;
 
  private:
   Device *device_;

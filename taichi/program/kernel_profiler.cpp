@@ -69,9 +69,6 @@ namespace {
 // A simple profiler that uses Time::get_time()
 class DefaultProfiler : public KernelProfilerBase {
  public:
-  DefaultProfiler(bool enable) : KernelProfilerBase(enable) {
-  }
-
   void sync() override {
   }
 
@@ -83,15 +80,11 @@ class DefaultProfiler : public KernelProfilerBase {
   }
 
   void start(const std::string &kernel_name) override {
-    if (!enabled_)
-      return;
     start_t_ = Time::get_time();
     event_name_ = kernel_name;
   }
 
   void stop() override {
-    if (!enabled_)
-      return;
     auto t = Time::get_time() - start_t_;
     auto ms = t * 1000.0;
     // trace record
@@ -121,6 +114,8 @@ class DefaultProfiler : public KernelProfilerBase {
 }  // namespace
 
 std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable) {
+  if (!enable)
+    return std::make_unique<DefaultProfiler>();
   if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     return std::make_unique<KernelProfilerCUDA>(enable);
@@ -128,7 +123,7 @@ std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable) {
     TI_NOT_IMPLEMENTED;
 #endif
   } else {
-    return std::make_unique<DefaultProfiler>(enable);
+    return std::make_unique<DefaultProfiler>();
   }
 }
 

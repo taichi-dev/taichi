@@ -287,9 +287,7 @@ class Matrix(TaichiOperations):
             return ti.local_subscript_with_offset(self.local_tensor_proxy,
                                                   (i, j), (self.n, self.m))
         # ptr.is_global_ptr() will check whether it's an element in the field (which is different from ptr.is_global_var()).
-        if isinstance(self.entries[0],
-                      ti.Expr) and self.entries[0].ptr.is_global_ptr(
-                      ) and ti.current_cfg().dynamic_index:
+        if ti.current_cfg().dynamic_index and isinstance(self.entries[0], expr.Expr) and not ti_core.is_custom_type(self.entries[0].ptr.get_ret_type()) and self.entries[0].ptr.is_global_ptr():
             # TODO: Add API to query whether AOS or SOA
             return ti.global_subscript_with_offset(self.entries[0], (i, j),
                                                    (self.n, self.m), True)
@@ -425,12 +423,6 @@ class Matrix(TaichiOperations):
     def copy(self):
         ret = self.empty_copy()
         ret.entries = copy.copy(self.entries)
-        return ret
-
-    @taichi_scope
-    def variable(self):
-        ret = self.copy()
-        ret.entries = [impl.expr_init(e) for e in ret.entries]
         return ret
 
     @taichi_scope
@@ -1345,29 +1337,18 @@ class MatrixType(CompoundType):
         mat = self.cast(Matrix(entries, dt=self.dtype))
         return mat
 
-    def cast(self, mat, in_place=False):
-        if not in_place:
-            mat = mat.copy()
+    def cast(self, mat):
         # sanity check shape
         if self.m != mat.m or self.n != mat.n:
             raise TaichiSyntaxError(
                 f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({mat.n}, {mat.m})"
             )
         if in_python_scope():
-            mat.entries = [
-                int(x) if self.dtype in ti.integer_types else x
-                for x in mat.entries
-            ]
-        else:
-            # only performs casting in Taichi scope
-            mat.entries = [cast(x, self.dtype) for x in mat.entries]
-        return mat
+            return Matrix([[int(mat(i, j)) if self.dtype in ti.integer_types else float(mat(i, j)) for j in range(self.m)] for i in range(self.n)])
+        return Matrix([[cast(mat(i, j), self.dtype) for j in range(self.m)] for i in range(self.n)])
 
-    def empty(self):
-        """
-        Create an empty instance of the given compound type.
-        """
-        return Matrix.empty(self.n, self.m)
+    def scalar_filled(self, value):
+        return Matrix([[value for _ in range(self.m)] for _ in range(self.n)])
 
     def field(self, **kwargs):
         return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)

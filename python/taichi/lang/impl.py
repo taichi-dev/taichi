@@ -33,9 +33,7 @@ def expr_init(rhs):
     if rhs is None:
         return Expr(_ti_core.expr_alloca())
     if is_taichi_class(rhs):
-        if rhs.local_tensor_proxy is not None:
-            return rhs
-        return rhs.variable()
+        return rhs
     if isinstance(rhs, list):
         return [expr_init(e) for e in rhs]
     if isinstance(rhs, tuple):
@@ -160,7 +158,7 @@ def subscript(value, *_indices):
                 for e in value.get_field_members()
             ])
         if isinstance(value, StructField):
-            return ti.Struct(
+            return ti.lang.struct.IntermediateStruct(
                 {k: subscript(v, *_indices)
                  for k, v in value.items})
         return Expr(_ti_core.subscript(_var, indices_expr_group))

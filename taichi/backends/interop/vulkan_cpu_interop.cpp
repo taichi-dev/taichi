@@ -10,7 +10,7 @@
 namespace taichi {
 namespace lang {
 
-#if TI_WITH_VULKAN
+#if TI_WITH_VULKAN && defined(TI_WITH_LLVM)
 
 using namespace taichi::lang::vulkan;
 using namespace taichi::lang::cpu;

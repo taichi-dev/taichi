@@ -351,13 +351,13 @@ def reset():
 
 
 class _EnvironmentConfigurator:
-    def __init__(self, kwargs, cfg):
-        self.cfg = cfg
+    def __init__(self, kwargs, _cfg):
+        self.cfg = _cfg
         self.kwargs = kwargs
         self.keys = []
 
-    def add(self, key, cast=None):
-        cast = cast or self.bool_int
+    def add(self, key, _cast=None):
+        _cast = _cast or self.bool_int
 
         self.keys.append(key)
 
@@ -367,7 +367,7 @@ class _EnvironmentConfigurator:
         name = 'TI_' + key.upper()
         value = os.environ.get(name, '')
         if len(value):
-            self[key] = cast(value)
+            self[key] = _cast(value)
             if key in self.kwargs:
                 _ti_core.warn(
                     f'ti.init argument "{key}" overridden by environment variable {name}={value}'
@@ -396,7 +396,7 @@ class _SpecialConfig:
         self.gdb_trigger = False
         self.excepthook = False
         self.experimental_real_function = False
-        self.experimental_ast_refactor = False
+        self.experimental_ast_refactor = True
 
 
 def prepare_sandbox():
@@ -495,10 +495,10 @@ def init(arch=None,
     for key in dir(ti.cfg):
         if key in ['arch', 'default_fp', 'default_ip']:
             continue
-        cast = type(getattr(ti.cfg, key))
-        if cast is bool:
-            cast = None
-        env_comp.add(key, cast)
+        _cast = type(getattr(ti.cfg, key))
+        if _cast is bool:
+            _cast = None
+        env_comp.add(key, _cast)
 
     unexpected_keys = kwargs.keys()
 
@@ -760,8 +760,8 @@ def clear_all_gradients():
 
     def visit(node):
         places = []
-        for i in range(node.ptr.get_num_ch()):
-            ch = node.ptr.get_ch(i)
+        for _i in range(node.ptr.get_num_ch()):
+            ch = node.ptr.get_ch(_i)
             if not ch.is_place():
                 visit(SNode(ch))
             else:
@@ -782,10 +782,10 @@ def deactivate_all_snodes():
         root_fb.deactivate_all()
 
 
-def benchmark(func, repeat=300, args=()):
+def benchmark(_func, repeat=300, args=()):
     def run_benchmark():
         compile_time = time.time()
-        func(*args)  # compile the kernel first
+        _func(*args)  # compile the kernel first
         ti.sync()
         compile_time = time.time() - compile_time
         ti.stat_write('compilation_time', compile_time)
@@ -808,12 +808,12 @@ def benchmark(func, repeat=300, args=()):
         # instruction/data caches. Discussion:
         # https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
         for _ in range(3):
-            func(*args)
+            _func(*args)
             ti.sync()
         ti.clear_kernel_profile_info()
         t = time.time()
         for _ in range(repeat):
-            func(*args)
+            _func(*args)
             ti.sync()
         elapsed = time.time() - t
         avg = elapsed / repeat
@@ -920,10 +920,11 @@ def benchmark_plot(fn=None,
             else:
                 raise RuntimeError('Unknown bars type')
             if normalize_to_lowest(col):
-                for i in range(len(current_archs)):
-                    maximum = max(y_left[i], y_right[i])
-                    y_left[i] = y_left[i] / maximum if y_left[i] != 0 else 1
-                    y_right[i] = y_right[i] / maximum if y_right[i] != 0 else 1
+                for _i in range(len(current_archs)):
+                    maximum = max(y_left[_i], y_right[_i])
+                    y_left[_i] = y_left[_i] / maximum if y_left[_i] != 0 else 1
+                    y_right[
+                        _i] = y_right[_i] / maximum if y_right[_i] != 0 else 1
             ax = subfigures[case_id][col_id]
             bar_left = ax.bar(x=[
                 i - bar_width / 2 - bar_distance / 2
@@ -1069,10 +1070,10 @@ _tests_arch_checkers_argname = '_tests_arch_checkers'
 
 
 def _get_or_make_arch_checkers(kwargs):
-    k = _tests_arch_checkers_argname
-    if k not in kwargs:
-        kwargs[k] = _ArchCheckers()
-    return kwargs[k]
+    _k = _tests_arch_checkers_argname
+    if _k not in kwargs:
+        kwargs[_k] = _ArchCheckers()
+    return kwargs[_k]
 
 
 # test with all archs
@@ -1178,10 +1179,10 @@ def archs_support_sparse(test, **kwargs):
     return require(extension.sparse)(wrapped)
 
 
-def torch_test(func):
+def torch_test(_func):
     if ti.has_pytorch():
         # OpenGL somehow crashes torch test without a reason, unforturnately
-        return ti.test(exclude=[opengl])(func)
+        return ti.test(exclude=[opengl])(_func)
     return lambda: None
 
 
@@ -1190,13 +1191,13 @@ def get_host_arch_list():
 
 
 # test with host arch only
-def host_arch_only(func):
-    @functools.wraps(func)
+def host_arch_only(_func):
+    @functools.wraps(_func)
     def test(*args, **kwargs):
         archs = [_ti_core.host_arch()]
         for arch in archs:
             ti.init(arch=arch)
-            func(*args, **kwargs)
+            _func(*args, **kwargs)
 
     return test
 
@@ -1222,11 +1223,11 @@ def archs_with(archs, **init_kwags):
 
 
 def must_throw(ex):
-    def decorator(func):
+    def decorator(_func):
         def func__(*args, **kwargs):
             finishes = False
             try:
-                func(*args, **kwargs)
+                _func(*args, **kwargs)
                 finishes = True
             except ex:
                 # throws. test passed

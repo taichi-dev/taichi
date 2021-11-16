@@ -1,3 +1,4 @@
+#ifdef TI_WITH_LLVM
 #include "taichi/codegen/codegen_llvm.h"
 
 #include "taichi/ir/statements.h"
@@ -669,3 +670,5 @@ llvm::Value *CodeGenLLVM::load_custom_float(Stmt *ptr_stmt) {
 }
 
 TLANG_NAMESPACE_END
+
+#endif  // #ifdef TI_WITH_LLVM

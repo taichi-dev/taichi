@@ -5,8 +5,12 @@
 
 #include "taichi/inc/constants.h"
 #include "taichi/ir/type_utils.h"
+#include "taichi/backends/device.h"
+
+#ifdef TI_WITH_LLVM
 #include "taichi/llvm/llvm_context.h"
 #include "taichi/llvm/llvm_program.h"
+#endif
 
 namespace taichi {
 namespace lang {

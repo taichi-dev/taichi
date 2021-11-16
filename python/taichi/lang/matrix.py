@@ -287,7 +287,10 @@ class Matrix(TaichiOperations):
             return ti.local_subscript_with_offset(self.local_tensor_proxy,
                                                   (i, j), (self.n, self.m))
         # ptr.is_global_ptr() will check whether it's an element in the field (which is different from ptr.is_global_var()).
-        if ti.current_cfg().dynamic_index and isinstance(self.entries[0], expr.Expr) and not ti_core.is_custom_type(self.entries[0].ptr.get_ret_type()) and self.entries[0].ptr.is_global_ptr():
+        if ti.current_cfg().dynamic_index and isinstance(
+                self.entries[0], expr.Expr) and not ti_core.is_custom_type(
+                    self.entries[0].ptr.get_ret_type(
+                    )) and self.entries[0].ptr.is_global_ptr():
             # TODO: Add API to query whether AOS or SOA
             return ti.global_subscript_with_offset(self.entries[0], (i, j),
                                                    (self.n, self.m), True)
@@ -1344,8 +1347,12 @@ class MatrixType(CompoundType):
                 f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({mat.n}, {mat.m})"
             )
         if in_python_scope():
-            return Matrix([[int(mat(i, j)) if self.dtype in ti.integer_types else float(mat(i, j)) for j in range(self.m)] for i in range(self.n)])
-        return Matrix([[cast(mat(i, j), self.dtype) for j in range(self.m)] for i in range(self.n)])
+            return Matrix([[
+                int(mat(i, j)) if self.dtype in ti.integer_types else float(
+                    mat(i, j)) for j in range(self.m)
+            ] for i in range(self.n)])
+        return Matrix([[cast(mat(i, j), self.dtype) for j in range(self.m)]
+                       for i in range(self.n)])
 
     def scalar_filled(self, value):
         return Matrix([[value for _ in range(self.m)] for _ in range(self.n)])

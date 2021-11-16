@@ -168,7 +168,8 @@ class Struct(TaichiOperations):
         entries = {}
         for k, v in self.items:
             if is_taichi_class(v):
-                entries[k] = v.element_wise_ternary(foo, other.entries[k], extra.entries[k])
+                entries[k] = v.element_wise_ternary(foo, other.entries[k],
+                                                    extra.entries[k])
             else:
                 entries[k] = foo(v, other.entries[k], extra.entries[k])
         return Struct(entries)
@@ -529,7 +530,8 @@ class StructType(CompoundType):
             else:
                 if in_python_scope():
                     v = struct.entries[k]
-                    entries[k] = int(v) if dtype in ti.integer_types else float(v)
+                    entries[k] = int(
+                        v) if dtype in ti.integer_types else float(v)
                 else:
                     entries[k] = cast(struct.entries[k], dtype)
         return Struct(entries)

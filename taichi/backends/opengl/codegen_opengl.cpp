@@ -207,11 +207,9 @@ class KernelGen : public IRVisitor {
     if (used.buf_args)
       kernel_header += gen_buffer_registration(
           used, "args", std::to_string(static_cast<int>(GLBufId::Args)));
-    for (auto iter = used.arr_arg_to_bind_idx.begin();
-         iter != used.arr_arg_to_bind_idx.end(); iter++) {
-      kernel_header +=
-          gen_buffer_registration(used, "arr" + std::to_string(iter->first),
-                                  std::to_string(iter->second));
+    for (auto [arr_id, bind_idx] : used.arr_arg_to_bind_idx) {
+      kernel_header += gen_buffer_registration(
+          used, "arr" + std::to_string(arr_id), std::to_string(bind_idx));
     }
 
     if (used.simulated_atomic_float) {

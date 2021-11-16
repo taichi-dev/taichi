@@ -54,6 +54,7 @@ enum class GLBufId {
   Gtmp = 1,
   Args = 2,
   Runtime = 3,
+  // This is indeed the beginning id for |Arr|s so |Arr| MUST be the last item.
   Arr = 4,
 };
 

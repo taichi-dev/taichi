@@ -7,6 +7,8 @@ import shutil
 import subprocess
 import sys
 import timeit
+import requests
+import json
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
@@ -98,15 +100,15 @@ class TaichiMain:
         major = _ti_core.get_version_major()
         minor = _ti_core.get_version_minor()
         patch = _ti_core.get_version_patch()
-        version = '{}.{}.{}'.format(major, minor, patch)
+        version = f'{major}.{minor}.{patch}'
         payload = {'version': version, 'platform': '', 'python': ''}
 
-        os = platform.system()
-        if os == 'Linux':
+        system = platform.system()
+        if system == 'Linux':
             payload['platform'] = 'manylinux1_x86_64'
-        elif os == 'Windows':
+        elif system == 'Windows':
             payload['platform'] = 'win_amd64'
-        elif os == 'Darwin':
+        elif system == 'Darwin':
             if platform.release() < '19.0.0':
                 payload['platform'] = 'macosx_10_14_x86_64'
             elif platform.machine() == 'x86_64':
@@ -124,10 +126,8 @@ class TaichiMain:
         elif python_version.startswith('3.9'):
             payload['python'] = 'cp39'
 
-        import requests
         response = requests.post('http://54.90.48.192/check_version',
                                  json=payload)
-        import json
         response_json = json.loads(response.text)
         if response_json['status'] == 1:
             print(

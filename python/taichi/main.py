@@ -128,7 +128,9 @@ class TaichiMain:
         response = requests.post('http://54.90.48.192/check_version',
                                  json=payload).json()
         if response['status'] == 1:
-            print(f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use pip to upgrade to the latest Taichi!')
+            print(
+                f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use pip to upgrade to the latest Taichi!'
+            )
         elif response['status'] == 0:
             print(response['message'])
 

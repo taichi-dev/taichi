@@ -305,7 +305,7 @@ class IntermediateStruct(Struct):
     """The Struct type class for compiler internal use only.
 
     Args:
-        entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): keys and values for struct members.
+        entries (Dict[str, Union[Expr, Matrix, Struct]]): keys and values for struct members.
     """
     def __init__(self, entries):
         assert isinstance(entries, dict)

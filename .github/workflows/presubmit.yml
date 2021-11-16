@@ -102,6 +102,7 @@ jobs:
             if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
               exit 0
             fi
+            python3 -m pip install --user pylint
             # Make sure pylint doesn't regress
             pylint python/taichi/ --disable=all --enable=$(python scripts/generate_pylint_tags.py)
             if [ $? -eq 0 ]

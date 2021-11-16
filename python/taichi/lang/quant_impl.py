@@ -1,6 +1,7 @@
-import taichi as ti
 from taichi.lang import impl
 from taichi.lang import type_factory_impl as tf_impl
+
+import taichi as ti
 
 
 class Quant:

@@ -1,7 +1,8 @@
-import taichi as ti
 import taichi.lang
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang.util import python_scope, to_numpy_type, to_pytorch_type
+
+import taichi as ti
 
 
 class Field:

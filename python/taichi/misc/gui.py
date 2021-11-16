@@ -3,10 +3,11 @@ import numbers
 import os
 
 import numpy as np
-import taichi as ti
 import taichi.lang
 from taichi.core import ti_core as _ti_core
 from taichi.lang.field import Field, ScalarField
+
+import taichi as ti
 
 from .util import core_veci, deprecated
 

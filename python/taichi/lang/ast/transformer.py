@@ -1,12 +1,13 @@
 import ast
 
 import astor
-import taichi as ti
 from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.ast_builder_utils import IRBuilderContext
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.ir_builder import IRBuilder
+
+import taichi as ti
 
 
 # Total transform

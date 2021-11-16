@@ -7,7 +7,6 @@ import time
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 
-import taichi as ti
 import taichi.lang.linalg_impl
 import taichi.lang.meta
 from taichi.core.util import locale_encode
@@ -36,6 +35,8 @@ from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
 from taichi.type.annotations import any_arr, ext_arr, template
+
+import taichi as ti
 
 runtime = impl.get_runtime()
 

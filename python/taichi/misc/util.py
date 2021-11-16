@@ -4,9 +4,10 @@ import subprocess
 import sys
 import traceback
 
-import taichi as ti
 from colorama import Fore, Style
 from taichi.core import ti_core as _ti_core
+
+import taichi as ti
 
 
 def config_from_dict(args):

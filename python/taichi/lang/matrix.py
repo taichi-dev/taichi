@@ -3,7 +3,6 @@ import numbers
 from collections.abc import Iterable
 
 import numpy as np
-import taichi as ti
 import taichi.lang
 from taichi.core import ti_core
 from taichi.lang import expr, impl
@@ -19,6 +18,8 @@ from taichi.lang.types import CompoundType
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
 from taichi.misc.util import deprecated, warning
+
+import taichi as ti
 
 
 class Matrix(TaichiOperations):

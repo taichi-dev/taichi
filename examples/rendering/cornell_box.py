@@ -1,8 +1,9 @@
 import time
 
 import numpy as np
-import taichi as ti
 from numpy.lib.function_base import average
+
+import taichi as ti
 
 ti.init(arch=ti.gpu)
 res = (800, 800)

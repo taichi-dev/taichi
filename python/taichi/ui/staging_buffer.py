@@ -1,8 +1,9 @@
-import taichi as ti
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
 from taichi.type.annotations import template
 from taichi.type.primitive_types import f32, u8
+
+import taichi as ti
 
 vbo_field_cache = {}
 

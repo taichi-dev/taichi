@@ -11,12 +11,13 @@ from functools import wraps
 from pathlib import Path
 
 import numpy as np
-import taichi as ti
 import taichi.cc_compose
 import taichi.diagnose
 from colorama import Fore
 from taichi.core import ti_core as _ti_core
 from taichi.tools import video
+
+import taichi as ti
 
 
 def timer(func):

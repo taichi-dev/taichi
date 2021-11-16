@@ -6,6 +6,7 @@ SSA violation edge-case regression test.
 import math
 
 import numpy as np
+
 import taichi as ti
 from taichi import approx
 

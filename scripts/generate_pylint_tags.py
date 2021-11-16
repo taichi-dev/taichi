@@ -9,7 +9,7 @@ TAGS = {
     'C0209': True,
     'W0404': True,
     'W0612': True,
-    'E1101': False,
+    'E1101': True,
     'R0402': True,
     'R0201': True,
     'W0235': True,

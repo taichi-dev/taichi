@@ -2211,10 +2211,8 @@ void CodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
   TI_NOT_IMPLEMENTED
 }
 
-// Mesh related.
-
 void CodeGenLLVM::visit(MeshPatchIndexStmt *stmt) {
-  TI_NOT_IMPLEMENTED;  // TODO(changyu): need a x64 version impl.
+  llvm_val[stmt] = get_arg(2);
 }
 
 void CodeGenLLVM::eliminate_unused_functions() {
@@ -2284,7 +2282,7 @@ std::vector<llvm::Type *> CodeGenLLVM::get_xlogue_argument_types() {
 }
 
 std::vector<llvm::Type *> CodeGenLLVM::get_mesh_xlogue_argument_types() {
-  return {llvm::PointerType::get(get_runtime_type("Context"), 0),
+  return {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
           get_tls_buffer_type(), tlctx->get_data_type<uint32_t>()};
 }
 

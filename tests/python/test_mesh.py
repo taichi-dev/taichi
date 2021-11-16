@@ -67,26 +67,28 @@ def _test_mesh_for(cell_reorder=False, vert_reorder=False, extra_tests=True):
     assert total == 1144
 
 
-@ti.test(arch=ti.cuda, dynamic_index=False)
+@ti.test(require=ti.extension.mesh, dynamic_index=False)
 def test_mesh_for():
     _test_mesh_for(False, False)
     _test_mesh_for(False, True)
 
 
-@ti.test(arch=ti.cuda,
+@ti.test(require=ti.extension.mesh,
          dynamic_index=False,
          optimize_mesh_reordered_mapping=False)
 def test_mesh_reordered_opt():
     _test_mesh_for(True, True, False)
 
 
-@ti.test(arch=ti.cuda, dynamic_index=False, mesh_localize_to_end_mapping=False)
+@ti.test(require=ti.extension.mesh,
+         dynamic_index=False,
+         mesh_localize_to_end_mapping=False)
 def test_mesh_localize_mapping0():
     _test_mesh_for(False, False, False)
     _test_mesh_for(True, True, False)
 
 
-@ti.test(arch=ti.cuda,
+@ti.test(require=ti.extension.mesh,
          dynamic_index=False,
          mesh_localize_from_end_mapping=True)
 def test_mesh_localize_mapping1():
@@ -94,7 +96,7 @@ def test_mesh_localize_mapping1():
     _test_mesh_for(True, True, False)
 
 
-@ti.test(arch=ti.cuda, dynamic_index=False)
+@ti.test(require=ti.extension.mesh, dynamic_index=False)
 def test_mesh_reorder():
     vec3i = ti.types.vector(3, ti.i32)
     mesh_builder = ti.Mesh.Tet()
@@ -132,7 +134,7 @@ def test_mesh_reorder():
         assert id234[i][2] == i**4
 
 
-@ti.test(arch=ti.cuda, dynamic_index=False)
+@ti.test(require=ti.extension.mesh, dynamic_index=False)
 def test_mesh_minor_relations():
     mesh_builder = ti.Mesh.Tet()
     mesh_builder.verts.place({'y': ti.i32})
@@ -156,7 +158,9 @@ def test_mesh_minor_relations():
     assert total == 576
 
 
-@ti.test(arch=ti.cuda, dynamic_index=False, demote_no_access_mesh_fors=True)
+@ti.test(require=ti.extension.mesh,
+         dynamic_index=False,
+         demote_no_access_mesh_fors=True)
 def test_multiple_meshes():
     mesh_builder = ti.Mesh.Tet()
     mesh_builder.verts.place({'y': ti.i32})

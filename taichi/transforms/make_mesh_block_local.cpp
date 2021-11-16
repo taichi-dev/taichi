@@ -138,8 +138,13 @@ Stmt *MakeMeshBlockLocal::create_xlogue(
   Stmt *idx = block->push_back<AllocaStmt>(mapping_data_type);
   [[maybe_unused]] Stmt *init_val =
       block->push_back<LocalStoreStmt>(idx, start_val);
-  Stmt *block_dim_val = block->push_back<ConstStmt>(
-      LaneAttribute<TypedConstant>{offload->block_dim});
+  Stmt *block_dim_val;
+  if (config.arch == Arch::x64) {
+    block_dim_val = block->push_back<ConstStmt>(TypedConstant(1));
+  } else {
+    block_dim_val = block->push_back<ConstStmt>(
+        LaneAttribute<TypedConstant>{offload->block_dim});
+  }
 
   std::unique_ptr<Block> body = std::make_unique<Block>();
   {
@@ -291,8 +296,13 @@ void MakeMeshBlockLocal::fetch_mapping(
         mapping_callback_handler,
     std::function<void(Block *body, Stmt *idx_val, Stmt *mapping_val)>
         attr_callback_handler) {
-  Stmt *thread_idx_stmt = block->push_back<LoopLinearIndexStmt>(
-      offload);  // Equivalent to CUDA threadIdx
+  Stmt *thread_idx_stmt;
+  if (config.arch == Arch::x64) {
+    thread_idx_stmt = block->push_back<ConstStmt>(TypedConstant(0));
+  } else {
+    thread_idx_stmt = block->push_back<LoopLinearIndexStmt>(
+        offload);  // Equivalent to CUDA threadIdx
+  }
   Stmt *total_element_num = offload->total_num_local.find(element_type)->second;
   Stmt *total_element_offset =
       offload->total_offset_local.find(element_type)->second;

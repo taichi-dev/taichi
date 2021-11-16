@@ -482,8 +482,8 @@ class Matrix(TaichiOperations):
             return Matrix([1 / self(0, 0)])
         if self.n == 2:
             inv_determinant = impl.expr_init(1.0 / self.determinant())
-            return inv_determinant * Matrix([[self(1, 1), -self(0, 1)],
-                                             [-self(1, 0), self(0, 0)]])
+            return inv_determinant * Matrix([[self(
+                1, 1), -self(0, 1)], [-self(1, 0), self(0, 0)]])
         if self.n == 3:
             n = 3
             inv_determinant = impl.expr_init(1.0 / self.determinant())
@@ -508,16 +508,14 @@ class Matrix(TaichiOperations):
 
             for i in range(n):
                 for j in range(n):
-                    entries[j][i] = inv_determinant * (-1)**(i + j) * (
-                        (E(i + 1, j + 1) *
-                         (E(i + 2, j + 2) * E(i + 3, j + 3) -
-                          E(i + 3, j + 2) * E(i + 2, j + 3)) -
-                         E(i + 2, j + 1) *
-                         (E(i + 1, j + 2) * E(i + 3, j + 3) -
-                          E(i + 3, j + 2) * E(i + 1, j + 3)) +
-                         E(i + 3, j + 1) *
-                         (E(i + 1, j + 2) * E(i + 2, j + 3) -
-                          E(i + 2, j + 2) * E(i + 1, j + 3))))
+                    entries[j][i] = inv_determinant * (-1)**(i + j) * ((
+                        E(i + 1, j + 1) *
+                        (E(i + 2, j + 2) * E(i + 3, j + 3) -
+                         E(i + 3, j + 2) * E(i + 2, j + 3)) - E(i + 2, j + 1) *
+                        (E(i + 1, j + 2) * E(i + 3, j + 3) -
+                         E(i + 3, j + 2) * E(i + 1, j + 3)) + E(i + 3, j + 1) *
+                        (E(i + 1, j + 2) * E(i + 2, j + 3) -
+                         E(i + 2, j + 2) * E(i + 1, j + 3))))
             return Matrix(entries)
         raise Exception(
             "Inversions of matrices with sizes >= 5 are not supported")
@@ -564,7 +562,8 @@ class Matrix(TaichiOperations):
             Get the transpose of a matrix.
 
         """
-        return Matrix([[self[i, j] for i in range(self.n)] for j in range(self.m)])
+        return Matrix([[self[i, j] for i in range(self.n)]
+                       for j in range(self.m)])
 
     @taichi_scope
     def determinant(a):
@@ -837,7 +836,8 @@ class Matrix(TaichiOperations):
             :class:`~taichi.lang.matrix.Matrix`: A n x n identity :class:`~taichi.lang.matrix.Matrix` instance.
 
         """
-        return Matrix([[ti.cast(int(i == j), dt) for j in range(n)] for i in range(n)])
+        return Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
+                       for i in range(n)])
 
     @staticmethod
     def rotation2d(alpha):
@@ -1140,7 +1140,8 @@ class Matrix(TaichiOperations):
         impl.static(
             impl.static_assert(other.m == 1,
                                "rhs for outer_product is not a vector"))
-        return Matrix([[self[i] * other[j] for j in range(other.n)] for i in range(self.n)])
+        return Matrix([[self[i] * other[j] for j in range(other.n)]
+                       for i in range(self.n)])
 
 
 def Vector(n, dt=None, **kwargs):

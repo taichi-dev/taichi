@@ -145,8 +145,7 @@ class Matrix(TaichiOperations):
             else:
                 raise ValueError(
                     "Declaring matrix fields using `ti.Matrix(n, m, dt, shape)` is no longer supported. "
-                    "Use `ti.Matrix.field(n, m, dtype, shape)` instead."
-                )
+                    "Use `ti.Matrix.field(n, m, dtype, shape)` instead.")
 
         if self.n * self.m > 32 and not suppress_warning:
             warning(

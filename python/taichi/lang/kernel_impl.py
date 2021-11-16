@@ -542,8 +542,7 @@ class Kernel:
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. "
                     "Please check if you have direct/indirect invocation of kernels within kernels. "
                     "Note that some methods provided by the Taichi standard library may invoke kernels, "
-                    "and please move their invocations to Python-scope."
-                )
+                    "and please move their invocations to Python-scope.")
             self.runtime.inside_kernel = True
             self.runtime.current_kernel = self
             try:
@@ -594,8 +593,7 @@ class Kernel:
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. "
                     "Please check if you have direct/indirect invocation of kernels within kernels. "
                     "Note that some methods provided by the Taichi standard library may invoke kernels, "
-                    "and please move their invocations to Python-scope."
-                )
+                    "and please move their invocations to Python-scope.")
             self.runtime.inside_kernel = True
             self.runtime.current_kernel = self
             try:
@@ -826,6 +824,7 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
                 f'Please decorate class {clsobj.__name__} with @ti.data_oriented'
             )
     else:
+
         @functools.wraps(_func)
         def wrapped(*args, **kwargs):
             _taichi_skip_traceback = 1

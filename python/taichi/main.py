@@ -1,5 +1,4 @@
 import argparse
-import json
 import math
 import os
 import platform
@@ -127,12 +126,11 @@ class TaichiMain:
             payload['python'] = 'cp39'
 
         response = requests.post('http://54.90.48.192/check_version',
-                                 json=payload)
-        response_json = json.loads(response.text)
-        if response_json['status'] == 1:
-            print(f'Your Taichi version {version} is outdated. The latest version is {response_json["latest_version"]}, you can use pip to upgrade to the latest Taichi!')
-        elif response_json['status'] == 0:
-            print(response_json['message'])
+                                 json=payload).json()
+        if response['status'] == 1:
+            print(f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use pip to upgrade to the latest Taichi!')
+        elif response['status'] == 0:
+            print(response['message'])
 
     @staticmethod
     def _get_friend_links():

@@ -578,13 +578,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
                  tlctx->get_constant(stmt->tls_size)});
   }
 
-  void create_offload_mesh_for(OffloadedStmt *stmt) {
+  void create_offload_mesh_for(OffloadedStmt *stmt) override {
     auto tls_prologue = create_mesh_xlogue(stmt->tls_prologue);
 
     llvm::Function *body;
     {
       auto guard = get_function_creation_guard(
-          {llvm::PointerType::get(get_runtime_type("Context"), 0),
+          {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
            get_tls_buffer_type(), tlctx->get_data_type<int>()});
 
       for (int i = 0; i < stmt->mesh_prologue->size(); i++) {
@@ -597,9 +597,12 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         call("block_barrier");  // "__syncthreads()"
       }
 
-      auto loop_test_bb = BasicBlock::Create(*llvm_context, "loop_test", func);
-      auto loop_body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
-      auto func_exit = BasicBlock::Create(*llvm_context, "func_exit", func);
+      auto loop_test_bb =
+          llvm::BasicBlock::Create(*llvm_context, "loop_test", func);
+      auto loop_body_bb =
+          llvm::BasicBlock::Create(*llvm_context, "loop_body", func);
+      auto func_exit =
+          llvm::BasicBlock::Create(*llvm_context, "func_exit", func);
       auto loop_index =
           create_entry_block_alloca(llvm::Type::getInt32Ty(*llvm_context));
       llvm::Value *thread_idx =
@@ -871,12 +874,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       llvm_val[stmt] = builder->CreateFPTrunc(
           llvm_val[stmt], llvm::Type::getHalfTy(*llvm_context));
     }
-  }
-
-  // Mesh related.
-
-  void visit(MeshPatchIndexStmt *stmt) override {
-    llvm_val[stmt] = get_arg(2);
   }
 };
 

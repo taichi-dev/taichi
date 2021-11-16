@@ -91,7 +91,7 @@ def expected_archs():
         List[taichi_core.Arch]: All expected archs on the machine.
     """
     archs = set([cpu, cuda, metal, vulkan, opengl, cc])
-    archs = set(filter(lambda x: is_arch_supported(x), archs))
+    archs = set(filter(is_arch_supported, archs))
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')

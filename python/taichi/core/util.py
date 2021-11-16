@@ -35,6 +35,7 @@ def get_os_name():
 
 def import_ti_core():
     if get_os_name() != 'win':
+        # pylint: disable=E1101
         old_flags = sys.getdlopenflags()
         sys.setdlopenflags(2 | 8)  # RTLD_NOW | RTLD_DEEPBIND
     else:
@@ -54,7 +55,7 @@ def import_ti_core():
         raise e from None
 
     if get_os_name() != 'win':
-        sys.setdlopenflags(old_flags)
+        sys.setdlopenflags(old_flags)  # pylint: disable=E1101
     lib_dir = os.path.join(package_root(), 'lib')
     core.set_lib_dir(locale_encode(lib_dir))
     return core

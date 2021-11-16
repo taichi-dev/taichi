@@ -21,10 +21,9 @@ class Ndarray:
         if impl.current_cfg().ndarray_use_torch:
             assert has_pytorch(
             ), "PyTorch must be available if you want to create a Taichi ndarray with PyTorch as its underlying storage."
-            # pylint: disable-msg=E1101
+            # pylint: disable=E1101
             self.arr = torch.zeros(shape,
                                    dtype=to_pytorch_type(cook_dtype(dtype)))
-            # pylint: enable-msg=E1101
             if impl.current_cfg().arch == _ti_core.Arch.cuda:
                 self.arr = self.arr.cuda()
         else:

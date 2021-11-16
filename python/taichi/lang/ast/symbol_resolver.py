@@ -1,6 +1,5 @@
 """Provides helpers to resolve AST nodes."""
 import ast
-import inspect
 
 
 class ASTResolver:

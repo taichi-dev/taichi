@@ -1987,7 +1987,7 @@ void VulkanSurface::create_swap_chain() {
   createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   createInfo.presentMode = present_mode;
   createInfo.clipped = VK_TRUE;
-  createInfo.oldSwapchain = nullptr;
+  createInfo.oldSwapchain = VK_NULL_HANDLE;
 
   if (vkCreateSwapchainKHR(device_->vk_device(), &createInfo,
                            kNoVkAllocCallbacks, &swapchain_) != VK_SUCCESS) {

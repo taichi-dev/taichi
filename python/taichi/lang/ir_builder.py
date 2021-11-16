@@ -904,6 +904,11 @@ class IRBuilder(Builder):
     def build_Pass(ctx, node):
         return node
 
+    @staticmethod
+    def build_Raise(ctx, node):
+        node.exc = build_stmt(ctx, node.exc)
+        raise node.exc.ptr
+
 
 build_stmt = IRBuilder()
 

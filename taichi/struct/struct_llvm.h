@@ -1,4 +1,5 @@
 #pragma once
+#ifdef TI_WITH_LLVM
 // Codegen for the hierarchical data structure (LLVM)
 #include "taichi/llvm/llvm_program.h"
 #include "taichi/llvm/llvm_codegen_utils.h"
@@ -6,6 +7,8 @@
 
 namespace taichi {
 namespace lang {
+
+class LlvmProgramImpl;
 class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
  public:
   StructCompilerLLVM(Arch arch,
@@ -46,3 +49,5 @@ class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
 
 }  // namespace lang
 }  // namespace taichi
+
+#endif  //#ifdef TI_WITH_LLVM

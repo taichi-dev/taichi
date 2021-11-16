@@ -967,3 +967,20 @@ def test_func_default_value_fail():
             return bar(1, 2, 3)
 
         foo()
+
+
+@ti.test(experimental_ast_refactor=True)
+def test_raise():
+    dim = 1
+    m = ti.Matrix.field(dim, dim, ti.f32)
+    ti.root.place(m)
+
+    with pytest.raises(Exception) as e:
+
+        @ti.kernel
+        def foo():
+            ti.polar_decompose(m, ti.f32)
+
+        foo()
+    assert e.value.args[
+        0] == "Polar decomposition only supports 2D and 3D matrices."

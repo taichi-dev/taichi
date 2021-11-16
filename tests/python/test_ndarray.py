@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 import pytest
 
 import taichi as ti
@@ -255,7 +256,7 @@ def _test_ndarray_deepcopy():
     x[0] = 1
     x[4] = 2
 
-    y = x.deepcopy()
+    y = copy.deepcopy(x)
 
     assert y.shape == x.shape
     assert y.dtype == x.dtype
@@ -270,7 +271,7 @@ def _test_ndarray_deepcopy():
     x[1][0] = 4
     x[2][4] = 5
 
-    y = x.deepcopy()
+    y = copy.deepcopy(x)
 
     assert y.shape == x.shape
     assert y.dtype == x.dtype
@@ -287,7 +288,7 @@ def _test_ndarray_deepcopy():
     x[0][0, 0] = 7
     x[4][1, 0] = 9
 
-    y = x.deepcopy()
+    y = copy.deepcopy(x)
 
     assert y.shape == x.shape
     assert y.dtype == x.dtype

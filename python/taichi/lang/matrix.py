@@ -1425,8 +1425,7 @@ class MatrixNdarray(Ndarray):
             for j in range(self.m)
         ])
 
-    @python_scope
-    def deepcopy(self):
+    def __deepcopy__(self, memo=None):
         ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape,
                                 self.layout)
         ret_arr.copy_from(self)
@@ -1479,8 +1478,7 @@ class VectorNdarray(Ndarray):
             self.n, 1,
             [NdarrayHostAccess(self, key, (i, )) for i in range(self.n)])
 
-    @python_scope
-    def deepcopy(self):
+    def __deepcopy__(self, memo=None):
         ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)
         ret_arr.copy_from(self)
         return ret_arr

@@ -151,8 +151,7 @@ class Ndarray:
         taichi.lang.meta.ndarray_to_ndarray(self, other)
         impl.get_runtime().sync()
 
-    @python_scope
-    def deepcopy(self):
+    def __deepcopy__(self, memo=None):
         """Copies all elements to a new ndarray.
 
         Returns:
@@ -205,8 +204,7 @@ class ScalarNdarray(Ndarray):
         self.initialize_host_accessor()
         return self.host_accessor.getter(*self.pad_key(key))
 
-    @python_scope
-    def deepcopy(self):
+    def __deepcopy__(self, memo=None):
         ret_arr = ScalarNdarray(self.dtype, self.shape)
         ret_arr.copy_from(self)
         return ret_arr

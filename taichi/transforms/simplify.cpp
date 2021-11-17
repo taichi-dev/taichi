@@ -155,7 +155,6 @@ class BasicBlockSimplify : public IRVisitor {
     }
   }
 
-  /*
   void visit(BitExtractStmt *stmt) override {
     if (is_done(stmt))
       return;
@@ -199,14 +198,16 @@ class BasicBlockSimplify : public IRVisitor {
         if (diff.linear_related() && diff.certain()) {
           // case 1: last loop var, vectorized, has assumption on vec size
           if (k == num_loop_vars - 1) {
-            auto load = stmt->insert_before_me(
-                Stmt::make<LoopIndexStmt>(current_struct_for, k));
+            auto load = Stmt::make<LoopIndexStmt>(current_struct_for, k);
+//                stmt->insert_before_me(
+//                );
             load->ret_type = PrimitiveType::i32;
-            stmt->input = load;
+            stmt->input = load.get();
             int64 bound = 1LL << stmt->bit_end;
             auto offset = (((int64)diff.low % bound + bound) % bound) &
                           ~((1LL << (stmt->bit_begin)) - 1);
-
+            auto load_addr = load.get();
+            modifier.insert_before(stmt, std::move(load));
             if (current_struct_for->vectorize == 1)
               offset = diff.low;
             if (stmt->bit_begin == 0 &&
@@ -227,7 +228,7 @@ class BasicBlockSimplify : public IRVisitor {
                         TypedConstant(PrimitiveType::i32, offset)));
                 //                auto offset_const = stmt->insert_before_me(
                 //                    );
-                auto sum = Stmt::make<BinaryOpStmt>(BinaryOpType::add, load,
+                auto sum = Stmt::make<BinaryOpStmt>(BinaryOpType::add, load_addr,
                                                     offset_const.get());
                 //                auto sum = stmt->insert_before_me();
                 stmt->input = sum.get();
@@ -255,7 +256,6 @@ class BasicBlockSimplify : public IRVisitor {
             modifier.insert_before(stmt, std::move(add));
           }
           stmt->simplified = true;
-          modifier.mark_as_modified();
           return;
         }
       }
@@ -264,6 +264,7 @@ class BasicBlockSimplify : public IRVisitor {
     set_done(stmt);
   }
 
+  /*
   template <typename T>
   static bool identical_vectors(const std::vector<T> &a,
                                 const std::vector<T> &b) {

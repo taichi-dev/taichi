@@ -139,7 +139,9 @@ class TaichiMain:
             print('Checking latest version failed: Server error,', err)
             return
         except requests.exceptions.Timeout as err:
-            print('Checking latest version failed: Time out when connecting server,', err)
+            print(
+                'Checking latest version failed: Time out when connecting server,',
+                err)
             return
         except requests.exceptions.RequestException as err:
             print('Checking latest version failed:', err)

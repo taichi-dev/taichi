@@ -127,8 +127,10 @@ class TaichiMain:
 
         # We do not want request exceptions break users' usage of Taichi.
         try:
-            response = requests.post('http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
-                                     json=payload, timeout=5)
+            response = requests.post(
+                'http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
+                json=payload,
+                timeout=5)
             response.raise_for_status()
         except requests.exceptions.ConnectionError as err:
             print('No internet:', err)
@@ -146,9 +148,9 @@ class TaichiMain:
         response = response.json()
         if response['status'] == 1:
             print(
-                f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use\n'+
-                f'pip install taichi=={response["latest_version"]}\n'+'to upgrade to the latest Taichi!'
-            )
+                f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use\n'
+                + f'pip install taichi=={response["latest_version"]}\n' +
+                'to upgrade to the latest Taichi!')
         elif response['status'] == 0:
             # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
             print(response['message'])

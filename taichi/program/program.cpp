@@ -41,7 +41,7 @@ namespace lang {
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances_;
 
-Program::Program(Arch desired_arch)
+Program::Program()
     : snode_rw_accessors_bank_(this), ndarray_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
@@ -63,7 +63,6 @@ Program::Program(Arch desired_arch)
   __asm__ __volatile__("");
 #endif
   config = default_compile_config;
-  config.arch = desired_arch;
   // TODO: allow users to run in debug mode without out-of-bound checks
   if (config.debug)
     config.check_out_of_bound = true;
@@ -73,53 +72,45 @@ Program::Program(Arch desired_arch)
 #ifdef TI_WITH_LLVM
     program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
 #else
-    TI_NOT_IMPLEMENTED
+    TI_ERROR("This taichi is not compiled with LLVM");
 #endif
   } else if (config.arch == Arch::metal) {
     if (!metal::is_metal_api_available()) {
-      TI_WARN("No Metal API detected.");
-      config.arch = host_arch();
+      TI_ERROR("No Metal API detected.");
     } else {
       program_impl_ = std::make_unique<MetalProgramImpl>(config);
     }
   }
-#ifdef TI_WITH_VULKAN
   else if (config.arch == Arch::vulkan) {
+#ifdef TI_WITH_VULKAN
     if (!vulkan::is_vulkan_api_available()) {
-      TI_WARN("No Vulkan API detected.");
-      config.arch = host_arch();
+      TI_ERROR("No Vulkan API detected.");
     } else {
       program_impl_ = std::make_unique<VulkanProgramImpl>(config);
     }
-  }
+#else
+    TI_ERROR("This taichi is not compiled with Vulkan")
 #endif
-
-  if (config.arch == Arch::opengl) {
+  } else if (config.arch == Arch::opengl) {
     if (!opengl::is_opengl_api_available()) {
-      TI_WARN("No OpenGL API detected.");
-      config.arch = host_arch();
+      TI_ERROR("No OpenGL API detected.");
     } else {
       program_impl_ = std::make_unique<OpenglProgramImpl>(config);
     }
-  }
-
-  if (config.arch == Arch::cc) {
+  } else if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
     program_impl_ = std::make_unique<CCProgramImpl>(config);
 #else
-    TI_WARN("No C backend detected.");
-    config.arch = host_arch();
+    TI_ERROR("No C backend detected.");
 #endif
+  } else {
+    TI_NOT_IMPLEMENTED
   }
 
-  if (config.arch != desired_arch) {
-    TI_WARN("Falling back to {}", arch_name(config.arch));
-  }
+  TI_ERROR_IF(!program_impl_, "Backend not found.");
 
   Device *compute_device = nullptr;
-  if (program_impl_.get()) {
-    compute_device = program_impl_->get_compute_device();
-  }
+  compute_device = program_impl_->get_compute_device();
   // Must have handled all the arch fallback logic by this point.
   memory_pool_ = std::make_unique<MemoryPool>(config.arch, compute_device);
   TI_ASSERT_INFO(num_instances_ == 0, "Only one instance at a time");

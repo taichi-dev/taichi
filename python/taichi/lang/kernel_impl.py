@@ -286,14 +286,14 @@ class TaichiCallableTemplateMapper:
             shape = tuple(arg.shape)
             if len(shape) < element_dim:
                 raise ValueError(
-                    f"Invalid argument into ti.any_arr() - required element_dim={element_dim}, but the argument has only {len(shape)} dimensions"
-                )
+                    f"Invalid argument into ti.any_arr() - required element_dim={element_dim}, "
+                    f"but the argument has only {len(shape)} dimensions")
             element_shape = (
             ) if element_dim == 0 else shape[:
                                              element_dim] if layout == Layout.SOA else shape[
                                                  -element_dim:]
             return to_taichi_type(arg.dtype), len(shape), element_shape, layout
-        return (type(arg).__name__, )
+        return type(arg).__name__,
 
     def extract(self, args):
         extracted = []
@@ -451,8 +451,10 @@ class Kernel:
             _taichi_skip_traceback = 1
             if self.runtime.inside_kernel:
                 raise TaichiSyntaxError(
-                    "Kernels cannot call other kernels. I.e., nested kernels are not allowed. Please check if you have direct/indirect invocation of kernels within kernels. Note that some methods provided by the Taichi standard library may invoke kernels, and please move their invocations to Python-scope."
-                )
+                    "Kernels cannot call other kernels. I.e., nested kernels are not allowed. "
+                    "Please check if you have direct/indirect invocation of kernels within kernels. "
+                    "Note that some methods provided by the Taichi standard library may invoke kernels, "
+                    "and please move their invocations to Python-scope.")
             self.runtime.inside_kernel = True
             self.runtime.current_kernel = self
             try:

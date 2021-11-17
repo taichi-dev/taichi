@@ -511,7 +511,7 @@ class StructType(CompoundType):
         elif len(args) == 1:
             # fill a single scalar
             if isinstance(args[0], (numbers.Number, expr.Expr)):
-                entries = self.scalar_filled(args[0])
+                entries = self.filled_with_scalar(args[0])
             else:
                 # initialize struct members by dictionary
                 entries = Struct(args[0])
@@ -536,7 +536,7 @@ class StructType(CompoundType):
                     entries[k] = cast(struct.entries[k], dtype)
         return Struct(entries)
 
-    def scalar_filled(self, value):
+    def filled_with_scalar(self, value):
         entries = {}
         for k, dtype in self.members.items():
             if isinstance(dtype, CompoundType):

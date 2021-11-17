@@ -14,6 +14,7 @@ conda activate $PY
 python3 -m pip uninstall taichi taichi-nightly -y
 
 cd taichi
+git fetch origin master
 
 if [[ $GPU_BUILD == "OFF" ]]
 then
@@ -29,7 +30,8 @@ fi
 if [[ $OSTYPE == "linux-"* ]]; then
     EXTRA_ARGS="-p manylinux1_x86_64"
 fi
-python3 misc/make_changelog.py origin/master ./ True || true
+
+python3 misc/make_changelog.py origin/master ./ True
 TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS PROJECT_NAME=$PROJECT_NAME python3 setup.py $PROJECT_TAGS bdist_wheel $EXTRA_ARGS
 # Run basic cpp tests
 

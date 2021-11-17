@@ -26,7 +26,7 @@ class Matrix(TaichiOperations):
     """The matrix class.
 
     Args:
-        n (int, list, tuple, np.ndarray): the first dimension of a matrix.
+        n (Union[int, list, tuple], np.ndarray): the first dimension of a matrix.
         m (int): the second dimension of a matrix.
         dt (DataType): the element data type.
         keep_raw (Bool, optional): Keep the contents in `n` as is.
@@ -611,7 +611,7 @@ class Matrix(TaichiOperations):
 
         Args:
             dim (int): the dimension of a square matrix.
-            val (TypeVar): the diagonal elment value.
+            val (TypeVar): the diagonal element value.
 
         Returns:
             The constructed diagonal square matrix.
@@ -678,7 +678,7 @@ class Matrix(TaichiOperations):
 
     @kern_mod.pyfunc
     def min(self):
-        """Return the minumum element value."""
+        """Return the minimum element value."""
         return ops_mod.ti_min(*self.entries)
 
     def any(self):
@@ -994,7 +994,7 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     def rows(rows):
-        """Construct a Matrix instance by concactinating Vectors/lists row by row.
+        """Construct a Matrix instance by concatenating Vectors/lists row by row.
 
         Args:
             rows (List): A list of Vector (1-D Matrix) or a list of list.
@@ -1027,7 +1027,7 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     def cols(cols):
-        """Construct a Matrix instance by concactinating Vectors/lists column by column.
+        """Construct a Matrix instance by concatenating Vectors/lists column by column.
 
         Args:
             cols (List): A list of Vector (1-D Matrix) or a list of list.
@@ -1148,7 +1148,7 @@ def Vector(n, dt=None, **kwargs):
     """Construct a `Vector` instance i.e. 1-D Matrix.
 
     Args:
-        n (int, list, tuple, np.ndarray): The desired number of entries of the Vector.
+        n (Union[int, list, tuple], np.ndarray): The desired number of entries of the Vector.
         dt (DataType, optional): The desired data type of the Vector.
 
     Returns:

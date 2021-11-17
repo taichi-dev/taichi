@@ -1282,7 +1282,8 @@ class MatrixField(Field):
         self.initialize_host_accessors()
         key = self.pad_key(key)
         host_access = self.host_access(key)
-        return Matrix([[host_access[i * self.m + j] for j in range(self.m)] for i in range(self.n)])
+        return Matrix([[host_access[i * self.m + j] for j in range(self.m)]
+                       for i in range(self.n)])
 
     def __repr__(self):
         # make interactive shell happy, prevent materialization
@@ -1390,7 +1391,9 @@ class MatrixNdarray(Ndarray):
     def __getitem__(self, key):
         key = () if key is None else (
             key, ) if isinstance(key, numbers.Number) else tuple(key)
-        return Matrix([[NdarrayHostAccess(self, key, (i, j)) for j in range(self.m)] for i in range(self.n)])
+        return Matrix(
+            [[NdarrayHostAccess(self, key, (i, j)) for j in range(self.m)]
+             for i in range(self.n)])
 
     def __deepcopy__(self, memo=None):
         ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape,
@@ -1441,7 +1444,8 @@ class VectorNdarray(Ndarray):
     def __getitem__(self, key):
         key = () if key is None else (
             key, ) if isinstance(key, numbers.Number) else tuple(key)
-        return Vector([NdarrayHostAccess(self, key, (i, )) for i in range(self.n)])
+        return Vector(
+            [NdarrayHostAccess(self, key, (i, )) for i in range(self.n)])
 
     def __deepcopy__(self, memo=None):
         ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)

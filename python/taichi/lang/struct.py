@@ -1,4 +1,3 @@
-import copy
 import numbers
 
 from taichi.lang import expr, impl
@@ -185,21 +184,6 @@ class Struct(TaichiOperations):
             return ti.assign(x, y)
 
         return self.element_wise_writeback_binary(assign_renamed, val)
-
-    def empty_copy(self):
-        """
-        Nested structs and matrices need to be recursively handled.
-        """
-        struct = Struct.empty(self.keys)
-        for k, v in self.items:
-            if isinstance(v, (Struct, Matrix)):
-                struct.entries[k] = v.empty_copy()
-        return struct
-
-    def copy(self):
-        ret = self.empty_copy()
-        ret.entries = copy.copy(self.entries)
-        return ret
 
     def __len__(self):
         """Get the number of entries in a custom struct"""

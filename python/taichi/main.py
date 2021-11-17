@@ -130,19 +130,19 @@ class TaichiMain:
             response = requests.post(
                 'http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
                 json=payload,
-                timeout=5)
+                timeout=3)
             response.raise_for_status()
         except requests.exceptions.ConnectionError as err:
-            print('No internet:', err)
+            print('Checking latest version failed: No internet,', err)
             return
         except requests.exceptions.HTTPError as err:
-            print('Server error:', err)
+            print('Checking latest version failed: Server error,', err)
             return
         except requests.exceptions.Timeout as err:
-            print('Time out when connecting server:', err)
+            print('Checking latest version failed: Time out when connecting server,', err)
             return
         except requests.exceptions.RequestException as err:
-            print('Unknown errors:', err)
+            print('Checking latest version failed:', err)
             return
 
         response = response.json()

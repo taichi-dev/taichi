@@ -584,7 +584,10 @@ class RangeAssumptionExpression : public Expression {
                             const Expr &base,
                             int low,
                             int high)
-      : input(input), base(base), low(low), high(high) {
+      : input(load_if_ptr(input)),
+        base(load_if_ptr(base)),
+        low(low),
+        high(high) {
   }
 
   void type_check() override;

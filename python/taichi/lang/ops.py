@@ -919,13 +919,13 @@ def rescale_index(a, b, I):
         assert isinstance(
             I, matrix.Matrix
         ), f"The third argument must be an index (list or ti.Vector)"
-    Ib = I.copy()
+    entries = [I(i) for i in range(I.n)]
     for n in range(min(I.n, min(len(a.shape), len(b.shape)))):
         if a.shape[n] > b.shape[n]:
-            Ib.entries[n] = I.entries[n] // (a.shape[n] // b.shape[n])
+            entries[n] = I(n) // (a.shape[n] // b.shape[n])
         if a.shape[n] < b.shape[n]:
-            Ib.entries[n] = I.entries[n] * (b.shape[n] // a.shape[n])
-    return Ib
+            entries[n] = I(n) * (b.shape[n] // a.shape[n])
+    return matrix.Vector(entries)
 
 
 def get_addr(f, indices):

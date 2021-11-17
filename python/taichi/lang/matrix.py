@@ -1,4 +1,3 @@
-import copy
 import numbers
 from collections.abc import Iterable
 
@@ -13,7 +12,6 @@ from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
-from taichi.lang.ops import cast
 from taichi.lang.types import CompoundType
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
@@ -356,16 +354,8 @@ class Matrix(TaichiOperations):
     @property
     @python_scope
     def value(self):
-        if isinstance(self.entries[0], SNodeHostAccess):
-            # fetch values from SNodeHostAccessor
-            ret = self.empty_copy()
-            for i in range(self.n):
-                for j in range(self.m):
-                    ret.entries[i * self.m + j] = self(i, j)
-        else:
-            # is local python-scope matrix
-            ret = self.entries
-        return ret
+        return Matrix([[self(i, j) for j in range(self.m)]
+                       for i in range(self.n)])
 
     # host access & python scope operation
     @python_scope
@@ -420,14 +410,6 @@ class Matrix(TaichiOperations):
             for j in range(self.m):
                 self[i, j] = value[i][j]
 
-    def empty_copy(self):
-        return Matrix.empty(self.n, self.m)
-
-    def copy(self):
-        ret = self.empty_copy()
-        ret.entries = copy.copy(self.entries)
-        return ret
-
     @taichi_scope
     def cast(self, dtype):
         """Cast the matrix element data type.
@@ -440,10 +422,9 @@ class Matrix(TaichiOperations):
 
         """
         _taichi_skip_traceback = 1
-        ret = self.copy()
-        for i, entry in enumerate(ret.entries):
-            ret.entries[i] = ops_mod.cast(entry, dtype)
-        return ret
+        return Matrix(
+            [[ops_mod.cast(self(i, j), dtype) for j in range(self.m)]
+             for i in range(self.n)])
 
     def trace(self):
         """The sum of a matrix diagonal elements.
@@ -1352,8 +1333,7 @@ class MatrixType(CompoundType):
                 int(mat(i, j)) if self.dtype in ti.integer_types else float(
                     mat(i, j)) for j in range(self.m)
             ] for i in range(self.n)])
-        return Matrix([[cast(mat(i, j), self.dtype) for j in range(self.m)]
-                       for i in range(self.n)])
+        return mat.cast(self.dtype)
 
     def filled_with_scalar(self, value):
         return Matrix([[value for _ in range(self.m)] for _ in range(self.n)])

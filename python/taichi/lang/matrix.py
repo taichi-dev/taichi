@@ -422,7 +422,9 @@ class Matrix(TaichiOperations):
 
         """
         _taichi_skip_traceback = 1
-        return Matrix([[ops_mod.cast(self(i, j), dtype) for j in range(self.m)] for i in range(self.n)])
+        return Matrix(
+            [[ops_mod.cast(self(i, j), dtype) for j in range(self.m)]
+             for i in range(self.n)])
 
     def trace(self):
         """The sum of a matrix diagonal elements.

@@ -81,15 +81,20 @@ def parse_args():
                         help='Set the project name')
     return parser.parse_args()
 
+
 def upload_taichi_version():
     username = os.getenv('METADATA_USERNAME')
     password = os.getenv('METADATA_PASSWORD')
     filename = os.listdir('../dist')[0]
-    filename = filename[:len(filename)-4]
+    filename = filename[:len(filename) - 4]
     parts = filename.split('-')
     payload = {'version': parts[1], 'platform': parts[4], 'python': parts[2]}
-    response = requests.post('http://54.90.48.192/add_version/detail', json=payload, auth=requests.auth.HTTPBasicAuth(username, password))
+    response = requests.post('http://54.90.48.192/add_version/detail',
+                             json=payload,
+                             auth=requests.auth.HTTPBasicAuth(
+                                 username, password))
     print(response.text)
+
 
 def main():
     args = parse_args()

@@ -540,7 +540,7 @@ class StructType(CompoundType):
         entries = {}
         for k, dtype in self.members.items():
             if isinstance(dtype, CompoundType):
-                entries[k] = dtype.scalar_filled(value)
+                entries[k] = dtype.filled_with_scalar(value)
             else:
                 entries[k] = value
         return Struct(entries)

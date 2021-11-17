@@ -181,7 +181,7 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST
+          docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
@@ -189,6 +189,7 @@ jobs:
         env:
           PY: ${{ matrix.python }}
           GPU_TEST: OFF
+          TI_WANTED_ARCHS: "cpu,cc"
 
       - name: clean docker container
         if: always()
@@ -205,9 +206,11 @@ jobs:
           - os: ubuntu-latest
             python: py38
             with_cc: OFF
+            wanted_archs: "cpu"
           - os: ubuntu-latest
             python: py39
             with_cc: ON
+            wanted_archs: "cpu,cc"
     runs-on: ${{ matrix.os }}
     permissions:
       packages: read
@@ -248,7 +251,7 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST
+          docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
@@ -256,6 +259,7 @@ jobs:
         env:
           PY: ${{ matrix.python }}
           GPU_TEST: OFF
+          TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
@@ -268,6 +272,7 @@ jobs:
             python: 3.7
             with_cc: OFF
             with_cpp_tests: ON
+            wanted_archs: "cpu"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -310,6 +315,7 @@ jobs:
           .github/workflows/scripts/unix_test.sh
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
+          TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
 
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
@@ -334,7 +340,7 @@ jobs:
           PY: py38
           GPU_BUILD: ON
           PROJECT_NAME: taichi
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
           DISPLAY: :1
 
       - name: Test
@@ -342,7 +348,7 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST
+          docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
           docker start -a taichi_test
@@ -350,6 +356,7 @@ jobs:
           PY: py38
           GPU_TEST: ON
           DISPLAY: :1
+          TI_WANTED_ARCHS: "cpu,cc,cuda,vulkan,opengl"
 
       - name: clean docker container
         if: always()
@@ -396,9 +403,11 @@ jobs:
           python examples/algorithm/laplace.py
           ti diagnose
           ti changelog
-          ti test -vr2 -t2
+          echo wanted arch: $env:TI_WANTED_ARCHS
+          ti test -vr2 -t2 -a "$env:TI_WANTED_ARCHS"
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
+          TI_WANTED_ARCHS: "cpu"
 
   build_and_test_m1:
     name: Build and Test (Apple M1)
@@ -440,4 +449,7 @@ jobs:
           python3 examples/algorithm/laplace.py
           TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
           TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
+          echo wanted archs: $TI_WANTED_ARCHS
           ti test -vr2 -t4 -x
+        env:
+          TI_WANTED_ARCHS: "metal,cpu"

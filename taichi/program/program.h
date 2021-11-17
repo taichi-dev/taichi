@@ -120,7 +120,10 @@ class Program {
   // migration. In the future each program should have its own copy.
   static TypeFactory &get_type_factory();
 
-  Program();
+  Program() : Program(default_compile_config.arch) {
+  }
+
+  explicit Program(Arch arch);
 
   ~Program();
 

@@ -41,7 +41,7 @@ namespace lang {
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances_;
 
-Program::Program()
+Program::Program(Arch desired_arch)
     : snode_rw_accessors_bank_(this), ndarray_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
@@ -63,6 +63,7 @@ Program::Program()
   __asm__ __volatile__("");
 #endif
   config = default_compile_config;
+  config.arch = desired_arch;
   // TODO: allow users to run in debug mode without out-of-bound checks
   if (config.debug)
     config.check_out_of_bound = true;
@@ -80,8 +81,7 @@ Program::Program()
     } else {
       program_impl_ = std::make_unique<MetalProgramImpl>(config);
     }
-  }
-  else if (config.arch == Arch::vulkan) {
+  } else if (config.arch == Arch::vulkan) {
 #ifdef TI_WITH_VULKAN
     if (!vulkan::is_vulkan_api_available()) {
       TI_ERROR("No Vulkan API detected.");

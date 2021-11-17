@@ -287,7 +287,7 @@ class Struct(TaichiOperations):
 
 
 class IntermediateStruct(Struct):
-    """The Struct type class for compiler internal use only.
+    """Intermediate struct class for compiler internal use only.
 
     Args:
         entries (Dict[str, Union[Expr, Matrix, Struct]]): keys and values for struct members.

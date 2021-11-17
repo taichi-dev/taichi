@@ -76,27 +76,18 @@ Program::Program(Arch desired_arch)
     TI_ERROR("This taichi is not compiled with LLVM");
 #endif
   } else if (config.arch == Arch::metal) {
-    if (!metal::is_metal_api_available()) {
-      TI_ERROR("No Metal API detected.");
-    } else {
-      program_impl_ = std::make_unique<MetalProgramImpl>(config);
-    }
+    TI_ASSERT(metal::is_metal_api_available());
+    program_impl_ = std::make_unique<MetalProgramImpl>(config);
   } else if (config.arch == Arch::vulkan) {
 #ifdef TI_WITH_VULKAN
-    if (!vulkan::is_vulkan_api_available()) {
-      TI_ERROR("No Vulkan API detected.");
-    } else {
-      program_impl_ = std::make_unique<VulkanProgramImpl>(config);
-    }
+    TI_ASSERT(vulkan::is_vulkan_api_available());
+    program_impl_ = std::make_unique<VulkanProgramImpl>(config);
 #else
     TI_ERROR("This taichi is not compiled with Vulkan")
 #endif
   } else if (config.arch == Arch::opengl) {
-    if (!opengl::is_opengl_api_available()) {
-      TI_ERROR("No OpenGL API detected.");
-    } else {
-      program_impl_ = std::make_unique<OpenglProgramImpl>(config);
-    }
+    TI_ASSERT(opengl::is_opengl_api_available());
+    program_impl_ = std::make_unique<OpenglProgramImpl>(config);
   } else if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
     program_impl_ = std::make_unique<CCProgramImpl>(config);
@@ -107,7 +98,8 @@ Program::Program(Arch desired_arch)
     TI_NOT_IMPLEMENTED
   }
 
-  TI_ERROR_IF(!program_impl_, "Backend not found.");
+  // program_impl_ should be set in the if-else branch above
+  TI_ASSERT(program_impl_);
 
   Device *compute_device = nullptr;
   compute_device = program_impl_->get_compute_device();

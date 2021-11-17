@@ -20,4 +20,4 @@ export NUM_WHL=`ls dist/*.whl | wc -l`
 if [ $NUM_WHL -ne 1 ]; then echo `ERROR: created more than 1 whl.` && exit 1; fi
 python3 -m pip install dist/*.whl
 
-rm -f CHANGELOG.md
+rm -f python/CHANGELOG.md

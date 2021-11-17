@@ -199,8 +199,8 @@ class BasicBlockSimplify : public IRVisitor {
           // case 1: last loop var, vectorized, has assumption on vec size
           if (k == num_loop_vars - 1) {
             auto load = Stmt::make<LoopIndexStmt>(current_struct_for, k);
-//                stmt->insert_before_me(
-//                );
+            //                stmt->insert_before_me(
+            //                );
             load->ret_type = PrimitiveType::i32;
             stmt->input = load.get();
             int64 bound = 1LL << stmt->bit_end;
@@ -228,8 +228,8 @@ class BasicBlockSimplify : public IRVisitor {
                         TypedConstant(PrimitiveType::i32, offset)));
                 //                auto offset_const = stmt->insert_before_me(
                 //                    );
-                auto sum = Stmt::make<BinaryOpStmt>(BinaryOpType::add, load_addr,
-                                                    offset_const.get());
+                auto sum = Stmt::make<BinaryOpStmt>(
+                    BinaryOpType::add, load_addr, offset_const.get());
                 //                auto sum = stmt->insert_before_me();
                 stmt->input = sum.get();
                 modifier.insert_before(stmt, std::move(offset_const));

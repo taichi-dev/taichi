@@ -150,7 +150,9 @@ void UnaryOpExpression::type_check() {
     throw std::runtime_error(
         fmt::format("TypeError: unsupported operand type(s) for '{}': '{}'",
                     unary_op_type_name(type), operand->ret_type->to_string()));
-  if ((type == UnaryOpType::floor || type == UnaryOpType::ceil ||
+  if ((type == UnaryOpType::round ||
+       type == UnaryOpType::floor ||
+       type == UnaryOpType::ceil ||
        is_trigonometric(type)) &&
       !is_real(operand->ret_type))
     throw std::runtime_error(fmt::format(

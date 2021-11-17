@@ -129,9 +129,8 @@ jobs:
         env:
           CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=OFF
 
-  build_and_test_cpu_required:
-    # This job will be required to pass before merging to master branch.
-    name: Required Build and Test (CPU)
+  build_and_test_cpu_linux:
+    name: Build and Test linux (CPU)
     needs: [check_code_format, check_files]
     timeout-minutes: 60
     strategy:
@@ -139,72 +138,6 @@ jobs:
         include:
           - os: ubuntu-latest
             python: py36
-    runs-on: [self-hosted, cpu, aws]
-    permissions:
-      packages: read
-      contents: read
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: "recursive"
-
-      - name: Get docker images
-        run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
-          # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
-          echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
-        env:
-          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build
-        run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
-          mkdir -m777 wheel
-          docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
-          # Docker cp preserves the ownership in the host machine. However, the user in the host machine won't be recognized
-          # by the docker image we set ahead of time. Therefore, we use tar to set the user of the folder that is copied to the container.
-          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
-          docker start -a taichi_build
-        env:
-          PY: ${{ matrix.python }}
-          GPU_BUILD: OFF
-          PROJECT_NAME: taichi
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
-
-      - name: Test
-        run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
-          docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
-          docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
-          docker cp wheel/*.whl taichi_test:/home/dev/
-          docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
-          docker start -a taichi_test
-        env:
-          PY: ${{ matrix.python }}
-          GPU_TEST: OFF
-          TI_WANTED_ARCHS: "cpu,cc"
-
-      - name: clean docker container
-        if: always()
-        run: |
-          docker rm taichi_build taichi_test -f
-
-  build_and_test_cpu_linux:
-    name: Build and Test linux (CPU)
-    needs: [build_and_test_cpu_required, check_files]
-    timeout-minutes: 60
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            python: py38
             with_cc: OFF
             wanted_archs: "cpu"
           - os: ubuntu-latest
@@ -263,7 +196,7 @@ jobs:
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
-    needs: [build_and_test_cpu_required, check_files]
+    needs: [check_code_format, check_files]
     timeout-minutes: 60
     strategy:
       matrix:

@@ -1,4 +1,5 @@
 import numpy as np
+import taichi.lang
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
@@ -21,6 +22,7 @@ class Ndarray:
         if impl.current_cfg().ndarray_use_torch:
             assert has_pytorch(
             ), "PyTorch must be available if you want to create a Taichi ndarray with PyTorch as its underlying storage."
+            # pylint: disable=E1101
             self.arr = torch.zeros(shape,
                                    dtype=to_pytorch_type(cook_dtype(dtype)))
             if impl.current_cfg().arch == _ti_core.Arch.cuda:
@@ -97,8 +99,7 @@ class Ndarray:
         if impl.current_cfg().ndarray_use_torch:
             self.arr.fill_(val)
         else:
-            from taichi.lang.meta import fill_ndarray  # pylint: disable=C0415
-            fill_ndarray(self, val)
+            taichi.lang.meta.fill_ndarray(self, val)
 
     @python_scope
     def to_numpy(self):
@@ -109,11 +110,8 @@ class Ndarray:
         """
         if impl.current_cfg().ndarray_use_torch:
             return self.arr.cpu().numpy()
-
         arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
-        from taichi.lang.meta import \
-            ndarray_to_ext_arr  # pylint: disable=C0415
-        ndarray_to_ext_arr(self, arr)
+        taichi.lang.meta.ndarray_to_ext_arr(self, arr)
         impl.get_runtime().sync()
         return arr
 
@@ -131,16 +129,36 @@ class Ndarray:
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
         if impl.current_cfg().ndarray_use_torch:
-            self.arr = torch.from_numpy(arr).to(self.arr.dtype)
+            self.arr = torch.from_numpy(arr).to(self.arr.dtype)  # pylint: disable=E1101
             if impl.current_cfg().arch == _ti_core.Arch.cuda:
                 self.arr = self.arr.cuda()
         else:
             if hasattr(arr, 'contiguous'):
                 arr = arr.contiguous()
-            from taichi.lang.meta import \
-                ext_arr_to_ndarray  # pylint: disable=C0415
-            ext_arr_to_ndarray(arr, self)
+            taichi.lang.meta.ext_arr_to_ndarray(arr, self)
             impl.get_runtime().sync()
+
+    @python_scope
+    def copy_from(self, other):
+        """Copies all elements from another ndarray.
+
+        The shape of the other ndarray needs to be the same as `self`.
+
+        Args:
+            other (Ndarray): The source ndarray.
+        """
+        assert isinstance(other, Ndarray)
+        assert tuple(self.arr.shape) == tuple(other.arr.shape)
+        taichi.lang.meta.ndarray_to_ndarray(self, other)
+        impl.get_runtime().sync()
+
+    def __deepcopy__(self, memo=None):
+        """Copies all elements to a new ndarray.
+
+        Returns:
+            Ndarray: The result ndarray.
+        """
+        raise NotImplementedError()
 
     def pad_key(self, key):
         if key is None:
@@ -158,7 +176,7 @@ class Ndarray:
 
 
 class ScalarNdarray(Ndarray):
-    """Taichi ndarray with scalar elements implemented with a torch tensor.
+    """Taichi ndarray with scalar elements.
 
     Args:
         dtype (DataType): Data type of each value.
@@ -186,6 +204,11 @@ class ScalarNdarray(Ndarray):
             return self.arr.__getitem__(key)
         self.initialize_host_accessor()
         return self.host_accessor.getter(*self.pad_key(key))
+
+    def __deepcopy__(self, memo=None):
+        ret_arr = ScalarNdarray(self.dtype, self.shape)
+        ret_arr.copy_from(self)
+        return ret_arr
 
     def __repr__(self):
         return '<ti.ndarray>'

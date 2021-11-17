@@ -314,6 +314,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(LoopLinearIndexStmt *stmt) override;
 
+  void visit(GlobalThreadIndexStmt *stmt) override;
+
   void visit(BlockCornerIndexStmt *stmt) override;
 
   void visit(BlockDimStmt *stmt) override;

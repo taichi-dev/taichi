@@ -414,6 +414,7 @@ def init(arch=None,
          default_fp=None,
          default_ip=None,
          _test_mode=False,
+         enable_fallback=True,
          **kwargs):
     """Initializes the Taichi runtime.
 
@@ -527,7 +528,7 @@ def init(arch=None,
     if env_arch is not None:
         ti.info(f'Following TI_ARCH setting up for arch={env_arch}')
         arch = _ti_core.arch_from_name(env_arch)
-    ti.cfg.arch = adaptive_arch_select(arch)
+    ti.cfg.arch = adaptive_arch_select(arch, enable_fallback)
     if ti.cfg.arch == cc:
         _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(ti.cfg.arch)}')
@@ -601,6 +602,7 @@ serialize = lambda: parallelize(1)
 vectorize = _ti_core.vectorize
 bit_vectorize = _ti_core.bit_vectorize
 block_dim = _ti_core.block_dim
+global_thread_idx = _ti_core.insert_thread_idx_expr
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
 transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)
@@ -1004,41 +1006,7 @@ def is_arch_supported(arch):
         return False
 
 
-def supported_archs():
-    """Gets all supported archs on the machine.
-
-    Returns:
-        List[taichi_core.Arch]: All supported archs on the machine.
-    """
-    archs = set([cpu, cuda, metal, vulkan, opengl, cc])
-    archs = set(filter(is_arch_supported, archs))
-
-    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
-    want_exclude = wanted_archs.startswith('^')
-    if want_exclude:
-        wanted_archs = wanted_archs[1:]
-    wanted_archs = wanted_archs.split(',')
-    # Note, ''.split(',') gives you [''], which is not an empty array.
-    expanded_wanted_archs = set([])
-    for arch in wanted_archs:
-        if arch == '':
-            continue
-        if arch == 'cpu':
-            expanded_wanted_archs.add(cpu)
-        elif arch == 'gpu':
-            expanded_wanted_archs.update(gpu)
-        else:
-            expanded_wanted_archs.add(_ti_core.arch_from_name(arch))
-    if len(expanded_wanted_archs) == 0:
-        return list(archs)
-    if want_exclude:
-        supported = archs - expanded_wanted_archs
-    else:
-        supported = archs & expanded_wanted_archs
-    return list(supported)
-
-
-def adaptive_arch_select(arch):
+def adaptive_arch_select(arch, enable_fallback):
     if arch is None:
         return cpu
     if not isinstance(arch, (list, tuple)):
@@ -1046,6 +1014,8 @@ def adaptive_arch_select(arch):
     for a in arch:
         if is_arch_supported(a):
             return a
+    if not enable_fallback:
+        raise RuntimeError(f'Arch={arch} is not supported')
     ti.warn(f'Arch={arch} is not supported, falling back to CPU')
     return cpu
 
@@ -1094,7 +1064,7 @@ def all_archs_with(**kwargs):
                 can_run_on.register(lambda arch: is_extension_supported(
                     arch, extension.data64))
 
-            for arch in ti.supported_archs():
+            for arch in ti.testing.expected_archs():
                 if can_run_on(arch):
                     print(f'Running test on arch={arch}')
                     ti.init(arch=arch, **kwargs)

@@ -73,53 +73,36 @@ Program::Program(Arch desired_arch)
 #ifdef TI_WITH_LLVM
     program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
 #else
-    TI_NOT_IMPLEMENTED
+    TI_ERROR("This taichi is not compiled with LLVM");
 #endif
   } else if (config.arch == Arch::metal) {
-    if (!metal::is_metal_api_available()) {
-      TI_WARN("No Metal API detected.");
-      config.arch = host_arch();
-    } else {
-      program_impl_ = std::make_unique<MetalProgramImpl>(config);
-    }
-  }
+    TI_ASSERT(metal::is_metal_api_available());
+    program_impl_ = std::make_unique<MetalProgramImpl>(config);
+  } else if (config.arch == Arch::vulkan) {
 #ifdef TI_WITH_VULKAN
-  else if (config.arch == Arch::vulkan) {
-    if (!vulkan::is_vulkan_api_available()) {
-      TI_WARN("No Vulkan API detected.");
-      config.arch = host_arch();
-    } else {
-      program_impl_ = std::make_unique<VulkanProgramImpl>(config);
-    }
-  }
+    TI_ASSERT(vulkan::is_vulkan_api_available());
+    program_impl_ = std::make_unique<VulkanProgramImpl>(config);
+#else
+    TI_ERROR("This taichi is not compiled with Vulkan")
 #endif
-
-  if (config.arch == Arch::opengl) {
-    if (!opengl::is_opengl_api_available()) {
-      TI_WARN("No OpenGL API detected.");
-      config.arch = host_arch();
-    } else {
-      program_impl_ = std::make_unique<OpenglProgramImpl>(config);
-    }
-  }
-
-  if (config.arch == Arch::cc) {
+  } else if (config.arch == Arch::opengl) {
+    TI_ASSERT(opengl::is_opengl_api_available());
+    program_impl_ = std::make_unique<OpenglProgramImpl>(config);
+  } else if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
     program_impl_ = std::make_unique<CCProgramImpl>(config);
 #else
-    TI_WARN("No C backend detected.");
-    config.arch = host_arch();
+    TI_ERROR("No C backend detected.");
 #endif
+  } else {
+    TI_NOT_IMPLEMENTED
   }
 
-  if (config.arch != desired_arch) {
-    TI_WARN("Falling back to {}", arch_name(config.arch));
-  }
+  // program_impl_ should be set in the if-else branch above
+  TI_ASSERT(program_impl_);
 
   Device *compute_device = nullptr;
-  if (program_impl_.get()) {
-    compute_device = program_impl_->get_compute_device();
-  }
+  compute_device = program_impl_->get_compute_device();
   // Must have handled all the arch fallback logic by this point.
   memory_pool_ = std::make_unique<MemoryPool>(config.arch, compute_device);
   TI_ASSERT_INFO(num_instances_ == 0, "Only one instance at a time");
@@ -234,9 +217,6 @@ void Program::synchronize() {
   if (!sync) {
     if (config.async_mode) {
       async_engine->synchronize();
-    }
-    if (profiler) {
-      profiler->sync();
     }
     if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
         config.arch == Arch::vulkan) {

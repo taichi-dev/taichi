@@ -91,6 +91,12 @@ def ext_arr_to_tensor(arr: ext_arr(), tensor: template()):
 
 
 @kernel
+def ndarray_to_ndarray(ndarray: any_arr(), other: any_arr()):
+    for I in ti.grouped(ndarray):
+        ndarray[I] = other[I]
+
+
+@kernel
 def ext_arr_to_ndarray(arr: ext_arr(), ndarray: any_arr()):
     for I in ti.grouped(ndarray):
         ndarray[I] = arr[I]

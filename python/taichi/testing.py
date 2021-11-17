@@ -5,6 +5,8 @@ import os
 from tempfile import mkstemp
 
 from taichi.core import ti_core as _ti_core
+from taichi.lang import (cc, cpu, cuda, gpu, is_arch_supported, metal, opengl,
+                         vulkan)
 
 import taichi as ti
 
@@ -80,15 +82,56 @@ _test_features = {
 }
 
 
+def expected_archs():
+    """
+    Reads the environment variable `TI_WANTED_ARCHS` (usually set by option `-a` in `ti test`)
+    and gets all expected archs on the machine.
+    If `TI_WANTED_ARCHS` is set and does not start with `^`, archs specified in it will be returned.
+    If `TI_WANTED_ARCHS` starts with `^` (usually when option `-n` is specified in `ti test`),
+    all supported archs except archs specified in it will be returned.
+    If `TI_WANTED_ARCHS` is not set, all supported archs will be returned.
+    Returns:
+        List[taichi_core.Arch]: All expected archs on the machine.
+    """
+    archs = set([cpu, cuda, metal, vulkan, opengl, cc])
+    archs = set(filter(is_arch_supported, archs))
+
+    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
+    want_exclude = wanted_archs.startswith('^')
+    if want_exclude:
+        wanted_archs = wanted_archs[1:]
+    wanted_archs = wanted_archs.split(',')
+    # Note, ''.split(',') gives you [''], which is not an empty array.
+    expanded_wanted_archs = set([])
+    for arch in wanted_archs:
+        if arch == '':
+            continue
+        if arch == 'cpu':
+            expanded_wanted_archs.add(cpu)
+        elif arch == 'gpu':
+            expanded_wanted_archs.update(gpu)
+        else:
+            expanded_wanted_archs.add(_ti_core.arch_from_name(arch))
+    if len(expanded_wanted_archs) == 0:
+        return list(archs)
+    if want_exclude:
+        expected = archs - expanded_wanted_archs
+    else:
+        expected = expanded_wanted_archs
+    return list(expected)
+
+
 def test(arch=None, exclude=None, require=None, **options):
-    '''
+    """
+    Performs tests on archs in `expected_archs()` which are in `arch` and not in `exclude` and satisfy `require`
 .. function:: ti.test(arch=[], exclude=[], require=[], **options)
 
     :parameter arch: backends to include
     :parameter exclude: backends to exclude
     :parameter require: extensions required
     :parameter options: other options to be passed into ``ti.init``
-    '''
+
+    """
 
     if arch is None:
         arch = []
@@ -102,11 +145,11 @@ def test(arch=None, exclude=None, require=None, **options):
         exclude = [exclude]
     if not isinstance(require, (list, tuple)):
         require = [require]
-    supported_archs = ti.supported_archs()
+    archs_expected = expected_archs()
     if len(arch) == 0:
-        arch = supported_archs
+        arch = archs_expected
     else:
-        arch = list(filter(lambda x: x in supported_archs, arch))
+        arch = list(filter(lambda x: x in archs_expected, arch))
 
     def decorator(foo):
         @functools.wraps(foo)
@@ -145,7 +188,9 @@ def test(arch=None, exclude=None, require=None, **options):
                 if skip:
                     continue
 
-                ti.init(arch=req_arch, **current_options)
+                ti.init(arch=req_arch,
+                        enable_fallback=False,
+                        **current_options)
                 foo(*args, **kwargs)
                 ti.reset()
 

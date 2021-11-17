@@ -75,7 +75,7 @@ def core_vec(*args):
         assert False, type(args[0])
 
 
-class Tee():
+class Tee:
     def __init__(self, name):
         with open(name, 'w') as self.file:
             self.stdout = sys.stdout
@@ -256,6 +256,7 @@ __all__ = [
     'core_vec',
     'core_veci',
     'deprecated',
+    'warning',
     'dump_dot',
     'dot_to_pdf',
     'obsolete',

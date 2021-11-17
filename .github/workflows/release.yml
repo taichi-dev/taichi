@@ -105,10 +105,10 @@ jobs:
         run: |
           mkdir dist
           cp wheel/*.whl dist/
-          cd python
-          python3 -m pip install requests==2.26
-          if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
-          elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
+          pip install twine
+          if [ $PROJECT_NAME == "taichi-nightly" ]; then twine upload --repository testpypi --verbose -u __token__ -p "$NIGHT_PWD" dist/*
+          elif [ $PROJECT_NAME == "taichi" ]; then twine upload --verbose -u __token__ -p "$PROD_PWD" dist/*
+          fi
 
       - name: clean docker container
         if: always()
@@ -138,22 +138,12 @@ jobs:
 
       - name: Create Python Wheel
         run: |
-          TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export CXX=clang++
-          python -m pip install -r requirements_dev.txt
-          python -m pip install -r requirements_test.txt
-          cd python
-          git fetch origin master
-          export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
-          python build.py build --project_name $PROJECT_NAME
-          cd ..
-          NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          pip install dist/*.whl
+          export PATH=$(pwd)/taichi-llvm/bin/:$PATH
+          bash .github/workflows/scripts/unix_build.sh
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
           PROJECT_NAME: ${{ matrix.name }}
+          CXX: clang++
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v2
@@ -178,9 +168,9 @@ jobs:
           METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
           METADATA_URL: ${{ secrets.METADATA_URL }}
         run: |
-          cd python
-          if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
-          elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python build.py upload --skip_build; fi
+          if [ $PROJECT_NAME == "taichi-nightly" ]; then twine upload --repository testpypi --verbose -u __token__ -p "$NIGHT_PWD" dist/*
+          elif [ $PROJECT_NAME == "taichi" ]; then twine upload --verbose -u __token__ -p "$PROD_PWD" dist/*
+          fi
 
   build_and_upload_m1:
     name: Build and Upload (Apple M1)
@@ -203,23 +193,12 @@ jobs:
           # automatically. So we don't activate and use desired python version
           # directly.
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
-          python3 -m pip uninstall taichi taichi-nightly -y
-          git --version
-          export CXX=clang++
-          python3 -m pip install -r requirements_dev.txt
-          python3 -m pip install -r requirements_test.txt
-          cd python
-          git fetch origin master
-          export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
-          python3 build.py build --project_name $PROJECT_NAME
-          cd ..
-          export NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          python3 -m pip install dist/*.whl
+          bash .github/workflows/scripts/unix_build.sh
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
+          CXX: clang++
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v2
@@ -240,9 +219,9 @@ jobs:
           METADATA_URL: ${{ secrets.METADATA_URL }}
         run: |
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
-          cd python
-          if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
-          elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
+          if [ $PROJECT_NAME == "taichi-nightly" ]; then twine upload --repository testpypi --verbose -u __token__ -p "$NIGHT_PWD" dist/*
+          elif [ $PROJECT_NAME == "taichi" ]; then twine upload --verbose -u __token__ -p "$PROD_PWD" dist/*
+          fi
 
   build_and_upload_macos_1014:
     name: Build and Upload (macos 1014)
@@ -264,23 +243,12 @@ jobs:
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
           export LLVM_DIR=/Users/buildbot6/taichi-llvm-10.0.0-macos
           export PATH=$LLVM_DIR/bin:$PATH
-          python3 -m pip uninstall taichi taichi-nightly -y
-          git --version
-          export CXX=clang++
-          python3 -m pip install -r requirements_dev.txt
-          python3 -m pip install -r requirements_test.txt
-          cd python
-          git fetch origin master
-          export TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS
-          python3 build.py build --project_name $PROJECT_NAME
-          cd ..
-          export NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          python3 -m pip install dist/*.whl
+          bash .github/workflows/scripts/unix_build.sh
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
+          CXX: clang++
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v2
@@ -310,9 +278,9 @@ jobs:
           METADATA_URL: ${{ secrets.METADATA_URL }}
         run: |
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
-          cd python
-          if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
-          elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
+          if [ $PROJECT_NAME == "taichi-nightly" ]; then twine upload --repository testpypi --verbose -u __token__ -p "$NIGHT_PWD" dist/*
+          elif [ $PROJECT_NAME == "taichi" ]; then twine upload --verbose -u __token__ -p "$PROD_PWD" dist/*
+          fi
 
   build_and_upload_windows:
     name: Build and Upload (Windows only)
@@ -369,8 +337,5 @@ jobs:
           METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
           METADATA_URL: ${{ secrets.METADATA_URL }}
         run: |
-          cd python
-          if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {$env:PYPI_PWD = "$env:NIGHT_PWD"}
-          if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {..\venv\Scripts\python build.py upload --skip_build --testpypi --project_name $env:PROJECT_NAME}
-          if ( $env:PROJECT_NAME -eq "taichi" ) {$env:PYPI_PWD = "$env:PROD_PWD"}
-          if ( $env:PROJECT_NAME -eq "taichi" ) {..\venv\Scripts\python build.py upload --skip_build}
+          if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {venv\Scripts\twine upload --verbose --repository testpypi -u __token__ -p "$env:NIGHT_PWD" dist/*}
+          else {venv\Scripts\twine upload --verbose -u __token__ -p "$env:PROD_PWD" dist/*}

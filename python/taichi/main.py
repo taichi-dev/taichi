@@ -992,23 +992,6 @@ class TaichiMain:
 
         return None
 
-    @register
-    def dist(self, arguments: list = sys.argv[2:]):
-        """Build package and test in release mode"""
-        parser = argparse.ArgumentParser(prog='ti dist',
-                                         description=f"{self.dist.__doc__}")
-        parser.add_argument('mode',
-                            nargs='?',
-                            default='test',
-                            choices=['upload', 'try_upload', 'test'],
-                            help='Which mode shall we run?')
-        args = parser.parse_args(arguments)
-
-        os.chdir(os.path.join(_ti_core.get_repo_dir(), 'python'))
-        sys.argv.pop(0)
-        sys.argv.append(args.mode)
-        runpy.run_path('build.py')
-
     @staticmethod
     @register
     def diagnose(arguments: list = sys.argv[2:]):

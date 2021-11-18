@@ -29,6 +29,7 @@ rest_length = ti.field(dtype=ti.f32,
 # gray color
 gray = (128, 128, 128, 255)
 
+
 @ti.kernel
 def substep():
     n = num_particles[None]
@@ -161,7 +162,8 @@ def main():
         canvas.circles(x, per_vertex_color=per_vertex_color, radius=0.02)
 
         window.GUI.begin("mass spring", 0.05, 0.05, 0.9, 0.2)
-        window.GUI.text_colored(gray,
+        window.GUI.text_colored(
+            gray,
             "Left click: add mass point (with shift to fix); Right click: attract"
         )
         window.GUI.text_colored(gray, "C: clear all; Space: pause")

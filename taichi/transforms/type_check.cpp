@@ -61,11 +61,11 @@ class TypeCheck : public IRVisitor {
     // TODO(type): test_ad_for fails if we assume dest is a pointer type.
     auto dst_type = stmt->dest->ret_type.ptr_removed();
     if (auto cit = dst_type->cast<CustomIntType>()) {
-      dst_type = cit->get_compute_type();
+      dst_type = cit->get_physical_type();
     } else if (auto cft = dst_type->cast<CustomFloatType>()) {
-      dst_type = cft->get_compute_type();
-    }
-    if (stmt->val->ret_type != dst_type) {
+      auto cit = cft->get_digits_type()->as<CustomIntType>();
+      dst_type = cit->get_physical_type();
+    } else if (stmt->val->ret_type != dst_type) {
       TI_WARN("[{}] Atomic add ({} to {}) may lose precision, at", stmt->name(),
               data_type_name(stmt->val->ret_type), data_type_name(dst_type));
       TI_WARN("\n{}", stmt->tb);

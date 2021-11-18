@@ -1127,7 +1127,7 @@ Vector.unit = Matrix.unit
 Vector.normalized = Matrix.normalized
 
 
-class IntermediateMatrix(Matrix):
+class _IntermediateMatrix(Matrix):
     """Intermediate matrix class for compiler internal use only.
 
     Args:

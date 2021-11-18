@@ -1,4 +1,4 @@
-from taichi.lang.matrix import IntermediateMatrix
+from taichi.lang.matrix import _IntermediateMatrix
 
 
 class ndrange:
@@ -44,4 +44,4 @@ class GroupedNDRange:
 
     def __iter__(self):
         for ind in self.r:
-            yield IntermediateMatrix(len(ind), 1, list(ind))
+            yield _IntermediateMatrix(len(ind), 1, list(ind))

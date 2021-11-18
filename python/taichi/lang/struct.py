@@ -286,7 +286,7 @@ class Struct(TaichiOperations):
         return StructField(field_dict, name=name)
 
 
-class IntermediateStruct(Struct):
+class _IntermediateStruct(Struct):
     """Intermediate struct class for compiler internal use only.
 
     Args:

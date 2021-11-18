@@ -1394,6 +1394,40 @@ class MatrixNdarray(Ndarray):
             for j in range(self.m)
         ])
 
+    @python_scope
+    def fill(self, val):
+        if impl.current_cfg().ndarray_use_torch:
+            self.arr.fill_(val)
+        else:
+            taichi.lang.meta.fill_ndarray_matrix(self, val)
+
+    @python_scope
+    def to_numpy(self):
+        if impl.current_cfg().ndarray_use_torch:
+            return self.arr.cpu().numpy()
+        arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
+        taichi.lang.meta.ndarray_matrix_to_ext_arr(self, arr, 0)
+        impl.get_runtime().sync()
+        return arr
+
+    @python_scope
+    def from_numpy(self, arr):
+        if not isinstance(arr, np.ndarray):
+            raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
+        if tuple(self.arr.shape) != tuple(arr.shape):
+            raise ValueError(
+                f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
+            )
+        if impl.current_cfg().ndarray_use_torch:
+            self.arr = torch.from_numpy(arr).to(self.arr.dtype)  # pylint: disable=E1101
+            if impl.current_cfg().arch == _ti_core.Arch.cuda:
+                self.arr = self.arr.cuda()
+        else:
+            if hasattr(arr, 'contiguous'):
+                arr = arr.contiguous()
+            taichi.lang.meta.ext_arr_to_ndarray_matrix(arr, self, 0)
+            impl.get_runtime().sync()
+
     def __deepcopy__(self, memo=None):
         ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape,
                                 self.layout)
@@ -1446,6 +1480,40 @@ class VectorNdarray(Ndarray):
         return Matrix.with_entries(
             self.n, 1,
             [NdarrayHostAccess(self, key, (i, )) for i in range(self.n)])
+
+    @python_scope
+    def fill(self, val):
+        if impl.current_cfg().ndarray_use_torch:
+            self.arr.fill_(val)
+        else:
+            taichi.lang.meta.fill_ndarray_matrix(self, val)
+
+    @python_scope
+    def to_numpy(self):
+        if impl.current_cfg().ndarray_use_torch:
+            return self.arr.cpu().numpy()
+        arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
+        taichi.lang.meta.ndarray_matrix_to_ext_arr(self, arr, 1)
+        impl.get_runtime().sync()
+        return arr
+
+    @python_scope
+    def from_numpy(self, arr):
+        if not isinstance(arr, np.ndarray):
+            raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
+        if tuple(self.arr.shape) != tuple(arr.shape):
+            raise ValueError(
+                f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
+            )
+        if impl.current_cfg().ndarray_use_torch:
+            self.arr = torch.from_numpy(arr).to(self.arr.dtype)  # pylint: disable=E1101
+            if impl.current_cfg().arch == _ti_core.Arch.cuda:
+                self.arr = self.arr.cuda()
+        else:
+            if hasattr(arr, 'contiguous'):
+                arr = arr.contiguous()
+            taichi.lang.meta.ext_arr_to_ndarray_matrix(arr, self, 1)
+            impl.get_runtime().sync()
 
     def __deepcopy__(self, memo=None):
         ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)

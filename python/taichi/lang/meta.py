@@ -19,7 +19,13 @@ def fill_tensor(tensor: template(), val: template()):
 @kernel
 def fill_ndarray(ndarray: any_arr(), val: template()):
     for I in ti.grouped(ndarray):
-        ndarray[I] = val
+        ndarray[I].fill(val)
+
+
+@kernel
+def fill_ndarray_matrix(ndarray: any_arr(), val: template()):
+    for I in ti.grouped(ndarray):
+        ndarray[I].fill(val)
 
 
 @kernel
@@ -32,6 +38,17 @@ def tensor_to_ext_arr(tensor: template(), arr: ext_arr()):
 def ndarray_to_ext_arr(ndarray: any_arr(), arr: ext_arr()):
     for I in ti.grouped(ndarray):
         arr[I] = ndarray[I]
+
+
+@kernel
+def ndarray_matrix_to_ext_arr(ndarray: any_arr(), arr: ext_arr(), as_vector: template()):
+    for I in ti.grouped(ndarray):
+        for p in ti.static(range(ndarray[I].n)):
+            for q in ti.static(range(ndarray[I].m)):
+                if ti.static(as_vector):
+                    arr[I, p] = ndarray[I][p]
+                else:
+                    arr[I, p, q] = ndarray[I][p, q]
 
 
 @kernel
@@ -101,6 +118,16 @@ def ext_arr_to_ndarray(arr: ext_arr(), ndarray: any_arr()):
     for I in ti.grouped(ndarray):
         ndarray[I] = arr[I]
 
+
+@kernel
+def ext_arr_to_ndarray_matrix(arr: ext_arr(), ndarray: any_arr(), as_vector: template()):
+    for I in ti.grouped(ndarray):
+        for p in ti.static(range(ndarray[I].n)):
+            for q in ti.static(range(ndarray[I].m)):
+                if ti.static(as_vector):
+                    ndarray[I][p] = arr[I, p]
+                else:
+                    ndarray[I][p, q] = arr[I, p, q]
 
 @kernel
 def matrix_to_ext_arr(mat: template(), arr: ext_arr(), as_vector: template()):

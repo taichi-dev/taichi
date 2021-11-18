@@ -327,7 +327,7 @@ def _test_ndarray_numpy_io():
 
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-@ti.test(exclude=[ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda])
 def test_ndarray_numpy_io_torch():
     _test_ndarray_numpy_io()
 

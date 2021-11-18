@@ -90,33 +90,6 @@ class Ndarray:
         raise NotImplementedError()
 
     @python_scope
-    def fill(self, val):
-        """Fills ndarray with a specific scalar value.
-
-        Args:
-            val (Union[int, float]): Value to fill.
-        """
-        raise NotImplementedError()
-
-    @python_scope
-    def to_numpy(self):
-        """Converts ndarray to a numpy array.
-
-        Returns:
-            numpy.ndarray: The result numpy array.
-        """
-        raise NotImplementedError()
-
-    @python_scope
-    def from_numpy(self, arr):
-        """Loads all values from a numpy array.
-
-        Args:
-            arr (numpy.ndarray): The source numpy array.
-        """
-        raise NotImplementedError()
-
-    @python_scope
     def copy_from(self, other):
         """Copies all elements from another ndarray.
 
@@ -137,6 +110,70 @@ class Ndarray:
             Ndarray: The result ndarray.
         """
         raise NotImplementedError()
+
+    def ndarray_fill(self, val):
+        """Fills ndarray with a specific scalar value.
+
+        Args:
+            val (Union[int, float]): Value to fill.
+        """
+        if impl.current_cfg().ndarray_use_torch:
+            self.arr.fill_(val)
+        elif len(self.element_shape) == 0:
+            taichi.lang.meta.fill_ndarray(self, val)
+        else:
+            taichi.lang.meta.fill_ndarray_matrix(self, val)
+
+    def ndarray_to_numpy(self):
+        """Converts ndarray to a numpy array.
+
+        Returns:
+            numpy.ndarray: The result numpy array.
+        """
+        if impl.current_cfg().ndarray_use_torch:
+            return self.arr.cpu().numpy()
+
+        arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
+        if len(self.element_shape) == 0:
+            taichi.lang.meta.ndarray_to_ext_arr(self, arr)
+        elif len(self.element_shape) == 1:
+            taichi.lang.meta.ndarray_matrix_to_ext_arr(self, arr, 1)
+        elif len(self.element_shape) == 2:
+            taichi.lang.meta.ndarray_matrix_to_ext_arr(self, arr, 0)
+        else:
+            raise NotImplementedError()
+        impl.get_runtime().sync()
+        return arr
+
+    def ndarray_from_numpy(self, arr):
+        """Loads all values from a numpy array.
+
+        Args:
+            arr (numpy.ndarray): The source numpy array.
+        """
+        if not isinstance(arr, np.ndarray):
+            raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
+        if tuple(self.arr.shape) != tuple(arr.shape):
+            raise ValueError(
+                f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
+            )
+        if impl.current_cfg().ndarray_use_torch:
+            self.arr = torch.from_numpy(arr).to(self.arr.dtype)  # pylint: disable=E1101
+            if impl.current_cfg().arch == _ti_core.Arch.cuda:
+                self.arr = self.arr.cuda()
+        else:
+            if hasattr(arr, 'contiguous'):
+                arr = arr.contiguous()
+
+            if len(self.element_shape) == 0:
+                taichi.lang.meta.ext_arr_to_ndarray(arr, self)
+            elif len(self.element_shape) == 1:
+                taichi.lang.meta.ext_arr_to_ndarray_matrix(arr, self, 1)
+            elif len(self.element_shape) == 2:
+                taichi.lang.meta.ext_arr_to_ndarray_matrix(arr, self, 0)
+            else:
+                raise NotImplementedError()
+            impl.get_runtime().sync()
 
     def pad_key(self, key):
         if key is None:
@@ -185,37 +222,15 @@ class ScalarNdarray(Ndarray):
 
     @python_scope
     def fill(self, val):
-        if impl.current_cfg().ndarray_use_torch:
-            self.arr.fill_(val)
-        else:
-            taichi.lang.meta.fill_ndarray(self, val)
+        self.ndarray_fill(val)
 
     @python_scope
     def to_numpy(self):
-        if impl.current_cfg().ndarray_use_torch:
-            return self.arr.cpu().numpy()
-        arr = np.zeros(shape=self.arr.shape, dtype=to_numpy_type(self.dtype))
-        taichi.lang.meta.ndarray_to_ext_arr(self, arr)
-        impl.get_runtime().sync()
-        return arr
+        return self.ndarray_to_numpy()
 
     @python_scope
     def from_numpy(self, arr):
-        if not isinstance(arr, np.ndarray):
-            raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
-        if tuple(self.arr.shape) != tuple(arr.shape):
-            raise ValueError(
-                f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
-            )
-        if impl.current_cfg().ndarray_use_torch:
-            self.arr = torch.from_numpy(arr).to(self.arr.dtype)  # pylint: disable=E1101
-            if impl.current_cfg().arch == _ti_core.Arch.cuda:
-                self.arr = self.arr.cuda()
-        else:
-            if hasattr(arr, 'contiguous'):
-                arr = arr.contiguous()
-            taichi.lang.meta.ext_arr_to_ndarray(arr, self)
-            impl.get_runtime().sync()
+        self.ndarray_from_numpy(arr)
 
     def __deepcopy__(self, memo=None):
         ret_arr = ScalarNdarray(self.dtype, self.shape)

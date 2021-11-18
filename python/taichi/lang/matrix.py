@@ -30,11 +30,7 @@ class Matrix(TaichiOperations):
     """
     is_taichi_class = True
 
-    def __init__(self,
-                 n=1,
-                 m=1,
-                 dt=None,
-                 suppress_warning=False):
+    def __init__(self, n=1, m=1, dt=None, suppress_warning=False):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None

@@ -4,6 +4,7 @@ import platform
 import re
 import shutil
 import sys
+
 import requests
 
 
@@ -92,7 +93,10 @@ def upload_taichi_version():
     parts = filename.split('-')
     payload = {'version': parts[1], 'platform': parts[4], 'python': parts[2]}
     try:
-        response = requests.post('http://'+url+'/add_version/detail', json=payload, auth=(username, password), timeout=5)
+        response = requests.post('http://' + url + '/add_version/detail',
+                                 json=payload,
+                                 auth=(username, password),
+                                 timeout=5)
         response.raise_for_status()
     except requests.exceptions.ConnectionError as err:
         print('Updating latest version failed: No internet,', err)

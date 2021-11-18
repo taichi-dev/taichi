@@ -21,7 +21,10 @@ Ndarray::Ndarray(Program *prog,
   ndarray_alloc_ = prog_impl->allocate_memory_ndarray(nelement_ * element_size_,
                                                       prog->result_buffer);
 
-  data_ptr_ = prog_impl->get_ndarray_alloc_info_ptr(ndarray_alloc_);
+  // taichi's own ndarray's ptr points to its |DeviceAllocation| on the
+  // specified device. Note that torch-based ndarray's ptr is a raw ptr but
+  // we'll get rid of it soon.
+  data_ptr_ = (uint64_t *)&ndarray_alloc_;
 #else
   TI_ERROR("Llvm disabled");
 #endif

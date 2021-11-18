@@ -2228,8 +2228,23 @@ FunctionType CodeGenLLVM::compile_module_to_executable() {
   }
   auto offloaded_tasks_local = offloaded_tasks;
   auto kernel_name_ = kernel_name;
-  return [=](RuntimeContext &context) {
+  return [offloaded_tasks_local, kernel_name_,
+          kernel = this->kernel](RuntimeContext &context) {
     TI_TRACE("Launching kernel {}", kernel_name_);
+    auto args = kernel->args;
+    // For taichi ndarrays, context.args saves pointer to its
+    // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
+    for (int i = 0; i < (int)args.size(); i++) {
+      if (args[i].is_external_array && context.sizes_in_bytes[i] == 0 &&
+          args[i].size > 0) {
+        DeviceAllocation *ptr =
+            static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
+        uint64 host_ptr = (uint64)kernel->program->get_llvm_program_impl()
+                              ->get_ndarray_alloc_info_ptr(*ptr);
+        context.set_arg(i, host_ptr);
+        context.set_raw_ptr_arg_size(i, args[i].size);
+      }
+    }
     for (auto task : offloaded_tasks_local) {
       task(&context);
     }

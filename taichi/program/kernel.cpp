@@ -246,9 +246,11 @@ void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
   ctx_->extra_args[i][j] = d;
 }
 
-void Kernel::LaunchContextBuilder::set_arg_external_array(int arg_id,
-                                                          uint64 ptr,
-                                                          uint64 size) {
+void Kernel::LaunchContextBuilder::set_arg_external_array(
+    int arg_id,
+    uint64 ptr,
+    uint64 size,
+    bool is_device_allocation) {
   TI_ASSERT_INFO(
       kernel_->args[arg_id].is_external_array,
       "Assigning external (numpy) array to scalar argument is not allowed.");
@@ -261,6 +263,10 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(int arg_id,
 
   kernel_->args[arg_id].size = size;
   ctx_->set_arg(arg_id, ptr);
+  if (!is_device_allocation) {
+    // This is a raw ptr
+    ctx_->set_raw_ptr_arg_size(arg_id, size);
+  }
 }
 
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {

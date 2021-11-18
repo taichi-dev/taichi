@@ -51,7 +51,8 @@ void NdarrayRwAccessorsBank::Accessors::write_float(const std::vector<int> &I,
   launch_ctx.set_arg_float(ndarray_->num_active_indices, val);
   launch_ctx.set_arg_external_array(
       ndarray_->num_active_indices + 1, ndarray_->get_data_ptr_as_int(),
-      ndarray_->get_nelement() * ndarray_->get_element_size());
+      ndarray_->get_nelement() * ndarray_->get_element_size(),
+      /*is_device_allocation=*/true);
   set_kernel_extra_args(ndarray_, ndarray_->num_active_indices + 1,
                         &launch_ctx);
   prog_->synchronize();
@@ -65,7 +66,8 @@ float64 NdarrayRwAccessorsBank::Accessors::read_float(
   set_kernel_args(I, ndarray_->num_active_indices, &launch_ctx);
   launch_ctx.set_arg_external_array(
       ndarray_->num_active_indices, ndarray_->get_data_ptr_as_int(),
-      ndarray_->get_nelement() * ndarray_->get_element_size());
+      ndarray_->get_nelement() * ndarray_->get_element_size(),
+      /*is_device_allocation=*/true);
   set_kernel_extra_args(ndarray_, ndarray_->num_active_indices, &launch_ctx);
   (*reader_)(launch_ctx);
   prog_->synchronize();
@@ -81,7 +83,8 @@ void NdarrayRwAccessorsBank::Accessors::write_int(const std::vector<int> &I,
   launch_ctx.set_arg_int(ndarray_->num_active_indices, val);
   launch_ctx.set_arg_external_array(
       ndarray_->num_active_indices + 1, ndarray_->get_data_ptr_as_int(),
-      ndarray_->get_nelement() * ndarray_->get_element_size());
+      ndarray_->get_nelement() * ndarray_->get_element_size(),
+      /*is_device_allocation=*/true);
   set_kernel_extra_args(ndarray_, ndarray_->num_active_indices + 1,
                         &launch_ctx);
   prog_->synchronize();
@@ -94,7 +97,8 @@ int64 NdarrayRwAccessorsBank::Accessors::read_int(const std::vector<int> &I) {
   set_kernel_args(I, ndarray_->num_active_indices, &launch_ctx);
   launch_ctx.set_arg_external_array(
       ndarray_->num_active_indices, ndarray_->get_data_ptr_as_int(),
-      ndarray_->get_nelement() * ndarray_->get_element_size());
+      ndarray_->get_nelement() * ndarray_->get_element_size(),
+      /*is_device_allocation=*/true);
   set_kernel_extra_args(ndarray_, ndarray_->num_active_indices, &launch_ctx);
   (*reader_)(launch_ctx);
   prog_->synchronize();

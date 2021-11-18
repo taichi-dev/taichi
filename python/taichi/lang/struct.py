@@ -215,18 +215,6 @@ class Struct(TaichiOperations):
         return self.entries
 
     @classmethod
-    def empty(cls, entries):
-        """Clear the struct and fill None.
-
-        Args:
-            members (Dict[str, DataType]): the names and data types for struct members.
-        Returns:
-            :class:`~taichi.lang.struct.Struct`: A :class:`~taichi.lang.struct.Struct` instance filled with None.
-
-        """
-        return cls({k: None for k in entries})
-
-    @classmethod
     @python_scope
     def field(cls,
               members,

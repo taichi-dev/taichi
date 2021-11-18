@@ -33,6 +33,7 @@ class Ndarray:
         else:
             self.arr = _ti_core.Ndarray(impl.get_runtime().prog,
                                         cook_dtype(dtype), shape)
+
             def ndarray_fill(val, fill_func):
                 fill_func(self, val)
 

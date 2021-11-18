@@ -14,6 +14,7 @@ payload = {'version': version, 'major': major, 'minor': minor, 'patch': patch, '
 
 username = os.getenv('METADATA_USERNAME')
 password = os.getenv('METADATA_PASSWORD')
+url = os.getenv('METADATA_URL')
 
-response = requests.post('http://54.90.48.192/add_version/main', json=payload, auth=requests.auth.HTTPBasicAuth(username, password))
+response = requests.post('http://'+url+'/add_version/main', json=payload, auth=(username, password))
 print(response.text)

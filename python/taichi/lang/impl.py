@@ -10,9 +10,9 @@ from taichi.lang.exception import InvalidOperationError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
-from taichi.lang.matrix import _IntermediateMatrix, MatrixField
+from taichi.lang.matrix import MatrixField, _IntermediateMatrix
 from taichi.lang.snode import SNode
-from taichi.lang.struct import _IntermediateStruct, StructField
+from taichi.lang.struct import StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)

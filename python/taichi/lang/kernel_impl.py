@@ -543,7 +543,7 @@ class Kernel:
                         # Note I put x64/arm64/cuda here to be more specific.
                         assert not is_ndarray or taichi_arch in (
                             _ti_core.Arch.cuda, _ti_core.Arch.x64,
-                            _ti_core.arm64
+                            _ti_core.Arch.arm64
                         ), "Torch-based ndarray is only supported on taichi x64/arm64/cuda backend."
 
                         if str(v.device).startswith('cuda'):

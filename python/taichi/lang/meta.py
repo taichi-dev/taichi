@@ -41,7 +41,8 @@ def ndarray_to_ext_arr(ndarray: any_arr(), arr: ext_arr()):
 
 
 @kernel
-def ndarray_matrix_to_ext_arr(ndarray: any_arr(), arr: ext_arr(), as_vector: template()):
+def ndarray_matrix_to_ext_arr(ndarray: any_arr(), arr: ext_arr(),
+                              as_vector: template()):
     for I in ti.grouped(ndarray):
         for p in ti.static(range(ndarray[I].n)):
             for q in ti.static(range(ndarray[I].m)):
@@ -120,7 +121,8 @@ def ext_arr_to_ndarray(arr: ext_arr(), ndarray: any_arr()):
 
 
 @kernel
-def ext_arr_to_ndarray_matrix(arr: ext_arr(), ndarray: any_arr(), as_vector: template()):
+def ext_arr_to_ndarray_matrix(arr: ext_arr(), ndarray: any_arr(),
+                              as_vector: template()):
     for I in ti.grouped(ndarray):
         for p in ti.static(range(ndarray[I].n)):
             for q in ti.static(range(ndarray[I].m)):
@@ -128,6 +130,7 @@ def ext_arr_to_ndarray_matrix(arr: ext_arr(), ndarray: any_arr(), as_vector: tem
                     ndarray[I][p] = arr[I, p]
                 else:
                     ndarray[I][p, q] = arr[I, p, q]
+
 
 @kernel
 def matrix_to_ext_arr(mat: template(), arr: ext_arr(), as_vector: template()):

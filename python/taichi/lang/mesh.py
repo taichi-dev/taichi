@@ -6,7 +6,7 @@ from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.matrix import Matrix, MatrixField
+from taichi.lang.matrix import Matrix, MatrixField, _IntermediateMatrix
 from taichi.lang.struct import StructField
 from taichi.lang.types import CompoundType
 from taichi.lang.util import python_scope
@@ -80,7 +80,7 @@ class MeshReorderedMatrixFieldProxy(MatrixField):
         self.initialize_host_accessors()
         key = self.g2r_field[key]
         key = self.pad_key(key)
-        return Matrix.with_entries(self.n, self.m, self.host_access(key))
+        return _IntermediateMatrix(self.n, self.m, self.host_access(key))
 
 
 class MeshElementField:
@@ -477,7 +477,7 @@ class MeshElementFieldProxy:
             if isinstance(attr, MatrixField):
                 setattr(
                     self, key,
-                    Matrix.with_entries(attr.n, attr.m, [
+                    _IntermediateMatrix(attr.n, attr.m, [
                         impl.Expr(
                             _ti_core.subscript(e.ptr, global_entry_expr_group))
                         for e in attr.get_field_members()

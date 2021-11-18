@@ -1671,10 +1671,7 @@ class MeshIndexConversionStmt : public Stmt {
  */
 class MeshPatchIndexStmt : public Stmt {
  public:
-  OffloadedStmt *loop;
-
-  MeshPatchIndexStmt(OffloadedStmt *loop) : loop(loop) {
-    TI_ASSERT(loop->task_type == OffloadedStmt::TaskType::mesh_for);
+  MeshPatchIndexStmt() {
     this->ret_type = PrimitiveType::i32;
     TI_STMT_REG_FIELDS;
   }
@@ -1683,7 +1680,7 @@ class MeshPatchIndexStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, loop);
+  TI_STMT_DEF_FIELDS(ret_type);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

@@ -739,8 +739,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(MeshPatchIndexStmt *stmt) override {
-    print("{}{} = loop {} patch idx", stmt->type_hint(), stmt->name(),
-          stmt->loop->name());
+    print("{}{} = mesh patch idx", stmt->type_hint(), stmt->name());
   }
 };
 

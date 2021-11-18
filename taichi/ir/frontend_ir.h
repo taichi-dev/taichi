@@ -796,6 +796,20 @@ class FuncCallExpression : public Expression {
 
 // Mesh related.
 
+class MeshPatchIndexExpression : public Expression {
+ public:
+  MeshPatchIndexExpression() {
+  }
+
+  void type_check() override;
+
+  void serialize(std::ostream &ss) override {
+    ss << fmt::format("mesh_patch_idx()");
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
 class MeshRelationAccessExpression : public Expression {
  public:
   mesh::Mesh *mesh;

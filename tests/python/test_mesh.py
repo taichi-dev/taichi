@@ -9,6 +9,23 @@ repo_dir = os.path.abspath(
 model_file_path = os.path.join(repo_dir, 'misc', 'ell.json')
 
 
+@ti.test(require=ti.extension.mesh, dynamic_index=False)
+def test_mesh_patch_idx():
+    mesh_builder = ti.Mesh.Tet()
+    mesh_builder.verts.place({'idx': ti.i32})
+    model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
+
+    @ti.kernel
+    def foo():
+        for v in model.verts:
+            v.idx = ti.mesh_patch_idx()
+
+    foo()
+    idx = model.verts.idx.to_numpy()
+    assert idx[0] == 6
+    assert idx.sum() == 89
+
+
 def _test_mesh_for(cell_reorder=False, vert_reorder=False, extra_tests=True):
     mesh_builder = ti.Mesh.Tet()
     mesh_builder.verts.place({'t': ti.i32}, reorder=vert_reorder)

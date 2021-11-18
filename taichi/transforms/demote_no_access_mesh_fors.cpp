@@ -37,10 +37,16 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   offloaded->task_type = OffloadedTaskType::range_for;
 }
 
-void maybe_convert(OffloadedStmt *stmt) {
-  if (stmt->task_type == OffloadedTaskType::mesh_for &&
-      stmt->major_to_types.size() == 0) {
-    convert_to_range_for(stmt);
+void maybe_convert(OffloadedStmt *offloaded) {
+  if (offloaded->task_type == OffloadedTaskType::mesh_for &&
+      offloaded->major_to_types.size() == 0) {
+    auto stmts = irpass::analysis::gather_statements(  // ti.mesh_patch_idx()
+                                                       // relies on mesh-for
+        offloaded->body.get(),
+        [&](Stmt *stmt) { return stmt->is<MeshPatchIndexStmt>(); });
+    if (stmts.size() == 0) {
+      convert_to_range_for(offloaded);
+    }
   }
 }
 

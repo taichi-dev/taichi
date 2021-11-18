@@ -849,8 +849,7 @@ def test_listcomp():
     @ti.func
     def identity(dt, n: ti.template()):
         return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
-                          for i in range(n)],
-                         disable_local_tensor=1)
+                          for i in range(n)])
 
     @ti.kernel
     def foo(n: ti.template()) -> ti.i32:

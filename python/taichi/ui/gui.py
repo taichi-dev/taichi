@@ -49,6 +49,9 @@ class Gui:
 
     def text(self, text):
         """Declares a line of text.
+
+        Args:
+            text (str): a line of text to be shown.
         """
         self.gui.text(text)
 
@@ -93,6 +96,7 @@ class Gui:
         """Declares a line of colored text.
 
         Args:
-            TODO
+            color (Tuple[float]): the color of the text, this should be a tuple of floats in [0,1] that indicates RGB values.
+            text (str): a line of text to be shown.
         """
         return self.gui.text_colored(color, text)

@@ -26,6 +26,8 @@ per_vertex_color = ti.Vector.field(3, ti.f32, shape=max_num_particles)
 rest_length = ti.field(dtype=ti.f32,
                        shape=(max_num_particles, max_num_particles))
 
+# gray color
+gray = (128, 128, 128, 255)
 
 @ti.kernel
 def substep():
@@ -159,10 +161,10 @@ def main():
         canvas.circles(x, per_vertex_color=per_vertex_color, radius=0.02)
 
         window.GUI.begin("mass spring", 0.05, 0.05, 0.9, 0.2)
-        window.GUI.text(
+        window.GUI.text_colored(gray,
             "Left click: add mass point (with shift to fix); Right click: attract"
         )
-        window.GUI.text("C: clear all; Space: pause")
+        window.GUI.text_colored(gray, "C: clear all; Space: pause")
         spring_Y[None] = window.GUI.slider_float("Spring Young's modulus",
                                                  spring_Y[None], 100, 10000)
         drag_damping[None] = window.GUI.slider_float("Drag damping",

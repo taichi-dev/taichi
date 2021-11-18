@@ -105,7 +105,7 @@ void demote_mesh_statements_offload(OffloadedStmt *offload,
     } else {  // low-to-high or same-order
       SNode *rel_offset = stmt->mesh->relations.find(rel_type)->second.offset;
       VecStatement block;
-      Stmt *patch_idx = block.push_back<MeshPatchIndexStmt>(offload);
+      Stmt *patch_idx = block.push_back<MeshPatchIndexStmt>();
       Stmt *owned_offset = offload->owned_offset_local.find(from_type)->second;
       Stmt *index_offset = block.push_back<BinaryOpStmt>(
           BinaryOpType::add, patch_idx, owned_offset);

@@ -953,6 +953,23 @@ void export_lang(py::module &m) {
     return Expr::make<GlobalThreadIndexExpression>();
   });
 
+  m.def("insert_patch_idx_expr", [&]() {
+    auto loop =
+        scope_stack.size() ? scope_stack.back()->list->parent_stmt : nullptr;
+    if (loop != nullptr) {
+      auto i = scope_stack.size() - 1;
+      while (!(loop->is<FrontendForStmt>())) {
+        loop = i > 0 ? scope_stack[--i]->list->parent_stmt : nullptr;
+        if (loop == nullptr)
+          break;
+      }
+    }
+    TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>() &&
+                  loop->as<FrontendForStmt>()->mesh_for),
+                "ti.mesh_patch_idx() is only valid within mesh-for loops.");
+    return Expr::make<MeshPatchIndexExpression>();
+  });
+
   py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())
       .value("block_local", SNodeAccessFlag::block_local)
       .value("read_only", SNodeAccessFlag::read_only)

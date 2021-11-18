@@ -633,6 +633,7 @@ vectorize = _ti_core.vectorize
 bit_vectorize = _ti_core.bit_vectorize
 block_dim = _ti_core.block_dim
 global_thread_idx = _ti_core.insert_thread_idx_expr
+mesh_patch_idx = _ti_core.insert_patch_idx_expr
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
 transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)

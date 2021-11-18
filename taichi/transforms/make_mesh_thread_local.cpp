@@ -37,8 +37,8 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
     offload->mesh_prologue->parent_stmt = offload;
   }
 
-  auto patch_idx = offload->tls_prologue->insert(
-      std::make_unique<MeshPatchIndexStmt>(offload), -1);
+  auto patch_idx =
+      offload->tls_prologue->insert(std::make_unique<MeshPatchIndexStmt>(), -1);
   auto one = offload->tls_prologue->insert(
       std::make_unique<ConstStmt>(TypedConstant(data_type, 1)), -1);
   auto patch_idx_1 = offload->tls_prologue->insert(

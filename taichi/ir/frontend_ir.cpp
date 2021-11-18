@@ -769,6 +769,16 @@ void FuncCallExpression::serialize(std::ostream &ss) {
 
 // Mesh related.
 
+void MeshPatchIndexExpression::flatten(FlattenContext *ctx) {
+  auto pid_stmt = std::make_unique<MeshPatchIndexStmt>();
+  ctx->push_back(std::move(pid_stmt));
+  stmt = ctx->back_stmt();
+}
+
+void MeshPatchIndexExpression::type_check() {
+  ret_type = PrimitiveType::i32;
+}
+
 void MeshRelationAccessExpression::type_check() {
   ret_type = PrimitiveType::i32;
 }

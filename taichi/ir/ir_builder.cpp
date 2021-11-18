@@ -480,8 +480,8 @@ MeshIndexConversionStmt *IRBuilder::get_index_conversion(
                                                           conv_type));
 }
 
-MeshPatchIndexStmt *IRBuilder::get_patch_index(OffloadedStmt *loop) {
-  return insert(Stmt::make_typed<MeshPatchIndexStmt>(loop));
+MeshPatchIndexStmt *IRBuilder::get_patch_index() {
+  return insert(Stmt::make_typed<MeshPatchIndexStmt>());
 }
 
 TLANG_NAMESPACE_END

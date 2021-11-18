@@ -273,7 +273,7 @@ class IRBuilder {
                                                 mesh::MeshElementType idx_type,
                                                 Stmt *idx,
                                                 mesh::ConvType conv_type);
-  MeshPatchIndexStmt *get_patch_index(OffloadedStmt *loop);
+  MeshPatchIndexStmt *get_patch_index();
 
  private:
   std::unique_ptr<Block> root_{nullptr};

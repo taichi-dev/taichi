@@ -16,5 +16,23 @@ username = os.getenv('METADATA_USERNAME')
 password = os.getenv('METADATA_PASSWORD')
 url = os.getenv('METADATA_URL')
 
-response = requests.post('http://'+url+'/add_version/main', json=payload, auth=(username, password))
-print(response.text)
+try:
+    response = requests.post('http://'+url+'/add_version/main', json=payload, auth=(username, password), timeout=5)
+    response.raise_for_status()
+except requests.exceptions.ConnectionError as err:
+    print('Updating latest version failed: No internet,', err)
+    exit(1)
+except requests.exceptions.HTTPError as err:
+    print('Updating latest version failed: Server error,', err)
+    exit(1)
+except requests.exceptions.Timeout as err:
+    print(
+        'Updating latest version failed: Time out when connecting server,',
+        err)
+    exit(1)
+except requests.exceptions.RequestException as err:
+    print('Updating latest version failed:', err)
+    exit(1)
+
+response = response.json()
+print(response['message'])

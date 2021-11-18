@@ -305,7 +305,7 @@ if (NOT WIN32)
         if (NOT TI_EXPORT_CORE) # expose api for CHI IR Builder
             target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/misc/linker.map)
         endif ()
-        target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f,--wrap=log2,--wrap=exp,--wrap=log,--wrap=pow) # Avoid glibc dependencies
+        target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f) # Avoid glibc dependencies
     endif()
 else()
     # windows

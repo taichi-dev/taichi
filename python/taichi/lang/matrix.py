@@ -1396,15 +1396,15 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def fill(self, val):
-        self.ndarray_fill(val)
+        self.ndarray_fill(val, taichi.lang.meta.fill_ndarray_matrix)
 
     @python_scope
     def to_numpy(self):
-        return self.ndarray_to_numpy()
+        return self.ndarray_matrix_to_numpy(as_vector=0)
 
     @python_scope
     def from_numpy(self, arr):
-        self.ndarray_from_numpy(arr)
+        self.ndarray_matrix_from_numpy(arr, as_vector=0)
 
     def __deepcopy__(self, memo=None):
         ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape,
@@ -1461,15 +1461,15 @@ class VectorNdarray(Ndarray):
 
     @python_scope
     def fill(self, val):
-        self.ndarray_fill(val)
+        self.ndarray_fill(val, taichi.lang.meta.fill_ndarray_matrix)
 
     @python_scope
     def to_numpy(self):
-        return self.ndarray_to_numpy()
+        return self.ndarray_matrix_to_numpy(as_vector=1)
 
     @python_scope
     def from_numpy(self, arr):
-        self.ndarray_from_numpy(arr)
+        self.ndarray_matrix_from_numpy(arr, as_vector=1)
 
     def __deepcopy__(self, memo=None):
         ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)

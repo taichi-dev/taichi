@@ -279,7 +279,7 @@ def round(a):
         a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
 
     Returns:
-        Round of `a`.
+        The nearest integer of `a`.
     """
     return _unary_operation(_ti_core.expr_round, builtins.round, a)
 

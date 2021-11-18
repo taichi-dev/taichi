@@ -537,6 +537,14 @@ class Kernel:
                         assert isinstance(v, torch.Tensor)
                         tmp = v
                         taichi_arch = self.runtime.prog.config.arch
+                        # Ndarray means its memory is allocated on the specified taichi arch.
+                        # Since torch only supports CPU & CUDA, torch-base ndarray only supports
+                        # taichi cpu/cuda backend as well.
+                        # Note I put x64/arm64/cuda here to be more specific.
+                        assert not is_ndarray or taichi_arch in (
+                            _ti_core.Arch.cuda, _ti_core.Arch.x64,
+                            _ti_core.arm64
+                        ), "Torch-based ndarray is only supported on taichi x64/arm64/cuda backend."
 
                         if str(v.device).startswith('cuda'):
                             # External tensor on cuda

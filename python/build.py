@@ -82,12 +82,13 @@ def parse_args():
                         help='Set the project name')
     return parser.parse_args()
 
+
 def upload_taichi_version():
     username = os.getenv('METADATA_USERNAME')
     password = os.getenv('METADATA_PASSWORD')
     url = os.getenv('METADATA_URL')
     filename = os.listdir('../dist')[0]
-    filename = filename[:len(filename)-4]
+    filename = filename[:len(filename) - 4]
     parts = filename.split('-')
     payload = {'version': parts[1], 'platform': parts[4], 'python': parts[2]}
     try:
@@ -109,6 +110,7 @@ def upload_taichi_version():
         exit(1)
     response = response.json()
     print(response['message'])
+
 
 def main():
     args = parse_args()

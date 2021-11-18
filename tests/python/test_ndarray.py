@@ -325,6 +325,23 @@ def _test_ndarray_numpy_io():
     b.from_numpy(np.ones((n, m), dtype=np.int32) * 2)
     assert (a.to_numpy() == b.to_numpy()).all()
 
+    d = 2
+    p = 4
+    x = ti.Vector.ndarray(d, ti.f32, p)
+    x.fill(2)
+    y = ti.Vector.ndarray(d, ti.f32, p)
+    y.from_numpy(np.ones((p, d), dtype=np.int32) * 2)
+    assert (x.to_numpy() == y.to_numpy()).all()
+
+    c = 2
+    d = 2
+    p = 4
+    x = ti.Matrix.ndarray(c, d, ti.f32, p)
+    x.fill(2)
+    y = ti.Matrix.ndarray(c, d, ti.f32, p)
+    y.from_numpy(np.ones((p, c, d), dtype=np.int32) * 2)
+    assert (x.to_numpy() == y.to_numpy()).all()
+
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda])

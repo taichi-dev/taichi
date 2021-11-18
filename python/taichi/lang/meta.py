@@ -19,7 +19,7 @@ def fill_tensor(tensor: template(), val: template()):
 @kernel
 def fill_ndarray(ndarray: any_arr(), val: template()):
     for I in ti.grouped(ndarray):
-        ndarray[I].fill(val)
+        ndarray[I] = val
 
 
 @kernel

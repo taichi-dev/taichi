@@ -231,7 +231,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
         });
     tlctx->add_module(std::move(module));
     auto kernel_symbol = tlctx->lookup_function_pointer(offloaded_task_name);
-    return [=](Context &context) {
+    return [=](RuntimeContext &context) {
       TI_TRACE("Launching Taichi Kernel Function");
       auto func = (int32(*)(void *))kernel_symbol;
       func(&context);

@@ -97,7 +97,8 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void finalize();
 
-  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size);
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer);
 
   uint64_t *get_ndarray_alloc_info_ptr(DeviceAllocation &alloc);
 
@@ -158,7 +159,6 @@ class LlvmProgramImpl : public ProgramImpl {
   DeviceAllocation preallocated_device_buffer_alloc{kDeviceNullAllocation};
 
   std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
-  std::vector<DeviceAllocation> ndarray_allocs_;
 
   std::unique_ptr<Device> device_;
   cuda::CudaDevice *cuda_device();

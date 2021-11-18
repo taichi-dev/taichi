@@ -1,5 +1,6 @@
 // The LLVM backend for CPUs/NVPTX/AMDGPU
 #pragma once
+#ifdef TI_WITH_LLVM
 
 #include <set>
 #include <unordered_map>
@@ -30,7 +31,7 @@ class OffloadedTask {
 
   void compile();
 
-  void operator()(Context *context);
+  void operator()(RuntimeContext *context);
 };
 
 class FunctionCreationGuard {
@@ -313,6 +314,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(LoopLinearIndexStmt *stmt) override;
 
+  void visit(GlobalThreadIndexStmt *stmt) override;
+
   void visit(BlockCornerIndexStmt *stmt) override;
 
   void visit(BlockDimStmt *stmt) override;
@@ -362,7 +365,14 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *get_exponent_offset(llvm::Value *exponent, CustomFloatType *cft);
 
+  llvm::Value *atomic_op_using_cas(
+      llvm::Value *dest,
+      llvm::Value *val,
+      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op);
+
   ~CodeGenLLVM() = default;
 };
 
 TLANG_NAMESPACE_END
+
+#endif  // #ifdef TI_WITH_LLVM

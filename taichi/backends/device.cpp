@@ -120,11 +120,22 @@ void Device::print_all_cap() const {
       {DeviceCapability::spirv_has_atomic_float64_minmax,
        "spirv_has_atomic_float64_minmax"},
       {DeviceCapability::spirv_has_variable_ptr, "spirv_has_variable_ptr"},
+      {DeviceCapability::wide_lines, "wide_lines"},
   };
   for (auto &pair : caps_) {
     TI_TRACE("DeviceCapability::{} ({}) = {}", names.at(pair.first),
              int(pair.first), pair.second);
   }
+}
+
+uint64_t *Device::allocate_llvm_runtime_memory_jit(JITModule *runtime_jit,
+                                                   LLVMRuntime *runtime,
+                                                   size_t size,
+                                                   uint64 *result_buffer) {
+  runtime_jit->call<void *, std::size_t, std::size_t>(
+      "runtime_memory_allocate_aligned", runtime, size, taichi_page_size);
+  return taichi_union_cast_with_different_sizes<uint64_t *>(fetch_result_uint64(
+      taichi_result_buffer_runtime_query_id, result_buffer));
 }
 
 void GraphicsDevice::image_transition(DeviceAllocation img,

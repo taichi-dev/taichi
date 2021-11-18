@@ -244,6 +244,8 @@ void export_lang(py::module &m) {
   py::class_<Program>(m, "Program")
       .def(py::init<>())
       .def_readonly("config", &Program::config)
+      .def("sync_kernel_profiler",
+           [](Program *program) { program->profiler->sync(); })
       .def("query_kernel_profile_info",
            [](Program *program, const std::string &name) {
              return program->query_kernel_profile_info(name);
@@ -780,6 +782,7 @@ void export_lang(py::module &m) {
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
+  m.def("is_custom_type", is_custom_type);
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
   m.def("is_real", is_real);
@@ -880,6 +883,25 @@ void export_lang(py::module &m) {
   m.def("bit_vectorize", BitVectorize);
   m.def("block_dim", BlockDim);
 
+  m.def("insert_thread_idx_expr", [&]() {
+    auto arch = get_current_program().config.arch;
+    auto loop =
+        scope_stack.size() ? scope_stack.back()->list->parent_stmt : nullptr;
+    TI_ERROR_IF(arch != Arch::cuda && !arch_is_cpu(arch),
+                "ti.thread_idx() is only available in cuda or cpu context.");
+    if (loop != nullptr) {
+      auto i = scope_stack.size() - 1;
+      while (!(loop->is<FrontendForStmt>())) {
+        loop = i > 0 ? scope_stack[--i]->list->parent_stmt : nullptr;
+        if (loop == nullptr)
+          break;
+      }
+    }
+    TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
+                "ti.thread_idx() is only valid within loops.");
+    return Expr::make<GlobalThreadIndexExpression>();
+  });
+
   py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())
       .value("block_local", SNodeAccessFlag::block_local)
       .value("read_only", SNodeAccessFlag::read_only)
@@ -900,7 +922,9 @@ void export_lang(py::module &m) {
   m.def("test_throw", [] { throw IRModified(); });
   m.def("needs_grad", needs_grad);
 
+#if TI_WITH_LLVM
   m.def("libdevice_path", libdevice_path);
+#endif
 
   m.def("host_arch", host_arch);
 

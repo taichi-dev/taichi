@@ -52,7 +52,7 @@ jobs:
           GPU_BUILD: ON
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
-          DISPLAY: :1
+          DISPLAY: ":1"
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v2
@@ -70,7 +70,7 @@ jobs:
         env:
           PY: ${{ matrix.conda_python }}
           GPU_TEST: ON
-          DISPLAY: :1
+          DISPLAY: ":1"
 
       - name: Upload PyPI
         env:
@@ -288,10 +288,6 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     runs-on: windows-latest
     steps:
-      - name: Install 7Zip PowerShell
-        shell: powershell
-        run: Install-Module 7Zip4PowerShell -Force -Verbose
-
       - uses: actions/checkout@v2
         with:
           submodules: "recursive"
@@ -303,39 +299,13 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
 
-      - name: Download And Install Vulkan
-        shell: powershell
-        run: |
-          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe" -OutFile VulkanSDK.exe
-          $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
-          $installer.WaitForExit();
-
       - name: Build Python Wheel
         shell: powershell
         run: |
-          $env:Path += ";C:/VulkanSDK/1.2.189.0/Bin"
-          cd C:\
-          Remove-item alias:curl
-          curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO
-          7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi_llvm
-          curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip -LO
-          7z x clang-10.0.0-win.zip -otaichi_clang
-          $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
-          clang --version
-          cd D:\a\taichi\taichi
-          python -m pip install -r requirements_dev.txt
-          python -m pip install -r requirements_test.txt
-          cd python
-          git fetch origin master
-          $env:TAICHI_CMAKE_ARGS = $env:CI_SETUP_CMAKE_ARGS
-          python build.py build --project_name $env:PROJECT_NAME
-          cd ..\dist
-          $env:WHL = $(dir *.whl)
-          python -m pip install $env:WHL
+          .\.github\workflows\scripts\win_build.ps1 -installVulkan -libsDir C:\
+          venv\Scripts\python -m pip install $(dir dist\*.whl)
         env:
-          CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm -DTI_WITH_VULKAN:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
-          VULKAN_SDK: C:/VulkanSDK/1.2.189.0
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v2
@@ -348,10 +318,11 @@ jobs:
         shell: powershell
         run: |
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
+          . venv\Scripts\activate.ps1
           python -c "import taichi"
           python examples/algorithm/laplace.py
-          python bin/taichi diagnose
-          python bin/taichi test -vr2 -t2
+          ti diagnose
+          ti test -vr2 -t2
 
       - name: Upload PyPI
         shell: powershell
@@ -363,6 +334,6 @@ jobs:
         run: |
           cd python
           if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {$env:PYPI_PWD = "$env:NIGHT_PWD"}
-          if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {python build.py upload --skip_build --testpypi --project_name $env:PROJECT_NAME}
+          if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {..\venv\Scripts\python build.py upload --skip_build --testpypi --project_name $env:PROJECT_NAME}
           if ( $env:PROJECT_NAME -eq "taichi" ) {$env:PYPI_PWD = "$env:PROD_PWD"}
-          if ( $env:PROJECT_NAME -eq "taichi" ) {python build.py upload --skip_build}
+          if ( $env:PROJECT_NAME -eq "taichi" ) {..\venv\Scripts\python build.py upload --skip_build}

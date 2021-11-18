@@ -1,20 +1,20 @@
-import taichi as ti
+from taichi.lang.matrix import _IntermediateMatrix
 
 
 class ndrange:
     def __init__(self, *args):
         args = list(args)
-        for i in range(len(args)):
-            if isinstance(args[i], list):
-                args[i] = tuple(args[i])
-            if not isinstance(args[i], tuple):
-                args[i] = (0, args[i])
+        for i, arg in enumerate(args):
+            if isinstance(arg, list):
+                args[i] = tuple(arg)
+            if not isinstance(arg, tuple):
+                args[i] = (0, arg)
             assert len(args[i]) == 2
         self.bounds = args
 
         self.dimensions = [None] * len(args)
-        for i in range(len(self.bounds)):
-            self.dimensions[i] = self.bounds[i][1] - self.bounds[i][0]
+        for i, bound in enumerate(self.bounds):
+            self.dimensions[i] = bound[1] - bound[0]
 
         self.acc_dimensions = self.dimensions.copy()
         for i in reversed(range(len(self.bounds) - 1)):
@@ -44,4 +44,4 @@ class GroupedNDRange:
 
     def __iter__(self):
         for ind in self.r:
-            yield ti.Vector(list(ind), keep_raw=True)
+            yield _IntermediateMatrix(len(ind), 1, list(ind))

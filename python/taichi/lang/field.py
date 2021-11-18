@@ -16,8 +16,8 @@ class Field:
     Args:
         vars (List[Expr]): Field members.
     """
-    def __init__(self, vars):
-        self.vars = vars
+    def __init__(self, _vars):
+        self.vars = _vars
         self.host_accessors = None
         self.grad = None
 
@@ -187,8 +187,7 @@ class Field:
             return self.__repr__()  # make pybind11 happy, see Matrix.__str__
         if self.snode.ptr is None:
             return '<Field: Definition of this field is incomplete>'
-        else:
-            return str(self.to_numpy())
+        return str(self.to_numpy())
 
     def pad_key(self, key):
         if key is None:
@@ -236,6 +235,8 @@ class ScalarField(Field):
     @python_scope
     def to_torch(self, device=None):
         import torch  # pylint: disable=C0415
+
+        # pylint: disable=E1101
         arr = torch.zeros(size=self.shape,
                           dtype=to_pytorch_type(self.dtype),
                           device=device)

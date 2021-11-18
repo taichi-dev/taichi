@@ -1101,7 +1101,9 @@ void VulkanCommandList::blit_image(DeviceAllocation dst_img,
 }
 
 void VulkanCommandList::set_line_width(float width) {
-  vkCmdSetLineWidth(buffer_->buffer, width);
+  if (ti_device_->get_cap(DeviceCapability::wide_lines)) {
+    vkCmdSetLineWidth(buffer_->buffer, width);
+  }
 }
 
 vkapi::IVkRenderPass VulkanCommandList::current_renderpass() {
@@ -1746,6 +1748,14 @@ vkapi::IVkDescriptorSet VulkanDevice::alloc_desc_set(
 }
 
 void VulkanDevice::create_vma_allocator() {
+  VmaAllocatorCreateInfo allocatorInfo = {};
+  allocatorInfo.vulkanApiVersion =
+      this->get_cap(DeviceCapability::vk_api_version);
+  allocatorInfo.physicalDevice = physical_device_;
+  allocatorInfo.device = device_;
+  allocatorInfo.instance = instance_;
+
+#ifndef __APPLE__
   VolkDeviceTable table;
   VmaVulkanFunctions vk_vma_functions;
 
@@ -1784,13 +1794,8 @@ void VulkanDevice::create_vma_allocator() {
       PFN_vkGetPhysicalDeviceMemoryProperties2KHR(vkGetInstanceProcAddr(
           volkGetLoadedInstance(), "vkGetPhysicalDeviceMemoryProperties2KHR"));
 
-  VmaAllocatorCreateInfo allocatorInfo = {};
-  allocatorInfo.vulkanApiVersion =
-      this->get_cap(DeviceCapability::vk_api_version);
-  allocatorInfo.physicalDevice = physical_device_;
-  allocatorInfo.device = device_;
-  allocatorInfo.instance = instance_;
   allocatorInfo.pVulkanFunctions = &vk_vma_functions;
+#endif
 
   vmaCreateAllocator(&allocatorInfo, &allocator_);
 
@@ -1982,7 +1987,7 @@ void VulkanSurface::create_swap_chain() {
   createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   createInfo.presentMode = present_mode;
   createInfo.clipped = VK_TRUE;
-  createInfo.oldSwapchain = nullptr;
+  createInfo.oldSwapchain = VK_NULL_HANDLE;
 
   if (vkCreateSwapchainKHR(device_->vk_device(), &createInfo,
                            kNoVkAllocCallbacks, &swapchain_) != VK_SUCCESS) {

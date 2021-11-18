@@ -1,3 +1,4 @@
+#ifdef TI_WITH_LLVM
 #include "taichi/codegen/codegen_llvm.h"
 
 #include "taichi/ir/statements.h"
@@ -25,7 +26,7 @@ void OffloadedTask::end() {
   codegen->offloaded_tasks.push_back(*this);
 }
 
-void OffloadedTask::operator()(Context *context) {
+void OffloadedTask::operator()(RuntimeContext *context) {
   TI_ASSERT(func);
   func(context);
 }
@@ -326,7 +327,7 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
     this->ir = kernel->ir.get();
   initialize_context();
 
-  context_ty = get_runtime_type("Context");
+  context_ty = get_runtime_type("RuntimeContext");
   physical_coordinate_ty = get_runtime_type(kLLVMPhysicalCoordinatesName);
 
   kernel_name = kernel->name + "_kernel";
@@ -1024,7 +1025,7 @@ void CodeGenLLVM::visit(RangeForStmt *for_stmt) {
 }
 
 void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
-  auto raw_arg = call(builder.get(), "Context_get_args", get_context(),
+  auto raw_arg = call(builder.get(), "RuntimeContext_get_args", get_context(),
                       tlctx->get_constant(stmt->arg_id));
 
   llvm::Type *dest_ty = nullptr;
@@ -1174,6 +1175,41 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
+llvm::Value *CodeGenLLVM::atomic_op_using_cas(
+    llvm::Value *dest,
+    llvm::Value *val,
+    std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
+  using namespace llvm;
+  BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
+  BasicBlock *after_loop =
+      BasicBlock::Create(*llvm_context, "after_while", func);
+
+  builder->CreateBr(body);
+  builder->SetInsertPoint(body);
+
+  llvm::Value *old_val;
+
+  {
+    old_val = builder->CreateLoad(dest);
+    auto new_val = op(old_val, val);
+    dest =
+        builder->CreateBitCast(dest, llvm::Type::getInt16PtrTy(*llvm_context));
+    auto atomicCmpXchg = builder->CreateAtomicCmpXchg(
+        dest,
+        builder->CreateBitCast(old_val, llvm::Type::getInt16Ty(*llvm_context)),
+        builder->CreateBitCast(new_val, llvm::Type::getInt16Ty(*llvm_context)),
+        AtomicOrdering::SequentiallyConsistent,
+        AtomicOrdering::SequentiallyConsistent);
+    // Check whether CAS was succussful
+    auto ok = builder->CreateExtractValue(atomicCmpXchg, 1);
+    builder->CreateCondBr(builder->CreateNot(ok), body, after_loop);
+  }
+
+  builder->SetInsertPoint(after_loop);
+
+  return old_val;
+}
+
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   // auto mask = stmt->parent->mask();
   // TODO: deal with mask when vectorized
@@ -1205,6 +1241,10 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+        old_value = atomic_op_using_cas(
+            llvm_val[stmt->dest], llvm_val[stmt->val],
+            [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
         old_value = create_call("atomic_min_f32",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -1219,6 +1259,10 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+        old_value = atomic_op_using_cas(
+            llvm_val[stmt->dest], llvm_val[stmt->val],
+            [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
       } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
         old_value = create_call("atomic_max_f32",
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -1520,7 +1564,7 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 
   for (int i = 0; i < num_indices; i++) {
     auto raw_arg = create_call(
-        "Context_get_extra_args",
+        "RuntimeContext_get_extra_args",
         {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(i)});
     sizes[i] = raw_arg;
   }
@@ -1543,7 +1587,7 @@ void CodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
   llvm_val[stmt] = create_call(
-      "Context_get_extra_args",
+      "RuntimeContext_get_extra_args",
       {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(axis)});
 }
 
@@ -1648,7 +1692,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   {
     // Create the loop body function
     auto guard = get_function_creation_guard({
-        llvm::PointerType::get(get_runtime_type("Context"), 0),
+        llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
         get_tls_buffer_type(),
         llvm::PointerType::get(get_runtime_type("Element"), 0),
         tlctx->get_data_type<int>(),
@@ -1940,6 +1984,10 @@ void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
   }
 }
 
+void CodeGenLLVM::visit(GlobalThreadIndexStmt *stmt) {
+  llvm_val[stmt] = create_call("linear_thread_idx", {get_context()});
+}
+
 void CodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
       stmt->loop->as<OffloadedStmt>()->task_type ==
@@ -2180,7 +2228,7 @@ FunctionType CodeGenLLVM::compile_module_to_executable() {
   }
   auto offloaded_tasks_local = offloaded_tasks;
   auto kernel_name_ = kernel_name;
-  return [=](Context &context) {
+  return [=](RuntimeContext &context) {
     TI_TRACE("Launching kernel {}", kernel_name_);
     for (auto task : offloaded_tasks_local) {
       task(&context);
@@ -2220,7 +2268,7 @@ llvm::Type *CodeGenLLVM::get_tls_buffer_type() {
 }
 
 std::vector<llvm::Type *> CodeGenLLVM::get_xlogue_argument_types() {
-  return {llvm::PointerType::get(get_runtime_type("Context"), 0),
+  return {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
           get_tls_buffer_type()};
 }
 
@@ -2235,7 +2283,7 @@ llvm::Value *CodeGenLLVM::get_root(int snode_tree_id) {
 }
 
 llvm::Value *CodeGenLLVM::get_runtime() {
-  auto runtime_ptr = create_call("Context_get_runtime", {get_context()});
+  auto runtime_ptr = create_call("RuntimeContext_get_runtime", {get_context()});
   return builder->CreateBitCast(
       runtime_ptr, llvm::PointerType::get(get_runtime_type("LLVMRuntime"), 0));
 }
@@ -2274,3 +2322,5 @@ llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
 }
 
 TLANG_NAMESPACE_END
+
+#endif  // #ifdef TI_WITH_LLVM

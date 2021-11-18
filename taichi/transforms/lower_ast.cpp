@@ -380,9 +380,6 @@ class LowerAST : public IRVisitor {
     auto expr = stmt->expr;
     auto fctx = make_flatten_ctx();
     expr->flatten(&fctx);
-    if (stmt->eval_expr.expr && stmt->eval_expr.is<EvalExpression>()) {
-      stmt->eval_expr.cast<EvalExpression>()->stmt_ptr = stmt->expr->stmt;
-    }
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }

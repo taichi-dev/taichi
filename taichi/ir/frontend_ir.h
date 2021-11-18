@@ -125,7 +125,6 @@ class FrontendPrintStmt : public Stmt {
 class FrontendEvalStmt : public Stmt {
  public:
   Expr expr;
-  Expr eval_expr;
 
   FrontendEvalStmt(const Expr &expr) : expr(load_if_ptr(expr)) {
   }
@@ -358,6 +357,8 @@ class InternalFuncCallExpression : public Expression {
     }
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override {
     ss << "internal call " << func_name << '(';
     std::string args_str;
@@ -395,6 +396,8 @@ class ExternalFuncCallExpression : public Expression {
         args(args),
         outputs(outputs) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     if (so_func != nullptr) {
@@ -558,21 +561,18 @@ class TensorElementExpression : public Expression {
   }
 };
 
-class EvalExpression : public Expression {
+class GlobalThreadIndexExpression : public Expression {
  public:
-  Stmt *stmt_ptr;
-  int stmt_id;
-  EvalExpression(Stmt *stmt) : stmt_ptr(stmt), stmt_id(stmt_ptr->id) {
-    // cache stmt->id since it may be released later
+  GlobalThreadIndexExpression() {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
-    ss << '%' << stmt_id;
+    ss << fmt::format("global_thread_idx()");
   }
 
-  void flatten(FlattenContext *ctx) override {
-    stmt = stmt_ptr;
-  }
+  void flatten(FlattenContext *ctx) override;
 };
 
 class RangeAssumptionExpression : public Expression {
@@ -584,8 +584,13 @@ class RangeAssumptionExpression : public Expression {
                             const Expr &base,
                             int low,
                             int high)
-      : input(input), base(base), low(low), high(high) {
+      : input(load_if_ptr(input)),
+        base(load_if_ptr(base)),
+        low(low),
+        high(high) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     ss << "assume_in_range({";
@@ -609,6 +614,8 @@ class LoopUniqueExpression : public Expression {
   LoopUniqueExpression(const Expr &input, const std::vector<SNode *> &covers)
       : input(input), covers(covers) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override;
 
@@ -651,6 +658,8 @@ class AtomicOpExpression : public Expression {
       : op_type(op_type), dest(dest), val(val) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
@@ -664,15 +673,20 @@ class SNodeOpExpression : public Expression {
   Expr value;
 
   SNodeOpExpression(SNode *snode, SNodeOpType op_type, const ExprGroup &indices)
-      : snode(snode), op_type(op_type), indices(indices) {
+      : snode(snode), op_type(op_type), indices(indices.loaded()) {
   }
 
   SNodeOpExpression(SNode *snode,
                     SNodeOpType op_type,
                     const ExprGroup &indices,
                     const Expr &value)
-      : snode(snode), op_type(op_type), indices(indices), value(value) {
+      : snode(snode),
+        op_type(op_type),
+        indices(indices.loaded()),
+        value(value) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override;
 
@@ -750,6 +764,8 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
       : ptr(ptr), axis(axis) {
   }
 
+  void type_check() override;
+
   void flatten(FlattenContext *ctx) override;
 };
 
@@ -757,6 +773,8 @@ class FuncCallExpression : public Expression {
  public:
   Function *func;
   ExprGroup args;
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override;
 

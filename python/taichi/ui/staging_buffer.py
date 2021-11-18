@@ -1,15 +1,9 @@
-from taichi.core import ti_core as _ti_core
-from taichi.lang.impl import default_cfg, field, static
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
-from taichi.lang.ndrange import ndrange
-from taichi.lang.ops import atomic_add, get_addr
-from taichi.type.annotations import ext_arr, template
+from taichi.type.annotations import template
 from taichi.type.primitive_types import f32, u8
 
 import taichi as ti
-
-from .utils import get_field_info
 
 vbo_field_cache = {}
 
@@ -25,8 +19,7 @@ def get_vbo_field(vertices):
         vbo = Vector.field(vertex_stride, f32, shape=(N, ))
         vbo_field_cache[vertices] = vbo
         return vbo
-    else:
-        return vbo_field_cache[vertices]
+    return vbo_field_cache[vertices]
 
 
 @kernel

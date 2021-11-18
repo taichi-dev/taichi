@@ -43,7 +43,7 @@ class StopWatch {
 class HostDeviceContextBlitter {
  public:
   HostDeviceContextBlitter(const KernelContextAttributes *ctx_attribs,
-                           Context *host_ctx,
+                           RuntimeContext *host_ctx,
                            Device *device,
                            uint64_t *host_result_buffer,
                            DeviceAllocation *device_buffer,
@@ -208,7 +208,7 @@ class HostDeviceContextBlitter {
 
   static std::unique_ptr<HostDeviceContextBlitter> maybe_make(
       const KernelContextAttributes *ctx_attribs,
-      Context *host_ctx,
+      RuntimeContext *host_ctx,
       Device *device,
       uint64_t *host_result_buffer,
       DeviceAllocation *device_buffer,
@@ -223,7 +223,7 @@ class HostDeviceContextBlitter {
 
  private:
   const KernelContextAttributes *const ctx_attribs_;
-  Context *const host_ctx_;
+  RuntimeContext *const host_ctx_;
   uint64_t *const host_result_buffer_;
   DeviceAllocation *const device_buffer_;
   DeviceAllocation *const host_shadow_buffer_;
@@ -232,6 +232,9 @@ class HostDeviceContextBlitter {
 
 }  // namespace
 
+constexpr size_t kGtmpBufferSize = 1024 * 1024;
+constexpr size_t kListGenBufferSize = 32 << 20;
+
 // Info for launching a compiled Taichi kernel, which consists of a series of
 // Vulkan pipelines.
 
@@ -239,6 +242,7 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
     : ti_kernel_attribs_(*ti_params.ti_kernel_attribs),
       device_(ti_params.device) {
   input_buffers_[BufferType::GlobalTmps] = ti_params.global_tmps_buffer;
+  input_buffers_[BufferType::ListGen] = ti_params.listgen_buffer;
   for (int root = 0; root < ti_params.compiled_structs.size(); ++root) {
     BufferInfo buffer = {BufferType::Root, root};
     input_buffers_[buffer] = ti_params.root_buffers[root];
@@ -297,7 +301,22 @@ void CompiledTaichiKernel::command_list(CommandList *cmdlist) const {
                         attribs.advisory_num_threads_per_group;
     ResourceBinder *binder = vp->resource_binder();
     for (auto &bind : attribs.buffer_binds) {
-      binder->rw_buffer(0, bind.binding, *input_buffers_.at(bind.buffer));
+      DeviceAllocation *alloc = input_buffers_.at(bind.buffer);
+      if (alloc) {
+        binder->rw_buffer(0, bind.binding, *alloc);
+      }
+    }
+
+    if (attribs.task_type == OffloadedTaskType::listgen) {
+      for (auto &bind : attribs.buffer_binds) {
+        if (bind.buffer.type == BufferType::ListGen) {
+          // FIXME: properlly support multiple list
+          cmdlist->buffer_fill(input_buffers_.at(bind.buffer)->get_ptr(0),
+                               kListGenBufferSize,
+                               /*data=*/0);
+          cmdlist->buffer_barrier(*input_buffers_.at(bind.buffer));
+        }
+      }
     }
 
     cmdlist->bind_pipeline(vp);
@@ -364,6 +383,7 @@ VkRuntime::KernelHandle VkRuntime::register_taichi_kernel(
     params.root_buffers.push_back(root_buffers_[root].get());
   }
   params.global_tmps_buffer = global_tmps_buffer_.get();
+  params.listgen_buffer = listgen_buffer_.get();
 
   for (int i = 0; i < reg_params.task_spirv_source_codes.size(); ++i) {
     const auto &spirv_src = reg_params.task_spirv_source_codes[i];
@@ -378,7 +398,7 @@ VkRuntime::KernelHandle VkRuntime::register_taichi_kernel(
   return res;
 }
 
-void VkRuntime::launch_kernel(KernelHandle handle, Context *host_ctx) {
+void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   auto *ti_kernel = ti_kernels_[handle.id_].get();
   auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
       &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx, device_,
@@ -416,10 +436,13 @@ Device *VkRuntime::get_ti_device() const {
 }
 
 void VkRuntime::init_buffers() {
-  size_t gtmp_buffer_size = 1024 * 1024;
-
   global_tmps_buffer_ = device_->allocate_memory_unique(
-      {gtmp_buffer_size,
+      {kGtmpBufferSize,
+       /*host_write=*/false, /*host_read=*/false,
+       /*export_sharing=*/false, AllocUsage::Storage});
+
+  listgen_buffer_ = device_->allocate_memory_unique(
+      {kListGenBufferSize,
        /*host_write=*/false, /*host_read=*/false,
        /*export_sharing=*/false, AllocUsage::Storage});
 
@@ -427,7 +450,9 @@ void VkRuntime::init_buffers() {
   Stream *stream = device_->get_compute_stream();
   auto cmdlist = stream->new_command_list();
 
-  cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), gtmp_buffer_size,
+  cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), kGtmpBufferSize,
+                       /*data=*/0);
+  cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kListGenBufferSize,
                        /*data=*/0);
   stream->submit_synced(cmdlist.get());
 }

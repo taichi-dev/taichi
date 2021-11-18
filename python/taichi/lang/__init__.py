@@ -20,7 +20,7 @@ from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, Vector
 from taichi.lang.ndrange import GroupedNDRange, ndrange
-from taichi.lang.ops import *
+from taichi.lang.ops import *  # pylint: disable=W0622
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.source_builder import SourceBuilder
@@ -101,8 +101,8 @@ cpu = _ti_core.host_arch()
 
 When this is used, Taichi automatically picks the matching CPU backend.
 """
-timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()
-timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
+timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()  # pylint: disable=unnecessary-lambda
+timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: disable=unnecessary-lambda
 
 # Legacy API
 type_factory_ = _ti_core.get_type_factory_instance()
@@ -351,13 +351,13 @@ def reset():
 
 
 class _EnvironmentConfigurator:
-    def __init__(self, kwargs, cfg):
-        self.cfg = cfg
+    def __init__(self, kwargs, _cfg):
+        self.cfg = _cfg
         self.kwargs = kwargs
         self.keys = []
 
-    def add(self, key, cast=None):
-        cast = cast or self.bool_int
+    def add(self, key, _cast=None):
+        _cast = _cast or self.bool_int
 
         self.keys.append(key)
 
@@ -367,7 +367,7 @@ class _EnvironmentConfigurator:
         name = 'TI_' + key.upper()
         value = os.environ.get(name, '')
         if len(value):
-            self[key] = cast(value)
+            self[key] = _cast(value)
             if key in self.kwargs:
                 _ti_core.warn(
                     f'ti.init argument "{key}" overridden by environment variable {name}={value}'
@@ -396,7 +396,6 @@ class _SpecialConfig:
         self.gdb_trigger = False
         self.excepthook = False
         self.experimental_real_function = False
-        self.experimental_ast_refactor = False
 
 
 def prepare_sandbox():
@@ -415,6 +414,7 @@ def init(arch=None,
          default_fp=None,
          default_ip=None,
          _test_mode=False,
+         enable_fallback=True,
          **kwargs):
     """Initializes the Taichi runtime.
 
@@ -489,16 +489,15 @@ def init(arch=None,
     env_spec.add('gdb_trigger')
     env_spec.add('excepthook')
     env_spec.add('experimental_real_function')
-    env_spec.add('experimental_ast_refactor')
 
     # compiler configurations (ti.cfg):
     for key in dir(ti.cfg):
         if key in ['arch', 'default_fp', 'default_ip']:
             continue
-        cast = type(getattr(ti.cfg, key))
-        if cast is bool:
-            cast = None
-        env_comp.add(key, cast)
+        _cast = type(getattr(ti.cfg, key))
+        if _cast is bool:
+            _cast = None
+        env_comp.add(key, _cast)
 
     unexpected_keys = kwargs.keys()
 
@@ -519,8 +518,6 @@ def init(arch=None,
         impl.get_runtime().print_preprocessed = spec_cfg.print_preprocessed
         impl.get_runtime().experimental_real_function = \
             spec_cfg.experimental_real_function
-        impl.get_runtime(
-        ).experimental_ast_refactor = spec_cfg.experimental_ast_refactor
         ti.set_logging_level(spec_cfg.log_level.lower())
         if spec_cfg.excepthook:
             # TODO(#1405): add a way to restore old excepthook
@@ -531,7 +528,7 @@ def init(arch=None,
     if env_arch is not None:
         ti.info(f'Following TI_ARCH setting up for arch={env_arch}')
         arch = _ti_core.arch_from_name(env_arch)
-    ti.cfg.arch = adaptive_arch_select(arch)
+    ti.cfg.arch = adaptive_arch_select(arch, enable_fallback)
     if ti.cfg.arch == cc:
         _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(ti.cfg.arch)}')
@@ -549,6 +546,8 @@ def init(arch=None,
     impl.get_runtime().prog.materialize_runtime()
 
     impl._root_fb = FieldsBuilder()
+
+    return None
 
 
 def no_activate(*args):
@@ -603,6 +602,7 @@ serialize = lambda: parallelize(1)
 vectorize = _ti_core.vectorize
 bit_vectorize = _ti_core.bit_vectorize
 block_dim = _ti_core.block_dim
+global_thread_idx = _ti_core.insert_thread_idx_expr
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
 transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)
@@ -758,8 +758,8 @@ def clear_all_gradients():
 
     def visit(node):
         places = []
-        for i in range(node.ptr.get_num_ch()):
-            ch = node.ptr.get_ch(i)
+        for _i in range(node.ptr.get_num_ch()):
+            ch = node.ptr.get_ch(_i)
             if not ch.is_place():
                 visit(SNode(ch))
             else:
@@ -780,10 +780,10 @@ def deactivate_all_snodes():
         root_fb.deactivate_all()
 
 
-def benchmark(func, repeat=300, args=()):
+def benchmark(_func, repeat=300, args=()):
     def run_benchmark():
         compile_time = time.time()
-        func(*args)  # compile the kernel first
+        _func(*args)  # compile the kernel first
         ti.sync()
         compile_time = time.time() - compile_time
         ti.stat_write('compilation_time', compile_time)
@@ -805,13 +805,13 @@ def benchmark(func, repeat=300, args=()):
         # Use 3 initial iterations to warm up
         # instruction/data caches. Discussion:
         # https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
-        for i in range(3):
-            func(*args)
+        for _ in range(3):
+            _func(*args)
             ti.sync()
         ti.clear_kernel_profile_info()
         t = time.time()
-        for n in range(repeat):
-            func(*args)
+        for _ in range(repeat):
+            _func(*args)
             ti.sync()
         elapsed = time.time() - t
         avg = elapsed / repeat
@@ -869,8 +869,7 @@ def benchmark_plot(fn=None,
     figure.suptitle(title, fontweight="bold")
     for col_id in range(len(columns)):
         subfigures[0][col_id].set_title(column_titles[col_id])
-    for case_id in range(len(cases)):
-        case = cases[case_id]
+    for case_id, case in enumerate(cases):
         subfigures[case_id][0].annotate(
             case,
             xy=(0, 0.5),
@@ -880,8 +879,7 @@ def benchmark_plot(fn=None,
             size='large',
             ha='right',
             va='center')
-        for col_id in range(len(columns)):
-            col = columns[col_id]
+        for col_id, col in enumerate(columns):
             if archs is None:
                 current_archs = data[case][col].keys()
             else:
@@ -920,10 +918,11 @@ def benchmark_plot(fn=None,
             else:
                 raise RuntimeError('Unknown bars type')
             if normalize_to_lowest(col):
-                for i in range(len(current_archs)):
-                    maximum = max(y_left[i], y_right[i])
-                    y_left[i] = y_left[i] / maximum if y_left[i] != 0 else 1
-                    y_right[i] = y_right[i] / maximum if y_right[i] != 0 else 1
+                for _i in range(len(current_archs)):
+                    maximum = max(y_left[_i], y_right[_i])
+                    y_left[_i] = y_left[_i] / maximum if y_left[_i] != 0 else 1
+                    y_right[
+                        _i] = y_right[_i] / maximum if y_right[_i] != 0 else 1
             ax = subfigures[case_id][col_id]
             bar_left = ax.bar(x=[
                 i - bar_width / 2 - bar_distance / 2
@@ -991,7 +990,7 @@ def is_arch_supported(arch):
         metal: _ti_core.with_metal,
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
-        vulkan: lambda: _ti_core.with_vulkan(),
+        vulkan: _ti_core.with_vulkan,
         wasm: lambda: True,
         cpu: lambda: True,
     }
@@ -1007,41 +1006,7 @@ def is_arch_supported(arch):
         return False
 
 
-def supported_archs():
-    """Gets all supported archs on the machine.
-
-    Returns:
-        List[taichi_core.Arch]: All supported archs on the machine.
-    """
-    archs = set([cpu, cuda, metal, vulkan, opengl, cc])
-    archs = set(filter(lambda x: is_arch_supported(x), archs))
-
-    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
-    want_exclude = wanted_archs.startswith('^')
-    if want_exclude:
-        wanted_archs = wanted_archs[1:]
-    wanted_archs = wanted_archs.split(',')
-    # Note, ''.split(',') gives you [''], which is not an empty array.
-    expanded_wanted_archs = set([])
-    for arch in wanted_archs:
-        if arch == '':
-            continue
-        if arch == 'cpu':
-            expanded_wanted_archs.add(cpu)
-        elif arch == 'gpu':
-            expanded_wanted_archs.update(gpu)
-        else:
-            expanded_wanted_archs.add(_ti_core.arch_from_name(arch))
-    if len(expanded_wanted_archs) == 0:
-        return list(archs)
-    if want_exclude:
-        supported = archs - expanded_wanted_archs
-    else:
-        supported = archs & expanded_wanted_archs
-    return list(supported)
-
-
-def adaptive_arch_select(arch):
+def adaptive_arch_select(arch, enable_fallback):
     if arch is None:
         return cpu
     if not isinstance(arch, (list, tuple)):
@@ -1049,11 +1014,13 @@ def adaptive_arch_select(arch):
     for a in arch:
         if is_arch_supported(a):
             return a
+    if not enable_fallback:
+        raise RuntimeError(f'Arch={arch} is not supported')
     ti.warn(f'Arch={arch} is not supported, falling back to CPU')
     return cpu
 
 
-class _ArchCheckers(object):
+class _ArchCheckers:
     def __init__(self):
         self._checkers = []
 
@@ -1069,10 +1036,10 @@ _tests_arch_checkers_argname = '_tests_arch_checkers'
 
 
 def _get_or_make_arch_checkers(kwargs):
-    k = _tests_arch_checkers_argname
-    if k not in kwargs:
-        kwargs[k] = _ArchCheckers()
-    return kwargs[k]
+    _k = _tests_arch_checkers_argname
+    if _k not in kwargs:
+        kwargs[_k] = _ArchCheckers()
+    return kwargs[_k]
 
 
 # test with all archs
@@ -1097,13 +1064,13 @@ def all_archs_with(**kwargs):
                 can_run_on.register(lambda arch: is_extension_supported(
                     arch, extension.data64))
 
-            for arch in ti.supported_archs():
+            for arch in ti.testing.expected_archs():
                 if can_run_on(arch):
-                    print('Running test on arch={}'.format(arch))
+                    print(f'Running test on arch={arch}')
                     ti.init(arch=arch, **kwargs)
                     test(*test_args, **test_kwargs)
                 else:
-                    print('Skipped test on arch={}'.format(arch))
+                    print(f'Skipped test on arch={arch}')
 
         return wrapped
 
@@ -1178,12 +1145,11 @@ def archs_support_sparse(test, **kwargs):
     return require(extension.sparse)(wrapped)
 
 
-def torch_test(func):
+def torch_test(_func):
     if ti.has_pytorch():
         # OpenGL somehow crashes torch test without a reason, unforturnately
-        return ti.test(exclude=[opengl])(func)
-    else:
-        return lambda: None
+        return ti.test(exclude=[opengl])(_func)
+    return lambda: None
 
 
 def get_host_arch_list():
@@ -1191,13 +1157,13 @@ def get_host_arch_list():
 
 
 # test with host arch only
-def host_arch_only(func):
-    @functools.wraps(func)
+def host_arch_only(_func):
+    @functools.wraps(_func)
     def test(*args, **kwargs):
         archs = [_ti_core.host_arch()]
         for arch in archs:
             ti.init(arch=arch)
-            func(*args, **kwargs)
+            _func(*args, **kwargs)
 
     return test
 
@@ -1223,21 +1189,19 @@ def archs_with(archs, **init_kwags):
 
 
 def must_throw(ex):
-    def decorator(func):
+    def decorator(_func):
         def func__(*args, **kwargs):
             finishes = False
             try:
-                func(*args, **kwargs)
+                _func(*args, **kwargs)
                 finishes = True
             except ex:
                 # throws. test passed
                 pass
             except Exception as err_actual:
-                assert False, 'Exception {} instead of {} thrown'.format(
-                    str(type(err_actual)), str(ex))
+                assert False, f'Exception {str(type(err_actual))} instead of {str(ex)} thrown'
             if finishes:
-                assert False, 'Test successfully finished instead of throwing {}'.format(
-                    str(ex))
+                assert False, f'Test successfully finished instead of throwing {str(ex)}'
 
         return func__
 

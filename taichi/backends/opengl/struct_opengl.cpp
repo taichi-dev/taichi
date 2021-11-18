@@ -37,7 +37,8 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   const auto &node_name = snode.node_type_name;
   const auto child_name = node_name + "_ch";
   auto &snode_info = snode_map_[node_name];
-  auto &snode_child_info = snode_map_[child_name];
+  snode_info.snode = &snode;
+  SNodeInfo snode_child_info;
   if (!is_place) {
     size_t stride_num = 0;
     snode_info.children_offsets.resize(snode.ch.size());

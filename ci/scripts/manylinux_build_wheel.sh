@@ -22,13 +22,10 @@ git clone --recursive https://github.com/taichi-dev/taichi --branch=master
 cd taichi
 git checkout $SHA
 python3 -m pip install -r requirements_dev.txt -i http://repo.taichigraphics.com/repository/pypi/simple --trusted-host repo.taichigraphics.com
-TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF" python3 setup.py install
-
 # Add Docker specific ENV
 export TI_IN_DOCKER=true
 
-# Run tests
-ti diagnose
-
-# Build wheel
-cd python && python build.py build
+# TODO, unify this step with wheel build, check #3537
+TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF" python3 setup.py install
+# build.py is to be removed
+#cd python && python build.py build

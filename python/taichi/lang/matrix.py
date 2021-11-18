@@ -24,18 +24,13 @@ class Matrix(TaichiOperations):
     """The matrix class.
 
     Args:
-        n (Union[int, list, tuple], np.ndarray): the first dimension of a matrix.
+        n (Union[int, list, tuple, np.ndarray]): the first dimension of a matrix.
         m (int): the second dimension of a matrix.
         dt (DataType): the element data type.
     """
     is_taichi_class = True
 
-    def __init__(self,
-                 n=1,
-                 m=1,
-                 dt=None,
-                 disable_local_tensor=False,
-                 suppress_warning=False):
+    def __init__(self, n=1, m=1, dt=None, suppress_warning=False):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
@@ -49,8 +44,7 @@ class Matrix(TaichiOperations):
             elif not isinstance(n[0], Iterable):  # now init a Vector
                 if in_python_scope():
                     mat = [[x] for x in n]
-                elif disable_local_tensor or not ti.current_cfg(
-                ).dynamic_index:
+                elif not ti.current_cfg().dynamic_index:
                     mat = [[impl.expr_init(x)] for x in n]
                 else:
                     if not ti.is_extension_supported(
@@ -88,8 +82,7 @@ class Matrix(TaichiOperations):
             else:  # now init a Matrix
                 if in_python_scope():
                     mat = [list(row) for row in n]
-                elif disable_local_tensor or not ti.current_cfg(
-                ).dynamic_index:
+                elif not ti.current_cfg().dynamic_index:
                     mat = [[impl.expr_init(x) for x in row] for row in n]
                 else:
                     if not ti.is_extension_supported(
@@ -1011,20 +1004,6 @@ class Matrix(TaichiOperations):
 
         """
         return Matrix.rows(cols).transpose()
-
-    @classmethod
-    def empty(cls, n, m):
-        """Clear the matrix and fill None.
-
-        Args:
-            n (int): The number of the row of the matrix.
-            m (int): The number of the column of the matrix.
-
-        Returns:
-            :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with None.
-
-        """
-        return cls([[None] * m for _ in range(n)], disable_local_tensor=True)
 
     def __hash__(self):
         # TODO: refactor KernelTemplateMapper

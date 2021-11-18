@@ -89,28 +89,6 @@ class Ndarray:
         """
         raise NotImplementedError()
 
-    @python_scope
-    def copy_from(self, other):
-        """Copies all elements from another ndarray.
-
-        The shape of the other ndarray needs to be the same as `self`.
-
-        Args:
-            other (Ndarray): The source ndarray.
-        """
-        assert isinstance(other, Ndarray)
-        assert tuple(self.arr.shape) == tuple(other.arr.shape)
-        taichi.lang.meta.ndarray_to_ndarray(self, other)
-        impl.get_runtime().sync()
-
-    def __deepcopy__(self, memo=None):
-        """Copies all elements to a new ndarray.
-
-        Returns:
-            Ndarray: The result ndarray.
-        """
-        raise NotImplementedError()
-
     def ndarray_fill(self, val):
         """Fills ndarray with a specific scalar value.
 
@@ -174,6 +152,28 @@ class Ndarray:
             else:
                 raise NotImplementedError()
             impl.get_runtime().sync()
+
+    @python_scope
+    def copy_from(self, other):
+        """Copies all elements from another ndarray.
+
+        The shape of the other ndarray needs to be the same as `self`.
+
+        Args:
+            other (Ndarray): The source ndarray.
+        """
+        assert isinstance(other, Ndarray)
+        assert tuple(self.arr.shape) == tuple(other.arr.shape)
+        taichi.lang.meta.ndarray_to_ndarray(self, other)
+        impl.get_runtime().sync()
+
+    def __deepcopy__(self, memo=None):
+        """Copies all elements to a new ndarray.
+
+        Returns:
+            Ndarray: The result ndarray.
+        """
+        raise NotImplementedError()
 
     def pad_key(self, key):
         if key is None:

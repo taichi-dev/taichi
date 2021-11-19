@@ -263,7 +263,7 @@ class BasicBlockSimplify : public IRVisitor {
 
     set_done(stmt);
   }
-// /*
+  // /*
   template <typename T>
   static bool identical_vectors(const std::vector<T> &a,
                                 const std::vector<T> &b) {
@@ -279,8 +279,8 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(LinearizeStmt *stmt) override {
-    if (!stmt->inputs.empty() && stmt->inputs.back()->is<IntegerOffsetStmt>())
-  { auto previous_offset = stmt->inputs.back()->as<IntegerOffsetStmt>();
+    if (!stmt->inputs.empty() && stmt->inputs.back()->is<IntegerOffsetStmt>()) {
+      auto previous_offset = stmt->inputs.back()->as<IntegerOffsetStmt>();
       // push forward offset
       auto offset_stmt =
           Stmt::make<IntegerOffsetStmt>(stmt, previous_offset->offset);
@@ -316,8 +316,7 @@ class BasicBlockSimplify : public IRVisitor {
     if (debug) {
       auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
       auto check_sum =
-          Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ge, sum.get(),
-  zero.get()); auto assert = Stmt::make<AssertStmt>(check_sum.get(), "The
+          Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ge, sum.get(), zero.get()); auto assert = Stmt::make<AssertStmt>(check_sum.get(), "The
   indices provided are too big!", std::vector<Stmt *>());
       // Because Taichi's assertion is checked only after the execution of the
       // kernel, when the linear index overflows and goes negative, we have to
@@ -427,8 +426,9 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
-    if (if_stmt->width() == 1 && (if_stmt->true_mask || if_stmt->false_mask))
-  { if_stmt->true_mask = nullptr; if_stmt->false_mask = nullptr;
+    if (if_stmt->width() == 1 && (if_stmt->true_mask || if_stmt->false_mask)) {
+      if_stmt->true_mask = nullptr;
+      if_stmt->false_mask = nullptr;
       modifier.mark_as_modified();
       return;
     }
@@ -446,9 +446,9 @@ class BasicBlockSimplify : public IRVisitor {
 
         if (global_state_changed && clause[i]->is<GlobalLoadStmt>()) {
           // This clause cannot be trivially simplified, since there's a
-  global
-          // load after store and they must be kept in order
-          plain_clause = false;
+          global
+              // load after store and they must be kept in order
+              plain_clause = false;
         }
 
         if (clause[i]->is<GlobalStoreStmt>() ||
@@ -581,7 +581,7 @@ class BasicBlockSimplify : public IRVisitor {
       return;
     }
   }
-//  */
+  //  */
 };
 
 class Simplify : public IRVisitor {

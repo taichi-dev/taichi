@@ -17,11 +17,14 @@ Ndarray::Ndarray(Program *prog,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)) {
 #ifdef TI_WITH_LLVM
-  LlvmProgramImpl *prog_impl = prog->get_llvm_program_impl();
-  ndarray_alloc_ = prog_impl->allocate_memory_ndarray(nelement_ * element_size_,
-                                                      prog->result_buffer);
+  ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
+                                                 prog->result_buffer);
 
-  data_ptr_ = prog_impl->get_ndarray_alloc_info_ptr(ndarray_alloc_);
+  if (arch_is_cpu(prog->config.arch) || prog->config.arch == Arch::cuda) {
+    // Keep this information for TNG.
+    data_ptr_ = prog->get_llvm_program_impl()->get_ndarray_alloc_info_ptr(
+        ndarray_alloc_);
+  }
 
   // taichi's own ndarray's ptr points to its |DeviceAllocation| on the
   // specified device. Note that torch-based ndarray's ptr is a raw ptr but

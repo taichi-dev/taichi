@@ -894,8 +894,7 @@ def test_dictcomp_fail():
 
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-# TODO: enable opengl
-@ti.test(arch=[ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.opengl])
 def test_ndarray():
     n = 4
     m = 7

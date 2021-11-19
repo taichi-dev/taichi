@@ -71,6 +71,7 @@ struct CompiledProgram {
   size_t total_ext_arr_size{0};
   size_t ret_buf_size{0};
 
+  // TODO: remove ext_arr_map & total_ext_arr_size
   std::unordered_map<int, size_t> ext_arr_map;
   std::unordered_map<int, irpass::ExternalPtrAccess> ext_arr_access;
   std::vector<std::string> str_table;
@@ -90,7 +91,9 @@ struct CompiledProgram {
 class DeviceCompiledProgram {
  public:
   DeviceCompiledProgram(CompiledProgram &&program, Device *device);
-  void launch(RuntimeContext &ctx, OpenGlRuntime *runtime) const;
+  void launch(RuntimeContext &ctx,
+              Kernel *kernel,
+              OpenGlRuntime *runtime) const;
 
  private:
   Device *device_;
@@ -100,6 +103,9 @@ class DeviceCompiledProgram {
 
   DeviceAllocation args_buf_{kDeviceNullAllocation};
   DeviceAllocation ret_buf_{kDeviceNullAllocation};
+  // Only saves numpy/torch cpu based external array since they don't have
+  // DeviceAllocation.
+  // Taichi |Ndarray| manages their own DeviceAllocation so it's not saved here.
   DeviceAllocation arr_bufs_[taichi_max_num_args]{kDeviceNullAllocation};
 };
 

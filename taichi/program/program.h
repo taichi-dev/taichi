@@ -292,6 +292,12 @@ class Program {
     return program_impl_->get_graphics_device();
   }
 
+  // TODO: do we still need result_buffer?
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer) {
+    return program_impl_->allocate_memory_ndarray(alloc_size, result_buffer);
+  }
+
  private:
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;

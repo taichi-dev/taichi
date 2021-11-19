@@ -75,6 +75,10 @@ class ProgramImpl {
     return kDeviceNullPtr;
   }
 
+  virtual DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                                   uint64 *result_buffer) {
+    return kDeviceNullAllocation;
+  }
   virtual ~ProgramImpl() {
   }
 

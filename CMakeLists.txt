@@ -77,21 +77,49 @@ if (TI_WITH_CUDA)
     set(CUDA_ARCH "cuda")
 endif()
 
-find_program(CLANG_EXECUTABLE NAMES clang clang-7 clang-8 clang-9 clang-10)
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+  set (CLANG_EXECUTABLE ${CMAKE_CXX_COMPILER})
+else()
+  find_program(CLANG_EXECUTABLE NAMES clang clang-10 clang-11 clang-9 clang-8 clang-7)
+endif()
+
 if (NOT CLANG_EXECUTABLE)
-    message(FATAL_ERROR "Cannot find any clang executable.")
+  message(FATAL_ERROR "Cannot find any clang executable.")
+endif()
+
+execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
+string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
+message("clang --version: ${CLANG_VERSION}")
+
+set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
+
+if (APPLE)
+  set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
+  set(CLANG_HIGHEST_VERSION "12")
+else()
+  set(CLANG_HIGHEST_VERSION "11")
+endif()
+
+if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
+  message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Condider passing -DCLANG_PATH=/path/to/clang to cmake to use a specific clang.")
 endif()
 
 find_program(LLVM_AS_EXECUTABLE NAMES llvm-as)
 if (NOT LLVM_AS_EXECUTABLE)
-    message(FATAL_ERROR "Cannot find llvm-as executable.")
+    message(FATAL_ERROR "Cannot find any llvm-as executable.")
+endif()
+
+execute_process(COMMAND ${LLVM_AS_EXECUTABLE} --version OUTPUT_VARIABLE LLVM_AS_VERSION_OUTPUT)
+string(REGEX MATCH "[0-9]+\\.[0-9]+(\\.[0-9]+)?" LLVM_AS_VERSION "${LLVM_AS_VERSION_OUTPUT}")
+if (NOT ${CLANG_VERSION} VERSION_EQUAL ${LLVM_AS_VERSION})
+  message(WARNING "Versions of ${CLANG_EXECUTABLE} and ${LLVM_AS_EXECUTABLE} don't match.")
 endif()
 
 # Build llvm-runtime for host arch and cuda (if available)
 foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
   add_custom_target(
       "generate_llvm_runtime_${arch}"
-      COMMAND ${CLANG_EXECUTABLE} -S runtime.cpp -o "runtime_${arch}.ll" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
+      COMMAND ${CLANG_EXECUTABLE} ${CLANG_OSX_FLAGS} -S runtime.cpp -o "runtime_${arch}.ll" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
       COMMAND ${LLVM_AS_EXECUTABLE} "runtime_${arch}.ll" -o "runtime_${arch}.bc"
       WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm"
   )

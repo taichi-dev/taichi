@@ -283,7 +283,9 @@ def test_atomic_min_f16():
 @ti.test(arch=archs_support_f16)
 def test_cast_to_f16(dtype):
     @ti.kernel
-    def func(x: dtype, y: dtype) -> ti.f16:
-        return ti.cast(x * y, ti.f16)
+    def func() -> ti.f16:
+        a = ti.cast(23.0, ti.f64)
+        b = ti.cast(4.0, ti.f64)
+        return ti.cast(a * b, ti.f16)
 
-    assert func(23, 4) == pytest.approx(23.0 * 4.0, 1e-4)
+    assert func() == pytest.approx(23.0 * 4.0, 1e-4)

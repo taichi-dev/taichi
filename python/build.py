@@ -5,6 +5,8 @@ import re
 import shutil
 import sys
 
+import requests
+
 
 def get_os_name():
     name = platform.platform()
@@ -82,6 +84,38 @@ def parse_args():
     return parser.parse_args()
 
 
+def upload_taichi_version():
+    username = os.getenv('METADATA_USERNAME')
+    password = os.getenv('METADATA_PASSWORD')
+    url = os.getenv('METADATA_URL')
+    filename = os.listdir('../dist')[0]
+    filename = filename[:len(filename) - 4]
+    parts = filename.split('-')
+    payload = {'version': parts[1], 'platform': parts[4], 'python': parts[2]}
+    try:
+        response = requests.post(f'http://{url}/add_version/detail',
+                                 json=payload,
+                                 auth=(username, password),
+                                 timeout=5)
+        response.raise_for_status()
+    except requests.exceptions.ConnectionError as err:
+        print('Updating latest version failed: No internet,', err)
+        exit(1)
+    except requests.exceptions.HTTPError as err:
+        print('Updating latest version failed: Server error,', err)
+        exit(1)
+    except requests.exceptions.Timeout as err:
+        print(
+            'Updating latest version failed: Time out when connecting server,',
+            err)
+        exit(1)
+    except requests.exceptions.RequestException as err:
+        print('Updating latest version failed:', err)
+        exit(1)
+    response = response.json()
+    print(response['message'])
+
+
 def main():
     args = parse_args()
     mode = args.mode
@@ -115,6 +149,8 @@ def main():
     if mode == 'build':
         return
     if mode == 'upload':
+        if project_name == 'taichi':
+            upload_taichi_version()
         if os.system('{} -m twine upload {} ../dist/* --verbose -u {}'.format(
                 get_python_executable(), pypi_repo, pypi_user)) != 0:
             raise SystemExit(1)

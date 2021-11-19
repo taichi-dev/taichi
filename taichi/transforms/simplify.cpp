@@ -263,7 +263,6 @@ class BasicBlockSimplify : public IRVisitor {
 
     set_done(stmt);
   }
-  // /*
   template <typename T>
   static bool identical_vectors(const std::vector<T> &a,
                                 const std::vector<T> &b) {
@@ -342,6 +341,7 @@ class BasicBlockSimplify : public IRVisitor {
     irpass::type_check(stmt->parent, config);
   }
 
+  /*
   void visit(SNodeLookupStmt *stmt) override {
     if (is_done(stmt))
       return;
@@ -581,7 +581,7 @@ class BasicBlockSimplify : public IRVisitor {
       return;
     }
   }
-  //  */
+  */
 };
 
 class Simplify : public IRVisitor {

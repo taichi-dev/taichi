@@ -263,8 +263,7 @@ class BasicBlockSimplify : public IRVisitor {
 
     set_done(stmt);
   }
-
-  /*
+// /*
   template <typename T>
   static bool identical_vectors(const std::vector<T> &a,
                                 const std::vector<T> &b) {
@@ -582,7 +581,7 @@ class BasicBlockSimplify : public IRVisitor {
       return;
     }
   }
-  */
+//  */
 };
 
 class Simplify : public IRVisitor {

@@ -21,7 +21,7 @@ Ndarray::Ndarray(Program *prog,
                                                  prog->result_buffer);
 
   if (arch_is_cpu(prog->config.arch) || prog->config.arch == Arch::cuda) {
-    // Keep this information for TNG.
+    // For the LLVM backends, device allocation is a physical pointer.
     data_ptr_ = prog->get_llvm_program_impl()->get_ndarray_alloc_info_ptr(
         ndarray_alloc_);
   }

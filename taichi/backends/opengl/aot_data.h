@@ -53,14 +53,7 @@ struct CompiledNdarrayData {
   int row_num{0};
   int column_num{0};
 
-  TI_IO_DEF(field_name,
-            dtype,
-            dtype_name,
-            dim,
-            shape,
-            is_scalar,
-            row_num,
-            column_num);
+  TI_IO_DEF(field_name, dtype, dtype_name, dim, is_scalar, row_num, column_num);
 };
 
 struct AotData {

@@ -6,13 +6,14 @@ import taichi as ti
 '''
 Test fields with shape.
 '''
+
+
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_with_shape():
     shape_size_1d = 5
     x = ti.field(ti.f32, shape=shape_size_1d)
     y = ti.field(ti.f32, shape=shape_size_1d)
 
-    # [shape] 1. Test and validation for assigning fields once
     @ti.kernel
     def assign_field_single():
         for i in range(shape_size_1d):
@@ -22,7 +23,6 @@ def test_fields_with_shape():
     for i in range(shape_size_1d):
         assert x[i] == i
 
-    # [shape] 2. Test and validation for assigning fields twice
     @ti.kernel
     def assign_field_multiple():
         for i in range(shape_size_1d):
@@ -35,14 +35,16 @@ def test_fields_with_shape():
         assert x[i] == i * 3
         assert y[i] == i * 2
 
-    # [shape] 3. Test and validation for Re-assigning variable of field
     assign_field_single()
     for i in range(shape_size_1d):
         assert x[i] == i
 
+
 '''
 Test fields with builder dense.
 '''
+
+
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_dense():
     shape_size_1d = 5
@@ -86,9 +88,12 @@ def test_fields_builder_dense():
     for i in range(shape_size_1d):
         assert x[i] == i * 3
 
+
 '''
 Test fields with builder pointer.
 '''
+
+
 @ti.test(arch=[ti.cpu, ti.cuda, ti.metal])
 def test_fields_builder_pointer():
     shape_size_1d = 5
@@ -146,9 +151,12 @@ def test_fields_builder_pointer():
     for i in range(shape_size_1d):
         assert x[i] == i * 3
 
+
 '''
 Test fields with builder destory.
 '''
+
+
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_fields_builder_destroy():
     test_sizes = [1] # [1, 2, 3]
@@ -156,7 +164,7 @@ def test_fields_builder_destroy():
     # note: currently only consider precison that all platform supported,
     # more detailed here: https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types
     field_types = [ti.f32, ti.i32]
-    field_sizes = [1] # [1, 5, 10]
+    field_sizes = [1]  # [1, 5, 10]
 
     def test_for_single_destroy_multi_fields(test_sizes, size_extend_factor, field_types, field_sizes):
         fb = ti.FieldsBuilder()
@@ -173,9 +181,10 @@ def test_fields_builder_destroy():
                     fb_snode_tree = fb.finalize()
         fb_snode_tree.destroy()
 
-    test_for_single_destroy_multi_fields(test_sizes, size_extend_factor, field_types, field_sizes)
+    test_for_single_destroy_multi_fields(test_sizes, size_extend_factor,
+                                         field_types, field_sizes)
 
-    def test_for_multi_destroy_multi_fields(test_sizes, size_extend_factor, field_types, field_sizes): #size_1d_0, size_1d_1):
+    def test_for_multi_destroy_multi_fields(test_sizes, size_extend_factor, field_types, field_sizes):
         fb0 = ti.FieldsBuilder()
         fb1 = ti.FieldsBuilder()
 
@@ -213,27 +222,3 @@ def test_fields_builder_destroy():
             c.destroy()
 
     test_for_raise_twice_destroy(10)
-
-
-'''
-Test fields with builder exceeds max.
-'''
-@ti.test(arch=[ti.cpu, ti.cuda])
-def test_fields_builder_exceeds_max():
-    shape_size = (4, 4)
-
-    def create_fb():
-        fb = ti.FieldsBuilder()
-        x = ti.field(ti.f32)
-        fb.dense(ti.ij, shape_size).place(x)
-        fb.finalize()
-
-    # kMaxNumSnodeTreesLlvm=32 in taichi/inc/constants.h
-    # TODO(ysh329): kMaxNumSnodeTreesLlvm=512 not 32 in `taichi/inc/constants.h`.
-    #               Can this value `kMaxNumSnodeTreesLlvm` load from `.h` file?
-    for _ in range(32):
-        create_fb()
-
-    with pytest.raises(RuntimeError) as e:
-        create_fb()
-    assert 'LLVM backend supports up to 32 snode trees' in e.value.args[0]

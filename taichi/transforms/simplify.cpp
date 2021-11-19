@@ -446,10 +446,9 @@ class BasicBlockSimplify : public IRVisitor {
                                 clause[i]->has_global_side_effect();
 
         if (global_state_changed && clause[i]->is<GlobalLoadStmt>()) {
-          // This clause cannot be trivially simplified, since there's a
-          global
-              // load after store and they must be kept in order
-              plain_clause = false;
+          // This clause cannot be trivially simplified, since there's a global
+          // load after store and they must be kept in order
+          plain_clause = false;
         }
 
         if (clause[i]->is<GlobalStoreStmt>() ||

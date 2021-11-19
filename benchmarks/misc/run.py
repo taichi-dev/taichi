@@ -1,12 +1,13 @@
 import os
 import warnings
 
+from end2end import EndToEnd
 from membound import MemoryBound
 from utils import arch_name, datatime_with_format, dump2json
 
 import taichi as ti
 
-benchmark_suites = [MemoryBound]
+benchmark_suites = [MemoryBound, EndToEnd]
 benchmark_archs = [ti.x64, ti.cuda]
 
 

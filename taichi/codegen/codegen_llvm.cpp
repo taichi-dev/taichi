@@ -373,9 +373,9 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
       llvm_val[stmt] = llvm_val[stmt->operand];
     } else if (is_real(from) != is_real(to)) {
       if (is_real(from) && is_integral(to)) {
-        cast_op = llvm::Instruction::CastOps::FPToSI;
+        cast_op = is_signed(to) ? llvm::Instruction::CastOps::FPToSI : llvm::Instruction::CastOps::FPToUI;
       } else if (is_integral(from) && is_real(to)) {
-        cast_op = llvm::Instruction::CastOps::SIToFP;
+        cast_op = is_signed(from) ? llvm::Instruction::CastOps::SIToFP : llvm::Instruction::CastOps::UIToFP;
       } else {
         TI_P(data_type_name(from));
         TI_P(data_type_name(to));

@@ -81,11 +81,10 @@ struct CompiledProgram {
             arg_count,
             ret_count,
             args_buf_size,
-            total_ext_arr_size,
             ret_buf_size,
-            ext_arr_map,
             ext_arr_access,
-            str_table);
+            str_table,
+            used.arr_arg_to_bind_idx);
 };
 
 class DeviceCompiledProgram {

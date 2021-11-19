@@ -290,6 +290,7 @@ void export_lang(py::module &m) {
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
+      .def("add_ndarray", &AotModuleBuilder::add_ndarray)
       .def("add", &AotModuleBuilder::add)
       .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
       .def("dump", &AotModuleBuilder::dump);

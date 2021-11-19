@@ -398,8 +398,8 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
             llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
       } else {
         if (to->is_primitive(PrimitiveTypeID::f16)) {
-          llvm_val[stmt] = builder->CreateFPTrunc(
-              llvm_val[stmt->operand], llvm::Type::getHalfTy(*llvm_context));
+          llvm_val[stmt] = builder->CreateFPTrunc(builder->CreateFPTrunc(
+              llvm_val[stmt->operand], llvm::Type::getFloatTy(*llvm_context)), llvm::Type::getHalfTy(*llvm_context));
         } else {
           llvm_val[stmt] = builder->CreateFPTrunc(
               llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
@@ -946,6 +946,7 @@ llvm::Value *CodeGenLLVM::create_call(llvm::Value *func,
   check_func_call_signature(func, args);
   return builder->CreateCall(func, args);
 }
+
 llvm::Value *CodeGenLLVM::create_call(std::string func_name,
                                       llvm::ArrayRef<llvm::Value *> args) {
   auto func = get_runtime_function(func_name);

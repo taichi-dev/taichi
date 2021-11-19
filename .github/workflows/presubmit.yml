@@ -174,14 +174,14 @@ jobs:
             exit 0
           fi
           mkdir -m777 wheel
-          docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
+          docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS" "${{secrets.SCCACHE_BUCKET}}" "${{secrets.AWS_ACCESS_KEY_ID}}" "${{secrets.AWS_SECRET_ACCESS_KEY}}"
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
         env:
           PY: ${{ matrix.python }}
           GPU_BUILD: OFF
           PROJECT_NAME: taichi
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Test
         run: |

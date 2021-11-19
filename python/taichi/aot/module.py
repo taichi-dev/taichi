@@ -2,12 +2,10 @@ from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
 from taichi.lang import impl, kernel_impl
-from taichi.lang._ndarray import Ndarray, ScalarNdarray
-from taichi.lang.enums import Layout
+from taichi.lang._ndarray import Ndarray
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField, MatrixNdarray, VectorNdarray
 from taichi.type.annotations import ArgAnyArray, template
-from taichi.type.primitive_types import f32
 
 
 class KernelTemplate:

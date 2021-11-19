@@ -91,6 +91,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             } else {
               device_buffers[i] = arg_buffers[i];
             }
+            // device_buffers[i] saves a raw ptr on CUDA device.
             ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
                                                args[i].size,
                                                /*is_device_allocation=*/false);
@@ -109,6 +110,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             // PR.
             arg_buffers[i] = device_buffers[i];
 
+            // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
             ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
                                                args[i].size,
                                                /*is_device_allocation=*/false);

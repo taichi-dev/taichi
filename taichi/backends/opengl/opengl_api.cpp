@@ -351,23 +351,26 @@ void DeviceCompiledProgram::launch(RuntimeContext &ctx,
   // - For raw ptrs, arr_bufs_[i] contains its DeviceAllocation on device.
   // Note shapes of these external arrays still reside in argument buffer,
   // see more details below.
-  for (int i = 0; i < args.size(); i++) {
-    if (!args[i].is_external_array)
+  for (auto &item : program_.ext_arr_map) {
+    int i = item.first;
+    if (!args[i].is_external_array || args[i].size == 0 ||
+        ctx.is_device_allocation[i])
       continue;
-    if (args[i].size == 0)
-      continue;
-
-    if (!ctx.is_device_allocation[i]) {
-      void *host_ptr = (void *)ctx.args[i];
-      const_cast<DeviceAllocation &>(arr_bufs_[i]) = device_->allocate_memory(
+    if (args[i].size != item.second || arr_bufs_[i] == kDeviceNullAllocation) {
+      if (arr_bufs_[i] != kDeviceNullAllocation) {
+        device_->dealloc_memory(arr_bufs_[i]);
+      }
+      arr_bufs_[i] = device_->allocate_memory(
           {args[i].size, /*host_write=*/true, /*host_read=*/true,
            /*export_sharing=*/false});
-      void *baseptr = device_->map(arr_bufs_[i]);
-      if (program_.check_ext_arr_read(i)) {
-        std::memcpy((char *)baseptr, host_ptr, args[i].size);
-      }
-      device_->unmap(arr_bufs_[i]);
+      item.second = args[i].size;
     }
+    void *host_ptr = (void *)ctx.args[i];
+    void *baseptr = device_->map(arr_bufs_[i]);
+    if (program_.check_ext_arr_read(i)) {
+      std::memcpy((char *)baseptr, host_ptr, args[i].size);
+    }
+    device_->unmap(arr_bufs_[i]);
   }
   // clang-format off
   // Prepare argument buffer

@@ -184,9 +184,8 @@ class CMakeBuild(build_ext):
                 shutil.copy(
                     os.path.join(self.build_temp, 'libtaichi_core.dylib'),
                     os.path.join(target, 'taichi_core.so'))
-                shutil.copy(
-                    os.path.join(self.build_temp, 'libMoltenVK.dylib'),
-                    os.path.join(target, 'libMoltenVK.dylib'))
+                shutil.copy(os.path.join(self.build_temp, 'libMoltenVK.dylib'),
+                            os.path.join(target, 'libMoltenVK.dylib'))
             else:
                 shutil.copy('runtimes/Release/taichi_core.dll',
                             os.path.join(target, 'taichi_core.pyd'))

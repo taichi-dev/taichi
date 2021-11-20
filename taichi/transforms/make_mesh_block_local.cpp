@@ -123,6 +123,30 @@ void MakeMeshBlockLocal::replace_global_ptrs(SNode *snode) {
         index, TypeFactory::create_vector_or_scalar_type(1, data_type, true));
     global_ptr->replace_with(std::move(bls));
   }
+
+  // in the cpu backend, atomic op in body block could be demoted to non-atomic
+  if (config.arch != Arch::x64) {
+    return;
+  }
+  std::vector<AtomicOpStmt *> atomic_ops;
+  irpass::analysis::gather_statements(offload->body.get(), [&](Stmt *stmt) {
+    if (auto atomic_op = stmt->cast<AtomicOpStmt>()) {
+      if (atomic_op->op_type == AtomicOpType::add &&
+          atomic_op->dest->is<BlockLocalPtrStmt>()) {
+        atomic_ops.push_back(atomic_op);
+      }
+    }
+    return false;
+  });
+
+  for (auto atomic_op : atomic_ops) {
+    VecStatement non_atomic;
+    Stmt *dest_val = non_atomic.push_back<GlobalLoadStmt>(atomic_op->dest);
+    Stmt *res_val = non_atomic.push_back<BinaryOpStmt>(
+        BinaryOpType::add, dest_val, atomic_op->val);
+    non_atomic.push_back<GlobalStoreStmt>(atomic_op->dest, res_val);
+    atomic_op->replace_with(std::move(non_atomic));
+  }
 }
 
 // This function creates loop like:

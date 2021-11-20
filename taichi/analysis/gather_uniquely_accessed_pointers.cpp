@@ -181,8 +181,8 @@ class UniquelyAccessedBitStructGatherer : public BasicStmtVisitor {
 
   void visit(OffloadedStmt *stmt) override {
     if (stmt->task_type == OffloadedTaskType::range_for ||
-        stmt->task_type == OffloadedTaskType::struct_for ||
-        stmt->task_type == OffloadedTaskType::mesh_for) {
+        stmt->task_type == OffloadedTaskType::mesh_for ||
+        stmt->task_type == OffloadedTaskType::struct_for) {
       auto &loop_unique_bit_struct = result_[stmt];
       auto loop_unique_ptr =
           irpass::analysis::gather_uniquely_accessed_pointers(stmt);

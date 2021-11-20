@@ -6,7 +6,7 @@ from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.matrix import Matrix, MatrixField, _IntermediateMatrix
+from taichi.lang.matrix import MatrixField, _IntermediateMatrix
 from taichi.lang.struct import StructField
 from taichi.lang.types import CompoundType
 from taichi.lang.util import python_scope
@@ -84,9 +84,9 @@ class MeshReorderedMatrixFieldProxy(MatrixField):
 
 
 class MeshElementField:
-    def __init__(self, mesh_instance, type, attr_dict, field_dict, g2r_field):
+    def __init__(self, mesh_instance, _type, attr_dict, field_dict, g2r_field):
         self.mesh = mesh_instance
-        self.type = type
+        self._type = _type
         self.attr_dict = attr_dict
         self.field_dict = field_dict
         self.g2r_field = g2r_field
@@ -113,11 +113,11 @@ class MeshElementField:
                     if isinstance(self.field_dict[key], ScalarField):
                         self.getter_dict[key] = MeshReorderedScalarFieldProxy(
                             self.field_dict[key], self.mesh.mesh_ptr,
-                            self.type, self.g2r_field)
+                            self._type, self.g2r_field)
                     elif isinstance(self.field_dict[key], MatrixField):
                         self.getter_dict[key] = MeshReorderedMatrixFieldProxy(
                             self.field_dict[key], self.mesh.mesh_ptr,
-                            self.type, self.g2r_field)
+                            self._type, self.g2r_field)
                 else:
                     self.getter_dict[key] = self.field_dict[key]
             """Get an entry from custom struct by name."""
@@ -178,13 +178,13 @@ class MeshElementField:
 
     @python_scope
     def __len__(self):
-        return _ti_core.get_num_elements(self.mesh.mesh_ptr, self.type)
+        return _ti_core.get_num_elements(self.mesh.mesh_ptr, self._type)
 
 
 class MeshElement:
-    def __init__(self, type, builder):
+    def __init__(self, _type, builder):
         self.builder = builder
-        self.type = type
+        self._type = _type
         self.layout = Layout.SOA
         self.attr_dict = {}
 
@@ -203,7 +203,7 @@ class MeshElement:
         reorder=False,
         needs_grad=False,
     ):
-        self.builder.elements.add(self.type)
+        self.builder.elements.add(self._type)
         for key, dtype in members.items():
             if key in {'verts', 'edges', 'faces', 'cells'}:
                 raise TaichiSyntaxError(
@@ -237,21 +237,21 @@ class MeshElement:
             if len(grads) > 0:
                 impl.root.dense(impl.axes(0), size).place(*grads)
 
-        return MeshElementField(mesh_instance, self.type, self.attr_dict,
+        return MeshElementField(mesh_instance, self._type, self.attr_dict,
                                 field_dict, g2r_field)
 
     def link(self, element):
         assert isinstance(element, MeshElement)
         assert element.builder == self.builder
-        self.builder.relations.add(tuple([self.type, element.type]))
-        self.builder.elements.add(self.type)
-        self.builder.elements.add(element.type)
+        self.builder.relations.add(tuple([self._type, element._type]))
+        self.builder.elements.add(self._type)
+        self.builder.elements.add(element._type)
 
 
 # Define the instance of the Mesh Type, stores the field (type and data) info
 class MeshInstance:
-    def __init__(self, type):
-        self.type = type
+    def __init__(self, _type):
+        self._type = _type
         self.mesh_ptr = _ti_core.create_mesh()
 
     def set_owned_offset(self, element_type: MeshElementType,
@@ -426,8 +426,8 @@ class MeshBuilder:
                 instance.set_relation_fixed(
                     rel_type, metadata.relation_fields[rel_type]["value"])
 
-        if "x" in instance.verts.attr_dict:
-            instance.verts.x.from_numpy(metadata.attrs["x"])
+        if "x" in instance.verts.attr_dict:  # pylint: disable=E1101
+            instance.verts.x.from_numpy(metadata.attrs["x"])  # pylint: disable=E1101
 
         return instance
 
@@ -491,7 +491,7 @@ class MeshElementFieldProxy:
                     impl.Expr(_ti_core.subscript(var,
                                                  global_entry_expr_group)))
 
-        for element_type in self.mesh.type.elements:
+        for element_type in self.mesh._type.elements:
             setattr(self, element_type_name(element_type),
                     impl.mesh_relation_access(self.mesh, self, element_type))
 

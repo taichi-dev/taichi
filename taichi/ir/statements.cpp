@@ -289,18 +289,25 @@ std::unique_ptr<Stmt> StructForStmt::clone() const {
 MeshForStmt::MeshForStmt(mesh::Mesh *mesh,
                          mesh::MeshElementType element_type,
                          std::unique_ptr<Block> &&body,
+                         int vectorize,
+                         int bit_vectorize,
+                         int num_cpu_threads,
                          int block_dim)
     : mesh(mesh),
       major_from_type(element_type),
       body(std::move(body)),
+      vectorize(vectorize),
+      bit_vectorize(bit_vectorize),
+      num_cpu_threads(num_cpu_threads),
       block_dim(block_dim) {
   this->body->parent_stmt = this;
   TI_STMT_REG_FIELDS;
 }
 
 std::unique_ptr<Stmt> MeshForStmt::clone() const {
-  auto new_stmt = std::make_unique<MeshForStmt>(mesh, major_from_type,
-                                                body->clone(), block_dim);
+  auto new_stmt = std::make_unique<MeshForStmt>(
+      mesh, major_from_type, body->clone(), vectorize, bit_vectorize,
+      num_cpu_threads, block_dim);
   new_stmt->major_to_types = major_to_types;
   new_stmt->minor_relation_types = minor_relation_types;
   new_stmt->mem_access_opt = mem_access_opt;

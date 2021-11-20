@@ -119,6 +119,8 @@ class Offloader {
         } else {
           offloaded->block_dim = st->block_dim;
         }
+        offloaded->num_cpu_threads =
+            std::min(st->num_cpu_threads, config.cpu_max_num_threads);
         replace_all_usages_with(st, st, offloaded.get());
         for (int j = 0; j < (int)st->body->statements.size(); j++) {
           offloaded->body->insert(std::move(st->body->statements[j]));

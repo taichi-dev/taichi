@@ -126,7 +126,7 @@ If you wish to build taichi with Vulkan. You will need to install the Vulkan SDK
 
 After Vulkan is successfully installed. You can build Taichi with Vulkan by adding an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON`.
 
-### Setting up Taichi for development
+## Building Taichi from source
 
 1. Clone the Taichi repo **recursively**, and build:
 

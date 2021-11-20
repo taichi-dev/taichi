@@ -40,6 +40,10 @@ DeviceAllocation OpenglProgramImpl::allocate_memory_ndarray(
        /*export_sharing=*/false});
 }
 
+std::shared_ptr<Device> OpenglProgramImpl::get_device_shared() {
+  return opengl_runtime_->device;
+}
+
 void OpenglProgramImpl::compile_snode_tree_types(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {

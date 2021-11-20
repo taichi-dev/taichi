@@ -279,6 +279,7 @@ def test_atomic_min_f16():
     foo()
     assert (f[0] == approx(f[1], rel=1e-3))
 
+
 @ti.test(arch=archs_support_f16)
 def test_cast_f32_to_f16():
     @ti.kernel

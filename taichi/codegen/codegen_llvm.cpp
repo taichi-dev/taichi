@@ -398,8 +398,10 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
             llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
       } else {
         if (to->is_primitive(PrimitiveTypeID::f16)) {
-          llvm_val[stmt] = builder->CreateFPTrunc(builder->CreateFPTrunc(
-              llvm_val[stmt->operand], llvm::Type::getFloatTy(*llvm_context)), llvm::Type::getHalfTy(*llvm_context));
+          llvm_val[stmt] = builder->CreateFPTrunc(
+              builder->CreateFPTrunc(llvm_val[stmt->operand],
+                                     llvm::Type::getFloatTy(*llvm_context)),
+              llvm::Type::getHalfTy(*llvm_context));
         } else {
           llvm_val[stmt] = builder->CreateFPTrunc(
               llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));

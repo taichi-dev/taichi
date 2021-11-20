@@ -292,6 +292,10 @@ class Program {
     return program_impl_->get_graphics_device();
   }
 
+  std::shared_ptr<Device> get_device_shared() {
+    return program_impl_->get_device_shared();
+  }
+
   // TODO: do we still need result_buffer?
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) {

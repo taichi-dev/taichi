@@ -492,7 +492,7 @@ DeviceCompiledProgram::DeviceCompiledProgram(CompiledProgram &&program,
 OpenGlRuntime::OpenGlRuntime() {
   initialize_opengl();
 
-  device = std::make_unique<GLDevice>();
+  device = std::make_shared<GLDevice>();
 
   impl = std::make_unique<OpenGlRuntimeImpl>();
 

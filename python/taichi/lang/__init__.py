@@ -34,7 +34,7 @@ from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, MatrixField, Vector
-from taichi.lang.mesh import Mesh, TetMesh, TriMesh
+from taichi.lang.mesh import Mesh, MeshElementFieldProxy, TetMesh, TriMesh
 from taichi.lang.ndrange import GroupedNDRange, ndrange
 from taichi.lang.ops import *  # pylint: disable=W0622
 from taichi.lang.quant_impl import quant

@@ -807,6 +807,9 @@ class MeshForStmt : public Stmt {
  public:
   mesh::Mesh *mesh;
   std::unique_ptr<Block> body;
+  int vectorize;
+  int bit_vectorize;
+  int num_cpu_threads;
   int block_dim;
   mesh::MeshElementType major_from_type;
   std::unordered_set<mesh::MeshElementType> major_to_types{};
@@ -816,6 +819,9 @@ class MeshForStmt : public Stmt {
   MeshForStmt(mesh::Mesh *mesh,
               mesh::MeshElementType element_type,
               std::unique_ptr<Block> &&body,
+              int vectorize,
+              int bit_vectorize,
+              int num_cpu_threads,
               int block_dim);
 
   bool is_container_statement() const override {
@@ -825,7 +831,9 @@ class MeshForStmt : public Stmt {
   std::unique_ptr<Stmt> clone() const override;
 
   TI_STMT_DEF_FIELDS(mesh,
-                     major_from_type,
+                     vectorize,
+                     bit_vectorize,
+                     num_cpu_threads,
                      block_dim,
                      major_from_type,
                      major_to_types,

@@ -1324,8 +1324,8 @@ bool StateFlowGraph::optimize_dead_store() {
     // |mt| is not the desired type.
     if ((mt == OffloadedTaskType::serial ||
          mt == OffloadedTaskType::struct_for ||
-         mt == OffloadedTaskType::range_for ||
-         mt == OffloadedTaskType::mesh_for) &&
+         mt == OffloadedTaskType::mesh_for ||
+         mt == OffloadedTaskType::range_for) &&
         ir->body->statements.empty()) {
       to_delete.insert(i + first_pending_task_index_);
     }

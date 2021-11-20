@@ -4,9 +4,8 @@ import numpy as np
 
 import taichi as ti
 
-repo_dir = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-model_file_path = os.path.join(repo_dir, 'misc', 'ell.json')
+this_dir = os.path.dirname(os.path.abspath(__file__))
+model_file_path = os.path.join(this_dir, 'ell.json')
 
 
 @ti.test(require=ti.extension.mesh, dynamic_index=False)
@@ -199,7 +198,7 @@ def test_multiple_meshes():
         assert out[i] == i**2
 
 
-@ti.test(arch=ti.cuda, dynamic_index=False)
+@ti.test(require=ti.extension.mesh, dynamic_index=False)
 def test_mesh_local():
     mesh_builder = ti.Mesh.Tet()
     mesh_builder.verts.place({'a': ti.i32})

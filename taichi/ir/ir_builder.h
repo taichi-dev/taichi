@@ -115,7 +115,10 @@ class IRBuilder {
                                    int block_dim = 0);
   MeshForStmt *create_mesh_for(mesh::Mesh *mesh,
                                mesh::MeshElementType element_type,
-                               int block_dim);
+                               int vectorize = -1,
+                               int bit_vectorize = -1,
+                               int num_cpu_threads = 0,
+                               int block_dim = 0);
   WhileStmt *create_while_true();
   IfStmt *create_if(Stmt *cond);
   WhileControlStmt *create_break();

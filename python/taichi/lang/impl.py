@@ -11,9 +11,8 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import MatrixField, _IntermediateMatrix
-from taichi.lang.mesh import (ConvType, MeshElementField,
-                              MeshElementFieldProxy, MeshElementType,
-                              MeshInstance, MeshRelationAccessProxy,
+from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
+                              MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
                               MeshReorderedScalarFieldProxy, element_type_name)
 from taichi.lang.snode import SNode
@@ -116,17 +115,6 @@ def wrap_scalar(x):
     if type(x) in [int, float]:
         return Expr(x)
     return x
-
-
-@taichi_scope
-def mesh_relation_access(mesh, from_index, to_element_type):
-    # to support ti.mesh_local and access mesh attribute as field
-    if isinstance(from_index, MeshInstance):
-        return getattr(from_index, element_type_name(to_element_type))
-    if isinstance(mesh, MeshInstance):
-        return MeshRelationAccessProxy(mesh, from_index, to_element_type)
-    else:
-        raise RuntimeError("Relation access should be with a mesh instance!")
 
 
 @taichi_scope
@@ -939,3 +927,13 @@ def default_cfg():
 def call_internal(name, *args):
     return expr_init(
         _ti_core.insert_internal_func_call(name, make_expr_group(args)))
+
+
+@taichi_scope
+def mesh_relation_access(mesh, from_index, to_element_type):
+    # to support ti.mesh_local and access mesh attribute as field
+    if isinstance(from_index, MeshInstance):
+        return getattr(from_index, element_type_name(to_element_type))
+    if isinstance(mesh, MeshInstance):
+        return MeshRelationAccessProxy(mesh, from_index, to_element_type)
+    raise RuntimeError("Relation access should be with a mesh instance!")

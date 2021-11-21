@@ -64,6 +64,35 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   }
 }
 
+FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
+                                 const mesh::MeshPtr &mesh,
+                                 const mesh::MeshElementType &element_type)
+    : mesh_for(true), mesh(mesh.ptr.get()), element_type(element_type) {
+  vectorize = dec.vectorize;
+  bit_vectorize = dec.bit_vectorize;
+  num_cpu_threads = dec.num_cpu_threads;
+  block_dim = dec.block_dim;
+  auto cfg = get_current_program().config;
+  if (cfg.arch == Arch::cuda) {
+    vectorize = 1;
+    num_cpu_threads = 1;
+    TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
+  } else {
+    // cpu
+    if (num_cpu_threads == 0)
+      num_cpu_threads = std::thread::hardware_concurrency();
+  }
+  mem_access_opt = dec.mem_access_opt;
+  dec.reset();
+  if (vectorize == -1)
+    vectorize = 1;
+
+  loop_var_id.resize(loop_var.size());
+  for (int i = 0; i < (int)loop_var.size(); i++) {
+    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+  }
+}
+
 DecoratorRecorder dec;
 
 FrontendContext::FrontendContext() {
@@ -736,6 +765,44 @@ void FuncCallExpression::serialize(std::ostream &ss) {
   ss << "func_call(\"" << func->func_key.get_full_name() << "\", ";
   args.serialize(ss);
   ss << ')';
+}
+
+// Mesh related.
+
+void MeshPatchIndexExpression::flatten(FlattenContext *ctx) {
+  auto pid_stmt = std::make_unique<MeshPatchIndexStmt>();
+  ctx->push_back(std::move(pid_stmt));
+  stmt = ctx->back_stmt();
+}
+
+void MeshPatchIndexExpression::type_check() {
+  ret_type = PrimitiveType::i32;
+}
+
+void MeshRelationAccessExpression::type_check() {
+  ret_type = PrimitiveType::i32;
+}
+
+void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
+  mesh_idx->flatten(ctx);
+  if (neighbor_idx) {
+    neighbor_idx->flatten(ctx);
+    ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx->stmt, to_type,
+                                           neighbor_idx->stmt);
+  } else {
+    ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx->stmt, to_type);
+  }
+  stmt = ctx->back_stmt();
+}
+
+void MeshIndexConversionExpression::type_check() {
+  ret_type = PrimitiveType::i32;
+}
+
+void MeshIndexConversionExpression::flatten(FlattenContext *ctx) {
+  idx->flatten(ctx);
+  ctx->push_back<MeshIndexConversionStmt>(mesh, idx_type, idx->stmt, conv_type);
+  stmt = ctx->back_stmt();
 }
 
 Block *ASTBuilder::current_block() {

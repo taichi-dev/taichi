@@ -242,6 +242,10 @@ class TypeCheck : public IRVisitor {
     stmt->body->accept(this);
   }
 
+  void visit(MeshForStmt *stmt) override {
+    stmt->body->accept(this);
+  }
+
   void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }

@@ -584,6 +584,10 @@ class Simplify : public IRVisitor {
     current_struct_for = nullptr;
   }
 
+  void visit(MeshForStmt *for_stmt) override {
+    for_stmt->body->accept(this);
+  }
+
   void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }

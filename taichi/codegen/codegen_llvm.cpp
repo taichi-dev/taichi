@@ -401,7 +401,9 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
       } else {
         if (to->is_primitive(PrimitiveTypeID::f16)) {
           llvm_val[stmt] = builder->CreateFPTrunc(
-              llvm_val[stmt->operand], llvm::Type::getHalfTy(*llvm_context));
+              builder->CreateFPTrunc(llvm_val[stmt->operand],
+                                     llvm::Type::getFloatTy(*llvm_context)),
+              llvm::Type::getHalfTy(*llvm_context));
         } else {
           llvm_val[stmt] = builder->CreateFPTrunc(
               llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
@@ -948,6 +950,7 @@ llvm::Value *CodeGenLLVM::create_call(llvm::Value *func,
   check_func_call_signature(func, args);
   return builder->CreateCall(func, args);
 }
+
 llvm::Value *CodeGenLLVM::create_call(std::string func_name,
                                       llvm::ArrayRef<llvm::Value *> args) {
   auto func = get_runtime_function(func_name);
@@ -1992,8 +1995,10 @@ void CodeGenLLVM::visit(GlobalThreadIndexStmt *stmt) {
 
 void CodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
-      stmt->loop->as<OffloadedStmt>()->task_type ==
-          OffloadedStmt::TaskType::struct_for) {
+      (stmt->loop->as<OffloadedStmt>()->task_type ==
+           OffloadedStmt::TaskType::struct_for ||
+       stmt->loop->as<OffloadedStmt>()->task_type ==
+           OffloadedStmt::TaskType::mesh_for)) {
     llvm_val[stmt] = create_call("thread_idx");
   } else {
     TI_NOT_IMPLEMENTED;
@@ -2208,6 +2213,10 @@ void CodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
   TI_NOT_IMPLEMENTED
 }
 
+void CodeGenLLVM::visit(MeshPatchIndexStmt *stmt) {
+  llvm_val[stmt] = get_arg(2);
+}
+
 void CodeGenLLVM::eliminate_unused_functions() {
   TaichiLLVMContext::eliminate_unused_functions(
       module.get(), [&](std::string func_name) {
@@ -2274,9 +2283,19 @@ std::vector<llvm::Type *> CodeGenLLVM::get_xlogue_argument_types() {
           get_tls_buffer_type()};
 }
 
+std::vector<llvm::Type *> CodeGenLLVM::get_mesh_xlogue_argument_types() {
+  return {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
+          get_tls_buffer_type(), tlctx->get_data_type<uint32_t>()};
+}
+
 llvm::Type *CodeGenLLVM::get_xlogue_function_type() {
   return llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                  get_xlogue_argument_types(), false);
+}
+
+llvm::Type *CodeGenLLVM::get_mesh_xlogue_function_type() {
+  return llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
+                                 get_mesh_xlogue_argument_types(), false);
 }
 
 llvm::Value *CodeGenLLVM::get_root(int snode_tree_id) {
@@ -2314,6 +2333,23 @@ llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
 
   if (block) {
     auto guard = get_function_creation_guard(get_xlogue_argument_types());
+    block->accept(this);
+    xlogue = guard.body;
+  } else {
+    xlogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
+  }
+
+  return xlogue;
+}
+
+llvm::Value *CodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block) {
+  llvm::Value *xlogue;
+
+  auto xlogue_type = get_mesh_xlogue_function_type();
+  auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
+
+  if (block) {
+    auto guard = get_function_creation_guard(get_mesh_xlogue_argument_types());
     block->accept(this);
     xlogue = guard.body;
   } else {

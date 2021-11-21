@@ -10,9 +10,30 @@ on:
   workflow_dispatch:
 
 jobs:
+  add_version_to_database:
+    name: Add version to database
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: set tag
+        id: tag
+        run: echo ::set-output name=version::${GITHUB_REF#refs/*/}
+
+      - name: Save new version
+        run: |
+          python3 -m pip install requests==2.26
+          [ -z "${{ github.event.action }}" ] || python3 misc/save_new_version.py
+        env:
+          RELEASE_VERSION: ${{ steps.tag.outputs.version }}
+          METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
+          METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
+          METADATA_URL: ${{ secrets.METADATA_URL }}
+
   # This job set environment matrix with respect to production release and nightly release.
   matrix_prep:
     runs-on: ubuntu-latest
+    needs: add_version_to_database
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       matrix_osx: ${{ steps.set-matrix.outputs.matrix_osx }}
@@ -78,10 +99,14 @@ jobs:
           PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
+          METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
+          METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
+          METADATA_URL: ${{ secrets.METADATA_URL }}
         run: |
           mkdir dist
           cp wheel/*.whl dist/
           cd python
+          python3 -m pip install requests==2.26
           if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python3 build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
           elif [ $PROJECT_NAME == "taichi" ]; then export PYPI_PWD="$PROD_PWD" && python3 build.py upload --skip_build; fi
 
@@ -149,6 +174,9 @@ jobs:
           PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
+          METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
+          METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
+          METADATA_URL: ${{ secrets.METADATA_URL }}
         run: |
           cd python
           if [ $PROJECT_NAME == "taichi-nightly" ]; then export PYPI_PWD="$NIGHT_PWD" && python build.py upload --skip_build --testpypi --project_name $PROJECT_NAME
@@ -207,6 +235,9 @@ jobs:
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
+          METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
+          METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
+          METADATA_URL: ${{ secrets.METADATA_URL }}
         run: |
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           cd python
@@ -274,6 +305,9 @@ jobs:
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
+          METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
+          METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
+          METADATA_URL: ${{ secrets.METADATA_URL }}
         run: |
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
           cd python
@@ -331,6 +365,9 @@ jobs:
           PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
           NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
+          METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
+          METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
+          METADATA_URL: ${{ secrets.METADATA_URL }}
         run: |
           cd python
           if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {$env:PYPI_PWD = "$env:NIGHT_PWD"}

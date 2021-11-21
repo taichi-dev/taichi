@@ -34,6 +34,7 @@ from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, MatrixField, Vector
+from taichi.lang.mesh import Mesh, MeshElementFieldProxy, TetMesh, TriMesh
 from taichi.lang.ndrange import GroupedNDRange, ndrange
 from taichi.lang.ops import *  # pylint: disable=W0622
 from taichi.lang.quant_impl import quant
@@ -589,6 +590,16 @@ def block_local(*args):
                 _ti_core.SNodeAccessFlag.block_local, v.ptr)
 
 
+def mesh_local(*args):
+    if ti.current_cfg().dynamic_index:
+        raise InvalidOperationError(
+            'dynamic_index is not allowed when mesh_local is turned on.')
+    for a in args:
+        for v in a.get_field_members():
+            _ti_core.insert_snode_access_flag(
+                _ti_core.SNodeAccessFlag.mesh_local, v.ptr)
+
+
 @deprecated('ti.cache_shared', 'ti.block_local')
 def cache_shared(*args):
     block_local(*args)
@@ -622,6 +633,7 @@ vectorize = _ti_core.vectorize
 bit_vectorize = _ti_core.bit_vectorize
 block_dim = _ti_core.block_dim
 global_thread_idx = _ti_core.insert_thread_idx_expr
+mesh_patch_idx = _ti_core.insert_patch_idx_expr
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
 transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)

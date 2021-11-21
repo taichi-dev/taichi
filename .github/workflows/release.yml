@@ -9,6 +9,13 @@ on:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
+env:
+  PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
+  NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
+  METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
+  METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
+  METADATA_URL: ${{ secrets.METADATA_URL }}
+
 jobs:
   add_version_to_database:
     name: Add version to database
@@ -26,9 +33,6 @@ jobs:
           [ -z "${{ github.event.action }}" ] || python3 misc/save_new_version.py
         env:
           RELEASE_VERSION: ${{ steps.tag.outputs.version }}
-          METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
-          METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
-          METADATA_URL: ${{ secrets.METADATA_URL }}
 
   # This job set environment matrix with respect to production release and nightly release.
   matrix_prep:
@@ -95,20 +99,12 @@ jobs:
 
       - name: Upload PyPI
         env:
-          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
-          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
-          METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
-          METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
-          METADATA_URL: ${{ secrets.METADATA_URL }}
         run: |
           mkdir dist
           cp wheel/*.whl dist/
-          pip install twine
-          if [ $PROJECT_NAME == "taichi-nightly" ]; then twine upload --repository testpypi --verbose -u __token__ -p "$NIGHT_PWD" dist/*
-          elif [ $PROJECT_NAME == "taichi" ]; then twine upload --verbose -u __token__ -p "$PROD_PWD" dist/*
-          fi
+          pip install twine requests==2.26
+          python misc/upload_release.py
 
       - name: clean docker container
         if: always()
@@ -161,16 +157,8 @@ jobs:
       - name: Upload PyPI
         env:
           # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
-          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
-          METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
-          METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
-          METADATA_URL: ${{ secrets.METADATA_URL }}
-        run: |
-          if [ $PROJECT_NAME == "taichi-nightly" ]; then twine upload --repository testpypi --verbose -u __token__ -p "$NIGHT_PWD" dist/*
-          elif [ $PROJECT_NAME == "taichi" ]; then twine upload --verbose -u __token__ -p "$PROD_PWD" dist/*
-          fi
+        run: python misc/upload_release.py
 
   build_and_upload_m1:
     name: Build and Upload (Apple M1)
@@ -209,19 +197,11 @@ jobs:
 
       - name: Upload PyPI
         env:
-          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
-          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
-          METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
-          METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
-          METADATA_URL: ${{ secrets.METADATA_URL }}
         run: |
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
-          if [ $PROJECT_NAME == "taichi-nightly" ]; then twine upload --repository testpypi --verbose -u __token__ -p "$NIGHT_PWD" dist/*
-          elif [ $PROJECT_NAME == "taichi" ]; then twine upload --verbose -u __token__ -p "$PROD_PWD" dist/*
-          fi
+          python misc/upload_release.py
 
   build_and_upload_macos_1014:
     name: Build and Upload (macos 1014)
@@ -268,19 +248,11 @@ jobs:
 
       - name: Upload PyPI
         env:
-          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
-          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
-          METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
-          METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
-          METADATA_URL: ${{ secrets.METADATA_URL }}
         run: |
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
-          if [ $PROJECT_NAME == "taichi-nightly" ]; then twine upload --repository testpypi --verbose -u __token__ -p "$NIGHT_PWD" dist/*
-          elif [ $PROJECT_NAME == "taichi" ]; then twine upload --verbose -u __token__ -p "$PROD_PWD" dist/*
-          fi
+          python misc/upload_release.py
 
   build_and_upload_windows:
     name: Build and Upload (Windows only)
@@ -329,13 +301,6 @@ jobs:
       - name: Upload PyPI
         shell: powershell
         env:
-          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-          PROD_PWD: ${{ secrets.PYPI_PWD_PROD }}
-          NIGHT_PWD: ${{ secrets.PYPI_PWD_NIGHTLY }}
           PROJECT_NAME: ${{ matrix.name }}
-          METADATA_USERNAME: ${{ secrets.METADATA_USERNAME }}
-          METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
-          METADATA_URL: ${{ secrets.METADATA_URL }}
         run: |
-          if ( $env:PROJECT_NAME -eq "taichi-nightly" ) {venv\Scripts\twine upload --verbose --repository testpypi -u __token__ -p "$env:NIGHT_PWD" dist/*}
-          else {venv\Scripts\twine upload --verbose -u __token__ -p "$env:PROD_PWD" dist/*}
+          venv\Scripts\python misc/upload_release.py

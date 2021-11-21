@@ -47,13 +47,6 @@ On Linux, some additional packages might be required to build Taichi. E.g., on U
    - [LLVM 10.0.0 for macOS (M1 chip)](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_m1/llvm-10.0.0-m1.zip)
    - [LLVM 10.0.0 for Windows MSVC 2019](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip)
 
-
-:::caution
-If you encounter `llvm-as can’t be opened because Apple cannot check it for malicious software on macOS`, you have two options to work around this:
-  - (One-off) `System Preferences` -> `Security & Privacy` -> `General` -> `Allow anyway`
-  - (Permanent) Run `sudo spctl --master-disable` in your terminal to allow your MacBook to download apps from anywhere by default.
-:::
-
 :::note
 When using the above pre-built LLVM for Taichi, please add `$LLVM_FOLDER/bin` to `PATH`, e.g., `export PATH=<path_to_llvm_folder>/bin:$PATH` on Linux.
 :::
@@ -288,15 +281,6 @@ sudo systemctl restart docker
   ```bash
   clang --version
   # version should be >= 7
-  ```
-
-  and our **Taichi configured** `llvm-as`:
-
-  ```bash
-  llvm-as --version
-  # version should be >= 8
-  which llvm-as
-  # should be /usr/local/bin/llvm-as or /opt/XXX/bin/llvm-as, which is our configured installation
   ```
 
   If not, please install `clang` and **build LLVM from source** with

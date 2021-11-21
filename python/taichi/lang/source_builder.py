@@ -69,13 +69,9 @@ class SourceBuilder:
                     subprocess.call(
                         get_clangpp() + ' ' +
                         os.path.join(self.td, 'source.cu') +
-                        ' -S -emit-llvm -std=c++17 --cuda-gpu-arch=sm_50 -nocudalib',
+                        ' -c -emit-llvm -std=c++17 --cuda-gpu-arch=sm_50 -nocudalib',
                         cwd=self.td,
                         shell=True)
-                    subprocess.call('llvm-as ' + os.path.join(
-                        self.td, 'source-cuda-nvptx64-nvidia-cuda-sm_50.ll'),
-                                    cwd=self.td,
-                                    shell=True)
                     return os.path.join(
                         self.td, 'source-cuda-nvptx64-nvidia-cuda-sm_50.bc')
 

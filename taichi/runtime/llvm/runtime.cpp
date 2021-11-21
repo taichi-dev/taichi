@@ -35,6 +35,7 @@ using host_vsnprintf_type = int (*)(char *,
                                     std::va_list);
 using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
 using RangeForTaskFunc = void(RuntimeContext *, const char *tls, int i);
+using MeshForTaskFunc = void(RuntimeContext *, const char *tls, uint32_t i);
 using parallel_for_type = void (*)(void *thread_pool,
                                    int splits,
                                    int num_desired_threads,
@@ -1329,6 +1330,9 @@ void parallel_struct_for(RuntimeContext *context,
 }
 
 using range_for_xlogue = void (*)(RuntimeContext *, /*TLS*/ char *tls_base);
+using mesh_for_xlogue = void (*)(RuntimeContext *,
+                                 /*TLS*/ char *tls_base,
+                                 uint32_t patch_idx);
 
 struct range_task_helper_context {
   RuntimeContext *context;
@@ -1425,6 +1429,83 @@ void gpu_parallel_range_for(RuntimeContext *context,
   }
   if (epilogue)
     epilogue(context, tls_ptr);
+}
+
+struct mesh_task_helper_context {
+  RuntimeContext *context;
+  mesh_for_xlogue prologue{nullptr};
+  RangeForTaskFunc *body{nullptr};
+  mesh_for_xlogue epilogue{nullptr};
+  std::size_t tls_size{1};
+  int num_patches;
+  int block_size;
+};
+
+void cpu_parallel_mesh_for_task(void *range_context,
+                                int thread_id,
+                                int task_id) {
+  auto ctx = *(mesh_task_helper_context *)range_context;
+  alignas(8) char tls_buffer[ctx.tls_size];
+  auto tls_ptr = &tls_buffer[0];
+
+  RuntimeContext this_thread_context = *ctx.context;
+  this_thread_context.cpu_thread_id = thread_id;
+
+  int block_start = task_id * ctx.block_size;
+  int block_end = std::min(block_start + ctx.block_size, ctx.num_patches);
+
+  for (int idx = block_start; idx < block_end; idx++) {
+    if (ctx.prologue)
+      ctx.prologue(ctx.context, tls_ptr, idx);
+    ctx.body(&this_thread_context, tls_ptr, idx);
+    if (ctx.epilogue)
+      ctx.epilogue(ctx.context, tls_ptr, idx);
+  }
+}
+
+void cpu_parallel_mesh_for(RuntimeContext *context,
+                           int num_threads,
+                           int num_patches,
+                           int block_dim,
+                           mesh_for_xlogue prologue,
+                           RangeForTaskFunc *body,
+                           mesh_for_xlogue epilogue,
+                           std::size_t tls_size) {
+  mesh_task_helper_context ctx;
+  ctx.context = context;
+  ctx.prologue = prologue;
+  ctx.tls_size = tls_size;
+  ctx.body = body;
+  ctx.epilogue = epilogue;
+  ctx.num_patches = num_patches;
+  if (block_dim == 0) {
+    // adaptive block dim
+    // ensure each thread has at least ~32 tasks for load balancing
+    // and each task has at least 512 items to amortize scheduler overhead
+    block_dim = std::min(512, std::max(1, num_patches / (num_threads * 32)));
+  }
+  ctx.block_size = block_dim;
+  auto runtime = context->runtime;
+  runtime->parallel_for(runtime->thread_pool,
+                        (num_patches + block_dim - 1) / block_dim, num_threads,
+                        &ctx, cpu_parallel_mesh_for_task);
+}
+
+void gpu_parallel_mesh_for(RuntimeContext *context,
+                           int num_patches,
+                           mesh_for_xlogue prologue,
+                           MeshForTaskFunc *func,
+                           mesh_for_xlogue epilogue,
+                           const std::size_t tls_size) {
+  alignas(8) char tls_buffer[tls_size];
+  auto tls_ptr = &tls_buffer[0];
+  for (int idx = block_idx(); idx < num_patches; idx += grid_dim()) {
+    if (prologue)
+      prologue(context, tls_ptr, idx);
+    func(context, tls_ptr, idx);
+    if (epilogue)
+      epilogue(context, tls_ptr, idx);
+  }
 }
 
 i32 linear_thread_idx(RuntimeContext *context) {

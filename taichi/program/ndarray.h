@@ -30,12 +30,14 @@ class Ndarray {
   intptr_t get_data_ptr_as_int() const;
   std::size_t get_element_size() const;
   std::size_t get_nelement() const;
+  void release();
 
  private:
   DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
   uint64_t *data_ptr_{nullptr};
   std::size_t nelement_{1};
   std::size_t element_size_{1};
+  LlvmProgramImpl *prog_impl_{nullptr};
 };
 
 }  // namespace lang

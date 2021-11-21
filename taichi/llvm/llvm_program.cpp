@@ -576,9 +576,14 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
 
   Device::AllocParams device_buffer_alloc_params;
   device_buffer_alloc_params.size = alloc_size;
+  device_buffer_alloc_params.use_cached = config->ndarray_use_cached_allocator;
   return get_compute_device()->allocate_memory_runtime(
       device_buffer_alloc_params, tlctx->runtime_jit_module, get_llvm_runtime(),
       result_buffer);
+}
+
+void LlvmProgramImpl::release_memory_ndarray(DeviceAllocation &alloc) {
+    get_compute_device()->release_memory(alloc);
 }
 
 uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {

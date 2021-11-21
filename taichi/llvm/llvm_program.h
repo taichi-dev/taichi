@@ -102,6 +102,8 @@ class LlvmProgramImpl : public ProgramImpl {
 
   uint64_t *get_ndarray_alloc_info_ptr(DeviceAllocation &alloc);
 
+  void release_memory_ndarray(DeviceAllocation &alloc);
+
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
       const std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,

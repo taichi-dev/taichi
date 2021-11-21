@@ -38,6 +38,8 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(const AllocParams &params,
   AllocInfo info;
   if (params.host_read || params.host_write) {
     TI_NOT_IMPLEMENTED
+  } else if (params.use_cached && ccalloc.find_block(params.size)) {
+    info.ptr = ccalloc.allocate(params.size);
   } else {
     info.ptr = allocate_llvm_runtime_memory_jit(runtime_jit, runtime,
                                                 params.size, result_buffer);
@@ -51,6 +53,16 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(const AllocParams &params,
 
   allocations_.push_back(info);
   return alloc;
+}
+
+void CudaDevice::release_memory(DeviceAllocation &handle) {
+  validate_device_alloc(handle);
+  AllocInfo &info = allocations_[handle.alloc_id];
+  if (info.ptr == nullptr) {
+    TI_ERROR("the DeviceAllocation is already released");
+  }
+  TI_ASSERT(!info.is_imported);
+  ccalloc.release(info.size, (uint64_t *)info.ptr);
 }
 
 void CudaDevice::dealloc_memory(DeviceAllocation handle) {

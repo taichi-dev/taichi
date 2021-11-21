@@ -252,11 +252,11 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
     ctx_buffer_ = ti_params.device->allocate_memory_unique(
         {size_t(ctx_sz),
          /*host_write=*/true, /*host_read=*/false,
-         /*export_sharing=*/false, AllocUsage::Storage});
+         /*export_sharing=*/false, /*use_cached=*/false, AllocUsage::Storage});
     ctx_buffer_host_ = ti_params.device->allocate_memory_unique(
         {size_t(ctx_sz),
          /*host_write=*/false, /*host_read=*/true,
-         /*export_sharing=*/false, AllocUsage::Storage});
+         /*export_sharing=*/false, /*use_cached=*/false, AllocUsage::Storage});
     input_buffers_[BufferType::Context] = ctx_buffer_.get();
   }
 
@@ -439,12 +439,12 @@ void VkRuntime::init_buffers() {
   global_tmps_buffer_ = device_->allocate_memory_unique(
       {kGtmpBufferSize,
        /*host_write=*/false, /*host_read=*/false,
-       /*export_sharing=*/false, AllocUsage::Storage});
+       /*export_sharing=*/false, /*use_cached=*/false, AllocUsage::Storage});
 
   listgen_buffer_ = device_->allocate_memory_unique(
       {kListGenBufferSize,
        /*host_write=*/false, /*host_read=*/false,
-       /*export_sharing=*/false, AllocUsage::Storage});
+       /*export_sharing=*/false, /*use_cached=*/false, AllocUsage::Storage});
 
   // Need to zero fill the buffers, otherwise there could be NaN.
   Stream *stream = device_->get_compute_stream();
@@ -465,7 +465,7 @@ void VkRuntime::add_root_buffer(size_t root_buffer_size) {
       device_->allocate_memory_unique(
           {root_buffer_size,
            /*host_write=*/false, /*host_read=*/false,
-           /*export_sharing=*/false, AllocUsage::Storage});
+           /*export_sharing=*/false, /*use_cached=*/false, AllocUsage::Storage});
   Stream *stream = device_->get_compute_stream();
   auto cmdlist = stream->new_command_list();
   cmdlist->buffer_fill(new_buffer->get_ptr(0), root_buffer_size, /*data=*/0);

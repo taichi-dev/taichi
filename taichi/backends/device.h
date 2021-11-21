@@ -386,6 +386,7 @@ class Device {
     bool host_write{false};
     bool host_read{false};
     bool export_sharing{false};
+    bool use_cached{true};
     AllocUsage usage{AllocUsage::Storage};
   };
 
@@ -396,6 +397,11 @@ class Device {
                                                    uint64 *result_buffer) {
     TI_NOT_IMPLEMENTED
   }
+
+  virtual void release_memory(DeviceAllocation &alloc) {
+    TI_NOT_IMPLEMENTED
+  }
+
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
 
   uint64_t *allocate_llvm_runtime_memory_jit(JITModule *runtime_jit,

@@ -4,6 +4,7 @@
 
 #include "taichi/common/core.h"
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/backends/cuda/cuda_caching_allocator.h"
 #include "taichi/backends/cuda/cuda_context.h"
 #include "taichi/backends/device.h"
 
@@ -93,6 +94,8 @@ class CudaDevice : public Device {
                                            uint64 *result_buffer) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
+  void release_memory(DeviceAllocation &alloc) override;
+
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") override{TI_NOT_IMPLEMENTED};
@@ -119,6 +122,7 @@ class CudaDevice : public Device {
       TI_ERROR("invalid DeviceAllocation");
     }
   }
+  CudaCachingAllocator ccalloc{};
 };
 
 }  // namespace cuda

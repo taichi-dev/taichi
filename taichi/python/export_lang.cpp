@@ -186,6 +186,7 @@ void export_lang(py::module &m) {
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("ndarray_use_torch", &CompileConfig::ndarray_use_torch)
+      .def_readwrite("ndarray_use_cached_allocator", &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
@@ -399,6 +400,7 @@ void export_lang(py::module &m) {
       .def("data_ptr", &Ndarray::get_data_ptr_as_int)
       .def("element_size", &Ndarray::get_element_size)
       .def("nelement", &Ndarray::get_nelement)
+      .def("release", &Ndarray::release)
       .def("read_int",
            [](Ndarray *ndarray, const std::vector<int> &I) -> int64 {
              return get_ndarray_rw_accessors(ndarray).read_int(I);

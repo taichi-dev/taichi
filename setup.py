@@ -219,7 +219,6 @@ class Clean(clean):
             'taichi/common/commit_hash.h', 'taichi/common/version.h'
         ]
         generated_files += glob.glob('taichi/runtime/llvm/runtime_*.bc')
-        generated_files += glob.glob('taichi/runtime/llvm/runtime_*.ll')
         for f in generated_files:
             if os.path.exists(f):
                 print(f'removing generated file {f}')

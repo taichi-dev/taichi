@@ -94,8 +94,13 @@ class DIE : public IRVisitor {
     for_stmt->body->accept(this);
   }
 
+  void visit(MeshForStmt *for_stmt) {
+    register_usage(for_stmt);
+    for_stmt->body->accept(this);
+  }
+
   void visit(OffloadedStmt *stmt) {
-    stmt->all_blocks_accept(this);
+    stmt->all_blocks_accept(this, true);
   }
 };
 

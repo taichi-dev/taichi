@@ -11,22 +11,20 @@ Ndarray::Ndarray(Program *prog,
     : dtype(type),
       shape(shape),
       num_active_indices(shape.size()),
-      data_ptr_(nullptr),
       nelement_(std::accumulate(std::begin(shape),
                                 std::end(shape),
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)) {
-  TaichiLLVMContext *tlctx =
-      prog->get_llvm_program_impl()->get_llvm_context(prog->config.arch);
-  auto *const runtime_jit = tlctx->runtime_jit_module;
-  TI_TRACE("allocating memory for Ndarray");
-  runtime_jit->call<void *, std::size_t, std::size_t>(
-      "runtime_memory_allocate_aligned",
-      prog->get_llvm_program_impl()->get_llvm_runtime(),
-      nelement_ * element_size_, taichi_page_size);
-  data_ptr_ = prog->get_llvm_program_impl()->fetch_result<uint64_t *>(
-      taichi_result_buffer_runtime_query_id, prog->result_buffer);
+#ifdef TI_WITH_LLVM
+  LlvmProgramImpl *prog_impl = prog->get_llvm_program_impl();
+  ndarray_alloc_ = prog_impl->allocate_memory_ndarray(nelement_ * element_size_,
+                                                      prog->result_buffer);
+
+  data_ptr_ = prog_impl->get_ndarray_alloc_info_ptr(ndarray_alloc_);
+#else
+  TI_ERROR("Llvm disabled");
+#endif
 }
 
 intptr_t Ndarray::get_data_ptr_as_int() const {

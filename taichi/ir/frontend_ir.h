@@ -8,6 +8,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
 #include "taichi/program/function.h"
+#include "taichi/ir/mesh.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -125,7 +126,6 @@ class FrontendPrintStmt : public Stmt {
 class FrontendEvalStmt : public Stmt {
  public:
   Expr expr;
-  Expr eval_expr;
 
   FrontendEvalStmt(const Expr &expr) : expr(load_if_ptr(expr)) {
   }
@@ -146,8 +146,12 @@ class FrontendForStmt : public Stmt {
   MemoryAccessOptions mem_access_opt;
   int block_dim;
 
+  bool mesh_for = false;
+  mesh::Mesh *mesh;
+  mesh::MeshElementType element_type;
+
   bool is_ranged() const {
-    if (global_var.expr == nullptr) {
+    if (global_var.expr == nullptr && !mesh_for) {
       return true;
     } else {
       return false;
@@ -155,6 +159,10 @@ class FrontendForStmt : public Stmt {
   }
 
   FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var);
+
+  FrontendForStmt(const ExprGroup &loop_var,
+                  const mesh::MeshPtr &mesh,
+                  const mesh::MeshElementType &element_type);
 
   FrontendForStmt(const Expr &loop_var, const Expr &begin, const Expr &end);
 
@@ -330,6 +338,8 @@ class TernaryOpExpression : public Expression {
     this->op3.set(load_if_ptr(op3));
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override {
     ss << ternary_type_name(type) << '(';
     op1->serialize(ss);
@@ -355,6 +365,8 @@ class InternalFuncCallExpression : public Expression {
       args.push_back(load_if_ptr(a));
     }
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     ss << "internal call " << func_name << '(';
@@ -393,6 +405,8 @@ class ExternalFuncCallExpression : public Expression {
         args(args),
         outputs(outputs) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     if (so_func != nullptr) {
@@ -437,6 +451,9 @@ class ExternalTensorExpression : public Expression {
     set_attribute("dim", std::to_string(dim));
   }
 
+  void type_check() override {
+  }
+
   void serialize(std::ostream &ss) override {
     ss << fmt::format("{}d_ext_arr", dim);
   }
@@ -468,6 +485,9 @@ class GlobalVariableExpression : public Expression {
     is_primal = true;
   }
 
+  void type_check() override {
+  }
+
   void set_snode(SNode *snode) {
     this->snode = snode;
     set_attribute("dim", std::to_string(snode->num_active_indices));
@@ -494,6 +514,8 @@ class GlobalPtrExpression : public Expression {
       : snode(snode), indices(indices) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
@@ -516,6 +538,8 @@ class TensorElementExpression : public Expression {
                           int layout_stride)
       : var(var), indices(indices), shape(shape), layout_stride(layout_stride) {
   }
+
+  void type_check() override;
 
   bool is_local_tensor() const;
 
@@ -546,21 +570,18 @@ class TensorElementExpression : public Expression {
   }
 };
 
-class EvalExpression : public Expression {
+class GlobalThreadIndexExpression : public Expression {
  public:
-  Stmt *stmt_ptr;
-  int stmt_id;
-  EvalExpression(Stmt *stmt) : stmt_ptr(stmt), stmt_id(stmt_ptr->id) {
-    // cache stmt->id since it may be released later
+  GlobalThreadIndexExpression() {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
-    ss << '%' << stmt_id;
+    ss << fmt::format("global_thread_idx()");
   }
 
-  void flatten(FlattenContext *ctx) override {
-    stmt = stmt_ptr;
-  }
+  void flatten(FlattenContext *ctx) override;
 };
 
 class RangeAssumptionExpression : public Expression {
@@ -572,8 +593,13 @@ class RangeAssumptionExpression : public Expression {
                             const Expr &base,
                             int low,
                             int high)
-      : input(input), base(base), low(low), high(high) {
+      : input(load_if_ptr(input)),
+        base(load_if_ptr(base)),
+        low(low),
+        high(high) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override {
     ss << "assume_in_range({";
@@ -597,6 +623,8 @@ class LoopUniqueExpression : public Expression {
   LoopUniqueExpression(const Expr &input, const std::vector<SNode *> &covers)
       : input(input), covers(covers) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override;
 
@@ -639,6 +667,8 @@ class AtomicOpExpression : public Expression {
       : op_type(op_type), dest(dest), val(val) {
   }
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override;
 
   void flatten(FlattenContext *ctx) override;
@@ -652,15 +682,20 @@ class SNodeOpExpression : public Expression {
   Expr value;
 
   SNodeOpExpression(SNode *snode, SNodeOpType op_type, const ExprGroup &indices)
-      : snode(snode), op_type(op_type), indices(indices) {
+      : snode(snode), op_type(op_type), indices(indices.loaded()) {
   }
 
   SNodeOpExpression(SNode *snode,
                     SNodeOpType op_type,
                     const ExprGroup &indices,
                     const Expr &value)
-      : snode(snode), op_type(op_type), indices(indices), value(value) {
+      : snode(snode),
+        op_type(op_type),
+        indices(indices.loaded()),
+        value(value) {
   }
+
+  void type_check() override;
 
   void serialize(std::ostream &ss) override;
 
@@ -671,6 +706,11 @@ class LocalLoadExpression : public Expression {
  public:
   Expr ptr;
   LocalLoadExpression(const Expr &ptr) : ptr(ptr) {
+    // Now it is only constructed by load_if_ptr. No type_check will be called.
+    ret_type = ptr->ret_type;
+  }
+
+  void type_check() override {
   }
 
   void serialize(std::ostream &ss) override {
@@ -685,6 +725,11 @@ class GlobalLoadExpression : public Expression {
  public:
   Expr ptr;
   GlobalLoadExpression(const Expr &ptr) : ptr(ptr) {
+    // Now it is only constructed by load_if_ptr. No type_check will be called.
+    ret_type = ptr->ret_type->get_compute_type();
+  }
+
+  void type_check() override {
   }
 
   void serialize(std::ostream &ss) override {
@@ -728,6 +773,8 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
       : ptr(ptr), axis(axis) {
   }
 
+  void type_check() override;
+
   void flatten(FlattenContext *ctx) override;
 };
 
@@ -736,10 +783,96 @@ class FuncCallExpression : public Expression {
   Function *func;
   ExprGroup args;
 
+  void type_check() override;
+
   void serialize(std::ostream &ss) override;
 
   FuncCallExpression(Function *func, const ExprGroup &args)
       : func(func), args(args) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+// Mesh related.
+
+class MeshPatchIndexExpression : public Expression {
+ public:
+  MeshPatchIndexExpression() {
+  }
+
+  void type_check() override;
+
+  void serialize(std::ostream &ss) override {
+    ss << fmt::format("mesh_patch_idx()");
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class MeshRelationAccessExpression : public Expression {
+ public:
+  mesh::Mesh *mesh;
+  Expr mesh_idx;
+  mesh::MeshElementType to_type;
+  Expr neighbor_idx;
+
+  void type_check() override;
+
+  void serialize(std::ostream &ss) override {
+    if (neighbor_idx) {
+      ss << "mesh_relation_access(";
+      mesh_idx->serialize(ss);
+      ss << ", " << mesh::element_type_name(to_type) << "[";
+      neighbor_idx->serialize(ss);
+      ss << "])";
+    } else {
+      ss << "mesh_relation_size(";
+      mesh_idx->serialize(ss);
+      ss << ", " << mesh::element_type_name(to_type) << ")";
+    }
+  }
+
+  MeshRelationAccessExpression(mesh::Mesh *mesh,
+                               const Expr mesh_idx,
+                               mesh::MeshElementType to_type)
+      : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
+  }
+
+  MeshRelationAccessExpression(mesh::Mesh *mesh,
+                               const Expr mesh_idx,
+                               mesh::MeshElementType to_type,
+                               const Expr neighbor_idx)
+      : mesh(mesh),
+        mesh_idx(mesh_idx),
+        to_type(to_type),
+        neighbor_idx(neighbor_idx) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class MeshIndexConversionExpression : public Expression {
+ public:
+  mesh::Mesh *mesh;
+  mesh::MeshElementType idx_type;
+  Expr idx;
+  mesh::ConvType conv_type;
+
+  void type_check() override;
+
+  void serialize(std::ostream &ss) override {
+    ss << "mesh_index_conversion(" << mesh::conv_type_name(conv_type) << ", "
+       << mesh::element_type_name(idx_type) << ", ";
+    idx->serialize(ss);
+    ss << ")";
+  }
+
+  MeshIndexConversionExpression(mesh::Mesh *mesh,
+                                mesh::MeshElementType idx_type,
+                                const Expr idx,
+                                mesh::ConvType conv_type)
+      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
   }
 
   void flatten(FlattenContext *ctx) override;

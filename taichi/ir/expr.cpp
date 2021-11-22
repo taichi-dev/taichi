@@ -68,12 +68,11 @@ Expr &Expr::operator=(const Expr &o) {
     // Inside a kernel or a function
     // Create an assignment in the IR
     if (expr == nullptr) {
-      set(o.eval());
+      set(o);
     } else if (expr->is_lvalue()) {
       current_ast_builder().insert(
           std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
     } else {
-      // set(o.eval());
       TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
     }
   } else {
@@ -125,20 +124,6 @@ Expr::Expr(float64 x) : Expr() {
 
 Expr::Expr(const Identifier &id) : Expr() {
   expr = std::make_shared<IdExpression>(id);
-}
-
-Expr Expr::eval() const {
-  TI_ASSERT(expr != nullptr);
-  if (is<EvalExpression>()) {
-    return *this;
-  }
-  auto eval_stmt = Stmt::make<FrontendEvalStmt>(*this);
-  auto eval_expr = Expr::make<EvalExpression>(eval_stmt.get());
-  eval_stmt->as<FrontendEvalStmt>()->eval_expr.set(eval_expr);
-  // needed in lower_ast to replace the statement itself with the
-  // lowered statement
-  current_ast_builder().insert(std::move(eval_stmt));
-  return eval_expr;
 }
 
 void Expr::operator+=(const Expr &o) {
@@ -195,7 +180,6 @@ Expr Var(const Expr &x) {
       std::static_pointer_cast<IdExpression>(var.expr)->id,
       PrimitiveType::unknown));
   var = x;
-  var->ret_type = x->ret_type;
   return var;
 }
 

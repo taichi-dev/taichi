@@ -1,6 +1,5 @@
 """Provides helpers to resolve AST nodes."""
 import ast
-import inspect
 
 
 class ASTResolver:
@@ -52,22 +51,3 @@ class ASTResolver:
                 return False
         # The name ``scope`` here could be a bit confusing
         return scope is wanted
-
-
-class ModuleResolver:
-    @staticmethod
-    def get_module_name(function, wanted):
-        """Get the user defined module name of the given
-        ``wanted`` module object from the golbal variables of a function.
-
-        Args:
-            function (Callable): A function to get the global variables from.
-            wanted (Module): The wanted module object.
-        """
-        if not inspect.isfunction(function):
-            return None
-
-        for name, module in function.__globals__.items():
-            if module == wanted:
-                return name
-        return None

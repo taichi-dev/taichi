@@ -20,7 +20,7 @@ This section documents how to configure the Taichi development environment and b
    - On Arch Linux, download `llvm == 10.0.0` prebuilt binary for `ubuntu 18.04` from [here](https://releases.llvm.org/download.html#10.0.1). Then update environment variables `TAICHI_CMAKE_ARGS` and  `PATH`:
 
      ```bash
-     export TAICHI_CMAKE_ARGS="-DCMAKE_CXX_COMPILER=<path_to_llvm_folder>/bin/clang++:$TAICHI_CMAKE_ARGS"
+     export TAICHI_CMAKE_ARGS="-DCMAKE_CXX_COMPILER=<path_to_llvm_folder>/bin/clang++ $TAICHI_CMAKE_ARGS"
      export PATH=<path_to_llvm_folder>/bin:$PATH
      ```
 
@@ -44,11 +44,14 @@ On Linux, some additional packages might be required to build Taichi. E.g., on U
 3. LLVM: Make sure you have version 10.0.0 installed. Taichi uses a **customized LLVM**, which we provided as binaries depending on your system environment. Note that the pre-built binaries from the LLVM official website or other sources may not work.
    - [LLVM 10.0.0 for Linux](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_linux_patch2/taichi-llvm-10.0.0-linux.zip)
    - [LLVM 10.0.0 for macOS (excluding M1)](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip)
+   - [LLVM 10.0.0 for macOS (M1 chip)](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_m1/llvm-10.0.0-m1.zip)
    - [LLVM 10.0.0 for Windows MSVC 2019](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip)
 
 
 :::caution
-If you are building on using Apple M1 chip, you'll have to build LLVM from source following the steps below. Note the `-DLLVM_TARGETS_TO_BUILD="AArch64"` is required.
+If you encounter `llvm-as can’t be opened because Apple cannot check it for malicious software on macOS`, you have two options to work around this:
+  - (One-off) `System Preferences` -> `Security & Privacy` -> `General` -> `Allow anyway`
+  - (Permanent) Run `sudo spctl --master-disable` in your terminal to allow your MacBook to download apps from anywhere by default.
 :::
 
 :::note
@@ -123,7 +126,7 @@ If you wish to build taichi with Vulkan. You will need to install the Vulkan SDK
 
 After Vulkan is successfully installed. You can build Taichi with Vulkan by adding an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON`.
 
-### Setting up Taichi for development
+## Building Taichi from source
 
 1. Clone the Taichi repo **recursively**, and build:
 
@@ -132,7 +135,7 @@ After Vulkan is successfully installed. You can build Taichi with Vulkan by addi
   cd taichi
   python3 -m pip install --user -r requirements_dev.txt
   # export CXX=/path/to/clang++  # Uncomment if clang++ is not system default compiler. Note that clang is not acceptable due to requirements of some submodules.
-  python3 setup.py develop --user  # Optionally add DEBUG=1 to keep debug information.
+  python3 setup.py develop --user  # Optionally export DEBUG=1 to keep debug information.
   ```
 
 :::note
@@ -229,8 +232,7 @@ brew install socat
 2.  Temporally disable the xhost access-control: `xhost +`.
 3.  Start the Docker container with
     `docker run -it -e DISPLAY=$(ipconfig getifaddr en0):0 taichidev/taichi:v0.6.17`.
-4.  Do whatever you want within the container, e.g. you could run tests
-    or an example, try: `ti test` or `ti example mpm88`.
+4.  Do whatever you want within the container, e.g. you could run an example, try: `ti example mpm88`.
 5.  Exit from the container with `exit` or `ctrl+D`.
 6.  **[To keep your xhost safe]** Re-enable the xhost access-control:
     `xhost -`.
@@ -255,8 +257,7 @@ sudo systemctl restart docker
 4.  Temporally disable the xhost access-control: `xhost +`.
 5.  Start the Docker container with
     `sudo docker run -it --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix taichidev/taichi:v0.6.17`.
-6.  Do whatever you want within the container, e.g. you could run tests
-    or an example, try: `ti test` or `ti example mpm88`.
+6.  Do whatever you want within the container, e.g. you could run an example, try: `ti example mpm88`.
 7.  Exit from the container with `exit` or `ctrl+D`.
 8.  **[To keep your xhost safe]** Re-enable the xhost access-control:
     `xhost -`.

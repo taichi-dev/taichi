@@ -14,7 +14,7 @@ jobs:
         include:
           - os: ubuntu-latest
             python: py36
-    runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, cpu, aws]
     permissions:
       packages: read
       contents: read
@@ -55,6 +55,11 @@ jobs:
         env:
           PY: ${{ matrix.python }}
           GPU_TEST: OFF
+
+      - name: clean docker container
+        if: always()
+        run: |
+          docker rm taichi_build taichi_test -f
 
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
@@ -136,9 +141,11 @@ jobs:
           CI_PLATFORM: ${{ matrix.os }}
 
       - name: Build & Install
-        run: .github/workflows/scripts/unix_build.sh
+        run: |
+          export PATH=`pwd`/taichi-llvm/bin/:$PATH
+          .github/workflows/scripts/unix_build.sh
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
           CXX: clang++
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
@@ -194,10 +201,6 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 90
     steps:
-      - name: Install 7Zip PowerShell
-        shell: powershell
-        run: Install-Module 7Zip4PowerShell -Force -Verbose
-
       - uses: actions/checkout@v2
         with:
           submodules: "recursive"
@@ -209,49 +212,21 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
 
-      - name: Download And Install Vulkan
-        shell: powershell
-        run: |
-          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe" -OutFile VulkanSDK.exe
-          $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
-          $installer.WaitForExit();
-
       - name: Build
         shell: powershell
         run: |
-          $env:Path += ";C:/VulkanSDK/1.2.189.0/Bin"
-          cd C:\
-          Remove-item alias:curl
-          curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO
-          7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi_llvm
-          curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip -LO
-          7z x clang-10.0.0-win.zip -otaichi_clang
-          $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
-          clang --version
-          cd D:\a\taichi\taichi
-          python -m pip install -r requirements_dev.txt
-          python -m pip install -r requirements_test.txt
-          cd python
-          git fetch origin master
-          $env:TAICHI_CMAKE_ARGS = $env:CI_SETUP_CMAKE_ARGS
-          python build.py build
-          cd ..\dist
-          $env:WHL = $(dir *.whl)
-          python -m pip install $env:WHL
-        env:
-          PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
-          CI_SETUP_CMAKE_ARGS: -G "Visual Studio 16 2019" -A x64 -DLLVM_DIR=C:\taichi_llvm\lib\cmake\llvm -DTI_WITH_VULKAN:BOOL=ON
-          VULKAN_SDK: C:/VulkanSDK/1.2.189.0
+          .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
 
       - name: Test
         shell: powershell
         run: |
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
+          . venv\Scripts\activate.ps1
           python -c "import taichi"
-          python examples/algorithm/laplace.py
-          python bin/taichi diagnose
-          python bin/taichi changelog
-          python bin/taichi test -vr2 -t2
+          ti example laplace
+          ti diagnose
+          ti changelog
+          python tests/run_tests.py -vr2 -t2
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
 
@@ -274,30 +249,19 @@ jobs:
           submodules: "recursive"
 
       - name: Build
-        run: |
-          python3 -m pip uninstall taichi -y
-          rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
-          git --version
-          export CXX=clang++
-          python3 -m pip install -r requirements_dev.txt
-          cd python
-          git fetch origin master
-          TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python3 build.py build
-          cd ..
-          export NUM_WHL=`ls dist/*.whl | wc -l`
-          if [ $NUM_WHL -ne 1 ]; then echo 'ERROR: created more than 1 whl.' && exit 1; fi
-          python3 -m pip install dist/*.whl
+        run: bash .github/workflows/scripts/unix_build.sh
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          CXX: clang++
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Test
         run: |
           export PATH=$PATH:$HOME/Library/Python/3.8/bin
           python3 -m pip install -r requirements_test.txt
-          python3 examples/algorithm/laplace.py
+          ti example laplace
           TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
           TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
-          ti test -vr2 -t4 -x
+          python3 tests/run_tests.py -vr2 -t4 -x
 
   performance_monitoring:
     name: Performance monitoring (NVGPU)
@@ -306,18 +270,19 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Build & Install
         run: |
           export PATH=$PATH:/usr/local/cuda/bin
+          export PATH=`pwd`/taichi-llvm/bin/:$LLVM_PATH:$PATH
           .github/workflows/scripts/unix_build.sh
         env:
           LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
           LLVM_PATH: /opt/taichi-llvm-10.0.0/bin
           LLVM_DIR: /opt/taichi-llvm-10.0.0/lib/cmake/llvm
           CUDA_TOOLKIT_ROOT_DIR: /usr/local/cuda/
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_CUDA_TOOLKIT:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_CUDA_TOOLKIT:BOOL=ON
           BUILD_NUM_THREADS: 8
           CXX: clang++-10
 

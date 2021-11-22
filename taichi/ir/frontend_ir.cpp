@@ -5,6 +5,10 @@
 
 TLANG_NAMESPACE_BEGIN
 
+#define TI_ASSERT_TYPE_CHECKED(x)                       \
+  TI_ASSERT_INFO(x->ret_type != PrimitiveType::unknown, \
+                 "[{}] was not type-checked", x.serialize())
+
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,
                                          const ExprGroup &indices,
@@ -21,6 +25,9 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
 FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
   TI_ASSERT(lhs->is_lvalue());
+  if (lhs.is<IdExpression>() && lhs->ret_type == PrimitiveType::unknown) {
+    lhs.expr->ret_type = rhs->ret_type;
+  }
 }
 
 IRNode *FrontendContext::root() {
@@ -34,6 +41,36 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   bit_vectorize = dec.bit_vectorize;
   num_cpu_threads = dec.num_cpu_threads;
   strictly_serialized = dec.strictly_serialized;
+  block_dim = dec.block_dim;
+  auto cfg = get_current_program().config;
+  if (cfg.arch == Arch::cuda) {
+    vectorize = 1;
+    num_cpu_threads = 1;
+    TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
+  } else {
+    // cpu
+    if (num_cpu_threads == 0)
+      num_cpu_threads = std::thread::hardware_concurrency();
+  }
+  mem_access_opt = dec.mem_access_opt;
+  dec.reset();
+  if (vectorize == -1)
+    vectorize = 1;
+
+  loop_var_id.resize(loop_var.size());
+  for (int i = 0; i < (int)loop_var.size(); i++) {
+    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+    loop_var[i].expr->ret_type = PrimitiveType::i32;
+  }
+}
+
+FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
+                                 const mesh::MeshPtr &mesh,
+                                 const mesh::MeshElementType &element_type)
+    : mesh_for(true), mesh(mesh.ptr.get()), element_type(element_type) {
+  vectorize = dec.vectorize;
+  bit_vectorize = dec.bit_vectorize;
+  num_cpu_threads = dec.num_cpu_threads;
   block_dim = dec.block_dim;
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
@@ -86,6 +123,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     vectorize = 1;
   loop_var_id.resize(1);
   loop_var_id[0] = loop_var.cast<IdExpression>()->id;
+  loop_var.expr->ret_type = PrimitiveType::i32;
 }
 
 void ArgLoadExpression::type_check() {
@@ -112,6 +150,16 @@ void RandExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void GlobalThreadIndexExpression::flatten(FlattenContext *ctx) {
+  auto tid_stmt = std::make_unique<GlobalThreadIndexStmt>();
+  ctx->push_back(std::move(tid_stmt));
+  stmt = ctx->back_stmt();
+}
+
+void GlobalThreadIndexExpression::type_check() {
+  ret_type = PrimitiveType::i32;
+}
+
 void UnaryOpExpression::serialize(std::ostream &ss) {
   ss << '(';
   if (is_cast()) {
@@ -126,10 +174,11 @@ void UnaryOpExpression::serialize(std::ostream &ss) {
 }
 
 void UnaryOpExpression::type_check() {
-  // TODO: assert no unknowns after type_check for all expressions are
-  // implemented
-  if (operand->ret_type == PrimitiveType::unknown)
-    return;
+  TI_ASSERT_TYPE_CHECKED(operand);
+  if (!operand->ret_type->is<PrimitiveType>())
+    throw std::runtime_error(
+        fmt::format("TypeError: unsupported operand type(s) for '{}': '{}'",
+                    unary_op_type_name(type), operand->ret_type->to_string()));
   if ((type == UnaryOpType::floor || type == UnaryOpType::ceil ||
        is_trigonometric(type)) &&
       !is_real(operand->ret_type))
@@ -155,12 +204,10 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
 }
 
 void BinaryOpExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(lhs);
+  TI_ASSERT_TYPE_CHECKED(rhs);
   auto lhs_type = lhs->ret_type;
   auto rhs_type = rhs->ret_type;
-  // TODO: assert no unknowns after type_check for all expressions are
-  // implemented
-  if (lhs_type == PrimitiveType::unknown || rhs_type == PrimitiveType::unknown)
-    return;
   auto error = [&]() {
     throw std::runtime_error(fmt::format(
         "TypeError: unsupported operand type(s) for '{}': '{}' and '{}'",
@@ -198,6 +245,25 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void TernaryOpExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(op1);
+  TI_ASSERT_TYPE_CHECKED(op2);
+  TI_ASSERT_TYPE_CHECKED(op3);
+  auto op1_type = op1->ret_type;
+  auto op2_type = op2->ret_type;
+  auto op3_type = op3->ret_type;
+  auto error = [&]() {
+    throw std::runtime_error(fmt::format(
+        "TypeError: unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
+        ternary_type_name(type), op1->ret_type->to_string(),
+        op2->ret_type->to_string(), op3->ret_type->to_string()));
+  };
+  if (!is_integral(op1_type) || !op2_type->is<PrimitiveType>() ||
+      !op3_type->is<PrimitiveType>())
+    error();
+  ret_type = promoted_type(op2_type, op3_type);
+}
+
 void TernaryOpExpression::flatten(FlattenContext *ctx) {
   // if (stmt)
   //  return;
@@ -209,6 +275,15 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void InternalFuncCallExpression::type_check() {
+  for (auto &arg : args) {
+    TI_ASSERT_TYPE_CHECKED(arg);
+    // no arg type compatibility check for now due to lack of specification
+  }
+  // internal func calls have default return type
+  ret_type = PrimitiveType::i32;
+}
+
 void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> args_stmts(args.size());
   for (int i = 0; i < (int)args.size(); ++i) {
@@ -217,6 +292,18 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
   }
   ctx->push_back<InternalFuncStmt>(func_name, args_stmts);
   stmt = ctx->back_stmt();
+}
+
+void ExternalFuncCallExpression::type_check() {
+  for (auto &arg : args) {
+    TI_ASSERT_TYPE_CHECKED(arg);
+    // no arg type compatibility check for now due to lack of specification
+  }
+  for (auto &output : outputs) {
+    TI_ASSERT_TYPE_CHECKED(output);
+    // no output type compatibility check for now due to lack of specification
+  }
+  // external func calls have no return type for now
 }
 
 void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
@@ -265,6 +352,28 @@ void GlobalVariableExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(ptr));
 }
 
+void GlobalPtrExpression::type_check() {
+  // Currently, dimension compatibility check happens in Python
+  if (snode != nullptr) {
+    ret_type = snode->dt;
+  } else if (var.is<GlobalVariableExpression>()) {
+    ret_type = var.cast<GlobalVariableExpression>()->snode->dt;
+  } else if (var.is<ExternalTensorExpression>()) {
+    for (int i = 0; i < indices.exprs.size(); i++) {
+      auto &expr = indices.exprs[i];
+      TI_ASSERT_TYPE_CHECKED(expr);
+      if (!is_integral(expr->ret_type))
+        throw std::runtime_error(
+            fmt::format("TypeError: indices must be integers, however '{}' is "
+                        "provided as index {}",
+                        expr->ret_type->to_string(), i));
+    }
+    ret_type = var.cast<ExternalTensorExpression>()->dt;
+  } else {
+    TI_ERROR("Invalid GlobalPtrExpression");
+  }
+}
+
 void GlobalPtrExpression::serialize(std::ostream &ss) {
   if (snode) {
     ss << snode->get_node_type_name_hinted();
@@ -311,6 +420,26 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
         var.cast<ExternalTensorExpression>()->stmt, index_stmts));
   }
   stmt = ctx->back_stmt();
+}
+
+void TensorElementExpression::type_check() {
+  std::string invalid_msg{
+      "Invalid TensorElementExpression: the source is neither a local tensor "
+      "nor a global tensor field"};
+  if (is_local_tensor()) {
+    TI_ASSERT_INFO(var->ret_type->is<TensorType>(), invalid_msg);
+    ret_type = var->ret_type->cast<TensorType>()->get_element_type();
+  } else if (is_global_tensor()) {
+    TI_ASSERT_INFO(
+        var.is<GlobalPtrExpression>() &&
+            var.cast<GlobalPtrExpression>()->var.is<GlobalVariableExpression>(),
+        invalid_msg);
+    ret_type = var.cast<GlobalPtrExpression>()
+                   ->var.cast<GlobalVariableExpression>()
+                   ->snode->dt;
+  } else {
+    TI_ERROR(invalid_msg);
+  }
 }
 
 bool TensorElementExpression::is_local_tensor() const {
@@ -374,12 +503,33 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void RangeAssumptionExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(input);
+  TI_ASSERT_TYPE_CHECKED(base);
+  if (!input->ret_type->is<PrimitiveType>() ||
+      !base->ret_type->is<PrimitiveType>() || input->ret_type != base->ret_type)
+    throw std::runtime_error(
+        fmt::format("TypeError: unsupported operand type(s) for "
+                    "'range_assumption': '{}' and '{}'",
+                    input->ret_type->to_string(), base->ret_type->to_string()));
+  ret_type = input->ret_type;
+}
+
 void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   input->flatten(ctx);
   base->flatten(ctx);
   ctx->push_back(
       Stmt::make<RangeAssumptionStmt>(input->stmt, base->stmt, low, high));
   stmt = ctx->back_stmt();
+}
+
+void LoopUniqueExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(input);
+  if (!input->ret_type->is<PrimitiveType>())
+    throw std::runtime_error(fmt::format(
+        "TypeError: unsupported operand type(s) for 'loop_unique': '{}'",
+        input->ret_type->to_string()));
+  ret_type = input->ret_type;
 }
 
 void LoopUniqueExpression::serialize(std::ostream &ss) {
@@ -419,6 +569,28 @@ void IdExpression::flatten(FlattenContext *ctx) {
     // The loop index may have a coordinate offset.
     TI_ASSERT(var_stmt->is<LoopIndexStmt>() || var_stmt->is<BinaryOpStmt>());
     stmt = var_stmt;
+  }
+}
+
+void AtomicOpExpression::type_check() {
+  TI_ASSERT_TYPE_CHECKED(dest);
+  TI_ASSERT_TYPE_CHECKED(val);
+  auto error = [&]() {
+    throw std::runtime_error(fmt::format(
+        "TypeError: unsupported operand type(s) for 'atomic_{}': '{}' and '{}'",
+        atomic_op_type_name(op_type), dest->ret_type->to_string(),
+        val->ret_type->to_string()));
+  };
+  if (!val->ret_type->is<PrimitiveType>())
+    error();
+  if (auto cit = dest->ret_type->cast<CustomIntType>()) {
+    ret_type = cit->get_compute_type();
+  } else if (auto cft = dest->ret_type->cast<CustomFloatType>()) {
+    ret_type = cft->get_compute_type();
+  } else if (dest->ret_type->is<PrimitiveType>()) {
+    ret_type = dest->ret_type;
+  } else {
+    error();
   }
 }
 
@@ -471,6 +643,14 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     ctx->push_back<AtomicOpStmt>(op_type, ctx->back_stmt(), expr->stmt);
   }
   stmt = ctx->back_stmt();
+}
+
+void SNodeOpExpression::type_check() {
+  if (op_type == SNodeOpType::get_addr) {
+    ret_type = PrimitiveType::u64;
+  } else {
+    ret_type = PrimitiveType::i32;
+  }
 }
 
 void SNodeOpExpression::serialize(std::ostream &ss) {
@@ -545,11 +725,30 @@ void ConstExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void ExternalTensorShapeAlongAxisExpression::type_check() {
+  TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
+                 "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression",
+                 ptr.serialize());
+  ret_type = PrimitiveType::i32;
+}
+
 void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   auto temp = ptr.cast<ExternalTensorExpression>();
   TI_ASSERT(0 <= axis && axis < temp->dim);
   ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id);
   stmt = ctx->back_stmt();
+}
+
+void FuncCallExpression::type_check() {
+  for (auto &arg : args.exprs) {
+    TI_ASSERT_TYPE_CHECKED(arg);
+    // no arg type compatibility check for now due to lack of specification
+  }
+  TI_ASSERT_INFO(func->rets.size() <= 1,
+                 "Too many (> 1) return values for FuncCallExpression");
+  if (func->rets.size() == 1) {
+    ret_type = func->rets[0].dt;
+  }
 }
 
 void FuncCallExpression::flatten(FlattenContext *ctx) {
@@ -566,6 +765,44 @@ void FuncCallExpression::serialize(std::ostream &ss) {
   ss << "func_call(\"" << func->func_key.get_full_name() << "\", ";
   args.serialize(ss);
   ss << ')';
+}
+
+// Mesh related.
+
+void MeshPatchIndexExpression::flatten(FlattenContext *ctx) {
+  auto pid_stmt = std::make_unique<MeshPatchIndexStmt>();
+  ctx->push_back(std::move(pid_stmt));
+  stmt = ctx->back_stmt();
+}
+
+void MeshPatchIndexExpression::type_check() {
+  ret_type = PrimitiveType::i32;
+}
+
+void MeshRelationAccessExpression::type_check() {
+  ret_type = PrimitiveType::i32;
+}
+
+void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
+  mesh_idx->flatten(ctx);
+  if (neighbor_idx) {
+    neighbor_idx->flatten(ctx);
+    ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx->stmt, to_type,
+                                           neighbor_idx->stmt);
+  } else {
+    ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx->stmt, to_type);
+  }
+  stmt = ctx->back_stmt();
+}
+
+void MeshIndexConversionExpression::type_check() {
+  ret_type = PrimitiveType::i32;
+}
+
+void MeshIndexConversionExpression::flatten(FlattenContext *ctx) {
+  idx->flatten(ctx);
+  ctx->push_back<MeshIndexConversionStmt>(mesh, idx_type, idx->stmt, conv_type);
+  stmt = ctx->back_stmt();
 }
 
 Block *ASTBuilder::current_block() {

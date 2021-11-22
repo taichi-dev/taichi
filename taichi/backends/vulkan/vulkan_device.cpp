@@ -869,15 +869,16 @@ void VulkanCommandList::begin_renderpass(int x0,
     rp_desc.color_attachments.emplace_back(format, color_clear[i]);
     fb_desc.attachments.push_back(view);
     clear_values[i].color =
-        VkClearColorValue{clear_colors[i][0], clear_colors[i][1],
-                          clear_colors[i][2], clear_colors[i][3]};
+        VkClearColorValue{{clear_colors[i][0], clear_colors[i][1],
+                           clear_colors[i][2], clear_colors[i][3]}};
   }
 
   if (has_depth) {
-    auto [image, view, format] = ti_device_->get_vk_image(*depth_attachment);
+    auto [depth_image, depth_view, depth_format] =
+        ti_device_->get_vk_image(*depth_attachment);
     clear_values[num_color_attachments].depthStencil =
         VkClearDepthStencilValue{0.0, 0};
-    fb_desc.attachments.push_back(view);
+    fb_desc.attachments.push_back(depth_view);
   }
 
   current_renderpass_ = ti_device_->get_renderpass(rp_desc);
@@ -1100,7 +1101,9 @@ void VulkanCommandList::blit_image(DeviceAllocation dst_img,
 }
 
 void VulkanCommandList::set_line_width(float width) {
-  vkCmdSetLineWidth(buffer_->buffer, width);
+  if (ti_device_->get_cap(DeviceCapability::wide_lines)) {
+    vkCmdSetLineWidth(buffer_->buffer, width);
+  }
 }
 
 vkapi::IVkRenderPass VulkanCommandList::current_renderpass() {
@@ -1417,11 +1420,11 @@ std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(
     } else if (src_desc.stage == PipelineStageType::vertex) {
       code.stage = VK_SHADER_STAGE_VERTEX_BIT;
     } else if (src_desc.stage == PipelineStageType::geometry) {
-      code.stage == VK_SHADER_STAGE_GEOMETRY_BIT;
+      code.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
     } else if (src_desc.stage == PipelineStageType::tesselation_control) {
-      code.stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+      code.stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
     } else if (src_desc.stage == PipelineStageType::tesselation_eval) {
-      code.stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+      code.stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
     }
   }
 
@@ -1745,6 +1748,14 @@ vkapi::IVkDescriptorSet VulkanDevice::alloc_desc_set(
 }
 
 void VulkanDevice::create_vma_allocator() {
+  VmaAllocatorCreateInfo allocatorInfo = {};
+  allocatorInfo.vulkanApiVersion =
+      this->get_cap(DeviceCapability::vk_api_version);
+  allocatorInfo.physicalDevice = physical_device_;
+  allocatorInfo.device = device_;
+  allocatorInfo.instance = instance_;
+
+#ifndef __APPLE__
   VolkDeviceTable table;
   VmaVulkanFunctions vk_vma_functions;
 
@@ -1783,13 +1794,8 @@ void VulkanDevice::create_vma_allocator() {
       PFN_vkGetPhysicalDeviceMemoryProperties2KHR(vkGetInstanceProcAddr(
           volkGetLoadedInstance(), "vkGetPhysicalDeviceMemoryProperties2KHR"));
 
-  VmaAllocatorCreateInfo allocatorInfo = {};
-  allocatorInfo.vulkanApiVersion =
-      this->get_cap(DeviceCapability::vk_api_version);
-  allocatorInfo.physicalDevice = physical_device_;
-  allocatorInfo.device = device_;
-  allocatorInfo.instance = instance_;
   allocatorInfo.pVulkanFunctions = &vk_vma_functions;
+#endif
 
   vmaCreateAllocator(&allocatorInfo, &allocator_);
 
@@ -1877,7 +1883,7 @@ VkPresentModeKHR choose_swap_present_mode(
 }
 
 VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
-    : device_(device), config_(config) {
+    : config_(config), device_(device) {
   window_ = (GLFWwindow *)config.window_handle;
   if (window_) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -1981,7 +1987,7 @@ void VulkanSurface::create_swap_chain() {
   createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   createInfo.presentMode = present_mode;
   createInfo.clipped = VK_TRUE;
-  createInfo.oldSwapchain = nullptr;
+  createInfo.oldSwapchain = VK_NULL_HANDLE;
 
   if (vkCreateSwapchainKHR(device_->vk_device(), &createInfo,
                            kNoVkAllocCallbacks, &swapchain_) != VK_SUCCESS) {

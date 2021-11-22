@@ -19,6 +19,7 @@ namespace py = pybind11;
 #include "taichi/ui/backends/vulkan/scene.h"
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/gui_base.h"
+#include <memory>
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -229,7 +230,7 @@ struct PyCanvas {
 };
 
 struct PyWindow {
-  WindowBase *window;
+  std::unique_ptr<WindowBase> window{nullptr};
 
   PyWindow(std::string name,
            py::tuple res,
@@ -242,7 +243,7 @@ struct PyWindow {
                         vsync,   show_window,        package_path,
                         ti_arch, is_packed_mode};
     // todo: support other ggui backends
-    window = new vulkan::Window(config);
+    window = std::make_unique<vulkan::Window>(config);
   }
 
   void write_image(const std::string &filename) {
@@ -298,8 +299,10 @@ struct PyWindow {
     return py::make_tuple(x, y);
   }
 
-  ~PyWindow() {
-    delete window;
+  void destroy() {
+    if (window) {
+      window.reset();
+    }
   }
 };
 
@@ -320,6 +323,7 @@ void export_ggui(py::module &m) {
       .def("get_events", &PyWindow::get_events)
       .def_property("event", &PyWindow::get_current_event,
                     &PyWindow::set_current_event)
+      .def("destroy", &PyWindow::destroy)
       .def("GUI", &PyWindow::GUI);
 
   py::class_<PyCanvas>(m, "PyCanvas")

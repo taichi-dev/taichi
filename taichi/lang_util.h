@@ -20,9 +20,9 @@ real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,
                  real time_second = default_measurement_time);
 
-struct Context;
+struct RuntimeContext;
 
-using FunctionType = std::function<void(Context &)>;
+using FunctionType = std::function<void(RuntimeContext &)>;
 
 inline std::string make_list(const std::vector<std::string> &data,
                              std::string bracket = "") {

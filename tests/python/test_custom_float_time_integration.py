@@ -35,7 +35,7 @@ def test_custom_float_time_integration(use_cft, use_exponent, use_shared_exp):
 
     @ti.func
     def v_at(p):
-        return ti.Vector([-p[1], p[0]], ti.f32)
+        return ti.Vector([-p[1], p[0]])
 
     @ti.kernel
     def advance(dt: ti.f32):

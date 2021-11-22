@@ -70,6 +70,10 @@ class UnreachableCodeEliminator : public BasicStmtVisitor {
     visit_loop(stmt->body.get());
   }
 
+  void visit(MeshForStmt *stmt) override {
+    visit_loop(stmt->body.get());
+  }
+
   void visit(WhileStmt *stmt) override {
     visit_loop(stmt->body.get());
   }
@@ -78,10 +82,14 @@ class UnreachableCodeEliminator : public BasicStmtVisitor {
     if (stmt->tls_prologue)
       stmt->tls_prologue->accept(this);
 
+    if (stmt->mesh_prologue)
+      stmt->mesh_prologue->accept(this);
+
     if (stmt->bls_prologue)
       stmt->bls_prologue->accept(this);
 
     if (stmt->task_type == OffloadedStmt::TaskType::range_for ||
+        stmt->task_type == OffloadedStmt::TaskType::mesh_for ||
         stmt->task_type == OffloadedStmt::TaskType::struct_for)
       visit_loop(stmt->body.get());
     else if (stmt->body)

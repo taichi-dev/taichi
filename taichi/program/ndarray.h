@@ -5,8 +5,12 @@
 
 #include "taichi/inc/constants.h"
 #include "taichi/ir/type_utils.h"
+#include "taichi/backends/device.h"
+
+#ifdef TI_WITH_LLVM
 #include "taichi/llvm/llvm_context.h"
 #include "taichi/llvm/llvm_program.h"
+#endif
 
 namespace taichi {
 namespace lang {
@@ -28,6 +32,7 @@ class Ndarray {
   std::size_t get_nelement() const;
 
  private:
+  DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
   uint64_t *data_ptr_{nullptr};
   std::size_t nelement_{1};
   std::size_t element_size_{1};

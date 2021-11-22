@@ -680,7 +680,16 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void visit(ContinueStmt *stmt) override {
-    if (stmt->as_return()) {
+    auto stmt_in_off_for = [stmt]() {
+      TI_ASSERT(stmt->scope != nullptr);
+      if (auto *offl = stmt->scope->cast<OffloadedStmt>(); offl) {
+        TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||
+                  offl->task_type == OffloadedStmt::TaskType::struct_for);
+        return true;
+      }
+      return false;
+    };
+    if (stmt_in_off_for()) {
       emit("return;");
     } else {
       emit("continue;");
@@ -1626,7 +1635,8 @@ FunctionType compile_to_metal_executable(
   kernel_mgr->register_taichi_kernel(
       compiled_res.kernel_name, compiled_res.source_code,
       compiled_res.kernel_attribs, compiled_res.ctx_attribs);
-  return [kernel_mgr, kernel_name = compiled_res.kernel_name](Context &ctx) {
+  return [kernel_mgr,
+          kernel_name = compiled_res.kernel_name](RuntimeContext &ctx) {
     kernel_mgr->launch_taichi_kernel(kernel_name, &ctx);
   };
 }

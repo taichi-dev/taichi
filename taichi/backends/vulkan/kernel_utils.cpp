@@ -49,14 +49,14 @@ std::string TaskAttributes::BufferBind::debug_string() const {
 KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     : args_bytes_(0),
       rets_bytes_(0),
-      extra_args_bytes_(Context::extra_args_size) {
+      extra_args_bytes_(RuntimeContext::extra_args_size) {
   arg_attribs_vec_.reserve(kernel.args.size());
   for (const auto &ka : kernel.args) {
     ArgAttributes aa;
     aa.dt = ka.dt;
     const size_t dt_bytes = vk_data_type_size(aa.dt);
-    if (dt_bytes != 4) {
-      TI_ERROR("Vulkan kernel only supports 32-bit data, got {}",
+    if (dt_bytes > 4) {
+      TI_ERROR("Vulkan kernel only supports less than 32-bit arguments, got {}",
                data_type_name(aa.dt));
     }
     aa.is_array = ka.is_external_array;
@@ -69,10 +69,11 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     RetAttributes ra;
     ra.dt = kr.dt;
     const size_t dt_bytes = vk_data_type_size(ra.dt);
-    if (dt_bytes != 4) {
+    if (dt_bytes > 4) {
       // Metal doesn't support 64bit data buffers.
-      TI_ERROR("Vulkan kernel only supports 32-bit data, got {}",
-               data_type_name(ra.dt));
+      TI_ERROR(
+          "Vulkan kernel only supports less than 32-bit return value, got {}",
+          data_type_name(ra.dt));
     }
     ra.is_array = false;  // TODO(#909): this is a temporary limitation
     ra.stride = dt_bytes;
@@ -94,6 +95,9 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     // Put scalar args in the memory first
     for (int i : scalar_indices) {
       auto &attribs = (*vec)[i];
+      const size_t dt_bytes = vk_data_type_size(attribs.dt);
+      // Align bytes to the nearest multiple of dt_bytes
+      bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;
       TI_TRACE("  at={} scalar offset_in_mem={} stride={}", i,
@@ -102,6 +106,8 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     // Then the array args
     for (int i : array_indices) {
       auto &attribs = (*vec)[i];
+      const size_t dt_bytes = vk_data_type_size(attribs.dt);
+      bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;
       TI_TRACE("  at={} array offset_in_mem={} stride={}", i,

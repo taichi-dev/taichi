@@ -564,5 +564,33 @@ DevicePtr LlvmProgramImpl::get_snode_tree_device_ptr(int tree_id) {
   return tree_alloc.get_ptr();
 }
 
+DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
+    std::size_t alloc_size,
+    uint64 *result_buffer) {
+  TaichiLLVMContext *tlctx = nullptr;
+  if (llvm_context_device) {
+    tlctx = llvm_context_device.get();
+  } else {
+    tlctx = llvm_context_host.get();
+  }
+
+  Device::AllocParams device_buffer_alloc_params;
+  device_buffer_alloc_params.size = alloc_size;
+  return get_compute_device()->allocate_memory_runtime(
+      device_buffer_alloc_params, tlctx->runtime_jit_module, get_llvm_runtime(),
+      result_buffer);
+}
+
+uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {
+  if (config->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    return (uint64_t *)cuda_device()->get_alloc_info(alloc).ptr;
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    return (uint64_t *)cpu_device()->get_alloc_info(alloc).ptr;
+  }
+}
 }  // namespace lang
 }  // namespace taichi

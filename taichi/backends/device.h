@@ -1,6 +1,7 @@
 #pragma once
 #include "taichi/lang_util.h"
 
+#include "taichi/jit/jit_module.h"
 #include "taichi/program/compile_config.h"
 #include <string>
 #include <vector>
@@ -26,6 +27,9 @@ enum class DeviceCapability : uint32_t {
   spirv_has_float16,
   spirv_has_float64,
   spirv_has_atomic_i64,
+  spirv_has_atomic_float16,  // load, store, exchange
+  spirv_has_atomic_float16_add,
+  spirv_has_atomic_float16_minmax,
   spirv_has_atomic_float,  // load, store, exchange
   spirv_has_atomic_float_add,
   spirv_has_atomic_float_minmax,
@@ -33,11 +37,14 @@ enum class DeviceCapability : uint32_t {
   spirv_has_atomic_float64_add,
   spirv_has_atomic_float64_minmax,
   spirv_has_variable_ptr,
+  // Graphics Caps,
+  wide_lines
 };
 
 class Device;
 struct DeviceAllocation;
 struct DevicePtr;
+struct LLVMRuntime;
 
 // TODO: Figure out how to support images. Temporary solutions is to have all
 // opque types such as images work as an allocation
@@ -362,15 +369,17 @@ class Device {
  public:
   virtual ~Device(){};
 
-  virtual uint32_t get_cap(DeviceCapability capability_id) const {
+  uint32_t get_cap(DeviceCapability capability_id) const {
     if (caps_.find(capability_id) == caps_.end())
       return 0;
     return caps_.at(capability_id);
   }
 
-  virtual void set_cap(DeviceCapability capability_id, uint32_t val) {
+  void set_cap(DeviceCapability capability_id, uint32_t val) {
     caps_[capability_id] = val;
   }
+
+  void print_all_cap() const;
 
   struct AllocParams {
     uint64_t size{0};
@@ -381,7 +390,18 @@ class Device {
   };
 
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
+  virtual DeviceAllocation allocate_memory_runtime(const AllocParams &params,
+                                                   JITModule *runtime_jit,
+                                                   LLVMRuntime *runtime,
+                                                   uint64 *result_buffer) {
+    TI_NOT_IMPLEMENTED
+  }
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
+
+  uint64_t *allocate_llvm_runtime_memory_jit(JITModule *runtime_jit,
+                                             LLVMRuntime *runtime,
+                                             size_t size,
+                                             uint64 *result_buffer);
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
@@ -391,6 +411,10 @@ class Device {
       const AllocParams &params) {
     return std::make_unique<DeviceAllocationGuard>(
         this->allocate_memory(params));
+  }
+
+  virtual uint64 fetch_result_uint64(int i, uint64 *result_buffer) {
+    TI_NOT_IMPLEMENTED
   }
 
   // Mapping can fail and will return nullptr

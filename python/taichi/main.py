@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import math
 import os
 import platform
@@ -7,7 +8,6 @@ import shutil
 import subprocess
 import sys
 import timeit
-import datetime
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
@@ -78,7 +78,8 @@ class TaichiMain:
             last_time = ''
             with open(timestamp_path, 'r') as f:
                 last_time = f.readlines()[0].rstrip()
-            target_date = (cur_date - datetime.timedelta(days=14)).strftime('%Y-%m-%d')
+            target_date = (cur_date -
+                           datetime.timedelta(days=14)).strftime('%Y-%m-%d')
             if target_date > last_time:
                 with open(timestamp_path, 'w') as f:
                     f.write(cur_date.strftime('%Y-%m-%d'))
@@ -88,7 +89,6 @@ class TaichiMain:
             with open(timestamp_path, 'w') as f:
                 f.write(cur_date.strftime('%Y-%m-%d'))
             self._check_version()
-
 
     @timer
     def __call__(self):

@@ -174,7 +174,7 @@ jobs:
             exit 0
           fi
           mkdir -m777 wheel
-          docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS" "${{secrets.SCCACHE_BUCKET}}" "${{secrets.AWS_ACCESS_KEY_ID}}" "${{secrets.AWS_SECRET_ACCESS_KEY}}"
+          docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
         env:
@@ -264,13 +264,21 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/sccache
+          key: sccache-linux-${{ github.sha }}
+          restore-keys: |
+            sccache-linux-
+
       - name: Build & Install
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
           mkdir -m777 wheel
-          docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
+          docker create -v `pwd`/wheel:/wheel -v ~/.cache/sccache:/cache --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
         env:

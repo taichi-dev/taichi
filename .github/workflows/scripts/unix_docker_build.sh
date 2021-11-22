@@ -7,9 +7,7 @@ PY=$1
 GPU_BUILD=$2
 PROJECT_NAME=$3
 CI_SETUP_CMAKE_ARGS=$4
-export SCCACHE_BUCKET=$5
-export AWS_ACCESS_KEY_ID=$6
-export AWS_SECRET_ACCESS_KEY=$7
+export SCCACHE_DIR=/cache
 source /home/dev/miniconda/etc/profile.d/conda.sh
 conda activate $PY
 

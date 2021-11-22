@@ -213,7 +213,7 @@ Frequently used tags:
 - `[Refactor]`: code refactoring;
 - `[CLI]`: commandline interfaces, e.g., the `ti` command;
 - `[Doc]`: documentation under [docs/](https://github.com/taichi-dev/taichi/blob/master/docs/);
-- `[Example]`: examples under [examples/](https://github.com/taichi-dev/taichi/blob/master/examples/);
+- `[Example]`: examples under [examples/](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/);
 - `[Test]`: tests under [tests/](https://github.com/taichi-dev/taichi/blob/master/tests/);
 - `[Linux]`: Linux platform;
 - `[Mac]`: macOS platform;

@@ -181,6 +181,8 @@ jobs:
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
+          docker cp -r build/ taichi_test:/home/dev/
+          docker cp -r tests/ taichi_test:/home/dev/
           docker start -a taichi_test
         env:
           PY: ${{ matrix.python }}
@@ -268,6 +270,8 @@ jobs:
           docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
+          docker cp -r build/ taichi_test:/home/dev/
+          docker cp -r tests/ taichi_test:/home/dev/
           docker start -a taichi_test
         env:
           PY: py38
@@ -309,7 +313,7 @@ jobs:
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
           . venv\Scripts\activate.ps1
           python -c "import taichi"
-          python examples/algorithm/laplace.py
+          ti example laplace
           ti diagnose
           ti changelog
           echo wanted arch: $env:TI_WANTED_ARCHS
@@ -350,7 +354,7 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/Library/Python/3.8/bin
           python3 -m pip install -r requirements_test.txt
-          python3 examples/algorithm/laplace.py
+          ti example laplace
           TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
           TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
           echo wanted archs: $TI_WANTED_ARCHS

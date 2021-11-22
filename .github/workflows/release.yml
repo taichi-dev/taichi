@@ -152,7 +152,7 @@ jobs:
         run: |
           python examples/algorithm/laplace.py
           ti diagnose
-          ti test -vr2 -t2 -a cpu,metal
+          python tests/run_tests.py -vr2 -t2 -a cpu,metal
 
       - name: Upload PyPI
         env:
@@ -242,7 +242,7 @@ jobs:
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
           python examples/algorithm/laplace.py
           ti diagnose
-          ti test -vr2 -t2 -a cpu
+          python tests/run_tests.py -vr2 -t2 -a cpu
         env:
           PYTHON: ${{ matrix.python }}
 
@@ -296,7 +296,7 @@ jobs:
           python -c "import taichi"
           python examples/algorithm/laplace.py
           ti diagnose
-          ti test -vr2 -t2
+          python tests/run_tests.py -vr2 -t2
 
       - name: Upload PyPI
         shell: powershell

@@ -156,7 +156,7 @@ See [development mode](https://setuptools.pypa.io/en/stable/userguide/developmen
 :::
 
 2. Check out the `examples` folder for runnable examples. Run them with commands
-  like `python3 examples/simulation/mpm128.py`.
+  like `python3 python/taichi/examples/simulation/mpm128.py`.
 
 3. Execute `python3 -m taichi test` to run all the tests. It may take
   up to 5 minutes to run all tests.

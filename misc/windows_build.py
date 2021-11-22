@@ -63,7 +63,7 @@ execute_cmd(
     r'msbuild /p:Configuration=RelWithDebInfo /p:Platform=x64 /m taichi.sln')
 os.chdir(repo_dir)
 execute_cmd('%PYTHON% -c "import taichi"')
-execute_cmd('%PYTHON% examples/laplace.py')
+execute_cmd('%PYTHON% python/taichi/examples/laplace.py')
 execute_cmd('%PYTHON% bin/taichi test')
 os.chdir(os.path.join(repo_dir, 'python'))
 execute_cmd('%PYTHON% build.py try_upload')

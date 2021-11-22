@@ -112,7 +112,7 @@ def main():
         ti_laplace = subprocess.check_output(
             [executable, '-m', 'taichi', 'example', 'minimal'])
     except Exception as e:
-        print(f'`examples/laplace.py` failed: {e}')
+        print(f'`python/taichi/examples/laplace.py` failed: {e}')
     else:
         print(f'{ti_laplace.decode()}')
 

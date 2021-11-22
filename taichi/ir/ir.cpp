@@ -490,11 +490,16 @@ void DelayedIRModifier::extract_to_block_front(Stmt *stmt, Block *blk) {
   to_extract_to_block_front.emplace_back(stmt, blk);
 }
 
+void DelayedIRModifier::type_check(IRNode *node, CompileConfig cfg) {
+  to_type_check.emplace_back(node, cfg);
+}
+
 bool DelayedIRModifier::modify_ir() {
   bool force_modified = modified_;
   modified_ = false;
   if (to_insert_before.empty() && to_insert_after.empty() && to_erase.empty() &&
-      to_replace_with.empty() && to_extract_to_block_front.empty())
+      to_replace_with.empty() && to_extract_to_block_front.empty() &&
+      to_type_check.empty())
     return force_modified;
   for (auto &i : to_insert_before) {
     i.first->parent->insert_before(i.first, std::move(i.second));
@@ -526,10 +531,6 @@ bool DelayedIRModifier::modify_ir() {
 
 void DelayedIRModifier::mark_as_modified() {
   modified_ = true;
-}
-
-void DelayedIRModifier::type_check(IRNode *node, CompileConfig cfg) {
-  to_type_check.emplace_back(node, cfg);
 }
 
 LocalAddress::LocalAddress(Stmt *var, int offset) : var(var), offset(offset) {

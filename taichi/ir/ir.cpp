@@ -449,6 +449,7 @@ DelayedIRModifier::~DelayedIRModifier() {
   TI_ASSERT(to_erase.empty());
   TI_ASSERT(to_replace_with.empty());
   TI_ASSERT(to_extract_to_block_front.empty());
+  TI_ASSERT(to_type_check.empty());
 }
 
 void DelayedIRModifier::erase(Stmt *stmt) {
@@ -514,11 +515,19 @@ bool DelayedIRModifier::modify_ir() {
     i.second->insert(std::move(extracted), 0);
   }
   to_extract_to_block_front.clear();
+  for (auto &i : to_type_check) {
+    irpass::type_check(i.first, i.second);
+  }
+  to_type_check.clear();
   return true;
 }
 
 void DelayedIRModifier::mark_as_modified() {
   modified_ = true;
+}
+
+void DelayedIRModifier::type_check(Block *block, CompileConfig cfg) {
+  to_type_check.emplace_back(block, cfg);
 }
 
 LocalAddress::LocalAddress(Stmt *var, int offset) : var(var), offset(offset) {

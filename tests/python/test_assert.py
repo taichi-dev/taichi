@@ -53,17 +53,17 @@ def test_assert_message_formatted():
         for i in x:
             assert x[i] == 0, 'x[%d] expect=%d got=%d' % (i, 0, x[i])
 
-    @ti.kernel
-    def assert_float():
-        y = 0.5
-        assert y < 0, 'y = %f' % y
+    # @ti.kernel
+    # def assert_float():
+    #     y = 0.5
+    #     assert y < 0, 'y = %f' % y
 
     with pytest.raises(RuntimeError, match=r'x\[10\] expect=0 got=42'):
         assert_formatted()
     # TODO: note that we are not fully polished to be able to recover from
     # assertion failures...
-    with pytest.raises(RuntimeError, match=r'y = 0.5'):
-        assert_float()
+    # with pytest.raises(RuntimeError, match=r'y = 0.5'):
+    #     assert_float()
 
     # success case
     x[10] = 0

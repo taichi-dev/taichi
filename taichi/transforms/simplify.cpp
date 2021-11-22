@@ -338,7 +338,7 @@ class BasicBlockSimplify : public IRVisitor {
     }
     modifier.erase(stmt);
     // get types of adds and muls
-    irpass::type_check(stmt->parent, config);
+    modifier.type_check(stmt->parent, config);
   }
 
   /*
@@ -645,6 +645,10 @@ bool simplify(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   bool modified = false;
   while (true) {
+    std::cout << std::flush;
+    irpass::re_id(root);
+    irpass::print(root);
+    std::cout << std::flush;
     Simplify pass(root, config);
     if (pass.modified)
       modified = true;
@@ -661,6 +665,7 @@ void full_simplify(IRNode *root,
   if (config.advanced_optimization) {
     bool first_iteration = true;
     while (true) {
+
       bool modified = false;
       if (extract_constant(root, config))
         modified = true;

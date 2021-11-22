@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import timeit
+import datetime
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
@@ -69,7 +70,25 @@ class TaichiMain:
 
         self.main_parser = parser
 
-        self._check_version()
+        # Check timestamp
+        os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
+        timestamp_path = os.path.join(_ti_core.get_repo_dir(), 'timestamp')
+        cur_date = datetime.date.today()
+        if os.path.exists(timestamp_path):
+            last_time = ''
+            with open(timestamp_path, 'r') as f:
+                last_time = f.readlines()[0].rstrip()
+            target_date = (cur_date - datetime.timedelta(days=14)).strftime('%Y-%m-%d')
+            if target_date > last_time:
+                with open(timestamp_path, 'w') as f:
+                    f.write(cur_date.strftime('%Y-%m-%d'))
+                    f.truncate()
+                self._check_version()
+        else:
+            with open(timestamp_path, 'w') as f:
+                f.write(cur_date.strftime('%Y-%m-%d'))
+            self._check_version()
+
 
     @timer
     def __call__(self):

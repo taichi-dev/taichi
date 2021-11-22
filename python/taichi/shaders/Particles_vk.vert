@@ -25,7 +25,7 @@ layout(binding = 0) uniform UBO {
 ubo;
 
 layout(location = 0) out vec4 pos_camera_space;
-layout(location = 1) out vec3 selected_color;
+layout(location = 1) out vec4 selected_color;
 
 void main() {
   float distance = length(in_position - ubo.scene.camera_pos);
@@ -38,8 +38,8 @@ void main() {
   gl_Position.y *= -1;
 
   if (ubo.use_per_vertex_color == 0) {
-    selected_color = ubo.color;
+    selected_color = vec4(ubo.color, 1.0);
   } else {
-    selected_color = in_color.rgb;
+    selected_color = in_color;
   }
 }

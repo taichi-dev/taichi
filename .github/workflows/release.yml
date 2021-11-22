@@ -150,7 +150,7 @@ jobs:
 
       - name: Test
         run: |
-          python examples/algorithm/laplace.py
+          ti example laplace
           ti diagnose
           python tests/run_tests.py -vr2 -t2 -a cpu,metal
 
@@ -240,7 +240,7 @@ jobs:
       - name: Test
         run: |
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
-          python examples/algorithm/laplace.py
+          ti example laplace
           ti diagnose
           python tests/run_tests.py -vr2 -t2 -a cpu
         env:
@@ -294,7 +294,7 @@ jobs:
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
           . venv\Scripts\activate.ps1
           python -c "import taichi"
-          python examples/algorithm/laplace.py
+          ti example laplace
           ti diagnose
           python tests/run_tests.py -vr2 -t2
 

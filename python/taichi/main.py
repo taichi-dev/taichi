@@ -78,16 +78,14 @@ class TaichiMain:
             last_time = ''
             with open(timestamp_path, 'r') as f:
                 last_time = f.readlines()[0].rstrip()
-            target_date = (cur_date -
-                           datetime.timedelta(days=14)).strftime('%Y-%m-%d')
-            if target_date > last_time:
+            if cur_date.strftime('%Y-%m-%d') > last_time:
                 with open(timestamp_path, 'w') as f:
-                    f.write(cur_date.strftime('%Y-%m-%d'))
+                    f.write((cur_date + datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
                     f.truncate()
                 self._check_version()
         else:
             with open(timestamp_path, 'w') as f:
-                f.write(cur_date.strftime('%Y-%m-%d'))
+                f.write((cur_date + datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
             self._check_version()
 
     @timer

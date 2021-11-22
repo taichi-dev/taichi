@@ -330,6 +330,8 @@ class IRPrinter : public IRVisitor {
       print("{} : for {} in range({}, {}) {}{{", for_stmt->name(), vars,
             for_stmt->begin.serialize(), for_stmt->end.serialize(),
             block_dim_info(for_stmt->block_dim));
+    } else if (for_stmt->mesh_for) {
+      print("{} : for {} in mesh {{", for_stmt->name(), vars);
     } else {
       print("{} : for {} in {} {}{}{{", for_stmt->name(), vars,
             for_stmt->global_var.is<GlobalVariableExpression>()
@@ -358,6 +360,17 @@ class IRPrinter : public IRVisitor {
           for_stmt->vectorize, for_stmt->bit_vectorize,
           scratch_pad_info(for_stmt->mem_access_opt),
           block_dim_info(for_stmt->block_dim));
+    for_stmt->body->accept(this);
+    print("}}");
+  }
+
+  void visit(MeshForStmt *for_stmt) override {
+    print("{} : mesh for ({} -> {}) {}{{", for_stmt->name(),
+          mesh::element_type_name(for_stmt->major_from_type),
+          for_stmt->major_to_types.size() == 0
+              ? "Unknown"
+              : mesh::element_type_name(*for_stmt->major_to_types.begin()),
+          scratch_pad_info(for_stmt->mem_access_opt));
     for_stmt->body->accept(this);
     print("}}");
   }
@@ -547,6 +560,15 @@ class IRPrinter : public IRVisitor {
           fmt::format("struct_for({}) grid_dim={} block_dim={} bls={}",
                       stmt->snode->get_node_type_name_hinted(), stmt->grid_dim,
                       stmt->block_dim, scratch_pad_info(stmt->mem_access_opt));
+    } else if (stmt->task_type == OffloadedTaskType::mesh_for) {
+      details = fmt::format(
+          "mesh_for({} -> {}) num_patches={} grid_dim={} block_dim={} bls={}",
+          mesh::element_type_name(stmt->major_from_type),
+          stmt->major_to_types.size() == 0
+              ? "Unknown"
+              : mesh::element_type_name(*stmt->major_to_types.begin()),
+          stmt->mesh->num_patches, stmt->grid_dim, stmt->block_dim,
+          scratch_pad_info(stmt->mem_access_opt));
     }
     if (stmt->task_type == OffloadedTaskType::listgen) {
       print("{} = offloaded listgen {}->{}", stmt->name(),
@@ -560,6 +582,12 @@ class IRPrinter : public IRVisitor {
       if (stmt->tls_prologue) {
         print("tls prologue {{");
         stmt->tls_prologue->accept(this);
+        print("}}");
+      }
+      if (stmt->mesh_prologue) {
+        TI_ASSERT(stmt->task_type == OffloadedTaskType::mesh_for);
+        print("body prologue {{");
+        stmt->mesh_prologue->accept(this);
         print("}}");
       }
       if (stmt->bls_prologue) {
@@ -597,6 +625,10 @@ class IRPrinter : public IRVisitor {
   void visit(LoopLinearIndexStmt *stmt) override {
     print("{}{} = loop {} index linear", stmt->type_hint(), stmt->name(),
           stmt->loop->name());
+  }
+
+  void visit(GlobalThreadIndexStmt *stmt) override {
+    print("{}{} = global thread index", stmt->type_hint(), stmt->name());
   }
 
   void visit(BlockCornerIndexStmt *stmt) override {
@@ -685,6 +717,29 @@ class IRPrinter : public IRVisitor {
     }
     print("{} : {}bit_struct_store {}, ch_ids=[{}], values=[{}]", stmt->name(),
           stmt->is_atomic ? "atomic " : "", stmt->ptr->name(), ch_ids, values);
+  }
+
+  // Mesh related.
+
+  void visit(MeshRelationAccessStmt *stmt) override {
+    if (stmt->is_size()) {
+      print("{}{} = {} idx relation {} size", stmt->type_hint(), stmt->name(),
+            stmt->mesh_idx->name(), mesh::element_type_name(stmt->to_type));
+    } else {
+      print("{}{} = {} idx relation {}[{}]", stmt->type_hint(), stmt->name(),
+            stmt->mesh_idx->name(), mesh::element_type_name(stmt->to_type),
+            stmt->neighbor_idx->name());
+    }
+  }
+
+  void visit(MeshIndexConversionStmt *stmt) override {
+    print("{}{} = {} {} {}", stmt->type_hint(), stmt->name(),
+          mesh::conv_type_name(stmt->conv_type),
+          mesh::element_type_name(stmt->idx_type), stmt->idx->name());
+  }
+
+  void visit(MeshPatchIndexStmt *stmt) override {
+    print("{}{} = mesh patch idx", stmt->type_hint(), stmt->name());
   }
 };
 

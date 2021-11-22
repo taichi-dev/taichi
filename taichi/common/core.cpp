@@ -17,18 +17,6 @@
 
 TI_NAMESPACE_BEGIN
 
-extern "C" {
-#if defined(TI_PLATFORM_LINUX) && defined(TI_ARCH_x64)
-// Avoid dependency on glibc 2.27
-// log2f is used by a third party .a file, so we have to define a wrapper.
-// https://stackoverflow.com/questions/8823267/linking-against-older-symbol-version-in-a-so-file
-__asm__(".symver log2f,log2f@GLIBC_2.2.5");
-float __wrap_log2f(float x) {
-  return log2f(x);
-}
-#endif
-}
-
 std::string python_package_dir;
 
 std::string get_python_package_dir() {

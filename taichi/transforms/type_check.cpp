@@ -242,6 +242,10 @@ class TypeCheck : public IRVisitor {
     stmt->body->accept(this);
   }
 
+  void visit(MeshForStmt *stmt) override {
+    stmt->body->accept(this);
+  }
+
   void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }
@@ -443,6 +447,11 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LoopLinearIndexStmt *stmt) override {
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+  }
+
+  void visit(GlobalThreadIndexStmt *stmt) override {
     stmt->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }

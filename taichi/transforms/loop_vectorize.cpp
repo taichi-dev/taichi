@@ -151,6 +151,10 @@ class LoopVectorize : public IRVisitor {
     vectorize = old_vectorize;*/
   }
 
+  void visit(MeshForStmt *for_stmt) override {
+    return;
+  }
+
   void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }

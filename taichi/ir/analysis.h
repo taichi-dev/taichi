@@ -1,8 +1,10 @@
 #pragma once
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/mesh.h"
 #include "taichi/ir/pass.h"
 #include "taichi/analysis/gather_uniquely_accessed_pointers.h"
+#include "taichi/analysis/mesh_bls_analyzer.h"
 #include <atomic>
 #include <optional>
 #include <unordered_set>
@@ -233,6 +235,14 @@ std::unordered_set<Stmt *> constexpr_prop(
     std::function<bool(Stmt *)> is_const_seed);
 
 void verify(IRNode *root);
+
+// Mesh Related.
+void gather_meshfor_relation_types(IRNode *node);
+std::pair</* owned= */ std::unordered_set<mesh::MeshElementType>,
+          /* total= */ std::unordered_set<mesh::MeshElementType>>
+gather_mesh_thread_local(OffloadedStmt *offload, const CompileConfig &config);
+std::unique_ptr<MeshBLSCaches> initialize_mesh_local_attribute(
+    OffloadedStmt *offload);
 
 }  // namespace analysis
 }  // namespace irpass

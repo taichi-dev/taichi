@@ -16,6 +16,8 @@ std::string snode_access_flag_name(SNodeAccessFlag type) {
     return "block_local";
   } else if (type == SNodeAccessFlag::read_only) {
     return "read_only";
+  } else if (type == SNodeAccessFlag::mesh_local) {
+    return "mesh_local";
   } else {
     TI_ERROR("Undefined SNode AccessType (value={})", int(type));
   }

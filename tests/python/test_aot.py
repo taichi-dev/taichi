@@ -172,6 +172,9 @@ def test_mpm88_aot():
             json.load(json_file)
 
 
+# TODO: enable opengl
+@pytest.mark.skipif(
+    True, reason='re-enable after adding non-torch based opengl support')
 @ti.test(arch=ti.opengl)
 def test_opengl_8_ssbo():
     # 6 ndarrays + gtmp + args
@@ -204,6 +207,9 @@ def test_opengl_8_ssbo():
     assert (density6.to_numpy() == (np.zeros(shape=(n, n)) + 6)).all()
 
 
+# TODO: enable opengl
+@pytest.mark.skipif(
+    True, reason='re-enable after adding non-torch based opengl support')
 @ti.test(arch=ti.opengl)
 def test_opengl_exceed_max_ssbo():
     # 7 ndarrays + gtmp + args > 8 (maximum allowed)

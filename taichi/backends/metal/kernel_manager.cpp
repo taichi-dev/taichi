@@ -997,11 +997,13 @@ class KernelManager::Impl {
       end_encoding(encoder.get());
     }
     // Sync
-    profiler_->start("metal_synchronize");
+    if (profiler_)
+      profiler_->start("metal_synchronize");
     commit_command_buffer(cur_command_buffer_.get());
     wait_until_completed(cur_command_buffer_.get());
     create_new_command_buffer();
-    profiler_->stop();
+    if (profiler_)
+      profiler_->stop();
 
     // print_runtime_debug();
   }

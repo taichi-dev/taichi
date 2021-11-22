@@ -42,6 +42,7 @@ def test_binary_op():
 
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+# TODO: enable opengl
 @ti.test(arch=ti.cpu)
 def test_subscript():
     a = ti.ndarray(ti.i32, shape=(10, 10))

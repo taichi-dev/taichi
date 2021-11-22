@@ -262,21 +262,21 @@ have both Python tests and C++ tests.
 
 ### Python tests
 
-- Use `ti test` to run all the tests.
-- Use `ti test -v` for verbose outputs.
-- Use `ti test -s` for original output from the tests.
-- Use `ti test -a <arch(s)>` to test only specified backends, e.g.,
-  `ti test -a cuda,metal`.
-- Use `ti test -na <arch(s)>` to test all backends excluding specified ones,
-  e.g., `ti test -na opengl,x64`.
-- Use `ti test <filename(s)>` to run tests in specified files. For example,
-  `ti test numpy_io` will run all tests in [tests/python/test_numpy_io.py](https://github.com/taichi-dev/taichi/blob/master/tests/python/test_numpy_io.py).
-- Use `ti test -k <key>` to run tests that match the specified key. For
-  example, `ti test linalg -k "cross or diag"` will run `test_cross`
+- Use `python tests/run_tests.py` to run all the tests.
+- Use `python tests/run_tests.py -v` for verbose outputs.
+- Use `python tests/run_tests.py -s` for original output from the tests.
+- Use `python tests/run_tests.py -a <arch(s)>` to test only specified backends, e.g.,
+  `python tests/run_tests.py -a cuda,metal`.
+- Use `python tests/run_tests.py -na <arch(s)>` to test all backends excluding specified ones,
+  e.g., `python tests/run_tests.py -na opengl,x64`.
+- Use `python tests/run_tests.py <filename(s)>` to run tests in specified files. For example,
+  `python tests/run_tests.py numpy_io` will run all tests in [tests/python/test_numpy_io.py](https://github.com/taichi-dev/taichi/blob/master/tests/python/test_numpy_io.py).
+- Use `python tests/run_tests.py -k <key>` to run tests that match the specified key. For
+  example, `python tests/run_tests.py linalg -k "cross or diag"` will run `test_cross`
   and `test_diag` in [tests/python/test_linalg.py](https://github.com/taichi-dev/taichi/blob/master/tests/python/test_linalg.py).
-- Use `ti test -t <threads>` to set custom number of threads for parallel testing.
+- Use `python tests/run_tests.py -t <threads>` to set custom number of threads for parallel testing.
 
-For more options, see `ti test -h`.
+For more options, see `python tests/run_tests.py -h`.
 
 For more details on how to write a Python test case, see
 [Workflow for writing a Python test](./write_test).

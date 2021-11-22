@@ -111,6 +111,10 @@ class LoopInvariantCodeMotion : public BasicStmtVisitor {
     visit_loop(stmt->body.get());
   }
 
+  void visit(MeshForStmt *stmt) override {
+    visit_loop(stmt->body.get());
+  }
+
   void visit(WhileStmt *stmt) override {
     visit_loop(stmt->body.get());
   }
@@ -118,6 +122,9 @@ class LoopInvariantCodeMotion : public BasicStmtVisitor {
   void visit(OffloadedStmt *stmt) override {
     if (stmt->tls_prologue)
       stmt->tls_prologue->accept(this);
+
+    if (stmt->mesh_prologue)
+      stmt->mesh_prologue->accept(this);
 
     if (stmt->bls_prologue)
       stmt->bls_prologue->accept(this);

@@ -4,6 +4,9 @@
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/program/arch.h"
+#include "taichi/ir/mesh.h"
+
+#include <optional>
 
 namespace taichi {
 namespace lang {
@@ -798,6 +801,48 @@ class StructForStmt : public Stmt {
 };
 
 /**
+ * meshfor
+ */
+class MeshForStmt : public Stmt {
+ public:
+  mesh::Mesh *mesh;
+  std::unique_ptr<Block> body;
+  int vectorize;
+  int bit_vectorize;
+  int num_cpu_threads;
+  int block_dim;
+  mesh::MeshElementType major_from_type;
+  std::unordered_set<mesh::MeshElementType> major_to_types{};
+  std::unordered_set<mesh::MeshRelationType> minor_relation_types{};
+  MemoryAccessOptions mem_access_opt;
+
+  MeshForStmt(mesh::Mesh *mesh,
+              mesh::MeshElementType element_type,
+              std::unique_ptr<Block> &&body,
+              int vectorize,
+              int bit_vectorize,
+              int num_cpu_threads,
+              int block_dim);
+
+  bool is_container_statement() const override {
+    return true;
+  }
+
+  std::unique_ptr<Stmt> clone() const override;
+
+  TI_STMT_DEF_FIELDS(mesh,
+                     vectorize,
+                     bit_vectorize,
+                     num_cpu_threads,
+                     block_dim,
+                     major_from_type,
+                     major_to_types,
+                     minor_relation_types,
+                     mem_access_opt);
+  TI_DEFINE_ACCEPT
+};
+
+/**
  * An inline Taichi function.
  * TODO: This statement seems unused.
  */
@@ -1079,9 +1124,24 @@ class OffloadedStmt : public Stmt {
   bool reversed{false};
   int num_cpu_threads{1};
 
+  mesh::Mesh *mesh{nullptr};
+  mesh::MeshElementType major_from_type;
+  std::unordered_set<mesh::MeshElementType> major_to_types;
+  std::unordered_set<mesh::MeshRelationType> minor_relation_types;
+
+  std::unordered_map<mesh::MeshElementType, Stmt *>
+      owned_offset_local;  // |owned_offset[idx]|
+  std::unordered_map<mesh::MeshElementType, Stmt *>
+      total_offset_local;  // |total_offset[idx]|
+  std::unordered_map<mesh::MeshElementType, Stmt *>
+      owned_num_local;  // |owned_offset[idx+1] - owned_offset[idx]|
+  std::unordered_map<mesh::MeshElementType, Stmt *>
+      total_num_local;  // |total_offset[idx+1] - total_offset[idx]|
+
   std::vector<int> index_offsets;
 
   std::unique_ptr<Block> tls_prologue;
+  std::unique_ptr<Block> mesh_prologue;  // mesh-for only block
   std::unique_ptr<Block> bls_prologue;
   std::unique_ptr<Block> body;
   std::unique_ptr<Block> bls_epilogue;
@@ -1106,7 +1166,7 @@ class OffloadedStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  void all_blocks_accept(IRVisitor *visitor);
+  void all_blocks_accept(IRVisitor *visitor, bool skip_mesh_prologue = false);
 
   TI_STMT_DEF_FIELDS(ret_type /*inherited from Stmt*/,
                      task_type,
@@ -1139,6 +1199,27 @@ class LoopIndexStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
+  bool is_mesh_index() const {
+    if (auto offload = loop->cast<OffloadedStmt>()) {
+      return offload->task_type == OffloadedTaskType::mesh_for;
+    } else if (loop->cast<MeshForStmt>()) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  mesh::MeshElementType mesh_index_type() const {
+    TI_ASSERT(is_mesh_index());
+    if (auto offload = loop->cast<OffloadedStmt>()) {
+      return offload->major_from_type;
+    } else if (auto mesh_for = loop->cast<MeshForStmt>()) {
+      return mesh_for->major_from_type;
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
+  }
+
   bool has_global_side_effect() const override {
     return false;
   }
@@ -1167,6 +1248,23 @@ class LoopLinearIndexStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, loop);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
+ * global thread index, i.e. thread_idx() + block_idx() * block_dim()
+ */
+class GlobalThreadIndexStmt : public Stmt {
+ public:
+  explicit GlobalThreadIndexStmt() {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -1485,6 +1583,113 @@ class BitStructStoreStmt : public Stmt {
 
   TI_STMT_DEF_FIELDS(ret_type, ptr, ch_ids, values, is_atomic);
   TI_DEFINE_ACCEPT_AND_CLONE;
+};
+
+// Mesh related.
+
+/**
+ * The relation access, mesh_idx -> to_type[neighbor_idx]
+ * If neibhor_idex has no value, it returns the number of neighbors (length of
+ * relation) of a mesh idx
+ */
+class MeshRelationAccessStmt : public Stmt {
+ public:
+  mesh::Mesh *mesh;
+  Stmt *mesh_idx;
+  mesh::MeshElementType to_type;
+  Stmt *neighbor_idx;
+
+  MeshRelationAccessStmt(mesh::Mesh *mesh,
+                         Stmt *mesh_idx,
+                         mesh::MeshElementType to_type,
+                         Stmt *neighbor_idx)
+      : mesh(mesh),
+        mesh_idx(mesh_idx),
+        to_type(to_type),
+        neighbor_idx(neighbor_idx) {
+    this->ret_type = PrimitiveType::i32;
+    TI_STMT_REG_FIELDS;
+  }
+
+  MeshRelationAccessStmt(mesh::Mesh *mesh,
+                         Stmt *mesh_idx,
+                         mesh::MeshElementType to_type)
+      : mesh(mesh),
+        mesh_idx(mesh_idx),
+        to_type(to_type),
+        neighbor_idx(nullptr) {
+    this->ret_type = PrimitiveType::i32;
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool is_size() const {
+    return neighbor_idx == nullptr;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  mesh::MeshElementType from_type() const {
+    if (auto idx = mesh_idx->cast<LoopIndexStmt>()) {
+      TI_ASSERT(idx->is_mesh_index());
+      return idx->mesh_index_type();
+    } else if (auto idx = mesh_idx->cast<MeshRelationAccessStmt>()) {
+      TI_ASSERT(!idx->is_size());
+      return idx->to_type;
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, mesh, mesh_idx, to_type, neighbor_idx);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
+ *  Convert a mesh index to another index space
+ */
+class MeshIndexConversionStmt : public Stmt {
+ public:
+  mesh::Mesh *mesh;
+  mesh::MeshElementType idx_type;
+  Stmt *idx;
+
+  mesh::ConvType conv_type;
+
+  MeshIndexConversionStmt(mesh::Mesh *mesh,
+                          mesh::MeshElementType idx_type,
+                          Stmt *idx,
+                          mesh::ConvType conv_type)
+      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
+    this->ret_type = PrimitiveType::i32;
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, mesh, idx_type, idx, conv_type);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
+ * The patch index of the |mesh_loop|.
+ */
+class MeshPatchIndexStmt : public Stmt {
+ public:
+  MeshPatchIndexStmt() {
+    this->ret_type = PrimitiveType::i32;
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type);
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 }  // namespace lang

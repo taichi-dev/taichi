@@ -14,7 +14,7 @@ def get_vbo_field(vertices):
         pos = 3
         normal = 3
         tex_coord = 2
-        color = 3
+        color = 4
         vertex_stride = pos + normal + tex_coord + color
         vbo = Vector.field(vertex_stride, f32, shape=(N, ))
         vbo_field_cache[vertices] = vbo
@@ -29,6 +29,12 @@ def copy_to_vbo(vbo: template(), src: template(), offset: template(),
         for c in ti.static(range(num_components)):
             vbo[i][offset + c] = src[i][c]
 
+@kernel
+def fill_vbo(vbo: template(), value: template(), offset: template(),
+                num_components: template()):
+    for i in vbo:
+        for c in ti.static(range(num_components)):
+            vbo[i][offset + c] = value
 
 def validate_input_field(f, name):
     if f.dtype != f32:
@@ -66,9 +72,11 @@ def copy_texcoords_to_vbo(vbo, texcoords):
 
 def copy_colors_to_vbo(vbo, colors):
     validate_input_field(colors, "colors")
-    if colors.n != 3:
-        raise Exception(f'colors can only be 3D vector fields')
+    if colors.n != 3 and colors.n != 4:
+        raise Exception(f'colors can only be 3D/4D vector fields')
     copy_to_vbo(vbo, colors, 8, colors.n)
+    if colors.n == 3:
+        fill_vbo(vbo, 1.0, 11, 1)
 
 
 @ti.kernel

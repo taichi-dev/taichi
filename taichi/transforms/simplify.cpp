@@ -34,7 +34,6 @@ class BasicBlockSimplify : public IRVisitor {
         config(config) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
-    //    run();
   }
 
   bool is_done(Stmt *stmt) {
@@ -199,8 +198,6 @@ class BasicBlockSimplify : public IRVisitor {
           // case 1: last loop var, vectorized, has assumption on vec size
           if (k == num_loop_vars - 1) {
             auto load = Stmt::make<LoopIndexStmt>(current_struct_for, k);
-            //                stmt->insert_before_me(
-            //                );
             load->ret_type = PrimitiveType::i32;
             stmt->input = load.get();
             int64 bound = 1LL << stmt->bit_end;
@@ -215,8 +212,6 @@ class BasicBlockSimplify : public IRVisitor {
               // TODO: take care of cases where vectorization width != z
               // dimension of the block
               auto offset_stmt = Stmt::make<IntegerOffsetStmt>(stmt, offset);
-              //              auto offset_stmt = stmt->insert_after_me(
-              //                  );
               stmt->replace_usages_with(offset_stmt.get());
               // fix the offset stmt operand
               offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
@@ -226,11 +221,8 @@ class BasicBlockSimplify : public IRVisitor {
                 auto offset_const =
                     Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
                         TypedConstant(PrimitiveType::i32, offset)));
-                //                auto offset_const = stmt->insert_before_me(
-                //                    );
                 auto sum = Stmt::make<BinaryOpStmt>(
                     BinaryOpType::add, load_addr, offset_const.get());
-                //                auto sum = stmt->insert_before_me();
                 stmt->input = sum.get();
                 modifier.insert_before(stmt, std::move(offset_const));
                 modifier.insert_before(stmt, std::move(offset_const));
@@ -239,16 +231,10 @@ class BasicBlockSimplify : public IRVisitor {
           } else {
             // insert constant
             auto load = Stmt::make<LoopIndexStmt>(current_struct_for, k);
-            //            auto load = stmt->insert_before_me(
-            //                );
             load->ret_type = PrimitiveType::i32;
             auto constant = Stmt::make<ConstStmt>(TypedConstant(diff.low));
-            //            auto constant = stmt->insert_before_me(
-            //                );
             auto add = Stmt::make<BinaryOpStmt>(BinaryOpType::add, load.get(),
                                                 constant.get());
-            //            auto add = stmt->insert_before_me(
-            //                );
             add->ret_type = PrimitiveType::i32;
             stmt->input = add.get();
             modifier.insert_before(stmt, std::move(load));
@@ -283,8 +269,6 @@ class BasicBlockSimplify : public IRVisitor {
       // push forward offset
       auto offset_stmt =
           Stmt::make<IntegerOffsetStmt>(stmt, previous_offset->offset);
-      //      auto offset_stmt = stmt->insert_after_me(
-      //          );
 
       stmt->inputs.back() = previous_offset->input;
       stmt->replace_usages_with(offset_stmt.get());
@@ -359,7 +343,6 @@ class BasicBlockSimplify : public IRVisitor {
 
       auto offset_stmt = Stmt::make<IntegerOffsetStmt>(
           stmt, previous_offset->offset * sizeof(int32) * (snode->ch.size()));
-      //      auto offset_stmt = stmt->insert_after_me();
 
       stmt->input_index = previous_offset->input;
       stmt->replace_usages_with(offset_stmt.get());
@@ -382,7 +365,6 @@ class BasicBlockSimplify : public IRVisitor {
       // auto snode = stmt->input_snode;
       auto offset_stmt = Stmt::make<IntegerOffsetStmt>(
           stmt, stmt->chid * sizeof(int32) + previous_offset->offset);
-      //      auto offset_stmt = stmt->insert_after_me();
 
       stmt->input_ptr = previous_offset->input;
       stmt->replace_usages_with(offset_stmt.get());
@@ -475,14 +457,11 @@ class BasicBlockSimplify : public IRVisitor {
               lanes.push_back(LocalAddress(store->dest, l));
             }
             auto load = Stmt::make<LocalLoadStmt>(lanes);
-            //                if_stmt->insert_before_me();
             modifier.type_check(load.get(), config);
             auto select = Stmt::make<TernaryOpStmt>(
                 TernaryOpType::select, if_stmt->cond,
                 true_branch ? store->val : load.get(),
                 true_branch ? load.get() : store->val);
-            //            auto select = if_stmt->insert_before_me(
-            //                );
             modifier.type_check(select.get(), config);
             store->val = select.get();
             modifier.insert_before(if_stmt, std::move(load));
@@ -647,10 +626,6 @@ bool simplify(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   bool modified = false;
   while (true) {
-    std::cout << std::flush;
-    irpass::re_id(root);
-    irpass::print(root);
-    std::cout << std::flush;
     Simplify pass(root, config);
     if (pass.modified)
       modified = true;

@@ -623,7 +623,7 @@ class Kernel:
     @_shell_pop_print
     def __call__(self, *args, **kwargs):
         if self.is_grad and impl.current_cfg().opt_level == 0:
-            warning(
+            ti.warn(
                 """opt_level = 1 is enforced to enable gradient computation."""
             )
             impl.current_cfg().opt_level = 1

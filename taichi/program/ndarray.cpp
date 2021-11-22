@@ -18,8 +18,8 @@ Ndarray::Ndarray(Program *prog,
       element_size_(data_type_size(dtype)),
       prog_impl_(prog->get_llvm_program_impl()) {
 #ifdef TI_WITH_LLVM
-  ndarray_alloc_ = prog_impl_->allocate_memory_ndarray(nelement_ * element_size_,
-                                                      prog->result_buffer);
+  ndarray_alloc_ = prog_impl_->allocate_memory_ndarray(
+      nelement_ * element_size_, prog->result_buffer);
 
   data_ptr_ = prog_impl_->get_ndarray_alloc_info_ptr(ndarray_alloc_);
 #else

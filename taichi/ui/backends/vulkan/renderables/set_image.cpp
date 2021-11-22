@@ -123,14 +123,15 @@ void SetImage::create_texture() {
 
   texture_ = app_context_->device().create_image(params);
 
-  Device::AllocParams cpu_staging_buffer_params{image_size, true, false, false, false,
-                                                AllocUsage::Uniform};
+  Device::AllocParams cpu_staging_buffer_params{
+      image_size, true, false, false, false, AllocUsage::Uniform};
   cpu_staging_buffer_ =
       app_context_->device().allocate_memory(cpu_staging_buffer_params);
 
   Device::AllocParams gpu_staging_buffer_params{
-      image_size, false, false, app_context_->requires_export_sharing(), false,
-      AllocUsage::Uniform};
+      image_size, false,
+      false,      app_context_->requires_export_sharing(),
+      false,      AllocUsage::Uniform};
   gpu_staging_buffer_ =
       app_context_->device().allocate_memory(gpu_staging_buffer_params);
 }

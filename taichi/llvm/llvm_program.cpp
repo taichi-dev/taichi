@@ -583,7 +583,7 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
 }
 
 void LlvmProgramImpl::release_memory_ndarray(DeviceAllocation &alloc) {
-    get_compute_device()->release_memory(alloc);
+  get_compute_device()->release_memory(alloc);
 }
 
 uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {

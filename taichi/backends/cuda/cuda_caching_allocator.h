@@ -8,7 +8,7 @@ namespace taichi {
 namespace lang {
 namespace cuda {
 
-class CudaCachingAllocator{
+class CudaCachingAllocator {
  public:
   void release(size_t sz, uint64_t *ptr);
   uint64_t *allocate(size_t sz);

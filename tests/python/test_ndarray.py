@@ -602,6 +602,7 @@ def test_arg_not_match_torch():
 def test_arg_not_match():
     _test_arg_not_match()
 
+
 @ti.test(arch=[ti.cuda], ndarray_use_torch=False)
 def test_ndarray_release():
     n = 4

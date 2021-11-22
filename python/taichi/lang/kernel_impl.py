@@ -578,7 +578,8 @@ class Kernel:
             ret_dt = self.return_type
             has_ret = ret_dt is not None
 
-            if has_ret or (ti.current_cfg().async_mode and has_external_arrays):
+            if has_ret or (ti.current_cfg().async_mode
+                           and has_external_arrays):
                 ti.sync()
 
             if has_ret:

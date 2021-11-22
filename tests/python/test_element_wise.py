@@ -242,7 +242,7 @@ def test_writeback_binary_i(rhs_is_mat):
     assert allclose(x[11], np.maximum(y, z))
 
 
-@ti.test(exclude=[ti.vulkan])
+@ti.test()
 def test_unary():
     xi = ti.Matrix.field(3, 2, ti.i32, 4)
     yi = ti.Matrix.field(3, 2, ti.i32, ())

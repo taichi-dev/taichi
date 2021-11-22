@@ -207,27 +207,6 @@ def test_cli_benchmark():
         assert args.threads == "4"
 
 
-def test_cli_test():
-    with patch_sys_argv_helper(
-        ["ti", "test", "cli", "atomic", "-c", "-v", "-r2",
-         "-t4"]) as custom_argv:
-        cli = TaichiMain(test_mode=True)
-        args = cli()
-        assert args.files == ["cli", "atomic"]
-        assert args.cpp == True
-        assert args.verbose == True
-        assert args.rerun == "2"
-        assert args.threads == "4"
-
-    with patch_sys_argv_helper(
-        ["ti", "test", "cli", "atomic", "-c", "-v", "-r2",
-         "-t4"]) as custom_argv:
-        with patch.object(TaichiMain, 'test', return_value=1) as mock_method:
-            cli = TaichiMain(test_mode=False)
-            return_code = cli()
-            assert return_code == 1
-
-
 def test_cli_debug():
     with patch_sys_argv_helper(["ti", "debug", "a.py"]) as custom_argv:
         cli = TaichiMain(test_mode=True)

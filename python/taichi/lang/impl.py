@@ -10,9 +10,13 @@ from taichi.lang.exception import InvalidOperationError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
-from taichi.lang.matrix import MatrixField
+from taichi.lang.matrix import MatrixField, _IntermediateMatrix
+from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
+                              MeshRelationAccessProxy,
+                              MeshReorderedMatrixFieldProxy,
+                              MeshReorderedScalarFieldProxy, element_type_name)
 from taichi.lang.snode import SNode
-from taichi.lang.struct import StructField
+from taichi.lang.struct import StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
@@ -45,6 +49,10 @@ def expr_init(rhs):
     if isinstance(rhs, _ti_core.Arch):
         return rhs
     if isinstance(rhs, ti.ndrange):
+        return rhs
+    if isinstance(rhs, MeshElementFieldProxy):
+        return rhs
+    if isinstance(rhs, MeshRelationAccessProxy):
         return rhs
     if hasattr(rhs, '_data_oriented'):
         return rhs
@@ -110,7 +118,7 @@ def wrap_scalar(x):
 
 
 @taichi_scope
-def subscript(value, *_indices):
+def subscript(value, *_indices, skip_reordered=False):
     _taichi_skip_traceback = 1
     if isinstance(value, np.ndarray):
         return value.__getitem__(*_indices)
@@ -135,6 +143,22 @@ def subscript(value, *_indices):
 
     if is_taichi_class(value):
         return value.subscript(*_indices)
+    if isinstance(value, MeshElementFieldProxy):
+        return value.subscript(*_indices)
+    if isinstance(value, MeshRelationAccessProxy):
+        return value.subscript(*_indices)
+    if isinstance(value,
+                  (MeshReorderedScalarFieldProxy,
+                   MeshReorderedMatrixFieldProxy)) and not skip_reordered:
+        assert index_dim == 1
+        reordered_index = tuple([
+            Expr(
+                _ti_core.get_index_conversion(value.mesh_ptr,
+                                              value.element_type,
+                                              Expr(_indices[0]).ptr,
+                                              ConvType.g2r))
+        ])
+        return subscript(value, *reordered_index, skip_reordered=True)
     if isinstance(value, SparseMatrixProxy):
         return value.subscript(*_indices)
     if isinstance(value, Field):
@@ -153,12 +177,12 @@ def subscript(value, *_indices):
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         if isinstance(value, MatrixField):
-            return ti.Matrix.with_entries(value.n, value.m, [
+            return _IntermediateMatrix(value.n, value.m, [
                 Expr(_ti_core.subscript(e.ptr, indices_expr_group))
                 for e in value.get_field_members()
             ])
         if isinstance(value, StructField):
-            return ti.lang.struct.IntermediateStruct(
+            return _IntermediateStruct(
                 {k: subscript(v, *_indices)
                  for k, v in value.items})
         return Expr(_ti_core.subscript(_var, indices_expr_group))
@@ -175,7 +199,7 @@ def subscript(value, *_indices):
         n = value.element_shape[0]
         m = 1 if element_dim == 1 else value.element_shape[1]
         any_array_access = AnyArrayAccess(value, _indices)
-        ret = ti.Matrix.with_entries(n, m, [
+        ret = _IntermediateMatrix(n, m, [
             any_array_access.subscript(i, j) for i in range(n)
             for j in range(m)
         ])
@@ -903,3 +927,13 @@ def default_cfg():
 def call_internal(name, *args):
     return expr_init(
         _ti_core.insert_internal_func_call(name, make_expr_group(args)))
+
+
+@taichi_scope
+def mesh_relation_access(mesh, from_index, to_element_type):
+    # to support ti.mesh_local and access mesh attribute as field
+    if isinstance(from_index, MeshInstance):
+        return getattr(from_index, element_type_name(to_element_type))
+    if isinstance(mesh, MeshInstance):
+        return MeshRelationAccessProxy(mesh, from_index, to_element_type)
+    raise RuntimeError("Relation access should be with a mesh instance!")

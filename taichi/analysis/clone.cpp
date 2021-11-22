@@ -112,6 +112,7 @@ class IRCloner : public IRVisitor {
 
     CLONE_BLOCK(tls_prologue)
     CLONE_BLOCK(bls_prologue)
+    CLONE_BLOCK(mesh_prologue)
 
     if (stmt->body) {
       other_node = other->body.get();

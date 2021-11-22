@@ -1,4 +1,4 @@
-import taichi as ti
+from taichi.lang.matrix import _IntermediateMatrix
 
 
 class ndrange:
@@ -44,4 +44,4 @@ class GroupedNDRange:
 
     def __iter__(self):
         for ind in self.r:
-            yield ti.Vector(list(ind), keep_raw=True)
+            yield _IntermediateMatrix(len(ind), 1, list(ind))

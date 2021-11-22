@@ -9,6 +9,12 @@ struct Vertex {
     float y;
     float z;
   };
+  struct vec4 {
+    float x;
+    float y;
+    float z;
+    float w;
+  };
   struct vec2 {
     float x;
     float y;
@@ -16,7 +22,7 @@ struct Vertex {
   vec3 pos;
   vec3 normal;
   vec2 texCoord;
-  vec3 color;
+  vec4 color;
 };
 
 }  // namespace ui

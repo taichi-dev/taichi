@@ -718,10 +718,12 @@ class TaichiMain:
             os.system('python benchmarks/run.py')
             # TODO: benchmark_python(args)
         else:
-            TaichiMain._test_python(args)
+            # TODO: shall we replace this with the new benchmark tools?
+            os.system('python tests/run_tests.py')
 
         return None
 
+    @staticmethod
     @register
     def test(self, arguments: list = sys.argv[2:]):
         raise RuntimeError(

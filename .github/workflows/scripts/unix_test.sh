@@ -5,7 +5,7 @@ export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
 ## Only GPU machine uses system python.
 [ -z $GPU_TEST ] || export PATH=$PATH:$HOME/.local/bin
 hash -r
-python3 examples/algorithm/laplace.py
+ti example laplace
 ti diagnose
 ti changelog
 echo wanted archs: $TI_WANTED_ARCHS

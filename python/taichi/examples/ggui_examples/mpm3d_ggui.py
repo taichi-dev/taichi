@@ -155,7 +155,9 @@ def init_cube_vol(first_par: int, last_par: int, x_begin: float,
         F[i] = ti.Matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         v[i] = ti.Vector([0.0, 0.0, 0.0])
         materials[i] = material
-        colors_random[i] = ti.Vector([ti.random(), ti.random(), ti.random(), ti.random()])
+        colors_random[i] = ti.Vector(
+            [ti.random(), ti.random(),
+             ti.random(), ti.random()])
         used[i] = 1
 
 

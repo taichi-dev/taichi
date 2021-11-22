@@ -29,12 +29,14 @@ def copy_to_vbo(vbo: template(), src: template(), offset: template(),
         for c in ti.static(range(num_components)):
             vbo[i][offset + c] = src[i][c]
 
+
 @kernel
 def fill_vbo(vbo: template(), value: template(), offset: template(),
-                num_components: template()):
+             num_components: template()):
     for i in vbo:
         for c in ti.static(range(num_components)):
             vbo[i][offset + c] = value
+
 
 def validate_input_field(f, name):
     if f.dtype != f32:

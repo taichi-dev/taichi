@@ -24,8 +24,8 @@ echo wanted archs: $TI_WANTED_ARCHS
 
 if [[ $GPU_TEST == "OFF" ]]
 then
-    ti test -vr2 -t2 -a "$TI_WANTED_ARCHS"
+    python tests/run_tests.py -vr2 -t2 -a "$TI_WANTED_ARCHS"
 else
-    ti test -vr2 -t2 -k "not ndarray and not torch" -a "$TI_WANTED_ARCHS"
-    ti test -vr2 -t1 -k "ndarray or torch" -a "$TI_WANTED_ARCHS"
+    python tests/run_tests.py -vr2 -t2 -k "not ndarray and not torch" -a "$TI_WANTED_ARCHS"
+    python tests/run_tests.py -vr2 -t1 -k "ndarray or torch" -a "$TI_WANTED_ARCHS"
 fi

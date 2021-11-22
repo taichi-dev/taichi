@@ -46,7 +46,7 @@ sidebar_position: 7
 - Cache compiled runtime bitcode in **dev mode** to save start up
   time: `export TI_CACHE_RUNTIME_BITCODE=1`.
 - To specify how many threads to run test: `export TI_TEST_THREADS=4`
-  or `ti test -t4`.
+  or `python tests/run_tests.py -t4`.
 
 ## Specifying `ti.init` arguments from environment variables
 

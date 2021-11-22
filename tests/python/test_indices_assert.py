@@ -4,7 +4,7 @@ import pytest
 
 import taichi as ti
 
-'''
+
 @pytest.mark.skipif(platform.system() == 'Windows',
                     reason="Too much virtual memory for github windows env.")
 @ti.test(debug=True, gdb_trigger=False, packed=False, arch=[ti.cpu])
@@ -20,4 +20,3 @@ def test_indices_assert():
     with pytest.raises(RuntimeError,
                        match='The indices provided are too big!'):
         access_overflow()
-'''

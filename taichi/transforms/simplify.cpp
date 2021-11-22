@@ -341,7 +341,6 @@ class BasicBlockSimplify : public IRVisitor {
     modifier.type_check(stmt->parent, config);
   }
 
-  /*
   void visit(SNodeLookupStmt *stmt) override {
     if (is_done(stmt))
       return;
@@ -477,14 +476,14 @@ class BasicBlockSimplify : public IRVisitor {
             }
             auto load = Stmt::make<LocalLoadStmt>(lanes);
             //                if_stmt->insert_before_me();
-            irpass::type_check(load.get(), config);
+            modifier.type_check(load.get(), config);
             auto select = Stmt::make<TernaryOpStmt>(
                 TernaryOpType::select, if_stmt->cond,
                 true_branch ? store->val : load.get(),
                 true_branch ? load.get() : store->val);
             //            auto select = if_stmt->insert_before_me(
             //                );
-            irpass::type_check(select.get(), config);
+            modifier.type_check(select.get(), config);
             store->val = select.get();
             modifier.insert_before(if_stmt, std::move(load));
             modifier.insert_before(if_stmt, std::move(select));
@@ -581,7 +580,6 @@ class BasicBlockSimplify : public IRVisitor {
       return;
     }
   }
-  */
 };
 
 class Simplify : public IRVisitor {

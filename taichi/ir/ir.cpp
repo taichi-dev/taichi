@@ -526,8 +526,8 @@ void DelayedIRModifier::mark_as_modified() {
   modified_ = true;
 }
 
-void DelayedIRModifier::type_check(Block *block, CompileConfig cfg) {
-  to_type_check.emplace_back(block, cfg);
+void DelayedIRModifier::type_check(IRNode *node, CompileConfig cfg) {
+  to_type_check.emplace_back(node, cfg);
 }
 
 LocalAddress::LocalAddress(Stmt *var, int offset) : var(var), offset(offset) {

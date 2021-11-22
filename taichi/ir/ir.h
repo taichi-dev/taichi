@@ -677,7 +677,7 @@ class DelayedIRModifier {
   std::vector<std::tuple<Stmt *, VecStatement, bool>> to_replace_with;
   std::vector<Stmt *> to_erase;
   std::vector<std::pair<Stmt *, Block *>> to_extract_to_block_front;
-  std::vector<std::pair<Block *, CompileConfig>> to_type_check;
+  std::vector<std::pair<IRNode *, CompileConfig>> to_type_check;
   bool modified_{false};
 
  public:
@@ -691,7 +691,7 @@ class DelayedIRModifier {
                     VecStatement &&new_statements,
                     bool replace_usages = true);
   void extract_to_block_front(Stmt *stmt, Block *blk);
-  void type_check(Block *block, CompileConfig cfg);
+  void type_check(IRNode *node, CompileConfig cfg);
   bool modify_ir();
 
   // Force the next call of modify_ir() to return true.

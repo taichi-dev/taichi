@@ -272,7 +272,7 @@ def rsqrt(a):
 
 
 @unary
-def round(a):
+def round(a):  # pylint: disable=redefined-builtin
     """The round function.
 
     Args:

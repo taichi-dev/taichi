@@ -139,7 +139,7 @@ jobs:
           export PATH=$(pwd)/taichi-llvm/bin/:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
           PROJECT_NAME: ${{ matrix.name }}
           CXX: clang++
 
@@ -227,7 +227,7 @@ jobs:
           export PATH=$LLVM_DIR/bin:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
           CXX: clang++

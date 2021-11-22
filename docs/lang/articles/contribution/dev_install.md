@@ -232,8 +232,7 @@ brew install socat
 2.  Temporally disable the xhost access-control: `xhost +`.
 3.  Start the Docker container with
     `docker run -it -e DISPLAY=$(ipconfig getifaddr en0):0 taichidev/taichi:v0.6.17`.
-4.  Do whatever you want within the container, e.g. you could run tests
-    or an example, try: `ti test` or `ti example mpm88`.
+4.  Do whatever you want within the container, e.g. you could run an example, try: `ti example mpm88`.
 5.  Exit from the container with `exit` or `ctrl+D`.
 6.  **[To keep your xhost safe]** Re-enable the xhost access-control:
     `xhost -`.
@@ -258,8 +257,7 @@ sudo systemctl restart docker
 4.  Temporally disable the xhost access-control: `xhost +`.
 5.  Start the Docker container with
     `sudo docker run -it --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix taichidev/taichi:v0.6.17`.
-6.  Do whatever you want within the container, e.g. you could run tests
-    or an example, try: `ti test` or `ti example mpm88`.
+6.  Do whatever you want within the container, e.g. you could run an example, try: `ti example mpm88`.
 7.  Exit from the container with `exit` or `ctrl+D`.
 8.  **[To keep your xhost safe]** Re-enable the xhost access-control:
     `xhost -`.

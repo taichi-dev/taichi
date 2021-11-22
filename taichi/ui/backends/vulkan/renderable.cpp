@@ -145,11 +145,11 @@ void Renderable::create_vertex_buffer() {
   size_t buffer_size = sizeof(Vertex) * config_.max_vertices_count;
 
   Device::AllocParams vb_params{buffer_size, false, false,
-                                app_context_->requires_export_sharing(),
+                                app_context_->requires_export_sharing(), false,
                                 AllocUsage::Vertex};
   vertex_buffer_ = app_context_->device().allocate_memory(vb_params);
 
-  Device::AllocParams staging_vb_params{buffer_size, true, false, false,
+  Device::AllocParams staging_vb_params{buffer_size, true, false, false, false,
                                         AllocUsage::Vertex};
   staging_vertex_buffer_ =
       app_context_->device().allocate_memory(staging_vb_params);
@@ -159,11 +159,11 @@ void Renderable::create_index_buffer() {
   size_t buffer_size = sizeof(int) * config_.max_indices_count;
 
   Device::AllocParams ib_params{buffer_size, false, false,
-                                app_context_->requires_export_sharing(),
+                                app_context_->requires_export_sharing(), false,
                                 AllocUsage::Index};
   index_buffer_ = app_context_->device().allocate_memory(ib_params);
 
-  Device::AllocParams staging_ib_params{buffer_size, true, false, false,
+  Device::AllocParams staging_ib_params{buffer_size, true, false, false, false,
                                         AllocUsage::Index};
   staging_index_buffer_ =
       app_context_->device().allocate_memory(staging_ib_params);
@@ -175,7 +175,7 @@ void Renderable::create_uniform_buffers() {
     return;
   }
 
-  Device::AllocParams ub_params{buffer_size, true, false, false,
+  Device::AllocParams ub_params{buffer_size, true, false, false, false,
                                 AllocUsage::Uniform};
   uniform_buffer_ = app_context_->device().allocate_memory(ub_params);
 }
@@ -186,7 +186,7 @@ void Renderable::create_storage_buffers() {
     return;
   }
 
-  Device::AllocParams sb_params{buffer_size, true, false, false,
+  Device::AllocParams sb_params{buffer_size, true, false, false, false,
                                 AllocUsage::Storage};
   storage_buffer_ = app_context_->device().allocate_memory(sb_params);
 }

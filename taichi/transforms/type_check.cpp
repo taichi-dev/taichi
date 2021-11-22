@@ -262,8 +262,8 @@ class TypeCheck : public IRVisitor {
       } else if (stmt->op_type == UnaryOpType::round ||
                  stmt->op_type == UnaryOpType::floor ||
                  stmt->op_type == UnaryOpType::ceil) {
-        TI_ERROR("[{}] round/floor/ceil takes real inputs only at {}", stmt->name(),
-                 stmt->tb);
+        TI_ERROR("[{}] round/floor/ceil takes real inputs only at {}",
+                 stmt->name(), stmt->tb);
       } else if (stmt->op_type == UnaryOpType::sqrt ||
                  stmt->op_type == UnaryOpType::exp ||
                  stmt->op_type == UnaryOpType::log) {

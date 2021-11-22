@@ -665,7 +665,6 @@ void full_simplify(IRNode *root,
   if (config.advanced_optimization) {
     bool first_iteration = true;
     while (true) {
-
       bool modified = false;
       if (extract_constant(root, config))
         modified = true;

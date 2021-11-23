@@ -157,6 +157,15 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/sccache
+          key: sccache-linux-${{matrix.wanted_archs}}-${{ github.sha }}
+          restore-keys: |
+            sccache-linux-${{matrix.wanted_archs}}-
+            sccache-linux-
+
       - name: Get docker images
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
@@ -259,6 +268,8 @@ jobs:
     needs: [check_code_format, check_files]
     runs-on: [self-hosted, cuda, vulkan, cn]
     timeout-minutes: 60
+    env:
+      TI_WANTED_ARCHS: "cpu,cc,cuda,vulkan,opengl"
     steps:
       - uses: actions/checkout@v2
         with:
@@ -268,8 +279,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/sccache
-          key: sccache-linux-${{ github.sha }}
+          key: sccache-linux-${{env.TI_WANTED_ARCHS}}-${{ github.sha }}
           restore-keys: |
+            sccache-linux-${{env.TI_WANTED_ARCHS}}-
             sccache-linux-
 
       - name: Build & Install
@@ -285,7 +297,7 @@ jobs:
           PY: py38
           GPU_BUILD: ON
           PROJECT_NAME: taichi
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           DISPLAY: :1
 
       - name: Test
@@ -293,7 +305,7 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
+          docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST ${{env.TI_WANTED_ARCHS}}
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
           docker start -a taichi_test
@@ -301,7 +313,6 @@ jobs:
           PY: py38
           GPU_TEST: ON
           DISPLAY: :1
-          TI_WANTED_ARCHS: "cpu,cc,cuda,vulkan,opengl"
 
       - name: clean docker container
         if: always()

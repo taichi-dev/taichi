@@ -110,7 +110,6 @@ def get_unique_task_id():
 ti_core = import_ti_core()
 
 ti_core.set_python_package_dir(package_root())
-os.makedirs(ti_core.get_repo_dir(), exist_ok=True)
 
 log_level = os.environ.get('TI_LOG_LEVEL', '')
 if log_level:

@@ -11,6 +11,7 @@
 #include "taichi/common/core.h"
 #include "taichi/ir/ir_modified.h"
 #include "taichi/ir/snode.h"
+#include "taichi/ir/mesh.h"
 #include "taichi/ir/type_factory.h"
 #include "taichi/util/short_name.h"
 
@@ -27,7 +28,7 @@ class SNode;
 class Kernel;
 struct CompileConfig;
 
-enum class SNodeAccessFlag : int { block_local, read_only };
+enum class SNodeAccessFlag : int { block_local, read_only, mesh_local };
 std::string snode_access_flag_name(SNodeAccessFlag type);
 
 class MemoryAccessOptions {

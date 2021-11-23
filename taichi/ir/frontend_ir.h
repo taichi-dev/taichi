@@ -8,6 +8,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
 #include "taichi/program/function.h"
+#include "taichi/ir/mesh.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -145,8 +146,12 @@ class FrontendForStmt : public Stmt {
   MemoryAccessOptions mem_access_opt;
   int block_dim;
 
+  bool mesh_for = false;
+  mesh::Mesh *mesh;
+  mesh::MeshElementType element_type;
+
   bool is_ranged() const {
-    if (global_var.expr == nullptr) {
+    if (global_var.expr == nullptr && !mesh_for) {
       return true;
     } else {
       return false;
@@ -154,6 +159,10 @@ class FrontendForStmt : public Stmt {
   }
 
   FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var);
+
+  FrontendForStmt(const ExprGroup &loop_var,
+                  const mesh::MeshPtr &mesh,
+                  const mesh::MeshElementType &element_type);
 
   FrontendForStmt(const Expr &loop_var, const Expr &begin, const Expr &end);
 
@@ -780,6 +789,90 @@ class FuncCallExpression : public Expression {
 
   FuncCallExpression(Function *func, const ExprGroup &args)
       : func(func), args(args) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+// Mesh related.
+
+class MeshPatchIndexExpression : public Expression {
+ public:
+  MeshPatchIndexExpression() {
+  }
+
+  void type_check() override;
+
+  void serialize(std::ostream &ss) override {
+    ss << fmt::format("mesh_patch_idx()");
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class MeshRelationAccessExpression : public Expression {
+ public:
+  mesh::Mesh *mesh;
+  Expr mesh_idx;
+  mesh::MeshElementType to_type;
+  Expr neighbor_idx;
+
+  void type_check() override;
+
+  void serialize(std::ostream &ss) override {
+    if (neighbor_idx) {
+      ss << "mesh_relation_access(";
+      mesh_idx->serialize(ss);
+      ss << ", " << mesh::element_type_name(to_type) << "[";
+      neighbor_idx->serialize(ss);
+      ss << "])";
+    } else {
+      ss << "mesh_relation_size(";
+      mesh_idx->serialize(ss);
+      ss << ", " << mesh::element_type_name(to_type) << ")";
+    }
+  }
+
+  MeshRelationAccessExpression(mesh::Mesh *mesh,
+                               const Expr mesh_idx,
+                               mesh::MeshElementType to_type)
+      : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
+  }
+
+  MeshRelationAccessExpression(mesh::Mesh *mesh,
+                               const Expr mesh_idx,
+                               mesh::MeshElementType to_type,
+                               const Expr neighbor_idx)
+      : mesh(mesh),
+        mesh_idx(mesh_idx),
+        to_type(to_type),
+        neighbor_idx(neighbor_idx) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class MeshIndexConversionExpression : public Expression {
+ public:
+  mesh::Mesh *mesh;
+  mesh::MeshElementType idx_type;
+  Expr idx;
+  mesh::ConvType conv_type;
+
+  void type_check() override;
+
+  void serialize(std::ostream &ss) override {
+    ss << "mesh_index_conversion(" << mesh::conv_type_name(conv_type) << ", "
+       << mesh::element_type_name(idx_type) << ", ";
+    idx->serialize(ss);
+    ss << ")";
+  }
+
+  MeshIndexConversionExpression(mesh::Mesh *mesh,
+                                mesh::MeshElementType idx_type,
+                                const Expr idx,
+                                mesh::ConvType conv_type)
+      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
   }
 
   void flatten(FlattenContext *ctx) override;

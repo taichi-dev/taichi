@@ -367,6 +367,9 @@ void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
   } else if (task_type == OffloadedStmt::TaskType::struct_for) {
     stat.add("launched_tasks_compute", 1.0);
     stat.add("launched_tasks_struct_for", 1.0);
+  } else if (task_type == OffloadedStmt::TaskType::mesh_for) {
+    stat.add("launched_tasks_compute", 1.0);
+    stat.add("launched_tasks_mesh_for", 1.0);
   } else if (task_type == OffloadedStmt::TaskType::gc) {
     stat.add("launched_tasks_garbage_collect", 1.0);
   }

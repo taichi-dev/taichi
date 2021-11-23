@@ -161,9 +161,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/sccache
-          key: sccache-linux-${{matrix.wanted_archs}}-${{ github.sha }}
+          key: sccache-linux-${{matrix.python}}-${{ github.sha }}
           restore-keys: |
-            sccache-linux-${{matrix.wanted_archs}}-
+            sccache-linux-${{matrix.python}}-
             sccache-linux-
 
       - name: Get docker images
@@ -279,9 +279,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/sccache
-          key: sccache-linux-${{env.TI_WANTED_ARCHS}}-${{ github.sha }}
+          key: sccache-linux-gpu-${{ github.sha }}
           restore-keys: |
-            sccache-linux-${{env.TI_WANTED_ARCHS}}-
+            sccache-linux-gpu-
             sccache-linux-
 
       - name: Build & Install

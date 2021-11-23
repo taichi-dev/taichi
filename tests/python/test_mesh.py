@@ -89,21 +89,18 @@ def test_mesh_for():
     _test_mesh_for(False, True)
 
 
-@ti.test(require=ti.extension.mesh,
-         optimize_mesh_reordered_mapping=False)
+@ti.test(require=ti.extension.mesh, optimize_mesh_reordered_mapping=False)
 def test_mesh_reordered_opt():
     _test_mesh_for(True, True, False)
 
 
-@ti.test(require=ti.extension.mesh,
-         mesh_localize_to_end_mapping=False)
+@ti.test(require=ti.extension.mesh, mesh_localize_to_end_mapping=False)
 def test_mesh_localize_mapping0():
     _test_mesh_for(False, False, False)
     _test_mesh_for(True, True, False)
 
 
-@ti.test(require=ti.extension.mesh,
-         mesh_localize_from_end_mapping=True)
+@ti.test(require=ti.extension.mesh, mesh_localize_from_end_mapping=True)
 def test_mesh_localize_mapping1():
     _test_mesh_for(False, False, False)
     _test_mesh_for(True, True, False)
@@ -171,8 +168,7 @@ def test_mesh_minor_relations():
     assert total == 576
 
 
-@ti.test(require=ti.extension.mesh,
-         demote_no_access_mesh_fors=True)
+@ti.test(require=ti.extension.mesh, demote_no_access_mesh_fors=True)
 def test_multiple_meshes():
     mesh_builder = ti.Mesh.Tet()
     mesh_builder.verts.place({'y': ti.i32})

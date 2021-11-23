@@ -872,7 +872,10 @@ class MeshIndexConversionExpression : public Expression {
                                 mesh::MeshElementType idx_type,
                                 const Expr idx,
                                 mesh::ConvType conv_type)
-      : mesh(mesh), idx_type(idx_type), idx(load_if_ptr(idx)), conv_type(conv_type) {
+      : mesh(mesh),
+        idx_type(idx_type),
+        idx(load_if_ptr(idx)),
+        conv_type(conv_type) {
   }
 
   void flatten(FlattenContext *ctx) override;

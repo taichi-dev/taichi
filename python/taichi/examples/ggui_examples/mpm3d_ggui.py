@@ -35,8 +35,8 @@ F = ti.Matrix.field(3, 3, dtype=float,
                     shape=n_particles)  # deformation gradient
 Jp = ti.field(float, n_particles)
 
-colors = ti.Vector.field(3, float, n_particles)
-colors_random = ti.Vector.field(3, float, n_particles)
+colors = ti.Vector.field(4, float, n_particles)
+colors_random = ti.Vector.field(4, float, n_particles)
 materials = ti.field(int, n_particles)
 grid_v = ti.Vector.field(dim, float, (n_grid, ) * dim)
 grid_m = ti.field(float, (n_grid, ) * dim)
@@ -155,7 +155,9 @@ def init_cube_vol(first_par: int, last_par: int, x_begin: float,
         F[i] = ti.Matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         v[i] = ti.Vector([0.0, 0.0, 0.0])
         materials[i] = material
-        colors_random[i] = ti.Vector([ti.random(), ti.random(), ti.random()])
+        colors_random[i] = ti.Vector(
+            [ti.random(), ti.random(),
+             ti.random(), ti.random()])
         used[i] = 1
 
 
@@ -199,7 +201,7 @@ def set_color_by_material(material_colors: ti.ext_arr()):
         mat = materials[i]
         colors[i] = ti.Vector([
             material_colors[mat, 0], material_colors[mat, 1],
-            material_colors[mat, 2]
+            material_colors[mat, 2], 1.0
         ])
 
 

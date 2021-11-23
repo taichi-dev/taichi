@@ -109,6 +109,28 @@ class Offloader {
       } else if (auto st = stmt->cast<StructForStmt>()) {
         assemble_serial_statements();
         emit_struct_for(st, root_block, config, st->mem_access_opt);
+      } else if (auto st = stmt->cast<MeshForStmt>()) {
+        assemble_serial_statements();
+        auto offloaded = Stmt::make_typed<OffloadedStmt>(
+            OffloadedStmt::TaskType::mesh_for, arch);
+        offloaded->grid_dim = config.saturating_grid_dim;
+        if (st->block_dim == 0) {
+          offloaded->block_dim = Program::default_block_dim(config);
+        } else {
+          offloaded->block_dim = st->block_dim;
+        }
+        offloaded->num_cpu_threads =
+            std::min(st->num_cpu_threads, config.cpu_max_num_threads);
+        replace_all_usages_with(st, st, offloaded.get());
+        for (int j = 0; j < (int)st->body->statements.size(); j++) {
+          offloaded->body->insert(std::move(st->body->statements[j]));
+        }
+        offloaded->mesh = st->mesh;
+        offloaded->major_from_type = std::move(st->major_from_type);
+        offloaded->major_to_types = std::move(st->major_to_types);
+        offloaded->minor_relation_types = std::move(st->minor_relation_types);
+        offloaded->mem_access_opt = st->mem_access_opt;
+        root_block->insert(std::move(offloaded));
       } else {
         pending_serial_statements->body->insert(std::move(stmt));
       }
@@ -323,13 +345,6 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     TI_ASSERT(current_offloaded);
   }
 
-  void visit(RangeForStmt *stmt) override {
-    test_and_allocate(stmt->begin);
-    test_and_allocate(stmt->end);
-    if (stmt->body)
-      stmt->body->accept(this);
-  }
-
   void test_and_allocate(Stmt *stmt) {
     if (stmt == nullptr)
       return;
@@ -349,12 +364,20 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     }
   }
 
-  void visit(Stmt *stmt) override {
+  void generic_visit(Stmt *stmt) {
     int n_op = stmt->num_operands();
     for (int i = 0; i < n_op; i++) {
       auto op = stmt->operand(i);
       test_and_allocate(op);
     }
+  }
+
+  void preprocess_container_stmt(Stmt *stmt) override {
+    generic_visit(stmt);
+  }
+
+  void visit(Stmt *stmt) override {
+    generic_visit(stmt);
   }
 
   static StmtToOffsetMap run(

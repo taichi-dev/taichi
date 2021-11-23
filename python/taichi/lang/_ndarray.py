@@ -172,6 +172,24 @@ class Ndarray:
             impl.get_runtime().sync()
 
     @python_scope
+    def get_element_size(self):
+        """Returns the size of one element in bytes.
+
+        Returns:
+            Size in bytes.
+        """
+        return self.arr.element_size()
+
+    @python_scope
+    def get_nelement(self):
+        """Returns the total number of elements.
+
+        Returns:
+            Total number of elements.
+        """
+        return self.arr.nelement()
+
+    @python_scope
     def copy_from(self, other):
         """Copies all elements from another ndarray.
 

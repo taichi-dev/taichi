@@ -5,9 +5,6 @@ include *.cfg
 include python/taichi/*.md
 include python/taichi/assets/*
 recursive-include python/taichi/examples *.py
-include python/taichi/tests/*
-include python/taichi/tests38/*
-include python/taichi/tests/expected/*
 include python/taichi/lib/*.so
 include python/taichi/lib/*.pyd
 include python/taichi/lib/*.bc

@@ -29,11 +29,6 @@ Ndarray::Ndarray(Program *prog,
 #else
   TI_ERROR("Llvm disabled");
 #endif
-
-  // Taichi's own ndarray's ptr points to its |DeviceAllocation| on the
-  // specified device. Note that torch-based ndarray's ptr is a raw ptr but
-  // we'll get rid of it soon.
-  device_allocation_ptr_ = (uint64_t *)&ndarray_alloc_;
 }
 
 Ndarray::~Ndarray() {
@@ -47,7 +42,10 @@ intptr_t Ndarray::get_data_ptr_as_int() const {
 }
 
 intptr_t Ndarray::get_device_allocation_ptr_as_int() const {
-  return reinterpret_cast<intptr_t>(device_allocation_ptr_);
+  // taichi's own ndarray's ptr points to its |DeviceAllocation| on the
+  // specified device. Note that torch-based ndarray's ptr is a raw ptr but
+  // we'll get rid of it soon.
+  return reinterpret_cast<intptr_t>(&ndarray_alloc_);
 }
 
 std::size_t Ndarray::get_element_size() const {

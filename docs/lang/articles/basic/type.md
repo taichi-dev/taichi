@@ -166,6 +166,7 @@ ti.sqrt(x)
 ti.rsqrt(x)  # A fast version for `1 / ti.sqrt(x)`.
 ti.exp(x)
 ti.log(x)
+ti.round(x)
 ti.floor(x)
 ti.ceil(x)
 ```

@@ -27,6 +27,7 @@
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/program/sparse_matrix.h"
+#include "taichi/ir/mesh.h"
 
 namespace taichi {
 namespace lang {

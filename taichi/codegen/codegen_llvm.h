@@ -100,7 +100,11 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   std::vector<llvm::Type *> get_xlogue_argument_types();
 
+  std::vector<llvm::Type *> get_mesh_xlogue_argument_types();
+
   llvm::Type *get_xlogue_function_type();
+
+  llvm::Type *get_mesh_xlogue_function_type();
 
   llvm::Value *get_root(int snode_tree_id);
 
@@ -308,6 +312,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   virtual void create_offload_range_for(OffloadedStmt *stmt) = 0;
 
+  virtual void create_offload_mesh_for(OffloadedStmt *stmt) {
+    TI_NOT_IMPLEMENTED;
+  }
+
   void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false);
 
   void visit(LoopIndexStmt *stmt) override;
@@ -354,7 +362,11 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(ExternalFuncCallStmt *stmt) override;
 
+  void visit(MeshPatchIndexStmt *stmt) override;
+
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
+
+  llvm::Value *create_mesh_xlogue(std::unique_ptr<Block> &block);
 
   llvm::Value *extract_exponent_from_float(llvm::Value *f);
 

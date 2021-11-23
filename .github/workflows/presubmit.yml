@@ -21,24 +21,38 @@ jobs:
           echo "=============== list modified files ==============="
           git diff --name-only @^
 
-          echo "========== check paths of modified files =========="
-          git diff --name-only @^ > files.txt
-          while IFS= read -r file
-          do
-            echo $file
-            if [[ $file == docs/* ]]; then
-              echo "This modified file is not under the 'docs' folder."
-              echo "::set-output name=run_job::false"
+          chore_files=( LICENSE CONTRIBUTING.md README.md netlify.toml )
+          chore_dirs=( docs )
+          run_job=false
+
+          for file in $(git diff --name-only @^); do
+            is_chore=false
+
+            for chore_file in ${chore_files[*]}; do
+              [[ ${file} == ${chore_file} ]] && is_chore=true && break
+            done
+
+            for chore_dir in ${chore_dirs[*]}; do
+              [[ ${file} == ${chore_dir}/* ]] && is_chore=true && break
+            done
+
+            if ! ${is_chore}; then
+              run_job=true
               break
-            else
-              echo "::set-output name=run_job::true"
             fi
-          done < files.txt
+          done
+
+          if ${run_job}; then
+            echo "::set-output name=run_job::true"
+          else
+            echo "::set-output name=run_job::false"
+          fi
 
   check_code_format:
     name: Check Code Format
     runs-on: ubuntu-latest
     needs: check_files
+    if: needs.check_files.outputs.run_job == 'true'
     # This job will be required to pass before merging to master branch.
     steps:
       - uses: actions/checkout@v2
@@ -49,9 +63,6 @@ jobs:
 
       - name: Setup git & clang-format
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           git config user.email "taichigardener@gmail.com"
           git config user.name "Taichi Gardener"
           git checkout -b _fake_squash
@@ -67,16 +78,10 @@ jobs:
 
       - name: Install requirements
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           python3 -m pip install --user -r requirements_dev.txt
 
       - name: Check code format
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           python3 misc/code_format.py
           git checkout -b _enforced_format
           git commit -am "enforce code format" || true
@@ -84,58 +89,51 @@ jobs:
           git diff _fake_squash _enforced_format --exit-code
 
   check_static_analyzer:
-      name: Check Static Analyzer
-      runs-on: ubuntu-latest
-      needs: check_files
-      steps:
-        - uses: actions/checkout@v2
-          with:
-            submodules: "recursive"
+    name: Check Static Analyzer
+    runs-on: ubuntu-latest
+    needs: check_files
+    if: needs.check_files.outputs.run_job == 'true'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
 
-        - name: Set up Python ${{ matrix.python-version }}
-          uses: actions/setup-python@v2
-          with:
-            python-version: 3.8
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
 
-        - name: Pylint
-          run: |
-            if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-              exit 0
-            fi
-            python3 -m pip install --user pylint
-            # Make sure pylint doesn't regress
-            pylint python/taichi/ --disable=all --enable=$(python scripts/generate_pylint_tags.py)
-            if [ $? -eq 0 ]
-            then
-              echo "PASSED: pylint is happy"
-              exit 0
-            else
-              echo "FAILED: please run the pylint command above and make sure it passes"
-              exit 1
-            fi
+      - name: Pylint
+        run: |
+          python3 -m pip install --user pylint
+          # Make sure pylint doesn't regress
+          pylint python/taichi/ --disable=all --enable=$(python scripts/generate_pylint_tags.py)
+          if [ $? -eq 0 ]
+          then
+            echo "PASSED: pylint is happy"
+            exit 0
+          else
+            echo "FAILED: please run the pylint command above and make sure it passes"
+            exit 1
+          fi
 
-        - name: clang-tidy
-          run: |
-            if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-              exit 0
-            fi
-            # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
-            echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
-            if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-              exit 0
-            fi
-            docker run -id --user dev --name check_clang_tidy ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /bin/bash
-            tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - check_clang_tidy:/home/dev/
-            docker exec --user root check_clang_tidy apt install -y clang-tidy-10
-            docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
-          env:
-            CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-            CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=OFF
+      - name: clang-tidy
+        run: |
+          # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
+          echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
+          docker run -id --user dev --name check_clang_tidy ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /bin/bash
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - check_clang_tidy:/home/dev/
+          docker exec --user root check_clang_tidy apt install -y clang-tidy-10
+          docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
+        env:
+          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
+          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=OFF
 
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
     needs: [check_code_format, check_files]
+    if: needs.check_files.outputs.run_job == 'true'
     timeout-minutes: 60
     strategy:
       matrix:
@@ -159,9 +157,6 @@ jobs:
 
       - name: Get docker images
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
@@ -170,9 +165,6 @@ jobs:
 
       - name: Build
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           mkdir -m777 wheel
           docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
@@ -185,13 +177,11 @@ jobs:
 
       - name: Test
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
+          docker cp tests/ taichi_test:/home/dev/
           docker start -a taichi_test
         env:
           PY: ${{ matrix.python }}
@@ -201,6 +191,7 @@ jobs:
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
     needs: [check_code_format, check_files]
+    if: needs.check_files.outputs.run_job == 'true'
     timeout-minutes: 60
     strategy:
       matrix:
@@ -222,9 +213,6 @@ jobs:
 
       - name: Download Pre-Built LLVM 10.0.0
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           python misc/ci_download.py
         env:
           CI_PLATFORM: ${{ matrix.os }}
@@ -234,9 +222,10 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
+          export PATH=`pwd`/taichi-llvm/bin/:$PATH
           .github/workflows/scripts/unix_build.sh
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
           CXX: clang++
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
@@ -246,9 +235,6 @@ jobs:
 
       - name: Test
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           .github/workflows/scripts/unix_test.sh
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
@@ -258,6 +244,7 @@ jobs:
     name: Build and Test (GPU)
     needs: [check_code_format, check_files]
     runs-on: [self-hosted, cuda, vulkan, cn]
+    if: needs.check_files.outputs.run_job == 'true'
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v2
@@ -266,9 +253,6 @@ jobs:
 
       - name: Build & Install
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           mkdir -m777 wheel
           docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
@@ -282,12 +266,10 @@ jobs:
 
       - name: Test
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
+          docker cp tests/ taichi_test:/home/dev/
           docker start -a taichi_test
         env:
           PY: py38
@@ -298,14 +280,12 @@ jobs:
       - name: clean docker container
         if: always()
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           docker rm taichi_build taichi_test -f
 
   build_and_test_windows:
     name: Build and Test (Windows)
     needs: [check_code_format, check_files]
+    if: needs.check_files.outputs.run_job == 'true'
     runs-on: windows-latest
     timeout-minutes: 90
     steps:
@@ -323,25 +303,19 @@ jobs:
       - name: Build
         shell: powershell
         run: |
-          if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
-            exit 0
-          }
           .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
 
       - name: Test
         shell: powershell
         run: |
-          if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
-            exit 0
-          }
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
           . venv\Scripts\activate.ps1
           python -c "import taichi"
-          python examples/algorithm/laplace.py
+          ti example laplace
           ti diagnose
           ti changelog
           echo wanted arch: $env:TI_WANTED_ARCHS
-          ti test -vr2 -t2 -a "$env:TI_WANTED_ARCHS"
+          python tests/run_tests.py -vr2 -t2 -a "$env:TI_WANTED_ARCHS"
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
           TI_WANTED_ARCHS: "cpu"
@@ -349,6 +323,7 @@ jobs:
   build_and_test_m1:
     name: Build and Test (Apple M1)
     needs: [check_code_format, check_files]
+    if: needs.check_files.outputs.run_job == 'true'
     timeout-minutes: 60
     strategy:
       matrix:
@@ -367,26 +342,20 @@ jobs:
 
       - name: Build
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
           .github/workflows/scripts/unix_build.sh
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
           CXX: clang++
 
       - name: Test
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           export PATH=$PATH:$HOME/Library/Python/3.8/bin
           python3 -m pip install -r requirements_test.txt
-          python3 examples/algorithm/laplace.py
+          ti example laplace
           TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
           TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
           echo wanted archs: $TI_WANTED_ARCHS
-          ti test -vr2 -t4 -x
+          python3 tests/run_tests.py -vr2 -t4 -x
         env:
           TI_WANTED_ARCHS: "metal,cpu"

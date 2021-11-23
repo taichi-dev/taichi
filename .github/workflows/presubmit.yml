@@ -146,7 +146,7 @@ jobs:
             python: py39
             with_cc: ON
             wanted_archs: "cpu,cc"
-    runs-on: [self-hosted, cpu, aws]
+    runs-on: ${{ matrix.os }}
     permissions:
       packages: read
       contents: read
@@ -159,9 +159,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/sccache
-          key: sccache-linux-${{matrix.python}}-${{ github.sha }}
+          key: sccache-linux-${{matrix.with_cc}}-${{ github.sha }}
           restore-keys: |
-            sccache-linux-${{matrix.python}}-
+            sccache-linux-${{matrix.with_cc}}-
             sccache-linux-
 
       - name: Get docker images
@@ -228,6 +228,14 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/sccache
+          key: sccache-mac-${{ github.sha }}
+          restore-keys: |
+            sccache-mac-
+
       - name: Download Pre-Built LLVM 10.0.0
         run: |
           python misc/ci_download.py
@@ -242,8 +250,9 @@ jobs:
           export PATH=`pwd`/taichi-llvm/bin/:$PATH
           .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++
+          SCCACHE_DIR: $HOME/.cache/sccache
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
@@ -263,8 +272,6 @@ jobs:
     runs-on: [self-hosted, cuda, vulkan, cn]
     if: needs.check_files.outputs.run_job == 'true'
     timeout-minutes: 60
-    env:
-      TI_WANTED_ARCHS: "cpu,cc,cuda,vulkan,opengl"
     steps:
       - uses: actions/checkout@v2
         with:
@@ -291,12 +298,12 @@ jobs:
           PY: py38
           GPU_BUILD: ON
           PROJECT_NAME: taichi
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           DISPLAY: :1
 
       - name: Test
         run: |
-          docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST ${{env.TI_WANTED_ARCHS}}
+          docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
           docker cp tests/ taichi_test:/home/dev/
@@ -305,6 +312,7 @@ jobs:
           PY: py38
           GPU_TEST: ON
           DISPLAY: :1
+          TI_WANTED_ARCHS: "cpu,cuda,vulkan,opengl"
 
       - name: clean docker container
         if: always()

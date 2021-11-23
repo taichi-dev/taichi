@@ -91,6 +91,15 @@ struct CompileConfig {
   bool quant_opt_store_fusion{true};
   bool quant_opt_atomic_demotion{true};
 
+  // Mesh related.
+  // MeshTaichi options
+  bool make_mesh_block_local{true};
+  bool optimize_mesh_reordered_mapping{true};
+  bool mesh_localize_to_end_mapping{true};
+  bool mesh_localize_from_end_mapping{false};
+  bool mesh_localize_all_attr_mappings{false};
+  bool demote_no_access_mesh_fors{true};
+
   CompileConfig();
 };
 

@@ -94,6 +94,7 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
   TI_ASSERT(!task_a->tls_prologue && !task_a->bls_prologue &&
             !task_a->tls_epilogue && !task_a->tls_epilogue &&
             !task_b->tls_prologue && !task_b->bls_prologue &&
+            !task_a->mesh_prologue && !task_b->mesh_prologue &&
             !task_b->tls_epilogue && !task_b->tls_epilogue);
   // TODO: in certain cases this optimization can be wrong!
   // Fuse task b into task_a

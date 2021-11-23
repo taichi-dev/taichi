@@ -84,10 +84,10 @@ _test_features = {
 
 def expected_archs():
     """
-    Reads the environment variable `TI_WANTED_ARCHS` (usually set by option `-a` in `ti test`)
+    Reads the environment variable `TI_WANTED_ARCHS` (usually set by option `-a` in `python tests/run_tests.py`)
     and gets all expected archs on the machine.
     If `TI_WANTED_ARCHS` is set and does not start with `^`, archs specified in it will be returned.
-    If `TI_WANTED_ARCHS` starts with `^` (usually when option `-n` is specified in `ti test`),
+    If `TI_WANTED_ARCHS` starts with `^` (usually when option `-n` is specified in `python tests/run_tests.py`),
     all supported archs except archs specified in it will be returned.
     If `TI_WANTED_ARCHS` is not set, all supported archs will be returned.
     Returns:

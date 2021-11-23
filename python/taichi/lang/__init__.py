@@ -1,11 +1,17 @@
 import atexit
+import datetime
 import functools
+import json
 import os
+import platform
 import shutil
 import tempfile
 import time
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
+from socket import timeout
+from urllib import request
+from urllib.error import HTTPError
 
 import taichi.lang.linalg_impl
 import taichi.lang.meta
@@ -34,6 +40,7 @@ from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, MatrixField, Vector
+from taichi.lang.mesh import Mesh, MeshElementFieldProxy, TetMesh, TriMesh
 from taichi.lang.ndrange import GroupedNDRange, ndrange
 from taichi.lang.ops import *  # pylint: disable=W0622
 from taichi.lang.quant_impl import quant
@@ -429,6 +436,66 @@ def prepare_sandbox():
     return tmp_dir
 
 
+def check_version():
+    # Check Taichi version for the user.
+    print('Checking your Taichi version...')
+    major = _ti_core.get_version_major()
+    minor = _ti_core.get_version_minor()
+    patch = _ti_core.get_version_patch()
+    version = f'{major}.{minor}.{patch}'
+    payload = {'version': version, 'platform': '', 'python': ''}
+
+    system = platform.system()
+    if system == 'Linux':
+        payload['platform'] = 'manylinux1_x86_64'
+    elif system == 'Windows':
+        payload['platform'] = 'win_amd64'
+    elif system == 'Darwin':
+        if platform.release() < '19.0.0':
+            payload['platform'] = 'macosx_10_14_x86_64'
+        elif platform.machine() == 'x86_64':
+            payload['platform'] = 'macosx_10_15_x86_64'
+        else:
+            payload['platform'] = 'macosx_11_0_arm64'
+
+    python_version = platform.python_version()
+    if python_version.startswith('3.6'):
+        payload['python'] = 'cp36'
+    elif python_version.startswith('3.7'):
+        payload['python'] = 'cp37'
+    elif python_version.startswith('3.8'):
+        payload['python'] = 'cp38'
+    elif python_version.startswith('3.9'):
+        payload['python'] = 'cp39'
+
+    # We do not want request exceptions break users' usage of Taichi.
+    try:
+        payload = json.dumps(payload)
+        payload = payload.encode()
+        req = request.Request(
+            'http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
+            method='POST')
+        req.add_header('Content-Type', 'application/json')
+        with request.urlopen(req, data=payload, timeout=1.5) as response:
+            response = json.loads(response.read().decode('utf-8'))
+            if response['status'] == 1:
+                print(
+                    f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use\n'
+                    + f'pip install taichi=={response["latest_version"]}\n' +
+                    'to upgrade to the latest Taichi!')
+            elif response['status'] == 0:
+                # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
+                print(response['message'])
+            return True
+    except HTTPError as error:
+        print('Checking latest version failed: Server error.', error)
+        return False
+    except timeout:
+        print(
+            'Checking latest version failed: Time out when connecting server.')
+        return False
+
+
 def init(arch=None,
          default_fp=None,
          default_ip=None,
@@ -455,6 +522,26 @@ def init(arch=None,
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
             * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/lang/articles/advanced/layout.
     """
+    # Check version for users every 7 days.
+    os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
+    timestamp_path = os.path.join(_ti_core.get_repo_dir(), 'timestamp')
+    cur_date = datetime.date.today()
+    if os.path.exists(timestamp_path):
+        last_time = ''
+        with open(timestamp_path, 'r') as f:
+            last_time = f.readlines()[0].rstrip()
+        if cur_date.strftime('%Y-%m-%d') > last_time:
+            if check_version():
+                with open(timestamp_path, 'w') as f:
+                    f.write((cur_date +
+                             datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
+                    f.truncate()
+    else:
+        if check_version():
+            with open(timestamp_path, 'w') as f:
+                f.write((cur_date +
+                         datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
+
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
     # ti.reset() could override the args to their default values.
@@ -597,6 +684,13 @@ def block_local(*args):
                 _ti_core.SNodeAccessFlag.block_local, v.ptr)
 
 
+def mesh_local(*args):
+    for a in args:
+        for v in a.get_field_members():
+            _ti_core.insert_snode_access_flag(
+                _ti_core.SNodeAccessFlag.mesh_local, v.ptr)
+
+
 @deprecated('ti.cache_shared', 'ti.block_local')
 def cache_shared(*args):
     block_local(*args)
@@ -630,6 +724,7 @@ vectorize = _ti_core.vectorize
 bit_vectorize = _ti_core.bit_vectorize
 block_dim = _ti_core.block_dim
 global_thread_idx = _ti_core.insert_thread_idx_expr
+mesh_patch_idx = _ti_core.insert_patch_idx_expr
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
 transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)

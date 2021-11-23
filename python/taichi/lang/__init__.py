@@ -1,15 +1,15 @@
 import atexit
+import datetime
 import functools
 import os
-import datetime
 import platform
-import requests
 import shutil
 import tempfile
 import time
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 
+import requests
 import taichi.lang.linalg_impl
 import taichi.lang.meta
 from taichi.core.util import locale_encode
@@ -540,8 +540,8 @@ def init(arch=None,
     else:
         check_version()
         with open(timestamp_path, 'w') as f:
-            f.write((cur_date +
-                     datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
+            f.write(
+                (cur_date + datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,

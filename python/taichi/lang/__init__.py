@@ -475,7 +475,17 @@ def check_version():
         req = request.Request('http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
                               method='POST')
         req.add_header('Content-Type', 'application/json')
-        response = request.urlopen(req, data=payload, timeout=1.5)
+        with request.urlopen(req, data=payload, timeout=1.5) as response:
+            response = json.loads(response.read().decode('utf-8'))
+            if response['status'] == 1:
+                print(
+                    f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use\n'
+                    + f'pip install taichi=={response["latest_version"]}\n' +
+                    'to upgrade to the latest Taichi!')
+            elif response['status'] == 0:
+                # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
+                print(response['message'])
+            return True
     except HTTPError as error:
         print('Checking latest version failed: Server error.', error)
         return False
@@ -483,18 +493,6 @@ def check_version():
         print(
             'Checking latest version failed: Time out when connecting server.')
         return False
-
-    response = json.loads(response.read().decode('utf-8'))
-    if response['status'] == 1:
-        print(
-            f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use\n'
-            + f'pip install taichi=={response["latest_version"]}\n' +
-            'to upgrade to the latest Taichi!')
-    elif response['status'] == 0:
-        # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
-        print(response['message'])
-
-    return True
 
 
 def init(arch=None,

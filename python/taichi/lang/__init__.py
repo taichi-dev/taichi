@@ -472,17 +472,17 @@ def check_version():
             json=payload,
             timeout=1.5)
         response.raise_for_status()
-    except requests.exceptions.ConnectionError as err:
+    except requests.exceptions.ConnectionError:
         print('Checking latest version failed: No internet.')
         return
-    except requests.exceptions.HTTPError as err:
+    except requests.exceptions.HTTPError:
         print('Checking latest version failed: Server error.')
         return
-    except requests.exceptions.Timeout as err:
+    except requests.exceptions.Timeout:
         print(
             'Checking latest version failed: Time out when connecting server.')
         return
-    except requests.exceptions.RequestException as err:
+    except requests.exceptions.RequestException:
         print('Checking latest version failed.')
         return
 

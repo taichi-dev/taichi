@@ -1,8 +1,6 @@
 import argparse
-import datetime
 import math
 import os
-import platform
 import runpy
 import shutil
 import subprocess
@@ -13,7 +11,6 @@ from functools import wraps
 from pathlib import Path
 
 import numpy as np
-import requests
 import taichi.cc_compose
 import taichi.diagnose
 from colorama import Fore
@@ -70,26 +67,6 @@ class TaichiMain:
 
         self.main_parser = parser
 
-        # Check timestamp
-        os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
-        timestamp_path = os.path.join(_ti_core.get_repo_dir(), 'timestamp')
-        cur_date = datetime.date.today()
-        if os.path.exists(timestamp_path):
-            last_time = ''
-            with open(timestamp_path, 'r') as f:
-                last_time = f.readlines()[0].rstrip()
-            if cur_date.strftime('%Y-%m-%d') > last_time:
-                with open(timestamp_path, 'w') as f:
-                    f.write((cur_date +
-                             datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
-                    f.truncate()
-                self._check_version()
-        else:
-            with open(timestamp_path, 'w') as f:
-                f.write((cur_date +
-                         datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
-            self._check_version()
-
     @timer
     def __call__(self):
         # Print help if no command provided
@@ -110,71 +87,6 @@ class TaichiMain:
             return 1
 
         return getattr(self, args.command)(sys.argv[2:])
-
-    @staticmethod
-    def _check_version():
-        # Check Taichi version for the user.
-        print('Checking your Taichi version...')
-        major = _ti_core.get_version_major()
-        minor = _ti_core.get_version_minor()
-        patch = _ti_core.get_version_patch()
-        version = f'{major}.{minor}.{patch}'
-        payload = {'version': version, 'platform': '', 'python': ''}
-
-        system = platform.system()
-        if system == 'Linux':
-            payload['platform'] = 'manylinux1_x86_64'
-        elif system == 'Windows':
-            payload['platform'] = 'win_amd64'
-        elif system == 'Darwin':
-            if platform.release() < '19.0.0':
-                payload['platform'] = 'macosx_10_14_x86_64'
-            elif platform.machine() == 'x86_64':
-                payload['platform'] = 'macosx_10_15_x86_64'
-            else:
-                payload['platform'] = 'macosx_11_0_arm64'
-
-        python_version = platform.python_version()
-        if python_version.startswith('3.6'):
-            payload['python'] = 'cp36'
-        elif python_version.startswith('3.7'):
-            payload['python'] = 'cp37'
-        elif python_version.startswith('3.8'):
-            payload['python'] = 'cp38'
-        elif python_version.startswith('3.9'):
-            payload['python'] = 'cp39'
-
-        # We do not want request exceptions break users' usage of Taichi.
-        try:
-            response = requests.post(
-                'http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
-                json=payload,
-                timeout=3)
-            response.raise_for_status()
-        except requests.exceptions.ConnectionError as err:
-            print('Checking latest version failed: No internet,', err)
-            return
-        except requests.exceptions.HTTPError as err:
-            print('Checking latest version failed: Server error,', err)
-            return
-        except requests.exceptions.Timeout as err:
-            print(
-                'Checking latest version failed: Time out when connecting server,',
-                err)
-            return
-        except requests.exceptions.RequestException as err:
-            print('Checking latest version failed:', err)
-            return
-
-        response = response.json()
-        if response['status'] == 1:
-            print(
-                f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use\n'
-                + f'pip install taichi=={response["latest_version"]}\n' +
-                'to upgrade to the latest Taichi!')
-        elif response['status'] == 0:
-            # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
-            print(response['message'])
 
     @staticmethod
     def _get_friend_links():

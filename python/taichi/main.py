@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import math
 import os
 import platform
@@ -69,7 +70,25 @@ class TaichiMain:
 
         self.main_parser = parser
 
-        self._check_version()
+        # Check timestamp
+        os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
+        timestamp_path = os.path.join(_ti_core.get_repo_dir(), 'timestamp')
+        cur_date = datetime.date.today()
+        if os.path.exists(timestamp_path):
+            last_time = ''
+            with open(timestamp_path, 'r') as f:
+                last_time = f.readlines()[0].rstrip()
+            if cur_date.strftime('%Y-%m-%d') > last_time:
+                with open(timestamp_path, 'w') as f:
+                    f.write((cur_date +
+                             datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
+                    f.truncate()
+                self._check_version()
+        else:
+            with open(timestamp_path, 'w') as f:
+                f.write((cur_date +
+                         datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
+            self._check_version()
 
     @timer
     def __call__(self):

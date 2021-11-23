@@ -146,7 +146,7 @@ jobs:
             python: py39
             with_cc: ON
             wanted_archs: "cpu,cc"
-    runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, cpu, aws]
     permissions:
       packages: read
       contents: read

@@ -243,10 +243,10 @@ jobs:
       - name: Test
         run: |
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
-          ti example laplace
-          ti diagnose
-          python tests/run_tests.py -vr2 -t2 -a cpu
+          .github/workflows/scripts/unix_test.sh
         env:
+          RUN_CPP_TESTS: ON
+          TI_WANTED_ARCHS: "cpu"
           PYTHON: ${{ matrix.python }}
 
       - name: Upload PyPI

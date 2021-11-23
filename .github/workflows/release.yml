@@ -152,9 +152,10 @@ jobs:
 
       - name: Test
         run: |
-          ti example laplace
-          ti diagnose
-          python tests/run_tests.py -vr2 -t2 -a cpu,metal
+          .github/workflows/scripts/unix_test.sh
+        env:
+          RUN_CPP_TESTS: ON
+          TI_WANTED_ARCHS: "cpu"
 
       - name: Upload PyPI
         env:
@@ -305,4 +306,5 @@ jobs:
         env:
           PROJECT_NAME: ${{ matrix.name }}
         run: |
+          python -m pip install twine
           venv\Scripts\python misc/upload_release.py

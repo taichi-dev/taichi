@@ -40,8 +40,8 @@ def upload_artifact(is_taichi):
     twine_password = os.getenv(pwd_env)
     if not twine_password:
         sys.exit(f'Missing password env var {pwd_env}')
-    command = ["python", "-m", "twine", "upload"]
-    if is_taichi:
+    command = ["python3", "-m", "twine", "upload"]
+    if not is_taichi:
         command.extend(['--repository', 'testpypi'])
     command.extend(
         ['--verbose', '-u', '__token__', '-p', twine_password, 'dist/*'])

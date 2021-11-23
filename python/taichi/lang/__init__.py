@@ -6,10 +6,13 @@ import platform
 import shutil
 import tempfile
 import time
+import json
+from urllib import request
+from urllib.error import HTTPError
+from socket import timeout
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 
-import requests
 import taichi.lang.linalg_impl
 import taichi.lang.meta
 from taichi.core.util import locale_encode
@@ -467,26 +470,21 @@ def check_version():
 
     # We do not want request exceptions break users' usage of Taichi.
     try:
-        response = requests.post(
-            'http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
-            json=payload,
-            timeout=1.5)
-        response.raise_for_status()
-    except requests.exceptions.ConnectionError:
-        print('Checking latest version failed: No internet.')
-        return
-    except requests.exceptions.HTTPError:
-        print('Checking latest version failed: Server error.')
-        return
-    except requests.exceptions.Timeout:
+        payload = json.dumps(payload)
+        payload = payload.encode()
+        req = request.Request('http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
+                              method='POST')
+        req.add_header('Content-Type', 'application/json')
+        response = request.urlopen(req, data=payload, timeout=1.5)
+    except HTTPError as error:
+        print('Checking latest version failed: Server error.', error)
+        return False
+    except timeout:
         print(
             'Checking latest version failed: Time out when connecting server.')
-        return
-    except requests.exceptions.RequestException:
-        print('Checking latest version failed.')
-        return
+        return False
 
-    response = response.json()
+    response = json.loads(response.read().decode('utf-8'))
     if response['status'] == 1:
         print(
             f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use\n'
@@ -495,6 +493,8 @@ def check_version():
     elif response['status'] == 0:
         # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
         print(response['message'])
+
+    return True
 
 
 def init(arch=None,
@@ -532,16 +532,16 @@ def init(arch=None,
         with open(timestamp_path, 'r') as f:
             last_time = f.readlines()[0].rstrip()
         if cur_date.strftime('%Y-%m-%d') > last_time:
-            check_version()
-            with open(timestamp_path, 'w') as f:
-                f.write((cur_date +
-                         datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
-                f.truncate()
+            if check_version():
+                with open(timestamp_path, 'w') as f:
+                    f.write((cur_date +
+                             datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
+                    f.truncate()
     else:
-        check_version()
-        with open(timestamp_path, 'w') as f:
-            f.write(
-                (cur_date + datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
+        if check_version():
+            with open(timestamp_path, 'w') as f:
+                f.write(
+                    (cur_date + datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,

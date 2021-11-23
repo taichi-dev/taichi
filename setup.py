@@ -72,9 +72,6 @@ def get_os_name():
 
 def remove_tmp(taichi_dir):
     shutil.rmtree(os.path.join(taichi_dir, 'assets'), ignore_errors=True)
-    shutil.rmtree(os.path.join(taichi_dir, 'examples'), ignore_errors=True)
-    shutil.rmtree(os.path.join(taichi_dir, 'tests'), ignore_errors=True)
-    shutil.rmtree(os.path.join(taichi_dir, 'tests38'), ignore_errors=True)
 
 
 class CMakeExtension(Extension):
@@ -87,9 +84,6 @@ class EggInfo(egg_info):
         taichi_dir = os.path.join(package_dir, 'taichi')
         remove_tmp(taichi_dir)
 
-        shutil.copytree('tests/python', os.path.join(taichi_dir, 'tests'))
-        shutil.copytree('tests/python38', os.path.join(taichi_dir, 'tests38'))
-        shutil.copytree('examples', os.path.join(taichi_dir, 'examples'))
         shutil.copytree('external/assets', os.path.join(taichi_dir, 'assets'))
 
         egg_info.run(self)
@@ -184,6 +178,11 @@ class CMakeBuild(build_ext):
                 shutil.copy(
                     os.path.join(self.build_temp, 'libtaichi_core.dylib'),
                     os.path.join(target, 'taichi_core.so'))
+                moltenvk_path = os.path.join(self.build_temp,
+                                             'libMoltenVK.dylib')
+                if os.path.exists(moltenvk_path):
+                    shutil.copy(moltenvk_path,
+                                os.path.join(target, 'libMoltenVK.dylib'))
             else:
                 shutil.copy('runtimes/Release/taichi_core.dll',
                             os.path.join(target, 'taichi_core.pyd'))
@@ -209,9 +208,7 @@ class Clean(clean):
         if os.path.exists(self.build_temp):
             remove_tree(self.build_temp, dry_run=self.dry_run)
         generated_folders = ('bin', 'dist', 'python/taichi/assets',
-                             'python/taichi/lib', 'python/taichi/examples',
-                             'python/taichi/tests', 'python/taichi/tests38',
-                             'python/taichi.egg-info')
+                             'python/taichi/lib', 'python/taichi.egg-info')
         for d in generated_folders:
             if os.path.exists(d):
                 remove_tree(d, dry_run=self.dry_run)

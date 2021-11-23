@@ -603,6 +603,27 @@ def test_arg_not_match():
     _test_arg_not_match()
 
 
+def _test_size_in_bytes():
+    a = ti.ndarray(ti.i32, 8)
+    assert a.get_element_size() == 4
+    assert a.get_nelement() == 8
+
+    b = ti.Vector.ndarray(10, ti.f64, 5)
+    assert b.get_element_size() == 8
+    assert b.get_nelement() == 50
+
+
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
+@ti.test(arch=[ti.cpu, ti.cuda])
+def test_size_in_bytes_torch():
+    _test_size_in_bytes()
+
+
+@ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=False)
+def test_size_in_bytes():
+    _test_size_in_bytes()
+
+
 @ti.test(arch=ti.opengl, ndarray_use_torch=True)
 def test_torch_based_ndarray_opengl():
     x = ti.ndarray(ti.f32, shape=(4, 2))

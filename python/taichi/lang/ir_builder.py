@@ -701,11 +701,40 @@ class IRBuilder(Builder):
                     var = ti.Expr(ti.core.make_id_expr(""))
                     _vars.append(var)
                     ctx.create_variable(name, var)
-                loop_var = build_stmt(ctx, node.iter).ptr
+                loop_var = node.iter.ptr
                 expr_group = ti.lang.expr.make_expr_group(*_vars)
                 ti.begin_frontend_struct_for(expr_group, loop_var)
                 node.body = build_stmts(ctx, node.body)
                 ti.core.end_frontend_range_for()
+        return node
+
+    @staticmethod
+    def build_mesh_for(ctx, node):
+        targets = IRBuilder.get_for_loop_targets(node)
+        if len(targets) != 1:
+            raise TaichiSyntaxError(
+                "Mesh for should have 1 loop target, found {len(targets)}")
+        target = targets[0]
+
+        with ctx.variable_scope_guard():
+            element_dict = {
+                'verts': ti.core.MeshElementType.Vertex,
+                'edges': ti.core.MeshElementType.Edge,
+                'faces': ti.core.MeshElementType.Face,
+                'cells': ti.core.MeshElementType.Cell
+            }
+            var = ti.Expr(ti.core.make_id_expr(""))
+            ctx.mesh = node.iter.value.ptr
+            assert isinstance(ctx.mesh, impl.MeshInstance)
+            mesh_idx = ti.MeshElementFieldProxy(ctx.mesh,
+                                                element_dict[node.iter.attr],
+                                                var.ptr)
+            ctx.create_variable(target, mesh_idx)
+            ti.core.begin_frontend_mesh_for(mesh_idx.ptr, ctx.mesh.mesh_ptr,
+                                            element_dict[node.iter.attr])
+            node.body = build_stmts(ctx, node.body)
+            ctx.mesh = None
+            ti.core.end_frontend_range_for()
         return node
 
     @staticmethod
@@ -748,7 +777,16 @@ class IRBuilder(Builder):
             elif isinstance(node.iter, ast.Call) and isinstance(
                     node.iter.func, ast.Name) and node.iter.func.id == 'range':
                 return IRBuilder.build_range_for(ctx, node)
+            elif isinstance(node.iter, ast.Attribute) and isinstance(
+                    build_stmt(ctx, node.iter).value.ptr, impl.MeshInstance):
+                if not ti.is_extension_supported(ti.cfg.arch,
+                                                 ti.extension.mesh):
+                    raise Exception('Backend ' + str(ti.cfg.arch) +
+                                    ' doesn\'t support MeshTaichi extension')
+                return IRBuilder.build_mesh_for(ctx, node)
             else:  # Struct for
+                if not isinstance(node.iter, ast.Attribute):
+                    build_stmt(ctx, node.iter)
                 return IRBuilder.build_struct_for(ctx, node, is_grouped=False)
 
     @staticmethod

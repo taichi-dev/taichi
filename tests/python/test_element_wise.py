@@ -242,11 +242,11 @@ def test_writeback_binary_i(rhs_is_mat):
     assert allclose(x[11], np.maximum(y, z))
 
 
-@ti.test(exclude=[ti.vulkan])
+@ti.test()
 def test_unary():
     xi = ti.Matrix.field(3, 2, ti.i32, 4)
     yi = ti.Matrix.field(3, 2, ti.i32, ())
-    xf = ti.Matrix.field(3, 2, ti.f32, 14)
+    xf = ti.Matrix.field(3, 2, ti.f32, 15)
     yf = ti.Matrix.field(3, 2, ti.f32, ())
 
     yi.from_numpy(np.array([[3, 2], [9, 0], [7, 4]], np.int32))
@@ -272,6 +272,7 @@ def test_unary():
         xf[11] = ti.exp(yf[None])
         xf[12] = ti.log(yf[None])
         xf[13] = ti.rsqrt(yf[None])
+        xf[14] = ti.round(yf[None])
 
     func()
     xi = xi.to_numpy()
@@ -295,6 +296,7 @@ def test_unary():
     assert allclose(xf[11], np.exp(yf), rel=1e-5)
     assert allclose(xf[12], np.log(yf), rel=1e-5)
     assert allclose(xf[13], 1 / np.sqrt(yf), rel=1e-5)
+    assert allclose(xf[14], np.round(yf), rel=1e-5)
 
 
 @pytest.mark.parametrize('is_mat', [(True, True, True), (True, False, False),

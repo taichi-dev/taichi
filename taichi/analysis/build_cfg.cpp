@@ -312,6 +312,14 @@ class CFGBuilder : public IRVisitor {
     in_parallel_for = old_in_parallel_for;
   }
 
+  void visit(MeshForStmt *stmt) override {
+    auto old_in_parallel_for = in_parallel_for;
+    if (!current_offload)
+      in_parallel_for = true;
+    visit_loop(stmt->body.get(), new_node(-1), false);
+    in_parallel_for = old_in_parallel_for;
+  }
+
   /**
    * Structure:
    *
@@ -319,6 +327,9 @@ class CFGBuilder : public IRVisitor {
    *   ...
    * } -> node_tls_prologue;
    * node_tls_prologue {
+   *   ...
+   * } -> node_mesh_prologue;
+   * node_mesh_prologue:
    *   ...
    * } -> node_bls_prologue;
    * node_bls_prologue {
@@ -349,6 +360,16 @@ class CFGBuilder : public IRVisitor {
       begin_location = offload_stmt_id + 1;
       CFGNode::add_edge(before_offload, graph->nodes[block_begin_index].get());
     }
+    if (stmt->mesh_prologue) {
+      auto before_offload = new_node(-1);
+      int offload_stmt_id = current_stmt_id;
+      auto block_begin_index = graph->size();
+      stmt->mesh_prologue->accept(this);
+      prev_nodes.push_back(graph->back());
+      // Container statements don't belong to any CFGNodes.
+      begin_location = offload_stmt_id + 1;
+      CFGNode::add_edge(before_offload, graph->nodes[block_begin_index].get());
+    }
     if (stmt->bls_prologue) {
       auto before_offload = new_node(-1);
       int offload_stmt_id = current_stmt_id;
@@ -364,7 +385,8 @@ class CFGBuilder : public IRVisitor {
       int offload_stmt_id = current_stmt_id;
       auto block_begin_index = graph->size();
       if (stmt->task_type == OffloadedStmt::TaskType::range_for ||
-          stmt->task_type == OffloadedStmt::TaskType::struct_for) {
+          stmt->task_type == OffloadedStmt::TaskType::struct_for ||
+          stmt->task_type == OffloadedStmt::TaskType::mesh_for) {
         in_parallel_for = true;
       }
       stmt->body->accept(this);

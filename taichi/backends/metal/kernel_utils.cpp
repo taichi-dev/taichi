@@ -120,12 +120,17 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     // Put scalar args in the memory first
     for (int i : scalar_indices) {
       auto &attribs = (*vec)[i];
+      const size_t dt_bytes = metal_data_type_bytes(attribs.dt);
+      // Align bytes to the nearest multiple of dt_bytes
+      bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;
     }
     // Then the array args
     for (int i : array_indices) {
       auto &attribs = (*vec)[i];
+      const size_t dt_bytes = metal_data_type_bytes(attribs.dt);
+      bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;
     }

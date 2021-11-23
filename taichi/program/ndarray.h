@@ -38,13 +38,14 @@ class Ndarray {
   // Invariant:
   //   data_ptr_ is not nullptr iff arch is a llvm backend
   uint64_t *data_ptr_{nullptr};
-  uint64_t *device_allocation_ptr_{nullptr};
   std::size_t nelement_{1};
   std::size_t element_size_{1};
   // Ndarrays manage their own |DeviceAllocation| so this must be shared with
   // |OpenGlRuntime|. Without the ownership, when the program exits |device_|
-  // mighted be destructed earlier than Ndarray object, leaving a segfault when
+  // might be destructed earlier than Ndarray object, leaving a segfault when
   // you try to deallocate in Ndarray destructor.
+  // Note that we might consider changing this logic later if we implement
+  // dynamic tensor rematerialization.
   std::shared_ptr<Device> device_;
 };
 

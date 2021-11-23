@@ -76,7 +76,8 @@ class IRVerifier : public BasicStmtVisitor {
     auto backup_block = current_block;
     current_block = block;
     auto backup_container_stmt = current_container_stmt;
-    visible_stmts.emplace_back();
+    if (!block->parent_stmt || !block->parent_stmt->is<OffloadedStmt>())
+      visible_stmts.emplace_back();
     for (auto &stmt : block->statements) {
       if (stmt->is_container_statement())
         current_container_stmt = stmt.get();
@@ -85,7 +86,8 @@ class IRVerifier : public BasicStmtVisitor {
         current_container_stmt = backup_container_stmt;
     }
     current_block = backup_block;
-    visible_stmts.pop_back();
+    if (!block->parent_stmt || !block->parent_stmt->is<OffloadedStmt>())
+      visible_stmts.pop_back();
   }
 
   void visit(OffloadedStmt *stmt) override {
@@ -123,9 +125,12 @@ class IRVerifier : public BasicStmtVisitor {
       TI_ASSERT(stmt->loop->as<OffloadedStmt>()->task_type ==
                     OffloadedStmt::TaskType::struct_for ||
                 stmt->loop->as<OffloadedStmt>()->task_type ==
+                    OffloadedStmt::TaskType::mesh_for ||
+                stmt->loop->as<OffloadedStmt>()->task_type ==
                     OffloadedStmt::TaskType::range_for);
     } else {
       TI_ASSERT(stmt->loop->is<StructForStmt>() ||
+                stmt->loop->is<MeshForStmt>() ||
                 stmt->loop->is<RangeForStmt>());
     }
   }

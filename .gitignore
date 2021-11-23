@@ -80,6 +80,7 @@ _build
 *.yml
 *.dot
 *.json
+!tests/**/*.json
 !docs/**/*.json
 imgui.ini
 /venv/

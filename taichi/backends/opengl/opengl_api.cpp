@@ -420,13 +420,13 @@ void DeviceCompiledProgram::launch(RuntimeContext &ctx,
     //       On most devices this number is 8. But I need to look up how
     //       to query this information so currently this is thrown from OpenGl.
     for (const auto [arg_id, bind_id] : program_.used.arr_arg_to_bind_idx) {
-      if (!ctx.is_device_allocation[arg_id]) {
-        binder->buffer(0, bind_id, arr_bufs_[arg_id]);
-      } else {
+      if (ctx.is_device_allocation[arg_id]) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>((void *)ctx.args[arg_id]);
 
         binder->buffer(0, bind_id, *ptr);
+      } else {
+        binder->buffer(0, bind_id, arr_bufs_[arg_id]);
       }
     }
 

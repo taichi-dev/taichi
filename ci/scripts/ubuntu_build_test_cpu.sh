@@ -29,5 +29,5 @@ export TI_IN_DOCKER=true
 
 # Run tests
 ti diagnose
-ti test -vr2 -t2 -k "not ndarray and not torch"
-ti test -vr2 -t1 -k "ndarray or torch"
+python tests/run_tests.py -vr2 -t2 -k "not ndarray and not torch"
+python tests/run_tests.py -vr2 -t1 -k "ndarray or torch"

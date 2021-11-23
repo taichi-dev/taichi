@@ -155,55 +155,55 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/sccache
+          key: sccache-linux-${{matrix.python}}-${{ github.sha }}
+          restore-keys: |
+            sccache-linux-${{matrix.python}}-
+            sccache-linux-
+
+      - name: Get docker images
+        run: |
+          # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
+          echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
+        env:
+          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        run: |
+          mkdir -m777 wheel
+          mkdir -p ~/.cache/sccache
+          chmod 777 ~/.cache/sccache
+          docker create -v `pwd`/wheel:/wheel -v $HOME/.cache/sccache:/cache --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
+          docker start -a taichi_build
+          chmod -R 777 ~/.cache/sccache
+        env:
+          PY: ${{ matrix.python }}
+          GPU_BUILD: OFF
+          PROJECT_NAME: taichi
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+      - name: Test
+        run: |
+          docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
+          docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
+          docker cp wheel/*.whl taichi_test:/home/dev/
+          docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
+          docker cp tests/ taichi_test:/home/dev/
+          docker start -a taichi_test
+        env:
+          PY: ${{ matrix.python }}
+          GPU_TEST: OFF
+          TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
+
       - name: clean docker container
         if: always()
         run: |
           docker rm taichi_build taichi_test -f
-#
-#      - name: Get sccache cache
-#        uses: actions/cache@v2
-#        with:
-#          path: ~/.cache/sccache
-#          key: sccache-linux-${{matrix.python}}-${{ github.sha }}
-#          restore-keys: |
-#            sccache-linux-${{matrix.python}}-
-#            sccache-linux-
-#
-#      - name: Get docker images
-#        run: |
-#          # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
-#          echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-#          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
-#        env:
-#          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-#
-#      - name: Build
-#        run: |
-#          mkdir -m777 wheel
-#          mkdir -p ~/.cache/sccache
-#          chmod 777 ~/.cache/sccache
-#          docker create -v `pwd`/wheel:/wheel -v $HOME/.cache/sccache:/cache --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
-#          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
-#          docker start -a taichi_build
-#          chmod -R 777 ~/.cache/sccache
-#        env:
-#          PY: ${{ matrix.python }}
-#          GPU_BUILD: OFF
-#          PROJECT_NAME: taichi
-#          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-#
-#      - name: Test
-#        run: |
-#          docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
-#          docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
-#          docker cp wheel/*.whl taichi_test:/home/dev/
-#          docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
-#          docker cp tests/ taichi_test:/home/dev/
-#          docker start -a taichi_test
-#        env:
-#          PY: ${{ matrix.python }}
-#          GPU_TEST: OFF
-#          TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)

@@ -345,13 +345,6 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     TI_ASSERT(current_offloaded);
   }
 
-  void visit(RangeForStmt *stmt) override {
-    test_and_allocate(stmt->begin);
-    test_and_allocate(stmt->end);
-    if (stmt->body)
-      stmt->body->accept(this);
-  }
-
   void test_and_allocate(Stmt *stmt) {
     if (stmt == nullptr)
       return;
@@ -371,12 +364,20 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     }
   }
 
-  void visit(Stmt *stmt) override {
+  void generic_visit(Stmt *stmt) {
     int n_op = stmt->num_operands();
     for (int i = 0; i < n_op; i++) {
       auto op = stmt->operand(i);
       test_and_allocate(op);
     }
+  }
+
+  void preprocess_container_stmt(Stmt *stmt) override {
+    generic_visit(stmt);
+  }
+
+  void visit(Stmt *stmt) override {
+    generic_visit(stmt);
   }
 
   static StmtToOffsetMap run(

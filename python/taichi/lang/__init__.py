@@ -1,6 +1,9 @@
 import atexit
 import functools
 import os
+import datetime
+import platform
+import requests
 import shutil
 import tempfile
 import time
@@ -430,6 +433,70 @@ def prepare_sandbox():
     return tmp_dir
 
 
+def check_version():
+    # Check Taichi version for the user.
+    print('Checking your Taichi version...')
+    major = _ti_core.get_version_major()
+    minor = _ti_core.get_version_minor()
+    patch = _ti_core.get_version_patch()
+    version = f'{major}.{minor}.{patch}'
+    payload = {'version': version, 'platform': '', 'python': ''}
+
+    system = platform.system()
+    if system == 'Linux':
+        payload['platform'] = 'manylinux1_x86_64'
+    elif system == 'Windows':
+        payload['platform'] = 'win_amd64'
+    elif system == 'Darwin':
+        if platform.release() < '19.0.0':
+            payload['platform'] = 'macosx_10_14_x86_64'
+        elif platform.machine() == 'x86_64':
+            payload['platform'] = 'macosx_10_15_x86_64'
+        else:
+            payload['platform'] = 'macosx_11_0_arm64'
+
+    python_version = platform.python_version()
+    if python_version.startswith('3.6'):
+        payload['python'] = 'cp36'
+    elif python_version.startswith('3.7'):
+        payload['python'] = 'cp37'
+    elif python_version.startswith('3.8'):
+        payload['python'] = 'cp38'
+    elif python_version.startswith('3.9'):
+        payload['python'] = 'cp39'
+
+    # We do not want request exceptions break users' usage of Taichi.
+    try:
+        response = requests.post(
+            'http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
+            json=payload,
+            timeout=1.5)
+        response.raise_for_status()
+    except requests.exceptions.ConnectionError as err:
+        print('Checking latest version failed: No internet.')
+        return
+    except requests.exceptions.HTTPError as err:
+        print('Checking latest version failed: Server error.')
+        return
+    except requests.exceptions.Timeout as err:
+        print(
+            'Checking latest version failed: Time out when connecting server.')
+        return
+    except requests.exceptions.RequestException as err:
+        print('Checking latest version failed.')
+        return
+
+    response = response.json()
+    if response['status'] == 1:
+        print(
+            f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use\n'
+            + f'pip install taichi=={response["latest_version"]}\n' +
+            'to upgrade to the latest Taichi!')
+    elif response['status'] == 0:
+        # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
+        print(response['message'])
+
+
 def init(arch=None,
          default_fp=None,
          default_ip=None,
@@ -456,6 +523,26 @@ def init(arch=None,
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
             * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/lang/articles/advanced/layout.
     """
+    # Check version for users every 7 days.
+    os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
+    timestamp_path = os.path.join(_ti_core.get_repo_dir(), 'timestamp')
+    cur_date = datetime.date.today()
+    if os.path.exists(timestamp_path):
+        last_time = ''
+        with open(timestamp_path, 'r') as f:
+            last_time = f.readlines()[0].rstrip()
+        if cur_date.strftime('%Y-%m-%d') > last_time:
+            check_version()
+            with open(timestamp_path, 'w') as f:
+                f.write((cur_date +
+                         datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
+                f.truncate()
+    else:
+        check_version()
+        with open(timestamp_path, 'w') as f:
+            f.write((cur_date +
+                     datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
+
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
     # ti.reset() could override the args to their default values.

@@ -18,6 +18,7 @@ tar -xzf sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
 chmod +x sccache-v0.2.15-x86_64-unknown-linux-musl/sccache
 export PATH=$(pwd)/sccache-v0.2.15-x86_64-unknown-linux-musl:$PATH
 sccache --start-server
+sccache -s
 cd taichi
 git fetch origin master
 

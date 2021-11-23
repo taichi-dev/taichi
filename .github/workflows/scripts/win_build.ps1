@@ -72,6 +72,10 @@ if ($install) {
     }
     WriteInfo("Build and install finished")
 } else {
-    python setup.py bdist_wheel
+    if ($env:PROJECT_NAME -eq "taichi-nightly") {
+        python setup.py egg_info --tag-date bdist_wheel
+    } else {
+        python setup.py bdist_wheel
+    }
     WriteInfo("Build finished")
 }

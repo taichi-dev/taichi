@@ -144,6 +144,7 @@ class DemoteAtomicBitStructStores : public BasicStmtVisitor {
     if (current_offloaded->task_type == OffloadedTaskType::serial) {
       demote = true;
     } else if (current_offloaded->task_type == OffloadedTaskType::range_for ||
+               current_offloaded->task_type == OffloadedTaskType::mesh_for ||
                current_offloaded->task_type == OffloadedTaskType::struct_for) {
       auto *snode = stmt->get_bit_struct_snode();
       // Find the nearest non-bit-level ancestor
@@ -165,6 +166,7 @@ class DemoteAtomicBitStructStores : public BasicStmtVisitor {
   void visit(OffloadedStmt *stmt) override {
     current_offloaded = stmt;
     if (stmt->task_type == OffloadedTaskType::range_for ||
+        stmt->task_type == OffloadedTaskType::mesh_for ||
         stmt->task_type == OffloadedTaskType::struct_for) {
       current_iterator_ =
           uniquely_accessed_bit_structs_.find(current_offloaded);

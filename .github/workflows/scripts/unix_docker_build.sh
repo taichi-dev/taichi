@@ -14,19 +14,29 @@ conda activate $PY
 python3 -m pip uninstall taichi taichi-nightly -y
 
 cd taichi
+git fetch origin master
 
 if [[ $GPU_BUILD == "OFF" ]]
-then 
+then
     python3 -m pip install -r requirements_dev.txt
 fi
 
-cd python
-# This is for changelog
-git fetch origin master
-TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS python3 build.py build --project_name $PROJECT_NAME
+PROJECT_TAGS=""
+EXTRA_ARGS=""
+if [ $PROJECT_NAME -eq "taichi-nightly" ]; then
+    PROJECT_TAGS="egg_info --tag-date"
+fi
+
+if [[ $OSTYPE == "linux-"* ]]; then
+    EXTRA_ARGS="-p manylinux1_x86_64"
+fi
+
+python3 misc/make_changelog.py origin/master ./ True
+TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS PROJECT_NAME=$PROJECT_NAME python3 setup.py $PROJECT_TAGS bdist_wheel $EXTRA_ARGS
 # Run basic cpp tests
-cd ..
+
 CUR_DIR=`pwd`
 TI_LIB_DIR=$CUR_DIR/python/taichi/lib ./build/taichi_cpp_tests
 
 cp dist/*.whl /wheel/
+rm -f python/CHANGELOG.md

@@ -184,5 +184,5 @@ print(f">>>> Computation was successful?: {isSuccess}")
 ## Examples
 
 Please have a look at our two demos for more information:
-+ [Stable fluid](https://github.com/taichi-dev/taichi/blob/master/examples/simulation/stable_fluid.py): A 2D fluid simulation using a sparse Laplacian matrix to solve Poisson's pressure equation.
-+ [Implicit mass spring](https://github.com/taichi-dev/taichi/blob/master/examples/simulation/implicit_mass_spring.py): A 2D cloth simulation demo using sparse matrices to solve the linear systems.
++ [Stable fluid](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/stable_fluid.py): A 2D fluid simulation using a sparse Laplacian matrix to solve Poisson's pressure equation.
++ [Implicit mass spring](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/implicit_mass_spring.py): A 2D cloth simulation demo using sparse matrices to solve the linear systems.

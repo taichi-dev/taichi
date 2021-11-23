@@ -720,6 +720,7 @@ class TaskCodegen : public IRVisitor {
       TI_NOT_IMPLEMENTED                                                       \
     }                                                                          \
   }
+    UNARY_OP_TO_SPIRV(round, Round, 1, 64)
     UNARY_OP_TO_SPIRV(floor, Floor, 8, 64)
     UNARY_OP_TO_SPIRV(ceil, Ceil, 9, 64)
     UNARY_OP_TO_SPIRV(sin, Sin, 13, 32)

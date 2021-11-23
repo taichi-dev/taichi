@@ -48,7 +48,6 @@ struct CompiledNdarrayData {
   uint32_t dtype;
   std::string dtype_name;
   size_t dim{0};
-  std::vector<int> shape;
   bool is_scalar{false};
   int row_num{0};
   int column_num{0};

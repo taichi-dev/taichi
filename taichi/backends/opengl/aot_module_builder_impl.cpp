@@ -132,8 +132,7 @@ void AotModuleBuilderImpl::add_ndarray_per_backend(
   uint32_t gl_dtype_enum = to_gl_dtype_enum(dt);
 
   aot_data_.ndarrays.push_back({identifier, gl_dtype_enum, dt.to_string(),
-                                shape.size(), shape, is_scalar, row_num,
-                                column_num});
+                                shape.size(), is_scalar, row_num, column_num});
 }
 
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,

@@ -591,9 +591,6 @@ def block_local(*args):
 
 
 def mesh_local(*args):
-    if ti.current_cfg().dynamic_index:
-        raise InvalidOperationError(
-            'dynamic_index is not allowed when mesh_local is turned on.')
     for a in args:
         for v in a.get_field_members():
             _ti_core.insert_snode_access_flag(

@@ -836,7 +836,7 @@ class MeshRelationAccessExpression : public Expression {
   MeshRelationAccessExpression(mesh::Mesh *mesh,
                                const Expr mesh_idx,
                                mesh::MeshElementType to_type)
-      : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
+      : mesh(mesh), mesh_idx(load_if_ptr(mesh_idx)), to_type(to_type) {
   }
 
   MeshRelationAccessExpression(mesh::Mesh *mesh,
@@ -844,9 +844,9 @@ class MeshRelationAccessExpression : public Expression {
                                mesh::MeshElementType to_type,
                                const Expr neighbor_idx)
       : mesh(mesh),
-        mesh_idx(mesh_idx),
+        mesh_idx(load_if_ptr(mesh_idx)),
         to_type(to_type),
-        neighbor_idx(neighbor_idx) {
+        neighbor_idx(load_if_ptr(neighbor_idx)) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -872,7 +872,10 @@ class MeshIndexConversionExpression : public Expression {
                                 mesh::MeshElementType idx_type,
                                 const Expr idx,
                                 mesh::ConvType conv_type)
-      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
+      : mesh(mesh),
+        idx_type(idx_type),
+        idx(load_if_ptr(idx)),
+        conv_type(conv_type) {
   }
 
   void flatten(FlattenContext *ctx) override;

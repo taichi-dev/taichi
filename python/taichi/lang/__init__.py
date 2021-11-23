@@ -1,17 +1,17 @@
 import atexit
 import datetime
 import functools
+import json
 import os
 import platform
 import shutil
 import tempfile
 import time
-import json
-from urllib import request
-from urllib.error import HTTPError
-from socket import timeout
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
+from socket import timeout
+from urllib import request
+from urllib.error import HTTPError
 
 import taichi.lang.linalg_impl
 import taichi.lang.meta
@@ -472,8 +472,9 @@ def check_version():
     try:
         payload = json.dumps(payload)
         payload = payload.encode()
-        req = request.Request('http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
-                              method='POST')
+        req = request.Request(
+            'http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
+            method='POST')
         req.add_header('Content-Type', 'application/json')
         with request.urlopen(req, data=payload, timeout=1.5) as response:
             response = json.loads(response.read().decode('utf-8'))
@@ -538,8 +539,8 @@ def init(arch=None,
     else:
         if check_version():
             with open(timestamp_path, 'w') as f:
-                f.write(
-                    (cur_date + datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
+                f.write((cur_date +
+                         datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,

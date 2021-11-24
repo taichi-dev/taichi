@@ -20,11 +20,9 @@ def upload_taichi_version():
                                  timeout=5)
         response.raise_for_status()
     except requests.exceptions.ConnectionError as err:
-        sys.exit('Updating latest version failed: No internet, ' +
-                 str(err))
+        sys.exit('Updating latest version failed: No internet, ' + str(err))
     except requests.exceptions.HTTPError as err:
-        sys.exit('Updating latest version failed: Server error, ' +
-                 str(err))
+        sys.exit('Updating latest version failed: Server error, ' + str(err))
     except requests.exceptions.Timeout as err:
         sys.exit(
             'Updating latest version failed: Time out when connecting server, '

@@ -53,7 +53,7 @@ from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (cook_dtype, has_clangpp, has_pytorch,
                               is_taichi_class, python_scope, taichi_scope,
                               to_numpy_type, to_pytorch_type, to_taichi_type)
-from taichi.misc.util import deprecated, get_traceback, warning
+from taichi.misc.util import deprecated, get_traceback
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
@@ -678,6 +678,9 @@ def block_local(*args):
     Args:
         *args (List[Field]): A list of sparse Taichi fields.
     """
+    if impl.current_cfg().opt_level == 0:
+        ti.warn("""opt_level = 1 is enforced to enable bls analysis.""")
+        impl.current_cfg().opt_level = 1
     for a in args:
         for v in a.get_field_members():
             _ti_core.insert_snode_access_flag(

@@ -16,7 +16,7 @@ Ndarray::Ndarray(Program *prog,
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)),
-      //prog_impl_(prog->get_llvm_program_impl()),
+      // prog_impl_(prog->get_llvm_program_impl()),
       device_(prog->get_device_shared()) {
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
                                                  prog->result_buffer);

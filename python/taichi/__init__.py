@@ -8,7 +8,6 @@ from taichi.main import main
 from taichi.misc import *
 from taichi.testing import *
 from taichi.tools import *
-from taichi.torch_io import from_torch, to_torch
 from taichi.type import *
 
 from taichi import ad
@@ -35,7 +34,7 @@ else:
 
 
 __all__ = [
-    'ad', 'core', 'misc', 'lang', 'tools', 'main', 'torch_io', 'ui', 'profiler'
+    'ad', 'core', 'misc', 'lang', 'tools', 'main', 'ui', 'profiler'
 ]
 
 complex_kernel = deprecated('ti.complex_kernel',

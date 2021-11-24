@@ -43,6 +43,6 @@ TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS PROJECT_NAME=$PROJECT_NAME python3 setup.
 CUR_DIR=`pwd`
 TI_LIB_DIR=$CUR_DIR/python/taichi/lib ./build/taichi_cpp_tests
 sccache -s
-chmod -R 777 $SCCACHE_DIR
+chmod -fR 777 $SCCACHE_DIR || true
 cp dist/*.whl /wheel/
 rm -f python/CHANGELOG.md

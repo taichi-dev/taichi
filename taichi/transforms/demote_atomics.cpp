@@ -120,7 +120,7 @@ class DemoteAtomics : public BasicStmtVisitor {
       // value. The correct thing is to replace |stmt| $d with the loaded
       // old value $d'.
       // See also: https://github.com/taichi-dev/taichi/issues/332
-      stmt->replace_with(load);
+      stmt->replace_usages_with(load);
       modifier.replace_with(stmt, std::move(new_stmts),
                             /*replace_usages=*/false);
     }

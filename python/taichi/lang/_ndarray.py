@@ -97,10 +97,6 @@ class Ndarray:
         """
         raise NotImplementedError()
 
-    @python_scope
-    def release(self):
-        self.arr.release()
-
     def ndarray_to_numpy(self):
         """Converts ndarray to a numpy array.
 

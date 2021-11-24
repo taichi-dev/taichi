@@ -416,7 +416,6 @@ void export_lang(py::module &m) {
       .def("device_allocation_ptr", &Ndarray::get_device_allocation_ptr_as_int)
       .def("element_size", &Ndarray::get_element_size)
       .def("nelement", &Ndarray::get_nelement)
-      .def("release", &Ndarray::release)
       .def("read_int",
            [](Ndarray *ndarray, const std::vector<int> &I) -> int64 {
              return get_ndarray_rw_accessors(ndarray).read_int(I);

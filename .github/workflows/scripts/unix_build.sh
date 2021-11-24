@@ -20,6 +20,7 @@ else
     chmod +x sccache-v0.2.15-x86_64-apple-darwin/sccache
     export PATH=$(pwd)/sccache-v0.2.15-x86_64-apple-darwin:$PATH
 fi
+sccache -s
 PROJECT_TAGS=""
 EXTRA_ARGS=""
 if [ $PROJECT_NAME -eq "taichi-nightly" ]; then
@@ -32,6 +33,7 @@ fi
 python3 misc/make_changelog.py origin/master ./ True
 python3 setup.py $PROJECT_TAGS bdist_wheel $EXTRA_ARGS
 
+sccache -s
 export NUM_WHL=`ls dist/*.whl | wc -l`
 if [ $NUM_WHL -ne 1 ]; then echo `ERROR: created more than 1 whl.` && exit 1; fi
 python3 -m pip install dist/*.whl

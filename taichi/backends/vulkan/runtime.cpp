@@ -465,8 +465,7 @@ void VkRuntime::add_root_buffer(size_t root_buffer_size) {
       device_->allocate_memory_unique(
           {root_buffer_size,
            /*host_write=*/false, /*host_read=*/false,
-           /*export_sharing=*/false,
-           AllocUsage::Storage});
+           /*export_sharing=*/false, AllocUsage::Storage});
   Stream *stream = device_->get_compute_stream();
   auto cmdlist = stream->new_command_list();
   cmdlist->buffer_fill(new_buffer->get_ptr(0), root_buffer_size, /*data=*/0);

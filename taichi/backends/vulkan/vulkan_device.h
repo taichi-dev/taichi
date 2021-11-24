@@ -365,6 +365,7 @@ class VulkanSurface : public Surface {
 
   void present_image() override;
   std::pair<uint32_t, uint32_t> get_size() override;
+  int get_image_count() override;
   BufferFormat image_format() override;
   void resize(uint32_t width, uint32_t height) override;
 

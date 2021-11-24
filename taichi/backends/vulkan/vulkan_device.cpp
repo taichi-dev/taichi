@@ -2039,6 +2039,10 @@ void VulkanSurface::destroy_swap_chain() {
   vkDestroySwapchainKHR(device_->vk_device(), swapchain_, nullptr);
 }
 
+int VulkanSurface::get_image_count() {
+  return swapchain_images_.size();
+}
+
 VulkanSurface::~VulkanSurface() {
   if (config_.window_handle) {
     destroy_swap_chain();

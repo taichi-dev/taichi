@@ -10,9 +10,9 @@ import numpy as np
 import taichi.lang
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
+from taichi.lang.ast import visit_tree
+from taichi.lang.ast.ast_transformer_utils import ASTTransformerContext
 from taichi.lang.ast.checkers import KernelSimplicityASTChecker
-from taichi.lang.ast_builder_utils import ASTBuilderContext
-from taichi.lang.ast.transformer import visit_tree
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.shell import _shell_pop_print, oinspect
@@ -90,7 +90,11 @@ def pyfunc(fn):
     return decorated
 
 
-def _get_tree_and_ctx(self, excluded_parameters=(), is_kernel=True, arg_features=None, args=None):
+def _get_tree_and_ctx(self,
+                      excluded_parameters=(),
+                      is_kernel=True,
+                      arg_features=None,
+                      args=None):
     src = textwrap.dedent(oinspect.getsource(self.func))
     tree = ast.parse(src)
 
@@ -112,14 +116,12 @@ def _get_tree_and_ctx(self, excluded_parameters=(), is_kernel=True, arg_features
         template_var_name = self.argument_names[i]
         global_vars[template_var_name] = args[i]
 
-    return tree, ASTBuilderContext(
-        excluded_parameters=excluded_parameters,
-        is_kernel=is_kernel,
-        func=self,
-        arg_features=arg_features,
-        global_vars=global_vars,
-        argument_data=args
-    )
+    return tree, ASTTransformerContext(excluded_parameters=excluded_parameters,
+                                       is_kernel=is_kernel,
+                                       func=self,
+                                       arg_features=arg_features,
+                                       global_vars=global_vars,
+                                       argument_data=args)
 
 
 class Func:
@@ -421,7 +423,11 @@ class Kernel:
         kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}{grad_suffix}"
         ti.trace(f"Compiling kernel {kernel_name}...")
 
-        tree, ctx = _get_tree_and_ctx(self, args=args, excluded_parameters=self.template_slot_locations, arg_features=arg_features)
+        tree, ctx = _get_tree_and_ctx(
+            self,
+            args=args,
+            excluded_parameters=self.template_slot_locations,
+            arg_features=arg_features)
 
         if self.is_grad:
             KernelSimplicityASTChecker(self.func).visit(tree)

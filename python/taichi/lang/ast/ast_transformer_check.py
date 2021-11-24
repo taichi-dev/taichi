@@ -1,30 +1,9 @@
 import ast
 
-import astor
-from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.ast_builder_utils import ASTBuilderContext
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.ast_builder import ASTBuilder
 
 import taichi as ti
-
-
-def _print_ast(tree, title=None):
-    if not impl.get_runtime().print_preprocessed:
-        return
-    if title is not None:
-        ti.info(f'{title}:')
-    print(astor.to_source(tree.body[0], indent_with='    '), flush=True)
-
-
-def visit_tree(tree, ctx: ASTBuilderContext):
-    _print_ast(tree, 'Initial AST')
-    tree = ASTBuilder()(ctx, tree)
-    ast.fix_missing_locations(tree)
-    _print_ast(tree, 'Preprocessed')
-    ASTTransformerChecks(func=ctx.func, global_vars=ctx.global_vars).visit(tree)
-    return ctx.return_data
 
 
 # Performs checks at the Python AST level. Does not modify the AST.

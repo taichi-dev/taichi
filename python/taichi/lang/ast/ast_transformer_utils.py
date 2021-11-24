@@ -1,6 +1,10 @@
 from enum import Enum
 
+import astor
+from taichi.lang import impl
 from taichi.lang.exception import TaichiSyntaxError
+
+from taichi import info
 
 
 class Builder:
@@ -51,7 +55,7 @@ class ControlScopeGuard:
         self.scopes.pop()
 
 
-class ASTBuilderContext:
+class ASTTransformerContext:
     def __init__(self,
                  excluded_parameters=(),
                  is_kernel=True,
@@ -122,3 +126,11 @@ class ASTBuilderContext:
             if name in s:
                 return s[name]
         return self.global_vars.get(name)
+
+
+def print_ast(tree, title=None):
+    if not impl.get_runtime().print_preprocessed:
+        return
+    if title is not None:
+        info(f'{title}:')
+    print(astor.to_source(tree.body[0], indent_with='    '), flush=True)

@@ -388,7 +388,7 @@ class VulkanSurface : public Surface {
 
   std::vector<DeviceAllocation> swapchain_images_;
 
-  DeviceAllocation screenshot_image_{kDeviceNullAllocation};
+  //DeviceAllocation screenshot_image_{kDeviceNullAllocation};
   DeviceAllocation screenshot_buffer_{kDeviceNullAllocation};
 };
 

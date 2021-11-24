@@ -3,52 +3,28 @@ import ast
 import astor
 from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.ast_builder_utils import IRBuilderContext
+from taichi.lang.ast_builder_utils import ASTBuilderContext
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.ir_builder import IRBuilder
+from taichi.lang.ast_builder import ASTBuilder
 
 import taichi as ti
 
 
-# Total transform
-class ASTTransformerTotal:
-    def __init__(self,
-                 func=None,
-                 excluded_parameters=(),
-                 is_kernel=True,
-                 arg_features=None,
-                 global_vars=None):
-        self.func = func
-        self.excluded_parameters = excluded_parameters
-        self.is_kernel = is_kernel
-        self.arg_features = arg_features
-        self.pass_checks = ASTTransformerChecks(func=func,
-                                                global_vars=global_vars)
-        self.global_vars = global_vars
+def _print_ast(tree, title=None):
+    if not impl.get_runtime().print_preprocessed:
+        return
+    if title is not None:
+        ti.info(f'{title}:')
+    print(astor.to_source(tree.body[0], indent_with='    '), flush=True)
 
-    @staticmethod
-    def print_ast(tree, title=None):
-        if not impl.get_runtime().print_preprocessed:
-            return
-        if title is not None:
-            ti.info(f'{title}:')
-        print(astor.to_source(tree.body[0], indent_with='    '), flush=True)
 
-    def visit(self, tree, *arguments):
-        self.print_ast(tree, 'Initial AST')
-        ctx = IRBuilderContext(func=self.func,
-                               excluded_parameters=self.excluded_parameters,
-                               is_kernel=self.is_kernel,
-                               arg_features=self.arg_features,
-                               global_vars=self.global_vars,
-                               argument_data=arguments)
-        # Convert Python AST to Python code that generates Taichi C++ AST.
-
-        tree = IRBuilder()(ctx, tree)
-        ast.fix_missing_locations(tree)
-        self.print_ast(tree, 'Preprocessed')
-        self.pass_checks.visit(tree)  # does not modify the AST
-        return ctx.return_data
+def visit_tree(tree, ctx: ASTBuilderContext):
+    _print_ast(tree, 'Initial AST')
+    tree = ASTBuilder()(ctx, tree)
+    ast.fix_missing_locations(tree)
+    _print_ast(tree, 'Preprocessed')
+    ASTTransformerChecks(func=ctx.func, global_vars=ctx.global_vars).visit(tree)
+    return ctx.return_data
 
 
 # Performs checks at the Python AST level. Does not modify the AST.

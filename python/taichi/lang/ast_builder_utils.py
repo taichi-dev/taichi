@@ -51,7 +51,7 @@ class ControlScopeGuard:
         self.scopes.pop()
 
 
-class IRBuilderContext:
+class ASTBuilderContext:
     def __init__(self,
                  excluded_parameters=(),
                  is_kernel=True,

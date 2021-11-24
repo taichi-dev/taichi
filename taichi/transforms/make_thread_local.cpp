@@ -162,7 +162,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
               tls_offset,
               TypeFactory::create_vector_or_scalar_type(1, data_type, true)),
           0);
-      dest.first->replace_with(tls_ptr);
+      dest.first->replace_usages_with(tls_ptr);
     }
 
     // Step 3:

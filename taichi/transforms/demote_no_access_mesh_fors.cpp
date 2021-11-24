@@ -19,7 +19,7 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   for (size_t i = 0; i < stmts.size(); ++i) {
     auto conv_stmt = stmts[i]->cast<MeshIndexConversionStmt>();
     if (conv_stmt->conv_type == mesh::ConvType::l2g) {
-      stmts[i]->replace_with(conv_stmt->idx);
+      stmts[i]->replace_usages_with(conv_stmt->idx);
       modifier.erase(stmts[i]);
     } else if (conv_stmt->conv_type == mesh::ConvType::l2r) {
       stmts[i]->as<MeshIndexConversionStmt>()->conv_type = mesh::ConvType::g2r;

@@ -2080,7 +2080,7 @@ DeviceAllocation VulkanSurface::get_target_image() {
     image_index_ = (image_index_ + 1) % swapchain_images_.size();
   } else {
     vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
-                      image_available_, VK_NULL_HANDLE, &image_index_);
+                          image_available_, VK_NULL_HANDLE, &image_index_);
   }
 
   return swapchain_images_[image_index_];

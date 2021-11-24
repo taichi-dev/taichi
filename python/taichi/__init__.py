@@ -8,7 +8,6 @@ from taichi.main import main
 from taichi.misc import *
 from taichi.testing import *
 from taichi.tools import *
-from taichi.torch_io import from_torch, to_torch
 from taichi.type import *
 
 from taichi import ad
@@ -34,9 +33,7 @@ else:
         raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")
 
 
-__all__ = [
-    'ad', 'core', 'misc', 'lang', 'tools', 'main', 'torch_io', 'ui', 'profiler'
-]
+__all__ = ['ad', 'core', 'misc', 'lang', 'tools', 'main', 'ui', 'profiler']
 
 complex_kernel = deprecated('ti.complex_kernel',
                             'ti.ad.grad_replaced')(ad.grad_replaced)

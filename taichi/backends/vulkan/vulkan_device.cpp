@@ -1918,7 +1918,9 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
                           config.height,
                           1,
                           false};
-    screenshot_image_ = device->create_image(params);
+    // screenshot_image_ = device->create_image(params);
+    swapchain_images_.push_back(device->create_image(params));
+    swapchain_images_.push_back(device->create_image(params));
   }
 }
 
@@ -2047,17 +2049,23 @@ void VulkanSurface::destroy_swap_chain() {
   vkDestroySwapchainKHR(device_->vk_device(), swapchain_, nullptr);
 }
 
+int VulkanSurface::get_image_count() {
+  return swapchain_images_.size();
+}
+
 VulkanSurface::~VulkanSurface() {
   if (config_.window_handle) {
     destroy_swap_chain();
     vkDestroySemaphore(device_->vk_device(), image_available_, nullptr);
     vkDestroySurfaceKHR(device_->vk_instance(), surface_, nullptr);
+  } else {
+    for (auto &img : swapchain_images_) {
+      device_->destroy_image(img);
+    }
+    swapchain_images_.clear();
   }
   if (screenshot_buffer_ != kDeviceNullAllocation) {
     device_->dealloc_memory(screenshot_buffer_);
-  }
-  if (screenshot_image_ != kDeviceNullAllocation) {
-    device_->destroy_image(screenshot_image_);
   }
 }
 
@@ -2077,10 +2085,11 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
 
 DeviceAllocation VulkanSurface::get_target_image() {
   if (!config_.window_handle) {
-    return screenshot_image_;
+    image_index_ = (image_index_ + 1) % swapchain_images_.size();
+  } else {
+    vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
+                          image_available_, VK_NULL_HANDLE, &image_index_);
   }
-  vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
-                        image_available_, VK_NULL_HANDLE, &image_index_);
 
   return swapchain_images_[image_index_];
 }
@@ -2107,11 +2116,11 @@ void VulkanSurface::present_image() {
 
 DeviceAllocation VulkanSurface::get_image_data() {
   auto *stream = device_->get_graphics_stream();
-  DeviceAllocation img_alloc = config_.window_handle
-                                   ? swapchain_images_[image_index_]
-                                   : screenshot_image_;
+  DeviceAllocation img_alloc = swapchain_images_[image_index_];
   auto [w, h] = get_size();
   size_t size_bytes = w * h * 4;
+
+  /*
   if (screenshot_image_ == kDeviceNullAllocation) {
     ImageParams params = {ImageDimension::d2D,
                           BufferFormat::rgba8,
@@ -2122,6 +2131,8 @@ DeviceAllocation VulkanSurface::get_image_data() {
                           false};
     screenshot_image_ = device_->create_image(params);
   }
+  */
+
   if (screenshot_buffer_ == kDeviceNullAllocation) {
     Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
                                /*host_read*/ true, /*export_sharing*/ false,
@@ -2134,6 +2145,7 @@ DeviceAllocation VulkanSurface::get_image_data() {
 
   std::unique_ptr<CommandList> cmd_list{nullptr};
 
+  /*
   if (config_.window_handle) {
     // TODO: check if blit is suppoted, and use copy_image if not
     cmd_list = stream->new_command_list();
@@ -2144,18 +2156,21 @@ DeviceAllocation VulkanSurface::get_image_data() {
                                ImageLayout::transfer_src);
     stream->submit_synced(cmd_list.get());
   }
+  */
 
   BufferImageCopyParams copy_params;
   copy_params.image_extent.x = w;
   copy_params.image_extent.y = h;
   cmd_list = stream->new_command_list();
   // TODO: directly map the image to cpu memory
-  cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), screenshot_image_,
+  cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), img_alloc,
                             ImageLayout::transfer_src, copy_params);
+  /*
   if (config_.window_handle) {
     cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_src,
                                ImageLayout::transfer_dst);
   }
+  */
   cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
                              ImageLayout::present_src);
   stream->submit_synced(cmd_list.get());

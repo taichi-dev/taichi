@@ -10,7 +10,7 @@ import numpy as np
 import taichi.lang
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
-from taichi.lang.ast import visit_tree
+from taichi.lang.ast import transform_tree
 from taichi.lang.ast.ast_transformer_utils import ASTTransformerContext
 from taichi.lang.ast.checkers import KernelSimplicityASTChecker
 from taichi.lang.enums import Layout
@@ -170,7 +170,7 @@ class Func:
                 self.do_compile(key=key, args=args)
             return self.func_call_rvalue(key=key, args=args)
         tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
-        return visit_tree(tree, ctx)
+        return transform_tree(tree, ctx)
 
     def func_call_rvalue(self, key, args):
         # Skip the template args, e.g., |self|
@@ -186,7 +186,7 @@ class Func:
 
     def do_compile(self, key, args):
         tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
-        self.compiled[key.instance_id] = lambda: visit_tree(tree, ctx)
+        self.compiled[key.instance_id] = lambda: transform_tree(tree, ctx)
         self.taichi_functions[key.instance_id] = _ti_core.create_function(key)
         self.taichi_functions[key.instance_id].set_function_body(
             self.compiled[key.instance_id])
@@ -445,7 +445,7 @@ class Kernel:
             self.runtime.inside_kernel = True
             self.runtime.current_kernel = self
             try:
-                visit_tree(tree, ctx)
+                transform_tree(tree, ctx)
             finally:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None

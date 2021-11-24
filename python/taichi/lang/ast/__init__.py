@@ -4,7 +4,7 @@ from taichi.lang.ast.ast_transformer_utils import (ASTTransformerContext,
                                                    print_ast)
 
 
-def visit_tree(tree, ctx: ASTTransformerContext):
+def transform_tree(tree, ctx: ASTTransformerContext):
     print_ast(tree, 'Initial AST')
     tree = ASTTransformer()(ctx, tree)
     print_ast(tree, 'Preprocessed')

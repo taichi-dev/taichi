@@ -548,7 +548,7 @@ class Stmt : public IRNode {
 
   bool has_operand(Stmt *stmt) const;
 
-  void replace_with(Stmt *new_stmt);
+  void replace_usages_with(Stmt *new_stmt);
   void replace_with(VecStatement &&new_statements, bool replace_usages = true);
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
@@ -678,6 +678,7 @@ class DelayedIRModifier {
   std::vector<std::tuple<Stmt *, VecStatement, bool>> to_replace_with;
   std::vector<Stmt *> to_erase;
   std::vector<std::pair<Stmt *, Block *>> to_extract_to_block_front;
+  std::vector<std::pair<IRNode *, CompileConfig>> to_type_check;
   bool modified_{false};
 
  public:
@@ -691,6 +692,7 @@ class DelayedIRModifier {
                     VecStatement &&new_statements,
                     bool replace_usages = true);
   void extract_to_block_front(Stmt *stmt, Block *blk);
+  void type_check(IRNode *node, CompileConfig cfg);
   bool modify_ir();
 
   // Force the next call of modify_ir() to return true.

@@ -16,7 +16,7 @@ class RemoveLoopUnique : public BasicStmtVisitor {
   DelayedIRModifier modifier;
 
   void visit(LoopUniqueStmt *stmt) override {
-    stmt->replace_with(stmt->input);
+    stmt->replace_usages_with(stmt->input);
     modifier.erase(stmt);
   }
 

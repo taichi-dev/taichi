@@ -1839,20 +1839,28 @@ void lower(Kernel *kernel) {
                                 /*make_thread_local=*/false);
 }
 
-FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
+VkRuntime::RegisterParams run_codegen(
+    Kernel *kernel,
+    const std::vector<CompiledSNodeStructs> &compiled_structs,
+    VkRuntime *runtime) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
   TI_TRACE("VK codegen for Taichi kernel={}", taichi_kernel_name);
   KernelCodegen::Params params;
   params.ti_kernel_name = taichi_kernel_name;
   params.kernel = kernel;
-  params.compiled_structs = runtime->get_compiled_structs();
+  params.compiled_structs = compiled_structs;
   params.device = runtime->get_ti_device();
   params.enable_spv_opt =
       kernel->program->config.external_optimization_level > 0;
   KernelCodegen codegen(params);
-  auto res = codegen.run();
+  return codegen.run();
+}
+
+FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
+  auto res = run_codegen(kernel, runtime->get_compiled_structs(), runtime);
   auto handle = runtime->register_taichi_kernel(std::move(res));
+  std::string taichi_kernel_name = res.kernel_attribs.name;
   return [runtime, handle, taichi_kernel_name](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };

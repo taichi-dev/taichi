@@ -382,7 +382,7 @@ jobs:
       - name: Get sccache cache
         uses: actions/cache@v2
         with:
-          path: ~/.cache/sccache
+          path: $HOME/.cache/sccache
           key: sccache-m1-${{ github.sha }}
           restore-keys: |
             sccache-m1-

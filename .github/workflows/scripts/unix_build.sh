@@ -4,6 +4,7 @@ python3 -m pip install -r requirements_dev.txt
 python3 -m pip install -r requirements_test.txt
 git fetch origin master
 export SCCACHE_CACHE_SIZE="128M"
+echo sccache dir: $SCCACHE_DIR
 if [[ $OSTYPE == "linux-"* ]]; then
     wget https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
     tar -xzf sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz

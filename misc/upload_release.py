@@ -20,17 +20,15 @@ def upload_taichi_version():
                                  timeout=5)
         response.raise_for_status()
     except requests.exceptions.ConnectionError as err:
-        sys.exit('Updating latest version failed: No internet, ' +
-                 err.toString())
+        sys.exit('Updating latest version failed: No internet, ' + str(err))
     except requests.exceptions.HTTPError as err:
-        sys.exit('Updating latest version failed: Server error, ' +
-                 err.toString())
+        sys.exit('Updating latest version failed: Server error, ' + str(err))
     except requests.exceptions.Timeout as err:
         sys.exit(
             'Updating latest version failed: Time out when connecting server, '
-            + err.toString())
+            + str(err))
     except requests.exceptions.RequestException as err:
-        sys.exit('Updating latest version failed: ' + err.toString())
+        sys.exit('Updating latest version failed: ' + str(err))
     response = response.json()
     print(response['message'])
 
@@ -53,6 +51,6 @@ def upload_artifact(is_taichi):
 
 if __name__ == '__main__':
     is_taichi = os.getenv('PROJECT_NAME', 'taichi') == 'taichi'
+    upload_artifact(is_taichi)
     if is_taichi:
         upload_taichi_version()
-    upload_artifact(is_taichi)

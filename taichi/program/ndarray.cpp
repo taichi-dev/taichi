@@ -31,7 +31,7 @@ Ndarray::Ndarray(Program *prog,
 #endif
 }
 
-//void Ndarray::release() {
+// void Ndarray::release() {
 //  prog_impl_->release_memory_ndarray(ndarray_alloc_);
 //}
 

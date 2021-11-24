@@ -2134,8 +2134,8 @@ DeviceAllocation VulkanSurface::get_image_data() {
   */
 
   if (screenshot_buffer_ == kDeviceNullAllocation) {
-    Device::AllocParams params{size_bytes,           /*host_wrtie*/ false,
-                               /*host_read*/ true,   /*export_sharing*/ false,
+    Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
+                               /*host_read*/ true, /*export_sharing*/ false,
                                AllocUsage::Uniform};
     screenshot_buffer_ = device_->allocate_memory(params);
   }

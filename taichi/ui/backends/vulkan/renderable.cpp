@@ -149,8 +149,8 @@ void Renderable::create_vertex_buffer() {
                                 AllocUsage::Vertex};
   vertex_buffer_ = app_context_->device().allocate_memory(vb_params);
 
-  Device::AllocParams staging_vb_params{buffer_size, true,
-                                        false,       false, AllocUsage::Vertex};
+  Device::AllocParams staging_vb_params{buffer_size, true, false, false,
+                                        AllocUsage::Vertex};
   staging_vertex_buffer_ =
       app_context_->device().allocate_memory(staging_vb_params);
 }
@@ -163,8 +163,8 @@ void Renderable::create_index_buffer() {
                                 AllocUsage::Index};
   index_buffer_ = app_context_->device().allocate_memory(ib_params);
 
-  Device::AllocParams staging_ib_params{buffer_size, true,
-                                        false,       false, AllocUsage::Index};
+  Device::AllocParams staging_ib_params{buffer_size, true, false, false,
+                                        AllocUsage::Index};
   staging_index_buffer_ =
       app_context_->device().allocate_memory(staging_ib_params);
 }
@@ -175,8 +175,8 @@ void Renderable::create_uniform_buffers() {
     return;
   }
 
-  Device::AllocParams ub_params{buffer_size, true,
-                                false,       false, AllocUsage::Uniform};
+  Device::AllocParams ub_params{buffer_size, true, false, false,
+                                AllocUsage::Uniform};
   uniform_buffer_ = app_context_->device().allocate_memory(ub_params);
 }
 
@@ -186,8 +186,8 @@ void Renderable::create_storage_buffers() {
     return;
   }
 
-  Device::AllocParams sb_params{buffer_size, true,
-                                false,       false, AllocUsage::Storage};
+  Device::AllocParams sb_params{buffer_size, true, false, false,
+                                AllocUsage::Storage};
   storage_buffer_ = app_context_->device().allocate_memory(sb_params);
 }
 

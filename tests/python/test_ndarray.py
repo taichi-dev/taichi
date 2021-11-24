@@ -608,18 +608,6 @@ def test_arg_not_match():
     _test_arg_not_match()
 
 
-@ti.test(arch=[ti.cuda], ndarray_use_torch=False)
-def test_ndarray_release():
-    n = 4
-    a = ti.ndarray(ti.i32, shape=(n, ))
-    a.fill(1)
-    a.release()
-    b = ti.ndarray(ti.i32, shape=(n, ))
-    b.fill(1)
-    b.release()
-    # test is expected to fail if release() is not implemented
-
-
 def _test_size_in_bytes():
     a = ti.ndarray(ti.i32, 8)
     assert a.get_element_size() == 4

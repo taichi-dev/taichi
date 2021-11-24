@@ -386,7 +386,6 @@ class Device {
     bool host_write{false};
     bool host_read{false};
     bool export_sharing{false};
-    bool use_cached{true};
     AllocUsage usage{AllocUsage::Storage};
   };
 

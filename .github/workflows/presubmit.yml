@@ -281,7 +281,7 @@ jobs:
       - name: Get sccache cache
         uses: actions/cache@v2
         with:
-          path: `pwd`/sccache
+          path: sccache
           key: sccache-linux-gpu-${{ github.sha }}
           restore-keys: |
             sccache-linux-gpu-

@@ -281,7 +281,7 @@ jobs:
       - name: Get sccache cache
         uses: actions/cache@v2
         with:
-          path: ~/.cache/sccache
+          path: `pwd`/sccache
           key: sccache-linux-gpu-${{ github.sha }}
           restore-keys: |
             sccache-linux-gpu-
@@ -289,12 +289,12 @@ jobs:
       - name: Build & Install
         run: |
           mkdir -m777 wheel
-          mkdir -p ~/.cache/sccache
-          chmod 777 ~/.cache/sccache
-          docker create -v `pwd`/wheel:/wheel -v $HOME/.cache/sccache:/cache --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
+          mkdir -p sccache
+          chmod 777 sccache
+          docker create -v `pwd`/wheel:/wheel -v `pwd`/sccache:/cache --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
-          chmod -R 777 ~/.cache/sccache
+          chmod -R 777 sccache
         env:
           PY: py38
           GPU_BUILD: ON

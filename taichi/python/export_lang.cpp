@@ -410,6 +410,7 @@ void export_lang(py::module &m) {
   py::class_<Ndarray>(m, "Ndarray")
       .def(py::init<Program *, const DataType &, const std::vector<int> &>())
       .def("data_ptr", &Ndarray::get_data_ptr_as_int)
+      .def("device_allocation_ptr", &Ndarray::get_device_allocation_ptr_as_int)
       .def("element_size", &Ndarray::get_element_size)
       .def("nelement", &Ndarray::get_nelement)
       .def("read_int",

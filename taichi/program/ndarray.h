@@ -28,6 +28,7 @@ class Ndarray {
   int num_active_indices{0};
 
   intptr_t get_data_ptr_as_int() const;
+  intptr_t get_device_allocation_ptr_as_int() const;
   std::size_t get_element_size() const;
   std::size_t get_nelement() const;
 

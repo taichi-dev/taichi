@@ -518,13 +518,14 @@ class Kernel:
                         tmps.append(tmp)
                         launch_ctx.set_arg_external_array(
                             actual_argument_slot, int(tmp.ctypes.data),
-                            tmp.nbytes)
+                            tmp.nbytes, False)
                     elif is_ndarray and not ndarray_use_torch:
                         # Use ndarray's own memory allocator
                         tmp = v
                         launch_ctx.set_arg_external_array(
-                            actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement())
+                            actual_argument_slot,
+                            int(tmp.device_allocation_ptr()),
+                            tmp.element_size() * tmp.nelement(), True)
                     else:
 
                         def get_call_back(u, v):
@@ -561,7 +562,7 @@ class Kernel:
                                 callbacks.append(get_call_back(v, gpu_v))
                         launch_ctx.set_arg_external_array(
                             actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement())
+                            tmp.element_size() * tmp.nelement(), False)
 
                     shape = v.shape
                     max_num_indices = _ti_core.get_max_num_indices()

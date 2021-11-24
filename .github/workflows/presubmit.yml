@@ -162,7 +162,6 @@ jobs:
           key: sccache-linux-${{matrix.with_cc}}-${{ github.sha }}
           restore-keys: |
             sccache-linux-${{matrix.with_cc}}-
-            sccache-linux-
 
       - name: Get docker images
         run: |
@@ -247,8 +246,11 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
+          mkdir -p ~/.cache/sccache
+          chmod 777 ~/.cache/sccache
           export PATH=`pwd`/taichi-llvm/bin/:$PATH
           .github/workflows/scripts/unix_build.sh
+          chmod -R 777 ~/.cache/sccache
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++
@@ -284,7 +286,6 @@ jobs:
           key: sccache-linux-gpu-${{ github.sha }}
           restore-keys: |
             sccache-linux-gpu-
-            sccache-linux-
 
       - name: Build & Install
         run: |
@@ -294,6 +295,7 @@ jobs:
           docker create -v `pwd`/wheel:/wheel -v $HOME/.cache/sccache:/cache --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
+          chmod -R 777 ~/.cache/sccache
         env:
           PY: py38
           GPU_BUILD: ON
@@ -377,13 +379,25 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/sccache
+          key: sccache-m1-${{ github.sha }}
+          restore-keys: |
+            sccache-m1-
+
       - name: Build
         run: |
           rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
+          mkdir -p ~/.cache/sccache
+          chmod 777 ~/.cache/sccache
           .github/workflows/scripts/unix_build.sh
+          chmod -R 777 ~/.cache/sccache
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++
+          SCCACHE_DIR: $HOME/.cache/sccache
 
       - name: Test
         run: |
@@ -393,6 +407,6 @@ jobs:
           TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
           TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
           echo wanted archs: $TI_WANTED_ARCHS
-          python3 tests/run_tests.py -vr2 -t4 -x
+          python3 tests/run_tests.py -vr2 -t4 -x -a "$TI_WANTED_ARCHS"
         env:
           TI_WANTED_ARCHS: "metal,cpu"

@@ -4,11 +4,22 @@ python3 -m pip install -r requirements_dev.txt
 python3 -m pip install -r requirements_test.txt
 git fetch origin master
 export SCCACHE_CACHE_SIZE="128M"
-wget https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
-tar -xzf sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
-chmod +x sccache-v0.2.15-x86_64-unknown-linux-musl/sccache
-export PATH=$(pwd)/sccache-v0.2.15-x86_64-unknown-linux-musl:$PATH
-
+if [[ $OSTYPE == "linux-"* ]]; then
+    wget https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
+    tar -xzf sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
+    chmod +x sccache-v0.2.15-x86_64-unknown-linux-musl/sccache
+    export PATH=$(pwd)/sccache-v0.2.15-x86_64-unknown-linux-musl:$PATH
+elif [[ `uname -m` == "arm64" ]]; then
+    wget https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-aarch64-apple-darwin.tar.gz
+    tar -xzf sccache-v0.2.15-aarch64-apple-darwin.tar.gz
+    chmod +x sccache-v0.2.15-aarch64-apple-darwin/sccache
+    export PATH=$(pwd)/sccache-v0.2.15-aarch64-apple-darwin:$PATH
+else
+    wget https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-apple-darwin.tar.gz
+    tar -xzf sccache-v0.2.15-x86_64-apple-darwin.tar.gz
+    chmod +x sccache-v0.2.15-x86_64-apple-darwin/sccache
+    export PATH=$(pwd)/sccache-v0.2.15-x86_64-apple-darwin:$PATH
+fi
 PROJECT_TAGS=""
 EXTRA_ARGS=""
 if [ $PROJECT_NAME -eq "taichi-nightly" ]; then

@@ -233,3 +233,95 @@ def test_opengl_exceed_max_ssbo():
     with pytest.raises(RuntimeError):
         init(0, density1, density2, density3, density4, density5, density6,
              density7)
+
+
+@ti.test(arch=ti.opengl)
+def test_mpm88_ndarray():
+    dim = 2
+    N = 64
+    n_particles = N * N
+    n_grid = 128
+    dx = 1 / n_grid
+    inv_dx = 1 / dx
+    dt = 2.0e-4
+    p_vol = (dx * 0.5)**2
+    p_rho = 1
+    p_mass = p_vol * p_rho
+    E = 400
+
+    @ti.kernel
+    def substep(x: ti.any_arr(element_dim=1), v: ti.any_arr(element_dim=1),
+                C: ti.any_arr(element_dim=2), J: ti.any_arr(),
+                grid_v: ti.any_arr(element_dim=1), grid_m: ti.any_arr()):
+        for p in x:
+            base = (x[p] * inv_dx - 0.5).cast(int)
+            fx = x[p] * inv_dx - base.cast(float)
+            w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
+            stress = -dt * p_vol * (J[p] - 1) * 4 * inv_dx * inv_dx * E
+            affine = ti.Matrix([[stress, 0], [0, stress]]) + p_mass * C[p]
+            for i in ti.static(range(3)):
+                for j in ti.static(range(3)):
+                    offset = ti.Vector([i, j])
+                    dpos = (offset.cast(float) - fx) * dx
+                    weight = w[i][0] * w[j][1]
+                    grid_v[base + offset].atomic_add(
+                        weight * (p_mass * v[p] + affine @ dpos))
+                    grid_m[base + offset].atomic_add(weight * p_mass)
+
+        for i, j in grid_m:
+            if grid_m[i, j] > 0:
+                bound = 3
+                inv_m = 1 / grid_m[i, j]
+                grid_v[i, j] = inv_m * grid_v[i, j]
+                grid_v[i, j][1] -= dt * 9.8
+                if i < bound and grid_v[i, j][0] < 0:
+                    grid_v[i, j][0] = 0
+                if i > n_grid - bound and grid_v[i, j][0] > 0:
+                    grid_v[i, j][0] = 0
+                if j < bound and grid_v[i, j][1] < 0:
+                    grid_v[i, j][1] = 0
+                if j > n_grid - bound and grid_v[i, j][1] > 0:
+                    grid_v[i, j][1] = 0
+
+        for p in x:
+            base = (x[p] * inv_dx - 0.5).cast(int)
+            fx = x[p] * inv_dx - base.cast(float)
+            w = [
+                0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2
+            ]
+            new_v = ti.Vector.zero(ti.f32, 2)
+            new_C = ti.Matrix.zero(ti.f32, 2, 2)
+            for i in ti.static(range(3)):
+                for j in ti.static(range(3)):
+                    dpos = ti.Vector([i, j]).cast(float) - fx
+                    g_v = grid_v[base + ti.Vector([i, j])]
+                    weight = w[i][0] * w[j][1]
+                    new_v += weight * g_v
+                    new_C += 4 * weight * g_v.outer_product(dpos) * inv_dx
+            v[p] = new_v
+            x[p] += dt * v[p]
+            J[p] *= 1 + dt * new_C.trace()
+            C[p] = new_C
+
+    x = ti.Vector.ndarray(dim, ti.f32, n_particles)
+    v = ti.Vector.ndarray(dim, ti.f32, n_particles)
+    C = ti.Matrix.ndarray(dim, dim, ti.f32, n_particles)
+    J = ti.ndarray(ti.f32, n_particles)
+    grid_v = ti.Vector.ndarray(dim, ti.f32, (n_grid, n_grid))
+    grid_m = ti.ndarray(ti.f32, (n_grid, n_grid))
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m = ti.aot.Module(ti.opengl)
+        m.add_ndarray("x", x)
+        m.add_ndarray("v", v)
+        m.add_ndarray("C", C)
+        m.add_ndarray("J", J)
+        m.add_ndarray("grid_v", grid_v)
+        m.add_ndarray("grid_m", grid_m)
+        m.add_kernel(substep, (x, v, C, J, grid_v, grid_m))
+
+        filename = 'taichi_aot_example'
+        m.save(tmpdir, filename)
+        with open(os.path.join(tmpdir,
+                               f'{filename}_metadata.json')) as json_file:
+            json.load(json_file)

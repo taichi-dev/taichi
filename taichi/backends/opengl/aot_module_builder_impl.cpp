@@ -28,6 +28,32 @@ void write_glsl_file(const std::string &output_dir,
   k.kernel_src = glsl_path;
   fs.close();
 }
+
+uint32_t to_gl_dtype_enum(DataType dt) {
+  if (dt == PrimitiveType::u64) {
+    return GL_UNSIGNED_INT64_ARB;
+  } else if (dt == PrimitiveType::i64) {
+    return GL_INT64_ARB;
+  } else if (dt == PrimitiveType::u32) {
+    return GL_UNSIGNED_INT;
+  } else if (dt == PrimitiveType::i32) {
+    return GL_INT;
+  } else if (dt == PrimitiveType::u16) {
+    return GL_UNSIGNED_SHORT;
+  } else if (dt == PrimitiveType::i16) {
+    return GL_SHORT;
+  } else if (dt == PrimitiveType::u8) {
+    return GL_UNSIGNED_BYTE;
+  } else if (dt == PrimitiveType::i8) {
+    return GL_BYTE;
+  } else if (dt == PrimitiveType::f64) {
+    return GL_DOUBLE;
+  } else if (dt == PrimitiveType::f32) {
+    return GL_FLOAT;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
 }  // namespace
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
@@ -82,31 +108,7 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
                                                  std::vector<int> shape,
                                                  int row_num,
                                                  int column_num) {
-  uint32_t gl_dtype_enum;
-
-  if (dt == PrimitiveType::u64) {
-    gl_dtype_enum = GL_UNSIGNED_INT64_ARB;
-  } else if (dt == PrimitiveType::i64) {
-    gl_dtype_enum = GL_INT64_ARB;
-  } else if (dt == PrimitiveType::u32) {
-    gl_dtype_enum = GL_UNSIGNED_INT;
-  } else if (dt == PrimitiveType::i32) {
-    gl_dtype_enum = GL_INT;
-  } else if (dt == PrimitiveType::u16) {
-    gl_dtype_enum = GL_UNSIGNED_SHORT;
-  } else if (dt == PrimitiveType::i16) {
-    gl_dtype_enum = GL_SHORT;
-  } else if (dt == PrimitiveType::u8) {
-    gl_dtype_enum = GL_UNSIGNED_BYTE;
-  } else if (dt == PrimitiveType::i8) {
-    gl_dtype_enum = GL_BYTE;
-  } else if (dt == PrimitiveType::f64) {
-    gl_dtype_enum = GL_DOUBLE;
-  } else if (dt == PrimitiveType::f32) {
-    gl_dtype_enum = GL_FLOAT;
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
+  uint32_t gl_dtype_enum = to_gl_dtype_enum(dt);
 
   // Note that currently we only support adding dense fields in AOT for all
   // backends. In opengl backend we only error out when a non dense field is
@@ -118,6 +120,19 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
   aot_data_.fields.push_back({identifier, gl_dtype_enum, dt.to_string(),
                               get_snode_base_address(rep_snode), shape,
                               is_scalar, row_num, column_num});
+}
+
+void AotModuleBuilderImpl::add_ndarray_per_backend(
+    const std::string &identifier,
+    bool is_scalar,
+    DataType dt,
+    std::vector<int> shape,
+    int row_num,
+    int column_num) {
+  uint32_t gl_dtype_enum = to_gl_dtype_enum(dt);
+
+  aot_data_.ndarrays.push_back({identifier, gl_dtype_enum, dt.to_string(),
+                                shape.size(), is_scalar, row_num, column_num});
 }
 
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,

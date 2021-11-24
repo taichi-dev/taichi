@@ -125,8 +125,7 @@ def test_mpm88_async():
     run_mpm88_test()
 
 
-# TODO: enable opengl
-@ti.test(arch=[ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.opengl])
 def test_mpm88_numpy_and_ndarray():
     import numpy as np
 

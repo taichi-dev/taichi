@@ -91,6 +91,8 @@ jobs:
           docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
+          docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
+          docker cp tests/ taichi_test:/home/dev/
           docker start -a taichi_test
         env:
           PY: ${{ matrix.conda_python }}
@@ -104,7 +106,7 @@ jobs:
           mkdir dist
           cp wheel/*.whl dist/
           pip install twine requests==2.26
-          python misc/upload_release.py
+          python3 misc/upload_release.py
 
       - name: clean docker container
         if: always()
@@ -137,7 +139,7 @@ jobs:
           export PATH=$(pwd)/taichi-llvm/bin/:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
           PROJECT_NAME: ${{ matrix.name }}
           CXX: clang++
 
@@ -150,9 +152,10 @@ jobs:
 
       - name: Test
         run: |
-          python examples/algorithm/laplace.py
-          ti diagnose
-          ti test -vr2 -t2 -a cpu,metal
+          .github/workflows/scripts/unix_test.sh
+        env:
+          RUN_CPP_TESTS: ON
+          TI_WANTED_ARCHS: "cpu"
 
       - name: Upload PyPI
         env:
@@ -183,7 +186,7 @@ jobs:
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
           CXX: clang++
@@ -225,7 +228,7 @@ jobs:
           export PATH=$LLVM_DIR/bin:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
           CXX: clang++
@@ -240,10 +243,10 @@ jobs:
       - name: Test
         run: |
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
-          python examples/algorithm/laplace.py
-          ti diagnose
-          ti test -vr2 -t2 -a cpu
+          .github/workflows/scripts/unix_test.sh
         env:
+          RUN_CPP_TESTS: ON
+          TI_WANTED_ARCHS: "cpu"
           PYTHON: ${{ matrix.python }}
 
       - name: Upload PyPI
@@ -294,13 +297,14 @@ jobs:
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
           . venv\Scripts\activate.ps1
           python -c "import taichi"
-          python examples/algorithm/laplace.py
+          ti example laplace
           ti diagnose
-          ti test -vr2 -t2
+          python tests/run_tests.py -vr2 -t2
 
       - name: Upload PyPI
         shell: powershell
         env:
           PROJECT_NAME: ${{ matrix.name }}
         run: |
+          python -m pip install twine
           venv\Scripts\python misc/upload_release.py

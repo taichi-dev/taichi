@@ -98,7 +98,7 @@ class LlvmProgramImpl : public ProgramImpl {
   void finalize();
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
-                                           uint64 *result_buffer);
+                                           uint64 *result_buffer) override;
 
   uint64_t *get_ndarray_alloc_info_ptr(DeviceAllocation &alloc);
 

@@ -219,6 +219,10 @@ UnaryOpStmt *IRBuilder::create_logical_not(Stmt *value) {
   return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::logic_not, value));
 }
 
+UnaryOpStmt *IRBuilder::create_round(Stmt *value) {
+  return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::round, value));
+}
+
 UnaryOpStmt *IRBuilder::create_floor(Stmt *value) {
   return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::floor, value));
 }

@@ -120,3 +120,15 @@ def test_offload_with_cross_nested_for():
                 print('OK')
 
     run(2)
+
+
+@ti.test()
+def test_offload_with_cross_if_inside_for():
+    @ti.kernel
+    def run(a: ti.i32):
+        b = a > 2
+        for x in range(1):
+            if b:
+                print('OK')
+
+    run(2)

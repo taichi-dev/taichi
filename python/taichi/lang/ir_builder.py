@@ -338,7 +338,8 @@ class IRBuilder(Builder):
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
                             ctx.arg_features[i][3]))
                 else:
-                        ctx.global_vars[arg.arg] = ti.lang.kernel_arguments.decl_scalar_arg(
+                    ctx.global_vars[
+                        arg.arg] = ti.lang.kernel_arguments.decl_scalar_arg(
                             ctx.func.argument_annotations[i])
             # remove original args
             node.args.args = []

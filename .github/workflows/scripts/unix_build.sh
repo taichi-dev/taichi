@@ -3,6 +3,7 @@ python3 -m pip uninstall taichi taichi-nightly -y
 python3 -m pip install -r requirements_dev.txt
 python3 -m pip install -r requirements_test.txt
 git fetch origin master
+export SCCACHE_DIR=$HOME/.cache/sccache
 export SCCACHE_CACHE_SIZE="128M"
 echo sccache dir: $SCCACHE_DIR
 if [[ $OSTYPE == "linux-"* ]]; then

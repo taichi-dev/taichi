@@ -63,9 +63,9 @@ HackedSignalRegister::HackedSignalRegister() {
 }
 
 HackedSignalRegister::~HackedSignalRegister() {
-#define TI_UNREGISTER_SIGNAL_HANDLER(name)                   \
-  {                                                                 \
-    if (std::signal(name, SIG_DFL) == SIG_ERR)                      \
+#define TI_UNREGISTER_SIGNAL_HANDLER(name)                            \
+  {                                                                   \
+    if (std::signal(name, SIG_DFL) == SIG_ERR)                        \
       std::printf("Cannot unregister signal handler for" #name "\n"); \
   }
 
@@ -77,8 +77,8 @@ HackedSignalRegister::~HackedSignalRegister() {
   TI_UNREGISTER_SIGNAL_HANDLER(SIGFPE);
 
 #undef TI_UNREGISTER_SIGNAL_HANDLER
-  TI_TRACE("Taichi signal handlers unregistered. Thread ID = {}", PID::get_pid());
-
+  TI_TRACE("Taichi signal handlers unregistered. Thread ID = {}",
+           PID::get_pid());
 }
 
 }  // namespace taichi

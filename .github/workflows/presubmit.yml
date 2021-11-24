@@ -158,7 +158,7 @@ jobs:
       - name: Get sccache cache
         uses: actions/cache@v2
         with:
-          path: ~/.cache/sccache
+          path: sccache_cache
           key: sccache-linux-${{matrix.with_cc}}-${{ github.sha }}
           restore-keys: |
             sccache-linux-${{matrix.with_cc}}-
@@ -174,12 +174,12 @@ jobs:
       - name: Build
         run: |
           mkdir -m777 wheel
-          mkdir -p ~/.cache/sccache
-          chmod 777 ~/.cache/sccache
-          docker create -v `pwd`/wheel:/wheel -v $HOME/.cache/sccache:/cache --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
+          mkdir -p sccache_cache
+          chmod 777 sccache_cache
+          docker create -v `pwd`/wheel:/wheel -v `pwd`/sccache_cache:/cache --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
-          chmod -R 777 ~/.cache/sccache
+          chmod -R 777 sccache_cache
         env:
           PY: ${{ matrix.python }}
           GPU_BUILD: OFF
@@ -230,7 +230,7 @@ jobs:
       - name: Get sccache cache
         uses: actions/cache@v2
         with:
-          path: ~/.cache/sccache
+          path: sccache_cache
           key: sccache-mac-${{ github.sha }}
           restore-keys: |
             sccache-mac-
@@ -246,11 +246,11 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          mkdir -p ~/.cache/sccache
-          chmod 777 ~/.cache/sccache
+          mkdir -p sccache_cache
+          chmod 777 sccache_cache
           export PATH=`pwd`/taichi-llvm/bin/:$PATH
           .github/workflows/scripts/unix_build.sh
-          chmod -R 777 ~/.cache/sccache
+          chmod -R 777 sccache_cache
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++
@@ -286,7 +286,7 @@ jobs:
           restore-keys: |
             sccache-linux-gpu-
 
-      - name: Build & Install
+      - name: Build & Instal
         run: |
           mkdir -m777 wheel
           mkdir -p sccache
@@ -381,7 +381,7 @@ jobs:
       - name: Get sccache cache
         uses: actions/cache@v2
         with:
-          path: $HOME/.cache/sccache
+          path: sccache_cache
           key: sccache-m1-${{ github.sha }}
           restore-keys: |
             sccache-m1-
@@ -389,10 +389,10 @@ jobs:
       - name: Build
         run: |
           rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
-          mkdir -p ~/.cache/sccache
-          chmod 777 ~/.cache/sccache
+          mkdir -p sccache_cache
+          chmod 777 sccache_cache
           .github/workflows/scripts/unix_build.sh
-          chmod -R 777 ~/.cache/sccache
+          chmod -R 777 sccache_cache
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++

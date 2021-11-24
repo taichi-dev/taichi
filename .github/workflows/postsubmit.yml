@@ -1,8 +1,11 @@
 name: Postsubmit Checks
 on:
-  push:
-    branches:
-      - master
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+
+#  push:
+#    branches:
+#      - master
 
 jobs:
   build_and_test_cpu_required:
@@ -315,7 +318,6 @@ jobs:
         env:
           CXX: clang++
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON  -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          SCCACHE_DIR: $HOME/.cache/sccache
 
       - name: Test
         run: |

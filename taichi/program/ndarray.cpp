@@ -16,7 +16,7 @@ Ndarray::Ndarray(Program *prog,
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)),
-      prog_impl_(prog->get_llvm_program_impl()),
+      //prog_impl_(prog->get_llvm_program_impl()),
       device_(prog->get_device_shared()) {
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
                                                  prog->result_buffer);
@@ -31,13 +31,13 @@ Ndarray::Ndarray(Program *prog,
 #endif
 }
 
-// void Ndarray::release() {
-//  prog_impl_->release_memory_ndarray(ndarray_alloc_);
-//}
-
 Ndarray::~Ndarray() {
   if (device_) {
+#ifdef TI_WITH_LLVM
+    device_->release_memory(ndarray_alloc_);
+#else
     device_->dealloc_memory(ndarray_alloc_);
+#endif
   }
 }
 

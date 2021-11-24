@@ -31,7 +31,6 @@ class Ndarray {
   intptr_t get_device_allocation_ptr_as_int() const;
   std::size_t get_element_size() const;
   std::size_t get_nelement() const;
-  void release();
   ~Ndarray();
 
  private:
@@ -41,7 +40,6 @@ class Ndarray {
   uint64_t *data_ptr_{nullptr};
   std::size_t nelement_{1};
   std::size_t element_size_{1};
-  // LlvmProgramImpl *prog_impl_{nullptr};
   // Ndarrays manage their own |DeviceAllocation| so this must be shared with
   // |OpenGlRuntime|. Without the ownership, when the program exits |device_|
   // might be destructed earlier than Ndarray object, leaving a segfault when

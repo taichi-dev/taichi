@@ -639,6 +639,14 @@ def init(arch=None,
         _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(ti.cfg.arch)}')
 
+    # Torch based ndarray on opengl backend allocates memory on host instead of opengl backend.
+    # So it won't work.
+    if ti.cfg.arch == opengl and ti.cfg.ndarray_use_torch:
+        ti.warn(
+            f'Opengl backend doesn\'t support torch based ndarray. Setting ndarray_use_torch to False.'
+        )
+        ti.cfg.ndarray_use_torch = False
+
     if _test_mode:
         return spec_cfg
 

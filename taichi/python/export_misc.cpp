@@ -17,6 +17,7 @@
 #include "taichi/python/memory_usage_monitor.h"
 #include "taichi/system/benchmark.h"
 #include "taichi/system/dynamic_loader.h"
+#include "taichi/system/hacked_signal_handler.h"
 #include "taichi/system/profiler.h"
 #include "taichi/util/statistics.h"
 #if defined(TI_WITH_CUDA)
@@ -33,7 +34,7 @@ extern bool is_c_backend_available();
 }
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 Config config_from_py_dict(py::dict &c) {
   Config config;
@@ -189,6 +190,8 @@ void export_misc(py::module &m) {
   m.def(
       "get_kernel_stats", []() -> Statistics & { return stat; },
       py::return_value_policy::reference);
+
+  py::class_<HackedSignalRegister>(m, "HackedSignalRegister").def(py::init<>());
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

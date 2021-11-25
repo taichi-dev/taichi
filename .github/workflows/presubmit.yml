@@ -52,7 +52,6 @@ jobs:
     name: Check Code Format
     runs-on: ubuntu-latest
     needs: check_files
-    if: needs.check_files.outputs.run_job == 'true'
     # This job will be required to pass before merging to master branch.
     steps:
       - uses: actions/checkout@v2
@@ -63,6 +62,9 @@ jobs:
 
       - name: Setup git & clang-format
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           git config user.email "taichigardener@gmail.com"
           git config user.name "Taichi Gardener"
           git checkout -b _fake_squash
@@ -78,10 +80,16 @@ jobs:
 
       - name: Install requirements
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           python3 -m pip install --user -r requirements_dev.txt
 
       - name: Check code format
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           python3 misc/code_format.py
           git checkout -b _enforced_format
           git commit -am "enforce code format" || true
@@ -92,7 +100,6 @@ jobs:
     name: Check Static Analyzer
     runs-on: ubuntu-latest
     needs: check_files
-    if: needs.check_files.outputs.run_job == 'true'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -105,6 +112,9 @@ jobs:
 
       - name: Pylint
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           python3 -m pip install --user pylint
           # Make sure pylint doesn't regress
           pylint python/taichi/ --disable=all --enable=$(python scripts/generate_pylint_tags.py)
@@ -119,6 +129,9 @@ jobs:
 
       - name: clang-tidy
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
@@ -133,7 +146,6 @@ jobs:
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
     needs: [check_code_format, check_files]
-    if: needs.check_files.outputs.run_job == 'true'
     timeout-minutes: 60
     strategy:
       matrix:
@@ -157,6 +169,9 @@ jobs:
 
       - name: Get docker images
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0
@@ -165,6 +180,9 @@ jobs:
 
       - name: Build
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           mkdir -m777 wheel
           docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
@@ -177,6 +195,9 @@ jobs:
 
       - name: Test
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
@@ -191,7 +212,6 @@ jobs:
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
     needs: [check_code_format, check_files]
-    if: needs.check_files.outputs.run_job == 'true'
     timeout-minutes: 60
     strategy:
       matrix:
@@ -213,6 +233,9 @@ jobs:
 
       - name: Download Pre-Built LLVM 10.0.0
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           python misc/ci_download.py
         env:
           CI_PLATFORM: ${{ matrix.os }}
@@ -235,6 +258,9 @@ jobs:
 
       - name: Test
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           .github/workflows/scripts/unix_test.sh
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
@@ -244,7 +270,6 @@ jobs:
     name: Build and Test (GPU)
     needs: [check_code_format, check_files]
     runs-on: [self-hosted, cuda, vulkan, cn]
-    if: needs.check_files.outputs.run_job == 'true'
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v2
@@ -253,6 +278,9 @@ jobs:
 
       - name: Build & Install
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           mkdir -m777 wheel
           docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
@@ -266,6 +294,9 @@ jobs:
 
       - name: Test
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
           docker cp wheel/*.whl taichi_test:/home/dev/
@@ -303,11 +334,17 @@ jobs:
       - name: Build
         shell: powershell
         run: |
+          if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
+            exit 0
+          }
           .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
 
       - name: Test
         shell: powershell
         run: |
+          if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
+            exit 0
+          }
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
           . venv\Scripts\activate.ps1
           python -c "import taichi"
@@ -323,7 +360,6 @@ jobs:
   build_and_test_m1:
     name: Build and Test (Apple M1)
     needs: [check_code_format, check_files]
-    if: needs.check_files.outputs.run_job == 'true'
     timeout-minutes: 60
     strategy:
       matrix:
@@ -342,6 +378,9 @@ jobs:
 
       - name: Build
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
           .github/workflows/scripts/unix_build.sh
         env:
@@ -350,6 +389,9 @@ jobs:
 
       - name: Test
         run: |
+          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+            exit 0
+          fi
           export PATH=$PATH:$HOME/Library/Python/3.8/bin
           python3 -m pip install -r requirements_test.txt
           ti example laplace

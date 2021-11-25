@@ -476,7 +476,7 @@ def check_version():
             'http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
             method='POST')
         req.add_header('Content-Type', 'application/json')
-        with request.urlopen(req, data=payload, timeout=1.5) as response:
+        with request.urlopen(req, data=payload, timeout=3) as response:
             response = json.loads(response.read().decode('utf-8'))
             if response['status'] == 1:
                 print(
@@ -486,14 +486,11 @@ def check_version():
             elif response['status'] == 0:
                 # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
                 print(response['message'])
-            return True
     except HTTPError as error:
         print('Checking latest version failed: Server error.', error)
-        return False
     except timeout:
         print(
             'Checking latest version failed: Time out when connecting server.')
-        return False
 
 
 def init(arch=None,
@@ -531,16 +528,16 @@ def init(arch=None,
         with open(timestamp_path, 'r') as f:
             last_time = f.readlines()[0].rstrip()
         if cur_date.strftime('%Y-%m-%d') > last_time:
-            if check_version():
-                with open(timestamp_path, 'w') as f:
-                    f.write((cur_date +
-                             datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
-                    f.truncate()
-    else:
-        if check_version():
+            check_version()
             with open(timestamp_path, 'w') as f:
                 f.write((cur_date +
-                         datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
+                         datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+                f.truncate()
+    else:
+        check_version()
+        with open(timestamp_path, 'w') as f:
+            f.write(
+                (cur_date + datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,

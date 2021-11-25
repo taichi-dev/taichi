@@ -16,6 +16,7 @@ DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
   auto vm = std::make_unique<VirtualMemoryAllocator>(params.size);
   info.ptr = vm->ptr;
   info.size = vm->size;
+  info.use_cached = false;
 
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();
@@ -26,15 +27,11 @@ DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
   return alloc;
 }
 
-DeviceAllocation CpuDevice::allocate_memory_runtime(const AllocParamsLlvm &params,
-                                                    JITModule *runtime_jit,
-                                                    LLVMRuntime *runtime,
-                                                    uint64 *result_buffer) {
-  // TODO add cpu caching allocator
+DeviceAllocation CpuDevice::allocate_memory_runtime(AllocParamsLlvmRuntime &params) {
   AllocInfo info;
-  info.ptr = allocate_llvm_runtime_memory_jit(runtime_jit, runtime, params.size,
-                                              result_buffer);
+  info.ptr = allocate_llvm_runtime_memory_jit(params);
   info.size = params.size;
+  info.use_cached = params.use_cached; // TODO add cpu caching allocator
 
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();
@@ -50,19 +47,11 @@ void CpuDevice::dealloc_memory(DeviceAllocation handle) {
   if (info.ptr == nullptr) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }
-  // Use at() to ensure that the memory is allocated, and not imported
-  virtual_memories_.at(handle.alloc_id).reset();
-  info.ptr = nullptr;
-}
-
-void CpuDevice::dealloc_memory_runtime(DeviceAllocation handle) {
-  validate_device_alloc(handle);
-  AllocInfo &info = allocations_[handle.alloc_id];
-  if (info.ptr == nullptr) {
-    TI_ERROR("the DeviceAllocation is already released");
-  }
-  // TODO add cpu caching allocator
-  //ccalloc.release(info.size, (uint64_t *)info.ptr);
+  if (!info.use_cached) {
+    // Use at() to ensure that the memory is allocated, and not imported
+    virtual_memories_.at(handle.alloc_id).reset();
+    info.ptr = nullptr;
+  }// TODO add cpu caching allocator
 }
 
 DeviceAllocation CpuDevice::import_memory(void *ptr, size_t size) {

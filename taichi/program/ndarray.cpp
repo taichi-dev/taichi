@@ -33,16 +33,7 @@ Ndarray::Ndarray(Program *prog,
 
 Ndarray::~Ndarray() {
   if (device_) {
-#ifdef TI_WITH_OPENGL
     device_->dealloc_memory(ndarray_alloc_);
-#elif TI_WITH_LLVM
-    // cpu and cuda backend use the preallocated memory from the runtime module
-    if (arch_is_cpu(prog_->config.arch) || prog_->config.arch == Arch::cuda) {
-      device_->dealloc_memory_runtime(ndarray_alloc_);
-    }
-#else
-    TI_ERROR("Arch is not supported by Ndarray");
-#endif
   }
 }
 

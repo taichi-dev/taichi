@@ -4,14 +4,22 @@ namespace taichi {
 namespace lang {
 namespace cuda {
 
+CudaCachingAllocator::CudaCachingAllocator(Device *device)
+    : device_(device) {}
+
 bool CudaCachingAllocator::find_block(size_t sz) const {
   return mem_blocks_.find(sz) != mem_blocks_.end();
 }
 
-uint64_t *CudaCachingAllocator::allocate(size_t sz) {
-  auto blk = mem_blocks_.find(sz);
-  uint64_t *ret = blk->second;
-  mem_blocks_.erase(blk);
+uint64_t *CudaCachingAllocator::allocate(Device::AllocParamsLlvmRuntime &params) {
+  uint64_t *ret{nullptr}; 
+  if (find_block(params.size)) {
+    auto blk = mem_blocks_.find(params.size);
+    ret = blk->second;
+    mem_blocks_.erase(blk);
+  } else {
+    ret = device_->allocate_llvm_runtime_memory_jit(params);
+  }
   return ret;
 }
 

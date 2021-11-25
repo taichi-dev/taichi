@@ -389,29 +389,22 @@ class Device {
     AllocUsage usage{AllocUsage::Storage};
   };
 
-  struct AllocParamsLlvm : AllocParams {
+  struct AllocParamsLlvmRuntime : AllocParams {
     bool use_cached{true};
+    JITModule *runtime_jit{nullptr};
+    LLVMRuntime *runtime{nullptr};
+    uint64 *result_buffer{nullptr};
   };
 
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
 
-  virtual DeviceAllocation allocate_memory_runtime(const AllocParamsLlvm &params,
-                                                   JITModule *runtime_jit,
-                                                   LLVMRuntime *runtime,
-                                                   uint64 *result_buffer) {
+  virtual DeviceAllocation allocate_memory_runtime(AllocParamsLlvmRuntime &params) {
     TI_NOT_IMPLEMENTED
   }
 
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
 
-  virtual void dealloc_memory_runtime(DeviceAllocation handle) {
-    TI_NOT_IMPLEMENTED
-  }
-
-  uint64_t *allocate_llvm_runtime_memory_jit(JITModule *runtime_jit,
-                                             LLVMRuntime *runtime,
-                                             size_t size,
-                                             uint64 *result_buffer);
+  uint64_t *allocate_llvm_runtime_memory_jit(AllocParamsLlvmRuntime &params);
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,

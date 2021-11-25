@@ -574,12 +574,13 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
     tlctx = llvm_context_host.get();
   }
 
-  Device::AllocParamsLlvm device_buffer_alloc_params;
+  Device::AllocParamsLlvmRuntime device_buffer_alloc_params;
   device_buffer_alloc_params.size = alloc_size;
   device_buffer_alloc_params.use_cached = config->ndarray_use_cached_allocator;
-  return get_compute_device()->allocate_memory_runtime(
-      device_buffer_alloc_params, tlctx->runtime_jit_module, get_llvm_runtime(),
-      result_buffer);
+  device_buffer_alloc_params.runtime_jit = tlctx->runtime_jit_module;
+  device_buffer_alloc_params.runtime = get_llvm_runtime();
+  device_buffer_alloc_params.result_buffer = result_buffer;
+  return get_compute_device()->allocate_memory_runtime(device_buffer_alloc_params);
 }
 
 std::shared_ptr<Device> LlvmProgramImpl::get_device_shared() {

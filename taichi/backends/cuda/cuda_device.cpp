@@ -31,15 +31,16 @@ DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
   return alloc;
 }
 
-DeviceAllocation CudaDevice::allocate_memory_runtime(const AllocParamsLlvm &params,
-                                                     JITModule *runtime_jit,
-                                                     LLVMRuntime *runtime,
-                                                     uint64 *result_buffer) {
+DeviceAllocation CudaDevice::allocate_memory_runtime(
+    const AllocParamsLlvm &params,
+    JITModule *runtime_jit,
+    LLVMRuntime *runtime,
+    uint64 *result_buffer) {
   AllocInfo info;
   if (params.host_read || params.host_write) {
     TI_NOT_IMPLEMENTED
   } else if (ccalloc.find_block(params.size)) {
-  //} else if (params.use_cached && ccalloc.find_block(params.size)) {
+    //} else if (params.use_cached && ccalloc.find_block(params.size)) {
     info.ptr = ccalloc.allocate(params.size);
   } else {
     info.ptr = allocate_llvm_runtime_memory_jit(runtime_jit, runtime,

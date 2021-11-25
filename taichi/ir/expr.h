@@ -91,7 +91,7 @@ class Expr {
   Expr eval() const;
 
   template <typename T, typename... Args>
-  static Expr make(Args &&...args) {
+  static Expr make(Args &&... args) {
     return Expr(std::make_shared<T>(std::forward<Args>(args)...));
   }
 

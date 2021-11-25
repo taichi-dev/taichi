@@ -71,22 +71,36 @@ class ExprGroup {
   }
 
   ExprGroup(const Expr &a) {
-    exprs.push_back(a);
+    exprs.emplace_back(a);
   }
 
   ExprGroup(const Expr &a, const Expr &b) {
-    exprs.push_back(a);
-    exprs.push_back(b);
+    exprs.emplace_back(a);
+    exprs.emplace_back(b);
   }
 
   ExprGroup(const ExprGroup &a, const Expr &b) {
-    exprs = a.exprs;
-    exprs.push_back(b);
+	for (auto i = 0; i < a.size() + 1; i++){
+		exprs.emplace_back();
+	}
+
+	exprs[0].set_or_insert_assignment(b);
+
+	for (auto i = 0; i < exprs.size(); i++){
+		exprs[i + 1].set_or_insert_assignment(a.exprs[i]);
+	}
   }
 
   ExprGroup(const Expr &a, const ExprGroup &b) {
-    exprs = b.exprs;
-    exprs.insert(exprs.begin(), a);
+	for (auto i = 0; i < b.size() + 1; i++){
+		exprs.emplace_back();
+	}
+
+	exprs[0].set_or_insert_assignment(a);
+
+	for (auto i = 0; i < exprs.size(); i++){
+		exprs[i + 1].set_or_insert_assignment(b.exprs[i]);
+	}
   }
 
   void push_back(const Expr &expr) {

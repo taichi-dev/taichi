@@ -12,6 +12,7 @@ struct CompileConfig {
   bool check_out_of_bound;
   int simd_width;
   bool lazy_compilation;
+  int opt_level;
   int external_optimization_level;
   int max_vector_width;
   bool packed;

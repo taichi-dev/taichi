@@ -53,7 +53,7 @@ from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (cook_dtype, has_clangpp, has_pytorch,
                               is_taichi_class, python_scope, taichi_scope,
                               to_numpy_type, to_pytorch_type, to_taichi_type)
-from taichi.misc.util import deprecated, get_traceback, warning
+from taichi.misc.util import deprecated, get_traceback
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
@@ -476,7 +476,7 @@ def check_version():
             'http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
             method='POST')
         req.add_header('Content-Type', 'application/json')
-        with request.urlopen(req, data=payload, timeout=1.5) as response:
+        with request.urlopen(req, data=payload, timeout=3) as response:
             response = json.loads(response.read().decode('utf-8'))
             if response['status'] == 1:
                 print(
@@ -486,14 +486,11 @@ def check_version():
             elif response['status'] == 0:
                 # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
                 print(response['message'])
-            return True
     except HTTPError as error:
         print('Checking latest version failed: Server error.', error)
-        return False
     except timeout:
         print(
             'Checking latest version failed: Time out when connecting server.')
-        return False
 
 
 def init(arch=None,
@@ -531,16 +528,16 @@ def init(arch=None,
         with open(timestamp_path, 'r') as f:
             last_time = f.readlines()[0].rstrip()
         if cur_date.strftime('%Y-%m-%d') > last_time:
-            if check_version():
-                with open(timestamp_path, 'w') as f:
-                    f.write((cur_date +
-                             datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
-                    f.truncate()
-    else:
-        if check_version():
+            check_version()
             with open(timestamp_path, 'w') as f:
                 f.write((cur_date +
-                         datetime.timedelta(days=14)).strftime('%Y-%m-%d'))
+                         datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+                f.truncate()
+    else:
+        check_version()
+        with open(timestamp_path, 'w') as f:
+            f.write(
+                (cur_date + datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
@@ -678,6 +675,9 @@ def block_local(*args):
     Args:
         *args (List[Field]): A list of sparse Taichi fields.
     """
+    if impl.current_cfg().opt_level == 0:
+        ti.warn("""opt_level = 1 is enforced to enable bls analysis.""")
+        impl.current_cfg().opt_level = 1
     for a in args:
         for v in a.get_field_members():
             _ti_core.insert_snode_access_flag(

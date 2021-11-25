@@ -398,7 +398,8 @@ class Device {
 
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
 
-  virtual DeviceAllocation allocate_memory_runtime(AllocParamsLlvmRuntime &params) {
+  virtual DeviceAllocation allocate_memory_runtime(
+      AllocParamsLlvmRuntime &params) {
     TI_NOT_IMPLEMENTED
   }
 

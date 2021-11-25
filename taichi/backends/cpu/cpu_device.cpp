@@ -27,11 +27,12 @@ DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
   return alloc;
 }
 
-DeviceAllocation CpuDevice::allocate_memory_runtime(AllocParamsLlvmRuntime &params) {
+DeviceAllocation CpuDevice::allocate_memory_runtime(
+    AllocParamsLlvmRuntime &params) {
   AllocInfo info;
   info.ptr = allocate_llvm_runtime_memory_jit(params);
   info.size = params.size;
-  info.use_cached = params.use_cached; // TODO add cpu caching allocator
+  info.use_cached = params.use_cached;  // TODO add cpu caching allocator
 
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();
@@ -51,7 +52,7 @@ void CpuDevice::dealloc_memory(DeviceAllocation handle) {
     // Use at() to ensure that the memory is allocated, and not imported
     virtual_memories_.at(handle.alloc_id).reset();
     info.ptr = nullptr;
-  }// TODO add cpu caching allocator
+  }  // TODO add cpu caching allocator
 }
 
 DeviceAllocation CpuDevice::import_memory(void *ptr, size_t size) {

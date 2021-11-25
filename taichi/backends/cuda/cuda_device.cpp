@@ -32,7 +32,8 @@ DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
   return alloc;
 }
 
-DeviceAllocation CudaDevice::allocate_memory_runtime(AllocParamsLlvmRuntime &params) {
+DeviceAllocation CudaDevice::allocate_memory_runtime(
+    AllocParamsLlvmRuntime &params) {
   AllocInfo info;
   if (params.host_read || params.host_write) {
     TI_NOT_IMPLEMENTED
@@ -69,7 +70,9 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
 }
 
 std::unique_ptr<CudaCachingAllocator> CudaDevice::get_caching_allocator() {
-  return (caching_allocator_ != nullptr) ? std::move(caching_allocator_) : std::make_unique<CudaCachingAllocator>(this);
+  return (caching_allocator_ != nullptr)
+             ? std::move(caching_allocator_)
+             : std::make_unique<CudaCachingAllocator>(this);
 }
 
 DeviceAllocation CudaDevice::import_memory(void *ptr, size_t size) {

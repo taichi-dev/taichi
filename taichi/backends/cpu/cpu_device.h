@@ -88,7 +88,8 @@ class CpuDevice : public Device {
   ~CpuDevice() override{};
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
-  DeviceAllocation allocate_memory_runtime(AllocParamsLlvmRuntime &params) override;
+  DeviceAllocation allocate_memory_runtime(
+      AllocParamsLlvmRuntime &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
   std::unique_ptr<Pipeline> create_pipeline(

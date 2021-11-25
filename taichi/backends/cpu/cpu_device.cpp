@@ -26,10 +26,11 @@ DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
   return alloc;
 }
 
-DeviceAllocation CpuDevice::allocate_memory_runtime(const AllocParams &params,
+DeviceAllocation CpuDevice::allocate_memory_runtime(const AllocParamsLlvm &params,
                                                     JITModule *runtime_jit,
                                                     LLVMRuntime *runtime,
                                                     uint64 *result_buffer) {
+  // TODO add cpu caching allocator
   AllocInfo info;
   info.ptr = allocate_llvm_runtime_memory_jit(runtime_jit, runtime, params.size,
                                               result_buffer);
@@ -52,6 +53,16 @@ void CpuDevice::dealloc_memory(DeviceAllocation handle) {
   // Use at() to ensure that the memory is allocated, and not imported
   virtual_memories_.at(handle.alloc_id).reset();
   info.ptr = nullptr;
+}
+
+void CpuDevice::dealloc_memory_runtime(DeviceAllocation handle) {
+  validate_device_alloc(handle);
+  AllocInfo &info = allocations_[handle.alloc_id];
+  if (info.ptr == nullptr) {
+    TI_ERROR("the DeviceAllocation is already released");
+  }
+  // TODO add cpu caching allocator
+  //ccalloc.release(info.size, (uint64_t *)info.ptr);
 }
 
 DeviceAllocation CpuDevice::import_memory(void *ptr, size_t size) {

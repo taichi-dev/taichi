@@ -88,13 +88,12 @@ class CudaDevice : public Device {
   ~CudaDevice() override{};
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
-  DeviceAllocation allocate_memory_runtime(const AllocParams &params,
+  DeviceAllocation allocate_memory_runtime(const AllocParamsLlvm &params,
                                            JITModule *runtime_jit_module,
                                            LLVMRuntime *runtime,
                                            uint64 *result_buffer) override;
   void dealloc_memory(DeviceAllocation handle) override;
-
-  void release_memory(DeviceAllocation &alloc) override;
+  void dealloc_memory_runtime(DeviceAllocation handle) override;
 
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,

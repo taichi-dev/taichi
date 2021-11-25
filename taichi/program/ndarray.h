@@ -34,6 +34,7 @@ class Ndarray {
   ~Ndarray();
 
  private:
+  Program *prog_{nullptr};
   DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
   // Invariant:
   //   data_ptr_ is not nullptr iff arch is a llvm backend
@@ -46,7 +47,7 @@ class Ndarray {
   // you try to deallocate in Ndarray destructor.
   // Note that we might consider changing this logic later if we implement
   // dynamic tensor rematerialization.
-  std::shared_ptr<Device> device_;
+  std::shared_ptr<Device> device_{nullptr};
 };
 
 }  // namespace lang

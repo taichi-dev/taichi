@@ -8,7 +8,8 @@ namespace lang {
 Ndarray::Ndarray(Program *prog,
                  const DataType type,
                  const std::vector<int> &shape)
-    : dtype(type),
+    : prog_(prog),
+      dtype(type),
       shape(shape),
       num_active_indices(shape.size()),
       nelement_(std::accumulate(std::begin(shape),
@@ -16,14 +17,13 @@ Ndarray::Ndarray(Program *prog,
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)),
-      //prog_impl_(prog->get_llvm_program_impl()),
-      device_(prog->get_device_shared()) {
-  ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
-                                                 prog->result_buffer);
+      device_(prog_->get_device_shared()) {
+  ndarray_alloc_ = prog_->allocate_memory_ndarray(nelement_ * element_size_,
+                                                 prog_->result_buffer);
 #ifdef TI_WITH_LLVM
-  if (arch_is_cpu(prog->config.arch) || prog->config.arch == Arch::cuda) {
+  if (arch_is_cpu(prog_->config.arch) || prog_->config.arch == Arch::cuda) {
     // For the LLVM backends, device allocation is a physical pointer.
-    data_ptr_ = prog->get_llvm_program_impl()->get_ndarray_alloc_info_ptr(
+    data_ptr_ = prog_->get_llvm_program_impl()->get_ndarray_alloc_info_ptr(
         ndarray_alloc_);
   }
 #else
@@ -33,10 +33,15 @@ Ndarray::Ndarray(Program *prog,
 
 Ndarray::~Ndarray() {
   if (device_) {
-#ifdef TI_WITH_LLVM
-    device_->release_memory(ndarray_alloc_);
-#else
+#ifdef TI_WITH_OPENGL
     device_->dealloc_memory(ndarray_alloc_);
+#elif TI_WITH_LLVM
+    // cpu and cuda backend use the preallocated memory from the runtime module
+    if (arch_is_cpu(prog_->config.arch) || prog_->config.arch == Arch::cuda) {
+      device_->dealloc_memory_runtime(ndarray_alloc_);
+    }
+#else
+    TI_ERROR("Arch is not supported by Ndarray");
 #endif
   }
 }

@@ -108,3 +108,27 @@ def test_offload_with_cross_block_globals():
     ker()
 
     assert ret[None] == 46
+
+
+@ti.test()
+def test_offload_with_cross_nested_for():
+    @ti.kernel
+    def run(a: ti.i32):
+        b = a + 1
+        for x in range(1):
+            for i in range(b):
+                print('OK')
+
+    run(2)
+
+
+@ti.test()
+def test_offload_with_cross_if_inside_for():
+    @ti.kernel
+    def run(a: ti.i32):
+        b = a > 2
+        for x in range(1):
+            if b:
+                print('OK')
+
+    run(2)

@@ -33,4 +33,4 @@ def _unit(unit_name):
 @_unit('task')
 class Task:
     def run(self, *args):
-        return self.c.run(args)
+        return self.c.run(args)  # pylint: disable=E1101

@@ -20,7 +20,7 @@ This section documents how to configure the Taichi development environment and b
    - On Arch Linux, download `llvm == 10.0.0` prebuilt binary for `ubuntu 18.04` from [here](https://releases.llvm.org/download.html#10.0.1). Then update environment variables `TAICHI_CMAKE_ARGS` and  `PATH`:
 
      ```bash
-     export TAICHI_CMAKE_ARGS="-DCMAKE_CXX_COMPILER=<path_to_llvm_folder>/bin/clang++:$TAICHI_CMAKE_ARGS"
+     export TAICHI_CMAKE_ARGS="-DCMAKE_CXX_COMPILER=<path_to_llvm_folder>/bin/clang++ $TAICHI_CMAKE_ARGS"
      export PATH=<path_to_llvm_folder>/bin:$PATH
      ```
 
@@ -126,7 +126,7 @@ If you wish to build taichi with Vulkan. You will need to install the Vulkan SDK
 
 After Vulkan is successfully installed. You can build Taichi with Vulkan by adding an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON`.
 
-### Setting up Taichi for development
+## Building Taichi from source
 
 1. Clone the Taichi repo **recursively**, and build:
 
@@ -135,7 +135,7 @@ After Vulkan is successfully installed. You can build Taichi with Vulkan by addi
   cd taichi
   python3 -m pip install --user -r requirements_dev.txt
   # export CXX=/path/to/clang++  # Uncomment if clang++ is not system default compiler. Note that clang is not acceptable due to requirements of some submodules.
-  python3 setup.py develop --user  # Optionally add DEBUG=1 to keep debug information.
+  python3 setup.py develop --user  # Optionally export DEBUG=1 to keep debug information.
   ```
 
 :::note
@@ -156,7 +156,7 @@ See [development mode](https://setuptools.pypa.io/en/stable/userguide/developmen
 :::
 
 2. Check out the `examples` folder for runnable examples. Run them with commands
-  like `python3 examples/simulation/mpm128.py`.
+  like `python3 python/taichi/examples/simulation/mpm128.py`.
 
 3. Execute `python3 -m taichi test` to run all the tests. It may take
   up to 5 minutes to run all tests.
@@ -232,8 +232,7 @@ brew install socat
 2.  Temporally disable the xhost access-control: `xhost +`.
 3.  Start the Docker container with
     `docker run -it -e DISPLAY=$(ipconfig getifaddr en0):0 taichidev/taichi:v0.6.17`.
-4.  Do whatever you want within the container, e.g. you could run tests
-    or an example, try: `ti test` or `ti example mpm88`.
+4.  Do whatever you want within the container, e.g. you could run an example, try: `ti example mpm88`.
 5.  Exit from the container with `exit` or `ctrl+D`.
 6.  **[To keep your xhost safe]** Re-enable the xhost access-control:
     `xhost -`.
@@ -258,8 +257,7 @@ sudo systemctl restart docker
 4.  Temporally disable the xhost access-control: `xhost +`.
 5.  Start the Docker container with
     `sudo docker run -it --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix taichidev/taichi:v0.6.17`.
-6.  Do whatever you want within the container, e.g. you could run tests
-    or an example, try: `ti test` or `ti example mpm88`.
+6.  Do whatever you want within the container, e.g. you could run an example, try: `ti example mpm88`.
 7.  Exit from the container with `exit` or `ctrl+D`.
 8.  **[To keep your xhost safe]** Re-enable the xhost access-control:
     `xhost -`.

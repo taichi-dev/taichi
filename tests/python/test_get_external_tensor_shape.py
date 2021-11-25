@@ -57,7 +57,7 @@ def test_get_external_tensor_shape_access_torch(size):
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @pytest.mark.parametrize('size', [[1, 2, 3, 4]])
-@ti.test(exclude=ti.opengl)
+@ti.test(arch=[ti.cpu, ti.cuda, ti.opengl])
 def test_get_external_tensor_shape_access_ndarray(size):
     @ti.kernel
     def func(x: ti.any_arr(), index: ti.template()) -> ti.i32:

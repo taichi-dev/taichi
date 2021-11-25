@@ -359,3 +359,4 @@ jobs:
           python3 tests/run_tests.py -vr2 -t4 -x
         env:
           TI_WANTED_ARCHS: "metal,cpu"
+

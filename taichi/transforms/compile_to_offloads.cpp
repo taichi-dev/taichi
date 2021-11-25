@@ -96,6 +96,10 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  if (is_extension_supported(config.arch, Extension::mesh)) {
+    irpass::analysis::gather_meshfor_relation_types(ir);
+  }
+
   if (grad) {
     // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir, config);
@@ -127,7 +131,7 @@ void compile_to_offloads(IRNode *ir,
 
   // TODO: This pass may be redundant as cfg_optimization() is already called
   //  in full_simplify().
-  if (config.cfg_optimization) {
+  if (config.opt_level > 0 && config.cfg_optimization) {
     irpass::cfg_optimization(ir, false);
     print("Optimized by CFG");
     irpass::analysis::verify(ir);
@@ -179,14 +183,38 @@ void offload_to_executable(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  if (is_extension_supported(config.arch, Extension::mesh) &&
+      config.demote_no_access_mesh_fors) {
+    irpass::demote_no_access_mesh_fors(ir);
+    irpass::type_check(ir, config);
+    print("No-access mesh-for demoted");
+    irpass::analysis::verify(ir);
+  }
+
   if (make_thread_local) {
     irpass::make_thread_local(ir, config);
     print("Make thread local");
   }
 
+  if (is_extension_supported(config.arch, Extension::mesh)) {
+    irpass::make_mesh_thread_local(ir, config, {kernel->get_name()});
+    print("Make mesh thread local");
+    if (config.make_mesh_block_local) {
+      irpass::make_mesh_block_local(ir, config, {kernel->get_name()});
+      print("Make mesh block local");
+      irpass::full_simplify(ir, config, {false, kernel->program});
+      print("Simplified X");
+    }
+  }
+
   if (make_block_local) {
     irpass::make_block_local(ir, config, {kernel->get_name()});
     print("Make block local");
+  }
+
+  if (is_extension_supported(config.arch, Extension::mesh)) {
+    irpass::demote_mesh_statements(ir, config, {kernel->get_name()});
+    print("Demote mesh statements");
   }
 
   irpass::demote_atomics(ir, config);

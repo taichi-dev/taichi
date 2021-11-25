@@ -1,11 +1,10 @@
-import shutil
-import warnings
 from contextlib import contextmanager
+from pathlib import Path, PurePosixPath
 
-from taichi.core import ti_core as _ti_core
 from taichi.lang import impl, kernel_impl
+from taichi.lang._ndarray import Ndarray
 from taichi.lang.field import ScalarField
-from taichi.lang.matrix import MatrixField
+from taichi.lang.matrix import MatrixField, MatrixNdarray, VectorNdarray
 from taichi.type.annotations import ArgAnyArray, template
 
 
@@ -39,8 +38,7 @@ class KernelTemplate:
         for index, (key, value) in enumerate(kwargs.items()):
             template_args[index] = (key, value)
 
-        for i in range(len(kernel.argument_annotations)):
-            anno = kernel.argument_annotations[i]
+        for anno in kernel.argument_annotations:
             if isinstance(anno, template):
                 (k, v) = template_args[anno_index]
                 key_p += k
@@ -86,6 +84,7 @@ class Module:
         self._arch = arch
         self._kernels = []
         self._fields = {}
+        self._ndarrays = {}
         rtm = impl.get_runtime()
         rtm._finalize_root_fb_for_aot()
         self._aot_builder = rtm.prog.make_aot_module_builder(arch)
@@ -122,26 +121,63 @@ class Module:
                                     field.dtype, field.snode.shape, row_num,
                                     column_num)
 
-    def add_kernel(self, kernel_fn, name=None):
+    def add_ndarray(self, name, arr):
+        """Add a taichi ndarray to the AOT module.
+
+        Args:
+          name: name of taichi ndarray
+          arr: taichi ndarray
+
+        Example:
+          Usage::
+
+          a = ti.ndarray(ti.f32, shape=(4,4))
+
+          m.add_ndarray(a)
+        """
+        is_scalar = True
+        self._ndarrays[name] = arr
+        column_num = 1
+        row_num = 1
+        if isinstance(arr, MatrixNdarray):
+            is_scalar = False
+            row_num = arr.m
+            column_num = arr.n
+        elif isinstance(arr, VectorNdarray):
+            is_scalar = False
+            column_num = arr.n
+        else:
+            assert isinstance(arr, Ndarray)
+        self._aot_builder.add_ndarray(name, is_scalar, arr.dtype, arr.shape,
+                                      row_num, column_num)
+
+    def add_kernel(self, kernel_fn, example_any_arrays=(), name=None):
         """Add a taichi kernel to the AOT module.
 
         Args:
           kernel_fn (Function): the function decorated by taichi `kernel`.
+          example_any_arrays (Tuple[any_arr]): a tuple of example any_arr inputs.
           name (str): Name to identify this kernel in the module. If not
             provided, uses the built-in ``__name__`` attribute of `kernel_fn`.
 
-        TODO:
-          * Support external array
         """
         name = name or kernel_fn.__name__
         kernel = kernel_fn._primal
         assert isinstance(kernel, kernel_impl.Kernel)
         injected_args = []
-        for i in range(len(kernel.argument_annotations)):
-            anno = kernel.argument_annotations[i]
+        num_arr = len([
+            anno for anno in kernel.argument_annotations
+            if isinstance(anno, ArgAnyArray)
+        ])
+        assert num_arr == len(
+            example_any_arrays
+        ), f'Need {num_arr} example any_arr inputs but got {len(example_any_arrays)}'
+        i = 0
+        for anno in kernel.argument_annotations:
             if isinstance(anno, ArgAnyArray):
-                raise RuntimeError(
-                    'Arg type `ext_arr`/`any_arr` not supported yet')
+                # TODO: maybe also save example_any_arrays variable names?
+                injected_args.append(example_any_arrays[i])
+                i = i + 1
             else:
                 # For primitive types, we can just inject a dummy value.
                 injected_args.append(0)
@@ -193,4 +229,5 @@ class Module:
           filepath (str): path to a folder to store aot files.
           filename (str): filename prefix for stored aot files.
         """
+        filepath = str(PurePosixPath(Path(filepath).resolve()))
         self._aot_builder.dump(filepath, filename)

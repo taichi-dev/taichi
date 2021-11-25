@@ -96,7 +96,7 @@ class VulkanResourceBinder : public ResourceBinder {
   struct Binding {
     VkDescriptorType type;
     DevicePtr ptr;
-    size_t size;
+    VkDeviceSize size;
     VkSampler sampler{VK_NULL_HANDLE};  // used only for images
   };
 
@@ -365,6 +365,7 @@ class VulkanSurface : public Surface {
 
   void present_image() override;
   std::pair<uint32_t, uint32_t> get_size() override;
+  int get_image_count() override;
   BufferFormat image_format() override;
   void resize(uint32_t width, uint32_t height) override;
 
@@ -387,7 +388,7 @@ class VulkanSurface : public Surface {
 
   std::vector<DeviceAllocation> swapchain_images_;
 
-  DeviceAllocation screenshot_image_{kDeviceNullAllocation};
+  // DeviceAllocation screenshot_image_{kDeviceNullAllocation};
   DeviceAllocation screenshot_buffer_{kDeviceNullAllocation};
 };
 

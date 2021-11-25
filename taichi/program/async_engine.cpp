@@ -196,7 +196,7 @@ AsyncEngine::AsyncEngine(const CompileConfig *const config,
   ir_bank_.set_sfg(sfg.get());
 }
 
-void AsyncEngine::launch(Kernel *kernel, Context &context) {
+void AsyncEngine::launch(Kernel *kernel, RuntimeContext &context) {
   if (!kernel->lowered()) {
     kernel->lower(/*to_executable=*/false);
   }

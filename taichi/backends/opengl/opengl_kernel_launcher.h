@@ -18,7 +18,7 @@ class DeviceCompiledProgram;
 
 struct OpenGlRuntime {
   std::unique_ptr<OpenGlRuntimeImpl> impl;
-  std::unique_ptr<Device> device{nullptr};
+  std::shared_ptr<Device> device{nullptr};
   OpenGlRuntime();
   ~OpenGlRuntime();
   DeviceCompiledProgram *keep(CompiledProgram &&program);

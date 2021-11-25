@@ -16,6 +16,8 @@ std::string snode_access_flag_name(SNodeAccessFlag type) {
     return "block_local";
   } else if (type == SNodeAccessFlag::read_only) {
     return "read_only";
+  } else if (type == SNodeAccessFlag::mesh_local) {
+    return "mesh_local";
   } else {
     TI_ERROR("Undefined SNode AccessType (value={})", int(type));
   }
@@ -171,7 +173,7 @@ Stmt *Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
   return ret;
 }
 
-void Stmt::replace_with(Stmt *new_stmt) {
+void Stmt::replace_usages_with(Stmt *new_stmt) {
   irpass::replace_all_usages_with(nullptr, this, new_stmt);
 }
 
@@ -391,7 +393,7 @@ void Block::replace_with(Stmt *old_statement,
   }
   TI_ASSERT(location != -1);
   if (replace_usages && !new_statements.stmts.empty())
-    old_statement->replace_with(new_statements.back().get());
+    old_statement->replace_usages_with(new_statements.back().get());
   trash_bin.push_back(std::move(statements[location]));
   if (new_statements.size() == 1) {
     // Keep all std::vector::iterator valid in this case.
@@ -449,6 +451,7 @@ DelayedIRModifier::~DelayedIRModifier() {
   TI_ASSERT(to_erase.empty());
   TI_ASSERT(to_replace_with.empty());
   TI_ASSERT(to_extract_to_block_front.empty());
+  TI_ASSERT(to_type_check.empty());
 }
 
 void DelayedIRModifier::erase(Stmt *stmt) {
@@ -487,11 +490,16 @@ void DelayedIRModifier::extract_to_block_front(Stmt *stmt, Block *blk) {
   to_extract_to_block_front.emplace_back(stmt, blk);
 }
 
+void DelayedIRModifier::type_check(IRNode *node, CompileConfig cfg) {
+  to_type_check.emplace_back(node, cfg);
+}
+
 bool DelayedIRModifier::modify_ir() {
   bool force_modified = modified_;
   modified_ = false;
   if (to_insert_before.empty() && to_insert_after.empty() && to_erase.empty() &&
-      to_replace_with.empty() && to_extract_to_block_front.empty())
+      to_replace_with.empty() && to_extract_to_block_front.empty() &&
+      to_type_check.empty())
     return force_modified;
   for (auto &i : to_insert_before) {
     i.first->parent->insert_before(i.first, std::move(i.second));
@@ -514,6 +522,10 @@ bool DelayedIRModifier::modify_ir() {
     i.second->insert(std::move(extracted), 0);
   }
   to_extract_to_block_front.clear();
+  for (auto &i : to_type_check) {
+    irpass::type_check(i.first, i.second);
+  }
+  to_type_check.clear();
   return true;
 }
 

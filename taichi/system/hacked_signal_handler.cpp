@@ -1,11 +1,11 @@
 #include <csignal>
 
 #include "taichi/common/logging.h"
+#include "taichi/system/hacked_signal_handler.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/traceback.h"
 
 namespace taichi {
-
 namespace {
 
 std::string signal_name(int sig) {
@@ -40,30 +40,45 @@ void signal_handler(int signo) {
   TI_UNREACHABLE;
 }
 
-class HackedSignalRegister {
- public:
-  explicit HackedSignalRegister() {
+}  // namespace
+
+HackedSignalRegister::HackedSignalRegister() {
 #define TI_REGISTER_SIGNAL_HANDLER(name, handler)                   \
   {                                                                 \
     if (std::signal(name, handler) == SIG_ERR)                      \
       std::printf("Cannot register signal handler for" #name "\n"); \
   }
 
-    TI_REGISTER_SIGNAL_HANDLER(SIGSEGV, signal_handler);
-    TI_REGISTER_SIGNAL_HANDLER(SIGABRT, signal_handler);
+  TI_REGISTER_SIGNAL_HANDLER(SIGSEGV, signal_handler);
+  TI_REGISTER_SIGNAL_HANDLER(SIGABRT, signal_handler);
 #if !defined(_WIN64)
-    TI_REGISTER_SIGNAL_HANDLER(SIGBUS, signal_handler);
+  TI_REGISTER_SIGNAL_HANDLER(SIGBUS, signal_handler);
 #endif
-    TI_REGISTER_SIGNAL_HANDLER(SIGFPE, signal_handler);
+  TI_REGISTER_SIGNAL_HANDLER(SIGFPE, signal_handler);
 
 #undef TI_REGISTER_SIGNAL_HANDLER
 
-    Logger::get_instance().set_print_stacktrace_func(print_traceback);
-    TI_TRACE("Taichi core started. Thread ID = {}", PID::get_pid());
+  Logger::get_instance().set_print_stacktrace_func(print_traceback);
+  TI_TRACE("Taichi signal handlers registered. Thread ID = {}", PID::get_pid());
+}
+
+HackedSignalRegister::~HackedSignalRegister() {
+#define TI_UNREGISTER_SIGNAL_HANDLER(name)                            \
+  {                                                                   \
+    if (std::signal(name, SIG_DFL) == SIG_ERR)                        \
+      std::printf("Cannot unregister signal handler for" #name "\n"); \
   }
-};
 
-HackedSignalRegister _;
+  TI_UNREGISTER_SIGNAL_HANDLER(SIGSEGV);
+  TI_UNREGISTER_SIGNAL_HANDLER(SIGABRT);
+#if !defined(_WIN64)
+  TI_UNREGISTER_SIGNAL_HANDLER(SIGBUS);
+#endif
+  TI_UNREGISTER_SIGNAL_HANDLER(SIGFPE);
 
-}  // namespace
+#undef TI_UNREGISTER_SIGNAL_HANDLER
+  TI_TRACE("Taichi signal handlers unregistered. Thread ID = {}",
+           PID::get_pid());
+}
+
 }  // namespace taichi

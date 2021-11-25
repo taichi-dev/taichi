@@ -658,6 +658,9 @@ def init(arch=None,
 
     impl._root_fb = FieldsBuilder()
 
+    if not os.environ.get("TI_DISABLE_SIGNAL_HANDLERS", False):
+        impl.get_runtime()._register_signal_handlers()
+
     return None
 
 

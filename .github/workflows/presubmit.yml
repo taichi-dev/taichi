@@ -295,7 +295,7 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
@@ -317,7 +317,7 @@ jobs:
           echo wanted arch: $env:TI_WANTED_ARCHS
           python tests/run_tests.py -vr2 -t2 -a "$env:TI_WANTED_ARCHS"
         env:
-          PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
+          PYTHON: C:\hostedtoolcache\windows\Python\3.9.7\x64\python.exe
           TI_WANTED_ARCHS: "cpu"
 
   build_and_test_m1:

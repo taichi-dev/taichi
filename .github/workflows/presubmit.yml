@@ -245,7 +245,7 @@ jobs:
     needs: [check_code_format, check_files]
     runs-on: [self-hosted, cuda, vulkan, cn]
     if: needs.check_files.outputs.run_job == 'true'
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v2
         with:

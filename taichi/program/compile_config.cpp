@@ -7,6 +7,7 @@ TLANG_NAMESPACE_BEGIN
 CompileConfig::CompileConfig() {
   arch = host_arch();
   simd_width = default_simd_width(arch);
+  opt_level = 1;
   external_optimization_level = 3;
   packed = false;
   print_ir = false;

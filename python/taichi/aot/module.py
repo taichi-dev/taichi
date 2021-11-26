@@ -229,5 +229,5 @@ class Module:
           filepath (str): path to a folder to store aot files.
           filename (str): filename prefix for stored aot files.
         """
-        filepath = str(PurePosixPath(Path(filepath).resolve()))
+        filepath = str(PurePosixPath(Path(filepath)))
         self._aot_builder.dump(filepath, filename)

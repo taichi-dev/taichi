@@ -19,8 +19,10 @@ wget https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.1
 tar -xzf sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
 chmod +x sccache-v0.2.15-x86_64-unknown-linux-musl/sccache
 export PATH=$(pwd)/sccache-v0.2.15-x86_64-unknown-linux-musl:$PATH
+cp -R $SCCACHE_DIR /home/dev/sccache2
+rm -rf $SCCACHE_DIR
+mv /home/dev/sccache2 $SCCACHE_DIR
 sccache -s
-chmod -R 777 $SCCACHE_DIR
 cd taichi
 git fetch origin master
 

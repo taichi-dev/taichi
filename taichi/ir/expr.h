@@ -75,7 +75,7 @@ class Expr {
 
   void set_or_insert_assignment(const Expr &o);
 
-  Expr &operator=(const Expr &o) = default;
+  Expr &operator=(const Expr &o);
 
   Expr operator[](const ExprGroup &indices) const;
 

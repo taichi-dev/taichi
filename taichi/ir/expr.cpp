@@ -86,6 +86,11 @@ void Expr::set_or_insert_assignment(const Expr &o) {
   }
 }
 
+Expr &Expr::operator=(const Expr &o) {
+  set_or_insert_assignment(o);
+  return *this;
+}
+
 Expr Expr::parent() const {
   TI_ASSERT_INFO(is<GlobalVariableExpression>(),
                  "Cannot get snode parent of non-global variables.");

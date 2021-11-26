@@ -305,6 +305,7 @@ class PyTaichi:
         self.target_tape = None
         self.grad_replaced = False
         self.kernels = kernels or []
+        self._signal_handler_registry = None
 
     def get_num_compiled_functions(self):
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
@@ -370,10 +371,15 @@ class PyTaichi:
             callback()
         self.materialize_callbacks = []
 
+    def _register_signal_handlers(self):
+        if self._signal_handler_registry is None:
+            self._signal_handler_registry = _ti_core.HackedSignalRegister()
+
     def clear(self):
         if self.prog:
             self.prog.finalize()
             self.prog = None
+        self._signal_handler_registry = None
         self.materialized = False
 
     def get_tape(self, loss=None):

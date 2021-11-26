@@ -10,9 +10,8 @@ import numpy as np
 import taichi.lang
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
-from taichi.lang.ast import transform_tree
-from taichi.lang.ast.ast_transformer_utils import ASTTransformerContext
-from taichi.lang.ast.checkers import KernelSimplicityASTChecker
+from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
+                             transform_tree)
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.shell import _shell_pop_print, oinspect

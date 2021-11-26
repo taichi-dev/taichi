@@ -20,9 +20,8 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang import _random, impl, types
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.ast.transformer import TaichiSyntaxError
 from taichi.lang.enums import Layout
-from taichi.lang.exception import InvalidOperationError
+from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.impl import (axes, begin_frontend_if,

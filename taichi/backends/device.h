@@ -405,7 +405,8 @@ class Device {
 
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
 
-  uint64_t *allocate_llvm_runtime_memory_jit(const LlvmRuntimeAllocParams &params);
+  uint64_t *allocate_llvm_runtime_memory_jit(
+      const LlvmRuntimeAllocParams &params);
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,

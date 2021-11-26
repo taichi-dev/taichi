@@ -33,7 +33,7 @@ DeviceAllocation CpuDevice::allocate_memory_runtime(
   info.ptr = allocate_llvm_runtime_memory_jit(params);
   // TODO: Add caching allocator
   info.size = params.size;
-  info.use_cached = params.use_cached;  
+  info.use_cached = params.use_cached;
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();
   alloc.device = this;

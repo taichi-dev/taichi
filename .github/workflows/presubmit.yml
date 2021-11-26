@@ -284,8 +284,8 @@ jobs:
 
   build_and_test_windows:
     name: Build and Test (Windows)
-    needs: [check_code_format, check_files]
-    if: needs.check_files.outputs.run_job == 'true'
+    #needs: [check_code_format, check_files]
+    #if: needs.check_files.outputs.run_job == 'true'
     runs-on: [self-hosted,windows]
     timeout-minutes: 90
     steps:
@@ -295,7 +295,7 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.9.7
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2

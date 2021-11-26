@@ -54,7 +54,7 @@ jobs:
           docker cp sccache.tar taichi_build:/home/dev/
           docker start -a taichi_build
           rm -rf sccache_cache
-          docker cp taichi_build:/home/dev/sccache_cache sccache_cache
+          docker cp taichi_build:/home/dev/sccache_cache .
         env:
           PY: ${{ matrix.python }}
           GPU_BUILD: OFF
@@ -130,7 +130,7 @@ jobs:
           docker cp sccache.tar taichi_build:/home/dev/
           docker start -a taichi_build
           rm -rf sccache_cache
-          docker cp taichi_build:/home/dev/sccache_cache sccache_cache
+          docker cp taichi_build:/home/dev/sccache_cache .
         env:
           PY: ${{ matrix.python }}
           GPU_BUILD: OFF
@@ -235,7 +235,7 @@ jobs:
           docker cp sccache.tar taichi_build:/home/dev/
           docker start -a taichi_build
           rm -rf sccache_cache
-          docker cp taichi_build:/home/dev/sccache_cache sccache_cache
+          docker cp taichi_build:/home/dev/sccache_cache .
         env:
           PY: py38
           GPU_BUILD: ON

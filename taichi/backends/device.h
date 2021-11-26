@@ -389,7 +389,7 @@ class Device {
     AllocUsage usage{AllocUsage::Storage};
   };
 
-  struct AllocParamsLlvmRuntime : AllocParams {
+  struct LlvmRuntimeAllocParams : AllocParams {
     bool use_cached{true};
     JITModule *runtime_jit{nullptr};
     LLVMRuntime *runtime{nullptr};

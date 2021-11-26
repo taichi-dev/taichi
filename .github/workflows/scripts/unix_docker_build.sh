@@ -9,6 +9,8 @@ PROJECT_NAME=$3
 CI_SETUP_CMAKE_ARGS=$4
 export SCCACHE_DIR=/cache
 export SCCACHE_CACHE_SIZE="128M"
+export SCCACHE_LOG=debug
+export SCCACHE_ERROR_LOG=/home/dev/sccache_error
 source /home/dev/miniconda/etc/profile.d/conda.sh
 conda activate $PY
 
@@ -43,6 +45,7 @@ TAICHI_CMAKE_ARGS=$CI_SETUP_CMAKE_ARGS PROJECT_NAME=$PROJECT_NAME python3 setup.
 
 CUR_DIR=`pwd`
 TI_LIB_DIR=$CUR_DIR/python/taichi/lib ./build/taichi_cpp_tests
+cat /home/dev/sccache_error
 sccache -s
 chmod -fR 777 $SCCACHE_DIR || true
 cp dist/*.whl /wheel/

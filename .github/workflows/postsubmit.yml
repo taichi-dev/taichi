@@ -46,7 +46,7 @@ jobs:
         run: |
           mkdir -m777 wheel
           mkdir -p sccache_cache
-          docker create -v `pwd`/wheel:/wheel -v `pwd`/sccache_cache:/cache --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
+          docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           # Docker cp preserves the ownership in the host machine. However, the user in the host machine won't be recognized
           # by the docker image we set ahead of time. Therefore, we use tar to set the user of the folder that is copied to the container.
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
@@ -124,7 +124,7 @@ jobs:
         run: |
           mkdir -m777 wheel
           mkdir -p sccache_cache
-          docker create -v `pwd`/wheel:/wheel -v `pwd`/sccache_cache:/cache --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
+          docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
           tar -cf sccache.tar sccache_cache
           docker cp sccache.tar taichi_build:/home/dev/
@@ -229,7 +229,7 @@ jobs:
         run: |
           mkdir -m777 wheel
           mkdir -p sccache_cache
-          docker create -v `pwd`/wheel:/wheel -v `pwd`/sccache_cache:/cache --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
+          docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
           tar -cf sccache.tar sccache_cache
           docker cp sccache.tar taichi_build:/home/dev/

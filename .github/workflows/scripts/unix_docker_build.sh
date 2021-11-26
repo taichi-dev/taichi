@@ -13,7 +13,7 @@ export SCCACHE_LOG=error
 export SCCACHE_ERROR_LOG=/home/dev/sccache_error
 source /home/dev/miniconda/etc/profile.d/conda.sh
 conda activate $PY
-
+tar xf /home/dev/sccache.tar -C /home/dev
 python3 -m pip uninstall taichi taichi-nightly -y
 wget https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
 tar -xzf sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz

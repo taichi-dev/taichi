@@ -32,6 +32,7 @@ void Particles::update_ubo(glm::vec3 color,
 }
 
 void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
+  Renderable::update_data(info.renderable_info);
   size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
   if (config_.ssbo_size != correct_ssbo_size) {
     resize_storage_buffers(correct_ssbo_size);
@@ -42,8 +43,6 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
     memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
     app_context_->device().unmap(storage_buffer_);
   }
-
-  Renderable::update_data(info.renderable_info);
 
   update_ubo(info.color, info.renderable_info.has_per_vertex_color, info.radius,
              scene);

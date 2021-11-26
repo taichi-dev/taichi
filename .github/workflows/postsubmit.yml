@@ -284,6 +284,7 @@ jobs:
           python tests/run_tests.py -vr2 -t2 -a $env:TI_WANTED_ARCHS
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
+          TI_WANTED_ARCHS: "cpu"
 
   build_and_test_m1:
     name: Build and Test (Apple M1)

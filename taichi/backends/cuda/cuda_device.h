@@ -90,7 +90,7 @@ class CudaDevice : public Device {
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   DeviceAllocation allocate_memory_runtime(
-      AllocParamsLlvmRuntime &params) override;
+      LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
   std::unique_ptr<CudaCachingAllocator> get_caching_allocator();

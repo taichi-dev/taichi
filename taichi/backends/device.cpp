@@ -129,7 +129,7 @@ void Device::print_all_cap() const {
 }
 
 uint64_t *Device::allocate_llvm_runtime_memory_jit(
-    AllocParamsLlvmRuntime &params) {
+    const LlvmRuntimeAllocParams &params) {
   params.runtime_jit->call<void *, std::size_t, std::size_t>(
       "runtime_memory_allocate_aligned", params.runtime, params.size,
       taichi_page_size);

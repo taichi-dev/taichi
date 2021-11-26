@@ -7,12 +7,8 @@ namespace cuda {
 CudaCachingAllocator::CudaCachingAllocator(Device *device) : device_(device) {
 }
 
-bool CudaCachingAllocator::find_block(size_t sz) const {
-  return mem_blocks_.find(sz) != mem_blocks_.end();
-}
-
 uint64_t *CudaCachingAllocator::allocate(
-    Device::AllocParamsLlvmRuntime &params) {
+    Device::LlvmRuntimeAllocParams &params) {
   uint64_t *ret{nullptr};
   if (find_block(params.size)) {
     auto blk = mem_blocks_.find(params.size);
@@ -26,6 +22,10 @@ uint64_t *CudaCachingAllocator::allocate(
 
 void CudaCachingAllocator::release(size_t sz, uint64_t *ptr) {
   mem_blocks_.insert(std::pair<size_t, uint64_t *>(sz, ptr));
+}
+
+bool CudaCachingAllocator::find_block(size_t sz) const {
+  return mem_blocks_.find(sz) != mem_blocks_.end();
 }
 
 }  // namespace cuda

@@ -13,10 +13,8 @@ class CudaCachingAllocator {
  public:
   CudaCachingAllocator(Device *device);
 
+  uint64_t *allocate(Device::LlvmRuntimeAllocParams &params);
   void release(size_t sz, uint64_t *ptr);
-
-  uint64_t *allocate(Device::AllocParamsLlvmRuntime &params);
-
   bool find_block(size_t sz) const;
 
  private:

@@ -574,7 +574,7 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
     tlctx = llvm_context_host.get();
   }
 
-  Device::AllocParamsLlvmRuntime device_buffer_alloc_params;
+  Device::LlvmRuntimeAllocParams device_buffer_alloc_params;
   device_buffer_alloc_params.size = alloc_size;
   device_buffer_alloc_params.use_cached = config->ndarray_use_cached_allocator;
   device_buffer_alloc_params.runtime_jit = tlctx->runtime_jit_module;

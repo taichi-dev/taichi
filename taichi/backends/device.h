@@ -399,13 +399,13 @@ class Device {
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
 
   virtual DeviceAllocation allocate_memory_runtime(
-      AllocParamsLlvmRuntime &params) {
+      LlvmRuntimeAllocParams &params) {
     TI_NOT_IMPLEMENTED
   }
 
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
 
-  uint64_t *allocate_llvm_runtime_memory_jit(AllocParamsLlvmRuntime &params);
+  uint64_t *allocate_llvm_runtime_memory_jit(const LlvmRuntimeAllocParams &params);
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,

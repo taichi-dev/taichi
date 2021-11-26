@@ -129,6 +129,7 @@ void export_lang(py::module &m) {
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
+      .def_readwrite("opt_level", &CompileConfig::opt_level)
       .def_readwrite("packed", &CompileConfig::packed)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
       .def_readwrite("print_preprocessed_ir",
@@ -303,6 +304,7 @@ void export_lang(py::module &m) {
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
+      .def("add_ndarray", &AotModuleBuilder::add_ndarray)
       .def("add", &AotModuleBuilder::add)
       .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
       .def("dump", &AotModuleBuilder::dump);
@@ -410,6 +412,7 @@ void export_lang(py::module &m) {
   py::class_<Ndarray>(m, "Ndarray")
       .def(py::init<Program *, const DataType &, const std::vector<int> &>())
       .def("data_ptr", &Ndarray::get_data_ptr_as_int)
+      .def("device_allocation_ptr", &Ndarray::get_device_allocation_ptr_as_int)
       .def("element_size", &Ndarray::get_element_size)
       .def("nelement", &Ndarray::get_nelement)
       .def("read_int",
@@ -712,6 +715,7 @@ void export_lang(py::module &m) {
 
   m.def("expr_neg", [&](const Expr &e) { return -e; });
   DEFINE_EXPRESSION_OP_UNARY(sqrt)
+  DEFINE_EXPRESSION_OP_UNARY(round)
   DEFINE_EXPRESSION_OP_UNARY(floor)
   DEFINE_EXPRESSION_OP_UNARY(ceil)
   DEFINE_EXPRESSION_OP_UNARY(abs)

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ex
 python3 -m pip uninstall taichi taichi-nightly -y
 python3 -m pip install -r requirements_dev.txt
 python3 -m pip install -r requirements_test.txt
@@ -25,7 +26,7 @@ fi
 sccache -s
 PROJECT_TAGS=""
 EXTRA_ARGS=""
-if [ $PROJECT_NAME -eq "taichi-nightly" ]; then
+if [ $PROJECT_NAME = "taichi-nightly" ]; then
     PROJECT_TAGS="egg_info --tag-date"
 fi
 

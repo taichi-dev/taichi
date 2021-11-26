@@ -1,11 +1,17 @@
 import atexit
+import datetime
 import functools
+import json
 import os
+import platform
 import shutil
 import tempfile
 import time
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
+from socket import timeout
+from urllib import request
+from urllib.error import HTTPError
 
 import taichi.lang.linalg_impl
 import taichi.lang.meta
@@ -14,9 +20,8 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang import _random, impl, types
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.ast.transformer import TaichiSyntaxError
 from taichi.lang.enums import Layout
-from taichi.lang.exception import InvalidOperationError
+from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.impl import (axes, begin_frontend_if,
@@ -47,7 +52,7 @@ from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (cook_dtype, has_clangpp, has_pytorch,
                               is_taichi_class, python_scope, taichi_scope,
                               to_numpy_type, to_pytorch_type, to_taichi_type)
-from taichi.misc.util import deprecated, get_traceback, warning
+from taichi.misc.util import deprecated, get_traceback
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
@@ -430,6 +435,63 @@ def prepare_sandbox():
     return tmp_dir
 
 
+def check_version():
+    # Check Taichi version for the user.
+    print('Checking your Taichi version...')
+    major = _ti_core.get_version_major()
+    minor = _ti_core.get_version_minor()
+    patch = _ti_core.get_version_patch()
+    version = f'{major}.{minor}.{patch}'
+    payload = {'version': version, 'platform': '', 'python': ''}
+
+    system = platform.system()
+    if system == 'Linux':
+        payload['platform'] = 'manylinux1_x86_64'
+    elif system == 'Windows':
+        payload['platform'] = 'win_amd64'
+    elif system == 'Darwin':
+        if platform.release() < '19.0.0':
+            payload['platform'] = 'macosx_10_14_x86_64'
+        elif platform.machine() == 'x86_64':
+            payload['platform'] = 'macosx_10_15_x86_64'
+        else:
+            payload['platform'] = 'macosx_11_0_arm64'
+
+    python_version = platform.python_version()
+    if python_version.startswith('3.6'):
+        payload['python'] = 'cp36'
+    elif python_version.startswith('3.7'):
+        payload['python'] = 'cp37'
+    elif python_version.startswith('3.8'):
+        payload['python'] = 'cp38'
+    elif python_version.startswith('3.9'):
+        payload['python'] = 'cp39'
+
+    # We do not want request exceptions break users' usage of Taichi.
+    try:
+        payload = json.dumps(payload)
+        payload = payload.encode()
+        req = request.Request(
+            'http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
+            method='POST')
+        req.add_header('Content-Type', 'application/json')
+        with request.urlopen(req, data=payload, timeout=3) as response:
+            response = json.loads(response.read().decode('utf-8'))
+            if response['status'] == 1:
+                print(
+                    f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use\n'
+                    + f'pip install taichi=={response["latest_version"]}\n' +
+                    'to upgrade to the latest Taichi!')
+            elif response['status'] == 0:
+                # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
+                print(response['message'])
+    except HTTPError as error:
+        print('Checking latest version failed: Server error.', error)
+    except timeout:
+        print(
+            'Checking latest version failed: Time out when connecting server.')
+
+
 def init(arch=None,
          default_fp=None,
          default_ip=None,
@@ -456,6 +518,26 @@ def init(arch=None,
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
             * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/lang/articles/advanced/layout.
     """
+    # Check version for users every 7 days.
+    os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
+    timestamp_path = os.path.join(_ti_core.get_repo_dir(), 'timestamp')
+    cur_date = datetime.date.today()
+    if os.path.exists(timestamp_path):
+        last_time = ''
+        with open(timestamp_path, 'r') as f:
+            last_time = f.readlines()[0].rstrip()
+        if cur_date.strftime('%Y-%m-%d') > last_time:
+            check_version()
+            with open(timestamp_path, 'w') as f:
+                f.write((cur_date +
+                         datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+                f.truncate()
+    else:
+        check_version()
+        with open(timestamp_path, 'w') as f:
+            f.write(
+                (cur_date + datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
     # ti.reset() could override the args to their default values.
@@ -553,6 +635,14 @@ def init(arch=None,
         _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(ti.cfg.arch)}')
 
+    # Torch based ndarray on opengl backend allocates memory on host instead of opengl backend.
+    # So it won't work.
+    if ti.cfg.arch == opengl and ti.cfg.ndarray_use_torch:
+        ti.warn(
+            f'Opengl backend doesn\'t support torch based ndarray. Setting ndarray_use_torch to False.'
+        )
+        ti.cfg.ndarray_use_torch = False
+
     if _test_mode:
         return spec_cfg
 
@@ -566,6 +656,9 @@ def init(arch=None,
     impl.get_runtime().prog.materialize_runtime()
 
     impl._root_fb = FieldsBuilder()
+
+    if not os.environ.get("TI_DISABLE_SIGNAL_HANDLERS", False):
+        impl.get_runtime()._register_signal_handlers()
 
     return None
 
@@ -584,6 +677,9 @@ def block_local(*args):
     Args:
         *args (List[Field]): A list of sparse Taichi fields.
     """
+    if impl.current_cfg().opt_level == 0:
+        ti.warn("""opt_level = 1 is enforced to enable bls analysis.""")
+        impl.current_cfg().opt_level = 1
     for a in args:
         for v in a.get_field_members():
             _ti_core.insert_snode_access_flag(
@@ -591,9 +687,6 @@ def block_local(*args):
 
 
 def mesh_local(*args):
-    if ti.current_cfg().dynamic_index:
-        raise InvalidOperationError(
-            'dynamic_index is not allowed when mesh_local is turned on.')
     for a in args:
         for v in a.get_field_members():
             _ti_core.insert_snode_access_flag(

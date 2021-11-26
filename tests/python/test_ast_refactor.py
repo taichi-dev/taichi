@@ -894,8 +894,7 @@ def test_dictcomp_fail():
 
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-# TODO: enable opengl
-@ti.test(arch=[ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.opengl])
 def test_ndarray():
     n = 4
     m = 7
@@ -978,3 +977,13 @@ def test_raise():
         foo()
     assert e.value.args[
         0] == "Polar decomposition only supports 2D and 3D matrices."
+
+
+@ti.test()
+def test_scalar_argument():
+    @ti.kernel
+    def add(a: ti.f32, b: ti.f32) -> ti.f32:
+        a = a + b
+        return a
+
+    assert add(1.0, 2.0) == approx(3.0)

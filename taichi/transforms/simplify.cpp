@@ -22,6 +22,7 @@ class BasicBlockSimplify : public IRVisitor {
   std::set<int> &visited;
   StructForStmt *current_struct_for;
   CompileConfig config;
+  DelayedIRModifier modifier;
 
   BasicBlockSimplify(Block *block,
                      std::set<int> &visited,
@@ -33,7 +34,6 @@ class BasicBlockSimplify : public IRVisitor {
         config(config) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
-    run();
   }
 
   bool is_done(Stmt *stmt) {
@@ -44,11 +44,28 @@ class BasicBlockSimplify : public IRVisitor {
     visited.insert(stmt->instance_id);
   }
 
-  void run() {
+  void accept_block() {
     for (int i = 0; i < (int)block->statements.size(); i++) {
       current_stmt_id = i;
       block->statements[i]->accept(this);
     }
+  }
+
+  static bool run(Block *block,
+                  std::set<int> &visited,
+                  StructForStmt *current_struct_for,
+                  const CompileConfig &config) {
+    BasicBlockSimplify simplifier(block, visited, current_struct_for, config);
+    bool ir_modified = false;
+    while (true) {
+      simplifier.accept_block();
+      if (simplifier.modifier.modify_ir()) {
+        ir_modified = true;
+      } else {
+        break;
+      }
+    }
+    return ir_modified;
   }
 
   void visit(ElementShuffleStmt *stmt) override {
@@ -67,9 +84,8 @@ class BasicBlockSimplify : public IRVisitor {
       if (same_source && inc_index &&
           stmt->width() == stmt->elements[0].stmt->width()) {
         // useless shuffle.
-        stmt->replace_with(stmt->elements[0].stmt);
-        stmt->parent->erase(current_stmt_id);
-        throw IRModified();
+        stmt->replace_usages_with(stmt->elements[0].stmt);
+        modifier.erase(stmt);
       }
     }
 
@@ -120,9 +136,9 @@ class BasicBlockSimplify : public IRVisitor {
               }
             }
             if (!has_store) {
-              stmt->replace_with(bstmt.get());
-              stmt->parent->erase(current_stmt_id);
-              throw IRModified();
+              stmt->replace_usages_with(bstmt.get());
+              modifier.erase(stmt);
+              return;
             }
           }
         }
@@ -133,9 +149,8 @@ class BasicBlockSimplify : public IRVisitor {
 
   void visit(IntegerOffsetStmt *stmt) override {
     if (stmt->offset == 0) {
-      stmt->replace_with(stmt->input);
-      stmt->parent->erase(stmt);
-      throw IRModified();
+      stmt->replace_usages_with(stmt->input);
+      modifier.erase(stmt);
     }
   }
 
@@ -146,19 +161,19 @@ class BasicBlockSimplify : public IRVisitor {
     // step 0: eliminate empty extraction
     if (stmt->bit_begin == stmt->bit_end) {
       auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
-      stmt->replace_with(zero.get());
-      stmt->insert_after_me(std::move(zero));
-      stmt->parent->erase(current_stmt_id);
-      throw IRModified();
+      stmt->replace_usages_with(zero.get());
+      modifier.insert_after(stmt, std::move(zero));
+      modifier.erase(stmt);
+      return;
     }
 
     // step 1: eliminate useless extraction of another BitExtractStmt
     if (stmt->bit_begin == 0 && stmt->input->is<BitExtractStmt>()) {
       auto bstmt = stmt->input->as<BitExtractStmt>();
       if (stmt->bit_end >= bstmt->bit_end - bstmt->bit_begin) {
-        stmt->replace_with(bstmt);
-        stmt->parent->erase(current_stmt_id);
-        throw IRModified();
+        stmt->replace_usages_with(bstmt);
+        modifier.erase(stmt);
+        return;
       }
     }
 
@@ -167,9 +182,9 @@ class BasicBlockSimplify : public IRVisitor {
       auto bstmt = stmt->input->as<LoopIndexStmt>();
       const int max_num_bits = bstmt->max_num_bits();
       if (max_num_bits != -1 && stmt->bit_end >= max_num_bits) {
-        stmt->replace_with(bstmt);
-        stmt->parent->erase(current_stmt_id);
-        throw IRModified();
+        stmt->replace_usages_with(bstmt);
+        modifier.erase(stmt);
+        return;
       }
     }
 
@@ -182,56 +197,58 @@ class BasicBlockSimplify : public IRVisitor {
         if (diff.linear_related() && diff.certain()) {
           // case 1: last loop var, vectorized, has assumption on vec size
           if (k == num_loop_vars - 1) {
-            auto load = stmt->insert_before_me(
-                Stmt::make<LoopIndexStmt>(current_struct_for, k));
+            auto load = Stmt::make<LoopIndexStmt>(current_struct_for, k);
             load->ret_type = PrimitiveType::i32;
-            stmt->input = load;
+            stmt->input = load.get();
             int64 bound = 1LL << stmt->bit_end;
             auto offset = (((int64)diff.low % bound + bound) % bound) &
                           ~((1LL << (stmt->bit_begin)) - 1);
-
+            auto load_addr = load.get();
+            modifier.insert_before(stmt, std::move(load));
             if (current_struct_for->vectorize == 1)
               offset = diff.low;
             if (stmt->bit_begin == 0 &&
                 current_struct_for->vectorize == bound) {
               // TODO: take care of cases where vectorization width != z
               // dimension of the block
-              auto offset_stmt = stmt->insert_after_me(
-                  Stmt::make<IntegerOffsetStmt>(stmt, offset));
-              stmt->replace_with(offset_stmt);
+              auto offset_stmt = Stmt::make<IntegerOffsetStmt>(stmt, offset);
+              stmt->replace_usages_with(offset_stmt.get());
               // fix the offset stmt operand
               offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
+              modifier.insert_after(stmt, std::move(offset_stmt));
             } else {
               if (offset != 0) {
-                auto offset_const = stmt->insert_before_me(
+                auto offset_const =
                     Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
-                        TypedConstant(PrimitiveType::i32, offset))));
-                auto sum = stmt->insert_before_me(Stmt::make<BinaryOpStmt>(
-                    BinaryOpType::add, load, offset_const));
-                stmt->input = sum;
+                        TypedConstant(PrimitiveType::i32, offset)));
+                auto sum = Stmt::make<BinaryOpStmt>(
+                    BinaryOpType::add, load_addr, offset_const.get());
+                stmt->input = sum.get();
+                modifier.insert_before(stmt, std::move(offset_const));
+                modifier.insert_before(stmt, std::move(offset_const));
               }
             }
           } else {
             // insert constant
-            auto load = stmt->insert_before_me(
-                Stmt::make<LoopIndexStmt>(current_struct_for, k));
+            auto load = Stmt::make<LoopIndexStmt>(current_struct_for, k);
             load->ret_type = PrimitiveType::i32;
-            auto constant = stmt->insert_before_me(
-                Stmt::make<ConstStmt>(TypedConstant(diff.low)));
-            auto add = stmt->insert_before_me(
-                Stmt::make<BinaryOpStmt>(BinaryOpType::add, load, constant));
+            auto constant = Stmt::make<ConstStmt>(TypedConstant(diff.low));
+            auto add = Stmt::make<BinaryOpStmt>(BinaryOpType::add, load.get(),
+                                                constant.get());
             add->ret_type = PrimitiveType::i32;
-            stmt->input = add;
+            stmt->input = add.get();
+            modifier.insert_before(stmt, std::move(load));
+            modifier.insert_before(stmt, std::move(constant));
+            modifier.insert_before(stmt, std::move(add));
           }
           stmt->simplified = true;
-          throw IRModified();
+          return;
         }
       }
     }
 
     set_done(stmt);
   }
-
   template <typename T>
   static bool identical_vectors(const std::vector<T> &a,
                                 const std::vector<T> &b) {
@@ -250,13 +267,14 @@ class BasicBlockSimplify : public IRVisitor {
     if (!stmt->inputs.empty() && stmt->inputs.back()->is<IntegerOffsetStmt>()) {
       auto previous_offset = stmt->inputs.back()->as<IntegerOffsetStmt>();
       // push forward offset
-      auto offset_stmt = stmt->insert_after_me(
-          Stmt::make<IntegerOffsetStmt>(stmt, previous_offset->offset));
+      auto offset_stmt =
+          Stmt::make<IntegerOffsetStmt>(stmt, previous_offset->offset);
 
       stmt->inputs.back() = previous_offset->input;
-      stmt->replace_with(offset_stmt);
+      stmt->replace_usages_with(offset_stmt.get());
       offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
-      throw IRModified();
+      modifier.insert_after(stmt, std::move(offset_stmt));
+      return;
     }
 
     // Lower into a series of adds and muls.
@@ -269,10 +287,10 @@ class BasicBlockSimplify : public IRVisitor {
                                           stride_stmt.get());
       auto newsum =
           Stmt::make<BinaryOpStmt>(BinaryOpType::add, sum.get(), mul.get());
-      stmt->insert_before_me(std::move(sum));
+      modifier.insert_before(stmt, std::move(sum));
       sum = std::move(newsum);
-      stmt->insert_before_me(std::move(stride_stmt));
-      stmt->insert_before_me(std::move(mul));
+      modifier.insert_before(stmt, std::move(stride_stmt));
+      modifier.insert_before(stmt, std::move(mul));
       stride_product *= stmt->strides[i];
     }
     // Compare the result with 0 to make sure no overflow occurs under Debug
@@ -292,20 +310,19 @@ class BasicBlockSimplify : public IRVisitor {
       auto select = Stmt::make<TernaryOpStmt>(
           TernaryOpType::select, check_sum.get(), sum.get(), zero.get());
 
-      stmt->insert_before_me(std::move(zero));
-      stmt->insert_before_me(std::move(sum));
-      stmt->insert_before_me(std::move(check_sum));
-      stmt->insert_before_me(std::move(assert));
-      stmt->replace_with(select.get());
-      stmt->insert_before_me(std::move(select));
+      modifier.insert_before(stmt, std::move(zero));
+      modifier.insert_before(stmt, std::move(sum));
+      modifier.insert_before(stmt, std::move(check_sum));
+      modifier.insert_before(stmt, std::move(assert));
+      stmt->replace_usages_with(select.get());
+      modifier.insert_before(stmt, std::move(select));
     } else {
-      stmt->replace_with(sum.get());
-      stmt->insert_before_me(std::move(sum));
+      stmt->replace_usages_with(sum.get());
+      modifier.insert_before(stmt, std::move(sum));
     }
-    stmt->parent->erase(stmt);
+    modifier.erase(stmt);
     // get types of adds and muls
-    irpass::type_check(stmt->parent, config);
-    throw IRModified();
+    modifier.type_check(stmt->parent, config);
   }
 
   void visit(SNodeLookupStmt *stmt) override {
@@ -324,13 +341,14 @@ class BasicBlockSimplify : public IRVisitor {
                   snode->ch[i]->dt->is_primitive(PrimitiveTypeID::f32));
       }
 
-      auto offset_stmt = stmt->insert_after_me(Stmt::make<IntegerOffsetStmt>(
-          stmt, previous_offset->offset * sizeof(int32) * (snode->ch.size())));
+      auto offset_stmt = Stmt::make<IntegerOffsetStmt>(
+          stmt, previous_offset->offset * sizeof(int32) * (snode->ch.size()));
 
       stmt->input_index = previous_offset->input;
-      stmt->replace_with(offset_stmt);
+      stmt->replace_usages_with(offset_stmt.get());
       offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
-      throw IRModified();
+      modifier.insert_after(stmt, std::move(offset_stmt));
+      return;
     }
 
     set_done(stmt);
@@ -345,15 +363,16 @@ class BasicBlockSimplify : public IRVisitor {
       // push forward offset
 
       // auto snode = stmt->input_snode;
-      auto offset_stmt = stmt->insert_after_me(Stmt::make<IntegerOffsetStmt>(
-          stmt, stmt->chid * sizeof(int32) + previous_offset->offset));
+      auto offset_stmt = Stmt::make<IntegerOffsetStmt>(
+          stmt, stmt->chid * sizeof(int32) + previous_offset->offset);
 
       stmt->input_ptr = previous_offset->input;
-      stmt->replace_with(offset_stmt);
+      stmt->replace_usages_with(offset_stmt.get());
       stmt->chid = 0;
       stmt->output_snode = stmt->input_snode->ch[stmt->chid].get();
       offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
-      throw IRModified();
+      modifier.insert_after(stmt, std::move(offset_stmt));
+      return;
     }
 
     set_done(stmt);
@@ -362,7 +381,8 @@ class BasicBlockSimplify : public IRVisitor {
   void visit(WhileControlStmt *stmt) override {
     if (stmt->width() == 1 && stmt->mask) {
       stmt->mask = nullptr;
-      throw IRModified();
+      modifier.mark_as_modified();
+      return;
     }
   }
 
@@ -391,7 +411,8 @@ class BasicBlockSimplify : public IRVisitor {
     if (if_stmt->width() == 1 && (if_stmt->true_mask || if_stmt->false_mask)) {
       if_stmt->true_mask = nullptr;
       if_stmt->false_mask = nullptr;
-      throw IRModified();
+      modifier.mark_as_modified();
+      return;
     }
     auto flatten = [&](std::vector<pStmt> &clause, bool true_branch) {
       bool plain_clause = true;  // no global store, no container
@@ -435,18 +456,19 @@ class BasicBlockSimplify : public IRVisitor {
             for (int l = 0; l < store->width(); l++) {
               lanes.push_back(LocalAddress(store->dest, l));
             }
-            auto load =
-                if_stmt->insert_before_me(Stmt::make<LocalLoadStmt>(lanes));
-            irpass::type_check(load, config);
-            auto select = if_stmt->insert_before_me(
-                Stmt::make<TernaryOpStmt>(TernaryOpType::select, if_stmt->cond,
-                                          true_branch ? store->val : load,
-                                          true_branch ? load : store->val));
-            irpass::type_check(select, config);
-            store->val = select;
-            if_stmt->insert_before_me(std::move(clause[i]));
+            auto load = Stmt::make<LocalLoadStmt>(lanes);
+            modifier.type_check(load.get(), config);
+            auto select = Stmt::make<TernaryOpStmt>(
+                TernaryOpType::select, if_stmt->cond,
+                true_branch ? store->val : load.get(),
+                true_branch ? load.get() : store->val);
+            modifier.type_check(select.get(), config);
+            store->val = select.get();
+            modifier.insert_before(if_stmt, std::move(load));
+            modifier.insert_before(if_stmt, std::move(select));
+            modifier.insert_before(if_stmt, std::move(clause[i]));
           } else {
-            if_stmt->insert_before_me(std::move(clause[i]));
+            modifier.insert_before(if_stmt, std::move(clause[i]));
           }
         }
         auto clean_clause = std::vector<pStmt>();
@@ -467,31 +489,35 @@ class BasicBlockSimplify : public IRVisitor {
     if (config.flatten_if) {
       if (if_stmt->true_statements &&
           flatten(if_stmt->true_statements->statements, true)) {
-        throw IRModified();
+        modifier.mark_as_modified();
+        return;
       }
       if (if_stmt->false_statements &&
           flatten(if_stmt->false_statements->statements, false)) {
-        throw IRModified();
+        modifier.mark_as_modified();
+        return;
       }
     }
 
     if (if_stmt->true_statements) {
       if (if_stmt->true_statements->statements.empty()) {
         if_stmt->set_true_statements(nullptr);
-        throw IRModified();
+        modifier.mark_as_modified();
+        return;
       }
     }
 
     if (if_stmt->false_statements) {
       if (if_stmt->false_statements->statements.empty()) {
         if_stmt->set_false_statements(nullptr);
-        throw IRModified();
+        modifier.mark_as_modified();
+        return;
       }
     }
 
     if (!if_stmt->true_statements && !if_stmt->false_statements) {
-      if_stmt->parent->erase(if_stmt);
-      throw IRModified();
+      modifier.erase(if_stmt);
+      return;
     }
 
     if (config.advanced_optimization) {
@@ -512,8 +538,8 @@ class BasicBlockSimplify : public IRVisitor {
           };
           concatenate(bstmt->true_statements, if_stmt->true_statements);
           concatenate(bstmt->false_statements, if_stmt->false_statements);
-          if_stmt->parent->erase(if_stmt);
-          throw IRModified();
+          modifier.erase(if_stmt);
+          return;
         }
       }
     }
@@ -521,15 +547,16 @@ class BasicBlockSimplify : public IRVisitor {
 
   void visit(OffloadedStmt *stmt) override {
     if (stmt->has_body() && stmt->body->statements.empty()) {
-      stmt->parent->erase(stmt);
-      throw IRModified();
+      modifier.erase(stmt);
+      return;
     }
   }
 
   void visit(WhileStmt *stmt) override {
     if (stmt->width() == 1 && stmt->mask) {
       stmt->mask = nullptr;
-      throw IRModified();
+      modifier.mark_as_modified();
+      return;
     }
   }
 };
@@ -550,14 +577,8 @@ class Simplify : public IRVisitor {
 
   void visit(Block *block) override {
     std::set<int> visited;
-    while (true) {
-      try {
-        BasicBlockSimplify _(block, visited, current_struct_for, config);
-      } catch (IRModified) {
-        modified = true;
-        continue;
-      }
-      break;
+    if (BasicBlockSimplify::run(block, visited, current_struct_for, config)) {
+      modified = true;
     }
     for (auto &stmt : block->statements) {
       stmt->accept(this);
@@ -643,11 +664,12 @@ void full_simplify(IRNode *root,
         modified = true;
       if (die(root))
         modified = true;
-      if (whole_kernel_cse(root))
+      if (config.opt_level > 0 && whole_kernel_cse(root))
         modified = true;
       // Don't do this time-consuming optimization pass again if the IR is
       // not modified.
-      if ((first_iteration || modified) && config.cfg_optimization &&
+      if (config.opt_level > 0 && (first_iteration || modified) &&
+          config.cfg_optimization &&
           cfg_optimization(root, args.after_lower_access))
         modified = true;
       first_iteration = false;

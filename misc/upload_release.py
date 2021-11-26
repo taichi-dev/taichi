@@ -20,17 +20,15 @@ def upload_taichi_version():
                                  timeout=5)
         response.raise_for_status()
     except requests.exceptions.ConnectionError as err:
-        sys.exit('Updating latest version failed: No internet, ' +
-                 err.toString())
+        sys.exit('Updating latest version failed: No internet, ' + str(err))
     except requests.exceptions.HTTPError as err:
-        sys.exit('Updating latest version failed: Server error, ' +
-                 err.toString())
+        sys.exit('Updating latest version failed: Server error, ' + str(err))
     except requests.exceptions.Timeout as err:
         sys.exit(
             'Updating latest version failed: Time out when connecting server, '
-            + err.toString())
+            + str(err))
     except requests.exceptions.RequestException as err:
-        sys.exit('Updating latest version failed: ' + err.toString())
+        sys.exit('Updating latest version failed: ' + str(err))
     response = response.json()
     print(response['message'])
 
@@ -40,8 +38,8 @@ def upload_artifact(is_taichi):
     twine_password = os.getenv(pwd_env)
     if not twine_password:
         sys.exit(f'Missing password env var {pwd_env}')
-    command = ["python", "-m", "twine", "upload"]
-    if is_taichi:
+    command = ["python3", "-m", "twine", "upload"]
+    if not is_taichi:
         command.extend(['--repository', 'testpypi'])
     command.extend(
         ['--verbose', '-u', '__token__', '-p', twine_password, 'dist/*'])
@@ -53,6 +51,6 @@ def upload_artifact(is_taichi):
 
 if __name__ == '__main__':
     is_taichi = os.getenv('PROJECT_NAME', 'taichi') == 'taichi'
+    upload_artifact(is_taichi)
     if is_taichi:
         upload_taichi_version()
-    upload_artifact(is_taichi)

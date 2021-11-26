@@ -337,41 +337,39 @@ jobs:
         env:
           TI_WANTED_ARCHS: "cpu,metal"
 
-  performance_monitoring:
-    name: Performance monitoring (NVGPU)
-    timeout-minutes: 60
-    runs-on: [self-hosted, x64, cuda, linux, benchmark]
-    if: 1 == 0
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: "recursive"
+  # performance_monitoring:
+  #   name: Performance monitoring (NVGPU)
+  #   timeout-minutes: 60
+  #   runs-on: [self-hosted, x64, cuda, linux, benchmark]
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         submodules: "recursive"
+  #     - name: Build & Install
+  #       run: |
+  #         export PATH=$PATH:/usr/local/cuda/bin
+  #         export PATH=`pwd`/taichi-llvm/bin/:$LLVM_PATH:$PATH
+  #         .github/workflows/scripts/unix_build.sh
+  #       env:
+  #         LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
+  #         LLVM_PATH: /opt/taichi-llvm-10.0.0/bin
+  #         LLVM_DIR: /opt/taichi-llvm-10.0.0/lib/cmake/llvm
+  #         CUDA_TOOLKIT_ROOT_DIR: /usr/local/cuda/
+  #         TAICHI_CMAKE_ARGS: -DTI_WITH_CUDA_TOOLKIT:BOOL=ON
+  #         BUILD_NUM_THREADS: 8
+  #         CXX: clang++-10
 
-      - name: Build & Install
-        run: |
-          export PATH=$PATH:/usr/local/cuda/bin
-          export PATH=`pwd`/taichi-llvm/bin/:$LLVM_PATH:$PATH
-          .github/workflows/scripts/unix_build.sh
-        env:
-          LLVM_LIB_ROOT_DIR: /opt/taichi-llvm-10.0.0
-          LLVM_PATH: /opt/taichi-llvm-10.0.0/bin
-          LLVM_DIR: /opt/taichi-llvm-10.0.0/lib/cmake/llvm
-          CUDA_TOOLKIT_ROOT_DIR: /usr/local/cuda/
-          TAICHI_CMAKE_ARGS: -DTI_WITH_CUDA_TOOLKIT:BOOL=ON
-          BUILD_NUM_THREADS: 8
-          CXX: clang++-10
-
-      - name: Run performance-monitoring
-        run: |
-          export BENCHMARK_CODE_DIR=`pwd`/benchmarks/misc/
-          cd ..
-          # clone repo
-          rm -rf performance-monitoring
-          git clone git@github.com:taichi-dev/performance-monitoring.git
-          cd performance-monitoring
-          # update repo (benchmarks code)
-          cp -r $BENCHMARK_CODE_DIR/* ./benchmarks/
-          # run benchmark & store results
-          ./run.sh
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
+  #     - name: Run performance-monitoring
+  #       run: |
+  #         export BENCHMARK_CODE_DIR=`pwd`/benchmarks/misc/
+  #         cd ..
+  #         # clone repo
+  #         rm -rf performance-monitoring
+  #         git clone git@github.com:taichi-dev/performance-monitoring.git
+  #         cd performance-monitoring
+  #         # update repo (benchmarks code)
+  #         cp -r $BENCHMARK_CODE_DIR/* ./benchmarks/
+  #         # run benchmark & store results
+  #         ./run.sh
+  #       env:
+  #         GITHUB_CONTEXT: ${{ toJson(github) }}

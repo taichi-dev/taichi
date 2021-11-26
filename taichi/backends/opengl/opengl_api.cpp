@@ -340,25 +340,38 @@ void CompiledProgram::set_used(const UsedFeature &used) {
 OpenGlRuntime::~OpenGlRuntime() = default;
 
 void DeviceCompiledProgram::launch(RuntimeContext &ctx,
+                                   Kernel *kernel,
                                    OpenGlRuntime *runtime) const {
   uint8_t *args_buf_mapped = nullptr;
+  auto args = kernel->args;
 
   // Prepare external arrays/ndarrays
-  // Each external array is copied into its own device buffer (SSBO).
-  // - ctx.args[i] contains its ptr on host.
-  // - arr_bufs_[i] contains its DeviceAllocation on device.
+  // - ctx.args[i] contains its ptr on host, it could be a raw ptr or
+  // DeviceAllocation*
+  // - For raw ptrs, arr_bufs_[i] contains its DeviceAllocation on device.
   // Note shapes of these external arrays still reside in argument buffer,
   // see more details below.
-  for (const auto &[i, size] : program_.ext_arr_map) {
-    if (size == 0)
+  for (auto &item : program_.ext_arr_map) {
+    int i = item.first;
+    if (!args[i].is_external_array || args[i].size == 0 ||
+        ctx.is_device_allocation[i])
       continue;
+    if (args[i].size != item.second || arr_bufs_[i] == kDeviceNullAllocation) {
+      if (arr_bufs_[i] != kDeviceNullAllocation) {
+        device_->dealloc_memory(arr_bufs_[i]);
+      }
+      arr_bufs_[i] = device_->allocate_memory(
+          {args[i].size, /*host_write=*/true, /*host_read=*/true,
+           /*export_sharing=*/false});
+      item.second = args[i].size;
+    }
+    void *host_ptr = (void *)ctx.args[i];
     void *baseptr = device_->map(arr_bufs_[i]);
     if (program_.check_ext_arr_read(i)) {
-      std::memcpy((char *)baseptr, (void *)ctx.args[i], size);
+      std::memcpy((char *)baseptr, host_ptr, args[i].size);
     }
     device_->unmap(arr_bufs_[i]);
   }
-
   // clang-format off
   // Prepare argument buffer
   // Layout:
@@ -406,8 +419,15 @@ void DeviceCompiledProgram::launch(RuntimeContext &ctx,
     // TODO: properly assert and throw if we bind more than allowed SSBOs.
     //       On most devices this number is 8. But I need to look up how
     //       to query this information so currently this is thrown from OpenGl.
-    for (const auto &[arg_id, bind_id] : program_.used.arr_arg_to_bind_idx) {
-      binder->buffer(0, bind_id, arr_bufs_[arg_id]);
+    for (const auto [arg_id, bind_id] : program_.used.arr_arg_to_bind_idx) {
+      if (ctx.is_device_allocation[arg_id]) {
+        DeviceAllocation *ptr =
+            static_cast<DeviceAllocation *>((void *)ctx.args[arg_id]);
+
+        binder->buffer(0, bind_id, *ptr);
+      } else {
+        binder->buffer(0, bind_id, arr_bufs_[arg_id]);
+      }
     }
 
     cmdlist->bind_pipeline(compiled_pipeline_[i].get());
@@ -429,14 +449,18 @@ void DeviceCompiledProgram::launch(RuntimeContext &ctx,
     dump_message_buffer(device_, runtime->impl->core_bufs.runtime,
                         program_.str_table);
   }
-  for (const auto &[i, size] : program_.ext_arr_map) {
-    if (size == 0)
+
+  for (int i = 0; i < args.size(); i++) {
+    if (!args[i].is_external_array)
       continue;
-    uint8_t *baseptr = (uint8_t *)device_->map(arr_bufs_[i]);
+    if (args[i].size == 0)
+      continue;
+    if (!ctx.is_device_allocation[i]) {
+      uint8_t *baseptr = (uint8_t *)device_->map(arr_bufs_[i]);
+      memcpy((void *)ctx.args[i], baseptr, args[i].size);
 
-    memcpy((void *)ctx.args[i], baseptr, size);
-
-    device_->unmap(arr_bufs_[i]);
+      device_->unmap(arr_bufs_[i]);
+    }
   }
 
   if (program_.ret_buf_size) {
@@ -455,12 +479,6 @@ DeviceCompiledProgram::DeviceCompiledProgram(CompiledProgram &&program,
                                          /*host_write=*/true,
                                          /*host_read=*/true,
                                          /*export_sharing=*/false});
-    for (const auto &[i, size] : program_.ext_arr_map) {
-      arr_bufs_[i] = device->allocate_memory({size,
-                                              /*host_write=*/true,
-                                              /*host_read=*/true,
-                                              /*export_sharing=*/false});
-    }
   }
 
   for (auto &k : program_.kernels) {
@@ -474,7 +492,7 @@ DeviceCompiledProgram::DeviceCompiledProgram(CompiledProgram &&program,
 OpenGlRuntime::OpenGlRuntime() {
   initialize_opengl();
 
-  device = std::make_unique<GLDevice>();
+  device = std::make_shared<GLDevice>();
 
   impl = std::make_unique<OpenGlRuntimeImpl>();
 

@@ -18,7 +18,7 @@ class RemoveRangeAssumption : public BasicStmtVisitor {
   DelayedIRModifier modifier;
 
   void visit(RangeAssumptionStmt *stmt) override {
-    stmt->replace_with(stmt->input);
+    stmt->replace_usages_with(stmt->input);
     modifier.erase(stmt);
   }
 

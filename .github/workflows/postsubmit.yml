@@ -30,9 +30,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: sccache_cache
-          key: sccache-linux-ON-${{ github.sha }}
+          key: sccache-linux-aws-${{ github.sha }}
           restore-keys: |
-            sccache-linux-ON-
+            sccache-linux-aws-
 
       - name: Get docker images
         run: |
@@ -60,6 +60,7 @@ jobs:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON  -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Test
+        if: 1 == 0
         run: |
           docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
@@ -133,6 +134,7 @@ jobs:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Test
+        if: 1 == 0
         run: |
           docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
@@ -196,6 +198,7 @@ jobs:
       #    limit-access-to-actor: true
 
       - name: Test
+        if: 1 == 0
         run: .github/workflows/scripts/unix_test.sh
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
@@ -235,6 +238,7 @@ jobs:
           DISPLAY: :1
 
       - name: Test
+        if: 1 == 0
         run: |
           docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
@@ -273,6 +277,7 @@ jobs:
           .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
 
       - name: Test
+        if: 1 == 0
         shell: powershell
         run: |
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
@@ -321,6 +326,7 @@ jobs:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON  -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Test
+        if: 1 == 0
         run: |
           export PATH=$PATH:$HOME/Library/Python/3.8/bin
           python3 -m pip install -r requirements_test.txt
@@ -335,6 +341,7 @@ jobs:
     name: Performance monitoring (NVGPU)
     timeout-minutes: 60
     runs-on: [self-hosted, x64, cuda, linux, benchmark]
+    if: 1 == 0
     steps:
       - uses: actions/checkout@v2
         with:

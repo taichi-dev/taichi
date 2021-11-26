@@ -207,7 +207,6 @@ jobs:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Test
-        if: 1 == 0
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
@@ -285,7 +284,6 @@ jobs:
       #    limit-access-to-actor: true
 
       - name: Test
-        if: 1 == 0
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
@@ -336,7 +334,6 @@ jobs:
           DISPLAY: :1
 
       - name: Test
-        if: 1 == 0
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
@@ -383,7 +380,6 @@ jobs:
           .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
 
       - name: Test
-        if: 1 == 0
         shell: powershell
         run: |
           if ( "${{needs.check_files.outputs.run_job}}" -eq "false" ) {
@@ -441,7 +437,6 @@ jobs:
           CXX: clang++
 
       - name: Test
-        if: 1 == 0
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0

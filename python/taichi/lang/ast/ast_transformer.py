@@ -4,15 +4,15 @@ from collections import ChainMap
 
 import astor
 from taichi.lang import impl
+from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.ast_builder_utils import Builder, LoopStatus
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.util import to_taichi_type
 
 import taichi as ti
 
 
-class IRBuilder(Builder):
+class ASTTransformer(Builder):
     @staticmethod
     def build_Name(ctx, node):
         node.ptr = ctx.get_var_by_name(node.id)
@@ -31,8 +31,9 @@ class IRBuilder(Builder):
         # The variable is introduced to support chained assignments.
         # Ref https://github.com/taichi-dev/taichi/issues/2659.
         for node_target in node.targets:
-            IRBuilder.build_assign_unpack(ctx, node_target, node.value.ptr,
-                                          is_static_assign)
+            ASTTransformer.build_assign_unpack(ctx, node_target,
+                                               node.value.ptr,
+                                               is_static_assign)
         return node
 
     @staticmethod
@@ -48,15 +49,15 @@ class IRBuilder(Builder):
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
         if not isinstance(node_target, ast.Tuple):
-            return IRBuilder.build_assign_basic(ctx, node_target, values,
-                                                is_static_assign)
+            return ASTTransformer.build_assign_basic(ctx, node_target, values,
+                                                     is_static_assign)
         targets = node_target.elts
         tmp_tuple = values if is_static_assign else ti.expr_init_list(
             values, len(targets))
 
         for i, target in enumerate(targets):
-            IRBuilder.build_assign_basic(ctx, target, tmp_tuple[i],
-                                         is_static_assign)
+            ASTTransformer.build_assign_basic(ctx, target, tmp_tuple[i],
+                                              is_static_assign)
 
         return None
 
@@ -93,9 +94,9 @@ class IRBuilder(Builder):
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
                 node.value.func, ti.static, globals())
-        node.ptr = IRBuilder.build_assign_basic(ctx, node.target,
-                                                node.value.ptr,
-                                                is_static_assign)
+        node.ptr = ASTTransformer.build_assign_basic(ctx, node.target,
+                                                     node.value.ptr,
+                                                     is_static_assign)
         return node
 
     @staticmethod
@@ -112,7 +113,7 @@ class IRBuilder(Builder):
     def build_Subscript(ctx, node):
         node.value = build_stmt(ctx, node.value)
         node.slice = build_stmt(ctx, node.slice)
-        if not IRBuilder.is_tuple(node.slice):
+        if not ASTTransformer.is_tuple(node.slice):
             node.slice.ptr = [node.slice.ptr]
         node.ptr = ti.subscript(node.value.ptr, *node.slice.ptr)
         return node
@@ -160,22 +161,23 @@ class IRBuilder(Builder):
             ctx, node.generators[now_comp].iter)
         for value in _iter.ptr:
             with ctx.variable_scope_guard():
-                IRBuilder.build_assign_unpack(ctx, target, value, True)
+                ASTTransformer.build_assign_unpack(ctx, target, value, True)
                 node.generators[now_comp].ifs = build_stmts(
                     ctx, node.generators[now_comp].ifs)
-                IRBuilder.process_ifs(ctx, node, now_comp, 0, func, result)
+                ASTTransformer.process_ifs(ctx, node, now_comp, 0, func,
+                                           result)
 
         return None
 
     @staticmethod
     def process_ifs(ctx, node, now_comp, now_if, func, result):
         if now_if >= len(node.generators[now_comp].ifs):
-            return IRBuilder.process_generators(ctx, node, now_comp + 1, func,
-                                                result)
+            return ASTTransformer.process_generators(ctx, node, now_comp + 1,
+                                                     func, result)
         cond = node.generators[now_comp].ifs[now_if].ptr
         if cond:
-            IRBuilder.process_ifs(ctx, node, now_comp, now_if + 1, func,
-                                  result)
+            ASTTransformer.process_ifs(ctx, node, now_comp, now_if + 1, func,
+                                       result)
 
         return None
 
@@ -189,16 +191,18 @@ class IRBuilder(Builder):
     @staticmethod
     def build_ListComp(ctx, node):
         result = []
-        IRBuilder.process_generators(ctx, node, 0, IRBuilder.process_listcomp,
-                                     result)
+        ASTTransformer.process_generators(ctx, node, 0,
+                                          ASTTransformer.process_listcomp,
+                                          result)
         node.ptr = result
         return node
 
     @staticmethod
     def build_DictComp(ctx, node):
         result = {}
-        IRBuilder.process_generators(ctx, node, 0, IRBuilder.process_dictcomp,
-                                     result)
+        ASTTransformer.process_generators(ctx, node, 0,
+                                          ASTTransformer.process_dictcomp,
+                                          result)
         node.ptr = result
         return node
 
@@ -473,16 +477,67 @@ class IRBuilder(Builder):
         return node
 
     @staticmethod
+    def build_short_circuit_and(operands):
+        if len(operands) == 1:
+            return operands[0].ptr
+
+        val = ti.expr_init(None)
+        lhs = operands[0].ptr
+        ti.begin_frontend_if(lhs)
+
+        ti.core.begin_frontend_if_true()
+        rhs = ASTTransformer.build_short_circuit_and(operands[1:])
+        val.assign(rhs)
+        ti.core.pop_scope()
+
+        ti.core.begin_frontend_if_false()
+        val.assign(0)
+        ti.core.pop_scope()
+
+        return val
+
+    @staticmethod
+    def build_short_circuit_or(operands):
+        if len(operands) == 1:
+            return operands[0].ptr
+
+        val = ti.expr_init(None)
+        lhs = operands[0].ptr
+        ti.begin_frontend_if(lhs)
+
+        ti.core.begin_frontend_if_true()
+        val.assign(1)
+        ti.core.pop_scope()
+
+        ti.core.begin_frontend_if_false()
+        rhs = ASTTransformer.build_short_circuit_or(operands[1:])
+        val.assign(rhs)
+        ti.core.pop_scope()
+
+        return val
+
+    @staticmethod
+    def build_normal_bool_op(op):
+        def inner(operands):
+            result = op(operands[0].ptr, operands[1].ptr)
+            for i in range(2, len(operands)):
+                result = op(result, operands[i].ptr)
+            return result
+
+        return inner
+
+    @staticmethod
     def build_BoolOp(ctx, node):
         node.values = build_stmts(ctx, node.values)
-        op = {
-            ast.And: ti.logical_and,
-            ast.Or: ti.logical_or,
-        }.get(type(node.op))
-        result = op(node.values[0].ptr, node.values[1].ptr)
-        for i in range(2, len(node.values)):
-            result = op(result, node.values[i].ptr)
-        node.ptr = result
+        ops = {
+            ast.And: ASTTransformer.build_short_circuit_and,
+            ast.Or: ASTTransformer.build_short_circuit_or,
+        } if impl.get_runtime().short_circuit_operators else {
+            ast.And: ASTTransformer.build_normal_bool_op(ti.logical_and),
+            ast.Or: ASTTransformer.build_normal_bool_op(ti.logical_or),
+        }
+        op = ops.get(type(node.op))
+        node.ptr = op(node.values)
         return node
 
     @staticmethod
@@ -544,7 +599,7 @@ class IRBuilder(Builder):
                 raise TaichiSyntaxError(
                     "Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'."
                 )
-            targets = IRBuilder.get_for_loop_targets(node)
+            targets = ASTTransformer.get_for_loop_targets(node)
             if len(targets) != 1:
                 raise TaichiSyntaxError(
                     f"Group for should have 1 loop target, found {len(targets)}"
@@ -561,7 +616,7 @@ class IRBuilder(Builder):
                         ctx.set_loop_status(LoopStatus.Normal)
         else:
             node.iter = build_stmt(ctx, node.iter)
-            targets = IRBuilder.get_for_loop_targets(node)
+            targets = ASTTransformer.get_for_loop_targets(node)
             for target_values in node.iter.ptr:
                 if not isinstance(
                         target_values,
@@ -615,7 +670,7 @@ class IRBuilder(Builder):
                                              ndrange_begin.ptr,
                                              ndrange_end.ptr)
             I = ti.expr_init(ndrange_loop_var)
-            targets = IRBuilder.get_for_loop_targets(node)
+            targets = ASTTransformer.get_for_loop_targets(node)
             for i, target in enumerate(targets):
                 if i + 1 < len(targets):
                     target_tmp = ti.expr_init(
@@ -646,7 +701,7 @@ class IRBuilder(Builder):
                                              ndrange_begin.ptr,
                                              ndrange_end.ptr)
 
-            targets = IRBuilder.get_for_loop_targets(node)
+            targets = ASTTransformer.get_for_loop_targets(node)
             if len(targets) != 1:
                 raise TaichiSyntaxError(
                     f"Group for should have 1 loop target, found {len(targets)}"
@@ -674,7 +729,7 @@ class IRBuilder(Builder):
     def build_struct_for(ctx, node, is_grouped):
         # for i, j in x
         # for I in ti.grouped(x)
-        targets = IRBuilder.get_for_loop_targets(node)
+        targets = ASTTransformer.get_for_loop_targets(node)
 
         for target in targets:
             ctx.check_loop_var(target)
@@ -709,7 +764,7 @@ class IRBuilder(Builder):
 
     @staticmethod
     def build_mesh_for(ctx, node):
-        targets = IRBuilder.get_for_loop_targets(node)
+        targets = ASTTransformer.get_for_loop_targets(node)
         if len(targets) != 1:
             raise TaichiSyntaxError(
                 "Mesh for should have 1 loop target, found {len(targets)}")
@@ -744,49 +799,51 @@ class IRBuilder(Builder):
 
         with ctx.control_scope_guard():
 
-            decorator = IRBuilder.get_decorator(ctx, node.iter)
+            decorator = ASTTransformer.get_decorator(ctx, node.iter)
             double_decorator = ''
             if decorator != '' and len(node.iter.args) == 1:
-                double_decorator = IRBuilder.get_decorator(
+                double_decorator = ASTTransformer.get_decorator(
                     ctx, node.iter.args[0])
             ast.fix_missing_locations(node)
 
             if decorator == 'static':
                 if double_decorator == 'static':
                     raise TaichiSyntaxError("'ti.static' cannot be nested")
-                return IRBuilder.build_static_for(
+                return ASTTransformer.build_static_for(
                     ctx, node, double_decorator == 'grouped')
             if decorator == 'ndrange':
                 if double_decorator != '':
                     raise TaichiSyntaxError(
                         "No decorator is allowed inside 'ti.ndrange")
-                return IRBuilder.build_ndrange_for(ctx, node)
+                return ASTTransformer.build_ndrange_for(ctx, node)
             if decorator == 'grouped':
                 if double_decorator == 'static':
                     raise TaichiSyntaxError(
                         "'ti.static' is not allowed inside 'ti.grouped'")
                 elif double_decorator == 'ndrange':
-                    return IRBuilder.build_grouped_ndrange_for(ctx, node)
+                    return ASTTransformer.build_grouped_ndrange_for(ctx, node)
                 elif double_decorator == 'grouped':
                     raise TaichiSyntaxError("'ti.grouped' cannot be nested")
                 else:
-                    return IRBuilder.build_struct_for(ctx,
-                                                      node,
-                                                      is_grouped=True)
+                    return ASTTransformer.build_struct_for(ctx,
+                                                           node,
+                                                           is_grouped=True)
             elif isinstance(node.iter, ast.Call) and isinstance(
                     node.iter.func, ast.Name) and node.iter.func.id == 'range':
-                return IRBuilder.build_range_for(ctx, node)
+                return ASTTransformer.build_range_for(ctx, node)
             elif isinstance(node.iter, ast.Attribute) and isinstance(
                     build_stmt(ctx, node.iter).value.ptr, impl.MeshInstance):
                 if not ti.is_extension_supported(ti.cfg.arch,
                                                  ti.extension.mesh):
                     raise Exception('Backend ' + str(ti.cfg.arch) +
                                     ' doesn\'t support MeshTaichi extension')
-                return IRBuilder.build_mesh_for(ctx, node)
+                return ASTTransformer.build_mesh_for(ctx, node)
             else:  # Struct for
                 if not isinstance(node.iter, ast.Attribute):
                     build_stmt(ctx, node.iter)
-                return IRBuilder.build_struct_for(ctx, node, is_grouped=False)
+                return ASTTransformer.build_struct_for(ctx,
+                                                       node,
+                                                       is_grouped=False)
 
     @staticmethod
     def build_While(ctx, node):
@@ -810,7 +867,8 @@ class IRBuilder(Builder):
     @staticmethod
     def build_If(ctx, node):
         node.test = build_stmt(ctx, node.test)
-        is_static_if = (IRBuilder.get_decorator(ctx, node.test) == "static")
+        is_static_if = (ASTTransformer.get_decorator(ctx,
+                                                     node.test) == "static")
 
         if is_static_if:
             if node.test.ptr:
@@ -853,7 +911,8 @@ class IRBuilder(Builder):
             node.ptr = ti.select(node.test.ptr, node.body.ptr, node.orelse.ptr)
             return node
 
-        is_static_if = (IRBuilder.get_decorator(ctx, node.test) == "static")
+        is_static_if = (ASTTransformer.get_decorator(ctx,
+                                                     node.test) == "static")
 
         if is_static_if:
             if node.test.ptr:
@@ -909,8 +968,8 @@ class IRBuilder(Builder):
                 msg = node.msg.value
             elif isinstance(node.msg, ast.Str):
                 msg = node.msg.s
-            elif IRBuilder._is_string_mod_args(node.msg):
-                msg, extra_args = IRBuilder._handle_string_mod_args(
+            elif ASTTransformer._is_string_mod_args(node.msg):
+                msg, extra_args = ASTTransformer._handle_string_mod_args(
                     ctx, node.msg)
             else:
                 raise ValueError(
@@ -947,7 +1006,7 @@ class IRBuilder(Builder):
         raise node.exc.ptr
 
 
-build_stmt = IRBuilder()
+build_stmt = ASTTransformer()
 
 
 def build_stmts(ctx, stmts):

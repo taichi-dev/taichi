@@ -19,6 +19,16 @@ namespace opengl {
 namespace {
 
 namespace shaders {
+#define FOREACH_ARR_NAME(_) \
+  _(arr0)                   \
+  _(arr1)                   \
+  _(arr2)                   \
+  _(arr3)                   \
+  _(arr4)                   \
+  _(arr5)                   \
+  _(arr6)                   \
+  _(arr7)
+
 #define TI_INSIDE_OPENGL_CODEGEN
 #include "taichi/backends/opengl/shaders/atomics_macro_f32.glsl.h"
 #include "taichi/backends/opengl/shaders/runtime.h"
@@ -29,6 +39,8 @@ namespace shaders {
 
 GENERATE_OPENGL_ATOMIC_F32(data);
 GENERATE_OPENGL_ATOMIC_F32(gtmp);
+
+FOREACH_ARR_NAME(GENERATE_OPENGL_ATOMIC_F32);
 
 GENERATE_OPENGL_REDUCTION_FUNCTIONS(add, float);
 GENERATE_OPENGL_REDUCTION_FUNCTIONS(max, float);
@@ -41,6 +53,7 @@ GENERATE_OPENGL_REDUCTION_FUNCTIONS(max, uint);
 GENERATE_OPENGL_REDUCTION_FUNCTIONS(min, uint);
 
 #undef TI_INSIDE_OPENGL_CODEGEN
+#undef FOREACH_ARR_NAME
 }  // namespace shaders
 
 using irpass::ExternalPtrAccess;
@@ -213,10 +226,36 @@ class KernelGen : public IRVisitor {
     }
 
     if (used.simulated_atomic_float) {
-      kernel_header += shaders::kOpenGlAtomicF32Source_data;
+      if (used.buf_data) {
+        kernel_header += shaders::kOpenGlAtomicF32Source_data;
+      }
       if (used.buf_gtmp) {
         kernel_header += shaders::kOpenGlAtomicF32Source_gtmp;
       }
+      std::unordered_set<int> arr_ids;
+      for ([[maybe_unused]] const auto [arr_id, bind_idx] :
+           used.arr_arg_to_bind_idx) {
+        arr_ids.insert(arr_id);
+      }
+
+#define FOREACH_ARR_ID(_) \
+  _(0)                    \
+  _(1)                    \
+  _(2)                    \
+  _(3)                    \
+  _(4)                    \
+  _(5)                    \
+  _(6)                    \
+  _(7)
+
+#define ADD_ARR_ATOMIC_F32_SOURCE(id)                         \
+  if (arr_ids.count(id)) {                                    \
+    kernel_header += shaders::kOpenGlAtomicF32Source_arr##id; \
+  }
+
+      FOREACH_ARR_ID(ADD_ARR_ATOMIC_F32_SOURCE);
+#undef ADD_ARR_ATOMIC_F32_SOURCE
+#undef FOREACH_ARR_ID
     }
 
     if (used.reduction) {

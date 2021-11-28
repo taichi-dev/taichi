@@ -28,7 +28,7 @@ DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
 }
 
 DeviceAllocation CpuDevice::allocate_memory_runtime(
-    LlvmRuntimeAllocParams &params) {
+    const LlvmRuntimeAllocParams &params) {
   AllocInfo info;
   info.ptr = allocate_llvm_runtime_memory_jit(params);
   // TODO: Add caching allocator

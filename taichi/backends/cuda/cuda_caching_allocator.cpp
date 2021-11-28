@@ -8,7 +8,7 @@ CudaCachingAllocator::CudaCachingAllocator(Device *device) : device_(device) {
 }
 
 uint64_t *CudaCachingAllocator::allocate(
-    Device::LlvmRuntimeAllocParams &params) {
+    const Device::LlvmRuntimeAllocParams &params) {
   uint64_t *ret{nullptr};
   if (find_block(params.size)) {
     auto blk = mem_blocks_.find(params.size);

@@ -33,7 +33,7 @@ DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
 }
 
 DeviceAllocation CudaDevice::allocate_memory_runtime(
-    LlvmRuntimeAllocParams &params) {
+    const LlvmRuntimeAllocParams &params) {
   AllocInfo info;
   if (params.host_read || params.host_write) {
     TI_NOT_IMPLEMENTED

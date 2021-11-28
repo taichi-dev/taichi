@@ -15,8 +15,9 @@ struct TaichiAotData {
   //   BufferMetaData metadata;
   std::vector<std::vector<std::vector<uint32_t>>> spirv_codes;
   std::vector<spirv::TaichiKernelAttributes> kernels;
+  std::vector<spirv::CompiledFieldData> fields;
 
-  TI_IO_DEF(kernels);
+  TI_IO_DEF(kernels, fields);
 };
 
 }  // namespace vulkan

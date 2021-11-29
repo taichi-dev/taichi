@@ -102,11 +102,6 @@ def check_exists(src):
         )
 
 
-def get_unique_task_id():
-    return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + (
-        f'{random.randint(0, 10000):05d}')
-
-
 ti_core = import_ti_core()
 
 ti_core.set_python_package_dir(package_root())

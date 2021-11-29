@@ -1,7 +1,5 @@
-import datetime
 import os
 import platform
-import random
 import sys
 
 from colorama import Fore, Style

@@ -212,7 +212,11 @@ class Struct(TaichiOperations):
         Returns:
             Dict: The result dictionary.
         """
-        return {k: v.to_dict() if isinstance(v, Struct) else v.to_list() if isinstance(v, Matrix) else v for k, v in self.entries.items()}
+        return {
+            k: v.to_dict() if isinstance(v, Struct) else
+            v.to_list() if isinstance(v, Matrix) else v
+            for k, v in self.entries.items()
+        }
 
     @classmethod
     @python_scope

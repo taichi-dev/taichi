@@ -10,7 +10,8 @@ def test_unary_op():
         a = 1
         b = ti.floor(a)
 
-    with pytest.raises(ti.TaichiCompilationError, match="'floor' takes real inputs only"):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match="'floor' takes real inputs only"):
         floor()
 
 
@@ -50,5 +51,7 @@ def test_subscript():
     def any_array(x: ti.any_arr()):
         b = x[3, 1.1]
 
-    with pytest.raises(ti.TaichiCompilationError, match="indices must be integers"):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match="indices must be integers") as e:
         any_array(a)
+    print(str(e.value))

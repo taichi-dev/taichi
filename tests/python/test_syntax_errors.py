@@ -275,7 +275,8 @@ def test_func_multiple_return():
     def kern(a: float):
         print(safe_sqrt(a))
 
-    with pytest.raises(ti.TaichiCompilationError, match='cannot have multiple returns'):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='cannot have multiple returns'):
         kern(-233)
 
 

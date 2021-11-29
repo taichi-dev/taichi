@@ -119,16 +119,16 @@ def test_fields_builder_pointer():
     fb2.finalize()
 
     @ti.kernel
-    def assign_field_multiple0(a, b, c):
+    def assign_field_multiple0():
         # test range-for
         for i in range(shape_size_1d):
-            x[i] = i * a
+            x[i] = i * 2
         for i in range(shape_size_1d):
-            y[i] = i + b
+            y[i] = i + 5
         for i in range(shape_size_1d):
-            z[i] = i + c
+            z[i] = i + 10
 
-    assign_field_multiple0(2, 5, 10)
+    assign_field_multiple0()
     for i in range(shape_size_1d):
         assert x[i] == i * 2
         assert y[i] == i + 5

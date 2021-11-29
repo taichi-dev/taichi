@@ -31,7 +31,7 @@ fi
 
 PROJECT_TAGS=""
 EXTRA_ARGS=""
-if [ $PROJECT_NAME -eq "taichi-nightly" ]; then
+if [ $PROJECT_NAME = "taichi-nightly" ]; then
     PROJECT_TAGS="egg_info --tag-date"
 fi
 

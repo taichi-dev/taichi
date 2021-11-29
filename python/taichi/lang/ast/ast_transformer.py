@@ -477,16 +477,67 @@ class ASTTransformer(Builder):
         return node
 
     @staticmethod
+    def build_short_circuit_and(operands):
+        if len(operands) == 1:
+            return operands[0].ptr
+
+        val = ti.expr_init(None)
+        lhs = operands[0].ptr
+        ti.begin_frontend_if(lhs)
+
+        ti.core.begin_frontend_if_true()
+        rhs = ASTTransformer.build_short_circuit_and(operands[1:])
+        val.assign(rhs)
+        ti.core.pop_scope()
+
+        ti.core.begin_frontend_if_false()
+        val.assign(0)
+        ti.core.pop_scope()
+
+        return val
+
+    @staticmethod
+    def build_short_circuit_or(operands):
+        if len(operands) == 1:
+            return operands[0].ptr
+
+        val = ti.expr_init(None)
+        lhs = operands[0].ptr
+        ti.begin_frontend_if(lhs)
+
+        ti.core.begin_frontend_if_true()
+        val.assign(1)
+        ti.core.pop_scope()
+
+        ti.core.begin_frontend_if_false()
+        rhs = ASTTransformer.build_short_circuit_or(operands[1:])
+        val.assign(rhs)
+        ti.core.pop_scope()
+
+        return val
+
+    @staticmethod
+    def build_normal_bool_op(op):
+        def inner(operands):
+            result = op(operands[0].ptr, operands[1].ptr)
+            for i in range(2, len(operands)):
+                result = op(result, operands[i].ptr)
+            return result
+
+        return inner
+
+    @staticmethod
     def build_BoolOp(ctx, node):
         node.values = build_stmts(ctx, node.values)
-        op = {
-            ast.And: ti.logical_and,
-            ast.Or: ti.logical_or,
-        }.get(type(node.op))
-        result = op(node.values[0].ptr, node.values[1].ptr)
-        for i in range(2, len(node.values)):
-            result = op(result, node.values[i].ptr)
-        node.ptr = result
+        ops = {
+            ast.And: ASTTransformer.build_short_circuit_and,
+            ast.Or: ASTTransformer.build_short_circuit_or,
+        } if impl.get_runtime().short_circuit_operators else {
+            ast.And: ASTTransformer.build_normal_bool_op(ti.logical_and),
+            ast.Or: ASTTransformer.build_normal_bool_op(ti.logical_or),
+        }
+        op = ops.get(type(node.op))
+        node.ptr = op(node.values)
         return node
 
     @staticmethod

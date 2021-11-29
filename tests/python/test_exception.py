@@ -9,7 +9,7 @@ import taichi as ti
 @ti.test()
 def test_exception_multiline():
     frameinfo = getframeinfo(currentframe())
-    with pytest.raises(ti.TaichiError) as e:
+    with pytest.raises(ti.TaichiCompilationError) as e:
         # yapf: disable
         @ti.kernel
         def foo():
@@ -44,7 +44,7 @@ TypeError: 'NoneType' object is not callable"""
 @ti.test()
 def test_exception_from_func():
     frameinfo = getframeinfo(currentframe())
-    with pytest.raises(ti.TaichiError) as e:
+    with pytest.raises(ti.TaichiCompilationError) as e:
 
         @ti.func
         def baz():

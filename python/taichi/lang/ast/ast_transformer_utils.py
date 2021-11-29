@@ -4,7 +4,7 @@ from sys import version_info
 
 import astor
 from taichi.lang import impl
-from taichi.lang.exception import TaichiError, TaichiSyntaxError
+from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
 
 from taichi import info
 
@@ -25,11 +25,11 @@ class Builder:
             if ctx.raised or not isinstance(node, (ast.stmt, ast.expr)):
                 raise e
             msg = str(e)
-            if not isinstance(e, TaichiError):
+            if not isinstance(e, TaichiCompilationError):
                 msg = f"{e.__class__.__name__}: " + msg
             msg = ctx.get_pos_info(node) + msg
             ctx.raised = True
-            raise TaichiError(msg)
+            raise TaichiCompilationError(msg)
 
 
 class VariableScopeGuard:

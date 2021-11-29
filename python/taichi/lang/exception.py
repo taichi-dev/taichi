@@ -6,5 +6,5 @@ class InvalidOperationError(Exception):
     pass
 
 
-class TaichiError(Exception):
+class TaichiCompilationError(Exception):
     pass

@@ -37,7 +37,7 @@ def test_raise_no_gradient():
 
     x[None] = 5.
     with pytest.raises(
-            ti.TaichiError,
+            ti.TaichiCompilationError,
             match=
             'Gradient x.grad has not been placed, check whether `needs_grad=True`'
     ):

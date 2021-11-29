@@ -21,7 +21,7 @@ from taichi.lang import _random, impl, types
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
-from taichi.lang.exception import (InvalidOperationError, TaichiError,
+from taichi.lang.exception import (InvalidOperationError, TaichiCompilationError,
                                    TaichiSyntaxError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField

@@ -219,12 +219,3 @@ def test_cli_run():
         cli = TaichiMain(test_mode=True)
         args = cli()
         assert args.filename == "a.py"
-
-
-def test_cli_task():
-    with patch_sys_argv_helper(["ti", "task", "test_task", "arg1",
-                                "arg2"]) as custom_argv:
-        cli = TaichiMain(test_mode=True)
-        args = cli()
-        assert args.taskname == "test_task"
-        assert args.taskargs == ["arg1", "arg2"]

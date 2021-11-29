@@ -8,7 +8,9 @@ from taichi.main import main
 from taichi.misc import *
 from taichi.testing import *
 from taichi.tools import *
-from taichi.type import *
+from taichi.type.annotations import *
+# Provide a shortcut to types since they're commonly used.
+from taichi.type.primitive_types import *
 
 from taichi import ad
 from taichi.ui import ui

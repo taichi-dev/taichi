@@ -32,7 +32,7 @@ jobs:
           path: sccache_cache
           key: sccache-linux-ON-${{ github.sha }}
           restore-keys: |
-            sccache-linux-aws-
+            sccache-linux-ON-
 
       - name: Get docker images
         run: |

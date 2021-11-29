@@ -13,7 +13,7 @@ from taichi.type.annotations import *
 from taichi.type.primitive_types import *
 
 from taichi import ad
-from taichi.ui import ui
+from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
 from taichi import aot  # isort:skip

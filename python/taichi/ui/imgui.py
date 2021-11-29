@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 
+
 #For declaring IMGUI components in a ti.Window created by the GGUI system.
 class Gui:
     def __init__(self, gui) -> None:
@@ -88,6 +89,3 @@ class Gui:
             text (str): a line of text to be shown next to the button
         """
         return self.gui.button(text)
-
-
-

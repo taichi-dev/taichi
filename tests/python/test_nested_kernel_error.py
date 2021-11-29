@@ -2,7 +2,7 @@ import taichi as ti
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiError)
 def test_nested_kernel_error():
     @ti.kernel
     def B():

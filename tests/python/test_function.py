@@ -274,8 +274,7 @@ def test_missing_arg_annotation():
 
 @ti.test(experimental_real_function=True)
 def test_missing_return_annotation():
-    with pytest.raises(ti.TaichiSyntaxError,
-                       match='return value must be annotated'):
+    with pytest.raises(ti.TaichiError, match='return value must be annotated'):
 
         @ti.func
         def add(a: ti.i32, b: ti.i32):

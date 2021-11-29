@@ -24,7 +24,7 @@ class Builder:
         except Exception as e:
             if ctx.raised or not isinstance(node, (ast.stmt, ast.expr)):
                 raise e
-            msg = e.args[0]
+            msg = str(e)
             if not isinstance(e, TaichiError):
                 msg = f"{e.__class__.__name__}: " + msg
             msg = ctx.get_pos_info(node) + msg

@@ -159,14 +159,15 @@ Test fields with builder destory.
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_fields_builder_destroy():
-    test_sizes = [1] # [1, 2, 3]
-    size_extend_factor = 1 # 10 ** 3
+    test_sizes = [1]  # [1, 2, 3]
+    size_extend_factor = 1  # 10 ** 3
     # note: currently only consider precison that all platform supported,
     # more detailed here: https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types
     field_types = [ti.f32, ti.i32]
     field_sizes = [1]  # [1, 5, 10]
 
-    def test_for_single_destroy_multi_fields(test_sizes, size_extend_factor, field_types, field_sizes):
+    def test_for_single_destroy_multi_fields(test_sizes, size_extend_factor,
+                                             field_types, field_sizes):
         fb = ti.FieldsBuilder()
         for tsize_idx in range(len(test_sizes)):
             for ftype_idx in range(len(field_types)):
@@ -184,7 +185,8 @@ def test_fields_builder_destroy():
     test_for_single_destroy_multi_fields(test_sizes, size_extend_factor,
                                          field_types, field_sizes)
 
-    def test_for_multi_destroy_multi_fields(test_sizes, size_extend_factor, field_types, field_sizes):
+    def test_for_multi_destroy_multi_fields(test_sizes, size_extend_factor,
+                                            field_types, field_sizes):
         fb0 = ti.FieldsBuilder()
         fb1 = ti.FieldsBuilder()
 

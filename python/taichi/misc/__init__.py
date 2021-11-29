@@ -1,5 +1,4 @@
 from .error import *
-from .gui import *
 from .image import *
 from .util import *
 

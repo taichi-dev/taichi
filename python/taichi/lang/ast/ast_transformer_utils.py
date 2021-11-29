@@ -1,12 +1,12 @@
 import ast
 from enum import Enum
+from sys import version_info
 
 import astor
 from taichi.lang import impl
-from taichi.lang.exception import TaichiSyntaxError, TaichiError
+from taichi.lang.exception import TaichiError, TaichiSyntaxError
 
 from taichi import info
-from sys import version_info
 
 
 class Builder:
@@ -164,14 +164,18 @@ class ASTTransformerContext:
 
         if node.lineno == node.end_lineno:
             msg += self.src[node.lineno - 1]
-            msg += ' ' * col_offset + '^' * (end_col_offset - col_offset) + '\n'
+            msg += ' ' * col_offset + '^' * (end_col_offset -
+                                             col_offset) + '\n'
         else:
             for i in range(node.lineno - 1, node.end_lineno):
                 last = len(self.src[i])
-                while last > 0 and (self.src[i][last - 1].isspace() or not self.src[i][last - 1].isprintable()):
+                while last > 0 and (self.src[i][last - 1].isspace() or
+                                    not self.src[i][last - 1].isprintable()):
                     last -= 1
                 first = 0
-                while first < len(self.src[i]) and (self.src[i][first].isspace() or not self.src[i][first].isprintable()):
+                while first < len(self.src[i]) and (
+                        self.src[i][first].isspace()
+                        or not self.src[i][first].isprintable()):
                     first += 1
                 msg += self.src[i]
                 if i == node.lineno - 1:

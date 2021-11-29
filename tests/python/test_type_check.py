@@ -52,6 +52,5 @@ def test_subscript():
         b = x[3, 1.1]
 
     with pytest.raises(ti.TaichiCompilationError,
-                       match="indices must be integers") as e:
+                       match="indices must be integers"):
         any_array(a)
-    print(str(e.value))

@@ -179,7 +179,7 @@ def test_fields_builder_destroy():
                     for create_field_idx in range(field_size):
                         field = ti.field(field_type)
                         fb.dense(ti.i, test_1d_size).place(field)
-                    fb_snode_tree = fb.finalize()
+        fb_snode_tree = fb.finalize()
         fb_snode_tree.destroy()
 
     test_for_single_destroy_multi_fields(test_sizes, size_extend_factor,

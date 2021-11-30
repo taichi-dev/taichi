@@ -96,6 +96,9 @@ def _get_tree_and_ctx(self,
                       args=None):
     src = textwrap.dedent(oinspect.getsource(self.func))
     tree = ast.parse(src)
+    src, start_lineno = oinspect.getsourcelines(self.func)
+    src = [line.replace("\t", "    ") for line in src]
+    file = oinspect.getsourcefile(self.func)
 
     func_body = tree.body[0]
     func_body.decorator_list = []
@@ -120,7 +123,10 @@ def _get_tree_and_ctx(self,
                                        func=self,
                                        arg_features=arg_features,
                                        global_vars=global_vars,
-                                       argument_data=args)
+                                       argument_data=args,
+                                       src=src,
+                                       start_lineno=start_lineno,
+                                       file=file)
 
 
 class Func:

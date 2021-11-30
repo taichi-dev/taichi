@@ -1,8 +1,10 @@
+import ast
 from enum import Enum
+from sys import version_info
 
 import astor
 from taichi.lang import impl
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
 
 from taichi import info
 
@@ -10,14 +12,24 @@ from taichi import info
 class Builder:
     def __call__(self, ctx, node):
         method = getattr(self, 'build_' + node.__class__.__name__, None)
-        if method is None:
-            try:
-                import astpretty  # pylint: disable=C0415
-                error_msg = f'Unsupported node {node}:\n{astpretty.pformat(node)}'
-            except:
-                error_msg = f'Unsupported node {node}'
-            raise TaichiSyntaxError(error_msg)
-        return method(ctx, node)
+        try:
+            if method is None:
+                try:
+                    import astpretty  # pylint: disable=C0415
+                    error_msg = f'Unsupported node {node}:\n{astpretty.pformat(node)}'
+                except:
+                    error_msg = f'Unsupported node {node}'
+                raise TaichiSyntaxError(error_msg)
+            return method(ctx, node)
+        except Exception as e:
+            if ctx.raised or not isinstance(node, (ast.stmt, ast.expr)):
+                raise e
+            msg = str(e)
+            if not isinstance(e, TaichiCompilationError):
+                msg = f"{e.__class__.__name__}: " + msg
+            msg = ctx.get_pos_info(node) + msg
+            ctx.raised = True
+            raise TaichiCompilationError(msg)
 
 
 class VariableScopeGuard:
@@ -62,7 +74,10 @@ class ASTTransformerContext:
                  func=None,
                  arg_features=None,
                  global_vars=None,
-                 argument_data=None):
+                 argument_data=None,
+                 file=None,
+                 src=None,
+                 start_lineno=None):
         self.func = func
         self.local_scopes = []
         self.control_scopes = []
@@ -73,6 +88,18 @@ class ASTTransformerContext:
         self.global_vars = global_vars
         self.argument_data = argument_data
         self.return_data = None
+        self.file = file
+        self.src = src
+        self.indent = 0
+        for c in self.src[0]:
+            if c == ' ':
+                self.indent += 1
+            else:
+                break
+        if self.src[-1][-1] != '\n':
+            self.src[-1] += '\n'
+        self.lineno_offset = start_lineno - 1
+        self.raised = False
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope_guard(self, *args):
@@ -126,6 +153,40 @@ class ASTTransformerContext:
             if name in s:
                 return s[name]
         return self.global_vars.get(name)
+
+    def get_pos_info(self, node):
+        msg = f'On line {node.lineno + self.lineno_offset} of file "{self.file}":\n'
+        if version_info < (3, 8):
+            msg += self.src[node.lineno - 1]
+            return msg
+        col_offset = self.indent + node.col_offset
+        end_col_offset = self.indent + node.end_col_offset
+
+        if node.lineno == node.end_lineno:
+            msg += self.src[node.lineno - 1]
+            msg += ' ' * col_offset + '^' * (end_col_offset -
+                                             col_offset) + '\n'
+        else:
+            for i in range(node.lineno - 1, node.end_lineno):
+                last = len(self.src[i])
+                while last > 0 and (self.src[i][last - 1].isspace() or
+                                    not self.src[i][last - 1].isprintable()):
+                    last -= 1
+                first = 0
+                while first < len(self.src[i]) and (
+                        self.src[i][first].isspace()
+                        or not self.src[i][first].isprintable()):
+                    first += 1
+                msg += self.src[i]
+                if i == node.lineno - 1:
+                    msg += ' ' * col_offset + '^' * (last - col_offset) + '\n'
+                elif i == node.end_lineno - 1:
+                    msg += ' ' * first + '^' * (end_col_offset - first) + '\n'
+                elif first < last:
+                    msg += ' ' * first + '^' * (last - first) + '\n'
+                else:
+                    msg += '\n'
+        return msg
 
 
 def print_ast(tree, title=None):

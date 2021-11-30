@@ -33,7 +33,7 @@ On line {frameinfo.lineno + 5} of file "{frameinfo.filename}":
                  1211222,
                  ^^^^^^^^
 
-
+ 
                  23)
                  ^^^
 TypeError: 'NoneType' object is not callable"""

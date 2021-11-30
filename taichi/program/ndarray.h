@@ -34,7 +34,6 @@ class Ndarray {
   ~Ndarray();
 
  private:
-  Program *prog_{nullptr};
   DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
   // Invariant:
   //   data_ptr_ is not nullptr iff arch is a llvm backend

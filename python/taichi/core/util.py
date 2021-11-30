@@ -1,7 +1,5 @@
-import datetime
 import os
 import platform
-import random
 import sys
 
 from colorama import Fore, Style
@@ -100,11 +98,6 @@ def check_exists(src):
         raise FileNotFoundError(
             f'File "{src}" not exist. Installation corrupted or build incomplete?'
         )
-
-
-def get_unique_task_id():
-    return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + (
-        f'{random.randint(0, 10000):05d}')
 
 
 ti_core = import_ti_core()

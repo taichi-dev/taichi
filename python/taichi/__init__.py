@@ -8,10 +8,12 @@ from taichi.main import main
 from taichi.misc import *
 from taichi.testing import *
 from taichi.tools import *
-from taichi.type import *
+from taichi.type.annotations import *
+# Provide a shortcut to types since they're commonly used.
+from taichi.type.primitive_types import *
 
 from taichi import ad
-from taichi.ui import ui
+from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
 from taichi import aot  # isort:skip

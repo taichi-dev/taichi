@@ -38,6 +38,7 @@ class Struct(TaichiOperations):
                 v = Struct(v)
             self.entries[k] = v if in_python_scope() else impl.expr_init(v)
         self.register_members()
+        self.in_python_scope = in_python_scope()
 
     @property
     def keys(self):
@@ -203,7 +204,6 @@ class Struct(TaichiOperations):
     def __repr__(self):
         return str(self.to_dict())
 
-    @python_scope
     def to_dict(self):
         """Converts the Struct to a dictionary.
 
@@ -212,7 +212,11 @@ class Struct(TaichiOperations):
         Returns:
             Dict: The result dictionary.
         """
-        return self.entries
+        return {
+            k: v.to_dict() if isinstance(v, Struct) else
+            v.to_list() if isinstance(v, Matrix) else v
+            for k, v in self.entries.items()
+        }
 
     @classmethod
     @python_scope
@@ -284,6 +288,7 @@ class _IntermediateStruct(Struct):
         assert isinstance(entries, dict)
         self.entries = entries
         self.register_members()
+        self.in_python_scope = in_python_scope()
 
 
 class StructField(Field):

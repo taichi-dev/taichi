@@ -1380,7 +1380,7 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def fill(self, val):
-        self.ndarray_fill(val, taichi.lang.meta.fill_ndarray_matrix)
+        self.ndarray_matrix_fill(val)
 
     @python_scope
     def to_numpy(self):
@@ -1444,7 +1444,7 @@ class VectorNdarray(Ndarray):
 
     @python_scope
     def fill(self, val):
-        self.ndarray_fill(val, taichi.lang.meta.fill_ndarray_matrix)
+        self.ndarray_matrix_fill(val)
 
     @python_scope
     def to_numpy(self):

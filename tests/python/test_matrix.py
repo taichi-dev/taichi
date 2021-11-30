@@ -316,3 +316,27 @@ def test_copy_python_scope_matrix_to_taichi_scope():
         assert b[2] == 6
 
     test()
+
+
+@ti.test(debug=True)
+def test_copy_matrix_field_element_to_taichi_scope():
+    a = ti.Vector.field(3, ti.i32, shape=())
+    a[None] = ti.Vector([1, 2, 3])
+
+    @ti.kernel
+    def test():
+        b = a[None]
+        assert b[0] == 1
+        assert b[1] == 2
+        assert b[2] == 3
+        b[0] = 5
+        b[1] = 9
+        b[2] = 7
+        assert b[0] == 5
+        assert b[1] == 9
+        assert b[2] == 7
+        assert a[None][0] == 1
+        assert a[None][1] == 2
+        assert a[None][2] == 3
+
+    test()

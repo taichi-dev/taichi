@@ -18,11 +18,9 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
 }
 
 namespace {
-void write_glsl_file(const std::string &output_dir,
-                     const std::string &filename,
-                     CompiledKernel &k) {
+void write_glsl_file(const std::string &output_dir, CompiledKernel &k) {
   const std::string glsl_path =
-      fmt::format("{}/{}_{}.glsl", output_dir, filename, k.kernel_name);
+      fmt::format("{}/{}.glsl", output_dir, k.kernel_name);
   std::ofstream fs{glsl_path};
   fs << k.kernel_src;
   k.kernel_src = glsl_path;
@@ -58,26 +56,26 @@ uint32_t to_gl_dtype_enum(DataType dt) {
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
-  const std::string bin_path =
-      fmt::format("{}/{}_metadata.tcb", output_dir, filename);
+  TI_WARN_IF(!filename.empty(),
+             "Filename prefix is ignored on opengl backend.");
+  const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
   write_to_binary_file(aot_data_, bin_path);
   // Json format doesn't support multiple line strings.
   AotData new_aot_data = aot_data_;
   for (auto &k : new_aot_data.kernels) {
     for (auto &ki : k.program.kernels) {
-      write_glsl_file(output_dir, filename, ki);
+      write_glsl_file(output_dir, ki);
     }
   }
   for (auto &k : new_aot_data.kernel_tmpls) {
     for (auto &ki : k.program) {
       for (auto &kij : ki.second.kernels) {
-        write_glsl_file(output_dir, filename, kij);
+        write_glsl_file(output_dir, kij);
       }
     }
   }
 
-  const std::string txt_path =
-      fmt::format("{}/{}_metadata.json", output_dir, filename);
+  const std::string txt_path = fmt::format("{}/metadata.json", output_dir);
   TextSerializer ts;
   ts.serialize_to_json("aot_data", new_aot_data);
   ts.write_to_file(txt_path);

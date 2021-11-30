@@ -2,6 +2,7 @@
 
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
+#include <pybind11/pybind11.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -176,14 +177,14 @@ void UnaryOpExpression::serialize(std::ostream &ss) {
 void UnaryOpExpression::type_check() {
   TI_ASSERT_TYPE_CHECKED(operand);
   if (!operand->ret_type->is<PrimitiveType>())
-    throw std::runtime_error(
-        fmt::format("TypeError: unsupported operand type(s) for '{}': '{}'",
+    throw pybind11::type_error(
+        fmt::format("unsupported operand type(s) for '{}': '{}'",
                     unary_op_type_name(type), operand->ret_type->to_string()));
   if ((type == UnaryOpType::round || type == UnaryOpType::floor ||
        type == UnaryOpType::ceil || is_trigonometric(type)) &&
       !is_real(operand->ret_type))
-    throw std::runtime_error(fmt::format(
-        "TypeError: '{}' takes real inputs only, however '{}' is provided",
+    throw pybind11::type_error(fmt::format(
+        "'{}' takes real inputs only, however '{}' is provided",
         unary_op_type_name(type), operand->ret_type->to_string()));
   ret_type = is_cast() ? cast_type : operand->ret_type;
 }
@@ -209,8 +210,8 @@ void BinaryOpExpression::type_check() {
   auto lhs_type = lhs->ret_type;
   auto rhs_type = rhs->ret_type;
   auto error = [&]() {
-    throw std::runtime_error(fmt::format(
-        "TypeError: unsupported operand type(s) for '{}': '{}' and '{}'",
+    throw pybind11::type_error(fmt::format(
+        "unsupported operand type(s) for '{}': '{}' and '{}'",
         binary_op_type_symbol(type), lhs->ret_type->to_string(),
         rhs->ret_type->to_string()));
   };
@@ -253,8 +254,8 @@ void TernaryOpExpression::type_check() {
   auto op2_type = op2->ret_type;
   auto op3_type = op3->ret_type;
   auto error = [&]() {
-    throw std::runtime_error(fmt::format(
-        "TypeError: unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
+    throw pybind11::type_error(fmt::format(
+        "unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
         ternary_type_name(type), op1->ret_type->to_string(),
         op2->ret_type->to_string(), op3->ret_type->to_string()));
   };
@@ -363,8 +364,8 @@ void GlobalPtrExpression::type_check() {
       auto &expr = indices.exprs[i];
       TI_ASSERT_TYPE_CHECKED(expr);
       if (!is_integral(expr->ret_type))
-        throw std::runtime_error(
-            fmt::format("TypeError: indices must be integers, however '{}' is "
+        throw pybind11::type_error(
+            fmt::format("indices must be integers, however '{}' is "
                         "provided as index {}",
                         expr->ret_type->to_string(), i));
     }
@@ -508,8 +509,8 @@ void RangeAssumptionExpression::type_check() {
   TI_ASSERT_TYPE_CHECKED(base);
   if (!input->ret_type->is<PrimitiveType>() ||
       !base->ret_type->is<PrimitiveType>() || input->ret_type != base->ret_type)
-    throw std::runtime_error(
-        fmt::format("TypeError: unsupported operand type(s) for "
+    throw pybind11::type_error(
+        fmt::format("unsupported operand type(s) for "
                     "'range_assumption': '{}' and '{}'",
                     input->ret_type->to_string(), base->ret_type->to_string()));
   ret_type = input->ret_type;
@@ -526,8 +527,8 @@ void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
 void LoopUniqueExpression::type_check() {
   TI_ASSERT_TYPE_CHECKED(input);
   if (!input->ret_type->is<PrimitiveType>())
-    throw std::runtime_error(fmt::format(
-        "TypeError: unsupported operand type(s) for 'loop_unique': '{}'",
+    throw pybind11::type_error(fmt::format(
+        "unsupported operand type(s) for 'loop_unique': '{}'",
         input->ret_type->to_string()));
   ret_type = input->ret_type;
 }
@@ -576,8 +577,8 @@ void AtomicOpExpression::type_check() {
   TI_ASSERT_TYPE_CHECKED(dest);
   TI_ASSERT_TYPE_CHECKED(val);
   auto error = [&]() {
-    throw std::runtime_error(fmt::format(
-        "TypeError: unsupported operand type(s) for 'atomic_{}': '{}' and '{}'",
+    throw pybind11::type_error(fmt::format(
+        "unsupported operand type(s) for 'atomic_{}': '{}' and '{}'",
         atomic_op_type_name(op_type), dest->ret_type->to_string(),
         val->ret_type->to_string()));
   };

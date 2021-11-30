@@ -2,9 +2,7 @@ import ast
 import functools
 import inspect
 import re
-import sys
 import textwrap
-import traceback
 
 import numpy as np
 import taichi.lang

@@ -357,7 +357,7 @@ void GlobalPtrExpression::type_check() {
   if (snode != nullptr) {
     ret_type = snode->dt;
   } else if (var.is<GlobalVariableExpression>()) {
-    ret_type = var.cast<GlobalVariableExpression>()->snode->dt;
+    ret_type = var.cast<GlobalVariableExpression>()->snode->dt->get_compute_type();
   } else if (var.is<ExternalTensorExpression>()) {
     for (int i = 0; i < indices.exprs.size(); i++) {
       auto &expr = indices.exprs[i];

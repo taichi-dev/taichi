@@ -37,11 +37,11 @@ def expr_init(rhs):
     if rhs is None:
         return Expr(_ti_core.expr_alloca())
     if isinstance(rhs, Matrix):
-        if rhs.in_python_scope:
+        if rhs.in_python_scope or isinstance(rhs, _IntermediateMatrix):
             return Matrix(rhs.to_list())
         return rhs
     if isinstance(rhs, Struct):
-        if rhs.in_python_scope:
+        if rhs.in_python_scope or isinstance(rhs, _IntermediateStruct):
             return Struct(rhs.to_dict())
         return rhs
     if isinstance(rhs, list):

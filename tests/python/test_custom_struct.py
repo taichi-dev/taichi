@@ -315,3 +315,24 @@ def test_copy_python_scope_struct_to_taichi_scope():
         assert b.b == 4
 
     test()
+
+
+@ti.test(debug=True)
+def test_copy_struct_field_element_to_taichi_scope():
+    a = ti.Struct.field({'a': ti.i32, 'b': ti.i32}, shape=())
+    a[None].a = 2
+    a[None].b = 3
+
+    @ti.kernel
+    def test():
+        b = a[None]
+        assert b.a == 2
+        assert b.b == 3
+        b.a = 5
+        b.b = 9
+        assert b.a == 5
+        assert b.b == 9
+        assert a[None].a == 2
+        assert a[None].b == 3
+
+    test()

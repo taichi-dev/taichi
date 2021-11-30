@@ -204,8 +204,8 @@ def test_fields_builder_destroy():
                         fb0.dense(ti.i, test_1d_size).place(field0)
                         fb1.pointer(ti.i, test_1d_size).place(field1)
 
-                        fb0_snode_tree = fb0.finalize()
-                        fb1_snode_tree = fb1.finalize()
+        fb0_snode_tree = fb0.finalize()
+        fb1_snode_tree = fb1.finalize()
 
         # destroy
         fb0_snode_tree.destroy()

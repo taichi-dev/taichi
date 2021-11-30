@@ -135,14 +135,14 @@ def test_fields_builder_pointer():
         assert z[i] == i + 10
 
     @ti.kernel
-    def assign_field_multiple1(a, b):
+    def assign_field_multiple1():
         # test struct-for
         for i in y:
-            y[i] += a
+            y[i] += 5
         for i in z:
-            z[i] -= b
+            z[i] -= 5
 
-    assign_field_multiple1(5, 5)
+    assign_field_multiple1()
     for i in range(shape_size_1d):
         assert y[i] == i + 10
         assert z[i] == i + 5

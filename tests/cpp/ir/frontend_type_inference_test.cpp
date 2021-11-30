@@ -2,6 +2,7 @@
 
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/program.h"
+#include <pybind11/pybind11.h>
 
 namespace taichi {
 namespace lang {
@@ -94,7 +95,7 @@ TEST(FrontendTypeInference, GlobalPtr_ExternalTensor) {
       Expr::make<ExternalTensorExpression>(PrimitiveType::u16, 1, 0, 0);
   auto global_ptr =
       Expr::make<GlobalPtrExpression>(external_tensor, ExprGroup(index));
-  EXPECT_THROW(global_ptr->type_check(), std::runtime_error);
+  EXPECT_THROW(global_ptr->type_check(), pybind11::type_error);
 }
 
 TEST(FrontendTypeInference, TensorElement) {
@@ -161,7 +162,7 @@ TEST(FrontendTypeInference, RangeAssumption) {
   const_f64->type_check();
   auto invalid =
       Expr::make<RangeAssumptionExpression>(const_f32_a, const_f64, 0, 1);
-  EXPECT_THROW(invalid->type_check(), std::runtime_error);
+  EXPECT_THROW(invalid->type_check(), pybind11::type_error);
 }
 
 TEST(FrontendTypeInference, LoopUnique) {

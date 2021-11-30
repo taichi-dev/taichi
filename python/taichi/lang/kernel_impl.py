@@ -642,9 +642,7 @@ _KERNEL_CLASS_STACKFRAME_STMT_RES = [
 
 def _inside_class(level_of_class_stackframe):
     try:
-        maybe_class_frame = inspect.currentframe()
-        for _ in range(level_of_class_stackframe):
-            maybe_class_frame = maybe_class_frame.f_back
+        maybe_class_frame = sys._getframe(level_of_class_stackframe)
         statement_list = inspect.getframeinfo(maybe_class_frame)[3]
         first_statment = statement_list[0].strip()
         for pat in _KERNEL_CLASS_STACKFRAME_STMT_RES:

@@ -11,7 +11,7 @@ def test_unary_op():
         b = ti.floor(a)
 
     with pytest.raises(ti.TaichiCompilationError,
-                       match="TypeError: 'floor' takes real inputs only") as e:
+                       match="TypeError: 'floor' takes real inputs only"):
         floor()
 
 

@@ -21,7 +21,7 @@ uint64_t *CudaCachingAllocator::allocate(
 }
 
 void CudaCachingAllocator::release(size_t sz, uint64_t *ptr) {
-  //mem_blocks_.insert(std::pair<size_t, uint64_t *>(sz, ptr));
+  // mem_blocks_.insert(std::pair<size_t, uint64_t *>(sz, ptr));
   mem_blocks_.insert({sz, ptr});
 }
 

@@ -182,8 +182,10 @@ class ASTTransformerContext:
                     msg += ' ' * col_offset + '^' * (last - col_offset) + '\n'
                 elif i == node.end_lineno - 1:
                     msg += ' ' * first + '^' * (end_col_offset - first) + '\n'
-                else:
+                elif first < last:
                     msg += ' ' * first + '^' * (last - first) + '\n'
+                else:
+                    msg += '\n'
         return msg
 
 

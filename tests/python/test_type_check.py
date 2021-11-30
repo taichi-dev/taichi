@@ -23,8 +23,9 @@ def test_binary_op():
         b = 3.1
         c = a & b
 
-    with pytest.raises(ti.TaichiCompilationError,
-                       match=r"TypeError: unsupported operand type\(s\) for '&'"):
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match=r"TypeError: unsupported operand type\(s\) for '&'"):
         bitwise_float()
 
 

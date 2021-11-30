@@ -23,3 +23,7 @@ cmake ..
 make
 ./chi_examples
 ```
+
+## Reference
+
+[IRBuilder test for external ptr](https://github.com/taichi-dev/taichi/blob/master/tests/cpp/ir/ir_builder_test.cpp#L87-L119) might be useful for those who want to run Taichi kernels in cpp within Taichi repository.

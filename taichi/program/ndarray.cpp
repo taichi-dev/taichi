@@ -19,7 +19,6 @@ Ndarray::Ndarray(Program *prog,
       device_(prog->get_device_shared()) {
   ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
                                                  prog->result_buffer);
-
 #ifdef TI_WITH_LLVM
   if (arch_is_cpu(prog->config.arch) || prog->config.arch == Arch::cuda) {
     // For the LLVM backends, device allocation is a physical pointer.

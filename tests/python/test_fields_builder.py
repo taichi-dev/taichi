@@ -211,7 +211,8 @@ def test_fields_builder_destroy():
         fb0_snode_tree.destroy()
         fb1_snode_tree.destroy()
 
-    test_for_multi_destroy_multi_fields(size_1d_0, size_1d_1)
+    test_for_multi_destroy_multi_fields(test_sizes, size_extend_factor,
+                                        field_types, field_sizes)
 
     def test_for_raise_twice_destroy(size_1d):
         fb = ti.FieldsBuilder()

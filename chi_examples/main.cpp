@@ -49,7 +49,7 @@ void run_snode() {
   int n = 10;
   program.materialize_runtime();
   auto *root = new SNode(0, SNodeType::root);
-  auto *pointer = &root->pointer(Index(0), n);
+  auto *pointer = &root->pointer(Axis(0), n, false);
   auto *place = &pointer->insert_children(SNodeType::place);
   place->dt = PrimitiveType::i32;
   program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/false);
@@ -131,15 +131,15 @@ void run_snode() {
   auto ctx_ret = kernel_ret->make_launch_context();
   auto ctx_ext = kernel_ext->make_launch_context();
   std::vector<int> ext_arr(n);
-  ctx_ext.set_arg_external_array(0, taichi::uint64(ext_arr.data()), n);
+  ctx_ext.set_arg_external_array(0, taichi::uint64(ext_arr.data()), n, false);
 
   (*kernel_init)(ctx_init);
   (*kernel_ret)(ctx_ret);
-  std::cout << program.fetch_result<int>(0) << std::endl;
+  assert(program.fetch_result<int>(0) == 45);
   (*kernel_ext)(ctx_ext);
-  for (int i = 0; i < n; i++)
-    std::cout << ext_arr[i] << " ";
-  std::cout << std::endl;
+  for (int i = 0; i < n; i++) {
+    assert(ext_arr[i] == i);
+  }
 }
 
 void autograd() {
@@ -162,7 +162,7 @@ void autograd() {
   @ti.kernel
   def cal():
       for i in a:
-          c[i] += a[i] + (b[i] + b[i])
+          c[i] += a[i] + (b[i] * i)
 
   @ti.kernel
   def support(): # this function will not appear in CHI Builder code
@@ -211,10 +211,10 @@ void autograd() {
       }
     };
 
-    auto *snode = &root->dense(0, n).insert_children(SNodeType::place);
+    auto *snode = &root->dense(Axis(0), n, false).insert_children(SNodeType::place);
     snode->dt = PrimitiveType::f32;
     snode->grad_info = std::make_unique<GradInfoPrimal>(
-        &root->dense(0, n).insert_children(SNodeType::place));
+        &root->dense(Axis(0), n, false).insert_children(SNodeType::place));
     snode->get_grad()->dt = PrimitiveType::f32;
     snode->get_grad()->grad_info = std::make_unique<GradInfoAdjoint>();
     return snode;
@@ -317,15 +317,15 @@ void autograd() {
   (*kernel_forward)(ctx_forward);
   (*kernel_backward)(ctx_backward);
   (*kernel_ext)(ctx_ext);
-  for (int i = 0; i < n; i++)
-    std::cout << ext_a[i] << " ";
-  std::cout << std::endl;
-  for (int i = 0; i < n; i++)
-    std::cout << ext_b[i] << " ";
-  std::cout << std::endl;
-  for (int i = 0; i < n; i++)
-    std::cout << ext_c[i] << " ";
-  std::cout << std::endl;
+  auto eql = [](float a, float b, float eps=1e-7) {
+    float delta = a - b;
+    return -eps < delta && delta < eps;
+  };
+  for (int i = 0; i < n; i++) {
+    assert(eql(ext_a[i], 1));
+    assert(eql(ext_b[i], i));
+    assert(eql(ext_c[i], i * (i + 2)));
+  }
 }
 
 int main() {

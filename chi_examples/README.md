@@ -6,6 +6,8 @@ Follow the steps in `https://docs.taichi.graphics/lang/articles/contribution/dev
 
 Add option `-DTI_EXPORT_CORE=ON` to your `cmake` command (i.e. use `cmake .. DTI_EXPORT_CORE=ON`).
 
+Set environment variable `$TAICHI_REPO_DIR` to your Taichi repository path.
+
 Make sure taichi is built under `$TAICHI_REPO_DIR/build` directory.
 
 After building, `$TAICHI_REPO_DIR/build/libtaichi_export_core.so` should exist.

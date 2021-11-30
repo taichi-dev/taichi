@@ -22,7 +22,7 @@ git clone --recursive https://github.com/taichi-dev/taichi --branch=master
 cd taichi
 git checkout $SHA
 python3 -m pip install -r requirements_dev.txt -i http://repo.taichigraphics.com/repository/pypi/simple --trusted-host repo.taichigraphics.com
-TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF" python3 setup.py install
+TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_EXPORT_CORE=ON" python3 setup.py install
 
 # Add Docker specific ENV
 export TI_IN_DOCKER=true

@@ -1,11 +1,8 @@
 name: Postsubmit Checks
 on:
-  pull_request:
-    types: [ opened, synchronize, reopened ]
-
-#  push:
-#    branches:
-#      - master
+  push:
+    branches:
+      - master
 
 jobs:
   build_and_test_cpu_required:

@@ -641,10 +641,12 @@ _KERNEL_CLASS_STACKFRAME_STMT_RES = [
 
 
 def _inside_class(level_of_class_stackframe):
-    frames = oinspect.stack()
     try:
-        maybe_class_frame = frames[level_of_class_stackframe]
-        statement_list = maybe_class_frame[4]
+        maybe_class_frame = inspect.currentframe()
+        while level_of_class_stackframe > 0:
+            maybe_class_frame = maybe_class_frame.f_back
+            level_of_class_stackframe -= 1
+        statement_list = inspect.getframeinfo(maybe_class_frame)[3]
         first_statment = statement_list[0].strip()
         for pat in _KERNEL_CLASS_STACKFRAME_STMT_RES:
             if pat.match(first_statment):

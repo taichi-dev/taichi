@@ -196,6 +196,8 @@ jobs:
           mkdir -m777 wheel
           mkdir -p sccache_cache
           docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
+        # A tarball is needed because sccache needs some permissions that only the file owner has. 1000 is the uid and gid of user "dev" in the container.
+        # If the uid or gid of the user inside the docker changes, please change the uid and gid in the following line.
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
           rm -rf sccache_cache
@@ -320,12 +322,12 @@ jobs:
           mkdir -p sccache_cache
           chmod -R 777 sccache_cache
           docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
-          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
-          tar -cf sccache.tar sccache_cache
-          docker cp sccache.tar taichi_build:/home/dev/
+        # A tarball is needed because sccache needs some permissions that only the file owner has. 1000 is the uid and gid of user "dev" in the container.
+        # If the uid or gid of the user inside the docker changes, please change the uid and gid in the following line.
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
           rm -rf sccache_cache
-          docker cp taichi_build:/home/dev/sccache_cache sccache_cache
+          docker cp taichi_build:/home/dev/taichi/sccache_cache sccache_cache
         env:
           PY: py38
           GPU_BUILD: ON

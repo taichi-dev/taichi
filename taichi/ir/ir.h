@@ -9,7 +9,7 @@
 #include <tuple>
 
 #include "taichi/common/core.h"
-#include "taichi/ir/ir_modified.h"
+#include "taichi/common/exceptions.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/mesh.h"
 #include "taichi/ir/type_factory.h"

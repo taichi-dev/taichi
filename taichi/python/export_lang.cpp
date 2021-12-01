@@ -77,6 +77,7 @@ TI_NAMESPACE_BEGIN
 void export_lang(py::module &m) {
   using namespace taichi::lang;
 
+  py::register_exception<TaichiTypeError>(m, "TypeError", PyExc_TypeError);
   py::enum_<Arch>(m, "Arch", py::arithmetic())
 #define PER_ARCH(x) .value(#x, Arch::x)
 #include "taichi/inc/archs.inc.h"

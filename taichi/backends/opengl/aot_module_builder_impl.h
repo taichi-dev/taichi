@@ -31,12 +31,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   void add_per_backend_tmpl(const std::string &identifier,
                             const std::string &key,
                             Kernel *kernel) override;
-  void add_ndarray_per_backend(const std::string &identifier,
-                               bool is_scalar,
-                               DataType dt,
-                               std::vector<int> shape,
-                               int row_num,
-                               int column_num) override;
 
  private:
   size_t get_snode_base_address(const SNode *snode);

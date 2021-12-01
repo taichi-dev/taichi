@@ -2,6 +2,7 @@
 
 #include "taichi/backends/device.h"
 #include "taichi/common/core.h"
+#include "taichi/math/arithmetic.h"
 #include <stdint.h>
 #include <map>
 
@@ -19,7 +20,6 @@ class CudaCachingAllocator {
  private:
   std::multimap<size_t, uint64_t *> mem_blocks_;
   Device *device_{nullptr};
-  bool find_block(size_t sz) const;
 };
 
 }  // namespace cuda

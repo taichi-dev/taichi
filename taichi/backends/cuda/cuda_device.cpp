@@ -42,7 +42,7 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(
   } else {
     info.ptr = allocate_llvm_runtime_memory_jit(params);
   }
-  info.size = params.size;
+  info.size = taichi::iroundup(params.size, taichi_page_size);
   info.is_imported = false;
   info.use_cached = params.use_cached;
 

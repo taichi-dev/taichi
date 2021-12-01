@@ -66,7 +66,7 @@ The way a word or acronym is spoken determines whether "a" or "an" precedes it. 
 - Use sentence case for captions and other figure-related text.
 - Use sentence case for items in all types of lists.
 - Use sentence case for all the elements in a table: contents, headings, labels, and captions.
-- Refer to web page titles with the same casing used on the page. 
+- Refer to web page titles with the same casing used on the page.
 
 ### Ornamental words
 
@@ -80,7 +80,7 @@ Use third person singular for a description of an API method.
 The imperative mood keeps the content concise. The direct address is more personal.
 - Not recommended: Developers can download the SDK from here.
 - Better: You can download the SDK from here.
-- Recommended: Download the SDK from here.  
+- Recommended: Download the SDK from here.
 
 ### Gender-neutral
 
@@ -153,7 +153,7 @@ When referencing something specific (such as a unit of measure) in a table heade
 ### Information
 
 #### Note
-Provides supplemental information that may not apply to all readers, but is important for those specific readers to know. 
+Provides supplemental information that may not apply to all readers, but is important for those specific readers to know.
 Wrap the notes in:
 :::note
 This is a note.
@@ -161,9 +161,9 @@ This is a note.
 
 #### Warning
 Suggests proceeding with caution.
-Wrap the notes in 
+Wrap the notes in
 :::caution WARNING
-This is a warning. 
+This is a warning.
 :::
 
 #### DANGER
@@ -178,8 +178,8 @@ This is a danger!
 
 ### Example 1
 
-- Not recommended: Taichi Zoo uses cookies for security, improvement and analytics purposes. 
-- Recommended: Taichi Zoo uses cookies for security, improvement, and analytics purposes. 
+- Not recommended: Taichi Zoo uses cookies for security, improvement and analytics purposes.
+- Recommended: Taichi Zoo uses cookies for security, improvement, and analytics purposes.
 
 **Comments:**
 In a list of three or more items, add a comma before the conjunction。
@@ -188,23 +188,23 @@ In a list of three or more items, add a comma before the conjunction。
 
 - Not recommended: Two of the most commonly used types:
   - f32 represents a 32-bit floating point number.
-  - i32 represents a 32-bit signed integer. 
+  - i32 represents a 32-bit signed integer.
 - Recommended: Two of the most commonly used types:
   - f32: 32-bit floating point number.
-  - i32: 32-bit signed integer. 
+  - i32: 32-bit signed integer.
 
 **Comments:**
 
-Avoid repetitive information in a bullet list. 
+Avoid repetitive information in a bullet list.
 
 ### Example 3
 
-- Not recommended: If you run into this situation, Taichi's handy automatic differentiation (autodiff) system comes to the rescue! 
-- Recommended: Taichi's automatic differentiation (autodiff) system addresses this situation. 
+- Not recommended: If you run into this situation, Taichi's handy automatic differentiation (autodiff) system comes to the rescue!
+- Recommended: Taichi's automatic differentiation (autodiff) system addresses this situation.
 
 **Comments:**
 
-- Avoid subjective descriptions, such as "handy" and "very", and dramatic expressions, for example "come to the rescue" in a technical document. 
+- Avoid subjective descriptions, such as "handy" and "very", and dramatic expressions, for example "come to the rescue" in a technical document.
 
 ### Example 4
 
@@ -214,7 +214,7 @@ Avoid repetitive information in a bullet list.
 **Comments:**
 
 - Use third person singular when describing a function, a method, or a callback.
-- Use active voice as much as possible in a technical document. 
+- Use active voice as much as possible in a technical document.
 
 ### Example 5
 
@@ -223,7 +223,7 @@ Avoid repetitive information in a bullet list.
 
 **Comments:**
 
-Use simple verbs. A noun phrase, for example "make use of", is usually wordier than its original verb form, in this case "use". 
+Use simple verbs. A noun phrase, for example "make use of", is usually wordier than its original verb form, in this case "use".
 
 ### Example 6
 
@@ -237,7 +237,7 @@ Use simple verbs. A noun phrase, for example "make use of", is usually wordier t
 
 **Comments:**
 
-"Less" describes uncountable noun; "fewer" describes countable noun. 
+"Less" describes uncountable noun; "fewer" describes countable noun.
 
 ### Example 8
 
@@ -246,7 +246,7 @@ Use simple verbs. A noun phrase, for example "make use of", is usually wordier t
 
 **Comments:**
 
-Address your audience directly by using "you". 
+Address your audience directly by using "you".
 
 ### Example 9
 
@@ -266,7 +266,7 @@ Address your audience directly by using "you".
 **Comments:**
 
 - In technical writing, one word is always better than two.
-- Which is used in a non-restrictive attributive clause; that is used in a restrictive attributive clause. Always precede a which-clause with a comma. 
+- Which is used in a non-restrictive attributive clause; that is used in a restrictive attributive clause. Always precede a which-clause with a comma.
 
 
 ### Example 11
@@ -302,10 +302,10 @@ Address your audience directly by using "you".
 
 ### Example 14
 
-- Not recommended: Start the Prometheus server, with the --config.file flag pointing to the configuration file: 
+- Not recommended: Start the Prometheus server, with the --config.file flag pointing to the configuration file:
 $ ./prometheus --config.file=prometheus.yml
 
-- Recommended: Start the Prometheus server and specify the configuration file: 
+- Recommended: Start the Prometheus server and specify the configuration file:
 $ ./prometheus --config.file=prometheus.yml
 
 **Comments:**
@@ -324,11 +324,11 @@ $ ./prometheus --config.file=prometheus.yml
 
 ### Example 16
 
-- Not recommended: 
-  - True: Enables the debug mode. 
+- Not recommended:
+  - True: Enables the debug mode.
   - False: Disables the debug mode.
-- Recommended: 
-  - True: Enable debug mode. 
+- Recommended:
+  - True: Enable debug mode.
   - False: Disable debug mode.
 
 

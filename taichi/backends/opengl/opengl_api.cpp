@@ -8,6 +8,7 @@
 #include "taichi/util/environ_config.h"
 #include "taichi/backends/opengl/shaders/runtime.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/backends/opengl/opengl_utils.h"
 
 #ifdef TI_WITH_OPENGL
 #include "glad/gl.h"
@@ -217,7 +218,17 @@ void CompiledProgram::init_args(Kernel *kernel) {
   ret_count = kernel->rets.size();
   for (int i = 0; i < arg_count; i++) {
     if (kernel->args[i].is_external_array) {
+      // TODO: remove ext_arr_map, use arr_args instead
       ext_arr_map[i] = kernel->args[i].size;
+      arr_args[i] = CompiledNdarrayData(
+          {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt),
+           /*dtype_name=*/kernel->args[i].dt.to_string(),
+           /*field_dim=*/kernel->args[i].total_dim -
+               kernel->args[i].element_shapes.size(),
+           /*is_scalar=*/kernel->args[i].element_shapes.size() == 0,
+           /*element_shapes=*/kernel->args[i].element_shapes,
+           /*shape_offset_in_bytes_in_args_buf=*/taichi_opengl_extra_args_base +
+               i * taichi_max_num_indices * sizeof(int)});
     }
   }
 

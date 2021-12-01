@@ -307,7 +307,6 @@ void export_lang(py::module &m) {
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
-      .def("add_ndarray", &AotModuleBuilder::add_ndarray)
       .def("add", &AotModuleBuilder::add)
       .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
       .def("dump", &AotModuleBuilder::dump);
@@ -923,6 +922,12 @@ void export_lang(py::module &m) {
     return get_current_program().current_callable->insert_arg(
         dt, is_external_array);
   });
+
+  m.def("decl_arr_arg",
+        [&](const DataType &dt, int total_dim, std::vector<int> shape) {
+          return get_current_program().current_callable->insert_arr_arg(
+              dt, total_dim, shape);
+        });
 
   m.def("decl_ret", [&](const DataType &dt) {
     return get_current_program().current_callable->insert_ret(dt);

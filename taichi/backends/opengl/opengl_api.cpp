@@ -227,7 +227,7 @@ void CompiledProgram::init_args(Kernel *kernel) {
                kernel->args[i].element_shapes.size(),
            /*is_scalar=*/kernel->args[i].element_shapes.size() == 0,
            /*element_shapes=*/kernel->args[i].element_shapes,
-           /*total_size_hint=*/taichi_opengl_extra_args_base +
+           /*shape_offset_in_bytes_in_args_buf=*/taichi_opengl_extra_args_base +
                i * taichi_max_num_indices * sizeof(int)});
     }
   }

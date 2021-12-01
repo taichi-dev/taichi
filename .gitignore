@@ -78,6 +78,7 @@ _build
 *.ll
 *.bc
 *.yml
+!.github/**/*.yml
 *.dot
 *.json
 !tests/**/*.json

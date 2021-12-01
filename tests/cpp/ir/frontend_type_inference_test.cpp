@@ -94,7 +94,7 @@ TEST(FrontendTypeInference, GlobalPtr_ExternalTensor) {
       Expr::make<ExternalTensorExpression>(PrimitiveType::u16, 1, 0, 0);
   auto global_ptr =
       Expr::make<GlobalPtrExpression>(external_tensor, ExprGroup(index));
-  EXPECT_THROW(global_ptr->type_check(), std::runtime_error);
+  EXPECT_THROW(global_ptr->type_check(), TaichiTypeError);
 }
 
 TEST(FrontendTypeInference, TensorElement) {
@@ -161,7 +161,7 @@ TEST(FrontendTypeInference, RangeAssumption) {
   const_f64->type_check();
   auto invalid =
       Expr::make<RangeAssumptionExpression>(const_f32_a, const_f64, 0, 1);
-  EXPECT_THROW(invalid->type_check(), std::runtime_error);
+  EXPECT_THROW(invalid->type_check(), TaichiTypeError);
 }
 
 TEST(FrontendTypeInference, LoopUnique) {

@@ -17,7 +17,6 @@ tar -xzf sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
 chmod +x sccache-v0.2.15-x86_64-unknown-linux-musl/sccache
 export PATH=$(pwd)/sccache-v0.2.15-x86_64-unknown-linux-musl:$PATH
 #tar xf /home/dev/sccache.tar -C /home/dev
-exit 1
 
 source /home/dev/miniconda/etc/profile.d/conda.sh
 conda activate $PY

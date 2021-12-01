@@ -18,3 +18,5 @@ jobs:
             echo "Cancelling run $RUN_ID"
             gh run cancel $RUN_ID || true
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

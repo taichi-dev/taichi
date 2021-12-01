@@ -1,4 +1,4 @@
-#include <bits/stdc++.h>
+#include <cstdlib>
 
 #include "taichi/ir/ir_builder.h"
 #include "taichi/ir/statements.h"

@@ -211,7 +211,8 @@ void autograd() {
       }
     };
 
-    auto *snode = &root->dense(Axis(0), n, false).insert_children(SNodeType::place);
+    auto *snode =
+        &root->dense(Axis(0), n, false).insert_children(SNodeType::place);
     snode->dt = PrimitiveType::f32;
     snode->grad_info = std::make_unique<GradInfoPrimal>(
         &root->dense(Axis(0), n, false).insert_children(SNodeType::place));
@@ -317,7 +318,7 @@ void autograd() {
   (*kernel_forward)(ctx_forward);
   (*kernel_backward)(ctx_backward);
   (*kernel_ext)(ctx_ext);
-  auto eql = [](float a, float b, float eps=1e-7) {
+  auto eql = [](float a, float b, float eps = 1e-7) {
     float delta = a - b;
     return -eps < delta && delta < eps;
   };

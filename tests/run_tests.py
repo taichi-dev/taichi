@@ -23,9 +23,21 @@ def _test_cpp():
         export_core_filename = 'libtaichi_export_core.so'
         if os.path.exists(os.path.join(build_dir, cpp_test_filename)):
             chi_dir = os.path.join(curr_dir, '../chi_examples')
-            subprocess.run('cmake . -B build', env={'TI_LIB_DIR': ti_lib_dir, 'TAICHI_REPO_DIR': os.path.join(curr_dir, '..')}, cwd=chi_dir, shell=True)
-            subprocess.check_call('make -C build', env={'TI_LIB_DIR': ti_lib_dir}, cwd=chi_dir, shell=True)
-            subprocess.check_call('build/chi_examples', env={'TI_LIB_DIR': ti_lib_dir}, cwd=chi_dir, shell=True)
+            subprocess.run('cmake . -B build',
+                           env={
+                               'TI_LIB_DIR': ti_lib_dir,
+                               'TAICHI_REPO_DIR': os.path.join(curr_dir, '..')
+                           },
+                           cwd=chi_dir,
+                           shell=True)
+            subprocess.check_call('make -C build',
+                                  env={'TI_LIB_DIR': ti_lib_dir},
+                                  cwd=chi_dir,
+                                  shell=True)
+            subprocess.check_call('build/chi_examples',
+                                  env={'TI_LIB_DIR': ti_lib_dir},
+                                  cwd=chi_dir,
+                                  shell=True)
         else:
             ti.warn(
                 f"CHI example tests are skipped due to missing {export_core_filename} in {build_dir}",

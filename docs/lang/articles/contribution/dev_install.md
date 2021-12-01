@@ -10,9 +10,9 @@ Developers who are interested in the compiler, computer graphics, or high-perfor
 
 :::danger IMPORTANT
 
-This installation guide is *NOT* intended for end users who only wish to do simulation or high performance numerical computation. We recommend that end users install Taichi via `pip install taichi` and that there is no need for you to build Taichi from source. Doing both at the same time may cause unnecessary conflicts. 
+This installation guide is *NOT* intended for end users who only wish to do simulation or high performance numerical computation. We recommend that end users install Taichi via `pip install taichi` and that there is no need for you to build Taichi from source. Doing both at the same time may cause unnecessary conflicts.
 
-See the [Get Started](https://docs.taichi.graphics/) for more information on quickly setting up Taichi for end users. 
+See the [Get Started](https://docs.taichi.graphics/) for more information on quickly setting up Taichi for end users.
 
 :::
 
@@ -73,7 +73,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 
 <TabItem value="windows">
 
-Skip this section because we provide scripts that will install `Clang` for you. See the [Build Taichi from source](#build-taichi-from-source) for more information. 
+Skip this section because we provide scripts that will install `Clang` for you. See the [Build Taichi from source](#build-taichi-from-source) for more information.
 
 </TabItem>
 
@@ -129,7 +129,7 @@ Some Linux distributions may require additional packages to build Taichi. Keep a
 
 #### Install pre-built, customized LLVM binaries
 
-We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10.0.0 only. 
+We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10.0.0 only.
 
 1. Download and install customized binaries from the following list per your system environment:
 
@@ -181,7 +181,7 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
 
 <TabItem value="windows">
 
-Skip this section because we provide scripts that will install LLVM for you. See the [Build Taichi from source](#build-taichi-from-source) for more information. 
+Skip this section because we provide scripts that will install LLVM for you. See the [Build Taichi from source](#build-taichi-from-source) for more information.
 
 </TabItem>
 
@@ -192,7 +192,7 @@ Skip this section because we provide scripts that will install LLVM for you. See
 
 <summary><font color="#006284"><h4>Build LLVM 10.0.0 from source</h4></font></summary>
 
-We provide instructions here if you need to build LLVM 10.0.0 from source. 
+We provide instructions here if you need to build LLVM 10.0.0 from source.
 
 <Tabs
   defaultValue="linux"
@@ -205,7 +205,7 @@ We provide instructions here if you need to build LLVM 10.0.0 from source.
 
 ```shell
 wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/llvm-10.0.0.src.tar.xz
-  
+
 tar xvJf llvm-10.0.0.src.tar.xz
 
 cd llvm-10.0.0.src
@@ -244,7 +244,7 @@ cmake .. -G "Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SH
 ```
 
 1. Use Visual Studio 2017+ to build **LLVM.sln**.
-2. Ensure that you use the **Release** configuration. After building the `INSTALL` project (under folde **CMakePredefinedTargets** in the Solution Explorer window). 
+2. Ensure that you use the **Release** configuration. After building the `INSTALL` project (under folde **CMakePredefinedTargets** in the Solution Explorer window).
 3. If you use MSVC 2019, ensure that you use **C++17** for the `INSTALL` project.
 4. When the build completes, find your LLVM binaries and header files in **build/installed**. Add `build/installed/bin` to `PATH`. Later, when you build Taichi, please use `cmake -DLLVM_DIR=&lt;PATH_TO_BUILD&gt;/build/installed/lib/cmake/llvm`.
 
@@ -256,16 +256,16 @@ cmake .. -G "Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SH
 
 ## Install optional dependencies
 
-[CUDA](https://en.wikipedia.org/wiki/CUDA) is NVIDIA's answer to high-performance computing. Taichi has implemented a backend based on CUDA 10.0.0+. Vulkan is a next-generation, cross-platform API, open standard for 3D graphics and computing. Taichi has added a Vulkan backend as of v0.8.0. 
+[CUDA](https://en.wikipedia.org/wiki/CUDA) is NVIDIA's answer to high-performance computing. Taichi has implemented a backend based on CUDA 10.0.0+. Vulkan is a next-generation, cross-platform API, open standard for 3D graphics and computing. Taichi has added a Vulkan backend as of v0.8.0.
 
-This section provides instructions on installing these two optional dependencies. 
+This section provides instructions on installing these two optional dependencies.
 
 <details>
 <summary><font color="#006284"><h3>Install CUDA</h3></font></summary>
 
-This section works for you if you have a Nvidia GPU supporting CUDA. Note that the required CUDA version is 10.0+. 
+This section works for you if you have a Nvidia GPU supporting CUDA. Note that the required CUDA version is 10.0+.
 
-To install CUDA: 
+To install CUDA:
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -319,7 +319,7 @@ import TabItem from '@theme/TabItem';
 <details>
 <summary><font color="#006284"><h3>Install Vulkan</h3></font></summary>
 
-You must install the Vulkan SDK in order to build Taichi with a Vulkan backend. To proceed: 
+You must install the Vulkan SDK in order to build Taichi with a Vulkan backend. To proceed:
 
 <Tabs
   defaultValue="linux"
@@ -331,7 +331,7 @@ You must install the Vulkan SDK in order to build Taichi with a Vulkan backend. 
 <TabItem value="linux">
 
 1. Go to [Vulkan's SDK download page](https://vulkan.lunarg.com/sdk/home) and follow the instructions for your OS.
-2. Check if environment variables `VULKAN_SDK`, `PATH`, `LD_LIBRARY_PATH`, and `VK_LAYER_PATH` are updated. 
+2. Check if environment variables `VULKAN_SDK`, `PATH`, `LD_LIBRARY_PATH`, and `VK_LAYER_PATH` are updated.
 
   > The SDK for Ubuntu provides a `setup-env.sh` for updating these variables.
 
@@ -380,9 +380,9 @@ You must install the Vulkan SDK in order to build Taichi with a Vulkan backend. 
 
   # Exports CXX=/path/to/clang++  # Uncomment if clang++ is not default compiler of the system. Note that clang is not acceptable due to requirements of some submodules.
 
-  # export DEBUG=1 #Uncomment it if you wish to keep debug information. 
+  # export DEBUG=1 #Uncomment it if you wish to keep debug information.
 
-  python3 setup.py develop --user  
+  python3 setup.py develop --user
   ```
 
 2. Try out some of the demos in the **examples/** folder to see if Taichi is properly installed. For example:
@@ -395,8 +395,8 @@ You must install the Vulkan SDK in order to build Taichi with a Vulkan backend. 
 
 [^1]Although the two commands work similarly, `python setup.py develop` is recommended for you as a developer and `python setup.py install`more for end users. The difference is:
 
-- The `develop` command does not actually install anything but only symbolically links the source code to the deployment directory. 
-- The `install` command deep copies the source code so that end users need to rerun the command every time they modify the source code. 
+- The `develop` command does not actually install anything but only symbolically links the source code to the deployment directory.
+- The `install` command deep copies the source code so that end users need to rerun the command every time they modify the source code.
 
 The `develop` command serves the developers' needs better because edits to the Python files take effect immediately without the need to rerun the command. A rerun is needed only if you have modified the project's C extension or compiled files. See the [Development Mode](https://setuptools.pypa.io/en/stable/userguide/development_mode.html) for more information.
 
@@ -412,8 +412,8 @@ The `develop` command serves the developers' needs better because edits to the P
    ```shell
    .\install_deps.ps1
    ```
-3. Reboot your computer. 
-4. Run powershell as administrator and run [this script](https://github.com/taichi-dev/taichi_assets/releases/download/windows_scripts/build_taichi.ps1) to build Taichi from souce: 
+3. Reboot your computer.
+4. Run powershell as administrator and run [this script](https://github.com/taichi-dev/taichi_assets/releases/download/windows_scripts/build_taichi.ps1) to build Taichi from souce:
 
    ```shell
    .\build_taichi.ps1
@@ -443,7 +443,7 @@ Gets a `permission denied` after `python3 setup.py develop` or `python3 setup.py
 
 **Root cause**
 
-You were trying to install packages into the Python environment without write permission. 
+You were trying to install packages into the Python environment without write permission.
 
 **Workaround**
 
@@ -458,7 +458,7 @@ You were trying to install packages into the Python environment without write pe
 
 **Root cause**
 
-You did not use the `--recursive` flag when cloning the Taichi repository. 
+You did not use the `--recursive` flag when cloning the Taichi repository.
 
 **Workaround**
 
@@ -482,9 +482,9 @@ conda init
 
 ## Frequently asked questions
 
-### How can I get a fresh Taichi build? 
+### How can I get a fresh Taichi build?
 
-1. Clean up cache from your previous builds: 
+1. Clean up cache from your previous builds:
 
   ```
   python3 setup.py clean
@@ -492,12 +492,12 @@ conda init
 
 2. Uninstall the Taichi package from your Python environment:
 
-- `python setup.py develop --uninstall`, if you build Taichi using `python setup.py develop`. 
-- `pip uninstall taichi`, if you build Taichi using `python setup.py install`. 
+- `python setup.py develop --uninstall`, if you build Taichi using `python setup.py develop`.
+- `pip uninstall taichi`, if you build Taichi using `python setup.py install`.
 
 ### What if I don't have `wget` on my macOS?
 
-1. Install [Homebrew](https://brew.sh/). 
+1. Install [Homebrew](https://brew.sh/).
 2. Use Homebrew to install `wget`:
 
   `brew install wget`

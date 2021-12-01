@@ -17,9 +17,6 @@ tar -xzf sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
 chmod +x sccache-v0.2.15-x86_64-unknown-linux-musl/sccache
 export PATH=$(pwd)/sccache-v0.2.15-x86_64-unknown-linux-musl:$PATH
 #tar xf /home/dev/sccache.tar -C /home/dev
-ls -la /home/dev
-ls -la /home/dev/sccache_cache/0/0
-md5sum /home/dev/sccache_cache/0/0/002cc205149d3d4ceaab58032814373ef2dc36146e827f180e7f74d0c4c6fb73
 exit 1
 
 source /home/dev/miniconda/etc/profile.d/conda.sh

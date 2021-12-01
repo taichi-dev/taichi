@@ -63,7 +63,7 @@ Expr Expr::operator[](const ExprGroup &indices) const {
   return Expr::make<GlobalPtrExpression>(*this, indices.loaded());
 }
 
-Expr &Expr::operator=(const Expr &o) {
+void Expr::set_or_insert_assignment(const Expr &o) {
   if (get_current_program().current_callable) {
     // Inside a kernel or a function
     // Create an assignment in the IR
@@ -78,6 +78,10 @@ Expr &Expr::operator=(const Expr &o) {
   } else {
     set(o);  // Literally set this Expr to o
   }
+}
+
+Expr &Expr::operator=(const Expr &o) {
+  set_or_insert_assignment(o);
   return *this;
 }
 
@@ -128,30 +132,30 @@ Expr::Expr(const Identifier &id) : Expr() {
 
 void Expr::operator+=(const Expr &o) {
   if (this->atomic) {
-    (*this) = Expr::make<AtomicOpExpression>(AtomicOpType::add, *this,
-                                             load_if_ptr(o));
+    this->set_or_insert_assignment(Expr::make<AtomicOpExpression>(
+        AtomicOpType::add, *this, load_if_ptr(o)));
   } else {
-    (*this) = (*this) + o;
+    this->set_or_insert_assignment(*this + o);
   }
 }
 
 void Expr::operator-=(const Expr &o) {
   if (this->atomic) {
-    (*this) = Expr::make<AtomicOpExpression>(AtomicOpType::sub, *this,
-                                             load_if_ptr(o));
+    this->set_or_insert_assignment(Expr::make<AtomicOpExpression>(
+        AtomicOpType::sub, *this, load_if_ptr(o)));
   } else {
-    (*this) = (*this) - o;
+    this->set_or_insert_assignment(*this - o);
   }
 }
 
 void Expr::operator*=(const Expr &o) {
   TI_ASSERT(!this->atomic);
-  (*this) = (*this) * load_if_ptr(o);
+  this->set_or_insert_assignment((*this) * load_if_ptr(o));
 }
 
 void Expr::operator/=(const Expr &o) {
   TI_ASSERT(!this->atomic);
-  (*this) = (*this) / load_if_ptr(o);
+  this->set_or_insert_assignment((*this) / load_if_ptr(o));
 }
 
 Expr load_if_ptr(const Expr &ptr) {
@@ -179,7 +183,7 @@ Expr Var(const Expr &x) {
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id,
       PrimitiveType::unknown));
-  var = x;
+  var.set_or_insert_assignment(x);
   return var;
 }
 

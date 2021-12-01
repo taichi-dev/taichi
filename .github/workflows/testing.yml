@@ -1,7 +1,9 @@
-name: Presubmit Checks
+name: Build and Test
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches: [master]
 
 jobs:
   check_files:

@@ -10,13 +10,13 @@ from taichi.lang.exception import InvalidOperationError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
-from taichi.lang.matrix import MatrixField, _IntermediateMatrix
+from taichi.lang.matrix import Matrix, MatrixField, _IntermediateMatrix
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
                               MeshReorderedScalarFieldProxy, element_type_name)
 from taichi.lang.snode import SNode
-from taichi.lang.struct import StructField, _IntermediateStruct
+from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
@@ -36,7 +36,13 @@ def expr_init_local_tensor(shape, element_type, elements):
 def expr_init(rhs):
     if rhs is None:
         return Expr(_ti_core.expr_alloca())
-    if is_taichi_class(rhs):
+    if isinstance(rhs, Matrix):
+        if rhs.in_python_scope or isinstance(rhs, _IntermediateMatrix):
+            return Matrix(rhs.to_list())
+        return rhs
+    if isinstance(rhs, Struct):
+        if rhs.in_python_scope or isinstance(rhs, _IntermediateStruct):
+            return Struct(rhs.to_dict())
         return rhs
     if isinstance(rhs, list):
         return [expr_init(e) for e in rhs]

@@ -696,26 +696,6 @@ class TaichiMain:
 
         return None
 
-    @register
-    def task(self, arguments: list = sys.argv[2:]):
-        """Run a specific task"""
-        parser = argparse.ArgumentParser(prog='ti task',
-                                         description=f"{self.task.__doc__}")
-        parser.add_argument('taskname',
-                            help='A single task name to run, e.g. test_math')
-        parser.add_argument('taskargs',
-                            nargs='*',
-                            help='Optional task argument(s) to run with task')
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode: return args
-
-        task = ti.Task(args.taskname)
-        task.run(*args.taskargs)
-
-        return None
-
     @staticmethod
     @register
     def diagnose(arguments: list = sys.argv[2:]):

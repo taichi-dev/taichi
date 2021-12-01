@@ -102,6 +102,8 @@ class LlvmProgramImpl : public ProgramImpl {
 
   uint64_t *get_ndarray_alloc_info_ptr(DeviceAllocation &alloc);
 
+  std::shared_ptr<Device> get_device_shared() override;
+
  private:
   std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
       const std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
@@ -160,7 +162,7 @@ class LlvmProgramImpl : public ProgramImpl {
 
   std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
 
-  std::unique_ptr<Device> device_;
+  std::shared_ptr<Device> device_{nullptr};
   cuda::CudaDevice *cuda_device();
   cpu::CpuDevice *cpu_device();
 };

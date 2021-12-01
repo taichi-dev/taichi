@@ -70,14 +70,18 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     int query_max_block_dim;
     CUDADriver::get_instance().device_get_attribute(
         &query_max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, nullptr);
+    int query_max_block_per_sm;
+    CUDADriver::get_instance().device_get_attribute(
+        &query_max_block_per_sm,
+        CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR, nullptr);
 
     if (config_.max_block_dim == 0) {
       config_.max_block_dim = query_max_block_dim;
     }
 
     if (config_.saturating_grid_dim == 0) {
-      // each SM can have 16-32 resident blocks
-      config_.saturating_grid_dim = num_SMs * 32;
+      TI_INFO("CUDA max blocks per SM = {}", query_max_block_per_sm);
+      config_.saturating_grid_dim = num_SMs * query_max_block_per_sm;
     }
 #endif
   }

@@ -73,8 +73,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     int query_max_block_per_sm;
     CUDADriver::get_instance().device_get_attribute(
         &query_max_block_per_sm,
-        CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR,
-        nullptr);
+        CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR, nullptr);
 
     if (config_.max_block_dim == 0) {
       config_.max_block_dim = query_max_block_dim;

@@ -188,7 +188,7 @@ jobs:
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Buil_d
+      - name: Build
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
@@ -196,8 +196,8 @@ jobs:
           mkdir -m777 wheel
           mkdir -p sccache_cache
           chmod -R 777 sccache_cache
-          docker create -v `pwd`/wheel:/wheel -v `pwd`/sccache_cache:/home/dev/sccache_cache --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
-          docker cp taichi_build:/home/dev/.profile .profile --archive
+          docker create -v `pwd`/wheel:/wheel -v `pwd`/sccache_cache:/home/dev/sccache_cache:rw --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
+          docker cp taichi_build:/home/dev/.profile . --archive
           ls -la
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build

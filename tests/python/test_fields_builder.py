@@ -223,5 +223,6 @@ def test_fields_builder_destroy():
         with pytest.raises(InvalidOperationError) as e:
             # Triggered if destroy twice
             c.destroy()
+            c.destroy()
 
     test_for_raise_twice_destroy(10)

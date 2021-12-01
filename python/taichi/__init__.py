@@ -6,7 +6,7 @@ from taichi.core import ti_core as core
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.main import main
 from taichi.misc import *
-from taichi.testing import *
+from taichi._testing import *
 from taichi.tools import *
 from taichi.type.annotations import *
 # Provide a shortcut to types since they're commonly used.

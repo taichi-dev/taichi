@@ -1193,7 +1193,7 @@ def all_archs_with(**kwargs):
                 can_run_on.register(lambda arch: is_extension_supported(
                     arch, extension.data64))
 
-            for arch in ti.testing.expected_archs():
+            for arch in ti._testing.expected_archs():
                 if can_run_on(arch):
                     print(f'Running test on arch={arch}')
                     ti.init(arch=arch, **kwargs)

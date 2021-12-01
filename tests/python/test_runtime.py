@@ -114,7 +114,7 @@ def test_init_arg(key, values):
             test_arg(key, value)
 
 
-@pytest.mark.parametrize('arch', ti.testing.expected_archs())
+@pytest.mark.parametrize('arch', ti._testing.expected_archs())
 def test_init_arch(arch):
     with patch_os_environ_helper({}, excludes=['TI_ARCH']):
         ti.init(arch=arch)

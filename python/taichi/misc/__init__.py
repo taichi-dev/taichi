@@ -1,4 +1,3 @@
-from .error import *
 from .image import *
 from .util import *
 

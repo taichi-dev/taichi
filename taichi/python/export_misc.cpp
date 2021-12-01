@@ -36,15 +36,6 @@ extern bool is_c_backend_available();
 
 namespace taichi {
 
-Config config_from_py_dict(py::dict &c) {
-  Config config;
-  for (auto item : c) {
-    config.set(std::string(py::str(item.first)),
-               std::string(py::str(item.second)));
-  }
-  return config;
-}
-
 void test_raise_error() {
   raise_assertion_failure_in_python("Just a test.");
 }
@@ -68,27 +59,6 @@ void print_all_units() {
     }
   }
   std::cout << all_units << " units in all." << std::endl;
-}
-
-void duplicate_stdout_to_file(const std::string &fn) {
-/*
-static int stdout_fd = -1;
-int fd[2];
-pipe(fd);
-stdout = fdopen(fd[1], "w");
-auto file_fd = fdopen(fd[0], "w");
-FILE *file = freopen(fn.c_str(), "w", file_fd);
-*/
-#if defined(TI_PLATFORM_UNIX)
-  std::cerr.rdbuf(std::cout.rdbuf());
-  dup2(fileno(popen(fmt::format("tee {}", fn).c_str(), "w")), STDOUT_FILENO);
-#else
-  TI_NOT_IMPLEMENTED;
-#endif
-}
-
-void stop_duplicating_stdout_to_file(const std::string &fn) {
-  TI_NOT_IMPLEMENTED;
 }
 
 void export_misc(py::module &m) {
@@ -127,8 +97,6 @@ void export_misc(py::module &m) {
   TI_EXPORT_LOGGING(error);
   TI_EXPORT_LOGGING(critical);
 
-  m.def("duplicate_stdout_to_file", duplicate_stdout_to_file);
-
   m.def("print_all_units", print_all_units);
   m.def("set_core_state_python_imported", CoreState::set_python_imported);
   m.def("set_logging_level", [](const std::string &level) {
@@ -142,7 +110,6 @@ void export_misc(py::module &m) {
   m.def("set_core_trigger_gdb_when_crash",
         CoreState::set_trigger_gdb_when_crash);
   m.def("test_raise_error", test_raise_error);
-  m.def("config_from_dict", config_from_py_dict);
   m.def("get_default_float_size", []() { return sizeof(real); });
   m.def("trigger_sig_fpe", []() {
     int a = 2;

@@ -1738,20 +1738,15 @@ static void spriv_message_consumer(spv_message_level_t level,
   }
 }
 
-static std::unique_ptr<spvtools::Optimizer> spirv_opt_{nullptr};
-static std::unique_ptr<spvtools::SpirvTools> spirv_tools_{nullptr};
-static spvtools::OptimizerOptions _spirv_opt_options;
-
 KernelCodegen::KernelCodegen(const Params &params)
     : params_(params), ctx_attribs_(*params.kernel) {
-  if (!spirv_opt_) {
-    spirv_opt_ = std::make_unique<spvtools::Optimizer>(SPV_ENV_VULKAN_1_2);
-    spirv_opt_->SetMessageConsumer(spriv_message_consumer);
+  spirv_opt_ = std::make_unique<spvtools::Optimizer>(SPV_ENV_VULKAN_1_2);
+  spirv_opt_->SetMessageConsumer(spriv_message_consumer);
+  if (params.enable_spv_opt)
     spirv_opt_->RegisterPerformancePasses();
-    _spirv_opt_options.set_run_validator(false);
-  }
-  if (!spirv_tools_)
-    spirv_tools_ = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
+  _spirv_opt_options.set_run_validator(false);
+
+  spirv_tools_ = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
 }
 
 void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,

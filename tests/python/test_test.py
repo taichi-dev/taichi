@@ -14,7 +14,7 @@ import taichi as ti
 
 @ti.test()
 def test_all_archs():
-    assert ti.cfg.arch in ti.testing.expected_archs()
+    assert ti.cfg.arch in ti._testing.expected_archs()
 
 
 @ti.test(arch=ti.cpu)

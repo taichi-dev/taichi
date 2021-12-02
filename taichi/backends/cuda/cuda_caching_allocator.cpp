@@ -15,7 +15,8 @@ uint64_t *CudaCachingAllocator::allocate(
 
   if (it_blk != mem_blocks_.end()) {
     size_t remaining_sz = it_blk->first - size_aligned;
-    if ((remaining_sz > 0) && (remaining_sz % taichi_page_size == 0)) {
+    if (remaining_sz > 0) {
+      TI_ASSERT(remaining_sz % taichi_page_size == 0);
       // only split if the remaining sz is page aligned
       uint64_t *remaining_head = it_blk->second + size_aligned / 8;
       mem_blocks_.insert({remaining_sz, remaining_head});

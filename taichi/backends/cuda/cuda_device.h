@@ -120,7 +120,6 @@ class CudaDevice : public Device {
     }
   }
   std::unique_ptr<CudaCachingAllocator> caching_allocator_{nullptr};
-  std::unique_ptr<CudaCachingAllocator> get_caching_allocator();
 };
 
 }  // namespace cuda

@@ -225,9 +225,7 @@ void CompiledProgram::init_args(Kernel *kernel) {
   ret_count = kernel->rets.size();
   for (int i = 0; i < arg_count; i++) {
     if (kernel->args[i].is_external_array) {
-      // TODO: remove ext_arr_map, use arr_args instead
-      ext_arr_map[i] = kernel->args[i].size;
-      arr_args[i] = CompiledNdarrayData(
+      arr_args[i] = CompiledArrayData(
           {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt),
            /*dtype_name=*/kernel->args[i].dt.to_string(),
            /*field_dim=*/kernel->args[i].total_dim -
@@ -235,12 +233,13 @@ void CompiledProgram::init_args(Kernel *kernel) {
            /*is_scalar=*/kernel->args[i].element_shapes.size() == 0,
            /*element_shapes=*/kernel->args[i].element_shapes,
            /*shape_offset_in_bytes_in_args_buf=*/taichi_opengl_extra_args_base +
-               i * taichi_max_num_indices * sizeof(int)});
+               i * taichi_max_num_indices * sizeof(int),
+           /*total_size=*/kernel->args[i].size});
     }
   }
 
   args_buf_size = arg_count * sizeof(uint64_t);
-  if (ext_arr_map.size()) {
+  if (arr_args.size()) {
     args_buf_size = taichi_opengl_extra_args_base +
                     arg_count * taichi_max_num_indices * sizeof(int);
   }
@@ -369,19 +368,20 @@ void DeviceCompiledProgram::launch(RuntimeContext &ctx,
   // - For raw ptrs, arr_bufs_[i] contains its DeviceAllocation on device.
   // Note shapes of these external arrays still reside in argument buffer,
   // see more details below.
-  for (auto &item : program_.ext_arr_map) {
+  for (auto &item : program_.arr_args) {
     int i = item.first;
     if (!args[i].is_external_array || args[i].size == 0 ||
         ctx.is_device_allocation[i])
       continue;
-    if (args[i].size != item.second || arr_bufs_[i] == kDeviceNullAllocation) {
+    if (args[i].size != item.second.total_size ||
+        arr_bufs_[i] == kDeviceNullAllocation) {
       if (arr_bufs_[i] != kDeviceNullAllocation) {
         device_->dealloc_memory(arr_bufs_[i]);
       }
       arr_bufs_[i] = device_->allocate_memory(
           {args[i].size, /*host_write=*/true, /*host_read=*/true,
            /*export_sharing=*/false});
-      item.second = args[i].size;
+      item.second.total_size = args[i].size;
     }
     void *host_ptr = (void *)ctx.args[i];
     void *baseptr = device_->map(arr_bufs_[i]);
@@ -403,7 +403,7 @@ void DeviceCompiledProgram::launch(RuntimeContext &ctx,
     args_buf_mapped = (uint8_t *)device_->map(args_buf_);
     std::memcpy(args_buf_mapped, ctx.args,
                 program_.arg_count * sizeof(uint64_t));
-    if (program_.ext_arr_map.size()) {
+    if (program_.arr_args.size()) {
       std::memcpy(
           args_buf_mapped + size_t(taichi_opengl_extra_args_base),
           ctx.extra_args,
@@ -455,7 +455,7 @@ void DeviceCompiledProgram::launch(RuntimeContext &ctx,
     i++;
   }
 
-  if (program_.used.print || program_.ext_arr_map.size() ||
+  if (program_.used.print || program_.arr_args.size() ||
       program_.ret_buf_size) {
     device_->get_compute_stream()->submit_synced(cmdlist.get());
   } else {

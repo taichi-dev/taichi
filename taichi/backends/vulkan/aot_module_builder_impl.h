@@ -3,22 +3,27 @@
 #include <string>
 #include <vector>
 
+#include "taichi/backends/vulkan/aot_utils.h"
+#include "taichi/backends/vulkan/snode_struct_compiler.h"
+#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/backends/vulkan/kernel_utils.h"
+
 #include "taichi/program/aot_module_builder.h"
-#include "taichi/backends/opengl/aot_data.h"
 
 namespace taichi {
 namespace lang {
-namespace opengl {
+namespace vulkan {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
-  explicit AotModuleBuilderImpl(StructCompiledResult &compiled_structs,
-                                bool allow_nv_shader_extension);
+  explicit AotModuleBuilderImpl(
+      VkRuntime *runtime,
+      const std::vector<CompiledSNodeStructs> &compiled_structs);
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
 
- protected:
+ private:
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
 
   void add_field_per_backend(const std::string &identifier,
@@ -28,18 +33,20 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                              std::vector<int> shape,
                              int row_num,
                              int column_num) override;
+
   void add_per_backend_tmpl(const std::string &identifier,
                             const std::string &key,
                             Kernel *kernel) override;
 
- private:
-  size_t get_snode_base_address(const SNode *snode);
+  void write_spv_file(const std::string &output_dir,
+                      const TaskAttributes &k,
+                      const std::vector<uint32_t> &source_code) const;
 
-  StructCompiledResult &compiled_structs_;
-  AotData aot_data_;
-  bool allow_nv_shader_extension_ = false;
+  const std::vector<CompiledSNodeStructs> &compiled_structs_;
+  VkRuntime *runtime_;
+  TaichiAotData ti_aot_data_;
 };
 
-}  // namespace opengl
+}  // namespace vulkan
 }  // namespace lang
 }  // namespace taichi

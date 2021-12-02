@@ -86,7 +86,7 @@ Program::Program(Arch desired_arch)
     TI_ERROR("This taichi is not compiled with Vulkan")
 #endif
   } else if (config.arch == Arch::opengl) {
-    TI_ASSERT(opengl::is_opengl_api_available());
+    TI_ASSERT(opengl::initialize_opengl(config.use_gles));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
   } else if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC

@@ -1,4 +1,5 @@
 #include "taichi/backends/vulkan/vulkan_program.h"
+#include "taichi/backends/vulkan/aot_module_builder_impl.h"
 
 #include "GLFW/glfw3.h"
 
@@ -106,11 +107,29 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   vulkan_runtime_ = std::make_unique<vulkan::VkRuntime>(std::move(params));
 }
 
+void VulkanProgramImpl::compile_snode_tree_types(
+    SNodeTree *tree,
+    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+  vulkan_runtime_->materialize_snode_tree(tree);
+}
+
 void VulkanProgramImpl::materialize_snode_tree(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &,
     uint64 *result_buffer) {
   vulkan_runtime_->materialize_snode_tree(tree);
+}
+
+std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder() {
+  // TODO: Remove this compilation guard -- AOT is a compile-time thing, so it's
+  // fine to JIT to SPV on systems without the Vulkan runtime.
+#ifdef TI_WITH_VULKAN
+  return std::make_unique<AotModuleBuilderImpl>(
+      vulkan_runtime_.get(), vulkan_runtime_->get_compiled_structs());
+#else
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
+#endif
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {

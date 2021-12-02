@@ -74,7 +74,8 @@ struct CompileConfig {
   std::string cc_link_cmd;
 
   // Opengl backend options:
-  bool allow_nv_shader_extension;
+  bool allow_nv_shader_extension{true};
+  bool use_gles{false};
 
   // Async options
   int async_opt_passes{3};

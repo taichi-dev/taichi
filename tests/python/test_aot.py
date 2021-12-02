@@ -308,12 +308,6 @@ def test_mpm88_ndarray():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module(ti.opengl)
-        m.add_ndarray("x", x)
-        m.add_ndarray("v", v)
-        m.add_ndarray("C", C)
-        m.add_ndarray("J", J)
-        m.add_ndarray("grid_v", grid_v)
-        m.add_ndarray("grid_m", grid_m)
         m.add_kernel(substep, (x, v, C, J, grid_v, grid_m))
 
         m.save(tmpdir, '')

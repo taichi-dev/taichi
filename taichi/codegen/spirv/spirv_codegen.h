@@ -38,7 +38,7 @@ class KernelCodegen {
 
   std::unique_ptr<spvtools::Optimizer> spirv_opt_{nullptr};
   std::unique_ptr<spvtools::SpirvTools> spirv_tools_{nullptr};
-  spvtools::OptimizerOptions _spirv_opt_options;
+  spvtools::OptimizerOptions spirv_opt_options_;
 };
 
 }  // namespace spirv

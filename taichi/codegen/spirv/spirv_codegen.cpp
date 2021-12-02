@@ -1744,7 +1744,7 @@ KernelCodegen::KernelCodegen(const Params &params)
   spirv_opt_->SetMessageConsumer(spriv_message_consumer);
   if (params.enable_spv_opt)
     spirv_opt_->RegisterPerformancePasses();
-  _spirv_opt_options.set_run_validator(false);
+  spirv_opt_options_.set_run_validator(false);
 
   spirv_tools_ = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
 }
@@ -1769,7 +1769,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
     TI_WARN_IF(
         !spirv_opt_->Run(task_res.spirv_code.data(), task_res.spirv_code.size(),
-                         &optimized_spv, _spirv_opt_options),
+                         &optimized_spv, spirv_opt_options_),
         "SPIRV optimization failed");
 
     TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",

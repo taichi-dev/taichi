@@ -10,14 +10,6 @@ jobs:
   cancel:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: |
-          RUN_ID=$(gh run list -w "Build and Test"|awk -F '\t' '{if ($6 == "pull_request") {print;exit}}'|awk -F '\t' '{print $7}')
-          if [ -z "$RUN_ID" ]; then
-            echo "No run to cancel"
-          else
-            echo "Cancelling run $RUN_ID"
-            gh run cancel $RUN_ID || true
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          workflow_id: ${{ github.event.workflow.id }}

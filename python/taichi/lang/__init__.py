@@ -474,7 +474,7 @@ def check_version():
         payload = json.dumps(payload)
         payload = payload.encode()
         req = request.Request(
-            'http://ec2-54-90-48-192.compute-1.amazonaws.com/check_version',
+            'http://metadata.taichi.graphics/check_version',
             method='POST')
         req.add_header('Content-Type', 'application/json')
         with request.urlopen(req, data=payload, timeout=3) as response:
@@ -529,13 +529,19 @@ def init(arch=None,
         with open(timestamp_path, 'r') as f:
             last_time = f.readlines()[0].rstrip()
         if cur_date.strftime('%Y-%m-%d') > last_time:
-            check_version()
+            try:
+                check_version()
+            except Exception as error:
+                print('Checking lastest version failed:', error)
             with open(timestamp_path, 'w') as f:
                 f.write((cur_date +
                          datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
                 f.truncate()
     else:
-        check_version()
+        try:
+            check_version()
+        except Exception as error:
+            print('Checking lastest version failed:', error)
         with open(timestamp_path, 'w') as f:
             f.write(
                 (cur_date + datetime.timedelta(days=7)).strftime('%Y-%m-%d'))

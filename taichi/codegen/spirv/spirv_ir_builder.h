@@ -2,18 +2,16 @@
 
 #include <array>
 
-#include "taichi/backends/vulkan/spirv_header.h"
-#include "taichi/backends/vulkan/embedded_device.h"
+#include <spirv/unified1/spirv.hpp>
 #include "taichi/lang_util.h"
 #include "taichi/ir/type.h"
 #include "taichi/util/testing.h"
-#include "taichi/backends/vulkan/snode_struct_compiler.h"
+#include "taichi/codegen/spirv/snode_struct_compiler.h"
+#include "taichi/backends/device.h"
 #include "taichi/ir/statements.h"
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
-
 namespace spirv {
 
 template <bool stop, std::size_t I, typename F>
@@ -169,7 +167,7 @@ class InstrBuilder {
   InstrBuilder &add_seq(Args &&... args) {
     AddSeqHelper helper;
     helper.builder = this;
-    vulkan::spirv::for_each(helper, std::forward<Args>(args)...);
+    for_each(helper, std::forward<Args>(args)...);
     return *this;
   }
 
@@ -549,6 +547,5 @@ class IRBuilder {
   std::vector<uint32_t> function_;
 };
 }  // namespace spirv
-}  // namespace vulkan
 }  // namespace lang
 }  // namespace taichi

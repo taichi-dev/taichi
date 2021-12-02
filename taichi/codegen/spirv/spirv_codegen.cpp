@@ -1,4 +1,4 @@
-#include "taichi/backends/vulkan/codegen_vulkan.h"
+#include "taichi/codegen/spirv/spirv_codegen.h"
 
 #include <string>
 #include <vector>
@@ -8,10 +8,9 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/ir.h"
 #include "taichi/util/line_appender.h"
-#include "taichi/backends/vulkan/kernel_utils.h"
-#include "taichi/backends/vulkan/runtime.h"
+#include "taichi/codegen/spirv/kernel_utils.h"
 #include "taichi/backends/opengl/opengl_data_types.h"
-#include "taichi/backends/vulkan/spirv_ir_builder.h"
+#include "taichi/codegen/spirv/spirv_ir_builder.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/math/arithmetic.h"
 
@@ -20,7 +19,7 @@
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
+namespace spirv {
 namespace {
 
 constexpr char kRootBufferName[] = "root_buffer";
@@ -109,7 +108,7 @@ class TaskCodegen : public IRVisitor {
     } else if (task_ir_->task_type == OffloadedTaskType::struct_for) {
       generate_struct_for_kernel(task_ir_);
     } else {
-      TI_ERROR("Unsupported offload type={} on Vulkan arch",
+      TI_ERROR("Unsupported offload type={} on SPIR-V codegen",
                task_ir_->task_name());
     }
     // Headers need global information, so it has to be delayed after visiting
@@ -561,7 +560,7 @@ class TaskCodegen : public IRVisitor {
 
   void visit(ExternalPtrStmt *stmt) override {
     // Used mostly for transferring data between host (e.g. numpy array) and
-    // Vulkan.
+    // device.
     TI_ASSERT(stmt->width() == 1);
     spirv::Value linear_offset = ir_->int_immediate_number(ir_->i32_type(), 0);
     {
@@ -1717,6 +1716,7 @@ class TaskCodegen : public IRVisitor {
       root_stmts_;  // maps root id to get root stmt
   std::unordered_map<const Stmt *, BufferInfo> ptr_to_buffers_;
 };
+}  // namespace
 
 static void spriv_message_consumer(spv_message_level_t level,
                                    const char *source,
@@ -1738,96 +1738,68 @@ static void spriv_message_consumer(spv_message_level_t level,
   }
 }
 
-class KernelCodegen {
- public:
-  struct Params {
-    std::string ti_kernel_name;
-    Kernel *kernel;
-    std::vector<CompiledSNodeStructs> compiled_structs;
-    Device *device;
-    bool enable_spv_opt{true};
-  };
+static std::unique_ptr<spvtools::Optimizer> spirv_opt_{nullptr};
+static std::unique_ptr<spvtools::SpirvTools> spirv_tools_{nullptr};
+static spvtools::OptimizerOptions _spirv_opt_options;
 
-  explicit KernelCodegen(const Params &params)
-      : params_(params), ctx_attribs_(*params.kernel) {
+
+KernelCodegen::KernelCodegen(const Params &params)
+    : params_(params), ctx_attribs_(*params.kernel) {
+  if (!spirv_opt_) {
     spirv_opt_ = std::make_unique<spvtools::Optimizer>(SPV_ENV_VULKAN_1_2);
-    spirv_tools_ = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
-
     spirv_opt_->SetMessageConsumer(spriv_message_consumer);
-
-    // TODO: Utilize this if KHR_memory_model is supported
-    // TODO: Profile these passes, remove ones we don't need to speed up JIT
-    // ref:
-    // https://github.com/KhronosGroup/SPIRV-Tools/blob/f9893c4549406eb9643e0eb05a521ab70a320fff/source/opt/optimizer.cpp
-    if (params.enable_spv_opt) {
-      spirv_opt_->RegisterPerformancePasses();
-    }
-
+    spirv_opt_->RegisterPerformancePasses();
     _spirv_opt_options.set_run_validator(false);
   }
+  if (!spirv_tools_) spirv_tools_ = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
+}
 
-  using Result = VkRuntime::RegisterParams;
+void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs, std::vector<std::vector<uint32_t>> &generated_spirv) {
+  auto *root = params_.kernel->ir->as<Block>();
+  auto &tasks = root->statements;
+  for (int i = 0; i < tasks.size(); ++i) {
+    TaskCodegen::Params tp;
+    tp.task_ir = tasks[i]->as<OffloadedStmt>();
+    tp.task_id_in_kernel = i;
+    tp.compiled_structs = params_.compiled_structs;
+    tp.ctx_attribs = &ctx_attribs_;
+    tp.ti_kernel_name = params_.ti_kernel_name;
+    tp.device = params_.device;
 
-  Result run() {
-    Result res;
-    auto &kernel_attribs = res.kernel_attribs;
-    auto *root = params_.kernel->ir->as<Block>();
-    auto &tasks = root->statements;
-    for (int i = 0; i < tasks.size(); ++i) {
-      TaskCodegen::Params tp;
-      tp.task_ir = tasks[i]->as<OffloadedStmt>();
-      tp.task_id_in_kernel = i;
-      tp.compiled_structs = params_.compiled_structs;
-      tp.ctx_attribs = &ctx_attribs_;
-      tp.ti_kernel_name = params_.ti_kernel_name;
-      tp.device = params_.device;
+    TaskCodegen cgen(tp);
+    auto task_res = cgen.run();
 
-      TaskCodegen cgen(tp);
-      auto task_res = cgen.run();
+    std::vector<uint32_t> optimized_spv;
 
-      std::vector<uint32_t> optimized_spv;
+    TI_WARN_IF(!spirv_opt_->Run(task_res.spirv_code.data(),
+                                task_res.spirv_code.size(), &optimized_spv,
+                                _spirv_opt_options),
+                "SPIRV optimization failed");
 
-      TI_WARN_IF(!spirv_opt_->Run(task_res.spirv_code.data(),
-                                  task_res.spirv_code.size(), &optimized_spv,
-                                  _spirv_opt_options),
-                 "SPIRV optimization failed");
+    TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
+              task_res.spirv_code.size(), optimized_spv.size());
 
-      TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
-               task_res.spirv_code.size(), optimized_spv.size());
-
-      // Enable to dump SPIR-V assembly of kernels
+    // Enable to dump SPIR-V assembly of kernels
 #if 0
-      std::string spirv_asm;
-      spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
-      TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", params_.ti_kernel_name,
-              spirv_asm);
+    std::string spirv_asm;
+    spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
+    TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", params_.ti_kernel_name,
+            spirv_asm);
 
-      std::ofstream fout((params_.ti_kernel_name).c_str(),
-                         std::ios::binary | std::ios::out);
-      fout.write(reinterpret_cast<const char *>(optimized_spv.data()),
-                 optimized_spv.size() * sizeof(uint32_t));
-      fout.close();
+    std::ofstream fout((params_.ti_kernel_name).c_str(),
+                        std::ios::binary | std::ios::out);
+    fout.write(reinterpret_cast<const char *>(optimized_spv.data()),
+                optimized_spv.size() * sizeof(uint32_t));
+    fout.close();
 #endif
 
-      kernel_attribs.tasks_attribs.push_back(std::move(task_res.task_attribs));
-      res.task_spirv_source_codes.push_back(std::move(optimized_spv));
-    }
-    kernel_attribs.ctx_attribs = std::move(ctx_attribs_);
-    kernel_attribs.name = params_.ti_kernel_name;
-    kernel_attribs.is_jit_evaluator = params_.kernel->is_evaluator;
-    return res;
+    kernel_attribs.tasks_attribs.push_back(std::move(task_res.task_attribs));
+    generated_spirv.push_back(std::move(optimized_spv));
   }
-
- private:
-  Params params_;
-  KernelContextAttributes ctx_attribs_;
-
-  std::unique_ptr<spvtools::Optimizer> spirv_opt_;
-  std::unique_ptr<spvtools::SpirvTools> spirv_tools_;
-  spvtools::OptimizerOptions _spirv_opt_options;
-};
-
-}  // namespace
+  kernel_attribs.ctx_attribs = std::move(ctx_attribs_);
+  kernel_attribs.name = params_.ti_kernel_name;
+  kernel_attribs.is_jit_evaluator = params_.kernel->is_evaluator;
+}
 
 void lower(Kernel *kernel) {
   auto &config = kernel->program->config;
@@ -1839,33 +1811,6 @@ void lower(Kernel *kernel) {
                                 /*make_thread_local=*/false);
 }
 
-VkRuntime::RegisterParams run_codegen(
-    Kernel *kernel,
-    const std::vector<CompiledSNodeStructs> &compiled_structs,
-    VkRuntime *runtime) {
-  const auto id = Program::get_kernel_id();
-  const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
-  TI_TRACE("VK codegen for Taichi kernel={}", taichi_kernel_name);
-  KernelCodegen::Params params;
-  params.ti_kernel_name = taichi_kernel_name;
-  params.kernel = kernel;
-  params.compiled_structs = compiled_structs;
-  params.device = runtime->get_ti_device();
-  params.enable_spv_opt =
-      kernel->program->config.external_optimization_level > 0;
-  KernelCodegen codegen(params);
-  return codegen.run();
-}
-
-FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
-  auto res = run_codegen(kernel, runtime->get_compiled_structs(), runtime);
-  auto handle = runtime->register_taichi_kernel(std::move(res));
-  std::string taichi_kernel_name = res.kernel_attribs.name;
-  return [runtime, handle, taichi_kernel_name](RuntimeContext &ctx) {
-    runtime->launch_kernel(handle, &ctx);
-  };
-}
-
-}  // namespace vulkan
+}  // namespace spirv
 }  // namespace lang
 }  // namespace taichi

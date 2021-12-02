@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "taichi/backends/vulkan/kernel_utils.h"
+#include "taichi/codegen/spirv/kernel_utils.h"
 
 namespace taichi {
 namespace lang {
@@ -14,7 +14,7 @@ namespace vulkan {
 struct TaichiAotData {
   //   BufferMetaData metadata;
   std::vector<std::vector<std::vector<uint32_t>>> spirv_codes;
-  std::vector<TaichiKernelAttributes> kernels;
+  std::vector<spirv::TaichiKernelAttributes> kernels;
 
   TI_IO_DEF(kernels);
 };

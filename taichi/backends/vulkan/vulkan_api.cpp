@@ -1,7 +1,7 @@
 #define VOLK_IMPLEMENTATION
 
 #include "taichi/backends/vulkan/vulkan_api.h"
-#include "taichi/backends/vulkan/loader.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 
 namespace vkapi {
 

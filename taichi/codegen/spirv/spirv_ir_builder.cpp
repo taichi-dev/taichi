@@ -1,8 +1,7 @@
-#include "taichi/backends/vulkan/spirv_ir_builder.h"
+#include "taichi/codegen/spirv/spirv_ir_builder.h"
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
 
 namespace spirv {
 
@@ -995,6 +994,5 @@ void IRBuilder::init_random_function(Value global_tmp_) {
 }
 
 }  // namespace spirv
-}  // namespace vulkan
 }  // namespace lang
 }  // namespace taichi

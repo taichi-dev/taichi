@@ -2,7 +2,7 @@
 
 #include "taichi/backends/vulkan/vulkan_common.h"
 
-#include "taichi/backends/vulkan/loader.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/common/logging.h"
 
 namespace taichi {

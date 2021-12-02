@@ -42,7 +42,7 @@ struct VulkanQueueFamilyIndices {
  * This class creates a VulkanDevice instance. The underlying Vk* resources are
  * embedded directly inside the class.
  */
-class EmbeddedVulkanDevice {
+class VulkanDeviceCreator {
  public:
   struct Params {
     std::optional<uint32_t> api_version;
@@ -55,8 +55,8 @@ class EmbeddedVulkanDevice {
     std::function<VkSurfaceKHR(VkInstance)> surface_creator;
   };
 
-  explicit EmbeddedVulkanDevice(const Params &params);
-  ~EmbeddedVulkanDevice();
+  explicit VulkanDeviceCreator(const Params &params);
+  ~VulkanDeviceCreator();
 
   const VulkanDevice *device() const {
     return ti_device_.get();

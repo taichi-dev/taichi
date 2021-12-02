@@ -7,7 +7,7 @@
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
+namespace spirv {
 
 struct SNodeDescriptor {
   const SNode *snode = nullptr;
@@ -53,6 +53,6 @@ struct CompiledSNodeStructs {
 
 CompiledSNodeStructs compile_snode_structs(SNode &root);
 
-}  // namespace vulkan
+}  // namespace spirv
 }  // namespace lang
 }  // namespace taichi

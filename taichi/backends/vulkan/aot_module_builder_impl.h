@@ -4,9 +4,9 @@
 #include <vector>
 
 #include "taichi/backends/vulkan/aot_utils.h"
-#include "taichi/backends/vulkan/snode_struct_compiler.h"
 #include "taichi/backends/vulkan/runtime.h"
-#include "taichi/backends/vulkan/kernel_utils.h"
+#include "taichi/codegen/spirv/snode_struct_compiler.h"
+#include "taichi/codegen/spirv/kernel_utils.h"
 
 #include "taichi/program/aot_module_builder.h"
 

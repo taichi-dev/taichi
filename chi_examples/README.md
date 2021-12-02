@@ -4,13 +4,7 @@
 
 Follow the steps in `https://docs.taichi.graphics/lang/articles/contribution/dev_install`
 
-Add option `-DTI_EXPORT_CORE=ON` to your `cmake` command (i.e. use `cmake .. DTI_EXPORT_CORE=ON`).
-
-Set environment variable `$TAICHI_REPO_DIR` to your Taichi repository path.
-
-Make sure taichi is built under `$TAICHI_REPO_DIR/build` directory.
-
-After building, `$TAICHI_REPO_DIR/build/libtaichi_export_core.so` should exist.
+Add option `-DTI_EXPORT_CORE=ON` when building Taichi (As an example, run `TAICHI_CMAKE_ARGS="-DTI_EXPORT_CORE=ON" python3 setup.py install --user`).
 
 ## Link with the Taichi Shared Library
 
@@ -23,6 +17,8 @@ cmake ..
 make
 ./chi_examples
 ```
+
+If you want to build CHI examples in a non-default folder, set environment variable `$TAICHI_REPO_DIR` to your Taichi repository path.
 
 ## Reference
 

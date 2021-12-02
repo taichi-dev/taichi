@@ -25,13 +25,6 @@ class AotModuleBuilder {
                  int row_num,
                  int column_num);
 
-  void add_ndarray(const std::string &identifier,
-                   bool is_scalar,
-                   DataType dt,
-                   std::vector<int> shape,
-                   int row_num,
-                   int column_num);
-
   void add_kernel_template(const std::string &identifier,
                            const std::string &key,
                            Kernel *kernel);

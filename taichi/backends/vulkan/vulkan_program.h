@@ -36,6 +36,10 @@ class VulkanProgramImpl : public ProgramImpl {
     return 0;  // TODO: support sparse in vulkan
   }
 
+  void compile_snode_tree_types(
+      SNodeTree *tree,
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees) override;
+
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
@@ -48,10 +52,7 @@ class VulkanProgramImpl : public ProgramImpl {
     vulkan_runtime_->synchronize();
   }
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
-    // TODO: implement vk aot
-    return nullptr;
-  }
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
   virtual void destroy_snode_tree(SNodeTree *snode_tree) override {
     vulkan_runtime_->destroy_snode_tree(snode_tree);

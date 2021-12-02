@@ -49,6 +49,8 @@ struct TaskAttributes {
       }
       return true;
     }
+
+    TI_IO_DEF(type, root_id);
   };
 
   struct BufferInfoHasher {
@@ -66,6 +68,8 @@ struct TaskAttributes {
     int binding{0};
 
     std::string debug_string() const;
+
+    TI_IO_DEF(buffer, binding);
   };
 
   std::string name;
@@ -91,6 +95,8 @@ struct TaskAttributes {
     inline bool const_range() const {
       return (const_begin && const_end);
     }
+
+    TI_IO_DEF(begin, end, const_begin, const_end);
   };
   std::vector<BufferBind> buffer_binds;
   // Only valid when |task_type| is range_for.
@@ -99,6 +105,13 @@ struct TaskAttributes {
   static std::string buffers_name(BufferInfo b);
 
   std::string debug_string() const;
+
+  TI_IO_DEF(name,
+            advisory_total_num_threads,
+            advisory_num_threads_per_group,
+            task_type,
+            buffer_binds,
+            range_for_attribs);
 };
 
 /**
@@ -133,6 +146,8 @@ class KernelContextAttributes {
     int index{-1};
     DataType dt;
     bool is_array{false};
+
+    TI_IO_DEF(stride, offset_in_mem, index, is_array);
   };
 
  public:
@@ -231,6 +246,12 @@ class KernelContextAttributes {
     return ctx_bytes() + extra_args_bytes();
   }
 
+  TI_IO_DEF(arg_attribs_vec_,
+            ret_attribs_vec_,
+            args_bytes_,
+            rets_bytes_,
+            extra_args_bytes_);
+
  private:
   std::vector<ArgAttributes> arg_attribs_vec_;
   std::vector<RetAttributes> ret_attribs_vec_;
@@ -252,6 +273,8 @@ struct TaichiKernelAttributes {
   std::vector<TaskAttributes> tasks_attribs;
 
   KernelContextAttributes ctx_attribs;
+
+  TI_IO_DEF(name, is_jit_evaluator, tasks_attribs, ctx_attribs);
 };
 
 }  // namespace vulkan

@@ -14,9 +14,6 @@ function WriteInfo($text) {
     Write-Host -ForegroundColor Green "[BUILD] $text"
 }
 
-WriteInfo("Install 7Zip")
-Install-Module 7Zip4PowerShell -Force -Verbose -Scope CurrentUser
-
 if ($clone) {
     WriteInfo("Clone the repository")
     git clone --recurse-submodules $RepoURL
@@ -29,15 +26,15 @@ if (-not (Test-Path $libsDir)) {
     New-Item -ItemType Directory -Path $libsDir
 }
 Push-Location $libsDir
-WriteInfo("Download and extract LLVM")
 if (-not (Test-Path "taichi_llvm")) {
+    WriteInfo("Download and extract LLVM")
     curl.exe --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO
-    7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi_llvm
+    python -m zipfile -e taichi-llvm-10.0.0-msvc2019.zip taichi_llvm
 }
-WriteInfo("Download and extract Clang")
 if (-not (Test-Path "taichi_clang")) {
+    WriteInfo("Download and extract Clang")
     curl.exe --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip -LO
-    7z x clang-10.0.0-win.zip -otaichi_clang
+    python -m zipfile -e clang-10.0.0-win.zip taichi_clang
 }
 $env:PATH = "$libsDir\taichi_llvm\bin;$libsDir\taichi_clang\bin;$env:PATH"
 $env:TAICHI_CMAKE_ARGS = "-G 'Visual Studio 16 2019' -A x64 -DLLVM_DIR=$libsDir\taichi_llvm\lib\cmake\llvm"
@@ -67,14 +64,17 @@ $env:CXX = "$libsDir\taichi_clang\bin\clang++.exe"
 if ($install) {
     if ($develop) {
         python -m pip install -v -e .
-    } else {
+    }
+    else {
         python -m pip install -v .
     }
     WriteInfo("Build and install finished")
-} else {
+}
+else {
     if ($env:PROJECT_NAME -eq "taichi-nightly") {
         python setup.py egg_info --tag-date bdist_wheel
-    } else {
+    }
+    else {
         python setup.py bdist_wheel
     }
     WriteInfo("Build finished")

@@ -49,7 +49,8 @@ std::vector<std::string> get_required_device_extensions() {
 }  // namespace
 
 FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
-  auto handle = runtime->register_taichi_kernel(std::move(run_codegen(kernel, runtime)));
+  auto handle =
+      runtime->register_taichi_kernel(std::move(run_codegen(kernel, runtime)));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };

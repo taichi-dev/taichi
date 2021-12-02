@@ -69,8 +69,7 @@ void AppContext::init(GLFWwindow *glfw_window, const AppConfig &config) {
       }
       return surface;
     };
-    embedded_vulkan_device_ =
-        std::make_unique<VulkanDeviceCreator>(evd_params);
+    embedded_vulkan_device_ = std::make_unique<VulkanDeviceCreator>(evd_params);
   } else {
     vulkan_device_ = static_cast<VulkanDevice *>(
         get_current_program().get_graphics_device());

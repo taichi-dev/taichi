@@ -478,7 +478,6 @@ DevicePtr VkRuntime::get_snode_tree_device_ptr(int tree_id) {
   return root_buffers_[tree_id]->get_ptr();
 }
 
-
 VkRuntime::RegisterParams run_codegen(Kernel *kernel, VkRuntime *runtime) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));

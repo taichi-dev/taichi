@@ -1742,7 +1742,6 @@ static std::unique_ptr<spvtools::Optimizer> spirv_opt_{nullptr};
 static std::unique_ptr<spvtools::SpirvTools> spirv_tools_{nullptr};
 static spvtools::OptimizerOptions _spirv_opt_options;
 
-
 KernelCodegen::KernelCodegen(const Params &params)
     : params_(params), ctx_attribs_(*params.kernel) {
   if (!spirv_opt_) {
@@ -1751,10 +1750,12 @@ KernelCodegen::KernelCodegen(const Params &params)
     spirv_opt_->RegisterPerformancePasses();
     _spirv_opt_options.set_run_validator(false);
   }
-  if (!spirv_tools_) spirv_tools_ = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
+  if (!spirv_tools_)
+    spirv_tools_ = std::make_unique<spvtools::SpirvTools>(SPV_ENV_VULKAN_1_2);
 }
 
-void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs, std::vector<std::vector<uint32_t>> &generated_spirv) {
+void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
+                        std::vector<std::vector<uint32_t>> &generated_spirv) {
   auto *root = params_.kernel->ir->as<Block>();
   auto &tasks = root->statements;
   for (int i = 0; i < tasks.size(); ++i) {
@@ -1771,13 +1772,13 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs, std::vector<std:
 
     std::vector<uint32_t> optimized_spv;
 
-    TI_WARN_IF(!spirv_opt_->Run(task_res.spirv_code.data(),
-                                task_res.spirv_code.size(), &optimized_spv,
-                                _spirv_opt_options),
-                "SPIRV optimization failed");
+    TI_WARN_IF(
+        !spirv_opt_->Run(task_res.spirv_code.data(), task_res.spirv_code.size(),
+                         &optimized_spv, _spirv_opt_options),
+        "SPIRV optimization failed");
 
     TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
-              task_res.spirv_code.size(), optimized_spv.size());
+             task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
 #if 0

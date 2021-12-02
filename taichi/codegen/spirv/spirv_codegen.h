@@ -26,7 +26,8 @@ class KernelCodegen {
 
   explicit KernelCodegen(const Params &params);
 
-  void run(TaichiKernelAttributes &kernel_attribs, std::vector<std::vector<uint32_t>> &generated_spirv);
+  void run(TaichiKernelAttributes &kernel_attribs,
+           std::vector<std::vector<uint32_t>> &generated_spirv);
 
  private:
   Params params_;

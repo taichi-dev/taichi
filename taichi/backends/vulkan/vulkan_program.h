@@ -2,7 +2,6 @@
 #include "taichi/codegen/spirv/spirv_codegen.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 
-
 #include "taichi/backends/vulkan/vulkan_device_creator.h"
 #include "taichi/backends/vulkan/vulkan_utils.h"
 #include "taichi/backends/vulkan/vulkan_loader.h"

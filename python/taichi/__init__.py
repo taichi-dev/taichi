@@ -1,7 +1,6 @@
 import sys
 
 from taichi._logging import *
-from taichi._testing import *
 from taichi.core import get_os_name, package_root, require_version
 from taichi.core import ti_core as core
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
@@ -17,6 +16,7 @@ from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
 from taichi import aot  # isort:skip
+from taichi._testing import *  # isort:skip
 
 deprecated_names = {'SOA': 'Layout.SOA', 'AOS': 'Layout.AOS'}
 if sys.version_info.minor < 7:

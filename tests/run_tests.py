@@ -23,10 +23,8 @@ def _test_cpp():
         export_core_filename = 'libtaichi_export_core.so'
         if os.path.exists(os.path.join(build_dir, export_core_filename)):
             chi_dir = os.path.join(curr_dir, '../chi_examples')
-            subprocess.check_call(['cmake', '.', '-B',  'build'],
-                           cwd=chi_dir)
-            subprocess.check_call(['make', '-C', 'build'],
-                                  cwd=chi_dir)
+            subprocess.check_call(['cmake', '.', '-B', 'build'], cwd=chi_dir)
+            subprocess.check_call(['make', '-C', 'build'], cwd=chi_dir)
             subprocess.check_call('build/chi_examples',
                                   env={'TI_LIB_DIR': ti_lib_dir},
                                   cwd=chi_dir)

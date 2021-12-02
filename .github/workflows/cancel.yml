@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: |
-          RUN_ID=$(gh run list -w "Build and Test"|awk -F '\t' '{if ($6 == "pull_request") {print;exit}}'|awk -F '\t' '{print $7}')
+          RUN_ID=$(gh run list -w "Build and Test"|awk -F'\t' '{if ($5 == "${{ github.ref_name }}") {print $7;exit}}')
           if [ -z "$RUN_ID" ]; then
             echo "No run to cancel"
           else

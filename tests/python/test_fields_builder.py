@@ -8,7 +8,7 @@ Test fields with shape.
 '''
 
 
-@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
+@ti.test(arch=ti.get_host_arch_list())
 def test_fields_with_shape():
     shape = 5
     x = ti.field(ti.f32, shape=shape)
@@ -45,7 +45,7 @@ Test fields with builder dense.
 '''
 
 
-@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
+@ti.test(arch=ti.get_host_arch_list())
 def test_fields_builder_dense():
     shape = 5
     fb1 = ti.FieldsBuilder()
@@ -94,7 +94,7 @@ Test fields with builder pointer.
 '''
 
 
-@ti.test(arch=[ti.cpu, ti.cuda, ti.metal])
+@ti.test(arch=ti.get_host_arch_list())
 def test_fields_builder_pointer():
     shape = 5
     fb1 = ti.FieldsBuilder()
@@ -157,50 +157,34 @@ Test fields with builder destory.
 '''
 
 
-@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
+@ti.test(arch=ti.get_host_arch_list())
 def test_fields_builder_destroy():
-    test_sizes = [1]
     # note: currently only consider precison that all platform supported,
     # more detailed here: https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types
-    field_types = [ti.f32, ti.i32]
-    field_sizes = [1]
-
-    def test_for_single_destroy_multi_fields(test_sizes, field_types,
-                                             field_sizes):
+    @pytest.mark.parametrize('test_1d_size', [1, 10, 100])
+    @pytest.mark.parametrize('field_type', [ti.f32, ti.i32])
+    @ti.test(arch=ti.get_host_arch_list())
+    def test_for_single_destroy_multi_fields():
         fb = ti.FieldsBuilder()
-        for tsize_idx in range(len(test_sizes)):
-            for ftype_idx in range(len(field_types)):
-                for fsize_idx in range(len(field_sizes)):
-                    test_1d_size = test_sizes[tsize_idx]
-                    field_type = field_types[ftype_idx]
-                    field_size = field_sizes[fsize_idx]
-
-                    for create_field_idx in range(field_size):
-                        field = ti.field(field_type)
-                        fb.dense(ti.i, test_1d_size).place(field)
+        for create_field_idx in range(10):
+            field = ti.field(field_type)
+            fb.dense(ti.i, test_1d_size).place(field)
         fb_snode_tree = fb.finalize()
         fb_snode_tree.destroy()
 
-    test_for_single_destroy_multi_fields(test_sizes, field_types, field_sizes)
-
-    def test_for_multi_destroy_multi_fields(test_sizes, field_types,
-                                            field_sizes):
+    @pytest.mark.parametrize('test_1d_size', [1, 10, 100])
+    @pytest.mark.parametrize('field_type', [ti.f32, ti.i32])
+    @ti.test(arch=ti.get_host_arch_list())
+    def test_for_multi_destroy_multi_fields():
         fb0 = ti.FieldsBuilder()
         fb1 = ti.FieldsBuilder()
 
-        for tsize_idx in range(len(test_sizes)):
-            for ftype_idx in range(len(field_types)):
-                for fsize_idx in range(len(field_sizes)):
-                    test_1d_size = test_sizes[tsize_idx]
-                    field_type = field_types[ftype_idx]
-                    field_size = field_sizes[fsize_idx]
+        for create_field_idx in range(10):
+            field0 = ti.field(field_type)
+            field1 = ti.field(field_type)
 
-                    for create_field_idx in range(field_size):
-                        field0 = ti.field(field_type)
-                        field1 = ti.field(field_type)
-
-                        fb0.dense(ti.i, test_1d_size).place(field0)
-                        fb1.pointer(ti.i, test_1d_size).place(field1)
+            fb0.dense(ti.i, test_1d_size).place(field0)
+            fb1.pointer(ti.i, test_1d_size).place(field1)
 
         fb0_snode_tree = fb0.finalize()
         fb1_snode_tree = fb1.finalize()
@@ -209,9 +193,9 @@ def test_fields_builder_destroy():
         fb0_snode_tree.destroy()
         fb1_snode_tree.destroy()
 
-    test_for_multi_destroy_multi_fields(test_sizes, field_types, field_sizes)
-
-    def test_for_raise_twice_destroy(size_1d):
+    @pytest.mark.parametrize('size_1d', [10])
+    @ti.test(arch=ti.get_host_arch_list())
+    def test_for_raise_twice_destroy():
         fb = ti.FieldsBuilder()
         a = ti.field(ti.f32)
         fb.dense(ti.i, size_1d).place(a)
@@ -221,5 +205,3 @@ def test_fields_builder_destroy():
             # Triggered if destroy twice
             c.destroy()
             c.destroy()
-
-    test_for_raise_twice_destroy(10)

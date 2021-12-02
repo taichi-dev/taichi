@@ -34,6 +34,7 @@ class Matrix(TaichiOperations):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
+        self.in_python_scope = in_python_scope()
 
         if isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
@@ -345,8 +346,10 @@ class Matrix(TaichiOperations):
     @property
     @python_scope
     def value(self):
-        return Matrix([[self(i, j) for j in range(self.m)]
-                       for i in range(self.n)])
+        return Matrix(self.to_list())
+
+    def to_list(self):
+        return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
 
     # host access & python scope operation
     @python_scope
@@ -1123,6 +1126,7 @@ class _IntermediateMatrix(Matrix):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
+        self.in_python_scope = in_python_scope()
 
 
 class MatrixField(Field):
@@ -1376,7 +1380,7 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def fill(self, val):
-        self.ndarray_fill(val, taichi.lang.meta.fill_ndarray_matrix)
+        self.ndarray_matrix_fill(val)
 
     @python_scope
     def to_numpy(self):
@@ -1440,7 +1444,7 @@ class VectorNdarray(Ndarray):
 
     @python_scope
     def fill(self, val):
-        self.ndarray_fill(val, taichi.lang.meta.fill_ndarray_matrix)
+        self.ndarray_matrix_fill(val)
 
     @python_scope
     def to_numpy(self):

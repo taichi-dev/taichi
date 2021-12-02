@@ -28,16 +28,9 @@ class Ndarray:
             if impl.current_cfg().arch == _ti_core.Arch.cuda:
                 self.arr = self.arr.cuda()
 
-            def ndarray_fill(val, fill_func):
-                self.arr.fill_(val)
         else:
             self.arr = _ti_core.Ndarray(impl.get_runtime().prog,
                                         cook_dtype(dtype), shape)
-
-            def ndarray_fill(val, fill_func):
-                fill_func(self, val)
-
-        self.ndarray_fill = ndarray_fill
 
     @property
     def shape(self):
@@ -96,6 +89,28 @@ class Ndarray:
             element type: Value retrieved.
         """
         raise NotImplementedError()
+
+    def ndarray_fill(self, val):
+        """Fills ndarray with a specific scalar value.
+
+        Args:
+            val (Union[int, float]): Value to fill.
+        """
+        if impl.current_cfg().ndarray_use_torch:
+            self.arr.fill_(val)
+        else:
+            taichi.lang.meta.fill_ndarray(self, val)
+
+    def ndarray_matrix_fill(self, val):
+        """Fills ndarray with a specific scalar value.
+
+        Args:
+            val (Union[int, float]): Value to fill.
+        """
+        if impl.current_cfg().ndarray_use_torch:
+            self.arr.fill_(val)
+        else:
+            taichi.lang.meta.fill_ndarray_matrix(self, val)
 
     def ndarray_to_numpy(self):
         """Converts ndarray to a numpy array.
@@ -258,7 +273,7 @@ class ScalarNdarray(Ndarray):
 
     @python_scope
     def fill(self, val):
-        self.ndarray_fill(val, taichi.lang.meta.fill_ndarray)
+        self.ndarray_fill(val)
 
     @python_scope
     def to_numpy(self):

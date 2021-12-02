@@ -4,7 +4,6 @@ import inspect
 import re
 import sys
 import textwrap
-import traceback
 
 import numpy as np
 import taichi.lang
@@ -96,6 +95,9 @@ def _get_tree_and_ctx(self,
                       args=None):
     src = textwrap.dedent(oinspect.getsource(self.func))
     tree = ast.parse(src)
+    src, start_lineno = oinspect.getsourcelines(self.func)
+    src = [line.replace("\t", "    ") for line in src]
+    file = oinspect.getsourcefile(self.func)
 
     func_body = tree.body[0]
     func_body.decorator_list = []
@@ -120,7 +122,10 @@ def _get_tree_and_ctx(self,
                                        func=self,
                                        arg_features=arg_features,
                                        global_vars=global_vars,
-                                       argument_data=args)
+                                       argument_data=args,
+                                       src=src,
+                                       start_lineno=start_lineno,
+                                       file=file)
 
 
 class Func:
@@ -641,10 +646,9 @@ _KERNEL_CLASS_STACKFRAME_STMT_RES = [
 
 
 def _inside_class(level_of_class_stackframe):
-    frames = oinspect.stack()
     try:
-        maybe_class_frame = frames[level_of_class_stackframe]
-        statement_list = maybe_class_frame[4]
+        maybe_class_frame = sys._getframe(level_of_class_stackframe)
+        statement_list = inspect.getframeinfo(maybe_class_frame)[3]
         first_statment = statement_list[0].strip()
         for pat in _KERNEL_CLASS_STACKFRAME_STMT_RES:
             if pat.match(first_statment):
@@ -690,28 +694,7 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
         @functools.wraps(_func)
         def wrapped(*args, **kwargs):
             _taichi_skip_traceback = 1
-            try:
-                return primal(*args, **kwargs)
-            except RuntimeError as e:
-                if str(e).startswith("TypeError: "):
-                    tb = e.__traceback__
-
-                    while tb:
-                        if tb.tb_frame.f_code.co_name == 'taichi_ast_generator':  # pylint: disable=E1101
-                            tb = tb.tb_next
-                            if sys.version_info < (3, 7):
-                                # The traceback object is read-only on Python < 3.7,
-                                # print the traceback and raise
-                                traceback.print_tb(tb,
-                                                   limit=1,
-                                                   file=sys.stderr)
-                                raise TypeError(str(e)[11:]) from None
-                            # Otherwise, modify the traceback object
-                            tb.tb_next = None
-                            raise TypeError(
-                                str(e)[11:]).with_traceback(tb) from None
-                        tb = tb.tb_next
-                raise
+            return primal(*args, **kwargs)
 
         wrapped.grad = adjoint
 

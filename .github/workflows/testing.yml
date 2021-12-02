@@ -1,7 +1,9 @@
-name: Presubmit Checks
+name: Build and Test
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches: [master]
 
 jobs:
   check_files:
@@ -62,9 +64,6 @@ jobs:
 
       - name: Setup git & clang-format
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           git config user.email "taichigardener@gmail.com"
           git config user.name "Taichi Gardener"
           git checkout -b _fake_squash
@@ -80,16 +79,10 @@ jobs:
 
       - name: Install requirements
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           python3 -m pip install --user -r requirements_dev.txt
 
       - name: Check code format
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
           python3 misc/code_format.py
           git checkout -b _enforced_format
           git commit -am "enforce code format" || true
@@ -167,6 +160,14 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-linux-${{matrix.with_cc}}-${{ github.sha }}
+          restore-keys: |
+            sccache-linux-${{matrix.with_cc}}-
+
       - name: Get docker images
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
@@ -184,14 +185,19 @@ jobs:
             exit 0
           fi
           mkdir -m777 wheel
+          mkdir -p sccache_cache
           docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
-          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
+          # A tarball is needed because sccache needs some permissions that only the file owner has. 1000 is the uid and gid of user "dev" in the container.
+          # If the uid or gid of the user inside the docker changes, please change the uid and gid in the following line.
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
+          rm -rf sccache_cache
+          docker cp taichi_build:/home/dev/taichi/sccache_cache sccache_cache
         env:
           PY: ${{ matrix.python }}
           GPU_BUILD: OFF
           PROJECT_NAME: taichi
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Test
         run: |
@@ -208,6 +214,11 @@ jobs:
           PY: ${{ matrix.python }}
           GPU_TEST: OFF
           TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
+
+      - name: clean docker container
+        if: always()
+        run: |
+          docker rm taichi_build taichi_test -f
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
@@ -231,6 +242,14 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-mac-${{ github.sha }}
+          restore-keys: |
+            sccache-mac-
+
       - name: Download Pre-Built LLVM 10.0.0
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
@@ -245,10 +264,11 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
+          mkdir -p sccache_cache
           export PATH=`pwd`/taichi-llvm/bin/:$PATH
           .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
@@ -276,20 +296,34 @@ jobs:
         with:
           submodules: "recursive"
 
-      - name: Build & Install
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-linux-gpu-${{ github.sha }}
+          restore-keys: |
+            sccache-linux-gpu-
+
+      - name: Build & Instal
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
           mkdir -m777 wheel
+          mkdir -p sccache_cache
+          chmod -R 777 sccache_cache
           docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
-          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
+          # A tarball is needed because sccache needs some permissions that only the file owner has. 1000 is the uid and gid of user "dev" in the container.
+          # If the uid or gid of the user inside the docker changes, please change the uid and gid in the following line.
+          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
+          rm -rf sccache_cache
+          docker cp taichi_build:/home/dev/taichi/sccache_cache sccache_cache
         env:
           PY: py38
           GPU_BUILD: ON
           PROJECT_NAME: taichi
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           DISPLAY: :1
 
       - name: Test
@@ -306,7 +340,7 @@ jobs:
           PY: py38
           GPU_TEST: ON
           DISPLAY: :1
-          TI_WANTED_ARCHS: "cpu,cc,cuda,vulkan,opengl"
+          TI_WANTED_ARCHS: "cpu,cuda,vulkan,opengl"
 
       - name: clean docker container
         if: always()
@@ -375,15 +409,24 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-m1-${{ github.sha }}
+          restore-keys: |
+            sccache-m1-
+
       - name: Build
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
           rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
+          mkdir -p sccache_cache
           .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++
 
       - name: Test
@@ -397,6 +440,6 @@ jobs:
           TI_LIB_DIR=`python3 -c "import taichi;print(taichi.__path__[0])" | tail -1`
           TI_LIB_DIR="$TI_LIB_DIR/lib" ./build/taichi_cpp_tests
           echo wanted archs: $TI_WANTED_ARCHS
-          python3 tests/run_tests.py -vr2 -t4 -x
+          python3 tests/run_tests.py -vr2 -t4 -x -a "$TI_WANTED_ARCHS"
         env:
           TI_WANTED_ARCHS: "metal,cpu"

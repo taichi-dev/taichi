@@ -134,7 +134,7 @@ def test_numpy_3d():
 
 
 @ti.test()
-@ti.must_throw(IndexError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_numpy_3d_error():
     val = ti.field(ti.i32)
 

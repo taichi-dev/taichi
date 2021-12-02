@@ -4,7 +4,7 @@
 #include "taichi/util/io.h"
 #include "taichi/common/core.h"
 #include "taichi/system/profiler.h"
-#include "taichi/ir/ir_modified.h"
+#include "taichi/common/exceptions.h"
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/type.h"
 #include "taichi/ir/type_utils.h"

@@ -43,27 +43,14 @@ struct CompiledFieldData {
             column_num);
 };
 
-struct CompiledNdarrayData {
-  std::string field_name;
-  uint32_t dtype;
-  std::string dtype_name;
-  size_t dim{0};
-  bool is_scalar{false};
-  int row_num{0};
-  int column_num{0};
-
-  TI_IO_DEF(field_name, dtype, dtype_name, dim, is_scalar, row_num, column_num);
-};
-
 struct AotData {
   std::vector<AotCompiledKernel> kernels;
   std::vector<AotCompiledKernelTmpl> kernel_tmpls;
-  std::vector<CompiledNdarrayData> ndarrays;
   std::vector<CompiledFieldData> fields;
 
   size_t root_buffer_size;
 
-  TI_IO_DEF(kernels, kernel_tmpls, ndarrays, fields, root_buffer_size);
+  TI_IO_DEF(kernels, kernel_tmpls, fields, root_buffer_size);
 };
 
 }  // namespace opengl

@@ -6,15 +6,17 @@ from taichi.core import ti_core as core
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.main import main
 from taichi.misc import *
-from taichi.testing import *
 from taichi.tools import *
-from taichi.type import *
+from taichi.type.annotations import *
+# Provide a shortcut to types since they're commonly used.
+from taichi.type.primitive_types import *
 
 from taichi import ad
-from taichi.ui import ui
+from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
 from taichi import aot  # isort:skip
+from taichi._testing import *  # isort:skip
 
 deprecated_names = {'SOA': 'Layout.SOA', 'AOS': 'Layout.AOS'}
 if sys.version_info.minor < 7:

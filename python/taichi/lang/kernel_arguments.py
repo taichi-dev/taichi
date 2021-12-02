@@ -49,8 +49,8 @@ def decl_sparse_matrix():
 
 def decl_any_arr_arg(dtype, dim, element_shape, layout):
     dtype = cook_dtype(dtype)
-    arg_id = _ti_core.decl_arg(dtype, True)
     element_dim = len(element_shape)
+    arg_id = _ti_core.decl_arr_arg(dtype, dim, element_shape)
     if layout == Layout.AOS:
         element_dim = -element_dim
     return AnyArray(

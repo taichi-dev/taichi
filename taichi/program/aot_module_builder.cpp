@@ -22,16 +22,6 @@ void AotModuleBuilder::add_field(const std::string &identifier,
                         column_num);
 }
 
-void AotModuleBuilder::add_ndarray(const std::string &identifier,
-                                   bool is_scalar,
-                                   DataType dt,
-                                   std::vector<int> shape,
-                                   int row_num,
-                                   int column_num) {
-  add_ndarray_per_backend(identifier, is_scalar, dt, shape, row_num,
-                          column_num);
-}
-
 void AotModuleBuilder::add_kernel_template(const std::string &identifier,
                                            const std::string &key,
                                            Kernel *kernel) {

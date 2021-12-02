@@ -4,7 +4,7 @@ import taichi as ti
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_try():
     x = ti.field(ti.f32)
 
@@ -21,7 +21,7 @@ def test_try():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_for_else():
     x = ti.field(ti.f32)
 
@@ -38,7 +38,7 @@ def test_for_else():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_while_else():
     x = ti.field(ti.f32)
 
@@ -55,7 +55,7 @@ def test_while_else():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_loop_var_range():
     x = ti.field(ti.f32)
 
@@ -71,7 +71,7 @@ def test_loop_var_range():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_loop_var_struct():
     x = ti.field(ti.f32)
 
@@ -87,7 +87,7 @@ def test_loop_var_struct():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_loop_var_struct():
     x = ti.field(ti.f32)
 
@@ -103,7 +103,7 @@ def test_loop_var_struct():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_func_def_in_kernel():
     @ti.kernel
     def kernel():
@@ -117,7 +117,7 @@ def test_func_def_in_kernel():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_func_def_in_func():
     @ti.func
     def func():
@@ -153,7 +153,7 @@ def test_func_bad_argument_annotation():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_nested_static():
     @ti.kernel
     def func():
@@ -164,7 +164,7 @@ def test_nested_static():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_nested_grouped():
     @ti.kernel
     def func():
@@ -175,7 +175,7 @@ def test_nested_grouped():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_nested_ndrange():
     @ti.kernel
     def func():
@@ -186,7 +186,7 @@ def test_nested_ndrange():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_static_grouped_struct_for():
     val = ti.field(ti.i32)
 
@@ -201,7 +201,7 @@ def test_static_grouped_struct_for():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_is():
     b = ti.field(ti.i32, shape=())
     c = ti.field(ti.i32, shape=())
@@ -214,7 +214,7 @@ def test_is():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_is_not():
     b = ti.field(ti.i32, shape=())
     c = ti.field(ti.i32, shape=())
@@ -227,7 +227,7 @@ def test_is_not():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_in():
     b = ti.field(ti.i32, shape=())
     c = ti.field(ti.i32, shape=())
@@ -240,7 +240,7 @@ def test_in():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_not_in():
     b = ti.field(ti.i32, shape=())
     c = ti.field(ti.i32, shape=())
@@ -253,7 +253,7 @@ def test_not_in():
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_expr_set():
     @ti.kernel
     def func():
@@ -275,7 +275,7 @@ def test_func_multiple_return():
     def kern(a: float):
         print(safe_sqrt(a))
 
-    with pytest.raises(ti.TaichiSyntaxError,
+    with pytest.raises(ti.TaichiCompilationError,
                        match='cannot have multiple returns'):
         kern(-233)
 
@@ -304,7 +304,7 @@ def test_func_def_inside_kernel():
         def illegal():
             return 1
 
-    with pytest.raises(ti.TaichiSyntaxError,
+    with pytest.raises(ti.TaichiCompilationError,
                        match='Function definition not allowed'):
         k()
 
@@ -321,6 +321,6 @@ def test_func_def_inside_func():
     def k():
         f()
 
-    with pytest.raises(ti.TaichiSyntaxError,
+    with pytest.raises(ti.TaichiCompilationError,
                        match='Function definition not allowed'):
         k()

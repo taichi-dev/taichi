@@ -86,7 +86,7 @@ Program::Program(Arch desired_arch)
     TI_ERROR("This taichi is not compiled with Vulkan")
 #endif
   } else if (config.arch == Arch::opengl) {
-    TI_ASSERT(opengl::is_opengl_api_available());
+    TI_ASSERT(opengl::initialize_opengl(config.use_gles));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
   } else if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
@@ -366,9 +366,9 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    Expr(snode_to_glb_var_exprs_.at(snode))[indices] =
+    Expr(snode_to_glb_var_exprs_.at(snode))[indices].set_or_insert_assignment(
         Expr::make<ArgLoadExpression>(snode->num_active_indices,
-                                      snode->dt->get_compute_type());
+                                      snode->dt->get_compute_type()));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
@@ -411,9 +411,9 @@ Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
     }
     Expr(Expr::make<ExternalTensorExpression>(
         ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices + 1,
-        0))[indices] =
-        Expr::make<ArgLoadExpression>(ndarray->num_active_indices,
-                                      ndarray->dtype->get_compute_type());
+        0))[indices]
+        .set_or_insert_assignment(Expr::make<ArgLoadExpression>(
+            ndarray->num_active_indices, ndarray->dtype->get_compute_type()));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;

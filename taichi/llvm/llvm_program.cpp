@@ -70,21 +70,25 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     int query_max_block_dim;
     CUDADriver::get_instance().device_get_attribute(
         &query_max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, nullptr);
+    int query_max_block_per_sm;
+    CUDADriver::get_instance().device_get_attribute(
+        &query_max_block_per_sm,
+        CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR, nullptr);
 
     if (config_.max_block_dim == 0) {
       config_.max_block_dim = query_max_block_dim;
     }
 
     if (config_.saturating_grid_dim == 0) {
-      // each SM can have 16-32 resident blocks
-      config_.saturating_grid_dim = num_SMs * 32;
+      TI_INFO("CUDA max blocks per SM = {}", query_max_block_per_sm);
+      config_.saturating_grid_dim = num_SMs * query_max_block_per_sm;
     }
 #endif
   }
 
   if (arch_is_cpu(config->arch)) {
     config_.max_block_dim = 1024;
-    device_ = std::make_unique<cpu::CpuDevice>();
+    device_ = std::make_shared<cpu::CpuDevice>();
   }
 
   if (config->kernel_profiler && runtime_mem_info) {
@@ -98,7 +102,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
       CUDAContext::get_instance().set_profiler(nullptr);
     }
     CUDAContext::get_instance().set_debug(config->debug);
-    device_ = std::make_unique<cuda::CudaDevice>();
+    device_ = std::make_shared<cuda::CudaDevice>();
   }
 #endif
 }
@@ -574,11 +578,17 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
     tlctx = llvm_context_host.get();
   }
 
-  Device::AllocParams device_buffer_alloc_params;
-  device_buffer_alloc_params.size = alloc_size;
   return get_compute_device()->allocate_memory_runtime(
-      device_buffer_alloc_params, tlctx->runtime_jit_module, get_llvm_runtime(),
-      result_buffer);
+      {{alloc_size, /*host_write=*/false, /*host_read=*/false,
+        /*export_sharing=*/false, AllocUsage::Storage},
+       config->ndarray_use_cached_allocator,
+       tlctx->runtime_jit_module,
+       get_llvm_runtime(),
+       result_buffer});
+}
+
+std::shared_ptr<Device> LlvmProgramImpl::get_device_shared() {
+  return device_;
 }
 
 uint64_t *LlvmProgramImpl::get_ndarray_alloc_info_ptr(DeviceAllocation &alloc) {

@@ -726,7 +726,7 @@ class GlobalLoadExpression : public Expression {
   Expr ptr;
   GlobalLoadExpression(const Expr &ptr) : ptr(ptr) {
     // Now it is only constructed by load_if_ptr. No type_check will be called.
-    ret_type = ptr->ret_type->get_compute_type();
+    ret_type = ptr->ret_type;
   }
 
   void type_check() override {

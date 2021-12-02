@@ -77,6 +77,7 @@ TI_NAMESPACE_BEGIN
 void export_lang(py::module &m) {
   using namespace taichi::lang;
 
+  py::register_exception<TaichiTypeError>(m, "TypeError", PyExc_TypeError);
   py::enum_<Arch>(m, "Arch", py::arithmetic())
 #define PER_ARCH(x) .value(#x, Arch::x)
 #include "taichi/inc/archs.inc.h"
@@ -188,6 +189,8 @@ void export_lang(py::module &m) {
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("ndarray_use_torch", &CompileConfig::ndarray_use_torch)
+      .def_readwrite("ndarray_use_cached_allocator",
+                     &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
@@ -211,6 +214,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::quant_opt_atomic_demotion)
       .def_readwrite("allow_nv_shader_extension",
                      &CompileConfig::allow_nv_shader_extension)
+      .def_readwrite("use_gles", &CompileConfig::use_gles)
       .def_readwrite("make_mesh_block_local",
                      &CompileConfig::make_mesh_block_local)
       .def_readwrite("mesh_localize_to_end_mapping",
@@ -304,7 +308,6 @@ void export_lang(py::module &m) {
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
-      .def("add_ndarray", &AotModuleBuilder::add_ndarray)
       .def("add", &AotModuleBuilder::add)
       .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
       .def("dump", &AotModuleBuilder::dump);
@@ -920,6 +923,12 @@ void export_lang(py::module &m) {
     return get_current_program().current_callable->insert_arg(
         dt, is_external_array);
   });
+
+  m.def("decl_arr_arg",
+        [&](const DataType &dt, int total_dim, std::vector<int> shape) {
+          return get_current_program().current_callable->insert_arr_arg(
+              dt, total_dim, shape);
+        });
 
   m.def("decl_ret", [&](const DataType &dt) {
     return get_current_program().current_callable->insert_ret(dt);

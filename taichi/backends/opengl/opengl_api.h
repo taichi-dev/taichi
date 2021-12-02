@@ -21,8 +21,8 @@ class OffloadedStmt;
 
 namespace opengl {
 
-bool initialize_opengl(bool error_tolerance = false);
-bool is_opengl_api_available();
+bool initialize_opengl(bool use_gles = false, bool error_tolerance = false);
+bool is_opengl_api_available(bool use_gles = false);
 bool is_gles();
 
 #define PER_OPENGL_EXTENSION(x) extern bool opengl_extension_##x;
@@ -49,6 +49,26 @@ struct CompiledKernel {
   TI_IO_DEF(kernel_name, kernel_src, workgroup_size, num_groups);
 };
 
+struct CompiledNdarrayData {
+  uint32_t dtype;
+  std::string dtype_name;
+  std::size_t field_dim{0};
+  bool is_scalar{false};
+  std::vector<int> element_shapes;
+  size_t shape_offset_in_bytes_in_args_buf{0};
+  std::string total_size_hint =
+      "prod{element_shapes} * prod{field_shapes}, where len(field_shapes) == "
+      "field_dim";
+
+  TI_IO_DEF(dtype,
+            dtype_name,
+            field_dim,
+            is_scalar,
+            element_shapes,
+            shape_offset_in_bytes_in_args_buf,
+            total_size_hint);
+};
+
 struct CompiledProgram {
   void init_args(Kernel *kernel);
   void add(const std::string &kernel_name,
@@ -68,14 +88,14 @@ struct CompiledProgram {
   int arg_count{0};
   int ret_count{0};
   size_t args_buf_size{0};
-  size_t total_ext_arr_size{0};
   size_t ret_buf_size{0};
 
-  // TODO: remove ext_arr_map & total_ext_arr_size
+  // TODO: remove ext_arr_map
   mutable std::unordered_map<int, size_t> ext_arr_map;
   std::unordered_map<int, irpass::ExternalPtrAccess> ext_arr_access;
   std::vector<std::string> str_table;
   UsedFeature used;
+  std::unordered_map<int, CompiledNdarrayData> arr_args;
 
   TI_IO_DEF(kernels,
             arg_count,
@@ -83,7 +103,7 @@ struct CompiledProgram {
             args_buf_size,
             ret_buf_size,
             ext_arr_access,
-            str_table,
+            arr_args,
             used.arr_arg_to_bind_idx);
 };
 

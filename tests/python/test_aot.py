@@ -54,10 +54,8 @@ def test_save():
         with m.add_kernel_template(foo) as kt:
             kt.instantiate(n=6)
             kt.instantiate(n=8)
-        filename = 'taichi_aot_example'
-        m.save(tmpdir, filename)
-        with open(os.path.join(tmpdir,
-                               f'{filename}_metadata.json')) as json_file:
+        m.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             json.load(json_file)
 
 
@@ -165,10 +163,8 @@ def test_mpm88_aot():
         m.add_field("grid_m", grid_m)
         m.add_kernel(substep)
         m.add_kernel(init)
-        filename = 'taichi_aot_example'
-        m.save(tmpdir, filename)
-        with open(os.path.join(tmpdir,
-                               f'{filename}_metadata.json')) as json_file:
+        m.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             json.load(json_file)
 
 
@@ -312,16 +308,8 @@ def test_mpm88_ndarray():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module(ti.opengl)
-        m.add_ndarray("x", x)
-        m.add_ndarray("v", v)
-        m.add_ndarray("C", C)
-        m.add_ndarray("J", J)
-        m.add_ndarray("grid_v", grid_v)
-        m.add_ndarray("grid_m", grid_m)
         m.add_kernel(substep, (x, v, C, J, grid_v, grid_m))
 
-        filename = 'taichi_aot_example'
-        m.save(tmpdir, filename)
-        with open(os.path.join(tmpdir,
-                               f'{filename}_metadata.json')) as json_file:
+        m.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             json.load(json_file)

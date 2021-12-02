@@ -38,7 +38,8 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(
   if (params.host_read || params.host_write) {
     TI_NOT_IMPLEMENTED
   } else if (params.use_cached) {
-    info.ptr = get_caching_allocator()->allocate(params);
+    caching_allocator_ = get_caching_allocator();
+    info.ptr = caching_allocator_->allocate(params);
   } else {
     info.ptr = allocate_llvm_runtime_memory_jit(params);
   }
@@ -62,7 +63,10 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
   }
   TI_ASSERT(!info.is_imported);
   if (info.use_cached) {
-    get_caching_allocator()->release(info.size, (uint64_t *)info.ptr);
+    if (caching_allocator_ == nullptr) {
+      TI_ERROR("the CudaCachingAllocator is not initialized");
+    }
+    caching_allocator_->release(info.size, (uint64_t *)info.ptr);
   } else {
     CUDADriver::get_instance().mem_free(info.ptr);
     info.ptr = nullptr;

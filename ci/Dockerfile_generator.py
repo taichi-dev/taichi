@@ -8,9 +8,7 @@ from pathlib import Path
 OS = {
     "windows": (),
     "macos": (),
-    "manylinux2014": (
-        "",
-    ),
+    "manylinux2014": ("", ),
     "ubuntu": (
         "18.04",
         "20.04",
@@ -289,9 +287,10 @@ def main(arguments=None):
 
                 dockerfile = reduce(
                     lambda x, y: x + y,
-                    (base_block, MAINTAINER_BLOCK, install_block, LLVM_CLANG_FROM_SOURCE_BLOCK,
-                     GCC_LINK_BLOCK, USER_BLOCK, CONDA_BLOCK, scripts_block))
-                
+                    (base_block, MAINTAINER_BLOCK, install_block,
+                     LLVM_CLANG_FROM_SOURCE_BLOCK, GCC_LINK_BLOCK, USER_BLOCK,
+                     CONDA_BLOCK, scripts_block))
+
                 filename = pwd / f"Dockerfile.{os}.cpu"
             else:
                 base_block = CPU_BASE_BLOCK.format(os=os, version=version)
@@ -305,9 +304,9 @@ def main(arguments=None):
 
                 dockerfile = reduce(
                     lambda x, y: x + y,
-                    (base_block, DEBIAN_NONINTERACTIVE_BLOCK, MAINTAINER_BLOCK, 
-                     install_block, CMAKE_BLOCK,
-                     LLVM_BLOCK, USER_BLOCK, CONDA_BLOCK, scripts_block))
+                    (base_block, DEBIAN_NONINTERACTIVE_BLOCK, MAINTAINER_BLOCK,
+                     install_block, CMAKE_BLOCK, LLVM_BLOCK, USER_BLOCK,
+                     CONDA_BLOCK, scripts_block))
 
                 filename = pwd / f"Dockerfile.{os}.{version}.cpu"
 
@@ -332,9 +331,9 @@ def main(arguments=None):
             dockerfile = reduce(
                 lambda x, y: x + y,
                 (base_block, NVIDIA_DRIVER_CAPABILITIES_BLOCK,
-                 DEBIAN_NONINTERACTIVE_BLOCK, MAINTAINER_BLOCK,
-                 install_block, CMAKE_BLOCK, LLVM_BLOCK,
-                 VULKAN_BLOCK, USER_BLOCK, CONDA_BLOCK, scripts_block))
+                 DEBIAN_NONINTERACTIVE_BLOCK, MAINTAINER_BLOCK, install_block,
+                 CMAKE_BLOCK, LLVM_BLOCK, VULKAN_BLOCK, USER_BLOCK,
+                 CONDA_BLOCK, scripts_block))
             filename = pwd / f"Dockerfile.{os}.{version}"
             info(f"Storing at: {filename}")
             with (filename).open("w") as fp:

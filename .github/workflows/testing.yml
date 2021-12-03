@@ -196,7 +196,7 @@ jobs:
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
           rm -rf sccache_cache
-          docker cp taichi_build:/home/dev/sccache_cache sccache_cache
+          docker cp taichi_build:/home/dev/taichi/sccache_cache sccache_cache
           docker cp taichi_build:/home/dev/taichi/dist shared/dist
           docker cp taichi_build:/home/dev/taichi/build shared/build
         env:
@@ -326,7 +326,7 @@ jobs:
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
           rm -rf sccache_cache
-          docker cp taichi_build:/home/dev/sccache_cache sccache_cache
+          docker cp taichi_build:/home/dev/taichi/sccache_cache sccache_cache
           docker cp taichi_build:/home/dev/taichi/dist shared/dist
           docker cp taichi_build:/home/dev/taichi/build shared/build
         env:
@@ -426,7 +426,7 @@ jobs:
       - name: Get sccache cache
         uses: actions/cache@v2
         with:
-          path: /Users/github/sccache_cache
+          path: sccache_cache
           key: sccache-m1-${{ github.sha }}
           restore-keys: |
             sccache-m1-
@@ -437,7 +437,7 @@ jobs:
             exit 0
           fi
           rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
-          mkdir -p $HOME/sccache_cache
+          mkdir -p sccache_cache
           .github/workflows/scripts/unix_build.sh
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache

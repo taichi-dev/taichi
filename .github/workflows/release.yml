@@ -68,14 +68,19 @@ jobs:
 
       - name: Build
         run: |
-          mkdir -m777 wheel
-          docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
+          mkdir -m777 shared
+          docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
+            -e DISPLAY -e PY -e GPU_BUILD -e TAICHI_CMAKE_ARGS -e PROJECT_NAME \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 \
+            /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner dev --group dev | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
+          docker cp taichi_build:/home/dev/taichi/dist shared/dist
+          docker cp taichi_build:/home/dev/taichi/build shared/build
         env:
           PY: ${{ matrix.conda_python }}
           GPU_BUILD: ON
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
           DISPLAY: ":1"
 
@@ -83,15 +88,18 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.name }}-py${{ matrix.python }}-linux.whl
-          path: wheel/*.whl
+          path: shared/dist/*.whl
           retention-days: 20
 
       - name: Test
         run: |
-          docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST
-          docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
-          docker cp wheel/*.whl taichi_test:/home/dev/
+          docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
+            -e DISPLAY -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 \
+            /home/dev/unix_test.sh
+          docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
+          docker cp shared/dist/ taichi_test:/home/dev/
+          docker cp shared/build/ taichi_test:/home/dev/
           docker cp tests/ taichi_test:/home/dev/
           docker start -a taichi_test
         env:
@@ -103,8 +111,7 @@ jobs:
         env:
           PROJECT_NAME: ${{ matrix.name }}
         run: |
-          mkdir dist
-          cp wheel/*.whl dist/
+          cd shared
           pip install twine requests==2.26
           python3 misc/upload_release.py
 
@@ -151,10 +158,8 @@ jobs:
           retention-days: 20
 
       - name: Test
-        run: |
-          .github/workflows/scripts/unix_test.sh
+        run: .github/workflows/scripts/unix_test.sh
         env:
-          RUN_CPP_TESTS: ON
           TI_WANTED_ARCHS: "cpu"
 
       - name: Upload PyPI
@@ -245,7 +250,6 @@ jobs:
           export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
-          RUN_CPP_TESTS: ON
           TI_WANTED_ARCHS: "cpu"
           PYTHON: ${{ matrix.python }}
 

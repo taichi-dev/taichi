@@ -830,14 +830,18 @@ class ASTTransformer(Builder):
                 return ASTTransformer.build_range_for(ctx, node)
             else:
                 build_stmt(ctx, node.iter)
-                if isinstance(node.iter, ast.Attribute) and isinstance(node.iter.value.ptr, impl.MeshInstance):
+                if isinstance(node.iter, ast.Attribute) and isinstance(
+                        node.iter.value.ptr, impl.MeshInstance):
                     if not ti.is_extension_supported(ti.cfg.arch,
                                                      ti.extension.mesh):
-                        raise Exception('Backend ' + str(ti.cfg.arch) +
-                                        ' doesn\'t support MeshTaichi extension')
+                        raise Exception(
+                            'Backend ' + str(ti.cfg.arch) +
+                            ' doesn\'t support MeshTaichi extension')
                     return ASTTransformer.build_mesh_for(ctx, node)
                 else:  # Struct for
-                    return ASTTransformer.build_struct_for(ctx, node, is_grouped=False)
+                    return ASTTransformer.build_struct_for(ctx,
+                                                           node,
+                                                           is_grouped=False)
 
     @staticmethod
     def build_While(ctx, node):

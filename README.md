@@ -49,7 +49,7 @@ Please build from source for other configurations (e.g., your CPU is ARM, or you
 
 ## Contributing
 
-We welcome feedback and comments! If you would like to contribute to Taichi, please check out [CONTRIBUTING.md](CONTRIBUTING.md).
+We'd love to hear your comments or any of your feedback! If you would like to contribute to Taichi, please check out the [Contribution Guidelines](CONTRIBUTING.md) first. 
 
 ## Contributors
 

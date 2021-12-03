@@ -4,4 +4,4 @@ Thank you for your interest in contributing to Taichi! Please check out the [Con
 
 ## Developer Installation
 
-Please follow the [Developer Installation](https://docs.taichi.graphics/lang/articles/contribution/dev_install) doc to learn how to build Taichi from scratch.
+Please follow the [Developer Installation](https://docs.taichi.graphics/lang/articles/contribution/dev_install) to build Taichi from scratch.

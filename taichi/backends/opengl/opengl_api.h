@@ -49,7 +49,13 @@ struct CompiledOffloadedTask {
   TI_IO_DEF(name, src, workgroup_size, num_groups);
 };
 
-struct CompiledArrayData {
+struct ScalarArg {
+  size_t offset_in_bytes_in_args_buf{0};
+
+  TI_IO_DEF(offset_in_bytes_in_args_buf);
+};
+
+struct CompiledArrayArg {
   uint32_t dtype;
   std::string dtype_name;
   std::size_t field_dim{0};
@@ -88,7 +94,8 @@ struct CompiledProgram {
   std::unordered_map<int, irpass::ExternalPtrAccess> ext_arr_access;
   std::vector<std::string> str_table;
   UsedFeature used;
-  mutable std::unordered_map<int, CompiledArrayData> arr_args;
+  std::unordered_map<int, ScalarArg> scalar_args;
+  mutable std::unordered_map<int, CompiledArrayArg> arr_args;
 
   TI_IO_DEF(tasks,
             arg_count,
@@ -96,6 +103,7 @@ struct CompiledProgram {
             args_buf_size,
             ret_buf_size,
             ext_arr_access,
+            scalar_args,
             arr_args,
             used.arr_arg_to_bind_idx);
 };

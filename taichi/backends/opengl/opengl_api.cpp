@@ -225,7 +225,7 @@ void CompiledProgram::init_args(Kernel *kernel) {
   ret_count = kernel->rets.size();
   for (int i = 0; i < arg_count; i++) {
     if (kernel->args[i].is_external_array) {
-      arr_args[i] = CompiledArrayData(
+      arr_args[i] = CompiledArrayArg(
           {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt),
            /*dtype_name=*/kernel->args[i].dt.to_string(),
            /*field_dim=*/kernel->args[i].total_dim -
@@ -235,6 +235,9 @@ void CompiledProgram::init_args(Kernel *kernel) {
            /*shape_offset_in_bytes_in_args_buf=*/taichi_opengl_extra_args_base +
                i * taichi_max_num_indices * sizeof(int),
            /*total_size=*/kernel->args[i].size});
+    } else {
+      scalar_args[i] =
+          ScalarArg({/*offset_in_bytes_in_args_buf=*/i * sizeof(uint64_t)});
     }
   }
 

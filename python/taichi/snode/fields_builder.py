@@ -152,7 +152,7 @@ class FieldsBuilder:
 
     def _finalize_for_aot(self):
         """Constructs the SNodeTree and compiles the type for AOT purpose."""
-        return self._finalize(raise_warning=True, compile_only=True)
+        return self._finalize(raise_warning=False, compile_only=True)
 
     def _finalize(self, raise_warning, compile_only):
         self._check_not_finalized()

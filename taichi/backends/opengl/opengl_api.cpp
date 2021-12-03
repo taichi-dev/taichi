@@ -248,27 +248,27 @@ void CompiledProgram::init_args(Kernel *kernel) {
 }
 
 void CompiledProgram::add(
-    const std::string &kernel_name,
-    const std::string &kernel_source_code,
+    const std::string &name,
+    const std::string &source_code,
     int num_workgroups,
     int workgroup_size,
     std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access) {
   num_workgroups = std::min(num_workgroups, opengl_max_grid_dim);
   workgroup_size = std::min(workgroup_size, opengl_max_block_dim);
 
-  size_t layout_pos = kernel_source_code.find("precision highp float;\n");
+  size_t layout_pos = source_code.find("precision highp float;\n");
   TI_ASSERT(layout_pos != std::string::npos);
   std::string source =
-      kernel_source_code.substr(0, layout_pos) +
+      source_code.substr(0, layout_pos) +
       fmt::format(
           "layout(local_size_x = {}, local_size_y = 1, local_size_z = "
           "1) in;\n",
           workgroup_size) +
-      kernel_source_code.substr(layout_pos);
+      source_code.substr(layout_pos);
 
-  TI_DEBUG("[glsl]\ncompiling kernel {}<<<{}, {}>>>:\n{}", kernel_name,
-           num_workgroups, workgroup_size, source);
-  kernels.push_back({kernel_name, source, workgroup_size, num_workgroups});
+  TI_DEBUG("[glsl]\ncompiling kernel {}<<<{}, {}>>>:\n{}", name, num_workgroups,
+           workgroup_size, source);
+  tasks.push_back({name, source, workgroup_size, num_workgroups});
 
   if (ext_ptr_access) {
     for (auto pair : *ext_ptr_access) {
@@ -425,7 +425,7 @@ void DeviceCompiledProgram::launch(RuntimeContext &ctx,
 
   // Kernel dispatch
   int i = 0;
-  for (const auto &kernel : program_.kernels) {
+  for (const auto &task : program_.tasks) {
     auto binder = compiled_pipeline_[i]->resource_binder();
     auto &core_bufs = runtime->impl->core_bufs;
     binder->buffer(0, static_cast<int>(GLBufId::Runtime), core_bufs.runtime);
@@ -450,7 +450,7 @@ void DeviceCompiledProgram::launch(RuntimeContext &ctx,
 
     cmdlist->bind_pipeline(compiled_pipeline_[i].get());
     cmdlist->bind_resources(binder);
-    cmdlist->dispatch(kernel.num_groups, 1, 1);
+    cmdlist->dispatch(task.num_groups, 1, 1);
     cmdlist->memory_barrier();
     i++;
   }
@@ -499,11 +499,9 @@ DeviceCompiledProgram::DeviceCompiledProgram(CompiledProgram &&program,
                                          /*export_sharing=*/false});
   }
 
-  for (auto &k : program_.kernels) {
-    compiled_pipeline_.push_back(
-        device->create_pipeline({PipelineSourceType::glsl_src,
-                                 k.kernel_src.data(), k.kernel_src.size()},
-                                k.kernel_name));
+  for (auto &t : program_.tasks) {
+    compiled_pipeline_.push_back(device->create_pipeline(
+        {PipelineSourceType::glsl_src, t.src.data(), t.src.size()}, t.name));
   }
 }
 

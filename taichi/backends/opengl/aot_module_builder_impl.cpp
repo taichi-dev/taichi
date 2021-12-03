@@ -18,12 +18,11 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
 }
 
 namespace {
-void write_glsl_file(const std::string &output_dir, CompiledKernel &k) {
-  const std::string glsl_path =
-      fmt::format("{}/{}.glsl", output_dir, k.kernel_name);
+void write_glsl_file(const std::string &output_dir, CompiledOffloadedTask &t) {
+  const std::string glsl_path = fmt::format("{}/{}.glsl", output_dir, t.name);
   std::ofstream fs{glsl_path};
-  fs << k.kernel_src;
-  k.kernel_src = glsl_path;
+  fs << t.src;
+  t.src = glsl_path;
   fs.close();
 }
 
@@ -38,14 +37,14 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   // Json format doesn't support multiple line strings.
   AotData new_aot_data = aot_data_;
   for (auto &k : new_aot_data.kernels) {
-    for (auto &ki : k.program.kernels) {
-      write_glsl_file(output_dir, ki);
+    for (auto &t : k.program.tasks) {
+      write_glsl_file(output_dir, t);
     }
   }
   for (auto &k : new_aot_data.kernel_tmpls) {
     for (auto &ki : k.program) {
-      for (auto &kij : ki.second.kernels) {
-        write_glsl_file(output_dir, kij);
+      for (auto &t : ki.second.tasks) {
+        write_glsl_file(output_dir, t);
       }
     }
   }

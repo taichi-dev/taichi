@@ -838,10 +838,10 @@ class ASTTransformer(Builder):
                             'Backend ' + str(ti.cfg.arch) +
                             ' doesn\'t support MeshTaichi extension')
                     return ASTTransformer.build_mesh_for(ctx, node)
-                else:  # Struct for
-                    return ASTTransformer.build_struct_for(ctx,
-                                                           node,
-                                                           is_grouped=False)
+                # Struct for
+                return ASTTransformer.build_struct_for(ctx,
+                                                       node,
+                                                       is_grouped=False)
 
     @staticmethod
     def build_While(ctx, node):

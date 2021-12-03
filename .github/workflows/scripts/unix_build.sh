@@ -38,7 +38,6 @@ setup_sccache() {
         chmod +x sccache-v0.2.15-x86_64-apple-darwin/sccache
         export PATH=$(pwd)/sccache-v0.2.15-x86_64-apple-darwin:$PATH
     fi
-    sccache -s
 }
 
 setup_python() {
@@ -65,6 +64,7 @@ build() {
     fi
     python3 misc/make_changelog.py origin/master ./ True
     python3 setup.py $PROJECT_TAGS bdist_wheel $EXTRA_ARGS
+    sccache -s
 }
 
 setup_sccache

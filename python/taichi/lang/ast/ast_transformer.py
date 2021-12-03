@@ -156,11 +156,11 @@ class ASTTransformer(Builder):
         if now_comp >= len(node.generators):
             return func(ctx, node, result)
         build_stmt(ctx, node.generators[now_comp].target)
-        _iter = build_stmt(
-            ctx, node.generators[now_comp].iter)
+        _iter = build_stmt(ctx, node.generators[now_comp].iter)
         for value in _iter:
             with ctx.variable_scope_guard():
-                ASTTransformer.build_assign_unpack(ctx, node.generators[now_comp].target, value, True)
+                ASTTransformer.build_assign_unpack(
+                    ctx, node.generators[now_comp].target, value, True)
                 node.generators[now_comp].ifs = build_stmts(
                     ctx, node.generators[now_comp].ifs)
                 ASTTransformer.process_ifs(ctx, node, now_comp, 0, func,
@@ -644,8 +644,8 @@ class ASTTransformer(Builder):
                     f"Range should have 1 or 2 arguments, found {len(node.iter.args)}"
                 )
             if len(node.iter.args) == 2:
-                begin = ti.cast(
-                    ti.Expr(build_stmt(ctx, node.iter.args[0])), ti.i32)
+                begin = ti.cast(ti.Expr(build_stmt(ctx, node.iter.args[0])),
+                                ti.i32)
                 end = ti.cast(ti.Expr(build_stmt(ctx, node.iter.args[1])),
                               ti.i32)
             else:

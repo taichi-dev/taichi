@@ -57,17 +57,11 @@ struct CompiledArrayData {
   std::vector<int> element_shapes;
   size_t shape_offset_in_bytes_in_args_buf{0};
   size_t total_size{0};  // Runtime information
-  std::string total_size_hint =
-      "prod{element_shapes} * prod{field_shapes}, where len(field_shapes) == "
-      "field_dim";
 
-  TI_IO_DEF(dtype,
-            dtype_name,
-            field_dim,
+  TI_IO_DEF(field_dim,
             is_scalar,
             element_shapes,
-            shape_offset_in_bytes_in_args_buf,
-            total_size_hint);
+            shape_offset_in_bytes_in_args_buf);
 };
 
 struct CompiledProgram {

@@ -11,7 +11,11 @@
 
 #if defined(TI_PLATFORM_LINUX) || \
     (defined(TI_PLATFORM_UNIX) && !defined(TI_PLATFORM_OSX))
+#if defined(TI_PLATFORM_ANDROID)
+#define TI_GUI_ANDROID
+#else
 #define TI_GUI_X11
+#endif
 #endif
 
 #if defined(TI_PLATFORM_WINDOWS)
@@ -432,6 +436,17 @@ class Canvas {
     transform_matrix = Matrix3(1);
   }
 };
+
+#if defined(TI_GUI_ANDROID)
+
+class GUIBaseAndroid {
+ public:
+  // @TODO
+};
+
+using GUIBase = GUIBaseAndroid;
+
+#endif
 
 #if defined(TI_GUI_X11)
 

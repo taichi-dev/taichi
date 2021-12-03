@@ -1,4 +1,4 @@
-#include "taichi/backends/vulkan/embedded_device.h"
+#include "taichi/backends/vulkan/vulkan_device_creator.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "taichi/backends/vulkan/vulkan_common.h"
-#include "taichi/backends/vulkan/loader.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/common/logging.h"
 
@@ -170,8 +170,8 @@ bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
 }  // namespace
 
-EmbeddedVulkanDevice::EmbeddedVulkanDevice(
-    const EmbeddedVulkanDevice::Params &params)
+VulkanDeviceCreator::VulkanDeviceCreator(
+    const VulkanDeviceCreator::Params &params)
     : params_(params) {
   if (!VulkanLoader::instance().init()) {
     throw std::runtime_error("Error loading vulkan");
@@ -202,7 +202,7 @@ EmbeddedVulkanDevice::EmbeddedVulkanDevice(
   }
 }
 
-EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
+VulkanDeviceCreator::~VulkanDeviceCreator() {
   ti_device_.reset();
   if (surface_ != VK_NULL_HANDLE) {
     vkDestroySurfaceKHR(instance_, surface_, kNoVkAllocCallbacks);
@@ -215,7 +215,7 @@ EmbeddedVulkanDevice::~EmbeddedVulkanDevice() {
   vkDestroyInstance(instance_, kNoVkAllocCallbacks);
 }
 
-void EmbeddedVulkanDevice::create_instance() {
+void VulkanDeviceCreator::create_instance() {
   VkApplicationInfo app_info{};
   app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   app_info.pApplicationName = "Taichi Vulkan Backend";
@@ -308,7 +308,7 @@ void EmbeddedVulkanDevice::create_instance() {
   VulkanLoader::instance().load_instance(instance_);
 }
 
-void EmbeddedVulkanDevice::setup_debug_messenger() {
+void VulkanDeviceCreator::setup_debug_messenger() {
   if constexpr (!kEnableValidationLayers) {
     return;
   }
@@ -321,11 +321,11 @@ void EmbeddedVulkanDevice::setup_debug_messenger() {
       "failed to set up debug messenger");
 }
 
-void EmbeddedVulkanDevice::create_surface() {
+void VulkanDeviceCreator::create_surface() {
   surface_ = params_.surface_creator(instance_);
 }
 
-void EmbeddedVulkanDevice::pick_physical_device() {
+void VulkanDeviceCreator::pick_physical_device() {
   uint32_t device_count = 0;
   vkEnumeratePhysicalDevices(instance_, &device_count, nullptr);
   TI_ASSERT_INFO(device_count > 0, "failed to find GPUs with Vulkan support");
@@ -345,7 +345,7 @@ void EmbeddedVulkanDevice::pick_physical_device() {
   queue_family_indices_ = find_queue_families(physical_device_, surface_);
 }
 
-void EmbeddedVulkanDevice::create_logical_device() {
+void VulkanDeviceCreator::create_logical_device() {
   std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
   std::unordered_set<uint32_t> unique_families;
 
@@ -594,8 +594,7 @@ void EmbeddedVulkanDevice::create_logical_device() {
 
   // Dump capabilities
   ti_device_->print_all_cap();
-
-}  // namespace vulkan
+}
 
 }  // namespace vulkan
 }  // namespace lang

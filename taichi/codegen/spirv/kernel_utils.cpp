@@ -1,8 +1,7 @@
-#include "taichi/backends/vulkan/kernel_utils.h"
+#include "taichi/codegen/spirv/kernel_utils.h"
 
 #include <unordered_map>
 
-#include "taichi/backends/vulkan/data_type_utils.h"
 #include "taichi/program/kernel.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -10,7 +9,7 @@
 
 namespace taichi {
 namespace lang {
-namespace vulkan {
+namespace spirv {
 
 // static
 std::string TaskAttributes::buffers_name(BufferInfo b) {
@@ -54,9 +53,9 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
   for (const auto &ka : kernel.args) {
     ArgAttributes aa;
     aa.dt = ka.dt;
-    const size_t dt_bytes = vk_data_type_size(aa.dt);
+    const size_t dt_bytes = data_type_size(aa.dt);
     if (dt_bytes > 4) {
-      TI_ERROR("Vulkan kernel only supports less than 32-bit arguments, got {}",
+      TI_ERROR("SPIRV kernel only supports less than 32-bit arguments, got {}",
                data_type_name(aa.dt));
     }
     aa.is_array = ka.is_external_array;
@@ -68,11 +67,11 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
   for (const auto &kr : kernel.rets) {
     RetAttributes ra;
     ra.dt = kr.dt;
-    const size_t dt_bytes = vk_data_type_size(ra.dt);
+    const size_t dt_bytes = data_type_size(ra.dt);
     if (dt_bytes > 4) {
       // Metal doesn't support 64bit data buffers.
       TI_ERROR(
-          "Vulkan kernel only supports less than 32-bit return value, got {}",
+          "SPIRV kernel only supports less than 32-bit return value, got {}",
           data_type_name(ra.dt));
     }
     ra.is_array = false;  // TODO(#909): this is a temporary limitation
@@ -95,7 +94,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     // Put scalar args in the memory first
     for (int i : scalar_indices) {
       auto &attribs = (*vec)[i];
-      const size_t dt_bytes = vk_data_type_size(attribs.dt);
+      const size_t dt_bytes = data_type_size(attribs.dt);
       // Align bytes to the nearest multiple of dt_bytes
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
@@ -106,7 +105,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     // Then the array args
     for (int i : array_indices) {
       auto &attribs = (*vec)[i];
-      const size_t dt_bytes = vk_data_type_size(attribs.dt);
+      const size_t dt_bytes = data_type_size(attribs.dt);
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;
@@ -125,6 +124,6 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
   TI_ASSERT(has_rets() == (rets_bytes_ > 0));
 }
 
-}  // namespace vulkan
+}  // namespace spirv
 }  // namespace lang
 }  // namespace taichi

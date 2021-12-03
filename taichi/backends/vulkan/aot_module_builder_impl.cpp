@@ -3,7 +3,7 @@
 #include <fstream>
 #include <type_traits>
 
-#include "taichi/backends/vulkan/codegen_vulkan.h"
+#include "taichi/codegen/spirv/spirv_codegen.h"
 
 namespace taichi {
 namespace lang {
@@ -48,8 +48,8 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  lower(kernel);
-  auto compiled = run_codegen(kernel, compiled_structs_, runtime_);
+  spirv::lower(kernel);
+  auto compiled = run_codegen(kernel, runtime_);
   ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
 }

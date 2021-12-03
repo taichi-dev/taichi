@@ -1,7 +1,6 @@
 import ast
 import collections.abc
 from collections import ChainMap
-from pprint import pprint
 
 import astor
 from taichi.lang import impl

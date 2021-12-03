@@ -70,5 +70,3 @@ def test_ann_assign():
 
     func_ann()
 
-
-test_ann_assign()

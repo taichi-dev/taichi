@@ -49,13 +49,14 @@ struct CompiledKernel {
   TI_IO_DEF(kernel_name, kernel_src, workgroup_size, num_groups);
 };
 
-struct CompiledNdarrayData {
+struct CompiledArrayData {
   uint32_t dtype;
   std::string dtype_name;
   std::size_t field_dim{0};
   bool is_scalar{false};
   std::vector<int> element_shapes;
   size_t shape_offset_in_bytes_in_args_buf{0};
+  size_t total_size{0};  // Runtime information
   std::string total_size_hint =
       "prod{element_shapes} * prod{field_shapes}, where len(field_shapes) == "
       "field_dim";
@@ -90,12 +91,10 @@ struct CompiledProgram {
   size_t args_buf_size{0};
   size_t ret_buf_size{0};
 
-  // TODO: remove ext_arr_map
-  mutable std::unordered_map<int, size_t> ext_arr_map;
   std::unordered_map<int, irpass::ExternalPtrAccess> ext_arr_access;
   std::vector<std::string> str_table;
   UsedFeature used;
-  std::unordered_map<int, CompiledNdarrayData> arr_args;
+  mutable std::unordered_map<int, CompiledArrayData> arr_args;
 
   TI_IO_DEF(kernels,
             arg_count,

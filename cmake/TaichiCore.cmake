@@ -100,8 +100,6 @@ file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
 file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE
   "taichi/backends/vulkan/runtime.h"
   "taichi/backends/vulkan/runtime.cpp"
-  "taichi/backends/vulkan/snode_struct_compiler.cpp"
-  "taichi/backends/vulkan/snode_struct_compiler.h"
 )
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
@@ -292,14 +290,15 @@ if (TI_WITH_OPENGL)
     target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl spirv-cross-core)
 endif()
 
-if (TI_WITH_VULKAN)
-    set(SPIRV_SKIP_EXECUTABLES true)
-    set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
-    add_subdirectory(external/SPIRV-Tools)
-    # NOTE: SPIRV-Tools-opt must come before SPIRV-Tools
-    # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
-    target_link_libraries(${CORE_LIBRARY_NAME} SPIRV-Tools-opt ${SPIRV_TOOLS})
+# SPIR-V codegen is always there, regardless of Vulkan
+set(SPIRV_SKIP_EXECUTABLES true)
+set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
+add_subdirectory(external/SPIRV-Tools)
+# NOTE: SPIRV-Tools-opt must come before SPIRV-Tools
+# https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
+target_link_libraries(${CORE_LIBRARY_NAME} SPIRV-Tools-opt ${SPIRV_TOOLS})
 
+if (TI_WITH_VULKAN)
     include_directories(SYSTEM external/Vulkan-Headers/include)
 
     if (NOT APPLE)

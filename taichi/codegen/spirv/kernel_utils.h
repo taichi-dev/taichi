@@ -14,7 +14,7 @@ namespace lang {
 class Kernel;
 class SNode;
 
-namespace vulkan {
+namespace spirv {
 
 /**
  * Per offloaded task attributes.
@@ -118,8 +118,8 @@ struct TaskAttributes {
  * This class contains the attributes descriptors for both the input args and
  * the return values of a Taichi kernel.
  *
- * Note that all Vulkan tasks (shaders) belonging to the same Taichi kernel will
- * share the same kernel args (i.e. they use the same Vulkan buffer for input
+ * Note that all SPIRV tasks (shaders) belonging to the same Taichi kernel will
+ * share the same kernel args (i.e. they use the same device buffer for input
  * args and return values). This is because kernel arguments is a Taichi-level
  * concept.
  *
@@ -152,12 +152,12 @@ class KernelContextAttributes {
 
  public:
   /**
-   * This is mostly the same as Kernel::Arg, with Vulkan specific attributes.
+   * This is mostly the same as Kernel::Arg, with device specific attributes.
    */
   struct ArgAttributes : public AttribsBase {};
 
   /**
-   * This is mostly the same as Kernel::Ret, with Vulkan specific attributes.
+   * This is mostly the same as Kernel::Ret, with device specific attributes.
    */
   struct RetAttributes : public AttribsBase {};
 
@@ -240,7 +240,7 @@ class KernelContextAttributes {
   }
 
   /**
-   * Total bytes needed for allocating the Vulkan buffer.
+   * Total bytes needed for allocating the device buffer.
    */
   inline size_t total_bytes() const {
     return ctx_bytes() + extra_args_bytes();
@@ -262,7 +262,7 @@ class KernelContextAttributes {
 };
 
 /**
- * Groups all the Vulkan kernels generated from a single ti.kernel.
+ * Groups all the device kernels generated from a single ti.kernel.
  */
 struct TaichiKernelAttributes {
   // Taichi kernel name
@@ -277,6 +277,6 @@ struct TaichiKernelAttributes {
   TI_IO_DEF(name, is_jit_evaluator, tasks_attribs, ctx_attribs);
 };
 
-}  // namespace vulkan
+}  // namespace spirv
 }  // namespace lang
 }  // namespace taichi

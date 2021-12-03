@@ -1,4 +1,5 @@
 #include "taichi/backends/vulkan/runtime.h"
+#include "taichi/program/program.h"
 
 #include <chrono>
 #include <array>
@@ -475,6 +476,23 @@ void VkRuntime::add_root_buffer(size_t root_buffer_size) {
 
 DevicePtr VkRuntime::get_snode_tree_device_ptr(int tree_id) {
   return root_buffers_[tree_id]->get_ptr();
+}
+
+VkRuntime::RegisterParams run_codegen(Kernel *kernel, VkRuntime *runtime) {
+  const auto id = Program::get_kernel_id();
+  const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
+  TI_TRACE("VK codegen for Taichi kernel={}", taichi_kernel_name);
+  spirv::KernelCodegen::Params params;
+  params.ti_kernel_name = taichi_kernel_name;
+  params.kernel = kernel;
+  params.compiled_structs = runtime->get_compiled_structs();
+  params.device = runtime->get_ti_device();
+  params.enable_spv_opt =
+      kernel->program->config.external_optimization_level > 0;
+  spirv::KernelCodegen codegen(params);
+  VkRuntime::RegisterParams res;
+  codegen.run(res.kernel_attribs, res.task_spirv_source_codes);
+  return std::move(res);
 }
 
 }  // namespace vulkan

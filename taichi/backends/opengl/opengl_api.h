@@ -40,13 +40,13 @@ extern int opengl_threads_per_block;
     return false;                  \
   })()
 
-struct CompiledKernel {
-  std::string kernel_name;
-  std::string kernel_src;
+struct CompiledOffloadedTask {
+  std::string name;
+  std::string src;
   int workgroup_size;
   int num_groups;
 
-  TI_IO_DEF(kernel_name, kernel_src, workgroup_size, num_groups);
+  TI_IO_DEF(name, src, workgroup_size, num_groups);
 };
 
 struct CompiledArrayData {
@@ -66,8 +66,8 @@ struct CompiledArrayData {
 
 struct CompiledProgram {
   void init_args(Kernel *kernel);
-  void add(const std::string &kernel_name,
-           const std::string &kernel_source_code,
+  void add(const std::string &name,
+           const std::string &source_code,
            int num_workgrous,
            int workgroup_size,
            std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access =
@@ -78,7 +78,7 @@ struct CompiledProgram {
   bool check_ext_arr_read(int i) const;
   bool check_ext_arr_write(int i) const;
 
-  std::vector<CompiledKernel> kernels;
+  std::vector<CompiledOffloadedTask> tasks;
 
   int arg_count{0};
   int ret_count{0};
@@ -90,7 +90,7 @@ struct CompiledProgram {
   UsedFeature used;
   mutable std::unordered_map<int, CompiledArrayData> arr_args;
 
-  TI_IO_DEF(kernels,
+  TI_IO_DEF(tasks,
             arg_count,
             ret_count,
             args_buf_size,

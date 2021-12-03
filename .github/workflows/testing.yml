@@ -308,7 +308,7 @@ jobs:
           restore-keys: |
             sccache-linux-gpu-
 
-      - name: Build & Instal
+      - name: Build & Install
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
@@ -343,7 +343,7 @@ jobs:
           fi
           docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 \
              /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp shared/dist/ taichi_test:/home/dev/

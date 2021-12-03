@@ -161,11 +161,9 @@ class ASTTransformer(Builder):
             with ctx.variable_scope_guard():
                 ASTTransformer.build_assign_unpack(
                     ctx, node.generators[now_comp].target, value, True)
-                node.generators[now_comp].ifs = build_stmts(
-                    ctx, node.generators[now_comp].ifs)
+                build_stmts(ctx, node.generators[now_comp].ifs)
                 ASTTransformer.process_ifs(ctx, node, now_comp, 0, func,
                                            result)
-
         return None
 
     @staticmethod
@@ -830,19 +828,16 @@ class ASTTransformer(Builder):
             elif isinstance(node.iter, ast.Call) and isinstance(
                     node.iter.func, ast.Name) and node.iter.func.id == 'range':
                 return ASTTransformer.build_range_for(ctx, node)
-            elif isinstance(node.iter, ast.Attribute) and isinstance(
-                    build_stmt(ctx, node.iter).value.ptr, impl.MeshInstance):
-                if not ti.is_extension_supported(ti.cfg.arch,
-                                                 ti.extension.mesh):
-                    raise Exception('Backend ' + str(ti.cfg.arch) +
-                                    ' doesn\'t support MeshTaichi extension')
-                return ASTTransformer.build_mesh_for(ctx, node)
-            else:  # Struct for
-                if not isinstance(node.iter, ast.Attribute):
-                    build_stmt(ctx, node.iter)
-                return ASTTransformer.build_struct_for(ctx,
-                                                       node,
-                                                       is_grouped=False)
+            else:
+                build_stmt(ctx, node.iter)
+                if isinstance(node.iter, ast.Attribute) and isinstance(node.iter.value.ptr, impl.MeshInstance):
+                    if not ti.is_extension_supported(ti.cfg.arch,
+                                                     ti.extension.mesh):
+                        raise Exception('Backend ' + str(ti.cfg.arch) +
+                                        ' doesn\'t support MeshTaichi extension')
+                    return ASTTransformer.build_mesh_for(ctx, node)
+                else:  # Struct for
+                    return ASTTransformer.build_struct_for(ctx, node, is_grouped=False)
 
     @staticmethod
     def build_While(ctx, node):

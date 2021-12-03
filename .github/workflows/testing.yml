@@ -204,11 +204,8 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
+          docker create -v `pwd`/shared/build:/home/dev/build --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
-          # The files under "shared/build" was created by the previous Build step inside container, so their owner's uid is 1000, and some files' mode is 640.
-          # So we need to run the following "docker cp" command with uid 1000 to avoid permission error.
-          sudo -u 1000 docker cp shared/build/ taichi_test:/home/dev/
           docker cp shared/*.whl taichi_test:/home/dev/
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker cp tests/ taichi_test:/home/dev/
@@ -334,11 +331,8 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
+          docker create -v `pwd`/shared/build:/home/dev/build --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
-          # The files under "shared/build" was created by the previous Build step inside container, so their owner's uid is 1000, and some files' mode is 640.
-          # So we need to run the following "docker cp" command with uid 1000 to avoid permission error.
-          sudo -u 1000 docker cp shared/build/ taichi_test:/home/dev/
           docker cp shared/*.whl taichi_test:/home/dev/
           docker start -a taichi_test
         env:

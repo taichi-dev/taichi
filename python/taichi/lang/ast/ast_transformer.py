@@ -1,6 +1,7 @@
 import ast
 import collections.abc
 from collections import ChainMap
+from pprint import pprint
 
 import astor
 from taichi.lang import impl
@@ -17,6 +18,53 @@ class ASTTransformer(Builder):
     def build_Name(ctx, node):
         node.ptr = ctx.get_var_by_name(node.id)
         return node
+
+    @staticmethod
+    def build_AnnAssign(ctx, node):
+        annotation = getattr(node.annotation, 'attr')
+
+        node.value = build_stmt(ctx, node.value)
+        node.target = build_stmt(ctx, node.target)
+
+        is_static_assign = isinstance(
+            node.value, ast.Call) and ASTResolver.resolve_to(
+                node.value.func, ti.static, globals())
+
+        node.ptr = ASTTransformer.build_ann_assign_basic(
+            ctx, node.target, node.value.ptr, is_static_assign, annotation)
+        return node
+
+    @staticmethod
+    def build_ann_assign_basic(ctx, target, value, is_static_assign,
+                               annotation):
+        """Build basic assginment like this: target : annotation = value.
+
+         Args:
+            ctx (ast_builder_utils.BuilderContext): The builder context.
+            target (ast.Name): A variable name. `target.id` holds the name as
+            a string.
+            annotation: A type we hope to assign to the target
+            value: A node representing the value.
+            is_static_assign: A boolean value indicating whether this is a static assignment
+        """
+        is_local = isinstance(target, ast.Name)
+        if is_static_assign:
+            if not is_local:
+                raise TaichiSyntaxError(
+                    "Static assign cannot be used on elements in arrays")
+            ctx.create_variable(target.id, value)
+            var = value
+        elif is_local and not ctx.is_var_declared(target.id):
+            var = cast_type(value, annotation)
+            var = ti.expr_init(var)
+            ctx.create_variable(target.id, var)
+        else:
+            var = target.ptr
+            if str(var.ptr.get_ret_type()) != annotation:
+                raise TaichiSyntaxError(
+                    "Static assign cannot have type overloading")
+            var.assign(value)
+        return var
 
     @staticmethod
     def build_Assign(ctx, node):
@@ -1018,3 +1066,27 @@ def build_stmts(ctx, stmts):
             else:
                 result.append(stmt)
     return result
+
+
+def cast_type(expr, annotation):
+    if annotation == 'i8':
+        return ti.cast(expr, ti.i8)
+    if annotation == 'i16':
+        return ti.cast(expr, ti.i16)
+    if annotation == 'i32':
+        return ti.cast(expr, ti.i32)
+    if annotation == 'i64':
+        return ti.cast(expr, ti.i64)
+    if annotation == 'u8':
+        return ti.cast(expr, ti.u8)
+    if annotation == 'u16':
+        return ti.cast(expr, ti.u16)
+    if annotation == 'u32':
+        return ti.cast(expr, ti.u32)
+    if annotation == 'u64':
+        return ti.cast(expr, ti.u64)
+    if annotation == 'f32':
+        return ti.cast(expr, ti.f32)
+    if annotation == 'f64':
+        return ti.cast(expr, ti.f64)
+    raise TaichiSyntaxError("Typed assign must be a supported primitive type")

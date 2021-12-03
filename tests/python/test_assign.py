@@ -57,3 +57,18 @@ def test_assign_assign():
         assert a == 1
 
     func_assign()
+
+
+@ti.test(debug=True)
+def test_ann_assign():
+    @ti.kernel
+    def func_ann():
+        a: ti.i32 = 1
+        b: ti.f32 = a
+        assert a == 1
+        assert b == 1.0
+
+    func_ann()
+
+
+test_ann_assign()

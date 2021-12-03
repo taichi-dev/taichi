@@ -184,9 +184,9 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          mkdir -m777 wheel
+          mkdir -m777 shared
           mkdir -p sccache_cache
-          docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
+          docker create -v `pwd`/shared:/shared --user dev --name taichi_build ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           # A tarball is needed because sccache needs some permissions that only the file owner has. 1000 is the uid and gid of user "dev" in the container.
           # If the uid or gid of the user inside the docker changes, please change the uid and gid in the following line.
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
@@ -204,9 +204,12 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
+          id
+          ls -al shared/build/CMakeFiles/taichi_core.dir/taichi/python/
           docker create --user dev --name taichi_test ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
-          docker cp wheel/*.whl taichi_test:/home/dev/
+          docker cp shared/build/ taichi_test:/home/dev/
+          docker cp shared/*.whl taichi_test:/home/dev/
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker cp tests/ taichi_test:/home/dev/
           docker start -a taichi_test
@@ -309,10 +312,10 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          mkdir -m777 wheel
+          mkdir -m777 shared
           mkdir -p sccache_cache
           chmod -R 777 sccache_cache
-          docker create -v `pwd`/wheel:/wheel --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
+          docker create -v `pwd`/shared:/shared --user dev --name taichi_build --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/taichi/.github/workflows/scripts/unix_docker_build.sh $PY $GPU_BUILD $PROJECT_NAME "$CI_SETUP_CMAKE_ARGS"
           # A tarball is needed because sccache needs some permissions that only the file owner has. 1000 is the uid and gid of user "dev" in the container.
           # If the uid or gid of the user inside the docker changes, please change the uid and gid in the following line.
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
@@ -333,8 +336,8 @@ jobs:
           fi
           docker create --user dev --name taichi_test --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 /home/dev/unix_docker_test.sh $PY $GPU_TEST $TI_WANTED_ARCHS
           docker cp .github/workflows/scripts/unix_docker_test.sh taichi_test:/home/dev/unix_docker_test.sh
-          docker cp wheel/*.whl taichi_test:/home/dev/
-          docker cp tests/ taichi_test:/home/dev/
+          docker cp shared/build/ taichi_test:/home/dev/
+          docker cp shared/*.whl taichi_test:/home/dev/
           docker start -a taichi_test
         env:
           PY: py38

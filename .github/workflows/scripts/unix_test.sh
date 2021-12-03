@@ -17,9 +17,12 @@ if [[ "$TI_IN_DOCKER" == "true" ]]; then
     conda activate "$PY"
 fi
 python3 -m pip install dist/*.whl
-python3 -m pip install -r requirements_test.txt
-## Only GPU machine uses system python.
-[ -z "$GPU_TEST" ] || export PATH=$PATH:$HOME/.local/bin
+if [ -z "$GPU_TEST" ]; then
+    python3 -m pip install -r requirements_test.txt
+else
+    ## Only GPU machine uses system python.
+    export PATH=$PATH:$HOME/.local/bin
+fi
 ti example laplace
 ti diagnose
 ti changelog

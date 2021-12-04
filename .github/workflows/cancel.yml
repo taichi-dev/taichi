@@ -1,7 +1,8 @@
 name: Cancel
 on:
   workflow_run:
-    workflows: ["Presubmit Checks"]
+    workflows: ["Build and Test"]
+    branches-ignore: [master]
     types:
       - requested
 
@@ -9,6 +10,6 @@ jobs:
   cancel:
     runs-on: ubuntu-latest
     steps:
-      - uses: styfle/cancel-workflow-action@0.9.0
+      - uses: styfle/cancel-workflow-action@0.9.1
         with:
           workflow_id: ${{ github.event.workflow.id }}

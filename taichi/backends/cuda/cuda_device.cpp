@@ -22,6 +22,7 @@ DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
 
   info.size = params.size;
   info.is_imported = false;
+  info.use_cached = false;
 
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();
@@ -31,19 +32,22 @@ DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
   return alloc;
 }
 
-DeviceAllocation CudaDevice::allocate_memory_runtime(const AllocParams &params,
-                                                     JITModule *runtime_jit,
-                                                     LLVMRuntime *runtime,
-                                                     uint64 *result_buffer) {
+DeviceAllocation CudaDevice::allocate_memory_runtime(
+    const LlvmRuntimeAllocParams &params) {
   AllocInfo info;
   if (params.host_read || params.host_write) {
     TI_NOT_IMPLEMENTED
+  } else if (params.use_cached) {
+    if (caching_allocator_ == nullptr) {
+      caching_allocator_ = std::make_unique<CudaCachingAllocator>(this);
+    }
+    info.ptr = caching_allocator_->allocate(params);
   } else {
-    info.ptr = allocate_llvm_runtime_memory_jit(runtime_jit, runtime,
-                                                params.size, result_buffer);
+    info.ptr = allocate_llvm_runtime_memory_jit(params);
   }
-  info.size = params.size;
+  info.size = taichi::iroundup(params.size, taichi_page_size);
   info.is_imported = false;
+  info.use_cached = params.use_cached;
 
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();
@@ -60,8 +64,15 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }
   TI_ASSERT(!info.is_imported);
-  CUDADriver::get_instance().mem_free(info.ptr);
-  info.ptr = nullptr;
+  if (info.use_cached) {
+    if (caching_allocator_ == nullptr) {
+      TI_ERROR("the CudaCachingAllocator is not initialized");
+    }
+    caching_allocator_->release(info.size, (uint64_t *)info.ptr);
+  } else {
+    CUDADriver::get_instance().mem_free(info.ptr);
+    info.ptr = nullptr;
+  }
 }
 
 DeviceAllocation CudaDevice::import_memory(void *ptr, size_t size) {

@@ -10,9 +10,13 @@ from taichi.lang.exception import InvalidOperationError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
-from taichi.lang.matrix import MatrixField
+from taichi.lang.matrix import Matrix, MatrixField, _IntermediateMatrix
+from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
+                              MeshRelationAccessProxy,
+                              MeshReorderedMatrixFieldProxy,
+                              MeshReorderedScalarFieldProxy, element_type_name)
 from taichi.lang.snode import SNode
-from taichi.lang.struct import StructField
+from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
@@ -32,10 +36,14 @@ def expr_init_local_tensor(shape, element_type, elements):
 def expr_init(rhs):
     if rhs is None:
         return Expr(_ti_core.expr_alloca())
-    if is_taichi_class(rhs):
-        if rhs.local_tensor_proxy is not None:
-            return rhs
-        return rhs.variable()
+    if isinstance(rhs, Matrix):
+        if rhs.in_python_scope or isinstance(rhs, _IntermediateMatrix):
+            return Matrix(rhs.to_list())
+        return rhs
+    if isinstance(rhs, Struct):
+        if rhs.in_python_scope or isinstance(rhs, _IntermediateStruct):
+            return Struct(rhs.to_dict())
+        return rhs
     if isinstance(rhs, list):
         return [expr_init(e) for e in rhs]
     if isinstance(rhs, tuple):
@@ -47,6 +55,10 @@ def expr_init(rhs):
     if isinstance(rhs, _ti_core.Arch):
         return rhs
     if isinstance(rhs, ti.ndrange):
+        return rhs
+    if isinstance(rhs, MeshElementFieldProxy):
+        return rhs
+    if isinstance(rhs, MeshRelationAccessProxy):
         return rhs
     if hasattr(rhs, '_data_oriented'):
         return rhs
@@ -112,57 +124,74 @@ def wrap_scalar(x):
 
 
 @taichi_scope
-def subscript(value, *indices):
+def subscript(value, *_indices, skip_reordered=False):
     _taichi_skip_traceback = 1
     if isinstance(value, np.ndarray):
-        return value.__getitem__(*indices)
+        return value.__getitem__(*_indices)
 
     if isinstance(value, (tuple, list, dict)):
-        assert len(indices) == 1
-        return value[indices[0]]
+        assert len(_indices) == 1
+        return value[_indices[0]]
 
     flattened_indices = []
-    for index in indices:
-        if is_taichi_class(index):
-            ind = index.entries
+    for _index in _indices:
+        if is_taichi_class(_index):
+            ind = _index.entries
         else:
-            ind = [index]
+            ind = [_index]
         flattened_indices += ind
-    indices = tuple(flattened_indices)
-    if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
-        indices = ()
-    indices_expr_group = make_expr_group(*indices)
+    _indices = tuple(flattened_indices)
+    if isinstance(_indices,
+                  tuple) and len(_indices) == 1 and _indices[0] is None:
+        _indices = ()
+    indices_expr_group = make_expr_group(*_indices)
     index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
-        return value.subscript(*indices)
+        return value.subscript(*_indices)
+    if isinstance(value, MeshElementFieldProxy):
+        return value.subscript(*_indices)
+    if isinstance(value, MeshRelationAccessProxy):
+        return value.subscript(*_indices)
+    if isinstance(value,
+                  (MeshReorderedScalarFieldProxy,
+                   MeshReorderedMatrixFieldProxy)) and not skip_reordered:
+        assert index_dim == 1
+        reordered_index = tuple([
+            Expr(
+                _ti_core.get_index_conversion(value.mesh_ptr,
+                                              value.element_type,
+                                              Expr(_indices[0]).ptr,
+                                              ConvType.g2r))
+        ])
+        return subscript(value, *reordered_index, skip_reordered=True)
     if isinstance(value, SparseMatrixProxy):
-        return value.subscript(*indices)
+        return value.subscript(*_indices)
     if isinstance(value, Field):
-        var = value.get_field_members()[0].ptr
-        if var.snode() is None:
-            if var.is_primal():
+        _var = value.get_field_members()[0].ptr
+        if _var.snode() is None:
+            if _var.is_primal():
                 raise RuntimeError(
-                    f"{var.get_expr_name()} has not been placed.")
+                    f"{_var.get_expr_name()} has not been placed.")
             else:
                 raise RuntimeError(
-                    f"Gradient {var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
+                    f"Gradient {_var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                 )
-        field_dim = int(var.get_attribute("dim"))
+        field_dim = int(_var.get_attribute("dim"))
         if field_dim != index_dim:
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         if isinstance(value, MatrixField):
-            return ti.Matrix.with_entries(value.n, value.m, [
+            return _IntermediateMatrix(value.n, value.m, [
                 Expr(_ti_core.subscript(e.ptr, indices_expr_group))
                 for e in value.get_field_members()
             ])
         if isinstance(value, StructField):
-            return ti.Struct(
-                {k: subscript(v, *indices)
+            return _IntermediateStruct(
+                {k: subscript(v, *_indices)
                  for k, v in value.items})
-        return Expr(_ti_core.subscript(var, indices_expr_group))
+        return Expr(_ti_core.subscript(_var, indices_expr_group))
     if isinstance(value, AnyArray):
         # TODO: deprecate using get_attribute to get dim
         field_dim = int(value.ptr.get_attribute("dim"))
@@ -175,8 +204,8 @@ def subscript(value, *indices):
             return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
         n = value.element_shape[0]
         m = 1 if element_dim == 1 else value.element_shape[1]
-        any_array_access = AnyArrayAccess(value, indices)
-        ret = ti.Matrix.with_entries(n, m, [
+        any_array_access = AnyArrayAccess(value, _indices)
+        ret = _IntermediateMatrix(n, m, [
             any_array_access.subscript(i, j) for i in range(n)
             for j in range(m)
         ])
@@ -191,22 +220,22 @@ def subscript(value, *indices):
             )
         return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
     # Directly evaluate in Python for non-Taichi types
-    return value.__getitem__(*indices)
+    return value.__getitem__(*_indices)
 
 
 @taichi_scope
-def local_subscript_with_offset(var, indices, shape):
+def local_subscript_with_offset(_var, _indices, shape):
     return Expr(
-        _ti_core.local_subscript_with_offset(var, make_expr_group(*indices),
+        _ti_core.local_subscript_with_offset(_var, make_expr_group(*_indices),
                                              shape))
 
 
 @taichi_scope
-def global_subscript_with_offset(var, indices, shape, is_aos):
+def global_subscript_with_offset(_var, _indices, shape, is_aos):
     return Expr(
-        _ti_core.global_subscript_with_offset(var.ptr,
-                                              make_expr_group(*indices), shape,
-                                              is_aos))
+        _ti_core.global_subscript_with_offset(_var.ptr,
+                                              make_expr_group(*_indices),
+                                              shape, is_aos))
 
 
 @taichi_scope
@@ -277,12 +306,12 @@ class PyTaichi:
         self.global_vars = []
         self.print_preprocessed = False
         self.experimental_real_function = False
-        self.experimental_ast_refactor = False
         self.default_fp = f32
         self.default_ip = i32
         self.target_tape = None
         self.grad_replaced = False
         self.kernels = kernels or []
+        self._signal_handler_registry = None
 
     def get_num_compiled_functions(self):
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
@@ -331,9 +360,9 @@ class PyTaichi:
 
         self.materialized = True
         not_placed = []
-        for var in self.global_vars:
-            if var.ptr.snode() is None:
-                tb = getattr(var, 'declaration_tb', str(var.ptr))
+        for _var in self.global_vars:
+            if _var.ptr.snode() is None:
+                tb = getattr(_var, 'declaration_tb', str(_var.ptr))
                 not_placed.append(tb)
 
         if len(not_placed):
@@ -348,10 +377,15 @@ class PyTaichi:
             callback()
         self.materialize_callbacks = []
 
+    def _register_signal_handlers(self):
+        if self._signal_handler_registry is None:
+            self._signal_handler_registry = _ti_core.HackedSignalRegister()
+
     def clear(self):
         if self.prog:
             self.prog.finalize()
             self.prog = None
+        self._signal_handler_registry = None
         self.materialized = False
 
     def get_tape(self, loss=None):
@@ -643,44 +677,44 @@ def ndarray(dtype, shape):
 
 
 @taichi_scope
-def ti_print(*vars, sep=' ', end='\n'):
-    def entry2content(var):
-        if isinstance(var, str):
-            return var
-        return Expr(var).ptr
+def ti_print(*_vars, sep=' ', end='\n'):
+    def entry2content(_var):
+        if isinstance(_var, str):
+            return _var
+        return Expr(_var).ptr
 
-    def list_ti_repr(var):
+    def list_ti_repr(_var):
         yield '['  # distinguishing tuple & list will increase maintainance cost
-        for i, v in enumerate(var):
+        for i, v in enumerate(_var):
             if i:
                 yield ', '
             yield v
         yield ']'
 
-    def vars2entries(vars):
-        for var in vars:
-            if hasattr(var, '__ti_repr__'):
-                res = var.__ti_repr__()
-            elif isinstance(var, (list, tuple)):
-                res = var
+    def vars2entries(_vars):
+        for _var in _vars:
+            if hasattr(_var, '__ti_repr__'):
+                res = _var.__ti_repr__()
+            elif isinstance(_var, (list, tuple)):
+                res = _var
                 # If the first element is '__ti_format__', this list is the result of ti_format.
-                if len(var) > 0 and isinstance(
-                        var[0], str) and var[0] == '__ti_format__':
-                    res = var[1:]
+                if len(_var) > 0 and isinstance(
+                        _var[0], str) and _var[0] == '__ti_format__':
+                    res = _var[1:]
                 else:
-                    res = list_ti_repr(var)
+                    res = list_ti_repr(_var)
             else:
-                yield var
+                yield _var
                 continue
 
             for v in vars2entries(res):
                 yield v
 
-    def add_separators(vars):
-        for i, var in enumerate(vars):
+    def add_separators(_vars):
+        for i, _var in enumerate(_vars):
             if i:
                 yield sep
-            yield var
+            yield _var
         yield end
 
     def fused_string(entries):
@@ -696,8 +730,8 @@ def ti_print(*vars, sep=' ', end='\n'):
         if accumated:
             yield accumated
 
-    vars = add_separators(vars)
-    entries = vars2entries(vars)
+    _vars = add_separators(_vars)
+    entries = vars2entries(_vars)
     entries = fused_string(entries)
     contentries = [entry2content(entry) for entry in entries]
     _ti_core.create_print(contentries)
@@ -747,19 +781,19 @@ def ti_assert(cond, msg, extra_args):
 
 
 @taichi_scope
-def ti_int(var):
+def ti_int(_var):
     _taichi_skip_traceback = 1
-    if hasattr(var, '__ti_int__'):
-        return var.__ti_int__()
-    return int(var)
+    if hasattr(_var, '__ti_int__'):
+        return _var.__ti_int__()
+    return int(_var)
 
 
 @taichi_scope
-def ti_float(var):
+def ti_float(_var):
     _taichi_skip_traceback = 1
-    if hasattr(var, '__ti_float__'):
-        return var.__ti_float__()
-    return float(var)
+    if hasattr(_var, '__ti_float__'):
+        return _var.__ti_float__()
+    return float(_var)
 
 
 @taichi_scope
@@ -905,3 +939,13 @@ def default_cfg():
 def call_internal(name, *args):
     return expr_init(
         _ti_core.insert_internal_func_call(name, make_expr_group(args)))
+
+
+@taichi_scope
+def mesh_relation_access(mesh, from_index, to_element_type):
+    # to support ti.mesh_local and access mesh attribute as field
+    if isinstance(from_index, MeshInstance):
+        return getattr(from_index, element_type_name(to_element_type))
+    if isinstance(mesh, MeshInstance):
+        return MeshRelationAccessProxy(mesh, from_index, to_element_type)
+    raise RuntimeError("Relation access should be with a mesh instance!")

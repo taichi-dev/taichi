@@ -1,7 +1,5 @@
-import datetime
 import os
 import platform
-import random
 import sys
 
 from colorama import Fore, Style
@@ -30,11 +28,12 @@ def get_os_name():
         return 'linux'
     if 'bsd' in name.lower():
         return 'unix'
-    assert False, "Unknown platform name %s" % name
+    assert False, f"Unknown platform name {name}"
 
 
 def import_ti_core():
     if get_os_name() != 'win':
+        # pylint: disable=E1101
         old_flags = sys.getdlopenflags()
         sys.setdlopenflags(2 | 8)  # RTLD_NOW | RTLD_DEEPBIND
     else:
@@ -49,11 +48,12 @@ def import_ti_core():
                   "https://docs.taichi.graphics/lang/articles/misc/install" +
                   Fore.RESET)
             if get_os_name() == 'win':
+                # pylint: disable=E1101
                 e.msg += '\nConsider installing Microsoft Visual C++ Redistributable: https://aka.ms/vs/16/release/vc_redist.x64.exe'
         raise e from None
 
     if get_os_name() != 'win':
-        sys.setdlopenflags(old_flags)
+        sys.setdlopenflags(old_flags)  # pylint: disable=E1101
     lib_dir = os.path.join(package_root(), 'lib')
     core.set_lib_dir(locale_encode(lib_dir))
     return core
@@ -100,15 +100,9 @@ def check_exists(src):
         )
 
 
-def get_unique_task_id():
-    return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + (
-        '%05d' % random.randint(0, 10000))
-
-
 ti_core = import_ti_core()
 
 ti_core.set_python_package_dir(package_root())
-os.makedirs(ti_core.get_repo_dir(), exist_ok=True)
 
 log_level = os.environ.get('TI_LOG_LEVEL', '')
 if log_level:
@@ -117,11 +111,11 @@ if log_level:
 
 def get_dll_name(name):
     if get_os_name() == 'linux':
-        return 'libtaichi_%s.so' % name
+        return f'libtaichi_{name}.so'
     if get_os_name() == 'osx':
-        return 'libtaichi_%s.dylib' % name
+        return f'libtaichi_{name}.dylib'
     if get_os_name() == 'win':
-        return 'taichi_%s.dll' % name
+        return f'taichi_{name}.dll'
     raise Exception(f"Unknown OS: {get_os_name()}")
 
 
@@ -139,8 +133,7 @@ def require_version(major, minor=None, patch=None):
         minor < versions[1] or minor == versions[1] and patch <= versions[2])
     if match:
         return
-    print("Taichi version mismatch. required >= {}.{}.{}".format(
-        major, minor, patch))
+    print(f"Taichi version mismatch. required >= {major}.{minor}.{patch}")
     print("Installed =", ti_core.get_version_string())
     raise Exception("Taichi version mismatch")
 

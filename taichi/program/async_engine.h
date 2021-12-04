@@ -144,7 +144,7 @@ class AsyncEngine {
     queue.clear_cache();
   }
 
-  void launch(Kernel *kernel, Context &context);
+  void launch(Kernel *kernel, RuntimeContext &context);
 
   // Flush the tasks only.
   void flush();

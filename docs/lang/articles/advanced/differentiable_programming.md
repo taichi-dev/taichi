@@ -79,14 +79,14 @@ print('dy/dx =', x.grad[None], ' at x =', x[None])
 A common problem in physical simulation is that it's usually easy to compute
 energy but hard to compute force on every particle,
 e.g [Bond bending (and torsion) in molecular dynamics](https://github.com/victoriacity/taichimd/blob/5a44841cc8dfe5eb97de51f1d46f1bede1cc9936/taichimd/interaction.py#L190-L220)
-and [FEM with hyperelastic energy functions](https://github.com/taichi-dev/taichi/blob/master/examples/simulation/fem128.py).
+and [FEM with hyperelastic energy functions](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/fem128.py).
 Recall that we can differentiate
 (negative) potential energy to get forces: `F_i = -dU / dx_i`. So once you have coded
 a kernel that computes the potential energy, you may use Taichi's autodiff
 system to obtain the derivatives and then `F_i` on each particle.
 
 Take
-[examples/simulation/ad_gravity.py](https://github.com/taichi-dev/taichi/blob/master/examples/simulation/ad_gravity.py)
+[examples/simulation/ad_gravity.py](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/ad_gravity.py)
 as an example:
 
 ```python
@@ -158,9 +158,9 @@ start up.
 
 :::tip
 See
-[examples/simulation/mpm_lagrangian_forces.py](https://github.com/taichi-dev/taichi/blob/master/examples/simulation/mpm_lagrangian_forces.py)
+[examples/simulation/mpm_lagrangian_forces.py](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/mpm_lagrangian_forces.py)
 and
-[examples/simulation/fem99.py](https://github.com/taichi-dev/taichi/blob/master/examples/simulation/fem99.py)
+[examples/simulation/fem99.py](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/fem99.py)
 for examples on using autodiff-based force evaluation MPM and FEM.
 :::
 

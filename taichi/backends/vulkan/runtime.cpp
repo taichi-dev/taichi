@@ -1,4 +1,5 @@
 #include "taichi/backends/vulkan/runtime.h"
+#include "taichi/program/program.h"
 
 #include <chrono>
 #include <array>
@@ -43,7 +44,7 @@ class StopWatch {
 class HostDeviceContextBlitter {
  public:
   HostDeviceContextBlitter(const KernelContextAttributes *ctx_attribs,
-                           Context *host_ctx,
+                           RuntimeContext *host_ctx,
                            Device *device,
                            uint64_t *host_result_buffer,
                            DeviceAllocation *device_buffer,
@@ -208,7 +209,7 @@ class HostDeviceContextBlitter {
 
   static std::unique_ptr<HostDeviceContextBlitter> maybe_make(
       const KernelContextAttributes *ctx_attribs,
-      Context *host_ctx,
+      RuntimeContext *host_ctx,
       Device *device,
       uint64_t *host_result_buffer,
       DeviceAllocation *device_buffer,
@@ -223,7 +224,7 @@ class HostDeviceContextBlitter {
 
  private:
   const KernelContextAttributes *const ctx_attribs_;
-  Context *const host_ctx_;
+  RuntimeContext *const host_ctx_;
   uint64_t *const host_result_buffer_;
   DeviceAllocation *const device_buffer_;
   DeviceAllocation *const host_shadow_buffer_;
@@ -398,7 +399,7 @@ VkRuntime::KernelHandle VkRuntime::register_taichi_kernel(
   return res;
 }
 
-void VkRuntime::launch_kernel(KernelHandle handle, Context *host_ctx) {
+void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   auto *ti_kernel = ti_kernels_[handle.id_].get();
   auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
       &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx, device_,
@@ -475,6 +476,23 @@ void VkRuntime::add_root_buffer(size_t root_buffer_size) {
 
 DevicePtr VkRuntime::get_snode_tree_device_ptr(int tree_id) {
   return root_buffers_[tree_id]->get_ptr();
+}
+
+VkRuntime::RegisterParams run_codegen(Kernel *kernel, VkRuntime *runtime) {
+  const auto id = Program::get_kernel_id();
+  const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
+  TI_TRACE("VK codegen for Taichi kernel={}", taichi_kernel_name);
+  spirv::KernelCodegen::Params params;
+  params.ti_kernel_name = taichi_kernel_name;
+  params.kernel = kernel;
+  params.compiled_structs = runtime->get_compiled_structs();
+  params.device = runtime->get_ti_device();
+  params.enable_spv_opt =
+      kernel->program->config.external_optimization_level > 0;
+  spirv::KernelCodegen codegen(params);
+  VkRuntime::RegisterParams res;
+  codegen.run(res.kernel_attribs, res.task_spirv_source_codes);
+  return std::move(res);
 }
 
 }  // namespace vulkan

@@ -99,7 +99,6 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
         #     raise taichi.lang.kernel_impl.KernelDefError(
         #         f'No more for loops allowed, at {self.get_error_location(node)}'
         #     )
-        #
         # with self.new_scope():
         #     super().generic_visit(node)
         #

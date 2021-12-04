@@ -28,7 +28,7 @@
 #endif
 #ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/vulkan_program.h"
-#include "taichi/backends/vulkan/loader.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #endif
 
 #if defined(TI_ARCH_x64)
@@ -70,53 +70,39 @@ Program::Program(Arch desired_arch)
 
   profiler = make_profiler(config.arch, config.kernel_profiler);
   if (arch_uses_llvm(config.arch)) {
+#ifdef TI_WITH_LLVM
     program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
-
-  } else if (config.arch == Arch::metal) {
-    if (!metal::is_metal_api_available()) {
-      TI_WARN("No Metal API detected.");
-      config.arch = host_arch();
-    } else {
-      program_impl_ = std::make_unique<MetalProgramImpl>(config);
-    }
-  }
-#ifdef TI_WITH_VULKAN
-  else if (config.arch == Arch::vulkan) {
-    if (!vulkan::is_vulkan_api_available()) {
-      TI_WARN("No Vulkan API detected.");
-      config.arch = host_arch();
-    } else {
-      program_impl_ = std::make_unique<VulkanProgramImpl>(config);
-    }
-  }
+#else
+    TI_ERROR("This taichi is not compiled with LLVM");
 #endif
-
-  if (config.arch == Arch::opengl) {
-    if (!opengl::is_opengl_api_available()) {
-      TI_WARN("No OpenGL API detected.");
-      config.arch = host_arch();
-    } else {
-      program_impl_ = std::make_unique<OpenglProgramImpl>(config);
-    }
-  }
-
-  if (config.arch == Arch::cc) {
+  } else if (config.arch == Arch::metal) {
+    TI_ASSERT(metal::is_metal_api_available());
+    program_impl_ = std::make_unique<MetalProgramImpl>(config);
+  } else if (config.arch == Arch::vulkan) {
+#ifdef TI_WITH_VULKAN
+    TI_ASSERT(vulkan::is_vulkan_api_available());
+    program_impl_ = std::make_unique<VulkanProgramImpl>(config);
+#else
+    TI_ERROR("This taichi is not compiled with Vulkan")
+#endif
+  } else if (config.arch == Arch::opengl) {
+    TI_ASSERT(opengl::initialize_opengl(config.use_gles));
+    program_impl_ = std::make_unique<OpenglProgramImpl>(config);
+  } else if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
     program_impl_ = std::make_unique<CCProgramImpl>(config);
 #else
-    TI_WARN("No C backend detected.");
-    config.arch = host_arch();
+    TI_ERROR("No C backend detected.");
 #endif
+  } else {
+    TI_NOT_IMPLEMENTED
   }
 
-  if (config.arch != desired_arch) {
-    TI_WARN("Falling back to {}", arch_name(config.arch));
-  }
+  // program_impl_ should be set in the if-else branch above
+  TI_ASSERT(program_impl_);
 
   Device *compute_device = nullptr;
-  if (program_impl_.get()) {
-    compute_device = program_impl_->get_compute_device();
-  }
+  compute_device = program_impl_->get_compute_device();
   // Must have handled all the arch fallback logic by this point.
   memory_pool_ = std::make_unique<MemoryPool>(config.arch, compute_device);
   TI_ASSERT_INFO(num_instances_ == 0, "Only one instance at a time");
@@ -126,7 +112,11 @@ Program::Program(Arch desired_arch)
   TI_ASSERT(current_program == nullptr);
   current_program = this;
   if (arch_uses_llvm(config.arch)) {
+#if TI_WITH_LLVM
     static_cast<LlvmProgramImpl *>(program_impl_.get())->initialize_host();
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   }
 
   result_buffer = nullptr;
@@ -214,18 +204,19 @@ SNode *Program::get_snode_root(int tree_id) {
 }
 
 void Program::check_runtime_error() {
+#ifdef TI_WITH_LLVM
   TI_ASSERT(arch_uses_llvm(config.arch));
   static_cast<LlvmProgramImpl *>(program_impl_.get())
       ->check_runtime_error(result_buffer);
+#else
+  TI_ERROR("Llvm disabled");
+#endif
 }
 
 void Program::synchronize() {
   if (!sync) {
     if (config.async_mode) {
       async_engine->synchronize();
-    }
-    if (profiler) {
-      profiler->sync();
     }
     if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
         config.arch == Arch::vulkan) {
@@ -375,9 +366,9 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    Expr(snode_to_glb_var_exprs_.at(snode))[indices] =
+    Expr(snode_to_glb_var_exprs_.at(snode))[indices].set_or_insert_assignment(
         Expr::make<ArgLoadExpression>(snode->num_active_indices,
-                                      snode->dt->get_compute_type());
+                                      snode->dt->get_compute_type()));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
@@ -420,9 +411,9 @@ Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
     }
     Expr(Expr::make<ExternalTensorExpression>(
         ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices + 1,
-        0))[indices] =
-        Expr::make<ArgLoadExpression>(ndarray->num_active_indices,
-                                      ndarray->dtype->get_compute_type());
+        0))[indices]
+        .set_or_insert_assignment(Expr::make<ArgLoadExpression>(
+            ndarray->num_active_indices, ndarray->dtype->get_compute_type()));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
@@ -436,8 +427,12 @@ Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
 
 uint64 Program::fetch_result_uint64(int i) {
   if (arch_uses_llvm(config.arch)) {
+#ifdef TI_WITH_LLVM
     return static_cast<LlvmProgramImpl *>(program_impl_.get())
         ->fetch_result<uint64>(i, result_buffer);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   }
   return result_buffer[i];
 }
@@ -447,6 +442,7 @@ void Program::finalize() {
   if (async_engine)
     async_engine = nullptr;  // Finalize the async engine threads before
                              // anything else gets destoried.
+
   TI_TRACE("Program finalizing...");
   if (config.print_benchmark_stat) {
     const char *current_test = std::getenv("PYTEST_CURRENT_TEST");
@@ -487,7 +483,11 @@ void Program::finalize() {
   memory_pool_->terminate();
 
   if (arch_uses_llvm(config.arch)) {
+#if TI_WITH_LLVM
     static_cast<LlvmProgramImpl *>(program_impl_.get())->finalize();
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   }
 
   finalized_ = true;
@@ -504,9 +504,13 @@ int Program::default_block_dim(const CompileConfig &config) {
 }
 
 void Program::print_memory_profiler_info() {
+#ifdef TI_WITH_LLVM
   TI_ASSERT(arch_uses_llvm(config.arch));
   static_cast<LlvmProgramImpl *>(program_impl_.get())
       ->print_memory_profiler_info(snode_trees_, result_buffer);
+#else
+  TI_ERROR("Llvm disabled");
+#endif
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
@@ -527,7 +531,11 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
   // platform. Consider decoupling this part
   if (arch == Arch::wasm) {
     // Have to check WASM first, or it dispatches to the LlvmProgramImpl.
+#ifdef TI_WITH_LLVM
     return std::make_unique<wasm::AotModuleBuilderImpl>();
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   }
   if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
       config.arch == Arch::vulkan || config.arch == Arch::opengl) {
@@ -537,7 +545,11 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
 }
 
 LlvmProgramImpl *Program::get_llvm_program_impl() {
+#ifdef TI_WITH_LLVM
   return static_cast<LlvmProgramImpl *>(program_impl_.get());
+#else
+  TI_ERROR("Llvm disabled");
+#endif
 }
 
 }  // namespace lang

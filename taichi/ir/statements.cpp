@@ -286,6 +286,34 @@ std::unique_ptr<Stmt> StructForStmt::clone() const {
   return new_stmt;
 }
 
+MeshForStmt::MeshForStmt(mesh::Mesh *mesh,
+                         mesh::MeshElementType element_type,
+                         std::unique_ptr<Block> &&body,
+                         int vectorize,
+                         int bit_vectorize,
+                         int num_cpu_threads,
+                         int block_dim)
+    : mesh(mesh),
+      major_from_type(element_type),
+      body(std::move(body)),
+      vectorize(vectorize),
+      bit_vectorize(bit_vectorize),
+      num_cpu_threads(num_cpu_threads),
+      block_dim(block_dim) {
+  this->body->parent_stmt = this;
+  TI_STMT_REG_FIELDS;
+}
+
+std::unique_ptr<Stmt> MeshForStmt::clone() const {
+  auto new_stmt = std::make_unique<MeshForStmt>(
+      mesh, major_from_type, body->clone(), vectorize, bit_vectorize,
+      num_cpu_threads, block_dim);
+  new_stmt->major_to_types = major_to_types;
+  new_stmt->minor_relation_types = minor_relation_types;
+  new_stmt->mem_access_opt = mem_access_opt;
+  return new_stmt;
+}
+
 FuncBodyStmt::FuncBodyStmt(const std::string &funcid,
                            std::unique_ptr<Block> &&body)
     : funcid(funcid), body(std::move(body)) {
@@ -339,6 +367,8 @@ std::string OffloadedStmt::task_name() const {
     return "range_for";
   } else if (task_type == TaskType::struct_for) {
     return "struct_for";
+  } else if (task_type == TaskType::mesh_for) {
+    return "mesh_for";
   } else if (task_type == TaskType::listgen) {
     TI_ASSERT(snode);
     return fmt::format("listgen_{}", snode->get_node_type_name_hinted());
@@ -369,9 +399,24 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->reversed = reversed;
   new_stmt->num_cpu_threads = num_cpu_threads;
   new_stmt->index_offsets = index_offsets;
+
+  new_stmt->mesh = mesh;
+  new_stmt->major_from_type = major_from_type;
+  new_stmt->major_to_types = major_to_types;
+  new_stmt->minor_relation_types = minor_relation_types;
+
+  new_stmt->owned_offset_local = owned_offset_local;
+  new_stmt->total_offset_local = total_offset_local;
+  new_stmt->owned_num_local = owned_num_local;
+  new_stmt->total_num_local = total_num_local;
+
   if (tls_prologue) {
     new_stmt->tls_prologue = tls_prologue->clone();
     new_stmt->tls_prologue->parent_stmt = new_stmt.get();
+  }
+  if (mesh_prologue) {
+    new_stmt->mesh_prologue = mesh_prologue->clone();
+    new_stmt->mesh_prologue->parent_stmt = new_stmt.get();
   }
   if (bls_prologue) {
     new_stmt->bls_prologue = bls_prologue->clone();
@@ -395,9 +440,12 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   return new_stmt;
 }
 
-void OffloadedStmt::all_blocks_accept(IRVisitor *visitor) {
+void OffloadedStmt::all_blocks_accept(IRVisitor *visitor,
+                                      bool skip_mesh_prologue) {
   if (tls_prologue)
     tls_prologue->accept(visitor);
+  if (mesh_prologue && !skip_mesh_prologue)
+    mesh_prologue->accept(visitor);
   if (bls_prologue)
     bls_prologue->accept(visitor);
   if (body)

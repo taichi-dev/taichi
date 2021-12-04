@@ -2,7 +2,7 @@
 
 #include "taichi/ir/statements.h"
 #include "taichi/ir/analysis.h"
-#include "taichi/ir/ir_modified.h"
+#include "taichi/common/exceptions.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -139,16 +139,16 @@ void StateMachine::load(Stmt *load_stmt) {
         LaneAttribute<TypedConstant>(load_stmt->ret_type)));
     zero->repeat(load_stmt->width());
     int current_stmt_id = load_stmt->parent->locate(load_stmt);
-    load_stmt->replace_with(zero);
+    load_stmt->replace_usages_with(zero);
     load_stmt->parent->erase(current_stmt_id);
     throw IRModified();
   }
   if (last_store_forwardable) {
     // store-forwarding
     if (last_store->is<LocalStoreStmt>())
-      load_stmt->replace_with(last_store->as<LocalStoreStmt>()->val);
+      load_stmt->replace_usages_with(last_store->as<LocalStoreStmt>()->val);
     else
-      load_stmt->replace_with(last_store->as<GlobalStoreStmt>()->val);
+      load_stmt->replace_usages_with(last_store->as<GlobalStoreStmt>()->val);
     load_stmt->parent->erase(load_stmt);
     throw IRModified();
   }

@@ -1,4 +1,5 @@
 #include "taichi/backends/vulkan/vulkan_program.h"
+#include "taichi/backends/vulkan/aot_module_builder_impl.h"
 
 #include "GLFW/glfw3.h"
 
@@ -19,7 +20,7 @@ std::vector<std::string> get_required_instance_extensions() {
     extensions.push_back(glfw_extensions[i]);
   }
 
-  // EmbeddedVulkanDevice will check that these are supported
+  // VulkanDeviceCreator will check that these are supported
   extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 #if TI_WITH_CUDA
   // so that we can do cuda-vk interop
@@ -47,10 +48,18 @@ std::vector<std::string> get_required_device_extensions() {
 }
 }  // namespace
 
+FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
+  auto handle =
+      runtime->register_taichi_kernel(std::move(run_codegen(kernel, runtime)));
+  return [runtime, handle](RuntimeContext &ctx) {
+    runtime->launch_kernel(handle, &ctx);
+  };
+}
+
 FunctionType VulkanProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
-  vulkan::lower(kernel);
-  return vulkan::compile_to_executable(kernel, vulkan_runtime_.get());
+  spirv::lower(kernel);
+  return compile_to_executable(kernel, vulkan_runtime_.get());
 }
 
 void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -76,7 +85,7 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     }
   }
 
-  EmbeddedVulkanDevice::Params evd_params;
+  VulkanDeviceCreator::Params evd_params;
   evd_params.api_version = VulkanEnvSettings::kApiVersion();
   if (glfw_window) {
     // then we should be able to create a device with graphics abilities
@@ -98,7 +107,7 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     };
   }
 
-  embedded_device_ = std::make_unique<EmbeddedVulkanDevice>(evd_params);
+  embedded_device_ = std::make_unique<VulkanDeviceCreator>(evd_params);
 
   vulkan::VkRuntime::Params params;
   params.host_result_buffer = *result_buffer_ptr;
@@ -106,11 +115,29 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   vulkan_runtime_ = std::make_unique<vulkan::VkRuntime>(std::move(params));
 }
 
+void VulkanProgramImpl::compile_snode_tree_types(
+    SNodeTree *tree,
+    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+  vulkan_runtime_->materialize_snode_tree(tree);
+}
+
 void VulkanProgramImpl::materialize_snode_tree(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &,
     uint64 *result_buffer) {
   vulkan_runtime_->materialize_snode_tree(tree);
+}
+
+std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder() {
+  // TODO: Remove this compilation guard -- AOT is a compile-time thing, so it's
+  // fine to JIT to SPV on systems without the Vulkan runtime.
+#ifdef TI_WITH_VULKAN
+  return std::make_unique<AotModuleBuilderImpl>(
+      vulkan_runtime_.get(), vulkan_runtime_->get_compiled_structs());
+#else
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
+#endif
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {

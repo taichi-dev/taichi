@@ -4,7 +4,7 @@
 #include "taichi/util/io.h"
 #include "taichi/common/core.h"
 #include "taichi/system/profiler.h"
-#include "taichi/ir/ir_modified.h"
+#include "taichi/common/exceptions.h"
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/type.h"
 #include "taichi/ir/type_utils.h"
@@ -20,9 +20,9 @@ real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,
                  real time_second = default_measurement_time);
 
-struct Context;
+struct RuntimeContext;
 
-using FunctionType = std::function<void(Context &)>;
+using FunctionType = std::function<void(RuntimeContext &)>;
 
 inline std::string make_list(const std::vector<std::string> &data,
                              std::string bracket = "") {

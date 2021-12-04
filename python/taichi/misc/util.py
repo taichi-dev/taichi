@@ -1,24 +1,9 @@
-import copy
 import functools
 import subprocess
-import sys
 import traceback
 
 from colorama import Fore, Style
 from taichi.core import ti_core as _ti_core
-
-import taichi as ti
-
-
-def config_from_dict(args):
-    d = copy.copy(args)
-    for k in d:
-        if isinstance(d[k], _ti_core.Vector2f):
-            d[k] = '({}, {})'.format(d[k].x, d[k].y)
-        if isinstance(d[k], _ti_core.Vector3f):
-            d[k] = '({}, {}, {})'.format(d[k].x, d[k].y, d[k].z)
-        d[k] = str(d[k])
-    return _ti_core.config_from_dict(d)
 
 
 def core_veci(*args):
@@ -75,38 +60,20 @@ def core_vec(*args):
         assert False, type(args[0])
 
 
-class Tee():
-    def __init__(self, name):
-        with open(name, 'w') as self.file:
-            self.stdout = sys.stdout
-            self.stderr = sys.stderr
-            sys.stdout = self
-            sys.stderr = self
-
-    def write(self, data):
-        self.file.write(data)
-        self.stdout.write(data)
-        self.file.flush()
-        self.stdout.flush()
-
-    def write_to_file(self, data):
-        self.file.write(data)
-
-
 # The builtin `warnings` module is unreliable since it may be suppressed
 # by other packages such as IPython.
-def warning(msg, type=UserWarning, stacklevel=1):
+def warning(msg, warning_type=UserWarning, stacklevel=1):
     """Print warning message
 
     Args:
         msg (str): massage to print.
-        type (builtin warning type):  type of warning.
+        warning_type (builtin warning type):  type of warning.
         stacklevel (int): warning stack level from the caller.
     """
     s = traceback.extract_stack()[:-stacklevel]
     raw = ''.join(traceback.format_list(s))
     print(Fore.YELLOW + Style.BRIGHT, end='')
-    print(f'{type.__name__}: {msg}')
+    print(f'{warning_type.__name__}: {msg}')
     print(f'\n{raw}')
     print(Style.RESET_ALL, end='')
 
@@ -158,10 +125,6 @@ def obsolete(old, new):
 def get_traceback(stacklevel=1):
     s = traceback.extract_stack()[:-1 - stacklevel]
     return ''.join(traceback.format_list(s))
-
-
-def duplicate_stdout_to_file(fn):
-    _ti_core.duplicate_stdout_to_file(fn)
 
 
 def set_gdb_trigger(on=True):
@@ -230,32 +193,13 @@ def get_kernel_stats():
     return _ti_core.get_kernel_stats()
 
 
-def print_async_stats(include_kernel_profiler=False):
-    if include_kernel_profiler:
-        ti.print_kernel_profile_info()
-        print()
-    stat = ti.get_kernel_stats()
-    counters = stat.get_counters()
-    print('=======================')
-    print('Async benchmark metrics')
-    print('-----------------------')
-    print(f'Async mode:           {ti.current_cfg().async_mode}')
-    print(f'Kernel time:          {ti.kernel_profiler_total_time():.3f} s')
-    print(f'Tasks launched:       {int(counters["launched_tasks"])}')
-    print(f'Instructions emitted: {int(counters["codegen_statements"])}')
-    print(f'Tasks compiled:       {int(counters["codegen_offloaded_tasks"])}')
-    NUM_FUSED_TASKS_KEY = 'num_fused_tasks'
-    if NUM_FUSED_TASKS_KEY in counters:
-        print(f'Tasks fused:          {int(counters["num_fused_tasks"])}')
-    print('=======================')
-
-
 __all__ = [
     'vec',
     'veci',
     'core_vec',
     'core_veci',
     'deprecated',
+    'warning',
     'dump_dot',
     'dot_to_pdf',
     'obsolete',

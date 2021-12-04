@@ -272,6 +272,19 @@ def rsqrt(a):
 
 
 @unary
+def round(a):  # pylint: disable=redefined-builtin
+    """The round function.
+
+    Args:
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+
+    Returns:
+        The nearest integer of `a`.
+    """
+    return _unary_operation(_ti_core.expr_round, builtins.round, a)
+
+
+@unary
 def floor(a):
     """The floor function.
 
@@ -350,7 +363,7 @@ def log(a):
 
 
 @unary
-def abs(a):
+def abs(a):  # pylint: disable=W0622
     """The absolute value function.
 
     Args:
@@ -468,7 +481,7 @@ def mod(a, b):
 
 
 @binary
-def pow(a, b):
+def pow(a, b):  # pylint: disable=W0622
     """The power function.
 
     Args:
@@ -511,7 +524,7 @@ def truediv(a, b):
 
 
 @binary
-def max(a, b):
+def max(a, b):  # pylint: disable=W0622
     """The maxnimum function.
 
     Args:
@@ -525,7 +538,7 @@ def max(a, b):
 
 
 @binary
-def min(a, b):
+def min(a, b):  # pylint: disable=W0622
     """The minimum function.
 
     Args:
@@ -919,13 +932,13 @@ def rescale_index(a, b, I):
         assert isinstance(
             I, matrix.Matrix
         ), f"The third argument must be an index (list or ti.Vector)"
-    Ib = I.copy()
+    entries = [I(i) for i in range(I.n)]
     for n in range(min(I.n, min(len(a.shape), len(b.shape)))):
         if a.shape[n] > b.shape[n]:
-            Ib.entries[n] = I.entries[n] // (a.shape[n] // b.shape[n])
+            entries[n] = I(n) // (a.shape[n] // b.shape[n])
         if a.shape[n] < b.shape[n]:
-            Ib.entries[n] = I.entries[n] * (b.shape[n] // a.shape[n])
-    return Ib
+            entries[n] = I(n) * (b.shape[n] // a.shape[n])
+    return matrix.Vector(entries)
 
 
 def get_addr(f, indices):

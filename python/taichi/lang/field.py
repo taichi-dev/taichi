@@ -16,8 +16,8 @@ class Field:
     Args:
         vars (List[Expr]): Field members.
     """
-    def __init__(self, vars):
-        self.vars = vars
+    def __init__(self, _vars):
+        self.vars = _vars
         self.host_accessors = None
         self.grad = None
 
@@ -235,6 +235,8 @@ class ScalarField(Field):
     @python_scope
     def to_torch(self, device=None):
         import torch  # pylint: disable=C0415
+
+        # pylint: disable=E1101
         arr = torch.zeros(size=self.shape,
                           dtype=to_pytorch_type(self.dtype),
                           device=device)

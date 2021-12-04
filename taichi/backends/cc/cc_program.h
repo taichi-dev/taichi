@@ -72,7 +72,7 @@ class CCProgramImpl : public ProgramImpl {
   CCFuncEntryType *load_kernel(std::string const &name);
   void relink();
 
-  CCContext *update_context(Context *ctx);
+  CCContext *update_context(RuntimeContext *ctx);
   void context_to_result_buffer();
 
  private:

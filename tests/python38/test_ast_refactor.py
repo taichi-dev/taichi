@@ -7,7 +7,7 @@ import taichi as ti
 # See https://github.com/taichi-dev/taichi/issues/3425 for more information.
 
 
-@ti.test(experimental_ast_refactor=True)
+@ti.test()
 def test_namedexpr():
     @ti.kernel
     def foo() -> ti.i32:

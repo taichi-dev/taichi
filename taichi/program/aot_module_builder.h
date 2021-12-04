@@ -45,6 +45,15 @@ class AotModuleBuilder {
                                      std::vector<int> shape,
                                      int row_num,
                                      int column_num) = 0;
+  virtual void add_ndarray_per_backend(const std::string &identifier,
+                                       bool is_scalar,
+                                       DataType dt,
+                                       std::vector<int> shape,
+                                       int row_num,
+                                       int column_num) {
+    TI_NOT_IMPLEMENTED;
+  }
+
   virtual void add_per_backend_tmpl(const std::string &identifier,
                                     const std::string &key,
                                     Kernel *kernel) = 0;

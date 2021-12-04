@@ -1,8 +1,8 @@
 #pragma once
 #include "taichi/ui/common/app_config.h"
 #include <memory>
-#include "taichi/backends/vulkan/embedded_device.h"
-#include "taichi/backends/vulkan/loader.h"
+#include "taichi/backends/vulkan/vulkan_device_creator.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
 
@@ -24,7 +24,7 @@ class AppContext {
   AppConfig config;
 
  private:
-  std::unique_ptr<taichi::lang::vulkan::EmbeddedVulkanDevice>
+  std::unique_ptr<taichi::lang::vulkan::VulkanDeviceCreator>
       embedded_vulkan_device_{nullptr};
 
   // not owned

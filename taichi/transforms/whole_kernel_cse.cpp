@@ -104,7 +104,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
       for (auto &prev_stmt : scope[std::type_index(typeid(*stmt))]) {
         if (common_statement_eliminable(stmt, prev_stmt)) {
           MarkUndone::run(&visited, stmt);
-          stmt->replace_with(prev_stmt);
+          stmt->replace_usages_with(prev_stmt);
           modifier.erase(stmt);
           return;
         }

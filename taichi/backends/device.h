@@ -389,19 +389,24 @@ class Device {
     AllocUsage usage{AllocUsage::Storage};
   };
 
+  struct LlvmRuntimeAllocParams : AllocParams {
+    bool use_cached{true};
+    JITModule *runtime_jit{nullptr};
+    LLVMRuntime *runtime{nullptr};
+    uint64 *result_buffer{nullptr};
+  };
+
   virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
-  virtual DeviceAllocation allocate_memory_runtime(const AllocParams &params,
-                                                   JITModule *runtime_jit,
-                                                   LLVMRuntime *runtime,
-                                                   uint64 *result_buffer) {
+
+  virtual DeviceAllocation allocate_memory_runtime(
+      const LlvmRuntimeAllocParams &params) {
     TI_NOT_IMPLEMENTED
   }
+
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
 
-  uint64_t *allocate_llvm_runtime_memory_jit(JITModule *runtime_jit,
-                                             LLVMRuntime *runtime,
-                                             size_t size,
-                                             uint64 *result_buffer);
+  uint64_t *allocate_llvm_runtime_memory_jit(
+      const LlvmRuntimeAllocParams &params);
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
@@ -464,6 +469,7 @@ class Surface {
   virtual DeviceAllocation get_target_image() = 0;
   virtual void present_image() = 0;
   virtual std::pair<uint32_t, uint32_t> get_size() = 0;
+  virtual int get_image_count() = 0;
   virtual BufferFormat image_format() = 0;
   virtual void resize(uint32_t width, uint32_t height) = 0;
   virtual DeviceAllocation get_image_data() {

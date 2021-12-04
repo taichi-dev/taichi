@@ -60,6 +60,8 @@ class SparseMatrix:
             sm = self.matrix * other.matrix
             return SparseMatrix(sm=sm)
 
+        return None
+
     def __rmul__(self, other):
         """Right scalar multiplication for sparse matrix.
 
@@ -71,6 +73,8 @@ class SparseMatrix:
         if isinstance(other, float):
             sm = other * self.matrix
             return SparseMatrix(sm=sm)
+
+        return None
 
     def transpose(self):
         """Sparse Matrix transpose.
@@ -146,7 +150,7 @@ class SparseMatrixBuilder:
         """Print the triplets stored in the builder"""
         self.ptr.print_triplets()
 
-    def build(self, dtype=f32, format='CSR'):
+    def build(self, dtype=f32, _format='CSR'):
         """Create a sparse matrix using the triplets"""
         sm = self.ptr.build()
         return SparseMatrix(sm=sm)

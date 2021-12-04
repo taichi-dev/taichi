@@ -16,7 +16,7 @@ def _test_return_not_last_stmt():  # TODO: make this work
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_return_without_type_hint():
     @ti.kernel
     def kernel():

@@ -12,11 +12,11 @@ FunctionType OpenglProgramImpl::compile(Kernel *kernel,
                                 config->allow_nv_shader_extension);
   auto ptr = opengl_runtime_->keep(codegen.compile(*kernel));
 
-  return [ptr, runtime = opengl_runtime_.get()](Context &ctx) {
-    ptr->launch(ctx, runtime);
+  return [ptr, kernel, runtime = opengl_runtime_.get()](RuntimeContext &ctx) {
+    ptr->launch(ctx, kernel, runtime);
   };
 #else
-  return [](Context &ctx) {};
+  return [](RuntimeContext &ctx) {};
 #endif
 }
 
@@ -31,6 +31,17 @@ void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 #else
   TI_NOT_IMPLEMENTED;
 #endif
+}
+DeviceAllocation OpenglProgramImpl::allocate_memory_ndarray(
+    std::size_t alloc_size,
+    uint64 *result_buffer) {
+  return opengl_runtime_->device->allocate_memory(
+      {alloc_size, /*host_write=*/true, /*host_read=*/true,
+       /*export_sharing=*/false});
+}
+
+std::shared_ptr<Device> OpenglProgramImpl::get_device_shared() {
+  return opengl_runtime_->device;
 }
 
 void OpenglProgramImpl::compile_snode_tree_types(

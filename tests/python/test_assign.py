@@ -69,4 +69,3 @@ def test_ann_assign():
         assert b == 1.0
 
     func_ann()
-

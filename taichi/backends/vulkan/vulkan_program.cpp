@@ -48,6 +48,8 @@ std::vector<std::string> get_required_device_extensions() {
 }
 }  // namespace
 
+namespace vulkan {
+
 FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
   auto handle =
       runtime->register_taichi_kernel(std::move(run_codegen(kernel, runtime)));
@@ -56,10 +58,12 @@ FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
   };
 }
 
+}; // namespace vulkan
+
 FunctionType VulkanProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
   spirv::lower(kernel);
-  return compile_to_executable(kernel, vulkan_runtime_.get());
+  return vulkan::compile_to_executable(kernel, vulkan_runtime_.get());
 }
 
 void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,

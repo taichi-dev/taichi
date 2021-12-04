@@ -978,17 +978,12 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   store_var(_rand_y_, _362436069u);
   store_var(_rand_z_, _521288629u);
   store_var(_rand_w_, _88675123u);
-  // Yes, this is not an atomic operation, but just fine since no matter
-  // how RAND_STATE changes, `gl_GlobalInvocationID.x` can still help
-  // us to set different seeds for different threads.
-  // Discussion:
-  // https://github.com/taichi-dev/taichi/pull/912#discussion_r419021918
-  Value tmp9 = load_var(rand_gtmp_, t_int32_);
-  Value tmp10 = new_value(t_int32_, ValueKind::kNormal);
-  ib_.begin(spv::OpIAdd)
-      .add_seq(t_int32_, tmp10, tmp9, _1)
+
+  // FIXME: Only do this for the first thread or something
+  Value tmp9 = new_value(t_int32_, ValueKind::kNormal);
+  ib_.begin(spv::OpAtomicIAdd)
+      .add_seq(t_int32_, tmp9, rand_gtmp_, const_i32_one_, const_i32_zero_, _1)
       .commit(&func_header_);
-  store_var(rand_gtmp_, tmp10);
 
   init_rand_ = true;
 }

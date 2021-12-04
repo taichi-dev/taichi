@@ -1,6 +1,7 @@
-#include "taichi/backends/vulkan/codegen_vulkan.h"
+#include "taichi/codegen/spirv/spirv_codegen.h"
+#include "taichi/codegen/spirv/snode_struct_compiler.h"
+
 #include "taichi/backends/vulkan/runtime.h"
-#include "taichi/backends/vulkan/snode_struct_compiler.h"
 
 #include "taichi/backends/dx/dx_program.h"
 #include "taichi/backends/dx/dx_api.h"
@@ -8,9 +9,28 @@
 namespace taichi {
 namespace lang {
 
+namespace dx {
+
+FunctionType compile_to_executable(Kernel *kernel, vulkan::VkRuntime *runtime) {
+  auto handle = runtime->register_taichi_kernel(
+      std::move(vulkan::run_codegen(kernel, runtime)));
+  return [runtime, handle](RuntimeContext &ctx) {
+    runtime->launch_kernel(handle, &ctx);
+  };
+}
+
+} // namespace dx
+
+
 FunctionType DxProgramImpl::compile(Kernel *kernel, OffloadedStmt *offloaded) {
-  vulkan::lower(kernel);
-  return vulkan::compile_to_executable(kernel, runtime_.get());
+  spirv::lower(kernel);
+  return dx::compile_to_executable(kernel, runtime_.get());
+}
+
+void DxProgramImpl::compile_snode_tree_types(
+    SNodeTree *tree,
+    std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
+  runtime_->materialize_snode_tree(tree);
 }
 
 void DxProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -30,10 +50,9 @@ void DxProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 }
 
 void DxProgramImpl::materialize_snode_tree(
-    SNodeTree *tree,
-    std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-    std::unordered_map<int, SNode *> &snodes,
-    uint64 *result_buffer) {
+                         SNodeTree *tree,
+                         std::vector<std::unique_ptr<SNodeTree>> &,
+                         uint64 *result_buffer) {
   runtime_->materialize_snode_tree(tree);
 }
 

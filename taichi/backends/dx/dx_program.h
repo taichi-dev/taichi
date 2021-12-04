@@ -16,29 +16,46 @@ class DxProgramImpl : public ProgramImpl {
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
       uint64 *result_buffer) override {
-    return 0;  // TODO: support dynamic snode alloc in vulkan
+    return 0;  // TODO: support sparse in vulkan
   }
+
+  void compile_snode_tree_types(
+      SNodeTree *tree,
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees) override;
 
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
 
-  void materialize_snode_tree(
-      SNodeTree *tree,
-      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
-      std::unordered_map<int, SNode *> &snodes,
-      uint64 *result_buffer) override;
+  void materialize_snode_tree(SNodeTree *tree,
+                              std::vector<std::unique_ptr<SNodeTree>> &,
+                              uint64 *result_buffer) override;
 
   void synchronize() override {
+    runtime_->synchronize();
   }
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override {
-    // TODO: implement opengl aot
-    return nullptr;
+    TI_NOT_IMPLEMENTED;
   }
 
   virtual void destroy_snode_tree(SNodeTree *snode_tree) override {
-    TI_NOT_IMPLEMENTED
+    runtime_->destroy_snode_tree(snode_tree);
+  }
+
+  Device *get_compute_device() override {
+    if (device_) {
+      return device_.get();
+    }
+    return nullptr;
+  }
+
+  Device *get_graphics_device() override {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  DevicePtr get_snode_tree_device_ptr(int tree_id) override {
+    return runtime_->get_snode_tree_device_ptr(tree_id);
   }
 
   ~DxProgramImpl() override;

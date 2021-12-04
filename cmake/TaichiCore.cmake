@@ -289,7 +289,9 @@ endif()
 if (TI_WITH_OPENGL)
     add_subdirectory(external/SPIRV-Cross)
     target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Cross)
-    target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl spirv-cross-core)
+    target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl)
+    target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-hlsl)
+    target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-core)
 endif()
 
 # SPIR-V codegen is always there, regardless of Vulkan

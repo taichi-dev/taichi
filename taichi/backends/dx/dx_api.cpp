@@ -175,12 +175,12 @@ HRESULT CompileComputeShaderFromString(const std::string &source,
       D3DCompile(source.data(), source.size(), nullptr, defines, nullptr,
                  entry_point, profile, flags, 0, &shader_blob, &error_blob);
   if (FAILED(hr)) {
-    TI_ERROR("Error in CompileComputeShaderFromString\n");
+    TI_WARN("Error in CompileComputeShaderFromString\n");
     if (error_blob) {
-      TI_ERROR("%s\n", (char *)error_blob->GetBufferPointer());
+      TI_WARN("{}", (char *)error_blob->GetBufferPointer());
       error_blob->Release();
     } else
-      TI_ERROR("error_blob is null\n");
+      TI_WARN("error_blob is null\n");
     if (shader_blob) {
       shader_blob->Release();
     }

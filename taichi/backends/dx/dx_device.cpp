@@ -171,7 +171,8 @@ void DxCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
   std::unique_ptr<DxCommandList::CmdBufferFill> cmd =
       std::make_unique<CmdBufferFill>();
   ID3D11Buffer *buf = g_binding2buf.at(ptr.alloc_id);
-  cmd->buffer = buf;
+  ID3D11UnorderedAccessView *uav = g_binding2uav.at(ptr.alloc_id);
+  cmd->uav = uav;
   D3D11_BUFFER_DESC desc;
   buf->GetDesc(&desc);
   cmd->size = desc.ByteWidth;
@@ -191,21 +192,8 @@ void DxCommandList::CmdBindBufferToIndex::execute() {
 
 void DxCommandList::CmdBufferFill::execute() {
   ID3D11DeviceContext *context = GetD3D11Context();
-  // Use scratch
-  ID3D11Buffer *tmp_arg_buf = GetTmpArgBuf();
-  D3D11_MAPPED_SUBRESOURCE mapped;
-  context->Map(tmp_arg_buf, 0, D3D11_MAP_WRITE, 0, &mapped);
-  uint32_t *ptr = static_cast<uint32_t *>(mapped.pData);
-  for (int i = offset / 4; i < size / 4; i++) {
-    ptr[i] = data;
-  }
-  context->Unmap(tmp_arg_buf, 0);
-  D3D11_BOX box{};
-  box.left = offset;
-  box.right = offset + size;
-  box.front = box.top = 0;
-  box.back = box.bottom = 1; 
-  context->CopySubresourceRegion(buffer, 0, offset, 0, 0, tmp_arg_buf, 0, &box);
+  const UINT values[4] = {data, data, data, data};
+  context->ClearUnorderedAccessViewUint(uav, values);
 }
 
 void DxCommandList::CmdBufferCopy::execute() {

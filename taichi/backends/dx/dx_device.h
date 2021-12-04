@@ -117,7 +117,8 @@ class DxCommandList : public CommandList {
   };
 
   struct CmdBufferFill : public Cmd {
-    ID3D11Buffer *buffer = nullptr;
+    // ID3D11Buffer *buffer = nullptr;
+    ID3D11UnorderedAccessView *uav;
     size_t offset{0}, size{0};
     uint32_t data{0};
     void execute() override;

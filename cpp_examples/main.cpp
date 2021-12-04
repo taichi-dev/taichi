@@ -342,7 +342,7 @@ void aot() {
   place->dt = PrimitiveType::i32;
   program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/false);
 
-  auto &aot_builder = program.make_aot_module_builder(Arch::vulkan);
+  auto aot_builder = program.make_aot_module_builder(Arch::vulkan);
 
   std::unique_ptr<Kernel> kernel_init, kernel_ret;
 

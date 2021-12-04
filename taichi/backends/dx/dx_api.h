@@ -9,7 +9,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-namespace dx {
+namespace directx11 {
 
 bool initialize_dx(bool error_tolerance = false);
 bool is_dx_api_available();

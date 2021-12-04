@@ -6,7 +6,7 @@
 
 namespace taichi {
 namespace lang {
-namespace dx {
+namespace directx11 {
 
 extern IDXGISwapChain *g_swapchain;
 

@@ -90,8 +90,8 @@ Program::Program(Arch desired_arch)
   } else if (config.arch == Arch::opengl) {
     TI_ASSERT(opengl::initialize_opengl(config.use_gles));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
-  } else if (config.arch == Arch::dx) {
-    if (!dx::is_dx_api_available()) {
+  } else if (config.arch == Arch::dx11) {
+    if (!directx11::is_dx_api_available()) {
       TI_WARN("No DX API detected.");
       config.arch = host_arch();
     } else {
@@ -341,8 +341,8 @@ Arch Program::get_accessor_arch() {
     return Arch::metal;
   } else if (config.arch == Arch::cc) {
     return Arch::cc;
-  } else if (config.arch == Arch::dx) {
-    return Arch::dx;
+  } else if (config.arch == Arch::dx11) {
+    return Arch::dx11;
   } else {
     return get_host_arch();
   }

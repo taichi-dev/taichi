@@ -6,7 +6,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-namespace dx {
+namespace directx11 {
 
 ID3D11Device *g_device;
 ID3D11DeviceContext *g_context;

@@ -9,7 +9,7 @@
 namespace taichi {
 namespace lang {
 
-namespace dx {
+namespace directx11 {
 
 FunctionType compile_to_executable(Kernel *kernel, vulkan::VkRuntime *runtime) {
   auto handle = runtime->register_taichi_kernel(
@@ -24,7 +24,7 @@ FunctionType compile_to_executable(Kernel *kernel, vulkan::VkRuntime *runtime) {
 
 FunctionType DxProgramImpl::compile(Kernel *kernel, OffloadedStmt *offloaded) {
   spirv::lower(kernel);
-  return dx::compile_to_executable(kernel, runtime_.get());
+  return directx11::compile_to_executable(kernel, runtime_.get());
 }
 
 void DxProgramImpl::compile_snode_tree_types(
@@ -39,9 +39,9 @@ void DxProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   // 1. allocate result buffer
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
-  TI_ASSERT(dx::is_dx_api_available());
+  TI_ASSERT(directx11::is_dx_api_available());
 
-  device_ = dx::get_dx_device();
+  device_ = directx11::get_dx_device();
 
   vulkan::VkRuntime::Params params;
   params.host_result_buffer = *result_buffer_ptr;

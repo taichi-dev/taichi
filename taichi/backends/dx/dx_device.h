@@ -5,7 +5,7 @@
 
 namespace taichi {
 namespace lang {
-namespace dx {
+namespace directx11 {
 
 class DxResourceBinder : public ResourceBinder {
  public:

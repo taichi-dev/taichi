@@ -1,5 +1,3 @@
-#include <bits/stdc++.h>
-
 #include "taichi/ir/ir_builder.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
@@ -49,7 +47,7 @@ void run_snode() {
   int n = 10;
   program.materialize_runtime();
   auto *root = new SNode(0, SNodeType::root);
-  auto *pointer = &root->pointer(Index(0), n);
+  auto *pointer = &root->pointer(Axis(0), n, false);
   auto *place = &pointer->insert_children(SNodeType::place);
   place->dt = PrimitiveType::i32;
   program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/false);
@@ -131,7 +129,7 @@ void run_snode() {
   auto ctx_ret = kernel_ret->make_launch_context();
   auto ctx_ext = kernel_ext->make_launch_context();
   std::vector<int> ext_arr(n);
-  ctx_ext.set_arg_external_array(0, taichi::uint64(ext_arr.data()), n);
+  ctx_ext.set_arg_external_array(0, taichi::uint64(ext_arr.data()), n, false);
 
   (*kernel_init)(ctx_init);
   (*kernel_ret)(ctx_ret);
@@ -211,10 +209,11 @@ void autograd() {
       }
     };
 
-    auto *snode = &root->dense(0, n).insert_children(SNodeType::place);
+    auto *snode =
+        &root->dense(Axis(0), n, false).insert_children(SNodeType::place);
     snode->dt = PrimitiveType::f32;
     snode->grad_info = std::make_unique<GradInfoPrimal>(
-        &root->dense(0, n).insert_children(SNodeType::place));
+        &root->dense(Axis(0), n, false).insert_children(SNodeType::place));
     snode->get_grad()->dt = PrimitiveType::f32;
     snode->get_grad()->grad_info = std::make_unique<GradInfoAdjoint>();
     return snode;

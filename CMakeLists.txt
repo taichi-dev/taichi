@@ -63,6 +63,12 @@ if (TI_BUILD_TESTS)
   include(cmake/TaichiTests.cmake)
 endif()
 
+option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
+
+if (TI_BUILD_EXAMPLES)
+  include(cmake/TaichiExamples.cmake)
+endif()
+
 include_directories(${PROJECT_SOURCE_DIR}/external/eigen)
 
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")

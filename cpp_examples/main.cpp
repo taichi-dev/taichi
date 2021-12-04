@@ -335,12 +335,13 @@ void aot() {
   program.config.advanced_optimization = false;
 
   int n = 10;
-  program.materialize_runtime();
+  // not needed, but `compile_only` needs to be set to `true`
+  // program.materialize_runtime();
   auto *root = new SNode(0, SNodeType::root);
   auto *pointer = &root->dense(Axis(0), n, false);
   auto *place = &pointer->insert_children(SNodeType::place);
   place->dt = PrimitiveType::i32;
-  program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/false);
+  program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/true);
 
   auto aot_builder = program.make_aot_module_builder(Arch::vulkan);
 

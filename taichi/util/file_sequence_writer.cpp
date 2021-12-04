@@ -1,5 +1,7 @@
+#ifdef TI_WITH_LLVM
 #include "llvm/IR/Module.h"
 #include "llvm/Support/raw_ostream.h"
+#endif
 
 #include "taichi/util/file_sequence_writer.h"
 
@@ -10,12 +12,14 @@ FileSequenceWriter::FileSequenceWriter(std::string filename_template,
     : counter(0), filename_template(filename_template), file_type(file_type) {
 }
 
+#ifdef TI_WITH_LLVM
 std::string FileSequenceWriter::write(llvm::Module *module) {
   std::string str;
   llvm::raw_string_ostream ros(str);
   module->print(ros, nullptr);
   return write(str);
 }
+#endif
 
 std::string FileSequenceWriter::write(const std::string &str) {
   auto [ofs, fn] = create_new_file();

@@ -95,7 +95,7 @@ class TaskCodegen : public IRVisitor {
 
   Result run() {
     ir_->init_header();
-    kernel_function_ = ir_->new_function();  // void main();
+    kernel_function_ = ir_->new_function();
     ir_->debug(spv::OpName, kernel_function_, "main");
 
     if (task_ir_->task_type == OffloadedTaskType::serial) {

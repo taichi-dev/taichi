@@ -9,10 +9,52 @@ namespace taichi {
 namespace lang {
 namespace vulkan {
 
+// Only responsible for reporting device capabilities
+class AotTargetDevice : public Device {
+ public:
+  AotTargetDevice() {
+    // TODO: make this configurable
+    set_default_caps();
+  }
+
+  void set_default_caps() {
+    set_cap(DeviceCapability::spirv_version, 0x10300);
+    set_cap(DeviceCapability::spirv_has_variable_ptr, true);
+    set_cap(DeviceCapability::spirv_has_atomic_float_add, true);
+    set_cap(DeviceCapability::spirv_has_atomic_float, true);
+  }
+
+  DeviceAllocation allocate_memory(const AllocParams &params) override {
+    TI_NOT_IMPLEMENTED
+  }
+  void dealloc_memory(DeviceAllocation handle)
+      override{TI_NOT_IMPLEMENTED} std::unique_ptr<Pipeline> create_pipeline(
+          const PipelineSourceDesc &src,
+          std::string name = "Pipeline") override {
+    TI_NOT_IMPLEMENTED
+  }
+  void *map_range(DevicePtr ptr, uint64_t size) override {
+    TI_NOT_IMPLEMENTED
+  }
+  void *map(DeviceAllocation alloc) override {
+    TI_NOT_IMPLEMENTED
+  }
+  void unmap(DevicePtr ptr) override {
+    TI_NOT_IMPLEMENTED
+  }
+  void unmap(DeviceAllocation alloc) override {
+    TI_NOT_IMPLEMENTED
+  }
+  void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override{
+      TI_NOT_IMPLEMENTED} Stream *get_compute_stream() override {
+    TI_NOT_IMPLEMENTED
+  }
+};
+
 AotModuleBuilderImpl::AotModuleBuilderImpl(
-    VkRuntime *runtime,
     const std::vector<CompiledSNodeStructs> &compiled_structs)
-    : compiled_structs_(compiled_structs), runtime_(runtime) {
+    : compiled_structs_(compiled_structs) {
+  aot_target_device_ = std::make_unique<AotTargetDevice>();
 }
 
 void AotModuleBuilderImpl::write_spv_file(
@@ -49,7 +91,8 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
   spirv::lower(kernel);
-  auto compiled = run_codegen(kernel, runtime_);
+  auto compiled =
+      run_codegen(kernel, aot_target_device_.get(), compiled_structs_);
   ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
 }

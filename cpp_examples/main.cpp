@@ -335,8 +335,8 @@ void aot_save() {
   program.config.advanced_optimization = false;
 
   int n = 10;
-  // not needed, but `compile_only` needs to be set to `true`
-  // program.materialize_runtime();
+
+  program.materialize_runtime();
   auto *root = new SNode(0, SNodeType::root);
   auto *pointer = &root->dense(Axis(0), n, false);
   auto *place = &pointer->insert_children(SNodeType::place);

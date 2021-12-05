@@ -25,29 +25,33 @@ class AotTargetDevice : public Device {
   }
 
   DeviceAllocation allocate_memory(const AllocParams &params) override {
-    TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED;
   }
-  void dealloc_memory(DeviceAllocation handle)
-      override{TI_NOT_IMPLEMENTED} std::unique_ptr<Pipeline> create_pipeline(
-          const PipelineSourceDesc &src,
-          std::string name = "Pipeline") override {
-    TI_NOT_IMPLEMENTED
+  void dealloc_memory(DeviceAllocation handle) override {
+    TI_NOT_IMPLEMENTED;
+  }
+  std::unique_ptr<Pipeline> create_pipeline(
+      const PipelineSourceDesc &src,
+      std::string name = "Pipeline") override {
+    TI_NOT_IMPLEMENTED;
   }
   void *map_range(DevicePtr ptr, uint64_t size) override {
-    TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED;
   }
   void *map(DeviceAllocation alloc) override {
-    TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED;
   }
   void unmap(DevicePtr ptr) override {
-    TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED;
   }
   void unmap(DeviceAllocation alloc) override {
-    TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED;
   }
-  void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override{
-      TI_NOT_IMPLEMENTED} Stream *get_compute_stream() override {
-    TI_NOT_IMPLEMENTED
+  void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override {
+    TI_NOT_IMPLEMENTED;
+  }
+  Stream *get_compute_stream() override {
+    TI_NOT_IMPLEMENTED;
   }
 };
 

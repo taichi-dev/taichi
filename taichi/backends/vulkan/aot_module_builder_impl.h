@@ -44,7 +44,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 
   const std::vector<CompiledSNodeStructs> &compiled_structs_;
   TaichiAotData ti_aot_data_;
-  std::unique_ptr<AotTargetDevice> aot_target_device_;
+  std::unique_ptr<Device> aot_target_device_;
 };
 
 }  // namespace vulkan

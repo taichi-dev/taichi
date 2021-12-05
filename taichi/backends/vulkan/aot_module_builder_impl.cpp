@@ -19,9 +19,6 @@ class AotTargetDevice : public Device {
 
   void set_default_caps() {
     set_cap(DeviceCapability::spirv_version, 0x10300);
-    set_cap(DeviceCapability::spirv_has_variable_ptr, true);
-    set_cap(DeviceCapability::spirv_has_atomic_float_add, true);
-    set_cap(DeviceCapability::spirv_has_atomic_float, true);
   }
 
   DeviceAllocation allocate_memory(const AllocParams &params) override {

@@ -327,7 +327,7 @@ void autograd() {
   std::cout << std::endl;
 }
 
-void aot() {
+void aot_save() {
   using namespace taichi;
   using namespace lang;
   auto program = Program(Arch::vulkan);
@@ -405,6 +405,6 @@ void aot() {
 int main() {
   run_snode();
   autograd();
-  aot();
+  aot_save();
   return 0;
 }

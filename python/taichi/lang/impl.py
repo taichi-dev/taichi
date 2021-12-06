@@ -831,8 +831,6 @@ def axes(*x: Iterable[int]):
     return [_ti_core.Axis(i) for i in x]
 
 
-index = indices
-
 Axis = _ti_core.Axis
 
 

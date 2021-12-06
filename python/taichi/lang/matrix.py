@@ -1073,7 +1073,6 @@ def Vector(n, dt=None, **kwargs):
     return Matrix(n, 1, dt=dt, **kwargs)
 
 
-Vector.var = Matrix._Vector_var
 Vector.field = Matrix._Vector_field
 Vector.ndarray = Matrix._Vector_ndarray
 Vector.zero = Matrix.zero

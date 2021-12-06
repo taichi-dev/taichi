@@ -29,12 +29,12 @@ from taichi.lang.impl import (axes, begin_frontend_if,
                               chain_compare, current_cfg, expr_init,
                               expr_init_func, expr_init_list, field,
                               get_runtime, global_subscript_with_offset,
-                              grouped, indices, insert_expr_stmt_if_ti_func,
+                              grouped, insert_expr_stmt_if_ti_func,
                               local_subscript_with_offset,
                               materialize_callback, ndarray, one, root, static,
                               static_assert, static_print, stop_grad,
                               subscript, ti_assert, ti_float, ti_format,
-                              ti_int, ti_print, var, zero)
+                              ti_int, ti_print, zero)
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
@@ -717,9 +717,6 @@ bit_vectorize = _ti_core.bit_vectorize
 block_dim = _ti_core.block_dim
 global_thread_idx = _ti_core.insert_thread_idx_expr
 mesh_patch_idx = _ti_core.insert_patch_idx_expr
-
-inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
-transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)
 
 
 def polar_decompose(A, dt=None):

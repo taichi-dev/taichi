@@ -36,8 +36,10 @@ if (WIN32)
     endif()
 endif()
 
+# Enable GGUI Only if building with Vulkan on Desktop machine as it depends on
+# GLFW which is not supported on Android platform for example
 set(TI_WITH_GGUI OFF)
-if(TI_WITH_VULKAN)
+if(TI_WITH_VULKAN AND NOT ANDROID)
     set(TI_WITH_GGUI ON)
 endif()
 
@@ -204,7 +206,8 @@ endif()
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
-if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
+# GLFW not available on Android
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN AND NOT ANDROID)
   set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -334,7 +337,14 @@ if (APPLE)
 endif ()
 
 if (NOT WIN32)
-    target_link_libraries(${CORE_LIBRARY_NAME} pthread stdc++)
+    # Android has a custom toolchain so pthread is not available and should
+    # link against other libraries as well for logcat and internal features.
+    if (ANDROID)
+        target_link_libraries(${CORE_LIBRARY_NAME} android log)
+    else()
+        target_link_libraries(${CORE_LIBRARY_NAME} pthread stdc++)
+    endif()
+
     if (UNIX AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	# OS X or BSD
     else()
@@ -361,7 +371,13 @@ endforeach ()
 message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
 
 set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_core)
-add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED ${TAICHI_PYBIND_SOURCE})
+# Cannot compile Python source code with Android, but TI_EXPORT_CORE should be set and
+# Android should only use the isolated library ignoring those source code.
+if (NOT ANDROID)
+    add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED ${TAICHI_PYBIND_SOURCE})
+else()
+    add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED)
+endif ()
 # It is actually possible to link with an OBJECT library
 # https://cmake.org/cmake/help/v3.13/command/target_link_libraries.html?highlight=target_link_libraries#linking-object-libraries
 target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC ${CORE_LIBRARY_NAME})

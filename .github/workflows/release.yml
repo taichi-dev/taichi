@@ -202,6 +202,10 @@ jobs:
         with:
           submodules: "recursive"
 
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+
       - name: Get sccache cache
         uses: actions/cache@v2
         with:
@@ -231,9 +235,12 @@ jobs:
           retention-days: 20
 
       - name: Test
-        run: .github/workflows/scripts/unix_test.sh
+        run: |
+          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
+          .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: "metal,cpu"
+          PYTHON: ${{ matrix.python }}
 
       - name: Upload PyPI
         env:

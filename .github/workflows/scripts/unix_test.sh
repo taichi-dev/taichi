@@ -17,6 +17,8 @@ if [[ "$TI_IN_DOCKER" == "true" ]]; then
     conda activate "$PY"
 fi
 
+echo "Python is $(which python3)"
+
 python3 -m pip uninstall taichi taichi-nightly -y
 python3 -m pip install dist/*.whl
 if [ -z "$GPU_TEST" ]; then

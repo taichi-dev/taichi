@@ -69,6 +69,14 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-linux-gpu-${{ github.sha }}
+          restore-keys: |
+            sccache-linux-gpu-
+
       - name: Build
         run: |
           mkdir -m777 shared
@@ -135,6 +143,14 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-mac-${{ github.sha }}
+          restore-keys: |
+            sccache-mac-
+
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
@@ -186,6 +202,14 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-m1-${{ github.sha }}
+          restore-keys: |
+            sccache-m1-
+
       - name: Build
         run: |
           # We hacked here because conda activate in CI won't update python PATH
@@ -194,7 +218,7 @@ jobs:
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
           CXX: clang++
@@ -231,6 +255,14 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-1014-${{ github.sha }}
+          restore-keys: |
+            sccache-1014-
+
       - name: Build
         run: |
           # We hacked here because conda activate in CI won't update python PATH
@@ -241,7 +273,7 @@ jobs:
           export PATH=$LLVM_DIR/bin:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
           CXX: clang++

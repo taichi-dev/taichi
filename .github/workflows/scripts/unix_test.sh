@@ -16,6 +16,8 @@ if [[ "$TI_IN_DOCKER" == "true" ]]; then
     source $HOME/miniconda/etc/profile.d/conda.sh
     conda activate "$PY"
 fi
+
+python3 -m pip uninstall taichi taichi-nightly -y
 python3 -m pip install dist/*.whl
 if [ -z "$GPU_TEST" ]; then
     python3 -m pip install -r requirements_test.txt

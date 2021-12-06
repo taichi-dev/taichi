@@ -85,6 +85,7 @@ class IRVerifier : public BasicStmtVisitor {
       if (stmt->is_container_statement())
         current_container_stmt_ = backup_container_stmt;
     }
+    current_block_ = backup_block;
     if (!block->parent_stmt || !block->parent_stmt->is<OffloadedStmt>())
       current_block_ = backup_block;
   }

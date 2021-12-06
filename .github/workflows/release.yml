@@ -21,6 +21,7 @@ env:
 jobs:
   add_version_to_database:
     name: Add version to database
+    if: 0
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

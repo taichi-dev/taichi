@@ -1,5 +1,7 @@
 name: Publishing Release
 on:
+  pull_request:
+    types: [ opened, synchronize, reopened ]
   release:
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#release
     types: [published]
@@ -146,7 +148,7 @@ jobs:
           export PATH=$(pwd)/taichi-llvm/bin/:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
           PROJECT_NAME: ${{ matrix.name }}
           CXX: clang++
 
@@ -202,6 +204,11 @@ jobs:
           name: ${{ matrix.name }}-py${{ matrix.python }}-macos-m1.whl
           path: dist/*.whl
           retention-days: 20
+
+      - name: Test
+        run: .github/workflows/scripts/unix_test.sh
+        env:
+          TI_WANTED_ARCHS: "metal,cpu"
 
       - name: Upload PyPI
         env:

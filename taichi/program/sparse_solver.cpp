@@ -55,8 +55,9 @@ bool EigenSparseSolver<EigenSolver>::info() {
   return solver_.info() == Eigen::Success;
 }
 
-std::unique_ptr<SparseSolver> make_sparse_solver(const std::string &solver_type,
+std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt, const std::string &solver_type,
                                                  const std::string &ordering) {
+  printf("hello world: %d\n", dt==PrimitiveType::f32);                                                 
   using key_type = std::pair<std::string, std::string>;
   using func_type = std::unique_ptr<SparseSolver> (*)();
   static const std::unordered_map<key_type, func_type, pair_hash>

@@ -113,7 +113,7 @@ jobs:
         run: |
           cd shared
           pip install twine requests==2.26
-          python3 misc/upload_release.py
+          python3 ../misc/upload_release.py
 
       - name: clean docker container
         if: always()

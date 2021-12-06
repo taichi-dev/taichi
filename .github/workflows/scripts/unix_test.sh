@@ -23,7 +23,6 @@ else
     ## Only GPU machine uses system python.
     export PATH=$PATH:$HOME/.local/bin
 fi
-ti example laplace
 ti diagnose
 ti changelog
 echo "wanted archs: $TI_WANTED_ARCHS"

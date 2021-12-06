@@ -9,7 +9,6 @@ import tempfile
 import time
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
-from socket import timeout
 from urllib import request
 from urllib.error import HTTPError
 
@@ -473,7 +472,7 @@ def check_version():
     try:
         payload = json.dumps(payload)
         payload = payload.encode()
-        req = request.Request('http://metadata.taichi.graphics/check_version',
+        req = request.Request('https://metadata.taichi.graphics/check_version',
                               method='POST')
         req.add_header('Content-Type', 'application/json')
         with request.urlopen(req, data=payload, timeout=3) as response:
@@ -486,11 +485,8 @@ def check_version():
             elif response['status'] == 0:
                 # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
                 print(response['message'])
-    except HTTPError as error:
-        print('Checking latest version failed: Server error.', error)
-    except timeout:
-        print(
-            'Checking latest version failed: Time out when connecting server.')
+    except Exception as error:
+        print('Checking lastest version failed:', error)
 
 
 def init(arch=None,
@@ -520,30 +516,28 @@ def init(arch=None,
             * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/lang/articles/advanced/layout.
     """
     # Check version for users every 7 days.
-    os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
-    timestamp_path = os.path.join(_ti_core.get_repo_dir(), 'timestamp')
-    cur_date = datetime.date.today()
-    if os.path.exists(timestamp_path):
-        last_time = ''
-        with open(timestamp_path, 'r') as f:
-            last_time = f.readlines()[0].rstrip()
-        if cur_date.strftime('%Y-%m-%d') > last_time:
-            try:
+    try:
+        os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
+        timestamp_path = os.path.join(_ti_core.get_repo_dir(), 'timestamp')
+        cur_date = datetime.date.today()
+        if os.path.exists(timestamp_path):
+            last_time = ''
+            with open(timestamp_path, 'r') as f:
+                last_time = f.readlines()[0].rstrip()
+            if cur_date.strftime('%Y-%m-%d') > last_time:
                 check_version()
-            except Exception as error:
-                print('Checking lastest version failed:', error)
+                with open(timestamp_path, 'w') as f:
+                    f.write((cur_date +
+                             datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+                    f.truncate()
+        else:
+            check_version()
             with open(timestamp_path, 'w') as f:
                 f.write((cur_date +
                          datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
-                f.truncate()
-    else:
-        try:
-            check_version()
-        except Exception as error:
-            print('Checking lastest version failed:', error)
-        with open(timestamp_path, 'w') as f:
-            f.write(
-                (cur_date + datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+    # Wildcard exception to catch potential file writing errors.
+    except Exception as error:
+        print('Checking lastest version failed:', error)
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,

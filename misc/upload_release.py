@@ -14,7 +14,7 @@ def upload_taichi_version():
     parts = filename.split('-')
     payload = {'version': parts[1], 'platform': parts[4], 'python': parts[2]}
     try:
-        response = requests.post(f'http://{url}/add_version/detail',
+        response = requests.post(f'https://{url}/add_version/detail',
                                  json=payload,
                                  auth=(username, password),
                                  timeout=5)

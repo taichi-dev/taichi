@@ -756,7 +756,8 @@ class KernelManager::Impl {
   }
 
  private:
-  void init_runtime_buffer(const CompiledRuntimeModule &rtm_module, int random_seed) {
+  void init_runtime_buffer(const CompiledRuntimeModule &rtm_module,
+                           int random_seed) {
     char *addr = runtime_mem_->ptr();
     // init rand_seeds
     std::default_random_engine generator((unsigned int)random_seed);

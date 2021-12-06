@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#ifdef TI_WITH_LLVM
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
@@ -32,6 +33,7 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/IPO.h"
+#endif
 
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
@@ -41,8 +43,10 @@
 
 TLANG_NAMESPACE_BEGIN
 
+#ifdef TI_WITH_LLVM
 using namespace llvm;
 using namespace llvm::orc;
+#endif
 
 std::pair<JITTargetMachineBuilder, llvm::DataLayout> get_host_target_info() {
 #if defined(TI_PLATFORM_OSX) and defined(TI_ARCH_ARM)

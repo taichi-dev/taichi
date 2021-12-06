@@ -93,7 +93,6 @@ class CudaDevice : public Device {
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
-  std::unique_ptr<CudaCachingAllocator> get_caching_allocator();
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") override{TI_NOT_IMPLEMENTED};

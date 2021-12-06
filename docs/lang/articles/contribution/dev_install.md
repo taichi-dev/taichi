@@ -425,7 +425,7 @@ The `develop` command serves the developers' needs better because edits to the P
 
 ## Troubleshooting and debugging
 
-### `llvm-as` cannot be opened
+### `llvm-as` cannot be opened on macOS
 
 **Description**
 
@@ -462,7 +462,7 @@ You did not use the `--recursive` flag when cloning the Taichi repository.
 
 **Workaround**
 
-Run `git submodule update --init --re``cursive --depth=1`.
+Run `git submodule update --init --recursive --depth=1`.
 
 ### `which python` still returns the system's Python location
 

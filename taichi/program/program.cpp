@@ -21,7 +21,9 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
+#ifdef TI_WITH_LLVM
 #include "taichi/llvm/llvm_program.h"
+#endif
 
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/cc_program.h"

@@ -218,7 +218,7 @@ class SNode:
             Tuple[int]: The number of elements from root in each axis of `self`.
         """
         dim = self.ptr.num_active_indices()
-        ret = [self.ptr.get_shape_along_axis(i) for i in range(dim)]
+        ret = tuple(self.ptr.get_shape_along_axis(i) for i in range(dim))
 
         return ret
 

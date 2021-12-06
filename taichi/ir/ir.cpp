@@ -498,9 +498,9 @@ void DelayedIRModifier::type_check(IRNode *node, CompileConfig cfg) {
 bool DelayedIRModifier::modify_ir() {
   bool force_modified = modified_;
   modified_ = false;
-  if (to_insert_before_.empty() && to_insert_after_.empty() && to_erase_.empty() &&
-      to_replace_with_.empty() && to_extract_to_block_front_.empty() &&
-      to_type_check_.empty())
+  if (to_insert_before_.empty() && to_insert_after_.empty() &&
+      to_erase_.empty() && to_replace_with_.empty() &&
+      to_extract_to_block_front_.empty() && to_type_check_.empty())
     return force_modified;
   for (auto &i : to_insert_before_) {
     i.first->parent->insert_before(i.first, std::move(i.second));

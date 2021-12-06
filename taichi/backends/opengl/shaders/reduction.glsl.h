@@ -9,9 +9,9 @@ constexpr auto kOpenGLReductionCommon = STR(
                                    gl_WorkGroupSize.z];
     shared uint _reduction_temp_uint[gl_WorkGroupSize.x * gl_WorkGroupSize.y *
                                      gl_WorkGroupSize.z];
-    float add(float a, float b) { return a + b; }
-    int add(int a, int b) { return a + b; }
-    uint add(uint a, uint b) { return a + b; }
+    float add(float a, float b) { return a + b; } int add(int a, int b) {
+      return a + b;
+    } uint add(uint a, uint b) { return a + b; }
 \n);
 
 #ifndef TI_INSIDE_OPENGL_CODEGEN
@@ -24,8 +24,8 @@ static_assert(false, "Do not include");
         _reduction_temp_##TYPE[gl_LocalInvocationIndex] = r;                   \
         barrier();                                                             \
         memoryBarrierShared();                                                 \
-        const int group_size = int(gl_WorkGroupSize.x *                        \
-                                   gl_WorkGroupSize.y * gl_WorkGroupSize.z);   \
+        const int group_size =                                                 \
+            int(gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z); \
         const int depth = int(ceil(log2(float(group_size))));                  \
         for (int i = 0; i < depth; ++i) {                                      \
           const int radix = 1 << (i + 1);                                      \

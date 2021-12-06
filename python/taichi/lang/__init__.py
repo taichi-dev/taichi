@@ -133,11 +133,6 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: 
 type_factory_ = _ti_core.get_type_factory_instance()
 
 
-@deprecated('kernel_profiler_print()', 'print_kernel_profile_info()')
-def kernel_profiler_print():
-    return print_kernel_profile_info()
-
-
 def print_kernel_profile_info(mode='count'):
     """Print the profiling results of Taichi kernels.
 
@@ -218,11 +213,6 @@ def query_kernel_profile_info(name):
         backend due to its lack of support for `ti.sync()`.
     """
     return get_default_kernel_profiler().query_info(name)
-
-
-@deprecated('kernel_profiler_clear()', 'clear_kernel_profile_info()')
-def kernel_profiler_clear():
-    return clear_kernel_profile_info()
 
 
 def clear_kernel_profile_info():
@@ -332,11 +322,6 @@ def collect_kernel_profile_metrics(metric_list=default_cupti_metrics):
     get_default_kernel_profiler().set_metrics(metric_list)
     yield get_default_kernel_profiler()
     get_default_kernel_profiler().set_metrics()
-
-
-@deprecated('memory_profiler_print()', 'print_memory_profile_info()')
-def memory_profiler_print():
-    return print_memory_profile_info()
 
 
 def print_memory_profile_info():
@@ -701,11 +686,6 @@ def mesh_local(*args):
         for v in a.get_field_members():
             _ti_core.insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.mesh_local, v.ptr)
-
-
-@deprecated('ti.cache_shared', 'ti.block_local')
-def cache_shared(*args):
-    block_local(*args)
 
 
 def cache_read_only(*args):

@@ -883,11 +883,11 @@ class MeshIndexConversionExpression : public Expression {
 
 class ASTBuilder {
  private:
-  std::vector<Block *> stack;
+  std::vector<Block *> stack_;
 
  public:
   ASTBuilder(Block *initial) {
-    stack.push_back(initial);
+    stack_.push_back(initial);
   }
 
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
@@ -897,11 +897,11 @@ class ASTBuilder {
     Block *list;
     ScopeGuard(ASTBuilder *builder, Block *list)
         : builder(builder), list(list) {
-      builder->stack.push_back(list);
+      builder->stack_.push_back(list);
     }
 
     ~ScopeGuard() {
-      builder->stack.pop_back();
+      builder->stack_.pop_back();
     }
   };
 
@@ -915,20 +915,20 @@ ASTBuilder &current_ast_builder();
 
 class FrontendContext {
  private:
-  std::unique_ptr<ASTBuilder> current_builder;
-  std::unique_ptr<Block> root_node;
+  std::unique_ptr<ASTBuilder> current_builder_;
+  std::unique_ptr<Block> root_node_;
 
  public:
   FrontendContext();
 
   ASTBuilder &builder() {
-    return *current_builder;
+    return *current_builder_;
   }
 
   IRNode *root();
 
   std::unique_ptr<Block> get_root() {
-    return std::move(root_node);
+    return std::move(root_node_);
   }
 };
 

@@ -16,7 +16,7 @@
 TLANG_NAMESPACE_BEGIN
 
 UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
-    : size(size), arch_(arch), device_(device) {
+    : size_(size), arch_(arch), device_(device) {
   auto t = Time::get_time();
   if (arch_ == Arch::x64) {
 #ifdef TI_WITH_LLVM
@@ -34,8 +34,8 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
   } else {
     TI_TRACE("Allocating virtual address space of size {} MB",
              size / 1024 / 1024);
-    cpu_vm = std::make_unique<VirtualMemoryAllocator>(size);
-    data = (uint8 *)cpu_vm->ptr;
+    cpu_vm_ = std::make_unique<VirtualMemoryAllocator>(size);
+    data = (uint8 *)cpu_vm_->ptr;
   }
   TI_ASSERT(data != nullptr);
   TI_ASSERT(uint64(data) % 4096 == 0);
@@ -56,7 +56,7 @@ taichi::lang::UnifiedAllocator::~UnifiedAllocator() {
 }
 
 void taichi::lang::UnifiedAllocator::memset(unsigned char val) {
-  std::memset(data, val, size);
+  std::memset(data, val, size_);
 }
 
 TLANG_NAMESPACE_END

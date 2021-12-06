@@ -12,9 +12,9 @@ TLANG_NAMESPACE_BEGIN
 // Compare if two IRNodes are equivalent.
 class IRNodeComparator : public IRVisitor {
  private:
-  IRNode *other_node;
+  IRNode *other_node_;
   // map the id from this node to the other node
-  std::unordered_map<int, int> id_map;
+  std::unordered_map<int, int> id_map_;
 
   bool recursively_check_;
 
@@ -39,13 +39,13 @@ class IRNodeComparator : public IRVisitor {
       const std::optional<std::unordered_set<AsyncState>>
           &possibly_modified_states,
       IRBank *ir_bank)
-      : other_node(other_node) {
+      : other_node_(other_node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     same = true;
     if (id_map.has_value()) {
       recursively_check_ = true;
-      this->id_map = id_map.value();
+      this->id_map_ = id_map.value();
     } else {
       recursively_check_ = false;
     }
@@ -66,9 +66,9 @@ class IRNodeComparator : public IRVisitor {
   }
 
   void map_id(int this_id, int other_id) {
-    auto it = id_map.find(this_id);
-    if (it == id_map.end()) {
-      id_map[this_id] = other_id;
+    auto it = id_map_.find(this_id);
+    if (it == id_map_.end()) {
+      id_map_[this_id] = other_id;
     } else if (it->second != other_id) {
       same = false;
     }
@@ -77,8 +77,8 @@ class IRNodeComparator : public IRVisitor {
   void check_mapping(Stmt *this_stmt, Stmt *other_stmt) {
     // get the corresponding id in the other node
     // and check if it is other_stmt->id
-    auto it = id_map.find(this_stmt->id);
-    if (it != id_map.end()) {
+    auto it = id_map_.find(this_stmt->id);
+    if (it != id_map_.end()) {
       if (it->second != other_stmt->id) {
         same = false;
       }
@@ -89,43 +89,43 @@ class IRNodeComparator : public IRVisitor {
       if (this_stmt->id != other_stmt->id) {
         same = false;
       }
-      id_map[this_stmt->id] = other_stmt->id;
+      id_map_[this_stmt->id] = other_stmt->id;
     } else {
       // recursively check them
-      IRNode *backup_other_node = other_node;
-      other_node = other_stmt;
+      IRNode *backup_other_node = other_node_;
+      other_node_ = other_stmt;
       this_stmt->accept(this);
-      other_node = backup_other_node;
+      other_node_ = backup_other_node;
     }
   }
 
   void visit(Block *stmt_list) override {
-    if (!other_node->is<Block>()) {
+    if (!other_node_->is<Block>()) {
       same = false;
       return;
     }
 
-    auto other = other_node->as<Block>();
+    auto other = other_node_->as<Block>();
     if (stmt_list->size() != other->size()) {
       same = false;
       return;
     }
     for (int i = 0; i < (int)stmt_list->size(); i++) {
-      other_node = other->statements[i].get();
+      other_node_ = other->statements[i].get();
       stmt_list->statements[i]->accept(this);
       if (!same)
         break;
     }
-    other_node = other;
+    other_node_ = other;
   }
 
   void basic_check(Stmt *stmt) {
     // type check
-    if (typeid(*other_node) != typeid(*stmt)) {
+    if (typeid(*other_node_) != typeid(*stmt)) {
       same = false;
       return;
     }
-    auto other = other_node->as<Stmt>();
+    auto other = other_node_->as<Stmt>();
     if (stmt == other) {
       return;
     }
@@ -240,24 +240,24 @@ class IRNodeComparator : public IRVisitor {
     basic_check(stmt);
     if (!same)
       return;
-    auto other = other_node->as<IfStmt>();
+    auto other = other_node_->as<IfStmt>();
     if (stmt->true_statements) {
       if (!other->true_statements) {
         same = false;
         return;
       }
-      other_node = other->true_statements.get();
+      other_node_ = other->true_statements.get();
       stmt->true_statements->accept(this);
-      other_node = other;
+      other_node_ = other;
     }
     if (stmt->false_statements && same) {
       if (!other->false_statements) {
         same = false;
         return;
       }
-      other_node = other->false_statements.get();
+      other_node_ = other->false_statements.get();
       stmt->false_statements->accept(this);
-      other_node = other;
+      other_node_ = other;
     }
   }
 
@@ -265,53 +265,53 @@ class IRNodeComparator : public IRVisitor {
     basic_check(stmt);
     if (!same)
       return;
-    auto other = other_node->as<FuncBodyStmt>();
-    other_node = other->body.get();
+    auto other = other_node_->as<FuncBodyStmt>();
+    other_node_ = other->body.get();
     stmt->body->accept(this);
-    other_node = other;
+    other_node_ = other;
   }
 
   void visit(WhileStmt *stmt) override {
     basic_check(stmt);
     if (!same)
       return;
-    auto other = other_node->as<WhileStmt>();
-    other_node = other->body.get();
+    auto other = other_node_->as<WhileStmt>();
+    other_node_ = other->body.get();
     stmt->body->accept(this);
-    other_node = other;
+    other_node_ = other;
   }
 
   void visit(RangeForStmt *stmt) override {
     basic_check(stmt);
     if (!same)
       return;
-    auto other = other_node->as<RangeForStmt>();
-    other_node = other->body.get();
+    auto other = other_node_->as<RangeForStmt>();
+    other_node_ = other->body.get();
     stmt->body->accept(this);
-    other_node = other;
+    other_node_ = other;
   }
 
   void visit(StructForStmt *stmt) override {
     basic_check(stmt);
     if (!same)
       return;
-    auto other = other_node->as<StructForStmt>();
-    other_node = other->body.get();
+    auto other = other_node_->as<StructForStmt>();
+    other_node_ = other->body.get();
     stmt->body->accept(this);
-    other_node = other;
+    other_node_ = other;
   }
 
   void visit(OffloadedStmt *stmt) override {
     basic_check(stmt);
     if (!same)
       return;
-    auto other = other_node->as<OffloadedStmt>();
+    auto other = other_node_->as<OffloadedStmt>();
     if (stmt->has_body()) {
       TI_ASSERT(stmt->body);
       TI_ASSERT(other->body);
-      other_node = other->body.get();
+      other_node_ = other->body.get();
       stmt->body->accept(this);
-      other_node = other;
+      other_node_ = other;
     }
   }
 

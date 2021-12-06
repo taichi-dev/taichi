@@ -70,7 +70,7 @@ TEST(DiffRangeTest, Add) {
 
   auto diff = value_diff_loop_index(loop_idx2, for_stmt.get(), /*index=*/0);
 
-  EXPECT_TRUE(diff.related_());
+  EXPECT_TRUE(diff.related());
   EXPECT_EQ(diff.coeff, 1);
   EXPECT_EQ(diff.low, 4);
   EXPECT_EQ(diff.high, 5);
@@ -88,7 +88,7 @@ TEST(DiffRangeTest, Sub) {
 
   auto diff = value_diff_loop_index(loop_idx2, for_stmt.get(), /*index=*/0);
 
-  EXPECT_TRUE(diff.related_());
+  EXPECT_TRUE(diff.related());
   EXPECT_EQ(diff.coeff, 1);
   EXPECT_EQ(diff.low, -4);
   EXPECT_EQ(diff.high, -3);
@@ -106,7 +106,7 @@ TEST(DiffRangeTest, Mul) {
 
   auto diff = value_diff_loop_index(loop_idx2, for_stmt.get(), /*index=*/0);
 
-  EXPECT_TRUE(diff.related_());
+  EXPECT_TRUE(diff.related());
   EXPECT_EQ(diff.coeff, 4);
   EXPECT_EQ(diff.low, 0);
   EXPECT_EQ(diff.high, 1);
@@ -124,7 +124,7 @@ TEST(DiffRangeTest, Shl) {
 
   auto diff = value_diff_loop_index(loop_idx2, for_stmt.get(), /*index=*/0);
 
-  EXPECT_TRUE(diff.related_());
+  EXPECT_TRUE(diff.related());
   EXPECT_EQ(diff.coeff, 4);
   EXPECT_EQ(diff.low, 0);
   EXPECT_EQ(diff.high, 1);

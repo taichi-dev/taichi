@@ -91,7 +91,7 @@ int StmtFieldSNode::get_snode_id(SNode *snode) {
 
 bool StmtFieldSNode::equal(const StmtField *other_generic) const {
   if (auto other = dynamic_cast<const StmtFieldSNode *>(other_generic)) {
-    return get_snode_id(snode) == get_snode_id(other->snode);
+    return get_snode_id(snode_) == get_snode_id(other->snode_);
   } else {
     // Different types
     return false;
@@ -446,86 +446,87 @@ std::unique_ptr<Block> Block::clone() const {
 }
 
 DelayedIRModifier::~DelayedIRModifier() {
-  TI_ASSERT(to_insert_before.empty());
-  TI_ASSERT(to_insert_after.empty());
-  TI_ASSERT(to_erase.empty());
-  TI_ASSERT(to_replace_with.empty());
-  TI_ASSERT(to_extract_to_block_front.empty());
-  TI_ASSERT(to_type_check.empty());
+  TI_ASSERT(to_insert_before_.empty());
+  TI_ASSERT(to_insert_after_.empty());
+  TI_ASSERT(to_erase_.empty());
+  TI_ASSERT(to_replace_with_.empty());
+  TI_ASSERT(to_extract_to_block_front_.empty());
+  TI_ASSERT(to_type_check_.empty());
 }
 
 void DelayedIRModifier::erase(Stmt *stmt) {
-  to_erase.push_back(stmt);
+  to_erase_.push_back(stmt);
 }
 
 void DelayedIRModifier::insert_before(Stmt *old_statement,
                                       std::unique_ptr<Stmt> new_statements) {
-  to_insert_before.emplace_back(old_statement,
-                                VecStatement(std::move(new_statements)));
+  to_insert_before_.emplace_back(old_statement,
+                                 VecStatement(std::move(new_statements)));
 }
 
 void DelayedIRModifier::insert_before(Stmt *old_statement,
                                       VecStatement &&new_statements) {
-  to_insert_before.emplace_back(old_statement, std::move(new_statements));
+  to_insert_before_.emplace_back(old_statement, std::move(new_statements));
 }
 
 void DelayedIRModifier::insert_after(Stmt *old_statement,
                                      std::unique_ptr<Stmt> new_statements) {
-  to_insert_after.emplace_back(old_statement,
-                               VecStatement(std::move(new_statements)));
+  to_insert_after_.emplace_back(old_statement,
+                                VecStatement(std::move(new_statements)));
 }
 
 void DelayedIRModifier::insert_after(Stmt *old_statement,
                                      VecStatement &&new_statements) {
-  to_insert_after.emplace_back(old_statement, std::move(new_statements));
+  to_insert_after_.emplace_back(old_statement, std::move(new_statements));
 }
 
 void DelayedIRModifier::replace_with(Stmt *stmt,
                                      VecStatement &&new_statements,
                                      bool replace_usages) {
-  to_replace_with.emplace_back(stmt, std::move(new_statements), replace_usages);
+  to_replace_with_.emplace_back(stmt, std::move(new_statements),
+                                replace_usages);
 }
 
 void DelayedIRModifier::extract_to_block_front(Stmt *stmt, Block *blk) {
-  to_extract_to_block_front.emplace_back(stmt, blk);
+  to_extract_to_block_front_.emplace_back(stmt, blk);
 }
 
 void DelayedIRModifier::type_check(IRNode *node, CompileConfig cfg) {
-  to_type_check.emplace_back(node, cfg);
+  to_type_check_.emplace_back(node, cfg);
 }
 
 bool DelayedIRModifier::modify_ir() {
   bool force_modified = modified_;
   modified_ = false;
-  if (to_insert_before.empty() && to_insert_after.empty() && to_erase.empty() &&
-      to_replace_with.empty() && to_extract_to_block_front.empty() &&
-      to_type_check.empty())
+  if (to_insert_before_.empty() && to_insert_after_.empty() &&
+      to_erase_.empty() && to_replace_with_.empty() &&
+      to_extract_to_block_front_.empty() && to_type_check_.empty())
     return force_modified;
-  for (auto &i : to_insert_before) {
+  for (auto &i : to_insert_before_) {
     i.first->parent->insert_before(i.first, std::move(i.second));
   }
-  to_insert_before.clear();
-  for (auto &i : to_insert_after) {
+  to_insert_before_.clear();
+  for (auto &i : to_insert_after_) {
     i.first->parent->insert_after(i.first, std::move(i.second));
   }
-  to_insert_after.clear();
-  for (auto &stmt : to_erase) {
+  to_insert_after_.clear();
+  for (auto &stmt : to_erase_) {
     stmt->parent->erase(stmt);
   }
-  to_erase.clear();
-  for (auto &i : to_replace_with) {
+  to_erase_.clear();
+  for (auto &i : to_replace_with_) {
     std::get<0>(i)->replace_with(std::move(std::get<1>(i)), std::get<2>(i));
   }
-  to_replace_with.clear();
-  for (auto &i : to_extract_to_block_front) {
+  to_replace_with_.clear();
+  for (auto &i : to_extract_to_block_front_) {
     auto extracted = i.first->parent->extract(i.first);
     i.second->insert(std::move(extracted), 0);
   }
-  to_extract_to_block_front.clear();
-  for (auto &i : to_type_check) {
+  to_extract_to_block_front_.clear();
+  for (auto &i : to_type_check_) {
     irpass::type_check(i.first, i.second);
   }
-  to_type_check.clear();
+  to_type_check_.clear();
   return true;
 }
 

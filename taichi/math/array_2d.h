@@ -19,7 +19,7 @@ TI_NAMESPACE_BEGIN
 template <>
 class IndexND<2> {
  private:
-  int x[2], y[2];
+  int x_[2], y_[2];
 
  public:
   using Index = IndexND<2>;
@@ -37,28 +37,28 @@ class IndexND<2> {
           int y0,
           int y1,
           Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
-    x[0] = x0;
-    x[1] = x1;
-    y[0] = y0;
-    y[1] = y1;
-    i = x[0];
-    j = y[0];
+    x_[0] = x0;
+    x_[1] = x1;
+    y_[0] = y0;
+    y_[1] = y1;
+    i = x_[0];
+    j = y_[0];
     // offset = 0;
-    stride = y[1] - y[0];
+    stride = y_[1] - y_[0];
     this->storage_offset = storage_offset;
   }
 
   IndexND(Vector2i start,
           Vector2i end,
           Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
-    x[0] = start[0];
-    x[1] = end[0];
-    y[0] = start[1];
-    y[1] = end[1];
-    i = x[0];
-    j = y[0];
+    x_[0] = start[0];
+    x_[1] = end[0];
+    y_[0] = start[1];
+    y_[1] = end[1];
+    i = x_[0];
+    j = y_[0];
     // offset = 0;
-    stride = y[1] - y[0];
+    stride = y_[1] - y_[0];
     this->storage_offset = storage_offset;
   }
 
@@ -70,10 +70,10 @@ class IndexND<2> {
   void next() {
     j++;
     // offset++;
-    if (j == y[1]) {
-      j = y[0];
+    if (j == y_[1]) {
+      j = y_[0];
       i++;
-      if (i == x[1]) {
+      if (i == x_[1]) {
       }
     }
   }
@@ -92,8 +92,8 @@ class IndexND<2> {
   }
 
   Index &to_end() {
-    i = x[1];
-    j = y[0];
+    i = x_[1];
+    j = y_[0];
     // offset = (x[1] - x[0]) * (y[1] - y[0]);
     return *this;
   }
@@ -146,10 +146,10 @@ typedef IndexND<2> Index2D;
 template <>
 class RegionND<2> {
  private:
-  int x[2], y[2];
-  Index2D index_begin;
-  Index2D index_end;
-  Vector2 storage_offset;
+  int x_[2], y_[2];
+  Index2D index_begin_;
+  Index2D index_end_;
+  Vector2 storage_offset_;
 
  public:
   using Region = RegionND<2>;
@@ -162,41 +162,41 @@ class RegionND<2> {
            int y0,
            int y1,
            Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
-    x[0] = x0;
-    x[1] = x1;
-    y[0] = y0;
-    y[1] = y1;
-    index_begin = Index2D(x0, x1, y0, y1, storage_offset);
-    index_end = Index2D(x0, x1, y0, y1, storage_offset).to_end();
-    this->storage_offset = storage_offset;
+    x_[0] = x0;
+    x_[1] = x1;
+    y_[0] = y0;
+    y_[1] = y1;
+    index_begin_ = Index2D(x0, x1, y0, y1, storage_offset);
+    index_end_ = Index2D(x0, x1, y0, y1, storage_offset).to_end();
+    this->storage_offset_ = storage_offset;
   }
 
   RegionND(Vector2i start,
            Vector2i end,
            Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
-    x[0] = start[0];
-    x[1] = end[0];
-    y[0] = start[1];
-    y[1] = end[1];
-    index_begin = Index2D(start, end, storage_offset);
-    index_end = Index2D(start, end, storage_offset).to_end();
-    this->storage_offset = storage_offset;
+    x_[0] = start[0];
+    x_[1] = end[0];
+    y_[0] = start[1];
+    y_[1] = end[1];
+    index_begin_ = Index2D(start, end, storage_offset);
+    index_end_ = Index2D(start, end, storage_offset).to_end();
+    this->storage_offset_ = storage_offset;
   }
 
   const Index2D begin() const {
-    return index_begin;
+    return index_begin_;
   }
 
   Index2D begin() {
-    return index_begin;
+    return index_begin_;
   }
 
   const Index2D end() const {
-    return index_end;
+    return index_end_;
   }
 
   Index2D end() {
-    return index_end;
+    return index_end_;
   }
 };
 

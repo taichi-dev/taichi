@@ -69,14 +69,16 @@ class Time {
 
   class TickTimer : public Timer {
    protected:
-    double get_time();
+    double get_time() override;
 
-    void print_record(const char *left, double elapsed, double average);
+    void print_record(const char *left,
+                      double elapsed,
+                      double average) override;
 
    public:
     TickTimer(std::string name);
 
-    ~TickTimer() {
+    ~TickTimer() override {
       output();
     }
   };

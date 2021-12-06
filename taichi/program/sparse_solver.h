@@ -21,13 +21,12 @@ class EigenSparseSolver : public SparseSolver {
   EigenSolver solver_;
 
  public:
-  virtual ~EigenSparseSolver() = default;
-  virtual bool compute(const SparseMatrix &sm) override;
-  virtual void analyze_pattern(const SparseMatrix &sm) override;
-  virtual void factorize(const SparseMatrix &sm) override;
-  virtual Eigen::VectorXf solve(
-      const Eigen::Ref<const Eigen::VectorXf> &b) override;
-  virtual bool info() override;
+  ~EigenSparseSolver() override = default;
+  bool compute(const SparseMatrix &sm) override;
+  void analyze_pattern(const SparseMatrix &sm) override;
+  void factorize(const SparseMatrix &sm) override;
+  Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) override;
+  bool info() override;
 };
 
 std::unique_ptr<SparseSolver> make_sparse_solver(const std::string &solver_type,

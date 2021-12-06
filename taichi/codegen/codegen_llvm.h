@@ -382,7 +382,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
       llvm::Value *val,
       std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op);
 
-  ~CodeGenLLVM() = default;
+  ~CodeGenLLVM() override = default;
 };
 
 TLANG_NAMESPACE_END

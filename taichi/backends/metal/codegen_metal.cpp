@@ -233,7 +233,7 @@ class KernelCodegenImpl : public IRVisitor {
     const auto root_id = stmt->root()->id;
     root_id_to_stmts_[root_id] = stmt;
     const auto &cst = get_compiled_snode_tree(stmt->root());
-    const auto root_desc = BufferDescriptor::Root(root_id);
+    const auto root_desc = BufferDescriptor::root(root_id);
     emit(R"({} {}({});)", cst.root_snode_type_name, stmt->raw_name(),
          buffer_to_name(root_desc));
   }
@@ -644,7 +644,7 @@ class KernelCodegenImpl : public IRVisitor {
     const auto root_ids = RootIdsExtractor::run(stmt);
     BufferDescSet used_root_descs;
     for (const auto rid : root_ids) {
-      used_root_descs.insert(BufferDescriptor::Root(rid));
+      used_root_descs.insert(BufferDescriptor::root(rid));
     }
     root_id_to_stmts_.clear();
 
@@ -1077,13 +1077,13 @@ class KernelCodegenImpl : public IRVisitor {
           TI_ASSERT(rhs.type() == BufferType::Root);
           return lhs.root_id() < rhs.root_id();
         });
-    result.push_back(BufferDescriptor::GlobalTmps());
+    result.push_back(BufferDescriptor::global_tmps());
     if (!ctx_attribs_.empty()) {
-      result.push_back(BufferDescriptor::Context());
+      result.push_back(BufferDescriptor::context());
     }
-    result.push_back(BufferDescriptor::Runtime());
+    result.push_back(BufferDescriptor::runtime());
     // TODO(k-ye): Bind this buffer only when print() is used.
-    result.push_back(BufferDescriptor::Print());
+    result.push_back(BufferDescriptor::print());
     return result;
   }
 
@@ -1261,7 +1261,7 @@ class KernelCodegenImpl : public IRVisitor {
          kKernelGridSizeName);
     {
       const auto belonged_root_id = snode_to_roots_.at(sn_id).snode_id;
-      const auto root_desc = BufferDescriptor::Root(belonged_root_id);
+      const auto root_desc = BufferDescriptor::root(belonged_root_id);
       ScopedIndent s2(current_appender());
       emit("const int parent_idx_ = (ii / child_num_slots);");
       emit("if (parent_idx_ >= parent_list.num_active()) break;");
@@ -1341,9 +1341,9 @@ class KernelCodegenImpl : public IRVisitor {
         std::min(total_num_self_from_root(sn_descs, sn->id),
                  kMaxNumThreadsGridStrideLoop);
     ka.advisory_num_threads_per_group = stmt->block_dim;
-    ka.buffers = {BufferDescriptor::Runtime(),
-                  BufferDescriptor::Root(snode_to_roots_.at(sn->id).snode_id),
-                  BufferDescriptor::Context()};
+    ka.buffers = {BufferDescriptor::runtime(),
+                  BufferDescriptor::root(snode_to_roots_.at(sn->id).snode_id),
+                  BufferDescriptor::context()};
 
     ka.runtime_list_op_attribs = KernelAttributes::RuntimeListOpAttributes();
     ka.runtime_list_op_attribs->snode = sn;
@@ -1363,7 +1363,7 @@ class KernelCodegenImpl : public IRVisitor {
     ka.task_type = OffloadedTaskType::gc;
     ka.gc_op_attribs = KernelAttributes::GcOpAttributes();
     ka.gc_op_attribs->snode = sn;
-    ka.buffers = {BufferDescriptor::Runtime(), BufferDescriptor::Context()};
+    ka.buffers = {BufferDescriptor::runtime(), BufferDescriptor::context()};
     current_kernel_attribs_ = nullptr;
     // stage 1 specific
     ka.name = "gc_compact_free_list";

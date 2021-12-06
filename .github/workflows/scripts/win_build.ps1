@@ -40,7 +40,7 @@ if (-not (Test-Path "taichi_clang")) {
     7z x clang-10.0.0-win.zip -otaichi_clang
 }
 $env:PATH = "$libsDir\taichi_llvm\bin;$libsDir\taichi_clang\bin;$env:PATH"
-$env:TAICHI_CMAKE_ARGS = "-G 'Visual Studio 16 2019' -A x64 -DLLVM_DIR=$libsDir\taichi_llvm\lib\cmake\llvm"
+$env:TAICHI_CMAKE_ARGS = "-GNinja -DLLVM_DIR=$libsDir\taichi_llvm\lib\cmake\llvm"
 if ($installVulkan) {
     WriteInfo("Download and install Vulkan")
     if (-not (Test-Path "VulkanSDK.exe")) {

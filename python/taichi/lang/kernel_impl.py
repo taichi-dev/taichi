@@ -264,18 +264,18 @@ class TaichiCallableTemplateMapper:
         if isinstance(anno, any_arr):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_element_dim(arg, 0)
-                anno.check_element_shapes(())
+                anno.check_element_shape(())
                 anno.check_field_dim(len(arg.shape))
                 return arg.dtype, len(arg.shape), (), Layout.AOS
             if isinstance(arg, taichi.lang.matrix.VectorNdarray):
                 anno.check_element_dim(arg, 1)
-                anno.check_element_shapes((arg.n, ))
+                anno.check_element_shape((arg.n, ))
                 anno.check_field_dim(len(arg.shape))
                 anno.check_layout(arg)
                 return arg.dtype, len(arg.shape) + 1, (arg.n, ), arg.layout
             if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
                 anno.check_element_dim(arg, 2)
-                anno.check_element_shapes((arg.n, arg.m))
+                anno.check_element_shape((arg.n, arg.m))
                 anno.check_field_dim(len(arg.shape))
                 anno.check_layout(arg)
                 return arg.dtype, len(arg.shape) + 2, (arg.n,

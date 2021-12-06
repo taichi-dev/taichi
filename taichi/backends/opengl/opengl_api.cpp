@@ -229,9 +229,9 @@ void CompiledProgram::init_args(Kernel *kernel) {
           {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt),
            /*dtype_name=*/kernel->args[i].dt.to_string(),
            /*field_dim=*/kernel->args[i].total_dim -
-               kernel->args[i].element_shapes.size(),
-           /*is_scalar=*/kernel->args[i].element_shapes.size() == 0,
-           /*element_shapes=*/kernel->args[i].element_shapes,
+               kernel->args[i].element_shape.size(),
+           /*is_scalar=*/kernel->args[i].element_shape.size() == 0,
+           /*element_shape=*/kernel->args[i].element_shape,
            /*shape_offset_in_bytes_in_args_buf=*/taichi_opengl_extra_args_base +
                i * taichi_max_num_indices * sizeof(int),
            /*total_size=*/kernel->args[i].size});

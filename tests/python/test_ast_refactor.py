@@ -985,3 +985,16 @@ def test_scalar_argument():
         return a
 
     assert add(1.0, 2.0) == approx(3.0)
+
+
+@ti.test()
+def test_default_template_args_on_func():
+    @ti.func
+    def bar(a: ti.template() = 123):
+        return a
+
+    @ti.kernel
+    def foo() -> ti.i32:
+        return bar()
+
+    assert foo() == 123

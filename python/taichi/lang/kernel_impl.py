@@ -112,10 +112,11 @@ def _get_tree_and_ctx(self,
     if isinstance(func_body.returns, ast.Name):
         global_vars[func_body.returns.id] = self.return_type
 
-    # inject template parameters into globals
-    for i in self.template_slot_locations:
-        template_var_name = self.argument_names[i]
-        global_vars[template_var_name] = args[i]
+    if is_kernel or impl.get_runtime().experimental_real_function:
+        # inject template parameters into globals
+        for i in self.template_slot_locations:
+            template_var_name = self.argument_names[i]
+            global_vars[template_var_name] = args[i]
 
     return tree, ASTTransformerContext(excluded_parameters=excluded_parameters,
                                        is_kernel=is_kernel,

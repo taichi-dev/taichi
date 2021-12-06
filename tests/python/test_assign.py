@@ -63,10 +63,11 @@ def test_assign_assign():
 def test_assign_ann():
     @ti.kernel
     def func_ann():
+        #need to introduce it
+        my_float = ti.f32
         a: ti.i32 = 1
         b: ti.f32 = a
-        c = ti.f32
-        d: c = 1
+        d: my_float = 1
         assert a == 1
         assert b == 1.0
         assert d == 1.0
@@ -74,52 +75,15 @@ def test_assign_ann():
     func_ann()
 
 
-test_assign_ann()
-
-
-@ti.test(debug=True)
+@ti.test()
 def test_assign_ann_over():
     @ti.kernel
     def func_ann_over():
-        a: ti.i32 = 2
-        a: ti.f32 = 2.0
-        assert a == 2
+        my_int = ti.i32
+        d: my_int = 2
+        d: ti.f32 = 2.0
 
-    func_ann_over()
+    with pytest.raises(ti.lang.exception.TaichiCompilationError) as e:
+        func_ann_over()
 
-
-test_assign_ann_over()
-
-# @ti.test()
-# def test_assign_ann():
-
-#     @ti.kernel
-#     def func_ann():
-#         a: ti.i32 = 1
-
-#     func_ann()
-# try:
-#     @ti.kernel
-#     def func_ann_overload():
-#         a: ti.i32 = 1
-#         a : ti.f32 = 2.0
-# except ti.SyntaxError:
-#     pass
-# func_ann_overload()
-
-# @ti.test(debug = True, arch = ti.cpu)
-# def test_ann_assign_global():
-#     x = ti.field(ti.i32)
-#     ti.root.place(x)
-#     try:
-#         @ti.kernel
-#         def func_ann_global():
-#             x1: ti.f32 = 1
-
-#     except ti.SyntaxError:
-#         pass
-
-#     func_ann_global()
-# test_assign_ann()
-# test_ann_assign()
-# test_ann_assign_global()
+    assert e.type is ti.lang.exception.TaichiCompilationError

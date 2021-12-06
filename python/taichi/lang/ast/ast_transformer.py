@@ -48,18 +48,18 @@ class ASTTransformer(Builder):
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
         is_local = isinstance(target, ast.Name)
-        annot = ti.expr_init(annotation)
+        anno = ti.expr_init(annotation)
         if is_static_assign:
             raise TaichiSyntaxError(
                 "Static assign cannot be used on annotated assignment")
         if is_local and not ctx.is_var_declared(target.id):
-            var = ti.cast(value, annot)
+            var = ti.cast(value, anno)
             var = ti.expr_init(var)
 
             ctx.create_variable(target.id, var)
         else:
             var = target.ptr
-            if var.ptr.get_ret_type() != annot:
+            if var.ptr.get_ret_type() != anno:
                 raise TaichiSyntaxError(
                     "Static assign cannot have type overloading")
             var.assign(value)
@@ -478,7 +478,6 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Attribute(ctx, node):
         node.value = build_stmt(ctx, node.value)
-        print(node.value.ptr)
         node.ptr = getattr(node.value.ptr, node.attr)
         return node
 
@@ -1055,6 +1054,7 @@ class ASTTransformer(Builder):
 
 
 build_stmt = ASTTransformer()
+
 
 def build_stmts(ctx, stmts):
     result = []

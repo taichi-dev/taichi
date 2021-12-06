@@ -10,10 +10,20 @@ CudaCachingAllocator::CudaCachingAllocator(Device *device) : device_(device) {
 uint64_t *CudaCachingAllocator::allocate(
     const Device::LlvmRuntimeAllocParams &params) {
   uint64_t *ret{nullptr};
-  if (find_block(params.size)) {
-    auto blk = mem_blocks_.find(params.size);
-    ret = blk->second;
-    mem_blocks_.erase(blk);
+  auto size_aligned = taichi::iroundup(params.size, taichi_page_size);
+  auto it_blk = mem_blocks_.lower_bound(size_aligned);
+
+  if (it_blk != mem_blocks_.end()) {
+    size_t remaining_sz = it_blk->first - size_aligned;
+    if (remaining_sz > 0) {
+      TI_ASSERT(remaining_sz % taichi_page_size == 0);
+      auto remaining_head =
+          reinterpret_cast<uint8_t *>(it_blk->second) + size_aligned;
+      mem_blocks_.insert(
+          {remaining_sz, reinterpret_cast<uint64_t *>(remaining_head)});
+    }
+    ret = it_blk->second;
+    mem_blocks_.erase(it_blk);
   } else {
     ret = device_->allocate_llvm_runtime_memory_jit(params);
   }
@@ -21,12 +31,7 @@ uint64_t *CudaCachingAllocator::allocate(
 }
 
 void CudaCachingAllocator::release(size_t sz, uint64_t *ptr) {
-  // mem_blocks_.insert(std::pair<size_t, uint64_t *>(sz, ptr));
   mem_blocks_.insert({sz, ptr});
-}
-
-bool CudaCachingAllocator::find_block(size_t sz) const {
-  return mem_blocks_.find(sz) != mem_blocks_.end();
 }
 
 }  // namespace cuda

@@ -51,6 +51,11 @@ endif ()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
+
 include(cmake/PythonNumpyPybind11.cmake)
 include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
@@ -61,6 +66,12 @@ option(TI_BUILD_TESTS "Build the CPP tests" OFF)
 if (TI_BUILD_TESTS)
   add_subdirectory(external/googletest EXCLUDE_FROM_ALL)
   include(cmake/TaichiTests.cmake)
+endif()
+
+option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
+
+if (TI_BUILD_EXAMPLES)
+  include(cmake/TaichiExamples.cmake)
 endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/external/eigen)

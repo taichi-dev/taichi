@@ -117,7 +117,7 @@ class KernelGen : public IRVisitor {
   GetRootStmt *root_stmt_;
   int glsl_kernel_count_{0};
   bool is_top_level_{true};
-  CompiledProgram compiled_program_;
+  CompiledTaichiKernel compiled_program_;
   UsedFeature used;  // TODO: is this actually per-offload?
   int arr_bind_idx = static_cast<int>(GLBufId::Arr);
 
@@ -1147,7 +1147,7 @@ class KernelGen : public IRVisitor {
   }
 
  public:
-  CompiledProgram get_compiled_program() {
+  CompiledTaichiKernel get_compiled_program() {
     // We have to set it at the last moment, to get all used feature.
     compiled_program_.set_used(used);
     return std::move(compiled_program_);
@@ -1160,7 +1160,7 @@ class KernelGen : public IRVisitor {
 
 }  // namespace
 
-CompiledProgram OpenglCodeGen::gen(void) {
+CompiledTaichiKernel OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
   KernelGen codegen(kernel_, struct_compiled_, kernel_name_,
                     allows_nv_shader_ext_);
@@ -1185,7 +1185,7 @@ void OpenglCodeGen::lower() {
 #endif
 }
 
-CompiledProgram OpenglCodeGen::compile(Kernel &kernel) {
+CompiledTaichiKernel OpenglCodeGen::compile(Kernel &kernel) {
   this->kernel_ = &kernel;
 
   this->lower();

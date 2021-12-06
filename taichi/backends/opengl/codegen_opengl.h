@@ -24,11 +24,11 @@ class OpenglCodeGen {
         allows_nv_shader_ext_(allows_nv_shader_ext) {
   }
 
-  CompiledProgram compile(Kernel &kernel);
+  CompiledTaichiKernel compile(Kernel &kernel);
 
  private:
   void lower();
-  CompiledProgram gen();
+  CompiledTaichiKernel gen();
 
   const std::string kernel_name_;
   [[maybe_unused]] const StructCompiledResult *struct_compiled_;

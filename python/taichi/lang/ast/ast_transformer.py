@@ -20,7 +20,6 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_AnnAssign(ctx, node):
-
         node.value = build_stmt(ctx, node.value)
         node.target = build_stmt(ctx, node.target)
         node.annotation = build_stmt(ctx, node.annotation)
@@ -29,15 +28,15 @@ class ASTTransformer(Builder):
             node.value, ast.Call) and ASTResolver.resolve_to(
                 node.value.func, ti.static, globals())
 
-        node.ptr = ASTTransformer.build_ann_assign_basic(
+        node.ptr = ASTTransformer.build_assign_annotated(
             ctx, node.target, node.value.ptr, is_static_assign,
             node.annotation.ptr)
         return node
 
     @staticmethod
-    def build_ann_assign_basic(ctx, target, value, is_static_assign,
+    def build_assign_annotated(ctx, target, value, is_static_assign,
                                annotation):
-        """Build basic assginment like this: target : annotation = value.
+        """Build an annotated assginment like this: target: annotation = value.
 
          Args:
             ctx (ast_builder_utils.BuilderContext): The builder context.
@@ -55,7 +54,6 @@ class ASTTransformer(Builder):
         if is_local and not ctx.is_var_declared(target.id):
             var = ti.cast(value, anno)
             var = ti.expr_init(var)
-
             ctx.create_variable(target.id, var)
         else:
             var = target.ptr

@@ -20,7 +20,6 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_AnnAssign(ctx, node):
-
         node.value = build_stmt(ctx, node.value)
         node.target = build_stmt(ctx, node.target)
         node.annotation = build_stmt(ctx, node.annotation)

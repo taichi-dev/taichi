@@ -83,7 +83,7 @@ def test_assign_ann_over():
         d: my_int = 2
         d: ti.f32 = 2.0
 
-    with pytest.raises(ti.lang.exception.TaichiCompilationError) as e:
+    with pytest.raises(ti.TaichiCompilationError):
         func_ann_over()
 
     assert e.type is ti.lang.exception.TaichiCompilationError

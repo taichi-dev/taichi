@@ -2,7 +2,9 @@
 
 #include "taichi/lang_util.h"
 #include "taichi/ir/transforms.h"
+#ifdef TI_WITH_LLVM
 #include "taichi/llvm/llvm_fwd.h"
+#endif
 
 TLANG_NAMESPACE_BEGIN
 
@@ -10,8 +12,10 @@ class FileSequenceWriter {
  public:
   FileSequenceWriter(std::string filename_template, std::string file_type);
 
+#ifdef TI_WITH_LLVM
   // returns filename
   std::string write(llvm::Module *module);
+#endif
 
   std::string write(IRNode *irnode);
 

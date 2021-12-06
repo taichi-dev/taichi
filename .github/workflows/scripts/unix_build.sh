@@ -52,7 +52,6 @@ setup_python() {
 }
 
 build() {
-    if [[ $OSTYPE == 'darwin'* ]]; then brew install brew; fi
     git fetch origin master
     PROJECT_TAGS=""
     EXTRA_ARGS=""

@@ -1,4 +1,4 @@
-from taichi.examples.algorithm.laplace import *
+from taichi.examples.algorithm.laplace import x, y, laplace
 
 
 def test_laplace():

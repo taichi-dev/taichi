@@ -191,4 +191,3 @@ def dot_to_pdf(dot, filepath):
 
 def get_kernel_stats():
     return _ti_core.get_kernel_stats()
-

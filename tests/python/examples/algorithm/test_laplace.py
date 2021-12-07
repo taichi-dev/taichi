@@ -1,7 +1,6 @@
-from taichi.examples.algorithm.laplace import laplace, x, y
-
-
 def test_laplace():
+    from taichi.examples.algorithm.laplace import laplace, x, y
+
     for i in range(10):
         x[i, i + 1] = 1.0
 

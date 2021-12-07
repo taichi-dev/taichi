@@ -8,7 +8,6 @@ import taichi.lang
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.field import Field
-from taichi.tools.util import deprecated
 
 
 class SNode:

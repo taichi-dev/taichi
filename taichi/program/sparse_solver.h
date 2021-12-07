@@ -32,7 +32,8 @@ class EigenSparseSolver : public SparseSolver {
   virtual bool info() override;
 };
 
-std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,const std::string &solver_type,
+std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
+                                                 const std::string &solver_type,
                                                  const std::string &ordering);
 
 }  // namespace lang

@@ -202,10 +202,6 @@ jobs:
         with:
           submodules: "recursive"
 
-      - uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
-
       - name: Get sccache cache
         uses: actions/cache@v2
         with:

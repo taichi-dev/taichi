@@ -209,7 +209,7 @@ class Clean(clean):
         if os.path.exists(self.build_temp):
             remove_tree(self.build_temp, dry_run=self.dry_run)
         generated_folders = ('bin', 'dist', 'python/taichi/assets',
-                             'python/taichi/lib', 'python/taichi.egg-info')
+                             'python/taichi/lib/runtime', 'python/taichi.egg-info')
         for d in generated_folders:
             if os.path.exists(d):
                 remove_tree(d, dry_run=self.dry_run)

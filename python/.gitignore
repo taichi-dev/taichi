@@ -1,4 +1,5 @@
-lib
+taichi/lib/*
+!taichi/lib/core
 taichi.egg-info
 taichi/include
 taichi/assets

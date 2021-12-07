@@ -187,7 +187,7 @@ class CMakeBuild(build_ext):
                     shutil.copy(moltenvk_path,
                                 os.path.join(target, 'libMoltenVK.dylib'))
             else:
-                shutil.copy('runtimes/Release/taichi_core.dll',
+                shutil.copy('runtimes/taichi_core.dll',
                             os.path.join(target, 'taichi_core.pyd'))
 
             if get_os_name() != 'osx':

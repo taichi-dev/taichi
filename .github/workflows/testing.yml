@@ -400,6 +400,7 @@ jobs:
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
           TI_WANTED_ARCHS: "cpu"
+          TI_SKIP_VERSION_CHECK: ON
 
   build_and_test_m1:
     name: Build and Test (Apple M1)

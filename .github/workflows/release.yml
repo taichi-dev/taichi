@@ -344,6 +344,8 @@ jobs:
           ti example laplace
           ti diagnose
           python tests/run_tests.py -vr2 -t2
+        env:
+          TI_SKIP_VERSION_CHECK: ON
 
       - name: Upload PyPI
         shell: powershell

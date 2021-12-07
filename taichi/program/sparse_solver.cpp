@@ -30,7 +30,7 @@ namespace lang {
 
 template <class EigenSolver>
 bool EigenSparseSolver<EigenSolver>::compute(const SparseMatrix &sm) {
-  solver_.compute(sm.get_matrix().cast<float>());
+  solver_.compute(sm.get_matrix());
   if (solver_.info() != Eigen::Success) {
     return false;
   } else

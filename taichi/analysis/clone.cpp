@@ -12,7 +12,7 @@ TLANG_NAMESPACE_BEGIN
 class IRCloner : public IRVisitor {
  private:
   IRNode *other_node;
-  std::unordered_map<Stmt *, Stmt *> operand_map;
+  std::unordered_map<Stmt *, Stmt *> operand_map_;
 
  public:
   enum Phase { register_operand_map, replace_operand } phase;
@@ -34,16 +34,16 @@ class IRCloner : public IRVisitor {
 
   void generic_visit(Stmt *stmt) {
     if (phase == register_operand_map)
-      operand_map[stmt] = other_node->as<Stmt>();
+      operand_map_[stmt] = other_node->as<Stmt>();
     else {
       TI_ASSERT(phase == replace_operand);
       auto other_stmt = other_node->as<Stmt>();
       TI_ASSERT(stmt->num_operands() == other_stmt->num_operands());
       for (int i = 0; i < stmt->num_operands(); i++) {
-        if (operand_map.find(stmt->operand(i)) == operand_map.end())
+        if (operand_map_.find(stmt->operand(i)) == operand_map_.end())
           other_stmt->set_operand(i, stmt->operand(i));
         else
-          other_stmt->set_operand(i, operand_map[stmt->operand(i)]);
+          other_stmt->set_operand(i, operand_map_[stmt->operand(i)]);
       }
     }
   }

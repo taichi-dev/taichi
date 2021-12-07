@@ -32,7 +32,7 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
 }
 
 IRNode *FrontendContext::root() {
-  return static_cast<IRNode *>(root_node.get());
+  return static_cast<IRNode *>(root_node_.get());
 }
 
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
@@ -97,8 +97,8 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
 DecoratorRecorder dec;
 
 FrontendContext::FrontendContext() {
-  root_node = std::make_unique<Block>();
-  current_builder = std::make_unique<ASTBuilder>(root_node.get());
+  root_node_ = std::make_unique<Block>();
+  current_builder_ = std::make_unique<ASTBuilder>(root_node_.get());
 }
 
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
@@ -808,32 +808,32 @@ void MeshIndexConversionExpression::flatten(FlattenContext *ctx) {
 }
 
 Block *ASTBuilder::current_block() {
-  if (stack.empty())
+  if (stack_.empty())
     return nullptr;
   else
-    return stack.back();
+    return stack_.back();
 }
 
 Stmt *ASTBuilder::get_last_stmt() {
-  TI_ASSERT(!stack.empty());
-  return stack.back()->back();
+  TI_ASSERT(!stack_.empty());
+  return stack_.back()->back();
 }
 
 void ASTBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->insert(std::move(stmt), location);
+  TI_ASSERT(!stack_.empty());
+  stack_.back()->insert(std::move(stmt), location);
 }
 
 void ASTBuilder::stop_gradient(SNode *snode) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->stop_gradients.push_back(snode);
+  TI_ASSERT(!stack_.empty());
+  stack_.back()->stop_gradients.push_back(snode);
 }
 
 std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
     std::unique_ptr<Block> &list) {
   TI_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
-  if (!stack.empty()) {
+  if (!stack_.empty()) {
     list->parent_stmt = get_last_stmt();
   }
   return std::make_unique<ScopeGuard>(this, list.get());

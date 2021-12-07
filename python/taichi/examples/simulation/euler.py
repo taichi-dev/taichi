@@ -215,12 +215,12 @@ def HLLC_flux(qL, qR, n):
     HLLC = ti.Vector([0.0, 0.0, 0.0, 0.0])
     if (0 <= sL):
         HLLC = fL
-    elif (sL <= 0) and (0 <= sM):
+    elif (0 <= sM):
         qsL = rL * (sL-vnL)/(sL-sM) \
                   * ti.Vector([1.0, sM*nx-vtL*ny,sM*ny+vtL*nx, \
                                qL[3]/rL + (sM-vnL)*(sM+pL/(rL*(sL-vnL)))])
         HLLC = fL + sL * (qsL - qL)
-    elif (sM <= 0) and (0 <= sR):
+    elif (0 <= sR):
         qsR = rR * (sR-vnR)/(sR-sM) \
                    * ti.Vector([1.0, sM*nx-vtR*ny,sM*ny+vtR*nx, \
                                 qR[3]/rR + (sM-vnR)*(sM+pR/(rR*(sR-vnR)))])

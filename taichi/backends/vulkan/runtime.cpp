@@ -26,7 +26,7 @@ class StopWatch {
   StopWatch() : begin_(std::chrono::system_clock::now()) {
   }
 
-  int GetMicros() {
+  int get_micros() {
     typedef std::chrono::duration<float> fsec;
 
     auto now = std::chrono::system_clock::now();
@@ -478,15 +478,18 @@ DevicePtr VkRuntime::get_snode_tree_device_ptr(int tree_id) {
   return root_buffers_[tree_id]->get_ptr();
 }
 
-VkRuntime::RegisterParams run_codegen(Kernel *kernel, VkRuntime *runtime) {
+VkRuntime::RegisterParams run_codegen(
+    Kernel *kernel,
+    Device *device,
+    const std::vector<CompiledSNodeStructs> &compiled_structs) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
   TI_TRACE("VK codegen for Taichi kernel={}", taichi_kernel_name);
   spirv::KernelCodegen::Params params;
   params.ti_kernel_name = taichi_kernel_name;
   params.kernel = kernel;
-  params.compiled_structs = runtime->get_compiled_structs();
-  params.device = runtime->get_ti_device();
+  params.compiled_structs = compiled_structs;
+  params.device = device;
   params.enable_spv_opt =
       kernel->program->config.external_optimization_level > 0;
   spirv::KernelCodegen codegen(params);

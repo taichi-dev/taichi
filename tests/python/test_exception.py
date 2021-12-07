@@ -84,3 +84,61 @@ On line {lineno + 5} of file "{file}":
 TypeError: 'NoneType' object is not callable"""
     print(e.value.args[0])
     assert e.value.args[0] == msg
+
+
+@ti.test()
+def test_tab():
+    frameinfo = getframeinfo(currentframe())
+    with pytest.raises(ti.TaichiCompilationError) as e:
+        # yapf: disable
+        @ti.kernel
+        def foo():
+            a(11,	22,	3)
+        foo()
+        # yapf: enable
+    lineno = frameinfo.lineno
+    file = frameinfo.filename
+    if version_info < (3, 8):
+        msg = f"""\
+On line {lineno + 5} of file "{file}":
+            a(11,   22, 3)
+TypeError: 'NoneType' object is not callable"""
+    else:
+        msg = f"""\
+On line {lineno + 5} of file "{file}":
+            a(11,   22, 3)
+            ^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not callable"""
+    print(e.value.args[0])
+    assert e.value.args[0] == msg
+
+
+@ti.test()
+def test_super_long_line():
+    frameinfo = getframeinfo(currentframe())
+    with pytest.raises(ti.TaichiCompilationError) as e:
+        # yapf: disable
+        @ti.kernel
+        def foo():
+            aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa(111)
+        foo()
+        # yapf: enable
+    lineno = frameinfo.lineno
+    file = frameinfo.filename
+    if version_info < (3, 8):
+        msg = f"""\
+On line {lineno + 5} of file "{file}":
+            aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa(111)
+TypeError: 'NoneType' object is not callable"""
+    else:
+        msg = f"""\
+On line {lineno + 5} of file "{file}":
+            aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbaaaaaa
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa(111)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not callable"""
+    print(e.value.args[0])
+    assert e.value.args[0] == msg

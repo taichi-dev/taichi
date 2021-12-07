@@ -23,7 +23,7 @@ class Task : public Unit {
     return this->run(std::vector<std::string>());
   }
 
-  ~Task() {
+  ~Task() override {
   }
 };
 

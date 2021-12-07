@@ -97,17 +97,17 @@ class VariableOptimize : public IRVisitor {
 class AllocaOptimize : public VariableOptimize {
  private:
   std::unordered_map<Block *, std::unordered_map<Stmt *, StateMachine>>
-      state_machines;
+      state_machines_;
 
  public:
   using VariableOptimize::visit;
 
   StateMachine &get_state_machine(Stmt *stmt) override {
-    return state_machines[stmt->parent][stmt];
+    return state_machines_[stmt->parent][stmt];
   }
 
   void modify_all_state_machines(void (StateMachine::*func)()) override {
-    for (auto &i : state_machines) {
+    for (auto &i : state_machines_) {
       for (auto &j : i.second) {
         (j.second.*func)();
       }
@@ -115,11 +115,11 @@ class AllocaOptimize : public VariableOptimize {
   }
 
   void clear() override {
-    state_machines.clear();
+    state_machines_.clear();
   }
 
   void visit(AllocaStmt *stmt) override {
-    state_machines[stmt->parent].insert(
+    state_machines_[stmt->parent].insert(
         std::make_pair(stmt, StateMachine(stmt, true)));
   }
 
@@ -149,22 +149,22 @@ class AllocaOptimize : public VariableOptimize {
   }
 
   void visit(IfStmt *if_stmt) override {
-    auto origin = state_machines;
+    auto origin = state_machines_;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);
     if (if_stmt->true_statements) {
       if_stmt->true_statements->accept(this);
     }
-    auto true_branch = std::move(state_machines);
+    auto true_branch = std::move(state_machines_);
 
-    state_machines = origin;
+    state_machines_ = origin;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);
     if (if_stmt->false_statements) {
       if_stmt->false_statements->accept(this);
     }
-    auto false_branch = std::move(state_machines);
+    auto false_branch = std::move(state_machines_);
 
-    state_machines = std::move(origin);
-    for (auto &i : state_machines) {
+    state_machines_ = std::move(origin);
+    for (auto &i : state_machines_) {
       auto &true_branch_block = true_branch[i.first];
       auto &false_branch_block = false_branch[i.first];
       for (auto &j : i.second) {
@@ -180,61 +180,61 @@ class AllocaOptimize : public VariableOptimize {
       return;
     }
 
-    auto origin = state_machines;
+    auto origin = state_machines_;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);
     maybe_run = true;
     body->accept(this);
     maybe_run = false;
     body->accept(this);
     for (auto &i : origin) {
-      auto &loop_block = state_machines[i.first];
+      auto &loop_block = state_machines_[i.first];
       for (auto &j : i.second) {
         j.second.merge_from_loop(loop_block[j.first]);
       }
     }
-    state_machines = std::move(origin);
+    state_machines_ = std::move(origin);
   }
 
   void visit(Block *block) override {
-    state_machines.insert(
+    state_machines_.insert(
         std::make_pair(block, std::unordered_map<Stmt *, StateMachine>()));
 
     for (auto &stmt : block->statements) {
       stmt->accept(this);
     }
     if (!maybe_run) {
-      for (auto &it : state_machines[block]) {
+      for (auto &it : state_machines_[block]) {
         it.second.finalize();
       }
     }
-    state_machines.erase(block);
+    state_machines_.erase(block);
   }
 };
 
 class GlobalTempOptimize : public VariableOptimize {
  private:
-  std::unordered_map<std::size_t, StateMachine> state_machines;
+  std::unordered_map<std::size_t, StateMachine> state_machines_;
 
  public:
   using VariableOptimize::visit;
 
   StateMachine &get_state_machine(Stmt *stmt) override {
-    return state_machines[stmt->as<GlobalTemporaryStmt>()->offset];
+    return state_machines_[stmt->as<GlobalTemporaryStmt>()->offset];
   }
 
   void modify_all_state_machines(void (StateMachine::*func)()) override {
-    for (auto &i : state_machines) {
+    for (auto &i : state_machines_) {
       (i.second.*func)();
     }
   }
 
   void clear() override {
-    state_machines.clear();
+    state_machines_.clear();
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
-    if (state_machines.find(stmt->offset) == state_machines.end())
-      state_machines.insert(
+    if (state_machines_.find(stmt->offset) == state_machines_.end())
+      state_machines_.insert(
           std::make_pair(stmt->offset, StateMachine(stmt, false)));
   }
 
@@ -266,31 +266,31 @@ class GlobalTempOptimize : public VariableOptimize {
   }
 
   void visit(IfStmt *if_stmt) override {
-    auto origin = state_machines;
+    auto origin = state_machines_;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);
     if (if_stmt->true_statements) {
       if_stmt->true_statements->accept(this);
     }
-    auto true_branch = std::move(state_machines);
+    auto true_branch = std::move(state_machines_);
 
-    state_machines = origin;
+    state_machines_ = origin;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);
     if (if_stmt->false_statements) {
       if_stmt->false_statements->accept(this);
     }
-    auto false_branch = std::move(state_machines);
+    auto false_branch = std::move(state_machines_);
 
-    state_machines = std::move(origin);
-    for (auto &it : state_machines) {
+    state_machines_ = std::move(origin);
+    for (auto &it : state_machines_) {
       it.second.merge_from_if(true_branch[it.first], false_branch[it.first]);
     }
     for (auto &it : true_branch) {
-      if (state_machines.find(it.first) == state_machines.end())
-        state_machines.insert(it);
+      if (state_machines_.find(it.first) == state_machines_.end())
+        state_machines_.insert(it);
     }
     for (auto &it : false_branch) {
-      if (state_machines.find(it.first) == state_machines.end())
-        state_machines.insert(it);
+      if (state_machines_.find(it.first) == state_machines_.end())
+        state_machines_.insert(it);
     }
   }
 
@@ -300,37 +300,37 @@ class GlobalTempOptimize : public VariableOptimize {
       return;
     }
 
-    auto origin = state_machines;
+    auto origin = state_machines_;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);
     maybe_run = true;
     body->accept(this);
     maybe_run = false;
     body->accept(this);
     for (auto &it : origin) {
-      it.second.merge_from_loop(state_machines[it.first]);
+      it.second.merge_from_loop(state_machines_[it.first]);
     }
-    for (auto &it : state_machines) {
+    for (auto &it : state_machines_) {
       if (origin.find(it.first) == origin.end()) {
         StateMachine state_machine(it.second.get_var(), false);
         state_machine.merge_from_loop(it.second);
         origin.insert(std::make_pair(it.first, state_machine));
       }
     }
-    state_machines = std::move(origin);
+    state_machines_ = std::move(origin);
   }
 
   void visit(OffloadedStmt *stmt) override {
     if (stmt->task_type == OffloadedTaskType::range_for) {
       TI_ASSERT(!maybe_run);
       if (!stmt->const_begin) {
-        TI_ASSERT(state_machines.find(stmt->begin_offset) !=
-                  state_machines.end());
-        state_machines[stmt->begin_offset].load();
+        TI_ASSERT(state_machines_.find(stmt->begin_offset) !=
+                  state_machines_.end());
+        state_machines_[stmt->begin_offset].load();
       }
       if (!stmt->const_end) {
-        TI_ASSERT(state_machines.find(stmt->end_offset) !=
-                  state_machines.end());
-        state_machines[stmt->end_offset].load();
+        TI_ASSERT(state_machines_.find(stmt->end_offset) !=
+                  state_machines_.end());
+        state_machines_[stmt->end_offset].load();
       }
     }
     if (stmt->body) {
@@ -343,17 +343,17 @@ class GlobalTempOptimize : public VariableOptimize {
 class GlobalPtrOptimize : public VariableOptimize {
  private:
   std::unordered_map<int, std::unordered_map<Stmt *, StateMachine>>
-      state_machines;
+      state_machines_;
 
  public:
   using VariableOptimize::visit;
 
   StateMachine &get_state_machine(Stmt *stmt) override {
-    return state_machines[stmt->as<GlobalPtrStmt>()->snodes[0]->id][stmt];
+    return state_machines_[stmt->as<GlobalPtrStmt>()->snodes[0]->id][stmt];
   }
 
   void modify_all_state_machines(void (StateMachine::*func)()) override {
-    for (auto &i : state_machines) {
+    for (auto &i : state_machines_) {
       for (auto &j : i.second) {
         (j.second.*func)();
       }
@@ -361,7 +361,7 @@ class GlobalPtrOptimize : public VariableOptimize {
   }
 
   void clear() override {
-    state_machines.clear();
+    state_machines_.clear();
   }
 
   void finalize() override {
@@ -370,7 +370,7 @@ class GlobalPtrOptimize : public VariableOptimize {
 
   void visit(GlobalPtrStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    auto &state_machines_map = state_machines[stmt->snodes[0]->id];
+    auto &state_machines_map = state_machines_[stmt->snodes[0]->id];
     if (state_machines_map.find(stmt) == state_machines_map.end())
       state_machines_map.insert(
           std::make_pair(stmt, StateMachine(stmt, false)));
@@ -384,7 +384,7 @@ class GlobalPtrOptimize : public VariableOptimize {
     else
       get_state_machine(stmt->dest).atomic_op(stmt);
     auto dest = stmt->dest->as<GlobalPtrStmt>();
-    for (auto &var : state_machines[dest->snodes[0]->id]) {
+    for (auto &var : state_machines_[dest->snodes[0]->id]) {
       if (var.first != dest &&
           irpass::analysis::maybe_same_address(dest, var.first)) {
         var.second.maybe_atomic_op();
@@ -400,7 +400,7 @@ class GlobalPtrOptimize : public VariableOptimize {
     else
       get_state_machine(stmt->dest).store(stmt);
     auto dest = stmt->dest->as<GlobalPtrStmt>();
-    for (auto &var : state_machines[dest->snodes[0]->id]) {
+    for (auto &var : state_machines_[dest->snodes[0]->id]) {
       if (var.first != dest &&
           irpass::analysis::maybe_same_address(dest, var.first)) {
         var.second.maybe_store(stmt);
@@ -416,7 +416,7 @@ class GlobalPtrOptimize : public VariableOptimize {
     else
       get_state_machine(stmt->src).load(stmt);
     auto dest = stmt->src->as<GlobalPtrStmt>();
-    for (auto &var : state_machines[dest->snodes[0]->id]) {
+    for (auto &var : state_machines_[dest->snodes[0]->id]) {
       if (var.first != dest &&
           irpass::analysis::maybe_same_address(dest, var.first)) {
         var.second.maybe_load();
@@ -425,22 +425,22 @@ class GlobalPtrOptimize : public VariableOptimize {
   }
 
   void visit(IfStmt *if_stmt) override {
-    auto origin = state_machines;
+    auto origin = state_machines_;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);
     if (if_stmt->true_statements) {
       if_stmt->true_statements->accept(this);
     }
-    auto true_branch = std::move(state_machines);
+    auto true_branch = std::move(state_machines_);
 
-    state_machines = origin;
+    state_machines_ = origin;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);
     if (if_stmt->false_statements) {
       if_stmt->false_statements->accept(this);
     }
-    auto false_branch = std::move(state_machines);
+    auto false_branch = std::move(state_machines_);
 
-    state_machines = std::move(origin);
-    for (auto &i : state_machines) {
+    state_machines_ = std::move(origin);
+    for (auto &i : state_machines_) {
       auto &true_branch_block = true_branch[i.first];
       auto &false_branch_block = false_branch[i.first];
       for (auto &j : i.second) {
@@ -450,16 +450,16 @@ class GlobalPtrOptimize : public VariableOptimize {
     }
     for (auto &i : true_branch) {
       for (auto &j : i.second) {
-        if (state_machines[i.first].find(j.first) ==
-            state_machines[i.first].end())
-          state_machines[i.first].insert(j);
+        if (state_machines_[i.first].find(j.first) ==
+            state_machines_[i.first].end())
+          state_machines_[i.first].insert(j);
       }
     }
     for (auto &i : false_branch) {
       for (auto &j : i.second) {
-        if (state_machines[i.first].find(j.first) ==
-            state_machines[i.first].end())
-          state_machines[i.first].insert(j);
+        if (state_machines_[i.first].find(j.first) ==
+            state_machines_[i.first].end())
+          state_machines_[i.first].insert(j);
       }
     }
   }
@@ -470,19 +470,19 @@ class GlobalPtrOptimize : public VariableOptimize {
       return;
     }
 
-    auto origin = state_machines;
+    auto origin = state_machines_;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);
     maybe_run = true;
     body->accept(this);
     maybe_run = false;
     body->accept(this);
     for (auto &i : origin) {
-      auto &loop_snode = state_machines[i.first];
+      auto &loop_snode = state_machines_[i.first];
       for (auto &j : i.second) {
         j.second.merge_from_loop(loop_snode[j.first]);
       }
     }
-    for (auto &i : state_machines) {
+    for (auto &i : state_machines_) {
       auto &origin_snode = origin[i.first];
       for (auto &j : i.second) {
         if (origin_snode.find(j.first) == origin_snode.end()) {
@@ -492,31 +492,31 @@ class GlobalPtrOptimize : public VariableOptimize {
         }
       }
     }
-    state_machines = std::move(origin);
+    state_machines_ = std::move(origin);
   }
 };
 
 class OtherVariableOptimize : public VariableOptimize {
  private:
-  std::unordered_map<Stmt *, StateMachine> state_machines;
+  std::unordered_map<Stmt *, StateMachine> state_machines_;
 
  public:
   using VariableOptimize::visit;
 
   StateMachine &get_state_machine(Stmt *stmt) override {
-    if (state_machines.find(stmt) == state_machines.end())
-      state_machines.insert(std::make_pair(stmt, StateMachine(stmt, false)));
-    return state_machines[stmt];
+    if (state_machines_.find(stmt) == state_machines_.end())
+      state_machines_.insert(std::make_pair(stmt, StateMachine(stmt, false)));
+    return state_machines_[stmt];
   }
 
   void modify_all_state_machines(void (StateMachine::*func)()) override {
-    for (auto &i : state_machines) {
+    for (auto &i : state_machines_) {
       (i.second.*func)();
     }
   }
 
   void clear() override {
-    state_machines.clear();
+    state_machines_.clear();
   }
 
   void finalize() override {
@@ -531,7 +531,7 @@ class OtherVariableOptimize : public VariableOptimize {
       get_state_machine(stmt->dest).maybe_atomic_op();
     else
       get_state_machine(stmt->dest).atomic_op(stmt);
-    for (auto &var : state_machines) {
+    for (auto &var : state_machines_) {
       if (var.first != stmt->dest &&
           irpass::analysis::maybe_same_address(stmt->dest, var.first)) {
         var.second.maybe_atomic_op();
@@ -546,7 +546,7 @@ class OtherVariableOptimize : public VariableOptimize {
       get_state_machine(stmt->dest).maybe_store(stmt);
     else
       get_state_machine(stmt->dest).store(stmt);
-    for (auto &var : state_machines) {
+    for (auto &var : state_machines_) {
       if (var.first != stmt->dest &&
           irpass::analysis::maybe_same_address(stmt->dest, var.first)) {
         var.second.maybe_store(stmt);
@@ -561,7 +561,7 @@ class OtherVariableOptimize : public VariableOptimize {
       get_state_machine(stmt->src).maybe_load();
     else
       get_state_machine(stmt->src).load(stmt);
-    for (auto &var : state_machines) {
+    for (auto &var : state_machines_) {
       if (var.first != stmt->src &&
           irpass::analysis::maybe_same_address(stmt->src, var.first)) {
         var.second.maybe_load();
@@ -570,31 +570,31 @@ class OtherVariableOptimize : public VariableOptimize {
   }
 
   void visit(IfStmt *if_stmt) override {
-    auto origin = state_machines;
+    auto origin = state_machines_;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);
     if (if_stmt->true_statements) {
       if_stmt->true_statements->accept(this);
     }
-    auto true_branch = std::move(state_machines);
+    auto true_branch = std::move(state_machines_);
 
-    state_machines = origin;
+    state_machines_ = origin;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);
     if (if_stmt->false_statements) {
       if_stmt->false_statements->accept(this);
     }
-    auto false_branch = std::move(state_machines);
+    auto false_branch = std::move(state_machines_);
 
-    state_machines = std::move(origin);
-    for (auto &it : state_machines) {
+    state_machines_ = std::move(origin);
+    for (auto &it : state_machines_) {
       it.second.merge_from_if(true_branch[it.first], false_branch[it.first]);
     }
     for (auto &it : true_branch) {
-      if (state_machines.find(it.first) == state_machines.end())
-        state_machines.insert(it);
+      if (state_machines_.find(it.first) == state_machines_.end())
+        state_machines_.insert(it);
     }
     for (auto &it : false_branch) {
-      if (state_machines.find(it.first) == state_machines.end())
-        state_machines.insert(it);
+      if (state_machines_.find(it.first) == state_machines_.end())
+        state_machines_.insert(it);
     }
   }
 
@@ -604,23 +604,23 @@ class OtherVariableOptimize : public VariableOptimize {
       return;
     }
 
-    auto origin = state_machines;
+    auto origin = state_machines_;
     modify_all_state_machines(&StateMachine::begin_if_or_loop);
     maybe_run = true;
     body->accept(this);
     maybe_run = false;
     body->accept(this);
     for (auto &it : origin) {
-      it.second.merge_from_loop(state_machines[it.first]);
+      it.second.merge_from_loop(state_machines_[it.first]);
     }
-    for (auto &it : state_machines) {
+    for (auto &it : state_machines_) {
       if (origin.find(it.first) == origin.end()) {
         StateMachine state_machine(it.second.get_var(), false);
         state_machine.merge_from_loop(it.second);
         origin.insert(std::make_pair(it.first, state_machine));
       }
     }
-    state_machines = std::move(origin);
+    state_machines_ = std::move(origin);
   }
 };
 

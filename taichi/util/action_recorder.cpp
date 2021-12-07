@@ -24,33 +24,33 @@ ActionRecorder::ActionRecorder() {
 
 void ActionRecorder::start_recording(const std::string &fn) {
   TI_INFO("ActionRecorder: start recording to [{}]", fn);
-  TI_ASSERT(!running);
-  running = true;
-  ofs.open(fn);
+  TI_ASSERT(!running_);
+  running_ = true;
+  ofs_.open(fn);
 }
 
 void ActionRecorder::stop_recording() {
   TI_INFO("ActionRecorder: stop recording");
-  TI_ASSERT(running);
-  running = false;
-  ofs.close();
+  TI_ASSERT(running_);
+  running_ = false;
+  ofs_.close();
 }
 
 bool ActionRecorder::is_recording() {
-  return running;
+  return running_;
 }
 
 void ActionRecorder::record(const std::string &content,
                             const std::vector<ActionArg> &arguments) {
-  if (!running)
+  if (!running_)
     return;
-  ofs << "- action: \"" << content << "\"" << std::endl;
+  ofs_ << "- action: \"" << content << "\"" << std::endl;
   for (auto &arg : arguments) {
-    ofs << "  ";
-    arg.serialize(ofs);
-    ofs << std::endl;
+    ofs_ << "  ";
+    arg.serialize(ofs_);
+    ofs_ << std::endl;
   }
-  ofs.flush();
+  ofs_.flush();
 }
 
 TI_NAMESPACE_END

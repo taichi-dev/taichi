@@ -336,7 +336,7 @@ void aot_save() {
 
   int n = 10;
 
-  program.materialize_runtime();
+  // program.materialize_runtime();
   auto *root = new SNode(0, SNodeType::root);
   auto *pointer = &root->dense(Axis(0), n, false);
   auto *place = &pointer->insert_children(SNodeType::place);

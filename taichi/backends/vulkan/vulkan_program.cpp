@@ -49,8 +49,8 @@ std::vector<std::string> get_required_device_extensions() {
 }  // namespace
 
 FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
-  auto handle =
-      runtime->register_taichi_kernel(std::move(run_codegen(kernel, runtime)));
+  auto handle = runtime->register_taichi_kernel(std::move(run_codegen(
+      kernel, runtime->get_ti_device(), runtime->get_compiled_structs())));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
@@ -118,7 +118,13 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 void VulkanProgramImpl::compile_snode_tree_types(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
-  vulkan_runtime_->materialize_snode_tree(tree);
+  if (vulkan_runtime_) {
+    vulkan_runtime_->materialize_snode_tree(tree);
+  } else {
+    CompiledSNodeStructs compiled_structs =
+        vulkan::compile_snode_structs(*tree->root());
+    aot_compiled_snode_structs_.push_back(compiled_structs);
+  }
 }
 
 void VulkanProgramImpl::materialize_snode_tree(
@@ -129,15 +135,12 @@ void VulkanProgramImpl::materialize_snode_tree(
 }
 
 std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder() {
-  // TODO: Remove this compilation guard -- AOT is a compile-time thing, so it's
-  // fine to JIT to SPV on systems without the Vulkan runtime.
-#ifdef TI_WITH_VULKAN
-  return std::make_unique<AotModuleBuilderImpl>(
-      vulkan_runtime_.get(), vulkan_runtime_->get_compiled_structs());
-#else
-  TI_NOT_IMPLEMENTED;
-  return nullptr;
-#endif
+  if (vulkan_runtime_) {
+    return std::make_unique<AotModuleBuilderImpl>(
+        vulkan_runtime_->get_compiled_structs());
+  } else {
+    return std::make_unique<AotModuleBuilderImpl>(aot_compiled_snode_structs_);
+  }
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {

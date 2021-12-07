@@ -117,7 +117,7 @@ class KernelGen : public IRVisitor {
   GetRootStmt *root_stmt_;
   int glsl_kernel_count_{0};
   bool is_top_level_{true};
-  CompiledProgram compiled_program_;
+  CompiledTaichiKernel compiled_program_;
   UsedFeature used;  // TODO: is this actually per-offload?
   int arr_bind_idx = static_cast<int>(GLBufId::Arr);
 
@@ -127,8 +127,8 @@ class KernelGen : public IRVisitor {
   std::string glsl_kernel_name_;
   int num_workgroups_{1};
   int workgroup_size_{1};
-  bool used_tls;  // TODO: move into UsedFeature?
-  std::unordered_map<int, irpass::ExternalPtrAccess> extptr_access;
+  bool used_tls_;  // TODO: move into UsedFeature?
+  std::unordered_map<int, irpass::ExternalPtrAccess> extptr_access_;
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -296,7 +296,7 @@ class KernelGen : public IRVisitor {
         line_appender_.lines();
     compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
                           num_workgroups_, workgroup_size_,
-                          &this->extptr_access);
+                          &this->extptr_access_);
     auto &config = kernel_->program->config;
     if (config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer("shader{:04d}.comp",
@@ -319,7 +319,7 @@ class KernelGen : public IRVisitor {
       line_appender_.pop_indent();
   }
 
-  virtual void visit(Stmt *stmt) override {
+  void visit(Stmt *stmt) override {
     TI_ERROR("[glsl] unsupported statement type {}", typeid(*stmt).name());
   }
 
@@ -486,7 +486,7 @@ class KernelGen : public IRVisitor {
     }
   }
 
-  std::map<int, std::string> ptr_signats;
+  std::map<int, std::string> ptr_signats_;
 
   void visit(GetChStmt *stmt) override {
     used.buf_data = true;
@@ -496,16 +496,17 @@ class KernelGen : public IRVisitor {
              .children_offsets[stmt->chid],
          stmt->output_snode->node_type_name);
     if (stmt->output_snode->is_place())
-      ptr_signats[stmt->id] = "data";
+      ptr_signats_[stmt->id] = "data";
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->val->element_type();
-    emit("_{}_{}_[{} >> {}] = {};",
-         ptr_signats.at(stmt->dest->id),  // throw out_of_range if not a pointer
-         opengl_data_type_short_name(dt), stmt->dest->short_name(),
-         opengl_data_address_shifter(dt), stmt->val->short_name());
+    emit(
+        "_{}_{}_[{} >> {}] = {};",
+        ptr_signats_.at(stmt->dest->id),  // throw out_of_range if not a pointer
+        opengl_data_type_short_name(dt), stmt->dest->short_name(),
+        opengl_data_address_shifter(dt), stmt->val->short_name());
   }
 
   void visit(GlobalLoadStmt *stmt) override {
@@ -513,7 +514,7 @@ class KernelGen : public IRVisitor {
     auto dt = stmt->element_type();
     emit("{} {} = _{}_{}_[{} >> {}];",
          opengl_data_type_name(stmt->element_type()), stmt->short_name(),
-         ptr_signats.at(stmt->src->id), opengl_data_type_short_name(dt),
+         ptr_signats_.at(stmt->src->id), opengl_data_type_short_name(dt),
          stmt->src->short_name(), opengl_data_address_shifter(dt));
   }
 
@@ -547,7 +548,7 @@ class KernelGen : public IRVisitor {
     emit("int {} = {} << {};", stmt->short_name(), linear_index_name,
          opengl_data_address_shifter(stmt->base_ptrs[0]->element_type()));
 
-    ptr_signats[stmt->id] = "arr" + std::to_string(arg_id);
+    ptr_signats_[stmt->id] = "arr" + std::to_string(arg_id);
   }
 
   void visit(UnaryOpStmt *stmt) override {
@@ -751,7 +752,7 @@ class KernelGen : public IRVisitor {
       used.int32 = true;  // since simulated atomics are based on _data_i32_
       emit("{} = {}_{}_{}({} >> {}, {});", stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
-           ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
+           ptr_signats_.at(stmt->dest->id), opengl_data_type_short_name(dt),
            stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
     }
 
@@ -778,7 +779,7 @@ class KernelGen : public IRVisitor {
     if (check_int || (check_add && check_float)) {
       emit("{} = {}(_{}_{}_[{} >> {}], {});", stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
-           ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
+           ptr_signats_.at(stmt->dest->id), opengl_data_type_short_name(dt),
            stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
       return true;
     }
@@ -933,7 +934,7 @@ class KernelGen : public IRVisitor {
         // Refs:
         // https://stackoverflow.com/questions/36374652/compute-shaders-optimal-data-division-on-invocations-threads-and-workgroups
         if (const_iterations > 0) {
-          if (gen->used_tls) {
+          if (gen->used_tls_) {
             // const range with TLS reduction
             gen->num_workgroups_ = std::max(
                 const_iterations / std::max(gen->workgroup_size_, 1) / 32, 1);
@@ -966,8 +967,8 @@ class KernelGen : public IRVisitor {
     this->glsl_kernel_name_ = glsl_kernel_name;
     emit("{{ // range for");
 
-    used_tls = (stmt->tls_prologue != nullptr);
-    if (used_tls) {
+    used_tls_ = (stmt->tls_prologue != nullptr);
+    if (used_tls_) {
       auto tls_size = stmt->tls_size;
       // TODO(k-ye): support 'cursor' in LineAppender:
       emit("int _tls_i32_[{}];", (tls_size + 3) / 4);
@@ -1014,13 +1015,13 @@ class KernelGen : public IRVisitor {
       stmt->body->accept(this);
     }
 
-    if (used_tls) {
+    if (used_tls_) {
       TI_ASSERT(stmt->tls_epilogue != nullptr);
       emit("{{  // TLS epilogue");
       stmt->tls_epilogue->accept(this);
       emit("}}");
     }
-    used_tls = false;
+    used_tls_ = false;
 
     emit("}}\n");
   }
@@ -1046,13 +1047,13 @@ class KernelGen : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     used.buf_gtmp = true;
     emit("int {} = {};", stmt->short_name(), stmt->offset);
-    ptr_signats[stmt->id] = "gtmp";
+    ptr_signats_[stmt->id] = "gtmp";
   }
 
   void visit(ThreadLocalPtrStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     emit("int {} = {};", stmt->short_name(), stmt->offset);
-    ptr_signats[stmt->id] = "tls";
+    ptr_signats_[stmt->id] = "tls";
   }
 
   void visit(LoopIndexStmt *stmt) override {
@@ -1110,7 +1111,7 @@ class KernelGen : public IRVisitor {
   void visit(OffloadedStmt *stmt) override {
     auto map = irpass::detect_external_ptr_access_in_task(stmt);
 
-    this->extptr_access = std::move(map);
+    this->extptr_access_ = std::move(map);
 
     generate_header();
     TI_ASSERT(is_top_level_);
@@ -1147,7 +1148,7 @@ class KernelGen : public IRVisitor {
   }
 
  public:
-  CompiledProgram get_compiled_program() {
+  CompiledTaichiKernel get_compiled_program() {
     // We have to set it at the last moment, to get all used feature.
     compiled_program_.set_used(used);
     return std::move(compiled_program_);
@@ -1160,7 +1161,7 @@ class KernelGen : public IRVisitor {
 
 }  // namespace
 
-CompiledProgram OpenglCodeGen::gen(void) {
+CompiledTaichiKernel OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
   KernelGen codegen(kernel_, struct_compiled_, kernel_name_,
                     allows_nv_shader_ext_);
@@ -1185,7 +1186,7 @@ void OpenglCodeGen::lower() {
 #endif
 }
 
-CompiledProgram OpenglCodeGen::compile(Kernel &kernel) {
+CompiledTaichiKernel OpenglCodeGen::compile(Kernel &kernel) {
   this->kernel_ = &kernel;
 
   this->lower();

@@ -541,7 +541,7 @@ def init(arch=None,
             * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/lang/articles/advanced/layout.
     """
     # Check version for users every 7 days if not disabled by users.
-    skip = os.getenv('SKIP_VERSION_CHECK')
+    skip = os.environ.get("SKIP_VERSION_CHECK")
     if skip != 'ON':
         try_check_version()
 

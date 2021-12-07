@@ -341,7 +341,6 @@ jobs:
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
           . venv\Scripts\activate.ps1
           python -c "import taichi"
-          ti example laplace
           ti diagnose
           python tests/run_tests.py -vr2 -t2
         env:

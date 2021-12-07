@@ -489,6 +489,31 @@ def check_version():
         print('Checking lastest version failed:', error)
 
 
+def try_check_version():
+    try:
+        os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
+        timestamp_path = os.path.join(_ti_core.get_repo_dir(), 'timestamp')
+        cur_date = datetime.date.today()
+        if os.path.exists(timestamp_path):
+            last_time = ''
+            with open(timestamp_path, 'r') as f:
+                last_time = f.readlines()[0].rstrip()
+            if cur_date.strftime('%Y-%m-%d') > last_time:
+                check_version()
+                with open(timestamp_path, 'w') as f:
+                    f.write((cur_date +
+                             datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+                    f.truncate()
+        else:
+            check_version()
+            with open(timestamp_path, 'w') as f:
+                f.write((cur_date +
+                         datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+    # Wildcard exception to catch potential file writing errors.
+    except Exception as error:
+        print('Checking lastest version failed:', error)
+
+
 def init(arch=None,
          default_fp=None,
          default_ip=None,
@@ -515,29 +540,10 @@ def init(arch=None,
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
             * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/lang/articles/advanced/layout.
     """
-    # Check version for users every 7 days.
-    try:
-        os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
-        timestamp_path = os.path.join(_ti_core.get_repo_dir(), 'timestamp')
-        cur_date = datetime.date.today()
-        if os.path.exists(timestamp_path):
-            last_time = ''
-            with open(timestamp_path, 'r') as f:
-                last_time = f.readlines()[0].rstrip()
-            if cur_date.strftime('%Y-%m-%d') > last_time:
-                check_version()
-                with open(timestamp_path, 'w') as f:
-                    f.write((cur_date +
-                             datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
-                    f.truncate()
-        else:
-            check_version()
-            with open(timestamp_path, 'w') as f:
-                f.write((cur_date +
-                         datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
-    # Wildcard exception to catch potential file writing errors.
-    except Exception as error:
-        print('Checking lastest version failed:', error)
+    # Check version for users every 7 days if not disabled by users.
+    skip = os.getenv('SKIP_VERSION_CHECK')
+    if skip != 'ON':
+        try_check_version()
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,

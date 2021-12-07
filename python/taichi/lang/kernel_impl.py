@@ -17,7 +17,7 @@ from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
 from taichi.misc.util import obsolete
-from taichi.type import any_arr, primitive_types, template
+from taichi.types import any_arr, primitive_types, template
 
 import taichi as ti
 

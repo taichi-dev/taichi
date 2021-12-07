@@ -7,9 +7,9 @@ from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taic
 from taichi.main import main
 from taichi.misc import *
 from taichi.tools import *
-from taichi.type.annotations import *
+from taichi.types.annotations import *
 # Provide a shortcut to types since they're commonly used.
-from taichi.type.primitive_types import *
+from taichi.types.primitive_types import *
 
 from taichi import ad
 from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui

@@ -7,9 +7,9 @@ from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix
 from taichi.lang.ops import cast
-from taichi.lang.types import CompoundType
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
+from taichi.types import CompoundType
 
 import taichi as ti
 

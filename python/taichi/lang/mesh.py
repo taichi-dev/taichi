@@ -8,8 +8,8 @@ from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField, _IntermediateMatrix
 from taichi.lang.struct import StructField
-from taichi.lang.types import CompoundType
 from taichi.lang.util import python_scope
+from taichi.types import CompoundType
 
 import taichi as ti
 

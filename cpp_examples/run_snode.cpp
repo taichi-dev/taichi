@@ -2,6 +2,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
 
+namespace taichi {
+namespace example {
 void run_snode() {
   /*
   import taichi as ti, numpy as np
@@ -139,3 +141,5 @@ void run_snode() {
     std::cout << ext_arr[i] << " ";
   std::cout << std::endl;
 }
+}  // namespace example
+}  // namespace taichi

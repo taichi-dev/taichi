@@ -2,6 +2,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
 
+namespace taichi {
+namespace example {
 void autograd() {
   /*
   import taichi as ti, numpy as np
@@ -188,3 +190,5 @@ void autograd() {
     std::cout << ext_c[i] << " ";
   std::cout << std::endl;
 }
+}  // namespace example
+}  // namespace taichi

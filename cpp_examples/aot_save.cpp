@@ -2,6 +2,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
 
+namespace taichi {
+namespace example {
 void aot_save() {
   using namespace taichi;
   using namespace lang;
@@ -76,3 +78,5 @@ void aot_save() {
   aot_builder->dump(".", "aot.tcb");
   std::cout << "done" << std::endl;
 }
+}  // namespace example
+}  // namespace taichi

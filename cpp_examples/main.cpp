@@ -2,6 +2,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
 
+namespace taichi {
+namespace example {
 void run_snode();
 void autograd();
 void aot_save();
@@ -12,3 +14,5 @@ int main() {
   aot_save();
   return 0;
 }
+}  // namespace example
+}  // namespace taichi

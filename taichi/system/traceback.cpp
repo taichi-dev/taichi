@@ -156,8 +156,7 @@ inline std::vector<StackFrame> stack_trace() {
       f.name = symbol->Name;
     } else {
       DWORD error = GetLastError();
-      trace("Failed to resolve address 0x%X: %u\n",
-            frame.AddrPC.Offset, error);
+      trace("Failed to resolve address 0x%X: %u\n", frame.AddrPC.Offset, error);
       f.name = "Unknown Function";
     }
 
@@ -170,8 +169,8 @@ inline std::vector<StackFrame> stack_trace() {
       f.line = line.LineNumber;
     } else {
       DWORD error = GetLastError();
-      trace("Failed to resolve line for 0x%X: %u\n",
-            frame.AddrPC.Offset, error);
+      trace("Failed to resolve line for 0x%X: %u\n", frame.AddrPC.Offset,
+            error);
       f.line = 0;
     }
 

@@ -22,7 +22,7 @@ from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
 from taichi.misc.util import deprecated, get_traceback, warning
 from taichi.snode.fields_builder import FieldsBuilder
-from taichi.type.primitive_types import f16, f32, f64, i32, i64, u32, u64
+from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 import taichi as ti
 

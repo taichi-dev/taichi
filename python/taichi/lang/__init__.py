@@ -16,7 +16,7 @@ import taichi.lang.linalg_impl
 import taichi.lang.meta
 from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
-from taichi.lang import _random, impl, types
+from taichi.lang import _random, impl
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
@@ -57,9 +57,9 @@ from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
-from taichi.type.annotations import any_arr, ext_arr, template
-from taichi.type.primitive_types import (f16, f32, f64, i32, i64,
-                                         integer_types, u32, u64)
+from taichi.types.annotations import any_arr, ext_arr, template
+from taichi.types.primitive_types import (f16, f32, f64, i32, i64,
+                                          integer_types, u32, u64)
 
 import taichi as ti
 

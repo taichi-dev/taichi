@@ -5,6 +5,7 @@ class CompoundType:
     pass
 
 
+# TODO: maybe move MatrixType, StructType here to avoid the circular import?
 def matrix(n, m, dtype):
     return taichi.lang.matrix.MatrixType(n, m, dtype)
 

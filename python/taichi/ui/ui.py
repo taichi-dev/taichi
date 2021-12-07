@@ -4,7 +4,6 @@ if _ti_core.GGUI_AVAILABLE:
 
     from .camera import Camera  # pylint: disable=unused-import
 
-
     def make_camera():
         return Camera(_ti_core.PyCamera())
 

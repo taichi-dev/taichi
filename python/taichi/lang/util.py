@@ -2,8 +2,8 @@ import functools
 import os
 
 import numpy as np
-from taichi.lib.core import ti_core as _ti_core
 from taichi.lang import impl
+from taichi.lib.core import ti_core as _ti_core
 
 import taichi as ti
 

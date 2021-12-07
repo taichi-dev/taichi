@@ -1,8 +1,8 @@
-from taichi.lib.core import ti_core as _ti_core
 from taichi.lang.impl import field
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
 from taichi.lang.ops import atomic_add
+from taichi.lib.core import ti_core as _ti_core
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f32
 

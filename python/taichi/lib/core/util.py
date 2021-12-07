@@ -40,7 +40,8 @@ def import_ti_core():
         pyddir = os.path.join(package_root(), 'lib', 'runtime')
         os.environ['PATH'] += os.pathsep + pyddir
     try:
-        from taichi.lib.runtime import taichi_core as core  # pylint: disable=C0415
+        from taichi.lib.runtime import \
+            taichi_core as core  # pylint: disable=C0415
     except Exception as e:
         if isinstance(e, ImportError):
             print(Fore.YELLOW + "Share object taichi_core import failed, "
@@ -78,7 +79,9 @@ def is_ci():
 
 
 def package_root():
-    return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+    return os.path.join(
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
 
 
 def get_core_shared_object():
@@ -160,4 +163,3 @@ def _print_taichi_header():
 
 
 _print_taichi_header()
-

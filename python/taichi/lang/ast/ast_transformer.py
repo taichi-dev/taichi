@@ -20,9 +20,9 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_AnnAssign(ctx, node):
-        node.value = build_stmt(ctx, node.value)
-        node.target = build_stmt(ctx, node.target)
-        node.annotation = build_stmt(ctx, node.annotation)
+        build_stmt(ctx, node.value)
+        build_stmt(ctx, node.target)
+        build_stmt(ctx, node.annotation)
 
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
@@ -31,7 +31,7 @@ class ASTTransformer(Builder):
         node.ptr = ASTTransformer.build_assign_annotated(
             ctx, node.target, node.value.ptr, is_static_assign,
             node.annotation.ptr)
-        return node
+        return node.ptr
 
     @staticmethod
     def build_assign_annotated(ctx, target, value, is_static_assign,

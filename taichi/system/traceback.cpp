@@ -91,7 +91,7 @@ inline std::vector<StackFrame> stack_trace() {
   HANDLE thread = GetCurrentThread();
 
   if (SymInitialize(process, NULL, TRUE) == FALSE) {
-    trace(__FUNCTION__ ": Failed to call SymInitialize.");
+    trace("Failed to call SymInitialize.");
     return std::vector<StackFrame>();
   }
 
@@ -149,15 +149,14 @@ inline std::vector<StackFrame> stack_trace() {
 #endif
     char symbolBuffer[sizeof(IMAGEHLP_SYMBOL) + 255];
     PIMAGEHLP_SYMBOL symbol = (PIMAGEHLP_SYMBOL)symbolBuffer;
-    symbol->SizeOfStruct = (sizeof IMAGEHLP_SYMBOL) + 255;
+    symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL) + 255;
     symbol->MaxNameLength = 254;
 
     if (SymGetSymFromAddr(process, frame.AddrPC.Offset, &offset, symbol)) {
       f.name = symbol->Name;
     } else {
       DWORD error = GetLastError();
-      trace(__FUNCTION__ ": Failed to resolve address 0x%X: %u\n",
-            frame.AddrPC.Offset, error);
+      trace("Failed to resolve address 0x%X: %u\n", frame.AddrPC.Offset, error);
       f.name = "Unknown Function";
     }
 
@@ -170,8 +169,8 @@ inline std::vector<StackFrame> stack_trace() {
       f.line = line.LineNumber;
     } else {
       DWORD error = GetLastError();
-      trace(__FUNCTION__ ": Failed to resolve line for 0x%X: %u\n",
-            frame.AddrPC.Offset, error);
+      trace("Failed to resolve line for 0x%X: %u\n", frame.AddrPC.Offset,
+            error);
       f.line = 0;
     }
 

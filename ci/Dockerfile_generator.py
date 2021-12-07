@@ -308,9 +308,9 @@ def main(arguments=None):
 
                 dockerfile = reduce(
                     lambda x, y: x + y,
-                    (head_block, base_block, DEBIAN_NONINTERACTIVE_BLOCK, MAINTAINER_BLOCK,
-                     install_block, CMAKE_BLOCK, LLVM_BLOCK, USER_BLOCK,
-                     CONDA_BLOCK, scripts_block))
+                    (head_block, base_block, DEBIAN_NONINTERACTIVE_BLOCK,
+                     MAINTAINER_BLOCK, install_block, CMAKE_BLOCK, LLVM_BLOCK,
+                     USER_BLOCK, CONDA_BLOCK, scripts_block))
 
                 filename = pwd / f"Dockerfile.{os}.{version}.cpu"
 

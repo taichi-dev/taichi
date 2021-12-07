@@ -47,9 +47,9 @@ Please build from source for other configurations (e.g., your CPU is ARM, or you
  - On Windows, please install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe) if you haven't.
  - [[All releases]](https://github.com/taichi-dev/taichi/releases)
 
-## Developer Installation
+## Contributing
 
-Please follow [this doc](https://docs.taichi.graphics/lang/articles/contribution/dev_install) to learn how to build Taichi from source. Note that Taichi requires LLVM-10.0.0, and it is recommneded to use [our prebuilt LLVM libraries](https://docs.taichi.graphics/lang/articles/contribution/dev_install#installing-dependencies) for each platform.
+We'd love to hear your comments or any of your feedback! If you would like to contribute to Taichi, please check out the [Contribution Guidelines](CONTRIBUTING.md) first.
 
 ## Contributors
 
@@ -58,8 +58,6 @@ Please follow [this doc](https://docs.taichi.graphics/lang/articles/contribution
 *Note: contributor avatars above are randomly shuffled.*
 
 -------------------------------
-
-We welcome feedback and comments. If you would like to contribute to Taichi, please check out our [Contributor Guidelines](https://docs.taichi.graphics/lang/articles/contribution/contributor_guide).
 
 If you use Taichi in your research, please cite related papers:
 

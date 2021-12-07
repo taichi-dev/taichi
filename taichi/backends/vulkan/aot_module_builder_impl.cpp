@@ -10,9 +10,9 @@ namespace lang {
 namespace vulkan {
 
 AotModuleBuilderImpl::AotModuleBuilderImpl(
-    VkRuntime *runtime,
     const std::vector<CompiledSNodeStructs> &compiled_structs)
-    : compiled_structs_(compiled_structs), runtime_(runtime) {
+    : compiled_structs_(compiled_structs) {
+  aot_target_device_ = std::make_unique<AotTargetDevice>(Arch::vulkan);
 }
 
 void AotModuleBuilderImpl::write_spv_file(
@@ -49,7 +49,8 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
   spirv::lower(kernel);
-  auto compiled = run_codegen(kernel, runtime_);
+  auto compiled =
+      run_codegen(kernel, aot_target_device_.get(), compiled_structs_);
   ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
 }

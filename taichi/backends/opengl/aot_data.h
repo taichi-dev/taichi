@@ -9,20 +9,6 @@ namespace taichi {
 namespace lang {
 namespace opengl {
 
-struct AotCompiledKernel {
-  CompiledProgram program;
-  std::string identifier;
-
-  TI_IO_DEF(program, identifier);
-};
-
-struct AotCompiledKernelTmpl {
-  std::unordered_map<std::string, CompiledProgram> program;
-  std::string identifier;
-
-  TI_IO_DEF(program, identifier);
-};
-
 struct CompiledFieldData {
   std::string field_name;
   uint32_t dtype;
@@ -44,8 +30,8 @@ struct CompiledFieldData {
 };
 
 struct AotData {
-  std::vector<AotCompiledKernel> kernels;
-  std::vector<AotCompiledKernelTmpl> kernel_tmpls;
+  std::unordered_map<std::string, CompiledTaichiKernel> kernels;
+  std::unordered_map<std::string, CompiledTaichiKernel> kernel_tmpls;
   std::vector<CompiledFieldData> fields;
 
   size_t root_buffer_size;

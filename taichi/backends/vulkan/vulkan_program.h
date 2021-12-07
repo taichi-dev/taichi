@@ -82,6 +82,7 @@ class VulkanProgramImpl : public ProgramImpl {
  private:
   std::unique_ptr<vulkan::VulkanDeviceCreator> embedded_device_{nullptr};
   std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
+  std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
 };
 }  // namespace lang
 }  // namespace taichi

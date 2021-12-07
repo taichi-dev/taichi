@@ -45,14 +45,14 @@ class LlvmProgramImpl : public ProgramImpl {
 
   TaichiLLVMContext *get_llvm_context(Arch arch) {
     if (arch_is_cpu(arch)) {
-      return llvm_context_host.get();
+      return llvm_context_host_.get();
     } else {
-      return llvm_context_device.get();
+      return llvm_context_device_.get();
     }
   }
 
   LLVMRuntime *get_llvm_runtime() {
-    return static_cast<LLVMRuntime *>(llvm_runtime);
+    return static_cast<LLVMRuntime *>(llvm_runtime_);
   }
 
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
@@ -83,8 +83,8 @@ class LlvmProgramImpl : public ProgramImpl {
       SNode *snode,
       uint64 *result_buffer) override;
 
-  virtual void destroy_snode_tree(SNodeTree *snode_tree) override {
-    snode_tree_buffer_manager->destroy(snode_tree);
+  void destroy_snode_tree(SNodeTree *snode_tree) override {
+    snode_tree_buffer_manager_->destroy(snode_tree);
   }
 
   void print_memory_profiler_info(
@@ -123,14 +123,14 @@ class LlvmProgramImpl : public ProgramImpl {
     TI_ASSERT(arch_uses_llvm(config->arch));
 
     TaichiLLVMContext *tlctx = nullptr;
-    if (llvm_context_device) {
-      tlctx = llvm_context_device.get();
+    if (llvm_context_device_) {
+      tlctx = llvm_context_device_.get();
     } else {
-      tlctx = llvm_context_host.get();
+      tlctx = llvm_context_host_.get();
     }
 
     auto runtime = tlctx->runtime_jit_module;
-    runtime->call<void *, Args...>("runtime_" + key, llvm_runtime,
+    runtime->call<void *, Args...>("runtime_" + key, llvm_runtime_,
                                    std::forward<Args>(args)...);
     return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(
         taichi_result_buffer_runtime_query_id, result_buffer));
@@ -142,23 +142,23 @@ class LlvmProgramImpl : public ProgramImpl {
     TI_NOT_IMPLEMENTED;
   }
 
-  virtual Device *get_compute_device() override {
+  Device *get_compute_device() override {
     return device_.get();
   }
 
   DevicePtr get_snode_tree_device_ptr(int tree_id) override;
 
  private:
-  std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
-  std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
-  std::unique_ptr<ThreadPool> thread_pool{nullptr};
-  std::unique_ptr<Runtime> runtime_mem_info{nullptr};
-  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager{nullptr};
+  std::unique_ptr<TaichiLLVMContext> llvm_context_host_{nullptr};
+  std::unique_ptr<TaichiLLVMContext> llvm_context_device_{nullptr};
+  std::unique_ptr<ThreadPool> thread_pool_{nullptr};
+  std::unique_ptr<Runtime> runtime_mem_info_{nullptr};
+  std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager_{nullptr};
   std::unique_ptr<StructCompiler> struct_compiler_{nullptr};
-  void *llvm_runtime{nullptr};
-  void *preallocated_device_buffer{nullptr};  // TODO: move to memory allocator
+  void *llvm_runtime_{nullptr};
+  void *preallocated_device_buffer_{nullptr};  // TODO: move to memory allocator
 
-  DeviceAllocation preallocated_device_buffer_alloc{kDeviceNullAllocation};
+  DeviceAllocation preallocated_device_buffer_alloc_{kDeviceNullAllocation};
 
   std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
 

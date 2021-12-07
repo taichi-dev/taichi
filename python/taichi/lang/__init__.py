@@ -9,7 +9,6 @@ import tempfile
 import time
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
-from socket import timeout
 from urllib import request
 from urllib.error import HTTPError
 
@@ -17,7 +16,7 @@ import taichi.lang.linalg_impl
 import taichi.lang.meta
 from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
-from taichi.lang import _random, impl, types
+from taichi.lang import _random, impl
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
@@ -53,14 +52,14 @@ from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (cook_dtype, has_clangpp, has_pytorch,
                               is_taichi_class, python_scope, taichi_scope,
                               to_numpy_type, to_pytorch_type, to_taichi_type)
-from taichi.misc.util import deprecated, get_traceback
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
-from taichi.type.annotations import any_arr, ext_arr, template
-from taichi.type.primitive_types import (f16, f32, f64, i32, i64,
-                                         integer_types, u32, u64)
+from taichi.tools.util import deprecated, get_traceback
+from taichi.types.annotations import any_arr, ext_arr, template
+from taichi.types.primitive_types import (f16, f32, f64, i32, i64,
+                                          integer_types, u32, u64)
 
 import taichi as ti
 
@@ -473,7 +472,7 @@ def check_version():
     try:
         payload = json.dumps(payload)
         payload = payload.encode()
-        req = request.Request('http://metadata.taichi.graphics/check_version',
+        req = request.Request('https://metadata.taichi.graphics/check_version',
                               method='POST')
         req.add_header('Content-Type', 'application/json')
         with request.urlopen(req, data=payload, timeout=3) as response:
@@ -486,11 +485,33 @@ def check_version():
             elif response['status'] == 0:
                 # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
                 print(response['message'])
-    except HTTPError as error:
-        print('Checking latest version failed: Server error.', error)
-    except timeout:
-        print(
-            'Checking latest version failed: Time out when connecting server.')
+    except Exception as error:
+        print('Checking lastest version failed:', error)
+
+
+def try_check_version():
+    try:
+        os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
+        timestamp_path = os.path.join(_ti_core.get_repo_dir(), 'timestamp')
+        cur_date = datetime.date.today()
+        if os.path.exists(timestamp_path):
+            last_time = ''
+            with open(timestamp_path, 'r') as f:
+                last_time = f.readlines()[0].rstrip()
+            if cur_date.strftime('%Y-%m-%d') > last_time:
+                check_version()
+                with open(timestamp_path, 'w') as f:
+                    f.write((cur_date +
+                             datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+                    f.truncate()
+        else:
+            check_version()
+            with open(timestamp_path, 'w') as f:
+                f.write((cur_date +
+                         datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+    # Wildcard exception to catch potential file writing errors.
+    except Exception as error:
+        print('Checking lastest version failed:', error)
 
 
 def init(arch=None,
@@ -519,31 +540,10 @@ def init(arch=None,
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
             * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi.graphics/lang/articles/advanced/layout.
     """
-    # Check version for users every 7 days.
-    os.makedirs(_ti_core.get_repo_dir(), exist_ok=True)
-    timestamp_path = os.path.join(_ti_core.get_repo_dir(), 'timestamp')
-    cur_date = datetime.date.today()
-    if os.path.exists(timestamp_path):
-        last_time = ''
-        with open(timestamp_path, 'r') as f:
-            last_time = f.readlines()[0].rstrip()
-        if cur_date.strftime('%Y-%m-%d') > last_time:
-            try:
-                check_version()
-            except Exception as error:
-                print('Checking lastest version failed:', error)
-            with open(timestamp_path, 'w') as f:
-                f.write((cur_date +
-                         datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
-                f.truncate()
-    else:
-        try:
-            check_version()
-        except Exception as error:
-            print('Checking lastest version failed:', error)
-        with open(timestamp_path, 'w') as f:
-            f.write(
-                (cur_date + datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+    # Check version for users every 7 days if not disabled by users.
+    skip = os.environ.get("TI_SKIP_VERSION_CHECK")
+    if skip != 'ON':
+        try_check_version()
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,

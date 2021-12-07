@@ -19,6 +19,51 @@ class ASTTransformer(Builder):
         return node
 
     @staticmethod
+    def build_AnnAssign(ctx, node):
+        node.value = build_stmt(ctx, node.value)
+        node.target = build_stmt(ctx, node.target)
+        node.annotation = build_stmt(ctx, node.annotation)
+
+        is_static_assign = isinstance(
+            node.value, ast.Call) and ASTResolver.resolve_to(
+                node.value.func, ti.static, globals())
+
+        node.ptr = ASTTransformer.build_assign_annotated(
+            ctx, node.target, node.value.ptr, is_static_assign,
+            node.annotation.ptr)
+        return node
+
+    @staticmethod
+    def build_assign_annotated(ctx, target, value, is_static_assign,
+                               annotation):
+        """Build an annotated assginment like this: target: annotation = value.
+
+         Args:
+            ctx (ast_builder_utils.BuilderContext): The builder context.
+            target (ast.Name): A variable name. `target.id` holds the name as
+            a string.
+            annotation: A type we hope to assign to the target
+            value: A node representing the value.
+            is_static_assign: A boolean value indicating whether this is a static assignment
+        """
+        is_local = isinstance(target, ast.Name)
+        anno = ti.expr_init(annotation)
+        if is_static_assign:
+            raise TaichiSyntaxError(
+                "Static assign cannot be used on annotated assignment")
+        if is_local and not ctx.is_var_declared(target.id):
+            var = ti.cast(value, anno)
+            var = ti.expr_init(var)
+            ctx.create_variable(target.id, var)
+        else:
+            var = target.ptr
+            if var.ptr.get_ret_type() != anno:
+                raise TaichiSyntaxError(
+                    "Static assign cannot have type overloading")
+            var.assign(value)
+        return var
+
+    @staticmethod
     def build_Assign(ctx, node):
         node.value = build_stmt(ctx, node.value)
         node.targets = build_stmts(ctx, node.targets)

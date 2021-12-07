@@ -17,7 +17,6 @@ namespace vulkan {
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
   explicit AotModuleBuilderImpl(
-      VkRuntime *runtime,
       const std::vector<CompiledSNodeStructs> &compiled_structs);
 
   void dump(const std::string &output_dir,
@@ -43,8 +42,8 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                       const std::vector<uint32_t> &source_code) const;
 
   const std::vector<CompiledSNodeStructs> &compiled_structs_;
-  VkRuntime *runtime_;
   TaichiAotData ti_aot_data_;
+  std::unique_ptr<Device> aot_target_device_;
 };
 
 }  // namespace vulkan

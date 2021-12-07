@@ -26,15 +26,15 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  void visit(WhileStmt *stmt) {
+  void visit(WhileStmt *stmt) override {
     TI_ERROR("WhileStmt is not supported in AutoDiff.");
   }
 
-  void visit(ContinueStmt *stmt) {
+  void visit(ContinueStmt *stmt) override {
     TI_ERROR("ContinueStmt is not supported in AutoDiff.");
   }
 
-  void visit(WhileControlStmt *stmt) {
+  void visit(WhileControlStmt *stmt) override {
     TI_ERROR("WhileControlStmt (break) is not supported in AutoDiff.");
   }
 
@@ -75,33 +75,33 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
 
   void visit_loop_body(Block *block) {
     if (is_independent_block(block)) {
-      current_ib = block;
+      current_ib_ = block;
       block->accept(this);
     } else {
       // No need to dive further
     }
   }
 
-  void visit(StructForStmt *stmt) {
-    TI_ASSERT(depth == 0);
-    depth++;
-    current_ib = stmt->body.get();
+  void visit(StructForStmt *stmt) override {
+    TI_ASSERT(depth_ == 0);
+    depth_++;
+    current_ib_ = stmt->body.get();
     visit_loop_body(stmt->body.get());
-    depth--;
-    if (depth == 0) {
-      independent_blocks.push_back(current_ib);
+    depth_--;
+    if (depth_ == 0) {
+      independent_blocks_.push_back(current_ib_);
     }
   }
 
-  void visit(RangeForStmt *stmt) {
-    if (depth == 0) {
-      current_ib = stmt->body.get();
+  void visit(RangeForStmt *stmt) override {
+    if (depth_ == 0) {
+      current_ib_ = stmt->body.get();
     }
-    depth++;
+    depth_++;
     visit_loop_body(stmt->body.get());
-    depth--;
-    if (depth == 0) {
-      independent_blocks.push_back(current_ib);
+    depth_--;
+    if (depth_ == 0) {
+      independent_blocks_.push_back(current_ib_);
     }
   }
 
@@ -116,18 +116,18 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     }
     if (!has_for) {
       // The whole block is an IB
-      pass.independent_blocks.push_back(block);
+      pass.independent_blocks_.push_back(block);
     } else {
       root->accept(&pass);
     }
-    TI_ASSERT(!pass.independent_blocks.empty());
-    return pass.independent_blocks;
+    TI_ASSERT(!pass.independent_blocks_.empty());
+    return pass.independent_blocks_;
   }
 
  private:
-  std::vector<Block *> independent_blocks;
-  int depth{0};
-  Block *current_ib{nullptr};
+  std::vector<Block *> independent_blocks_;
+  int depth_{0};
+  Block *current_ib_{nullptr};
 };
 
 // Note that SSA does not mean the instruction will be executed at most once.
@@ -137,13 +137,13 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   PromoteSSA2LocalVar(Block *block) {
-    alloca_block = block;
+    alloca_block_ = block;
     invoke_default_visitor = true;
-    execute_once = true;
+    execute_once_ = true;
   }
 
   void visit(Stmt *stmt) override {
-    if (execute_once)
+    if (execute_once_)
       return;
     TI_ASSERT(stmt->width() == 1);
     if (!(stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
@@ -155,8 +155,8 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
     // Create a alloc
     auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type);
     auto alloc_ptr = alloc.get();
-    TI_ASSERT(alloca_block);
-    alloca_block->insert(std::move(alloc), 0);
+    TI_ASSERT(alloca_block_);
+    alloca_block_->insert(std::move(alloc), 0);
     auto load = stmt->insert_after_me(
         Stmt::make<LocalLoadStmt>(LocalAddress(alloc_ptr, 0)));
     irpass::replace_all_usages_with(stmt->parent, stmt, load);
@@ -165,15 +165,15 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
   }
 
   void visit(RangeForStmt *stmt) override {
-    auto old_execute_once = execute_once;
-    execute_once = false;  // loop body may be executed many times
+    auto old_execute_once = execute_once_;
+    execute_once_ = false;  // loop body may be executed many times
     stmt->body->accept(this);
-    execute_once = old_execute_once;
+    execute_once_ = old_execute_once;
   }
 
  private:
-  Block *alloca_block{nullptr};
-  bool execute_once;
+  Block *alloca_block_{nullptr};
+  bool execute_once_;
 
  public:
   static void run(Block *block) {
@@ -234,32 +234,32 @@ class ReverseOuterLoops : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
  private:
-  ReverseOuterLoops(const std::vector<Block *> &IB) : loop_depth(0), IB(IB) {
+  ReverseOuterLoops(const std::vector<Block *> &IB) : loop_depth_(0), ib_(IB) {
   }
 
-  bool is_IB(Block *block) const {
-    return std::find(IB.begin(), IB.end(), block) != IB.end();
+  bool is_ib(Block *block) const {
+    return std::find(ib_.begin(), ib_.end(), block) != ib_.end();
   }
 
-  void visit(StructForStmt *stmt) {
-    loop_depth += 1;
-    if (!is_IB(stmt->body.get()))
+  void visit(StructForStmt *stmt) override {
+    loop_depth_ += 1;
+    if (!is_ib(stmt->body.get()))
       stmt->body->accept(this);
-    loop_depth -= 1;
+    loop_depth_ -= 1;
   }
 
-  void visit(RangeForStmt *stmt) {
-    if (loop_depth >= 1) {
+  void visit(RangeForStmt *stmt) override {
+    if (loop_depth_ >= 1) {
       stmt->reversed = !stmt->reversed;
     }
-    loop_depth += 1;
-    if (!is_IB(stmt->body.get()))
+    loop_depth_ += 1;
+    if (!is_ib(stmt->body.get()))
       stmt->body->accept(this);
-    loop_depth -= 1;
+    loop_depth_ -= 1;
   }
 
-  int loop_depth;
-  std::vector<Block *> IB;
+  int loop_depth_;
+  std::vector<Block *> ib_;
 
  public:
   static void run(IRNode *root, const std::vector<Block *> &IB) {

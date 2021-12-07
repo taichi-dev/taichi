@@ -7,7 +7,9 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/util/line_appender.h"
 #include "taichi/util/str.h"
+#ifdef TI_WITH_LLVM
 #include "taichi/llvm/llvm_program.h"
+#endif
 #include "cc_utils.h"
 
 #define C90_COMPAT 0
@@ -23,51 +25,51 @@ std::string get_node_ptr_name(SNode *snode) {
 
 class CCTransformer : public IRVisitor {
  private:
-  [[maybe_unused]] Kernel *kernel;
-  [[maybe_unused]] CCLayout *layout;
+  [[maybe_unused]] Kernel *kernel_;
+  [[maybe_unused]] CCLayout *layout_;
 
-  LineAppender line_appender;
-  LineAppender line_appender_header;
-  bool is_top_level{true};
-  GetRootStmt *root_stmt;
+  LineAppender line_appender_;
+  LineAppender line_appender_header_;
+  bool is_top_level_{true};
+  GetRootStmt *root_stmt_;
 
  public:
   CCTransformer(Kernel *kernel, CCLayout *layout)
-      : kernel(kernel), layout(layout) {
+      : kernel_(kernel), layout_(layout) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
 
   void run() {
     this->lower_ast();
-    emit_header("void Tk_{}(struct Ti_Context *ti_ctx) {{", kernel->name);
-    kernel->ir->accept(this);
+    emit_header("void Tk_{}(struct Ti_Context *ti_ctx) {{", kernel_->name);
+    kernel_->ir->accept(this);
     emit("}}");
   }
 
   void lower_ast() {
-    auto ir = kernel->ir.get();
-    auto config = kernel->program->config;
+    auto ir = kernel_->ir.get();
+    auto config = kernel_->program->config;
     config.demote_dense_struct_fors = true;
-    irpass::compile_to_executable(ir, config, kernel,
-                                  /*vectorize=*/false, kernel->grad,
+    irpass::compile_to_executable(ir, config, kernel_,
+                                  /*vectorize=*/false, kernel_->grad,
                                   /*ad_use_stack=*/true, config.print_ir,
                                   /*lower_global_access*/ true);
   }
 
   std::string get_source() {
-    return line_appender_header.lines() + line_appender.lines();
+    return line_appender_header_.lines() + line_appender_.lines();
   }
 
  private:
   void visit(Block *stmt) override {
-    if (!is_top_level)
-      line_appender.push_indent();
+    if (!is_top_level_)
+      line_appender_.push_indent();
     for (auto &s : stmt->statements) {
       s->accept(this);
     }
-    if (!is_top_level)
-      line_appender.pop_indent();
+    if (!is_top_level_)
+      line_appender_.pop_indent();
   }
 
   void visit(Stmt *stmt) override {
@@ -90,10 +92,10 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(GetRootStmt *stmt) override {
-    auto *root = kernel->program->get_snode_root(SNodeTree::kFirstID);
+    auto *root = kernel_->program->get_snode_root(SNodeTree::kFirstID);
     emit("{} = ti_ctx->root;",
          define_var(get_node_ptr_name(root), stmt->raw_name()));
-    root_stmt = stmt;
+    root_stmt_ = stmt;
   }
 
   void visit(SNodeLookupStmt *stmt) override {
@@ -101,8 +103,8 @@ class CCTransformer : public IRVisitor {
     if (stmt->input_snode) {
       input_ptr = stmt->input_snode;
     } else {
-      TI_ASSERT(root_stmt != nullptr);
-      input_ptr = root_stmt;
+      TI_ASSERT(root_stmt_ != nullptr);
+      input_ptr = root_stmt_;
     }
 
     emit("{} = &{}[{}];",
@@ -421,7 +423,7 @@ class CCTransformer : public IRVisitor {
 
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     if (stmt->const_begin && stmt->const_end) {
-      ScopedIndent _s(line_appender);
+      ScopedIndent _s(line_appender_);
       auto begin_value = stmt->begin_value;
       auto end_value = stmt->end_value;
       auto var = define_var("Ti_i32", stmt->raw_name());
@@ -455,8 +457,8 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    TI_ASSERT(is_top_level);
-    is_top_level = false;
+    TI_ASSERT(is_top_level_);
+    is_top_level_ = false;
     if (stmt->task_type == OffloadedStmt::TaskType::serial) {
       generate_serial_kernel(stmt);
     } else if (stmt->task_type == OffloadedStmt::TaskType::range_for) {
@@ -465,7 +467,7 @@ class CCTransformer : public IRVisitor {
       TI_ERROR("[glsl] Unsupported offload type={} on C backend",
                stmt->task_name());
     }
-    is_top_level = true;
+    is_top_level_ = true;
   }
 
   void visit(LoopIndexStmt *stmt) override {
@@ -591,12 +593,12 @@ class CCTransformer : public IRVisitor {
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
-    line_appender.append(std::move(f), std::move(args)...);
+    line_appender_.append(std::move(f), std::move(args)...);
   }
 
   template <typename... Args>
   void emit_header(std::string f, Args &&... args) {
-    line_appender_header.append(std::move(f), std::move(args)...);
+    line_appender_header_.append(std::move(f), std::move(args)...);
   }
 };  // namespace cccp
 

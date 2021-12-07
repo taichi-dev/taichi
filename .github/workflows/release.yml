@@ -305,7 +305,7 @@ jobs:
           ti diagnose
           python tests/run_tests.py -vr2 -t2
         env:
-          SKIP_VERSION_CHECK: ON
+          TI_SKIP_VERSION_CHECK: ON
 
       - name: Upload PyPI
         shell: powershell

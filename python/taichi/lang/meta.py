@@ -1,4 +1,4 @@
-from taichi.core import get_os_name
+from taichi.lib.core.util import get_os_name
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField

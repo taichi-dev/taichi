@@ -165,15 +165,13 @@ class CMakeBuild(build_ext):
         # We need to make sure these additional files are ready for
         #   - develop mode: must exist in local python/taichi/lib/ folder
         #   - install mode: must exist in self.build_lib/taichi/lib
-        taichi_lib_dir = 'taichi/lib'
+        taichi_lib_dir = 'taichi/lib/runtime'
         for target in (
                 os.path.join(package_dir, taichi_lib_dir),
                 os.path.join(self.build_lib, taichi_lib_dir),
         ):
             shutil.rmtree(target, ignore_errors=True)
             os.makedirs(target)
-            with open(os.path.join(target, "__init__.py"), "w") as f:
-                pass
             if get_os_name() == 'linux' or get_os_name() == 'unix':
                 shutil.copy(os.path.join(self.build_temp, 'libtaichi_core.so'),
                             os.path.join(target, 'taichi_core.so'))

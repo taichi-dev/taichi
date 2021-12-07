@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 
-from taichi.core import ti_core as _ti_core
+from taichi.lib.core import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.profiler.kernelmetrics import default_cupti_metrics
 

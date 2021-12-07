@@ -37,10 +37,10 @@ def import_ti_core():
         old_flags = sys.getdlopenflags()
         sys.setdlopenflags(2 | 8)  # RTLD_NOW | RTLD_DEEPBIND
     else:
-        pyddir = os.path.join(package_root(), 'lib')
+        pyddir = os.path.join(package_root(), 'lib', 'runtime')
         os.environ['PATH'] += os.pathsep + pyddir
     try:
-        from taichi.lib import taichi_core as core  # pylint: disable=C0415
+        from taichi.lib.runtime import taichi_core as core  # pylint: disable=C0415
     except Exception as e:
         if isinstance(e, ImportError):
             print(Fore.YELLOW + "Share object taichi_core import failed, "
@@ -54,7 +54,7 @@ def import_ti_core():
 
     if get_os_name() != 'win':
         sys.setdlopenflags(old_flags)  # pylint: disable=E1101
-    lib_dir = os.path.join(package_root(), 'lib')
+    lib_dir = os.path.join(package_root(), 'lib', 'runtime')
     core.set_lib_dir(locale_encode(lib_dir))
     return core
 
@@ -78,8 +78,7 @@ def is_ci():
 
 
 def package_root():
-    return os.path.join(
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
 
 
 def get_core_shared_object():
@@ -162,9 +161,3 @@ def _print_taichi_header():
 
 _print_taichi_header()
 
-__all__ = [
-    'ti_core',
-    'get_os_name',
-    'package_root',
-    'require_version',
-]

@@ -14,8 +14,8 @@ from urllib.error import HTTPError
 
 import taichi.lang.linalg_impl
 import taichi.lang.meta
-from taichi.core.util import locale_encode
-from taichi.core.util import ti_core as _ti_core
+from taichi.lib.core.util import locale_encode
+from taichi.lib.core import ti_core as _ti_core
 from taichi.lang import _random, impl
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess

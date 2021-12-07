@@ -1,13 +1,9 @@
-from taichi.core import ti_core as _ti_core
+from taichi.lib.core import ti_core as _ti_core
 
 if _ti_core.GGUI_AVAILABLE:
 
     from .camera import Camera  # pylint: disable=unused-import
-    from .canvas import Canvas  # pylint: disable=unused-import
-    from .constants import *  # pylint: disable=unused-import,wildcard-import
-    from .imgui import Gui  # pylint: disable=unused-import
-    from .scene import Scene  # pylint: disable=unused-import
-    from .window import Window  # pylint: disable=unused-import
+
 
     def make_camera():
         return Camera(_ti_core.PyCamera())

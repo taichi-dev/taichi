@@ -4,7 +4,7 @@ import math
 import operator as _bt_ops_mod  # bt for builtin
 import traceback
 
-from taichi.core.util import ti_core as _ti_core
+from taichi.lib.core import ti_core as _ti_core
 from taichi.lang import impl, matrix
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group

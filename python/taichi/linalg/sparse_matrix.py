@@ -1,5 +1,5 @@
 import numpy as np
-from taichi.core.util import ti_core as _ti_core
+from taichi.lib.core import ti_core as _ti_core
 from taichi.lang.field import Field
 from taichi.types.primitive_types import f32
 

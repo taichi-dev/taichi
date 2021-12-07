@@ -3,7 +3,7 @@ from collections.abc import Iterable
 
 import numpy as np
 import taichi.lang
-from taichi.core import ti_core
+from taichi.lib.core import ti_core
 from taichi.lang import expr, impl
 from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod

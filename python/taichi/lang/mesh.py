@@ -1,7 +1,7 @@
 import json
 
 import numpy as np
-from taichi.core.util import ti_core as _ti_core
+from taichi.lib.core import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError

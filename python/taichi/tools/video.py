@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from taichi.core import get_os_name
+from taichi.lib.core.util import get_os_name
 from taichi.tools.image import imwrite
 
 FRAME_FN_TEMPLATE = '%06d.png'

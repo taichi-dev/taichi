@@ -3,7 +3,7 @@ import os
 import sys
 
 from taichi._logging import info, warn
-from taichi.core.util import ti_core as _ti_core
+from taichi.lib.core import ti_core as _ti_core
 
 try:
     import sourceinspect as oinspect  # pylint: disable=unused-import

@@ -2,7 +2,7 @@ import numpy as np
 import taichi.lang
 from taichi.core.util import ti_core as _ti_core
 from taichi.linalg import SparseMatrix
-from taichi.type.primitive_types import f32
+from taichi.types.primitive_types import f32
 
 
 class SparseSolver:

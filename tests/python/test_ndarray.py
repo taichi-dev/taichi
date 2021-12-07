@@ -596,6 +596,36 @@ def _test_arg_not_match():
     ):
         func4(x)
 
+    @ti.kernel
+    def func5(a: ti.any_arr(element_shape=(2, 3))):
+        pass
+
+    x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
+    with pytest.raises(
+            ValueError,
+            match=
+            r'Invalid argument into ti\.any_arr\(\) - required element_dim'):
+        func5(x)
+
+    with pytest.raises(
+            ValueError,
+            match=r'Both element_shape and element_dim are specified'):
+
+        @ti.kernel
+        def func6(a: ti.any_arr(element_dim=1, element_shape=(2, 3))):
+            pass
+
+    @ti.kernel
+    def func7(a: ti.any_arr(field_dim=2)):
+        pass
+
+    x = ti.ndarray(ti.i32, shape=(3, ))
+    with pytest.raises(
+            ValueError,
+            match=r'Invalid argument into ti\.any_arr\(\) - required field_dim'
+    ):
+        func7(x)
+
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=ti.get_host_arch_list())

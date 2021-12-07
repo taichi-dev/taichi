@@ -309,15 +309,15 @@ void trash(T &&t) {
 }
 
 class DeferedExecution {
-  std::function<void(void)> statement;
+  std::function<void(void)> statement_;
 
  public:
   DeferedExecution(const std::function<void(void)> &statement)
-      : statement(statement) {
+      : statement_(statement) {
   }
 
   ~DeferedExecution() {
-    statement();
+    statement_();
   }
 };
 

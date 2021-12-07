@@ -18,12 +18,11 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
 }
 
 namespace {
-void write_glsl_file(const std::string &output_dir, CompiledKernel &k) {
-  const std::string glsl_path =
-      fmt::format("{}/{}.glsl", output_dir, k.kernel_name);
+void write_glsl_file(const std::string &output_dir, CompiledOffloadedTask &t) {
+  const std::string glsl_path = fmt::format("{}/{}.glsl", output_dir, t.name);
   std::ofstream fs{glsl_path};
-  fs << k.kernel_src;
-  k.kernel_src = glsl_path;
+  fs << t.src;
+  t.src = glsl_path;
   fs.close();
 }
 
@@ -38,15 +37,13 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   // Json format doesn't support multiple line strings.
   AotData new_aot_data = aot_data_;
   for (auto &k : new_aot_data.kernels) {
-    for (auto &ki : k.program.kernels) {
-      write_glsl_file(output_dir, ki);
+    for (auto &t : k.second.tasks) {
+      write_glsl_file(output_dir, t);
     }
   }
   for (auto &k : new_aot_data.kernel_tmpls) {
-    for (auto &ki : k.program) {
-      for (auto &kij : ki.second.kernels) {
-        write_glsl_file(output_dir, kij);
-      }
+    for (auto &t : k.second.tasks) {
+      write_glsl_file(output_dir, t);
     }
   }
 
@@ -61,7 +58,7 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   opengl::OpenglCodeGen codegen(kernel->name, &compiled_structs_,
                                 allow_nv_shader_extension_);
   auto compiled = codegen.compile(*kernel);
-  aot_data_.kernels.push_back({compiled, identifier});
+  aot_data_.kernels.insert(std::make_pair(identifier, std::move(compiled)));
 }
 
 size_t AotModuleBuilderImpl::get_snode_base_address(const SNode *snode) {
@@ -102,18 +99,8 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                 allow_nv_shader_extension_);
   auto compiled = codegen.compile(*kernel);
 
-  for (auto &k : aot_data_.kernel_tmpls) {
-    if (k.identifier == identifier) {
-      k.program.insert(std::make_pair(key, compiled));
-      return;
-    }
-  }
-
-  AotCompiledKernelTmpl tmpldata;
-  tmpldata.identifier = identifier;
-  tmpldata.program.insert(std::make_pair(key, compiled));
-
-  aot_data_.kernel_tmpls.push_back(std::move(tmpldata));
+  aot_data_.kernel_tmpls.insert(
+      std::make_pair(identifier + "|" + key, std::move(compiled)));
 }
 
 }  // namespace opengl

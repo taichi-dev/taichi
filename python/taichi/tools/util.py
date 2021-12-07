@@ -191,21 +191,3 @@ def dot_to_pdf(dot, filepath):
 
 def get_kernel_stats():
     return _ti_core.get_kernel_stats()
-
-
-__all__ = [
-    'vec',
-    'veci',
-    'core_vec',
-    'core_veci',
-    'deprecated',
-    'warning',
-    'dump_dot',
-    'dot_to_pdf',
-    'obsolete',
-    'get_kernel_stats',
-    'get_traceback',
-    'set_gdb_trigger',
-    'print_profile_info',
-    'clear_profile_info',
-]

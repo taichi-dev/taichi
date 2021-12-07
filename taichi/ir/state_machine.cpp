@@ -9,7 +9,7 @@ TLANG_NAMESPACE_BEGIN
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> StateMachine::used_atomics;
 
 StateMachine::StateMachine(Stmt *var, bool zero_initialized)
-    : var(var),
+    : var_(var),
       stored(never),
       stored_in_this_if_or_loop(never),
       loaded(never),
@@ -428,13 +428,13 @@ void StateMachine::finalize() {
     // For future vectorization, if it's an alloca, we need to check that
     // this alloca is not used as masks (this can be done by checking operands)
     // before eliminating it.
-    var->parent->erase(var);
+    var_->parent->erase(var_);
     throw IRModified();
   }
 }
 
 Stmt *StateMachine::get_var() const {
-  return var;
+  return var_;
 }
 
 TLANG_NAMESPACE_END

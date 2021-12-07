@@ -6,27 +6,27 @@ TLANG_NAMESPACE_BEGIN
 
 class StmtSearcher : public BasicStmtVisitor {
  private:
-  std::function<bool(Stmt *)> test;
-  std::vector<Stmt *> results;
+  std::function<bool(Stmt *)> test_;
+  std::vector<Stmt *> results_;
 
  public:
   using BasicStmtVisitor::visit;
 
-  StmtSearcher(std::function<bool(Stmt *)> test) : test(test) {
+  StmtSearcher(std::function<bool(Stmt *)> test) : test_(test) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
 
   void visit(Stmt *stmt) override {
-    if (test(stmt))
-      results.push_back(stmt);
+    if (test_(stmt))
+      results_.push_back(stmt);
   }
 
   static std::vector<Stmt *> run(IRNode *root,
                                  const std::function<bool(Stmt *)> &test) {
     StmtSearcher searcher(test);
     root->accept(&searcher);
-    return searcher.results;
+    return searcher.results_;
   }
 };
 

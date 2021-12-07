@@ -29,10 +29,10 @@ CFGNode::CFGNode(Block *block,
     TI_ASSERT(begin_location >= 0);
     TI_ASSERT(block);
     auto parent_block = block;
-    parent_blocks.insert(parent_block);
+    parent_blocks_.insert(parent_block);
     while (parent_block->parent_block()) {
       parent_block = parent_block->parent_block();
-      parent_blocks.insert(parent_block);
+      parent_blocks_.insert(parent_block);
     }
   }
 }
@@ -167,7 +167,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     // |parent_blocks| is precomputed in the constructor of CFGNode.
     // TODO: What if |stmt| appears in an ancestor of |block| but after
     //  |position|?
-    return parent_blocks.find(stmt->parent) != parent_blocks.end();
+    return parent_blocks_.find(stmt->parent) != parent_blocks_.end();
   };
   /**
    * |stmt| is a definition in the UD-chain of |var|. Update |result| with

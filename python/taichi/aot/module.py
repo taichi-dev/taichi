@@ -2,9 +2,12 @@ from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
 from taichi.lang import impl, kernel_impl
+from taichi.lang._ndarray import ScalarNdarray
+from taichi.lang.enums import Layout
 from taichi.lang.field import ScalarField
-from taichi.lang.matrix import MatrixField
-from taichi.type.annotations import ArgAnyArray, template
+from taichi.lang.matrix import MatrixField, MatrixNdarray, VectorNdarray
+from taichi.types.annotations import ArgAnyArray, template
+from taichi.types.primitive_types import f32
 
 
 class KernelTemplate:
@@ -119,7 +122,7 @@ class Module:
                                     field.dtype, field.snode.shape, row_num,
                                     column_num)
 
-    def add_kernel(self, kernel_fn, example_any_arrays=(), name=None):
+    def add_kernel(self, kernel_fn, example_any_arrays=None, name=None):
         """Add a taichi kernel to the AOT module.
 
         Args:
@@ -137,15 +140,35 @@ class Module:
             anno for anno in kernel.argument_annotations
             if isinstance(anno, ArgAnyArray)
         ])
-        assert num_arr == len(
+        assert example_any_arrays is None or num_arr == len(
             example_any_arrays
         ), f'Need {num_arr} example any_arr inputs but got {len(example_any_arrays)}'
         i = 0
         for anno in kernel.argument_annotations:
             if isinstance(anno, ArgAnyArray):
-                # TODO: support annotate element_shapes in ArgAnyArray then we can
-                # make example_any_arrays optional.
-                injected_args.append(example_any_arrays[i])
+                if example_any_arrays:
+                    injected_args.append(example_any_arrays[i])
+                else:
+                    assert anno.element_shape is not None and anno.field_dim is not None, 'Please either specify element_shape & field_dim in the kernel arg annotation or provide a dict of example ndarrays.'
+                    if anno.element_dim == 0:
+                        injected_args.append(
+                            ScalarNdarray(dtype=f32,
+                                          shape=(2, ) * anno.field_dim))
+                    elif anno.element_dim == 1:
+                        injected_args.append(
+                            VectorNdarray(anno.element_shape[0],
+                                          dtype=f32,
+                                          shape=(2, ) * anno.field_dim,
+                                          layout=Layout.AOS))
+                    elif anno.element_dim == 2:
+                        injected_args.append(
+                            MatrixNdarray(anno.element_shape[0],
+                                          anno.element_shape[1],
+                                          dtype=f32,
+                                          shape=(2, ) * anno.field_dim,
+                                          layout=Layout.AOS))
+                    else:
+                        raise RuntimeError('')
             else:
                 # For primitive types, we can just inject a dummy value.
                 injected_args.append(0)

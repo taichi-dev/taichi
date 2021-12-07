@@ -60,11 +60,11 @@ class TypeFactory {
 
   // TODO: use unordered map
   std::map<std::tuple<int, bool, Type *>, std::unique_ptr<Type>>
-      custom_int_types;
+      custom_int_types_;
 
   // TODO: use unordered map
   std::map<std::tuple<Type *, Type *, Type *, float64>, std::unique_ptr<Type>>
-      custom_float_types;
+      custom_float_types_;
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<Type>> bit_struct_types_;

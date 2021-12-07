@@ -130,6 +130,9 @@ class CMakeBuild(build_ext):
             f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
         ]
 
+        if shutil.which('ninja'):
+            cmake_args += ['-GNinja']
+
         self.debug = os.getenv('DEBUG', '0') in ('1', 'ON')
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]

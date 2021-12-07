@@ -1,4 +1,5 @@
 // vim: ft=glsl
+// NOLINTBEGIN(*)
 #include "taichi/util/macros.h"
 
 #ifndef TI_INSIDE_OPENGL_CODEGEN
@@ -36,3 +37,4 @@ static_assert(false, "Do not include");
         } while (old != atomicCompSwap(_##NAME##_i32_[addr], old, new)); \
         return intBitsToFloat(old);                                      \
       });
+// NOLINTEND(*)

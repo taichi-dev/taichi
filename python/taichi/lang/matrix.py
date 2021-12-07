@@ -515,15 +515,6 @@ class Matrix(TaichiOperations):
         invlen = 1 / (self.norm() + eps)
         return invlen * self
 
-    @staticmethod
-    @deprecated('ti.Matrix.transposed(a)', 'a.transpose()')
-    def transposed(a):
-        return a.transpose()
-
-    @deprecated('a.T()', 'a.transpose()')
-    def T(self):
-        return self.transpose()
-
     @kern_mod.pyfunc
     def transpose(self):
         """Get the transpose of a matrix.
@@ -901,25 +892,10 @@ class Matrix(TaichiOperations):
         return entries
 
     @classmethod
-    @python_scope
-    @deprecated('ti.Matrix.var', 'ti.Matrix.field')
-    def var(cls, n, m, dt, *args, **kwargs):
-        """ti.Matrix.var"""
-        _taichi_skip_traceback = 1
-        return cls.field(n, m, dt, *args, **kwargs)
-
-    @classmethod
     def _Vector_field(cls, n, dtype, *args, **kwargs):
         """ti.Vector.field"""
         _taichi_skip_traceback = 1
         return cls.field(n, 1, dtype, *args, **kwargs)
-
-    @classmethod
-    @deprecated('ti.Vector.var', 'ti.Vector.field')
-    def _Vector_var(cls, n, dt, *args, **kwargs):
-        """ti.Vector.var"""
-        _taichi_skip_traceback = 1
-        return cls._Vector_field(n, dt, *args, **kwargs)
 
     @classmethod
     @python_scope
@@ -1097,7 +1073,6 @@ def Vector(n, dt=None, **kwargs):
     return Matrix(n, 1, dt=dt, **kwargs)
 
 
-Vector.var = Matrix._Vector_var
 Vector.field = Matrix._Vector_field
 Vector.ndarray = Matrix._Vector_ndarray
 Vector.zero = Matrix.zero
@@ -1142,10 +1117,6 @@ class MatrixField(Field):
         super().__init__(_vars)
         self.n = n
         self.m = m
-
-    @deprecated('x(i, j)', 'x.get_scalar_field(i, j)')
-    def __call__(self, *indices):
-        return self.get_scalar_field(*indices)
 
     def get_scalar_field(self, *indices):
         """Creates a ScalarField using a specific field member. Only used for quant.

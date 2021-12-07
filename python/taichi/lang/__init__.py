@@ -29,12 +29,12 @@ from taichi.lang.impl import (axes, begin_frontend_if,
                               chain_compare, current_cfg, expr_init,
                               expr_init_func, expr_init_list, field,
                               get_runtime, global_subscript_with_offset,
-                              grouped, indices, insert_expr_stmt_if_ti_func,
+                              grouped, insert_expr_stmt_if_ti_func,
                               local_subscript_with_offset,
                               materialize_callback, ndarray, one, root, static,
                               static_assert, static_print, stop_grad,
                               subscript, ti_assert, ti_float, ti_format,
-                              ti_int, ti_print, var, zero)
+                              ti_int, ti_print, zero)
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
@@ -133,11 +133,6 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: 
 type_factory_ = _ti_core.get_type_factory_instance()
 
 
-@deprecated('kernel_profiler_print()', 'print_kernel_profile_info()')
-def kernel_profiler_print():
-    return print_kernel_profile_info()
-
-
 def print_kernel_profile_info(mode='count'):
     """Print the profiling results of Taichi kernels.
 
@@ -218,11 +213,6 @@ def query_kernel_profile_info(name):
         backend due to its lack of support for `ti.sync()`.
     """
     return get_default_kernel_profiler().query_info(name)
-
-
-@deprecated('kernel_profiler_clear()', 'clear_kernel_profile_info()')
-def kernel_profiler_clear():
-    return clear_kernel_profile_info()
 
 
 def clear_kernel_profile_info():
@@ -332,11 +322,6 @@ def collect_kernel_profile_metrics(metric_list=default_cupti_metrics):
     get_default_kernel_profiler().set_metrics(metric_list)
     yield get_default_kernel_profiler()
     get_default_kernel_profiler().set_metrics()
-
-
-@deprecated('memory_profiler_print()', 'print_memory_profile_info()')
-def memory_profiler_print():
-    return print_memory_profile_info()
 
 
 def print_memory_profile_info():
@@ -703,11 +688,6 @@ def mesh_local(*args):
                 _ti_core.SNodeAccessFlag.mesh_local, v.ptr)
 
 
-@deprecated('ti.cache_shared', 'ti.block_local')
-def cache_shared(*args):
-    block_local(*args)
-
-
 def cache_read_only(*args):
     for a in args:
         for v in a.get_field_members():
@@ -737,9 +717,6 @@ bit_vectorize = _ti_core.bit_vectorize
 block_dim = _ti_core.block_dim
 global_thread_idx = _ti_core.insert_thread_idx_expr
 mesh_patch_idx = _ti_core.insert_patch_idx_expr
-
-inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
-transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)
 
 
 def polar_decompose(A, dt=None):

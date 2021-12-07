@@ -21,7 +21,7 @@ from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
 from taichi.snode.fields_builder import FieldsBuilder
-from taichi.tools.util import deprecated, get_traceback, warning
+from taichi.tools.util import get_traceback, warning
 from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 import taichi as ti
@@ -242,7 +242,7 @@ def global_subscript_with_offset(_var, _indices, shape, is_aos):
 def chain_compare(comparators, ops):
     _taichi_skip_traceback = 1
     assert len(comparators) == len(ops) + 1, \
-      f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
+        f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
     ret = True
     for i, op in enumerate(ops):
         lhs = comparators[i]
@@ -594,12 +594,6 @@ def create_field_member(dtype, name):
     return x, x_grad
 
 
-@deprecated('ti.var', 'ti.field')
-def var(dt, shape=None, offset=None, needs_grad=False):
-    _taichi_skip_traceback = 1
-    return field(dt, shape, offset, needs_grad)
-
-
 @python_scope
 def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     """Defines a Taichi field
@@ -836,14 +830,6 @@ def axes(*x: Iterable[int]):
     """
     return [_ti_core.Axis(i) for i in x]
 
-
-@deprecated("ti.indices", "ti.axes")
-def indices(*x):
-    """Same as :func:`~taichi.lang.impl.axes`."""
-    return [_ti_core.Axis(i) for i in x]
-
-
-index = indices
 
 Axis = _ti_core.Axis
 

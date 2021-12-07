@@ -1,5 +1,6 @@
 import taichi
 
+
 class CompoundType:
     pass
 

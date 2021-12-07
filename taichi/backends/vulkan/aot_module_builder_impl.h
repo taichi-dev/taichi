@@ -14,7 +14,6 @@ namespace taichi {
 namespace lang {
 namespace vulkan {
 
-class AotTargetDevice;
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
   explicit AotModuleBuilderImpl(

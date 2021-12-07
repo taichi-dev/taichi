@@ -9,53 +9,10 @@ namespace taichi {
 namespace lang {
 namespace vulkan {
 
-// Only responsible for reporting device capabilities
-class AotTargetDevice : public Device {
- public:
-  AotTargetDevice() {
-    // TODO: make this configurable
-    set_default_caps();
-  }
-
-  void set_default_caps() {
-    set_cap(DeviceCapability::spirv_version, 0x10300);
-  }
-
-  DeviceAllocation allocate_memory(const AllocParams &params) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  void dealloc_memory(DeviceAllocation handle) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  std::unique_ptr<Pipeline> create_pipeline(
-      const PipelineSourceDesc &src,
-      std::string name = "Pipeline") override {
-    TI_NOT_IMPLEMENTED;
-  }
-  void *map_range(DevicePtr ptr, uint64_t size) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  void *map(DeviceAllocation alloc) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  void unmap(DevicePtr ptr) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  void unmap(DeviceAllocation alloc) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  Stream *get_compute_stream() override {
-    TI_NOT_IMPLEMENTED;
-  }
-};
-
 AotModuleBuilderImpl::AotModuleBuilderImpl(
     const std::vector<CompiledSNodeStructs> &compiled_structs)
     : compiled_structs_(compiled_structs) {
-  aot_target_device_ = std::make_unique<AotTargetDevice>();
+  aot_target_device_ = std::make_unique<AotTargetDevice>(Arch::vulkan);
 }
 
 void AotModuleBuilderImpl::write_spv_file(

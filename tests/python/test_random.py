@@ -124,7 +124,7 @@ def test_random_seed_per_program():
     assert not np.allclose(result[0], result[1])
 
 
-@ti.test(arch=[ti.cpu, ti.cuda, ti.metal])
+@ti.test(arch=[ti.cpu, ti.cuda])
 def test_random_f64():
     '''
     Tests the granularity of float64 random numbers.

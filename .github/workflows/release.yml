@@ -1,7 +1,5 @@
 name: Publishing Release
 on:
-  pull_request:
-    types: [ opened, synchronize, reopened ]
   release:
     # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#release
     types: [published]
@@ -21,7 +19,6 @@ env:
 jobs:
   add_version_to_database:
     name: Add version to database
-    if: 0
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -40,7 +37,7 @@ jobs:
   # This job set environment matrix with respect to production release and nightly release.
   matrix_prep:
     runs-on: ubuntu-latest
-    # needs: add_version_to_database
+    needs: add_version_to_database
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       matrix_osx: ${{ steps.set-matrix.outputs.matrix_osx }}

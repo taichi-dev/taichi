@@ -14,7 +14,7 @@ from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
-from taichi.misc.util import deprecated, warning
+from taichi.tools.util import deprecated, warning
 from taichi.types import CompoundType
 
 import taichi as ti

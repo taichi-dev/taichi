@@ -5,8 +5,8 @@ from taichi.core import get_os_name, package_root, require_version
 from taichi.core import ti_core as core
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.main import main
-from taichi.misc import *
 from taichi.tools import *
+from taichi.tools.patterns import taichi_logo
 from taichi.types.annotations import *
 # Provide a shortcut to types since they're commonly used.
 from taichi.types.primitive_types import *

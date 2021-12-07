@@ -52,7 +52,6 @@ setup_python() {
 }
 
 build() {
-    echo "TAICHI_CMAKE_ARGS: $TAICHI_CMAKE_ARGS"
     git fetch origin master
     PROJECT_TAGS=""
     EXTRA_ARGS=""

@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 
-void main(int argc, char **argv) {
+int main(int argc, char **argv) {
   Py_SetProgramName(L"ti");
   Py_Initialize();
 
@@ -36,5 +36,5 @@ void main(int argc, char **argv) {
   auto file = std::fopen(path.c_str(), "r");
   PyRun_SimpleFile(file, "ti");
   Py_Finalize();
-  return;
+  return 0;
 }

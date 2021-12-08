@@ -25,6 +25,7 @@ jobs:
           rm -rf performance-monitoring
           git clone git@github.com:taichi-dev/performance-monitoring.git
           cd performance-monitoring
+          export WORKFLOW_MODE=postsubmit
           ./run.sh
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}

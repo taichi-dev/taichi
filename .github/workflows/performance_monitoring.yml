@@ -1,0 +1,30 @@
+name: Performance Monitoring
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  gpu_backends:
+    name: Performance monitoring (NVIDIA GPU)
+    timeout-minutes: 60
+    runs-on: [self-hosted, x64, cuda, linux, benchmark]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
+
+      - name: Build & Install
+        run: |
+          .github/workflows/scripts/unix_build.sh
+          python3 -m pip install dist/*.whl
+
+      - name: Run performance-monitoring
+        run: |
+          cd ..
+          rm -rf performance-monitoring
+          git clone git@github.com:taichi-dev/performance-monitoring.git
+          cd performance-monitoring
+          ./run.sh
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}

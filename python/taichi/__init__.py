@@ -34,7 +34,7 @@ else:
         raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")
 
 
-__all__ = ['ad', 'misc', 'lang', 'tools', 'main', 'ui', 'profiler']
+__all__ = ['ad', 'lang', 'tools', 'main', 'ui', 'profiler']
 
 complex_kernel = deprecated('ti.complex_kernel',
                             'ti.ad.grad_replaced')(ad.grad_replaced)

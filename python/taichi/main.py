@@ -215,7 +215,7 @@ class TaichiMain:
     @register
     def changelog(arguments: list = sys.argv[2:]):
         """Display changelog of current version"""
-        changelog_md = os.path.join(ti.package_root(), 'CHANGELOG.md')
+        changelog_md = os.path.join(ti.lib.core.util.package_root(), 'CHANGELOG.md')
         with open(changelog_md) as f:
             print(f.read())
 

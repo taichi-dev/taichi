@@ -1,5 +1,6 @@
 import sys
 
+from taichi._funcs import *
 from taichi._logging import *
 from taichi.core import get_os_name, package_root, require_version
 from taichi.core import ti_core as core

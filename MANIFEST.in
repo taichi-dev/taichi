@@ -6,7 +6,7 @@ include python/taichi/*.md
 include python/taichi/assets/*
 recursive-include python/taichi/examples *.py
 include python/taichi/lib/core/*.so
-include python/taichi/lib/runtime/*.pyd
+include python/taichi/lib/core/*.pyd
 include python/taichi/lib/runtime/*.bc
 include python/taichi/lib/runtime/*.dylib
 include python/taichi/shaders/*.spv

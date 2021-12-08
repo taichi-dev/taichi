@@ -2,7 +2,7 @@ from typing import Any, Optional, Sequence, Union
 
 from taichi.lang import impl, snode
 from taichi.lang.exception import InvalidOperationError
-from taichi.lib.core import ti_core as _ti_core
+from taichi._lib.core import ti_core as _ti_core
 from taichi.snode.snode_tree import SNodeTree
 from taichi.tools.util import warning
 

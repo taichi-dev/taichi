@@ -1,4 +1,4 @@
-from taichi.lib.core import ti_core as _ti_core
+from taichi._lib.core import ti_core as _ti_core
 
 if _ti_core.GGUI_AVAILABLE:
 

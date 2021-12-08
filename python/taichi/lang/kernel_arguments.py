@@ -3,7 +3,7 @@ from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
 from taichi.lang.util import cook_dtype
-from taichi.lib.core import ti_core as _ti_core
+from taichi._lib.core import ti_core as _ti_core
 from taichi.types.primitive_types import u64
 
 

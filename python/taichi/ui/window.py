@@ -1,7 +1,7 @@
 import pathlib
 
 from taichi.lang.impl import default_cfg
-from taichi.lib.core import ti_core as _ti_core
+from taichi._lib.core import ti_core as _ti_core
 
 from .canvas import Canvas
 from .constants import PRESS, RELEASE

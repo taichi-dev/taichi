@@ -1,4 +1,4 @@
-from taichi.lib.core import ti_core
+from taichi._lib.core import ti_core
 
 # Real types
 

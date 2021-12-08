@@ -14,7 +14,7 @@ import numpy as np
 import taichi.cc_compose
 import taichi.diagnose
 from colorama import Fore
-from taichi.lib.core import ti_core as _ti_core
+from taichi._lib.core import ti_core as _ti_core
 from taichi.tools import video
 
 import taichi as ti

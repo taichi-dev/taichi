@@ -10,7 +10,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.snode import SNode
 from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
-from taichi.lib.core import ti_core as _ti_core
+from taichi._lib.core import ti_core as _ti_core
 
 unary_ops = []
 

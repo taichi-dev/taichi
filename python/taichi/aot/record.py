@@ -1,6 +1,6 @@
 import os
 
-from taichi.lib.core import ti_core
+from taichi._lib.core import ti_core
 
 
 def record_action_entry(name, contents):

@@ -40,7 +40,7 @@ def import_ti_core():
         pyddir = os.path.dirname(os.path.realpath(__file__))
         os.environ['PATH'] += os.pathsep + pyddir
     try:
-        from taichi.lib.core import \
+        from taichi._lib.core import \
             taichi_core as core  # pylint: disable=C0415
     except Exception as e:
         if isinstance(e, ImportError):
@@ -55,7 +55,7 @@ def import_ti_core():
 
     if get_os_name() != 'win':
         sys.setdlopenflags(old_flags)  # pylint: disable=E1101
-    lib_dir = os.path.join(package_root(), 'lib', 'runtime')
+    lib_dir = os.path.join(package_root(), '_lib', 'runtime')
     core.set_lib_dir(locale_encode(lib_dir))
     return core
 
@@ -85,7 +85,7 @@ def package_root():
 
 
 def get_core_shared_object():
-    directory = os.path.join(package_root(), 'lib')
+    directory = os.path.join(package_root(), '_lib')
     return os.path.join(directory, 'libtaichi_core.so')
 
 

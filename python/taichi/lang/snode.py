@@ -7,7 +7,7 @@ import numbers
 import taichi.lang
 from taichi.lang import impl
 from taichi.lang.field import Field
-from taichi.lib.core import ti_core as _ti_core
+from taichi._lib.core import ti_core as _ti_core
 
 
 class SNode:

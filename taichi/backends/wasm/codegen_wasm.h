@@ -29,7 +29,7 @@ class CodeGenWASM : public KernelCodeGen {
       : KernelCodeGen(kernel, ir) {
   }
 
-  virtual FunctionType codegen() override;
+  FunctionType codegen() override;
 
 #ifdef TI_WITH_LLVM
   std::unique_ptr<ModuleGenValue> modulegen(

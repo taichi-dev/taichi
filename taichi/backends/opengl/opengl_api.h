@@ -60,17 +60,17 @@ struct CompiledArrayArg {
   std::string dtype_name;
   std::size_t field_dim{0};
   bool is_scalar{false};
-  std::vector<int> element_shapes;
+  std::vector<int> element_shape;
   size_t shape_offset_in_bytes_in_args_buf{0};
   size_t total_size{0};  // Runtime information
 
   TI_IO_DEF(field_dim,
             is_scalar,
-            element_shapes,
+            element_shape,
             shape_offset_in_bytes_in_args_buf);
 };
 
-struct CompiledProgram {
+struct CompiledTaichiKernel {
   void init_args(Kernel *kernel);
   void add(const std::string &name,
            const std::string &source_code,
@@ -108,16 +108,16 @@ struct CompiledProgram {
             used.arr_arg_to_bind_idx);
 };
 
-class DeviceCompiledProgram {
+class DeviceCompiledTaichiKernel {
  public:
-  DeviceCompiledProgram(CompiledProgram &&program, Device *device);
+  DeviceCompiledTaichiKernel(CompiledTaichiKernel &&program, Device *device);
   void launch(RuntimeContext &ctx,
               Kernel *kernel,
               OpenGlRuntime *runtime) const;
 
  private:
   Device *device_;
-  CompiledProgram program_;
+  CompiledTaichiKernel program_;
 
   std::vector<std::unique_ptr<Pipeline>> compiled_pipeline_;
 

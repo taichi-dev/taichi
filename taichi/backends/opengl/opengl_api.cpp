@@ -49,7 +49,7 @@ struct OpenGlRuntimeImpl {
   }
 
   std::unique_ptr<GLSLRuntime> runtime{nullptr};
-  std::vector<std::unique_ptr<DeviceCompiledProgram>> programs;
+  std::vector<std::unique_ptr<DeviceCompiledTaichiKernel>> programs;
 };
 
 // TODO: Move this into ProgramImpl class so that it naturally
@@ -220,7 +220,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
   return true;
 }
 
-void CompiledProgram::init_args(Kernel *kernel) {
+void CompiledTaichiKernel::init_args(Kernel *kernel) {
   arg_count = kernel->args.size();
   ret_count = kernel->rets.size();
   for (int i = 0; i < arg_count; i++) {
@@ -229,9 +229,9 @@ void CompiledProgram::init_args(Kernel *kernel) {
           {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt),
            /*dtype_name=*/kernel->args[i].dt.to_string(),
            /*field_dim=*/kernel->args[i].total_dim -
-               kernel->args[i].element_shapes.size(),
-           /*is_scalar=*/kernel->args[i].element_shapes.size() == 0,
-           /*element_shapes=*/kernel->args[i].element_shapes,
+               kernel->args[i].element_shape.size(),
+           /*is_scalar=*/kernel->args[i].element_shape.size() == 0,
+           /*element_shape=*/kernel->args[i].element_shape,
            /*shape_offset_in_bytes_in_args_buf=*/taichi_opengl_extra_args_base +
                i * taichi_max_num_indices * sizeof(int),
            /*total_size=*/kernel->args[i].size});
@@ -250,7 +250,7 @@ void CompiledProgram::init_args(Kernel *kernel) {
   ret_buf_size = ret_count * sizeof(uint64_t);
 }
 
-void CompiledProgram::add(
+void CompiledTaichiKernel::add(
     const std::string &name,
     const std::string &source_code,
     int num_workgroups,
@@ -284,7 +284,7 @@ void CompiledProgram::add(
   }
 }
 
-int CompiledProgram::lookup_or_add_string(const std::string &str) {
+int CompiledTaichiKernel::lookup_or_add_string(const std::string &str) {
   int i;
   for (i = 0; i < str_table.size(); i++) {
     if (str_table[i] == str) {
@@ -335,7 +335,7 @@ void dump_message_buffer(Device *device,
   device->unmap(runtime_buf);
 }
 
-bool CompiledProgram::check_ext_arr_read(int i) const {
+bool CompiledTaichiKernel::check_ext_arr_read(int i) const {
   auto iter = ext_arr_access.find(i);
   if (iter == ext_arr_access.end())
     return false;
@@ -344,7 +344,7 @@ bool CompiledProgram::check_ext_arr_read(int i) const {
          irpass::ExternalPtrAccess::NONE;
 }
 
-bool CompiledProgram::check_ext_arr_write(int i) const {
+bool CompiledTaichiKernel::check_ext_arr_write(int i) const {
   auto iter = ext_arr_access.find(i);
   if (iter == ext_arr_access.end())
     return false;
@@ -353,15 +353,15 @@ bool CompiledProgram::check_ext_arr_write(int i) const {
          irpass::ExternalPtrAccess::NONE;
 }
 
-void CompiledProgram::set_used(const UsedFeature &used) {
+void CompiledTaichiKernel::set_used(const UsedFeature &used) {
   this->used = used;
 }
 
 OpenGlRuntime::~OpenGlRuntime() = default;
 
-void DeviceCompiledProgram::launch(RuntimeContext &ctx,
-                                   Kernel *kernel,
-                                   OpenGlRuntime *runtime) const {
+void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
+                                        Kernel *kernel,
+                                        OpenGlRuntime *runtime) const {
   uint8_t *args_buf_mapped = nullptr;
   auto args = kernel->args;
 
@@ -492,8 +492,9 @@ void DeviceCompiledProgram::launch(RuntimeContext &ctx,
   }
 }
 
-DeviceCompiledProgram::DeviceCompiledProgram(CompiledProgram &&program,
-                                             Device *device)
+DeviceCompiledTaichiKernel::DeviceCompiledTaichiKernel(
+    CompiledTaichiKernel &&program,
+    Device *device)
     : device_(device), program_(std::move(program)) {
   if (program_.args_buf_size || program_.ret_buf_size) {
     args_buf_ = device->allocate_memory({taichi_opengl_external_arr_base,
@@ -530,9 +531,10 @@ OpenGlRuntime::OpenGlRuntime() {
   device->get_compute_stream()->submit_synced(cmdlist.get());
 }
 
-DeviceCompiledProgram *OpenGlRuntime::keep(CompiledProgram &&program) {
-  auto p =
-      std::make_unique<DeviceCompiledProgram>(std::move(program), device.get());
+DeviceCompiledTaichiKernel *OpenGlRuntime::keep(
+    CompiledTaichiKernel &&program) {
+  auto p = std::make_unique<DeviceCompiledTaichiKernel>(std::move(program),
+                                                        device.get());
   auto ptr = p.get();
   impl->programs.push_back(std::move(p));
   return ptr;
@@ -564,7 +566,8 @@ OpenGlRuntime::~OpenGlRuntime() {
   TI_NOT_IMPLEMENTED;
 }
 
-DeviceCompiledProgram *OpenGlRuntime::keep(CompiledProgram &&program) {
+DeviceCompiledTaichiKernel *OpenGlRuntime::keep(
+    CompiledTaichiKernel &&program) {
   TI_NOT_IMPLEMENTED;
   return nullptr;
 }

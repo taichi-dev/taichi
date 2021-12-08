@@ -13,10 +13,10 @@ TLANG_NAMESPACE_BEGIN
 // Var lookup and Type inference
 class TypeCheck : public IRVisitor {
  private:
-  CompileConfig config;
+  CompileConfig config_;
 
  public:
-  explicit TypeCheck(const CompileConfig &config) : config(config) {
+  explicit TypeCheck(const CompileConfig &config) : config_(config) {
     allow_undefined_visitor = true;
   }
 
@@ -267,7 +267,7 @@ class TypeCheck : public IRVisitor {
       } else if (stmt->op_type == UnaryOpType::sqrt ||
                  stmt->op_type == UnaryOpType::exp ||
                  stmt->op_type == UnaryOpType::log) {
-        cast(stmt->operand, config.default_fp);
+        cast(stmt->operand, config_.default_fp);
       }
     }
   }
@@ -322,7 +322,7 @@ class TypeCheck : public IRVisitor {
     // lower truediv into div
 
     if (stmt->op_type == BinaryOpType::truediv) {
-      auto default_fp = config.default_fp;
+      auto default_fp = config_.default_fp;
       if (!is_real(stmt->lhs->ret_type)) {
         cast(stmt->lhs, default_fp);
       }

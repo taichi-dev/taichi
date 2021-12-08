@@ -185,7 +185,6 @@ jobs:
             exit 0
           fi
           mkdir -m777 shared
-          mkdir -p sccache_cache
           docker create --user dev --name taichi_build \
             -e PY -e PROJECT_NAME -e TAICHI_CMAKE_ARGS \
             ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.1.0 \
@@ -314,8 +313,6 @@ jobs:
             exit 0
           fi
           mkdir -m777 shared
-          mkdir -p sccache_cache
-          chmod -R 777 sccache_cache
           docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.1.1 \
@@ -395,7 +392,6 @@ jobs:
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
           . venv\Scripts\activate.ps1
           python -c "import taichi"
-          ti example laplace
           ti diagnose
           ti changelog
           echo wanted arch: $env:TI_WANTED_ARCHS
@@ -403,6 +399,7 @@ jobs:
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
           TI_WANTED_ARCHS: "cpu"
+          TI_SKIP_VERSION_CHECK: ON
 
   build_and_test_m1:
     name: Build and Test (Apple M1)
@@ -437,7 +434,6 @@ jobs:
             exit 0
           fi
           rm -rf $HOME/Library/Python/3.8/lib/python/site-packages/taichi
-          mkdir -p sccache_cache
           .github/workflows/scripts/unix_build.sh
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache

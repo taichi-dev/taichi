@@ -9,18 +9,18 @@ namespace taichi {
 namespace lang {
 
 DiffRange operator+(const DiffRange &a, const DiffRange &b) {
-  return DiffRange(a.related_() && b.related_(), a.coeff + b.coeff,
-                   a.low + b.low, a.high + b.high - 1);
+  return DiffRange(a.related() && b.related(), a.coeff + b.coeff, a.low + b.low,
+                   a.high + b.high - 1);
 }
 
 DiffRange operator-(const DiffRange &a, const DiffRange &b) {
-  return DiffRange(a.related_() && b.related_(), a.coeff - b.coeff,
+  return DiffRange(a.related() && b.related(), a.coeff - b.coeff,
                    a.low - b.high + 1, a.high - b.low);
 }
 
 DiffRange operator*(const DiffRange &a, const DiffRange &b) {
   return DiffRange(
-      a.related_() && b.related_() && a.coeff * b.coeff == 0,
+      a.related() && b.related() && a.coeff * b.coeff == 0,
       fmax(a.low * b.coeff, a.coeff * b.low),
       fmin(a.low * b.low,
            fmin(a.low * (b.high - 1),
@@ -33,7 +33,7 @@ DiffRange operator*(const DiffRange &a, const DiffRange &b) {
 
 DiffRange operator<<(const DiffRange &a, const DiffRange &b) {
   return DiffRange(
-      a.related_() && b.related_() && b.coeff == 0 && b.high - b.low == 1,
+      a.related() && b.related() && b.coeff == 0 && b.high - b.low == 1,
       a.coeff << b.low, a.low << b.low, ((a.high - 1) << b.low) + 1);
 }
 
@@ -113,7 +113,7 @@ class ValueDiffLoopIndex : public IRVisitor {
       stmt->rhs->accept(this);
       auto ret1 = results[stmt->lhs->instance_id];
       auto ret2 = results[stmt->rhs->instance_id];
-      if (ret1.related_() && ret2.related_()) {
+      if (ret1.related() && ret2.related()) {
         if (stmt->op_type == BinaryOpType::add) {
           results[stmt->instance_id] = ret1 + ret2;
         } else if (stmt->op_type == BinaryOpType::sub) {

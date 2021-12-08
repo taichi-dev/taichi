@@ -3,8 +3,8 @@ from taichi.lang.impl import field
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
 from taichi.lang.ops import atomic_add
-from taichi.type.annotations import template
-from taichi.type.primitive_types import f32
+from taichi.types.annotations import template
+from taichi.types.primitive_types import f32
 
 from .staging_buffer import (copy_colors_to_vbo, copy_normals_to_vbo,
                              copy_vertices_to_vbo, get_vbo_field)

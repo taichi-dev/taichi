@@ -1,4 +1,5 @@
 // vim: ft=glsl
+// NOLINTBEGIN(*)
 #include "taichi/util/macros.h"
 
 constexpr auto kOpenGLReductionCommon = STR(
@@ -23,8 +24,8 @@ static_assert(false, "Do not include");
         _reduction_temp_##TYPE[gl_LocalInvocationIndex] = r;                   \
         barrier();                                                             \
         memoryBarrierShared();                                                 \
-        const int group_size = int(gl_WorkGroupSize.x *                        \
-                                   gl_WorkGroupSize.y *  \gl_WorkGroupSize.z); \
+        const int group_size =                                                 \
+            int(gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z); \
         const int depth = int(ceil(log2(float(group_size))));                  \
         for (int i = 0; i < depth; ++i) {                                      \
           const int radix = 1 << (i + 1);                                      \
@@ -43,3 +44,5 @@ static_assert(false, "Do not include");
         barrier();                                                             \
         return result;                                                         \
       });
+
+// NOLINTEND(*)

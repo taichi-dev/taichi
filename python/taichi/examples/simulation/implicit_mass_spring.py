@@ -17,7 +17,7 @@ class Cloth:
         self.initPos = ti.Vector.field(2, ti.f32, self.NV)
         self.vel = ti.Vector.field(2, ti.f32, self.NV)
         self.force = ti.Vector.field(2, ti.f32, self.NV)
-        self.invMass = ti.field(ti.f32, self.NV)
+        self.mass = ti.field(ti.f32, self.NV)
 
         self.spring = ti.Vector.field(2, ti.i32, self.NE)
         self.indices = ti.field(ti.i32, 2 * self.NE)
@@ -55,9 +55,7 @@ class Cloth:
                 [0.25, 0.25])
             self.initPos[k] = self.pos[k]
             self.vel[k] = ti.Vector([0, 0])
-            self.invMass[k] = 1.0
-        self.invMass[self.N] = 0.0
-        self.invMass[self.NV - 1] = 0.0
+            self.mass[k] = 1.0
 
     @ti.kernel
     def init_edges(self):
@@ -89,10 +87,9 @@ class Cloth:
     @ti.kernel
     def init_mass_sp(self, M: ti.linalg.sparse_matrix_builder()):
         for i in range(self.NV):
-            if self.invMass[i] != 0.0:
-                mass = 1.0 / self.invMass[i]
-                M[2 * i + 0, 2 * i + 0] += mass
-                M[2 * i + 1, 2 * i + 1] += mass
+            mass = self.mass[i]
+            M[2 * i + 0, 2 * i + 0] += mass
+            M[2 * i + 1, 2 * i + 1] += mass
 
     @ti.func
     def clear_force(self):
@@ -103,8 +100,7 @@ class Cloth:
     def compute_force(self):
         self.clear_force()
         for i in self.force:
-            if self.invMass[i] != 0.0:
-                self.force[i] += self.gravity / self.invMass[i]
+            self.force[i] += self.gravity * self.mass[i]
 
         for i in self.spring:
             idx1, idx2 = self.spring[i][0], self.spring[i][1]
@@ -137,8 +133,8 @@ class Cloth:
             self.Jv[i] = self.kd * I
 
         # fix point constraint hessian
-        self.Jf[0] = ti.Matrix([[self.kf, 0], [0, self.kf]])
-        self.Jf[1] = ti.Matrix([[self.kf, 0], [0, self.kf]])
+        self.Jf[0] = ti.Matrix([[-self.kf, 0], [0, -self.kf]])
+        self.Jf[1] = ti.Matrix([[-self.kf, 0], [0, -self.kf]])
 
     @ti.kernel
     def assemble_K(self, K: ti.linalg.sparse_matrix_builder()):
@@ -166,9 +162,8 @@ class Cloth:
     @ti.kernel
     def updatePosVel(self, h: ti.f32, dv: ti.ext_arr()):
         for i in self.pos:
-            if self.invMass[i] != 0.0:
-                self.vel[i] += ti.Vector([dv[2 * i], dv[2 * i + 1]])
-                self.pos[i] += h * self.vel[i]
+            self.vel[i] += ti.Vector([dv[2 * i], dv[2 * i + 1]])
+            self.pos[i] += h * self.vel[i]
 
     def update(self, h):
         self.compute_force()

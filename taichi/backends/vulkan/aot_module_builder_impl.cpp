@@ -100,7 +100,6 @@ void AotModuleBuilderImpl::load(const std::string &output_dir) {
     VkRuntime::RegisterParams params;
     params.kernel_attribs = ti_aot_data_.kernels[i];
     params.task_spirv_source_codes = spirv_sources_codes;
-    runtime_->register_taichi_kernel(params);
   }
 }
 

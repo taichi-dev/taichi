@@ -37,10 +37,10 @@ def import_ti_core():
         old_flags = sys.getdlopenflags()
         sys.setdlopenflags(2 | 8)  # RTLD_NOW | RTLD_DEEPBIND
     else:
-        pyddir = os.path.join(package_root(), 'lib', 'runtime')
+        pyddir = os.path.dirname(os.path.realpath(__file__))
         os.environ['PATH'] += os.pathsep + pyddir
     try:
-        from taichi.lib.runtime import \
+        from taichi.lib.core import \
             taichi_core as core  # pylint: disable=C0415
     except Exception as e:
         if isinstance(e, ImportError):

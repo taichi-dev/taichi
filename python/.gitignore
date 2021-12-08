@@ -1,4 +1,6 @@
 taichi/lib/runtime
+taichi/lib/core/*.so
+taichi/lib/core/*.pyd
 taichi.egg-info
 taichi/include
 taichi/assets

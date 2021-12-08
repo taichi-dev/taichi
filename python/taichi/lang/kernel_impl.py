@@ -7,6 +7,7 @@ import textwrap
 
 import numpy as np
 import taichi.lang
+from taichi._lib.core import ti_core as _ti_core
 from taichi.lang import impl, util
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
@@ -14,7 +15,6 @@ from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
-from taichi._lib.core import ti_core as _ti_core
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
 from taichi.tools.util import obsolete
 from taichi.types import any_arr, primitive_types, template

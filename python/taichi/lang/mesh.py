@@ -1,6 +1,7 @@
 import json
 
 import numpy as np
+from taichi._lib.core import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
@@ -8,7 +9,6 @@ from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField, _IntermediateMatrix
 from taichi.lang.struct import StructField
 from taichi.lang.util import python_scope
-from taichi._lib.core import ti_core as _ti_core
 from taichi.types import CompoundType
 
 import taichi as ti

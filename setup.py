@@ -171,7 +171,7 @@ class CMakeBuild(build_ext):
         # We need to make sure these additional files are ready for
         #   - develop mode: must exist in local python/taichi/lib/ folder
         #   - install mode: must exist in self.build_lib/taichi/lib
-        taichi_lib_dir = os.path.join('taichi', 'lib')
+        taichi_lib_dir = os.path.join('taichi', '_lib')
         for target in (
                 os.path.join(package_dir, taichi_lib_dir),
                 os.path.join(self.build_lib, taichi_lib_dir),

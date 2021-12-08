@@ -1,8 +1,8 @@
 from math import acos, asin, cos, sin
 
+from taichi._lib.core import ti_core as _ti_core
 from taichi.lang.impl import default_cfg
 from taichi.lang.matrix import Vector
-from taichi._lib.core import ti_core as _ti_core
 
 
 def get_field_info(field):

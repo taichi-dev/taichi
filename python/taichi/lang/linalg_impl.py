@@ -1,6 +1,6 @@
+from taichi._lib.core import ti_core as _ti_core
 from taichi.lang.impl import expr_init
 from taichi.lang.kernel_impl import func
-from taichi._lib.core import ti_core as _ti_core
 
 import taichi as ti
 

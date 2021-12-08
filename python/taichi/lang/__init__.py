@@ -14,6 +14,8 @@ from urllib.error import HTTPError
 
 import taichi.lang.linalg_impl
 import taichi.lang.meta
+from taichi._lib.core import ti_core as _ti_core
+from taichi._lib.core.util import locale_encode
 from taichi.lang import _random, impl
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
@@ -50,8 +52,6 @@ from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (cook_dtype, has_clangpp, has_pytorch,
                               is_taichi_class, python_scope, taichi_scope,
                               to_numpy_type, to_pytorch_type, to_taichi_type)
-from taichi._lib.core import ti_core as _ti_core
-from taichi._lib.core.util import locale_encode
 from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)

@@ -3,6 +3,7 @@ from collections.abc import Iterable
 
 import numpy as np
 import taichi.lang
+from taichi._lib.core import ti_core
 from taichi.lang import expr, impl
 from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod
@@ -13,7 +14,6 @@ from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
-from taichi._lib.core import ti_core
 from taichi.tools.util import deprecated, warning
 from taichi.types import CompoundType
 

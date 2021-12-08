@@ -1,8 +1,8 @@
 import numpy as np
+from taichi._lib.core import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.util import is_taichi_class
-from taichi._lib.core import ti_core as _ti_core
 
 import taichi as ti
 

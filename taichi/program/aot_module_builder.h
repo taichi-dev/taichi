@@ -29,6 +29,8 @@ class AotModuleBuilder {
                            const std::string &key,
                            Kernel *kernel);
 
+  virtual void load(const std::string &output_dir);
+
   virtual void dump(const std::string &output_dir,
                     const std::string &filename) const = 0;
 

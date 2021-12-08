@@ -1,5 +1,6 @@
 import ast
 
+from taichi.lang import impl
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 
@@ -32,8 +33,9 @@ class ASTTransformerChecks(ast.NodeTransformer):
         node.test = self.visit(node.test)
 
         old_in_static_if = self.in_static_if
-        self.in_static_if = self.get_decorator(self.globals,
-                                               node.test) == 'static'
+        self.in_static_if = impl.get_runtime(
+        ).experimental_real_function or self.get_decorator(
+            self.globals, node.test) == 'static'
 
         node.body = list(map(self.visit, node.body))
         if node.orelse is not None:

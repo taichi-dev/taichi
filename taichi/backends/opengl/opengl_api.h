@@ -102,7 +102,6 @@ struct CompiledTaichiKernel {
             ret_count,
             args_buf_size,
             ret_buf_size,
-            ext_arr_access,
             scalar_args,
             arr_args,
             used.arr_arg_to_bind_idx);

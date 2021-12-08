@@ -34,9 +34,8 @@ class Builder:
 
 
 class VariableScopeGuard:
-    def __init__(self, scopes, stmt_block=None):
+    def __init__(self, scopes):
         self.scopes = scopes
-        self.stmt_block = stmt_block
 
     def __enter__(self):
         self.scopes.append({})
@@ -101,8 +100,8 @@ class ASTTransformerContext:
         self.raised = False
 
     # e.g.: FunctionDef, Module, Global
-    def variable_scope_guard(self, *args):
-        return VariableScopeGuard(self.local_scopes, *args)
+    def variable_scope_guard(self):
+        return VariableScopeGuard(self.local_scopes)
 
     # e.g.: For, While
     def control_scope_guard(self):

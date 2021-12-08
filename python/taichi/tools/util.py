@@ -161,16 +161,6 @@ def clear_profile_info():
     _ti_core.clear_profile_info()
 
 
-@deprecated('ti.vec(x, y)', 'ti.core_vec(x, y)')
-def vec(*args, **kwargs):
-    return core_vec(*args, **kwargs)
-
-
-@deprecated('ti.veci(x, y)', 'ti.core_veci(x, y)')
-def veci(*args, **kwargs):
-    return core_veci(*args, **kwargs)
-
-
 def dump_dot(filepath=None, rankdir=None, embed_states_threshold=0):
     d = _ti_core.dump_dot(rankdir, embed_states_threshold)
     if filepath is not None:

@@ -620,7 +620,7 @@ class KernelManager::Impl {
                                            print_mem_->size());
     TI_ASSERT(print_buffer_ != nullptr);
 
-    init_runtime_buffer(compiled_runtime_module_);
+    init_runtime_buffer(compiled_runtime_module_, params.config->random_seed);
     clear_print_assert_buffer();
   }
 
@@ -756,14 +756,11 @@ class KernelManager::Impl {
   }
 
  private:
-  void init_runtime_buffer(const CompiledRuntimeModule &rtm_module) {
+  void init_runtime_buffer(const CompiledRuntimeModule &rtm_module,
+                           int random_seed) {
     char *addr = runtime_mem_->ptr();
     // init rand_seeds
-    // TODO(k-ye): Provide a way to use a fixed seed in dev mode.
-    std::mt19937 generator(
-        std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count());
+    std::default_random_engine generator((unsigned int)random_seed);
     std::uniform_int_distribution<uint32_t> distr(
         0, std::numeric_limits<uint32_t>::max());
     for (int i = 0; i < kNumRandSeeds; ++i) {

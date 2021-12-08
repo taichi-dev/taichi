@@ -1,14 +1,5 @@
 import taichi as ti
 
-x = ti.Vector([2, 3])
+x = ti.Vector([2, 2])
 
-x.transposed(x)
-
-
-@ti.kernel
-def func():
-    x = 0
-    x = 0.1
-
-
-func()
+ti.dot(x, x)

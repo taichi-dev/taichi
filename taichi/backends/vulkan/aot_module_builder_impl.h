@@ -22,6 +22,8 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
 
+  void load(const std::string &output_dir) override;
+
  private:
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
 
@@ -40,6 +42,11 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   void write_spv_file(const std::string &output_dir,
                       const TaskAttributes &k,
                       const std::vector<uint32_t> &source_code) const;
+
+  std::vector<uint32_t> read_spv_file(const std::string &output_dir,
+                                      const TaskAttributes &k);
+
+  uint32_t to_vk_dtype_enum(DataType dt);
 
   const std::vector<CompiledSNodeStructs> &compiled_structs_;
   TaichiAotData ti_aot_data_;

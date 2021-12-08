@@ -57,9 +57,5 @@ int AotModuleBuilder::find_children_id(const SNode *snode) {
   TI_ERROR("Child not found in parent!");
 }
 
-void AotModuleBuilder::load(const std::string &output_dir) {
-  TI_ERROR("Aot loader not supported");
-}
-
 }  // namespace lang
 }  // namespace taichi

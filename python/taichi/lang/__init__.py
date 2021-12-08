@@ -598,7 +598,7 @@ def init(arch=None,
 
     if 'use_unified_memory' in unexpected_keys:
         _ti_core.warn(
-            f'"use_unified_memory" is a deprecated option, as taichi no longer have the option of using unified memory.'
+            '"use_unified_memory" is a deprecated option, as taichi no longer have the option of using unified memory.'
         )
         del kwargs['use_unified_memory']
 
@@ -634,7 +634,7 @@ def init(arch=None,
     # So it won't work.
     if ti.cfg.arch == opengl and ti.cfg.ndarray_use_torch:
         ti.warn(
-            f'Opengl backend doesn\'t support torch based ndarray. Setting ndarray_use_torch to False.'
+            'Opengl backend doesn\'t support torch based ndarray. Setting ndarray_use_torch to False.'
         )
         ti.cfg.ndarray_use_torch = False
 

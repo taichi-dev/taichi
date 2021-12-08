@@ -5,9 +5,10 @@ include *.cfg
 include python/taichi/*.md
 include python/taichi/assets/*
 recursive-include python/taichi/examples *.py
-include python/taichi/lib/*.so
-include python/taichi/lib/*.pyd
-include python/taichi/lib/*.bc
+include python/taichi/lib/runtime/*.so
+include python/taichi/lib/runtime/*.pyd
+include python/taichi/lib/runtime/*.bc
+include python/taichi/lib/core/*.py
 include python/taichi/shaders/*.spv
 include python/taichi/shaders/*.vert
 include python/taichi/shaders/*.frag

@@ -373,8 +373,10 @@ class PyTaichi:
 
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
-            shapes = [_field.get_scalar_field(i, j).shape
-                      for i in range(_field.n) for j in range(_field.m)]
+            shapes = [
+                _field.get_scalar_field(i, j).shape for i in range(_field.n)
+                for j in range(_field.m)
+            ]
             if any(shape != shapes[0] for shape in shapes):
                 raise RuntimeError(
                     'Members of the following field have different shapes ' +

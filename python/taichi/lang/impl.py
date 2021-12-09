@@ -690,7 +690,6 @@ def ti_print(*_vars, sep=' ', end='\n'):
             if hasattr(_var, '__ti_repr__'):
                 res = _var.__ti_repr__()
             elif isinstance(_var, (list, tuple)):
-                res = _var
                 # If the first element is '__ti_format__', this list is the result of ti_format.
                 if len(_var) > 0 and isinstance(
                         _var[0], str) and _var[0] == '__ti_format__':

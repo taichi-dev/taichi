@@ -193,5 +193,3 @@ class ASTTransformerContext:
                     hint = ''
                 msg += gen_line(self.src[i], hint)
         return msg
-
-

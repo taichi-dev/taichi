@@ -309,13 +309,12 @@ def _test_ndarray_deepcopy():
     assert y[4][1, 0] == 9
 
 
-@pytest.mark.skip(reason='Temporarily disable flaky test.')
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_ndarray_deepcopy_torch():
     _test_ndarray_deepcopy()
 
 
-@pytest.mark.skip(reason='Temporarily disable flaky test.')
 @ti.test(arch=supported_archs_taichi_ndarray, ndarray_use_torch=False)
 def test_ndarray_deepcopy():
     _test_ndarray_deepcopy()

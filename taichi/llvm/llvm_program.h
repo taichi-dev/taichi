@@ -18,7 +18,7 @@
 #include <memory>
 
 namespace llvm {
-  class Module;
+class Module;
 }
 
 namespace taichi {

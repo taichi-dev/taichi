@@ -216,6 +216,7 @@ Frequently used tags:
 - `[Example]`: examples under [examples/](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/);
 - `[Test]`: tests under [tests/](https://github.com/taichi-dev/taichi/blob/master/tests/);
 - `[Linux]`: Linux platform;
+- `[Android]`: Android platform;
 - `[Mac]`: macOS platform;
 - `[Windows]`: Windows platform;
 - `[Perf]`: performance improvements;

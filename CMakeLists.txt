@@ -56,7 +56,10 @@ if(CCACHE_PROGRAM)
     set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
 endif()
 
-include(cmake/PythonNumpyPybind11.cmake)
+# No support of Python for Android build
+if (NOT ANDROID)
+    include(cmake/PythonNumpyPybind11.cmake)
+endif()
 include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
 include(cmake/TaichiMain.cmake)

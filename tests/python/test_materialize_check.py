@@ -30,7 +30,5 @@ def test_check_matrix_field_member_shape():
 
     with pytest.raises(
             RuntimeError,
-            match=
-            r"Members of the following field have different shapes \[\(10,\), \(11,\), \(10,\), \(11,\)\].*"
-    ):
+            match=r"Members of the following field have different shapes.*"):
         foo()

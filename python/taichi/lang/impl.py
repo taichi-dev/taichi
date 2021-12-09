@@ -354,14 +354,14 @@ class PyTaichi:
         _root_fb._finalize_for_aot()
 
     @staticmethod
-    def _get_tb_of_global_var(_var):
+    def _get_tb(_var):
         return getattr(_var, 'declaration_tb', str(_var.ptr))
 
     def _check_field_not_placed(self):
         not_placed = []
         for _var in self.global_vars:
             if _var.ptr.snode() is None:
-                not_placed.append(self._get_tb_of_global_var(_var))
+                not_placed.append(self._get_tb(_var))
 
         if len(not_placed):
             bar = '=' * 44 + '\n'
@@ -372,14 +372,13 @@ class PyTaichi:
                 '\n\n  x = ti.field(float, shape=(2, 3))')
 
     def _check_matrix_field_member_shape(self):
-        for matrix_field in self.matrix_fields:
-            shapes = [
-                matrix_field.get_scalar_field(i, j).shape
-                for i in range(matrix_field.n) for j in range(matrix_field.m)
-            ]
+        for _field in self.matrix_fields:
+            shapes = [_field.get_scalar_field(i, j).shape
+                      for i in range(_field.n) for j in range(_field.m)]
             if any(shape != shapes[0] for shape in shapes):
                 raise RuntimeError(
-                    f'Members of the following field have different shapes {shapes}:\n{self._get_tb_of_global_var(matrix_field.get_field_members()[0])}'
+                    'Members of the following field have different shapes ' +
+                    f'{shapes}:\n{self._get_tb(_field.get_field_members()[0])}'
                 )
 
     def materialize(self):

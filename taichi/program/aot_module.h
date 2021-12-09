@@ -33,6 +33,19 @@ struct CompiledFieldData {
 };
 }  // namespace aot
 
+class AotModuleLoader {
+ public:
+  virtual ~AotModuleLoader() = default;
+
+  // @TODO: Add method get_kernel(...) once the kernel field data will be
+  // generic/common across all backends.
+
+  virtual bool get_field(const std::string &name,
+                         aot::CompiledFieldData &field) = 0;
+
+  virtual size_t get_root_size() const = 0;
+};
+
 class AotModuleBuilder {
  public:
   virtual ~AotModuleBuilder() = default;

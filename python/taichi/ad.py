@@ -66,7 +66,7 @@ def grad_for(primal):
             )
         if primal.grad is not None:
             raise RuntimeError(
-                f'Primal function must be a **python** function instead of a taichi kernel. Please wrap the taichi kernel in a @ti.ad.grad_replaced decorated python function instead.'
+                'Primal function must be a **python** function instead of a taichi kernel. Please wrap the taichi kernel in a @ti.ad.grad_replaced decorated python function instead.'
             )
         primal.grad = decorated
         return decorated

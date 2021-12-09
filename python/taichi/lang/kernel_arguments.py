@@ -23,7 +23,7 @@ class SparseMatrixEntry:
                                            self.j,
                                            -taichi.lang.impl.ti_float(value))
         else:
-            assert False, f"Only operations '+=' and '-=' are supported on sparse matrices."
+            assert False, "Only operations '+=' and '-=' are supported on sparse matrices."
 
 
 class SparseMatrixProxy:

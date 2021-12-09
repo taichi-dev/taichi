@@ -145,7 +145,7 @@ class TaichiMain:
                                          description=f"{self.example.__doc__}")
         parser.add_argument(
             "name",
-            help=f"Name of an example (supports .py extension too)\n",
+            help="Name of an example (supports .py extension too)\n",
             type=TaichiMain._example_choices_type(choices.keys()),
             choices=sorted(choices.keys()))
         parser.add_argument(

@@ -15,7 +15,7 @@
 
 using Triplets = std::tuple<std::string, std::string, std::string>;
 namespace {
-struct key_hash : public std::unary_function<Triplets, std::size_t> {
+struct key_hash {
   std::size_t operator()(const Triplets &k) const {
     auto h1 = std::hash<std::string>{}(std::get<0>(k));
     auto h2 = std::hash<std::string>{}(std::get<1>(k));

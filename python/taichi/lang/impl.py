@@ -373,9 +373,14 @@ class PyTaichi:
 
     def _check_matrix_field_member_shape(self):
         for matrix_field in self.matrix_fields:
-            shapes = [matrix_field.get_scalar_field(i, j).shape for i in range(matrix_field.n) for j in range(matrix_field.m)]
+            shapes = [
+                matrix_field.get_scalar_field(i, j).shape
+                for i in range(matrix_field.n) for j in range(matrix_field.m)
+            ]
             if any(shape != shapes[0] for shape in shapes):
-                raise RuntimeError(f'Members of the following field have different shapes {shapes}:\n{self._get_tb_of_global_var(matrix_field.get_field_members()[0])}')
+                raise RuntimeError(
+                    f'Members of the following field have different shapes {shapes}:\n{self._get_tb_of_global_var(matrix_field.get_field_members()[0])}'
+                )
 
     def materialize(self):
         self.materialize_root_fb(not self.materialized)

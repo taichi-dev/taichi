@@ -1,4 +1,5 @@
 import pytest
+
 import taichi as ti
 
 
@@ -10,7 +11,8 @@ def test_check_field_not_placed():
     def foo():
         pass
 
-    with pytest.raises(RuntimeError, match=r"These field\(s\) are not placed.*"):
+    with pytest.raises(RuntimeError,
+                       match=r"These field\(s\) are not placed.*"):
         foo()
 
 
@@ -26,5 +28,9 @@ def test_check_matrix_field_member_shape():
     def foo():
         pass
 
-    with pytest.raises(RuntimeError, match=r"Members of the following field have different shapes \[\(10,\), \(11,\), \(10,\), \(11,\)\].*"):
+    with pytest.raises(
+            RuntimeError,
+            match=
+            r"Members of the following field have different shapes \[\(10,\), \(11,\), \(10,\), \(11,\)\].*"
+    ):
         foo()

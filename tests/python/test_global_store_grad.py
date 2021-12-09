@@ -8,7 +8,6 @@ def test_global_store_branching():
     # ti.reset()
 
     N = 16
-    ti.runtime.print_preprocessed = True
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)
 

@@ -304,7 +304,6 @@ class PyTaichi:
         self.inside_kernel = False
         self.current_kernel = None
         self.global_vars = []
-        self.print_preprocessed = False
         self.experimental_real_function = False
         self.default_fp = f32
         self.default_ip = i32

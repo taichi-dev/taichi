@@ -233,7 +233,8 @@ class MeshElement:
                             size).place(*tuple(field_dict.values()))
             grads = []
             for key, field in field_dict.items():
-                if self.attr_dict[key].needs_grad: grads.append(field.grad)
+                if self.attr_dict[key].needs_grad:
+                    grads.append(field.grad)
             if len(grads) > 0:
                 impl.root.dense(impl.axes(0), size).place(*grads)
 

@@ -22,6 +22,7 @@ TAGS = {
     'R1703': True,
     'W0108': True,
     'W1309': True,
+    'C0321': True,
 }
 
 if __name__ == '__main__':

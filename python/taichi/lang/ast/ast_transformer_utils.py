@@ -195,9 +195,3 @@ class ASTTransformerContext:
         return msg
 
 
-def print_ast(tree, title=None):
-    if not impl.get_runtime().print_preprocessed:
-        return
-    if title is not None:
-        info(f'{title}:')
-    print(astor.to_source(tree.body[0], indent_with='    '), flush=True)

@@ -1117,6 +1117,7 @@ class MatrixField(Field):
         super().__init__(_vars)
         self.n = n
         self.m = m
+        impl.get_runtime().matrix_fields.append(self)
 
     def get_scalar_field(self, *indices):
         """Creates a ScalarField using a specific field member. Only used for quant.

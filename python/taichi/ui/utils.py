@@ -56,7 +56,7 @@ def vec_to_euler(v):
         yaw = 0
     else:
         yaw = acos(cos_yaw)
-        if (sin_yaw < 0):
+        if sin_yaw < 0:
             yaw = -yaw
 
     return yaw, pitch

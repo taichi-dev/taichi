@@ -523,7 +523,7 @@ class MeshRelationAccessProxy:
                                        self.to_element_type))
 
     def subscript(self, *indices):
-        assert (len(indices) == 1)
+        assert len(indices) == 1
         entry_expr = _ti_core.get_relation_access(self.mesh.mesh_ptr,
                                                   self.from_index.ptr,
                                                   self.to_element_type,

@@ -413,7 +413,7 @@ def _clamp_unsigned_to_range(npty, val):
     if iif.min <= val <= iif.max:
         return val
     cap = (1 << iif.bits)
-    if not (0 <= val < cap):
+    if not 0 <= val < cap:
         # We let pybind11 fail intentionally, because this isn't the case we want
         # to deal with: |val| does't fall into the valid range of either
         # the signed or the unsigned type.

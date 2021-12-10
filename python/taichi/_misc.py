@@ -1,6 +1,6 @@
 import sys
 
-import taichi._lib.core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang.enums import Layout  # pylint: disable=unused-import
 from taichi.tools import deprecated, warning
 

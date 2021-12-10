@@ -1,6 +1,6 @@
 import pathlib
 
-from taichi._lib.core import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang.impl import default_cfg
 
 from .canvas import Canvas

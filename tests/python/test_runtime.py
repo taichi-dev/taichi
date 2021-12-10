@@ -119,7 +119,7 @@ def test_init_arch(arch):
     with patch_os_environ_helper({}, excludes=['TI_ARCH']):
         ti.init(arch=arch)
         assert ti.cfg.arch == arch
-    with patch_os_environ_helper({'TI_ARCH': ti.core.arch_name(arch)},
+    with patch_os_environ_helper({'TI_ARCH': ti._lib.core.arch_name(arch)},
                                  excludes=['TI_ARCH']):
         ti.init(arch=ti.cc)
         assert ti.cfg.arch == arch

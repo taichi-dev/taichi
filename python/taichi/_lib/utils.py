@@ -80,8 +80,7 @@ def is_ci():
 
 def package_root():
     return os.path.join(
-        os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 
 def get_core_shared_object():

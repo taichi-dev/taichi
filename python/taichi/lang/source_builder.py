@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import tempfile
 
-from taichi._lib.core import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import make_expr_group

@@ -1,14 +1,20 @@
-import taichi._lib.core as _ti_core
-from taichi import ad
-from taichi.lang.enums import Layout
+import sys
 
-__all__ = ["__version__", "complex_kernel", "complex_kernel_grad", "deprecated_names"]
+import taichi._lib.core as _ti_core
+from taichi.lang.enums import Layout  # pylint: disable=unused-import
+from taichi.tools import deprecated, warning
+
+from taichi import ad
+
+__all__ = [
+    "__version__", "complex_kernel", "complex_kernel_grad", "deprecated_names"
+]
 
 deprecated_names = {'SOA': 'Layout.SOA', 'AOS': 'Layout.AOS'}
 if sys.version_info.minor < 7:
     for name, alter in deprecated_names.items():
         exec(f'{name} = {alter}')
-        __all__ += name
+        __all__.append(name)
 else:
 
     def __getattr__(attr):
@@ -20,9 +26,8 @@ else:
             exec(f'{attr} = {deprecated_names[attr]}')
             return locals()[attr]
         raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")
-    __all__ += "__getattr__"
 
-
+    __all__.append("__getattr__")
 
 complex_kernel = deprecated('ti.complex_kernel',
                             'ti.ad.grad_replaced')(ad.grad_replaced)

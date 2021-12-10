@@ -3,7 +3,7 @@ from types import FunctionType, MethodType
 from typing import Iterable
 
 import numpy as np
-from taichi._lib.core import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.exception import InvalidOperationError

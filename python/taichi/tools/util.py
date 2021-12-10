@@ -3,7 +3,7 @@ import subprocess
 import traceback
 
 from colorama import Fore, Style
-from taichi._lib.core import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 
 
 def core_veci(*args):

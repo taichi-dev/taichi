@@ -1,5 +1,3 @@
-import sys
-
 from taichi._funcs import *
 from taichi._logging import *
 from taichi._misc import *

@@ -2,7 +2,7 @@ import functools
 import os
 import sys
 
-from taichi._lib.core import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi._logging import info, warn
 
 try:

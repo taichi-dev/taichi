@@ -27,5 +27,5 @@ def _test_dimensionality(d):
 
 
 def test_dimensionality():
-    for i in range(2, ti.core.get_max_num_indices() + 1):
+    for i in range(2, ti._lib.core.get_max_num_indices() + 1):
         _test_dimensionality(i)

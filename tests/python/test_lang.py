@@ -153,7 +153,7 @@ def test_meta_zero_one(dtype, ti_zero, zero, is_mat):
         y[None] = ti_zero(x[None])
 
     for a in [-1, -2.3, -1, -0.3, 0, 1, 1.9, 2, 3]:
-        if ti.core.is_integral(dtype):
+        if ti.types.is_integral(dtype):
             a = int(a)
         x.fill(a)
         func()

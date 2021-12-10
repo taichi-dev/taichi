@@ -1,4 +1,4 @@
-from taichi._lib.core import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.util import taichi_scope

@@ -5,7 +5,7 @@ import numbers
 # loaded during the import procedure, it's probably still good to delay the
 # access to it.
 import taichi.lang
-from taichi._lib.core import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.field import Field
 

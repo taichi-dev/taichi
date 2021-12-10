@@ -1,6 +1,8 @@
-from taichi._lib.core import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 
-if _ti_core.GGUI_AVAILABLE:
+GGUI_AVAILABLE = _ti_core.GGUI_AVAILABLE
+
+if GGUI_AVAILABLE:
 
     from .camera import Camera  # pylint: disable=unused-import
     from .canvas import Canvas  # pylint: disable=unused-import

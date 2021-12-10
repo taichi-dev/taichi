@@ -123,7 +123,7 @@ def test_allclose_rel_reordered2(x, allclose):
     assert not allclose(x - x * rel * 3.0, x)
 
 
-@pytest.mark.skipif(ti.core.with_metal(),
+@pytest.mark.skipif(ti._lib.core.with_metal(),
                     reason="Skip metal because metal is used as the example")
 def test_disable_fallback():
     old_environ = os.environ.get('TI_WANTED_ARCHS', '')

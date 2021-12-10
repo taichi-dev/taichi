@@ -14,7 +14,7 @@ import numpy as np
 import taichi.cc_compose
 import taichi.diagnose
 from colorama import Fore
-from taichi._lib.core import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.tools import video
 
 import taichi as ti
@@ -114,7 +114,7 @@ class TaichiMain:
     def _get_examples_dir() -> Path:
         """Get the path to the examples directory."""
 
-        root_dir = ti._lib.core.util.package_root()
+        root_dir = taichi._lib.utils.package_root()
         examples_dir = Path(root_dir) / 'examples'
         return examples_dir
 
@@ -215,7 +215,7 @@ class TaichiMain:
     @register
     def changelog(arguments: list = sys.argv[2:]):
         """Display changelog of current version"""
-        changelog_md = os.path.join(ti._lib.core.util.package_root(),
+        changelog_md = os.path.join(taichi._lib.utils.package_root(),
                                     'CHANGELOG.md')
         with open(changelog_md) as f:
             print(f.read())

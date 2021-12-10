@@ -40,7 +40,7 @@ TI_VERSION_MINOR = 8
 TI_VERSION_PATCH = 8
 version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 
-data_files = glob.glob('python/lib/runtime/*')
+data_files = glob.glob('python/_lib/runtime/*')
 print(data_files)
 packages = find_packages('python')
 print(packages)
@@ -260,7 +260,7 @@ setup(name=project_name,
           'colorama',
           'astor',
       ],
-      data_files=[('lib/runtime', data_files)],
+      data_files=[(os.path.join('_lib', 'runtime'), data_files)],
       keywords=['graphics', 'simulation'],
       license='MIT',
       include_package_data=True,

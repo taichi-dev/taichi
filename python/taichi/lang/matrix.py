@@ -858,6 +858,7 @@ class Matrix(TaichiOperations):
         entries, entries_grad = MatrixField(entries, n, m), MatrixField(
             entries_grad, n, m)
         entries.set_grad(entries_grad)
+        impl.get_runtime().matrix_fields.append(entries)
 
         if shape is None:
             assert offset is None, "shape cannot be None when offset is being set"

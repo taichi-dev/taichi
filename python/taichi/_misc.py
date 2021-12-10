@@ -1,4 +1,6 @@
 import taichi._lib.core as _ti_core
+from taichi import ad
+from taichi.lang.enums import Layout
 
 __all__ = ["__version__", "complex_kernel", "complex_kernel_grad", "deprecated_names"]
 

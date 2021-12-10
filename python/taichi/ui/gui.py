@@ -6,7 +6,7 @@ import numpy as np
 import taichi.lang
 from taichi.core import ti_core as _ti_core
 from taichi.lang.field import Field, ScalarField
-from taichi.tools.util import core_veci, core_vec
+from taichi.tools.util import core_vec, core_veci
 
 import taichi as ti
 

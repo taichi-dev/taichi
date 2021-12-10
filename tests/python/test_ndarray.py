@@ -309,13 +309,12 @@ def _test_ndarray_deepcopy():
     assert y[4][1, 0] == 9
 
 
-@pytest.mark.skip(reason='Temporarily disable flaky test.')
+@pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_ndarray_deepcopy_torch():
     _test_ndarray_deepcopy()
 
 
-@pytest.mark.skip(reason='Temporarily disable flaky test.')
 @ti.test(arch=supported_archs_taichi_ndarray, ndarray_use_torch=False)
 def test_ndarray_deepcopy():
     _test_ndarray_deepcopy()
@@ -597,7 +596,7 @@ def _test_arg_not_match():
         func4(x)
 
     @ti.kernel
-    def func5(a: ti.any_arr(element_shapes=(2, 3))):
+    def func5(a: ti.any_arr(element_shape=(2, 3))):
         pass
 
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
@@ -609,10 +608,10 @@ def _test_arg_not_match():
 
     with pytest.raises(
             ValueError,
-            match=r'Both element_shapes and element_dim are specified'):
+            match=r'Both element_shape and element_dim are specified'):
 
         @ti.kernel
-        def func6(a: ti.any_arr(element_dim=1, element_shapes=(2, 3))):
+        def func6(a: ti.any_arr(element_dim=1, element_shape=(2, 3))):
             pass
 
     @ti.kernel

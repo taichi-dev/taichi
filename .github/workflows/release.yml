@@ -66,6 +66,14 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-linux-gpu-${{ github.sha }}
+          restore-keys: |
+            sccache-linux-gpu-
+
       - name: Build
         run: |
           mkdir -m777 shared
@@ -80,7 +88,7 @@ jobs:
         env:
           PY: ${{ matrix.conda_python }}
           GPU_BUILD: ON
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
           DISPLAY: ":1"
 
@@ -113,7 +121,7 @@ jobs:
         run: |
           cd shared
           pip install twine requests==2.26
-          python3 misc/upload_release.py
+          python3 ../misc/upload_release.py
 
       - name: clean docker container
         if: always()
@@ -132,6 +140,14 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-mac-${{ github.sha }}
+          restore-keys: |
+            sccache-mac-
+
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
@@ -146,7 +162,7 @@ jobs:
           export PATH=$(pwd)/taichi-llvm/bin/:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
           CXX: clang++
 
@@ -183,6 +199,14 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-m1-${{ github.sha }}
+          restore-keys: |
+            sccache-m1-
+
       - name: Build
         run: |
           # We hacked here because conda activate in CI won't update python PATH
@@ -191,7 +215,7 @@ jobs:
           export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
           CXX: clang++
@@ -202,6 +226,14 @@ jobs:
           name: ${{ matrix.name }}-py${{ matrix.python }}-macos-m1.whl
           path: dist/*.whl
           retention-days: 20
+
+      - name: Test
+        run: |
+          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
+          .github/workflows/scripts/unix_test.sh
+        env:
+          TI_WANTED_ARCHS: "metal,cpu"
+          PYTHON: ${{ matrix.python }}
 
       - name: Upload PyPI
         env:
@@ -223,6 +255,14 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: sccache_cache
+          key: sccache-1014-${{ github.sha }}
+          restore-keys: |
+            sccache-1014-
+
       - name: Build
         run: |
           # We hacked here because conda activate in CI won't update python PATH
@@ -233,7 +273,7 @@ jobs:
           export PATH=$LLVM_DIR/bin:$PATH
           bash .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
           PYTHON: ${{ matrix.python }}
           CXX: clang++
@@ -301,9 +341,10 @@ jobs:
           $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
           . venv\Scripts\activate.ps1
           python -c "import taichi"
-          ti example laplace
           ti diagnose
           python tests/run_tests.py -vr2 -t2
+        env:
+          TI_SKIP_VERSION_CHECK: ON
 
       - name: Upload PyPI
         shell: powershell

@@ -406,7 +406,7 @@ The `develop` command serves the developers' needs better because edits to the P
 
 <TabItem value="windows">
 
-1. Run powershell as administrator and `Set-ExecutionPolicy RemoteSigned`.
+1. Run powershell as administrator and `Set-ExecutionPolicy -ExecutionPolicy UNRESTRICTED`.
 2. Run [this script](https://github.com/taichi-dev/taichi_assets/releases/download/windows_scripts/install_deps.ps1) to install all necessary dependencies:
 
    ```shell

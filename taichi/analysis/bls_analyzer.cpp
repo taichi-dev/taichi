@@ -50,7 +50,7 @@ void BLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
     for (int i = 0; i < num_indices; i++) {
       auto diff = irpass::analysis::value_diff_loop_index(ptr->indices[i],
                                                           for_stmt_, i);
-      if (diff.related_() && diff.coeff > 0) {
+      if (diff.related() && diff.coeff > 0) {
         offsets[i].low = diff.low;
         offsets[i].high = diff.high;
         coeffs[i] = diff.coeff;

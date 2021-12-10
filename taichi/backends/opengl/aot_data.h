@@ -30,8 +30,8 @@ struct CompiledFieldData {
 };
 
 struct AotData {
-  std::unordered_map<std::string, CompiledProgram> kernels;
-  std::unordered_map<std::string, CompiledProgram> kernel_tmpls;
+  std::unordered_map<std::string, CompiledTaichiKernel> kernels;
+  std::unordered_map<std::string, CompiledTaichiKernel> kernel_tmpls;
   std::vector<CompiledFieldData> fields;
 
   size_t root_buffer_size;

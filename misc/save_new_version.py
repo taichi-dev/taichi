@@ -24,7 +24,7 @@ password = os.getenv('METADATA_PASSWORD')
 url = os.getenv('METADATA_URL')
 
 try:
-    response = requests.post(f'http://{url}/add_version/main',
+    response = requests.post(f'https://{url}/add_version/main',
                              json=payload,
                              auth=(username, password),
                              timeout=5)

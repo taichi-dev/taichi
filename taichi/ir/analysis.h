@@ -15,7 +15,7 @@ namespace lang {
 
 class DiffRange {
  private:
-  bool related;
+  bool related_;
 
  public:
   int coeff;
@@ -33,22 +33,22 @@ class DiffRange {
   }
 
   DiffRange(bool related, int coeff, int low, int high)
-      : related(related), coeff(coeff), low(low), high(high) {
+      : related_(related), coeff(coeff), low(low), high(high) {
     if (!related) {
       this->low = this->high = 0;
     }
   }
 
-  bool related_() const {
-    return related;
+  bool related() const {
+    return related_;
   }
 
   bool linear_related() const {
-    return related && coeff == 1;
+    return related_ && coeff == 1;
   }
 
   bool certain() {
-    TI_ASSERT(related);
+    TI_ASSERT(related_);
     return high == low + 1;
   }
 };

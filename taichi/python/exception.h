@@ -13,13 +13,13 @@ TI_NAMESPACE_BEGIN
 
 class ExceptionForPython : public std::exception {
  private:
-  std::string msg;
+  std::string msg_;
 
  public:
-  ExceptionForPython(const std::string &msg) : msg(msg) {
+  ExceptionForPython(const std::string &msg) : msg_(msg) {
   }
-  char const *what() const throw() {
-    return msg.c_str();
+  char const *what() const throw() override {
+    return msg_.c_str();
   }
 };
 

@@ -52,11 +52,11 @@ class OpenglProgramImpl : public ProgramImpl {
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 
-  virtual void destroy_snode_tree(SNodeTree *snode_tree) override {
+  void destroy_snode_tree(SNodeTree *snode_tree) override {
     TI_NOT_IMPLEMENTED
   }
 
-  ~OpenglProgramImpl() {
+  ~OpenglProgramImpl() override {
   }
 
  private:

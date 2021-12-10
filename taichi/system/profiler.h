@@ -34,10 +34,10 @@ class ScopedProfiler {
   ~ScopedProfiler();
 
  private:
-  std::string name;
-  float64 start_time;
-  uint64 elements;
-  bool stopped;
+  std::string name_;
+  float64 start_time_;
+  uint64 elements_;
+  bool stopped_;
 };
 
 // A profiling system for multithreaded applications
@@ -49,8 +49,8 @@ class Profiling {
   static Profiling &get_instance();
 
  private:
-  std::mutex mut;
-  std::unordered_map<std::thread::id, ProfilerRecords *> profilers;
+  std::mutex mut_;
+  std::unordered_map<std::thread::id, ProfilerRecords *> profilers_;
 };
 
 #define TI_PROFILER(name) taichi::ScopedProfiler _profiler_##__LINE__(name);

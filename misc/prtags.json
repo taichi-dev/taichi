@@ -3,6 +3,7 @@
   "cpu"             : "CPU backends",
   "cuda"            : "CUDA backend",
   "doc"             : "Documentation",
+  "docs"            : "Documentation",
   "infra"           : "Infrastructure",
   "cli"             : "Command line interface",
   "ir"              : "Intermediate representation",
@@ -29,6 +30,7 @@
   "mesh"            : "MeshTaichi",
   "workflow"        : "GitHub Actions/Workflows",
   "linux"           : "Linux",
+  "android"         : "Android",
   "mac"             : "Mac OS X",
   "windows"         : "Windows",
   "docker"          : "Docker container",
@@ -39,5 +41,6 @@
   "blender"         : "Blender intergration",
   "export"          : "Exporting kernels",
   "type"            : "Type system",
-  "release"         : "Release"
+  "release"         : "Release",
+  "build"           : "Build system"
 }

@@ -17,10 +17,14 @@ if (MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
 endif ()
 
-if (MSVC)
+if (WIN32)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
-    set(CMAKE_CXX_FLAGS
-            "${CMAKE_CXX_FLAGS} /Zc:__cplusplus /std:c++17 /MP /Z7 /D \"_CRT_SECURE_NO_WARNINGS\" /D \"_ENABLE_EXTENDED_ALIGNED_STORAGE\"")
+    if (MSVC)
+        set(CMAKE_CXX_FLAGS
+            "${CMAKE_CXX_FLAGS} /Zc:__cplusplus /std:c++17 /bigobj /wd4244 /wd4267 /nologo /Zi /D \"_CRT_SECURE_NO_WARNINGS\" /D \"_ENABLE_EXTENDED_ALIGNED_STORAGE\"")
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fsized-deallocation -target x86_64-pc-windows-msvc")
+    endif()
 else()
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
         message("Clang compiler detected. Using std=c++17.")

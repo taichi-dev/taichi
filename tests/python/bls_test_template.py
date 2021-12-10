@@ -15,7 +15,7 @@ def bls_test_template(dim,
                       dense=False):
     x, y, y2 = ti.field(ti.i32), ti.field(ti.i32), ti.field(ti.i32)
 
-    index = ti.indices(*range(dim))
+    index = ti.axes(*range(dim))
     mismatch = ti.field(ti.i32, shape=())
 
     if not isinstance(bs, (tuple, list)):

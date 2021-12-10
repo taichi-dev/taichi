@@ -6,7 +6,7 @@ import numpy as np
 import taichi.lang
 from taichi.core import ti_core as _ti_core
 from taichi.lang.field import Field, ScalarField
-from taichi.misc.util import core_veci, deprecated
+from taichi.tools.util import core_veci
 
 import taichi as ti
 
@@ -112,7 +112,7 @@ class GUI:
     def close(self):
         self.core = None  # dereference to call GUI::~GUI()
 
-    ## Widget system
+    # Widget system
 
     class WidgetValue:
         def __init__(self, gui, wid):
@@ -185,7 +185,7 @@ class GUI:
         self.core.make_button(text, event_name)
         return event_name
 
-    ## Drawing system
+    # Drawing system
 
     def clear(self, color=None):
         """Clear the canvas with the color provided.
@@ -249,13 +249,13 @@ class GUI:
 
         if self.fast_gui:
             assert isinstance(img, taichi.lang.matrix.MatrixField), \
-                    "Only ti.Vector.field is supported in GUI.set_image when fast_gui=True"
+                "Only ti.Vector.field is supported in GUI.set_image when fast_gui=True"
             assert img.shape == self.res, \
-                    "Image resolution does not match GUI resolution"
+                "Image resolution does not match GUI resolution"
             assert img.n in [3, 4] and img.m == 1, \
-                    "Only RGB images are supported in GUI.set_image when fast_gui=True"
+                "Only RGB images are supported in GUI.set_image when fast_gui=True"
             assert img.dtype in [ti.f32, ti.f64, ti.u8], \
-                    "Only f32, f64, u8 are supported in GUI.set_image when fast_gui=True"
+                "Only f32, f64, u8 are supported in GUI.set_image when fast_gui=True"
 
             taichi.lang.meta.vector_to_fast_image(img, self.img)
             return
@@ -267,7 +267,7 @@ class GUI:
             else:
                 # Type matched! We can use an optimized copy kernel.
                 assert img.shape \
-                 == self.res, "Image resolution does not match GUI resolution"
+                    == self.res, "Image resolution does not match GUI resolution"
                 taichi.lang.meta.tensor_to_image(img, self.img)
                 ti.sync()
 
@@ -276,10 +276,10 @@ class GUI:
                 self.img = self.cook_image(img.to_numpy())
             else:
                 # Type matched! We can use an optimized copy kernel.
-                assert img.shape  == self.res, \
-                        "Image resolution does not match GUI resolution"
+                assert img.shape == self.res, \
+                    "Image resolution does not match GUI resolution"
                 assert img.n in [2, 3, 4] and img.m == 1, \
-                        "Only greyscale, RG, RGB or RGBA images are supported in GUI.set_image"
+                    "Only greyscale, RG, RGB or RGBA images are supported in GUI.set_image"
 
                 taichi.lang.meta.vector_to_image(img, self.img)
                 ti.sync()
@@ -665,7 +665,7 @@ class GUI:
         self.frame += 1
         self.clear()
 
-    ## Event system
+    # Event system
 
     class EventFilter:
         def __init__(self, *e_filter):
@@ -793,12 +793,6 @@ class GUI:
         pos = self.core.get_cursor_pos()
         return pos[0], pos[1]
 
-    @deprecated('gui.has_key_pressed()', 'gui.get_event()')
-    def has_key_pressed(self):
-        if self.has_key_event():
-            self.get_key_event()  # pop to update self.key_pressed
-        return len(self.key_pressed) != 0
-
     @property
     def running(self):
         """Get the property of whether the gui is running.
@@ -846,7 +840,9 @@ def rgb_to_hex(c):
         The hex representation of color.
 
     """
-    to255 = lambda x: np.clip(np.int32(x * 255), 0, 255)
+    def to255(x):
+        return np.clip(np.int32(x * 255), 0, 255)
+
     return (to255(c[0]) << 16) + (to255(c[1]) << 8) + to255(c[2])
 
 

@@ -20,7 +20,11 @@ static_assert(false, "32-bit Windows systems are not supported")
 
 // Linux
 #if defined(__linux__)
+#if defined(ANDROID)
+#define TI_PLATFORM_ANDROID
+#else
 #define TI_PLATFORM_LINUX
+#endif
 #endif
 
 // OSX

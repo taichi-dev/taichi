@@ -66,7 +66,7 @@ class CCProgramImpl : public ProgramImpl {
     return runtime_.get();
   }
 
-  ~CCProgramImpl() {
+  ~CCProgramImpl() override {
   }
 
   CCFuncEntryType *load_kernel(std::string const &name);

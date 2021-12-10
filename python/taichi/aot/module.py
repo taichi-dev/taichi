@@ -6,8 +6,8 @@ from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.enums import Layout
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField, MatrixNdarray, VectorNdarray
-from taichi.type.annotations import ArgAnyArray, template
-from taichi.type.primitive_types import f32
+from taichi.types.annotations import ArgAnyArray, template
+from taichi.types.primitive_types import f32
 
 
 class KernelTemplate:
@@ -149,21 +149,21 @@ class Module:
                 if example_any_arrays:
                     injected_args.append(example_any_arrays[i])
                 else:
-                    assert anno.element_shapes is not None and anno.field_dim is not None, 'Please either specify element_shapes & field_dim in the kernel arg annotation or provide a dict of example ndarrays.'
+                    assert anno.element_shape is not None and anno.field_dim is not None, 'Please either specify element_shape & field_dim in the kernel arg annotation or provide a dict of example ndarrays.'
                     if anno.element_dim == 0:
                         injected_args.append(
                             ScalarNdarray(dtype=f32,
                                           shape=(2, ) * anno.field_dim))
                     elif anno.element_dim == 1:
                         injected_args.append(
-                            VectorNdarray(anno.element_shapes[0],
+                            VectorNdarray(anno.element_shape[0],
                                           dtype=f32,
                                           shape=(2, ) * anno.field_dim,
                                           layout=Layout.AOS))
                     elif anno.element_dim == 2:
                         injected_args.append(
-                            MatrixNdarray(anno.element_shapes[0],
-                                          anno.element_shapes[1],
+                            MatrixNdarray(anno.element_shape[0],
+                                          anno.element_shape[1],
                                           dtype=f32,
                                           shape=(2, ) * anno.field_dim,
                                           layout=Layout.AOS))

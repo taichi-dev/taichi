@@ -30,7 +30,7 @@ class DynamicLoader {
   ~DynamicLoader();
 
  private:
-  void *dll = nullptr;
+  void *dll_ = nullptr;
 };
 
 TI_NAMESPACE_END

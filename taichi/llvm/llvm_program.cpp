@@ -1,4 +1,5 @@
 #include "llvm_program.h"
+#include "llvm/IR/Module.h"
 
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/program/arch.h"
@@ -36,15 +37,15 @@ void *taichi_allocate_aligned(MemoryPool *memory_pool,
 LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
                                  KernelProfilerBase *profiler)
     : ProgramImpl(config_) {
-  runtime_mem_info = Runtime::create(config_.arch);
+  runtime_mem_info_ = Runtime::create(config_.arch);
   if (config_.arch == Arch::cuda) {
-    if (!runtime_mem_info) {
+    if (!runtime_mem_info_) {
       TI_WARN("Taichi is not compiled with CUDA.");
       config_.arch = host_arch();
     } else if (!is_cuda_api_available()) {
       TI_WARN("No CUDA driver API detected.");
       config_.arch = host_arch();
-    } else if (!runtime_mem_info->detected()) {
+    } else if (!runtime_mem_info_->detected()) {
       TI_WARN("No CUDA device detected.");
       config_.arch = host_arch();
     } else {
@@ -55,13 +56,13 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     }
   }
 
-  snode_tree_buffer_manager = std::make_unique<SNodeTreeBufferManager>(this);
+  snode_tree_buffer_manager_ = std::make_unique<SNodeTreeBufferManager>(this);
 
-  thread_pool = std::make_unique<ThreadPool>(config->cpu_max_num_threads);
+  thread_pool_ = std::make_unique<ThreadPool>(config->cpu_max_num_threads);
 
-  preallocated_device_buffer = nullptr;
-  llvm_runtime = nullptr;
-  llvm_context_host = std::make_unique<TaichiLLVMContext>(host_arch());
+  preallocated_device_buffer_ = nullptr;
+  llvm_runtime_ = nullptr;
+  llvm_context_host_ = std::make_unique<TaichiLLVMContext>(host_arch());
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     int num_SMs;
@@ -91,8 +92,8 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
     device_ = std::make_shared<cpu::CpuDevice>();
   }
 
-  if (config->kernel_profiler && runtime_mem_info) {
-    runtime_mem_info->set_profiler(profiler);
+  if (config->kernel_profiler && runtime_mem_info_) {
+    runtime_mem_info_->set_profiler(profiler);
   }
 #if defined(TI_WITH_CUDA)
   if (config_.arch == Arch::cuda) {
@@ -110,13 +111,13 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 void LlvmProgramImpl::initialize_host() {
   // Note this cannot be placed inside LlvmProgramImpl constructor, see doc
   // string for init_runtime_jit_module() for more details.
-  llvm_context_host->init_runtime_jit_module();
+  llvm_context_host_->init_runtime_jit_module();
 }
 
 void LlvmProgramImpl::maybe_initialize_cuda_llvm_context() {
-  if (config->arch == Arch::cuda && llvm_context_device == nullptr) {
-    llvm_context_device = std::make_unique<TaichiLLVMContext>(Arch::cuda);
-    llvm_context_device->init_runtime_jit_module();
+  if (config->arch == Arch::cuda && llvm_context_device_ == nullptr) {
+    llvm_context_device_ = std::make_unique<TaichiLLVMContext>(Arch::cuda);
+    llvm_context_device_->init_runtime_jit_module();
   }
 }
 
@@ -154,12 +155,12 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   TaichiLLVMContext *tlctx = nullptr;
   if (config->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    tlctx = llvm_context_device.get();
+    tlctx = llvm_context_device_.get();
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    tlctx = llvm_context_host.get();
+    tlctx = llvm_context_host_.get();
   }
 
   auto *const runtime_jit = tlctx->runtime_jit_module;
@@ -172,8 +173,8 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   std::size_t rounded_size =
       taichi::iroundup(scomp->root_size, taichi_page_size);
 
-  Ptr root_buffer = snode_tree_buffer_manager->allocate(
-      runtime_jit, llvm_runtime, rounded_size, taichi_page_size, tree->id(),
+  Ptr root_buffer = snode_tree_buffer_manager_->allocate(
+      runtime_jit, llvm_runtime_, rounded_size, taichi_page_size, tree->id(),
       result_buffer);
 
   DeviceAllocation alloc{kDeviceNullAllocation};
@@ -201,7 +202,7 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 
   runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
-      "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
+      "runtime_initialize_snodes", llvm_runtime_, scomp->root_size, root_id,
       (int)snodes.size(), tree->id(), rounded_size, root_buffer, all_dense);
 
   for (int i = 0; i < (int)snodes.size(); i++) {
@@ -218,7 +219,7 @@ void LlvmProgramImpl::initialize_llvm_runtime_snodes(const SNodeTree *tree,
       }
       TI_TRACE("Initializing allocator for snode {} (node size {})", snode_id,
                node_size);
-      auto rt = llvm_runtime;
+      auto rt = llvm_runtime_;
       runtime_jit->call<void *, int, std::size_t>(
           "runtime_NodeAllocator_initialize", rt, snode_id, node_size);
       TI_TRACE("Allocating ambient element for snode {} (node size {})",
@@ -235,14 +236,14 @@ void LlvmProgramImpl::compile_snode_tree_types(
   auto *const root = tree->root();
   if (arch_is_cpu(config->arch)) {
     auto host_module = clone_struct_compiler_initial_context(
-        snode_trees, llvm_context_host.get());
+        snode_trees, llvm_context_host_.get());
     struct_compiler_ = std::make_unique<StructCompilerLLVM>(
         host_arch(), this, std::move(host_module));
 
   } else {
     TI_ASSERT(config->arch == Arch::cuda);
     auto device_module = clone_struct_compiler_initial_context(
-        snode_trees, llvm_context_device.get());
+        snode_trees, llvm_context_device_.get());
     struct_compiler_ = std::make_unique<StructCompilerLLVM>(
         Arch::cuda, this, std::move(device_module));
   }
@@ -283,7 +284,7 @@ std::size_t LlvmProgramImpl::get_snode_num_dynamically_allocated(
 
   auto node_allocator =
       runtime_query<void *>("LLVMRuntime_get_node_allocators", result_buffer,
-                            llvm_runtime, snode->id);
+                            llvm_runtime_, snode->id);
   auto data_list = runtime_query<void *>("NodeManager_get_data_list",
                                          result_buffer, node_allocator);
 
@@ -326,7 +327,7 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     CUDADriver::get_instance().malloc(
         (void **)result_buffer_ptr,
         sizeof(uint64) * taichi_result_buffer_entries);
-    const auto total_mem = runtime_mem_info->get_total_memory();
+    const auto total_mem = runtime_mem_info_->get_total_memory();
     if (config->device_memory_fraction == 0) {
       TI_ASSERT(config->device_memory_GB > 0);
       prealloc_size = std::size_t(config->device_memory_GB * (1UL << 30));
@@ -340,22 +341,22 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 
     Device::AllocParams preallocated_device_buffer_alloc_params;
     preallocated_device_buffer_alloc_params.size = prealloc_size;
-    preallocated_device_buffer_alloc =
+    preallocated_device_buffer_alloc_ =
         cuda_device()->allocate_memory(preallocated_device_buffer_alloc_params);
     cuda::CudaDevice::AllocInfo preallocated_device_buffer_alloc_info =
-        cuda_device()->get_alloc_info(preallocated_device_buffer_alloc);
-    preallocated_device_buffer = preallocated_device_buffer_alloc_info.ptr;
+        cuda_device()->get_alloc_info(preallocated_device_buffer_alloc_);
+    preallocated_device_buffer_ = preallocated_device_buffer_alloc_info.ptr;
 
-    CUDADriver::get_instance().memset(preallocated_device_buffer, 0,
+    CUDADriver::get_instance().memset(preallocated_device_buffer_, 0,
                                       prealloc_size);
-    tlctx = llvm_context_device.get();
+    tlctx = llvm_context_device_.get();
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else {
     *result_buffer_ptr = (uint64 *)memory_pool->allocate(
         sizeof(uint64) * taichi_result_buffer_entries, 8);
-    tlctx = llvm_context_host.get();
+    tlctx = llvm_context_host_.get();
   }
   auto *const runtime_jit = tlctx->runtime_jit_module;
 
@@ -384,17 +385,17 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   runtime_jit->call<void *, void *, std::size_t, void *, int, int, void *,
                     void *, void *>(
       "runtime_initialize", *result_buffer_ptr, memory_pool, prealloc_size,
-      preallocated_device_buffer, starting_rand_state, num_rand_states,
+      preallocated_device_buffer_, starting_rand_state, num_rand_states,
       (void *)&taichi_allocate_aligned, (void *)std::printf,
       (void *)std::vsnprintf);
 
   TI_TRACE("LLVMRuntime initialized (excluding `root`)");
-  llvm_runtime = fetch_result<void *>(taichi_result_buffer_ret_value_id,
-                                      *result_buffer_ptr);
+  llvm_runtime_ = fetch_result<void *>(taichi_result_buffer_ret_value_id,
+                                       *result_buffer_ptr);
   TI_TRACE("LLVMRuntime pointer fetched");
 
   if (arch_use_host_memory(config->arch)) {
-    runtime_jit->call<void *>("runtime_get_mem_req_queue", llvm_runtime);
+    runtime_jit->call<void *>("runtime_get_mem_req_queue", llvm_runtime_);
     auto mem_req_queue = fetch_result<void *>(taichi_result_buffer_ret_value_id,
                                               *result_buffer_ptr);
     memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
@@ -402,36 +403,37 @@ void LlvmProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 
   if (arch_use_host_memory(config->arch)) {
     runtime_jit->call<void *, void *, void *>(
-        "LLVMRuntime_initialize_thread_pool", llvm_runtime, thread_pool.get(),
+        "LLVMRuntime_initialize_thread_pool", llvm_runtime_, thread_pool_.get(),
         (void *)ThreadPool::static_run);
 
     runtime_jit->call<void *, void *>("LLVMRuntime_set_assert_failed",
-                                      llvm_runtime, (void *)assert_failed_host);
+                                      llvm_runtime_,
+                                      (void *)assert_failed_host);
   }
   if (arch_is_cpu(config->arch)) {
     // Profiler functions can only be called on CPU kernels
-    runtime_jit->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime,
+    runtime_jit->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime_,
                                       profiler);
     runtime_jit->call<void *, void *>(
-        "LLVMRuntime_set_profiler_start", llvm_runtime,
+        "LLVMRuntime_set_profiler_start", llvm_runtime_,
         (void *)&KernelProfilerBase::profiler_start);
     runtime_jit->call<void *, void *>(
-        "LLVMRuntime_set_profiler_stop", llvm_runtime,
+        "LLVMRuntime_set_profiler_stop", llvm_runtime_,
         (void *)&KernelProfilerBase::profiler_stop);
   }
 }
 
 void LlvmProgramImpl::check_runtime_error(uint64 *result_buffer) {
   synchronize();
-  auto tlctx = llvm_context_host.get();
-  if (llvm_context_device) {
+  auto tlctx = llvm_context_host_.get();
+  if (llvm_context_device_) {
     // In case there is a standalone device context (e.g. CUDA without unified
     // memory), use the device context instead.
-    tlctx = llvm_context_device.get();
+    tlctx = llvm_context_device_.get();
   }
   auto *runtime_jit_module = tlctx->runtime_jit_module;
   runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
-                                   llvm_runtime);
+                                   llvm_runtime_);
   auto error_code =
       fetch_result<int64>(taichi_result_buffer_error_id, result_buffer);
 
@@ -444,7 +446,7 @@ void LlvmProgramImpl::check_runtime_error(uint64 *result_buffer) {
     // "fetch_result" that works across device/host memroy is necessary.
     for (int i = 0;; i++) {
       runtime_jit_module->call<void *>("runtime_retrieve_error_message",
-                                       llvm_runtime, i);
+                                       llvm_runtime_, i);
       auto c = fetch_result<char>(taichi_result_buffer_error_id, result_buffer);
       error_message_template += c;
       if (c == '\0') {
@@ -457,7 +459,7 @@ void LlvmProgramImpl::check_runtime_error(uint64 *result_buffer) {
           error_message_template,
           [runtime_jit_module, result_buffer, this](int argument_id) {
             runtime_jit_module->call<void *>(
-                "runtime_retrieve_error_message_argument", llvm_runtime,
+                "runtime_retrieve_error_message_argument", llvm_runtime_,
                 argument_id);
             return fetch_result<uint64>(taichi_result_buffer_error_id,
                                         result_buffer);
@@ -470,11 +472,11 @@ void LlvmProgramImpl::check_runtime_error(uint64 *result_buffer) {
 }
 
 void LlvmProgramImpl::finalize() {
-  if (runtime_mem_info)
-    runtime_mem_info->set_profiler(nullptr);
+  if (runtime_mem_info_)
+    runtime_mem_info_->set_profiler(nullptr);
 #if defined(TI_WITH_CUDA)
-  if (preallocated_device_buffer != nullptr) {
-    cuda_device()->dealloc_memory(preallocated_device_buffer_alloc);
+  if (preallocated_device_buffer_ != nullptr) {
+    cuda_device()->dealloc_memory(preallocated_device_buffer_alloc_);
   }
 #endif
 }
@@ -494,7 +496,7 @@ void LlvmProgramImpl::print_memory_profiler_info(
   std::function<void(SNode *, int)> visit = [&](SNode *snode, int depth) {
     auto element_list =
         runtime_query<void *>("LLVMRuntime_get_element_lists", result_buffer,
-                              llvm_runtime, snode->id);
+                              llvm_runtime_, snode->id);
 
     if (snode->type != SNodeType::place) {
       fmt::print("SNode {:10}\n", snode->get_node_type_name_hinted());
@@ -505,7 +507,7 @@ void LlvmProgramImpl::print_memory_profiler_info(
 
         auto node_allocator =
             runtime_query<void *>("LLVMRuntime_get_node_allocators",
-                                  result_buffer, llvm_runtime, snode->id);
+                                  result_buffer, llvm_runtime_, snode->id);
 
         if (node_allocator) {
           auto free_list = runtime_query<void *>("NodeManager_get_free_list",
@@ -544,7 +546,7 @@ void LlvmProgramImpl::print_memory_profiler_info(
   }
 
   auto total_requested_memory = runtime_query<std::size_t>(
-      "LLVMRuntime_get_total_requested_memory", result_buffer, llvm_runtime);
+      "LLVMRuntime_get_total_requested_memory", result_buffer, llvm_runtime_);
 
   fmt::print(
       "Total requested dynamic memory (excluding alignment padding): {:n} B\n",
@@ -572,10 +574,10 @@ DeviceAllocation LlvmProgramImpl::allocate_memory_ndarray(
     std::size_t alloc_size,
     uint64 *result_buffer) {
   TaichiLLVMContext *tlctx = nullptr;
-  if (llvm_context_device) {
-    tlctx = llvm_context_device.get();
+  if (llvm_context_device_) {
+    tlctx = llvm_context_device_.get();
   } else {
-    tlctx = llvm_context_host.get();
+    tlctx = llvm_context_host_.get();
   }
 
   return get_compute_device()->allocate_memory_runtime(

@@ -620,13 +620,13 @@ class KernelManager::Impl {
                                            print_mem_->size());
     TI_ASSERT(print_buffer_ != nullptr);
 
-    init_runtime_buffer(compiled_runtime_module_);
+    init_runtime_buffer(compiled_runtime_module_, params.config->random_seed);
     clear_print_assert_buffer();
   }
 
   void add_compiled_snode_tree(const CompiledStructs &compiled_tree) {
     SNodesRootBuffer rtbuf{};
-    rtbuf.desc = BufferDescriptor::Root(compiled_tree.root_id);
+    rtbuf.desc = BufferDescriptor::root(compiled_tree.root_id);
     if (compiled_tree.root_size > 0) {
       rtbuf.mem = std::make_unique<BufferMemoryView>(compiled_tree.root_size,
                                                      mem_pool_);
@@ -689,13 +689,13 @@ class KernelManager::Impl {
     for (auto &rb : root_buffers_) {
       input_buffers[rb.desc] = rb.buffer.get();
     }
-    input_buffers[BufferDescriptor::GlobalTmps()] = global_tmps_buffer_.get();
-    input_buffers[BufferDescriptor::Runtime()] = runtime_buffer_.get();
-    input_buffers[BufferDescriptor::Print()] = print_buffer_.get();
+    input_buffers[BufferDescriptor::global_tmps()] = global_tmps_buffer_.get();
+    input_buffers[BufferDescriptor::runtime()] = runtime_buffer_.get();
+    input_buffers[BufferDescriptor::print()] = print_buffer_.get();
 
     if (ctx_blitter) {
       ctx_blitter->host_to_metal();
-      input_buffers[BufferDescriptor::Context()] = ctk.ctx_buffer.get();
+      input_buffers[BufferDescriptor::context()] = ctk.ctx_buffer.get();
     }
 
     for (const auto &mk : ctk.compiled_mtl_kernels) {
@@ -756,14 +756,11 @@ class KernelManager::Impl {
   }
 
  private:
-  void init_runtime_buffer(const CompiledRuntimeModule &rtm_module) {
+  void init_runtime_buffer(const CompiledRuntimeModule &rtm_module,
+                           int random_seed) {
     char *addr = runtime_mem_->ptr();
     // init rand_seeds
-    // TODO(k-ye): Provide a way to use a fixed seed in dev mode.
-    std::mt19937 generator(
-        std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count());
+    std::default_random_engine generator((unsigned int)random_seed);
     std::uniform_int_distribution<uint32_t> distr(
         0, std::numeric_limits<uint32_t>::max());
     for (int i = 0; i < kNumRandSeeds; ++i) {

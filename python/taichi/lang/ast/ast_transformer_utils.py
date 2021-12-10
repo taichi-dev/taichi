@@ -1,12 +1,12 @@
 import ast
 from enum import Enum
 from sys import version_info
+from textwrap import TextWrapper
 
 import astor
+from taichi._logging import info
 from taichi.lang import impl
 from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
-
-from taichi import info
 
 
 class Builder:
@@ -33,9 +33,8 @@ class Builder:
 
 
 class VariableScopeGuard:
-    def __init__(self, scopes, stmt_block=None):
+    def __init__(self, scopes):
         self.scopes = scopes
-        self.stmt_block = stmt_block
 
     def __enter__(self):
         self.scopes.append({})
@@ -96,14 +95,12 @@ class ASTTransformerContext:
                 self.indent += 1
             else:
                 break
-        if self.src[-1][-1] != '\n':
-            self.src[-1] += '\n'
         self.lineno_offset = start_lineno - 1
         self.raised = False
 
     # e.g.: FunctionDef, Module, Global
-    def variable_scope_guard(self, *args):
-        return VariableScopeGuard(self.local_scopes, *args)
+    def variable_scope_guard(self):
+        return VariableScopeGuard(self.local_scopes)
 
     # e.g.: For, While
     def control_scope_guard(self):
@@ -157,15 +154,24 @@ class ASTTransformerContext:
     def get_pos_info(self, node):
         msg = f'On line {node.lineno + self.lineno_offset} of file "{self.file}":\n'
         if version_info < (3, 8):
-            msg += self.src[node.lineno - 1]
+            msg += self.src[node.lineno - 1] + "\n"
             return msg
         col_offset = self.indent + node.col_offset
         end_col_offset = self.indent + node.end_col_offset
 
+        wrapper = TextWrapper(width=80)
+
+        def gen_line(code, hint):
+            hint += ' ' * (len(code) - len(hint))
+            code = wrapper.wrap(code)
+            hint = wrapper.wrap(hint)
+            if not len(code):
+                return "\n\n"
+            return "".join([c + '\n' + h + '\n' for c, h in zip(code, hint)])
+
         if node.lineno == node.end_lineno:
-            msg += self.src[node.lineno - 1]
-            msg += ' ' * col_offset + '^' * (end_col_offset -
-                                             col_offset) + '\n'
+            hint = ' ' * col_offset + '^' * (end_col_offset - col_offset)
+            msg += gen_line(self.src[node.lineno - 1], hint)
         else:
             for i in range(node.lineno - 1, node.end_lineno):
                 last = len(self.src[i])
@@ -177,15 +183,15 @@ class ASTTransformerContext:
                         self.src[i][first].isspace()
                         or not self.src[i][first].isprintable()):
                     first += 1
-                msg += self.src[i]
                 if i == node.lineno - 1:
-                    msg += ' ' * col_offset + '^' * (last - col_offset) + '\n'
+                    hint = ' ' * col_offset + '^' * (last - col_offset)
                 elif i == node.end_lineno - 1:
-                    msg += ' ' * first + '^' * (end_col_offset - first) + '\n'
+                    hint = ' ' * first + '^' * (end_col_offset - first)
                 elif first < last:
-                    msg += ' ' * first + '^' * (last - first) + '\n'
+                    hint = ' ' * first + '^' * (last - first)
                 else:
-                    msg += '\n'
+                    hint = ''
+                msg += gen_line(self.src[i], hint)
         return msg
 
 

@@ -1,5 +1,6 @@
 import sys
 
+from taichi._funcs import *
 from taichi._logging import *
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.main import main

@@ -4,10 +4,9 @@ from sys import version_info
 from textwrap import TextWrapper
 
 import astor
+from taichi._logging import info
 from taichi.lang import impl
 from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
-
-from taichi import info
 
 
 class Builder:

@@ -16,7 +16,7 @@ import taichi.lang.linalg_impl
 import taichi.lang.meta
 from taichi._lib.core import ti_core as _ti_core
 from taichi._lib.core.util import locale_encode
-from taichi.lang import _random, impl
+from taichi.lang import impl
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
@@ -796,22 +796,6 @@ def sym_eig(A, dt=None):
     if A.n == 2:
         return taichi.lang.linalg_impl.sym_eig2x2(A, dt)
     raise Exception("Symmetric eigen solver only supports 2D matrices.")
-
-
-def randn(dt=None):
-    """Generates a random number from standard normal distribution.
-
-    Implementation refers to :func:`taichi.lang.random.randn`.
-
-    Args:
-        dt (DataType): The datatype for the generated random number.
-
-    Returns:
-        The generated random number.
-    """
-    if dt is None:
-        dt = impl.get_runtime().default_fp
-    return _random.randn(dt)
 
 
 determinant = deprecated('ti.determinant(a)',

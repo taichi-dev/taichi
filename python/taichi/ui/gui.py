@@ -6,7 +6,7 @@ import numpy as np
 import taichi.lang
 from taichi.core import ti_core as _ti_core
 from taichi.lang.field import Field, ScalarField
-from taichi.tools.util import core_veci
+from taichi.tools.util import core_veci, core_vec
 
 import taichi as ti
 
@@ -600,9 +600,9 @@ class GUI:
 
         # TODO: refactor Canvas::text
         font_size = float(font_size)
-        pos = ti.core_vec(*pos)
+        pos = core_vec(*pos)
         r, g, b = hex_to_rgb(color)
-        color = ti.core_vec(r, g, b, 1)
+        color = core_vec(r, g, b, 1)
         self.canvas.text(content, pos, font_size, color)
 
     @staticmethod

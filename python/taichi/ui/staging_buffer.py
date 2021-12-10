@@ -90,6 +90,9 @@ def copy_image_f32_to_u8(src: ti.template(), dst: ti.template(),
             c = max(0.0, min(1.0, c))
             c = c * 255
             dst[i, j][k] = int(c)
+        if num_components < 4:
+            # alpha channel
+            dst[i, j][3] = 255
 
 
 @ti.kernel
@@ -98,6 +101,9 @@ def copy_image_u8_to_u8(src: ti.template(), dst: ti.template(),
     for i, j in src:
         for k in ti.static(range(num_components)):
             dst[i, j][k] = src[i, j][k]
+        if num_components < 4:
+            # alpha channel
+            dst[i, j][3] = 255
 
 
 # ggui renderer always assumes the input image to be u8 RGBA

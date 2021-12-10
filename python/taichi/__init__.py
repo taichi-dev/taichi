@@ -1,6 +1,5 @@
 import sys
 
-from taichi._lib.core import ti_core as core
 from taichi._logging import *
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from taichi.main import main
@@ -9,6 +8,7 @@ from taichi.tools.patterns import taichi_logo
 from taichi.types.annotations import *
 # Provide a shortcut to types since they're commonly used.
 from taichi.types.primitive_types import *
+from taichi._lib import core as _ti_core
 
 from taichi import ad
 from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
@@ -42,5 +42,5 @@ complex_kernel = deprecated('ti.complex_kernel',
 complex_kernel_grad = deprecated('ti.complex_kernel_grad',
                                  'ti.ad.grad_for')(ad.grad_for)
 
-__version__ = (core.get_version_major(), core.get_version_minor(),
-               core.get_version_patch())
+__version__ = (_ti_core.get_version_major(), _ti_core.get_version_minor(),
+               _ti_core.get_version_patch())

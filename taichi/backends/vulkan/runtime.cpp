@@ -244,9 +244,19 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
       device_(ti_params.device) {
   input_buffers_[BufferType::GlobalTmps] = ti_params.global_tmps_buffer;
   input_buffers_[BufferType::ListGen] = ti_params.listgen_buffer;
-  for (int root = 0; root < ti_params.compiled_structs.size(); ++root) {
-    BufferInfo buffer = {BufferType::Root, root};
-    input_buffers_[buffer] = ti_params.root_buffers[root];
+
+  // Compiled_structs can be empty if loading a kernel from an AOT module as
+  // the SNode are not re-compiled/structured. In thise case, we assume a
+  // single root buffer size configured from the AOT module.
+  if (ti_params.compiled_structs.empty() &&
+      (ti_params.root_buffers.size() == 1)) {
+    BufferInfo buffer = {BufferType::Root, 0};
+    input_buffers_[buffer] = ti_params.root_buffers[0];
+  } else {
+    for (int root = 0; root < ti_params.compiled_structs.size(); ++root) {
+      BufferInfo buffer = {BufferType::Root, root};
+      input_buffers_[buffer] = ti_params.root_buffers[root];
+    }
   }
   const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
   if (!ti_kernel_attribs_.ctx_attribs.empty()) {

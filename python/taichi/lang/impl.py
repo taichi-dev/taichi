@@ -72,7 +72,7 @@ def expr_init_list(xs, expected):
     if isinstance(xs, ti.Matrix):
         if not xs.m == 1:
             raise ValueError(
-                f'Matrices with more than one columns cannot be unpacked')
+                'Matrices with more than one columns cannot be unpacked')
         xs = xs.entries
     if expected != len(xs):
         raise ValueError(
@@ -636,7 +636,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
         ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
     assert (offset is None or shape
-            is not None), f'The shape cannot be None when offset is being set'
+            is not None), 'The shape cannot be None when offset is being set'
 
     del _taichi_skip_traceback
 
@@ -690,7 +690,6 @@ def ti_print(*_vars, sep=' ', end='\n'):
             if hasattr(_var, '__ti_repr__'):
                 res = _var.__ti_repr__()
             elif isinstance(_var, (list, tuple)):
-                res = _var
                 # If the first element is '__ti_format__', this list is the result of ti_format.
                 if len(_var) > 0 and isinstance(
                         _var[0], str) and _var[0] == '__ti_format__':

@@ -30,6 +30,7 @@
   "mesh"            : "MeshTaichi",
   "workflow"        : "GitHub Actions/Workflows",
   "linux"           : "Linux",
+  "android"         : "Android",
   "mac"             : "Mac OS X",
   "windows"         : "Windows",
   "docker"          : "Docker container",

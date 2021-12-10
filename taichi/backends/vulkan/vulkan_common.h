@@ -4,6 +4,10 @@
 #define VK_USE_PLATFORM_WIN32_KHR 1
 #endif
 
+#ifdef ANDROID
+#define VK_USE_PLATFORM_ANDROID_KHR
+#endif
+
 #ifndef __APPLE__
 #include <volk.h>
 #define VK_NO_PROTOTYPES

@@ -4,7 +4,11 @@
 
 #include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
 
+#ifdef ANDROID
+#include <android/native_window_jni.h>
+#else
 #include <GLFW/glfw3.h>
+#endif
 
 #include <memory>
 #include <optional>
@@ -381,7 +385,11 @@ class VulkanSurface : public Surface {
   VkSurfaceKHR surface_;
   VkSwapchainKHR swapchain_;
   VkSemaphore image_available_;
+#ifdef ANDROID
+  ANativeWindow *window_;
+#else
   GLFWwindow *window_;
+#endif
   BufferFormat image_format_;
 
   uint32_t image_index_{0};

@@ -464,7 +464,7 @@ class TaskCodegen : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     const auto dt = stmt->val->element_type();
-    const auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
+    const auto &primitive_buffer_type = ir_->get_primitive_type(dt);
 
     spirv::Value buffer_ptr = at_buffer(stmt->dest, dt);
     spirv::Value val = ir_->query_value(stmt->val->raw_name());
@@ -480,7 +480,7 @@ class TaskCodegen : public IRVisitor {
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->element_type();
-    const auto &primitive_buffer_type = ir_->get_primitive_buffer_type(dt);
+    const auto &primitive_buffer_type = ir_->get_primitive_type(dt);
 
     spirv::Value buffer_ptr = at_buffer(stmt->src, dt);
     spirv::Value buffer_typed_value =
@@ -983,7 +983,7 @@ class TaskCodegen : public IRVisitor {
       }
       */
 
-      auto ptr_elem_type = ir_->get_primitive_buffer_type(dt);
+      auto ptr_elem_type = ir_->get_primitive_type(dt);
       val = ir_->make_value(op, ptr_elem_type, addr_ptr,
                             /*scope=*/ir_->const_i32_one_,
                             /*semantics=*/ir_->const_i32_zero_, data);
@@ -1567,8 +1567,8 @@ class TaskCodegen : public IRVisitor {
     spirv::Value idx_val =
         ir_->make_value(spv::OpShiftRightArithmetic, ptr_val.stype, ptr_val,
                         make_pointer(size_t(std::log2(width))));
-    spirv::Value ret = ir_->struct_array_access(
-        ir_->get_primitive_buffer_type(dt), buffer, idx_val);
+    spirv::Value ret =
+        ir_->struct_array_access(ir_->get_primitive_type(dt), buffer, idx_val);
     return ret;
   }
 
@@ -1579,13 +1579,13 @@ class TaskCodegen : public IRVisitor {
     spirv::Value idx_val =
         ir_->make_value(spv::OpShiftRightArithmetic, ptr_val.stype, ptr_val,
                         make_pointer(size_t(std::log2(width))));
-    spirv::Value ret = ir_->struct_array_access(
-        ir_->get_primitive_buffer_type(dt), buffer, idx_val);
+    spirv::Value ret =
+        ir_->struct_array_access(ir_->get_primitive_type(dt), buffer, idx_val);
     return ret;
   }
 
   spirv::Value get_buffer_value(BufferInfo buffer, DataType dt) {
-    auto type = ir_->get_primitive_buffer_type(dt);
+    auto type = ir_->get_primitive_type(dt);
     auto key = std::make_pair(buffer, type.id);
 
     const auto it = buffer_value_map_.find(key);

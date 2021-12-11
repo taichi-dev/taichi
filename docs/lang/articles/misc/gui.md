@@ -204,8 +204,8 @@ The color and radius of arrows can be further specified with additional paramete
 
 For example:
 ```python
-x = nunpy.array([[0.1, 0.1], [0.9, 0.1]])
-y = nunpy.array([[0.3, 0.3], [-0.3, 0.3]])
+x = numpy.array([[0.1, 0.1], [0.9, 0.1]])
+y = numpy.array([[0.3, 0.3], [-0.3, 0.3]])
 gui.arrows(x, y, radius=1, color=0xFFFFFF)
 ```
 draws two arrow originated at [0.1, 0.1], [0.9, 0.1] and pointing to [0.3, 0.3], [-0.3, 0.3] with radius of 1 and color in white.

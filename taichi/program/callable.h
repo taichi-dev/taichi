@@ -59,8 +59,8 @@ class Callable {
   [[nodiscard]] virtual std::string get_name() const = 0;
 
   class CurrentCallableGuard {
-    Callable *old_callable;
-    Program *program;
+    Callable *old_callable_;
+    Program *program_;
 
    public:
     CurrentCallableGuard(Program *program, Callable *callable);

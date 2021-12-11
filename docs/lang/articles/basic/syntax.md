@@ -141,7 +141,7 @@ differentiation. Instead, it is recommended to store the result into a global va
 `loss[None]`).
 :::
 
-### Functions
+## Functions
 
 A Python function decorated by `@ti.func` is a **Taichi function**:
 

@@ -6,8 +6,8 @@ from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.enums import Layout
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField, MatrixNdarray, VectorNdarray
-from taichi.type.annotations import ArgAnyArray, template
-from taichi.type.primitive_types import f32
+from taichi.types.annotations import ArgAnyArray, template
+from taichi.types.primitive_types import f32
 
 
 class KernelTemplate:

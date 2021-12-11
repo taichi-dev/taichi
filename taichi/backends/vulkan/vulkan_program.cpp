@@ -1,7 +1,10 @@
 #include "taichi/backends/vulkan/vulkan_program.h"
 #include "taichi/backends/vulkan/aot_module_builder_impl.h"
 
+#ifdef ANDROID
+#else
 #include "GLFW/glfw3.h"
+#endif
 
 using namespace taichi::lang::vulkan;
 
@@ -10,6 +13,15 @@ namespace lang {
 
 namespace {
 std::vector<std::string> get_required_instance_extensions() {
+#ifdef ANDROID
+  std::vector<std::string> extensions;
+
+  extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+  extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
+  extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+
+  return extensions;
+#else
   uint32_t glfw_ext_count = 0;
   const char **glfw_extensions;
   glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_ext_count);
@@ -28,6 +40,7 @@ std::vector<std::string> get_required_instance_extensions() {
   extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif  // TI_WITH_CUDA
   return extensions;
+#endif
 }
 
 std::vector<std::string> get_required_device_extensions() {
@@ -48,9 +61,13 @@ std::vector<std::string> get_required_device_extensions() {
 }
 }  // namespace
 
+VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
+    : ProgramImpl(config) {
+}
+
 FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
-  auto handle =
-      runtime->register_taichi_kernel(std::move(run_codegen(kernel, runtime)));
+  auto handle = runtime->register_taichi_kernel(std::move(run_codegen(
+      kernel, runtime->get_ti_device(), runtime->get_compiled_structs())));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
@@ -68,6 +85,10 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
+// Android is meant to be embedded in other application only so the creation of
+// the device and other states is left to the caller/host.
+// The following code is only used when Taichi is running on its own.
+#ifndef ANDROID
   GLFWwindow *glfw_window = nullptr;
 #ifdef __APPLE__
   glfwInitVulkanLoader(vkGetInstanceProcAddr);
@@ -84,9 +105,11 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
       TI_WARN("GLFW reports no Vulkan support");
     }
   }
+#endif
 
   VulkanDeviceCreator::Params evd_params;
   evd_params.api_version = VulkanEnvSettings::kApiVersion();
+#ifndef ANDROID
   if (glfw_window) {
     // then we should be able to create a device with graphics abilities
     evd_params.additional_instance_extensions =
@@ -106,6 +129,7 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
       return surface;
     };
   }
+#endif
 
   embedded_device_ = std::make_unique<VulkanDeviceCreator>(evd_params);
 
@@ -118,7 +142,13 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 void VulkanProgramImpl::compile_snode_tree_types(
     SNodeTree *tree,
     std::vector<std::unique_ptr<SNodeTree>> &snode_trees) {
-  vulkan_runtime_->materialize_snode_tree(tree);
+  if (vulkan_runtime_) {
+    vulkan_runtime_->materialize_snode_tree(tree);
+  } else {
+    CompiledSNodeStructs compiled_structs =
+        vulkan::compile_snode_structs(*tree->root());
+    aot_compiled_snode_structs_.push_back(compiled_structs);
+  }
 }
 
 void VulkanProgramImpl::materialize_snode_tree(
@@ -129,15 +159,12 @@ void VulkanProgramImpl::materialize_snode_tree(
 }
 
 std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder() {
-  // TODO: Remove this compilation guard -- AOT is a compile-time thing, so it's
-  // fine to JIT to SPV on systems without the Vulkan runtime.
-#ifdef TI_WITH_VULKAN
-  return std::make_unique<AotModuleBuilderImpl>(
-      vulkan_runtime_.get(), vulkan_runtime_->get_compiled_structs());
-#else
-  TI_NOT_IMPLEMENTED;
-  return nullptr;
-#endif
+  if (vulkan_runtime_) {
+    return std::make_unique<AotModuleBuilderImpl>(
+        vulkan_runtime_->get_compiled_structs());
+  } else {
+    return std::make_unique<AotModuleBuilderImpl>(aot_compiled_snode_structs_);
+  }
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {

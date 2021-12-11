@@ -20,9 +20,9 @@ from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
-from taichi.misc.util import deprecated, get_traceback, warning
 from taichi.snode.fields_builder import FieldsBuilder
-from taichi.type.primitive_types import f16, f32, f64, i32, i64, u32, u64
+from taichi.tools.util import get_traceback, warning
+from taichi.types.primitive_types import f16, f32, f64, i32, i64, u32, u64
 
 import taichi as ti
 
@@ -72,7 +72,7 @@ def expr_init_list(xs, expected):
     if isinstance(xs, ti.Matrix):
         if not xs.m == 1:
             raise ValueError(
-                f'Matrices with more than one columns cannot be unpacked')
+                'Matrices with more than one columns cannot be unpacked')
         xs = xs.entries
     if expected != len(xs):
         raise ValueError(
@@ -242,7 +242,7 @@ def global_subscript_with_offset(_var, _indices, shape, is_aos):
 def chain_compare(comparators, ops):
     _taichi_skip_traceback = 1
     assert len(comparators) == len(ops) + 1, \
-      f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
+        f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
     ret = True
     for i, op in enumerate(ops):
         lhs = comparators[i]
@@ -304,6 +304,7 @@ class PyTaichi:
         self.inside_kernel = False
         self.current_kernel = None
         self.global_vars = []
+        self.matrix_fields = []
         self.print_preprocessed = False
         self.experimental_real_function = False
         self.default_fp = f32
@@ -352,18 +353,15 @@ class PyTaichi:
                 'AOT: can only finalize the root FieldsBuilder once')
         _root_fb._finalize_for_aot()
 
-    def materialize(self):
-        self.materialize_root_fb(not self.materialized)
+    @staticmethod
+    def _get_tb(_var):
+        return getattr(_var, 'declaration_tb', str(_var.ptr))
 
-        if self.materialized:
-            return
-
-        self.materialized = True
+    def _check_field_not_placed(self):
         not_placed = []
         for _var in self.global_vars:
             if _var.ptr.snode() is None:
-                tb = getattr(_var, 'declaration_tb', str(_var.ptr))
-                not_placed.append(tb)
+                not_placed.append(self._get_tb(_var))
 
         if len(not_placed):
             bar = '=' * 44 + '\n'
@@ -372,6 +370,29 @@ class PyTaichi:
                 f'{bar}'.join(not_placed) +
                 f'{bar}Please consider specifying a shape for them. E.g.,' +
                 '\n\n  x = ti.field(float, shape=(2, 3))')
+
+    def _check_matrix_field_member_shape(self):
+        for _field in self.matrix_fields:
+            shapes = [
+                _field.get_scalar_field(i, j).shape for i in range(_field.n)
+                for j in range(_field.m)
+            ]
+            if any(shape != shapes[0] for shape in shapes):
+                raise RuntimeError(
+                    'Members of the following field have different shapes ' +
+                    f'{shapes}:\n{self._get_tb(_field.get_field_members()[0])}'
+                )
+
+    def materialize(self):
+        self.materialize_root_fb(not self.materialized)
+
+        if self.materialized:
+            return
+
+        self.materialized = True
+
+        self._check_field_not_placed()
+        self._check_matrix_field_member_shape()
 
         for callback in self.materialize_callbacks:
             callback()
@@ -576,7 +597,7 @@ def create_field_member(dtype, name):
 
     # primal
     x = Expr(_ti_core.make_id_expr(""))
-    x.declaration_tb = get_traceback(stacklevel=2)
+    x.declaration_tb = get_traceback(stacklevel=4)
     x.ptr = _ti_core.global_new(x.ptr, dtype)
     x.ptr.set_name(name)
     x.ptr.set_is_primal(True)
@@ -592,12 +613,6 @@ def create_field_member(dtype, name):
         x.ptr.set_grad(x_grad.ptr)
 
     return x, x_grad
-
-
-@deprecated('ti.var', 'ti.field')
-def var(dt, shape=None, offset=None, needs_grad=False):
-    _taichi_skip_traceback = 1
-    return field(dt, shape, offset, needs_grad)
 
 
 @python_scope
@@ -642,7 +657,7 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
         ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
     assert (offset is None or shape
-            is not None), f'The shape cannot be None when offset is being set'
+            is not None), 'The shape cannot be None when offset is being set'
 
     del _taichi_skip_traceback
 
@@ -696,7 +711,6 @@ def ti_print(*_vars, sep=' ', end='\n'):
             if hasattr(_var, '__ti_repr__'):
                 res = _var.__ti_repr__()
             elif isinstance(_var, (list, tuple)):
-                res = _var
                 # If the first element is '__ti_format__', this list is the result of ti_format.
                 if len(_var) > 0 and isinstance(
                         _var[0], str) and _var[0] == '__ti_format__':
@@ -836,14 +850,6 @@ def axes(*x: Iterable[int]):
     """
     return [_ti_core.Axis(i) for i in x]
 
-
-@deprecated("ti.indices", "ti.axes")
-def indices(*x):
-    """Same as :func:`~taichi.lang.impl.axes`."""
-    return [_ti_core.Axis(i) for i in x]
-
-
-index = indices
 
 Axis = _ti_core.Axis
 

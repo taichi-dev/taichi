@@ -26,7 +26,7 @@ class StopWatch {
   StopWatch() : begin_(std::chrono::system_clock::now()) {
   }
 
-  int GetMicros() {
+  int get_micros() {
     typedef std::chrono::duration<float> fsec;
 
     auto now = std::chrono::system_clock::now();
@@ -244,9 +244,19 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
       device_(ti_params.device) {
   input_buffers_[BufferType::GlobalTmps] = ti_params.global_tmps_buffer;
   input_buffers_[BufferType::ListGen] = ti_params.listgen_buffer;
-  for (int root = 0; root < ti_params.compiled_structs.size(); ++root) {
-    BufferInfo buffer = {BufferType::Root, root};
-    input_buffers_[buffer] = ti_params.root_buffers[root];
+
+  // Compiled_structs can be empty if loading a kernel from an AOT module as
+  // the SNode are not re-compiled/structured. In thise case, we assume a
+  // single root buffer size configured from the AOT module.
+  if (ti_params.compiled_structs.empty() &&
+      (ti_params.root_buffers.size() == 1)) {
+    BufferInfo buffer = {BufferType::Root, 0};
+    input_buffers_[buffer] = ti_params.root_buffers[0];
+  } else {
+    for (int root = 0; root < ti_params.compiled_structs.size(); ++root) {
+      BufferInfo buffer = {BufferType::Root, root};
+      input_buffers_[buffer] = ti_params.root_buffers[root];
+    }
   }
   const auto ctx_sz = ti_kernel_attribs_.ctx_attribs.total_bytes();
   if (!ti_kernel_attribs_.ctx_attribs.empty()) {
@@ -478,15 +488,18 @@ DevicePtr VkRuntime::get_snode_tree_device_ptr(int tree_id) {
   return root_buffers_[tree_id]->get_ptr();
 }
 
-VkRuntime::RegisterParams run_codegen(Kernel *kernel, VkRuntime *runtime) {
+VkRuntime::RegisterParams run_codegen(
+    Kernel *kernel,
+    Device *device,
+    const std::vector<CompiledSNodeStructs> &compiled_structs) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
   TI_TRACE("VK codegen for Taichi kernel={}", taichi_kernel_name);
   spirv::KernelCodegen::Params params;
   params.ti_kernel_name = taichi_kernel_name;
   params.kernel = kernel;
-  params.compiled_structs = runtime->get_compiled_structs();
-  params.device = runtime->get_ti_device();
+  params.compiled_structs = compiled_structs;
+  params.device = device;
   params.enable_spv_opt =
       kernel->program->config.external_optimization_level > 0;
   spirv::KernelCodegen codegen(params);

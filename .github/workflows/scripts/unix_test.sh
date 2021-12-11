@@ -10,6 +10,7 @@ check_in_docker() {
     fi
 }
 
+export TI_SKIP_VERSION_CHECK=ON
 export TI_IN_DOCKER=$(check_in_docker)
 
 if [[ "$TI_IN_DOCKER" == "true" ]]; then
@@ -23,7 +24,6 @@ else
     ## Only GPU machine uses system python.
     export PATH=$PATH:$HOME/.local/bin
 fi
-ti example laplace
 ti diagnose
 ti changelog
 echo "wanted archs: $TI_WANTED_ARCHS"

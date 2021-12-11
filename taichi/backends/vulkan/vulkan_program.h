@@ -27,8 +27,7 @@ class VulkanDeviceCreator;
 
 class VulkanProgramImpl : public ProgramImpl {
  public:
-  VulkanProgramImpl(CompileConfig &config) : ProgramImpl(config) {
-  }
+  VulkanProgramImpl(CompileConfig &config);
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   std::size_t get_snode_num_dynamically_allocated(
@@ -82,6 +81,7 @@ class VulkanProgramImpl : public ProgramImpl {
  private:
   std::unique_ptr<vulkan::VulkanDeviceCreator> embedded_device_{nullptr};
   std::unique_ptr<vulkan::VkRuntime> vulkan_runtime_;
+  std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
 };
 }  // namespace lang
 }  // namespace taichi

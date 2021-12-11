@@ -123,7 +123,10 @@ class VkRuntime {
   std::vector<CompiledSNodeStructs> compiled_snode_structs_;
 };
 
-VkRuntime::RegisterParams run_codegen(Kernel *kernel, VkRuntime *runtime);
+VkRuntime::RegisterParams run_codegen(
+    Kernel *kernel,
+    Device *device,
+    const std::vector<CompiledSNodeStructs> &compiled_structs);
 
 }  // namespace vulkan
 }  // namespace lang

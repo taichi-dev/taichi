@@ -2,7 +2,12 @@ cmake_minimum_required(VERSION 3.0)
 
 set(EXAMPLES_NAME taichi_cpp_examples)
 
-file(GLOB_RECURSE TAICHI_EXAMPLES_SOURCE "cpp_examples/main.cpp")
+file(GLOB_RECURSE TAICHI_EXAMPLES_SOURCE
+"cpp_examples/main.cpp"
+"cpp_examples/run_snode.cpp"
+"cpp_examples/autograd.cpp"
+"cpp_examples/aot_save.cpp"
+)
 
 include_directories(
     ${PROJECT_SOURCE_DIR},

@@ -121,7 +121,7 @@ class PrimitiveType : public Type {
 
   std::string to_string() const override;
 
-  virtual Type *get_compute_type() override {
+  Type *get_compute_type() override {
     return this;
   }
 

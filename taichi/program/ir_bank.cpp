@@ -60,7 +60,7 @@ bool IRBank::insert(std::unique_ptr<IRNode> &&ir, uint64 hash) {
 }
 
 void IRBank::insert_to_trash_bin(std::unique_ptr<IRNode> &&ir) {
-  trash_bin.push_back(std::move(ir));
+  trash_bin_.push_back(std::move(ir));
 }
 
 IRNode *IRBank::find(IRHandle ir_handle) {

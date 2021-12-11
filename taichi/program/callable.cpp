@@ -23,13 +23,13 @@ int Callable::insert_arr_arg(const DataType &dt,
 
 Callable::CurrentCallableGuard::CurrentCallableGuard(Program *program,
                                                      Callable *callable)
-    : program(program) {
-  old_callable = program->current_callable;
+    : program_(program) {
+  old_callable_ = program->current_callable;
   program->current_callable = callable;
 }
 
 Callable::CurrentCallableGuard::~CurrentCallableGuard() {
-  program->current_callable = old_callable;
+  program_->current_callable = old_callable_;
 }
 
 }  // namespace lang

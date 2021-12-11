@@ -20,7 +20,7 @@ class MPMSolver:
         voxel = block.dense(indices, 8)
 
         voxel.place(self.grid_m)
-        block.dynamic(ti.indices(dim), 1024 * 1024,
+        block.dynamic(ti.axes(dim), 1024 * 1024,
                       chunk_size=4096).place(self.pid)
 
         ti.root.dynamic(ti.i, 2**25, 2**20).place(self.x)

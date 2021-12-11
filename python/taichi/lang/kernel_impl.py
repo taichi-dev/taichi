@@ -16,8 +16,8 @@ from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
-from taichi.misc.util import obsolete
-from taichi.type import any_arr, primitive_types, template
+from taichi.tools.util import obsolete
+from taichi.types import any_arr, primitive_types, template
 
 import taichi as ti
 
@@ -93,11 +93,10 @@ def _get_tree_and_ctx(self,
                       is_kernel=True,
                       arg_features=None,
                       args=None):
-    src = textwrap.dedent(oinspect.getsource(self.func))
-    tree = ast.parse(src)
-    src, start_lineno = oinspect.getsourcelines(self.func)
-    src = [line.replace("\t", "    ") for line in src]
     file = oinspect.getsourcefile(self.func)
+    src, start_lineno = oinspect.getsourcelines(self.func)
+    src = [textwrap.fill(line, tabsize=4, width=9999) for line in src]
+    tree = ast.parse(textwrap.dedent("\n".join(src)))
 
     func_body = tree.body[0]
     func_body.decorator_list = []

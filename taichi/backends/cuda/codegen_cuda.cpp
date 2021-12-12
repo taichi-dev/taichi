@@ -550,6 +550,10 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     if (atomics.find(prim_type) == atomics.end()) {
       return nullptr;
     }
+    if (is_integral(stmt->val->ret_type) &&
+        atomics.at(prim_type).find(op) == atomics.at(prim_type).end()) {
+      return nullptr;
+    }
     TI_ASSERT(atomics.at(prim_type).find(op) != atomics.at(prim_type).end());
 
     return create_call(atomics.at(prim_type).at(op),

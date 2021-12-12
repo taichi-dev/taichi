@@ -233,7 +233,8 @@ class MeshElement:
                             size).place(*tuple(field_dict.values()))
             grads = []
             for key, field in field_dict.items():
-                if self.attr_dict[key].needs_grad: grads.append(field.grad)
+                if self.attr_dict[key].needs_grad:
+                    grads.append(field.grad)
             if len(grads) > 0:
                 impl.root.dense(impl.axes(0), size).place(*grads)
 
@@ -522,7 +523,7 @@ class MeshRelationAccessProxy:
                                        self.to_element_type))
 
     def subscript(self, *indices):
-        assert (len(indices) == 1)
+        assert len(indices) == 1
         entry_expr = _ti_core.get_relation_access(self.mesh.mesh_ptr,
                                                   self.from_index.ptr,
                                                   self.to_element_type,

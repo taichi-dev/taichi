@@ -27,8 +27,7 @@ class VulkanDeviceCreator;
 
 class VulkanProgramImpl : public ProgramImpl {
  public:
-  VulkanProgramImpl(CompileConfig &config) : ProgramImpl(config) {
-  }
+  VulkanProgramImpl(CompileConfig &config);
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   std::size_t get_snode_num_dynamically_allocated(

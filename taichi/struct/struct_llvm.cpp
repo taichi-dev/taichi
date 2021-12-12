@@ -307,7 +307,7 @@ void StructCompilerLLVM::run(SNode &root) {
   TI_ASSERT((int)snodes.size() <= taichi_max_num_snodes);
 
   auto node_type = get_llvm_node_type(module.get(), &root);
-  root_size = tlctx_->get_data_layout().getTypeAllocSize(node_type);
+  root_size = tlctx_->get_type_size(node_type);
 
   tlctx_->set_struct_module(module);
 }

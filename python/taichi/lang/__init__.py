@@ -16,7 +16,7 @@ import taichi.lang.linalg_impl
 import taichi.lang.meta
 from taichi.core.util import locale_encode
 from taichi.core.util import ti_core as _ti_core
-from taichi.lang import _random, impl
+from taichi.lang import impl
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
@@ -56,7 +56,7 @@ from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
-from taichi.tools.util import deprecated, get_traceback
+from taichi.tools.util import get_traceback
 from taichi.types.annotations import any_arr, ext_arr, template
 from taichi.types.primitive_types import (f16, f32, f64, i32, i64,
                                           integer_types, u32, u64)
@@ -80,13 +80,6 @@ ijl = axes(0, 1, 3)
 ikl = axes(0, 2, 3)
 jkl = axes(1, 2, 3)
 ijkl = axes(0, 1, 2, 3)
-
-outer_product = deprecated('ti.outer_product(a, b)',
-                           'a.outer_product(b)')(Matrix.outer_product)
-cross = deprecated('ti.cross(a, b)', 'a.cross(b)')(Matrix.cross)
-dot = deprecated('ti.dot(a, b)', 'a.dot(b)')(Matrix.dot)
-normalized = deprecated('ti.normalized(a)',
-                        'a.normalized()')(Matrix.normalized)
 
 cfg = impl.default_cfg()
 x86_64 = _ti_core.x64
@@ -596,12 +589,6 @@ def init(arch=None,
 
     unexpected_keys = kwargs.keys()
 
-    if 'use_unified_memory' in unexpected_keys:
-        _ti_core.warn(
-            f'"use_unified_memory" is a deprecated option, as taichi no longer have the option of using unified memory.'
-        )
-        del kwargs['use_unified_memory']
-
     if len(unexpected_keys):
         raise KeyError(
             f'Unrecognized keyword argument(s) for ti.init: {", ".join(unexpected_keys)}'
@@ -634,7 +621,7 @@ def init(arch=None,
     # So it won't work.
     if ti.cfg.arch == opengl and ti.cfg.ndarray_use_torch:
         ti.warn(
-            f'Opengl backend doesn\'t support torch based ndarray. Setting ndarray_use_torch to False.'
+            'Opengl backend doesn\'t support torch based ndarray. Setting ndarray_use_torch to False.'
         )
         ti.cfg.ndarray_use_torch = False
 
@@ -796,27 +783,6 @@ def sym_eig(A, dt=None):
     if A.n == 2:
         return taichi.lang.linalg_impl.sym_eig2x2(A, dt)
     raise Exception("Symmetric eigen solver only supports 2D matrices.")
-
-
-def randn(dt=None):
-    """Generates a random number from standard normal distribution.
-
-    Implementation refers to :func:`taichi.lang.random.randn`.
-
-    Args:
-        dt (DataType): The datatype for the generated random number.
-
-    Returns:
-        The generated random number.
-    """
-    if dt is None:
-        dt = impl.get_runtime().default_fp
-    return _random.randn(dt)
-
-
-determinant = deprecated('ti.determinant(a)',
-                         'a.determinant()')(Matrix.determinant)
-tr = deprecated('ti.tr(a)', 'a.trace()')(Matrix.trace)
 
 
 def Tape(loss, clear_gradients=True):

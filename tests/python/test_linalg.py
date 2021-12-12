@@ -339,16 +339,6 @@ def test_init_matrix_from_vectors_deprecated():
             assert m4[0][j, i] == int(i + 3 * j + 1)
 
 
-@pytest.mark.filterwarnings('ignore')
-@ti.test(arch=ti.get_host_arch_list())
-def test_to_numpy_as_vector_deprecated():
-    v = ti.Vector.field(3, dtype=ti.f32, shape=(2))
-    u = np.array([[2, 3, 4], [5, 6, 7]])
-    v.from_numpy(u)
-    assert v.to_numpy(as_vector=True) == approx(u)
-    assert v.to_numpy() == approx(u)
-
-
 @ti.test()
 def test_any_all():
     a = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())

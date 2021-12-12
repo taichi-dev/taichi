@@ -12,6 +12,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
+#include "llvm/IR/Module.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/IntrinsicsNVPTX.h"
 #include "llvm/IR/LLVMContext.h"
@@ -517,7 +518,7 @@ std::string TaichiLLVMContext::type_name(llvm::Type *type) {
 }
 
 std::size_t TaichiLLVMContext::get_type_size(llvm::Type *type) {
-  return jit->get_type_size(type);
+  return get_data_layout().getTypeAllocSize(type);
 }
 
 void TaichiLLVMContext::mark_inline(llvm::Function *f) {

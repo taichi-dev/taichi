@@ -1,7 +1,10 @@
 #include "taichi/backends/vulkan/vulkan_program.h"
 #include "taichi/backends/vulkan/aot_module_builder_impl.h"
 
+#ifdef ANDROID
+#else
 #include "GLFW/glfw3.h"
+#endif
 
 using namespace taichi::lang::vulkan;
 
@@ -10,6 +13,15 @@ namespace lang {
 
 namespace {
 std::vector<std::string> get_required_instance_extensions() {
+#ifdef ANDROID
+  std::vector<std::string> extensions;
+
+  extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+  extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
+  extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+
+  return extensions;
+#else
   uint32_t glfw_ext_count = 0;
   const char **glfw_extensions;
   glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_ext_count);
@@ -28,6 +40,7 @@ std::vector<std::string> get_required_instance_extensions() {
   extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif  // TI_WITH_CUDA
   return extensions;
+#endif
 }
 
 std::vector<std::string> get_required_device_extensions() {
@@ -47,6 +60,10 @@ std::vector<std::string> get_required_device_extensions() {
   return extensions;
 }
 }  // namespace
+
+VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
+    : ProgramImpl(config) {
+}
 
 FunctionType compile_to_executable(Kernel *kernel, VkRuntime *runtime) {
   auto handle = runtime->register_taichi_kernel(std::move(run_codegen(
@@ -68,6 +85,10 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
+// Android is meant to be embedded in other application only so the creation of
+// the device and other states is left to the caller/host.
+// The following code is only used when Taichi is running on its own.
+#ifndef ANDROID
   GLFWwindow *glfw_window = nullptr;
 #ifdef __APPLE__
   glfwInitVulkanLoader(vkGetInstanceProcAddr);
@@ -84,9 +105,11 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
       TI_WARN("GLFW reports no Vulkan support");
     }
   }
+#endif
 
   VulkanDeviceCreator::Params evd_params;
   evd_params.api_version = VulkanEnvSettings::kApiVersion();
+#ifndef ANDROID
   if (glfw_window) {
     // then we should be able to create a device with graphics abilities
     evd_params.additional_instance_extensions =
@@ -106,6 +129,7 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
       return surface;
     };
   }
+#endif
 
   embedded_device_ = std::make_unique<VulkanDeviceCreator>(evd_params);
 

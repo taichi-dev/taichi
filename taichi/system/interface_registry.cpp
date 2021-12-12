@@ -1,6 +1,9 @@
 #include <functional>
 
+// No support of Python for Android Build
+#ifndef ANDROID
 #include "pybind11/pybind11.h"
+#endif
 #include "taichi/common/interface.h"
 #include "taichi/common/task.h"
 #include "taichi/system/benchmark.h"

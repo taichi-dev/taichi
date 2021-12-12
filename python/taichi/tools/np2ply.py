@@ -213,7 +213,7 @@ class PLYWriter:
             for i in range(self.num_vertex_channels):
                 f.write("property " + self.vertex_data_type[i] + " " +
                         self.vertex_channels[i] + "\n")
-            if (self.num_faces != 0):
+            if self.num_faces != 0:
                 f.write("element face " + str(self.num_faces) + "\n")
                 f.write("property list uchar int vertex_indices\n")
                 for i in range(self.num_face_channels):

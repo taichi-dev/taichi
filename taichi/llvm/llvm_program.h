@@ -6,7 +6,6 @@
 #include "taichi/llvm/llvm_context.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/system/threading.h"
-#include "llvm/IR/Module.h"
 #include "taichi/struct/struct.h"
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/program/snode_expr_utils.h"
@@ -17,6 +16,10 @@
 #undef TI_RUNTIME_HOST
 
 #include <memory>
+
+namespace llvm {
+class Module;
+}
 
 namespace taichi {
 namespace lang {

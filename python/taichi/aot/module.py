@@ -21,7 +21,7 @@ class KernelTemplate:
             key_p += '=' + str(v) + ','
             return key_p
         for ky, val in fields:
-            if (val is v):
+            if val is v:
                 key_p += '=' + ky + ','
                 return key_p
         raise RuntimeError('Arg type must be of type int/float/boolean' +

@@ -38,11 +38,5 @@ else:
 
 __all__ = ['ad', 'core', 'misc', 'lang', 'tools', 'main', 'ui', 'profiler']
 
-complex_kernel = deprecated('ti.complex_kernel',
-                            'ti.ad.grad_replaced')(ad.grad_replaced)
-
-complex_kernel_grad = deprecated('ti.complex_kernel_grad',
-                                 'ti.ad.grad_for')(ad.grad_for)
-
 __version__ = (core.get_version_major(), core.get_version_minor(),
                core.get_version_patch())

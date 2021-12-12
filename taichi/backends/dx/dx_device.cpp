@@ -1,4 +1,5 @@
 #include <unordered_map>
+#include <memory>
 
 #include "taichi/backends/dx/dx_device.h"
 #include "taichi/backends/dx/dx_api.h"
@@ -8,18 +9,8 @@ namespace taichi {
 namespace lang {
 namespace directx11 {
 
-extern IDXGISwapChain *g_swapchain;
-
-static uint32_t g_alloc_id = 0;
-
-// Mapping from binding ID to Buffer
-static std::unordered_map<uint32_t, ID3D11Buffer *> g_binding2buf;
-
-// Mapping from binding ID to CPU-accessible copy of the resource
-static std::unordered_map<uint32_t, ID3D11Buffer *> g_binding2cpucopy;
-
-// Mapping from binding ID to UAV
-static std::unordered_map<uint32_t, ID3D11UnorderedAccessView *> g_binding2uav;
+ID3D11Device *DxDevice::device_;
+ID3D11DeviceContext *DxDevice::context_;
 
 DxResourceBinder::~DxResourceBinder() {
 }
@@ -40,8 +31,7 @@ void DxResourceBinder::rw_buffer(uint32_t set,
                                  uint32_t binding,
                                  DeviceAllocation alloc) {
   TI_ASSERT_INFO(set == 0, "DX only supports set = 0, requested set = {}", set);
-  ID3D11UnorderedAccessView *uav = g_binding2uav[alloc.alloc_id];
-  binding_map_[binding] = uav;
+  binding_to_alloc_id_[binding] = alloc.alloc_id;
 }
 
 void DxResourceBinder::buffer(uint32_t set,
@@ -54,9 +44,10 @@ void DxResourceBinder::buffer(uint32_t set,
 void DxResourceBinder::buffer(uint32_t set,
                               uint32_t binding,
                               DeviceAllocation alloc) {
-  rw_buffer(set, binding, alloc);
+  // TODO: handle this with constant buffer handling
+  TI_NOT_IMPLEMENTED;
 }
-  
+
 void DxResourceBinder::image(uint32_t set,
                              uint32_t binding,
                              DeviceAllocation alloc,
@@ -76,38 +67,40 @@ void DxResourceBinder::index_buffer(DevicePtr ptr, size_t index_width) {
   TI_NOT_IMPLEMENTED;
 }
 
-DxPipeline::DxPipeline(const PipelineSourceDesc &desc,
-                       const std::string &name) {
+DxPipeline::DxPipeline(const PipelineSourceDesc &desc, const std::string &name)
+    : compute_shader_(nullptr) {
+  // TODO: Currently, PipelineSourceType::hlsl_src still returns SPIRV binary.
+  // Will need to update this section when that changes
   TI_ASSERT(desc.type == PipelineSourceType::hlsl_src ||
             desc.type == PipelineSourceType::spirv_binary);
 
-  if (desc.type == PipelineSourceType::hlsl_src) {
-    TI_NOT_IMPLEMENTED;
-  } else {
-    std::vector<uint32_t> spirv_binary(
-        (uint32_t *)desc.data, (uint32_t *)((uint8_t *)desc.data + desc.size));
-    spirv_cross::CompilerHLSL hlsl(std::move(spirv_binary));
-    spirv_cross::CompilerHLSL::Options options;
-    options.shader_model = 40;
-    hlsl.set_hlsl_options(options);
+  ID3D11Device *device = DxDevice::device_;
+  ID3DBlob *shader_blob;
+  HRESULT hr;
 
-    std::string source = hlsl.compile();
-    TI_TRACE("hlsl source: \n{}", source);
+  std::vector<uint32_t> spirv_binary(
+      (uint32_t *)desc.data, (uint32_t *)((uint8_t *)desc.data + desc.size));
+  spirv_cross::CompilerHLSL hlsl(std::move(spirv_binary));
+  spirv_cross::CompilerHLSL::Options options;
+  options.shader_model = 40;
+  hlsl.set_hlsl_options(options);
 
-    ID3DBlob *shader_blob;
-    ID3D11Device *device = GetD3D11Device();
-    HRESULT hr = CompileComputeShaderFromString(source, "main",
-                                                device, &shader_blob);
-    if (SUCCEEDED(hr)) {
-      hr = device->CreateComputeShader(shader_blob->GetBufferPointer(),
-                                       shader_blob->GetBufferSize(), nullptr,
-                                       &compute_shader_);
-      shader_blob->Release();
-      compute_shader_->SetPrivateData(WKPDID_D3DDebugObjectName,
-                                      name.size(), name.c_str());
-    } else {
-      TI_ERROR("HLSL compute shader compilation error");
+  std::string source = hlsl.compile();
+  TI_TRACE("hlsl source: \n{}", source);
+
+  hr = compile_compute_shader_from_string(source, "main", device, &shader_blob);
+  if (SUCCEEDED(hr)) {
+    hr = device->CreateComputeShader(shader_blob->GetBufferPointer(),
+                                     shader_blob->GetBufferSize(), nullptr,
+                                     &compute_shader_);
+    shader_blob->Release();
+    compute_shader_->SetPrivateData(WKPDID_D3DDebugObjectName, name.size(),
+                                    name.c_str());
+    if (!SUCCEEDED(hr)) {
+      TI_ERROR("HLSL compute shader creation error");
     }
+  } else {
+    TI_ERROR("HLSL compute shader compilation error");
   }
 }
 
@@ -118,8 +111,10 @@ ResourceBinder *DxPipeline::resource_binder() {
   return &binder_;
 }
 
+DxCommandList::DxCommandList(DxDevice *ti_device) : device_(ti_device) {
+}
+
 DxCommandList::~DxCommandList() {
-  
 }
 
 void DxCommandList::bind_pipeline(Pipeline *p) {
@@ -131,9 +126,10 @@ void DxCommandList::bind_pipeline(Pipeline *p) {
 
 void DxCommandList::bind_resources(ResourceBinder *binder_) {
   DxResourceBinder *binder = static_cast<DxResourceBinder *>(binder_);
-  for (auto &[binding, uav] : binder->binding_map()) {
+  for (auto &[binding, alloc_id] : binder->binding_to_alloc_id()) {
     std::unique_ptr<CmdBindBufferToIndex> cmd =
         std::make_unique<CmdBindBufferToIndex>();
+    ID3D11UnorderedAccessView *uav = device_->alloc_id_to_uav(alloc_id);
     cmd->binding = binding;
     cmd->uav = uav;
     recorded_commands_.push_back(std::move(cmd));
@@ -159,8 +155,8 @@ void DxCommandList::memory_barrier() {
 
 void DxCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   std::unique_ptr<CmdBufferCopy> cmd = std::make_unique<CmdBufferCopy>();
-  cmd->src = g_binding2buf.at(src.alloc_id);
-  cmd->dst = g_binding2buf.at(dst.alloc_id);
+  cmd->src = device_->alloc_id_to_buffer(src.alloc_id);
+  cmd->dst = device_->alloc_id_to_buffer(dst.alloc_id);
   cmd->src_offset = src.offset;
   cmd->dst_offset = dst.offset;
   cmd->size = size;
@@ -170,8 +166,8 @@ void DxCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
 void DxCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
   std::unique_ptr<DxCommandList::CmdBufferFill> cmd =
       std::make_unique<CmdBufferFill>();
-  ID3D11Buffer *buf = g_binding2buf.at(ptr.alloc_id);
-  ID3D11UnorderedAccessView *uav = g_binding2uav.at(ptr.alloc_id);
+  ID3D11Buffer *buf = device_->alloc_id_to_buffer(ptr.alloc_id);
+  ID3D11UnorderedAccessView *uav = device_->alloc_id_to_uav(ptr.alloc_id);
   cmd->uav = uav;
   D3D11_BUFFER_DESC desc;
   buf->GetDesc(&desc);
@@ -180,18 +176,18 @@ void DxCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
 }
 
 void DxCommandList::CmdBindPipeline::execute() {
-  GetD3D11Context()->CSSetShader(compute_shader_, nullptr, 0);
+  DxDevice::context_->CSSetShader(compute_shader_, nullptr, 0);
 }
 
 void DxCommandList::CmdBindBufferToIndex::execute() {
   char pdata[100];
   UINT data_size = 100;
   uav->GetPrivateData(WKPDID_D3DDebugObjectName, &data_size, pdata);
-  GetD3D11Context()->CSSetUnorderedAccessViews(binding, 1, &uav, nullptr);
+  DxDevice::context_->CSSetUnorderedAccessViews(binding, 1, &uav, nullptr);
 }
 
 void DxCommandList::CmdBufferFill::execute() {
-  ID3D11DeviceContext *context = GetD3D11Context();
+  ID3D11DeviceContext *context = DxDevice::context_;
   const UINT values[4] = {data, data, data, data};
   context->ClearUnorderedAccessViewUint(uav, values);
 }
@@ -202,11 +198,12 @@ void DxCommandList::CmdBufferCopy::execute() {
   box.right = src_offset + size;
   box.front = box.top = 0;
   box.back = box.bottom = 1;
-  GetD3D11Context()->CopySubresourceRegion(dst, 0, dst_offset, 0, 0, src, 0, &box);
+  DxDevice::context_->CopySubresourceRegion(dst, 0, dst_offset, 0, 0, src, 0,
+                                            &box);
 }
 
 void DxCommandList::CmdDispatch::execute() {
-  GetD3D11Context()->Dispatch(x, y, z);
+  DxDevice::context_->Dispatch(x, y, z);
 }
 
 void DxCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
@@ -279,11 +276,14 @@ void DxCommandList::run_commands() {
   }
 }
 
+DxStream::DxStream(DxDevice *device_) : device_(device_) {
+}
+
 DxStream::~DxStream() {
 }
 
 std::unique_ptr<CommandList> DxStream::new_command_list() {
-  return std::make_unique<DxCommandList>();
+  return std::make_unique<DxCommandList>(device_);
 }
 
 void DxStream::submit(CommandList *cmdlist) {
@@ -301,31 +301,152 @@ void DxStream::command_sync() {
   // Not needed for DX11
 }
 
+DxDevice::DxDevice() : alloc_serial_(0) {
+  stream_ = new DxStream(this);
+  set_cap(DeviceCapability::spirv_version, 0x10300);
+}
+
 DxDevice::~DxDevice() {
-  if (g_swapchain) {
-    g_swapchain->Present(0, 0);
+}
+
+HRESULT create_compute_device(ID3D11Device **out_device,
+                              ID3D11DeviceContext **out_context,
+                              HWND hWnd,
+                              IDXGISwapChain **out_swapchain,
+                              bool force_ref) {
+  const D3D_FEATURE_LEVEL levels[] = {
+      D3D_FEATURE_LEVEL_11_1,
+      D3D_FEATURE_LEVEL_11_0,
+      D3D_FEATURE_LEVEL_10_1,
+      D3D_FEATURE_LEVEL_10_0,
+  };
+
+  UINT flags = 0;
+  // flags |= D3D11_CREATE_DEVICE_DEBUG;
+
+  ID3D11Device *device = nullptr;
+  ID3D11DeviceContext *context = nullptr;
+  HRESULT hr;
+
+  if (hWnd != 0 && out_swapchain != nullptr) {
+    DXGI_SWAP_CHAIN_DESC scd;
+    ZeroMemory(&scd, sizeof(scd));
+    scd.BufferCount = 1;
+    scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    scd.OutputWindow = hWnd;
+    scd.SampleDesc.Count = 4;
+    scd.Windowed = true;
+    hr = D3D11CreateDeviceAndSwapChain(
+        nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, NULL, NULL, NULL,
+        D3D11_SDK_VERSION, &scd, out_swapchain, &device, NULL, &context);
+  } else {
+    hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags,
+                           levels, _countof(levels), D3D11_SDK_VERSION, &device,
+                           nullptr, &context);
+  }
+
+  if (FAILED(hr)) {
+    TI_ERROR("Failed to create D3D11 device: %08X\n", hr);
+  }
+
+  if (device->GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0) {
+    D3D11_FEATURE_DATA_D3D10_X_HARDWARE_OPTIONS hwopts = {0};
+    device->CheckFeatureSupport(D3D11_FEATURE_D3D10_X_HARDWARE_OPTIONS, &hwopts,
+                                sizeof(hwopts));
+    if (!hwopts.ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x) {
+      device->Release();
+      TI_ERROR(
+          "DirectCompute not supported via "
+          "ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4");
+    }
+  }
+
+  *out_device = device;
+  *out_context = context;
+  return hr;
+}
+
+void DxDevice::create_dx11_device() {
+  if (device_ == nullptr || context_ == nullptr) {
+    TI_TRACE("Creating D3D11 device");
+    HWND hWnd = 0;
+    IDXGISwapChain **pp_swapchain = nullptr;
+
+#ifdef DX_API_CREATE_DEBUG_WINDOW
+    bool is_create_window = true;
+    if (is_create_window) {
+      pp_swapchain = &g_swapchain;
+      // stolen from win32.cpp
+      int width = 320, height = 240;
+      std::wstring window_name = L"Taichi DX test window";
+      auto CLASS_NAME = L"Taichi Win32 Window";
+
+      WNDCLASS wc = {};
+
+      wc.lpfnWndProc = WindowProc;
+      wc.hInstance = GetModuleHandle(0);
+      wc.lpszClassName = CLASS_NAME;
+
+      RegisterClass(&wc);
+
+      RECT window_rect;
+      window_rect.left = 0;
+      window_rect.right = width;
+      window_rect.top = 0;
+      window_rect.bottom = height;
+
+      AdjustWindowRect(&window_rect, WS_OVERLAPPEDWINDOW, false);
+
+      hWnd = CreateWindowEx(0,           // Optional window styles.
+                            CLASS_NAME,  // Window class
+                            std::wstring(window_name.begin(), window_name.end())
+                                .data(),          // Window text
+                            WS_OVERLAPPEDWINDOW,  // Window style
+                            // Size and position
+                            CW_USEDEFAULT, CW_USEDEFAULT,
+                            window_rect.right - window_rect.left,
+                            window_rect.bottom - window_rect.top,
+                            NULL,                // Parent window
+                            NULL,                // Menu
+                            GetModuleHandle(0),  // Instance handle
+                            NULL                 // Additional application data
+      );
+      TI_ERROR_IF(hWnd == NULL, "Window creation failed");
+      ShowWindow(hWnd, SW_SHOWDEFAULT);
+    }
+
+    if (g_swapchain) {
+      g_swapchain->Present(0, 0);
+      g_swapchain->Present(0, 0);
+    }
+
+#endif
+    create_compute_device(&device_, &context_, hWnd, pp_swapchain, false);
+  } else {
+    TI_TRACE("D3D11 device has already been created.");
   }
 }
 
 DeviceAllocation DxDevice::allocate_memory(const AllocParams &params) {
   ID3D11Buffer *buf;
-  ID3D11Device *device = GetD3D11Device();
+  ID3D11Device *device = DxDevice::device_;
 
-  CreateRawBuffer(device, params.size, nullptr, &buf);
-  g_binding2buf[g_alloc_id] = buf;
+  create_raw_buffer(device, params.size, nullptr, &buf);
+  alloc_id_to_buffer_[alloc_serial_] = buf;
 
   ID3D11UnorderedAccessView *uav;
-  HRESULT hr = CreateBufferUAV(device, buf, &uav);
+  HRESULT hr = create_buffer_uav(device, buf, &uav);
   if (!SUCCEEDED(hr)) {
     TI_ERROR("Could not create UAV for the view\n");
   }
-  g_binding2uav[g_alloc_id] = uav;
+  alloc_id_to_uav_[alloc_serial_] = uav;
 
   // set debug name
-  std::string buf_name = "buffer alloc#" + std::to_string(g_alloc_id) +
+  std::string buf_name = "buffer alloc#" + std::to_string(alloc_serial_) +
                          " size=" + std::to_string(params.size) + '\0';
   hr = buf->SetPrivateData(WKPDID_D3DDebugObjectName, buf_name.size(),
-                                   buf_name.c_str());
+                           buf_name.c_str());
   assert(SUCCEEDED(hr));
   std::string uav_name = "UAV of " + buf_name;
   hr = uav->SetPrivateData(WKPDID_D3DDebugObjectName, uav_name.size(),
@@ -334,19 +455,20 @@ DeviceAllocation DxDevice::allocate_memory(const AllocParams &params) {
 
   DeviceAllocation alloc;
   alloc.device = this;
-  alloc.alloc_id = g_alloc_id;
+  alloc.alloc_id = alloc_serial_;
 
-  g_alloc_id++;
+  alloc_serial_++;
   return alloc;
 }
 
 void DxDevice::dealloc_memory(DeviceAllocation handle) {
   uint32_t alloc_id = handle.alloc_id;
-  ID3D11Buffer *buf = g_binding2buf[alloc_id];
+  ID3D11Buffer *buf = alloc_id_to_buffer_[alloc_id];
   buf->Release();
 
-  if (g_binding2cpucopy.count(alloc_id) > 0) {
-    g_binding2cpucopy[alloc_id]->Release();
+  if (alloc_id_to_buffer_.count(alloc_id) > 0) {
+    alloc_id_to_buffer_[alloc_id]->Release();
+    alloc_id_to_buffer_.erase(alloc_id);
   }
 }
 
@@ -356,30 +478,30 @@ void *DxDevice::map_range(DevicePtr ptr, uint64_t size) {
 
 void *DxDevice::map(DeviceAllocation alloc) {
   uint32_t alloc_id = alloc.alloc_id;
-  ID3D11Buffer *buf = g_binding2buf.at(alloc_id);
+  ID3D11Buffer *buf = alloc_id_to_buffer_.at(alloc_id);
   ID3D11Buffer *cpucopy;
 
-  if (g_binding2cpucopy.find(alloc_id) == g_binding2cpucopy.end()) {
+  if (alloc_id_to_cpucopy_.find(alloc_id) == alloc_id_to_cpucopy_.end()) {
     //
     // The reason we need a CPU-accessible copy is: a Resource that can be
     // bound to the GPU can't be CPU-accessible in DX11
     //
-    CreateCPUAccessibleCopyOfBuffer(GetD3D11Device(), buf, &cpucopy);
+    create_cpu_accessible_buffer_copy(DxDevice::device_, buf, &cpucopy);
     const std::string n = "CPU copy of alloc #" + std::to_string(alloc_id);
     cpucopy->SetPrivateData(WKPDID_D3DDebugObjectName, n.size(), n.c_str());
-    g_binding2cpucopy[alloc_id] = cpucopy;
+    alloc_id_to_cpucopy_[alloc_id] = cpucopy;
   } else {
-    cpucopy = g_binding2cpucopy.at(alloc_id);
+    cpucopy = alloc_id_to_cpucopy_.at(alloc_id);
   }
 
   //
-  // 
+  //
   // TODO:
   // This map and unmap is currently very slow b/c it copies the CopyResource.
   // Need a way to copy as little as possible
-  // 
+  //
   // read-modify-write
-  ID3D11DeviceContext *context = GetD3D11Context();
+  ID3D11DeviceContext *context = DxDevice::context_;
   context->CopyResource(cpucopy, buf);
   D3D11_MAPPED_SUBRESOURCE mapped;
   context->Map(cpucopy, 0, D3D11_MAP_READ_WRITE, 0, &mapped);
@@ -387,26 +509,24 @@ void *DxDevice::map(DeviceAllocation alloc) {
 }
 
 void DxDevice::unmap(DevicePtr ptr) {
-  ID3D11Buffer *cpucopy = g_binding2cpucopy.at(ptr.alloc_id);
-  ID3D11DeviceContext *context = GetD3D11Context();
+  ID3D11Buffer *cpucopy = alloc_id_to_cpucopy_.at(ptr.alloc_id);
+  ID3D11DeviceContext *context = DxDevice::context_;
   context->Unmap(cpucopy, 0);
 }
 
 void DxDevice::unmap(DeviceAllocation alloc) {
-  ID3D11Buffer *cpucopy = g_binding2cpucopy.at(alloc.alloc_id);
-  ID3D11Buffer *buf = g_binding2buf.at(alloc.alloc_id);
-  ID3D11DeviceContext *context = GetD3D11Context();
+  ID3D11Buffer *cpucopy = alloc_id_to_cpucopy_.at(alloc.alloc_id);
+  ID3D11Buffer *buf = alloc_id_to_buffer_.at(alloc.alloc_id);
+  ID3D11DeviceContext *context = DxDevice::context_;
   context->Unmap(cpucopy, 0);
   context->CopyResource(buf, cpucopy);
 }
-void DxDevice::memcpy_internal(DevicePtr dst,
-                               DevicePtr src,
-                               uint64_t size) {
+void DxDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
   TI_NOT_IMPLEMENTED;
 }
 
 Stream *DxDevice::get_compute_stream() {
-  return &stream_;
+  return stream_;
 }
 
 std::unique_ptr<Pipeline> DxDevice::create_raster_pipeline(
@@ -422,8 +542,7 @@ Stream *DxDevice::get_graphics_stream() {
   TI_NOT_IMPLEMENTED;
 }
 
-std::unique_ptr<Surface> DxDevice::create_surface(
-    const SurfaceConfig &config) {
+std::unique_ptr<Surface> DxDevice::create_surface(const SurfaceConfig &config) {
   TI_NOT_IMPLEMENTED;
 }
 
@@ -454,12 +573,24 @@ void DxDevice::image_to_buffer(DevicePtr dst_buf,
   TI_NOT_IMPLEMENTED;
 }
 
+ID3D11Buffer *DxDevice::alloc_id_to_buffer(uint32_t alloc_id) {
+  return alloc_id_to_buffer_.at(alloc_id);
+}
+
+ID3D11Buffer *DxDevice::alloc_id_to_buffer_cpu_copy(uint32_t alloc_id) {
+  return alloc_id_to_cpucopy_.at(alloc_id);
+}
+
+ID3D11UnorderedAccessView *DxDevice::alloc_id_to_uav(uint32_t alloc_id) {
+  return alloc_id_to_uav_.at(alloc_id);
+}
+
 std::unique_ptr<Pipeline> DxDevice::create_pipeline(
     const PipelineSourceDesc &src,
-  std::string name){
+    std::string name) {
   return std::make_unique<DxPipeline>(src, name);
 }
 
-}  // namespace dx
+}  // namespace directx11
 }  // namespace lang
 }  // namespace taichi

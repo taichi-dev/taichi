@@ -140,7 +140,11 @@ void export_misc(py::module &m) {
   m.def("with_metal", taichi::lang::metal::is_metal_api_available);
   m.def("with_opengl", taichi::lang::opengl::is_opengl_api_available,
         py::arg("use_gles") = false);
+#ifdef TI_WITH_DX11
   m.def("with_dx11", taichi::lang::directx11::is_dx_api_available);
+#else
+  m.def("with_dx11", []() { return false; });
+#endif
 #ifdef TI_WITH_VULKAN
   m.def("with_vulkan", taichi::lang::vulkan::is_vulkan_api_available);
 #else

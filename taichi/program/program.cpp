@@ -91,12 +91,16 @@ Program::Program(Arch desired_arch)
     TI_ASSERT(opengl::initialize_opengl(config.use_gles));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
   } else if (config.arch == Arch::dx11) {
+#ifdef TI_WITH_DX11
     if (!directx11::is_dx_api_available()) {
-      TI_WARN("No DX API detected.");
+      TI_WARN("Could not find a supported DX11 device.");
       config.arch = host_arch();
     } else {
-      program_impl_ = std::make_unique<DxProgramImpl>(config);
+      program_impl_ = std::make_unique<Dx11ProgramImpl>(config);
     }
+#else
+    TI_ERROR("This taichi is not compiled with DX11");
+#endif
   } else if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
     program_impl_ = std::make_unique<CCProgramImpl>(config);

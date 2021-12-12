@@ -7,6 +7,8 @@ namespace taichi {
 namespace lang {
 namespace directx11 {
 
+class DxDevice;
+
 class DxResourceBinder : public ResourceBinder {
  public:
   ~DxResourceBinder() override;
@@ -36,12 +38,12 @@ class DxResourceBinder : public ResourceBinder {
   // index_width = 2 -> uint16 index
   void index_buffer(DevicePtr ptr, size_t index_width) override;
 
-  const std::unordered_map<uint32_t, ID3D11UnorderedAccessView*> &binding_map() {
-    return binding_map_;
+  const std::unordered_map<uint32_t, uint32_t> &binding_to_alloc_id() {
+    return binding_to_alloc_id_;
   }
-  
+
  private:
-  std::unordered_map<uint32_t, ID3D11UnorderedAccessView*> binding_map_;
+  std::unordered_map<uint32_t, uint32_t> binding_to_alloc_id_;
 };
 
 class DxPipeline : public Pipeline {
@@ -60,6 +62,7 @@ class DxPipeline : public Pipeline {
 
 class DxCommandList : public CommandList {
  public:
+  DxCommandList(DxDevice *ti_device);
   ~DxCommandList() override;
 
   void bind_pipeline(Pipeline *p) override;
@@ -131,8 +134,8 @@ class DxCommandList : public CommandList {
   };
 
   struct CmdBindBufferToIndex : public Cmd {
-    ID3D11UnorderedAccessView *uav; // UAV of the buffer
-    uint32_t binding; // U register; UAV slot
+    ID3D11UnorderedAccessView *uav;  // UAV of the buffer
+    uint32_t binding;                // U register; UAV slot
     void execute() override;
   };
 
@@ -142,19 +145,25 @@ class DxCommandList : public CommandList {
   };
 
   std::vector<std::unique_ptr<Cmd>> recorded_commands_;
+  DxDevice *device_;
 };
 
 class DxStream : public Stream {
  public:
+  DxStream(DxDevice *);
   ~DxStream() override;
   std::unique_ptr<CommandList> new_command_list() override;
   void submit(CommandList *cmdlist) override;
   void submit_synced(CommandList *cmdlist) override;
   void command_sync() override;
+
+ private:
+  DxDevice *device_;
 };
 
 class DxDevice : public GraphicsDevice {
  public:
+  DxDevice();
   ~DxDevice() override;
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
@@ -191,10 +200,25 @@ class DxDevice : public GraphicsDevice {
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
 
+  ID3D11Buffer *alloc_id_to_buffer(uint32_t alloc_id);
+  ID3D11Buffer *alloc_id_to_buffer_cpu_copy(uint32_t alloc_id);
+  ID3D11UnorderedAccessView *alloc_id_to_uav(uint32_t alloc_id);
+
+  static ID3D11Device *device_;
+  static ID3D11DeviceContext *context_;
+  static void create_dx11_device();
+
  private:
-  DxStream stream_;
+  DxStream *stream_;
+  std::unordered_map<uint32_t, ID3D11Buffer *>
+      alloc_id_to_buffer_;  // binding ID to buffer
+  std::unordered_map<uint32_t, ID3D11Buffer *>
+      alloc_id_to_cpucopy_;  // binding ID to CPU copy of buffer
+  std::unordered_map<uint32_t, ID3D11UnorderedAccessView *>
+      alloc_id_to_uav_;  // binding ID to UAV
+  int alloc_serial_;
 };
 
-}
+}  // namespace directx11
 }  // namespace lang
 }  // namespace taichi

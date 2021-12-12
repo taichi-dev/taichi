@@ -1,14 +1,15 @@
 #pragma once
 
 #include "taichi/backends/vulkan/runtime.h"
-
 #include "taichi/program/program_impl.h"
 
 namespace taichi {
 namespace lang {
-class DxProgramImpl : public ProgramImpl {
+
+// This one is in taichi::lang and not taichi::lang::directx11
+class Dx11ProgramImpl : public ProgramImpl {
  public:
-  DxProgramImpl(CompileConfig &config) : ProgramImpl(config) {
+  Dx11ProgramImpl(CompileConfig &config) : ProgramImpl(config) {
   }
 
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
@@ -58,11 +59,12 @@ class DxProgramImpl : public ProgramImpl {
     return runtime_->get_snode_tree_device_ptr(tree_id);
   }
 
-  ~DxProgramImpl() override;
+  ~Dx11ProgramImpl() override;
 
  private:
   std::unique_ptr<Device> device_;
   std::unique_ptr<vulkan::VkRuntime> runtime_;
 };
+
 }  // namespace lang
 }  // namespace taichi

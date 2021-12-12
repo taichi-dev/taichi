@@ -518,7 +518,7 @@ std::string TaichiLLVMContext::type_name(llvm::Type *type) {
 }
 
 std::size_t TaichiLLVMContext::get_type_size(llvm::Type *type) {
-  return jit->get_type_size(type);
+  return get_data_layout().getTypeAllocSize(type);
 }
 
 void TaichiLLVMContext::mark_inline(llvm::Function *f) {

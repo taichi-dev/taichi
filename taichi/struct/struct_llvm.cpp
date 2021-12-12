@@ -42,6 +42,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   TI_ASSERT(ctx == tlctx_->get_this_thread_context());
 
   // create children type that supports forking...
+
   std::vector<llvm::Type *> ch_types;
   for (int i = 0; i < snode.ch.size(); i++) {
     if (!snode.ch[i]->is_bit_level) {

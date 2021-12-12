@@ -28,10 +28,6 @@ std::unique_ptr<JITSession> JITSession::create(Arch arch) {
 }
 
 #ifdef TI_WITH_LLVM
-std::size_t JITSession::get_type_size(llvm::Type *type) {
-  return get_data_layout().getTypeAllocSize(type);
-}
-
 llvm::DataLayout JITSession::get_data_layout() {
   TI_NOT_IMPLEMENTED
 }

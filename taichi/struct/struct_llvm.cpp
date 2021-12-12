@@ -42,7 +42,6 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   TI_ASSERT(ctx == tlctx_->get_this_thread_context());
 
   // create children type that supports forking...
-
   std::vector<llvm::Type *> ch_types;
   for (int i = 0; i < snode.ch.size(); i++) {
     if (!snode.ch[i]->is_bit_level) {
@@ -307,7 +306,7 @@ void StructCompilerLLVM::run(SNode &root) {
   TI_ASSERT((int)snodes.size() <= taichi_max_num_snodes);
 
   auto node_type = get_llvm_node_type(module.get(), &root);
-  root_size = tlctx_->get_data_layout().getTypeAllocSize(node_type);
+  root_size = tlctx_->get_type_size(node_type);
 
   tlctx_->set_struct_module(module);
 }

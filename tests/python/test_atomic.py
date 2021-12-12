@@ -47,6 +47,33 @@ def test_atomic_add_global_f32():
                                valproc=lambda x: approx(x, rel=1e-5))
 
 
+@ti.test(arch=[ti.cpu, ti.cuda])
+def test_atomic_min_max_uint():
+    x = ti.field(ti.u64, shape=100)
+
+    @ti.kernel
+    def test0():
+        for I in x:
+            x[I] = 0
+        x[1] = ti.cast(1, ti.u64) << 63
+        for I in x:
+            ti.atomic_max(x[0], x[1])
+
+    test0()
+    assert x[0] == 9223372036854775808
+
+    @ti.kernel
+    def test1():
+        for I in x:
+            x[I] = ti.cast(1, ti.u64) << 63
+        x[1] = 100
+        for I in x:
+            ti.atomic_min(x[0], x[1])
+
+    test1()
+    assert x[0] == 100
+
+
 @ti.test()
 def test_atomic_add_expr_evaled():
     c = ti.field(ti.i32)

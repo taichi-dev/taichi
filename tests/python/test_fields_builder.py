@@ -3,10 +3,6 @@ from taichi.lang.exception import InvalidOperationError
 import taichi as ti
 
 
-'''
-Test fields with shape.
-'''
-
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_with_shape():
     shape = 5
@@ -38,10 +34,6 @@ def test_fields_with_shape():
     for i in range(shape):
         assert x[i] == i
 
-
-'''
-Test fields with builder dense.
-'''
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_dense():
@@ -86,10 +78,6 @@ def test_fields_builder_dense():
     for i in range(shape):
         assert x[i] == i * 3
 
-
-'''
-Test fields with builder pointer.
-'''
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_pointer():
@@ -148,10 +136,6 @@ def test_fields_builder_pointer():
     for i in range(shape):
         assert x[i] == i * 3
 
-
-'''
-Test fields with builder destory.
-'''
 
 @pytest.mark.parametrize('test_1d_size', [1, 10, 100])
 @pytest.mark.parametrize('field_type', [ti.f32, ti.i32])

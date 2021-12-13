@@ -4,9 +4,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang.enums import Layout  # pylint: disable=unused-import
 from taichi.tools import warning
 
-__all__ = [
-    "__version__"
-]
+__all__ = ["__version__"]
 
 deprecated_names = {'SOA': 'Layout.SOA', 'AOS': 'Layout.AOS'}
 if sys.version_info.minor < 7:

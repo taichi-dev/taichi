@@ -134,7 +134,7 @@ def main(fin_name, fout_name, hdrout_name, emscripten=False):
     import yaml  # pylint: disable=C0415
     with open(fin_name, 'r') as fin:
         warnings.filterwarnings('ignore')
-        obj = yaml.load(fin)
+        obj = yaml.load(fin, Loader=yaml.FullLoader)
 
     with open(hdrout_name, 'w') as hdrout:
         with open(fout_name, 'w') as fout:

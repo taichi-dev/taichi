@@ -29,11 +29,5 @@ else:
 
     __all__.append("__getattr__")
 
-complex_kernel = deprecated('ti.complex_kernel',
-                            'ti.ad.grad_replaced')(ad.grad_replaced)
-
-complex_kernel_grad = deprecated('ti.complex_kernel_grad',
-                                 'ti.ad.grad_for')(ad.grad_for)
-
 __version__ = (_ti_core.get_version_major(), _ti_core.get_version_minor(),
                _ti_core.get_version_patch())

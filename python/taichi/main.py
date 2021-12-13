@@ -180,7 +180,8 @@ class TaichiMain:
         sys.path.append(str((examples_dir / choices[args.name]).resolve()))
 
         # Short circuit for testing
-        if self.test_mode: return args
+        if self.test_mode:
+            return args
 
         if args.save:
             print(f"Saving example {args.name} to current directory...")
@@ -256,7 +257,8 @@ class TaichiMain:
         ti.info(f"Converting {args.input_file} to {args.output_file}")
 
         # Short circuit for testing
-        if self.test_mode: return args
+        if self.test_mode:
+            return args
         video.mp4_to_gif(args.input_file, args.output_file, args.framerate)
 
         return None
@@ -288,7 +290,8 @@ class TaichiMain:
             ))
 
         # Short circuit for testing
-        if self.test_mode: return args
+        if self.test_mode:
+            return args
         video.accelerate_video(args.input_file, args.output_file, args.speed)
 
         return None
@@ -332,7 +335,8 @@ class TaichiMain:
             ))
 
         # Short circuit for testing
-        if self.test_mode: return args
+        if self.test_mode:
+            return args
         video.crop_video(args.input_file, args.output_file, args.x_begin,
                          args.x_end, args.y_begin, args.y_end)
 
@@ -375,7 +379,8 @@ class TaichiMain:
             ))
 
         # Short circuit for testing
-        if self.test_mode: return args
+        if self.test_mode:
+            return args
         video.scale_video(args.input_file, args.output_file, args.ratio_width,
                           args.ratio_height)
 
@@ -421,7 +426,8 @@ class TaichiMain:
         ti.info(f'frame_rate = {args.framerate}')
 
         # Short circuit for testing
-        if self.test_mode: return args
+        if self.test_mode:
+            return args
         video.make_video(args.inputs,
                          output_path=str(args.output_file),
                          crf=args.crf,
@@ -516,13 +522,16 @@ class TaichiMain:
                 else:
                     res = b / a
                 scatter[key].append(res)
-                if res == 1: continue
+                if res == 1:
+                    continue
                 if not single_line:
                     ret += f'{key:<30}'
                 res -= 1
                 color = Fore.RESET
-                if res > 0: color = Fore.RED
-                elif res < 0: color = Fore.GREEN
+                if res > 0:
+                    color = Fore.RED
+                elif res < 0:
+                    color = Fore.GREEN
                 if isinstance(a, float):
                     a = f'{a:>7.2}'
                 else:
@@ -568,7 +577,8 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         # Short circuit for testing
-        if self.test_mode: return args
+        if self.test_mode:
+            return args
 
         baseline_dir = TaichiMain._get_benchmark_baseline_dir()
         output_dir = TaichiMain._get_benchmark_output_dir()
@@ -585,7 +595,8 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         # Short circuit for testing
-        if self.test_mode: return args
+        if self.test_mode:
+            return args
 
         baseline_dir = TaichiMain._get_benchmark_baseline_dir()
         output_dir = TaichiMain._get_benchmark_output_dir()
@@ -629,7 +640,8 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         # Short circuit for testing
-        if self.test_mode: return args
+        if self.test_mode:
+            return args
 
         commit_hash = _ti_core.get_commit_hash()
         with os.popen('git rev-parse HEAD') as f:
@@ -670,7 +682,8 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         # Short circuit for testing
-        if self.test_mode: return args
+        if self.test_mode:
+            return args
 
         runpy.run_path(args.filename)
 
@@ -688,7 +701,8 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         # Short circuit for testing
-        if self.test_mode: return args
+        if self.test_mode:
+            return args
 
         _ti_core.set_core_trigger_gdb_when_crash(True)
         os.environ['TI_DEBUG'] = '1'

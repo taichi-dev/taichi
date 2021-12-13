@@ -1,24 +1,26 @@
+#include "taichi/ir/type_utils.h"
+
 #include "sparse_solver.h"
 
 #include <unordered_map>
 
-#define MAKE_SOLVER(type, order)                                              \
-  {                                                                           \
-    {#type, #order}, []() -> std::unique_ptr<SparseSolver> {                  \
-      using T =                                                               \
-          Eigen::Simplicial##type<Eigen::SparseMatrix<float32>, Eigen::Lower, \
-                                  Eigen::order##Ordering<int>>;               \
-      return std::make_unique<EigenSparseSolver<T>>();                        \
-    }                                                                         \
+#define MAKE_SOLVER(dt, type, order)                                           \
+  {                                                                            \
+    {#dt, #type, #order}, []() -> std::unique_ptr<SparseSolver> {              \
+      using T = Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower, \
+                                        Eigen::order##Ordering<int>>;          \
+      return std::make_unique<EigenSparseSolver<T>>();                         \
+    }                                                                          \
   }
 
+using Triplets = std::tuple<std::string, std::string, std::string>;
 namespace {
-struct pair_hash {
-  template <class T1, class T2>
-  std::size_t operator()(const std::pair<T1, T2> &p) const {
-    auto h1 = std::hash<T1>{}(p.first);
-    auto h2 = std::hash<T2>{}(p.second);
-    return h1 ^ h2;
+struct key_hash {
+  std::size_t operator()(const Triplets &k) const {
+    auto h1 = std::hash<std::string>{}(std::get<0>(k));
+    auto h2 = std::hash<std::string>{}(std::get<1>(k));
+    auto h3 = std::hash<std::string>{}(std::get<2>(k));
+    return h1 ^ h2 ^ h3;
   }
 };
 }  // namespace
@@ -55,20 +57,23 @@ bool EigenSparseSolver<EigenSolver>::info() {
   return solver_.info() == Eigen::Success;
 }
 
-std::unique_ptr<SparseSolver> make_sparse_solver(const std::string &solver_type,
+std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
+                                                 const std::string &solver_type,
                                                  const std::string &ordering) {
-  using key_type = std::pair<std::string, std::string>;
+  using key_type = Triplets;
   using func_type = std::unique_ptr<SparseSolver> (*)();
-  static const std::unordered_map<key_type, func_type, pair_hash>
+  static const std::unordered_map<key_type, func_type, key_hash>
       solver_factory = {
-          MAKE_SOLVER(LLT, AMD),
-          MAKE_SOLVER(LLT, COLAMD),
-          MAKE_SOLVER(LDLT, AMD),
-          MAKE_SOLVER(LDLT, COLAMD),
-      };
-  std::pair<std::string, std::string> solver_key =
-      std::make_pair(solver_type, ordering);
+          MAKE_SOLVER(float32, LLT, AMD), MAKE_SOLVER(float32, LLT, COLAMD),
+          MAKE_SOLVER(float32, LDLT, AMD), MAKE_SOLVER(float32, LDLT, COLAMD)};
+  static const std::unordered_map<std::string, std::string> dt_map = {
+      {"f32", "float32"}, {"f64", "float64"}};
+  auto it = dt_map.find(taichi::lang::data_type_name(dt));
+  if (it == dt_map.end())
+    TI_ERROR("Not supported sparse solver data type: {}",
+             taichi::lang::data_type_name(dt));
 
+  Triplets solver_key = std::make_tuple(it->second, solver_type, ordering);
   if (solver_factory.find(solver_key) != solver_factory.end()) {
     auto solver_func = solver_factory.at(solver_key);
     return solver_func();

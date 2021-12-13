@@ -14,7 +14,7 @@ from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
-from taichi.tools.util import deprecated, warning
+from taichi.tools.util import warning
 from taichi.types import CompoundType
 
 import taichi as ti
@@ -490,8 +490,6 @@ class Matrix(TaichiOperations):
         raise Exception(
             "Inversions of matrices with sizes >= 5 are not supported")
 
-    inversed = deprecated('a.inversed()', 'a.inverse()')(inverse)
-
     @kern_mod.pyfunc
     def normalized(self, eps=0):
         """Normalize a vector.
@@ -858,6 +856,7 @@ class Matrix(TaichiOperations):
         entries, entries_grad = MatrixField(entries, n, m), MatrixField(
             entries_grad, n, m)
         entries.set_grad(entries_grad)
+        impl.get_runtime().matrix_fields.append(entries)
 
         if shape is None:
             assert offset is None, "shape cannot be None when offset is being set"
@@ -1160,7 +1159,7 @@ class MatrixField(Field):
         taichi.lang.meta.fill_matrix(self, val)
 
     @python_scope
-    def to_numpy(self, keep_dims=False, as_vector=None, dtype=None):
+    def to_numpy(self, keep_dims=False, dtype=None):
         """Converts the field instance to a NumPy array.
 
         Args:
@@ -1168,20 +1167,11 @@ class MatrixField(Field):
                 When keep_dims=True, on an n-D matrix field, the numpy array always has n+2 dims, even for 1x1, 1xn, nx1 matrix fields.
                 When keep_dims=False, the resulting numpy array should skip the matrix dims with size 1.
                 For example, a 4x1 or 1x4 matrix field with 5x6x7 elements results in an array of shape 5x6x7x4.
-            as_vector (bool, deprecated): Whether to make the returned numpy array as a vector, i.e., with shape (n,) rather than (n, 1).
-                Note that this argument has been deprecated.
-                More discussion about `as_vector`: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858.
             dtype (DataType, optional): The desired data type of returned numpy array.
 
         Returns:
             numpy.ndarray: The result NumPy array.
         """
-        if as_vector is not None:
-            warning(
-                'v.to_numpy(as_vector=True) is deprecated, '
-                'please use v.to_numpy() directly instead',
-                DeprecationWarning,
-                stacklevel=3)
         if dtype is None:
             dtype = to_numpy_type(self.dtype)
         as_vector = self.m == 1 and not keep_dims

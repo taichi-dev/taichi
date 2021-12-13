@@ -1244,7 +1244,13 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (stmt->op_type == AtomicOpType::min) {
-      if (is_integral(stmt->val->ret_type)) {
+      if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u32)) {
+        old_value = create_call("atomic_min_u32",
+                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u64)) {
+        old_value = create_call("atomic_min_u64",
+                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
@@ -1262,7 +1268,13 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (stmt->op_type == AtomicOpType::max) {
-      if (is_integral(stmt->val->ret_type)) {
+      if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u32)) {
+        old_value = create_call("atomic_max_u32",
+                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u64)) {
+        old_value = create_call("atomic_max_u64",
+                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);

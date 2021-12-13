@@ -1,5 +1,6 @@
 import pytest
 from taichi.lang.exception import InvalidOperationError
+
 import taichi as ti
 
 

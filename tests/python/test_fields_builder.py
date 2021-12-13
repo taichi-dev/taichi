@@ -7,7 +7,7 @@ import taichi as ti
 Test fields with shape.
 '''
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_with_shape():
     shape = 5
     x = ti.field(ti.f32, shape=shape)
@@ -43,7 +43,7 @@ def test_fields_with_shape():
 Test fields with builder dense.
 '''
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_dense():
     shape = 5
     fb1 = ti.FieldsBuilder()
@@ -91,7 +91,7 @@ def test_fields_builder_dense():
 Test fields with builder pointer.
 '''
 
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_pointer():
     shape = 5
     fb1 = ti.FieldsBuilder()
@@ -155,7 +155,7 @@ Test fields with builder destory.
 
 @pytest.mark.parametrize('test_1d_size', [1, 10, 100])
 @pytest.mark.parametrize('field_type', [ti.f32, ti.i32])
-@ti.test(arch=ti.get_host_arch_list())
+@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_destroy():
     # note: currently only consider precison that all platform supported,
     # more detailed here: https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types

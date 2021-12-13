@@ -12,10 +12,9 @@ from pathlib import Path
 
 import numpy as np
 import taichi.cc_compose
-from taichi import _diagnose
 from colorama import Fore
 from taichi.core import ti_core as _ti_core
-from taichi.tools import video
+from taichi.tools import video, diagnose
 
 import taichi as ti
 
@@ -714,7 +713,7 @@ class TaichiMain:
     @register
     def diagnose(arguments: list = sys.argv[2:]):
         """System diagnose information"""
-        _diagnose.main()
+        diagnose.main()
 
     @register
     def cc_compose(self, arguments: list = sys.argv[2:]):

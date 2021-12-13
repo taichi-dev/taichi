@@ -6,7 +6,7 @@ TLANG_NAMESPACE_BEGIN
 
 struct CuptiConfig {
 #if defined(TI_WITH_CUDA_TOOLKIT)
-  uint32_t num_ranges = 16384;  // max number of kernels traced by CUPTI
+  uint32_t num_ranges = 1048576;  // max number of kernels traced by CUPTI
   std::vector<std::string> metric_list;
 #endif
 };

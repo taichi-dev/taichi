@@ -11,11 +11,9 @@ from functools import wraps
 from pathlib import Path
 
 import numpy as np
-import taichi.cc_compose
-import taichi.diagnose
 from colorama import Fore
 from taichi._lib import core as _ti_core
-from taichi.tools import video
+from taichi.tools import cc_compose, diagnose, video
 
 import taichi as ti
 
@@ -715,7 +713,7 @@ class TaichiMain:
     @register
     def diagnose(arguments: list = sys.argv[2:]):
         """System diagnose information"""
-        taichi.diagnose.main()
+        diagnose.main()
 
     @register
     def cc_compose(self, arguments: list = sys.argv[2:]):
@@ -741,8 +739,8 @@ class TaichiMain:
             help='Generate output C file for Emscripten instead of raw C')
         args = parser.parse_args(arguments)
 
-        taichi.cc_compose.main(args.fin_name, args.fout_name, args.hdrout_name,
-                               args.emscripten)
+        cc_compose.main(args.fin_name, args.fout_name, args.hdrout_name,
+                        args.emscripten)
 
     @staticmethod
     @register

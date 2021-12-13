@@ -2,9 +2,7 @@ import sys
 
 from taichi._lib import core as _ti_core
 from taichi.lang.enums import Layout  # pylint: disable=unused-import
-from taichi.tools import deprecated, warning
-
-from taichi import ad
+from taichi.tools import warning
 
 __all__ = [
     "__version__", "complex_kernel", "complex_kernel_grad", "deprecated_names"

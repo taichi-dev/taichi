@@ -1,12 +1,11 @@
 import pytest
 from taichi.lang.exception import InvalidOperationError
-
 import taichi as ti
+
 
 '''
 Test fields with shape.
 '''
-
 
 @ti.test(arch=ti.get_host_arch_list())
 def test_fields_with_shape():
@@ -43,7 +42,6 @@ def test_fields_with_shape():
 '''
 Test fields with builder dense.
 '''
-
 
 @ti.test(arch=ti.get_host_arch_list())
 def test_fields_builder_dense():
@@ -92,7 +90,6 @@ def test_fields_builder_dense():
 '''
 Test fields with builder pointer.
 '''
-
 
 @ti.test(arch=ti.get_host_arch_list())
 def test_fields_builder_pointer():
@@ -156,14 +153,12 @@ def test_fields_builder_pointer():
 Test fields with builder destory.
 '''
 
-
+@pytest.mark.parametrize('test_1d_size', [1, 10, 100])
+@pytest.mark.parametrize('field_type', [ti.f32, ti.i32])
 @ti.test(arch=ti.get_host_arch_list())
 def test_fields_builder_destroy():
     # note: currently only consider precison that all platform supported,
     # more detailed here: https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types
-    @pytest.mark.parametrize('test_1d_size', [1, 10, 100])
-    @pytest.mark.parametrize('field_type', [ti.f32, ti.i32])
-    @ti.test(arch=ti.get_host_arch_list())
     def test_for_single_destroy_multi_fields():
         fb = ti.FieldsBuilder()
         for create_field_idx in range(10):
@@ -172,9 +167,6 @@ def test_fields_builder_destroy():
         fb_snode_tree = fb.finalize()
         fb_snode_tree.destroy()
 
-    @pytest.mark.parametrize('test_1d_size', [1, 10, 100])
-    @pytest.mark.parametrize('field_type', [ti.f32, ti.i32])
-    @ti.test(arch=ti.get_host_arch_list())
     def test_for_multi_destroy_multi_fields():
         fb0 = ti.FieldsBuilder()
         fb1 = ti.FieldsBuilder()
@@ -193,12 +185,10 @@ def test_fields_builder_destroy():
         fb0_snode_tree.destroy()
         fb1_snode_tree.destroy()
 
-    @pytest.mark.parametrize('size_1d', [10])
-    @ti.test(arch=ti.get_host_arch_list())
     def test_for_raise_twice_destroy():
         fb = ti.FieldsBuilder()
         a = ti.field(ti.f32)
-        fb.dense(ti.i, size_1d).place(a)
+        fb.dense(ti.i, test_1d_size).place(a)
         c = fb.finalize()
 
         with pytest.raises(InvalidOperationError) as e:

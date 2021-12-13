@@ -11,6 +11,28 @@ namespace lang {
 class Kernel;
 class DataType;
 
+namespace aot {
+struct CompiledFieldData {
+  std::string field_name;
+  uint32_t dtype;
+  std::string dtype_name;
+  size_t mem_offset_in_parent{0};
+  std::vector<int> shape;
+  bool is_scalar{false};
+  int row_num{0};
+  int column_num{0};
+
+  TI_IO_DEF(field_name,
+            dtype,
+            dtype_name,
+            mem_offset_in_parent,
+            shape,
+            is_scalar,
+            row_num,
+            column_num);
+};
+}  // namespace aot
+
 class AotModuleBuilder {
  public:
   virtual ~AotModuleBuilder() = default;

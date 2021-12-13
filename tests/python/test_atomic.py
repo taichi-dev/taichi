@@ -57,7 +57,7 @@ def test_atomic_min_max_uint():
             x[I] = 0
         x[1] = ti.cast(1, ti.u64) << 63
         for I in x:
-            ti.atomic_max(x[0], x[1])
+            ti.atomic_max(x[0], x[I])
 
     test0()
     assert x[0] == 9223372036854775808
@@ -68,7 +68,7 @@ def test_atomic_min_max_uint():
             x[I] = ti.cast(1, ti.u64) << 63
         x[1] = 100
         for I in x:
-            ti.atomic_min(x[0], x[1])
+            ti.atomic_min(x[0], x[I])
 
     test1()
     assert x[0] == 100

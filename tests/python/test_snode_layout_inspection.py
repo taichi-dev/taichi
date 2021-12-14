@@ -21,8 +21,19 @@ def test_primitives():
     n3.place(p, q, r)
 
     assert n1.cell_size_bytes == 2
-    assert 12 <= n2.cell_size_bytes <= 16
+    assert n2.cell_size_bytes in [12, 16]
     assert n3.cell_size_bytes == 16
+
+    assert n1.offset_bytes_in_parent_cell == 0
+    assert n2.offset_bytes_in_parent_cell == 2 * 32
+    assert n3.offset_bytes_in_parent_cell in [2 * 32 + 12 * 32, 2 * 32 + 16 * 32]
+
+    assert x.snode.offset_bytes_in_parent_cell == 0
+    assert y.snode.offset_bytes_in_parent_cell == 0
+    assert z.snode.offset_bytes_in_parent_cell in [4, 8]
+    assert p.snode.offset_bytes_in_parent_cell == 0
+    assert q.snode.offset_bytes_in_parent_cell == 4
+    assert r.snode.offset_bytes_in_parent_cell == 8
 
 
 @ti.test(arch=ti.cpu)

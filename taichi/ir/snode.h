@@ -123,6 +123,7 @@ class SNode {
   int total_bit_start{0};
   int chunk_size{0};
   std::size_t cell_size_bytes{0};
+  std::size_t offset_bytes_in_parent_cell{0};
   PrimitiveType *physical_type{nullptr};  // for bit_struct and bit_array only
   DataType dt;
   bool has_ambient{false};

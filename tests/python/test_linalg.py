@@ -42,7 +42,7 @@ def test_basic_utils():
 
     @ti.kernel
     def init():
-        a[None] = ti.Vector([1.0, 2.0, 3.0])
+        a[None] = ti.Vector([1.0, 2.0, -3.0])
         b[None] = ti.Vector([4.0, 5.0])
         abT[None] = a[None].outer_product(b[None])
 
@@ -65,7 +65,7 @@ def test_basic_utils():
     assert normA[None] == approx(sqrt14)
     assert aNormalized[None][0] == approx(1.0 * invSqrt14)
     assert aNormalized[None][1] == approx(2.0 * invSqrt14)
-    assert aNormalized[None][2] == approx(3.0 * invSqrt14)
+    assert aNormalized[None][2] == approx(-3.0 * invSqrt14)
 
 
 @ti.test()

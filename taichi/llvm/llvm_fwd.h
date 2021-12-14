@@ -7,6 +7,7 @@ class Value;
 class Module;
 class Function;
 class DataLayout;
+class StructType;
 class JITSymbol;
 class ExitOnError;
 namespace orc {

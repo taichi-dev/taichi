@@ -314,9 +314,16 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Call(ctx, node):
+        is_in_static_scope_prev = ctx.is_in_static_scope
+        if ASTTransformer.get_decorator(ctx, node) == 'static':
+            ctx.is_in_static_scope = True
+
         build_stmt(ctx, node.func)
         build_stmts(ctx, node.args)
         build_stmts(ctx, node.keywords)
+
+        ctx.is_in_static_scope = is_in_static_scope_prev
+
         args = []
         for arg in node.args:
             if isinstance(arg, ast.Starred):
@@ -592,25 +599,38 @@ class ASTTransformer(Builder):
     def build_Compare(ctx, node):
         build_stmt(ctx, node.left)
         build_stmts(ctx, node.comparators)
-        op_dict = {
-            ast.Eq: "Eq",
-            ast.NotEq: "NotEq",
-            ast.Lt: "Lt",
-            ast.LtE: "LtE",
-            ast.Gt: "Gt",
-            ast.GtE: "GtE",
+        ops = {
+            ast.Eq: lambda l, r: l == r,
+            ast.NotEq: lambda l, r: l != r,
+            ast.Lt: lambda l, r: l < r,
+            ast.LtE: lambda l, r: l <= r,
+            ast.Gt: lambda l, r: l > r,
+            ast.GtE: lambda l, r: l >= r,
         }
+        ops_static = {
+            ast.In: lambda l, r: l in r,
+            ast.NotIn: lambda l, r: l not in r,
+        }
+        if ctx.is_in_static_scope:
+            ops = {**ops, **ops_static}
         operands = [node.left.ptr
                     ] + [comparator.ptr for comparator in node.comparators]
-        ops = []
-        for node_op in node.ops:
-            op = op_dict.get(type(node_op))
+        val = True
+        for i, node_op in enumerate(node.ops):
+            l = operands[i]
+            r = operands[i + 1]
+            op = ops.get(type(node_op))
             if op is None:
-                raise TaichiSyntaxError(
-                    f'"{type(node_op).__name__}" is not supported in Taichi kernels.'
-                )
-            ops.append(op)
-        node.ptr = ti.chain_compare(operands, ops)
+                if type(node_op) in ops_static:
+                    raise TaichiSyntaxError(
+                        f'"{type(node_op).__name__}" is only supported inside `ti.static`.'
+                    )
+                else:
+                    raise TaichiSyntaxError(
+                        f'"{type(node_op).__name__}" is not supported in Taichi kernels.'
+                    )
+            val = ti.logical_and(val, op(l, r))
+        node.ptr = val
         return node.ptr
 
     @staticmethod
@@ -1027,7 +1047,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Break(ctx, node):
-        if ctx.is_in_static():
+        if ctx.is_in_static_for():
             ctx.set_loop_status(LoopStatus.Break)
         else:
             ti.core.insert_break_stmt()
@@ -1035,7 +1055,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Continue(ctx, node):
-        if ctx.is_in_static():
+        if ctx.is_in_static_for():
             ctx.set_loop_status(LoopStatus.Continue)
         else:
             ti.core.insert_continue_stmt()

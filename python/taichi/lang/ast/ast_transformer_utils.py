@@ -143,7 +143,7 @@ class ASTTransformerContext:
         return self.loop_scopes[-1]
 
     def loop_status(self):
-        if len(self.loop_scopes):
+        if self.loop_scopes:
             return self.loop_scopes[-1].status
         return LoopStatus.Normal
 

@@ -79,7 +79,7 @@ def test_fields_builder_dense():
         assert x[i] == i * 3
 
 
-@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.metal])
 def test_fields_builder_pointer():
     shape = 5
     fb1 = ti.FieldsBuilder()
@@ -136,13 +136,12 @@ def test_fields_builder_pointer():
     for i in range(shape):
         assert x[i] == i * 3
 
-
+# We currently only consider data types that all platform support,
+# See https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types for more details.
 @pytest.mark.parametrize('test_1d_size', [1, 10, 100])
 @pytest.mark.parametrize('field_type', [ti.f32, ti.i32])
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_destroy(test_1d_size, field_type):
-    # note: currently only consider precison that all platform supported,
-    # more detailed here: https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types
     def test_for_single_destroy_multi_fields():
         fb = ti.FieldsBuilder()
         for create_field_idx in range(10):

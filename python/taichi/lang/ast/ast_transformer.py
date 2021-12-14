@@ -26,7 +26,7 @@ class ASTTransformer(Builder):
 
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
-            node.value.func, ti.static, globals())
+                node.value.func, ti.static, globals())
 
         node.ptr = ASTTransformer.build_assign_annotated(
             ctx, node.target, node.value.ptr, is_static_assign,
@@ -70,7 +70,7 @@ class ASTTransformer(Builder):
 
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
-            node.value.func, ti.static, globals())
+                node.value.func, ti.static, globals())
 
         # Keep all generated assign statements and compose single one at last.
         # The variable is introduced to support chained assignments.
@@ -138,7 +138,7 @@ class ASTTransformer(Builder):
         build_stmt(ctx, node.target)
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
-            node.value.func, ti.static, globals())
+                node.value.func, ti.static, globals())
         node.ptr = ASTTransformer.build_assign_basic(ctx, node.target,
                                                      node.value.ptr,
                                                      is_static_assign)
@@ -392,7 +392,7 @@ class ASTTransformer(Builder):
                 else:
                     ctx.global_vars[
                         arg.arg] = ti.lang.kernel_arguments.decl_scalar_arg(
-                        ctx.func.argument_annotations[i])
+                            ctx.func.argument_annotations[i])
             # remove original args
             node.args.args = []
 
@@ -494,7 +494,7 @@ class ASTTransformer(Builder):
             ast.Div: lambda l, r: l / r,
             ast.FloorDiv: lambda l, r: l // r,
             ast.Mod: lambda l, r: l % r,
-            ast.Pow: lambda l, r: l ** r,
+            ast.Pow: lambda l, r: l**r,
             ast.LShift: lambda l, r: l << r,
             ast.RShift: lambda l, r: l >> r,
             ast.BitOr: lambda l, r: l | r,
@@ -621,8 +621,8 @@ class ASTTransformer(Builder):
                     )
                 else:
                     raise TaichiSyntaxError(
-                    f'"{type(node_op).__name__}" is not supported in Taichi kernels.'
-                )
+                        f'"{type(node_op).__name__}" is not supported in Taichi kernels.'
+                    )
             val = ti.logical_and(val, op(l, r))
         node.ptr = val
         return node.ptr
@@ -1018,7 +1018,7 @@ class ASTTransformer(Builder):
         msg = build_stmt(ctx, node.left)
         args = build_stmt(ctx, node.right)
         if not isinstance(args, collections.abc.Sequence):
-            args = (args,)
+            args = (args, )
         return msg, args
 
     @staticmethod

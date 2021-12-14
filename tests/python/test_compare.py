@@ -1,5 +1,6 @@
-import taichi as ti
 import pytest
+
+import taichi as ti
 
 
 @ti.test(require=ti.extension.sparse)
@@ -141,7 +142,7 @@ def test_chain_compare():
 @ti.test()
 def test_static_in():
     @ti.kernel
-    def foo(a: ti.template())->ti.i32:
+    def foo(a: ti.template()) -> ti.i32:
         b = 0
         if ti.static(a in [ti.i32, ti.u32]):
             b = 1
@@ -156,11 +157,14 @@ def test_static_in():
 
 @ti.test()
 def test_non_static_in():
-    with pytest.raises(ti.TaichiCompilationError, match='"In" is only supported inside `ti.static`.'):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='"In" is only supported inside `ti.static`.'):
+
         @ti.kernel
-        def foo(a: ti.template())->ti.i32:
+        def foo(a: ti.template()) -> ti.i32:
             b = 0
             if a in [ti.i32, ti.u32]:
                 b = 1
             return b
+
         foo(ti.i32)

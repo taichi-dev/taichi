@@ -82,6 +82,7 @@ class ASTTransformerContext:
         self.control_scopes = []
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
+        self.is_in_static_scope = False
         self.arg_features = arg_features
         self.returns = None
         self.global_vars = global_vars
@@ -123,7 +124,7 @@ class ASTTransformerContext:
     def set_static_loop(self):
         self.control_scopes[-1].is_static = True
 
-    def is_in_static(self):
+    def is_in_static_for(self):
         if len(self.control_scopes):
             return self.control_scopes[-1].is_static
         return False

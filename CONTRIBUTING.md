@@ -2,6 +2,12 @@
 
 Thank you for your interest in contributing to Taichi! Please check out the [Contribution Guidelines](https://docs.taichi.graphics/lang/articles/contribution/contributor_guide) for how to make a contribution.
 
-## Developer Installation
+## Developer installation
 
 Taichi is developed mainly in C++17 and Python3. Please check out the [Developer Installation](https://docs.taichi.graphics/lang/articles/contribution/dev_install) to build Taichi from source. Note that Taichi is LLVM-10.0.0 dependent and that we recommend installing [our pre-built LLVM libraries](https://docs.taichi.graphics/lang/articles/contribution/dev_install#installing-dependencies) for your platform.
+
+## Contribution opportunities
+
+Issues marked with ["welcome contribution"](https://github.com/taichi-dev/taichi/issues?q=is%3Aopen+is%3Aissue+label%3A%22welcome+contribution%22) are great places for starters. You can quickly get an idea of the entire workflow and how to join the community.
+
+**RFC**: We use the `RFC` (Request for Comments) mechanism to discuss and organize some of the more advanced and self-contained features. These are the projects that we would like to work on, but still lack a concrete design or implementation roadmap because of the complexity. By documenting these proposals, we hope to provide a good enough context and gain more insights from the potentially passionate minds. You can find all the ongoing RFCs [here](https://github.com/taichi-dev/taichi/issues?q=is%3Aissue+is%3Aopen+label%3ARFC+). New RFCs are also welcome!

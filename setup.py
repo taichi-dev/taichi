@@ -179,6 +179,7 @@ class CMakeBuild(build_ext):
             runtime_dir = os.path.join(target, "runtime")
             core_dir = os.path.join(target, "core")
             os.makedirs(runtime_dir, exist_ok=True)
+            os.makedirs(core_dir, exist_ok=True)
 
             if get_os_name() == 'linux' or get_os_name(
             ) == 'unix' or get_os_name() == 'osx':

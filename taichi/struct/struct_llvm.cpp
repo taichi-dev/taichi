@@ -59,7 +59,8 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
 
   for (int i = 0; i < snode.ch.size(); i++) {
     if (!snode.ch[i]->is_bit_level) {
-      snode.ch[i]->offset_bytes_in_parent_cell = tlctx_->get_struct_element_offset(ch_type, i);
+      snode.ch[i]->offset_bytes_in_parent_cell =
+          tlctx_->get_struct_element_offset(ch_type, i);
     }
   }
 

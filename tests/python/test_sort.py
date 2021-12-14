@@ -4,20 +4,25 @@ import taichi as ti
 @ti.test(exclude=[ti.cc])
 def test_sort():
     def test_sort_for_dtype(dtype, N):
-        x = ti.field(dtype, N)
+        keys = ti.field(dtype, N)
+        values = ti.field(dtype, N)
 
         @ti.kernel
         def fill():
-            for i in x:
-                x[i] = ti.random() * N
+            for i in keys:
+                keys[i] = ti.random() * N
+                values[i] = keys[i]
 
         fill()
-        ti.parallel_sort(x)
+        ti.parallel_sort(keys, values)
 
-        x_host = x.to_numpy()
+        keys_host = keys.to_numpy()
+        values_host = values.to_numpy()
 
-        for i in range(N - 1):
-            assert x_host[i] <= x_host[i + 1]
+        for i in range(N):
+            if i < N - 1:
+                assert keys_host[i] <= keys_host[i + 1]
+            assert keys_host[i] == values_host[i]
 
     test_sort_for_dtype(ti.i32, 1)
     test_sort_for_dtype(ti.i32, 256)

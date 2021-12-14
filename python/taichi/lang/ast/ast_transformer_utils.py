@@ -130,8 +130,7 @@ class ASTTransformerContext:
     def loop_scope_guard(self, is_static=False):
         if is_static:
             return LoopScopeGuard(self.loop_scopes)
-        return LoopScopeGuard(self.loop_scopes,
-                                  self.non_static_scope_guard())
+        return LoopScopeGuard(self.loop_scopes, self.non_static_scope_guard())
 
     def non_static_scope_guard(self):
         return NonStaticScopeGuard(self.non_static_status)

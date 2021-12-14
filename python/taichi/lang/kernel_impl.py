@@ -174,7 +174,12 @@ class Func:
                 self.do_compile(key=key, args=args)
             return self.func_call_rvalue(key=key, args=args)
         tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
-        return transform_tree(tree, ctx)
+        ret = transform_tree(tree, ctx)
+        if self.return_type and not ctx.returned:
+            raise TaichiSyntaxError(
+                "Function has a return type but does not have a return statement"
+            )
+        return ret
 
     def func_call_rvalue(self, key, args):
         # Skip the template args, e.g., |self|
@@ -456,6 +461,10 @@ class Kernel:
             self.runtime.current_kernel = self
             try:
                 transform_tree(tree, ctx)
+                if self.return_type and not ctx.returned:
+                    raise TaichiSyntaxError(
+                        "Kernel has a return type but does not have a return statement"
+                    )
             finally:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None

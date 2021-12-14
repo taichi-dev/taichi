@@ -115,3 +115,35 @@ def test_return_inside_non_static_for():
                 return i
 
         foo()
+
+
+@ti.test()
+def test_kernel_no_return():
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=
+            "Kernel has a return type but does not have a return statement"):
+
+        @ti.kernel
+        def foo() -> ti.i32:
+            pass
+
+        foo()
+
+
+@ti.test()
+def test_func_no_return():
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match=
+            "Function has a return type but does not have a return statement"):
+
+        @ti.func
+        def bar() -> ti.i32:
+            pass
+
+        @ti.kernel
+        def foo() -> ti.i32:
+            return bar()
+
+        foo()

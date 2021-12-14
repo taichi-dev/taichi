@@ -275,8 +275,9 @@ def test_func_multiple_return():
     def kern(a: float):
         print(safe_sqrt(a))
 
-    with pytest.raises(ti.TaichiCompilationError,
-                       match='Return inside non-static if/for is not supported'):
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match='Return inside non-static if/for is not supported'):
         kern(-233)
 
 

@@ -443,6 +443,10 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Return(ctx, node):
+        if not impl.get_runtime().experimental_real_function:
+            if ctx.is_in_non_static():
+                raise TaichiSyntaxError(
+                    "Return inside non-static if/for is not supported")
         build_stmt(ctx, node.value)
         if ctx.is_kernel or impl.get_runtime().experimental_real_function:
             # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
@@ -459,6 +463,8 @@ class ASTTransformer(Builder):
                 # only need to replace the object part, i.e. args[0].value
             return None
         ctx.return_data = node.value.ptr
+        if not impl.get_runtime().experimental_real_function:
+            ctx.returned = True
         return None
 
     @staticmethod
@@ -633,7 +639,6 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_static_for(ctx, node, is_grouped):
-        ctx.set_static_loop()
         if is_grouped:
             assert len(node.iter.args[0].args) == 1
             ndrange_arg = build_stmt(ctx, node.iter.args[0].args[0])
@@ -838,21 +843,19 @@ class ASTTransformer(Builder):
         if node.orelse:
             raise TaichiSyntaxError(
                 "'else' clause for 'for' not supported in Taichi kernels")
+        decorator = ASTTransformer.get_decorator(ctx, node.iter)
+        double_decorator = ''
+        if decorator != '' and len(node.iter.args) == 1:
+            double_decorator = ASTTransformer.get_decorator(
+                ctx, node.iter.args[0])
 
-        with ctx.control_scope_guard():
-
-            decorator = ASTTransformer.get_decorator(ctx, node.iter)
-            double_decorator = ''
-            if decorator != '' and len(node.iter.args) == 1:
-                double_decorator = ASTTransformer.get_decorator(
-                    ctx, node.iter.args[0])
-            ast.fix_missing_locations(node)
-
-            if decorator == 'static':
-                if double_decorator == 'static':
-                    raise TaichiSyntaxError("'ti.static' cannot be nested")
+        if decorator == 'static':
+            if double_decorator == 'static':
+                raise TaichiSyntaxError("'ti.static' cannot be nested")
+            with ctx.loop_scope_guard(is_static=True):
                 return ASTTransformer.build_static_for(
                     ctx, node, double_decorator == 'grouped')
+        with ctx.loop_scope_guard():
             if decorator == 'ndrange':
                 if double_decorator != '':
                     raise TaichiSyntaxError(
@@ -894,7 +897,7 @@ class ASTTransformer(Builder):
             raise TaichiSyntaxError(
                 "'else' clause for 'while' not supported in Taichi kernels")
 
-        with ctx.control_scope_guard():
+        with ctx.loop_scope_guard():
             ti.core.begin_frontend_while(ti.Expr(1).ptr)
             while_cond = build_stmt(ctx, node.test)
             ti.begin_frontend_if(while_cond)
@@ -920,13 +923,14 @@ class ASTTransformer(Builder):
                 build_stmts(ctx, node.orelse)
             return node
 
-        ti.begin_frontend_if(node.test.ptr)
-        ti.core.begin_frontend_if_true()
-        build_stmts(ctx, node.body)
-        ti.core.pop_scope()
-        ti.core.begin_frontend_if_false()
-        build_stmts(ctx, node.orelse)
-        ti.core.pop_scope()
+        with ctx.non_static_scope_guard():
+            ti.begin_frontend_if(node.test.ptr)
+            ti.core.begin_frontend_if_true()
+            build_stmts(ctx, node.body)
+            ti.core.pop_scope()
+            ti.core.begin_frontend_if_false()
+            build_stmts(ctx, node.orelse)
+            ti.core.pop_scope()
         return None
 
     @staticmethod
@@ -1052,8 +1056,8 @@ build_stmt = ASTTransformer()
 def build_stmts(ctx, stmts):
     with ctx.variable_scope_guard():
         for stmt in stmts:
-            if ctx.loop_status() == LoopStatus.Normal:
-                build_stmt(ctx, stmt)
-            else:
+            if ctx.returned or ctx.loop_status() != LoopStatus.Normal:
                 break
+            else:
+                build_stmt(ctx, stmt)
     return stmts

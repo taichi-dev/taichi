@@ -43,27 +43,49 @@ class VariableScopeGuard:
         self.scopes.pop()
 
 
+class NonStaticStatus:
+    def __init__(self):
+        self.is_in_non_static_scope = False
+
+
+class NonStaticScopeGuard:
+    def __init__(self, status):
+        self.status = status
+
+    def __enter__(self):
+        self.prev = self.status.is_in_non_static_scope
+        self.status.is_in_non_static_scope = True
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.status.is_in_non_static_scope = self.prev
+
+
 class LoopStatus(Enum):
     Normal = 0
     Break = 1
     Continue = 2
 
 
-class ControlScopeAttribute:
-    def __init__(self):
-        self.is_static = False
+class LoopScopeAttribute:
+    def __init__(self, is_static):
+        self.is_static = is_static
         self.status = LoopStatus.Normal
 
 
-class ControlScopeGuard:
-    def __init__(self, scopes):
+class LoopScopeGuard:
+    def __init__(self, scopes, non_static_guard=None):
         self.scopes = scopes
+        self.non_static_guard = non_static_guard
 
     def __enter__(self):
-        self.scopes.append(ControlScopeAttribute())
+        self.scopes.append(LoopScopeAttribute(self.non_static_guard is None))
+        if self.non_static_guard:
+            self.non_static_guard.__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.scopes.pop()
+        if self.non_static_guard:
+            self.non_static_guard.__exit__(exc_type, exc_val, exc_tb)
 
 
 class ASTTransformerContext:
@@ -79,7 +101,7 @@ class ASTTransformerContext:
                  start_lineno=None):
         self.func = func
         self.local_scopes = []
-        self.control_scopes = []
+        self.loop_scopes = []
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
         self.arg_features = arg_features
@@ -97,36 +119,45 @@ class ASTTransformerContext:
                 break
         self.lineno_offset = start_lineno - 1
         self.raised = False
+        self.non_static_status = NonStaticStatus()
+        self.returned = False
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope_guard(self):
         return VariableScopeGuard(self.local_scopes)
 
     # e.g.: For, While
-    def control_scope_guard(self):
-        return ControlScopeGuard(self.control_scopes)
+    def loop_scope_guard(self, is_static=False):
+        if is_static:
+            return LoopScopeGuard(self.loop_scopes)
+        else:
+            return LoopScopeGuard(self.loop_scopes,
+                                  self.non_static_scope_guard())
+
+    def non_static_scope_guard(self):
+        return NonStaticScopeGuard(self.non_static_status)
 
     def current_scope(self):
         return self.local_scopes[-1]
 
-    def current_control_scope(self):
-        return self.control_scopes[-1]
+    def current_loop_scope(self):
+        return self.loop_scopes[-1]
 
     def loop_status(self):
-        if len(self.control_scopes):
-            return self.control_scopes[-1].status
+        if len(self.loop_scopes):
+            return self.loop_scopes[-1].status
         return LoopStatus.Normal
 
     def set_loop_status(self, status):
-        self.control_scopes[-1].status = status
-
-    def set_static_loop(self):
-        self.control_scopes[-1].is_static = True
+        self.loop_scopes[-1].status = status
 
     def is_in_static(self):
-        if len(self.control_scopes):
-            return self.control_scopes[-1].is_static
+        if len(self.loop_scopes):
+            return self.loop_scopes[-1].is_static
         return False
+
+    def is_in_non_static(self):
+        return self.non_static_status.is_in_non_static_scope
 
     def is_var_declared(self, name):
         for s in self.local_scopes:

@@ -239,33 +239,6 @@ def global_subscript_with_offset(_var, _indices, shape, is_aos):
 
 
 @taichi_scope
-def chain_compare(comparators, ops):
-    _taichi_skip_traceback = 1
-    assert len(comparators) == len(ops) + 1, \
-        f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
-    ret = True
-    for i, op in enumerate(ops):
-        lhs = comparators[i]
-        rhs = comparators[i + 1]
-        if op == 'Lt':
-            now = lhs < rhs
-        elif op == 'LtE':
-            now = lhs <= rhs
-        elif op == 'Gt':
-            now = lhs > rhs
-        elif op == 'GtE':
-            now = lhs >= rhs
-        elif op == 'Eq':
-            now = lhs == rhs
-        elif op == 'NotEq':
-            now = lhs != rhs
-        else:
-            assert False, f'Unknown operator {op}'
-        ret = ti.logical_and(ret, now)
-    return ret
-
-
-@taichi_scope
 def insert_expr_stmt_if_ti_func(func, *args, **kwargs):
     """This method is used only for real functions. It inserts a
     FrontendExprStmt to the C++ AST to hold the function call if `func` is a

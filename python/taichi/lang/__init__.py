@@ -26,7 +26,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.impl import (axes, begin_frontend_if,
                               begin_frontend_struct_for, call_internal,
-                              chain_compare, current_cfg, expr_init,
+                              current_cfg, expr_init,
                               expr_init_func, expr_init_list, field,
                               get_runtime, global_subscript_with_offset,
                               grouped, insert_expr_stmt_if_ti_func,

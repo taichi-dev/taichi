@@ -26,7 +26,7 @@ class ASTTransformer(Builder):
 
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
-                node.value.func, ti.static, globals())
+            node.value.func, ti.static, globals())
 
         node.ptr = ASTTransformer.build_assign_annotated(
             ctx, node.target, node.value.ptr, is_static_assign,
@@ -70,7 +70,7 @@ class ASTTransformer(Builder):
 
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
-                node.value.func, ti.static, globals())
+            node.value.func, ti.static, globals())
 
         # Keep all generated assign statements and compose single one at last.
         # The variable is introduced to support chained assignments.
@@ -138,7 +138,7 @@ class ASTTransformer(Builder):
         build_stmt(ctx, node.target)
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
-                node.value.func, ti.static, globals())
+            node.value.func, ti.static, globals())
         node.ptr = ASTTransformer.build_assign_basic(ctx, node.target,
                                                      node.value.ptr,
                                                      is_static_assign)
@@ -314,9 +314,16 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Call(ctx, node):
+        is_in_static_scope_prev = ctx.is_in_static_scope
+        if ASTTransformer.get_decorator(ctx, node) == 'static':
+            ctx.is_in_static_scope = True
+
         build_stmt(ctx, node.func)
         build_stmts(ctx, node.args)
         build_stmts(ctx, node.keywords)
+
+        ctx.is_in_static_scope = is_in_static_scope_prev
+
         args = []
         for arg in node.args:
             if isinstance(arg, ast.Starred):
@@ -385,7 +392,7 @@ class ASTTransformer(Builder):
                 else:
                     ctx.global_vars[
                         arg.arg] = ti.lang.kernel_arguments.decl_scalar_arg(
-                            ctx.func.argument_annotations[i])
+                        ctx.func.argument_annotations[i])
             # remove original args
             node.args.args = []
 
@@ -487,7 +494,7 @@ class ASTTransformer(Builder):
             ast.Div: lambda l, r: l / r,
             ast.FloorDiv: lambda l, r: l // r,
             ast.Mod: lambda l, r: l % r,
-            ast.Pow: lambda l, r: l**r,
+            ast.Pow: lambda l, r: l ** r,
             ast.LShift: lambda l, r: l << r,
             ast.RShift: lambda l, r: l >> r,
             ast.BitOr: lambda l, r: l | r,
@@ -586,25 +593,38 @@ class ASTTransformer(Builder):
     def build_Compare(ctx, node):
         build_stmt(ctx, node.left)
         build_stmts(ctx, node.comparators)
-        op_dict = {
-            ast.Eq: "Eq",
-            ast.NotEq: "NotEq",
-            ast.Lt: "Lt",
-            ast.LtE: "LtE",
-            ast.Gt: "Gt",
-            ast.GtE: "GtE",
+        ops = {
+            ast.Eq: lambda l, r: l == r,
+            ast.NotEq: lambda l, r: l != r,
+            ast.Lt: lambda l, r: l < r,
+            ast.LtE: lambda l, r: l <= r,
+            ast.Gt: lambda l, r: l > r,
+            ast.GtE: lambda l, r: l >= r,
         }
+        ops_static = {
+            ast.In: lambda l, r: l in r,
+            ast.NotIn: lambda l, r: l not in r,
+        }
+        if ctx.is_in_static_scope:
+            ops = {**ops, **ops_static}
         operands = [node.left.ptr
                     ] + [comparator.ptr for comparator in node.comparators]
-        ops = []
-        for node_op in node.ops:
-            op = op_dict.get(type(node_op))
+        val = True
+        for i, node_op in enumerate(node.ops):
+            l = operands[i]
+            r = operands[i + 1]
+            op = ops.get(type(node_op))
             if op is None:
-                raise TaichiSyntaxError(
+                if type(node_op) in ops_static:
+                    raise TaichiSyntaxError(
+                        f'"{type(node_op).__name__}" is only supported inside `ti.static`.'
+                    )
+                else:
+                    raise TaichiSyntaxError(
                     f'"{type(node_op).__name__}" is not supported in Taichi kernels.'
                 )
-            ops.append(op)
-        node.ptr = ti.chain_compare(operands, ops)
+            val = ti.logical_and(val, op(l, r))
+        node.ptr = val
         return node.ptr
 
     @staticmethod
@@ -998,7 +1018,7 @@ class ASTTransformer(Builder):
         msg = build_stmt(ctx, node.left)
         args = build_stmt(ctx, node.right)
         if not isinstance(args, collections.abc.Sequence):
-            args = (args, )
+            args = (args,)
         return msg, args
 
     @staticmethod
@@ -1023,7 +1043,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Break(ctx, node):
-        if ctx.is_in_static():
+        if ctx.is_in_static_for():
             ctx.set_loop_status(LoopStatus.Break)
         else:
             ti.core.insert_break_stmt()
@@ -1031,7 +1051,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Continue(ctx, node):
-        if ctx.is_in_static():
+        if ctx.is_in_static_for():
             ctx.set_loop_status(LoopStatus.Continue)
         else:
             ti.core.insert_continue_stmt()

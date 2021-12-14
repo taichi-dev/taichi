@@ -159,11 +159,11 @@ def test_boolop():
 @ti.test()
 def test_compare_fail():
     with pytest.raises(ti.TaichiCompilationError,
-                       match='"In" is not supported in Taichi kernels.'):
+                       match='"Is" is not supported in Taichi kernels.'):
 
         @ti.kernel
         def foo():
-            1 in [1]
+            1 is [1]
 
         foo()
 

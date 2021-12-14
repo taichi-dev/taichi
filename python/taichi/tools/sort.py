@@ -1,5 +1,3 @@
-from taichi.core.util import ti_core as _ti_core
-
 import taichi as ti
 
 
@@ -38,7 +36,6 @@ def parallel_sort(keys, values=None):
                 sort_stage(keys, 0, keys, N, p, k, invocations)
             else:
                 sort_stage(keys, 1, values, N, p, k, invocations)
-            if _ti_core.current_compile_config() == ti.vulkan:
-                ti.sync()
+            ti.sync()
             k = int(k / 2)
         p = int(p * 2)

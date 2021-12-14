@@ -1,6 +1,10 @@
 import taichi as ti
 
 
+# Odd-even merge sort
+# References:
+# https://developer.nvidia.com/gpugems/gpugems2/part-vi-simulation-and-numerical-algorithms/chapter-46-improved-gpu-sorting
+# https://en.wikipedia.org/wiki/Batcher_odd%E2%80%93even_mergesort
 def parallel_sort(x):
     N = x.shape[0]
 

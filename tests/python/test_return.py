@@ -101,3 +101,17 @@ def test_return_inside_static_for():
                 return a
 
     assert foo() == 204
+
+
+@ti.test()
+def test_return_inside_non_static_for():
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match='Return inside non-static if/for is not supported'):
+
+        @ti.kernel
+        def foo() -> ti.i32:
+            for i in range(10):
+                return i
+
+        foo()

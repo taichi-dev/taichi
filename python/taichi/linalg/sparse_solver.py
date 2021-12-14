@@ -1,6 +1,6 @@
 import numpy as np
 import taichi.lang
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.linalg import SparseMatrix
 from taichi.types.primitive_types import f32
 

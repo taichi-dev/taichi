@@ -7,7 +7,7 @@ import textwrap
 
 import numpy as np
 import taichi.lang
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl, util
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)

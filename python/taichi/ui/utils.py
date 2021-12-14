@@ -1,6 +1,6 @@
 from math import acos, asin, cos, sin
 
-from taichi.core import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang.impl import default_cfg
 from taichi.lang.matrix import Vector
 

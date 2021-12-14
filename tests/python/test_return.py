@@ -46,12 +46,12 @@ def _test_binary_func_ret(dt1, dt2, dt3, castor):
     def func(a: dt1, b: dt2) -> dt3:
         return a * b
 
-    if ti.core.is_integral(dt1):
+    if ti.types.is_integral(dt1):
         xs = list(range(4))
     else:
         xs = [0.2, 0.4, 0.8, 1.0]
 
-    if ti.core.is_integral(dt2):
+    if ti.types.is_integral(dt2):
         ys = list(range(4))
     else:
         ys = [0.2, 0.4, 0.8, 1.0]

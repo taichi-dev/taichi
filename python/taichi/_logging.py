@@ -1,7 +1,7 @@
 import inspect
 import os
 
-from taichi.core import ti_core
+from taichi._lib import core as ti_core
 
 
 def _get_logging(name):

@@ -151,7 +151,7 @@ class ASTTransformerContext:
         self.loop_scopes[-1].status = status
 
     def is_in_static_for(self):
-        if len(self.loop_scopes):
+        if self.loop_scopes:
             return self.loop_scopes[-1].is_static
         return False
 

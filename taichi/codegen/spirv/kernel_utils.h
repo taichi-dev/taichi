@@ -277,26 +277,6 @@ struct TaichiKernelAttributes {
   TI_IO_DEF(name, is_jit_evaluator, tasks_attribs, ctx_attribs);
 };
 
-struct CompiledFieldData {
-  std::string field_name;
-  uint32_t dtype;
-  std::string dtype_name;
-  std::vector<int> shape;
-  int mem_offset_in_parent{0};
-  bool is_scalar{false};
-  int row_num{0};
-  int column_num{0};
-
-  TI_IO_DEF(field_name,
-            dtype,
-            dtype_name,
-            shape,
-            mem_offset_in_parent,
-            is_scalar,
-            row_num,
-            column_num);
-};
-
 }  // namespace spirv
 }  // namespace lang
 }  // namespace taichi

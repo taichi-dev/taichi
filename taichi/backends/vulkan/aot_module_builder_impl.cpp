@@ -130,7 +130,7 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
   const auto &dense_desc =
       compiled_structs_[0].snode_descriptors.at(rep_snode->parent->id);
 
-  CompiledFieldData field_data;
+  aot::CompiledFieldData field_data;
   field_data.field_name = identifier;
   field_data.is_scalar = is_scalar;
   field_data.dtype = to_vk_dtype_enum(dt);

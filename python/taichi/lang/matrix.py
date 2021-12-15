@@ -628,7 +628,7 @@ class Matrix(TaichiOperations):
     @kern_mod.pyfunc
     def norm_sqr(self):
         """Return the sum of the absolute squares of its elements."""
-        return (self**2).sum()
+        return (self * self).sum()
 
     @kern_mod.pyfunc
     def max(self):

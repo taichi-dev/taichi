@@ -309,6 +309,18 @@ def _test_ndarray_deepcopy():
     assert y[4][1, 0] == 9
 
 
+@ti.test(arch=supported_archs_taichi_ndarray, ndarray_use_torch=False)
+def test_ndarray_rw_cache():
+    a = ti.Vector.ndarray(3, ti.f32, ())
+    b = ti.Vector.ndarray(3, ti.f32, 12)
+
+    n = 1000
+    for i in range(n):
+        c_a = copy.deepcopy(a)
+        c_b = copy.deepcopy(b)
+        c_a[None] = c_b[10]
+
+
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_ndarray_deepcopy_torch():

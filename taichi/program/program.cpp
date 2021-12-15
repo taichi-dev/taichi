@@ -383,47 +383,49 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 
 Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
   auto kernel_name = fmt::format("ndarray_reader");
-  auto &ker = kernel([ndarray] {
+  NdarrayRwKeys keys{ndarray->num_active_indices, ndarray->dtype};
+  auto &ker = kernel([keys] {
     ExprGroup indices;
-    for (int i = 0; i < ndarray->num_active_indices; i++) {
+    for (int i = 0; i < keys.num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
     auto ret = Stmt::make<FrontendReturnStmt>(
         load_if_ptr(Expr(Expr::make<ExternalTensorExpression>(
-            ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices,
+            keys.dtype, keys.num_active_indices, keys.num_active_indices,
             0))[indices]));
     current_ast_builder().insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
-  for (int i = 0; i < ndarray->num_active_indices; i++)
+  for (int i = 0; i < keys.num_active_indices; i++)
     ker.insert_arg(PrimitiveType::i32, false);
-  ker.insert_arg(ndarray->dtype, true);
-  ker.insert_ret(ndarray->dtype);
+  ker.insert_arg(keys.dtype, true);
+  ker.insert_ret(keys.dtype);
   return ker;
 }
 
 Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
   auto kernel_name = fmt::format("ndarray_writer");
-  auto &ker = kernel([ndarray] {
+  NdarrayRwKeys keys{ndarray->num_active_indices, ndarray->dtype};
+  auto &ker = kernel([keys] {
     ExprGroup indices;
-    for (int i = 0; i < ndarray->num_active_indices; i++) {
+    for (int i = 0; i < keys.num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
     Expr(Expr::make<ExternalTensorExpression>(
-        ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices + 1,
+        keys.dtype, keys.num_active_indices, keys.num_active_indices + 1,
         0))[indices]
         .set_or_insert_assignment(Expr::make<ArgLoadExpression>(
-            ndarray->num_active_indices, ndarray->dtype->get_compute_type()));
+            keys.num_active_indices, keys.dtype->get_compute_type()));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
-  for (int i = 0; i < ndarray->num_active_indices; i++)
+  for (int i = 0; i < keys.num_active_indices; i++)
     ker.insert_arg(PrimitiveType::i32, false);
-  ker.insert_arg(ndarray->dtype, false);
-  ker.insert_arg(ndarray->dtype, true);
+  ker.insert_arg(keys.dtype, false);
+  ker.insert_arg(keys.dtype, true);
   return ker;
 }
 

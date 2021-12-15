@@ -11,7 +11,7 @@ import taichi as ti
 def _test_cpp():
     ti.reset()
     print("Running C++ tests...")
-    ti_lib_dir = os.path.join(ti.__path__[0], 'lib')
+    ti_lib_dir = os.path.join(ti.__path__[0], '_lib', 'runtime')
 
     cpp_test_filename = 'taichi_cpp_tests'
     curr_dir = os.path.dirname(os.path.abspath(__file__))

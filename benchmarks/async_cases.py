@@ -4,7 +4,7 @@ import sys
 
 import taichi as ti
 
-sys.path.append(os.path.join(ti.core.get_repo_dir(), 'tests', 'python'))
+sys.path.append(os.path.join(sys.path[0], '../', 'tests', 'python/'))
 
 from fuse_test_template import (template_fuse_dense_x2y2z,
                                 template_fuse_reduction)

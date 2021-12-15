@@ -1,10 +1,11 @@
 import os
+import sys
 
 import taichi as ti
 
 
 def get_benchmark_dir():
-    return os.path.join(ti.core.get_repo_dir(), 'benchmarks')
+    return sys.path[0]
 
 
 class Case:

@@ -231,7 +231,7 @@ We do appreciate all kinds of contributions, yet we do not intend to expose the 
 
 - Other PRs (underlying development or intermediate implementation) should use tags **in lowercase letters**, for example`[metal]`, `[vulkan]`, `[ir]`, `[lang]`.
 
-- Because of the way the release changelog is generated, there should be **at most one capitalized tag** in a PR title to prevent duplicate PR highlights. For example, `[GUI] [Mac] Support modifier keys` ([#1189](https://github.com/taichi-dev/taichi/pull/1189))is an improper tag choice, and we should have used `[gui] [Mac] Support modifier keys in GUI` instead.
+- Because of the way the release changelog is generated, there should be **at most one capitalized tag** in a PR title to prevent duplicate PR highlights. For example, `[GUI] [Mac] Support modifier keys` ([#1189](https://github.com/taichi-dev/taichi/pull/1189)) is an improper tag choice, and we should have used `[gui] [Mac] Support modifier keys in GUI` instead.
 
 Please capitalize the most relevant tag to your PR.
 

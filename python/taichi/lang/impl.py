@@ -3,7 +3,7 @@ from types import FunctionType, MethodType
 from typing import Iterable
 
 import numpy as np
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.exception import InvalidOperationError
@@ -236,33 +236,6 @@ def global_subscript_with_offset(_var, _indices, shape, is_aos):
         _ti_core.global_subscript_with_offset(_var.ptr,
                                               make_expr_group(*_indices),
                                               shape, is_aos))
-
-
-@taichi_scope
-def chain_compare(comparators, ops):
-    _taichi_skip_traceback = 1
-    assert len(comparators) == len(ops) + 1, \
-        f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
-    ret = True
-    for i, op in enumerate(ops):
-        lhs = comparators[i]
-        rhs = comparators[i + 1]
-        if op == 'Lt':
-            now = lhs < rhs
-        elif op == 'LtE':
-            now = lhs <= rhs
-        elif op == 'Gt':
-            now = lhs > rhs
-        elif op == 'GtE':
-            now = lhs >= rhs
-        elif op == 'Eq':
-            now = lhs == rhs
-        elif op == 'NotEq':
-            now = lhs != rhs
-        else:
-            assert False, f'Unknown operator {op}'
-        ret = ti.logical_and(ret, now)
-    return ret
 
 
 @taichi_scope

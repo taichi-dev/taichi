@@ -3,7 +3,7 @@ from collections.abc import Iterable
 
 import numpy as np
 import taichi.lang
-from taichi.core import ti_core
+from taichi._lib import core as ti_core
 from taichi.lang import expr, impl
 from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod
@@ -628,7 +628,7 @@ class Matrix(TaichiOperations):
     @kern_mod.pyfunc
     def norm_sqr(self):
         """Return the sum of the absolute squares of its elements."""
-        return (self**2).sum()
+        return (self * self).sum()
 
     @kern_mod.pyfunc
     def max(self):

@@ -521,6 +521,11 @@ std::size_t TaichiLLVMContext::get_type_size(llvm::Type *type) {
   return get_data_layout().getTypeAllocSize(type);
 }
 
+std::size_t TaichiLLVMContext::get_struct_element_offset(llvm::StructType *type,
+                                                         int idx) {
+  return get_data_layout().getStructLayout(type)->getElementOffset(idx);
+}
+
 void TaichiLLVMContext::mark_inline(llvm::Function *f) {
   for (auto &B : *f)
     for (auto &I : B) {

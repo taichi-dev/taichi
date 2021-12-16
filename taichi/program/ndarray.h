@@ -24,6 +24,9 @@ class Ndarray {
                    const std::vector<int> &shape);
 
   DataType dtype;
+  // Invariant: Since ndarray indices are flattened for vector/matrix, this is
+  // always true:
+  //   num_active_indices = shape.size()
   std::vector<int> shape;
   int num_active_indices{0};
 

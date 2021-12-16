@@ -1,4 +1,4 @@
-from taichi.core import ti_core
+from taichi._lib import core as ti_core
 
 # Real types
 
@@ -63,6 +63,10 @@ integer_type_ids = [id(t) for t in integer_types]
 types = real_types + integer_types
 type_ids = [id(t) for t in types]
 
+is_signed = ti_core.is_signed
+
+is_integral = ti_core.is_integral
+
 __all__ = [
     'float32',
     'f32',
@@ -88,4 +92,6 @@ __all__ = [
     'u64',
     'real_types',
     'integer_types',
+    'is_signed',
+    'is_integral',
 ]

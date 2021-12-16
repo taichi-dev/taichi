@@ -5,7 +5,7 @@ import numbers
 # loaded during the import procedure, it's probably still good to delay the
 # access to it.
 import taichi.lang
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.field import Field
 
@@ -278,6 +278,11 @@ class SNode:
         runtime = impl.get_runtime()
         runtime.materialize()
         return self.ptr.cell_size_bytes
+
+    @property
+    def offset_bytes_in_parent_cell(self):
+        impl.get_runtime().materialize()
+        return self.ptr.offset_bytes_in_parent_cell
 
     def deactivate_all(self):
         """Recursively deactivate all children components of `self`."""

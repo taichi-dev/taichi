@@ -34,11 +34,26 @@ Advanced features of Taichi include [spatially sparse computing](https://docs.ta
 
 ## Installation [![Downloads](https://pepy.tech/badge/taichi)](https://pepy.tech/project/taichi)
 
+### Official releases
+
 ```bash
 python3 -m pip install taichi
 ```
 
 **Supported OS**: Windows, Linux, Mac OS X; **Python**: 3.6-3.9 (64-bit only); **Backends**: x64 CPUs, CUDA, Apple Metal, Vulkan, OpenGL Compute Shaders.
+
+### Nightly releases
+
+Nightly releases with the `master` branch of `taichi` are also available:
+
+```bash
+pip install -i https://test.pypi.org/simple/ taichi-nightly
+```
+
+Note nightly releases are bleeding edge versions and thus _may_ and _will_ contain bugs. Those releases are primarily aimed for alpha feature testing.
+If you need a stable version, please refer to the official release above.
+
+### Building from source
 
 Please build from source for other configurations (e.g., your CPU is ARM, or you want to try out our experimental C backend).
 

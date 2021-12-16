@@ -57,6 +57,13 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
 
   snode.cell_size_bytes = tlctx_->get_type_size(ch_type);
 
+  for (int i = 0; i < snode.ch.size(); i++) {
+    if (!snode.ch[i]->is_bit_level) {
+      snode.ch[i]->offset_bytes_in_parent_cell =
+          tlctx_->get_struct_element_offset(ch_type, i);
+    }
+  }
+
   llvm::Type *body_type = nullptr, *aux_type = nullptr;
   if (type == SNodeType::dense || type == SNodeType::bitmasked) {
     TI_ASSERT(snode._morton == false);

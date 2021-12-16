@@ -290,7 +290,8 @@ size_t CompiledTaichiKernel::get_ctx_buffer_size() const {
   return ctx_buffer_size_;
 }
 
-void CompiledTaichiKernel::command_list(CommandList *cmdlist,
+void CompiledTaichiKernel::command_list(
+    CommandList *cmdlist,
     DeviceAllocationGuard *ctx_buffer_host,
     DeviceAllocationGuard *ctx_buffer) const {
   const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
@@ -307,7 +308,7 @@ void CompiledTaichiKernel::command_list(CommandList *cmdlist,
         DeviceAllocation *alloc = input_buffers_.at(bind.buffer);
         if (alloc) {
           binder->rw_buffer(0, bind.binding, *alloc);
-        }      
+        }
       } else if (ctx_buffer) {
         binder->rw_buffer(0, bind.binding, *ctx_buffer);
       }
@@ -413,12 +414,12 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   if (ti_kernel->get_ctx_buffer_size()) {
     ctx_buffer = device_->allocate_memory_unique(
         {ti_kernel->get_ctx_buffer_size(),
-           /*host_write=*/true, /*host_read=*/false,
-           /*export_sharing=*/false, AllocUsage::Storage});
+         /*host_write=*/true, /*host_read=*/false,
+         /*export_sharing=*/false, AllocUsage::Storage});
     ctx_buffer_host = device_->allocate_memory_unique(
         {ti_kernel->get_ctx_buffer_size(),
-           /*host_write=*/false, /*host_read=*/true,
-           /*export_sharing=*/false, AllocUsage::Storage});
+         /*host_write=*/false, /*host_read=*/true,
+         /*export_sharing=*/false, AllocUsage::Storage});
   }
 
   auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
@@ -437,7 +438,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 
   ti_kernel->command_list(current_cmdlist_.get(), ctx_buffer_host.get(),
                           ctx_buffer.get());
-  
+
   if (ti_kernel->get_ctx_buffer_size()) {
     ctx_buffers_.push_back(std::move(ctx_buffer_host));
     ctx_buffers_.push_back(std::move(ctx_buffer));
@@ -445,7 +446,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 
   if (ctx_blitter) {
     if (ctx_blitter->device_to_host(current_cmdlist_.get())) {
-      current_cmdlist_ = nullptr; 
+      current_cmdlist_ = nullptr;
     }
   }
 }

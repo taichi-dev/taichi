@@ -2,7 +2,7 @@ import os
 import warnings
 
 from membound import MemoryBound
-from utils import arch_name, datatime_with_format, dump2json
+from utils import arch_name, datatime_with_format, dump2json, get_commit_hash
 
 import taichi as ti
 
@@ -66,7 +66,7 @@ def main():
     os.makedirs(benchmark_dir)
 
     pull_request_id = os.environ.get('PULL_REQUEST_NUMBER')
-    commit_hash = ti.core.get_commit_hash()  #[:8]
+    commit_hash = get_commit_hash()  #[:8]
     info = BenchmarksInfo(pull_request_id, commit_hash)
     info.datetime.append(datatime_with_format())  #start time
 

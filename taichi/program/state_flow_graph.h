@@ -6,8 +6,13 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#ifdef TI_WITH_LLVM
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
+#else
+#include <vector>
+#include <set>
+#endif
 #include "taichi/ir/ir.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/async_utils.h"
@@ -28,7 +33,11 @@ class StateFlowGraph {
    public:
     static constexpr unsigned kNumInlined = 8u;
     using Edge = std::pair<AsyncState, Node *>;
+#ifdef TI_WITH_LLVM
     using Container = llvm::SmallVector<Edge, kNumInlined>;
+#else
+    using Container = std::vector<Edge>;
+#endif
 
     StateToNodesMap() = default;
 
@@ -317,8 +326,13 @@ class StateFlowGraph {
   AsyncState get_async_state(Kernel *kernel);
 
   void populate_latest_state_owner(std::size_t id);
+#ifdef TI_WITH_LLVM
   using LatestStateReaders =
       llvm::SmallVector<std::pair<AsyncState, llvm::SmallSet<Node *, 8>>, 4>;
+#else
+  using LatestStateReaders =
+      std::vector<std::pair<AsyncState, std::set<Node *>>>;
+#endif
 
  private:
   std::vector<std::unique_ptr<Node>> nodes_;

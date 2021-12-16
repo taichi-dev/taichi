@@ -159,11 +159,11 @@ def test_boolop():
 @ti.test()
 def test_compare_fail():
     with pytest.raises(ti.TaichiCompilationError,
-                       match='"In" is not supported in Taichi kernels.'):
+                       match='"Is" is not supported in Taichi kernels.'):
 
         @ti.kernel
         def foo():
-            1 in [1]
+            1 is [1]
 
         foo()
 
@@ -985,3 +985,16 @@ def test_scalar_argument():
         return a
 
     assert add(1.0, 2.0) == approx(3.0)
+
+
+@ti.test()
+def test_default_template_args_on_func():
+    @ti.func
+    def bar(a: ti.template() = 123):
+        return a
+
+    @ti.kernel
+    def foo() -> ti.i32:
+        return bar()
+
+    assert foo() == 123

@@ -1,18 +1,7 @@
+import pytest
+
 import taichi as ti
 from taichi import approx
-
-
-@ti.test()
-@ti.must_throw(ti.TaichiSyntaxError)
-def _test_return_not_last_stmt():  # TODO: make this work
-    x = ti.field(ti.i32, ())
-
-    @ti.kernel
-    def kernel() -> ti.i32:
-        return 1
-        x[None] = 233
-
-    kernel()
 
 
 @ti.test()
@@ -46,12 +35,12 @@ def _test_binary_func_ret(dt1, dt2, dt3, castor):
     def func(a: dt1, b: dt2) -> dt3:
         return a * b
 
-    if ti.core.is_integral(dt1):
+    if ti.types.is_integral(dt1):
         xs = list(range(4))
     else:
         xs = [0.2, 0.4, 0.8, 1.0]
 
-    if ti.core.is_integral(dt2):
+    if ti.types.is_integral(dt2):
         ys = list(range(4))
     else:
         ys = [0.2, 0.4, 0.8, 1.0]
@@ -65,3 +54,96 @@ def test_binary_func_ret():
     _test_binary_func_ret(ti.f32, ti.i32, ti.f32, float)
     _test_binary_func_ret(ti.i32, ti.f32, ti.i32, int)
     _test_binary_func_ret(ti.f32, ti.i32, ti.i32, int)
+
+
+@ti.test()
+def test_return_in_static_if():
+    @ti.kernel
+    def foo(a: ti.template()) -> ti.i32:
+        if ti.static(a == 1):
+            return 1
+        elif ti.static(a == 2):
+            return 2
+        return 3
+
+    assert foo(1) == 1
+    assert foo(2) == 2
+    assert foo(123) == 3
+
+
+@ti.test()
+def test_func_multiple_return():
+    @ti.func
+    def safe_sqrt(a):
+        if a > 0:
+            return ti.sqrt(a)
+        else:
+            return 0.0
+
+    @ti.kernel
+    def kern(a: float):
+        print(safe_sqrt(a))
+
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match='Return inside non-static if/for is not supported'):
+        kern(-233)
+
+
+@ti.test()
+def test_return_inside_static_for():
+    @ti.kernel
+    def foo() -> ti.i32:
+        a = 0
+        for i in ti.static(range(10)):
+            a += i * i
+            if ti.static(i == 8):
+                return a
+
+    assert foo() == 204
+
+
+@ti.test()
+def test_return_inside_non_static_for():
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match='Return inside non-static if/for is not supported'):
+
+        @ti.kernel
+        def foo() -> ti.i32:
+            for i in range(10):
+                return i
+
+        foo()
+
+
+@ti.test()
+def test_kernel_no_return():
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=
+            "Kernel has a return type but does not have a return statement"):
+
+        @ti.kernel
+        def foo() -> ti.i32:
+            pass
+
+        foo()
+
+
+@ti.test()
+def test_func_no_return():
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match=
+            "Function has a return type but does not have a return statement"):
+
+        @ti.func
+        def bar() -> ti.i32:
+            pass
+
+        @ti.kernel
+        def foo() -> ti.i32:
+            return bar()
+
+        foo()

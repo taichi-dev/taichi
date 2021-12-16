@@ -2,6 +2,7 @@ import datetime
 import json
 
 import jsbeautifier
+from taichi._lib import core as ti_core
 
 import taichi as ti
 
@@ -29,6 +30,10 @@ def dtype_size(ti_dtype):
 
 def arch_name(arch):
     return str(arch).replace('Arch.', '')
+
+
+def get_commit_hash():
+    return ti_core.get_commit_hash()
 
 
 def datatime_with_format():
@@ -72,7 +77,7 @@ def scaled_repeat_times(arch, datasize, repeat=1):
 
 def md_table_header(suite_name, arch, test_dsize, test_repeat,
                     results_evaluation):
-    header = '|' + suite_name + '.' + ti.core.arch_name(arch) + '|'
+    header = '|' + suite_name + '.' + arch_name(arch) + '|'
     header += ''.join('|' for i in range(len(test_dsize)))
     header += ''.join(item.__name__ + '|' for item in results_evaluation)
 

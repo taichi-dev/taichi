@@ -3,8 +3,8 @@ import time
 
 from membound_cases import memory_bound_cases_list
 from utils import (arch_name, datatime_with_format, dtype2str, dump2json,
-                   geometric_mean, md_table_header, scaled_repeat_times,
-                   size2str)
+                   geometric_mean, get_commit_hash, md_table_header,
+                   scaled_repeat_times, size2str)
 
 import taichi as ti
 
@@ -44,7 +44,7 @@ class MemoryBound:
 
     def save_as_markdown(self, arch_dir='./'):
         current_time = datatime_with_format()
-        commit_hash = ti.core.get_commit_hash()  #[:8]
+        commit_hash = get_commit_hash()  #[:8]
         file_name = f'{self.suite_name}.md'
         file_path = os.path.join(arch_dir, file_name)
         with open(file_path, 'w') as f:

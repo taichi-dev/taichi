@@ -1,7 +1,7 @@
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
-from taichi.type.annotations import template
-from taichi.type.primitive_types import f32, u8
+from taichi.types.annotations import template
+from taichi.types.primitive_types import f32, u8
 
 import taichi as ti
 
@@ -54,28 +54,28 @@ def validate_input_field(f, name):
 def copy_vertices_to_vbo(vbo, vertices):
     validate_input_field(vertices, "vertices")
     if not 2 <= vertices.n <= 3:
-        raise Exception(f'vertices can only be 2D or 3D vector fields')
+        raise Exception('vertices can only be 2D or 3D vector fields')
     copy_to_vbo(vbo, vertices, 0, vertices.n)
 
 
 def copy_normals_to_vbo(vbo, normals):
     validate_input_field(normals, "normals")
     if normals.n != 3:
-        raise Exception(f'normals can only be 3D vector fields')
+        raise Exception('normals can only be 3D vector fields')
     copy_to_vbo(vbo, normals, 3, normals.n)
 
 
 def copy_texcoords_to_vbo(vbo, texcoords):
     validate_input_field(texcoords, "texcoords")
     if texcoords.n != 2:
-        raise Exception(f'texcoords can only be 3D vector fields')
+        raise Exception('texcoords can only be 3D vector fields')
     copy_to_vbo(vbo, texcoords, 6, texcoords.n)
 
 
 def copy_colors_to_vbo(vbo, colors):
     validate_input_field(colors, "colors")
     if colors.n != 3 and colors.n != 4:
-        raise Exception(f'colors can only be 3D/4D vector fields')
+        raise Exception('colors can only be 3D/4D vector fields')
     copy_to_vbo(vbo, colors, 8, colors.n)
     if colors.n == 3:
         fill_vbo(vbo, 1.0, 11, 1)
@@ -90,6 +90,9 @@ def copy_image_f32_to_u8(src: ti.template(), dst: ti.template(),
             c = max(0.0, min(1.0, c))
             c = c * 255
             dst[i, j][k] = int(c)
+        if num_components < 4:
+            # alpha channel
+            dst[i, j][3] = 255
 
 
 @ti.kernel
@@ -98,6 +101,9 @@ def copy_image_u8_to_u8(src: ti.template(), dst: ti.template(),
     for i, j in src:
         for k in ti.static(range(num_components)):
             dst[i, j][k] = src[i, j][k]
+        if num_components < 4:
+            # alpha channel
+            dst[i, j][3] = 255
 
 
 # ggui renderer always assumes the input image to be u8 RGBA
@@ -108,11 +114,11 @@ image_field_cache = {}
 def to_u8_rgba(image):
     if not hasattr(image, 'n') or image.m != 1:
         raise Exception(
-            f'the input image needs to be a Vector field (matrix with 1 column)'
+            'the input image needs to be a Vector field (matrix with 1 column)'
         )
     if len(image.shape) != 2:
         raise Exception(
-            f"the shape of the image must be of the form (width,height)")
+            "the shape of the image must be of the form (width,height)")
 
     if image.dtype == u8 and image.n == 4:
         # already in the desired format

@@ -1,12 +1,12 @@
 import ast
 from enum import Enum
 from sys import version_info
+from textwrap import TextWrapper
 
 import astor
+from taichi._logging import info
 from taichi.lang import impl
 from taichi.lang.exception import TaichiCompilationError, TaichiSyntaxError
-
-from taichi import info
 
 
 class Builder:
@@ -33,9 +33,8 @@ class Builder:
 
 
 class VariableScopeGuard:
-    def __init__(self, scopes, stmt_block=None):
+    def __init__(self, scopes):
         self.scopes = scopes
-        self.stmt_block = stmt_block
 
     def __enter__(self):
         self.scopes.append({})
@@ -44,27 +43,49 @@ class VariableScopeGuard:
         self.scopes.pop()
 
 
+class NonStaticStatus:
+    def __init__(self):
+        self.is_in_non_static_scope = False
+
+
+class NonStaticScopeGuard:
+    def __init__(self, status):
+        self.status = status
+
+    def __enter__(self):
+        self.prev = self.status.is_in_non_static_scope
+        self.status.is_in_non_static_scope = True
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.status.is_in_non_static_scope = self.prev
+
+
 class LoopStatus(Enum):
     Normal = 0
     Break = 1
     Continue = 2
 
 
-class ControlScopeAttribute:
-    def __init__(self):
-        self.is_static = False
+class LoopScopeAttribute:
+    def __init__(self, is_static):
+        self.is_static = is_static
         self.status = LoopStatus.Normal
 
 
-class ControlScopeGuard:
-    def __init__(self, scopes):
+class LoopScopeGuard:
+    def __init__(self, scopes, non_static_guard=None):
         self.scopes = scopes
+        self.non_static_guard = non_static_guard
 
     def __enter__(self):
-        self.scopes.append(ControlScopeAttribute())
+        self.scopes.append(LoopScopeAttribute(self.non_static_guard is None))
+        if self.non_static_guard:
+            self.non_static_guard.__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.scopes.pop()
+        if self.non_static_guard:
+            self.non_static_guard.__exit__(exc_type, exc_val, exc_tb)
 
 
 class ASTTransformerContext:
@@ -80,9 +101,10 @@ class ASTTransformerContext:
                  start_lineno=None):
         self.func = func
         self.local_scopes = []
-        self.control_scopes = []
+        self.loop_scopes = []
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
+        self.is_in_static_scope = False
         self.arg_features = arg_features
         self.returns = None
         self.global_vars = global_vars
@@ -96,40 +118,45 @@ class ASTTransformerContext:
                 self.indent += 1
             else:
                 break
-        if self.src[-1][-1] != '\n':
-            self.src[-1] += '\n'
         self.lineno_offset = start_lineno - 1
         self.raised = False
+        self.non_static_status = NonStaticStatus()
+        self.returned = False
 
     # e.g.: FunctionDef, Module, Global
-    def variable_scope_guard(self, *args):
-        return VariableScopeGuard(self.local_scopes, *args)
+    def variable_scope_guard(self):
+        return VariableScopeGuard(self.local_scopes)
 
     # e.g.: For, While
-    def control_scope_guard(self):
-        return ControlScopeGuard(self.control_scopes)
+    def loop_scope_guard(self, is_static=False):
+        if is_static:
+            return LoopScopeGuard(self.loop_scopes)
+        return LoopScopeGuard(self.loop_scopes, self.non_static_scope_guard())
+
+    def non_static_scope_guard(self):
+        return NonStaticScopeGuard(self.non_static_status)
 
     def current_scope(self):
         return self.local_scopes[-1]
 
-    def current_control_scope(self):
-        return self.control_scopes[-1]
+    def current_loop_scope(self):
+        return self.loop_scopes[-1]
 
     def loop_status(self):
-        if len(self.control_scopes):
-            return self.control_scopes[-1].status
+        if self.loop_scopes:
+            return self.loop_scopes[-1].status
         return LoopStatus.Normal
 
     def set_loop_status(self, status):
-        self.control_scopes[-1].status = status
+        self.loop_scopes[-1].status = status
 
-    def set_static_loop(self):
-        self.control_scopes[-1].is_static = True
-
-    def is_in_static(self):
-        if len(self.control_scopes):
-            return self.control_scopes[-1].is_static
+    def is_in_static_for(self):
+        if self.loop_scopes:
+            return self.loop_scopes[-1].is_static
         return False
+
+    def is_in_non_static(self):
+        return self.non_static_status.is_in_non_static_scope
 
     def is_var_declared(self, name):
         for s in self.local_scopes:
@@ -157,15 +184,24 @@ class ASTTransformerContext:
     def get_pos_info(self, node):
         msg = f'On line {node.lineno + self.lineno_offset} of file "{self.file}":\n'
         if version_info < (3, 8):
-            msg += self.src[node.lineno - 1]
+            msg += self.src[node.lineno - 1] + "\n"
             return msg
         col_offset = self.indent + node.col_offset
         end_col_offset = self.indent + node.end_col_offset
 
+        wrapper = TextWrapper(width=80)
+
+        def gen_line(code, hint):
+            hint += ' ' * (len(code) - len(hint))
+            code = wrapper.wrap(code)
+            hint = wrapper.wrap(hint)
+            if not len(code):
+                return "\n\n"
+            return "".join([c + '\n' + h + '\n' for c, h in zip(code, hint)])
+
         if node.lineno == node.end_lineno:
-            msg += self.src[node.lineno - 1]
-            msg += ' ' * col_offset + '^' * (end_col_offset -
-                                             col_offset) + '\n'
+            hint = ' ' * col_offset + '^' * (end_col_offset - col_offset)
+            msg += gen_line(self.src[node.lineno - 1], hint)
         else:
             for i in range(node.lineno - 1, node.end_lineno):
                 last = len(self.src[i])
@@ -177,15 +213,15 @@ class ASTTransformerContext:
                         self.src[i][first].isspace()
                         or not self.src[i][first].isprintable()):
                     first += 1
-                msg += self.src[i]
                 if i == node.lineno - 1:
-                    msg += ' ' * col_offset + '^' * (last - col_offset) + '\n'
+                    hint = ' ' * col_offset + '^' * (last - col_offset)
                 elif i == node.end_lineno - 1:
-                    msg += ' ' * first + '^' * (end_col_offset - first) + '\n'
+                    hint = ' ' * first + '^' * (end_col_offset - first)
                 elif first < last:
-                    msg += ' ' * first + '^' * (last - first) + '\n'
+                    hint = ' ' * first + '^' * (last - first)
                 else:
-                    msg += '\n'
+                    hint = ''
+                msg += gen_line(self.src[i], hint)
         return msg
 
 

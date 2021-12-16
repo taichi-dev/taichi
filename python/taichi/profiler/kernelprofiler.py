@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 
-from taichi.core import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.profiler.kernelmetrics import default_cupti_metrics
 
@@ -160,7 +160,7 @@ class KernelProfiler:
             self._print_kernel_info()
         else:
             raise ValueError(
-                f'Arg `mode` must be of type \'str\', and has the value \'count\' or \'trace\'.'
+                'Arg `mode` must be of type \'str\', and has the value \'count\' or \'trace\'.'
             )
 
         return None
@@ -169,7 +169,7 @@ class KernelProfiler:
     def _check_not_turned_on_with_warning_message(self):
         if self._profiling_mode is False:
             _ti_core.warn(
-                f'use \'ti.init(kernel_profiler = True)\' to turn on KernelProfiler.'
+                'use \'ti.init(kernel_profiler = True)\' to turn on KernelProfiler.'
             )
             return True
         return False

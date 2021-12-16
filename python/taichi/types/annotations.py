@@ -6,25 +6,27 @@ class ArgAnyArray:
 
     Args:
         element_dim (Union[Int, NoneType], optional): None if not specified (will be treated as 0 for external arrays), 0 if scalar elements, 1 if vector elements, and 2 if matrix elements.
+        element_shape (Union[Tuple[Int], NoneType]): None if not specified, shapes of each element. For example, element_shape must be 1d for vector and 2d tuple for matrix. This argument is ignored for external arrays for now.
+        field_dim (Union[Int, NoneType]): None if not specified, number of field dimensions. This argument is ignored for external arrays for now.
         layout (Union[Layout, NoneType], optional): None if not specified (will be treated as Layout.AOS for external arrays), Layout.AOS or Layout.SOA.
     """
     def __init__(self,
                  element_dim=None,
-                 element_shapes=None,
+                 element_shape=None,
                  field_dim=None,
                  layout=None):
         if element_dim is not None and (element_dim < 0 or element_dim > 2):
             raise ValueError(
                 "Only scalars, vectors, and matrices are allowed as elements of ti.any_arr()"
             )
-        if element_dim is not None and element_shapes is not None and len(
-                element_shapes) != element_dim:
+        if element_dim is not None and element_shape is not None and len(
+                element_shape) != element_dim:
             raise ValueError(
-                f"Both element_shapes and element_dim are specified, but shape doesn't match specified dim: {len(element_shapes)}!={element_dim}"
+                f"Both element_shape and element_dim are specified, but shape doesn't match specified dim: {len(element_shape)}!={element_dim}"
             )
-        self.element_shapes = element_shapes
+        self.element_shape = element_shape
         self.element_dim = len(
-            element_shapes) if element_shapes is not None else element_dim
+            element_shape) if element_shape is not None else element_dim
         self.field_dim = field_dim
         self.layout = layout
 
@@ -40,10 +42,10 @@ class ArgAnyArray:
                 f"Invalid argument into ti.any_arr() - required layout={self.layout}, but {arg} is provided"
             )
 
-    def check_element_shapes(self, shapes):
-        if self.element_shapes is not None and shapes != self.element_shapes:
+    def check_element_shape(self, shapes):
+        if self.element_shape is not None and shapes != self.element_shape:
             raise ValueError(
-                f"Invalid argument into ti.any_arr() - required element_shapes={self.element_shapes}, but {shapes} is provided"
+                f"Invalid argument into ti.any_arr() - required element_shape={self.element_shape}, but {shapes} is provided"
             )
 
     def check_field_dim(self, field_dim):
@@ -73,7 +75,7 @@ def ext_arr():
 
 
 any_arr = ArgAnyArray
-"""Alias for :class:`~taichi.type.annotations.ArgAnyArray`.
+"""Alias for :class:`~taichi.types.annotations.ArgAnyArray`.
 
 Example::
 
@@ -104,7 +106,7 @@ class Template:
 
 
 template = Template
-"""Alias for :class:`~taichi.type.annotations.Template`.
+"""Alias for :class:`~taichi.types.annotations.Template`.
 """
 
 __all__ = ['ext_arr', 'any_arr', 'template']

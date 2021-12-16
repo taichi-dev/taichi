@@ -1,15 +1,15 @@
 import json
 
 import numpy as np
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.matrix import MatrixField, _IntermediateMatrix
 from taichi.lang.struct import StructField
-from taichi.lang.types import CompoundType
 from taichi.lang.util import python_scope
+from taichi.types import CompoundType
 
 import taichi as ti
 
@@ -233,7 +233,8 @@ class MeshElement:
                             size).place(*tuple(field_dict.values()))
             grads = []
             for key, field in field_dict.items():
-                if self.attr_dict[key].needs_grad: grads.append(field.grad)
+                if self.attr_dict[key].needs_grad:
+                    grads.append(field.grad)
             if len(grads) > 0:
                 impl.root.dense(impl.axes(0), size).place(*grads)
 
@@ -522,7 +523,7 @@ class MeshRelationAccessProxy:
                                        self.to_element_type))
 
     def subscript(self, *indices):
-        assert (len(indices) == 1)
+        assert len(indices) == 1
         entry_expr = _ti_core.get_relation_access(self.mesh.mesh_ptr,
                                                   self.from_index.ptr,
                                                   self.to_element_type,

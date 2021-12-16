@@ -7,7 +7,7 @@ import textwrap
 
 import numpy as np
 import taichi.lang
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl, util
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
@@ -16,8 +16,8 @@ from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
-from taichi.misc.util import obsolete
-from taichi.type import any_arr, primitive_types, template
+from taichi.tools.util import obsolete
+from taichi.types import any_arr, primitive_types, template
 
 import taichi as ti
 
@@ -93,11 +93,10 @@ def _get_tree_and_ctx(self,
                       is_kernel=True,
                       arg_features=None,
                       args=None):
-    src = textwrap.dedent(oinspect.getsource(self.func))
-    tree = ast.parse(src)
-    src, start_lineno = oinspect.getsourcelines(self.func)
-    src = [line.replace("\t", "    ") for line in src]
     file = oinspect.getsourcefile(self.func)
+    src, start_lineno = oinspect.getsourcelines(self.func)
+    src = [textwrap.fill(line, tabsize=4, width=9999) for line in src]
+    tree = ast.parse(textwrap.dedent("\n".join(src)))
 
     func_body = tree.body[0]
     func_body.decorator_list = []
@@ -112,10 +111,11 @@ def _get_tree_and_ctx(self,
     if isinstance(func_body.returns, ast.Name):
         global_vars[func_body.returns.id] = self.return_type
 
-    # inject template parameters into globals
-    for i in self.template_slot_locations:
-        template_var_name = self.argument_names[i]
-        global_vars[template_var_name] = args[i]
+    if is_kernel or impl.get_runtime().experimental_real_function:
+        # inject template parameters into globals
+        for i in self.template_slot_locations:
+            template_var_name = self.argument_names[i]
+            global_vars[template_var_name] = args[i]
 
     return tree, ASTTransformerContext(excluded_parameters=excluded_parameters,
                                        is_kernel=is_kernel,
@@ -174,7 +174,13 @@ class Func:
                 self.do_compile(key=key, args=args)
             return self.func_call_rvalue(key=key, args=args)
         tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
-        return transform_tree(tree, ctx)
+        ret = transform_tree(tree, ctx)
+        if not impl.get_runtime().experimental_real_function:
+            if self.return_type and not ctx.returned:
+                raise TaichiSyntaxError(
+                    "Function has a return type but does not have a return statement"
+                )
+        return ret
 
     def func_call_rvalue(self, key, args):
         # Skip the template args, e.g., |self|
@@ -264,18 +270,18 @@ class TaichiCallableTemplateMapper:
         if isinstance(anno, any_arr):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_element_dim(arg, 0)
-                anno.check_element_shapes(())
+                anno.check_element_shape(())
                 anno.check_field_dim(len(arg.shape))
                 return arg.dtype, len(arg.shape), (), Layout.AOS
             if isinstance(arg, taichi.lang.matrix.VectorNdarray):
                 anno.check_element_dim(arg, 1)
-                anno.check_element_shapes((arg.n, ))
+                anno.check_element_shape((arg.n, ))
                 anno.check_field_dim(len(arg.shape))
                 anno.check_layout(arg)
                 return arg.dtype, len(arg.shape) + 1, (arg.n, ), arg.layout
             if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
                 anno.check_element_dim(arg, 2)
-                anno.check_element_shapes((arg.n, arg.m))
+                anno.check_element_shape((arg.n, arg.m))
                 anno.check_field_dim(len(arg.shape))
                 anno.check_layout(arg)
                 return arg.dtype, len(arg.shape) + 2, (arg.n,
@@ -456,6 +462,11 @@ class Kernel:
             self.runtime.current_kernel = self
             try:
                 transform_tree(tree, ctx)
+                if not impl.get_runtime().experimental_real_function:
+                    if self.return_type and not ctx.returned:
+                        raise TaichiSyntaxError(
+                            "Kernel has a return type but does not have a return statement"
+                        )
             finally:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None

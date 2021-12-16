@@ -1,9 +1,9 @@
-from taichi.core import get_os_name
+from taichi._lib.utils import get_os_name
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
 from taichi.lang.kernel_impl import kernel
-from taichi.type.annotations import any_arr, ext_arr, template
+from taichi.types.annotations import any_arr, ext_arr, template
 
 import taichi as ti
 
@@ -58,7 +58,8 @@ def vector_to_fast_image(img: template(), out: ext_arr()):
     for i, j in ti.ndrange(*img.shape):
         r, g, b = 0, 0, 0
         color = img[i, img.shape[1] - 1 - j]
-        if ti.static(img.dtype in [ti.f32, ti.f64]):
+        if ti.static(img.dtype == ti.f16 or img.dtype == ti.f32
+                     or img.dtype == ti.f64):
             r, g, b = min(255, max(0, int(color * 255)))
         else:
             impl.static_assert(img.dtype == ti.u8)

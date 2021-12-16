@@ -1892,8 +1892,22 @@ VkPresentModeKHR choose_swap_present_mode(
 
 VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     : config_(config), device_(device) {
+#ifdef ANDROID
+  window_ = (ANativeWindow *)config.window_handle;
+#else
   window_ = (GLFWwindow *)config.window_handle;
+#endif
   if (window_) {
+#ifdef ANDROID
+    VkAndroidSurfaceCreateInfoKHR createInfo{
+        .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
+        .pNext = nullptr,
+        .flags = 0,
+        .window = window_};
+
+    vkCreateAndroidSurfaceKHR(device->vk_instance(), &createInfo, nullptr,
+                              &surface_);
+#else
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     VkResult err = glfwCreateWindowSurface(device->vk_instance(), window_, NULL,
                                            &surface_);
@@ -1901,6 +1915,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
       TI_ERROR("Failed to create window surface ({})", err);
       return;
     }
+#endif
 
     create_swap_chain();
 
@@ -1974,7 +1989,12 @@ void VulkanSurface::create_swap_chain() {
       choose_swap_present_mode(present_modes, config_.vsync, config_.adaptive);
 
   int width, height;
+#ifdef ANDROID
+  width = ANativeWindow_getWidth(window_);
+  height = ANativeWindow_getWidth(window_);
+#else
   glfwGetFramebufferSize(window_, &width, &height);
+#endif
 
   VkExtent2D extent = {uint32_t(width), uint32_t(height)};
 
@@ -2079,7 +2099,12 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
     return std::make_pair(config_.width, config_.height);
   }
   int width, height;
+#ifdef ANDROID
+  width = ANativeWindow_getWidth(window_);
+  height = ANativeWindow_getWidth(window_);
+#else
   glfwGetFramebufferSize(window_, &width, &height);
+#endif
   return std::make_pair(width, height);
 }
 

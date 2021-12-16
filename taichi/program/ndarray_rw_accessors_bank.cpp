@@ -23,14 +23,12 @@ void set_kernel_extra_args(const Ndarray *ndarray,
 
 NdarrayRwAccessorsBank::Accessors NdarrayRwAccessorsBank::get(
     Ndarray *ndarray) {
-  auto &kernels = ndarray_to_kernels_[ndarray];
-  if (kernels.reader == nullptr) {
-    kernels.reader = &(program_->get_ndarray_reader(ndarray));
+  NdarrayRwKeys keys{ndarray->num_active_indices, ndarray->dtype};
+  if (ndarray_to_kernels_.find(keys) == ndarray_to_kernels_.end()) {
+    ndarray_to_kernels_[keys] = {&(program_->get_ndarray_reader(ndarray)),
+                                 &(program_->get_ndarray_writer(ndarray))};
   }
-  if (kernels.writer == nullptr) {
-    kernels.writer = &(program_->get_ndarray_writer(ndarray));
-  }
-  return Accessors(ndarray, kernels, program_);
+  return Accessors(ndarray, ndarray_to_kernels_[keys], program_);
 }
 
 NdarrayRwAccessorsBank::Accessors::Accessors(const Ndarray *ndarray,

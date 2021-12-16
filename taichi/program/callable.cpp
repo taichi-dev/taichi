@@ -15,21 +15,21 @@ int Callable::insert_ret(const DataType &dt) {
 }
 int Callable::insert_arr_arg(const DataType &dt,
                              int total_dim,
-                             std::vector<int> element_shapes) {
+                             std::vector<int> element_shape) {
   args.emplace_back(dt->get_compute_type(), true, /*size=*/0, total_dim,
-                    element_shapes);
+                    element_shape);
   return (int)args.size() - 1;
 }
 
 Callable::CurrentCallableGuard::CurrentCallableGuard(Program *program,
                                                      Callable *callable)
-    : program(program) {
-  old_callable = program->current_callable;
+    : program_(program) {
+  old_callable_ = program->current_callable;
   program->current_callable = callable;
 }
 
 Callable::CurrentCallableGuard::~CurrentCallableGuard() {
-  program->current_callable = old_callable;
+  program_->current_callable = old_callable_;
 }
 
 }  // namespace lang

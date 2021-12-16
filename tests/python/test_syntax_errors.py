@@ -262,40 +262,6 @@ def test_expr_set():
     func()
 
 
-@ti.test(arch=ti.cpu)
-def test_func_multiple_return():
-    @ti.func
-    def safe_sqrt(a):
-        if a > 0:
-            return ti.sqrt(a)
-        else:
-            return 0.0
-
-    @ti.kernel
-    def kern(a: float):
-        print(safe_sqrt(a))
-
-    with pytest.raises(ti.TaichiCompilationError,
-                       match='cannot have multiple returns'):
-        kern(-233)
-
-
-@ti.test(arch=ti.cpu)
-def test_func_multiple_return_in_static_if():
-    @ti.func
-    def safe_static_sqrt(a: ti.template()):
-        if ti.static(a > 0):
-            return ti.sqrt(a)
-        else:
-            return 0.0
-
-    @ti.kernel
-    def kern():
-        print(safe_static_sqrt(-233))
-
-    kern()
-
-
 @ti.test()
 def test_func_def_inside_kernel():
     @ti.kernel

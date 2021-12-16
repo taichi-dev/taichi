@@ -42,7 +42,7 @@ def test_basic_utils():
 
     @ti.kernel
     def init():
-        a[None] = ti.Vector([1.0, 2.0, 3.0])
+        a[None] = ti.Vector([1.0, 2.0, -3.0])
         b[None] = ti.Vector([4.0, 5.0])
         abT[None] = a[None].outer_product(b[None])
 
@@ -65,7 +65,7 @@ def test_basic_utils():
     assert normA[None] == approx(sqrt14)
     assert aNormalized[None][0] == approx(1.0 * invSqrt14)
     assert aNormalized[None][1] == approx(2.0 * invSqrt14)
-    assert aNormalized[None][2] == approx(3.0 * invSqrt14)
+    assert aNormalized[None][2] == approx(-3.0 * invSqrt14)
 
 
 @ti.test()
@@ -337,16 +337,6 @@ def test_init_matrix_from_vectors_deprecated():
             assert m2[0][j, i] == int(i + 3 * j + 1)
             assert m3[0][i, j] == int(i + 3 * j + 1)
             assert m4[0][j, i] == int(i + 3 * j + 1)
-
-
-@pytest.mark.filterwarnings('ignore')
-@ti.test(arch=ti.get_host_arch_list())
-def test_to_numpy_as_vector_deprecated():
-    v = ti.Vector.field(3, dtype=ti.f32, shape=(2))
-    u = np.array([[2, 3, 4], [5, 6, 7]])
-    v.from_numpy(u)
-    assert v.to_numpy(as_vector=True) == approx(u)
-    assert v.to_numpy() == approx(u)
 
 
 @ti.test()

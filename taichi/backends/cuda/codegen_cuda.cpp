@@ -505,7 +505,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return output_address;
   }
 
-  llvm::Value *real_type_atomic(AtomicOpStmt *stmt) {
+  llvm::Value *real_or_unsigned_type_atomic(AtomicOpStmt *stmt) {
     if (!stmt->val->ret_type->is<PrimitiveType>()) {
       return nullptr;
     }
@@ -542,8 +542,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     atomics[PrimitiveTypeID::f64][AtomicOpType::min] = "atomic_min_f64";
     atomics[PrimitiveTypeID::f32][AtomicOpType::max] = "atomic_max_f32";
     atomics[PrimitiveTypeID::f64][AtomicOpType::max] = "atomic_max_f64";
+    atomics[PrimitiveTypeID::u32][AtomicOpType::min] = "atomic_min_u32";
+    atomics[PrimitiveTypeID::u64][AtomicOpType::min] = "atomic_min_u64";
+    atomics[PrimitiveTypeID::u32][AtomicOpType::max] = "atomic_max_u32";
+    atomics[PrimitiveTypeID::u64][AtomicOpType::max] = "atomic_max_u64";
 
     if (atomics.find(prim_type) == atomics.end()) {
+      return nullptr;
+    }
+    if (is_integral(stmt->val->ret_type) &&
+        atomics.at(prim_type).find(op) == atomics.at(prim_type).end()) {
       return nullptr;
     }
     TI_ASSERT(atomics.at(prim_type).find(op) != atomics.at(prim_type).end());
@@ -566,9 +574,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         old_value = result;
       } else if (llvm::Value *result = custom_type_atomic(stmt)) {
         old_value = result;
-      } else if (llvm::Value *result = integral_type_atomic(stmt)) {
+      } else if (llvm::Value *result = real_or_unsigned_type_atomic(stmt)) {
         old_value = result;
-      } else if (llvm::Value *result = real_type_atomic(stmt)) {
+      } else if (llvm::Value *result = integral_type_atomic(stmt)) {
         old_value = result;
       } else {
         TI_NOT_IMPLEMENTED

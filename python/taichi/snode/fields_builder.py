@@ -1,10 +1,10 @@
 from typing import Any, Optional, Sequence, Union
 
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl, snode
 from taichi.lang.exception import InvalidOperationError
-from taichi.misc.util import warning
 from taichi.snode.snode_tree import SNodeTree
+from taichi.tools.util import warning
 
 _snode_registry = _ti_core.SNodeRegistry()
 

@@ -2,9 +2,11 @@ import math
 import os
 import sys
 
+from utils import get_benchmark_dir
+
 import taichi as ti
 
-sys.path.append(os.path.join(sys.path[0], '../', 'tests', 'python/'))
+sys.path.append(os.path.join(get_benchmark_dir(), '../', 'tests', 'python'))
 
 from fuse_test_template import (template_fuse_dense_x2y2z,
                                 template_fuse_reduction)

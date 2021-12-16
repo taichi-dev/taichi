@@ -1,11 +1,9 @@
 import os
 import sys
 
+from utils import get_benchmark_dir
+
 import taichi as ti
-
-
-def get_benchmark_dir():
-    return sys.path[0]
 
 
 class Case:

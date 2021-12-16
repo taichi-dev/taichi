@@ -69,8 +69,8 @@ Except for minor updates, most PRs start from a developer taking over an issue. 
 
 | Issue Tag                                                    | Description               | Target developer                               |
 | ------------------------------------------------------------ | ------------------------- | ---------------------------------------------- |
-| [good first issue](https://github.com/taichi-dev/taichi/issues?q=is:open+is:issue+label:"good+first+issue") |                           | Developers new to Taichi                       |
-| [welcome contribution](https://github.com/taichi-dev/taichi/issues?q=is:open+is:issue+label:"welcome+contribution") | Slightly more challenging | Developers who wish to dive deeper into Taichi |
+| [good first issue](https://github.com/taichi-dev/taichi/issues?q=is:open+is:issue+label:"good+first+issue") | Issues that are easy to start with | Developers new to Taichi                       |
+| [welcome contribution](https://github.com/taichi-dev/taichi/issues?q=is:open+is:issue+label:"welcome+contribution") | Slightly more challenging issues | Developers who wish to dive deeper into Taichi |
 
 ### Best practices
 
@@ -100,7 +100,7 @@ Except for minor updates, most PRs start from a developer taking over an issue. 
 We highly recommend that you write your own test cases to cover corner cases for your codes before filing a PR.
 
 - To write a Python test case, see the [Workflow for writing a Python test](./write_test).
-- To write a C++ test case, see the [Workflow for writing a CPP test](./writing_cpp_tests).
+- To write a C++ test case, see the [Workflow for writing a C++ test](./writing_cpp_tests).
 
 ## Conduct formatting and integration tests locally
 
@@ -178,9 +178,7 @@ For more options, see `python tests/run_tests.py -h`.
     - The reviewer is qualified to request you to remove off-topic **non-trivial** changes in your PR.
   - When implementing a complex feature, consider breaking it down into small PRs to keep a more detailed development history and to interact with core developers more frequently.
   - PR titles should be short sentences describing the changes and following [certain format](./contributor_guide#pr-title-format-and-tags).
-  - In the description of a PR, it will be nice to link relevant GitHub issues (e.g. `fixes #issue_number`) or provide a little context on the motivation.
-
-Some important implementation decisions you made in the PR is also helpful.
+  - In the description of a PR, it will be nice to link relevant GitHub issues (e.g. `fixes #issue_number`) or provide a little context on the motivation. Some important implementation decisions you made in the PR is also helpful.
 
 - If you want early feedback from core developers,
   - Open a PR in [Draft](https://github.blog/2019-02-14-introducing-draft-pull-requests/) state on GitHub to share your progress;
@@ -189,9 +187,7 @@ Some important implementation decisions you made in the PR is also helpful.
 - Most PRs, except for those for internal compiler implementations, ought to be accompanied with **document updates**. See [Documentation](./contributor_guide#documentation).
 - All PRs must pass **continuous integration tests** before they get merged. See [Using continuous integration](./contributor_guide#using-continuous-integration).
 - All PRs must pass **code format checks**. See [Enforcing code style](./contributor_guide#enforcing-code-style).
-- Read a great article from Google on [how to have your PR merged quickly](https://testing.googleblog.com/2017/06/code-health-too-many-comments-on-your.html)
-
-[[PDF]](https://github.com/yuanming-hu/public_files/blob/master/graphics/taichi/google_review_comments.pdf)
+- Read a great article from Google on [how to have your PR merged quickly](https://testing.googleblog.com/2017/06/code-health-too-many-comments-on-your.html) [[PDF]](https://github.com/yuanming-hu/public_files/blob/master/graphics/taichi/google_review_comments.pdf).
 
 - PR authors are required to **squash commits on your own**.
 - If you are making multiple PRs,
@@ -250,14 +246,14 @@ Please capitalize the most relevant tag to your PR.
 ### **PR reviewing & merging**
 
 - Please try to follow these tips from Google:
-  - [Code Health: Understanding Code In](https://testing.googleblog.com/2018/05/code-health-understanding-code-in-review.html)
-  - [Code Health: Respectful Reviews == Useful](https://testing.googleblog.com/2019/11/code-health-respectful-reviews-useful.html)
+  - [Code Health: Understanding Code In Review](https://testing.googleblog.com/2018/05/code-health-understanding-code-in-review.html)
+  - [Code Health: Respectful Reviews == Useful Reviews](https://testing.googleblog.com/2019/11/code-health-respectful-reviews-useful.html)
 
-- The master branch is required to have a **linear history**. https://idiv-biodiversity.github.io/git-knowledge-base/linear-vs-nonlinear.html
+- The master branch is required to have a [**linear history**](https://idiv-biodiversity.github.io/git-knowledge-base/linear-vs-nonlinear.html).
 
 - Ensure that the PR passes all **continuous integration (CI) tests**. See [Using continuous integration](./contributor_guide#using-continuous-integration).
 
-- Ensure that the title follows [PR tag rules](./contributor_guide#pr-title-format-and-tags).
+- Ensure that the title follows [PR tag rules](./contributor_guide#pr-naming-conventions).
 
 
 

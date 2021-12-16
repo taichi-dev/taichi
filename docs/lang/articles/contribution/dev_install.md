@@ -45,8 +45,8 @@ Installation instructions vary depending on which operating system (OS) you are 
 
 | Category                     | Prerequisites                                                                                                                                                                            |
 |:----------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| OS                           | <li>macOS</li><li>Ubuntu</li><li>Arch Linux</li><li>Other Linux distributions</li>                                                                                                       |
-| Python                       | 3.6/3.7/3.8/3.9 <blockquote>We recommend installing Python from [Miniforge](https://github.com/conda-forge/miniforge/#download) conda if you are on a MacBook with M1 chip.</blockquote> |
+| OS                           | macOS / Ubuntu / Arch Linux / Other Linux distributions                                                                                                       |
+| Python                       | 3.6/3.7/3.8/3.9 We recommend installing Python from [Miniforge](https://github.com/conda-forge/miniforge/#download) conda if you are on a MacBook with M1 chip. |
 | Clang++                      | 8&leq; Clang++ <12                                                                                                                                                                       |
 | LLVM                         | 10.0.0 (Taichi customized version)                                                                                                                                                       |
 | Command line tools for Xcode | For macOS users only: `xcode-select --install `                                                                                                                                          |
@@ -57,11 +57,11 @@ Installation instructions vary depending on which operating system (OS) you are 
 
 | Category      | Prerequisites                                                                                                                                                                            |
 |:-------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| OS            | <li>Windows 7/8/10/11</li>                                                                                                       |
+| OS            | Windows 7/8/10/11                                                                                                       |
 | Python        | 3.6/3.7/3.8/3.9  |
 | Clang++       | 8&leq; Clang++ <12 (We provide pre-built versions in the clang section)                                            |
 | LLVM          | 10.0.0 (Taichi customized version)                                                                                                                                                       |
-| Visual Studio | Visual Studio 2019/2022 with "Desktop Development with C++" component. <blockquote>If you want to use Clang++ as the compiler, also install "C++ Clang Compiler for Windows" component</blockquote>  |
+| Visual Studio | Visual Studio 2019/2022 with "Desktop Development with C++" component. If you want to use Clang++ as the compiler, also install "C++ Clang Compiler for Windows" component  |
 
 </TabItem>
 
@@ -185,7 +185,7 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
 </TabItem>
 </Tabs>
 
-2. Add `$LLVM_FOLDER/bin` to `PATH`:
+2. Configure environment variable:
 
 <Tabs
   defaultValue="linux"
@@ -210,9 +210,7 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
 
 <TabItem value="windows">
 
-Download and extract [LLVM 10.0.0 pre-built binary for windows](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip).
-
-Add an environment variable `LLVM_DIR` with value `&lt;Path to the extrated LLVM binary&gt;`
+Add an environment variable `LLVM_DIR` with value `<Path to the extrated LLVM binary>`
 
 </TabItem>
 
@@ -277,7 +275,7 @@ cmake .. -G "Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SH
 1. Use Visual Studio 2017+ to build **LLVM.sln**.
 2. Ensure that you use the **Release** configuration. After building the `INSTALL` project (under folde **CMakePredefinedTargets** in the Solution Explorer window).
 3. If you use MSVC 2019, ensure that you use **C++17** for the `INSTALL` project.
-4. When the build completes, add an environment variable `LLVM_DIR` with value `&lt;PATH_TO_BUILD&gt;/build/installed/lib/cmake/llvm`.
+4. When the build completes, add an environment variable `LLVM_DIR` with value `<PATH_TO_BUILD>/build/installed/lib/cmake/llvm`.
 
 </TabItem>
 
@@ -437,7 +435,7 @@ The `develop` command serves the developers' needs better because edits to the P
 
 <TabItem value="windows">
 
-1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=&lt;Path to Clang 10&gt;/bin/clang.exe -DLLVM_AS_EXECUTABLE=&lt;Path to LLVM 10&gt/bin/llvm-as.exe`
+1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=<Path to Clang 10>;/bin/clang.exe -DLLVM_AS_EXECUTABLE=<Path to LLVM 10>/bin/llvm-as.exe`
 2. Open the "x64 Native Tools Command Prompt" for VS2019 or VS2022. Please make sure you opened the x64 version. (Or load the Visual Studio environment yourself)
 3. Clone the Taichi repo *recursively* & install python dependencies
 

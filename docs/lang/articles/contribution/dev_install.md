@@ -42,7 +42,44 @@ Installation instructions vary depending on which operating system (OS) you are 
 |             LLVM             |                                                                                            10.0.0                                                                                           |
 | Command line tools for Xcode |                                                                       For macOS users only: `xcode-select --install `                                                                       |
 
+<Tabs
+  defaultValue="unix"
+  values={[
+    {label: 'Linux/Unix/Mac', value: 'unix'},
+    {label: 'Windows', value: 'windows'}
+  ]}>
+
+<TabItem value="unix">
+
+| Category                     | Prerequisites                                                                                                                                                                            |
+|:----------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| OS                           | <li>macOS</li><li>Ubuntu</li><li>Arch Linux</li><li>Other Linux distributions</li>                                                                                                       |
+| Python                       | 3.6/3.7/3.8/3.9 <blockquote>We recommend installing Python from [Miniforge](https://github.com/conda-forge/miniforge/#download) conda if you are on a MacBook with M1 chip.</blockquote> |
+| Clang++                      | 8&leq; Clang++ <12                                                                                                                                                                       |
+| LLVM                         | 10.0.0 (Taichi customized version)                                                                                                                                                       |
+| Command line tools for Xcode | For macOS users only: `xcode-select --install `                                                                                                                                          |
+
+</TabItem>
+
+<TabItem value="windows">
+
+| Category      | Prerequisites                                                                                                                                                                            |
+|:-------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| OS            | <li>Windows 7/8/10/11</li>                                                                                                       |
+| Python        | 3.6/3.7/3.8/3.9  |
+| Clang++       | 8&leq; Clang++ <12 (We provide pre-built versions in the clang section)                                            |
+| LLVM          | 10.0.0 (Taichi customized version)                                                                                                                                                       |
+| Visual Studio | Visual Studio 2019/2022 with "Desktop Development with C++" component. <blockquote>If you want to use Clang++ as the compiler, also install "C++ Clang Compiler for Windows" component</blockquote>  |
+
+</TabItem>
+
+</Tab>
+
 ### Install Clang
+
+<blockquote>
+This Clang compiler is used to compile the Taichi device runtime. It is **not required** to use this compiler for the C++ compiler.
+</blockquote>
 
 <Tabs
   defaultValue="arch"
@@ -73,7 +110,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 
 <TabItem value="windows">
 
-Skip this section because we provide scripts that will install `Clang` for you. See the [Build Taichi from source](#build-taichi-from-source) for more information.
+Download and extract [Clang 10.0.0 pre-built binary for windows](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip).
 
 </TabItem>
 
@@ -181,7 +218,9 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
 
 <TabItem value="windows">
 
-Skip this section because we provide scripts that will install LLVM for you. See the [Build Taichi from source](#build-taichi-from-source) for more information.
+Download and extract [LLVM 10.0.0 pre-built binary for windows](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip).
+
+Add an environment variable `LLVM_DIR` with value `&lt;Path to the extrated LLVM binary&gt;`
 
 </TabItem>
 
@@ -246,7 +285,7 @@ cmake .. -G "Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SH
 1. Use Visual Studio 2017+ to build **LLVM.sln**.
 2. Ensure that you use the **Release** configuration. After building the `INSTALL` project (under folde **CMakePredefinedTargets** in the Solution Explorer window).
 3. If you use MSVC 2019, ensure that you use **C++17** for the `INSTALL` project.
-4. When the build completes, find your LLVM binaries and header files in **build/installed**. Add `build/installed/bin` to `PATH`. Later, when you build Taichi, please use `cmake -DLLVM_DIR=&lt;PATH_TO_BUILD&gt;/build/installed/lib/cmake/llvm`.
+4. When the build completes, add an environment variable `LLVM_DIR` with value `&lt;PATH_TO_BUILD&gt;/build/installed/lib/cmake/llvm`.
 
 </TabItem>
 
@@ -319,7 +358,7 @@ import TabItem from '@theme/TabItem';
 <details>
 <summary><font color="#006284"><h3>Install Vulkan</h3></font></summary>
 
-You must install the Vulkan SDK in order to build Taichi with a Vulkan backend. To proceed:
+You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To proceed:
 
 <Tabs
   defaultValue="linux"
@@ -406,18 +445,37 @@ The `develop` command serves the developers' needs better because edits to the P
 
 <TabItem value="windows">
 
-1. Run powershell as administrator and `Set-ExecutionPolicy -ExecutionPolicy UNRESTRICTED`.
-2. Run [this script](https://github.com/taichi-dev/taichi_assets/releases/download/windows_scripts/install_deps.ps1) to install all necessary dependencies:
+1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=&lt;Path to Clang 10&gt;/bin/clang.exe -DLLVM_AS_EXECUTABLE=&lt;Path to LLVM 10&gt/bin/llvm-as.exe`
+2. Open the "x64 Native Tools Command Prompt" for VS2019 or VS2022. Please make sure you opened the x64 version. (Or load the Visual Studio environment yourself)
+3. Clone the Taichi repo *recursively* & install python dependencies
 
-   ```shell
-   .\install_deps.ps1
-   ```
-3. Reboot your computer.
-4. Run powershell as administrator and run [this script](https://github.com/taichi-dev/taichi_assets/releases/download/windows_scripts/build_taichi.ps1) to build Taichi from souce:
 
-   ```shell
-   .\build_taichi.ps1
-   ```
+```shell
+git clone --recursive https://github.com/taichi-dev/taichi
+
+cd taichi
+
+python -m pip install --user -r requirements_dev.txt
+```
+
+4. Build taichi by using `python setup.py develop`
+
+:::note
+
+[^1]Although the two commands work similarly, `python setup.py develop` is recommended for you as a developer and `python setup.py install`more for end users. The difference is:
+
+- The `develop` command does not actually install anything but only symbolically links the source code to the deployment directory.
+- The `install` command deep copies the source code so that end users need to rerun the command every time they modify the source code.
+
+The `develop` command serves the developers' needs better because edits to the Python files take effect immediately without the need to rerun the command. A rerun is needed only if you have modified the project's C extension or compiled files. See the [Development Mode](https://setuptools.pypa.io/en/stable/userguide/development_mode.html) for more information.
+
+:::
+
+:::note
+
+If you want to build Taichi with Clang or maybe utilize `ccache` to cache and speed-up builds, add the following to the end of environment variable `TAICHI_CMAKE_ARGS`: ` -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang`.
+
+:::
 
 </TabItem>
 

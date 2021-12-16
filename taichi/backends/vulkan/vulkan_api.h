@@ -93,6 +93,7 @@ struct DeviceObjVkCommandBuffer : public DeviceObj {
   VkCommandBuffer buffer{VK_NULL_HANDLE};
   VkCommandBufferLevel level{VK_COMMAND_BUFFER_LEVEL_PRIMARY};
   IVkCommandPool ref_pool{nullptr};
+  IVkSemaphore signal_sema{nullptr};
   std::vector<IDeviceObj> refs;
   ~DeviceObjVkCommandBuffer() override;
 };

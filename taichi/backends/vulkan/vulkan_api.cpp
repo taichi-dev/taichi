@@ -205,6 +205,7 @@ IVkCommandBuffer allocate_command_buffer(IVkCommandPool pool,
   obj->device = pool->device;
   obj->level = level;
   obj->ref_pool = pool;
+  obj->signal_sema = create_semaphore(pool->device, 0);
   obj->buffer = cmdbuf;
 
   return obj;

@@ -1371,16 +1371,31 @@ void VulkanStream::submit(CommandList *cmdlist_) {
   }
   */
 
+  VkPipelineStageFlags stage_flag{VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
+
   VkSubmitInfo submit_info{};
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &buffer->buffer;
+
+  if (last_semaphore_) {
+    submit_info.waitSemaphoreCount = 1;
+    submit_info.pWaitSemaphores = &last_semaphore_->semaphore;
+    submit_info.pWaitDstStageMask = &stage_flag;
+  }
+
+  if (buffer->signal_sema) {
+    submit_info.signalSemaphoreCount = 1;
+    submit_info.pSignalSemaphores = &buffer->signal_sema->semaphore;
+  }
 
   submitted_cmdbuffers_.push_back(buffer);
 
   BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
                                       /*fence=*/VK_NULL_HANDLE),
                         "failed to submit command buffer");
+
+  last_semaphore_ = buffer->signal_sema;
 }
 
 void VulkanStream::submit_synced(CommandList *cmdlist) {
@@ -1392,6 +1407,14 @@ void VulkanStream::submit_synced(CommandList *cmdlist) {
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &buffer->buffer;
 
+  VkPipelineStageFlags stage_flag{VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
+
+  if (last_semaphore_) {
+    submit_info.waitSemaphoreCount = 1;
+    submit_info.pWaitSemaphores = &last_semaphore_->semaphore;
+    submit_info.pWaitDstStageMask = &stage_flag;
+  }
+
   BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
                                       /*fence=*/cmd_sync_fence_->fence),
                         "failed to submit command buffer");
@@ -1399,12 +1422,15 @@ void VulkanStream::submit_synced(CommandList *cmdlist) {
   vkWaitForFences(device_.vk_device(), 1, &cmd_sync_fence_->fence, true,
                   UINT64_MAX);
   vkResetFences(device_.vk_device(), 1, &cmd_sync_fence_->fence);
+
+  last_semaphore_ = nullptr;
 }
 
 void VulkanStream::command_sync() {
   vkQueueWaitIdle(queue_);
 
   submitted_cmdbuffers_.clear();
+  last_semaphore_ = nullptr;
 }
 
 std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(

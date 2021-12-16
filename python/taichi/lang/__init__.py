@@ -7,6 +7,7 @@ import platform
 import shutil
 import tempfile
 import time
+import threading
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 from urllib import request
@@ -416,7 +417,6 @@ def prepare_sandbox():
 
 def check_version():
     # Check Taichi version for the user.
-    print('Checking your Taichi version...')
     major = _ti_core.get_version_major()
     minor = _ti_core.get_version_minor()
     patch = _ti_core.get_version_patch()
@@ -453,18 +453,15 @@ def check_version():
         req = request.Request('https://metadata.taichi.graphics/check_version',
                               method='POST')
         req.add_header('Content-Type', 'application/json')
-        with request.urlopen(req, data=payload, timeout=3) as response:
+        with request.urlopen(req, data=payload, timeout=5) as response:
             response = json.loads(response.read().decode('utf-8'))
             if response['status'] == 1:
-                print(
-                    f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use\n'
-                    + f'pip install taichi=={response["latest_version"]}\n' +
-                    'to upgrade to the latest Taichi!')
-            elif response['status'] == 0:
-                # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
-                print(response['message'])
+                version_path = os.path.join(_ti_core.get_repo_dir(), 'latest_version')
+                with open(version_path, 'w') as f:
+                    f.write(response['latest_version'])
+                    f.truncate()
     except Exception as error:
-        print('Checking lastest version failed:', error)
+        pass
 
 
 def try_check_version():
@@ -489,7 +486,7 @@ def try_check_version():
                          datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
     # Wildcard exception to catch potential file writing errors.
     except Exception as error:
-        print('Checking lastest version failed:', error)
+        pass
 
 
 def init(arch=None,
@@ -521,7 +518,9 @@ def init(arch=None,
     # Check version for users every 7 days if not disabled by users.
     skip = os.environ.get("TI_SKIP_VERSION_CHECK")
     if skip != 'ON':
-        try_check_version()
+        # We don't join this thread because we do not wish to block the user.
+        check_version_thread = threading.Thread(target=try_check_version, daemon=True)
+        check_version_thread.start()
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,

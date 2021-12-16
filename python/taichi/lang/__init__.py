@@ -460,7 +460,6 @@ def check_version():
                                             'latest_version')
                 with open(version_path, 'w') as f:
                     f.write(response['latest_version'])
-                    f.truncate()
     except Exception:
         pass
 
@@ -479,7 +478,6 @@ def try_check_version():
                 with open(timestamp_path, 'w') as f:
                     f.write((cur_date +
                              datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
-                    f.truncate()
         else:
             check_version()
             with open(timestamp_path, 'w') as f:

@@ -141,6 +141,17 @@ def require_version(major, minor=None, patch=None):
 
 at_startup()
 
+def compare_version(latest, current):
+    latest_num = map(int, latest.split('.'))
+    current_num = map(int, current.split('.'))
+    for x, y in zip(latest_num, current_num):
+        if x > y:
+            return True
+        elif x < y:
+            return False
+        else:
+            continue
+    return False
 
 def _print_taichi_header():
     header = '[Taichi] '
@@ -152,7 +163,7 @@ def _print_taichi_header():
             latest_version = ''
             with open(version_path, 'r') as f:
                 latest_version = f.readlines()[0].rstrip()
-            if latest_version > ti_core.get_version_string():
+            if compare_version(latest_version, ti_core.get_version_string()):
                 header += f'latest version {latest_version}, '
     except Exception:
         pass

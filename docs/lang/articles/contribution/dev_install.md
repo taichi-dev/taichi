@@ -34,14 +34,6 @@ Installation instructions vary depending on which operating system (OS) you are 
 
 ## Prerequisites
 
-|              Category              |                                Prerequisites                                                                 |
-|:----------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|              OS              |                                                                  <li>Windows</li><li>macOS</li><li>Ubuntu</li><li>Arch Linux</li><li>Other Linux distributions</li>                                                                  |
-|            Python            | 3.6/3.7/3.8/3.9    <blockquote>We recommend installing Python from [Miniforge](https://github.com/conda-forge/miniforge/#download) conda if you are on a MacBook with M1 chip.</blockquote> |
-|            Clang++           |                                                                                       8&leq; Clang++ <12                                                                                       |
-|             LLVM             |                                                                                            10.0.0                                                                                           |
-| Command line tools for Xcode |                                                                       For macOS users only: `xcode-select --install `                                                                       |
-
 <Tabs
   defaultValue="unix"
   values={[
@@ -73,7 +65,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 
 </TabItem>
 
-</Tab>
+</Tabs>
 
 ### Install Clang
 

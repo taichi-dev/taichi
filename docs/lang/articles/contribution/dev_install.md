@@ -440,13 +440,13 @@ The `develop` command serves the developers' needs better because edits to the P
 3. Clone the Taichi repo *recursively* & install python dependencies
 
 
-```shell
-git clone --recursive https://github.com/taichi-dev/taichi
-
-cd taichi
-
-python -m pip install --user -r requirements_dev.txt
-```
+   ```shell
+   git clone --recursive https://github.com/taichi-dev/taichi
+   
+   cd taichi
+   
+   python -m pip install --user -r requirements_dev.txt
+   ```
 
 4. Build taichi by using `python setup.py develop`
 

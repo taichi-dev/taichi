@@ -6,8 +6,8 @@ import os
 import platform
 import shutil
 import tempfile
-import time
 import threading
+import time
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 from urllib import request
@@ -456,7 +456,8 @@ def check_version():
         with request.urlopen(req, data=payload, timeout=5) as response:
             response = json.loads(response.read().decode('utf-8'))
             if response['status'] == 1:
-                version_path = os.path.join(_ti_core.get_repo_dir(), 'latest_version')
+                version_path = os.path.join(_ti_core.get_repo_dir(),
+                                            'latest_version')
                 with open(version_path, 'w') as f:
                     f.write(response['latest_version'])
                     f.truncate()
@@ -519,7 +520,8 @@ def init(arch=None,
     skip = os.environ.get("TI_SKIP_VERSION_CHECK")
     if skip != 'ON':
         # We don't join this thread because we do not wish to block the user.
-        check_version_thread = threading.Thread(target=try_check_version, daemon=True)
+        check_version_thread = threading.Thread(target=try_check_version,
+                                                daemon=True)
         check_version_thread.start()
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are

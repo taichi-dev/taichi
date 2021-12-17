@@ -455,13 +455,9 @@ def check_version():
         req.add_header('Content-Type', 'application/json')
         with request.urlopen(req, data=payload, timeout=5) as response:
             response = json.loads(response.read().decode('utf-8'))
-            if response['status'] == 1:
-                version_path = os.path.join(_ti_core.get_repo_dir(),
-                                            'latest_version')
-                with open(version_path, 'w') as f:
-                    f.write(response['latest_version'])
+            return response
     except:
-        pass
+        return None
 
 
 def try_check_version():
@@ -474,15 +470,29 @@ def try_check_version():
             with open(timestamp_path, 'r') as f:
                 last_time = f.readlines()[0].rstrip()
             if cur_date.strftime('%Y-%m-%d') > last_time:
-                check_version()
+                response = check_version()
+                if response == None:
+                    return
                 with open(timestamp_path, 'w') as f:
                     f.write((cur_date +
                              datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+                    f.write('\n')
+                    if response['status'] == 1:
+                        f.write(response['latest_version'])
+                    else:
+                        f.write('0.0.0')
         else:
-            check_version()
+            response = check_version()
+            if response == None:
+                return
             with open(timestamp_path, 'w') as f:
                 f.write((cur_date +
                          datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+                f.write('\n')
+                if response['status'] == 1:
+                    f.write(response['latest_version'])
+                else:
+                    f.write('0.0.0')
     # Wildcard exception to catch potential file writing errors.
     except:
         pass
@@ -517,7 +527,7 @@ def init(arch=None,
     # Check version for users every 7 days if not disabled by users.
     skip = os.environ.get("TI_SKIP_VERSION_CHECK")
     if skip != 'ON':
-        # We don't join this thread because we do not wish to block the user.
+        # We don't join this thread because we do not wish to block users.
         check_version_thread = threading.Thread(target=try_check_version,
                                                 daemon=True)
         check_version_thread.start()

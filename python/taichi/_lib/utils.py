@@ -153,11 +153,11 @@ def _print_taichi_header():
     header += f'version {ti_core.get_version_string()}, '
 
     try:
-        version_path = os.path.join(ti_core.get_repo_dir(), 'latest_version')
-        if os.path.exists(version_path):
+        timestamp_path = os.path.join(ti_core.get_repo_dir(), 'timestamp')
+        if os.path.exists(timestamp_path):
             latest_version = ''
-            with open(version_path, 'r') as f:
-                latest_version = f.readlines()[0].rstrip()
+            with open(timestamp_path, 'r') as f:
+                latest_version = f.readlines()[1].rstrip()
             if compare_version(latest_version, ti_core.get_version_string()):
                 header += f'latest version {latest_version}, '
     except:

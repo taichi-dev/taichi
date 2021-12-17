@@ -216,6 +216,7 @@ class CMakeBuild(build_ext):
                 print(f"Fetching runtime file {f} to {taichi_lib_dir} folder")
                 self.copy_file(os.path.join(llvm_runtime_dir, f), runtime_dir)
 
+
 class Clean(clean):
     def run(self):
         super().run()

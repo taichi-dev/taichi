@@ -442,9 +442,9 @@ The `develop` command serves the developers' needs better because edits to the P
 
    ```shell
    git clone --recursive https://github.com/taichi-dev/taichi
-   
+
    cd taichi
-   
+
    python -m pip install --user -r requirements_dev.txt
    ```
 

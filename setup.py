@@ -114,7 +114,7 @@ class CMakeBuild(build_ext):
 
     def run(self):
         try:
-            out = subprocess.check_output(['cmake', '--version'])
+            subprocess.check_call(['cmake', '--version'])
         except OSError:
             raise RuntimeError(
                 "CMake must be installed to build the following extensions: " +
@@ -171,54 +171,50 @@ class CMakeBuild(build_ext):
         # We need to make sure these additional files are ready for
         #   - develop mode: must exist in local python/taichi/lib/ folder
         #   - install mode: must exist in self.build_lib/taichi/lib
-        taichi_lib_dir = os.path.join('taichi', '_lib')
-        for target in (
-                os.path.join(package_dir, taichi_lib_dir),
-                os.path.join(self.build_lib, taichi_lib_dir),
-        ):
-            runtime_dir = os.path.join(target, "runtime")
-            core_dir = os.path.join(target, "core")
-            os.makedirs(runtime_dir, exist_ok=True)
-            os.makedirs(core_dir, exist_ok=True)
+        base_dir = package_dir if self.inplace else self.build_lib
+        taichi_lib_dir = os.path.join(base_dir, 'taichi', '_lib')
 
-            if get_os_name() == 'linux' or get_os_name(
-            ) == 'unix' or get_os_name() == 'osx':
-                remove_files_with_extension(core_dir, ".so")
-            else:
-                remove_files_with_extension(core_dir, ".pyd")
-            if get_os_name() == 'osx':
-                remove_files_with_extension(runtime_dir, ".dylib")
-            remove_files_with_extension(runtime_dir, ".bc")
+        runtime_dir = os.path.join(taichi_lib_dir, "runtime")
+        core_dir = os.path.join(taichi_lib_dir, "core")
+        os.makedirs(runtime_dir, exist_ok=True)
+        os.makedirs(core_dir, exist_ok=True)
 
-            if get_os_name() == 'linux' or get_os_name() == 'unix':
-                shutil.copy(os.path.join(self.build_temp, 'libtaichi_core.so'),
-                            os.path.join(core_dir, 'taichi_core.so'))
-            elif get_os_name() == 'osx':
-                shutil.copy(
-                    os.path.join(self.build_temp, 'libtaichi_core.dylib'),
-                    os.path.join(core_dir, 'taichi_core.so'))
-                moltenvk_path = os.path.join(self.build_temp,
-                                             'libMoltenVK.dylib')
-                if os.path.exists(moltenvk_path):
-                    shutil.copy(moltenvk_path,
-                                os.path.join(runtime_dir, 'libMoltenVK.dylib'))
-            else:
-                shutil.copy('runtimes/taichi_core.dll',
-                            os.path.join(core_dir, 'taichi_core.pyd'))
+        if (get_os_name() == 'linux' or get_os_name() == 'unix'
+                or get_os_name() == 'osx'):
+            remove_files_with_extension(core_dir, ".so")
+        else:
+            remove_files_with_extension(core_dir, ".pyd")
+        if get_os_name() == 'osx':
+            remove_files_with_extension(runtime_dir, ".dylib")
+        remove_files_with_extension(runtime_dir, ".bc")
 
-            if get_os_name() != 'osx':
-                libdevice_path = 'external/cuda_libdevice/slim_libdevice.10.bc'
-                print("copying libdevice:", libdevice_path)
-                assert os.path.exists(libdevice_path)
-                shutil.copy(libdevice_path,
-                            os.path.join(runtime_dir, 'slim_libdevice.10.bc'))
+        if get_os_name() == 'linux' or get_os_name() == 'unix':
+            self.copy_file(os.path.join(self.build_temp, 'libtaichi_core.so'),
+                           os.path.join(core_dir, 'taichi_core.so'))
+        elif get_os_name() == 'osx':
+            self.copy_file(
+                os.path.join(self.build_temp, 'libtaichi_core.dylib'),
+                os.path.join(core_dir, 'taichi_core.so'))
+            moltenvk_path = os.path.join(self.build_temp, 'libMoltenVK.dylib')
+            if os.path.exists(moltenvk_path):
+                self.copy_file(moltenvk_path,
+                               os.path.join(runtime_dir, 'libMoltenVK.dylib'))
+        else:
+            self.copy_file('runtimes/taichi_core.dll',
+                           os.path.join(core_dir, 'taichi_core.pyd'))
 
-            llvm_runtime_dir = 'taichi/runtime/llvm'
-            for f in os.listdir(llvm_runtime_dir):
-                if f.startswith('runtime_') and f.endswith('.bc'):
-                    print(f"Fetching runtime file {f} to {target} folder")
-                    shutil.copy(os.path.join(llvm_runtime_dir, f), runtime_dir)
+        if get_os_name() != 'osx':
+            libdevice_path = 'external/cuda_libdevice/slim_libdevice.10.bc'
+            print("copying libdevice:", libdevice_path)
+            assert os.path.exists(libdevice_path)
+            self.copy_file(libdevice_path,
+                           os.path.join(runtime_dir, 'slim_libdevice.10.bc'))
 
+        llvm_runtime_dir = 'taichi/runtime/llvm'
+        for f in os.listdir(llvm_runtime_dir):
+            if f.startswith('runtime_') and f.endswith('.bc'):
+                print(f"Fetching runtime file {f} to {taichi_lib_dir} folder")
+                self.copy_file(os.path.join(llvm_runtime_dir, f), runtime_dir)
 
 class Clean(clean):
     def run(self):

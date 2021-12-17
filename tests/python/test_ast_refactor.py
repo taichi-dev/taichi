@@ -1010,4 +1010,4 @@ def test_grouped_static_for_cast():
             ret += tmp[2] / 2
         return ret
 
-    assert (foo()) == approx(10)
+    assert foo() == approx(10)

@@ -6,7 +6,6 @@ import sys
 import textwrap
 
 import numpy as np
-from taichi import _logging
 import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang import impl, runtime_ops, util
@@ -20,6 +19,8 @@ from taichi.lang.util import to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
 from taichi.tools.util import obsolete
 from taichi.types import any_arr, primitive_types, template
+
+from taichi import _logging
 
 if util.has_pytorch():
     import torch

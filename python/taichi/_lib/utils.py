@@ -141,6 +141,7 @@ def require_version(major, minor=None, patch=None):
 
 at_startup()
 
+
 def compare_version(latest, current):
     latest_num = map(int, latest.split('.'))
     current_num = map(int, current.split('.'))
@@ -152,6 +153,7 @@ def compare_version(latest, current):
         else:
             continue
     return False
+
 
 def _print_taichi_header():
     header = '[Taichi] '

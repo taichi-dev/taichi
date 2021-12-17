@@ -6,6 +6,7 @@ import os
 import platform
 import shutil
 import tempfile
+import threading
 import time
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
@@ -416,7 +417,6 @@ def prepare_sandbox():
 
 def check_version():
     # Check Taichi version for the user.
-    print('Checking your Taichi version...')
     major = _ti_core.get_version_major()
     minor = _ti_core.get_version_minor()
     patch = _ti_core.get_version_patch()
@@ -437,13 +437,13 @@ def check_version():
             payload['platform'] = 'macosx_11_0_arm64'
 
     python_version = platform.python_version()
-    if python_version.startswith('3.6'):
+    if python_version.startswith('3.6.'):
         payload['python'] = 'cp36'
-    elif python_version.startswith('3.7'):
+    elif python_version.startswith('3.7.'):
         payload['python'] = 'cp37'
-    elif python_version.startswith('3.8'):
+    elif python_version.startswith('3.8.'):
         payload['python'] = 'cp38'
-    elif python_version.startswith('3.9'):
+    elif python_version.startswith('3.9.'):
         payload['python'] = 'cp39'
 
     # We do not want request exceptions break users' usage of Taichi.
@@ -453,18 +453,11 @@ def check_version():
         req = request.Request('https://metadata.taichi.graphics/check_version',
                               method='POST')
         req.add_header('Content-Type', 'application/json')
-        with request.urlopen(req, data=payload, timeout=3) as response:
+        with request.urlopen(req, data=payload, timeout=5) as response:
             response = json.loads(response.read().decode('utf-8'))
-            if response['status'] == 1:
-                print(
-                    f'Your Taichi version {version} is outdated. The latest version is {response["latest_version"]}, you can use\n'
-                    + f'pip install taichi=={response["latest_version"]}\n' +
-                    'to upgrade to the latest Taichi!')
-            elif response['status'] == 0:
-                # Status 0 means that user already have the latest Taichi. The message here prompts this infomation to users.
-                print(response['message'])
-    except Exception as error:
-        print('Checking lastest version failed:', error)
+            return response
+    except:
+        return None
 
 
 def try_check_version():
@@ -477,19 +470,32 @@ def try_check_version():
             with open(timestamp_path, 'r') as f:
                 last_time = f.readlines()[0].rstrip()
             if cur_date.strftime('%Y-%m-%d') > last_time:
-                check_version()
+                response = check_version()
+                if response is None:
+                    return
                 with open(timestamp_path, 'w') as f:
                     f.write((cur_date +
                              datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
-                    f.truncate()
+                    f.write('\n')
+                    if response['status'] == 1:
+                        f.write(response['latest_version'])
+                    else:
+                        f.write('0.0.0')
         else:
-            check_version()
+            response = check_version()
+            if response is None:
+                return
             with open(timestamp_path, 'w') as f:
                 f.write((cur_date +
                          datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
+                f.write('\n')
+                if response['status'] == 1:
+                    f.write(response['latest_version'])
+                else:
+                    f.write('0.0.0')
     # Wildcard exception to catch potential file writing errors.
-    except Exception as error:
-        print('Checking lastest version failed:', error)
+    except:
+        pass
 
 
 def init(arch=None,
@@ -521,7 +527,10 @@ def init(arch=None,
     # Check version for users every 7 days if not disabled by users.
     skip = os.environ.get("TI_SKIP_VERSION_CHECK")
     if skip != 'ON':
-        try_check_version()
+        # We don't join this thread because we do not wish to block users.
+        check_version_thread = threading.Thread(target=try_check_version,
+                                                daemon=True)
+        check_version_thread.start()
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,

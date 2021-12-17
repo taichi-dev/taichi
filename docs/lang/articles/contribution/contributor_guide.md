@@ -82,7 +82,7 @@ Except for minor updates, most PRs start from a developer taking over an issue. 
 
 ## References for documentation updates
 
-As part of the effort to increase visibility of the community and to improve developer experience, we highly recommend including documentation updates in your PR if applicable. Here are some of the documentation-specific references and tips: 
+As part of the effort to increase visibility of the community and to improve developer experience, we highly recommend including documentation updates in your PR if applicable. Here are some of the documentation-specific references and tips:
 
 - Documentation source files are hosted under [docs/](https://github.com/taichi-dev/taichi/blob/master/docs/).
 - We use GitHub Flavored Markdown (GFM) and [Docusaurus](https://docusaurus.io/) to build our documentation site. For information on the supported Markdown syntax, see the  [Documentation Writing Guide](./doc_writing).
@@ -126,7 +126,7 @@ python misc/code_format.py
 
 ### Run integration tests
 
-To run all the C++ and Python tests: 
+To run all the C++ and Python tests:
 `python tests/run_tests.py`
 
 - **Example 1:**
@@ -215,7 +215,7 @@ Your PR will make it into the commit history in the the master branch or even Ta
   - If you have multiple tags, separate adjacent tags with one space.
   - See [misc/prtags.json](https://github.com/taichi-dev/taichi/blob/master/misc/prtags.json) for a full list of available tags.
   - We differentiate PRs for end-users from PRs for developers by *capitalizing tag initial*.
-    - If a PR deals with a feature visible to the end-users, initialize the most relevant tag and the PR will [make it into the release notes](https://github.com/taichi-dev/taichi/blob/master/misc/make_changelog.py). For example, `[Metal]`, `[Vulkan]`, `[IR]`, `[Lang]`, or `[CUDA]`. Ensure that your PR title has *AT MOST* one tag dealt this way. 
+    - If a PR deals with a feature visible to the end-users, initialize the most relevant tag and the PR will [make it into the release notes](https://github.com/taichi-dev/taichi/blob/master/misc/make_changelog.py). For example, `[Metal]`, `[Vulkan]`, `[IR]`, `[Lang]`, or `[CUDA]`. Ensure that your PR title has *AT MOST* one tag dealt this way.
     - If a PR deals with the underlying or intermediate implementation, then it is for the developers and you need to ensure that all its tags are *in lowercase*. For example, `[metal]`, `[vulkan]`, `[ir]`, `[lang]`, or `[cuda]`.
 
 :::danger INCORRECT
@@ -267,14 +267,14 @@ When introducing a new tag, ensure that you add it to [misc/prtags.json](https:/
 Follow this checklist during PR review or merging:
 
 1. Ensure that your PR title follows our [naming conventions](#pr-naming-conventions).
-2. Ensure that Taichi's master branch has a *linear history*. See [Linear vs Non-Linear History](https://idiv-biodiversity.github.io/git-knowledge-base/linear-vs-nonlinear.html) for more information. 
+2. Ensure that Taichi's master branch has a *linear history*. See [Linear vs Non-Linear History](https://idiv-biodiversity.github.io/git-knowledge-base/linear-vs-nonlinear.html) for more information.
 3. Ensure that your PR passes all Continuous Integration (CI) tests before merging it.
-   
+
    CI is triggered each time you push a commit to an open PR. It builds and tests all commits in your PR in multiple environments. Keep an eye on the CI test results:
    - A ✔️ on the left-hand side of a commit hash: CI has passed,
    - A ❌ on the left-hand side of a commit hash: CI has failed.
 
-Here, we do not want to repeat some best practices summarized in the following Google blog articles. But please spare a couple of minutes reading them if your PR is being reviewed or if you are reviewing a PR. They have our recommendation! 
+Here, we do not want to repeat some best practices summarized in the following Google blog articles. But please spare a couple of minutes reading them if your PR is being reviewed or if you are reviewing a PR. They have our recommendation!
   - [Code Health: Understanding Code In Review](https://testing.googleblog.com/2018/05/code-health-understanding-code-in-review.html)
   - [Code Health: Respectful Reviews == Useful Reviews](https://testing.googleblog.com/2019/11/code-health-respectful-reviews-useful.html)
   - [How to have your PR merged quickly](https://testing.googleblog.com/2017/06/code-health-too-many-comments-on-your.html)

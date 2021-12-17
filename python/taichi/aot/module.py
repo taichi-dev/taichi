@@ -97,16 +97,15 @@ class Module:
           name: name of taichi field
           field: taichi field
 
-        Example:
-          Usage::
+        Example::
 
-          a = ti.field(ti.f32, shape=(4,4))
-          b = ti.field("something")
-
-          m.add_field(a)
-          m.add_field(b)
-
-          # Must add in sequence
+            >>> a = ti.field(ti.f32, shape=(4,4))
+            >>> b = ti.field("something")
+            >>>
+            >>> m.add_field(a)
+            >>> m.add_field(b)
+            >>>
+            >>> # Must add in sequence
         """
         is_scalar = True
         self._fields[name] = field
@@ -186,28 +185,27 @@ class Module:
         Args:
           kernel_fn (Function): the function decorated by taichi `kernel`.
 
-        Example:
-          Usage::
+        Example::
 
-            @ti.kernel
-            def bar_tmpl(a: ti.template()):
-              x = a
-              # or y = a
-              # do something with `x` or `y`
-
-            m = ti.aot.Module(arch)
-            with m.add_kernel_template(bar_tmpl) as kt:
-              kt.instantiate(a=x)
-              kt.instantiate(a=y)
-
-            @ti.kernel
-            def bar_tmpl_multiple_args(a: ti.template(), b: ti.template())
-              x = a
-              y = b
-              # do something with `x` and `y`
-
-            with m.add_kernel_template(bar_tmpl) as kt:
-              kt.instantiate(a=x, b=y)
+            >>> @ti.kernel
+            >>> def bar_tmpl(a: ti.template()):
+            >>>   x = a
+            >>>   # or y = a
+            >>>   # do something with `x` or `y`
+            >>>
+            >>> m = ti.aot.Module(arch)
+            >>> with m.add_kernel_template(bar_tmpl) as kt:
+            >>>   kt.instantiate(a=x)
+            >>>   kt.instantiate(a=y)
+            >>>
+            >>> @ti.kernel
+            >>> def bar_tmpl_multiple_args(a: ti.template(), b: ti.template())
+            >>>   x = a
+            >>>   y = b
+            >>>   # do something with `x` and `y`
+            >>>
+            >>> with m.add_kernel_template(bar_tmpl) as kt:
+            >>>   kt.instantiate(a=x, b=y)
 
         TODO:
           * Support external array

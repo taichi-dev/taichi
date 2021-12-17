@@ -5,14 +5,23 @@ import operator as _bt_ops_mod  # bt for builtin
 import traceback
 
 from taichi._lib import core as _ti_core
-from taichi.lang import impl, matrix
+from taichi.lang import impl
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.snode import SNode
 from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
 
 unary_ops = []
+
+
+def Expr(*args, **kw):
+    from taichi.lang.expr import Expr as ti_Expr  # pylint: disable=C0415
+    return ti_Expr(*args, **kw)
+
+
+def make_expr_group(*args):
+    from taichi.lang.expr import make_expr_group as ti_make_expr_group  # pylint: disable=C0415
+    return ti_make_expr_group(*args)
 
 
 def stack_info():
@@ -27,7 +36,8 @@ def stack_info():
 
 
 def is_taichi_expr(a):
-    return isinstance(a, Expr)
+    from taichi.lang.expr import Expr as ti_Expr  # pylint: disable=C0415
+    return isinstance(a, ti_Expr)
 
 
 def wrap_if_not_expr(a):
@@ -922,6 +932,7 @@ def rescale_index(a, b, I):
         rescaled grouped loop index
 
     """
+    import taichi.lang.matrix as matrix
     assert isinstance(
         a, (Field, SNode)), "The first argument must be a field or an SNode"
     assert isinstance(

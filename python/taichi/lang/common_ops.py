@@ -1,135 +1,135 @@
-import taichi as ti
+import taichi.lang.ops as ti_ops
 
 
 class TaichiOperations:
     """The base class of taichi operations of expressions. Subclasses: :class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`"""
     def __neg__(self):
         _taichi_skip_traceback = 1
-        return ti.neg(self)
+        return ti_ops.neg(self)
 
     def __abs__(self):
         _taichi_skip_traceback = 1
-        return ti.abs(self)
+        return ti_ops.abs(self)
 
     def __add__(self, other):
         _taichi_skip_traceback = 1
-        return ti.add(self, other)
+        return ti_ops.add(self, other)
 
     def __radd__(self, other):
         _taichi_skip_traceback = 1
-        return ti.add(other, self)
+        return ti_ops.add(other, self)
 
     def __sub__(self, other):
         _taichi_skip_traceback = 1
-        return ti.sub(self, other)
+        return ti_ops.sub(self, other)
 
     def __rsub__(self, other):
         _taichi_skip_traceback = 1
-        return ti.sub(other, self)
+        return ti_ops.sub(other, self)
 
     def __mul__(self, other):
         _taichi_skip_traceback = 1
-        return ti.mul(self, other)
+        return ti_ops.mul(self, other)
 
     def __rmul__(self, other):
         _taichi_skip_traceback = 1
-        return ti.mul(other, self)
+        return ti_ops.mul(other, self)
 
     def __truediv__(self, other):
         _taichi_skip_traceback = 1
-        return ti.truediv(self, other)
+        return ti_ops.truediv(self, other)
 
     def __rtruediv__(self, other):
         _taichi_skip_traceback = 1
-        return ti.truediv(other, self)
+        return ti_ops.truediv(other, self)
 
     def __floordiv__(self, other):
         _taichi_skip_traceback = 1
-        return ti.floordiv(self, other)
+        return ti_ops.floordiv(self, other)
 
     def __rfloordiv__(self, other):
         _taichi_skip_traceback = 1
-        return ti.floordiv(other, self)
+        return ti_ops.floordiv(other, self)
 
     def __mod__(self, other):
         _taichi_skip_traceback = 1
-        return ti.mod(self, other)
+        return ti_ops.mod(self, other)
 
     def __rmod__(self, other):
         _taichi_skip_traceback = 1
-        return ti.mod(other, self)
+        return ti_ops.mod(other, self)
 
     def __pow__(self, other, modulo=None):
         _taichi_skip_traceback = 1
-        return ti.pow(self, other)
+        return ti_ops.pow(self, other)
 
     def __rpow__(self, other, modulo=None):
         _taichi_skip_traceback = 1
-        return ti.pow(other, self)
+        return ti_ops.pow(other, self)
 
     def __le__(self, other):
         _taichi_skip_traceback = 1
-        return ti.cmp_le(self, other)
+        return ti_ops.cmp_le(self, other)
 
     def __lt__(self, other):
         _taichi_skip_traceback = 1
-        return ti.cmp_lt(self, other)
+        return ti_ops.cmp_lt(self, other)
 
     def __ge__(self, other):
         _taichi_skip_traceback = 1
-        return ti.cmp_ge(self, other)
+        return ti_ops.cmp_ge(self, other)
 
     def __gt__(self, other):
         _taichi_skip_traceback = 1
-        return ti.cmp_gt(self, other)
+        return ti_ops.cmp_gt(self, other)
 
     def __eq__(self, other):
         _taichi_skip_traceback = 1
-        return ti.cmp_eq(self, other)
+        return ti_ops.cmp_eq(self, other)
 
     def __ne__(self, other):
         _taichi_skip_traceback = 1
-        return ti.cmp_ne(self, other)
+        return ti_ops.cmp_ne(self, other)
 
     def __and__(self, other):
         _taichi_skip_traceback = 1
-        return ti.bit_and(self, other)
+        return ti_ops.bit_and(self, other)
 
     def __rand__(self, other):
         _taichi_skip_traceback = 1
-        return ti.bit_and(other, self)
+        return ti_ops.bit_and(other, self)
 
     def __or__(self, other):
         _taichi_skip_traceback = 1
-        return ti.bit_or(self, other)
+        return ti_ops.bit_or(self, other)
 
     def __ror__(self, other):
         _taichi_skip_traceback = 1
-        return ti.bit_or(other, self)
+        return ti_ops.bit_or(other, self)
 
     def __xor__(self, other):
         _taichi_skip_traceback = 1
-        return ti.bit_xor(self, other)
+        return ti_ops.bit_xor(self, other)
 
     def __rxor__(self, other):
         _taichi_skip_traceback = 1
-        return ti.bit_xor(other, self)
+        return ti_ops.bit_xor(other, self)
 
     def __lshift__(self, other):
         _taichi_skip_traceback = 1
-        return ti.bit_shl(self, other)
+        return ti_ops.bit_shl(self, other)
 
     def __rlshift__(self, other):
         _taichi_skip_traceback = 1
-        return ti.bit_shl(other, self)
+        return ti_ops.bit_shl(other, self)
 
     def __rshift__(self, other):
         _taichi_skip_traceback = 1
-        return ti.bit_sar(self, other)
+        return ti_ops.bit_sar(self, other)
 
     def __rrshift__(self, other):
         _taichi_skip_traceback = 1
-        return ti.bit_sar(other, self)
+        return ti_ops.bit_sar(other, self)
 
     def logical_and(self, other):
         """Return the new expression of computing logical and between self and a given operand.
@@ -140,7 +140,7 @@ class TaichiOperations:
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of logical and."""
         _taichi_skip_traceback = 1
-        return ti.logical_and(self, other)
+        return ti_ops.logical_and(self, other)
 
     def logical_or(self, other):
         """Return the new expression of computing logical or between self and a given operand.
@@ -151,15 +151,15 @@ class TaichiOperations:
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of logical or."""
         _taichi_skip_traceback = 1
-        return ti.logical_or(self, other)
+        return ti_ops.logical_or(self, other)
 
     def __invert__(self):  # ~a => a.__invert__()
         _taichi_skip_traceback = 1
-        return ti.bit_not(self)
+        return ti_ops.bit_not(self)
 
     def __not__(self):  # not a => a.__not__()
         _taichi_skip_traceback = 1
-        return ti.logical_not(self)
+        return ti_ops.logical_not(self)
 
     def atomic_add(self, other):
         """Return the new expression of computing atomic add between self and a given operand.
@@ -170,7 +170,7 @@ class TaichiOperations:
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic add."""
         _taichi_skip_traceback = 1
-        return ti.atomic_add(self, other)
+        return ti_ops.atomic_add(self, other)
 
     def atomic_sub(self, other):
         """Return the new expression of computing atomic sub between self and a given operand.
@@ -181,7 +181,7 @@ class TaichiOperations:
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic sub."""
         _taichi_skip_traceback = 1
-        return ti.atomic_sub(self, other)
+        return ti_ops.atomic_sub(self, other)
 
     def atomic_and(self, other):
         """Return the new expression of computing atomic and between self and a given operand.
@@ -192,7 +192,7 @@ class TaichiOperations:
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic and."""
         _taichi_skip_traceback = 1
-        return ti.atomic_and(self, other)
+        return ti_ops.atomic_and(self, other)
 
     def atomic_xor(self, other):
         """Return the new expression of computing atomic xor between self and a given operand.
@@ -203,7 +203,7 @@ class TaichiOperations:
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic xor."""
         _taichi_skip_traceback = 1
-        return ti.atomic_xor(self, other)
+        return ti_ops.atomic_xor(self, other)
 
     def atomic_or(self, other):
         """Return the new expression of computing atomic or between self and a given operand.
@@ -214,7 +214,7 @@ class TaichiOperations:
         Returns:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic or."""
         _taichi_skip_traceback = 1
-        return ti.atomic_or(self, other)
+        return ti_ops.atomic_or(self, other)
 
     def __iadd__(self, other):
         _taichi_skip_traceback = 1
@@ -244,37 +244,37 @@ class TaichiOperations:
     # we don't support atomic_mul/truediv/floordiv/mod yet:
     def __imul__(self, other):
         _taichi_skip_traceback = 1
-        self.assign(ti.mul(self, other))
+        self.assign(ti_ops.mul(self, other))
         return self
 
     def __itruediv__(self, other):
         _taichi_skip_traceback = 1
-        self.assign(ti.truediv(self, other))
+        self.assign(ti_ops.truediv(self, other))
         return self
 
     def __ifloordiv__(self, other):
         _taichi_skip_traceback = 1
-        self.assign(ti.floordiv(self, other))
+        self.assign(ti_ops.floordiv(self, other))
         return self
 
     def __imod__(self, other):
         _taichi_skip_traceback = 1
-        self.assign(ti.mod(self, other))
+        self.assign(ti_ops.mod(self, other))
         return self
 
     def __ilshift__(self, other):
         _taichi_skip_traceback = 1
-        self.assign(ti.bit_shl(self, other))
+        self.assign(ti_ops.bit_shl(self, other))
         return self
 
     def __irshift__(self, other):
         _taichi_skip_traceback = 1
-        self.assign(ti.bit_shr(self, other))
+        self.assign(ti_ops.bit_shr(self, other))
         return self
 
     def __ipow__(self, other):
         _taichi_skip_traceback = 1
-        self.assign(ti.pow(self, other))
+        self.assign(ti_ops.pow(self, other))
         return self
 
     def assign(self, other):
@@ -286,7 +286,7 @@ class TaichiOperations:
         Returns:
             :class:`~taichi.lang.expr.Expr`: The expression after assigning."""
         _taichi_skip_traceback = 1
-        return ti.assign(self, other)
+        return ti_ops.assign(self, other)
 
     # pylint: disable=R0201
     def augassign(self, x, op):
@@ -325,8 +325,8 @@ class TaichiOperations:
 
     def __ti_int__(self):
         _taichi_skip_traceback = 1
-        return ti.cast(self, int)
+        return ti_ops.cast(self, int)
 
     def __ti_float__(self):
         _taichi_skip_traceback = 1
-        return ti.cast(self, float)
+        return ti_ops.cast(self, float)

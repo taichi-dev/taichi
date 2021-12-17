@@ -1,4 +1,4 @@
-import taichi.lang.ops as ti_ops
+from taichi.lang import ops as ti_ops
 
 
 class TaichiOperations:

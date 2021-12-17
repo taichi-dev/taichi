@@ -119,27 +119,11 @@ if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
   message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Condider passing -DCLANG_PATH=/path/to/clang to cmake to use a specific clang.")
 endif()
 
-if (LLVM_AS_EXECUTABLE)
-  message("Using llvm-as = ${LLVM_AS_EXECUTABLE}")
-else()
-  find_program(LLVM_AS_EXECUTABLE NAMES llvm-as)
-  if (NOT LLVM_AS_EXECUTABLE)
-      message(FATAL_ERROR "Cannot find any llvm-as executable.")
-  endif()
-endif()
-
-execute_process(COMMAND ${LLVM_AS_EXECUTABLE} --version OUTPUT_VARIABLE LLVM_AS_VERSION_OUTPUT)
-string(REGEX MATCH "[0-9]+\\.[0-9]+(\\.[0-9]+)?" LLVM_AS_VERSION "${LLVM_AS_VERSION_OUTPUT}")
-if (NOT ${CLANG_VERSION} VERSION_EQUAL ${LLVM_AS_VERSION})
-  message(WARNING "Versions of ${CLANG_EXECUTABLE} and ${LLVM_AS_EXECUTABLE} don't match.")
-endif()
-
 # Build llvm-runtime for host arch and cuda (if available)
 foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
   add_custom_target(
       "generate_llvm_runtime_${arch}"
-      COMMAND ${CLANG_EXECUTABLE} ${CLANG_OSX_FLAGS} -S runtime.cpp -o "runtime_${arch}.ll" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
-      COMMAND ${LLVM_AS_EXECUTABLE} "runtime_${arch}.ll" -o "runtime_${arch}.bc"
+      COMMAND ${CLANG_EXECUTABLE} ${CLANG_OSX_FLAGS} -c runtime.cpp -o "runtime_${arch}.bc" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
       WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm"
   )
   add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${arch}")

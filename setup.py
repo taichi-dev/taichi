@@ -233,7 +233,6 @@ class Clean(clean):
             'taichi/common/commit_hash.h', 'taichi/common/version.h'
         ]
         generated_files += glob.glob('taichi/runtime/llvm/runtime_*.bc')
-        generated_files += glob.glob('taichi/runtime/llvm/runtime_*.ll')
         generated_files += glob.glob('python/taichi/_lib/core/*.so')
         generated_files += glob.glob('python/taichi/_lib/core/*.pyd')
         for f in generated_files:

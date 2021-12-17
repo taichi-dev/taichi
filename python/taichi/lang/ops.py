@@ -933,7 +933,7 @@ def rescale_index(a, b, I):
         rescaled grouped loop index
 
     """
-    import taichi.lang.matrix as matrix
+    from taichi.lang import matrix  # pylint: disable=C0415
     assert isinstance(
         a, (Field, SNode)), "The first argument must be a field or an SNode"
     assert isinstance(

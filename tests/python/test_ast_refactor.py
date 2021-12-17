@@ -998,3 +998,16 @@ def test_default_template_args_on_func():
         return bar()
 
     assert foo() == 123
+
+
+@ti.test()
+def test_grouped_static_for_cast():
+    @ti.kernel
+    def foo()->ti.f32:
+        ret = 0.
+        for I in ti.static(ti.grouped(ti.ndrange((4, 5), (3, 5), 5))):
+            tmp = I.cast(float)
+            ret += tmp[2] / 2
+        return ret
+
+    assert(foo()) == approx(10)

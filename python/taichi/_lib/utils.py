@@ -145,13 +145,7 @@ at_startup()
 def compare_version(latest, current):
     latest_num = map(int, latest.split('.'))
     current_num = map(int, current.split('.'))
-    for x, y in zip(latest_num, current_num):
-        if x > y:
-            return True
-        if x < y:
-            return False
-        continue
-    return False
+    return tuple(latest_num) > tuple(current_num)
 
 
 def _print_taichi_header():

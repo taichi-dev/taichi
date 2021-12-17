@@ -471,7 +471,7 @@ def try_check_version():
                 last_time = f.readlines()[0].rstrip()
             if cur_date.strftime('%Y-%m-%d') > last_time:
                 response = check_version()
-                if response == None:
+                if response is None:
                     return
                 with open(timestamp_path, 'w') as f:
                     f.write((cur_date +
@@ -483,7 +483,7 @@ def try_check_version():
                         f.write('0.0.0')
         else:
             response = check_version()
-            if response == None:
+            if response is None:
                 return
             with open(timestamp_path, 'w') as f:
                 f.write((cur_date +

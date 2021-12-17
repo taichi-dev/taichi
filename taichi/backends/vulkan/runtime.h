@@ -103,9 +103,10 @@ class VkRuntime {
 
   DevicePtr get_snode_tree_device_ptr(int tree_id);
 
+  void add_root_buffer(size_t root_buffer_size);
+
  private:
   void init_buffers();
-  void add_root_buffer(size_t root_buffer_size);
 
   Device *device_;
 

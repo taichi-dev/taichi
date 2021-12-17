@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "taichi/program/aot_module_builder.h"
+#include "taichi/program/aot_module.h"
 #include "taichi/program/kernel.h"
 
 #include "taichi/backends/wasm/codegen_wasm.h"

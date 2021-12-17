@@ -13,7 +13,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/program/program_impl.h"
 #include "taichi/program/callable.h"
-#include "taichi/program/aot_module_builder.h"
+#include "taichi/program/aot_module.h"
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"

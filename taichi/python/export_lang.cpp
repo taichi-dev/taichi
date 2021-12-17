@@ -3,7 +3,9 @@
 #include <optional>
 #include <string>
 
+#if TI_WITH_LLVM
 #include "llvm/Config/llvm-config.h"
+#endif
 
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
@@ -1020,7 +1022,9 @@ void export_lang(py::module &m) {
   m.def("get_version_major", get_version_major);
   m.def("get_version_minor", get_version_minor);
   m.def("get_version_patch", get_version_patch);
+#if TI_WITH_LLVM
   m.def("get_llvm_version_string", [] { return LLVM_VERSION_STRING; });
+#endif
   m.def("test_printf", [] { printf("test_printf\n"); });
   m.def("test_logging", [] { TI_INFO("test_logging"); });
   m.def("trigger_crash", [] { *(int *)(1) = 0; });

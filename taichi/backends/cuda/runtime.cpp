@@ -26,7 +26,7 @@ class RuntimeCUDA : public Runtime {
     return CUDAContext::get_instance().detected();
   }
 
-  ~RuntimeCUDA() {
+  ~RuntimeCUDA() override {
   }
 };
 

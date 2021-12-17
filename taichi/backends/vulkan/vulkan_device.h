@@ -4,7 +4,11 @@
 
 #include <external/VulkanMemoryAllocator/include/vk_mem_alloc.h>
 
+#ifdef ANDROID
+#include <android/native_window_jni.h>
+#else
 #include <GLFW/glfw3.h>
+#endif
 
 #include <memory>
 #include <optional>
@@ -365,6 +369,7 @@ class VulkanSurface : public Surface {
 
   void present_image() override;
   std::pair<uint32_t, uint32_t> get_size() override;
+  int get_image_count() override;
   BufferFormat image_format() override;
   void resize(uint32_t width, uint32_t height) override;
 
@@ -380,14 +385,18 @@ class VulkanSurface : public Surface {
   VkSurfaceKHR surface_;
   VkSwapchainKHR swapchain_;
   VkSemaphore image_available_;
+#ifdef ANDROID
+  ANativeWindow *window_;
+#else
   GLFWwindow *window_;
+#endif
   BufferFormat image_format_;
 
   uint32_t image_index_{0};
 
   std::vector<DeviceAllocation> swapchain_images_;
 
-  DeviceAllocation screenshot_image_{kDeviceNullAllocation};
+  // DeviceAllocation screenshot_image_{kDeviceNullAllocation};
   DeviceAllocation screenshot_buffer_{kDeviceNullAllocation};
 };
 

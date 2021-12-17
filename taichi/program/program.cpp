@@ -21,14 +21,16 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
+#ifdef TI_WITH_LLVM
 #include "taichi/llvm/llvm_program.h"
+#endif
 
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/cc_program.h"
 #endif
 #ifdef TI_WITH_VULKAN
 #include "taichi/backends/vulkan/vulkan_program.h"
-#include "taichi/backends/vulkan/loader.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #endif
 
 #if defined(TI_ARCH_x64)
@@ -86,7 +88,7 @@ Program::Program(Arch desired_arch)
     TI_ERROR("This taichi is not compiled with Vulkan")
 #endif
   } else if (config.arch == Arch::opengl) {
-    TI_ASSERT(opengl::is_opengl_api_available());
+    TI_ASSERT(opengl::initialize_opengl(config.use_gles));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
   } else if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
@@ -366,9 +368,9 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    Expr(snode_to_glb_var_exprs_.at(snode))[indices] =
+    Expr(snode_to_glb_var_exprs_.at(snode))[indices].set_or_insert_assignment(
         Expr::make<ArgLoadExpression>(snode->num_active_indices,
-                                      snode->dt->get_compute_type());
+                                      snode->dt->get_compute_type()));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
@@ -381,47 +383,49 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 
 Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
   auto kernel_name = fmt::format("ndarray_reader");
-  auto &ker = kernel([ndarray] {
+  NdarrayRwKeys keys{ndarray->num_active_indices, ndarray->dtype};
+  auto &ker = kernel([keys] {
     ExprGroup indices;
-    for (int i = 0; i < ndarray->num_active_indices; i++) {
+    for (int i = 0; i < keys.num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
     auto ret = Stmt::make<FrontendReturnStmt>(
         load_if_ptr(Expr(Expr::make<ExternalTensorExpression>(
-            ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices,
+            keys.dtype, keys.num_active_indices, keys.num_active_indices,
             0))[indices]));
     current_ast_builder().insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
-  for (int i = 0; i < ndarray->num_active_indices; i++)
+  for (int i = 0; i < keys.num_active_indices; i++)
     ker.insert_arg(PrimitiveType::i32, false);
-  ker.insert_arg(ndarray->dtype, true);
-  ker.insert_ret(ndarray->dtype);
+  ker.insert_arg(keys.dtype, true);
+  ker.insert_ret(keys.dtype);
   return ker;
 }
 
 Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
   auto kernel_name = fmt::format("ndarray_writer");
-  auto &ker = kernel([ndarray] {
+  NdarrayRwKeys keys{ndarray->num_active_indices, ndarray->dtype};
+  auto &ker = kernel([keys] {
     ExprGroup indices;
-    for (int i = 0; i < ndarray->num_active_indices; i++) {
+    for (int i = 0; i < keys.num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
     Expr(Expr::make<ExternalTensorExpression>(
-        ndarray->dtype, ndarray->shape.size(), ndarray->num_active_indices + 1,
-        0))[indices] =
-        Expr::make<ArgLoadExpression>(ndarray->num_active_indices,
-                                      ndarray->dtype->get_compute_type());
+        keys.dtype, keys.num_active_indices, keys.num_active_indices + 1,
+        0))[indices]
+        .set_or_insert_assignment(Expr::make<ArgLoadExpression>(
+            keys.num_active_indices, keys.dtype->get_compute_type()));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
-  for (int i = 0; i < ndarray->num_active_indices; i++)
+  for (int i = 0; i < keys.num_active_indices; i++)
     ker.insert_arg(PrimitiveType::i32, false);
-  ker.insert_arg(ndarray->dtype, false);
-  ker.insert_arg(ndarray->dtype, true);
+  ker.insert_arg(keys.dtype, false);
+  ker.insert_arg(keys.dtype, true);
   return ker;
 }
 

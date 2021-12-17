@@ -96,9 +96,9 @@ def simple_advection(scale):
 
     @ti.kernel
     def advect():
-        semi_lagrangian(x(0), new_x(0), dt)
-        semi_lagrangian(x(1), new_x(1), dt)
-        semi_lagrangian(x(2), new_x(2), dt)
+        semi_lagrangian(x.get_scalar_field(0), new_x.get_scalar_field(0), dt)
+        semi_lagrangian(x.get_scalar_field(1), new_x.get_scalar_field(1), dt)
+        semi_lagrangian(x.get_scalar_field(2), new_x.get_scalar_field(2), dt)
 
         for I in ti.grouped(x):
             x[I] = new_x[I]

@@ -56,9 +56,9 @@ class ActionRecorder {
  private:
   ActionRecorder();
 
-  std::ofstream ofs;
+  std::ofstream ofs_;
 
-  bool running{false};
+  bool running_{false};
 };
 
 TI_NAMESPACE_END

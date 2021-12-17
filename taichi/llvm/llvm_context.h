@@ -104,6 +104,8 @@ class TaichiLLVMContext {
 
   std::size_t get_type_size(llvm::Type *type);
 
+  std::size_t get_struct_element_offset(llvm::StructType *type, int idx);
+
   template <typename T>
   llvm::Value *get_constant(T t);
 
@@ -145,14 +147,14 @@ class TaichiLLVMContext {
   void update_runtime_jit_module(std::unique_ptr<llvm::Module> module);
 
   std::unordered_map<std::thread::id, std::unique_ptr<ThreadLocalData>>
-      per_thread_data;
+      per_thread_data_;
 
-  Arch arch;
+  Arch arch_;
 
-  std::thread::id main_thread_id;
-  ThreadLocalData *main_thread_data{nullptr};
-  std::mutex mut;
-  std::mutex thread_map_mut;
+  std::thread::id main_thread_id_;
+  ThreadLocalData *main_thread_data_{nullptr};
+  std::mutex mut_;
+  std::mutex thread_map_mut_;
 };
 
 std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,

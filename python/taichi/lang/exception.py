@@ -4,3 +4,7 @@ class TaichiSyntaxError(Exception):
 
 class InvalidOperationError(Exception):
     pass
+
+
+class TaichiCompilationError(Exception):
+    pass

@@ -19,7 +19,7 @@ namespace vulkan {
 
 class Gui final : public GuiBase {
  public:
-  Gui(AppContext *app_context, GLFWwindow *window);
+  Gui(AppContext *app_context, SwapChain *swap_chain, GLFWwindow *window);
   void cleanup();
 
   void init_render_resources(VkRenderPass render_pass);
@@ -55,6 +55,7 @@ class Gui final : public GuiBase {
  private:
   bool is_empty_;
   AppContext *app_context_;
+  SwapChain *swap_chain_;
 
   VkRenderPass render_pass_{VK_NULL_HANDLE};
 

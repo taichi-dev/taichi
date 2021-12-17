@@ -12,7 +12,7 @@ the target architecture. Nevertheless, for Ninjas who strive for the last few %
 of performance, we also provide some APIs to allow developers fine-tune their
 applications. For example, specifying a suitable `ti.block_dim` could yield an almost
 3x performance boost in
-[examples/mpm3d.py](https://github.com/taichi-dev/taichi/blob/master/examples/mpm3d.py).
+[examples/mpm3d.py](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/mpm3d.py).
 
 :::note
 For **performance profiling** utilities, please see [Profiler section of the Contribution Guide](../misc/profiler.md).

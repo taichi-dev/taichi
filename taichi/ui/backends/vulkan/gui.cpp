@@ -15,8 +15,9 @@ PFN_vkVoidFunction load_vk_function_for_gui(const char *name, void *userData) {
   return result;
 }
 
-Gui::Gui(AppContext *app_context, GLFWwindow *window) {
+Gui::Gui(AppContext *app_context, SwapChain *swap_chain, GLFWwindow *window) {
   app_context_ = app_context;
+  swap_chain_ = swap_chain;
 
   create_descriptor_pool();
 
@@ -46,8 +47,8 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
   init_info.PipelineCache = VK_NULL_HANDLE;
   init_info.DescriptorPool = descriptor_pool_;
   init_info.Allocator = VK_NULL_HANDLE;
-  init_info.MinImageCount = 1;
-  init_info.ImageCount = 1;
+  init_info.MinImageCount = swap_chain_->surface().get_image_count();
+  init_info.ImageCount = swap_chain_->surface().get_image_count();
   ImGui_ImplVulkan_Init(&init_info, render_pass);
   render_pass_ = render_pass;
 

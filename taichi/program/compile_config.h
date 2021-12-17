@@ -12,6 +12,7 @@ struct CompileConfig {
   bool check_out_of_bound;
   int simd_width;
   bool lazy_compilation;
+  int opt_level;
   int external_optimization_level;
   int max_vector_width;
   bool packed;
@@ -41,6 +42,7 @@ struct CompileConfig {
   bool make_block_local;
   bool detect_read_only;
   bool ndarray_use_torch;
+  bool ndarray_use_cached_allocator;
   DataType default_fp;
   DataType default_ip;
   std::string extra_flags;
@@ -72,7 +74,8 @@ struct CompileConfig {
   std::string cc_link_cmd;
 
   // Opengl backend options:
-  bool allow_nv_shader_extension;
+  bool allow_nv_shader_extension{true};
+  bool use_gles{false};
 
   // Async options
   int async_opt_passes{3};

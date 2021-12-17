@@ -51,16 +51,29 @@ endif ()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
-include(cmake/PythonNumpyPybind11.cmake)
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
+
+# No support of Python for Android build
+if (NOT ANDROID)
+    include(cmake/PythonNumpyPybind11.cmake)
+endif()
 include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
-include(cmake/TaichiMain.cmake)
 
 option(TI_BUILD_TESTS "Build the CPP tests" OFF)
 
 if (TI_BUILD_TESTS)
   add_subdirectory(external/googletest EXCLUDE_FROM_ALL)
   include(cmake/TaichiTests.cmake)
+endif()
+
+option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
+
+if (TI_BUILD_EXAMPLES)
+  include(cmake/TaichiExamples.cmake)
 endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/external/eigen)
@@ -77,7 +90,9 @@ if (TI_WITH_CUDA)
     set(CUDA_ARCH "cuda")
 endif()
 
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+if (CLANG_EXECUTABLE)
+  message("Clang executable ${CLANG_EXECUTABLE}")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   set (CLANG_EXECUTABLE ${CMAKE_CXX_COMPILER})
 else()
   find_program(CLANG_EXECUTABLE NAMES clang clang-10 clang-11 clang-9 clang-8 clang-7)

@@ -14,7 +14,7 @@ You also need to install the Vulkan environment: [https://vulkan.lunarg.com/sdk/
 
 A new UI system has been added to Taichi in version `v0.8.0`. The new GUI system uses GPU for rendering, enabling it to be much faster and to render 3d scenes. For these reasons, this new system is sometimes referred to as GGUI. This doc describes the APIs provided.
 
-Apart from this doc, a good way of getting familiarized with GGUI is to look at the examples. Please checkout the examples provided in  [`examples/ggui_examples`](https://github.com/taichi-dev/taichi/tree/master/examples/ggui_examples).
+Apart from this doc, a good way of getting familiarized with GGUI is to look at the examples. Please checkout the examples provided in  [`examples/ggui_examples`](https://github.com/taichi-dev/taichi/tree/master/python/taichi/examples/ggui_examples).
 
 ## Creating a window
 
@@ -145,7 +145,7 @@ To check if a specific key is currently pressed:
 
 
 
-Here is an input processing example in GGUI version [`mpm128`](https://github.com/taichi-dev/taichi/blob/master/examples/ggui_examples/mpm128_ggui.py):
+Here is an input processing example in GGUI version [`mpm128`](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/ggui_examples/mpm128_ggui.py):
 
 ```python
 while window.running:

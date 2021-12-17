@@ -24,7 +24,7 @@ std::vector<std::string> get_required_instance_extensions() {
     extensions.push_back(glfw_extensions[i]);
   }
 
-  // EmbeddedVulkanDevice will check that these are supported
+  // VulkanDeviceCreator will check that these are supported
   extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
   extensions.push_back(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
   extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
@@ -56,7 +56,7 @@ void AppContext::init(GLFWwindow *glfw_window, const AppConfig &config) {
   this->config = config;
 
   if (config.ti_arch != Arch::vulkan) {
-    EmbeddedVulkanDevice::Params evd_params;
+    VulkanDeviceCreator::Params evd_params;
     evd_params.additional_instance_extensions =
         get_required_instance_extensions();
     evd_params.additional_device_extensions = get_required_device_extensions();
@@ -69,8 +69,7 @@ void AppContext::init(GLFWwindow *glfw_window, const AppConfig &config) {
       }
       return surface;
     };
-    embedded_vulkan_device_ =
-        std::make_unique<EmbeddedVulkanDevice>(evd_params);
+    embedded_vulkan_device_ = std::make_unique<VulkanDeviceCreator>(evd_params);
   } else {
     vulkan_device_ = static_cast<VulkanDevice *>(
         get_current_program().get_graphics_device());

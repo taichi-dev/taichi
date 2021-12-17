@@ -16,7 +16,8 @@ void Window::init(const AppConfig &config) {
   renderer_ = std::make_unique<Renderer>();
   renderer_->init(glfw_window_, config);
   canvas_ = std::make_unique<Canvas>(renderer_.get());
-  gui_ = std::make_unique<Gui>(&renderer_->app_context(), glfw_window_);
+  gui_ = std::make_unique<Gui>(&renderer_->app_context(),
+                               &renderer_->swap_chain(), glfw_window_);
 
   prepare_for_next_frame();
 }

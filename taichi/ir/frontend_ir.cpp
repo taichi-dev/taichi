@@ -2,6 +2,7 @@
 
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
+#include "taichi/common/exceptions.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -31,7 +32,7 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
 }
 
 IRNode *FrontendContext::root() {
-  return static_cast<IRNode *>(root_node.get());
+  return static_cast<IRNode *>(root_node_.get());
 }
 
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
@@ -96,8 +97,8 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
 DecoratorRecorder dec;
 
 FrontendContext::FrontendContext() {
-  root_node = std::make_unique<Block>();
-  current_builder = std::make_unique<ASTBuilder>(root_node.get());
+  root_node_ = std::make_unique<Block>();
+  current_builder_ = std::make_unique<ASTBuilder>(root_node_.get());
 }
 
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
@@ -176,15 +177,15 @@ void UnaryOpExpression::serialize(std::ostream &ss) {
 void UnaryOpExpression::type_check() {
   TI_ASSERT_TYPE_CHECKED(operand);
   if (!operand->ret_type->is<PrimitiveType>())
-    throw std::runtime_error(
-        fmt::format("TypeError: unsupported operand type(s) for '{}': '{}'",
+    throw TaichiTypeError(
+        fmt::format("unsupported operand type(s) for '{}': '{}'",
                     unary_op_type_name(type), operand->ret_type->to_string()));
-  if ((type == UnaryOpType::floor || type == UnaryOpType::ceil ||
-       is_trigonometric(type)) &&
+  if ((type == UnaryOpType::round || type == UnaryOpType::floor ||
+       type == UnaryOpType::ceil || is_trigonometric(type)) &&
       !is_real(operand->ret_type))
-    throw std::runtime_error(fmt::format(
-        "TypeError: '{}' takes real inputs only, however '{}' is provided",
-        unary_op_type_name(type), operand->ret_type->to_string()));
+    throw TaichiTypeError(
+        fmt::format("'{}' takes real inputs only, however '{}' is provided",
+                    unary_op_type_name(type), operand->ret_type->to_string()));
   ret_type = is_cast() ? cast_type : operand->ret_type;
 }
 
@@ -209,10 +210,10 @@ void BinaryOpExpression::type_check() {
   auto lhs_type = lhs->ret_type;
   auto rhs_type = rhs->ret_type;
   auto error = [&]() {
-    throw std::runtime_error(fmt::format(
-        "TypeError: unsupported operand type(s) for '{}': '{}' and '{}'",
-        binary_op_type_symbol(type), lhs->ret_type->to_string(),
-        rhs->ret_type->to_string()));
+    throw TaichiTypeError(
+        fmt::format("unsupported operand type(s) for '{}': '{}' and '{}'",
+                    binary_op_type_symbol(type), lhs->ret_type->to_string(),
+                    rhs->ret_type->to_string()));
   };
   if (!lhs_type->is<PrimitiveType>() || !rhs_type->is<PrimitiveType>())
     error();
@@ -253,10 +254,10 @@ void TernaryOpExpression::type_check() {
   auto op2_type = op2->ret_type;
   auto op3_type = op3->ret_type;
   auto error = [&]() {
-    throw std::runtime_error(fmt::format(
-        "TypeError: unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
-        ternary_type_name(type), op1->ret_type->to_string(),
-        op2->ret_type->to_string(), op3->ret_type->to_string()));
+    throw TaichiTypeError(
+        fmt::format("unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
+                    ternary_type_name(type), op1->ret_type->to_string(),
+                    op2->ret_type->to_string(), op3->ret_type->to_string()));
   };
   if (!is_integral(op1_type) || !op2_type->is<PrimitiveType>() ||
       !op3_type->is<PrimitiveType>())
@@ -357,14 +358,15 @@ void GlobalPtrExpression::type_check() {
   if (snode != nullptr) {
     ret_type = snode->dt;
   } else if (var.is<GlobalVariableExpression>()) {
-    ret_type = var.cast<GlobalVariableExpression>()->snode->dt;
+    ret_type =
+        var.cast<GlobalVariableExpression>()->snode->dt->get_compute_type();
   } else if (var.is<ExternalTensorExpression>()) {
     for (int i = 0; i < indices.exprs.size(); i++) {
       auto &expr = indices.exprs[i];
       TI_ASSERT_TYPE_CHECKED(expr);
       if (!is_integral(expr->ret_type))
-        throw std::runtime_error(
-            fmt::format("TypeError: indices must be integers, however '{}' is "
+        throw TaichiTypeError(
+            fmt::format("indices must be integers, however '{}' is "
                         "provided as index {}",
                         expr->ret_type->to_string(), i));
     }
@@ -508,8 +510,8 @@ void RangeAssumptionExpression::type_check() {
   TI_ASSERT_TYPE_CHECKED(base);
   if (!input->ret_type->is<PrimitiveType>() ||
       !base->ret_type->is<PrimitiveType>() || input->ret_type != base->ret_type)
-    throw std::runtime_error(
-        fmt::format("TypeError: unsupported operand type(s) for "
+    throw TaichiTypeError(
+        fmt::format("unsupported operand type(s) for "
                     "'range_assumption': '{}' and '{}'",
                     input->ret_type->to_string(), base->ret_type->to_string()));
   ret_type = input->ret_type;
@@ -526,9 +528,9 @@ void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
 void LoopUniqueExpression::type_check() {
   TI_ASSERT_TYPE_CHECKED(input);
   if (!input->ret_type->is<PrimitiveType>())
-    throw std::runtime_error(fmt::format(
-        "TypeError: unsupported operand type(s) for 'loop_unique': '{}'",
-        input->ret_type->to_string()));
+    throw TaichiTypeError(
+        fmt::format("unsupported operand type(s) for 'loop_unique': '{}'",
+                    input->ret_type->to_string()));
   ret_type = input->ret_type;
 }
 
@@ -576,8 +578,8 @@ void AtomicOpExpression::type_check() {
   TI_ASSERT_TYPE_CHECKED(dest);
   TI_ASSERT_TYPE_CHECKED(val);
   auto error = [&]() {
-    throw std::runtime_error(fmt::format(
-        "TypeError: unsupported operand type(s) for 'atomic_{}': '{}' and '{}'",
+    throw TaichiTypeError(fmt::format(
+        "unsupported operand type(s) for 'atomic_{}': '{}' and '{}'",
         atomic_op_type_name(op_type), dest->ret_type->to_string(),
         val->ret_type->to_string()));
   };
@@ -806,32 +808,32 @@ void MeshIndexConversionExpression::flatten(FlattenContext *ctx) {
 }
 
 Block *ASTBuilder::current_block() {
-  if (stack.empty())
+  if (stack_.empty())
     return nullptr;
   else
-    return stack.back();
+    return stack_.back();
 }
 
 Stmt *ASTBuilder::get_last_stmt() {
-  TI_ASSERT(!stack.empty());
-  return stack.back()->back();
+  TI_ASSERT(!stack_.empty());
+  return stack_.back()->back();
 }
 
 void ASTBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->insert(std::move(stmt), location);
+  TI_ASSERT(!stack_.empty());
+  stack_.back()->insert(std::move(stmt), location);
 }
 
 void ASTBuilder::stop_gradient(SNode *snode) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->stop_gradients.push_back(snode);
+  TI_ASSERT(!stack_.empty());
+  stack_.back()->stop_gradients.push_back(snode);
 }
 
 std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
     std::unique_ptr<Block> &list) {
   TI_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
-  if (!stack.empty()) {
+  if (!stack_.empty()) {
     list->parent_stmt = get_last_stmt();
   }
   return std::make_unique<ScopeGuard>(this, list.get());

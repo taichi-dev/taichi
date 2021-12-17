@@ -4,21 +4,20 @@ import inspect
 import re
 import sys
 import textwrap
-import traceback
 
 import numpy as np
 import taichi.lang
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl, util
-from taichi.lang.ast.checkers import KernelSimplicityASTChecker
-from taichi.lang.ast.transformer import ASTTransformerTotal
+from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
+                             transform_tree)
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
-from taichi.misc.util import obsolete
-from taichi.type import any_arr, primitive_types, template
+from taichi.tools.util import obsolete
+from taichi.types import any_arr, primitive_types, template
 
 import taichi as ti
 
@@ -89,9 +88,15 @@ def pyfunc(fn):
     return decorated
 
 
-def _get_tree_and_global_vars(self, args):
-    src = textwrap.dedent(oinspect.getsource(self.func))
-    tree = ast.parse(src)
+def _get_tree_and_ctx(self,
+                      excluded_parameters=(),
+                      is_kernel=True,
+                      arg_features=None,
+                      args=None):
+    file = oinspect.getsourcefile(self.func)
+    src, start_lineno = oinspect.getsourcelines(self.func)
+    src = [textwrap.fill(line, tabsize=4, width=9999) for line in src]
+    tree = ast.parse(textwrap.dedent("\n".join(src)))
 
     func_body = tree.body[0]
     func_body.decorator_list = []
@@ -106,12 +111,21 @@ def _get_tree_and_global_vars(self, args):
     if isinstance(func_body.returns, ast.Name):
         global_vars[func_body.returns.id] = self.return_type
 
-    # inject template parameters into globals
-    for i in self.template_slot_locations:
-        template_var_name = self.argument_names[i]
-        global_vars[template_var_name] = args[i]
+    if is_kernel or impl.get_runtime().experimental_real_function:
+        # inject template parameters into globals
+        for i in self.template_slot_locations:
+            template_var_name = self.argument_names[i]
+            global_vars[template_var_name] = args[i]
 
-    return tree, global_vars
+    return tree, ASTTransformerContext(excluded_parameters=excluded_parameters,
+                                       is_kernel=is_kernel,
+                                       func=self,
+                                       arg_features=arg_features,
+                                       global_vars=global_vars,
+                                       argument_data=args,
+                                       src=src,
+                                       start_lineno=start_lineno,
+                                       file=file)
 
 
 class Func:
@@ -159,11 +173,14 @@ class Func:
             if key.instance_id not in self.compiled:
                 self.do_compile(key=key, args=args)
             return self.func_call_rvalue(key=key, args=args)
-        tree, global_vars = _get_tree_and_global_vars(self, args)
-        visitor = ASTTransformerTotal(is_kernel=False,
-                                      func=self,
-                                      global_vars=global_vars)
-        return visitor.visit(tree, *args)
+        tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
+        ret = transform_tree(tree, ctx)
+        if not impl.get_runtime().experimental_real_function:
+            if self.return_type and not ctx.returned:
+                raise TaichiSyntaxError(
+                    "Function has a return type but does not have a return statement"
+                )
+        return ret
 
     def func_call_rvalue(self, key, args):
         # Skip the template args, e.g., |self|
@@ -178,25 +195,8 @@ class Func:
                 self.taichi_functions[key.instance_id], non_template_args))
 
     def do_compile(self, key, args):
-        src = textwrap.dedent(oinspect.getsource(self.func))
-        tree = ast.parse(src)
-
-        func_body = tree.body[0]
-        func_body.decorator_list = []
-
-        ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
-
-        global_vars = _get_global_vars(self.func)
-        # inject template parameters into globals
-        for i in self.template_slot_locations:
-            template_var_name = self.argument_names[i]
-            global_vars[template_var_name] = args[i]
-
-        visitor = ASTTransformerTotal(is_kernel=False,
-                                      func=self,
-                                      global_vars=global_vars)
-
-        self.compiled[key.instance_id] = lambda: visitor.visit(tree)
+        tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args)
+        self.compiled[key.instance_id] = lambda: transform_tree(tree, ctx)
         self.taichi_functions[key.instance_id] = _ti_core.create_function(key)
         self.taichi_functions[key.instance_id].set_function_body(
             self.compiled[key.instance_id])
@@ -270,13 +270,19 @@ class TaichiCallableTemplateMapper:
         if isinstance(anno, any_arr):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_element_dim(arg, 0)
+                anno.check_element_shape(())
+                anno.check_field_dim(len(arg.shape))
                 return arg.dtype, len(arg.shape), (), Layout.AOS
             if isinstance(arg, taichi.lang.matrix.VectorNdarray):
                 anno.check_element_dim(arg, 1)
+                anno.check_element_shape((arg.n, ))
+                anno.check_field_dim(len(arg.shape))
                 anno.check_layout(arg)
                 return arg.dtype, len(arg.shape) + 1, (arg.n, ), arg.layout
             if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
                 anno.check_element_dim(arg, 2)
+                anno.check_element_shape((arg.n, arg.m))
+                anno.check_field_dim(len(arg.shape))
                 anno.check_layout(arg)
                 return arg.dtype, len(arg.shape) + 2, (arg.n,
                                                        arg.m), arg.layout
@@ -433,17 +439,14 @@ class Kernel:
         kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}{grad_suffix}"
         ti.trace(f"Compiling kernel {kernel_name}...")
 
-        tree, global_vars = _get_tree_and_global_vars(self, args)
+        tree, ctx = _get_tree_and_ctx(
+            self,
+            args=args,
+            excluded_parameters=self.template_slot_locations,
+            arg_features=arg_features)
 
         if self.is_grad:
             KernelSimplicityASTChecker(self.func).visit(tree)
-        visitor = ASTTransformerTotal(
-            excluded_parameters=self.template_slot_locations,
-            func=self,
-            arg_features=arg_features,
-            global_vars=global_vars)
-
-        ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
 
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
@@ -458,7 +461,12 @@ class Kernel:
             self.runtime.inside_kernel = True
             self.runtime.current_kernel = self
             try:
-                visitor.visit(tree)
+                transform_tree(tree, ctx)
+                if not impl.get_runtime().experimental_real_function:
+                    if self.return_type and not ctx.returned:
+                        raise TaichiSyntaxError(
+                            "Kernel has a return type but does not have a return statement"
+                        )
             finally:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None
@@ -518,13 +526,14 @@ class Kernel:
                         tmps.append(tmp)
                         launch_ctx.set_arg_external_array(
                             actual_argument_slot, int(tmp.ctypes.data),
-                            tmp.nbytes)
+                            tmp.nbytes, False)
                     elif is_ndarray and not ndarray_use_torch:
                         # Use ndarray's own memory allocator
                         tmp = v
                         launch_ctx.set_arg_external_array(
-                            actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement())
+                            actual_argument_slot,
+                            int(tmp.device_allocation_ptr()),
+                            tmp.element_size() * tmp.nelement(), True)
                     else:
 
                         def get_call_back(u, v):
@@ -561,7 +570,7 @@ class Kernel:
                                 callbacks.append(get_call_back(v, gpu_v))
                         launch_ctx.set_arg_external_array(
                             actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement())
+                            tmp.element_size() * tmp.nelement(), False)
 
                     shape = v.shape
                     max_num_indices = _ti_core.get_max_num_indices()
@@ -588,7 +597,8 @@ class Kernel:
             ret_dt = self.return_type
             has_ret = ret_dt is not None
 
-            if has_external_arrays or has_ret:
+            if has_ret or (ti.current_cfg().async_mode
+                           and has_external_arrays):
                 ti.sync()
 
             if has_ret:
@@ -622,6 +632,11 @@ class Kernel:
     # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
     @_shell_pop_print
     def __call__(self, *args, **kwargs):
+        if self.is_grad and impl.current_cfg().opt_level == 0:
+            ti.warn(
+                """opt_level = 1 is enforced to enable gradient computation."""
+            )
+            impl.current_cfg().opt_level = 1
         _taichi_skip_traceback = 1
         assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
         key = self.ensure_compiled(*args)
@@ -648,10 +663,9 @@ _KERNEL_CLASS_STACKFRAME_STMT_RES = [
 
 
 def _inside_class(level_of_class_stackframe):
-    frames = oinspect.stack()
     try:
-        maybe_class_frame = frames[level_of_class_stackframe]
-        statement_list = maybe_class_frame[4]
+        maybe_class_frame = sys._getframe(level_of_class_stackframe)
+        statement_list = inspect.getframeinfo(maybe_class_frame)[3]
         first_statment = statement_list[0].strip()
         for pat in _KERNEL_CLASS_STACKFRAME_STMT_RES:
             if pat.match(first_statment):
@@ -697,28 +711,7 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
         @functools.wraps(_func)
         def wrapped(*args, **kwargs):
             _taichi_skip_traceback = 1
-            try:
-                return primal(*args, **kwargs)
-            except RuntimeError as e:
-                if str(e).startswith("TypeError: "):
-                    tb = e.__traceback__
-
-                    while tb:
-                        if tb.tb_frame.f_code.co_name == 'taichi_ast_generator':  # pylint: disable=E1101
-                            tb = tb.tb_next
-                            if sys.version_info < (3, 7):
-                                # The traceback object is read-only on Python < 3.7,
-                                # print the traceback and raise
-                                traceback.print_tb(tb,
-                                                   limit=1,
-                                                   file=sys.stderr)
-                                raise TypeError(str(e)[11:]) from None
-                            # Otherwise, modify the traceback object
-                            tb.tb_next = None
-                            raise TypeError(
-                                str(e)[11:]).with_traceback(tb) from None
-                        tb = tb.tb_next
-                raise
+            return primal(*args, **kwargs)
 
         wrapped.grad = adjoint
 

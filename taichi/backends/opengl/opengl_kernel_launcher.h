@@ -10,18 +10,18 @@ TLANG_NAMESPACE_BEGIN
 
 namespace opengl {
 
-struct CompiledProgram;
+struct CompiledTaichiKernel;
 struct OpenGlRuntimeImpl;
 struct OpenGlRuntime;
 class GLBuffer;
-class DeviceCompiledProgram;
+class DeviceCompiledTaichiKernel;
 
 struct OpenGlRuntime {
   std::unique_ptr<OpenGlRuntimeImpl> impl;
-  std::unique_ptr<Device> device{nullptr};
+  std::shared_ptr<Device> device{nullptr};
   OpenGlRuntime();
   ~OpenGlRuntime();
-  DeviceCompiledProgram *keep(CompiledProgram &&program);
+  DeviceCompiledTaichiKernel *keep(CompiledTaichiKernel &&program);
   // FIXME: Currently GLSL codegen only supports single root
   void add_snode_tree(size_t size);
 

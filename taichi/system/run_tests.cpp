@@ -10,7 +10,7 @@
 TI_NAMESPACE_BEGIN
 
 class RunTests : public Task {
-  virtual std::string run(const std::vector<std::string> &parameters) {
+  std::string run(const std::vector<std::string> &parameters) override {
     return std::to_string(run_tests(parameters));
   }
 };

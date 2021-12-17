@@ -1,8 +1,8 @@
 import os
 import shutil
 
-from taichi.core import get_os_name
-from taichi.misc.image import imwrite
+from taichi._lib.utils import get_os_name
+from taichi.tools.image import imwrite
 
 FRAME_FN_TEMPLATE = '%06d.png'
 FRAME_DIR = 'frames'

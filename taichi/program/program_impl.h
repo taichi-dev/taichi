@@ -71,10 +71,18 @@ class ProgramImpl {
     return nullptr;
   }
 
+  virtual std::shared_ptr<Device> get_device_shared() {
+    return nullptr;
+  }
+
   virtual DevicePtr get_snode_tree_device_ptr(int tree_id) {
     return kDeviceNullPtr;
   }
 
+  virtual DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                                   uint64 *result_buffer) {
+    return kDeviceNullAllocation;
+  }
   virtual ~ProgramImpl() {
   }
 

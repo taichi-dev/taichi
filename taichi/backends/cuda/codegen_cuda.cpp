@@ -62,31 +62,59 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       Kernel::LaunchContextBuilder ctx_builder(kernel, &context);
       bool transferred = false;
       for (int i = 0; i < (int)args.size(); i++) {
-        if (args[i].is_external_array && args[i].size > 0) {
-          // Note: both numpy and PyTorch support arrays/tensors with zeros
-          // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
-          // args[i].size = 0.
+        if (args[i].is_external_array) {
+          if (args[i].size == 0)
+            continue;
           arg_buffers[i] = context.get_arg<void *>(i);
-          unsigned int attr_val = 0;
-          uint32_t ret_code = CUDADriver::get_instance().mem_get_attribute.call(
-              &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-              (void *)arg_buffers[i]);
-          if (ret_code != CUDA_SUCCESS || attr_val != CU_MEMORYTYPE_DEVICE) {
-            // Copy to device buffer if arg is on host
-            // - ret_code != CUDA_SUCCESS:
-            //   arg_buffers[i] is not on device
-            // - attr_val != CU_MEMORYTYPE_DEVICE:
-            //   Cuda driver is aware of arg_buffers[i] but it might be on host.
-            // See CUDA driver API `cuPointerGetAttribute` for more details.
-            transferred = true;
-            CUDADriver::get_instance().malloc(&device_buffers[i], args[i].size);
-            CUDADriver::get_instance().memcpy_host_to_device(
-                (void *)device_buffers[i], arg_buffers[i], args[i].size);
-          } else {
-            device_buffers[i] = arg_buffers[i];
+          if (!context.is_device_allocation[i]) {
+            // Note: both numpy and PyTorch support arrays/tensors with zeros
+            // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
+            // args[i].size = 0.
+            unsigned int attr_val = 0;
+            uint32_t ret_code =
+                CUDADriver::get_instance().mem_get_attribute.call(
+                    &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+                    (void *)arg_buffers[i]);
+            if (ret_code != CUDA_SUCCESS || attr_val != CU_MEMORYTYPE_DEVICE) {
+              // Copy to device buffer if arg is on host
+              // - ret_code != CUDA_SUCCESS:
+              //   arg_buffers[i] is not on device
+              // - attr_val != CU_MEMORYTYPE_DEVICE:
+              //   Cuda driver is aware of arg_buffers[i] but it might be on
+              //   host.
+              // See CUDA driver API `cuPointerGetAttribute` for more details.
+              transferred = true;
+              CUDADriver::get_instance().malloc(&device_buffers[i],
+                                                args[i].size);
+              CUDADriver::get_instance().memcpy_host_to_device(
+                  (void *)device_buffers[i], arg_buffers[i], args[i].size);
+            } else {
+              device_buffers[i] = arg_buffers[i];
+            }
+            // device_buffers[i] saves a raw ptr on CUDA device.
+            ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
+                                               args[i].size,
+                                               /*is_device_allocation=*/false);
+
+          } else if (args[i].size > 0) {
+            // arg_buffers[i] is a DeviceAllocation*
+            // TODO: Unwraps DeviceAllocation* can be done at CodeGenLLVM since
+            // it's shared by cpu and cuda.
+            DeviceAllocation *ptr =
+                static_cast<DeviceAllocation *>(arg_buffers[i]);
+            device_buffers[i] = kernel->program->get_llvm_program_impl()
+                                    ->get_ndarray_alloc_info_ptr(*ptr);
+            // We compare arg_buffers[i] and device_buffers[i] later to check
+            // if transfer happened.
+            // TODO: this logic can be improved but I'll leave it to a followup
+            // PR.
+            arg_buffers[i] = device_buffers[i];
+
+            // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
+            ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
+                                               args[i].size,
+                                               /*is_device_allocation=*/false);
           }
-          ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
-                                             args[i].size);
         }
       }
       if (transferred) {
@@ -477,7 +505,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return output_address;
   }
 
-  llvm::Value *real_type_atomic(AtomicOpStmt *stmt) {
+  llvm::Value *real_or_unsigned_type_atomic(AtomicOpStmt *stmt) {
     if (!stmt->val->ret_type->is<PrimitiveType>()) {
       return nullptr;
     }
@@ -514,8 +542,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     atomics[PrimitiveTypeID::f64][AtomicOpType::min] = "atomic_min_f64";
     atomics[PrimitiveTypeID::f32][AtomicOpType::max] = "atomic_max_f32";
     atomics[PrimitiveTypeID::f64][AtomicOpType::max] = "atomic_max_f64";
+    atomics[PrimitiveTypeID::u32][AtomicOpType::min] = "atomic_min_u32";
+    atomics[PrimitiveTypeID::u64][AtomicOpType::min] = "atomic_min_u64";
+    atomics[PrimitiveTypeID::u32][AtomicOpType::max] = "atomic_max_u32";
+    atomics[PrimitiveTypeID::u64][AtomicOpType::max] = "atomic_max_u64";
 
     if (atomics.find(prim_type) == atomics.end()) {
+      return nullptr;
+    }
+    if (is_integral(stmt->val->ret_type) &&
+        atomics.at(prim_type).find(op) == atomics.at(prim_type).end()) {
       return nullptr;
     }
     TI_ASSERT(atomics.at(prim_type).find(op) != atomics.at(prim_type).end());
@@ -538,9 +574,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         old_value = result;
       } else if (llvm::Value *result = custom_type_atomic(stmt)) {
         old_value = result;
-      } else if (llvm::Value *result = integral_type_atomic(stmt)) {
+      } else if (llvm::Value *result = real_or_unsigned_type_atomic(stmt)) {
         old_value = result;
-      } else if (llvm::Value *result = real_type_atomic(stmt)) {
+      } else if (llvm::Value *result = integral_type_atomic(stmt)) {
         old_value = result;
       } else {
         TI_NOT_IMPLEMENTED

@@ -73,6 +73,14 @@ class Expr {
     return cast<T>() != nullptr;
   }
 
+  void set_or_insert_assignment(const Expr &o);
+
+  // FIXME: We really should disable it completely,
+  // but we can't. This is because there are too much
+  // unintentional calls. Please mark it as `=delete`
+  // when problems pointed out in #3596 are solved.
+  // For now, please use `set_or_insert_assignment` to
+  // replace it's functionality.
   Expr &operator=(const Expr &o);
 
   Expr operator[](const ExprGroup &indices) const;

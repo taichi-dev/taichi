@@ -77,6 +77,7 @@ TI_NAMESPACE_BEGIN
 void export_lang(py::module &m) {
   using namespace taichi::lang;
 
+  py::register_exception<TaichiTypeError>(m, "TypeError", PyExc_TypeError);
   py::enum_<Arch>(m, "Arch", py::arithmetic())
 #define PER_ARCH(x) .value(#x, Arch::x)
 #include "taichi/inc/archs.inc.h"
@@ -129,6 +130,7 @@ void export_lang(py::module &m) {
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
+      .def_readwrite("opt_level", &CompileConfig::opt_level)
       .def_readwrite("packed", &CompileConfig::packed)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
       .def_readwrite("print_preprocessed_ir",
@@ -187,6 +189,8 @@ void export_lang(py::module &m) {
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("ndarray_use_torch", &CompileConfig::ndarray_use_torch)
+      .def_readwrite("ndarray_use_cached_allocator",
+                     &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
@@ -210,6 +214,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::quant_opt_atomic_demotion)
       .def_readwrite("allow_nv_shader_extension",
                      &CompileConfig::allow_nv_shader_extension)
+      .def_readwrite("use_gles", &CompileConfig::use_gles)
       .def_readwrite("make_mesh_block_local",
                      &CompileConfig::make_mesh_block_local)
       .def_readwrite("mesh_localize_to_end_mapping",
@@ -398,6 +403,8 @@ void export_lang(py::module &m) {
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; })
       .def_readonly("cell_size_bytes", &SNode::cell_size_bytes)
+      .def_readonly("offset_bytes_in_parent_cell",
+                    &SNode::offset_bytes_in_parent_cell)
       .def("begin_shared_exp_placement", &SNode::begin_shared_exp_placement)
       .def("end_shared_exp_placement", &SNode::end_shared_exp_placement);
 
@@ -410,6 +417,7 @@ void export_lang(py::module &m) {
   py::class_<Ndarray>(m, "Ndarray")
       .def(py::init<Program *, const DataType &, const std::vector<int> &>())
       .def("data_ptr", &Ndarray::get_data_ptr_as_int)
+      .def("device_allocation_ptr", &Ndarray::get_device_allocation_ptr_as_int)
       .def("element_size", &Ndarray::get_element_size)
       .def("nelement", &Ndarray::get_nelement)
       .def("read_int",
@@ -712,6 +720,7 @@ void export_lang(py::module &m) {
 
   m.def("expr_neg", [&](const Expr &e) { return -e; });
   DEFINE_EXPRESSION_OP_UNARY(sqrt)
+  DEFINE_EXPRESSION_OP_UNARY(round)
   DEFINE_EXPRESSION_OP_UNARY(floor)
   DEFINE_EXPRESSION_OP_UNARY(ceil)
   DEFINE_EXPRESSION_OP_UNARY(abs)
@@ -916,6 +925,12 @@ void export_lang(py::module &m) {
     return get_current_program().current_callable->insert_arg(
         dt, is_external_array);
   });
+
+  m.def("decl_arr_arg",
+        [&](const DataType &dt, int total_dim, std::vector<int> shape) {
+          return get_current_program().current_callable->insert_arr_arg(
+              dt, total_dim, shape);
+        });
 
   m.def("decl_ret", [&](const DataType &dt) {
     return get_current_program().current_callable->insert_ret(dt);

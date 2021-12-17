@@ -37,7 +37,7 @@ def test_assign2():
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(ValueError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_assign2_mismatch3():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -50,7 +50,7 @@ def test_assign2_mismatch3():
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(TypeError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_assign2_mismatch1():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -132,7 +132,7 @@ def test_unpack_from_tuple():
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(ValueError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_unpack_mismatch_tuple():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -164,7 +164,7 @@ def test_unpack_from_vector():
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(ValueError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_unpack_mismatch_vector():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -178,7 +178,7 @@ def test_unpack_mismatch_vector():
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(TypeError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_unpack_mismatch_type():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -193,7 +193,7 @@ def test_unpack_mismatch_type():
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(ValueError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_unpack_mismatch_matrix():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())

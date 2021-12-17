@@ -2,9 +2,12 @@ from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
 from taichi.lang import impl, kernel_impl
+from taichi.lang._ndarray import ScalarNdarray
+from taichi.lang.enums import Layout
 from taichi.lang.field import ScalarField
-from taichi.lang.matrix import MatrixField
-from taichi.type.annotations import ArgAnyArray, template
+from taichi.lang.matrix import MatrixField, MatrixNdarray, VectorNdarray
+from taichi.types.annotations import ArgAnyArray, template
+from taichi.types.primitive_types import f32
 
 
 class KernelTemplate:
@@ -15,11 +18,11 @@ class KernelTemplate:
     @staticmethod
     def keygen(v, key_p, fields):
         if isinstance(v, (int, float, bool)):
-            key_p += '=' + str(v) + '/'
+            key_p += '=' + str(v) + ','
             return key_p
         for ky, val in fields:
-            if (val is v):
-                key_p += '=' + ky + '/'
+            if val is v:
+                key_p += '=' + ky + ','
                 return key_p
         raise RuntimeError('Arg type must be of type int/float/boolean' +
                            'or taichi field. Type ' + str(type(v)) +
@@ -119,27 +122,57 @@ class Module:
                                     field.dtype, field.snode.shape, row_num,
                                     column_num)
 
-    def add_kernel(self, kernel_fn, name=None):
+    def add_kernel(self, kernel_fn, example_any_arrays=None, name=None):
         """Add a taichi kernel to the AOT module.
 
         Args:
           kernel_fn (Function): the function decorated by taichi `kernel`.
+          example_any_arrays (Dict[int, ti.ndarray]): a dict where key is arg_id and key is example any_arr input.
           name (str): Name to identify this kernel in the module. If not
             provided, uses the built-in ``__name__`` attribute of `kernel_fn`.
 
-        TODO:
-          * Support external array
         """
         name = name or kernel_fn.__name__
         kernel = kernel_fn._primal
         assert isinstance(kernel, kernel_impl.Kernel)
         injected_args = []
+        num_arr = len([
+            anno for anno in kernel.argument_annotations
+            if isinstance(anno, ArgAnyArray)
+        ])
+        assert example_any_arrays is None or num_arr == len(
+            example_any_arrays
+        ), f'Need {num_arr} example any_arr inputs but got {len(example_any_arrays)}'
+        i = 0
         for anno in kernel.argument_annotations:
             if isinstance(anno, ArgAnyArray):
-                raise RuntimeError(
-                    'Arg type `ext_arr`/`any_arr` not supported yet')
-            # For primitive types, we can just inject a dummy value.
-            injected_args.append(0)
+                if example_any_arrays:
+                    injected_args.append(example_any_arrays[i])
+                else:
+                    assert anno.element_shape is not None and anno.field_dim is not None, 'Please either specify element_shape & field_dim in the kernel arg annotation or provide a dict of example ndarrays.'
+                    if anno.element_dim == 0:
+                        injected_args.append(
+                            ScalarNdarray(dtype=f32,
+                                          shape=(2, ) * anno.field_dim))
+                    elif anno.element_dim == 1:
+                        injected_args.append(
+                            VectorNdarray(anno.element_shape[0],
+                                          dtype=f32,
+                                          shape=(2, ) * anno.field_dim,
+                                          layout=Layout.AOS))
+                    elif anno.element_dim == 2:
+                        injected_args.append(
+                            MatrixNdarray(anno.element_shape[0],
+                                          anno.element_shape[1],
+                                          dtype=f32,
+                                          shape=(2, ) * anno.field_dim,
+                                          layout=Layout.AOS))
+                    else:
+                        raise RuntimeError('')
+            else:
+                # For primitive types, we can just inject a dummy value.
+                injected_args.append(0)
+            i = i + 1
         kernel.ensure_compiled(*injected_args)
         self._aot_builder.add(name, kernel.kernel_cpp)
 
@@ -188,5 +221,5 @@ class Module:
           filepath (str): path to a folder to store aot files.
           filename (str): filename prefix for stored aot files.
         """
-        filepath = str(PurePosixPath(Path(filepath).resolve()))
+        filepath = str(PurePosixPath(Path(filepath)))
         self._aot_builder.dump(filepath, filename)

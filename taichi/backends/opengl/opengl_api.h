@@ -21,8 +21,8 @@ class OffloadedStmt;
 
 namespace opengl {
 
-bool initialize_opengl(bool error_tolerance = false);
-bool is_opengl_api_available();
+bool initialize_opengl(bool use_gles = false, bool error_tolerance = false);
+bool is_opengl_api_available(bool use_gles = false);
 bool is_gles();
 
 #define PER_OPENGL_EXTENSION(x) extern bool opengl_extension_##x;
@@ -40,19 +40,40 @@ extern int opengl_threads_per_block;
     return false;                  \
   })()
 
-struct CompiledKernel {
-  std::string kernel_name;
-  std::string kernel_src;
+struct CompiledOffloadedTask {
+  std::string name;
+  std::string src;
   int workgroup_size;
   int num_groups;
 
-  TI_IO_DEF(kernel_name, kernel_src, workgroup_size, num_groups);
+  TI_IO_DEF(name, src, workgroup_size, num_groups);
 };
 
-struct CompiledProgram {
+struct ScalarArg {
+  size_t offset_in_bytes_in_args_buf{0};
+
+  TI_IO_DEF(offset_in_bytes_in_args_buf);
+};
+
+struct CompiledArrayArg {
+  uint32_t dtype;
+  std::string dtype_name;
+  std::size_t field_dim{0};
+  bool is_scalar{false};
+  std::vector<int> element_shape;
+  size_t shape_offset_in_bytes_in_args_buf{0};
+  size_t total_size{0};  // Runtime information
+
+  TI_IO_DEF(field_dim,
+            is_scalar,
+            element_shape,
+            shape_offset_in_bytes_in_args_buf);
+};
+
+struct CompiledTaichiKernel {
   void init_args(Kernel *kernel);
-  void add(const std::string &kernel_name,
-           const std::string &kernel_source_code,
+  void add(const std::string &name,
+           const std::string &source_code,
            int num_workgrous,
            int workgroup_size,
            std::unordered_map<int, irpass::ExternalPtrAccess> *ext_ptr_access =
@@ -63,44 +84,49 @@ struct CompiledProgram {
   bool check_ext_arr_read(int i) const;
   bool check_ext_arr_write(int i) const;
 
-  std::vector<CompiledKernel> kernels;
+  std::vector<CompiledOffloadedTask> tasks;
 
   int arg_count{0};
   int ret_count{0};
   size_t args_buf_size{0};
-  size_t total_ext_arr_size{0};
   size_t ret_buf_size{0};
 
-  std::unordered_map<int, size_t> ext_arr_map;
   std::unordered_map<int, irpass::ExternalPtrAccess> ext_arr_access;
   std::vector<std::string> str_table;
   UsedFeature used;
+  std::unordered_map<int, ScalarArg> scalar_args;
+  mutable std::unordered_map<int, CompiledArrayArg> arr_args;
 
-  TI_IO_DEF(kernels,
+  TI_IO_DEF(tasks,
             arg_count,
             ret_count,
             args_buf_size,
-            total_ext_arr_size,
             ret_buf_size,
-            ext_arr_map,
-            ext_arr_access,
-            str_table);
+            scalar_args,
+            arr_args,
+            used.arr_arg_to_bind_idx);
 };
 
-class DeviceCompiledProgram {
+class DeviceCompiledTaichiKernel {
  public:
-  DeviceCompiledProgram(CompiledProgram &&program, Device *device);
-  void launch(RuntimeContext &ctx, OpenGlRuntime *runtime) const;
+  DeviceCompiledTaichiKernel(CompiledTaichiKernel &&program, Device *device);
+  void launch(RuntimeContext &ctx,
+              Kernel *kernel,
+              OpenGlRuntime *runtime) const;
 
  private:
   Device *device_;
-  CompiledProgram program_;
+  CompiledTaichiKernel program_;
 
   std::vector<std::unique_ptr<Pipeline>> compiled_pipeline_;
 
   DeviceAllocation args_buf_{kDeviceNullAllocation};
   DeviceAllocation ret_buf_{kDeviceNullAllocation};
-  DeviceAllocation arr_bufs_[taichi_max_num_args]{kDeviceNullAllocation};
+  // Only saves numpy/torch cpu based external array since they don't have
+  // DeviceAllocation.
+  // Taichi |Ndarray| manages their own DeviceAllocation so it's not saved here.
+  mutable DeviceAllocation arr_bufs_[taichi_max_num_args]{
+      kDeviceNullAllocation};
 };
 
 }  // namespace opengl

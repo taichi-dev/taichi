@@ -112,7 +112,7 @@ class LoopVectorize : public IRVisitor {
                                                    offsets.get());
       irpass::type_check(add_op.get(), config);
       auto offsets_p = offsets.get();
-      stmt->replace_with(add_op.get());
+      stmt->replace_usages_with(add_op.get());
       stmt->insert_after_me(std::move(offsets));
       offsets_p->insert_after_me(std::move(add_op));
     }

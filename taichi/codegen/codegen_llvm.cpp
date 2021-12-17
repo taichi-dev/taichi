@@ -5,6 +5,7 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
 
+#include "llvm/IR/Module.h"
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/Linker/Linker.h"
 
@@ -373,9 +374,11 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
       llvm_val[stmt] = llvm_val[stmt->operand];
     } else if (is_real(from) != is_real(to)) {
       if (is_real(from) && is_integral(to)) {
-        cast_op = llvm::Instruction::CastOps::FPToSI;
+        cast_op = is_signed(to) ? llvm::Instruction::CastOps::FPToSI
+                                : llvm::Instruction::CastOps::FPToUI;
       } else if (is_integral(from) && is_real(to)) {
-        cast_op = llvm::Instruction::CastOps::SIToFP;
+        cast_op = is_signed(from) ? llvm::Instruction::CastOps::SIToFP
+                                  : llvm::Instruction::CastOps::UIToFP;
       } else {
         TI_P(data_type_name(from));
         TI_P(data_type_name(to));
@@ -438,6 +441,7 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
       llvm_val[stmt] = builder->CreateNeg(input, "neg");
     }
   }
+  UNARY_INTRINSIC(round)
   UNARY_INTRINSIC(floor)
   UNARY_INTRINSIC(ceil)
   else {
@@ -1240,7 +1244,13 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (stmt->op_type == AtomicOpType::min) {
-      if (is_integral(stmt->val->ret_type)) {
+      if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u32)) {
+        old_value = create_call("atomic_min_u32",
+                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u64)) {
+        old_value = create_call("atomic_min_u64",
+                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
@@ -1258,7 +1268,13 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (stmt->op_type == AtomicOpType::max) {
-      if (is_integral(stmt->val->ret_type)) {
+      if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u32)) {
+        old_value = create_call("atomic_max_u32",
+                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::u64)) {
+        old_value = create_call("atomic_max_u64",
+                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
@@ -2237,8 +2253,23 @@ FunctionType CodeGenLLVM::compile_module_to_executable() {
   }
   auto offloaded_tasks_local = offloaded_tasks;
   auto kernel_name_ = kernel_name;
-  return [=](RuntimeContext &context) {
+  return [offloaded_tasks_local, kernel_name_,
+          kernel = this->kernel](RuntimeContext &context) {
     TI_TRACE("Launching kernel {}", kernel_name_);
+    auto args = kernel->args;
+    // For taichi ndarrays, context.args saves pointer to its
+    // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
+    for (int i = 0; i < (int)args.size(); i++) {
+      if (args[i].is_external_array && context.is_device_allocation[i] &&
+          args[i].size > 0) {
+        DeviceAllocation *ptr =
+            static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
+        uint64 host_ptr = (uint64)kernel->program->get_llvm_program_impl()
+                              ->get_ndarray_alloc_info_ptr(*ptr);
+        context.set_arg(i, host_ptr);
+        context.set_device_allocation(i, false);
+      }
+    }
     for (auto task : offloaded_tasks_local) {
       task(&context);
     }

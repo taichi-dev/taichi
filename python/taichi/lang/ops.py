@@ -4,7 +4,7 @@ import math
 import operator as _bt_ops_mod  # bt for builtin
 import traceback
 
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl, matrix
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
@@ -269,6 +269,19 @@ def rsqrt(a):
         return 1 / math.sqrt(a)
 
     return _unary_operation(_ti_core.expr_rsqrt, _rsqrt, a)
+
+
+@unary
+def round(a):  # pylint: disable=redefined-builtin
+    """The round function.
+
+    Args:
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+
+    Returns:
+        The nearest integer of `a`.
+    """
+    return _unary_operation(_ti_core.expr_round, builtins.round, a)
 
 
 @unary
@@ -918,7 +931,7 @@ def rescale_index(a, b, I):
     else:
         assert isinstance(
             I, matrix.Matrix
-        ), f"The third argument must be an index (list or ti.Vector)"
+        ), "The third argument must be an index (list or ti.Vector)"
     entries = [I(i) for i in range(I.n)]
     for n in range(min(I.n, min(len(a.shape), len(b.shape)))):
         if a.shape[n] > b.shape[n]:

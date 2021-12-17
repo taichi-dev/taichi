@@ -10,7 +10,8 @@ def test_unary_op():
         a = 1
         b = ti.floor(a)
 
-    with pytest.raises(TypeError, match="'floor' takes real inputs only"):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match="TypeError: 'floor' takes real inputs only"):
         floor()
 
 
@@ -22,8 +23,9 @@ def test_binary_op():
         b = 3.1
         c = a & b
 
-    with pytest.raises(TypeError,
-                       match=r"unsupported operand type\(s\) for '&'"):
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match=r"TypeError: unsupported operand type\(s\) for '&'"):
         bitwise_float()
 
 
@@ -36,14 +38,13 @@ def test_binary_op():
 #         c = 3.6
 #         d = b if a else c
 #
-#     with pytest.raises(TypeError,
+#     with pytest.raises(ti.TaichiCompilationError,
 #                        match="for 'select': 'f32', 'i32' and 'f32'"):
 #         select()
 
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-# TODO: enable opengl
-@ti.test(arch=ti.cpu)
+@ti.test(arch=[ti.cpu, ti.opengl])
 def test_subscript():
     a = ti.ndarray(ti.i32, shape=(10, 10))
 
@@ -51,5 +52,6 @@ def test_subscript():
     def any_array(x: ti.any_arr()):
         b = x[3, 1.1]
 
-    with pytest.raises(TypeError, match="indices must be integers"):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match="TypeError: indices must be integers"):
         any_array(a)

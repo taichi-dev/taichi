@@ -29,10 +29,10 @@ CFGNode::CFGNode(Block *block,
     TI_ASSERT(begin_location >= 0);
     TI_ASSERT(block);
     auto parent_block = block;
-    parent_blocks.insert(parent_block);
+    parent_blocks_.insert(parent_block);
     while (parent_block->parent_block()) {
       parent_block = parent_block->parent_block();
-      parent_blocks.insert(parent_block);
+      parent_blocks_.insert(parent_block);
     }
   }
 }
@@ -167,7 +167,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     // |parent_blocks| is precomputed in the constructor of CFGNode.
     // TODO: What if |stmt| appears in an ancestor of |block| but after
     //  |position|?
-    return parent_blocks.find(stmt->parent) != parent_blocks.end();
+    return parent_blocks_.find(stmt->parent) != parent_blocks_.end();
   };
   /**
    * |stmt| is a definition in the UD-chain of |var|. Update |result| with
@@ -283,7 +283,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
         zero->repeat(result->width());
         replace_with(i, std::move(zero), true);
       } else {
-        stmt->replace_with(result);
+        stmt->replace_usages_with(result);
         erase(i);  // This causes end_location--
         i--;       // to cancel i++ in the for loop
         modified = true;
@@ -507,7 +507,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           // Only perform identical load elimination within a CFGNode.
           auto next_load_stmt = live_load_in_this_node[load_ptr];
           TI_ASSERT(irpass::analysis::same_statements(stmt, next_load_stmt));
-          next_load_stmt->replace_with(stmt);
+          next_load_stmt->replace_usages_with(stmt);
           erase(block->locate(next_load_stmt));
           modified = true;
         }

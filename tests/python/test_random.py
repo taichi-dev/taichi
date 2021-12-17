@@ -2,11 +2,7 @@ import taichi as ti
 from taichi import approx
 
 
-def archs_support_random(func):
-    return ti.archs_excluding(ti.metal)(func)
-
-
-@ti.test(exclude=ti.metal)
+@ti.test()
 def test_random_float():
     for precision in [ti.f32, ti.f64]:
         ti.init()
@@ -25,7 +21,7 @@ def test_random_float():
             assert (X**i).mean() == approx(1 / (i + 1), rel=1e-2)
 
 
-@ti.test(exclude=ti.metal)
+@ti.test()
 def test_random_int():
     for precision in [ti.i32, ti.i64]:
         ti.init()
@@ -48,7 +44,7 @@ def test_random_int():
             assert (X**i).mean() == approx(1 / (i + 1), rel=1e-2)
 
 
-@ti.test(exclude=ti.metal)
+@ti.test()
 def test_random_independent_product():
     n = 1024
     x = ti.field(ti.f32, shape=n * n)
@@ -66,7 +62,7 @@ def test_random_independent_product():
         assert X.mean() == approx(1 / 4, rel=1e-2)
 
 
-@ti.test(exclude=ti.metal)
+@ti.test()
 def test_random_2d_dist():
     n = 8192
 
@@ -89,7 +85,7 @@ def test_random_2d_dist():
         assert counters[c] / n == approx(1 / 4, rel=0.2)
 
 
-@ti.test(exclude=ti.metal)
+@ti.test()
 def test_random_seed_per_launch():
     n = 10
     x = ti.field(ti.f32, shape=n)
@@ -107,7 +103,7 @@ def test_random_seed_per_launch():
     assert count <= n * 0.15
 
 
-@ti.test(arch=[ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.metal])
 def test_random_seed_per_program():
     import numpy as np
     n = 10
@@ -148,7 +144,7 @@ def test_random_f64():
     assert np.max(frac) > 0
 
 
-@ti.test(exclude=ti.metal)
+@ti.test()
 def test_randn():
     '''
     Tests the generation of Gaussian random numbers.

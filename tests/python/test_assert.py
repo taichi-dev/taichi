@@ -91,7 +91,7 @@ def test_static_assert_is_static():
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(AssertionError)
+@ti.must_throw(ti.TaichiCompilationError)
 def test_static_assert_message():
     x = 3
 

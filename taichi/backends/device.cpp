@@ -1,9 +1,11 @@
 #include <taichi/backends/device.h>
-#include <taichi/backends/cpu/cpu_device.h>
 
 #if TI_WITH_VULKAN
 #include <taichi/backends/vulkan/vulkan_device.h>
 #include <taichi/backends/interop/vulkan_cpu_interop.h>
+#if TI_WITH_LLVM
+#include <taichi/backends/cpu/cpu_device.h>
+#endif
 #if TI_WITH_CUDA
 #include <taichi/backends/cuda/cuda_device.h>
 #include <taichi/backends/interop/vulkan_cuda_interop.h>
@@ -29,11 +31,13 @@ Device::MemcpyCapability Device::check_memcpy_capability(DevicePtr dst,
   }
 
 #if TI_WITH_VULKAN
+#if TI_WITH_LLVM
   if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
       dynamic_cast<cpu::CpuDevice *>(src.device)) {
     // TODO: support direct copy if dst itself supports host write.
     return Device::MemcpyCapability::RequiresStagingBuffer;
   }
+#endif
 #if TI_WITH_CUDA
   if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
       dynamic_cast<cuda::CudaDevice *>(src.device)) {
@@ -71,7 +75,7 @@ void Device::memcpy_via_staging(DevicePtr dst,
                                 DevicePtr src,
                                 uint64_t size) {
   // Inter-device copy
-#if TI_WITH_VULKAN
+#if defined(TI_WITH_VULKAN) && defined(TI_WITH_LLVM)
   if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
       dynamic_cast<cpu::CpuDevice *>(src.device)) {
     memcpy_cpu_to_vulkan_via_staging(dst, staging, src, size);
@@ -128,14 +132,13 @@ void Device::print_all_cap() const {
   }
 }
 
-uint64_t *Device::allocate_llvm_runtime_memory_jit(JITModule *runtime_jit,
-                                                   LLVMRuntime *runtime,
-                                                   size_t size,
-                                                   uint64 *result_buffer) {
-  runtime_jit->call<void *, std::size_t, std::size_t>(
-      "runtime_memory_allocate_aligned", runtime, size, taichi_page_size);
+uint64_t *Device::allocate_llvm_runtime_memory_jit(
+    const LlvmRuntimeAllocParams &params) {
+  params.runtime_jit->call<void *, std::size_t, std::size_t>(
+      "runtime_memory_allocate_aligned", params.runtime, params.size,
+      taichi_page_size);
   return taichi_union_cast_with_different_sizes<uint64_t *>(fetch_result_uint64(
-      taichi_result_buffer_runtime_query_id, result_buffer));
+      taichi_result_buffer_runtime_query_id, params.result_buffer));
 }
 
 void GraphicsDevice::image_transition(DeviceAllocation img,

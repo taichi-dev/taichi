@@ -78,7 +78,7 @@ def run_mpm88_test():
             J[p] *= 1 + dt * new_C.trace()
             C[p] = new_C
 
-    # gui = ti.core.GUI("MPM88", ti.veci(512, 512))
+    # gui = ti._lib.core.GUI("MPM88", ti.core_veci(512, 512))
     # canvas = gui.get_canvas()
 
     for i in range(n_particles):
@@ -125,8 +125,7 @@ def test_mpm88_async():
     run_mpm88_test()
 
 
-# TODO: enable opengl
-@ti.test(arch=[ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.opengl])
 def test_mpm88_numpy_and_ndarray():
     import numpy as np
 

@@ -158,15 +158,14 @@ def test_boolop():
 
 @ti.test()
 def test_compare_fail():
-    with pytest.raises(ti.TaichiSyntaxError) as e:
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='"Is" is not supported in Taichi kernels.'):
 
         @ti.kernel
         def foo():
-            1 in [1]
+            1 is [1]
 
         foo()
-
-    assert e.value.args[0] == '"In" is not supported in Taichi kernels.'
 
 
 @ti.test()
@@ -394,7 +393,8 @@ def test_range_for_two_arguments():
 def test_range_for_three_arguments():
     a = ti.field(ti.i32, shape=(10, ))
 
-    with pytest.raises(ti.TaichiSyntaxError) as e:
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='Range should have 1 or 2 arguments, found 3'):
 
         @ti.kernel
         def foo(x: ti.i32):
@@ -403,8 +403,6 @@ def test_range_for_three_arguments():
 
         x = 5
         foo(x)
-
-    assert e.value.args[0] == "Range should have 1 or 2 arguments, found 3"
 
 
 @ti.test(print_preprocessed_ir=True)
@@ -740,7 +738,9 @@ def test_static_assign():
 
 @ti.test()
 def test_static_assign_element():
-    with pytest.raises(ti.TaichiSyntaxError) as e:
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match='Static assign cannot be used on elements in arrays'):
 
         @ti.kernel
         def foo():
@@ -748,13 +748,12 @@ def test_static_assign_element():
             a[0] = ti.static(2)
 
         foo()
-    assert e.value.args[
-        0] == "Static assign cannot be used on elements in arrays"
 
 
 @ti.test()
 def test_recreate_variable():
-    with pytest.raises(ti.TaichiSyntaxError) as e:
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='Recreating variables is not allowed'):
 
         @ti.kernel
         def foo():
@@ -762,7 +761,6 @@ def test_recreate_variable():
             a = ti.static(2)
 
         foo()
-    assert e.value.args[0] == "Recreating variables is not allowed"
 
 
 @ti.test()
@@ -840,7 +838,7 @@ def test_dict():
         return b[x]
 
     assert foo(1) == 2
-    with pytest.raises(KeyError):
+    with pytest.raises(ti.TaichiCompilationError):
         foo(2)
 
 
@@ -886,16 +884,15 @@ def test_dictcomp_fail():
         a = {i: i * i for i in range(n) if i % 3 if i % 2}
         return a[m]
 
-    with pytest.raises(KeyError):
+    with pytest.raises(ti.TaichiCompilationError):
         foo(5, 2)
 
-    with pytest.raises(KeyError):
+    with pytest.raises(ti.TaichiCompilationError):
         foo(5, 3)
 
 
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
-# TODO: enable opengl
-@ti.test(arch=[ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.opengl])
 def test_ndarray():
     n = 4
     m = 7
@@ -950,7 +947,7 @@ def test_func_default_value():
 
 @ti.test()
 def test_func_default_value_fail():
-    with pytest.raises(ti.TaichiSyntaxError):
+    with pytest.raises(ti.TaichiCompilationError):
 
         @ti.func
         def bar(s, t=1):
@@ -969,12 +966,35 @@ def test_raise():
     m = ti.Matrix.field(dim, dim, ti.f32)
     ti.root.place(m)
 
-    with pytest.raises(Exception) as e:
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match="Polar decomposition only supports 2D and 3D matrices."):
 
         @ti.kernel
         def foo():
             ti.polar_decompose(m, ti.f32)
 
         foo()
-    assert e.value.args[
-        0] == "Polar decomposition only supports 2D and 3D matrices."
+
+
+@ti.test()
+def test_scalar_argument():
+    @ti.kernel
+    def add(a: ti.f32, b: ti.f32) -> ti.f32:
+        a = a + b
+        return a
+
+    assert add(1.0, 2.0) == approx(3.0)
+
+
+@ti.test()
+def test_default_template_args_on_func():
+    @ti.func
+    def bar(a: ti.template() = 123):
+        return a
+
+    @ti.kernel
+    def foo() -> ti.i32:
+        return bar()
+
+    assert foo() == 123

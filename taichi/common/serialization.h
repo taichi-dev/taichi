@@ -625,9 +625,9 @@ class TextSerializer : public Serializer {
   }
 
  private:
-  int indent;
+  int indent_;
   static constexpr int indent_width = 2;
-  bool first_line;
+  bool first_line_;
 
   template <typename T>
   inline static constexpr bool is_elementary_type_v =
@@ -636,8 +636,8 @@ class TextSerializer : public Serializer {
 
  public:
   TextSerializer() {
-    indent = 0;
-    first_line = false;
+    indent_ = 0;
+    first_line_ = false;
   }
 
   template <typename T>
@@ -649,23 +649,24 @@ class TextSerializer : public Serializer {
 
   template <typename T>
   void operator()(const char *key, const T &t, bool append_comma = false) {
-    this->process(key, t);
+    add_key(key);
+    process(t);
     if (append_comma) {
-      data += ",";
+      add_raw(",");
     }
   }
 
   // Entry to make an AOT json file
   template <typename T>
   void serialize_to_json(const char *key, const T &t) {
-    add_line("{");
+    add_raw("{");
     (*this)(key, t);
-    add_line("}");
+    add_raw("}");
   }
 
  private:
-  void process(const char *key, const std::string &val) {
-    add_line(std::string(key), val);
+  void process(const std::string &val) {
+    add_raw("\"" + val + "\"");
   }
 
   template <typename T, std::size_t n>
@@ -676,7 +677,6 @@ class TextSerializer : public Serializer {
   // C-array
   template <typename T, std::size_t n>
   std::enable_if_t<is_compact<T, n>::value, void> process(
-      const char *key,
       const TArray<T, n> &val) {
     std::stringstream ss;
     ss << "{";
@@ -687,31 +687,29 @@ class TextSerializer : public Serializer {
       }
     }
     ss << "}";
-    add_line(key, ss.str());
+    add_raw(ss.str());
   }
 
   // C-array
   template <typename T, std::size_t n>
   std::enable_if_t<!is_compact<T, n>::value, void> process(
-      const char *key,
       const TArray<T, n> &val) {
-    add_key(key);
-    add_line("{");
-    indent++;
+    add_raw("{");
+    indent_++;
     for (std::size_t i = 0; i < n; i++) {
-      this->process(std::to_string(i).c_str(), val[i]);
+      add_key(std::to_string(i).c_str());
+      process(val[i]);
       if (i != n - 1) {
-        data += ",";
+        add_raw(",");
       }
     }
-    indent--;
-    add_line("}");
+    indent_--;
+    add_raw("}");
   }
 
   // std::array
   template <typename T, std::size_t n>
   std::enable_if_t<is_compact<T, n>::value, void> process(
-      const char *key,
       const StdTArray<T, n> &val) {
     std::stringstream ss;
     ss << "{";
@@ -722,160 +720,149 @@ class TextSerializer : public Serializer {
       }
     }
     ss << "}";
-    add_line(key, ss.str());
+    add_raw(ss.str());
   }
 
   // std::array
   template <typename T, std::size_t n>
   std::enable_if_t<!is_compact<T, n>::value, void> process(
-      const char *key,
       const StdTArray<T, n> &val) {
-    add_key(key);
-    add_line("{");
-    indent++;
+    add_raw("{");
+    indent_++;
     for (std::size_t i = 0; i < n; i++) {
-      this->process(std::to_string(i).c_str(), val[i]);
+      add_key(std::to_string(i).c_str());
+      process(val[i]);
       if (i != n - 1) {
-        data += ",";
+        add_raw(",");
       }
     }
-    indent--;
-    add_line("}");
+    indent_--;
+    add_raw("}");
   }
 
   // Elementary data types
   template <typename T>
-  std::enable_if_t<is_elementary_type_v<T>, void> process(const char *key,
-                                                          const T &val) {
+  std::enable_if_t<is_elementary_type_v<T>, void> process(const T &val) {
     static_assert(!has_io<T>::value, "");
     std::stringstream ss;
     ss << std::boolalpha << val;
-    add_line(key, ss.str());
-  }
-
-  template <typename T>
-  std::enable_if_t<has_io<T>::value, void> process(const char *key,
-                                                   const T &val) {
-    add_key(key);
-    add_line("{");
-    indent++;
-    val.io(*this);
-    indent--;
-    add_line("}");
+    add_raw(ss.str());
   }
 
   template <typename T>
   std::enable_if_t<has_io<T>::value, void> process(const T &val) {
-    add_line("{");
-    indent++;
+    add_raw("{");
+    indent_++;
     val.io(*this);
-    indent--;
-    add_line("}");
+    indent_--;
+    add_raw("}");
   }
 
   template <typename T>
-  std::enable_if_t<has_free_io<T>::value, void> process(const char *key,
-                                                        const T &val) {
-    add_key(key);
-    add_line("{");
-    indent++;
+  std::enable_if_t<has_free_io<T>::value, void> process(const T &val) {
+    add_raw("{");
+    indent_++;
     IO<typename type::remove_cvref_t<T>, decltype(*this)>()(*this, val);
-    indent--;
-    add_line("}");
+    indent_--;
+    add_raw("}");
   }
 
   template <typename T>
-  std::enable_if_t<std::is_enum_v<T>, void> process(const char *key,
-                                                    const T &val) {
+  std::enable_if_t<std::is_enum_v<T>, void> process(const T &val) {
     using UT = std::underlying_type_t<T>;
-    this->process(key, static_cast<UT>(val));
+    process(static_cast<UT>(val));
   }
 
   template <typename T>
-  void process(const char *key, const std::vector<T> &val) {
-    add_key(key);
-    add_line("{");
-    indent++;
+  void process(const std::vector<T> &val) {
+    add_raw("[");
+    indent_++;
     for (std::size_t i = 0; i < val.size(); i++) {
-      this->process(std::to_string(i).c_str(), val[i]);
+      process(val[i]);
       if (i < val.size() - 1) {
-        data += ",";
+        add_raw(",");
       }
     }
-    indent--;
-    add_line("}");
+    indent_--;
+    add_raw("]");
   }
 
   template <typename T, typename G>
-  void process(const char *key, const std::pair<T, G> &val) {
-    add_key(key);
-    add_line("{");
-    indent++;
-    this->process("first", val.first);
-    this->process("second", val.second);
-    indent--;
-    add_line("}");
+  void process(const std::pair<T, G> &val) {
+    add_raw("[");
+    indent_++;
+    process("first", val.first);
+    add_raw(", ");
+    process("second", val.second);
+    indent_--;
+    add_raw("]");
   }
 
   // std::map
   template <typename K, typename V>
-  void process(const char *key, const std::map<K, V> &val) {
-    handle_associative_container(key, val);
+  void process(const std::map<K, V> &val) {
+    handle_associative_container(val);
   }
 
   // std::unordered_map
   template <typename K, typename V>
-  void process(const char *key, const std::unordered_map<K, V> &val) {
-    handle_associative_container(key, val);
+  void process(const std::unordered_map<K, V> &val) {
+    handle_associative_container(val);
   }
 
   // std::optional
   template <typename T>
-  void process(const char *key, const std::optional<T> &val) {
-    add_key(key);
-    add_line("{");
-    indent++;
-    this->process("has_value", val.has_value());
+  void process(const std::optional<T> &val) {
+    add_raw("{");
+    indent_++;
+    add_key("has_value");
+    process(val.has_value());
     if (val.has_value()) {
-      this->process("value", val.value());
+      add_key("value");
+      process(val.value());
     }
-    indent--;
-    add_line("}");
+    indent_--;
+    add_raw("}");
   }
 
   template <typename M>
-  void handle_associative_container(const char *key, const M &val) {
-    add_key(key);
-    add_line("{");
-    indent++;
+  void handle_associative_container(const M &val) {
+    add_raw("{");
+    indent_++;
     for (auto iter = val.begin(); iter != val.end(); iter++) {
       auto first = iter->first;
-      this->process("key", first);
-      data += ",";
-      this->process("value", iter->second);
+      bool is_string = typeid(first) == typeid(std::string);
+      // Non-string keys must be wrapped by quotes.
+      if (!is_string) {
+        add_raw("\"");
+      }
+      process(first);
+      if (!is_string) {
+        add_raw("\"");
+      }
+      add_raw(": ");
+      process(iter->second);
       if (std::next(iter) != val.end()) {
-        data += ",";
+        add_raw(",");
       }
     }
-    indent--;
-    add_line("}");
+    indent_--;
+    add_raw("}");
   }
 
-  void add_line(const std::string &str) {
-    if (first_line) {
-      first_line = false;
-    } else {
-      data += "\n";
-    }
-    data += std::string(indent_width * indent, ' ') + str;
-  }
-
-  void add_line(const std::string &key, const std::string &value) {
-    add_line("\"" + key + "\"" + ": " + "\"" + value + "\"");
+  void add_raw(const std::string &str) {
+    data += str;
   }
 
   void add_key(const std::string &key) {
-    add_line("\"" + key + "\"" + ": ");
+    if (first_line_) {
+      first_line_ = false;
+    } else {
+      data += "\n";
+    }
+    data += std::string(indent_width * indent_, ' ') + "\"" + key + "\"";
+
+    add_raw(": ");
   }
 };
 

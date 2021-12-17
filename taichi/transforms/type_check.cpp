@@ -13,10 +13,10 @@ TLANG_NAMESPACE_BEGIN
 // Var lookup and Type inference
 class TypeCheck : public IRVisitor {
  private:
-  CompileConfig config;
+  CompileConfig config_;
 
  public:
-  explicit TypeCheck(const CompileConfig &config) : config(config) {
+  explicit TypeCheck(const CompileConfig &config) : config_(config) {
     allow_undefined_visitor = true;
   }
 
@@ -61,11 +61,11 @@ class TypeCheck : public IRVisitor {
     // TODO(type): test_ad_for fails if we assume dest is a pointer type.
     auto dst_type = stmt->dest->ret_type.ptr_removed();
     if (auto cit = dst_type->cast<CustomIntType>()) {
-      dst_type = cit->get_compute_type();
+      dst_type = cit->get_physical_type();
     } else if (auto cft = dst_type->cast<CustomFloatType>()) {
-      dst_type = cft->get_compute_type();
-    }
-    if (stmt->val->ret_type != dst_type) {
+      auto cit = cft->get_digits_type()->as<CustomIntType>();
+      dst_type = cit->get_physical_type();
+    } else if (stmt->val->ret_type != dst_type) {
       TI_WARN("[{}] Atomic {} ({} to {}) may lose precision, at\n{}",
               stmt->name(), atomic_op_type_name(stmt->op_type),
               data_type_name(stmt->val->ret_type), data_type_name(dst_type),
@@ -259,14 +259,15 @@ class TypeCheck : public IRVisitor {
       if (is_trigonometric(stmt->op_type)) {
         TI_ERROR("[{}] Trigonometric operator takes real inputs only, at {}",
                  stmt->name(), stmt->tb);
-      } else if (stmt->op_type == UnaryOpType::floor ||
+      } else if (stmt->op_type == UnaryOpType::round ||
+                 stmt->op_type == UnaryOpType::floor ||
                  stmt->op_type == UnaryOpType::ceil) {
-        TI_ERROR("[{}] floor/ceil takes real inputs only at {}", stmt->name(),
-                 stmt->tb);
+        TI_ERROR("[{}] round/floor/ceil takes real inputs only at {}",
+                 stmt->name(), stmt->tb);
       } else if (stmt->op_type == UnaryOpType::sqrt ||
                  stmt->op_type == UnaryOpType::exp ||
                  stmt->op_type == UnaryOpType::log) {
-        cast(stmt->operand, config.default_fp);
+        cast(stmt->operand, config_.default_fp);
       }
     }
   }
@@ -321,7 +322,7 @@ class TypeCheck : public IRVisitor {
     // lower truediv into div
 
     if (stmt->op_type == BinaryOpType::truediv) {
-      auto default_fp = config.default_fp;
+      auto default_fp = config_.default_fp;
       if (!is_real(stmt->lhs->ret_type)) {
         cast(stmt->lhs, default_fp);
       }

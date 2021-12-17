@@ -726,7 +726,7 @@ class GlobalLoadExpression : public Expression {
   Expr ptr;
   GlobalLoadExpression(const Expr &ptr) : ptr(ptr) {
     // Now it is only constructed by load_if_ptr. No type_check will be called.
-    ret_type = ptr->ret_type->get_compute_type();
+    ret_type = ptr->ret_type;
   }
 
   void type_check() override {
@@ -836,7 +836,7 @@ class MeshRelationAccessExpression : public Expression {
   MeshRelationAccessExpression(mesh::Mesh *mesh,
                                const Expr mesh_idx,
                                mesh::MeshElementType to_type)
-      : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
+      : mesh(mesh), mesh_idx(load_if_ptr(mesh_idx)), to_type(to_type) {
   }
 
   MeshRelationAccessExpression(mesh::Mesh *mesh,
@@ -844,9 +844,9 @@ class MeshRelationAccessExpression : public Expression {
                                mesh::MeshElementType to_type,
                                const Expr neighbor_idx)
       : mesh(mesh),
-        mesh_idx(mesh_idx),
+        mesh_idx(load_if_ptr(mesh_idx)),
         to_type(to_type),
-        neighbor_idx(neighbor_idx) {
+        neighbor_idx(load_if_ptr(neighbor_idx)) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -872,7 +872,10 @@ class MeshIndexConversionExpression : public Expression {
                                 mesh::MeshElementType idx_type,
                                 const Expr idx,
                                 mesh::ConvType conv_type)
-      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
+      : mesh(mesh),
+        idx_type(idx_type),
+        idx(load_if_ptr(idx)),
+        conv_type(conv_type) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -880,11 +883,11 @@ class MeshIndexConversionExpression : public Expression {
 
 class ASTBuilder {
  private:
-  std::vector<Block *> stack;
+  std::vector<Block *> stack_;
 
  public:
   ASTBuilder(Block *initial) {
-    stack.push_back(initial);
+    stack_.push_back(initial);
   }
 
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
@@ -894,11 +897,11 @@ class ASTBuilder {
     Block *list;
     ScopeGuard(ASTBuilder *builder, Block *list)
         : builder(builder), list(list) {
-      builder->stack.push_back(list);
+      builder->stack_.push_back(list);
     }
 
     ~ScopeGuard() {
-      builder->stack.pop_back();
+      builder->stack_.pop_back();
     }
   };
 
@@ -912,20 +915,20 @@ ASTBuilder &current_ast_builder();
 
 class FrontendContext {
  private:
-  std::unique_ptr<ASTBuilder> current_builder;
-  std::unique_ptr<Block> root_node;
+  std::unique_ptr<ASTBuilder> current_builder_;
+  std::unique_ptr<Block> root_node_;
 
  public:
   FrontendContext();
 
   ASTBuilder &builder() {
-    return *current_builder;
+    return *current_builder_;
   }
 
   IRNode *root();
 
   std::unique_ptr<Block> get_root() {
-    return std::move(root_node);
+    return std::move(root_node_);
   }
 };
 

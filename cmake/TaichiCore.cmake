@@ -36,8 +36,10 @@ if (WIN32)
     endif()
 endif()
 
+# Enable GGUI Only if building with Vulkan on Desktop machine as it depends on
+# GLFW which is not supported on Android platform for example
 set(TI_WITH_GGUI OFF)
-if(TI_WITH_VULKAN)
+if(TI_WITH_VULKAN AND NOT ANDROID)
     set(TI_WITH_GGUI ON)
 endif()
 
@@ -100,8 +102,6 @@ file(GLOB TAICHI_OPENGL_REQUIRED_SOURCE
 file(GLOB TAICHI_VULKAN_REQUIRED_SOURCE
   "taichi/backends/vulkan/runtime.h"
   "taichi/backends/vulkan/runtime.cpp"
-  "taichi/backends/vulkan/snode_struct_compiler.cpp"
-  "taichi/backends/vulkan/snode_struct_compiler.h"
 )
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
@@ -206,7 +206,8 @@ endif()
 
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
-if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
+# GLFW not available on Android
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN AND NOT ANDROID)
   set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -226,48 +227,50 @@ if(DEFINED ENV{LLVM_DIR})
     message("Getting LLVM_DIR=${LLVM_DIR} from the environment variable")
 endif()
 
-# http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
-find_package(LLVM REQUIRED CONFIG)
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-if(${LLVM_PACKAGE_VERSION} VERSION_LESS "10.0")
-    message(FATAL_ERROR "LLVM version < 10 is not supported")
-endif()
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-include_directories(${LLVM_INCLUDE_DIRS})
-message("LLVM include dirs ${LLVM_INCLUDE_DIRS}")
-message("LLVM library dirs ${LLVM_LIBRARY_DIRS}")
-add_definitions(${LLVM_DEFINITIONS})
+if(TI_WITH_LLVM)
+    # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
+    find_package(LLVM REQUIRED CONFIG)
+    message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+    if(${LLVM_PACKAGE_VERSION} VERSION_LESS "10.0")
+        message(FATAL_ERROR "LLVM version < 10 is not supported")
+    endif()
+    message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+    include_directories(${LLVM_INCLUDE_DIRS})
+    message("LLVM include dirs ${LLVM_INCLUDE_DIRS}")
+    message("LLVM library dirs ${LLVM_LIBRARY_DIRS}")
+    add_definitions(${LLVM_DEFINITIONS})
 
-llvm_map_components_to_libnames(llvm_libs
-        Core
-        ExecutionEngine
-        InstCombine
-        OrcJIT
-        RuntimeDyld
-        TransformUtils
-        BitReader
-        BitWriter
-        Object
-        ScalarOpts
-        Support
-        native
-        Linker
-        Target
-        MC
-        Passes
-        ipo
-        Analysis
-        )
-target_link_libraries(${LIBRARY_NAME} ${llvm_libs})
+    llvm_map_components_to_libnames(llvm_libs
+            Core
+            ExecutionEngine
+            InstCombine
+            OrcJIT
+            RuntimeDyld
+            TransformUtils
+            BitReader
+            BitWriter
+            Object
+            ScalarOpts
+            Support
+            native
+            Linker
+            Target
+            MC
+            Passes
+            ipo
+            Analysis
+            )
+    target_link_libraries(${LIBRARY_NAME} ${llvm_libs})
 
-if (APPLE AND "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64")
-    llvm_map_components_to_libnames(llvm_aarch64_libs AArch64)
-    target_link_libraries(${LIBRARY_NAME} ${llvm_aarch64_libs})
-endif()
+    if (APPLE AND "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64")
+        llvm_map_components_to_libnames(llvm_aarch64_libs AArch64)
+        target_link_libraries(${LIBRARY_NAME} ${llvm_aarch64_libs})
+    endif()
 
-if (TI_WITH_CUDA)
-    llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
-    target_link_libraries(${LIBRARY_NAME} ${llvm_ptx_libs})
+    if (TI_WITH_CUDA)
+        llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
+        target_link_libraries(${LIBRARY_NAME} ${llvm_ptx_libs})
+    endif()
 endif()
 
 if (TI_WITH_CUDA_TOOLKIT)
@@ -292,14 +295,15 @@ if (TI_WITH_OPENGL)
     target_link_libraries(${CORE_LIBRARY_NAME} spirv-cross-glsl spirv-cross-core)
 endif()
 
-if (TI_WITH_VULKAN)
-    set(SPIRV_SKIP_EXECUTABLES true)
-    set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
-    add_subdirectory(external/SPIRV-Tools)
-    # NOTE: SPIRV-Tools-opt must come before SPIRV-Tools
-    # https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
-    target_link_libraries(${CORE_LIBRARY_NAME} SPIRV-Tools-opt ${SPIRV_TOOLS})
+# SPIR-V codegen is always there, regardless of Vulkan
+set(SPIRV_SKIP_EXECUTABLES true)
+set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
+add_subdirectory(external/SPIRV-Tools)
+# NOTE: SPIRV-Tools-opt must come before SPIRV-Tools
+# https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
+target_link_libraries(${CORE_LIBRARY_NAME} SPIRV-Tools-opt ${SPIRV_TOOLS})
 
+if (TI_WITH_VULKAN)
     include_directories(SYSTEM external/Vulkan-Headers/include)
 
     if (NOT APPLE)
@@ -318,8 +322,10 @@ if (TI_WITH_VULKAN)
     endif()
 
     if (APPLE)
-        find_library(MOLTEN_VK libMoltenVK.a /opt/homebrew/Cellar/molten-vk)
-        target_link_libraries(${CORE_LIBRARY_NAME} ${MOLTEN_VK})
+        find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
+        configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
+        target_link_directories(${CORE_LIBRARY_NAME} PUBLIC ${CMAKE_BINARY_DIR})
+        target_link_libraries(${CORE_LIBRARY_NAME} MoltenVK)
         message(STATUS "MoltenVK library ${MOLTEN_VK}")
     endif()
 endif ()
@@ -331,7 +337,14 @@ if (APPLE)
 endif ()
 
 if (NOT WIN32)
-    target_link_libraries(${CORE_LIBRARY_NAME} pthread stdc++)
+    # Android has a custom toolchain so pthread is not available and should
+    # link against other libraries as well for logcat and internal features.
+    if (ANDROID)
+        target_link_libraries(${CORE_LIBRARY_NAME} android log)
+    else()
+        target_link_libraries(${CORE_LIBRARY_NAME} pthread stdc++)
+    endif()
+
     if (UNIX AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	# OS X or BSD
     else()
@@ -358,7 +371,13 @@ endforeach ()
 message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
 
 set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_core)
-add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED ${TAICHI_PYBIND_SOURCE})
+# Cannot compile Python source code with Android, but TI_EXPORT_CORE should be set and
+# Android should only use the isolated library ignoring those source code.
+if (NOT ANDROID)
+    add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED ${TAICHI_PYBIND_SOURCE})
+else()
+    add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED)
+endif ()
 # It is actually possible to link with an OBJECT library
 # https://cmake.org/cmake/help/v3.13/command/target_link_libraries.html?highlight=target_link_libraries#linking-object-libraries
 target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC ${CORE_LIBRARY_NAME})

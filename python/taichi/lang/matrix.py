@@ -3,7 +3,7 @@ from collections.abc import Iterable
 
 import numpy as np
 import taichi.lang
-from taichi.core import ti_core
+from taichi._lib import core as ti_core
 from taichi.lang import expr, impl
 from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod
@@ -12,10 +12,10 @@ from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
-from taichi.lang.types import CompoundType
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
-from taichi.misc.util import deprecated, warning
+from taichi.tools.util import warning
+from taichi.types import CompoundType
 
 import taichi as ti
 
@@ -34,6 +34,7 @@ class Matrix(TaichiOperations):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
+        self.in_python_scope = in_python_scope()
 
         if isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
@@ -345,8 +346,10 @@ class Matrix(TaichiOperations):
     @property
     @python_scope
     def value(self):
-        return Matrix([[self(i, j) for j in range(self.m)]
-                       for i in range(self.n)])
+        return Matrix(self.to_list())
+
+    def to_list(self):
+        return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
 
     # host access & python scope operation
     @python_scope
@@ -487,8 +490,6 @@ class Matrix(TaichiOperations):
         raise Exception(
             "Inversions of matrices with sizes >= 5 are not supported")
 
-    inversed = deprecated('a.inversed()', 'a.inverse()')(inverse)
-
     @kern_mod.pyfunc
     def normalized(self, eps=0):
         """Normalize a vector.
@@ -511,15 +512,6 @@ class Matrix(TaichiOperations):
                                "normalized() only works on vector"))
         invlen = 1 / (self.norm() + eps)
         return invlen * self
-
-    @staticmethod
-    @deprecated('ti.Matrix.transposed(a)', 'a.transpose()')
-    def transposed(a):
-        return a.transpose()
-
-    @deprecated('a.T()', 'a.transpose()')
-    def T(self):
-        return self.transpose()
 
     @kern_mod.pyfunc
     def transpose(self):
@@ -636,7 +628,7 @@ class Matrix(TaichiOperations):
     @kern_mod.pyfunc
     def norm_sqr(self):
         """Return the sum of the absolute squares of its elements."""
-        return (self**2).sum()
+        return (self * self).sum()
 
     @kern_mod.pyfunc
     def max(self):
@@ -864,6 +856,7 @@ class Matrix(TaichiOperations):
         entries, entries_grad = MatrixField(entries, n, m), MatrixField(
             entries_grad, n, m)
         entries.set_grad(entries_grad)
+        impl.get_runtime().matrix_fields.append(entries)
 
         if shape is None:
             assert offset is None, "shape cannot be None when offset is being set"
@@ -898,25 +891,10 @@ class Matrix(TaichiOperations):
         return entries
 
     @classmethod
-    @python_scope
-    @deprecated('ti.Matrix.var', 'ti.Matrix.field')
-    def var(cls, n, m, dt, *args, **kwargs):
-        """ti.Matrix.var"""
-        _taichi_skip_traceback = 1
-        return cls.field(n, m, dt, *args, **kwargs)
-
-    @classmethod
     def _Vector_field(cls, n, dtype, *args, **kwargs):
         """ti.Vector.field"""
         _taichi_skip_traceback = 1
         return cls.field(n, 1, dtype, *args, **kwargs)
-
-    @classmethod
-    @deprecated('ti.Vector.var', 'ti.Vector.field')
-    def _Vector_var(cls, n, dt, *args, **kwargs):
-        """ti.Vector.var"""
-        _taichi_skip_traceback = 1
-        return cls._Vector_field(n, dt, *args, **kwargs)
 
     @classmethod
     @python_scope
@@ -1094,7 +1072,6 @@ def Vector(n, dt=None, **kwargs):
     return Matrix(n, 1, dt=dt, **kwargs)
 
 
-Vector.var = Matrix._Vector_var
 Vector.field = Matrix._Vector_field
 Vector.ndarray = Matrix._Vector_ndarray
 Vector.zero = Matrix.zero
@@ -1123,6 +1100,7 @@ class _IntermediateMatrix(Matrix):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
+        self.in_python_scope = in_python_scope()
 
 
 class MatrixField(Field):
@@ -1138,10 +1116,6 @@ class MatrixField(Field):
         super().__init__(_vars)
         self.n = n
         self.m = m
-
-    @deprecated('x(i, j)', 'x.get_scalar_field(i, j)')
-    def __call__(self, *indices):
-        return self.get_scalar_field(*indices)
 
     def get_scalar_field(self, *indices):
         """Creates a ScalarField using a specific field member. Only used for quant.
@@ -1185,7 +1159,7 @@ class MatrixField(Field):
         taichi.lang.meta.fill_matrix(self, val)
 
     @python_scope
-    def to_numpy(self, keep_dims=False, as_vector=None, dtype=None):
+    def to_numpy(self, keep_dims=False, dtype=None):
         """Converts the field instance to a NumPy array.
 
         Args:
@@ -1193,20 +1167,11 @@ class MatrixField(Field):
                 When keep_dims=True, on an n-D matrix field, the numpy array always has n+2 dims, even for 1x1, 1xn, nx1 matrix fields.
                 When keep_dims=False, the resulting numpy array should skip the matrix dims with size 1.
                 For example, a 4x1 or 1x4 matrix field with 5x6x7 elements results in an array of shape 5x6x7x4.
-            as_vector (bool, deprecated): Whether to make the returned numpy array as a vector, i.e., with shape (n,) rather than (n, 1).
-                Note that this argument has been deprecated.
-                More discussion about `as_vector`: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858.
             dtype (DataType, optional): The desired data type of returned numpy array.
 
         Returns:
             numpy.ndarray: The result NumPy array.
         """
-        if as_vector is not None:
-            warning(
-                'v.to_numpy(as_vector=True) is deprecated, '
-                'please use v.to_numpy() directly instead',
-                DeprecationWarning,
-                stacklevel=3)
         if dtype is None:
             dtype = to_numpy_type(self.dtype)
         as_vector = self.m == 1 and not keep_dims
@@ -1376,7 +1341,7 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def fill(self, val):
-        self.ndarray_fill(val, taichi.lang.meta.fill_ndarray_matrix)
+        self.ndarray_matrix_fill(val)
 
     @python_scope
     def to_numpy(self):
@@ -1440,7 +1405,7 @@ class VectorNdarray(Ndarray):
 
     @python_scope
     def fill(self, val):
-        self.ndarray_fill(val, taichi.lang.meta.fill_ndarray_matrix)
+        self.ndarray_matrix_fill(val)
 
     @python_scope
     def to_numpy(self):

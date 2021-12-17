@@ -673,7 +673,7 @@ class ASTTransformer(Builder):
                     f"Group for should have 1 loop target, found {len(targets)}"
                 )
             target = targets[0]
-            for value in ndrange_arg:
+            for value in ti.grouped(ndrange_arg):
                 with ctx.variable_scope_guard():
                     ctx.create_variable(target, value)
                     build_stmts(ctx, node.body)

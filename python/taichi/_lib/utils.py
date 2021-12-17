@@ -148,10 +148,9 @@ def compare_version(latest, current):
     for x, y in zip(latest_num, current_num):
         if x > y:
             return True
-        elif x < y:
+        if x < y:
             return False
-        else:
-            continue
+        continue
     return False
 
 

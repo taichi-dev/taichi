@@ -6,20 +6,20 @@ import sys
 import textwrap
 
 import numpy as np
+from taichi import _logging
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang import impl, util
+from taichi.lang import impl, runtime_ops, util
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.expr import Expr
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import to_taichi_type
 from taichi.linalg.sparse_matrix import sparse_matrix_builder
 from taichi.tools.util import obsolete
 from taichi.types import any_arr, primitive_types, template
-
-import taichi as ti
 
 if util.has_pytorch():
     import torch
@@ -190,7 +190,7 @@ class Func:
             if not isinstance(anno, template):
                 non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
-        return ti.Expr(
+        return Expr(
             _ti_core.make_func_call_expr(
                 self.taichi_functions[key.instance_id], non_template_args))
 
@@ -437,7 +437,7 @@ class Kernel:
         if self.is_grad:
             grad_suffix = "_grad"
         kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}{grad_suffix}"
-        ti.trace(f"Compiling kernel {kernel_name}...")
+        _logging.trace(f"Compiling kernel {kernel_name}...")
 
         tree, ctx = _get_tree_and_ctx(
             self,
@@ -597,9 +597,9 @@ class Kernel:
             ret_dt = self.return_type
             has_ret = ret_dt is not None
 
-            if has_ret or (ti.current_cfg().async_mode
+            if has_ret or (impl.current_cfg().async_mode
                            and has_external_arrays):
-                ti.sync()
+                runtime_ops.sync()
 
             if has_ret:
                 if id(ret_dt) in primitive_types.integer_type_ids:
@@ -633,7 +633,7 @@ class Kernel:
     @_shell_pop_print
     def __call__(self, *args, **kwargs):
         if self.is_grad and impl.current_cfg().opt_level == 0:
-            ti.warn(
+            _logging.warn(
                 """opt_level = 1 is enforced to enable gradient computation."""
             )
             impl.current_cfg().opt_level = 1

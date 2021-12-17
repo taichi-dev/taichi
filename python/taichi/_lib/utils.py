@@ -166,7 +166,7 @@ def _print_taichi_header():
                 latest_version = f.readlines()[0].rstrip()
             if compare_version(latest_version, ti_core.get_version_string()):
                 header += f'latest version {latest_version}, '
-    except Exception:
+    except:
         pass
 
     llvm_version = ti_core.get_llvm_version_string()

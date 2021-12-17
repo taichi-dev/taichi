@@ -460,7 +460,7 @@ def check_version():
                                             'latest_version')
                 with open(version_path, 'w') as f:
                     f.write(response['latest_version'])
-    except Exception:
+    except:
         pass
 
 
@@ -484,7 +484,7 @@ def try_check_version():
                 f.write((cur_date +
                          datetime.timedelta(days=7)).strftime('%Y-%m-%d'))
     # Wildcard exception to catch potential file writing errors.
-    except Exception:
+    except:
         pass
 
 

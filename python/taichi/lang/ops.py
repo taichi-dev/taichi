@@ -20,7 +20,8 @@ def Expr(*args, **kw):
 
 
 def make_expr_group(*args):
-    from taichi.lang.expr import make_expr_group as ti_make_expr_group  # pylint: disable=C0415
+    from taichi.lang.expr import \
+        make_expr_group as ti_make_expr_group  # pylint: disable=C0415
     return ti_make_expr_group(*args)
 
 

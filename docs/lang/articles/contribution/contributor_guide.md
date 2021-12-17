@@ -18,13 +18,12 @@ This section provides some general guidelines for the Taichi community and tips 
 
 Always use straightforward (sometimes even brute-force) solutions: Complicated code usually suggests a lack of design or over-engineering.
 
-> "There are two ways of constructing a software design: One way is to make it so simple that there are obviously no deficiencies, and the other way is to make it so complicated that there are no obvious deficiencies. *The first method is far more difficult*." — [C.A.R. Hoare](https://en.wikipedia.org/wiki/Tony_Hoare)
+> - "There are two ways of constructing a software design: One way is to make it so simple that there are obviously no deficiencies, and the other way is to make it so complicated that there are no obvious deficiencies. *The first method is far more difficult*." — [C.A.R. Hoare](https://en.wikipedia.org/wiki/Tony_Hoare)
+> - "Perfection (in design) is achieved not when there is nothing more to add, but rather when there is nothing more to take away." [Antoine de Saint-Exupéry](https://en.wikipedia.org/wiki/The_Cathedral_and_the_Bazaar)
 
 ### Juxtapose pros and cons
 
 When it comes to making a design decision, weigh up its pros and cons. A design is *good to go* so long as its advantages outweigh its disadvantages.
-
-> "Perfection (in design) is achieved not when there is nothing more to add, but rather when there is nothing more to take away." [Antoine de Saint-Exupéry](https://en.wikipedia.org/wiki/The_Cathedral_and_the_Bazaar)
 
 ### Communicate effectively
 
@@ -42,7 +41,7 @@ Our ultimate goal is to build a sustainable, prosperous Taichi community, and ef
   - Acceptable😃: *"This design could be confusing to new Taichi users. If it were designed this way, it could..."*
   - Undesirable😞: ~~*"This design is terrible."*~~
 
-## What can you contribute
+## What you can contribute
 
 <!-- Todo: Add more information as to where to find the corresponding sources. -->
 
@@ -66,7 +65,7 @@ Except for minor updates, most PRs start from a developer taking over an issue. 
 | Issue Tag                                                    | Description               | Target developer                               |
 | ------------------------------------------------------------ | ------------------------- | ---------------------------------------------- |
 | [good first issue](https://github.com/taichi-dev/taichi/issues?q=is:open+is:issue+label:"good+first+issue") | Issues that are easy to start with                          | Developers new to Taichi                       |
-| [welcome contribution](https://github.com/taichi-dev/taichi/issues?q=is:open+is:issue+label:"welcome+contribution") | *Slightly* more challenging | Developers who wish to dive deeper into Taichi |
+| [welcome contribution](https://github.com/taichi-dev/taichi/issues?q=is:open+is:issue+label:"welcome+contribution") | Issues *Slightly* more challenging | Developers who wish to dive deeper into Taichi |
 
 ### Best practices
 
@@ -79,7 +78,7 @@ Except for minor updates, most PRs start from a developer taking over an issue. 
       1. Briefly describe how you plan to handle it (if no solution has been provided).
       2. Hold off until a core developer responds to your action plan.
   - **Goal**: Keep your implementation neat and effective.
-  - **Example**:  See [#2610](https://github.com/taichi-dev/taichi/issues/2610).
+  - **Example**: See [#2610](https://github.com/taichi-dev/taichi/issues/2610).
 
 ## References for documentation updates
 
@@ -97,9 +96,9 @@ If your PR is to implement a new feature, we recommend that you write your own t
 - To write a Python test case, see the [Workflow for writing a Python test](./write_test).
 - To write a C++ test case, see the [Workflow for writing a C++ test](./writing_cpp_tests).
 
-## Conduct formatting and integration tests locally
+## Conduct style checks and integration tests locally
 
-We highly recommend that you complete code formatting and integration tests on your local computer before filing a PR.
+We highly recommend that you complete code style checks and integration tests on your local computer before filing a PR.
 
 ### Enforce code style
 
@@ -177,7 +176,7 @@ Now you get to the point where you need to get your hands dirty with your PRs. T
     - If you include in your PR irrevelant implementations, ensure that they are minor.
     - Your reviewers have the right to request you to remove massive, irrevelant changes from your PR.
   - If your PR is to implement a new feature, ensure that you have designed test cases for it. See [Add test cases for your local changes](#add-test-cases-for-your-local-changes).
-  - You are required to conduct formatting and integration tests locally for your PR. See [Conduct formatting and integration tests locally](#conduct-formatting-and-integration-tests-locally)
+  - You are required to conduct code style checks and integration tests locally for your PR. See [Conduct style checks and integration tests locally](#conduct-style-checks-and-integration-tests-locally)
 
 - **When describing your PR:**
   - Provide sufficient information in the description of your PR to provide the community with clearer context:
@@ -188,15 +187,7 @@ Now you get to the point where you need to get your hands dirty with your PRs. T
 
   - Click **Convert to draft** on your PR page to convert the PR to draft, indicating that you are still working on it.
   - Click **Ready for review** when you are all set and up for a review.
-  - See the [Draft](https://github.blog/2019-02-14-introducing-draft-pull-requests/) for more information.
-
-- **If you make multiple commits to an open PR:**
-
-  - Consider rebasing your commits to keep the commit history clean and meaningful.
-
-- **If you are making multiple PRs:**
-  - Ensure that independent PRs are on *different* branches forked from `master`.
-  - PRs with dependencies should be created *only* after all prerequisite PRs are merged into `master`.
+  - See [Draft](https://github.blog/2019-02-14-introducing-draft-pull-requests/) for more information.
 
 
 ### PR naming conventions
@@ -224,7 +215,7 @@ Your PR will make it into the commit history in the the master branch or even Ta
   - If you have multiple tags, separate adjacent tags with one space.
   - See [misc/prtags.json](https://github.com/taichi-dev/taichi/blob/master/misc/prtags.json) for a full list of available tags.
   - We differentiate PRs for end-users from PRs for developers by *capitalizing tag initial*.
-    - If a PR deals with a feature visible to the end-users, initialize the most relevant tag and the PR will [make it into the release notes](https://github.com/taichi-dev/taichi/blob/master/misc/make_changelog.py). For example, `[Metal]`, `[Vulkan]`, `[IR]`, `[Lang]`, or `[CUDA]` Ensure that your PR title has *AT MOST* one tag dealt this way. 
+    - If a PR deals with a feature visible to the end-users, initialize the most relevant tag and the PR will [make it into the release notes](https://github.com/taichi-dev/taichi/blob/master/misc/make_changelog.py). For example, `[Metal]`, `[Vulkan]`, `[IR]`, `[Lang]`, or `[CUDA]`. Ensure that your PR title has *AT MOST* one tag dealt this way. 
     - If a PR deals with the underlying or intermediate implementation, then it is for the developers and you need to ensure that all its tags are *in lowercase*. For example, `[metal]`, `[vulkan]`, `[ir]`, `[lang]`, or `[cuda]`.
 
 :::danger INCORRECT
@@ -273,11 +264,12 @@ When introducing a new tag, ensure that you add it to [misc/prtags.json](https:/
 
 ### PR review & merging checklist
 
-Folow this checklist during PR review or merging:
+Follow this checklist during PR review or merging:
 
 1. Ensure that your PR title follows our [naming conventions](#pr-naming-conventions).
 2. Ensure that Taichi's master branch has a *linear history*. See [Linear vs Non-Linear History](https://idiv-biodiversity.github.io/git-knowledge-base/linear-vs-nonlinear.html) for more information. 
 3. Ensure that your PR passes all Continuous Integration (CI) tests before merging it.
+   
    CI is triggered each time you push a commit to an open PR. It builds and tests all commits in your PR in multiple environments. Keep an eye on the CI test results:
    - A ✔️ on the left-hand side of a commit hash: CI has passed,
    - A ❌ on the left-hand side of a commit hash: CI has failed.

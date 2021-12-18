@@ -105,8 +105,7 @@ def test_fields_builder_pointer():
     fb2.finalize()
 
     @ti.kernel
-    def assign_field_multiple0():
-        # test range-for
+    def assign_field_multiple_range_for():
         for i in range(shape):
             x[i] = i * 2
         for i in range(shape):
@@ -114,21 +113,20 @@ def test_fields_builder_pointer():
         for i in range(shape):
             z[i] = i + 10
 
-    assign_field_multiple0()
+    assign_field_multiple_range_for()
     for i in range(shape):
         assert x[i] == i * 2
         assert y[i] == i + 5
         assert z[i] == i + 10
 
     @ti.kernel
-    def assign_field_multiple1():
-        # test struct-for
+    def assign_field_multiple_struct_for():
         for i in y:
             y[i] += 5
         for i in z:
             z[i] -= 5
 
-    assign_field_multiple1()
+    assign_field_multiple_struct_for()
     for i in range(shape):
         assert y[i] == i + 10
         assert z[i] == i + 5
@@ -169,7 +167,7 @@ def test_fields_builder_destroy(test_1d_size, field_type):
         fb0_snode_tree.destroy()
         fb1_snode_tree.destroy()
 
-    def test_for_raise_twice_destroy():
+    def test_for_raise_destroy_twice():
         fb = ti.FieldsBuilder()
         a = ti.field(ti.f32)
         fb.dense(ti.i, test_1d_size).place(a)

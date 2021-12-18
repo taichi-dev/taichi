@@ -135,6 +135,7 @@ def test_fields_builder_pointer():
     for i in range(shape):
         assert x[i] == i * 3
 
+
 # We currently only consider data types that all platform support,
 # See https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types for more details.
 @pytest.mark.parametrize('test_1d_size', [1, 10, 100])

@@ -409,7 +409,8 @@ VkRuntime::KernelHandle VkRuntime::register_taichi_kernel(
 void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   auto *ti_kernel = ti_kernels_[handle.id_].get();
 
-  std::unique_ptr<DeviceAllocationGuard> ctx_buffer_host{nullptr}, ctx_buffer{nullptr};
+  std::unique_ptr<DeviceAllocationGuard> ctx_buffer_host{nullptr},
+      ctx_buffer{nullptr};
 
   if (ti_kernel->get_ctx_buffer_size()) {
     ctx_buffer = device_->allocate_memory_unique(

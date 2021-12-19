@@ -310,7 +310,9 @@ def _test_ndarray_deepcopy():
 
 
 def test_ndarray_cuda_caching_allocator():
-    ti.init(arch=ti.cuda, ndarray_use_torch=False, ndarray_use_cached_allocator=True)
+    ti.init(arch=ti.cuda,
+            ndarray_use_torch=False,
+            ndarray_use_cached_allocator=True)
     n = 8
     a = ti.ndarray(ti.i32, shape=(n))
     a.fill(2)

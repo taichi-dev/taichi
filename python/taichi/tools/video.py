@@ -1,8 +1,8 @@
 import os
 import shutil
 
-from taichi.core import get_os_name
-from taichi.misc.image import imwrite
+from taichi._lib.utils import get_os_name
+from taichi.tools.image import imwrite
 
 FRAME_FN_TEMPLATE = '%06d.png'
 FRAME_DIR = 'frames'
@@ -10,21 +10,22 @@ FRAME_DIR = 'frames'
 # Write the frames to the disk and then make videos (mp4 or gif) if necessary
 
 
-def scale_video(input, output, ratiow, ratioh):
-    os.system('ffmpeg -i {}  -vf "scale=iw*{:.4f}:ih*{:.4f}" {}'.format(
-        input, ratiow, ratioh, output))
-
-
-def crop_video(input, output, x_begin, x_end, y_begin, y_end):
+def scale_video(input_fn, output_fn, ratiow, ratioh):
     os.system(
-        'ffmpeg -i {} -filter:v "crop=iw*{:.4f}:ih*{:.4f}:iw*{:0.4f}:ih*{:0.4f}" {}'
-        .format(input, x_end - x_begin, y_end - y_begin, x_begin, 1 - y_end,
-                output))
+        f'ffmpeg -i {input_fn}  -vf "scale=iw*{ratiow:.4f}:ih*{ratioh:.4f}" {output_fn}'
+    )
 
 
-def accelerate_video(input, output, speed):
-    os.system('ffmpeg -i {} -filter:v "setpts={:.4f}*PTS" {}'.format(
-        input, 1 / speed, output))
+def crop_video(input_fn, output_fn, x_begin, x_end, y_begin, y_end):
+    os.system(
+        f'ffmpeg -i {input_fn} -filter:v "crop=iw*{x_end - x_begin:.4f}:ih*{y_end - y_begin:.4f}:iw*{x_begin:0.4f}:ih*{1 - y_end:0.4f}" {output_fn}'
+    )
+
+
+def accelerate_video(input_fn, output_fn, speed):
+    os.system(
+        f'ffmpeg -i {input_fn} -filter:v "setpts={1 / speed:.4f}*PTS" {output_fn}'
+    )
 
 
 def get_ffmpeg_path():
@@ -36,19 +37,17 @@ def mp4_to_gif(input_fn, output_fn, framerate):
     palette_name = 'palette.png'
     if get_os_name() == 'win':
         command = get_ffmpeg_path(
-        ) + " -loglevel panic -i %s -vf 'palettegen' -y %s" % (input_fn,
-                                                               palette_name)
+        ) + f" -loglevel panic -i {input_fn} -vf 'palettegen' -y {palette_name}"
     else:
         command = get_ffmpeg_path(
-        ) + " -loglevel panic -i %s -vf 'fps=%d,scale=320:640:flags=lanczos,palettegen' -y %s" % (
-            input_fn, framerate, palette_name)
+        ) + f" -loglevel panic -i {input_fn} -vf 'fps={framerate}," \
+            f"scale=320:640:flags=lanczos,palettegen' -y {palette_name}"
     # print command
     os.system(command)
 
     # Generate the GIF
     command = get_ffmpeg_path(
-    ) + " -loglevel panic -i %s -i %s -lavfi paletteuse -y %s" % (
-        input_fn, palette_name, output_fn)
+    ) + f" -loglevel panic -i {input_fn} -i {palette_name} -lavfi paletteuse -y {output_fn}"
     # print command
     os.system(command)
     os.remove(palette_name)
@@ -117,7 +116,8 @@ class VideoManager:
 
     def make_video(self, mp4=True, gif=True):
         fn = self.get_output_filename('.mp4')
-        command = (get_ffmpeg_path() + " -loglevel panic -framerate %d -i " % self.framerate) + os.path.join(self.frame_directory, FRAME_FN_TEMPLATE) + \
+        command = (get_ffmpeg_path() + f" -loglevel panic -framerate {self.framerate} -i ") + os.path.join(
+            self.frame_directory, FRAME_FN_TEMPLATE) + \
                   " -s:v " + str(self.width) + 'x' + str(self.height) + \
                   " -c:v libx264 -profile:v high -crf 1 -pix_fmt yuv420p -y " + fn
 
@@ -139,7 +139,7 @@ def interpolate_frames(frame_dir, mul=4):
     images_interpolated = []
     for f in sorted(files):
         if f.endswith('png'):
-            images.append(cv2.imread(f) / 255.0)
+            images.append(cv2.imread(f) / 255.0)  # pylint: disable=E1101
 
     for i in range(len(images) - 1):
         images_interpolated.append(images[i])
@@ -152,12 +152,12 @@ def interpolate_frames(frame_dir, mul=4):
 
     os.makedirs('interpolated', exist_ok=True)
     for i, img in enumerate(images_interpolated):
-        cv2.imwrite('interpolated/{:05d}.png'.format(i), img * 255.0)
+        cv2.imwrite(f'interpolated/{i:05d}.png', img * 255.0)  # pylint: disable=E1101
 
 
-def ffmpeg_common_args(frame_rate, input, width, height, crf, output_path):
-    return f"{get_ffmpeg_path()} -y -loglevel panic -framerate {frame_rate} -i {input} -s:v {width}x{height} " + \
-                         f"-c:v libx264 -profile:v high -crf {crf} -pix_fmt yuv420p {output_path}"
+def ffmpeg_common_args(frame_rate, input_fn, width, height, crf, output_path):
+    return f"{get_ffmpeg_path()} -y -loglevel panic -framerate {frame_rate} -i {input_fn} -s:v {width}x{height} " + \
+           f"-c:v libx264 -profile:v high -crf {crf} -pix_fmt yuv420p {output_path}"
 
 
 def make_video(input_files,
@@ -173,20 +173,20 @@ def make_video(input_files,
         tmp_dir = 'tmp_ffmpeg_dir'
         os.mkdir(tmp_dir)
         if width % 2 != 0:
-            print("Width ({}) not divisible by 2".format(width))
+            print(f"Width ({width}) not divisible by 2")
             width -= 1
         if height % 2 != 0:
-            print("Height ({}) not divisible by 2".format(width))
+            print(f"Height ({width}) not divisible by 2")
             height -= 1
         for i, inp in enumerate(input_files):
-            shutil.copy(inp, os.path.join(tmp_dir, '%06d.png' % i))
+            shutil.copy(inp, os.path.join(tmp_dir, f'{i:06d}.png'))
         inputs = f'{tmp_dir}/%06d.png'
         command = ffmpeg_common_args(frame_rate, inputs, width, height, crf,
                                      output_path)
         ret = os.system(command)
         assert ret == 0, "ffmpeg failed to generate video file."
         for i in range(len(input_files)):
-            os.remove(os.path.join(tmp_dir, '%06d.png' % i))
+            os.remove(os.path.join(tmp_dir, f'{i:06d}.png'))
         os.rmdir(tmp_dir)
     elif isinstance(input_files, str):
         assert width != 0 and height != 0

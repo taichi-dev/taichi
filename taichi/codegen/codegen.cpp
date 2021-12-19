@@ -3,8 +3,10 @@
 #include "codegen.h"
 
 #include "taichi/util/statistics.h"
+#if defined(TI_WITH_LLVM)
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/backends/wasm/codegen_wasm.h"
+#endif
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/codegen_cuda.h"
 #endif
@@ -31,6 +33,7 @@ KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
 std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
                                                      Kernel *kernel,
                                                      Stmt *stmt) {
+#ifdef TI_WITH_LLVM
   if (arch_is_cpu(arch) && arch != Arch::wasm) {
     return std::make_unique<CodeGenCPU>(kernel, stmt);
   } else if (arch == Arch::wasm) {
@@ -44,6 +47,9 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
   } else {
     TI_NOT_IMPLEMENTED
   }
+#else
+  TI_ERROR("Llvm disabled");
+#endif
 }
 
 TLANG_NAMESPACE_END

@@ -24,7 +24,7 @@ class CCKernel {
   }
 
   void compile();
-  void launch(Context *ctx);
+  void launch(RuntimeContext *ctx);
   std::string get_object() {
     return obj_path_;
   }

@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 
-from taichi.core import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.profiler.kernelmetrics import default_cupti_metrics
 
@@ -93,10 +93,12 @@ class KernelProfiler:
         if self._check_not_turned_on_with_warning_message():
             return None
         #sync first
-        impl.get_runtime().sync()
+        impl.get_runtime().prog.sync_kernel_profiler()
         #then clear backend & frontend info
         impl.get_runtime().prog.clear_kernel_profile_info()
         self._clear_frontend()
+
+        return None
 
     def query_info(self, name):
         """For docsting of this function, see :func:`~taichi.lang.query_kernel_profile_info`."""
@@ -117,6 +119,8 @@ class KernelProfiler:
         impl.get_runtime().prog.reinit_kernel_profiler_with_metrics(
             metric_name_list)
 
+        return None
+
     @contextmanager
     def collect_metrics_in_context(self, metric_list=default_cupti_metrics):
         """This function is not exposed to user now.
@@ -128,6 +132,8 @@ class KernelProfiler:
         self.set_metrics(metric_list)
         yield self
         self.set_metrics()  #back to default metric list
+
+        return None
 
     # mode of print_info
     COUNT = 'count'  # print the statistical results (min,max,avg time) of Taichi kernels.
@@ -154,18 +160,19 @@ class KernelProfiler:
             self._print_kernel_info()
         else:
             raise ValueError(
-                f'Arg `mode` must be of type \'str\', and has the value \'count\' or \'trace\'.'
+                'Arg `mode` must be of type \'str\', and has the value \'count\' or \'trace\'.'
             )
+
+        return None
 
     # private methods
     def _check_not_turned_on_with_warning_message(self):
         if self._profiling_mode is False:
             _ti_core.warn(
-                f'use \'ti.init(kernel_profiler = True)\' to turn on KernelProfiler.'
+                'use \'ti.init(kernel_profiler = True)\' to turn on KernelProfiler.'
             )
             return True
-        else:
-            return False
+        return False
 
     def _clear_frontend(self):
         """Clear member variables in :class:`~taichi.profiler.kernelprofiler.KernelProfiler`.
@@ -179,7 +186,7 @@ class KernelProfiler:
 
     def _update_records(self):
         """Acquires kernel records from a backend."""
-        impl.get_runtime().sync()
+        impl.get_runtime().prog.sync_kernel_profiler()
         self._clear_frontend()
         self._traced_records = impl.get_runtime(
         ).prog.get_kernel_profiler_records()
@@ -203,7 +210,8 @@ class KernelProfiler:
                                reverse=True)
         }
 
-    def _make_table_header(self, mode):
+    @staticmethod
+    def _make_table_header(mode):
         header_str = f'Kernel Profiler({mode})'
         arch_name = f' @ {_ti_core.arch_name(ti.cfg.arch).upper()}'
         device_name = impl.get_runtime().prog.get_kernel_profiler_device_name()

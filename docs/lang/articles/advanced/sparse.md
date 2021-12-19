@@ -33,7 +33,7 @@ block2 = block1.pointer(ti.ij, 4)
 block3 = block2.pointer(ti.ij, 4)
 block3.dense(ti.ij, 4).place(x)
 ```
-[[Full source code of this animation]](https://github.com/taichi-dev/taichi/blob/master/examples/features/sparse/taichi_sparse.py)
+[[Full source code of this animation]](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/features/sparse/taichi_sparse.py)
 
 Intuitively, a sparse grid in Taichi allows you to use memory space more wisely, since only tree nodes involved in computation are allocated.
 Now, let's take a step back and think about *why we need sparse grids, how to define them in Taichi, and how to compute on these data structures*.

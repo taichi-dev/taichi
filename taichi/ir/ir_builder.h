@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/mesh.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -49,6 +50,7 @@ class IRBuilder {
     }
     if constexpr (std::is_same_v<DecayedType, RangeForStmt> ||
                   std::is_same_v<DecayedType, StructForStmt> ||
+                  std::is_same_v<DecayedType, MeshForStmt> ||
                   std::is_same_v<DecayedType, WhileStmt>) {
       set_insertion_point({loop->body.get(), 0});
     } else {
@@ -111,6 +113,12 @@ class IRBuilder {
                                    int bit_vectorize = -1,
                                    int num_cpu_threads = 0,
                                    int block_dim = 0);
+  MeshForStmt *create_mesh_for(mesh::Mesh *mesh,
+                               mesh::MeshElementType element_type,
+                               int vectorize = -1,
+                               int bit_vectorize = -1,
+                               int num_cpu_threads = 0,
+                               int block_dim = 0);
   WhileStmt *create_while_true();
   IfStmt *create_if(Stmt *cond);
   WhileControlStmt *create_break();
@@ -145,6 +153,7 @@ class IRBuilder {
   UnaryOpStmt *create_neg(Stmt *value);
   UnaryOpStmt *create_not(Stmt *value);  // bitwise
   UnaryOpStmt *create_logical_not(Stmt *value);
+  UnaryOpStmt *create_round(Stmt *value);
   UnaryOpStmt *create_floor(Stmt *value);
   UnaryOpStmt *create_ceil(Stmt *value);
   UnaryOpStmt *create_abs(Stmt *value);
@@ -255,6 +264,20 @@ class IRBuilder {
   AdStackLoadTopStmt *ad_stack_load_top(AdStackAllocaStmt *stack);
   AdStackLoadTopAdjStmt *ad_stack_load_top_adjoint(AdStackAllocaStmt *stack);
   void ad_stack_accumulate_adjoint(AdStackAllocaStmt *stack, Stmt *val);
+
+  // Mesh related.
+  MeshRelationAccessStmt *get_relation_size(mesh::Mesh *mesh,
+                                            Stmt *mesh_idx,
+                                            mesh::MeshElementType to_type);
+  MeshRelationAccessStmt *get_relation_access(mesh::Mesh *mesh,
+                                              Stmt *mesh_idx,
+                                              mesh::MeshElementType to_type,
+                                              Stmt *neighbor_idx);
+  MeshIndexConversionStmt *get_index_conversion(mesh::Mesh *mesh,
+                                                mesh::MeshElementType idx_type,
+                                                Stmt *idx,
+                                                mesh::ConvType conv_type);
+  MeshPatchIndexStmt *get_patch_index();
 
  private:
   std::unique_ptr<Block> root_{nullptr};

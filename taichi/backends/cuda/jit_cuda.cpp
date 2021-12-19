@@ -20,8 +20,7 @@ JITModule *JITSessionCUDA ::add_module(std::unique_ptr<llvm::Module> M,
   TI_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);
   auto t = Time::get_time();
   TI_TRACE("Loading module...");
-  [[maybe_unused]] auto &&_ =
-      std::move(CUDAContext::get_instance().get_lock_guard());
+  [[maybe_unused]] auto _ = CUDAContext::get_instance().get_lock_guard();
 
   constexpr int max_num_options = 8;
   int num_options = 0;

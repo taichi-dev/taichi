@@ -5,11 +5,11 @@ import shutil
 import subprocess
 import tempfile
 
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import make_expr_group
-from taichi.lang.util import get_clangpp, has_clangpp
+from taichi.lang.util import get_clangpp
 
 
 class SourceBuilder:
@@ -69,13 +69,9 @@ class SourceBuilder:
                     subprocess.call(
                         get_clangpp() + ' ' +
                         os.path.join(self.td, 'source.cu') +
-                        ' -S -emit-llvm -std=c++17 --cuda-gpu-arch=sm_50 -nocudalib',
+                        ' -c -emit-llvm -std=c++17 --cuda-gpu-arch=sm_50 -nocudalib',
                         cwd=self.td,
                         shell=True)
-                    subprocess.call('llvm-as ' + os.path.join(
-                        self.td, 'source-cuda-nvptx64-nvidia-cuda-sm_50.ll'),
-                                    cwd=self.td,
-                                    shell=True)
                     return os.path.join(
                         self.td, 'source-cuda-nvptx64-nvidia-cuda-sm_50.bc')
 

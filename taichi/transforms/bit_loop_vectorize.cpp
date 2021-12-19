@@ -116,7 +116,7 @@ class BitLoopVectorize : public IRVisitor {
             stmt->insert_before_me(std::move(base_shift_op));
             stmt->insert_before_me(std::move(offsetted_shift_offset));
             stmt->insert_before_me(std::move(offsetted_shift_op));
-            stmt->replace_with(or_op.get());
+            stmt->replace_usages_with(or_op.get());
             offsetted_shift_op_p->insert_after_me(std::move(or_op));
           }
         }
@@ -168,7 +168,7 @@ class BitLoopVectorize : public IRVisitor {
         if (lhs_val == 1) {
           if (auto rhs = stmt->rhs->cast<BinaryOpStmt>();
               rhs && rhs->is_bit_vectorized) {
-            stmt->replace_with(stmt->rhs);
+            stmt->replace_usages_with(stmt->rhs);
           }
         }
       } else if (stmt->op_type == BinaryOpType::cmp_eq) {
@@ -191,7 +191,7 @@ class BitLoopVectorize : public IRVisitor {
             // modify IR
             auto zero_p = zero.get();
             stmt->insert_before_me(std::move(zero));
-            stmt->replace_with(add.get());
+            stmt->replace_usages_with(add.get());
             zero_p->insert_after_me(std::move(add));
           }
         } else if (auto lhs = stmt->lhs->cast<LocalLoadStmt>()) {
@@ -232,7 +232,7 @@ class BitLoopVectorize : public IRVisitor {
             stmt->insert_before_me(std::move(not_a));
             stmt->insert_before_me(std::move(not_c));
             stmt->insert_before_me(std::move(and_a_b));
-            stmt->replace_with(and_b_c.get());
+            stmt->replace_usages_with(and_b_c.get());
             and_a_b_p->insert_after_me(std::move(and_b_c));
           }
         }

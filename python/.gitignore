@@ -1,7 +1,8 @@
-lib
+taichi/_lib/runtime
+taichi/_lib/core/*.so
+taichi/_lib/core/*.pyd
 taichi.egg-info
 taichi/include
-taichi/examples
 taichi/assets
 taichi/tests
 taichi/tests38

@@ -149,7 +149,8 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
     TI_ASSERT(root->is<OffloadedStmt>());
     auto offload = root->as<OffloadedStmt>();
     UniquelyAccessedSNodeSearcher searcher;
-    if (offload->task_type == OffloadedTaskType::range_for) {
+    if (offload->task_type == OffloadedTaskType::range_for ||
+        offload->task_type == OffloadedTaskType::mesh_for) {
       searcher.loop_unique_stmt_searcher_.num_different_loop_indices = 1;
     } else if (offload->task_type == OffloadedTaskType::struct_for) {
       searcher.loop_unique_stmt_searcher_.num_different_loop_indices =
@@ -180,6 +181,7 @@ class UniquelyAccessedBitStructGatherer : public BasicStmtVisitor {
 
   void visit(OffloadedStmt *stmt) override {
     if (stmt->task_type == OffloadedTaskType::range_for ||
+        stmt->task_type == OffloadedTaskType::mesh_for ||
         stmt->task_type == OffloadedTaskType::struct_for) {
       auto &loop_unique_bit_struct = result_[stmt];
       auto loop_unique_ptr =

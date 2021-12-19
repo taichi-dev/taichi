@@ -1,4 +1,4 @@
-#include "taichi/backends/vulkan/embedded_device.h"
+#include "taichi/backends/vulkan/vulkan_device_creator.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -10,7 +10,7 @@
 
 #include "taichi/backends/vulkan/vulkan_common.h"
 #include "taichi/backends/vulkan/vulkan_utils.h"
-#include "taichi/backends/vulkan/loader.h"
+#include "taichi/backends/vulkan/vulkan_loader.h"
 #include "taichi/backends/vulkan/vulkan_device.h"
 #include "taichi/common/logging.h"
 
@@ -165,7 +165,15 @@ vkapi::IVkPipeline VulkanPipeline::graphics_pipeline(
     blend_attachments[i].colorWriteMask =
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
         VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    blend_attachments[i].blendEnable = VK_FALSE;
+    blend_attachments[i].blendEnable = VK_TRUE;
+    blend_attachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    blend_attachments[i].dstColorBlendFactor =
+        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    blend_attachments[i].colorBlendOp = VK_BLEND_OP_ADD;
+    blend_attachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    blend_attachments[i].dstAlphaBlendFactor =
+        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    blend_attachments[i].alphaBlendOp = VK_BLEND_OP_ADD;
   }
 
   graphics_pipeline_template_->color_blending.attachmentCount =
@@ -1748,6 +1756,14 @@ vkapi::IVkDescriptorSet VulkanDevice::alloc_desc_set(
 }
 
 void VulkanDevice::create_vma_allocator() {
+  VmaAllocatorCreateInfo allocatorInfo = {};
+  allocatorInfo.vulkanApiVersion =
+      this->get_cap(DeviceCapability::vk_api_version);
+  allocatorInfo.physicalDevice = physical_device_;
+  allocatorInfo.device = device_;
+  allocatorInfo.instance = instance_;
+
+#ifndef __APPLE__
   VolkDeviceTable table;
   VmaVulkanFunctions vk_vma_functions;
 
@@ -1786,13 +1802,8 @@ void VulkanDevice::create_vma_allocator() {
       PFN_vkGetPhysicalDeviceMemoryProperties2KHR(vkGetInstanceProcAddr(
           volkGetLoadedInstance(), "vkGetPhysicalDeviceMemoryProperties2KHR"));
 
-  VmaAllocatorCreateInfo allocatorInfo = {};
-  allocatorInfo.vulkanApiVersion =
-      this->get_cap(DeviceCapability::vk_api_version);
-  allocatorInfo.physicalDevice = physical_device_;
-  allocatorInfo.device = device_;
-  allocatorInfo.instance = instance_;
   allocatorInfo.pVulkanFunctions = &vk_vma_functions;
+#endif
 
   vmaCreateAllocator(&allocatorInfo, &allocator_);
 
@@ -1881,8 +1892,22 @@ VkPresentModeKHR choose_swap_present_mode(
 
 VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     : config_(config), device_(device) {
+#ifdef ANDROID
+  window_ = (ANativeWindow *)config.window_handle;
+#else
   window_ = (GLFWwindow *)config.window_handle;
+#endif
   if (window_) {
+#ifdef ANDROID
+    VkAndroidSurfaceCreateInfoKHR createInfo{
+        .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
+        .pNext = nullptr,
+        .flags = 0,
+        .window = window_};
+
+    vkCreateAndroidSurfaceKHR(device->vk_instance(), &createInfo, nullptr,
+                              &surface_);
+#else
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     VkResult err = glfwCreateWindowSurface(device->vk_instance(), window_, NULL,
                                            &surface_);
@@ -1890,6 +1915,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
       TI_ERROR("Failed to create window surface ({})", err);
       return;
     }
+#endif
 
     create_swap_chain();
 
@@ -1907,7 +1933,9 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
                           config.height,
                           1,
                           false};
-    screenshot_image_ = device->create_image(params);
+    // screenshot_image_ = device->create_image(params);
+    swapchain_images_.push_back(device->create_image(params));
+    swapchain_images_.push_back(device->create_image(params));
   }
 }
 
@@ -1961,7 +1989,12 @@ void VulkanSurface::create_swap_chain() {
       choose_swap_present_mode(present_modes, config_.vsync, config_.adaptive);
 
   int width, height;
+#ifdef ANDROID
+  width = ANativeWindow_getWidth(window_);
+  height = ANativeWindow_getWidth(window_);
+#else
   glfwGetFramebufferSize(window_, &width, &height);
+#endif
 
   VkExtent2D extent = {uint32_t(width), uint32_t(height)};
 
@@ -1984,7 +2017,7 @@ void VulkanSurface::create_swap_chain() {
   createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   createInfo.presentMode = present_mode;
   createInfo.clipped = VK_TRUE;
-  createInfo.oldSwapchain = nullptr;
+  createInfo.oldSwapchain = VK_NULL_HANDLE;
 
   if (vkCreateSwapchainKHR(device_->vk_device(), &createInfo,
                            kNoVkAllocCallbacks, &swapchain_) != VK_SUCCESS) {
@@ -2036,17 +2069,23 @@ void VulkanSurface::destroy_swap_chain() {
   vkDestroySwapchainKHR(device_->vk_device(), swapchain_, nullptr);
 }
 
+int VulkanSurface::get_image_count() {
+  return swapchain_images_.size();
+}
+
 VulkanSurface::~VulkanSurface() {
   if (config_.window_handle) {
     destroy_swap_chain();
     vkDestroySemaphore(device_->vk_device(), image_available_, nullptr);
     vkDestroySurfaceKHR(device_->vk_instance(), surface_, nullptr);
+  } else {
+    for (auto &img : swapchain_images_) {
+      device_->destroy_image(img);
+    }
+    swapchain_images_.clear();
   }
   if (screenshot_buffer_ != kDeviceNullAllocation) {
     device_->dealloc_memory(screenshot_buffer_);
-  }
-  if (screenshot_image_ != kDeviceNullAllocation) {
-    device_->destroy_image(screenshot_image_);
   }
 }
 
@@ -2060,16 +2099,22 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
     return std::make_pair(config_.width, config_.height);
   }
   int width, height;
+#ifdef ANDROID
+  width = ANativeWindow_getWidth(window_);
+  height = ANativeWindow_getWidth(window_);
+#else
   glfwGetFramebufferSize(window_, &width, &height);
+#endif
   return std::make_pair(width, height);
 }
 
 DeviceAllocation VulkanSurface::get_target_image() {
   if (!config_.window_handle) {
-    return screenshot_image_;
+    image_index_ = (image_index_ + 1) % swapchain_images_.size();
+  } else {
+    vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
+                          image_available_, VK_NULL_HANDLE, &image_index_);
   }
-  vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
-                        image_available_, VK_NULL_HANDLE, &image_index_);
 
   return swapchain_images_[image_index_];
 }
@@ -2096,11 +2141,11 @@ void VulkanSurface::present_image() {
 
 DeviceAllocation VulkanSurface::get_image_data() {
   auto *stream = device_->get_graphics_stream();
-  DeviceAllocation img_alloc = config_.window_handle
-                                   ? swapchain_images_[image_index_]
-                                   : screenshot_image_;
+  DeviceAllocation img_alloc = swapchain_images_[image_index_];
   auto [w, h] = get_size();
   size_t size_bytes = w * h * 4;
+
+  /*
   if (screenshot_image_ == kDeviceNullAllocation) {
     ImageParams params = {ImageDimension::d2D,
                           BufferFormat::rgba8,
@@ -2111,6 +2156,8 @@ DeviceAllocation VulkanSurface::get_image_data() {
                           false};
     screenshot_image_ = device_->create_image(params);
   }
+  */
+
   if (screenshot_buffer_ == kDeviceNullAllocation) {
     Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
                                /*host_read*/ true, /*export_sharing*/ false,
@@ -2123,6 +2170,7 @@ DeviceAllocation VulkanSurface::get_image_data() {
 
   std::unique_ptr<CommandList> cmd_list{nullptr};
 
+  /*
   if (config_.window_handle) {
     // TODO: check if blit is suppoted, and use copy_image if not
     cmd_list = stream->new_command_list();
@@ -2133,18 +2181,21 @@ DeviceAllocation VulkanSurface::get_image_data() {
                                ImageLayout::transfer_src);
     stream->submit_synced(cmd_list.get());
   }
+  */
 
   BufferImageCopyParams copy_params;
   copy_params.image_extent.x = w;
   copy_params.image_extent.y = h;
   cmd_list = stream->new_command_list();
   // TODO: directly map the image to cpu memory
-  cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), screenshot_image_,
+  cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), img_alloc,
                             ImageLayout::transfer_src, copy_params);
+  /*
   if (config_.window_handle) {
     cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_src,
                                ImageLayout::transfer_dst);
   }
+  */
   cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
                              ImageLayout::present_src);
   stream->submit_synced(cmd_list.get());

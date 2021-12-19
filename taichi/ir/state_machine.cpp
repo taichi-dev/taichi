@@ -2,14 +2,14 @@
 
 #include "taichi/ir/statements.h"
 #include "taichi/ir/analysis.h"
-#include "taichi/ir/ir_modified.h"
+#include "taichi/common/exceptions.h"
 
 TLANG_NAMESPACE_BEGIN
 
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> StateMachine::used_atomics;
 
 StateMachine::StateMachine(Stmt *var, bool zero_initialized)
-    : var(var),
+    : var_(var),
       stored(never),
       stored_in_this_if_or_loop(never),
       loaded(never),
@@ -139,16 +139,16 @@ void StateMachine::load(Stmt *load_stmt) {
         LaneAttribute<TypedConstant>(load_stmt->ret_type)));
     zero->repeat(load_stmt->width());
     int current_stmt_id = load_stmt->parent->locate(load_stmt);
-    load_stmt->replace_with(zero);
+    load_stmt->replace_usages_with(zero);
     load_stmt->parent->erase(current_stmt_id);
     throw IRModified();
   }
   if (last_store_forwardable) {
     // store-forwarding
     if (last_store->is<LocalStoreStmt>())
-      load_stmt->replace_with(last_store->as<LocalStoreStmt>()->val);
+      load_stmt->replace_usages_with(last_store->as<LocalStoreStmt>()->val);
     else
-      load_stmt->replace_with(last_store->as<GlobalStoreStmt>()->val);
+      load_stmt->replace_usages_with(last_store->as<GlobalStoreStmt>()->val);
     load_stmt->parent->erase(load_stmt);
     throw IRModified();
   }
@@ -428,13 +428,13 @@ void StateMachine::finalize() {
     // For future vectorization, if it's an alloca, we need to check that
     // this alloca is not used as masks (this can be done by checking operands)
     // before eliminating it.
-    var->parent->erase(var);
+    var_->parent->erase(var_);
     throw IRModified();
   }
 }
 
 Stmt *StateMachine::get_var() const {
-  return var;
+  return var_;
 }
 
 TLANG_NAMESPACE_END

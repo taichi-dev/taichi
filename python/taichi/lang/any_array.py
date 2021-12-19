@@ -1,4 +1,4 @@
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.util import taichi_scope
@@ -34,10 +34,8 @@ class AnyArray:
         element_dim = len(self.element_shape)
         if element_dim == 0:
             return ret
-        else:
-            return ret[
-                element_dim:] if self.layout == Layout.SOA else ret[:
-                                                                    -element_dim]
+        return ret[
+            element_dim:] if self.layout == Layout.SOA else ret[:-element_dim]
 
     @taichi_scope
     def loop_range(self):

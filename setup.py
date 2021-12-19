@@ -35,8 +35,12 @@ classifiers = [
 ]
 
 project_name = os.getenv('PROJECT_NAME', 'taichi')
+TI_VERSION_MAJOR = 0
+TI_VERSION_MINOR = 8
+TI_VERSION_PATCH = 8
+version = f'{TI_VERSION_MAJOR}.{TI_VERSION_MINOR}.{TI_VERSION_PATCH}'
 
-data_files = glob.glob('python/lib/*')
+data_files = glob.glob('python/_lib/runtime/*')
 print(data_files)
 packages = find_packages('python')
 print(packages)
@@ -68,9 +72,12 @@ def get_os_name():
 
 def remove_tmp(taichi_dir):
     shutil.rmtree(os.path.join(taichi_dir, 'assets'), ignore_errors=True)
-    shutil.rmtree(os.path.join(taichi_dir, 'examples'), ignore_errors=True)
-    shutil.rmtree(os.path.join(taichi_dir, 'tests'), ignore_errors=True)
-    shutil.rmtree(os.path.join(taichi_dir, 'tests38'), ignore_errors=True)
+
+
+def remove_files_with_extension(dir_name, extension):
+    for file in os.listdir(dir_name):
+        if file.endswith(extension):
+            os.remove(os.path.join(dir_name, file))
 
 
 class CMakeExtension(Extension):
@@ -83,9 +90,6 @@ class EggInfo(egg_info):
         taichi_dir = os.path.join(package_dir, 'taichi')
         remove_tmp(taichi_dir)
 
-        shutil.copytree('tests/python', os.path.join(taichi_dir, 'tests'))
-        shutil.copytree('tests/python38', os.path.join(taichi_dir, 'tests38'))
-        shutil.copytree('examples', os.path.join(taichi_dir, 'examples'))
         shutil.copytree('external/assets', os.path.join(taichi_dir, 'assets'))
 
         egg_info.run(self)
@@ -110,7 +114,7 @@ class CMakeBuild(build_ext):
 
     def run(self):
         try:
-            out = subprocess.check_output(['cmake', '--version'])
+            subprocess.check_call(['cmake', '--version'])
         except OSError:
             raise RuntimeError(
                 "CMake must be installed to build the following extensions: " +
@@ -127,7 +131,13 @@ class CMakeBuild(build_ext):
         cmake_args += [
             f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={build_directory}',
             f'-DPYTHON_EXECUTABLE={get_python_executable()}',
+            f'-DTI_VERSION_MAJOR={TI_VERSION_MAJOR}',
+            f'-DTI_VERSION_MINOR={TI_VERSION_MINOR}',
+            f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
         ]
+
+        if shutil.which('ninja'):
+            cmake_args += ['-GNinja']
 
         self.debug = os.getenv('DEBUG', '0') in ('1', 'ON')
         cfg = 'Debug' if self.debug else 'Release'
@@ -161,38 +171,50 @@ class CMakeBuild(build_ext):
         # We need to make sure these additional files are ready for
         #   - develop mode: must exist in local python/taichi/lib/ folder
         #   - install mode: must exist in self.build_lib/taichi/lib
-        taichi_lib_dir = 'taichi/lib'
-        for target in (
-                os.path.join(package_dir, taichi_lib_dir),
-                os.path.join(self.build_lib, taichi_lib_dir),
-        ):
-            shutil.rmtree(target, ignore_errors=True)
-            os.makedirs(target)
-            with open(os.path.join(target, "__init__.py"), "w") as f:
-                pass
-            if get_os_name() == 'linux' or get_os_name() == 'unix':
-                shutil.copy(os.path.join(self.build_temp, 'libtaichi_core.so'),
-                            os.path.join(target, 'taichi_core.so'))
-            elif get_os_name() == 'osx':
-                shutil.copy(
-                    os.path.join(self.build_temp, 'libtaichi_core.dylib'),
-                    os.path.join(target, 'taichi_core.so'))
-            else:
-                shutil.copy('runtimes/Release/taichi_core.dll',
-                            os.path.join(target, 'taichi_core.pyd'))
+        base_dir = package_dir if self.inplace else self.build_lib
+        taichi_lib_dir = os.path.join(base_dir, 'taichi', '_lib')
 
-            if get_os_name() != 'osx':
-                libdevice_path = 'external/cuda_libdevice/slim_libdevice.10.bc'
-                print("copying libdevice:", libdevice_path)
-                assert os.path.exists(libdevice_path)
-                shutil.copy(libdevice_path,
-                            os.path.join(target, 'slim_libdevice.10.bc'))
+        runtime_dir = os.path.join(taichi_lib_dir, "runtime")
+        core_dir = os.path.join(taichi_lib_dir, "core")
+        os.makedirs(runtime_dir, exist_ok=True)
+        os.makedirs(core_dir, exist_ok=True)
 
-            llvm_runtime_dir = 'taichi/runtime/llvm'
-            for f in os.listdir(llvm_runtime_dir):
-                if f.startswith('runtime_') and f.endswith('.bc'):
-                    print(f"Fetching runtime file {f} to {target} folder")
-                    shutil.copy(os.path.join(llvm_runtime_dir, f), target)
+        if (get_os_name() == 'linux' or get_os_name() == 'unix'
+                or get_os_name() == 'osx'):
+            remove_files_with_extension(core_dir, ".so")
+        else:
+            remove_files_with_extension(core_dir, ".pyd")
+        if get_os_name() == 'osx':
+            remove_files_with_extension(runtime_dir, ".dylib")
+        remove_files_with_extension(runtime_dir, ".bc")
+
+        if get_os_name() == 'linux' or get_os_name() == 'unix':
+            self.copy_file(os.path.join(self.build_temp, 'libtaichi_core.so'),
+                           os.path.join(core_dir, 'taichi_core.so'))
+        elif get_os_name() == 'osx':
+            self.copy_file(
+                os.path.join(self.build_temp, 'libtaichi_core.dylib'),
+                os.path.join(core_dir, 'taichi_core.so'))
+            moltenvk_path = os.path.join(self.build_temp, 'libMoltenVK.dylib')
+            if os.path.exists(moltenvk_path):
+                self.copy_file(moltenvk_path,
+                               os.path.join(runtime_dir, 'libMoltenVK.dylib'))
+        else:
+            self.copy_file('runtimes/taichi_core.dll',
+                           os.path.join(core_dir, 'taichi_core.pyd'))
+
+        if get_os_name() != 'osx':
+            libdevice_path = 'external/cuda_libdevice/slim_libdevice.10.bc'
+            print("copying libdevice:", libdevice_path)
+            assert os.path.exists(libdevice_path)
+            self.copy_file(libdevice_path,
+                           os.path.join(runtime_dir, 'slim_libdevice.10.bc'))
+
+        llvm_runtime_dir = 'taichi/runtime/llvm'
+        for f in os.listdir(llvm_runtime_dir):
+            if f.startswith('runtime_') and f.endswith('.bc'):
+                print(f"Fetching runtime file {f} to {taichi_lib_dir} folder")
+                self.copy_file(os.path.join(llvm_runtime_dir, f), runtime_dir)
 
 
 class Clean(clean):
@@ -202,8 +224,7 @@ class Clean(clean):
         if os.path.exists(self.build_temp):
             remove_tree(self.build_temp, dry_run=self.dry_run)
         generated_folders = ('bin', 'dist', 'python/taichi/assets',
-                             'python/taichi/lib', 'python/taichi/examples',
-                             'python/taichi/tests', 'python/taichi/tests38',
+                             'python/taichi/_lib/runtime',
                              'python/taichi.egg-info')
         for d in generated_folders:
             if os.path.exists(d):
@@ -212,7 +233,8 @@ class Clean(clean):
             'taichi/common/commit_hash.h', 'taichi/common/version.h'
         ]
         generated_files += glob.glob('taichi/runtime/llvm/runtime_*.bc')
-        generated_files += glob.glob('taichi/runtime/llvm/runtime_*.ll')
+        generated_files += glob.glob('python/taichi/_lib/core/*.so')
+        generated_files += glob.glob('python/taichi/_lib/core/*.pyd')
         for f in generated_files:
             if os.path.exists(f):
                 print(f'removing generated file {f}')
@@ -223,6 +245,7 @@ class Clean(clean):
 setup(name=project_name,
       packages=packages,
       package_dir={"": package_dir},
+      version=version,
       description='The Taichi Programming Language',
       author='Taichi developers',
       author_email='yuanmhu@gmail.com',
@@ -230,12 +253,11 @@ setup(name=project_name,
       python_requires=">=3.6,<3.10",
       install_requires=[
           'numpy',
-          'pybind11>=2.5.0',
           'sourceinspect>=0.0.4',
           'colorama',
           'astor',
       ],
-      data_files=[('lib', data_files)],
+      data_files=[(os.path.join('_lib', 'runtime'), data_files)],
       keywords=['graphics', 'simulation'],
       license='MIT',
       include_package_data=True,

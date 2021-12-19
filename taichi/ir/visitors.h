@@ -21,6 +21,8 @@ class BasicStmtVisitor : public IRVisitor {
 
   void visit(StructForStmt *for_stmt) override;
 
+  void visit(MeshForStmt *for_stmt) override;
+
   void visit(OffloadedStmt *stmt) override;
 
   void visit(FuncBodyStmt *stmt) override;

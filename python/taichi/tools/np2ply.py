@@ -3,8 +3,6 @@ import sys
 
 import numpy as np
 
-import taichi as ti
-
 
 class PLYWriter:
     def __init__(self,
@@ -25,9 +23,8 @@ class PLYWriter:
             np.float32, np.float64
         ]
         self.type_map = {}
-        for i in range(len(self.ply_supported_types)):
-            self.type_map[self.ply_supported_types[
-                i]] = self.corresponding_numpy_types[i]
+        for i, ply_type in enumerate(self.ply_supported_types):
+            self.type_map[ply_type] = self.corresponding_numpy_types[i]
 
         self.num_vertices = num_vertices
         self.num_vertex_channels = 0
@@ -46,9 +43,10 @@ class PLYWriter:
             self.face_indices = -np.ones((self.num_faces, 4), dtype=np.int32)
         self.comment = comment
 
-    def add_vertex_channel(self, key: str, type: str, data: np.array):
-        if type not in self.ply_supported_types:
-            print("Unknown type " + type + " detected, skipping this channel")
+    def add_vertex_channel(self, key: str, data_type: str, data: np.array):
+        if data_type not in self.ply_supported_types:
+            print("Unknown type " + data_type +
+                  " detected, skipping this channel")
             return
         if data.ndim == 1:
             assert data.size == self.num_vertices, "The dimension of the vertex channel is not correct"
@@ -56,8 +54,8 @@ class PLYWriter:
             if key in self.vertex_channels:
                 print("WARNING: duplicate key " + key + " detected")
             self.vertex_channels.append(key)
-            self.vertex_data_type.append(type)
-            self.vertex_data.append(self.type_map[type](data))
+            self.vertex_data_type.append(data_type)
+            self.vertex_data.append(self.type_map[data_type](data))
         else:
             num_col = data.size // self.num_vertices
             assert data.ndim == 2 and data.size == num_col * \
@@ -69,8 +67,8 @@ class PLYWriter:
                 if item_key in self.vertex_channels:
                     print("WARNING: duplicate key " + item_key + " detected")
                 self.vertex_channels.append(item_key)
-                self.vertex_data_type.append(type)
-                self.vertex_data.append(self.type_map[type](data[:, i]))
+                self.vertex_data_type.append(data_type)
+                self.vertex_data.append(self.type_map[data_type](data[:, i]))
 
     def add_vertex_pos(self, x: np.array, y: np.array, z: np.array):
         self.add_vertex_channel("x", "float", x)
@@ -164,9 +162,10 @@ class PLYWriter:
                                        (self.num_faces, vert_per_face))
         self.face_indices = self.face_indices.astype(np.int32)
 
-    def add_face_channel(self, key: str, type: str, data: np.array):
-        if type not in self.ply_supported_types:
-            print("Unknown type " + type + " detected, skipping this channel")
+    def add_face_channel(self, key: str, data_type: str, data: np.array):
+        if data_type not in self.ply_supported_types:
+            print("Unknown type " + data_type +
+                  " detected, skipping this channel")
             return
         if data.ndim == 1:
             assert data.size == self.num_faces, "The dimension of the face channel is not correct"
@@ -174,8 +173,8 @@ class PLYWriter:
             if key in self.face_channels:
                 print("WARNING: duplicate key " + key + " detected")
             self.face_channels.append(key)
-            self.face_data_type.append(type)
-            self.face_data.append(self.type_map[type](data))
+            self.face_data_type.append(data_type)
+            self.face_data.append(self.type_map[data_type](data))
         else:
             num_col = data.size // self.num_faces
             assert data.ndim == 2 and data.size == num_col * \
@@ -187,8 +186,8 @@ class PLYWriter:
                 if item_key in self.face_channels:
                     print("WARNING: duplicate key " + item_key + " detected")
                 self.face_channels.append(item_key)
-                self.face_data_type.append(type)
-                self.face_data.append(self.type_map[type](data[:, i]))
+                self.face_data_type.append(data_type)
+                self.face_data.append(self.type_map[data_type](data[:, i]))
 
     def add_face_id(self):
         self.add_face_channel("id", "int", np.arange(self.num_faces))
@@ -204,17 +203,17 @@ class PLYWriter:
             for idx in self.face_indices.flatten():
                 assert idx >= 0 and idx < self.num_vertices, "The face indices are invalid"
 
-    def print_header(self, path: str, format: str):
+    def print_header(self, path: str, _format: str):
         with open(path, "w") as f:
             f.writelines([
-                "ply\n", "format " + format + " 1.0\n",
+                "ply\n", "format " + _format + " 1.0\n",
                 "comment " + self.comment + "\n"
             ])
             f.write("element vertex " + str(self.num_vertices) + "\n")
             for i in range(self.num_vertex_channels):
                 f.write("property " + self.vertex_data_type[i] + " " +
                         self.vertex_channels[i] + "\n")
-            if (self.num_faces != 0):
+            if self.num_faces != 0:
                 f.write("element face " + str(self.num_faces) + "\n")
                 f.write("property list uchar int vertex_indices\n")
                 for i in range(self.num_face_channels):
@@ -267,7 +266,7 @@ class PLYWriter:
         if last_4_char == ".ply":
             path = path[:-4]
 
-        real_path = path + "_" + "{0:0=6d}".format(series_num) + ".ply"
+        real_path = path + "_" + f"{series_num:0=6d}" + ".ply"
         self.export_ascii(real_path)
 
     def export_frame(self, series_num: int, path: str):
@@ -276,5 +275,5 @@ class PLYWriter:
         if last_4_char == ".ply":
             path = path[:-4]
 
-        real_path = path + "_" + "{0:0=6d}".format(series_num) + ".ply"
+        real_path = path + "_" + f"{series_num:0=6d}" + ".ply"
         self.export(real_path)

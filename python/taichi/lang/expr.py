@@ -1,11 +1,8 @@
-import sys
-import traceback
-
 import numpy as np
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
-from taichi.lang.util import is_taichi_class, python_scope
+from taichi.lang.util import is_taichi_class
 
 import taichi as ti
 
@@ -38,20 +35,7 @@ class Expr(TaichiOperations):
             assert False
         if self.tb:
             self.ptr.set_tb(self.tb)
-        try:
-            self.ptr.type_check()
-        except RuntimeError as e:
-            if str(e).startswith('TypeError: '):
-                s = traceback.extract_stack()
-                for i, l in enumerate(s):
-                    if 'taichi_ast_generator' in l:
-                        s = s[i + 1:]
-                        break
-                print('[Taichi] Compilation failed', file=sys.stderr)
-                print(traceback.format_list(s[:1])[0], end='', file=sys.stderr)
-                print(f'TaichiTypeError: {str(e)[11:]}', file=sys.stderr)
-                sys.exit(1)
-            raise e
+        self.ptr.type_check()
 
     def __hash__(self):
         return self.ptr.get_raw_address()

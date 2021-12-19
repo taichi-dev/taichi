@@ -4,6 +4,10 @@ import os
 import taichi as ti
 
 
+def get_benchmark_dir():
+    return os.path.dirname(os.path.realpath(__file__))
+
+
 def benchmark_async(func):
     @functools.wraps(func)
     def body():

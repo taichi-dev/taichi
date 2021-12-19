@@ -3,7 +3,9 @@
 #include <optional>
 #include <string>
 
+#if TI_WITH_LLVM
 #include "llvm/Config/llvm-config.h"
+#endif
 
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
@@ -29,6 +31,7 @@
 #include "taichi/python/snode_registry.h"
 #include "taichi/program/sparse_matrix.h"
 #include "taichi/program/sparse_solver.h"
+#include "taichi/ir/mesh.h"
 
 #include "taichi/program/kernel_profiler.h"
 
@@ -76,6 +79,7 @@ TI_NAMESPACE_BEGIN
 void export_lang(py::module &m) {
   using namespace taichi::lang;
 
+  py::register_exception<TaichiTypeError>(m, "TypeError", PyExc_TypeError);
   py::enum_<Arch>(m, "Arch", py::arithmetic())
 #define PER_ARCH(x) .value(#x, Arch::x)
 #include "taichi/inc/archs.inc.h"
@@ -128,6 +132,7 @@ void export_lang(py::module &m) {
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
+      .def_readwrite("opt_level", &CompileConfig::opt_level)
       .def_readwrite("packed", &CompileConfig::packed)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
       .def_readwrite("print_preprocessed_ir",
@@ -186,6 +191,8 @@ void export_lang(py::module &m) {
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("ndarray_use_torch", &CompileConfig::ndarray_use_torch)
+      .def_readwrite("ndarray_use_cached_allocator",
+                     &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
@@ -208,7 +215,20 @@ void export_lang(py::module &m) {
       .def_readwrite("quant_opt_atomic_demotion",
                      &CompileConfig::quant_opt_atomic_demotion)
       .def_readwrite("allow_nv_shader_extension",
-                     &CompileConfig::allow_nv_shader_extension);
+                     &CompileConfig::allow_nv_shader_extension)
+      .def_readwrite("use_gles", &CompileConfig::use_gles)
+      .def_readwrite("make_mesh_block_local",
+                     &CompileConfig::make_mesh_block_local)
+      .def_readwrite("mesh_localize_to_end_mapping",
+                     &CompileConfig::mesh_localize_to_end_mapping)
+      .def_readwrite("mesh_localize_from_end_mapping",
+                     &CompileConfig::mesh_localize_from_end_mapping)
+      .def_readwrite("optimize_mesh_reordered_mapping",
+                     &CompileConfig::optimize_mesh_reordered_mapping)
+      .def_readwrite("mesh_localize_all_attr_mappings",
+                     &CompileConfig::mesh_localize_all_attr_mappings)
+      .def_readwrite("demote_no_access_mesh_fors",
+                     &CompileConfig::demote_no_access_mesh_fors);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -244,6 +264,8 @@ void export_lang(py::module &m) {
   py::class_<Program>(m, "Program")
       .def(py::init<>())
       .def_readonly("config", &Program::config)
+      .def("sync_kernel_profiler",
+           [](Program *program) { program->profiler->sync(); })
       .def("query_kernel_profile_info",
            [](Program *program, const std::string &name) {
              return program->query_kernel_profile_info(name);
@@ -383,6 +405,8 @@ void export_lang(py::module &m) {
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; })
       .def_readonly("cell_size_bytes", &SNode::cell_size_bytes)
+      .def_readonly("offset_bytes_in_parent_cell",
+                    &SNode::offset_bytes_in_parent_cell)
       .def("begin_shared_exp_placement", &SNode::begin_shared_exp_placement)
       .def("end_shared_exp_placement", &SNode::end_shared_exp_placement);
 
@@ -395,6 +419,7 @@ void export_lang(py::module &m) {
   py::class_<Ndarray>(m, "Ndarray")
       .def(py::init<Program *, const DataType &, const std::vector<int> &>())
       .def("data_ptr", &Ndarray::get_data_ptr_as_int)
+      .def("device_allocation_ptr", &Ndarray::get_device_allocation_ptr_as_int)
       .def("element_size", &Ndarray::get_element_size)
       .def("nelement", &Ndarray::get_nelement)
       .def("read_int",
@@ -564,6 +589,16 @@ void export_lang(py::module &m) {
     scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
   });
 
+  m.def("begin_frontend_mesh_for",
+        [&](const Expr &i, const mesh::MeshPtr &mesh_ptr,
+            const mesh::MeshElementType &element_type) {
+          auto stmt_unique =
+              std::make_unique<FrontendForStmt>(i, mesh_ptr, element_type);
+          auto stmt = stmt_unique.get();
+          current_ast_builder().insert(std::move(stmt_unique));
+          scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
+        });
+
   m.def("end_frontend_range_for", [&]() { scope_stack.pop_back(); });
   m.def("pop_scope", [&]() { scope_stack.pop_back(); });
 
@@ -687,6 +722,7 @@ void export_lang(py::module &m) {
 
   m.def("expr_neg", [&](const Expr &e) { return -e; });
   DEFINE_EXPRESSION_OP_UNARY(sqrt)
+  DEFINE_EXPRESSION_OP_UNARY(round)
   DEFINE_EXPRESSION_OP_UNARY(floor)
   DEFINE_EXPRESSION_OP_UNARY(ceil)
   DEFINE_EXPRESSION_OP_UNARY(abs)
@@ -780,6 +816,7 @@ void export_lang(py::module &m) {
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
+  m.def("is_custom_type", is_custom_type);
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
   m.def("is_real", is_real);
@@ -831,11 +868,39 @@ void export_lang(py::module &m) {
   m.def("get_external_tensor_shape_along_axis",
         Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
 
+  // Mesh related.
+  m.def("get_relation_size", [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
+                                mesh::MeshElementType to_type) {
+    return Expr::make<MeshRelationAccessExpression>(mesh_ptr.ptr.get(),
+                                                    mesh_idx, to_type);
+  });
+
   m.def(
       "create_kernel",
       [&](const std::function<void()> &body, const std::string &name,
           bool grad) -> Kernel * {
         py::gil_scoped_release release;
+        return &get_current_program().kernel(body, name, grad);
+      },
+      py::return_value_policy::reference);
+  m.def("get_relation_access",
+        [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
+           mesh::MeshElementType to_type, const Expr &neighbor_idx) {
+          return Expr::make<MeshRelationAccessExpression>(
+              mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
+        });
+
+  m.def("get_index_conversion",
+        [](mesh::MeshPtr mesh_ptr, mesh::MeshElementType idx_type,
+           const Expr &idx, mesh::ConvType &conv_type) {
+          return Expr::make<MeshIndexConversionExpression>(
+              mesh_ptr.ptr.get(), idx_type, idx, conv_type);
+        });
+
+  m.def(
+      "create_kernel",
+      [&](const std::function<void()> &body, const std::string &name,
+          bool grad) -> Kernel * {
         return &get_current_program().kernel(body, name, grad);
       },
       py::return_value_policy::reference);
@@ -863,6 +928,12 @@ void export_lang(py::module &m) {
         dt, is_external_array);
   });
 
+  m.def("decl_arr_arg",
+        [&](const DataType &dt, int total_dim, std::vector<int> shape) {
+          return get_current_program().current_callable->insert_arr_arg(
+              dt, total_dim, shape);
+        });
+
   m.def("decl_ret", [&](const DataType &dt) {
     return get_current_program().current_callable->insert_ret(dt);
   });
@@ -880,9 +951,46 @@ void export_lang(py::module &m) {
   m.def("bit_vectorize", BitVectorize);
   m.def("block_dim", BlockDim);
 
+  m.def("insert_thread_idx_expr", [&]() {
+    auto arch = get_current_program().config.arch;
+    auto loop =
+        scope_stack.size() ? scope_stack.back()->list->parent_stmt : nullptr;
+    TI_ERROR_IF(arch != Arch::cuda && !arch_is_cpu(arch),
+                "ti.thread_idx() is only available in cuda or cpu context.");
+    if (loop != nullptr) {
+      auto i = scope_stack.size() - 1;
+      while (!(loop->is<FrontendForStmt>())) {
+        loop = i > 0 ? scope_stack[--i]->list->parent_stmt : nullptr;
+        if (loop == nullptr)
+          break;
+      }
+    }
+    TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
+                "ti.thread_idx() is only valid within loops.");
+    return Expr::make<GlobalThreadIndexExpression>();
+  });
+
+  m.def("insert_patch_idx_expr", [&]() {
+    auto loop =
+        scope_stack.size() ? scope_stack.back()->list->parent_stmt : nullptr;
+    if (loop != nullptr) {
+      auto i = scope_stack.size() - 1;
+      while (!(loop->is<FrontendForStmt>())) {
+        loop = i > 0 ? scope_stack[--i]->list->parent_stmt : nullptr;
+        if (loop == nullptr)
+          break;
+      }
+    }
+    TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>() &&
+                  loop->as<FrontendForStmt>()->mesh_for),
+                "ti.mesh_patch_idx() is only valid within mesh-for loops.");
+    return Expr::make<MeshPatchIndexExpression>();
+  });
+
   py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())
       .value("block_local", SNodeAccessFlag::block_local)
       .value("read_only", SNodeAccessFlag::read_only)
+      .value("mesh_local", SNodeAccessFlag::mesh_local)
       .export_values();
 
   m.def("insert_snode_access_flag", insert_snode_access_flag);
@@ -900,7 +1008,9 @@ void export_lang(py::module &m) {
   m.def("test_throw", [] { throw IRModified(); });
   m.def("needs_grad", needs_grad);
 
+#if TI_WITH_LLVM
   m.def("libdevice_path", libdevice_path);
+#endif
 
   m.def("host_arch", host_arch);
 
@@ -912,7 +1022,9 @@ void export_lang(py::module &m) {
   m.def("get_version_major", get_version_major);
   m.def("get_version_minor", get_version_minor);
   m.def("get_version_patch", get_version_patch);
+#if TI_WITH_LLVM
   m.def("get_llvm_version_string", [] { return LLVM_VERSION_STRING; });
+#endif
   m.def("test_printf", [] { printf("test_printf\n"); });
   m.def("test_logging", [] { TI_INFO("test_logging"); });
   m.def("trigger_crash", [] { *(int *)(1) = 0; });
@@ -1062,6 +1174,114 @@ void export_lang(py::module &m) {
       .def("info", &SparseSolver::info);
 
   m.def("make_sparse_solver", &make_sparse_solver);
+
+  // Mesh Class
+  // Mesh related.
+  py::enum_<mesh::MeshTopology>(m, "MeshTopology", py::arithmetic())
+      .value("Triangle", mesh::MeshTopology::Triangle)
+      .value("Tetrahedron", mesh::MeshTopology::Tetrahedron)
+      .export_values();
+
+  py::enum_<mesh::MeshElementType>(m, "MeshElementType", py::arithmetic())
+      .value("Vertex", mesh::MeshElementType::Vertex)
+      .value("Edge", mesh::MeshElementType::Edge)
+      .value("Face", mesh::MeshElementType::Face)
+      .value("Cell", mesh::MeshElementType::Cell)
+      .export_values();
+
+  py::enum_<mesh::MeshRelationType>(m, "MeshRelationType", py::arithmetic())
+      .value("VV", mesh::MeshRelationType::VV)
+      .value("VE", mesh::MeshRelationType::VE)
+      .value("VF", mesh::MeshRelationType::VF)
+      .value("VC", mesh::MeshRelationType::VC)
+      .value("EV", mesh::MeshRelationType::EV)
+      .value("EE", mesh::MeshRelationType::EE)
+      .value("EF", mesh::MeshRelationType::EF)
+      .value("EC", mesh::MeshRelationType::EC)
+      .value("FV", mesh::MeshRelationType::FV)
+      .value("FE", mesh::MeshRelationType::FE)
+      .value("FF", mesh::MeshRelationType::FF)
+      .value("FC", mesh::MeshRelationType::FC)
+      .value("CV", mesh::MeshRelationType::CV)
+      .value("CE", mesh::MeshRelationType::CE)
+      .value("CF", mesh::MeshRelationType::CF)
+      .value("CC", mesh::MeshRelationType::CC)
+      .export_values();
+
+  py::enum_<mesh::ConvType>(m, "ConvType", py::arithmetic())
+      .value("l2g", mesh::ConvType::l2g)
+      .value("l2r", mesh::ConvType::l2r)
+      .value("g2r", mesh::ConvType::g2r)
+      .export_values();
+
+  py::class_<mesh::Mesh>(m, "Mesh");
+  py::class_<mesh::MeshPtr>(m, "MeshPtr");
+
+  m.def("element_order", mesh::element_order);
+  m.def("from_end_element_order", mesh::from_end_element_order);
+  m.def("to_end_element_order", mesh::to_end_element_order);
+  m.def("relation_by_orders", mesh::relation_by_orders);
+  m.def("inverse_relation", mesh::inverse_relation);
+  m.def("element_type_name", mesh::element_type_name);
+
+  m.def(
+      "create_mesh",
+      []() {
+        auto mesh_shared = std::make_shared<mesh::Mesh>();
+        mesh::MeshPtr mesh_ptr = mesh::MeshPtr{mesh_shared};
+        return mesh_ptr;
+      },
+      py::return_value_policy::reference);
+
+  // ad-hoc setters
+  m.def("set_owned_offset",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
+          mesh_ptr.ptr->owned_offset.insert(std::pair(type, snode));
+        });
+  m.def("set_total_offset",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
+          mesh_ptr.ptr->total_offset.insert(std::pair(type, snode));
+        });
+  m.def("set_num_patches", [](mesh::MeshPtr &mesh_ptr, int num_patches) {
+    mesh_ptr.ptr->num_patches = num_patches;
+  });
+
+  m.def("set_num_elements", [](mesh::MeshPtr &mesh_ptr,
+                               mesh::MeshElementType type, int num_elements) {
+    mesh_ptr.ptr->num_elements.insert(std::pair(type, num_elements));
+  });
+
+  m.def("get_num_elements",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type) {
+          return mesh_ptr.ptr->num_elements.find(type)->second;
+        });
+
+  m.def("set_patch_max_element_num",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type,
+           int max_element_num) {
+          mesh_ptr.ptr->patch_max_element_num.insert(
+              std::pair(type, max_element_num));
+        });
+
+  m.def("set_index_mapping",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType element_type,
+           mesh::ConvType conv_type, SNode *snode) {
+          mesh_ptr.ptr->index_mapping.insert(
+              std::make_pair(std::make_pair(element_type, conv_type), snode));
+        });
+
+  m.def("set_relation_fixed",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value) {
+          mesh_ptr.ptr->relations.insert(
+              std::pair(type, mesh::MeshLocalRelation(value)));
+        });
+
+  m.def("set_relation_dynamic",
+        [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value,
+           SNode *offset) {
+          mesh_ptr.ptr->relations.insert(
+              std::pair(type, mesh::MeshLocalRelation(value, offset)));
+        });
 }
 
 TI_NAMESPACE_END

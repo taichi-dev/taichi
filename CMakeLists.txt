@@ -5,9 +5,13 @@
 cmake_minimum_required(VERSION 3.12)
 
 project(taichi)
-set(TI_VERSION_MAJOR 0)
-set(TI_VERSION_MINOR 8)
-set(TI_VERSION_PATCH 4)
+
+if (NOT DEFINED TI_VERSION_MAJOR)
+    message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi.graphics/lang/articles/contribution/dev_install for more details.")
+    set(TI_VERSION_MAJOR 0)
+    set(TI_VERSION_MINOR 0)
+    set(TI_VERSION_PATCH 0)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -47,16 +51,29 @@ endif ()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
-include(cmake/PythonNumpyPybind11.cmake)
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
+
+# No support of Python for Android build
+if (NOT ANDROID)
+    include(cmake/PythonNumpyPybind11.cmake)
+endif()
 include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
-include(cmake/TaichiMain.cmake)
 
 option(TI_BUILD_TESTS "Build the CPP tests" OFF)
 
 if (TI_BUILD_TESTS)
   add_subdirectory(external/googletest EXCLUDE_FROM_ALL)
   include(cmake/TaichiTests.cmake)
+endif()
+
+option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
+
+if (TI_BUILD_EXAMPLES)
+  include(cmake/TaichiExamples.cmake)
 endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/external/eigen)
@@ -73,22 +90,40 @@ if (TI_WITH_CUDA)
     set(CUDA_ARCH "cuda")
 endif()
 
-find_program(CLANG_EXECUTABLE NAMES clang clang-7 clang-8 clang-9 clang-10)
-if (NOT CLANG_EXECUTABLE)
-    message(FATAL_ERROR "Cannot find any clang executable.")
+if (CLANG_EXECUTABLE)
+  message("Clang executable ${CLANG_EXECUTABLE}")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+  set (CLANG_EXECUTABLE ${CMAKE_CXX_COMPILER})
+else()
+  find_program(CLANG_EXECUTABLE NAMES clang clang-10 clang-11 clang-9 clang-8 clang-7)
 endif()
 
-find_program(LLVM_AS_EXECUTABLE NAMES llvm-as)
-if (NOT LLVM_AS_EXECUTABLE)
-    message(FATAL_ERROR "Cannot find llvm-as executable.")
+if (NOT CLANG_EXECUTABLE)
+  message(FATAL_ERROR "Cannot find any clang executable.")
+endif()
+
+execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
+string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
+message("clang --version: ${CLANG_VERSION}")
+
+set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
+
+if (APPLE)
+  set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
+  set(CLANG_HIGHEST_VERSION "12")
+else()
+  set(CLANG_HIGHEST_VERSION "11")
+endif()
+
+if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
+  message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Condider passing -DCLANG_PATH=/path/to/clang to cmake to use a specific clang.")
 endif()
 
 # Build llvm-runtime for host arch and cuda (if available)
 foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
   add_custom_target(
       "generate_llvm_runtime_${arch}"
-      COMMAND ${CLANG_EXECUTABLE} -S runtime.cpp -o "runtime_${arch}.ll" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
-      COMMAND ${LLVM_AS_EXECUTABLE} "runtime_${arch}.ll" -o "runtime_${arch}.bc"
+      COMMAND ${CLANG_EXECUTABLE} ${CLANG_OSX_FLAGS} -c runtime.cpp -o "runtime_${arch}.bc" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
       WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm"
   )
   add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${arch}")

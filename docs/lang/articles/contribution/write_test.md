@@ -51,7 +51,7 @@ def test_log10():
     assert r[None] == 2
 ```
 
-Execute `ti test logarithm`, and the functions starting with `test_` in
+Execute `python tests/run_tests.py logarithm`, and the functions starting with `test_` in
 `tests/python/test_logarithm.py` will be executed.
 
 ## Testing against multiple backends

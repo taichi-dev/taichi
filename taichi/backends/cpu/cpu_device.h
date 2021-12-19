@@ -80,6 +80,7 @@ class CpuDevice : public Device {
   struct AllocInfo {
     void *ptr{nullptr};
     size_t size{0};
+    bool use_cached{false};
   };
 
   AllocInfo get_alloc_info(DeviceAllocation handle);
@@ -87,10 +88,8 @@ class CpuDevice : public Device {
   ~CpuDevice() override{};
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
-  DeviceAllocation allocate_memory_runtime(const AllocParams &params,
-                                           JITModule *runtime_jit_module,
-                                           LLVMRuntime *runtime,
-                                           uint64 *result_buffer) override;
+  DeviceAllocation allocate_memory_runtime(
+      const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
   std::unique_ptr<Pipeline> create_pipeline(

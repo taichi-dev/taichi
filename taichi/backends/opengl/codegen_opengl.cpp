@@ -19,6 +19,16 @@ namespace opengl {
 namespace {
 
 namespace shaders {
+#define FOREACH_ARR_NAME(_) \
+  _(arr0)                   \
+  _(arr1)                   \
+  _(arr2)                   \
+  _(arr3)                   \
+  _(arr4)                   \
+  _(arr5)                   \
+  _(arr6)                   \
+  _(arr7)
+
 #define TI_INSIDE_OPENGL_CODEGEN
 #include "taichi/backends/opengl/shaders/atomics_macro_f32.glsl.h"
 #include "taichi/backends/opengl/shaders/runtime.h"
@@ -29,6 +39,8 @@ namespace shaders {
 
 GENERATE_OPENGL_ATOMIC_F32(data);
 GENERATE_OPENGL_ATOMIC_F32(gtmp);
+
+FOREACH_ARR_NAME(GENERATE_OPENGL_ATOMIC_F32);
 
 GENERATE_OPENGL_REDUCTION_FUNCTIONS(add, float);
 GENERATE_OPENGL_REDUCTION_FUNCTIONS(max, float);
@@ -41,6 +53,7 @@ GENERATE_OPENGL_REDUCTION_FUNCTIONS(max, uint);
 GENERATE_OPENGL_REDUCTION_FUNCTIONS(min, uint);
 
 #undef TI_INSIDE_OPENGL_CODEGEN
+#undef FOREACH_ARR_NAME
 }  // namespace shaders
 
 using irpass::ExternalPtrAccess;
@@ -104,8 +117,9 @@ class KernelGen : public IRVisitor {
   GetRootStmt *root_stmt_;
   int glsl_kernel_count_{0};
   bool is_top_level_{true};
-  CompiledProgram compiled_program_;
+  CompiledTaichiKernel compiled_program_;
   UsedFeature used;  // TODO: is this actually per-offload?
+  int arr_bind_idx = static_cast<int>(GLBufId::Arr);
 
   // per-offload variables:
   LineAppender line_appender_;
@@ -113,8 +127,8 @@ class KernelGen : public IRVisitor {
   std::string glsl_kernel_name_;
   int num_workgroups_{1};
   int workgroup_size_{1};
-  bool used_tls;  // TODO: move into UsedFeature?
-  std::unordered_map<int, irpass::ExternalPtrAccess> extptr_access;
+  bool used_tls_;  // TODO: move into UsedFeature?
+  std::unordered_map<int, irpass::ExternalPtrAccess> extptr_access_;
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -155,6 +169,34 @@ class KernelGen : public IRVisitor {
     return opengl::opengl_data_type_name(dt);
   }
 
+  std::string gen_layout_line(std::string dt,
+                              std::string dtype,
+                              std::string buf,
+                              std::string bind_id) {
+    return fmt::format(
+        "layout(std430, binding = {}) buffer {}_{} {{ {} _{}_{}_[];}}; \n",
+        bind_id, buf, dt, dtype, buf, dt);
+  }
+
+  std::string gen_buffer_registration(const UsedFeature &used,
+                                      std::string buf,
+                                      std::string bind_id) {
+    std::string res = "";
+    if (used.int32)
+      res += gen_layout_line("i32", "int", buf, bind_id);
+    if (used.int64)
+      res += gen_layout_line("i64", "int64_t", buf, bind_id);
+    if (used.uint32)
+      res += gen_layout_line("u32", "uint", buf, bind_id);
+    if (used.uint64)
+      res += gen_layout_line("u64", "uint64_t", buf, bind_id);
+    if (used.float32)
+      res += gen_layout_line("f32", "float", buf, bind_id);
+    if (used.float64)
+      res += gen_layout_line("f64", "double", buf, bind_id);
+    return res;
+  }
+
   void generate_bottom() {
     // TODO(archibate): <kernel_name>() really necessary? How about just main()?
     emit("void main()");
@@ -165,39 +207,55 @@ class KernelGen : public IRVisitor {
       emit("  {}();", glsl_kernel_name_);
     emit("}}");
 
-    // clang-format off
     if (used.print)  // the runtime buffer is only used for print now..
       line_appender_header_.append_raw(shaders::kOpenGlRuntimeSourceCode);
 
     std::string kernel_header;
-#define DEFINE_LAYOUT(layout, restype, name, id, dt, dtype) \
-      kernel_header += "layout("#layout", binding = " + fmt::format("{}", id) \
-                    + ") " #restype " " #name "_" #dt " { " #dtype " _" \
-                    #name "_" #dt "_[]; };\n"
-#define REGISTER_BUFFER(layout, restype, name, id) do { \
-    if (used.int32) DEFINE_LAYOUT(layout, restype, name, id, i32, int); \
-    if (used.int64) DEFINE_LAYOUT(layout, restype, name, id, i64, int64_t); \
-    if (used.uint32) DEFINE_LAYOUT(layout, restype, name, id, u32, uint); \
-    if (used.uint64) DEFINE_LAYOUT(layout, restype, name, id, u64, uint64_t); \
-    if (used.float32) DEFINE_LAYOUT(layout, restype, name, id, f32, float); \
-    if (used.float64) DEFINE_LAYOUT(layout, restype, name, id, f64, double); \
-  } while (0)
-
-    REGISTER_BUFFER(std430, buffer, data, GLBufId::Root);
+    if (used.buf_data)
+      kernel_header += gen_buffer_registration(
+          used, "data", std::to_string(static_cast<int>(GLBufId::Root)));
     if (used.buf_gtmp)
-      REGISTER_BUFFER(std430, buffer, gtmp, GLBufId::Gtmp);
+      kernel_header += gen_buffer_registration(
+          used, "gtmp", std::to_string(static_cast<int>(GLBufId::Gtmp)));
     if (used.buf_args)
-      REGISTER_BUFFER(std430, buffer, args, GLBufId::Args);
-
-#undef REGISTER_BUFFER
-#undef DEFINE_LAYOUT
-    // clang-format on
+      kernel_header += gen_buffer_registration(
+          used, "args", std::to_string(static_cast<int>(GLBufId::Args)));
+    for (auto [arr_id, bind_idx] : used.arr_arg_to_bind_idx) {
+      kernel_header += gen_buffer_registration(
+          used, "arr" + std::to_string(arr_id), std::to_string(bind_idx));
+    }
 
     if (used.simulated_atomic_float) {
-      kernel_header += shaders::kOpenGlAtomicF32Source_data;
+      if (used.buf_data) {
+        kernel_header += shaders::kOpenGlAtomicF32Source_data;
+      }
       if (used.buf_gtmp) {
         kernel_header += shaders::kOpenGlAtomicF32Source_gtmp;
       }
+      std::unordered_set<int> arr_ids;
+      for ([[maybe_unused]] const auto [arr_id, bind_idx] :
+           used.arr_arg_to_bind_idx) {
+        arr_ids.insert(arr_id);
+      }
+
+#define FOREACH_ARR_ID(_) \
+  _(0)                    \
+  _(1)                    \
+  _(2)                    \
+  _(3)                    \
+  _(4)                    \
+  _(5)                    \
+  _(6)                    \
+  _(7)
+
+#define ADD_ARR_ATOMIC_F32_SOURCE(id)                         \
+  if (arr_ids.count(id)) {                                    \
+    kernel_header += shaders::kOpenGlAtomicF32Source_arr##id; \
+  }
+
+      FOREACH_ARR_ID(ADD_ARR_ATOMIC_F32_SOURCE);
+#undef ADD_ARR_ATOMIC_F32_SOURCE
+#undef FOREACH_ARR_ID
     }
 
     if (used.reduction) {
@@ -238,7 +296,7 @@ class KernelGen : public IRVisitor {
         line_appender_.lines();
     compiled_program_.add(std::move(glsl_kernel_name_), kernel_src_code,
                           num_workgroups_, workgroup_size_,
-                          &this->extptr_access);
+                          &this->extptr_access_);
     auto &config = kernel_->program->config;
     if (config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer("shader{:04d}.comp",
@@ -248,7 +306,7 @@ class KernelGen : public IRVisitor {
     line_appender_header_.clear_all();
     line_appender_.clear_all();
     num_workgroups_ = 1;
-    num_workgroups_ = 1;
+    workgroup_size_ = 1;
   }
 
   void visit(Block *stmt) override {
@@ -261,7 +319,7 @@ class KernelGen : public IRVisitor {
       line_appender_.pop_indent();
   }
 
-  virtual void visit(Stmt *stmt) override {
+  void visit(Stmt *stmt) override {
     TI_ERROR("[glsl] unsupported statement type {}", typeid(*stmt).name());
   }
 
@@ -358,6 +416,11 @@ class KernelGen : public IRVisitor {
     }
   }
 
+  void visit(AssertStmt *stmt) override {
+    // TODO: do the actual assert
+    TI_WARN("Assert is not supported for OpenGL arch");
+  }
+
   void visit(SNodeOpStmt *stmt) override {  // IAPR?
     if (stmt->op_type == SNodeOpType::activate) {
       if (stmt->snode->type == SNodeType::dense ||
@@ -423,25 +486,27 @@ class KernelGen : public IRVisitor {
     }
   }
 
-  std::map<int, std::string> ptr_signats;
+  std::map<int, std::string> ptr_signats_;
 
   void visit(GetChStmt *stmt) override {
+    used.buf_data = true;
     emit("int {} = {} + {}; // {}", stmt->short_name(),
          stmt->input_ptr->short_name(),
          struct_compiled_->snode_map.at(stmt->input_snode->node_type_name)
              .children_offsets[stmt->chid],
          stmt->output_snode->node_type_name);
     if (stmt->output_snode->is_place())
-      ptr_signats[stmt->id] = "data";
+      ptr_signats_[stmt->id] = "data";
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->val->element_type();
-    emit("_{}_{}_[{} >> {}] = {};",
-         ptr_signats.at(stmt->dest->id),  // throw out_of_range if not a pointer
-         opengl_data_type_short_name(dt), stmt->dest->short_name(),
-         opengl_data_address_shifter(dt), stmt->val->short_name());
+    emit(
+        "_{}_{}_[{} >> {}] = {};",
+        ptr_signats_.at(stmt->dest->id),  // throw out_of_range if not a pointer
+        opengl_data_type_short_name(dt), stmt->dest->short_name(),
+        opengl_data_address_shifter(dt), stmt->val->short_name());
   }
 
   void visit(GlobalLoadStmt *stmt) override {
@@ -449,19 +514,19 @@ class KernelGen : public IRVisitor {
     auto dt = stmt->element_type();
     emit("{} {} = _{}_{}_[{} >> {}];",
          opengl_data_type_name(stmt->element_type()), stmt->short_name(),
-         ptr_signats.at(stmt->src->id), opengl_data_type_short_name(dt),
+         ptr_signats_.at(stmt->src->id), opengl_data_type_short_name(dt),
          stmt->src->short_name(), opengl_data_address_shifter(dt));
   }
 
   void visit(ExternalPtrStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     const auto linear_index_name = fmt::format("_li_{}", stmt->short_name());
+    const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+    const int arg_id = argload->arg_id;
     emit("int {} = 0;", linear_index_name);
     emit("{{ // linear seek");
     {
       ScopedIndent _s(line_appender_);
-      const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
-      const int arg_id = argload->arg_id;
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
       for (int i = 0; i < num_indices; i++) {
@@ -480,10 +545,10 @@ class KernelGen : public IRVisitor {
     }
     emit("}}");
 
-    emit("int {} = {} + ({} << {});", stmt->short_name(),
-         stmt->base_ptrs[0]->short_name(), linear_index_name,
+    emit("int {} = {} << {};", stmt->short_name(), linear_index_name,
          opengl_data_address_shifter(stmt->base_ptrs[0]->element_type()));
-    ptr_signats[stmt->id] = "args";
+
+    ptr_signats_[stmt->id] = "arr" + std::to_string(arg_id);
   }
 
   void visit(UnaryOpStmt *stmt) override {
@@ -687,7 +752,7 @@ class KernelGen : public IRVisitor {
       used.int32 = true;  // since simulated atomics are based on _data_i32_
       emit("{} = {}_{}_{}({} >> {}, {});", stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
-           ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
+           ptr_signats_.at(stmt->dest->id), opengl_data_type_short_name(dt),
            stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
     }
 
@@ -697,7 +762,7 @@ class KernelGen : public IRVisitor {
   bool maybe_generate_fatomics_using_nv_ext(AtomicOpStmt *stmt,
                                             DataType dt,
                                             const std::string &val_name) {
-    if (!allows_nv_shader_ext_) {
+    if (!allows_nv_shader_ext_ and !dt->is_primitive(PrimitiveTypeID::i32)) {
       return false;
     }
     const bool check_int =
@@ -714,7 +779,7 @@ class KernelGen : public IRVisitor {
     if (check_int || (check_add && check_float)) {
       emit("{} = {}(_{}_{}_[{} >> {}], {});", stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
-           ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
+           ptr_signats_.at(stmt->dest->id), opengl_data_type_short_name(dt),
            stmt->dest->short_name(), opengl_data_address_shifter(dt), val_name);
       return true;
     }
@@ -774,12 +839,12 @@ class KernelGen : public IRVisitor {
 
   void visit(ArgLoadStmt *stmt) override {
     const auto dt = opengl_data_type_name(stmt->element_type());
-    used.buf_args = true;
     if (stmt->is_ptr) {
-      used.int32 = true;
-      emit("int {} = _args_i32_[{} << 1]; // is ext pointer {}",
-           stmt->short_name(), stmt->arg_id, dt);
+      if (!used.arr_arg_to_bind_idx.count(stmt->arg_id)) {
+        used.arr_arg_to_bind_idx[stmt->arg_id] = arr_bind_idx++;
+      }
     } else {
+      used.buf_args = true;
       emit("{} {} = _args_{}_[{} << {}];", dt, stmt->short_name(),
            opengl_data_type_short_name(stmt->element_type()), stmt->arg_id,
            opengl_argument_address_shifter(stmt->element_type()));
@@ -869,7 +934,7 @@ class KernelGen : public IRVisitor {
         // Refs:
         // https://stackoverflow.com/questions/36374652/compute-shaders-optimal-data-division-on-invocations-threads-and-workgroups
         if (const_iterations > 0) {
-          if (gen->used_tls) {
+          if (gen->used_tls_) {
             // const range with TLS reduction
             gen->num_workgroups_ = std::max(
                 const_iterations / std::max(gen->workgroup_size_, 1) / 32, 1);
@@ -902,8 +967,8 @@ class KernelGen : public IRVisitor {
     this->glsl_kernel_name_ = glsl_kernel_name;
     emit("{{ // range for");
 
-    used_tls = (stmt->tls_prologue != nullptr);
-    if (used_tls) {
+    used_tls_ = (stmt->tls_prologue != nullptr);
+    if (used_tls_) {
       auto tls_size = stmt->tls_size;
       // TODO(k-ye): support 'cursor' in LineAppender:
       emit("int _tls_i32_[{}];", (tls_size + 3) / 4);
@@ -950,13 +1015,13 @@ class KernelGen : public IRVisitor {
       stmt->body->accept(this);
     }
 
-    if (used_tls) {
+    if (used_tls_) {
       TI_ASSERT(stmt->tls_epilogue != nullptr);
       emit("{{  // TLS epilogue");
       stmt->tls_epilogue->accept(this);
       emit("}}");
     }
-    used_tls = false;
+    used_tls_ = false;
 
     emit("}}\n");
   }
@@ -982,13 +1047,13 @@ class KernelGen : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     used.buf_gtmp = true;
     emit("int {} = {};", stmt->short_name(), stmt->offset);
-    ptr_signats[stmt->id] = "gtmp";
+    ptr_signats_[stmt->id] = "gtmp";
   }
 
   void visit(ThreadLocalPtrStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     emit("int {} = {};", stmt->short_name(), stmt->offset);
-    ptr_signats[stmt->id] = "tls";
+    ptr_signats_[stmt->id] = "tls";
   }
 
   void visit(LoopIndexStmt *stmt) override {
@@ -1046,7 +1111,7 @@ class KernelGen : public IRVisitor {
   void visit(OffloadedStmt *stmt) override {
     auto map = irpass::detect_external_ptr_access_in_task(stmt);
 
-    this->extptr_access = std::move(map);
+    this->extptr_access_ = std::move(map);
 
     generate_header();
     TI_ASSERT(is_top_level_);
@@ -1083,7 +1148,7 @@ class KernelGen : public IRVisitor {
   }
 
  public:
-  CompiledProgram get_compiled_program() {
+  CompiledTaichiKernel get_compiled_program() {
     // We have to set it at the last moment, to get all used feature.
     compiled_program_.set_used(used);
     return std::move(compiled_program_);
@@ -1096,7 +1161,7 @@ class KernelGen : public IRVisitor {
 
 }  // namespace
 
-CompiledProgram OpenglCodeGen::gen(void) {
+CompiledTaichiKernel OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
   KernelGen codegen(kernel_, struct_compiled_, kernel_name_,
                     allows_nv_shader_ext_);
@@ -1121,7 +1186,7 @@ void OpenglCodeGen::lower() {
 #endif
 }
 
-CompiledProgram OpenglCodeGen::compile(Kernel &kernel) {
+CompiledTaichiKernel OpenglCodeGen::compile(Kernel &kernel) {
   this->kernel_ = &kernel;
 
   this->lower();

@@ -41,7 +41,7 @@ def test_stop_grad():
     @ti.kernel
     def func():
         for i in range(n):
-            ti.core.stop_grad(x.snode.ptr)
+            ti.stop_grad(x)
             loss[None] += x[i]**2
 
     for i in range(n):

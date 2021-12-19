@@ -105,6 +105,17 @@ StructForStmt *IRBuilder::create_struct_for(SNode *snode,
       num_cpu_threads, block_dim));
 }
 
+MeshForStmt *IRBuilder::create_mesh_for(mesh::Mesh *mesh,
+                                        mesh::MeshElementType element_type,
+                                        int vectorize,
+                                        int bit_vectorize,
+                                        int num_cpu_threads,
+                                        int block_dim) {
+  return insert(Stmt::make_typed<MeshForStmt>(
+      mesh, element_type, std::make_unique<Block>(), vectorize, bit_vectorize,
+      num_cpu_threads, block_dim));
+}
+
 WhileStmt *IRBuilder::create_while_true() {
   return insert(Stmt::make_typed<WhileStmt>(std::make_unique<Block>()));
 }
@@ -206,6 +217,10 @@ UnaryOpStmt *IRBuilder::create_not(Stmt *value) {
 
 UnaryOpStmt *IRBuilder::create_logical_not(Stmt *value) {
   return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::logic_not, value));
+}
+
+UnaryOpStmt *IRBuilder::create_round(Stmt *value) {
+  return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::round, value));
 }
 
 UnaryOpStmt *IRBuilder::create_floor(Stmt *value) {
@@ -443,6 +458,38 @@ AdStackLoadTopAdjStmt *IRBuilder::ad_stack_load_top_adjoint(
 void IRBuilder::ad_stack_accumulate_adjoint(AdStackAllocaStmt *stack,
                                             Stmt *val) {
   insert(Stmt::make_typed<AdStackAccAdjointStmt>(stack, val));
+}
+
+// Mesh related.
+
+MeshRelationAccessStmt *IRBuilder::get_relation_size(
+    mesh::Mesh *mesh,
+    Stmt *mesh_idx,
+    mesh::MeshElementType to_type) {
+  return insert(
+      Stmt::make_typed<MeshRelationAccessStmt>(mesh, mesh_idx, to_type));
+}
+
+MeshRelationAccessStmt *IRBuilder::get_relation_access(
+    mesh::Mesh *mesh,
+    Stmt *mesh_idx,
+    mesh::MeshElementType to_type,
+    Stmt *neighbor_idx) {
+  return insert(Stmt::make_typed<MeshRelationAccessStmt>(
+      mesh, mesh_idx, to_type, neighbor_idx));
+}
+
+MeshIndexConversionStmt *IRBuilder::get_index_conversion(
+    mesh::Mesh *mesh,
+    mesh::MeshElementType idx_type,
+    Stmt *idx,
+    mesh::ConvType conv_type) {
+  return insert(Stmt::make_typed<MeshIndexConversionStmt>(mesh, idx_type, idx,
+                                                          conv_type));
+}
+
+MeshPatchIndexStmt *IRBuilder::get_patch_index() {
+  return insert(Stmt::make_typed<MeshPatchIndexStmt>());
 }
 
 TLANG_NAMESPACE_END

@@ -4,11 +4,14 @@
 
 #include "taichi/codegen/codegen.h"
 
+#ifdef TI_WITH_LLVM
 #include "llvm/IR/Module.h"
+#endif
 
 namespace taichi {
 namespace lang {
 
+#ifdef TI_WITH_LLVM
 class ModuleGenValue {
  public:
   ModuleGenValue(std::unique_ptr<llvm::Module> module,
@@ -18,6 +21,7 @@ class ModuleGenValue {
   std::unique_ptr<llvm::Module> module;
   std::vector<std::string> name_list;
 };
+#endif
 
 class CodeGenWASM : public KernelCodeGen {
  public:
@@ -25,10 +29,12 @@ class CodeGenWASM : public KernelCodeGen {
       : KernelCodeGen(kernel, ir) {
   }
 
-  virtual FunctionType codegen() override;
+  FunctionType codegen() override;
 
+#ifdef TI_WITH_LLVM
   std::unique_ptr<ModuleGenValue> modulegen(
       std::unique_ptr<llvm::Module> &&module);  // AOT Module Gen
+#endif
 };
 
 }  // namespace lang

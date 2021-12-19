@@ -1011,7 +1011,7 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
       const auto tt = nd->meta->type;
       if (!nd->is_initial_node &&
           (tt == TaskType::range_for || tt == TaskType::struct_for ||
-           tt == TaskType::serial)) {
+           tt == TaskType::mesh_for || tt == TaskType::serial)) {
         // ss << " style=filled fillcolor=lightgray";
       }
       ss << "]\n";
@@ -1324,6 +1324,7 @@ bool StateFlowGraph::optimize_dead_store() {
     // |mt| is not the desired type.
     if ((mt == OffloadedTaskType::serial ||
          mt == OffloadedTaskType::struct_for ||
+         mt == OffloadedTaskType::mesh_for ||
          mt == OffloadedTaskType::range_for) &&
         ir->body->statements.empty()) {
       to_delete.insert(i + first_pending_task_index_);

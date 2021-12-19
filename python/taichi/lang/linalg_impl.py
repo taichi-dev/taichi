@@ -1,4 +1,4 @@
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang.impl import expr_init
 from taichi.lang.kernel_impl import func
 
@@ -228,7 +228,7 @@ def svd(A, dt):
     Returns:
         Decomposed nxn matrices `U`, 'S' and `V`.
     """
-    if ti.static(A.n == 2):
+    if ti.static(A.n == 2):  # pylint: disable=R1705
         ret = svd2d(A, dt)
         return ret
     elif ti.static(A.n == 3):
@@ -252,7 +252,7 @@ def polar_decompose(A, dt):
     Returns:
         Decomposed nxn matrices `U` and `P`.
     """
-    if ti.static(A.n == 2):
+    if ti.static(A.n == 2):  # pylint: disable=R1705
         ret = polar_decompose2d(A, dt)
         return ret
     elif ti.static(A.n == 3):

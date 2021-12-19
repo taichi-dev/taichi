@@ -94,7 +94,7 @@ TEST(FrontendTypeInference, GlobalPtr_ExternalTensor) {
       Expr::make<ExternalTensorExpression>(PrimitiveType::u16, 1, 0, 0);
   auto global_ptr =
       Expr::make<GlobalPtrExpression>(external_tensor, ExprGroup(index));
-  EXPECT_THROW(global_ptr->type_check(), std::runtime_error);
+  EXPECT_THROW(global_ptr->type_check(), TaichiTypeError);
 }
 
 TEST(FrontendTypeInference, TensorElement) {
@@ -115,6 +115,69 @@ TEST(FrontendTypeInference, TensorElement) {
   tensor_element->type_check();
   auto load_tensor_element = load_if_ptr(tensor_element);
   EXPECT_EQ(load_tensor_element->ret_type, PrimitiveType::u32);
+}
+
+TEST(FrontendTypeInference, AtomicOp) {
+  auto const_i32 = Expr::make<ConstExpression, int32>(-(1 << 20));
+  const_i32->type_check();
+  auto const_f32 = Expr::make<ConstExpression, float32>(5.0);
+  const_f32->type_check();
+  auto atomic_add_i32 =
+      Expr::make<AtomicOpExpression>(AtomicOpType::add, const_i32, const_f32);
+  atomic_add_i32->type_check();
+  EXPECT_EQ(atomic_add_i32->ret_type, PrimitiveType::i32);
+}
+
+TEST(FrontendTypeInference, SNodeOp) {
+  auto snode = std::make_unique<SNode>(0, SNodeType::root);
+  snode->dt = PrimitiveType::u8;
+  auto index = Expr::make<ConstExpression, int32>(2);
+  index->type_check();
+  auto snode_op = Expr::make<SNodeOpExpression>(
+      snode.get(), SNodeOpType::get_addr, ExprGroup(index));
+  snode_op->type_check();
+  EXPECT_EQ(snode_op->ret_type, PrimitiveType::u64);
+}
+
+TEST(FrontendTypeInference, ExternalTensorShapeAlongAxis) {
+  auto external_tensor =
+      Expr::make<ExternalTensorExpression>(PrimitiveType::u64, 1, 0, 0);
+  auto shape =
+      Expr::make<ExternalTensorShapeAlongAxisExpression>(external_tensor, 0);
+  shape->type_check();
+  EXPECT_EQ(shape->ret_type, PrimitiveType::i32);
+}
+
+TEST(FrontendTypeInference, RangeAssumption) {
+  auto const_f32_a = Expr::make<ConstExpression, float32>(5.0);
+  const_f32_a->type_check();
+  auto const_f32_b = Expr::make<ConstExpression, float32>(5.0);
+  const_f32_b->type_check();
+  auto valid =
+      Expr::make<RangeAssumptionExpression>(const_f32_a, const_f32_b, 0, 1);
+  valid->type_check();
+  EXPECT_EQ(valid->ret_type, PrimitiveType::f32);
+  auto const_f64 = Expr::make<ConstExpression, float64>(5.0);
+  const_f64->type_check();
+  auto invalid =
+      Expr::make<RangeAssumptionExpression>(const_f32_a, const_f64, 0, 1);
+  EXPECT_THROW(invalid->type_check(), TaichiTypeError);
+}
+
+TEST(FrontendTypeInference, LoopUnique) {
+  auto const_i64 = Expr::make<ConstExpression, int64>(5);
+  const_i64->type_check();
+  auto loop_unique =
+      Expr::make<LoopUniqueExpression>(const_i64, std::vector<SNode *>{});
+  loop_unique->type_check();
+  EXPECT_EQ(loop_unique->ret_type, PrimitiveType::i64);
+}
+
+TEST(FrontendTypeInference, InternalFuncCall) {
+  auto internal_func_call =
+      Expr::make<InternalFuncCallExpression>("do_nothing", std::vector<Expr>{});
+  internal_func_call->type_check();
+  EXPECT_EQ(internal_func_call->ret_type, PrimitiveType::i32);
 }
 
 }  // namespace lang

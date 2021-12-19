@@ -13,7 +13,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/program/program_impl.h"
 #include "taichi/program/callable.h"
-#include "taichi/program/aot_module_builder.h"
+#include "taichi/program/aot_module.h"
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"
@@ -27,6 +27,7 @@
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/program/sparse_matrix.h"
+#include "taichi/ir/mesh.h"
 
 namespace taichi {
 namespace lang {
@@ -290,6 +291,16 @@ class Program {
 
   Device *get_graphics_device() {
     return program_impl_->get_graphics_device();
+  }
+
+  std::shared_ptr<Device> get_device_shared() {
+    return program_impl_->get_device_shared();
+  }
+
+  // TODO: do we still need result_buffer?
+  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
+                                           uint64 *result_buffer) {
+    return program_impl_->allocate_memory_ndarray(alloc_size, result_buffer);
   }
 
  private:

@@ -78,8 +78,10 @@ _build
 *.ll
 *.bc
 *.yml
+!.github/**/*.yml
 *.dot
 *.json
+!tests/**/*.json
 !docs/**/*.json
 imgui.ini
 /venv/

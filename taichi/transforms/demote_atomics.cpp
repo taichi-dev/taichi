@@ -40,6 +40,7 @@ class DemoteAtomics : public BasicStmtVisitor {
       }
       if (!demote &&
           (current_offloaded->task_type == OffloadedTaskType::range_for ||
+           current_offloaded->task_type == OffloadedTaskType::mesh_for ||
            current_offloaded->task_type == OffloadedTaskType::struct_for) &&
           stmt->dest->is<GlobalPtrStmt>()) {
         demote = true;
@@ -52,7 +53,9 @@ class DemoteAtomics : public BasicStmtVisitor {
             break;
           }
           if (current_offloaded->mem_access_opt.has_flag(
-                  snode, SNodeAccessFlag::block_local)) {
+                  snode, SNodeAccessFlag::block_local) ||
+              current_offloaded->mem_access_opt.has_flag(
+                  snode, SNodeAccessFlag::mesh_local)) {
             // BLS does not support write access yet so we keep atomic_adds.
             demote = false;
             break;
@@ -117,7 +120,7 @@ class DemoteAtomics : public BasicStmtVisitor {
       // value. The correct thing is to replace |stmt| $d with the loaded
       // old value $d'.
       // See also: https://github.com/taichi-dev/taichi/issues/332
-      stmt->replace_with(load);
+      stmt->replace_usages_with(load);
       modifier.replace_with(stmt, std::move(new_stmts),
                             /*replace_usages=*/false);
     }
@@ -126,6 +129,7 @@ class DemoteAtomics : public BasicStmtVisitor {
   void visit(OffloadedStmt *stmt) override {
     current_offloaded = stmt;
     if (stmt->task_type == OffloadedTaskType::range_for ||
+        stmt->task_type == OffloadedTaskType::mesh_for ||
         stmt->task_type == OffloadedTaskType::struct_for) {
       loop_unique_ptr_ =
           irpass::analysis::gather_uniquely_accessed_pointers(stmt);

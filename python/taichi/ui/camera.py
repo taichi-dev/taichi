@@ -3,7 +3,6 @@ from math import pi
 from taichi.lang.matrix import Vector
 
 from .utils import euler_to_vec, vec_to_euler
-from .window import Window
 
 
 class Camera:

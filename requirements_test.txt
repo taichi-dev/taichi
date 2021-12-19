@@ -5,3 +5,4 @@ pytest-rerunfailures
 pytest-cov
 numpy
 autograd
+requests==2.26

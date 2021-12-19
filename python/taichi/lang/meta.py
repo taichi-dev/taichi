@@ -1,9 +1,9 @@
-from taichi.core import get_os_name
+from taichi._lib.utils import get_os_name
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
 from taichi.lang.kernel_impl import kernel
-from taichi.type.annotations import any_arr, ext_arr, template
+from taichi.types.annotations import any_arr, ext_arr, template
 
 import taichi as ti
 
@@ -23,6 +23,12 @@ def fill_ndarray(ndarray: any_arr(), val: template()):
 
 
 @kernel
+def fill_ndarray_matrix(ndarray: any_arr(), val: template()):
+    for I in ti.grouped(ndarray):
+        ndarray[I].fill(val)
+
+
+@kernel
 def tensor_to_ext_arr(tensor: template(), arr: ext_arr()):
     for I in ti.grouped(tensor):
         arr[I] = tensor[I]
@@ -35,12 +41,25 @@ def ndarray_to_ext_arr(ndarray: any_arr(), arr: ext_arr()):
 
 
 @kernel
+def ndarray_matrix_to_ext_arr(ndarray: any_arr(), arr: ext_arr(),
+                              as_vector: template()):
+    for I in ti.grouped(ndarray):
+        for p in ti.static(range(ndarray[I].n)):
+            for q in ti.static(range(ndarray[I].m)):
+                if ti.static(as_vector):
+                    arr[I, p] = ndarray[I][p]
+                else:
+                    arr[I, p, q] = ndarray[I][p, q]
+
+
+@kernel
 def vector_to_fast_image(img: template(), out: ext_arr()):
     # FIXME: Why is ``for i, j in img:`` slower than:
     for i, j in ti.ndrange(*img.shape):
         r, g, b = 0, 0, 0
         color = img[i, img.shape[1] - 1 - j]
-        if ti.static(img.dtype in [ti.f32, ti.f64]):
+        if ti.static(img.dtype == ti.f16 or img.dtype == ti.f32
+                     or img.dtype == ti.f64):
             r, g, b = min(255, max(0, int(color * 255)))
         else:
             impl.static_assert(img.dtype == ti.u8)
@@ -91,9 +110,27 @@ def ext_arr_to_tensor(arr: ext_arr(), tensor: template()):
 
 
 @kernel
+def ndarray_to_ndarray(ndarray: any_arr(), other: any_arr()):
+    for I in ti.grouped(ndarray):
+        ndarray[I] = other[I]
+
+
+@kernel
 def ext_arr_to_ndarray(arr: ext_arr(), ndarray: any_arr()):
     for I in ti.grouped(ndarray):
         ndarray[I] = arr[I]
+
+
+@kernel
+def ext_arr_to_ndarray_matrix(arr: ext_arr(), ndarray: any_arr(),
+                              as_vector: template()):
+    for I in ti.grouped(ndarray):
+        for p in ti.static(range(ndarray[I].n)):
+            for q in ti.static(range(ndarray[I].m)):
+                if ti.static(as_vector):
+                    ndarray[I][p] = arr[I, p]
+                else:
+                    ndarray[I][p, q] = arr[I, p, q]
 
 
 @kernel
@@ -119,9 +156,9 @@ def ext_arr_to_matrix(arr: ext_arr(), mat: template(), as_vector: template()):
 
 
 @kernel
-def clear_gradients(vars: template()):
-    for I in ti.grouped(ScalarField(Expr(vars[0]))):
-        for s in ti.static(vars):
+def clear_gradients(_vars: template()):
+    for I in ti.grouped(ScalarField(Expr(_vars[0]))):
+        for s in ti.static(_vars):
             ScalarField(Expr(s))[I] = 0
 
 

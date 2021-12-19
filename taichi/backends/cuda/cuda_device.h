@@ -4,6 +4,7 @@
 
 #include "taichi/common/core.h"
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/backends/cuda/cuda_caching_allocator.h"
 #include "taichi/backends/cuda/cuda_context.h"
 #include "taichi/backends/device.h"
 
@@ -80,6 +81,7 @@ class CudaDevice : public Device {
     void *ptr{nullptr};
     size_t size{0};
     bool is_imported{false};
+    bool use_cached{false};
   };
 
   AllocInfo get_alloc_info(DeviceAllocation handle);
@@ -87,10 +89,8 @@ class CudaDevice : public Device {
   ~CudaDevice() override{};
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
-  DeviceAllocation allocate_memory_runtime(const AllocParams &params,
-                                           JITModule *runtime_jit_module,
-                                           LLVMRuntime *runtime,
-                                           uint64 *result_buffer) override;
+  DeviceAllocation allocate_memory_runtime(
+      const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
   std::unique_ptr<Pipeline> create_pipeline(
@@ -119,6 +119,7 @@ class CudaDevice : public Device {
       TI_ERROR("invalid DeviceAllocation");
     }
   }
+  std::unique_ptr<CudaCachingAllocator> caching_allocator_{nullptr};
 };
 
 }  // namespace cuda

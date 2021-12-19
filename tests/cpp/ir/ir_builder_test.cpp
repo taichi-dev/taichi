@@ -110,7 +110,8 @@ TEST(IRBuilder, ExternalPtr) {
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
   ker->insert_arg(get_data_type<int>(), /*is_external_array=*/true);
   auto launch_ctx = ker->make_launch_context();
-  launch_ctx.set_arg_external_array(/*arg_id=*/0, (uint64)array.get(), size);
+  launch_ctx.set_arg_external_array(/*arg_id=*/0, (uint64)array.get(), size,
+                                    /*is_device_allocation=*/false);
   (*ker)(launch_ctx);
   EXPECT_EQ(array[0], 2);
   EXPECT_EQ(array[1], 1);

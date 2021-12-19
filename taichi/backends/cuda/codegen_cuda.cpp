@@ -49,7 +49,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         jit->add_module(std::move(module), kernel->program->config.gpu_max_reg);
 
     return [offloaded_local, cuda_module,
-            kernel = this->kernel](Context &context) {
+            kernel = this->kernel](RuntimeContext &context) {
       CUDAContext::get_instance().make_current();
       auto args = kernel->args;
       std::vector<void *> arg_buffers(args.size(), nullptr);
@@ -62,31 +62,59 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       Kernel::LaunchContextBuilder ctx_builder(kernel, &context);
       bool transferred = false;
       for (int i = 0; i < (int)args.size(); i++) {
-        if (args[i].is_external_array && args[i].size > 0) {
-          // Note: both numpy and PyTorch support arrays/tensors with zeros
-          // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
-          // args[i].size = 0.
+        if (args[i].is_external_array) {
+          if (args[i].size == 0)
+            continue;
           arg_buffers[i] = context.get_arg<void *>(i);
-          unsigned int attr_val = 0;
-          uint32_t ret_code = CUDADriver::get_instance().mem_get_attribute.call(
-              &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-              (void *)arg_buffers[i]);
-          if (ret_code != CUDA_SUCCESS || attr_val != CU_MEMORYTYPE_DEVICE) {
-            // Copy to device buffer if arg is on host
-            // - ret_code != CUDA_SUCCESS:
-            //   arg_buffers[i] is not on device
-            // - attr_val != CU_MEMORYTYPE_DEVICE:
-            //   Cuda driver is aware of arg_buffers[i] but it might be on host.
-            // See CUDA driver API `cuPointerGetAttribute` for more details.
-            transferred = true;
-            CUDADriver::get_instance().malloc(&device_buffers[i], args[i].size);
-            CUDADriver::get_instance().memcpy_host_to_device(
-                (void *)device_buffers[i], arg_buffers[i], args[i].size);
-          } else {
-            device_buffers[i] = arg_buffers[i];
+          if (!context.is_device_allocation[i]) {
+            // Note: both numpy and PyTorch support arrays/tensors with zeros
+            // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
+            // args[i].size = 0.
+            unsigned int attr_val = 0;
+            uint32_t ret_code =
+                CUDADriver::get_instance().mem_get_attribute.call(
+                    &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+                    (void *)arg_buffers[i]);
+            if (ret_code != CUDA_SUCCESS || attr_val != CU_MEMORYTYPE_DEVICE) {
+              // Copy to device buffer if arg is on host
+              // - ret_code != CUDA_SUCCESS:
+              //   arg_buffers[i] is not on device
+              // - attr_val != CU_MEMORYTYPE_DEVICE:
+              //   Cuda driver is aware of arg_buffers[i] but it might be on
+              //   host.
+              // See CUDA driver API `cuPointerGetAttribute` for more details.
+              transferred = true;
+              CUDADriver::get_instance().malloc(&device_buffers[i],
+                                                args[i].size);
+              CUDADriver::get_instance().memcpy_host_to_device(
+                  (void *)device_buffers[i], arg_buffers[i], args[i].size);
+            } else {
+              device_buffers[i] = arg_buffers[i];
+            }
+            // device_buffers[i] saves a raw ptr on CUDA device.
+            ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
+                                               args[i].size,
+                                               /*is_device_allocation=*/false);
+
+          } else if (args[i].size > 0) {
+            // arg_buffers[i] is a DeviceAllocation*
+            // TODO: Unwraps DeviceAllocation* can be done at CodeGenLLVM since
+            // it's shared by cpu and cuda.
+            DeviceAllocation *ptr =
+                static_cast<DeviceAllocation *>(arg_buffers[i]);
+            device_buffers[i] = kernel->program->get_llvm_program_impl()
+                                    ->get_ndarray_alloc_info_ptr(*ptr);
+            // We compare arg_buffers[i] and device_buffers[i] later to check
+            // if transfer happened.
+            // TODO: this logic can be improved but I'll leave it to a followup
+            // PR.
+            arg_buffers[i] = device_buffers[i];
+
+            // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
+            ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
+                                               args[i].size,
+                                               /*is_device_allocation=*/false);
           }
-          ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
-                                             args[i].size);
         }
       }
       if (transferred) {
@@ -332,7 +360,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   // A huge hack for supporting f16 atomic add/max/min! Borrowed from
-  // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/service/gpu/ir_emitter.cc#L378-L490
+  // https://github.com/tensorflow/tensorflow/blob/470d58a83470f8ede3beaa584e6992bc71b7baa6/tensorflow/compiler/xla/service/gpu/ir_emitter.cc#L378-L490
   // The reason is that LLVM10 does not support generating atomicCAS for f16 on
   // NVPTX backend.
   //
@@ -477,7 +505,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return output_address;
   }
 
-  llvm::Value *real_type_atomic(AtomicOpStmt *stmt) {
+  llvm::Value *real_or_unsigned_type_atomic(AtomicOpStmt *stmt) {
     if (!stmt->val->ret_type->is<PrimitiveType>()) {
       return nullptr;
     }
@@ -514,8 +542,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     atomics[PrimitiveTypeID::f64][AtomicOpType::min] = "atomic_min_f64";
     atomics[PrimitiveTypeID::f32][AtomicOpType::max] = "atomic_max_f32";
     atomics[PrimitiveTypeID::f64][AtomicOpType::max] = "atomic_max_f64";
+    atomics[PrimitiveTypeID::u32][AtomicOpType::min] = "atomic_min_u32";
+    atomics[PrimitiveTypeID::u64][AtomicOpType::min] = "atomic_min_u64";
+    atomics[PrimitiveTypeID::u32][AtomicOpType::max] = "atomic_max_u32";
+    atomics[PrimitiveTypeID::u64][AtomicOpType::max] = "atomic_max_u64";
 
     if (atomics.find(prim_type) == atomics.end()) {
+      return nullptr;
+    }
+    if (is_integral(stmt->val->ret_type) &&
+        atomics.at(prim_type).find(op) == atomics.at(prim_type).end()) {
       return nullptr;
     }
     TI_ASSERT(atomics.at(prim_type).find(op) != atomics.at(prim_type).end());
@@ -538,9 +574,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         old_value = result;
       } else if (llvm::Value *result = custom_type_atomic(stmt)) {
         old_value = result;
-      } else if (llvm::Value *result = integral_type_atomic(stmt)) {
+      } else if (llvm::Value *result = real_or_unsigned_type_atomic(stmt)) {
         old_value = result;
-      } else if (llvm::Value *result = real_type_atomic(stmt)) {
+      } else if (llvm::Value *result = integral_type_atomic(stmt)) {
         old_value = result;
       } else {
         TI_NOT_IMPLEMENTED
@@ -559,7 +595,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     llvm::Function *body;
     {
       auto guard = get_function_creation_guard(
-          {llvm::PointerType::get(get_runtime_type("Context"), 0),
+          {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
            get_tls_buffer_type(), tlctx->get_data_type<int>()});
 
       auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
@@ -576,6 +612,79 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     create_call("gpu_parallel_range_for",
                 {get_arg(0), begin, end, tls_prologue, body, epilogue,
                  tlctx->get_constant(stmt->tls_size)});
+  }
+
+  void create_offload_mesh_for(OffloadedStmt *stmt) override {
+    auto tls_prologue = create_mesh_xlogue(stmt->tls_prologue);
+
+    llvm::Function *body;
+    {
+      auto guard = get_function_creation_guard(
+          {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
+           get_tls_buffer_type(), tlctx->get_data_type<int>()});
+
+      for (int i = 0; i < stmt->mesh_prologue->size(); i++) {
+        auto &s = stmt->mesh_prologue->statements[i];
+        s->accept(this);
+      }
+
+      if (stmt->bls_prologue) {
+        stmt->bls_prologue->accept(this);
+        call("block_barrier");  // "__syncthreads()"
+      }
+
+      auto loop_test_bb =
+          llvm::BasicBlock::Create(*llvm_context, "loop_test", func);
+      auto loop_body_bb =
+          llvm::BasicBlock::Create(*llvm_context, "loop_body", func);
+      auto func_exit =
+          llvm::BasicBlock::Create(*llvm_context, "func_exit", func);
+      auto loop_index =
+          create_entry_block_alloca(llvm::Type::getInt32Ty(*llvm_context));
+      llvm::Value *thread_idx =
+          builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
+      llvm::Value *block_dim = builder->CreateIntrinsic(
+          Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
+      builder->CreateStore(thread_idx, loop_index);
+      builder->CreateBr(loop_test_bb);
+
+      {
+        builder->SetInsertPoint(loop_test_bb);
+        auto cond = builder->CreateICmp(
+            llvm::CmpInst::Predicate::ICMP_SLT, builder->CreateLoad(loop_index),
+            llvm_val[stmt->owned_num_local.find(stmt->major_from_type)
+                         ->second]);
+        builder->CreateCondBr(cond, loop_body_bb, func_exit);
+      }
+
+      {
+        builder->SetInsertPoint(loop_body_bb);
+        loop_vars_llvm[stmt].push_back(loop_index);
+        for (int i = 0; i < stmt->body->size(); i++) {
+          auto &s = stmt->body->statements[i];
+          s->accept(this);
+        }
+        builder->CreateStore(
+            builder->CreateAdd(builder->CreateLoad(loop_index), block_dim),
+            loop_index);
+        builder->CreateBr(loop_test_bb);
+        builder->SetInsertPoint(func_exit);
+      }
+
+      if (stmt->bls_epilogue) {
+        call("block_barrier");  // "__syncthreads()"
+        stmt->bls_epilogue->accept(this);
+      }
+
+      body = guard.body;
+    }
+
+    auto tls_epilogue = create_mesh_xlogue(stmt->tls_epilogue);
+
+    create_call(
+        "gpu_parallel_mesh_for",
+        {get_arg(0), tlctx->get_constant(stmt->mesh->num_patches), tls_prologue,
+         body, tls_epilogue, tlctx->get_constant(stmt->tls_size)});
   }
 
   void emit_cuda_gc(OffloadedStmt *stmt) {
@@ -701,6 +810,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         create_offload_range_for(stmt);
       } else if (stmt->task_type == Type::struct_for) {
         create_offload_struct_for(stmt, true);
+      } else if (stmt->task_type == Type::mesh_for) {
+        create_offload_mesh_for(stmt);
       } else if (stmt->task_type == Type::listgen) {
         emit_list_gen(stmt);
       } else {
@@ -741,7 +852,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
     const auto arg_id = stmt->arg_id;
     const auto axis = stmt->axis;
-    llvm_val[stmt] = create_call("Context_get_extra_args",
+    llvm_val[stmt] = create_call("RuntimeContext_get_extra_args",
                                  {get_context(), tlctx->get_constant(arg_id),
                                   tlctx->get_constant(axis)});
   }

@@ -135,7 +135,7 @@ void Renderable::create_graphics_pipeline() {
       {0, 0, BufferFormat::rgb32f, offsetof(Vertex, pos)},
       {1, 0, BufferFormat::rgb32f, offsetof(Vertex, normal)},
       {2, 0, BufferFormat::rg32f, offsetof(Vertex, texCoord)},
-      {3, 0, BufferFormat::rgb32f, offsetof(Vertex, color)}};
+      {3, 0, BufferFormat::rgba32f, offsetof(Vertex, color)}};
 
   pipeline_ = app_context_->device().create_raster_pipeline(
       source, raster_params, vertex_inputs, vertex_attribs);

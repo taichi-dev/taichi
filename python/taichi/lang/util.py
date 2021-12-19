@@ -2,7 +2,7 @@ import functools
 import os
 
 import numpy as np
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl
 
 import taichi as ti
@@ -69,28 +69,27 @@ def to_numpy_type(dt):
     """
     if dt == ti.f32:
         return np.float32
-    elif dt == ti.f64:
+    if dt == ti.f64:
         return np.float64
-    elif dt == ti.i32:
+    if dt == ti.i32:
         return np.int32
-    elif dt == ti.i64:
+    if dt == ti.i64:
         return np.int64
-    elif dt == ti.i8:
+    if dt == ti.i8:
         return np.int8
-    elif dt == ti.i16:
+    if dt == ti.i16:
         return np.int16
-    elif dt == ti.u8:
+    if dt == ti.u8:
         return np.uint8
-    elif dt == ti.u16:
+    if dt == ti.u16:
         return np.uint16
-    elif dt == ti.u32:
+    if dt == ti.u32:
         return np.uint32
-    elif dt == ti.u64:
+    if dt == ti.u64:
         return np.uint64
-    elif dt == ti.f16:
+    if dt == ti.f16:
         return np.half
-    else:
-        assert False
+    assert False
 
 
 def to_pytorch_type(dt):
@@ -103,27 +102,27 @@ def to_pytorch_type(dt):
         DataType: The counterpart data type in torch.
 
     """
+    # pylint: disable=E1101
     if dt == ti.f32:
         return torch.float32
-    elif dt == ti.f64:
+    if dt == ti.f64:
         return torch.float64
-    elif dt == ti.i32:
+    if dt == ti.i32:
         return torch.int32
-    elif dt == ti.i64:
+    if dt == ti.i64:
         return torch.int64
-    elif dt == ti.i8:
+    if dt == ti.i8:
         return torch.int8
-    elif dt == ti.i16:
+    if dt == ti.i16:
         return torch.int16
-    elif dt == ti.u8:
+    if dt == ti.u8:
         return torch.uint8
-    elif dt == ti.f16:
+    if dt == ti.f16:
         return torch.float16
-    elif dt in (ti.u16, ti.u32, ti.u64):
+    if dt in (ti.u16, ti.u32, ti.u64):
         raise RuntimeError(
             f'PyTorch doesn\'t support {dt.to_string()} data type.')
-    else:
-        assert False
+    assert False
 
 
 def to_taichi_type(dt):
@@ -141,63 +140,63 @@ def to_taichi_type(dt):
 
     if dt == np.float32:
         return ti.f32
-    elif dt == np.float64:
+    if dt == np.float64:
         return ti.f64
-    elif dt == np.int32:
+    if dt == np.int32:
         return ti.i32
-    elif dt == np.int64:
+    if dt == np.int64:
         return ti.i64
-    elif dt == np.int8:
+    if dt == np.int8:
         return ti.i8
-    elif dt == np.int16:
+    if dt == np.int16:
         return ti.i16
-    elif dt == np.uint8:
+    if dt == np.uint8:
         return ti.u8
-    elif dt == np.uint16:
+    if dt == np.uint16:
         return ti.u16
-    elif dt == np.uint32:
+    if dt == np.uint32:
         return ti.u32
-    elif dt == np.uint64:
+    if dt == np.uint64:
         return ti.u64
-    elif dt == np.half:
+    if dt == np.half:
         return ti.f16
 
     if has_pytorch():
+        # pylint: disable=E1101
         if dt == torch.float32:
             return ti.f32
-        elif dt == torch.float64:
+        if dt == torch.float64:
             return ti.f64
-        elif dt == torch.int32:
+        if dt == torch.int32:
             return ti.i32
-        elif dt == torch.int64:
+        if dt == torch.int64:
             return ti.i64
-        elif dt == torch.int8:
+        if dt == torch.int8:
             return ti.i8
-        elif dt == torch.int16:
+        if dt == torch.int16:
             return ti.i16
-        elif dt == torch.uint8:
+        if dt == torch.uint8:
             return ti.u8
-        elif dt == torch.float16:
+        if dt == torch.float16:
             return ti.f16
-        elif dt in (ti.u16, ti.u32, ti.u64):
+        if dt in (ti.u16, ti.u32, ti.u64):
             raise RuntimeError(
                 f'PyTorch doesn\'t support {dt.to_string()} data type.')
 
-    raise AssertionError("Unknown type {}".format(dt))
+    raise AssertionError(f"Unknown type {dt}")
 
 
 def cook_dtype(dtype):
     _taichi_skip_traceback = 1
     if isinstance(dtype, _ti_core.DataType):
         return dtype
-    elif isinstance(dtype, _ti_core.Type):
+    if isinstance(dtype, _ti_core.Type):
         return _ti_core.DataType(dtype)
-    elif dtype is float:
+    if dtype is float:
         return impl.get_runtime().default_fp
-    elif dtype is int:
+    if dtype is int:
         return impl.get_runtime().default_ip
-    else:
-        raise ValueError(f'Invalid data type {dtype}')
+    raise ValueError(f'Invalid data type {dtype}')
 
 
 def in_taichi_scope():

@@ -73,6 +73,10 @@ inline PrimitiveTypeID get_primitive_data_type() {
   }
 }
 
+inline bool is_custom_type(DataType dt) {
+  return dt->is<CustomIntType>() || dt->is<CustomFloatType>();
+}
+
 inline bool is_real(DataType dt) {
   return dt->is_primitive(PrimitiveTypeID::f16) ||
          dt->is_primitive(PrimitiveTypeID::f32) ||

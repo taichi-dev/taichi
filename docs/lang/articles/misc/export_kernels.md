@@ -32,7 +32,7 @@ Linux. In the future, we will support macOS and Windows.
 Use `ti.core.start_recording` in the Taichi program you want to export.
 
 Suppose you want to export
-[examples/mpm88.py](https://github.com/taichi-dev/taichi/blob/master/examples/mpm88.py),
+[examples/mpm88.py](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/mpm88.py),
 here is the workflow:
 
 ### Export YAML

@@ -5,11 +5,9 @@ import numbers
 # loaded during the import procedure, it's probably still good to delay the
 # access to it.
 import taichi.lang
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang import impl
-from taichi.lang.expr import Expr
 from taichi.lang.field import Field
-from taichi.misc.util import deprecated
 
 
 class SNode:
@@ -59,13 +57,15 @@ class SNode:
             self.ptr.pointer(axes, dimensions,
                              impl.current_cfg().packed))
 
-    def hash(self, axes, dimensions):
+    @staticmethod
+    def hash(axes, dimensions):
+        # original code is #def hash(self,axes, dimensions) without #@staticmethod   before fix pylint R0201
         """Not supported."""
         raise RuntimeError('hash not yet supported')
-        if isinstance(dimensions, int):
-            dimensions = [dimensions] * len(axes)
-        return SNode(self.ptr.hash(axes, dimensions,
-                                   impl.current_cfg().packed))
+        # if isinstance(dimensions, int):
+        #     dimensions = [dimensions] * len(axes)
+        # return SNode(self.ptr.hash(axes, dimensions,
+        #                            impl.current_cfg().packed))
 
     def dynamic(self, axis, dimension, chunk_size=None):
         """Adds a dynamic SNode as a child component of `self`.
@@ -101,10 +101,6 @@ class SNode:
             self.ptr.bitmasked(axes, dimensions,
                                impl.current_cfg().packed))
 
-    @deprecated('_bit_struct', 'bit_struct')
-    def _bit_struct(self, num_bits):
-        return self.bit_struct(num_bits)
-
     def bit_struct(self, num_bits: int):
         """Adds a bit_struct SNode as a child component of `self`.
 
@@ -115,10 +111,6 @@ class SNode:
             The added :class:`~taichi.lang.SNode` instance.
         """
         return SNode(self.ptr.bit_struct(num_bits, impl.current_cfg().packed))
-
-    @deprecated('_bit_array', 'bit_array')
-    def _bit_array(self, axes, dimensions, num_bits):
-        return self.bit_array(axes, dimensions, num_bits)
 
     def bit_array(self, axes, dimensions, num_bits):
         """Adds a bit_array SNode as a child component of `self`.
@@ -208,14 +200,6 @@ class SNode:
         """
         return self.ptr.data_type()
 
-    @deprecated('x.data_type()', 'x.dtype')
-    def data_type(self):
-        return self.dtype
-
-    @deprecated('x.dim()', 'len(x.shape)')
-    def dim(self):
-        return len(self.shape)
-
     @property
     def id(self):
         """Gets the id of `self`.
@@ -233,19 +217,9 @@ class SNode:
             Tuple[int]: The number of elements from root in each axis of `self`.
         """
         dim = self.ptr.num_active_indices()
-        ret = [self.ptr.get_shape_along_axis(i) for i in range(dim)]
+        ret = tuple(self.ptr.get_shape_along_axis(i) for i in range(dim))
 
-        class callable_tuple(tuple):
-            @deprecated('x.shape()', 'x.shape')
-            def __call__(self):
-                return self
-
-        ret = callable_tuple(ret)
         return ret
-
-    @deprecated('x.get_shape(i)', 'x.shape[i]')
-    def get_shape(self, i):
-        return self.shape[i]
 
     def loop_range(self):
         """Gets the taichi_core.Expr wrapping the taichi_core.GlobalVariableExpression corresponding to `self` to serve as loop range.
@@ -304,6 +278,11 @@ class SNode:
         runtime = impl.get_runtime()
         runtime.materialize()
         return self.ptr.cell_size_bytes
+
+    @property
+    def offset_bytes_in_parent_cell(self):
+        impl.get_runtime().materialize()
+        return self.ptr.offset_bytes_in_parent_cell
 
     def deactivate_all(self):
         """Recursively deactivate all children components of `self`."""

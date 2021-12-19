@@ -30,8 +30,6 @@ class JITSession {
 
   virtual llvm::DataLayout get_data_layout();
 
-  std::size_t get_type_size(llvm::Type *type);
-
   static std::unique_ptr<JITSession> create(Arch arch);
 
   virtual void global_optimize_module(llvm::Module *module) {

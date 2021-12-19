@@ -32,7 +32,7 @@ class ParallelExecutor {
   void flush();
 
   int get_num_threads() {
-    return num_threads;
+    return num_threads_;
   }
 
  private:
@@ -48,15 +48,15 @@ class ParallelExecutor {
   bool flush_cv_cond();
 
   std::string name_;
-  int num_threads;
-  std::atomic<int> thread_counter{0};
-  std::mutex mut;
+  int num_threads_;
+  std::atomic<int> thread_counter_{0};
+  std::mutex mut_;
 
   // All guarded by |mut|
-  ExecutorStatus status;
-  std::vector<std::thread> threads;
-  std::deque<TaskType> task_queue;
-  int running_threads;
+  ExecutorStatus status_;
+  std::vector<std::thread> threads_;
+  std::deque<TaskType> task_queue_;
+  int running_threads_;
 
   // Used to signal the workers that they can start polling from |task_queue|.
   std::condition_variable init_cv_;
@@ -144,7 +144,7 @@ class AsyncEngine {
     queue.clear_cache();
   }
 
-  void launch(Kernel *kernel, Context &context);
+  void launch(Kernel *kernel, RuntimeContext &context);
 
   // Flush the tasks only.
   void flush();

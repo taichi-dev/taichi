@@ -103,7 +103,7 @@ def _test_overflow(dt, n):
     assert a[None] == 2**n // 3
     assert b[None] == 2**n // 3
 
-    if ti.core.is_signed(dt):
+    if ti.types.is_signed(dt):
         assert c[None] == 2**n // 3 * 2 - (2**n)  # overflows
     else:
         assert c[None] == 2**n // 3 * 2  # does not overflow

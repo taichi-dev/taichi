@@ -24,7 +24,7 @@ class Benchmark : public Unit {
   virtual void finalize(){};
 
  public:
-  virtual void initialize(const Config &config) override {
+  void initialize(const Config &config) override {
     warm_up_iterations = config.get("warm_up_iterations", 16);
     workload = config.get("workload", int64(1024));
     returns_time = config.get("returns_time", false);
@@ -54,7 +54,7 @@ class Benchmark : public Unit {
     return elapsed / (iterations * workload);
   }
 
-  virtual bool test() const override {
+  bool test() const override {
     return true;
   }
 };

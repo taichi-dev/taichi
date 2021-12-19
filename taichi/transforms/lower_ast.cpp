@@ -30,33 +30,33 @@ std::vector<T *> make_raw_pointer_list(
 // AST SSA.
 class LowerAST : public IRVisitor {
  private:
-  Stmt *capturing_loop;
-  std::unordered_set<Stmt *> detected_fors_with_break;
-  Block *current_block;
+  Stmt *capturing_loop_;
+  std::unordered_set<Stmt *> detected_fors_with_break_;
+  Block *current_block_;
 
   FlattenContext make_flatten_ctx() {
     FlattenContext fctx;
-    fctx.current_block = this->current_block;
+    fctx.current_block = this->current_block_;
     return fctx;
   }
 
  public:
   explicit LowerAST(const std::unordered_set<Stmt *> &_detected_fors_with_break)
-      : detected_fors_with_break(_detected_fors_with_break),
-        current_block(nullptr) {
+      : detected_fors_with_break_(_detected_fors_with_break),
+        current_block_(nullptr) {
     // TODO: change this to false
     allow_undefined_visitor = true;
-    capturing_loop = nullptr;
+    capturing_loop_ = nullptr;
   }
 
   void visit(Block *stmt_list) override {
-    auto backup_block = this->current_block;
-    this->current_block = stmt_list;
+    auto backup_block = this->current_block_;
+    this->current_block_ = stmt_list;
     auto stmts = make_raw_pointer_list(stmt_list->statements);
     for (auto &stmt : stmts) {
       stmt->accept(this);
     }
-    this->current_block = backup_block;
+    this->current_block_ = backup_block;
   }
 
   void visit(FrontendAllocaStmt *stmt) override {
@@ -136,7 +136,7 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendBreakStmt *stmt) override {
-    auto while_stmt = capturing_loop->as<WhileStmt>();
+    auto while_stmt = capturing_loop_->as<WhileStmt>();
     VecStatement stmts;
     auto const_true = stmts.push_back<ConstStmt>(TypedConstant((int32)0));
     stmts.push_back<WhileControlStmt>(while_stmt->mask, const_true);
@@ -180,10 +180,10 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(WhileStmt *stmt) override {
-    auto old_capturing_loop = capturing_loop;
-    capturing_loop = stmt;
+    auto old_capturing_loop = capturing_loop_;
+    capturing_loop_ = stmt;
     stmt->body->accept(this);
-    capturing_loop = old_capturing_loop;
+    capturing_loop_ = old_capturing_loop;
   }
 
   void visit(LoopIndexStmt *stmt) override {
@@ -203,8 +203,8 @@ class LowerAST : public IRVisitor {
       begin->flatten(&fctx);
       end->flatten(&fctx);
       bool is_good_range_for =
-          capturing_loop == nullptr ||
-          detected_fors_with_break.find(stmt) == detected_fors_with_break.end();
+          capturing_loop_ == nullptr || detected_fors_with_break_.find(stmt) ==
+                                            detected_fors_with_break_.end();
       // #578: a good range for is a range for that doesn't contains a break
       // statement
       if (is_good_range_for) {
@@ -267,6 +267,18 @@ class LowerAST : public IRVisitor {
         new_while->body->mask_var = new_while->mask;
         fctx.push_back(std::move(new_while));
       }
+    } else if (stmt->mesh_for) {
+      auto &&new_for = std::make_unique<MeshForStmt>(
+          stmt->mesh, stmt->element_type, std::move(stmt->body),
+          stmt->vectorize, stmt->bit_vectorize, stmt->num_cpu_threads,
+          stmt->block_dim);
+      new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
+                            0);
+      new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
+          new_for->body->statements[0].get();
+      new_for->mem_access_opt = stmt->mem_access_opt;
+      new_for->fields_registered = true;
+      fctx.push_back(std::move(new_for));
     } else if (stmt->global_var.is<GlobalVariableExpression>()) {
       auto snode = stmt->global_var.cast<GlobalVariableExpression>()->snode;
       std::vector<int> offsets;
@@ -353,17 +365,24 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    auto old_capturing_loop = capturing_loop;
-    capturing_loop = for_stmt;
+    auto old_capturing_loop = capturing_loop_;
+    capturing_loop_ = for_stmt;
     for_stmt->body->accept(this);
-    capturing_loop = old_capturing_loop;
+    capturing_loop_ = old_capturing_loop;
   }
 
   void visit(StructForStmt *for_stmt) override {
-    auto old_capturing_loop = capturing_loop;
-    capturing_loop = for_stmt;
+    auto old_capturing_loop = capturing_loop_;
+    capturing_loop_ = for_stmt;
     for_stmt->body->accept(this);
-    capturing_loop = old_capturing_loop;
+    capturing_loop_ = old_capturing_loop;
+  }
+
+  void visit(MeshForStmt *for_stmt) override {
+    auto old_capturing_loop = capturing_loop_;
+    capturing_loop_ = for_stmt;
+    for_stmt->body->accept(this);
+    capturing_loop_ = old_capturing_loop;
   }
 
   void visit(FrontendReturnStmt *stmt) override {
@@ -380,9 +399,6 @@ class LowerAST : public IRVisitor {
     auto expr = stmt->expr;
     auto fctx = make_flatten_ctx();
     expr->flatten(&fctx);
-    if (stmt->eval_expr.expr && stmt->eval_expr.is<EvalExpression>()) {
-      stmt->eval_expr.cast<EvalExpression>()->stmt_ptr = stmt->expr->stmt;
-    }
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }

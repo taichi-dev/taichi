@@ -63,28 +63,25 @@ Expr Expr::operator[](const ExprGroup &indices) const {
   return Expr::make<GlobalPtrExpression>(*this, indices.loaded());
 }
 
-Expr &Expr::operator=(const Expr &o) {
+void Expr::set_or_insert_assignment(const Expr &o) {
   if (get_current_program().current_callable) {
     // Inside a kernel or a function
     // Create an assignment in the IR
     if (expr == nullptr) {
-      set(o.eval());
+      set(o);
     } else if (expr->is_lvalue()) {
       current_ast_builder().insert(
           std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
-      if (this->is<IdExpression>()) {
-        expr->ret_type = current_ast_builder()
-                             .get_last_stmt()
-                             ->cast<FrontendAssignStmt>()
-                             ->rhs->ret_type;
-      }
     } else {
-      // set(o.eval());
       TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
     }
   } else {
     set(o);  // Literally set this Expr to o
   }
+}
+
+Expr &Expr::operator=(const Expr &o) {
+  set_or_insert_assignment(o);
   return *this;
 }
 
@@ -133,46 +130,32 @@ Expr::Expr(const Identifier &id) : Expr() {
   expr = std::make_shared<IdExpression>(id);
 }
 
-Expr Expr::eval() const {
-  TI_ASSERT(expr != nullptr);
-  if (is<EvalExpression>()) {
-    return *this;
-  }
-  auto eval_stmt = Stmt::make<FrontendEvalStmt>(*this);
-  auto eval_expr = Expr::make<EvalExpression>(eval_stmt.get());
-  eval_stmt->as<FrontendEvalStmt>()->eval_expr.set(eval_expr);
-  // needed in lower_ast to replace the statement itself with the
-  // lowered statement
-  current_ast_builder().insert(std::move(eval_stmt));
-  return eval_expr;
-}
-
 void Expr::operator+=(const Expr &o) {
   if (this->atomic) {
-    (*this) = Expr::make<AtomicOpExpression>(AtomicOpType::add, *this,
-                                             load_if_ptr(o));
+    this->set_or_insert_assignment(Expr::make<AtomicOpExpression>(
+        AtomicOpType::add, *this, load_if_ptr(o)));
   } else {
-    (*this) = (*this) + o;
+    this->set_or_insert_assignment(*this + o);
   }
 }
 
 void Expr::operator-=(const Expr &o) {
   if (this->atomic) {
-    (*this) = Expr::make<AtomicOpExpression>(AtomicOpType::sub, *this,
-                                             load_if_ptr(o));
+    this->set_or_insert_assignment(Expr::make<AtomicOpExpression>(
+        AtomicOpType::sub, *this, load_if_ptr(o)));
   } else {
-    (*this) = (*this) - o;
+    this->set_or_insert_assignment(*this - o);
   }
 }
 
 void Expr::operator*=(const Expr &o) {
   TI_ASSERT(!this->atomic);
-  (*this) = (*this) * load_if_ptr(o);
+  this->set_or_insert_assignment((*this) * load_if_ptr(o));
 }
 
 void Expr::operator/=(const Expr &o) {
   TI_ASSERT(!this->atomic);
-  (*this) = (*this) / load_if_ptr(o);
+  this->set_or_insert_assignment((*this) / load_if_ptr(o));
 }
 
 Expr load_if_ptr(const Expr &ptr) {
@@ -200,7 +183,7 @@ Expr Var(const Expr &x) {
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id,
       PrimitiveType::unknown));
-  var = x;
+  var.set_or_insert_assignment(x);
   return var;
 }
 

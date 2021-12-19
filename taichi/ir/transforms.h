@@ -13,6 +13,8 @@
 #include "taichi/transforms/inlining.h"
 #include "taichi/transforms/lower_access.h"
 #include "taichi/transforms/make_block_local.h"
+#include "taichi/transforms/make_mesh_block_local.h"
+#include "taichi/transforms/demote_mesh_statements.h"
 #include "taichi/transforms/simplify.h"
 #include "taichi/common/trait.h"
 
@@ -64,6 +66,15 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
 void make_block_local(IRNode *root,
                       const CompileConfig &config,
                       const MakeBlockLocalPass::Args &args);
+void make_mesh_thread_local(IRNode *root,
+                            const CompileConfig &config,
+                            const MakeBlockLocalPass::Args &args);
+void make_mesh_block_local(IRNode *root,
+                           const CompileConfig &config,
+                           const MakeMeshBlockLocal::Args &args);
+void demote_mesh_statements(IRNode *root,
+                            const CompileConfig &config,
+                            const DemoteMeshStatements::Args &args);
 bool remove_loop_unique(IRNode *root);
 bool remove_range_assumption(IRNode *root);
 bool lower_access(IRNode *root,
@@ -108,6 +119,7 @@ bool replace_statements(IRNode *root,
                         std::function<bool(Stmt *)> filter,
                         std::function<Stmt *(Stmt *)> finder);
 void demote_dense_struct_fors(IRNode *root, bool packed);
+void demote_no_access_mesh_fors(IRNode *root);
 bool demote_atomics(IRNode *root, const CompileConfig &config);
 void reverse_segments(IRNode *root);  // for autograd
 void detect_read_only(IRNode *root);

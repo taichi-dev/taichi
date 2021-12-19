@@ -1,15 +1,11 @@
 import pathlib
 
-from taichi.core import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang.impl import default_cfg
-from taichi.lang.kernel_impl import kernel
-from taichi.lang.ops import get_addr
-from taichi.type.annotations import ext_arr, template
 
 from .canvas import Canvas
-from .constants import *
-from .gui import Gui
-from .utils import get_field_info
+from .constants import PRESS, RELEASE
+from .imgui import Gui
 
 
 class Window(_ti_core.PyWindow):
@@ -44,9 +40,9 @@ class Window(_ti_core.PyWindow):
         """
         if tag is None:
             return super().get_events(_ti_core.EventType.Any)
-        elif tag is PRESS:
+        if tag is PRESS:
             return super().get_events(_ti_core.EventType.Press)
-        elif tag is RELEASE:
+        if tag is RELEASE:
             return super().get_events(_ti_core.EventType.Release)
         raise Exception("unrecognized event tag")
 
@@ -58,9 +54,9 @@ class Window(_ti_core.PyWindow):
         """
         if tag is None:
             return super().get_event(_ti_core.EventType.Any)
-        elif tag is PRESS:
+        if tag is PRESS:
             return super().get_event(_ti_core.EventType.Press)
-        elif tag is RELEASE:
+        if tag is RELEASE:
             return super().get_event(_ti_core.EventType.Release)
         raise Exception("unrecognized event tag")
 

@@ -1,7 +1,7 @@
 import numpy as np
-from taichi.core.util import ti_core as _ti_core
+from taichi._lib import core as _ti_core
 from taichi.lang.field import Field
-from taichi.type.primitive_types import f32
+from taichi.types.primitive_types import f32
 
 
 class SparseMatrix:
@@ -55,10 +55,12 @@ class SparseMatrix:
         if isinstance(other, float):
             sm = self.matrix * other
             return SparseMatrix(sm=sm)
-        elif isinstance(other, SparseMatrix):
+        if isinstance(other, SparseMatrix):
             assert self.n == other.n and self.m == other.m, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
             sm = self.matrix * other.matrix
             return SparseMatrix(sm=sm)
+
+        return None
 
     def __rmul__(self, other):
         """Right scalar multiplication for sparse matrix.
@@ -71,6 +73,8 @@ class SparseMatrix:
         if isinstance(other, float):
             sm = other * self.matrix
             return SparseMatrix(sm=sm)
+
+        return None
 
     def transpose(self):
         """Sparse Matrix transpose.
@@ -93,16 +97,15 @@ class SparseMatrix:
             assert self.m == other.n, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
             sm = self.matrix.matmul(other.matrix)
             return SparseMatrix(sm=sm)
-        elif isinstance(other, Field):
+        if isinstance(other, Field):
             assert self.m == other.shape[
                 0], f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
             return self.matrix.mat_vec_mul(other.to_numpy())
-        elif isinstance(other, np.ndarray):
+        if isinstance(other, np.ndarray):
             assert self.m == other.shape[
                 0], f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
             return self.matrix.mat_vec_mul(other)
-        else:
-            assert False, f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now. Supported types are SparseMatrix, ti.field, and numpy.ndarray."
+        assert False, f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now. Supported types are SparseMatrix, ti.field, and numpy.ndarray."
 
     def __getitem__(self, indices):
         return self.matrix.get_element(indices[0], indices[1])
@@ -147,7 +150,7 @@ class SparseMatrixBuilder:
         """Print the triplets stored in the builder"""
         self.ptr.print_triplets()
 
-    def build(self, dtype=f32, format='CSR'):
+    def build(self, dtype=f32, _format='CSR'):
         """Create a sparse matrix using the triplets"""
         sm = self.ptr.build()
         return SparseMatrix(sm=sm)

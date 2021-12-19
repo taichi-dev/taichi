@@ -16,6 +16,7 @@ DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
   auto vm = std::make_unique<VirtualMemoryAllocator>(params.size);
   info.ptr = vm->ptr;
   info.size = vm->size;
+  info.use_cached = false;
 
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();
@@ -26,15 +27,13 @@ DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
   return alloc;
 }
 
-DeviceAllocation CpuDevice::allocate_memory_runtime(const AllocParams &params,
-                                                    JITModule *runtime_jit,
-                                                    LLVMRuntime *runtime,
-                                                    uint64 *result_buffer) {
+DeviceAllocation CpuDevice::allocate_memory_runtime(
+    const LlvmRuntimeAllocParams &params) {
   AllocInfo info;
-  info.ptr = allocate_llvm_runtime_memory_jit(runtime_jit, runtime, params.size,
-                                              result_buffer);
+  info.ptr = allocate_llvm_runtime_memory_jit(params);
+  // TODO: Add caching allocator
   info.size = params.size;
-
+  info.use_cached = params.use_cached;
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();
   alloc.device = this;
@@ -49,9 +48,11 @@ void CpuDevice::dealloc_memory(DeviceAllocation handle) {
   if (info.ptr == nullptr) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }
-  // Use at() to ensure that the memory is allocated, and not imported
-  virtual_memories_.at(handle.alloc_id).reset();
-  info.ptr = nullptr;
+  if (!info.use_cached) {
+    // Use at() to ensure that the memory is allocated, and not imported
+    virtual_memories_.at(handle.alloc_id).reset();
+    info.ptr = nullptr;
+  }
 }
 
 DeviceAllocation CpuDevice::import_memory(void *ptr, size_t size) {

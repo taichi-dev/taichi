@@ -34,13 +34,6 @@ Expr Rand() {
   return Expr::make<RandExpression>(get_data_type<T>());
 }
 
-template <typename T>
-T Eval(const T &t) {
-  return t.eval();
-}
-
-Expr copy(const Expr &expr);
-
 template <typename... AX>
 std::vector<Axis> Axes(AX... axes) {
   auto ax_vec = std::vector<int>({axes...});

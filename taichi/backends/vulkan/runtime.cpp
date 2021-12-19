@@ -290,7 +290,7 @@ size_t CompiledTaichiKernel::get_ctx_buffer_size() const {
   return ctx_buffer_size_;
 }
 
-void CompiledTaichiKernel::command_list(
+void CompiledTaichiKernel::generate_command_list(
     CommandList *cmdlist,
     DeviceAllocationGuard *ctx_buffer_host,
     DeviceAllocationGuard *ctx_buffer) const {
@@ -437,7 +437,7 @@ void VkRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     current_cmdlist_ = device_->get_compute_stream()->new_command_list();
   }
 
-  ti_kernel->command_list(current_cmdlist_.get(), ctx_buffer_host.get(),
+  ti_kernel->generate_command_list(current_cmdlist_.get(), ctx_buffer_host.get(),
                           ctx_buffer.get());
 
   if (ti_kernel->get_ctx_buffer_size()) {

@@ -51,7 +51,7 @@ class CompiledTaichiKernel {
 
   size_t get_ctx_buffer_size() const;
 
-  void command_list(CommandList *cmdlist,
+  void generate_command_list(CommandList *cmdlist,
                     DeviceAllocationGuard *ctx_buffer_host,
                     DeviceAllocationGuard *ctx_buffer) const;
 

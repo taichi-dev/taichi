@@ -82,6 +82,7 @@ class CudaDevice : public Device {
     size_t size{0};
     bool is_imported{false};
     bool use_cached{false};
+    bool use_preallocated{true};
   };
 
   AllocInfo get_alloc_info(DeviceAllocation handle);

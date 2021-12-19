@@ -309,6 +309,16 @@ def _test_ndarray_deepcopy():
     assert y[4][1, 0] == 9
 
 
+def test_ndarray_cuda_caching_allocator():
+    ti.init(arch=ti.cuda, ndarray_use_torch=False, ndarray_use_cached_allocator=True)
+    n = 8
+    a = ti.ndarray(ti.i32, shape=(n))
+    a.fill(2)
+    a = 1
+    b = ti.ndarray(ti.i32, shape=(n))
+    b.fill(2)
+
+
 @ti.test(arch=supported_archs_taichi_ndarray, ndarray_use_torch=False)
 def test_ndarray_rw_cache():
     a = ti.Vector.ndarray(3, ti.f32, ())

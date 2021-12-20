@@ -427,6 +427,8 @@ class VulkanStream : public Stream {
   VkQueue queue_;
   uint32_t queue_family_index_;
 
+  vkapi::IVkSemaphore last_semaphore_{nullptr};
+
   // Command pools are per-thread
   vkapi::IVkFence cmd_sync_fence_;
   vkapi::IVkCommandPool command_pool_;

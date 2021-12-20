@@ -627,7 +627,7 @@ class ASTTransformer(Builder):
             if op is None:
                 if type(node_op) in ops_static:
                     raise TaichiSyntaxError(
-                        f'"{type(node_op).__name__}" is only supported inside `impl.static`.'
+                        f'"{type(node_op).__name__}" is only supported inside `ti.static`.'
                     )
                 else:
                     raise TaichiSyntaxError(

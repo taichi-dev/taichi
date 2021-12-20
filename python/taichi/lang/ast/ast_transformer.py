@@ -28,8 +28,7 @@ class ASTTransformer(Builder):
         build_stmt(ctx, node.annotation)
 
         is_static_assign = isinstance(
-            node.value, ast.Call) and ASTResolver.resolve_to(
-                node.value.func, impl.static, globals())
+            node.value, ast.Call) and node.value.func.ptr is impl.static
 
         node.ptr = ASTTransformer.build_assign_annotated(
             ctx, node.target, node.value.ptr, is_static_assign,
@@ -72,8 +71,7 @@ class ASTTransformer(Builder):
         build_stmts(ctx, node.targets)
 
         is_static_assign = isinstance(
-            node.value, ast.Call) and ASTResolver.resolve_to(
-                node.value.func, impl.static, globals())
+            node.value, ast.Call) and node.value.func.ptr is impl.static
 
         # Keep all generated assign statements and compose single one at last.
         # The variable is introduced to support chained assignments.
@@ -140,8 +138,7 @@ class ASTTransformer(Builder):
         build_stmt(ctx, node.value)
         build_stmt(ctx, node.target)
         is_static_assign = isinstance(
-            node.value, ast.Call) and ASTResolver.resolve_to(
-                node.value.func, impl.static, globals())
+            node.value, ast.Call) and node.value.func.ptr is impl.static
         node.ptr = ASTTransformer.build_assign_basic(ctx, node.target,
                                                      node.value.ptr,
                                                      is_static_assign)
@@ -401,18 +398,17 @@ class ASTTransformer(Builder):
             # remove original args
             node.args.args = []
 
+        build_stmts(ctx, node.decorator_list)
         if ctx.is_kernel:  # ti.kernel
             for decorator in node.decorator_list:
-                if ASTResolver.resolve_to(decorator, kernel_impl.func,
-                                          globals()):
+                if decorator.ptr is kernel_impl.func:
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.kernel'.")
             transform_as_kernel()
 
         else:  # ti.func
             for decorator in node.decorator_list:
-                if ASTResolver.resolve_to(decorator, kernel_impl.func,
-                                          globals()):
+                if decorator.ptr is kernel_impl.func:
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.func'.")
             if impl.get_runtime().experimental_real_function:

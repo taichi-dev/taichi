@@ -1,6 +1,6 @@
 import math
 
-from taichi.lang import impl, ops, matrix
+from taichi.lang import impl, matrix, ops
 from taichi.lang.kernel_impl import func, pyfunc
 from taichi.types import f32, f64
 
@@ -44,7 +44,7 @@ def _matrix_transpose(self):
 
     """
     return matrix.Matrix([[self[i, j] for i in range(self.n)]
-                   for j in range(self.m)])
+                          for j in range(self.m)])
 
 
 @pyfunc
@@ -79,7 +79,7 @@ def _matrix_outer_product(self, other):
         impl.static_assert(other.m == 1,
                            "rhs for outer_product is not a vector"))
     return matrix.Matrix([[self[i] * other[j] for j in range(other.n)]
-                   for i in range(self.n)])
+                          for i in range(self.n)])
 
 
 __all__ = ['randn']

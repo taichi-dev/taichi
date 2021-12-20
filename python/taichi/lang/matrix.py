@@ -6,6 +6,7 @@ import taichi.lang
 from taichi._lib import core as ti_core
 from taichi.lang import expr, impl
 from taichi.lang import ops as ops_mod
+from taichi.lang import runtime_ops
 from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
@@ -14,9 +15,7 @@ from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
 from taichi.tools.util import warning
-from taichi.types import CompoundType
-
-import taichi as ti
+from taichi.types import CompoundType, primitive_types
 
 
 class Matrix(TaichiOperations):
@@ -43,13 +42,14 @@ class Matrix(TaichiOperations):
             elif not isinstance(n[0], Iterable):  # now init a Vector
                 if in_python_scope():
                     mat = [[x] for x in n]
-                elif not ti.current_cfg().dynamic_index:
+                elif not impl.current_cfg().dynamic_index:
                     mat = [[impl.expr_init(x)] for x in n]
                 else:
-                    if not ti.is_extension_supported(
-                            ti.current_cfg().arch, ti.extension.dynamic_index):
+                    if not ti_core.is_extension_supported(
+                            impl.current_cfg().arch,
+                            ti_core.Extension.dynamic_index):
                         raise Exception(
-                            f"Backend {ti.current_cfg().arch} doesn't support dynamic index"
+                            f"Backend {impl.current_cfg().arch} doesn't support dynamic index"
                         )
                     if dt is None:
                         if isinstance(n[0], (int, np.integer)):
@@ -73,7 +73,7 @@ class Matrix(TaichiOperations):
                     for i in range(len(n)):
                         mat.append(
                             list([
-                                ti.local_subscript_with_offset(
+                                impl.local_subscript_with_offset(
                                     self.local_tensor_proxy,
                                     (impl.make_constant_expr_i32(i), ),
                                     (len(n), ))
@@ -81,13 +81,14 @@ class Matrix(TaichiOperations):
             else:  # now init a Matrix
                 if in_python_scope():
                     mat = [list(row) for row in n]
-                elif not ti.current_cfg().dynamic_index:
+                elif not impl.current_cfg().dynamic_index:
                     mat = [[impl.expr_init(x) for x in row] for row in n]
                 else:
-                    if not ti.is_extension_supported(
-                            ti.current_cfg().arch, ti.extension.dynamic_index):
+                    if not ti_core.is_extension_supported(
+                            impl.current_cfg().arch,
+                            ti_core.Extension.dynamic_index):
                         raise Exception(
-                            f"Backend {ti.current_cfg().arch} doesn't support dynamic index"
+                            f"Backend {impl.current_cfg().arch} doesn't support dynamic index"
                         )
                     if dt is None:
                         if isinstance(n[0][0], (int, np.integer)):
@@ -113,7 +114,7 @@ class Matrix(TaichiOperations):
                         mat.append([])
                         for j in range(len(n[0])):
                             mat[i].append(
-                                ti.local_subscript_with_offset(
+                                impl.local_subscript_with_offset(
                                     self.local_tensor_proxy,
                                     (impl.make_constant_expr_i32(i),
                                      impl.make_constant_expr_i32(j)),
@@ -270,18 +271,18 @@ class Matrix(TaichiOperations):
             return self.any_array_access.subscript(i, j)
         if self.local_tensor_proxy is not None:
             if len(indices) == 1:
-                return ti.local_subscript_with_offset(self.local_tensor_proxy,
-                                                      (i, ), (self.n, ))
-            return ti.local_subscript_with_offset(self.local_tensor_proxy,
-                                                  (i, j), (self.n, self.m))
+                return impl.local_subscript_with_offset(
+                    self.local_tensor_proxy, (i, ), (self.n, ))
+            return impl.local_subscript_with_offset(self.local_tensor_proxy,
+                                                    (i, j), (self.n, self.m))
         # ptr.is_global_ptr() will check whether it's an element in the field (which is different from ptr.is_global_var()).
-        if ti.current_cfg().dynamic_index and isinstance(
+        if impl.current_cfg().dynamic_index and isinstance(
                 self.entries[0], expr.Expr) and not ti_core.is_custom_type(
                     self.entries[0].ptr.get_ret_type(
                     )) and self.entries[0].ptr.is_global_ptr():
             # TODO: Add API to query whether AOS or SOA
-            return ti.global_subscript_with_offset(self.entries[0], (i, j),
-                                                   (self.n, self.m), True)
+            return impl.global_subscript_with_offset(self.entries[0], (i, j),
+                                                     (self.n, self.m), True)
         return self(i, j)
 
     @property
@@ -638,10 +639,10 @@ class Matrix(TaichiOperations):
             bool: True if any element is not equal zero, False otherwise.
 
         """
-        ret = ti.cmp_ne(self.entries[0], 0)
+        ret = ops_mod.cmp_ne(self.entries[0], 0)
         for i in range(1, len(self.entries)):
-            ret = ret + ti.cmp_ne(self.entries[i], 0)
-        return -ti.cmp_lt(ret, 0)
+            ret = ret + ops_mod.cmp_ne(self.entries[i], 0)
+        return -ops_mod.cmp_lt(ret, 0)
 
     def all(self):
         """Test whether all element not equal zero.
@@ -650,10 +651,10 @@ class Matrix(TaichiOperations):
             bool: True if all elements are not equal zero, False otherwise.
 
         """
-        ret = ti.cmp_ne(self.entries[0], 0)
+        ret = ops_mod.cmp_ne(self.entries[0], 0)
         for i in range(1, len(self.entries)):
-            ret = ret + ti.cmp_ne(self.entries[i], 0)
-        return -ti.cmp_eq(ret, -len(self.entries))
+            ret = ret + ops_mod.cmp_ne(self.entries[i], 0)
+        return -ops_mod.cmp_eq(ret, -len(self.entries))
 
     @taichi_scope
     def fill(self, val):
@@ -663,7 +664,7 @@ class Matrix(TaichiOperations):
             val (Union[int, float]): Value to fill.
         """
         def assign_renamed(x, y):
-            return ti.assign(x, y)
+            return ops_mod.assign(x, y)
 
         return self.element_wise_writeback_binary(assign_renamed, val)
 
@@ -733,8 +734,9 @@ class Matrix(TaichiOperations):
 
         """
         if m is None:
-            return Vector([ti.cast(0, dt) for _ in range(n)])
-        return Matrix([[ti.cast(0, dt) for _ in range(m)] for _ in range(n)])
+            return Vector([ops_mod.cast(0, dt) for _ in range(n)])
+        return Matrix([[ops_mod.cast(0, dt) for _ in range(m)]
+                       for _ in range(n)])
 
     @staticmethod
     @taichi_scope
@@ -751,8 +753,9 @@ class Matrix(TaichiOperations):
 
         """
         if m is None:
-            return Vector([ti.cast(1, dt) for _ in range(n)])
-        return Matrix([[ti.cast(1, dt) for _ in range(m)] for _ in range(n)])
+            return Vector([ops_mod.cast(1, dt) for _ in range(n)])
+        return Matrix([[ops_mod.cast(1, dt) for _ in range(m)]
+                       for _ in range(n)])
 
     @staticmethod
     @taichi_scope
@@ -771,7 +774,7 @@ class Matrix(TaichiOperations):
         if dt is None:
             dt = int
         assert 0 <= i < n
-        return Vector([ti.cast(int(j == i), dt) for j in range(n)])
+        return Vector([ops_mod.cast(int(j == i), dt) for j in range(n)])
 
     @staticmethod
     @taichi_scope
@@ -786,13 +789,14 @@ class Matrix(TaichiOperations):
             :class:`~taichi.lang.matrix.Matrix`: A n x n identity :class:`~taichi.lang.matrix.Matrix` instance.
 
         """
-        return Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
+        return Matrix([[ops_mod.cast(int(i == j), dt) for j in range(n)]
                        for i in range(n)])
 
     @staticmethod
     def rotation2d(alpha):
-        return Matrix([[ti.cos(alpha), -ti.sin(alpha)],
-                       [ti.sin(alpha), ti.cos(alpha)]])
+        return Matrix([[ops_mod.cos(alpha), -ops_mod.sin(alpha)],
+                       [ops_mod.sin(alpha),
+                        ops_mod.cos(alpha)]])
 
     @classmethod
     @python_scope
@@ -866,19 +870,19 @@ class Matrix(TaichiOperations):
             dim = len(shape)
             if layout == Layout.SOA:
                 for e in entries.get_field_members():
-                    ti.root.dense(impl.index_nd(dim),
-                                  shape).place(ScalarField(e), offset=offset)
+                    impl.root.dense(impl.index_nd(dim),
+                                    shape).place(ScalarField(e), offset=offset)
                 if needs_grad:
                     for e in entries_grad.get_field_members():
-                        ti.root.dense(impl.index_nd(dim),
-                                      shape).place(ScalarField(e),
-                                                   offset=offset)
+                        impl.root.dense(impl.index_nd(dim),
+                                        shape).place(ScalarField(e),
+                                                     offset=offset)
             else:
-                ti.root.dense(impl.index_nd(dim), shape).place(entries,
-                                                               offset=offset)
+                impl.root.dense(impl.index_nd(dim), shape).place(entries,
+                                                                 offset=offset)
                 if needs_grad:
-                    ti.root.dense(impl.index_nd(dim),
-                                  shape).place(entries_grad, offset=offset)
+                    impl.root.dense(impl.index_nd(dim),
+                                    shape).place(entries_grad, offset=offset)
         return entries
 
     @classmethod
@@ -1033,7 +1037,8 @@ class Matrix(TaichiOperations):
             :class:`~taichi.lang.matrix.Matrix`: The outer product result (Matrix) of the two Vectors.
 
         """
-        from taichi._funcs import _matrix_outer_product  # pylint: disable=C0415
+        from taichi._funcs import \
+            _matrix_outer_product  # pylint: disable=C0415
         return _matrix_outer_product(self, other)
 
 
@@ -1123,7 +1128,7 @@ class MatrixField(Field):
                         (list, tuple)) and isinstance(val[0], numbers.Number):
             assert self.m == 1
             val = tuple([(v, ) for v in val])
-        elif isinstance(val, ti.Matrix):
+        elif isinstance(val, Matrix):
             val_tuple = []
             for i in range(val.n):
                 row = []
@@ -1156,7 +1161,7 @@ class MatrixField(Field):
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
         arr = np.zeros(self.shape + shape_ext, dtype=dtype)
         taichi.lang.meta.matrix_to_ext_arr(self, arr, as_vector)
-        ti.sync()
+        runtime_ops.sync()
         return arr
 
     def to_torch(self, device=None, keep_dims=False):
@@ -1178,7 +1183,7 @@ class MatrixField(Field):
                           dtype=to_pytorch_type(self.dtype),
                           device=device)
         taichi.lang.meta.matrix_to_ext_arr(self, arr, as_vector)
-        ti.sync()
+        runtime_ops.sync()
         return arr
 
     @python_scope
@@ -1192,7 +1197,7 @@ class MatrixField(Field):
         dim_ext = 1 if as_vector else 2
         assert len(arr.shape) == len(self.shape) + dim_ext
         taichi.lang.meta.ext_arr_to_matrix(arr, self, as_vector)
-        ti.sync()
+        runtime_ops.sync()
 
     @python_scope
     def __setitem__(self, key, value):
@@ -1254,8 +1259,8 @@ class MatrixType(CompoundType):
             )
         if in_python_scope():
             return Matrix([[
-                int(mat(i, j)) if self.dtype in ti.integer_types else float(
-                    mat(i, j)) for j in range(self.m)
+                int(mat(i, j)) if self.dtype in primitive_types.integer_types
+                else float(mat(i, j)) for j in range(self.m)
             ] for i in range(self.n)])
         return mat.cast(self.dtype)
 

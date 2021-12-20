@@ -732,13 +732,13 @@ def ti_format(*args, **kwargs):
     new_mixed_kwargs = {}
     args = []
     for x in mixed:
-        if isinstance(x, Expr):
+        if isinstance(x, ti.Expr):
             new_mixed.append('{}')
             args.append(x)
         else:
             new_mixed.append(x)
     for k, v in kwargs.items():
-        if isinstance(v, Expr):
+        if isinstance(v, ti.Expr):
             new_mixed_kwargs[k] = '{}'
             args.append(v)
         else:

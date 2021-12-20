@@ -670,7 +670,7 @@ class ASTTransformer(Builder):
             from taichi.lang.ndrange import ndrange  # pylint: disable=C0415
             if not isinstance(ndrange_arg, ndrange):
                 raise TaichiSyntaxError(
-                    "Only 'ti.ndrange' is allowed in 'impl.static(ti.grouped(...))'."
+                    "Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'."
                 )
             targets = ASTTransformer.get_for_loop_targets(node)
             if len(targets) != 1:
@@ -886,7 +886,7 @@ class ASTTransformer(Builder):
 
         if decorator == 'static':
             if double_decorator == 'static':
-                raise TaichiSyntaxError("'impl.static' cannot be nested")
+                raise TaichiSyntaxError("'ti.static' cannot be nested")
             with ctx.loop_scope_guard(is_static=True):
                 return ASTTransformer.build_static_for(
                     ctx, node, double_decorator == 'grouped')
@@ -899,7 +899,7 @@ class ASTTransformer(Builder):
             if decorator == 'grouped':
                 if double_decorator == 'static':
                     raise TaichiSyntaxError(
-                        "'impl.static' is not allowed inside 'ti.grouped'")
+                        "'ti.static' is not allowed inside 'ti.grouped'")
                 elif double_decorator == 'ndrange':
                     return ASTTransformer.build_grouped_ndrange_for(ctx, node)
                 elif double_decorator == 'grouped':

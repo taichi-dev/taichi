@@ -33,7 +33,6 @@ class Matrix(TaichiOperations):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
-        self.in_python_scope = in_python_scope()
 
         if isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
@@ -1080,7 +1079,6 @@ class _IntermediateMatrix(Matrix):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
-        self.in_python_scope = in_python_scope()
 
 
 class MatrixField(Field):

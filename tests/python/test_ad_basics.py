@@ -1,5 +1,6 @@
 import functools
 
+import numpy as np
 import pytest
 
 import taichi as ti
@@ -314,3 +315,37 @@ def test_ad_rand():
         with ti.Tape(loss):
             work()
     assert 'RandStmt not supported' in e.value.args[0]
+
+
+@ti.test(exclude=[ti.cc, ti.vulkan, ti.opengl])
+def test_ad_frac():
+    @ti.func
+    def frac(x):
+        fractional = x - ti.floor(x) if x > 0. else x - ti.ceil(x)
+        return fractional
+
+    @ti.kernel
+    def ti_frac(input_field: ti.template(), output_field: ti.template()):
+        for i in input_field:
+            output_field[i] = frac(input_field[i])**2
+
+    @ti.kernel
+    def calc_loss(input_field: ti.template(), loss: ti.template()):
+        for i in input_field:
+            loss[None] += input_field[i]
+
+    n = 10
+    field0 = ti.field(dtype=ti.f32, shape=(n, ), needs_grad=True)
+    randoms = np.random.randn(10).astype(np.float32)
+    field0.from_numpy(randoms)
+    field1 = ti.field(dtype=ti.f32, shape=(n, ), needs_grad=True)
+    loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+
+    with ti.Tape(loss):
+        ti_frac(field0, field1)
+        calc_loss(field1, loss)
+
+    grads = field0.grad.to_numpy()
+    expected = np.modf(randoms)[0] * 2
+    for i in range(n):
+        assert grads[i] == approx(expected[i], rel=1e-4)

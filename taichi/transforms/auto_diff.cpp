@@ -430,7 +430,8 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    if (stmt->op_type == UnaryOpType::floor) {
+    if (stmt->op_type == UnaryOpType::floor ||
+        stmt->op_type == UnaryOpType::ceil) {
       // do nothing
     } else if (stmt->op_type == UnaryOpType::neg) {
       accumulate(stmt->operand, negate(adjoint(stmt)));

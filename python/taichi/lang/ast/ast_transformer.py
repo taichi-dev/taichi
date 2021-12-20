@@ -842,8 +842,7 @@ class ASTTransformer(Builder):
             var = ti.Expr(_ti_core.make_id_expr(""))
             ctx.mesh = node.iter.ptr.mesh
             assert isinstance(ctx.mesh, impl.MeshInstance)
-            mesh_idx = ti.MeshElementFieldProxy(ctx.mesh,
-                                                node.iter.ptr._type,
+            mesh_idx = ti.MeshElementFieldProxy(ctx.mesh, node.iter.ptr._type,
                                                 var.ptr)
             ctx.create_variable(target, mesh_idx)
             _ti_core.begin_frontend_mesh_for(mesh_idx.ptr, ctx.mesh.mesh_ptr,

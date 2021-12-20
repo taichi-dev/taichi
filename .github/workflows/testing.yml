@@ -371,9 +371,6 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: 3.7
-
-      #- name: Add msbuild to PATH
-      #  uses: microsoft/setup-msbuild@v1.0.2
         
       - name: Add Visual Studio Shell to ENV
         uses: egor-tensin/vs-shell@v2

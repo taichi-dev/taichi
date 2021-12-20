@@ -364,6 +364,9 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
                                         OpenGlRuntime *runtime) const {
   uint8_t *args_buf_mapped = nullptr;
   auto args = kernel->args;
+  // If we have external array args we'll have to do host-device memcpy.
+  // Whether we get external array arg is runtime information.
+  bool has_ext_arr = false;
 
   // Prepare external arrays/ndarrays
   // - ctx.args[i] contains its ptr on host, it could be a raw ptr or
@@ -374,8 +377,10 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   // see more details below.
   for (auto &item : program_.arr_args) {
     int i = item.first;
-    if (!args[i].is_array || args[i].size == 0 || ctx.is_device_allocation[i])
+    TI_ASSERT(args[i].is_array);
+    if (args[i].size == 0 || ctx.is_device_allocation[i])
       continue;
+    has_ext_arr = true;
     if (args[i].size != item.second.total_size ||
         ext_arr_bufs_[i] == kDeviceNullAllocation) {
       if (ext_arr_bufs_[i] != kDeviceNullAllocation) {
@@ -459,8 +464,8 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
     i++;
   }
 
-  if (program_.used.print || program_.arr_args.size() ||
-      program_.ret_buf_size) {
+  if (program_.used.print || has_ext_arr || program_.ret_buf_size) {
+    // We'll do device->host memcpy later so sync is required.
     device_->get_compute_stream()->submit_synced(cmdlist.get());
   } else {
     device_->get_compute_stream()->submit(cmdlist.get());
@@ -472,16 +477,14 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
                         program_.str_table);
   }
 
-  for (int i = 0; i < args.size(); i++) {
-    if (!args[i].is_array)
-      continue;
-    if (args[i].size == 0)
-      continue;
-    if (!ctx.is_device_allocation[i]) {
-      uint8_t *baseptr = (uint8_t *)device_->map(ext_arr_bufs_[i]);
-      memcpy((void *)ctx.args[i], baseptr, args[i].size);
-
-      device_->unmap(ext_arr_bufs_[i]);
+  if (has_ext_arr) {
+    for (auto &item : program_.arr_args) {
+      int i = item.first;
+      if (args[i].size != 0 && !ctx.is_device_allocation[i]) {
+        uint8_t *baseptr = (uint8_t *)device_->map(ext_arr_bufs_[i]);
+        memcpy((void *)ctx.args[i], baseptr, args[i].size);
+        device_->unmap(ext_arr_bufs_[i]);
+      }
     }
   }
 

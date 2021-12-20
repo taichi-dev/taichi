@@ -58,7 +58,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
       TI_ERROR("SPIRV kernel only supports less than 32-bit arguments, got {}",
                data_type_name(aa.dt));
     }
-    aa.is_array = ka.is_external_array;
+    aa.is_array = ka.is_array;
     // For array, |ka.size| is #elements * elements_size
     aa.stride = aa.is_array ? ka.size : dt_bytes;
     aa.index = arg_attribs_vec_.size();

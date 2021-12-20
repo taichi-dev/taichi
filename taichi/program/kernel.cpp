@@ -171,7 +171,7 @@ Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
 }
 
 void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
-  TI_ASSERT_INFO(!kernel_->args[arg_id].is_external_array,
+  TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -210,7 +210,7 @@ void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
 }
 
 void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
-  TI_ASSERT_INFO(!kernel_->args[arg_id].is_external_array,
+  TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -252,7 +252,7 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
     uint64 size,
     bool is_device_allocation) {
   TI_ASSERT_INFO(
-      kernel_->args[arg_id].is_external_array,
+      kernel_->args[arg_id].is_array,
       "Assigning external (numpy) array to scalar argument is not allowed.");
 
   ActionRecorder::get_instance().record(
@@ -267,7 +267,7 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
 }
 
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
-  TI_ASSERT_INFO(!kernel_->args[arg_id].is_external_array,
+  TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 

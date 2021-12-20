@@ -224,7 +224,7 @@ void CompiledTaichiKernel::init_args(Kernel *kernel) {
   arg_count = kernel->args.size();
   ret_count = kernel->rets.size();
   for (int i = 0; i < arg_count; i++) {
-    if (kernel->args[i].is_external_array) {
+    if (kernel->args[i].is_array) {
       arr_args[i] = CompiledArrayArg(
           {/*dtype_enum=*/to_gl_dtype_enum(kernel->args[i].dt),
            /*dtype_name=*/kernel->args[i].dt.to_string(),
@@ -368,30 +368,30 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   // Prepare external arrays/ndarrays
   // - ctx.args[i] contains its ptr on host, it could be a raw ptr or
   // DeviceAllocation*
-  // - For raw ptrs, arr_bufs_[i] contains its DeviceAllocation on device.
+  // - For raw ptrs, its content will be synced to device through
+  // ext_arr_bufs_[i] which is its corresponding DeviceAllocation on device.
   // Note shapes of these external arrays still reside in argument buffer,
   // see more details below.
   for (auto &item : program_.arr_args) {
     int i = item.first;
-    if (!args[i].is_external_array || args[i].size == 0 ||
-        ctx.is_device_allocation[i])
+    if (!args[i].is_array || args[i].size == 0 || ctx.is_device_allocation[i])
       continue;
     if (args[i].size != item.second.total_size ||
-        arr_bufs_[i] == kDeviceNullAllocation) {
-      if (arr_bufs_[i] != kDeviceNullAllocation) {
-        device_->dealloc_memory(arr_bufs_[i]);
+        ext_arr_bufs_[i] == kDeviceNullAllocation) {
+      if (ext_arr_bufs_[i] != kDeviceNullAllocation) {
+        device_->dealloc_memory(ext_arr_bufs_[i]);
       }
-      arr_bufs_[i] = device_->allocate_memory(
+      ext_arr_bufs_[i] = device_->allocate_memory(
           {args[i].size, /*host_write=*/true, /*host_read=*/true,
            /*export_sharing=*/false});
       item.second.total_size = args[i].size;
     }
     void *host_ptr = (void *)ctx.args[i];
-    void *baseptr = device_->map(arr_bufs_[i]);
+    void *baseptr = device_->map(ext_arr_bufs_[i]);
     if (program_.check_ext_arr_read(i)) {
       std::memcpy((char *)baseptr, host_ptr, args[i].size);
     }
-    device_->unmap(arr_bufs_[i]);
+    device_->unmap(ext_arr_bufs_[i]);
   }
   // clang-format off
   // Prepare argument buffer
@@ -447,7 +447,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
 
         binder->buffer(0, bind_id, *ptr);
       } else {
-        binder->buffer(0, bind_id, arr_bufs_[arg_id]);
+        binder->buffer(0, bind_id, ext_arr_bufs_[arg_id]);
       }
     }
 
@@ -473,15 +473,15 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   }
 
   for (int i = 0; i < args.size(); i++) {
-    if (!args[i].is_external_array)
+    if (!args[i].is_array)
       continue;
     if (args[i].size == 0)
       continue;
     if (!ctx.is_device_allocation[i]) {
-      uint8_t *baseptr = (uint8_t *)device_->map(arr_bufs_[i]);
+      uint8_t *baseptr = (uint8_t *)device_->map(ext_arr_bufs_[i]);
       memcpy((void *)ctx.args[i], baseptr, args[i].size);
 
-      device_->unmap(arr_bufs_[i]);
+      device_->unmap(ext_arr_bufs_[i]);
     }
   }
 

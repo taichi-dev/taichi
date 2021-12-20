@@ -452,7 +452,8 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
     }
 
     cmdlist->bind_pipeline(compiled_pipeline_[i].get());
-    cmdlist->bind_resources(binder);
+    if (i == 0)
+      cmdlist->bind_resources(binder);
     cmdlist->dispatch(task.num_groups, 1, 1);
     cmdlist->memory_barrier();
     i++;

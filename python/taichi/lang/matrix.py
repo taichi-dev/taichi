@@ -5,7 +5,6 @@ import numpy as np
 import taichi.lang
 from taichi._lib import core as ti_core
 from taichi.lang import expr, impl
-from taichi.lang import kernel_impl as kern_mod
 from taichi.lang import ops as ops_mod
 from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
@@ -490,7 +489,6 @@ class Matrix(TaichiOperations):
         raise Exception(
             "Inversions of matrices with sizes >= 5 are not supported")
 
-    @kern_mod.pyfunc
     def normalized(self, eps=0):
         """Normalize a vector.
 
@@ -513,7 +511,6 @@ class Matrix(TaichiOperations):
         invlen = 1 / (self.norm() + eps)
         return invlen * self
 
-    @kern_mod.pyfunc
     def transpose(self):
         """Get the transpose of a matrix.
 
@@ -521,8 +518,8 @@ class Matrix(TaichiOperations):
             Get the transpose of a matrix.
 
         """
-        return Matrix([[self[i, j] for i in range(self.n)]
-                       for j in range(self.m)])
+        from taichi._funcs import _matrix_transpose
+        return _matrix_transpose(self)
 
     @taichi_scope
     def determinant(a):
@@ -593,7 +590,6 @@ class Matrix(TaichiOperations):
             ret = ret + self.entries[i]
         return ret
 
-    @kern_mod.pyfunc
     def norm(self, eps=0):
         """Return the square root of the sum of the absolute squares of its elements.
 
@@ -612,7 +608,6 @@ class Matrix(TaichiOperations):
         """
         return ops_mod.sqrt(self.norm_sqr() + eps)
 
-    @kern_mod.pyfunc
     def norm_inv(self, eps=0):
         """Return the inverse of the matrix/vector `norm`. For `norm`: please see :func:`~taichi.lang.matrix.Matrix.norm`.
 
@@ -625,17 +620,14 @@ class Matrix(TaichiOperations):
         """
         return ops_mod.rsqrt(self.norm_sqr() + eps)
 
-    @kern_mod.pyfunc
     def norm_sqr(self):
         """Return the sum of the absolute squares of its elements."""
         return (self * self).sum()
 
-    @kern_mod.pyfunc
     def max(self):
         """Return the maximum element value."""
         return ops_mod.ti_max(*self.entries)
 
-    @kern_mod.pyfunc
     def min(self):
         """Return the minimum element value."""
         return ops_mod.ti_min(*self.entries)
@@ -989,7 +981,6 @@ class Matrix(TaichiOperations):
         # using matrices as template arguments.
         return id(self)
 
-    @kern_mod.pyfunc
     def dot(self, other):
         """Perform the dot product with the input Vector (1-D Matrix).
 
@@ -1006,17 +997,13 @@ class Matrix(TaichiOperations):
             impl.static_assert(other.m == 1, "rhs for dot is not a vector"))
         return (self * other).sum()
 
-    @kern_mod.pyfunc
     def _cross3d(self, other):
-        return Matrix([
-            self[1] * other[2] - self[2] * other[1],
-            self[2] * other[0] - self[0] * other[2],
-            self[0] * other[1] - self[1] * other[0],
-        ])
+        from taichi._funcs import _matrix_cross3d
+        return _matrix_cross3d(self, other)
 
-    @kern_mod.pyfunc
     def _cross2d(self, other):
-        return self[0] * other[1] - self[1] * other[0]
+        from taichi._funcs import _matrix_cross2d
+        return _matrix_cross2d(self, other)
 
     def cross(self, other):
         """Perform the cross product with the input Vector (1-D Matrix).
@@ -1037,7 +1024,6 @@ class Matrix(TaichiOperations):
         raise ValueError(
             "Cross product is only supported between pairs of 2D/3D vectors")
 
-    @kern_mod.pyfunc
     def outer_product(self, other):
         """Perform the outer product with the input Vector (1-D Matrix).
 
@@ -1048,14 +1034,8 @@ class Matrix(TaichiOperations):
             :class:`~taichi.lang.matrix.Matrix`: The outer product result (Matrix) of the two Vectors.
 
         """
-        impl.static(
-            impl.static_assert(self.m == 1,
-                               "lhs for outer_product is not a vector"))
-        impl.static(
-            impl.static_assert(other.m == 1,
-                               "rhs for outer_product is not a vector"))
-        return Matrix([[self[i] * other[j] for j in range(other.n)]
-                       for i in range(self.n)])
+        from taichi._funcs import _matrix_outer_product
+        return _matrix_outer_product(self, other)
 
 
 def Vector(n, dt=None, **kwargs):

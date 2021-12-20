@@ -15,7 +15,7 @@ PFN_vkVoidFunction load_vk_function_for_gui(const char *name, void *userData) {
   return result;
 }
 
-Gui::Gui(AppContext *app_context, SwapChain *swap_chain, GLFWwindow *window) {
+Gui::Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window) {
   app_context_ = app_context;
   swap_chain_ = swap_chain;
 
@@ -28,7 +28,11 @@ Gui::Gui(AppContext *app_context, SwapChain *swap_chain, GLFWwindow *window) {
   ImGui::StyleColorsDark();
 
   if (app_context->config.show_window) {
+#ifdef ANDROID
+    ImGui_ImplAndroid_Init(window);
+#else
     ImGui_ImplGlfw_InitForVulkan(window, true);
+#endif
   }
 }
 
@@ -99,7 +103,11 @@ void Gui::prepare_for_next_frame() {
   }
   ImGui_ImplVulkan_NewFrame();
   if (app_context_->config.show_window) {
+#ifdef ANDROID
+    ImGui_ImplAndroid_NewFrame();
+#else
     ImGui_ImplGlfw_NewFrame();
+#endif
   } else {
     // io.DisplaySize is set during ImGui_ImplGlfw_NewFrame()
     // but since we're headless, we do it explicitly here
@@ -142,7 +150,7 @@ void Gui::text(std::string text) {
   if (!initialized()) {
     return;
   }
-  ImGui::Text(text.c_str());
+  ImGui::Text("%s", text.c_str());
 }
 bool Gui::checkbox(std::string name, bool old_value) {
   if (!initialized()) {
@@ -196,7 +204,11 @@ void Gui::cleanup_render_resources() {
 
 void Gui::cleanup() {
   if (app_context_->config.show_window) {
+#ifdef ANDROID
+    ImGui_ImplAndroid_Shutdown();
+#else
     ImGui_ImplGlfw_Shutdown();
+#endif
   }
   cleanup_render_resources();
   ImGui::DestroyContext();

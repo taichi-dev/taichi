@@ -38,7 +38,6 @@ class Struct(TaichiOperations):
                 v = Struct(v)
             self.entries[k] = v if in_python_scope() else impl.expr_init(v)
         self.register_members()
-        self.in_python_scope = in_python_scope()
 
     @property
     def keys(self):
@@ -288,7 +287,6 @@ class _IntermediateStruct(Struct):
         assert isinstance(entries, dict)
         self.entries = entries
         self.register_members()
-        self.in_python_scope = in_python_scope()
 
 
 class StructField(Field):

@@ -367,6 +367,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   // If we have external array args we'll have to do host-device memcpy.
   // Whether we get external array arg is runtime information.
   bool has_ext_arr = false;
+  bool synced = false;
 
   // Prepare external arrays/ndarrays
   // - ctx.args[i] contains its ptr on host, it could be a raw ptr or
@@ -407,8 +408,16 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   // |...............taichi_opengl_ret_base.................|
   // |................taichi_opengl_external_arr_base..............|
   // clang-format on
+  if (program_.args_buf_size || program_.ret_buf_size) {
+    args_bufs_.push_back(
+        device_->allocate_memory_unique({taichi_opengl_external_arr_base,
+                                         /*host_write=*/true,
+                                         /*host_read=*/false,
+                                         /*export_sharing=*/false}));
+  }
   if (program_.args_buf_size) {
-    args_buf_mapped = (uint8_t *)device_->map(args_buf_);
+    auto &args_buf = *(args_bufs_.back().get());
+    args_buf_mapped = (uint8_t *)device_->map(args_buf);
     std::memcpy(args_buf_mapped, ctx.args,
                 program_.arg_count * sizeof(uint64_t));
     if (program_.arr_args.size()) {
@@ -417,7 +426,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
           ctx.extra_args,
           size_t(program_.arg_count * taichi_max_num_indices) * sizeof(int));
     }
-    device_->unmap(args_buf_);
+    device_->unmap(args_buf);
   }
 
   // Prepare runtime
@@ -441,7 +450,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
       binder->buffer(0, static_cast<int>(GLBufId::Root), core_bufs.root);
     binder->buffer(0, static_cast<int>(GLBufId::Gtmp), core_bufs.gtmp);
     if (program_.args_buf_size || program_.ret_buf_size)
-      binder->buffer(0, static_cast<int>(GLBufId::Args), args_buf_);
+      binder->buffer(0, static_cast<int>(GLBufId::Args), *(args_bufs_.back()));
     // TODO: properly assert and throw if we bind more than allowed SSBOs.
     //       On most devices this number is 8. But I need to look up how
     //       to query this information so currently this is thrown from OpenGl.
@@ -467,6 +476,7 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   if (program_.used.print || has_ext_arr || program_.ret_buf_size) {
     // We'll do device->host memcpy later so sync is required.
     device_->get_compute_stream()->submit_synced(cmdlist.get());
+    synced = true;
   } else {
     device_->get_compute_stream()->submit(cmdlist.get());
   }
@@ -489,10 +499,14 @@ void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
   }
 
   if (program_.ret_buf_size) {
-    uint8_t *baseptr = (uint8_t *)device_->map(args_buf_);
+    uint8_t *baseptr = (uint8_t *)device_->map(*(args_bufs_.back().get()));
     memcpy(runtime->result_buffer, baseptr + taichi_opengl_ret_base,
            program_.ret_buf_size);
-    device_->unmap(args_buf_);
+    device_->unmap(*(args_bufs_.back().get()));
+  }
+
+  if (synced) {
+    args_bufs_.clear();
   }
 }
 
@@ -500,12 +514,12 @@ DeviceCompiledTaichiKernel::DeviceCompiledTaichiKernel(
     CompiledTaichiKernel &&program,
     Device *device)
     : device_(device), program_(std::move(program)) {
-  if (program_.args_buf_size || program_.ret_buf_size) {
-    args_buf_ = device->allocate_memory({taichi_opengl_external_arr_base,
-                                         /*host_write=*/true,
-                                         /*host_read=*/true,
-                                         /*export_sharing=*/false});
-  }
+  // if (program_.args_buf_size || program_.ret_buf_size) {
+  //  args_buf_ = device->allocate_memory({taichi_opengl_external_arr_base,
+  //                                       /*host_write=*/true,
+  //                                       /*host_read=*/false,
+  //                                       /*export_sharing=*/false});
+  //}
 
   for (auto &t : program_.tasks) {
     compiled_pipeline_.push_back(device->create_pipeline(

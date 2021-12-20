@@ -923,9 +923,8 @@ void export_lang(py::module &m) {
               std::make_unique<FrontendPrintStmt>(contents));
         });
 
-  m.def("decl_arg", [&](const DataType &dt, bool is_external_array) {
-    return get_current_program().current_callable->insert_arg(
-        dt, is_external_array);
+  m.def("decl_arg", [&](const DataType &dt, bool is_array) {
+    return get_current_program().current_callable->insert_arg(dt, is_array);
   });
 
   m.def("decl_arr_arg",

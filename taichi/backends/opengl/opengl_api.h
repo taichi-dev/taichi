@@ -125,7 +125,7 @@ class DeviceCompiledTaichiKernel {
   // Only saves numpy/torch cpu based external array since they don't have
   // DeviceAllocation.
   // Taichi |Ndarray| manages their own DeviceAllocation so it's not saved here.
-  mutable DeviceAllocation arr_bufs_[taichi_max_num_args]{
+  mutable DeviceAllocation ext_arr_bufs_[taichi_max_num_args]{
       kDeviceNullAllocation};
 };
 

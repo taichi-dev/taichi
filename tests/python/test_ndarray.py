@@ -114,8 +114,7 @@ def test_default_fp_ndarray_torch(dtype):
 
 @pytest.mark.parametrize('dtype', [ti.f32, ti.f64])
 def test_default_fp_ndarray(dtype):
-    ti.init(arch=supported_archs_taichi_ndarray,
-            default_fp=dtype)
+    ti.init(arch=supported_archs_taichi_ndarray, default_fp=dtype)
 
     x = ti.Vector.ndarray(2, float, ())
 
@@ -134,8 +133,7 @@ def test_default_ip_ndarray_torch(dtype):
 
 @pytest.mark.parametrize('dtype', [ti.i32, ti.i64])
 def test_default_ip_ndarray(dtype):
-    ti.init(arch=supported_archs_taichi_ndarray,
-            default_ip=dtype)
+    ti.init(arch=supported_archs_taichi_ndarray, default_ip=dtype)
 
     x = ti.Vector.ndarray(2, int, ())
 
@@ -308,8 +306,7 @@ def _test_ndarray_deepcopy():
 
 
 def test_ndarray_cuda_caching_allocator():
-    ti.init(arch=ti.cuda,
-            ndarray_use_cached_allocator=True)
+    ti.init(arch=ti.cuda, ndarray_use_cached_allocator=True)
     n = 8
     a = ti.ndarray(ti.i32, shape=(n))
     a.fill(2)

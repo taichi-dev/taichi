@@ -82,13 +82,13 @@ class CudaDevice : public Device {
     size_t size{0};
     bool is_imported{false};
     /* Note: Memory allocation in CUDA device.
-     * CudaDevice can use either its own cuda malloc mechanism via 
-     * `allocate_memory` or the preallocated memory managed by Llvmprogramimpl 
-     * via `allocate_memory_runtime`. The `use_preallocated` is used to track 
-     * this option. For now, we keep both options and the preallocated method is 
-     * used by default for CUDA backend. The `use_cached` is to enable/disable 
-     * the caching behavior in `allocate_memory_runtime`. Later it should be 
-     * always enabled, for now we keep both options to allow a scenario when 
+     * CudaDevice can use either its own cuda malloc mechanism via
+     * `allocate_memory` or the preallocated memory managed by Llvmprogramimpl
+     * via `allocate_memory_runtime`. The `use_preallocated` is used to track
+     * this option. For now, we keep both options and the preallocated method is
+     * used by default for CUDA backend. The `use_cached` is to enable/disable
+     * the caching behavior in `allocate_memory_runtime`. Later it should be
+     * always enabled, for now we keep both options to allow a scenario when
      * using preallocated memory while disabling the caching behavior.
      * */
     bool use_preallocated{true};

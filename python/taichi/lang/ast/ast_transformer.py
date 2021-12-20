@@ -4,14 +4,14 @@ from collections import ChainMap
 
 import astor
 from taichi._lib import core as _ti_core
-from taichi.lang import impl
+from taichi.lang import expr, impl, kernel_arguments, kernel_impl
+from taichi.lang import ops as ti_ops
 from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.util import to_taichi_type, is_taichi_class
-from taichi.lang import ops as ti_ops, kernel_arguments, expr
+from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import annotations, primitive_types
-from taichi.lang import kernel_impl
+
 from taichi import linalg
 
 
@@ -379,13 +379,15 @@ class ASTTransformer(Builder):
                 kernel_arguments.decl_scalar_ret(ctx.func.return_type)
 
             for i, arg in enumerate(args.args):
-                if isinstance(ctx.func.argument_annotations[i], annotations.template):
+                if isinstance(ctx.func.argument_annotations[i],
+                              annotations.template):
                     continue
                 elif isinstance(ctx.func.argument_annotations[i],
                                 linalg.sparse_matrix_builder):
-                    ctx.create_variable(
-                        arg.arg, kernel_arguments.decl_sparse_matrix())
-                elif isinstance(ctx.func.argument_annotations[i], annotations.any_arr):
+                    ctx.create_variable(arg.arg,
+                                        kernel_arguments.decl_sparse_matrix())
+                elif isinstance(ctx.func.argument_annotations[i],
+                                annotations.any_arr):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_any_arr_arg(
@@ -401,14 +403,16 @@ class ASTTransformer(Builder):
 
         if ctx.is_kernel:  # ti.kernel
             for decorator in node.decorator_list:
-                if ASTResolver.resolve_to(decorator, kernel_impl.func, globals()):
+                if ASTResolver.resolve_to(decorator, kernel_impl.func,
+                                          globals()):
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.kernel'.")
             transform_as_kernel()
 
         else:  # ti.func
             for decorator in node.decorator_list:
-                if ASTResolver.resolve_to(decorator, kernel_impl.func, globals()):
+                if ASTResolver.resolve_to(decorator, kernel_impl.func,
+                                          globals()):
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.func'.")
             if impl.get_runtime().experimental_real_function:
@@ -467,7 +471,8 @@ class ASTTransformer(Builder):
                         'with a return value must be annotated '
                         'with a return type, e.g. def func() -> ti.f32')
                 _ti_core.create_kernel_return(
-                    ti_ops.cast(expr.Expr(node.value.ptr), ctx.func.return_type).ptr)
+                    ti_ops.cast(expr.Expr(node.value.ptr),
+                                ctx.func.return_type).ptr)
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value
@@ -640,7 +645,7 @@ class ASTTransformer(Builder):
     def get_decorator(ctx, node):
         if not isinstance(node, ast.Call):
             return ''
-        from taichi.lang.ndrange import ndrange
+        from taichi.lang.ndrange import ndrange  # pylint: disable=C0415
         for wanted, name in [
             (impl.static, 'static'),
             (impl.grouped, 'grouped'),
@@ -666,7 +671,7 @@ class ASTTransformer(Builder):
         if is_grouped:
             assert len(node.iter.args[0].args) == 1
             ndrange_arg = build_stmt(ctx, node.iter.args[0].args[0])
-            from taichi.lang.ndrange import ndrange
+            from taichi.lang.ndrange import ndrange  # pylint: disable=C0415
             if not isinstance(ndrange_arg, ndrange):
                 raise TaichiSyntaxError(
                     "Only 'ti.ndrange' is allowed in 'impl.static(ti.grouped(...))'."
@@ -717,14 +722,17 @@ class ASTTransformer(Builder):
                     f"Range should have 1 or 2 arguments, found {len(node.iter.args)}"
                 )
             if len(node.iter.args) == 2:
-                begin = ti_ops.cast(expr.Expr(build_stmt(ctx, node.iter.args[0])),
-                                primitive_types.i32)
-                end = ti_ops.cast(expr.Expr(build_stmt(ctx, node.iter.args[1])),
-                              primitive_types.i32)
+                begin = ti_ops.cast(
+                    expr.Expr(build_stmt(ctx, node.iter.args[0])),
+                    primitive_types.i32)
+                end = ti_ops.cast(
+                    expr.Expr(build_stmt(ctx, node.iter.args[1])),
+                    primitive_types.i32)
             else:
                 begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
-                end = ti_ops.cast(expr.Expr(build_stmt(ctx, node.iter.args[0])),
-                              primitive_types.i32)
+                end = ti_ops.cast(
+                    expr.Expr(build_stmt(ctx, node.iter.args[0])),
+                    primitive_types.i32)
             _ti_core.begin_frontend_range_for(loop_var.ptr, begin.ptr, end.ptr)
             build_stmts(ctx, node.body)
             _ti_core.end_frontend_range_for()
@@ -736,7 +744,8 @@ class ASTTransformer(Builder):
             ndrange_var = impl.expr_init(build_stmt(ctx, node.iter))
             ndrange_begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
             ndrange_end = ti_ops.cast(
-                expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)), primitive_types.i32)
+                expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
+                primitive_types.i32)
             ndrange_loop_var = expr.Expr(_ti_core.make_id_expr(''))
             _ti_core.begin_frontend_range_for(ndrange_loop_var.ptr,
                                               ndrange_begin.ptr,
@@ -751,9 +760,8 @@ class ASTTransformer(Builder):
                     target_tmp = impl.expr_init(I)
                 ctx.create_variable(
                     target,
-                    impl.expr_init(
-                        target_tmp +
-                        impl.subscript(impl.subscript(ndrange_var.bounds, i), 0)))
+                    impl.expr_init(target_tmp + impl.subscript(
+                        impl.subscript(ndrange_var.bounds, i), 0)))
                 if i + 1 < len(targets):
                     I.assign(I -
                              target_tmp * ndrange_var.acc_dimensions[i + 1])
@@ -763,12 +771,13 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_grouped_ndrange_for(ctx, node):
-        from taichi.lang.matrix import Vector
+        from taichi.lang.matrix import Vector  # pylint: disable=C0415
         with ctx.variable_scope_guard():
             ndrange_var = impl.expr_init(build_stmt(ctx, node.iter.args[0]))
             ndrange_begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
             ndrange_end = ti_ops.cast(
-                expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)), primitive_types.i32)
+                expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
+                primitive_types.i32)
             ndrange_loop_var = expr.Expr(_ti_core.make_id_expr(''))
             _ti_core.begin_frontend_range_for(ndrange_loop_var.ptr,
                                               ndrange_begin.ptr,
@@ -781,7 +790,8 @@ class ASTTransformer(Builder):
                 )
             target = targets[0]
             target_var = impl.expr_init(
-                Vector([0] * len(ndrange_var.dimensions), dt=primitive_types.i32))
+                Vector([0] * len(ndrange_var.dimensions),
+                       dt=primitive_types.i32))
             ctx.create_variable(target, target_var)
             I = impl.expr_init(ndrange_loop_var)
             for i in range(len(ndrange_var.dimensions)):
@@ -790,7 +800,7 @@ class ASTTransformer(Builder):
                 else:
                     target_tmp = I
                 impl.subscript(target_var,
-                             i).assign(target_tmp + ndrange_var.bounds[i][0])
+                               i).assign(target_tmp + ndrange_var.bounds[i][0])
                 if i + 1 < len(ndrange_var.dimensions):
                     I.assign(I -
                              target_tmp * ndrange_var.acc_dimensions[i + 1])
@@ -803,7 +813,7 @@ class ASTTransformer(Builder):
         # for i, j in x
         # for I in ti.grouped(x)
         targets = ASTTransformer.get_for_loop_targets(node)
-        from taichi.lang.matrix import Vector
+        from taichi.lang.matrix import Vector  # pylint: disable=C0415
 
         for target in targets:
             ctx.check_loop_var(target)
@@ -816,11 +826,11 @@ class ASTTransformer(Builder):
                     )
                 target = targets[0]
                 loop_var = build_stmt(ctx, node.iter)
-                loop_indices = expr.make_var_list(
-                    size=len(loop_var.shape))
+                loop_indices = expr.make_var_list(size=len(loop_var.shape))
                 expr_group = expr.make_expr_group(loop_indices)
                 impl.begin_frontend_struct_for(expr_group, loop_var)
-                ctx.create_variable(target, Vector(loop_indices, dt=primitive_types.i32))
+                ctx.create_variable(
+                    target, Vector(loop_indices, dt=primitive_types.i32))
                 build_stmts(ctx, node.body)
                 _ti_core.end_frontend_range_for()
             else:
@@ -838,7 +848,8 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_mesh_for(ctx, node):
-        from taichi.lang.mesh import MeshElementFieldProxy
+        from taichi.lang.mesh import \
+            MeshElementFieldProxy  # pylint: disable=C0415
         targets = ASTTransformer.get_for_loop_targets(node)
         if len(targets) != 1:
             raise TaichiSyntaxError(
@@ -856,8 +867,8 @@ class ASTTransformer(Builder):
             ctx.mesh = node.iter.value.ptr
             assert isinstance(ctx.mesh, impl.MeshInstance)
             mesh_idx = MeshElementFieldProxy(ctx.mesh,
-                                                element_dict[node.iter.attr],
-                                                var.ptr)
+                                             element_dict[node.iter.attr],
+                                             var.ptr)
             ctx.create_variable(target, mesh_idx)
             _ti_core.begin_frontend_mesh_for(mesh_idx.ptr, ctx.mesh.mesh_ptr,
                                              element_dict[node.iter.attr])
@@ -908,8 +919,8 @@ class ASTTransformer(Builder):
                 build_stmt(ctx, node.iter)
                 if isinstance(node.iter, ast.Attribute) and isinstance(
                         node.iter.value.ptr, impl.MeshInstance):
-                    if not _ti_core.is_extension_supported(impl.default_cfg().arch,
-                                                     _ti_core.Extension.mesh):
+                    if not _ti_core.is_extension_supported(
+                            impl.default_cfg().arch, _ti_core.Extension.mesh):
                         raise Exception(
                             'Backend ' + str(impl.default_cfg().arch) +
                             ' doesn\'t support MeshTaichi extension')
@@ -983,7 +994,8 @@ class ASTTransformer(Builder):
 
         if is_taichi_class(node.test.ptr) or is_taichi_class(
                 node.body.ptr) or is_taichi_class(node.orelse.ptr):
-            node.ptr = ti_ops.select(node.test.ptr, node.body.ptr, node.orelse.ptr)
+            node.ptr = ti_ops.select(node.test.ptr, node.body.ptr,
+                                     node.orelse.ptr)
             return node.ptr
 
         is_static_if = (ASTTransformer.get_decorator(ctx,

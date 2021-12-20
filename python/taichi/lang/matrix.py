@@ -517,7 +517,7 @@ class Matrix(TaichiOperations):
             Get the transpose of a matrix.
 
         """
-        from taichi._funcs import _matrix_transpose
+        from taichi._funcs import _matrix_transpose  # pylint: disable=C0415
         return _matrix_transpose(self)
 
     @taichi_scope
@@ -997,11 +997,11 @@ class Matrix(TaichiOperations):
         return (self * other).sum()
 
     def _cross3d(self, other):
-        from taichi._funcs import _matrix_cross3d
+        from taichi._funcs import _matrix_cross3d  # pylint: disable=C0415
         return _matrix_cross3d(self, other)
 
     def _cross2d(self, other):
-        from taichi._funcs import _matrix_cross2d
+        from taichi._funcs import _matrix_cross2d  # pylint: disable=C0415
         return _matrix_cross2d(self, other)
 
     def cross(self, other):
@@ -1033,7 +1033,7 @@ class Matrix(TaichiOperations):
             :class:`~taichi.lang.matrix.Matrix`: The outer product result (Matrix) of the two Vectors.
 
         """
-        from taichi._funcs import _matrix_outer_product
+        from taichi._funcs import _matrix_outer_product  # pylint: disable=C0415
         return _matrix_outer_product(self, other)
 
 

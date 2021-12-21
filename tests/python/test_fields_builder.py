@@ -136,7 +136,7 @@ def test_fields_builder_pointer():
         assert x[i] == i * 3
 
 
-# We currently only consider data types that all platform support,
+# We currently only consider data types that all platforms support.
 # See https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types for more details.
 @pytest.mark.parametrize('test_1d_size', [1, 10, 100])
 @pytest.mark.parametrize('field_type', [ti.f32, ti.i32])
@@ -164,7 +164,6 @@ def test_fields_builder_destroy(test_1d_size, field_type):
         fb0_snode_tree = fb0.finalize()
         fb1_snode_tree = fb1.finalize()
 
-        # destroy
         fb0_snode_tree.destroy()
         fb1_snode_tree.destroy()
 
@@ -174,7 +173,6 @@ def test_fields_builder_destroy(test_1d_size, field_type):
         fb.dense(ti.i, test_1d_size).place(a)
         c = fb.finalize()
 
-        with pytest.raises(InvalidOperationError) as e:
-            # Triggered if destroy twice
+        with pytest.raises(InvalidOperationError):
             c.destroy()
             c.destroy()

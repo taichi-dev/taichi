@@ -19,6 +19,7 @@ class DeviceCompiledTaichiKernel;
 struct OpenGlRuntime {
   std::unique_ptr<OpenGlRuntimeImpl> impl;
   std::shared_ptr<Device> device{nullptr};
+  std::vector<std::unique_ptr<DeviceAllocationGuard>> saved_arg_bufs;
   OpenGlRuntime();
   ~OpenGlRuntime();
   DeviceCompiledTaichiKernel *keep(CompiledTaichiKernel &&program);

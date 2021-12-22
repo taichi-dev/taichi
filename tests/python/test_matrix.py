@@ -362,3 +362,114 @@ def test_copy_matrix_in_taichi_scope():
         assert a[2] == 3
 
     test()
+
+
+@ti.test(arch=[ti.cpu, ti.cuda], debug=True)
+def test_matrix_field_dynamic_index_stride():
+    # placeholders
+    temp_a = ti.field(ti.f32)
+    temp_b = ti.field(ti.f32)
+    temp_c = ti.field(ti.f32)
+    # target
+    v = ti.Vector.field(3, ti.i32)
+    x = v.get_scalar_field(0)
+    y = v.get_scalar_field(1)
+    z = v.get_scalar_field(2)
+
+    S0 = ti.root
+    S1 = S0.pointer(ti.i, 4)
+    S2 = S1.dense(ti.i, 2)
+    S3 = S2.pointer(ti.i, 8)
+    S3.place(temp_a)
+    S4 = S2.dense(ti.i, 16)
+    S4.place(x)
+    S5 = S1.dense(ti.i, 2)
+    S6 = S5.pointer(ti.i, 8)
+    S6.place(temp_b)
+    S7 = S5.dense(ti.i, 16)
+    S7.place(y)
+    S8 = S1.dense(ti.i, 2)
+    S9 = S8.dense(ti.i, 32)
+    S9.place(temp_c)
+    S10 = S8.dense(ti.i, 16)
+    S10.place(z)
+
+    @ti.kernel
+    def check_stride():
+        for i in range(128):
+            assert ti.get_addr(y, i) - ti.get_addr(x, i) == v.dynamic_index_stride
+            assert ti.get_addr(z, i) - ti.get_addr(y, i) == v.dynamic_index_stride
+
+    check_stride()
+
+
+@ti.test(arch=[ti.cpu, ti.cuda])
+def test_matrix_field_dynamic_index_different_path_length():
+    v = ti.Vector.field(2, ti.i32)
+    x = v.get_scalar_field(0)
+    y = v.get_scalar_field(1)
+
+    ti.root.dense(ti.i, 8).place(x)
+    ti.root.dense(ti.i, 2).dense(ti.i, 4).place(y)
+
+    ti.get_runtime().materialize()
+    assert v.dynamic_index_stride is None
+
+
+@ti.test(arch=[ti.cpu, ti.cuda])
+def test_matrix_field_dynamic_index_not_pure_dense():
+    v = ti.Vector.field(2, ti.i32)
+    x = v.get_scalar_field(0)
+    y = v.get_scalar_field(1)
+
+    ti.root.dense(ti.i, 2).pointer(ti.i, 4).place(x)
+    ti.root.dense(ti.i, 2).dense(ti.i, 4).place(y)
+
+    ti.get_runtime().materialize()
+    assert v.dynamic_index_stride is None
+
+
+@ti.test(arch=[ti.cpu, ti.cuda])
+def test_matrix_field_dynamic_index_different_cell_size_bytes():
+    temp = ti.field(ti.f32)
+
+    v = ti.Vector.field(2, ti.i32)
+    x = v.get_scalar_field(0)
+    y = v.get_scalar_field(1)
+
+    ti.root.dense(ti.i, 8).place(x, temp)
+    ti.root.dense(ti.i, 8).place(y)
+
+    ti.get_runtime().materialize()
+    assert v.dynamic_index_stride is None
+
+
+@ti.test(arch=[ti.cpu, ti.cuda])
+def test_matrix_field_dynamic_index_different_offset_bytes_in_parent_cell():
+    temp_a = ti.field(ti.f32)
+    temp_b = ti.field(ti.f32)
+
+    v = ti.Vector.field(2, ti.i32)
+    x = v.get_scalar_field(0)
+    y = v.get_scalar_field(1)
+
+    ti.root.dense(ti.i, 8).place(temp_a, x)
+    ti.root.dense(ti.i, 8).place(y, temp_b)
+
+    ti.get_runtime().materialize()
+    assert v.dynamic_index_stride is None
+
+
+@ti.test(arch=[ti.cpu, ti.cuda])
+def test_matrix_field_dynamic_index_different_stride():
+    temp = ti.field(ti.f32)
+
+    v = ti.Vector.field(3, ti.i32)
+    x = v.get_scalar_field(0)
+    y = v.get_scalar_field(1)
+    z = v.get_scalar_field(2)
+
+    ti.root.dense(ti.i, 8).place(x, y, temp, z)
+
+    ti.get_runtime().materialize()
+    assert v.dynamic_index_stride is None

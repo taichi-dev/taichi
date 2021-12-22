@@ -397,8 +397,10 @@ def test_matrix_field_dynamic_index_stride():
     @ti.kernel
     def check_stride():
         for i in range(128):
-            assert ti.get_addr(y, i) - ti.get_addr(x, i) == v.dynamic_index_stride
-            assert ti.get_addr(z, i) - ti.get_addr(y, i) == v.dynamic_index_stride
+            assert ti.get_addr(y, i) - ti.get_addr(x,
+                                                   i) == v.dynamic_index_stride
+            assert ti.get_addr(z, i) - ti.get_addr(y,
+                                                   i) == v.dynamic_index_stride
 
     check_stride()
 

@@ -8,7 +8,6 @@ import taichi as ti
 def test_fields_with_shape():
     shape = 5
     x = ti.field(ti.f32, shape=shape)
-    y = ti.field(ti.f32, shape=shape)
 
     @ti.kernel
     def assign_field_single():
@@ -19,6 +18,7 @@ def test_fields_with_shape():
     for i in range(shape):
         assert x[i] == i
 
+    y = ti.field(ti.f32, shape=shape)
     @ti.kernel
     def assign_field_multiple():
         for i in range(shape):

@@ -361,7 +361,16 @@ jobs:
   build_and_test_windows:
     name: Build and Test (Windows)
     needs: [check_code_format, check_files]
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - machine: windows-latest
+            wanted_archs: cpu
+            cmake_args: ""
+          - machine: [self-hosted, windows]
+            wanted_archs: cpu,cuda,vulkan,opengl
+            cmake_args: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
+    runs-on: ${{ matrix.machine }}
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v2
@@ -371,12 +380,12 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: 3.7
-        
+
       - name: Add Visual Studio Shell to ENV
         uses: egor-tensin/vs-shell@v2
         with:
           arch: x64
-          
+
       - name: Get sccache cache
         uses: actions/cache@v2
         with:
@@ -408,7 +417,8 @@ jobs:
           python tests/run_tests.py -vr2 -t2 -a "$env:TI_WANTED_ARCHS"
         env:
           PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
-          TI_WANTED_ARCHS: "cpu"
+          TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
+          TAICHI_CMAKE_ARGS: ${{ matrix.cmake_args }}
           TI_SKIP_VERSION_CHECK: ON
 
   build_and_test_m1:

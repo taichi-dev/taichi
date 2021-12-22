@@ -6,7 +6,7 @@ namespace directx11 {
 
 bool is_dx_api_available() {
 #ifdef TI_WITH_DX11
-  TI_NOT_IMPLEMENTED;
+  return true;
 #else
   return false;
 #endif

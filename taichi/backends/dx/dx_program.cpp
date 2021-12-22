@@ -1,10 +1,10 @@
 #include "taichi/backends/dx/dx_program.h"
+#include "taichi/backends/dx/dx_device.h"
 
 namespace taichi {
 namespace lang {
 
 Dx11ProgramImpl::Dx11ProgramImpl(CompileConfig &config) : ProgramImpl(config) {
-  TI_NOT_IMPLEMENTED;
 }
 
 FunctionType Dx11ProgramImpl::compile(Kernel *kernel,

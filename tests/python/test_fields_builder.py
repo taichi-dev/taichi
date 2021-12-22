@@ -19,6 +19,7 @@ def test_fields_with_shape():
         assert x[i] == i
 
     y = ti.field(ti.f32, shape=shape)
+
     @ti.kernel
     def assign_field_multiple():
         for i in range(shape):

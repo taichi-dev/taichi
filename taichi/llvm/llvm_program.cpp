@@ -82,7 +82,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
     if (config_.saturating_grid_dim == 0) {
       TI_INFO("CUDA max blocks per SM = {}", query_max_block_per_sm);
-      config_.saturating_grid_dim = num_SMs * query_max_block_per_sm;
+      config_.saturating_grid_dim = num_SMs * query_max_block_per_sm * 2;
     }
 #endif
   }

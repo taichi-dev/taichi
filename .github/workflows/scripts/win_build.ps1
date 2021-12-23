@@ -56,11 +56,11 @@ $env:LLVM_DIR = "$libsDir\taichi_llvm"
 $env:TAICHI_CMAKE_ARGS += " -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang"
 if ($installVulkan) {
     WriteInfo("Download and install Vulkan")
-    if (-not (Test-Path "VulkanSDK.exe")) {
+    if (-not (Test-Path "VulkanSDK")) {
         curl.exe --retry 10 --retry-delay 5 https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe -Lo VulkanSDK.exe
+        $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
+        $installer.WaitForExit();
     }
-    $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
-    $installer.WaitForExit();
     $env:VULKAN_SDK = "$libsDir\VulkanSDK\1.2.189.0"
     $env:PATH += ";$env:VULKAN_SDK\Bin"
     $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_VULKAN:BOOL=ON"

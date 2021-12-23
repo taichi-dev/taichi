@@ -54,7 +54,7 @@ class IRVerifier : public BasicStmtVisitor {
           " If it doesn't help, please report this bug by opening an issue at"
           " https://github.com/taichi-dev/taichi to help us improve."
           " Thanks in advance!",
-          stmt->id, op->id);
+          stmt->type(), op->type());
     }
     visible_stmts_.back().insert(stmt);
   }

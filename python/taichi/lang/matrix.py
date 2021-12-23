@@ -1094,8 +1094,10 @@ class _MatrixFieldElement(_IntermediateMatrix):
         indices (taichi_core.ExprGroup): Indices of the element.
     """
     def __init__(self, field, indices):
-        super().__init__(field.n, field.m, [expr.Expr(ti_core.subscript(
-            e.ptr, indices)) for e in field.get_field_members()])
+        super().__init__(field.n, field.m, [
+            expr.Expr(ti_core.subscript(e.ptr, indices))
+            for e in field.get_field_members()
+        ])
         self.dynamic_index_stride = field.dynamic_index_stride
 
 

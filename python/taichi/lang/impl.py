@@ -352,6 +352,10 @@ class PyTaichi:
                     f'{shapes}:\n{self._get_tb(_field.get_field_members()[0])}'
                 )
 
+    def _calc_matrix_field_dynamic_index_stride(self):
+        for _field in self.matrix_fields:
+            _field.calc_dynamic_index_stride()
+
     def materialize(self):
         self.materialize_root_fb(not self.materialized)
 
@@ -362,6 +366,7 @@ class PyTaichi:
 
         self._check_field_not_placed()
         self._check_matrix_field_member_shape()
+        self._calc_matrix_field_dynamic_index_stride()
 
         for callback in self.materialize_callbacks:
             callback()

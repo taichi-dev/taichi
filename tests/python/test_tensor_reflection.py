@@ -88,6 +88,7 @@ def test_unordered_matrix():
     assert val.snode.parent(2) == blk2
     assert val.snode.parent(3) == blk1
     assert val.snode.parent(4) == ti.root
+    assert val.snode.path_from_root() == [ti.root, blk1, blk2, blk3, val.snode]
 
 
 @ti.test()

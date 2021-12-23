@@ -191,6 +191,20 @@ class SNode:
             return impl.root
         return SNode(p)
 
+    def path_from_root(self):
+        """Gets the path from root to `self` in the SNode tree.
+
+        Returns:
+            List[Union[_Root, SNode]]: The list of SNodes on the path from root to `self`.
+        """
+        p = self
+        res = [p]
+        while p != impl.root:
+            p = p.parent()
+            res.append(p)
+        res.reverse()
+        return res
+
     @property
     def dtype(self):
         """Gets the data type of `self`.

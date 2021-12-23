@@ -277,12 +277,17 @@ class Matrix(TaichiOperations):
             assert self.dynamic_index_stride is not None
             if len(indices) == 1:
                 return impl.make_tensor_element_expr(self.local_tensor_proxy,
-                        (i, ), (self.n, ), self.dynamic_index_stride)
+                                                     (i, ), (self.n, ),
+                                                     self.dynamic_index_stride)
             return impl.make_tensor_element_expr(self.local_tensor_proxy,
-                    (i, j), (self.n, self.m), self.dynamic_index_stride)
-        if impl.current_cfg().dynamic_index and isinstance(self, _MatrixFieldElement) and self.dynamic_index_stride is not None:
+                                                 (i, j), (self.n, self.m),
+                                                 self.dynamic_index_stride)
+        if impl.current_cfg().dynamic_index and isinstance(
+                self,
+                _MatrixFieldElement) and self.dynamic_index_stride is not None:
             return impl.make_tensor_element_expr(self.entries[0].ptr, (i, j),
-                    (self.n, self.m), self.dynamic_index_stride)
+                                                 (self.n, self.m),
+                                                 self.dynamic_index_stride)
         return self(i, j)
 
     @property
@@ -1139,9 +1144,10 @@ class MatrixField(Field):
             self.dynamic_index_stride = 0
             return
         length = len(paths[0])
-        if any(len(path) != length or
-               ti_core.is_custom_type(path[length - 1].dtype)
-               for path in paths):
+        if any(
+                len(path) != length or ti_core.is_custom_type(path[length -
+                                                                   1].dtype)
+                for path in paths):
             return
         for i in range(length):
             if any(path[i] != paths[0][i] for path in paths):

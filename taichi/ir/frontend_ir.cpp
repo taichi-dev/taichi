@@ -458,11 +458,14 @@ void TensorElementExpression::flatten(FlattenContext *ctx) {
   for (int i = 0; i < (int)shape.size(); ++i) {
     indices[i]->flatten(ctx);
     Stmt *shape_stmt = ctx->push_back<ConstStmt>(TypedConstant(shape[i]));
-    Stmt *mul_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, shape_stmt);
-    offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::add, mul_stmt, indices[i]->stmt);
+    Stmt *mul_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul,
+                                                  offset_stmt, shape_stmt);
+    offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::add, mul_stmt,
+                                               indices[i]->stmt);
   }
   Stmt *stride_stmt = ctx->push_back<ConstStmt>(TypedConstant(stride));
-  offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, stride_stmt);
+  offset_stmt =
+      ctx->push_back<BinaryOpStmt>(BinaryOpType::mul, offset_stmt, stride_stmt);
   stmt = ctx->push_back<PtrOffsetStmt>(var->stmt, offset_stmt);
 }
 

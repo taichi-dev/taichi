@@ -767,7 +767,8 @@ void export_lang(py::module &m) {
         indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
       current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
           Expr::make<TensorElementExpression>(var, indices, shape,
-          data_type_size(element_type)), load_if_ptr(elements.exprs[i])));
+                                              data_type_size(element_type)),
+          load_if_ptr(elements.exprs[i])));
     }
     return var;
   });
@@ -834,7 +835,9 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
-  m.def("make_tensor_element_expr", Expr::make<TensorElementExpression, const Expr &, const ExprGroup &, const std::vector<int> &, int>);
+  m.def("make_tensor_element_expr",
+        Expr::make<TensorElementExpression, const Expr &, const ExprGroup &,
+                   const std::vector<int> &, int>);
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
     return Expr::make<GlobalPtrExpression>(snode, indices.loaded());

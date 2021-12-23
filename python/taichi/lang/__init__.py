@@ -47,6 +47,7 @@ from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.snode import (SNode, activate, append, deactivate, get_addr,
                                is_active, length, rescale_index)
+from taichi.lang.sort import parallel_sort
 from taichi.lang.source_builder import SourceBuilder
 from taichi.lang.struct import Struct, StructField
 from taichi.lang.tape import TapeImpl

@@ -62,7 +62,7 @@ from taichi.tools.util import get_traceback
 from taichi.types.annotations import any_arr, ext_arr, template
 from taichi.types.primitive_types import (f16, f32, f64, i32, i64,
                                           integer_types, u32, u64)
-
+from taichi.lang.sort import parallel_sort
 import taichi as ti
 
 runtime = impl.get_runtime()

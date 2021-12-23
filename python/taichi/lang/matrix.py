@@ -32,6 +32,7 @@ class Matrix(TaichiOperations):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
+        self.dynamic_index_stride = None
 
         if isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
@@ -69,14 +70,15 @@ class Matrix(TaichiOperations):
                     self.local_tensor_proxy = impl.expr_init_local_tensor(
                         [len(n)], dt,
                         expr.make_expr_group([expr.Expr(x) for x in n]))
+                    self.dynamic_index_stride = ti_core.data_type_size(dt)
                     mat = []
                     for i in range(len(n)):
                         mat.append(
                             list([
-                                impl.local_subscript_with_offset(
+                                impl.make_tensor_element_expr(
                                     self.local_tensor_proxy,
                                     (impl.make_constant_expr_i32(i), ),
-                                    (len(n), ))
+                                    (len(n), ), self.dynamic_index_stride)
                             ]))
             else:  # now init a Matrix
                 if in_python_scope():
@@ -109,16 +111,18 @@ class Matrix(TaichiOperations):
                         [len(n), len(n[0])], dt,
                         expr.make_expr_group(
                             [expr.Expr(x) for row in n for x in row]))
+                    self.dynamic_index_stride = ti_core.data_type_size(dt)
                     mat = []
                     for i in range(len(n)):
                         mat.append([])
                         for j in range(len(n[0])):
                             mat[i].append(
-                                impl.local_subscript_with_offset(
+                                impl.make_tensor_element_expr(
                                     self.local_tensor_proxy,
                                     (impl.make_constant_expr_i32(i),
                                      impl.make_constant_expr_i32(j)),
-                                    (len(n), len(n[0]))))
+                                    (len(n), len(n[0])),
+                                    self.dynamic_index_stride))
             self.n = len(mat)
             if len(mat) > 0:
                 self.m = len(mat[0])
@@ -270,19 +274,15 @@ class Matrix(TaichiOperations):
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
         if self.local_tensor_proxy is not None:
+            assert self.dynamic_index_stride is not None
             if len(indices) == 1:
-                return impl.local_subscript_with_offset(
-                    self.local_tensor_proxy, (i, ), (self.n, ))
-            return impl.local_subscript_with_offset(self.local_tensor_proxy,
-                                                    (i, j), (self.n, self.m))
-        # ptr.is_global_ptr() will check whether it's an element in the field (which is different from ptr.is_global_var()).
-        if impl.current_cfg().dynamic_index and isinstance(
-                self.entries[0], expr.Expr) and not ti_core.is_custom_type(
-                    self.entries[0].ptr.get_ret_type(
-                    )) and self.entries[0].ptr.is_global_ptr():
-            # TODO: Add API to query whether AOS or SOA
-            return impl.global_subscript_with_offset(self.entries[0], (i, j),
-                                                     (self.n, self.m), True)
+                return impl.make_tensor_element_expr(self.local_tensor_proxy,
+                        (i, ), (self.n, ), self.dynamic_index_stride)
+            return impl.make_tensor_element_expr(self.local_tensor_proxy,
+                    (i, j), (self.n, self.m), self.dynamic_index_stride)
+        if impl.current_cfg().dynamic_index and isinstance(self, _MatrixFieldElement) and self.dynamic_index_stride is not None:
+            return impl.make_tensor_element_expr(self.entries[0].ptr, (i, j),
+                    (self.n, self.m), self.dynamic_index_stride)
         return self(i, j)
 
     @property
@@ -1084,6 +1084,7 @@ class _IntermediateMatrix(Matrix):
         self.local_tensor_proxy = None
         self.any_array_access = None
         self.grad = None
+        self.dynamic_index_stride = None
 
 
 class _MatrixFieldElement(_IntermediateMatrix):
@@ -1138,7 +1139,9 @@ class MatrixField(Field):
             self.dynamic_index_stride = 0
             return
         length = len(paths[0])
-        if any(len(path) != length for path in paths):
+        if any(len(path) != length or
+               ti_core.is_custom_type(path[length - 1].dtype)
+               for path in paths):
             return
         for i in range(length):
             if any(path[i] != paths[0][i] for path in paths):

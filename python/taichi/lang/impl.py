@@ -218,18 +218,10 @@ def subscript(value, *_indices, skip_reordered=False):
 
 
 @taichi_scope
-def local_subscript_with_offset(_var, _indices, shape):
+def make_tensor_element_expr(_var, _indices, shape, stride):
     return Expr(
-        _ti_core.local_subscript_with_offset(_var, make_expr_group(*_indices),
-                                             shape))
-
-
-@taichi_scope
-def global_subscript_with_offset(_var, _indices, shape, is_aos):
-    return Expr(
-        _ti_core.global_subscript_with_offset(_var.ptr,
-                                              make_expr_group(*_indices),
-                                              shape, is_aos))
+        _ti_core.make_tensor_element_expr(_var, make_expr_group(*_indices),
+                                          shape, stride))
 
 
 @taichi_scope

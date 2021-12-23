@@ -369,7 +369,7 @@ jobs:
             cmake_args: ""
             identifier: CPU
           - machine: [self-hosted, windows]
-            wanted_archs: cpu,cuda,vulkan,opengl
+            wanted_archs: cuda,opengl
             cmake_args: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
             identifier: GPU
     runs-on: ${{ matrix.machine }}

@@ -391,9 +391,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ccache_cache
-          key: ccache-win64-clang-${{ github.sha }}
+          key: ccache-win64-${{ matrix.wanted_archs }}-${{ github.sha }}
           restore-keys: |
-            ccache-win64-clang-
+            ccache-win64-${{ matrix.wanted_archs }}-
 
       - name: Build
         shell: powershell

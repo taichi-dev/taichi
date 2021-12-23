@@ -1091,7 +1091,7 @@ class _MatrixFieldElement(_IntermediateMatrix):
 
     Args:
         field (MatrixField): The matrix field.
-        indices: Indices of the element.
+        indices (taichi_core.ExprGroup): Indices of the element.
     """
     def __init__(self, field, indices):
         super().__init__(field.n, field.m, [expr.Expr(ti_core.subscript(

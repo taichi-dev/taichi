@@ -1090,7 +1090,7 @@ class _MatrixFieldElement(_IntermediateMatrix):
     """Matrix field element class for compiler internal use only.
 
     Args:
-        _field (MatrixField): The matrix field.
+        field (MatrixField): The matrix field.
         indices: Indices of the element.
     """
     def __init__(self, field, indices):

@@ -1086,6 +1086,21 @@ class _IntermediateMatrix(Matrix):
         self.grad = None
 
 
+class _MatrixFieldElement(_IntermediateMatrix):
+    """Matrix field element class for compiler internal use only.
+
+    Args:
+        field (MatrixField): The matrix field.
+        indices (taichi_core.ExprGroup): Indices of the element.
+    """
+    def __init__(self, field, indices):
+        super().__init__(field.n, field.m, [
+            expr.Expr(ti_core.subscript(e.ptr, indices))
+            for e in field.get_field_members()
+        ])
+        self.dynamic_index_stride = field.dynamic_index_stride
+
+
 class MatrixField(Field):
     """Taichi matrix field with SNode implementation.
 

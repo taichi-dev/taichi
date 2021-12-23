@@ -10,7 +10,7 @@ from taichi.lang.exception import InvalidOperationError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
-from taichi.lang.matrix import Matrix, MatrixField, _IntermediateMatrix
+from taichi.lang.matrix import Matrix, MatrixField, _IntermediateMatrix, _MatrixFieldElement
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -179,10 +179,7 @@ def subscript(value, *_indices, skip_reordered=False):
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         if isinstance(value, MatrixField):
-            return _IntermediateMatrix(value.n, value.m, [
-                Expr(_ti_core.subscript(e.ptr, indices_expr_group))
-                for e in value.get_field_members()
-            ])
+            return _MatrixFieldElement(value, indices_expr_group)
         if isinstance(value, StructField):
             return _IntermediateStruct(
                 {k: subscript(v, *_indices)

@@ -383,6 +383,7 @@ jobs:
 
       - name: Add Visual Studio Shell to ENV
         uses: egor-tensin/vs-shell@v2
+        if: matrix.machine == "windows-latest"
         with:
           arch: x64
 

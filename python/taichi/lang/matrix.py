@@ -1093,10 +1093,10 @@ class _MatrixFieldElement(_IntermediateMatrix):
         _field (MatrixField): The matrix field.
         indices: Indices of the element.
     """
-    def __init__(self, _field, indices):
-        super().__init__(_field.n, _field.m, [expr.Expr(ti_core.subscript(
-            e.ptr, indices)) for e in _field.get_field_members()])
-        self.dynamic_index_stride = _field.dynamic_index_stride
+    def __init__(self, field, indices):
+        super().__init__(field.n, field.m, [expr.Expr(ti_core.subscript(
+            e.ptr, indices)) for e in field.get_field_members()])
+        self.dynamic_index_stride = field.dynamic_index_stride
 
 
 class MatrixField(Field):

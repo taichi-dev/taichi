@@ -839,21 +839,14 @@ class ASTTransformer(Builder):
         target = targets[0]
 
         with ctx.variable_scope_guard():
-            element_dict = {
-                'verts': _ti_core.MeshElementType.Vertex,
-                'edges': _ti_core.MeshElementType.Edge,
-                'faces': _ti_core.MeshElementType.Face,
-                'cells': _ti_core.MeshElementType.Cell
-            }
             var = ti.Expr(_ti_core.make_id_expr(""))
-            ctx.mesh = node.iter.value.ptr
+            ctx.mesh = node.iter.ptr.mesh
             assert isinstance(ctx.mesh, impl.MeshInstance)
-            mesh_idx = ti.MeshElementFieldProxy(ctx.mesh,
-                                                element_dict[node.iter.attr],
+            mesh_idx = ti.MeshElementFieldProxy(ctx.mesh, node.iter.ptr._type,
                                                 var.ptr)
             ctx.create_variable(target, mesh_idx)
             _ti_core.begin_frontend_mesh_for(mesh_idx.ptr, ctx.mesh.mesh_ptr,
-                                             element_dict[node.iter.attr])
+                                             node.iter.ptr._type)
             build_stmts(ctx, node.body)
             ctx.mesh = None
             _ti_core.end_frontend_range_for()
@@ -899,8 +892,7 @@ class ASTTransformer(Builder):
                 return ASTTransformer.build_range_for(ctx, node)
             else:
                 build_stmt(ctx, node.iter)
-                if isinstance(node.iter, ast.Attribute) and isinstance(
-                        node.iter.value.ptr, impl.MeshInstance):
+                if isinstance(node.iter.ptr, ti.lang.mesh.MeshElementField):
                     if not ti.is_extension_supported(ti.cfg.arch,
                                                      ti.extension.mesh):
                         raise Exception(

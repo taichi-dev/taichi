@@ -1,14 +1,15 @@
 from taichi.lang.kernel_impl import kernel
-from taichi.types.annotations import template
 from taichi.lang.runtime_ops import sync
+from taichi.types.annotations import template
+
 
 # Odd-even merge sort
 # References:
 # https://developer.nvidia.com/gpugems/gpugems2/part-vi-simulation-and-numerical-algorithms/chapter-46-improved-gpu-sorting
 # https://en.wikipedia.org/wiki/Batcher_odd%E2%80%93even_mergesort
 @kernel
-def sort_stage(keys: template(), use_values: int, values: template(),
-                N: int, p: int, k: int, invocations: int):
+def sort_stage(keys: template(), use_values: int, values: template(), N: int,
+               p: int, k: int, invocations: int):
     for inv in range(invocations):
         j = k % p + inv * 2 * k
         for i in range(0, min(k, N - j - k)):
@@ -24,6 +25,7 @@ def sort_stage(keys: template(), use_values: int, values: template(),
                         temp = values[a]
                         values[a] = values[b]
                         values[b] = temp
+
 
 def parallel_sort(keys, values=None):
     N = keys.shape[0]

@@ -47,6 +47,7 @@ from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.snode import (SNode, activate, append, deactivate, get_addr,
                                is_active, length, rescale_index)
+from taichi.lang.sort import parallel_sort
 from taichi.lang.source_builder import SourceBuilder
 from taichi.lang.struct import Struct, StructField
 from taichi.lang.tape import TapeImpl
@@ -62,7 +63,7 @@ from taichi.tools.util import get_traceback
 from taichi.types.annotations import any_arr, ext_arr, template
 from taichi.types.primitive_types import (f16, f32, f64, i32, i64,
                                           integer_types, u32, u64)
-from taichi.lang.sort import parallel_sort
+
 import taichi as ti
 
 runtime = impl.get_runtime()

@@ -6,8 +6,21 @@ from .util import *
 from .video import VideoManager
 
 __all__ = [
-    'PLYWriter', 'VideoManager', 'imdisplay', 'imread', 'imresize', 'imshow',
-    'imwrite', 'deprecated', 'warning', 'dump_dot', 'dot_to_pdf', 'obsolete',
-    'get_kernel_stats', 'get_traceback', 'set_gdb_trigger',
-    'print_profile_info', 'clear_profile_info', 
+    'PLYWriter',
+    'VideoManager',
+    'imdisplay',
+    'imread',
+    'imresize',
+    'imshow',
+    'imwrite',
+    'deprecated',
+    'warning',
+    'dump_dot',
+    'dot_to_pdf',
+    'obsolete',
+    'get_kernel_stats',
+    'get_traceback',
+    'set_gdb_trigger',
+    'print_profile_info',
+    'clear_profile_info',
 ]

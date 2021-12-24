@@ -187,6 +187,7 @@ def test_decorated_primal_is_taichi_kernel():
             ti.atomic_add(total[None], x[i] * mul)
 
     with pytest.raises(RuntimeError):
+
         @ti.ad.grad_for(func)
         def backward(mul):
             func.grad(mul)
@@ -216,6 +217,7 @@ def test_decorated_primal_missing_decorator():
         func(mul)
 
     with pytest.raises(RuntimeError):
+
         @ti.ad.grad_for(func)
         def backward(mul):
             func.grad(mul)

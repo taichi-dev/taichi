@@ -132,5 +132,9 @@ def test_offset_must_throw_vector():
 @ti.test()
 def test_offset_must_throw_matrix():
     with pytest.raises(AssertionError):
-        c = ti.Matrix.field(3, 3, dtype=ti.i32, shape=(32, 16, 8), offset=(32, 16))
+        c = ti.Matrix.field(3,
+                            3,
+                            dtype=ti.i32,
+                            shape=(32, 16, 8),
+                            offset=(32, 16))
         d = ti.Matrix.field(3, 3, dtype=ti.i32, shape=None, offset=(32, 16))

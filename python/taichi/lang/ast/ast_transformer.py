@@ -4,7 +4,7 @@ from collections import ChainMap
 
 import astor
 from taichi._lib import core as _ti_core
-from taichi.lang import expr, impl, kernel_arguments, kernel_impl, mesh
+from taichi.lang import expr, impl, kernel_arguments, kernel_impl, mesh, ndrange, matrix
 from taichi.lang import ops as ti_ops
 from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus
 from taichi.lang.ast.symbol_resolver import ASTResolver
@@ -641,11 +641,10 @@ class ASTTransformer(Builder):
     def get_decorator(ctx, node):
         if not isinstance(node, ast.Call):
             return ''
-        from taichi.lang.ndrange import ndrange  # pylint: disable=C0415
         for wanted, name in [
             (impl.static, 'static'),
             (impl.grouped, 'grouped'),
-            (ndrange, 'ndrange'),
+            (ndrange.ndrange, 'ndrange'),
         ]:
             if ASTResolver.resolve_to(node.func, wanted, ctx.global_vars):
                 return name
@@ -667,8 +666,7 @@ class ASTTransformer(Builder):
         if is_grouped:
             assert len(node.iter.args[0].args) == 1
             ndrange_arg = build_stmt(ctx, node.iter.args[0].args[0])
-            from taichi.lang.ndrange import ndrange  # pylint: disable=C0415
-            if not isinstance(ndrange_arg, ndrange):
+            if not isinstance(ndrange_arg, ndrange.ndrange):
                 raise TaichiSyntaxError(
                     "Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'."
                 )
@@ -767,7 +765,6 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_grouped_ndrange_for(ctx, node):
-        from taichi.lang.matrix import Vector  # pylint: disable=C0415
         with ctx.variable_scope_guard():
             ndrange_var = impl.expr_init(build_stmt(ctx, node.iter.args[0]))
             ndrange_begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
@@ -786,7 +783,7 @@ class ASTTransformer(Builder):
                 )
             target = targets[0]
             target_var = impl.expr_init(
-                Vector([0] * len(ndrange_var.dimensions),
+                matrix.Vector([0] * len(ndrange_var.dimensions),
                        dt=primitive_types.i32))
             ctx.create_variable(target, target_var)
             I = impl.expr_init(ndrange_loop_var)
@@ -809,7 +806,6 @@ class ASTTransformer(Builder):
         # for i, j in x
         # for I in ti.grouped(x)
         targets = ASTTransformer.get_for_loop_targets(node)
-        from taichi.lang.matrix import Vector  # pylint: disable=C0415
 
         for target in targets:
             ctx.check_loop_var(target)
@@ -826,7 +822,7 @@ class ASTTransformer(Builder):
                 expr_group = expr.make_expr_group(loop_indices)
                 impl.begin_frontend_struct_for(expr_group, loop_var)
                 ctx.create_variable(
-                    target, Vector(loop_indices, dt=primitive_types.i32))
+                    target, matrix.Vector(loop_indices, dt=primitive_types.i32))
                 build_stmts(ctx, node.body)
                 _ti_core.end_frontend_range_for()
             else:
@@ -844,8 +840,6 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_mesh_for(ctx, node):
-        from taichi.lang.mesh import \
-            MeshElementFieldProxy  # pylint: disable=C0415
         targets = ASTTransformer.get_for_loop_targets(node)
         if len(targets) != 1:
             raise TaichiSyntaxError(
@@ -856,7 +850,7 @@ class ASTTransformer(Builder):
             var = expr.Expr(_ti_core.make_id_expr(""))
             ctx.mesh = node.iter.ptr.mesh
             assert isinstance(ctx.mesh, impl.MeshInstance)
-            mesh_idx = MeshElementFieldProxy(ctx.mesh, node.iter.ptr._type,
+            mesh_idx = mesh.MeshElementFieldProxy(ctx.mesh, node.iter.ptr._type,
                                                 var.ptr)
             ctx.create_variable(target, mesh_idx)
             _ti_core.begin_frontend_mesh_for(mesh_idx.ptr, ctx.mesh.mesh_ptr,

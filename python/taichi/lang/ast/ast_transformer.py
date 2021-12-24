@@ -4,7 +4,7 @@ from collections import ChainMap
 
 import astor
 from taichi._lib import core as _ti_core
-from taichi.lang import expr, impl, kernel_arguments, kernel_impl
+from taichi.lang import expr, impl, kernel_arguments, kernel_impl, mesh
 from taichi.lang import ops as ti_ops
 from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus
 from taichi.lang.ast.symbol_resolver import ASTResolver
@@ -853,21 +853,14 @@ class ASTTransformer(Builder):
         target = targets[0]
 
         with ctx.variable_scope_guard():
-            element_dict = {
-                'verts': _ti_core.MeshElementType.Vertex,
-                'edges': _ti_core.MeshElementType.Edge,
-                'faces': _ti_core.MeshElementType.Face,
-                'cells': _ti_core.MeshElementType.Cell
-            }
             var = expr.Expr(_ti_core.make_id_expr(""))
-            ctx.mesh = node.iter.value.ptr
+            ctx.mesh = node.iter.ptr.mesh
             assert isinstance(ctx.mesh, impl.MeshInstance)
-            mesh_idx = MeshElementFieldProxy(ctx.mesh,
-                                             element_dict[node.iter.attr],
-                                             var.ptr)
+            mesh_idx = MeshElementFieldProxy(ctx.mesh, node.iter.ptr._type,
+                                                var.ptr)
             ctx.create_variable(target, mesh_idx)
             _ti_core.begin_frontend_mesh_for(mesh_idx.ptr, ctx.mesh.mesh_ptr,
-                                             element_dict[node.iter.attr])
+                                             node.iter.ptr._type)
             build_stmts(ctx, node.body)
             ctx.mesh = None
             _ti_core.end_frontend_range_for()
@@ -913,10 +906,8 @@ class ASTTransformer(Builder):
                 return ASTTransformer.build_range_for(ctx, node)
             else:
                 build_stmt(ctx, node.iter)
-                if isinstance(node.iter, ast.Attribute) and isinstance(
-                        node.iter.value.ptr, impl.MeshInstance):
-                    if not _ti_core.is_extension_supported(
-                            impl.default_cfg().arch, _ti_core.Extension.mesh):
+                if isinstance(node.iter.ptr, mesh.MeshElementField):
+                    if not _ti_core.is_extension_supported(impl.default_cfg().arch, _ti_core.Extension.mesh):
                         raise Exception(
                             'Backend ' + str(impl.default_cfg().arch) +
                             ' doesn\'t support MeshTaichi extension')

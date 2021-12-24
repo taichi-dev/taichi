@@ -1371,10 +1371,25 @@ void VulkanStream::submit(CommandList *cmdlist_) {
   }
   */
 
+  VkPipelineStageFlags stage_flag{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT};
+
   VkSubmitInfo submit_info{};
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &buffer->buffer;
+
+  if (last_semaphore_) {
+    submit_info.waitSemaphoreCount = 1;
+    submit_info.pWaitSemaphores = &last_semaphore_->semaphore;
+    submit_info.pWaitDstStageMask = &stage_flag;
+  }
+
+  auto semaphore = vkapi::create_semaphore(buffer->device, 0);
+  last_semaphore_ = semaphore;
+  buffer->refs.push_back(semaphore);
+
+  submit_info.signalSemaphoreCount = 1;
+  submit_info.pSignalSemaphores = &semaphore->semaphore;
 
   submitted_cmdbuffers_.push_back(buffer);
 
@@ -1392,6 +1407,14 @@ void VulkanStream::submit_synced(CommandList *cmdlist) {
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &buffer->buffer;
 
+  VkPipelineStageFlags stage_flag{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT};
+
+  if (last_semaphore_) {
+    submit_info.waitSemaphoreCount = 1;
+    submit_info.pWaitSemaphores = &last_semaphore_->semaphore;
+    submit_info.pWaitDstStageMask = &stage_flag;
+  }
+
   BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
                                       /*fence=*/cmd_sync_fence_->fence),
                         "failed to submit command buffer");
@@ -1399,12 +1422,16 @@ void VulkanStream::submit_synced(CommandList *cmdlist) {
   vkWaitForFences(device_.vk_device(), 1, &cmd_sync_fence_->fence, true,
                   UINT64_MAX);
   vkResetFences(device_.vk_device(), 1, &cmd_sync_fence_->fence);
+
+  submitted_cmdbuffers_.clear();
+  last_semaphore_ = nullptr;
 }
 
 void VulkanStream::command_sync() {
   vkQueueWaitIdle(queue_);
 
   submitted_cmdbuffers_.clear();
+  last_semaphore_ = nullptr;
 }
 
 std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(

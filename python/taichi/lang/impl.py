@@ -10,7 +10,8 @@ from taichi.lang.exception import InvalidOperationError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
-from taichi.lang.matrix import Matrix, MatrixField, _IntermediateMatrix
+from taichi.lang.matrix import (Matrix, MatrixField, _IntermediateMatrix,
+                                _MatrixFieldElement)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -37,13 +38,9 @@ def expr_init(rhs):
     if rhs is None:
         return Expr(_ti_core.expr_alloca())
     if isinstance(rhs, Matrix):
-        if rhs.in_python_scope or isinstance(rhs, _IntermediateMatrix):
-            return Matrix(rhs.to_list())
-        return rhs
+        return Matrix(rhs.to_list())
     if isinstance(rhs, Struct):
-        if rhs.in_python_scope or isinstance(rhs, _IntermediateStruct):
-            return Struct(rhs.to_dict())
-        return rhs
+        return Struct(rhs.to_dict())
     if isinstance(rhs, list):
         return [expr_init(e) for e in rhs]
     if isinstance(rhs, tuple):
@@ -183,10 +180,7 @@ def subscript(value, *_indices, skip_reordered=False):
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         if isinstance(value, MatrixField):
-            return _IntermediateMatrix(value.n, value.m, [
-                Expr(_ti_core.subscript(e.ptr, indices_expr_group))
-                for e in value.get_field_members()
-            ])
+            return _MatrixFieldElement(value, indices_expr_group)
         if isinstance(value, StructField):
             return _IntermediateStruct(
                 {k: subscript(v, *_indices)
@@ -356,6 +350,10 @@ class PyTaichi:
                     f'{shapes}:\n{self._get_tb(_field.get_field_members()[0])}'
                 )
 
+    def _calc_matrix_field_dynamic_index_stride(self):
+        for _field in self.matrix_fields:
+            _field.calc_dynamic_index_stride()
+
     def materialize(self):
         self.materialize_root_fb(not self.materialized)
 
@@ -366,6 +364,7 @@ class PyTaichi:
 
         self._check_field_not_placed()
         self._check_matrix_field_member_shape()
+        self._calc_matrix_field_dynamic_index_stride()
 
         for callback in self.materialize_callbacks:
             callback()

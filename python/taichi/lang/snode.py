@@ -6,7 +6,7 @@ import numbers
 # access to it.
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang import impl
+from taichi.lang import expr, impl, matrix
 from taichi.lang.field import Field
 
 
@@ -191,6 +191,20 @@ class SNode:
             return impl.root
         return SNode(p)
 
+    def path_from_root(self):
+        """Gets the path from root to `self` in the SNode tree.
+
+        Returns:
+            List[Union[_Root, SNode]]: The list of SNodes on the path from root to `self`.
+        """
+        p = self
+        res = [p]
+        while p != impl.root:
+            p = p.parent()
+            res.append(p)
+        res.reverse()
+        return res
+
     @property
     def dtype(self):
         """Gets the data type of `self`.
@@ -325,3 +339,82 @@ class SNode:
             if physical != -1:
                 ret[virtual] = physical
         return ret
+
+
+def rescale_index(a, b, I):
+    """Rescales the index 'I' of field (or SNode) 'a' to match the shape of SNode 'b'
+
+    Parameters
+    ----------
+    a: ti.field(), ti.Vector.field, ti.Matrix.field()
+        input taichi field or snode
+    b: ti.field(), ti.Vector.field, ti.Matrix.field()
+        output taichi field or snode
+    I: ti.Vector()
+        grouped loop index
+
+    Returns
+    -------
+    Ib: ti.Vector()
+        rescaled grouped loop index
+
+    """
+    assert isinstance(
+        a, (Field, SNode)), "The first argument must be a field or an SNode"
+    assert isinstance(
+        b, (Field, SNode)), "The second argument must be a field or an SNode"
+    if isinstance(I, list):
+        I = matrix.Vector(I)
+    else:
+        assert isinstance(
+            I, matrix.Matrix
+        ), "The third argument must be an index (list or ti.Vector)"
+    entries = [I(i) for i in range(I.n)]
+    for n in range(min(I.n, min(len(a.shape), len(b.shape)))):
+        if a.shape[n] > b.shape[n]:
+            entries[n] = I(n) // (a.shape[n] // b.shape[n])
+        if a.shape[n] < b.shape[n]:
+            entries[n] = I(n) * (b.shape[n] // a.shape[n])
+    return matrix.Vector(entries)
+
+
+def append(l, indices, val):
+    a = impl.expr_init(
+        _ti_core.insert_append(l.snode.ptr, expr.make_expr_group(indices),
+                               expr.Expr(val).ptr))
+    return a
+
+
+def is_active(l, indices):
+    return expr.Expr(
+        _ti_core.insert_is_active(l.snode.ptr, expr.make_expr_group(indices)))
+
+
+def activate(l, indices):
+    _ti_core.insert_activate(l.snode.ptr, expr.make_expr_group(indices))
+
+
+def deactivate(l, indices):
+    _ti_core.insert_deactivate(l.snode.ptr, expr.make_expr_group(indices))
+
+
+def length(l, indices):
+    return expr.Expr(
+        _ti_core.insert_len(l.snode.ptr, expr.make_expr_group(indices)))
+
+
+def get_addr(f, indices):
+    """Query the memory address (on CUDA/x64) of field `f` at index `indices`.
+
+    Currently, this function can only be called inside a taichi kernel.
+
+    Args:
+        f (Union[ti.field, ti.Vector.field, ti.Matrix.field]): Input taichi field for memory address query.
+        indices (Union[int, ti.Vector()]): The specified field indices of the query.
+
+    Returns:
+        ti.u64:  The memory address of `f[indices]`.
+
+    """
+    return expr.Expr(
+        _ti_core.expr_get_addr(f.snode.ptr, expr.make_expr_group(indices)))

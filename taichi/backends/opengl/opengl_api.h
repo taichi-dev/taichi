@@ -120,12 +120,12 @@ class DeviceCompiledTaichiKernel {
 
   std::vector<std::unique_ptr<Pipeline>> compiled_pipeline_;
 
-  DeviceAllocation args_buf_{kDeviceNullAllocation};
+  mutable std::unique_ptr<DeviceAllocationGuard> args_buf_{nullptr};
   DeviceAllocation ret_buf_{kDeviceNullAllocation};
   // Only saves numpy/torch cpu based external array since they don't have
   // DeviceAllocation.
   // Taichi |Ndarray| manages their own DeviceAllocation so it's not saved here.
-  mutable DeviceAllocation arr_bufs_[taichi_max_num_args]{
+  mutable DeviceAllocation ext_arr_bufs_[taichi_max_num_args]{
       kDeviceNullAllocation};
 };
 

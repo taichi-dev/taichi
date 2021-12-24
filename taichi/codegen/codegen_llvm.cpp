@@ -2260,7 +2260,7 @@ FunctionType CodeGenLLVM::compile_module_to_executable() {
     // For taichi ndarrays, context.args saves pointer to its
     // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
     for (int i = 0; i < (int)args.size(); i++) {
-      if (args[i].is_external_array && context.is_device_allocation[i] &&
+      if (args[i].is_array && context.is_device_allocation[i] &&
           args[i].size > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));

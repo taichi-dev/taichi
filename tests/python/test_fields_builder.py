@@ -6,171 +6,174 @@ import taichi as ti
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_with_shape():
-    n = 5
-    x = ti.field(ti.f32, [n])
+    shape = 5
+    x = ti.field(ti.f32, shape=shape)
 
     @ti.kernel
-    def func():
-        for i in range(n):
+    def assign_field_single():
+        for i in range(shape):
             x[i] = i
 
-    func()
-
-    for i in range(n):
+    assign_field_single()
+    for i in range(shape):
         assert x[i] == i
 
-    y = ti.field(ti.f32, [n])
+    y = ti.field(ti.f32, shape=shape)
 
     @ti.kernel
-    def func2():
-        for i in range(n):
+    def assign_field_multiple():
+        for i in range(shape):
             y[i] = i * 2
-        for i in range(n):
+        for i in range(shape):
             x[i] = i * 3
 
-    func2()
-
-    for i in range(n):
+    assign_field_multiple()
+    for i in range(shape):
         assert x[i] == i * 3
         assert y[i] == i * 2
 
-    func()
-
-    for i in range(n):
+    assign_field_single()
+    for i in range(shape):
         assert x[i] == i
 
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_fields_builder_dense():
-    n = 5
-
+    shape = 5
     fb1 = ti.FieldsBuilder()
     x = ti.field(ti.f32)
-    fb1.dense(ti.i, n).place(x)
+    fb1.dense(ti.i, shape).place(x)
     fb1.finalize()
 
     @ti.kernel
-    def func1():
-        for i in range(n):
+    def assign_field_single():
+        for i in range(shape):
             x[i] = i * 3
 
-    func1()
-    for i in range(n):
+    assign_field_single()
+    for i in range(shape):
         assert x[i] == i * 3
 
     fb2 = ti.FieldsBuilder()
     y = ti.field(ti.f32)
-    fb2.dense(ti.i, n).place(y)
+    fb2.dense(ti.i, shape).place(y)
     z = ti.field(ti.f32)
-    fb2.dense(ti.i, n).place(z)
+    fb2.dense(ti.i, shape).place(z)
     fb2.finalize()
 
     @ti.kernel
-    def func2():
-        for i in range(n):
+    def assign_field_multiple():
+        for i in range(shape):
             x[i] = i * 2
-        for i in range(n):
+        for i in range(shape):
             y[i] = i + 5
-        for i in range(n):
+        for i in range(shape):
             z[i] = i + 10
 
-    func2()
-    for i in range(n):
+    assign_field_multiple()
+    for i in range(shape):
         assert x[i] == i * 2
         assert y[i] == i + 5
         assert z[i] == i + 10
 
-    func1()
-    for i in range(n):
+    assign_field_single()
+    for i in range(shape):
         assert x[i] == i * 3
 
 
 @ti.test(arch=[ti.cpu, ti.cuda, ti.metal])
 def test_fields_builder_pointer():
-    n = 5
-
+    shape = 5
     fb1 = ti.FieldsBuilder()
     x = ti.field(ti.f32)
-    fb1.pointer(ti.i, n).place(x)
+    fb1.pointer(ti.i, shape).place(x)
     fb1.finalize()
 
     @ti.kernel
-    def func1():
-        for i in range(n):
+    def assign_field_single():
+        for i in range(shape):
             x[i] = i * 3
 
-    func1()
-    for i in range(n):
+    assign_field_single()
+    for i in range(shape):
         assert x[i] == i * 3
 
     fb2 = ti.FieldsBuilder()
     y = ti.field(ti.f32)
-    fb2.pointer(ti.i, n).place(y)
+    fb2.pointer(ti.i, shape).place(y)
     z = ti.field(ti.f32)
-    fb2.pointer(ti.i, n).place(z)
+    fb2.pointer(ti.i, shape).place(z)
     fb2.finalize()
 
-    # test range-for
     @ti.kernel
-    def func2():
-        for i in range(n):
+    def assign_field_multiple_range_for():
+        for i in range(shape):
             x[i] = i * 2
-        for i in range(n):
+        for i in range(shape):
             y[i] = i + 5
-        for i in range(n):
+        for i in range(shape):
             z[i] = i + 10
 
-    func2()
-    for i in range(n):
+    assign_field_multiple_range_for()
+    for i in range(shape):
         assert x[i] == i * 2
         assert y[i] == i + 5
         assert z[i] == i + 10
 
-    # test struct-for
     @ti.kernel
-    def func3():
+    def assign_field_multiple_struct_for():
         for i in y:
             y[i] += 5
         for i in z:
             z[i] -= 5
 
-    func3()
-    for i in range(n):
+    assign_field_multiple_struct_for()
+    for i in range(shape):
         assert y[i] == i + 10
         assert z[i] == i + 5
 
-    func1()
-    for i in range(n):
+    assign_field_single()
+    for i in range(shape):
         assert x[i] == i * 3
 
 
-@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
-def test_fields_builder_destroy():
-    def A(i):
-        n = i * 10**3
+# We currently only consider data types that all platforms support.
+# See https://docs.taichi.graphics/lang/articles/basic/type#supported-primitive-types for more details.
+@pytest.mark.parametrize('test_1d_size', [1, 10, 100])
+@pytest.mark.parametrize('field_type', [ti.f32, ti.i32])
+@ti.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
+def test_fields_builder_destroy(test_1d_size, field_type):
+    def test_for_single_destroy_multi_fields():
         fb = ti.FieldsBuilder()
-        a = ti.field(ti.f64)
-        fb.dense(ti.i, n).place(a)
-        c = fb.finalize()
-        c.destroy()
+        for create_field_idx in range(10):
+            field = ti.field(field_type)
+            fb.dense(ti.i, test_1d_size).place(field)
+        fb_snode_tree = fb.finalize()
+        fb_snode_tree.destroy()
 
-    def B(i):
-        n = i * 10**3
+    def test_for_multi_destroy_multi_fields():
+        fb0 = ti.FieldsBuilder()
+        fb1 = ti.FieldsBuilder()
+
+        for create_field_idx in range(10):
+            field0 = ti.field(field_type)
+            field1 = ti.field(field_type)
+
+            fb0.dense(ti.i, test_1d_size).place(field0)
+            fb1.pointer(ti.i, test_1d_size).place(field1)
+
+        fb0_snode_tree = fb0.finalize()
+        fb1_snode_tree = fb1.finalize()
+
+        fb0_snode_tree.destroy()
+        fb1_snode_tree.destroy()
+
+    def test_for_raise_destroy_twice():
         fb = ti.FieldsBuilder()
-        a = ti.field(ti.f64)
-        fb.dense(ti.i, n).place(a)
+        a = ti.field(ti.f32)
+        fb.dense(ti.i, test_1d_size).place(a)
         c = fb.finalize()
 
-        ni = i * 10**3
-        fbi = ti.FieldsBuilder()
-        ai = ti.field(ti.f64)
-        fbi.dense(ti.i, n).place(ai)
-        ci = fbi.finalize()
-
-        c.destroy()
-        ci.destroy()
-
-    for i in range(5):
-        A(5)
-    B(2)
-    A(4)
+        with pytest.raises(InvalidOperationError):
+            c.destroy()
+            c.destroy()

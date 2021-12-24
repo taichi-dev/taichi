@@ -46,11 +46,14 @@ class CompiledTaichiKernel {
 
   size_t num_pipelines() const;
 
-  DeviceAllocation *ctx_buffer() const;
+  // DeviceAllocation *ctx_buffer() const;
+  // DeviceAllocation *ctx_buffer_host() const;
 
-  DeviceAllocation *ctx_buffer_host() const;
+  size_t get_ctx_buffer_size() const;
 
-  void command_list(CommandList *cmdlist) const;
+  void generate_command_list(CommandList *cmdlist,
+                             DeviceAllocationGuard *ctx_buffer_host,
+                             DeviceAllocationGuard *ctx_buffer) const;
 
  private:
   TaichiKernelAttributes ti_kernel_attribs_;
@@ -60,8 +63,7 @@ class CompiledTaichiKernel {
 
   InputBuffersMap input_buffers_;
 
-  std::unique_ptr<DeviceAllocationGuard> ctx_buffer_{nullptr};
-  std::unique_ptr<DeviceAllocationGuard> ctx_buffer_host_{nullptr};
+  size_t ctx_buffer_size_{0};
   std::vector<std::unique_ptr<Pipeline>> pipelines_;
 };
 
@@ -116,6 +118,8 @@ class VkRuntime {
   std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_;
   // FIXME: Support proper multiple lists
   std::unique_ptr<DeviceAllocationGuard> listgen_buffer_;
+
+  std::vector<std::unique_ptr<DeviceAllocationGuard>> ctx_buffers_;
 
   std::unique_ptr<CommandList> current_cmdlist_{nullptr};
 

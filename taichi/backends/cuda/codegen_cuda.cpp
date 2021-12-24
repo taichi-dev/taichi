@@ -62,7 +62,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       Kernel::LaunchContextBuilder ctx_builder(kernel, &context);
       bool transferred = false;
       for (int i = 0; i < (int)args.size(); i++) {
-        if (args[i].is_external_array) {
+        if (args[i].is_array) {
           if (args[i].size == 0)
             continue;
           arg_buffers[i] = context.get_arg<void *>(i);

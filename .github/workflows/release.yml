@@ -317,8 +317,18 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
+      - name: Add Visual Studio Shell to ENV
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
+
+      - name: Get sccache cache
+        uses: actions/cache@v2
+        with:
+          path: ccache_cache
+          key: ccache-win64-clang-${{ github.sha }}
+          restore-keys: |
+            ccache-win64-clang-
 
       - name: Build Python Wheel
         shell: powershell

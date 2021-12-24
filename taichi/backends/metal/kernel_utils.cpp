@@ -87,7 +87,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
       TI_ERROR("Metal kernel only supports <= 32-bit data, got {}",
                metal_data_type_name(ma.dt));
     }
-    ma.is_array = ka.is_external_array;
+    ma.is_array = ka.is_array;
     ma.stride = ma.is_array ? ka.size : dt_bytes;
     ma.index = arg_attribs_vec_.size();
     arg_attribs_vec_.push_back(ma);

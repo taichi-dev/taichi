@@ -6,7 +6,8 @@ from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.matrix import MatrixField, _IntermediateMatrix
+from taichi.lang.matrix import (MatrixField, _IntermediateMatrix,
+                                _MatrixFieldElement)
 from taichi.lang.struct import StructField
 from taichi.lang.util import python_scope
 from taichi.types import CompoundType
@@ -65,6 +66,7 @@ class MeshReorderedMatrixFieldProxy(MatrixField):
         self.grad = field.grad
         self.n = field.n
         self.m = field.m
+        self.dynamic_index_stride = field.dynamic_index_stride
 
         self.mesh_ptr = mesh_ptr
         self.element_type = element_type
@@ -476,13 +478,8 @@ class MeshElementFieldProxy:
             global_entry_expr_group = impl.make_expr_group(
                 *tuple([global_entry_expr]))
             if isinstance(attr, MatrixField):
-                setattr(
-                    self, key,
-                    _IntermediateMatrix(attr.n, attr.m, [
-                        impl.Expr(
-                            _ti_core.subscript(e.ptr, global_entry_expr_group))
-                        for e in attr.get_field_members()
-                    ]))
+                setattr(self, key,
+                        _MatrixFieldElement(attr, global_entry_expr_group))
             elif isinstance(attr, StructField):
                 raise RuntimeError('ti.Mesh has not support StructField yet')
             else:  # isinstance(attr, Field)

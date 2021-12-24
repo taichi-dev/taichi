@@ -27,7 +27,7 @@ class GatherStmts : public BasicStmtVisitor {
   }
 };
 
-bool mixed_statement_checker(Block *block){
+void mixed_statement_checker(Block *block){
   bool has_for;
   bool has_non_for;
   std::stack<Block *> for_loops_stmts;
@@ -56,10 +56,8 @@ bool mixed_statement_checker(Block *block){
                  "differentiable_programming#kernel-simplicity-rule");
       }
     }
-    if (has_for && has_non_for) return false;
+    if (has_for && has_non_for) TI_ERROR("Invalid program input for autodiff: mixed. ");
   }
-
-  return true;
 }
 
 void reverse_segments(IRNode *root) {
@@ -79,8 +77,8 @@ void reverse_segments(IRNode *root) {
             if(sub_s->is<FrontendForStmt>()) {
               for_loops_num++;
               // Check whether the loop inside contains mixed statement
-              if (!mixed_statement_checker(static_cast<FrontendForStmt *>(sub_s.get())->body.get()))
-                  TI_ERROR("Invalid program input for autodiff: mixed. ");
+              mixed_statement_checker(static_cast<FrontendForStmt *>(sub_s.get())->body.get());
+
             }
             if(for_loops_num >= 2)
               TI_ERROR("Invalid program input for autodiff: "

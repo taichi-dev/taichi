@@ -1,6 +1,7 @@
 import json
 
 import numpy as np
+from taichi import lang
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
@@ -10,9 +11,8 @@ from taichi.lang.matrix import (MatrixField, _IntermediateMatrix,
                                 _MatrixFieldElement)
 from taichi.lang.struct import StructField
 from taichi.lang.util import python_scope
-from taichi.types import CompoundType
+from taichi.types import CompoundType, i32
 
-import taichi as ti
 
 MeshTopology = _ti_core.MeshTopology
 MeshElementType = _ti_core.MeshElementType
@@ -318,15 +318,15 @@ class MeshMetadata:
             element["g2r_mapping"] = np.array(element["g2r_mapping"])
             self.element_fields[element_type] = {}
             self.element_fields[element_type]["owned"] = impl.field(
-                dtype=ti.i32, shape=self.num_patches + 1)
+                dtype=i32, shape=self.num_patches + 1)
             self.element_fields[element_type]["total"] = impl.field(
-                dtype=ti.i32, shape=self.num_patches + 1)
+                dtype=i32, shape=self.num_patches + 1)
             self.element_fields[element_type]["l2g"] = impl.field(
-                dtype=ti.i32, shape=element["l2g_mapping"].shape[0])
+                dtype=i32, shape=element["l2g_mapping"].shape[0])
             self.element_fields[element_type]["l2r"] = impl.field(
-                dtype=ti.i32, shape=element["l2r_mapping"].shape[0])
+                dtype=i32, shape=element["l2r_mapping"].shape[0])
             self.element_fields[element_type]["g2r"] = impl.field(
-                dtype=ti.i32, shape=element["g2r_mapping"].shape[0])
+                dtype=i32, shape=element["g2r_mapping"].shape[0])
 
         for relation in data["relations"]:
             from_order = relation["from_order"]
@@ -335,10 +335,10 @@ class MeshMetadata:
                 relation_by_orders(from_order, to_order))
             self.relation_fields[rel_type] = {}
             self.relation_fields[rel_type]["value"] = impl.field(
-                dtype=ti.i32, shape=len(relation["value"]))
+                dtype=i32, shape=len(relation["value"]))
             if from_order <= to_order:
                 self.relation_fields[rel_type]["offset"] = impl.field(
-                    dtype=ti.i32, shape=len(relation["offset"]))
+                    dtype=i32, shape=len(relation["offset"]))
 
         for element in data["elements"]:
             element_type = MeshElementType(element["order"])
@@ -371,8 +371,8 @@ class MeshMetadata:
 # Define the Mesh Type, stores the field type info
 class MeshBuilder:
     def __init__(self, topology):
-        if not ti.is_extension_supported(ti.cfg.arch, ti.extension.mesh):
-            raise Exception('Backend ' + str(ti.cfg.arch) +
+        if not lang.is_extension_supported(impl.current_cfg().arch, lang.extension.mesh):
+            raise Exception('Backend ' + str(impl.current_cfg().arch) +
                             ' doesn\'t support MeshTaichi extension')
 
         self.topology = topology

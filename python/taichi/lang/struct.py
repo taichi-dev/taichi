@@ -1,17 +1,14 @@
 import numbers
 
-from taichi.lang import expr, impl
+from taichi.lang import expr, impl, ops
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix
-from taichi.lang.ops import cast
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
-from taichi.types import CompoundType
-
-import taichi as ti
+from taichi.types import CompoundType, integer_types
 
 
 class Struct(TaichiOperations):
@@ -181,7 +178,7 @@ class Struct(TaichiOperations):
             val (Union[int, float]): Value to fill.
         """
         def assign_renamed(x, y):
-            return ti.assign(x, y)
+            return ops.assign(x, y)
 
         return self.element_wise_writeback_binary(assign_renamed, val)
 
@@ -260,20 +257,20 @@ class Struct(TaichiOperations):
             dim = len(shape)
             if layout == Layout.SOA:
                 for e in field_dict.values():
-                    ti.root.dense(impl.index_nd(dim),
-                                  shape).place(e, offset=offset)
+                    impl.root.dense(impl.index_nd(dim),
+                                    shape).place(e, offset=offset)
                 if needs_grad:
                     for e in field_dict.values():
-                        ti.root.dense(impl.index_nd(dim),
-                                      shape).place(e.grad, offset=offset)
+                        impl.root.dense(impl.index_nd(dim),
+                                        shape).place(e.grad, offset=offset)
             else:
-                ti.root.dense(impl.index_nd(dim),
-                              shape).place(*tuple(field_dict.values()),
-                                           offset=offset)
+                impl.root.dense(impl.index_nd(dim),
+                                shape).place(*tuple(field_dict.values()),
+                                             offset=offset)
                 if needs_grad:
                     grads = tuple(e.grad for e in field_dict.values())
-                    ti.root.dense(impl.index_nd(dim),
-                                  shape).place(*grads, offset=offset)
+                    impl.root.dense(impl.index_nd(dim),
+                                    shape).place(*grads, offset=offset)
         return StructField(field_dict, name=name)
 
 
@@ -505,10 +502,9 @@ class StructType(CompoundType):
             else:
                 if in_python_scope():
                     v = struct.entries[k]
-                    entries[k] = int(
-                        v) if dtype in ti.integer_types else float(v)
+                    entries[k] = int(v) if dtype in integer_types else float(v)
                 else:
-                    entries[k] = cast(struct.entries[k], dtype)
+                    entries[k] = ops.cast(struct.entries[k], dtype)
         return Struct(entries)
 
     def filled_with_scalar(self, value):

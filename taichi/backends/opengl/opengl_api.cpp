@@ -357,7 +357,11 @@ void CompiledTaichiKernel::set_used(const UsedFeature &used) {
   this->used = used;
 }
 
-OpenGlRuntime::~OpenGlRuntime() = default;
+OpenGlRuntime::~OpenGlRuntime() {
+  saved_arg_bufs.clear();
+  impl.reset(nullptr);
+  device.reset();
+}
 
 void DeviceCompiledTaichiKernel::launch(RuntimeContext &ctx,
                                         Kernel *kernel,

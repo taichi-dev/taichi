@@ -1086,6 +1086,21 @@ class _IntermediateMatrix(Matrix):
         self.grad = None
 
 
+class _MatrixFieldElement(_IntermediateMatrix):
+    """Matrix field element class for compiler internal use only.
+
+    Args:
+        field (MatrixField): The matrix field.
+        indices (taichi_core.ExprGroup): Indices of the element.
+    """
+    def __init__(self, field, indices):
+        super().__init__(field.n, field.m, [
+            expr.Expr(ti_core.subscript(e.ptr, indices))
+            for e in field.get_field_members()
+        ])
+        self.dynamic_index_stride = field.dynamic_index_stride
+
+
 class MatrixField(Field):
     """Taichi matrix field with SNode implementation.
 
@@ -1099,6 +1114,7 @@ class MatrixField(Field):
         super().__init__(_vars)
         self.n = n
         self.m = m
+        self.dynamic_index_stride = None
 
     def get_scalar_field(self, *indices):
         """Creates a ScalarField using a specific field member. Only used for quant.
@@ -1113,6 +1129,34 @@ class MatrixField(Field):
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
         return ScalarField(self.vars[i * self.m + j])
+
+    def calc_dynamic_index_stride(self):
+        # Algorithm: https://github.com/taichi-dev/taichi/issues/3810
+        paths = [ScalarField(var).snode.path_from_root() for var in self.vars]
+        num_members = len(paths)
+        if num_members == 1:
+            self.dynamic_index_stride = 0
+            return
+        length = len(paths[0])
+        if any(len(path) != length for path in paths):
+            return
+        for i in range(length):
+            if any(path[i] != paths[0][i] for path in paths):
+                depth_below_lca = i
+                break
+        for i in range(depth_below_lca, length - 1):
+            if any(path[i].ptr.type != ti_core.SNodeType.dense
+                   or path[i].cell_size_bytes != paths[0][i].cell_size_bytes
+                   or path[i + 1].offset_bytes_in_parent_cell != paths[0][
+                       i + 1].offset_bytes_in_parent_cell for path in paths):
+                return
+        stride = paths[1][depth_below_lca].offset_bytes_in_parent_cell - \
+                 paths[0][depth_below_lca].offset_bytes_in_parent_cell
+        for i in range(2, num_members):
+            if stride != paths[i][depth_below_lca].offset_bytes_in_parent_cell \
+                    - paths[i - 1][depth_below_lca].offset_bytes_in_parent_cell:
+                return
+        self.dynamic_index_stride = stride
 
     @python_scope
     def fill(self, val):

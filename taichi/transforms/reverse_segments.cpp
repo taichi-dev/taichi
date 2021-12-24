@@ -5,6 +5,7 @@
 #include "taichi/system/profiler.h"
 
 #include <set>
+#include <stack>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -26,6 +27,41 @@ class GatherStmts : public BasicStmtVisitor {
   }
 };
 
+bool mixed_statement_checker(Block *block){
+  bool has_for;
+  bool has_non_for;
+  std::stack<Block *> for_loops_stmts;
+  for_loops_stmts.push(block);
+  while(!for_loops_stmts.empty()){
+    has_for = false;
+    has_non_for = false;
+    auto sub_block = for_loops_stmts.top();
+    for_loops_stmts.pop();
+    int for_loops_num = 0;
+    // TODO: Solve the complier reminder
+    for (auto &&s: sub_block->statements) {
+      if (s->is<FrontendForStmt>()) {
+        has_for = true;
+        for_loops_num++;
+        for_loops_stmts.push(static_cast<FrontendForStmt *>(s.get())->body.get());
+      } else {
+        has_non_for = true;
+      }
+      if (for_loops_num >= 2){
+        TI_ERROR("Invalid program input for autodiff: "
+                 "The outer for-loop contains more than one for-loops. \n"
+                 "Please check the documentation "
+                 "for the \"Kernel Simplicity Rule\" \"differentiable_task3\":\n"
+                 "https://docs.taichi.graphics/lang/articles/advanced/"
+                 "differentiable_programming#kernel-simplicity-rule");
+      }
+    }
+    if (has_for && has_non_for) return false;
+  }
+
+  return true;
+}
+
 void reverse_segments(IRNode *root) {
   TI_AUTO_PROF;
   auto block = dynamic_cast<Block *>(root);
@@ -33,8 +69,28 @@ void reverse_segments(IRNode *root) {
   bool has_for = false;
   bool has_non_for = false;
   for (auto &&s : block->statements) {
-    if (s->is<FrontendForStmt>()) {
-      has_for = true;
+      std::cout << "type!! " << s->type() << std::endl;
+      if (s->is<FrontendForStmt>()) {
+        has_for = true;
+        int for_loops_num = 0;
+        // Check whether there are more than one for-loop
+        for (auto &&sub_s : static_cast<FrontendForStmt *>(s.get())->body.get()->statements) {
+            std::cout << "statements Type!! " << sub_s->type()<< std::endl;
+            if(sub_s->is<FrontendForStmt>()) {
+              for_loops_num++;
+              // Check whether the loop inside contains mixed statement
+              if (!mixed_statement_checker(static_cast<FrontendForStmt *>(sub_s.get())->body.get()))
+                  TI_ERROR("Invalid program input for autodiff: mixed. ");
+            }
+            if(for_loops_num >= 2)
+              TI_ERROR("Invalid program input for autodiff: "
+                       "The outer for-loop contains more than one for-loops. \n"
+                       "Please check the documentation "
+                       "for the \"Kernel Simplicity Rule\" \"differentiable_task3\":\n"
+                       "https://docs.taichi.graphics/lang/articles/advanced/"
+                       "differentiable_programming#kernel-simplicity-rule");
+        }
+
       statement_blocks.emplace_back();
       statement_blocks.back().push_back(std::move(s));
       statement_blocks.emplace_back();
@@ -64,12 +120,20 @@ void reverse_segments(IRNode *root) {
     }
   }
     */
-  if (has_for && has_non_for)
-    TI_ERROR(
-        "Invalid program input for autodiff. Please check the documentation "
-        "for the \"Kernel Simplicity Rule\":\n"
-        "https://docs.taichi.graphics/lang/articles/advanced/"
-        "differentiable_programming#kernel-simplicity-rule");
+  if (has_for && has_non_for) {
+      TI_ERROR("Invalid program input for autodiff: "
+               "Mixed usage of for-loop and a statement without looping. \n"
+               "Please check the documentation "
+               "for the \"Kernel Simplicity Rule\" \"differentiable_task4\":\n"
+               "https://docs.taichi.graphics/lang/articles/advanced/"
+               "differentiable_programming#kernel-simplicity-rule");
+
+//      TI_ERROR(
+//              "Invalid program input for autodiff. Please check the documentation "
+//              "for the \"Kernel Simplicity Rule\":\n"
+//              "https://docs.taichi.graphics/lang/articles/advanced/"
+//              "differentiable_programming#kernel-simplicity-rule");
+  }
   for (auto &sblock : statement_blocks) {
     for (auto &&s : sblock) {
       block->statements.push_back(std::move(s));

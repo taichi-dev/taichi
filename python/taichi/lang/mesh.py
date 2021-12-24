@@ -1,7 +1,6 @@
 import json
 
 import numpy as np
-from taichi import lang
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
@@ -13,6 +12,7 @@ from taichi.lang.struct import StructField
 from taichi.lang.util import python_scope
 from taichi.types import CompoundType, i32
 
+from taichi import lang
 
 MeshTopology = _ti_core.MeshTopology
 MeshElementType = _ti_core.MeshElementType
@@ -371,7 +371,8 @@ class MeshMetadata:
 # Define the Mesh Type, stores the field type info
 class MeshBuilder:
     def __init__(self, topology):
-        if not lang.is_extension_supported(impl.current_cfg().arch, lang.extension.mesh):
+        if not lang.is_extension_supported(impl.current_cfg().arch,
+                                           lang.extension.mesh):
             raise Exception('Backend ' + str(impl.current_cfg().arch) +
                             ' doesn\'t support MeshTaichi extension')
 

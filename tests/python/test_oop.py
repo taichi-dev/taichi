@@ -1,3 +1,5 @@
+import pytest
+
 import taichi as ti
 
 
@@ -176,7 +178,6 @@ def test_oop_inherit_ok():
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(ti.KernelDefError)
 def test_oop_class_must_be_data_oriented():
     class Array1D(object):
         def __init__(self, n, mul):
@@ -197,7 +198,8 @@ def test_oop_class_must_be_data_oriented():
     ti.root.lazy_grad()
 
     # Array1D is not properly decorated, this will raise an Exception
-    arr.reduce()
+    with pytest.raises(ti.KernelDefError):
+        arr.reduce()
 
 
 @ti.test(arch=ti.get_host_arch_list())

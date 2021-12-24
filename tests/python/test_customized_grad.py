@@ -1,3 +1,5 @@
+import pytest
+
 import taichi as ti
 
 
@@ -169,7 +171,6 @@ def test_customized_kernels_oop2():
 
 
 @ti.test()
-@ti.must_throw(RuntimeError)
 def test_decorated_primal_is_taichi_kernel():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)
@@ -185,16 +186,16 @@ def test_decorated_primal_is_taichi_kernel():
         for i in range(n):
             ti.atomic_add(total[None], x[i] * mul)
 
-    @ti.ad.grad_for(func)
-    def backward(mul):
-        func.grad(mul)
+    with pytest.raises(RuntimeError):
+        @ti.ad.grad_for(func)
+        def backward(mul):
+            func.grad(mul)
 
     with ti.Tape(loss=total):
         func(4)
 
 
 @ti.test()
-@ti.must_throw(RuntimeError)
 def test_decorated_primal_missing_decorator():
     x = ti.field(ti.f32)
     total = ti.field(ti.f32)
@@ -214,9 +215,10 @@ def test_decorated_primal_missing_decorator():
         func(mul)
         func(mul)
 
-    @ti.ad.grad_for(func)
-    def backward(mul):
-        func.grad(mul)
+    with pytest.raises(RuntimeError):
+        @ti.ad.grad_for(func)
+        def backward(mul):
+            func.grad(mul)
 
     with ti.Tape(loss=total):
         func(4)

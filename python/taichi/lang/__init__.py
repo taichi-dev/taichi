@@ -11,7 +11,6 @@ import time
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 from urllib import request
-from urllib.error import HTTPError
 
 import taichi.lang.linalg_impl
 import taichi.lang.meta
@@ -58,7 +57,6 @@ from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
-from taichi.tools.util import get_traceback
 from taichi.types.annotations import any_arr, ext_arr, template
 from taichi.types.primitive_types import (f16, f32, f64, i32, i64,
                                           integer_types, u32, u64)
@@ -1113,26 +1111,6 @@ def adaptive_arch_select(arch, enable_fallback, use_gles):
 
 def get_host_arch_list():
     return [_ti_core.host_arch()]
-
-
-def must_throw(ex):
-    def decorator(_func):
-        def func__(*args, **kwargs):
-            finishes = False
-            try:
-                _func(*args, **kwargs)
-                finishes = True
-            except ex:
-                # throws. test passed
-                pass
-            except Exception as err_actual:
-                assert False, f'Exception {str(type(err_actual))} instead of {str(ex)} thrown'
-            if finishes:
-                assert False, f'Test successfully finished instead of throwing {str(ex)}'
-
-        return func__
-
-    return decorator
 
 
 __all__ = [s for s in dir() if not s.startswith('_')]

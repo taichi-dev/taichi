@@ -4,7 +4,8 @@ from collections import ChainMap
 
 import astor
 from taichi._lib import core as _ti_core
-from taichi.lang import expr, impl, kernel_arguments, kernel_impl, mesh, ndrange, matrix
+from taichi.lang import (expr, impl, kernel_arguments, kernel_impl, matrix,
+                         mesh, ndrange)
 from taichi.lang import ops as ti_ops
 from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus
 from taichi.lang.ast.symbol_resolver import ASTResolver
@@ -784,7 +785,7 @@ class ASTTransformer(Builder):
             target = targets[0]
             target_var = impl.expr_init(
                 matrix.Vector([0] * len(ndrange_var.dimensions),
-                       dt=primitive_types.i32))
+                              dt=primitive_types.i32))
             ctx.create_variable(target, target_var)
             I = impl.expr_init(ndrange_loop_var)
             for i in range(len(ndrange_var.dimensions)):
@@ -822,7 +823,8 @@ class ASTTransformer(Builder):
                 expr_group = expr.make_expr_group(loop_indices)
                 impl.begin_frontend_struct_for(expr_group, loop_var)
                 ctx.create_variable(
-                    target, matrix.Vector(loop_indices, dt=primitive_types.i32))
+                    target, matrix.Vector(loop_indices,
+                                          dt=primitive_types.i32))
                 build_stmts(ctx, node.body)
                 _ti_core.end_frontend_range_for()
             else:
@@ -850,8 +852,8 @@ class ASTTransformer(Builder):
             var = expr.Expr(_ti_core.make_id_expr(""))
             ctx.mesh = node.iter.ptr.mesh
             assert isinstance(ctx.mesh, impl.MeshInstance)
-            mesh_idx = mesh.MeshElementFieldProxy(ctx.mesh, node.iter.ptr._type,
-                                                var.ptr)
+            mesh_idx = mesh.MeshElementFieldProxy(ctx.mesh,
+                                                  node.iter.ptr._type, var.ptr)
             ctx.create_variable(target, mesh_idx)
             _ti_core.begin_frontend_mesh_for(mesh_idx.ptr, ctx.mesh.mesh_ptr,
                                              node.iter.ptr._type)
@@ -901,7 +903,8 @@ class ASTTransformer(Builder):
             else:
                 build_stmt(ctx, node.iter)
                 if isinstance(node.iter.ptr, mesh.MeshElementField):
-                    if not _ti_core.is_extension_supported(impl.default_cfg().arch, _ti_core.Extension.mesh):
+                    if not _ti_core.is_extension_supported(
+                            impl.default_cfg().arch, _ti_core.Extension.mesh):
                         raise Exception(
                             'Backend ' + str(impl.default_cfg().arch) +
                             ' doesn\'t support MeshTaichi extension')

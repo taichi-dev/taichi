@@ -5,13 +5,13 @@ from taichi import approx
 
 
 @ti.test()
-@ti.must_throw(ti.TaichiCompilationError)
 def test_return_without_type_hint():
     @ti.kernel
     def kernel():
         return 1
 
-    kernel()
+    with pytest.raises(ti.TaichiCompilationError):
+        kernel()
 
 
 def test_const_func_ret():

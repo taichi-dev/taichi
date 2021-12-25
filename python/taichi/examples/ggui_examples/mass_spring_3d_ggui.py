@@ -4,10 +4,10 @@ ti.init(arch=ti.cuda)  # Alternatively, ti.init(arch=ti.cpu)
 
 n = 128
 cell_size = 1.0 / n
-gravity = 0.5
-stiffness = 2000
-damping = 1
-dt = 5e-4
+gravity = ti.Vector([0, -9.8, 0])
+stiffness = 1e5
+damping = 3
+dt = 1e-4
 
 ball_radius = 0.2
 ball_center = ti.Vector.field(3, float, (1, ))
@@ -44,24 +44,24 @@ def set_indices():
 links = []
 
 # Link to 8 neighbors
-for i in range(-1, 2):
-    for j in range(-1, 2):
-        if (i, j) != (0, 0):
+for i in range(-2, 3):
+    for j in range(-2, 3):
+        if (i, j) != (0, 0) and abs(i) + abs(j) <= 2:
             links.append(ti.Vector([i, j]))
 
 @ti.kernel
 def step():
     for i in ti.grouped(x):
-        v[i].y -= gravity * dt
+        v[i] += gravity * dt
 
     for i in ti.grouped(x):
         force = ti.Vector([0.0, 0.0, 0.0])
-        for d in ti.static(links):
-            j = min(max(i + d, 0), [n - 1, n - 1])
-            relative_pos = x[j] - x[i]
-            current_length = relative_pos.norm()
-            original_length = cell_size * float(i - j).norm()
-            if original_length != 0:
+        for offset in ti.static(links):
+            j = i + offset
+            if 0 <= j[0] < n and 0 <= j[1] < n:
+                relative_pos = x[j] - x[i]
+                current_length = relative_pos.norm()
+                original_length = cell_size * float(i - j).norm()
                 force += stiffness * relative_pos.normalized() * (
                     current_length - original_length) / original_length
         v[i] += force * dt
@@ -77,7 +77,7 @@ def step():
 
 
 @ti.kernel
-def set_vertices():
+def update_vertices():
     for i, j in ti.ndrange(n, n):
         vertices[i * n + j] = x[i, j]
 
@@ -91,9 +91,9 @@ scene = ti.ui.Scene()
 camera = ti.ui.make_camera()
 
 while window.running:
-    for i in range(60):
+    for i in range(30):
         step()
-    set_vertices()
+    update_vertices()
 
     camera.position(0.0, 0.3, 2)
     camera.lookat(0.0, 0.3, 0)

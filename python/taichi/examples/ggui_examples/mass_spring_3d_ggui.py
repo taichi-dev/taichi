@@ -1,13 +1,12 @@
 import taichi as ti
-
-ti.init(arch=ti.cuda)  # Alternatively, ti.init(arch=ti.cpu)
+ti.init(arch=ti.gpu)  # Alternatively, ti.init(arch=ti.cpu)
 
 n = 128
-gravity = ti.Vector([0, -9.8, 0])
 quad_size = 1.0 / n
 dt = 4e-2 / n
 substeps = int(1 / 60 // dt)
 
+gravity = ti.Vector([0, -9.8, 0])
 spring_Y = 3e4
 dashpot_damping = 1e4
 drag_damping = 1
@@ -53,8 +52,6 @@ def initialize_mesh_indices():
 initialize_mesh_indices()
 
 spring_offsets = []
-
-# Link to neighbors
 for i in range(-2, 3):
     for j in range(-2, 3):
         if (i, j) != (0, 0) and abs(i) + abs(j) <= 2:
@@ -76,8 +73,10 @@ def substep():
                 d = x_ij.normalized()
                 current_dist = x_ij.norm()
                 original_dist = quad_size * float(i - j).norm()
-                force += -spring_Y * d * (current_dist / original_dist - 1
-                                          ) - v_ij.dot(d) * d * dashpot_damping * quad_size
+                # Spring force
+                force += -spring_Y * d * (current_dist / original_dist - 1)
+                # Dashpot damping
+                force += -v_ij.dot(d) * d * dashpot_damping * quad_size
 
         v[i] += force * dt
 
@@ -97,7 +96,8 @@ def update_vertices():
         vertices[i * n + j] = x[i, j]
 
 
-window = ti.ui.Window("Taichi Cloth Simulation on GGUI", (1024, 1024), vsync=True)
+window = ti.ui.Window("Taichi Cloth Simulation on GGUI", (1024, 1024),
+                      vsync=True)
 canvas = window.get_canvas()
 scene = ti.ui.Scene()
 camera = ti.ui.make_camera()

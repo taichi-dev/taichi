@@ -5,8 +5,8 @@ ti.init(arch=ti.cuda)  # Alternatively, ti.init(arch=ti.cpu)
 N = 128
 cell_size = 1.0 / N
 gravity = 0.5
-stiffness = 1600
-damping = 2
+stiffness = 2000
+damping = 1
 dt = 5e-4
 
 ball_radius = 0.2
@@ -19,21 +19,13 @@ num_triangles = (N - 1) * (N - 1) * 2
 indices = ti.field(int, num_triangles * 3)
 vertices = ti.Vector.field(3, float, N * N)
 
-
 def init_scene():
     for i, j in ti.ndrange(N, N):
-        '''
-        x[i, j] = ti.Vector([
-            i * cell_size, j * cell_size / ti.sqrt(2),
-            (N - j) * cell_size / ti.sqrt(2)
-        ])
-        '''
-        x[i, j] = ti.Vector([
-            i * cell_size, 0.0,
-            (N - j) * cell_size / ti.sqrt(2)
-        ])
+        x[i, j] = [
+            i * cell_size - 0.5, 0.7,
+            j * cell_size - 0.5
+        ]
     ball_center[0] = [0, 0, 0]
-
 
 @ti.kernel
 def set_indices():
@@ -76,8 +68,11 @@ def step():
 
     for i in ti.grouped(x):
         v[i] *= ti.exp(-damping * dt)
-        if (x[i] - ball_center[0]).norm() <= ball_radius:
-            v[i] = ti.Vector([0.0, 0.0, 0.0])
+        offset_to_center = x[i] - ball_center[0]
+        if offset_to_center.norm() <= ball_radius:
+            # Velocity projection
+            normal = offset_to_center.normalized()
+            v[i] -= min(v[i].dot(normal), 0) * normal
         x[i] += dt * v[i]
 
 
@@ -96,7 +91,7 @@ scene = ti.ui.Scene()
 camera = ti.ui.make_camera()
 
 while window.running:
-    for i in range(30):
+    for i in range(60):
         step()
     set_vertices()
 

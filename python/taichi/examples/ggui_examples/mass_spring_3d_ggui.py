@@ -2,8 +2,8 @@ import taichi as ti
 
 ti.init(arch=ti.cuda)  # Alternatively, ti.init(arch=ti.cpu)
 
-N = 128
-cell_size = 1.0 / N
+n = 128
+cell_size = 1.0 / n
 gravity = 0.5
 stiffness = 2000
 damping = 1
@@ -12,15 +12,15 @@ dt = 5e-4
 ball_radius = 0.2
 ball_center = ti.Vector.field(3, float, (1, ))
 
-x = ti.Vector.field(3, float, (N, N))
-v = ti.Vector.field(3, float, (N, N))
+x = ti.Vector.field(3, float, (n, n))
+v = ti.Vector.field(3, float, (n, n))
 
-num_triangles = (N - 1) * (N - 1) * 2
+num_triangles = (n - 1) * (n - 1) * 2
 indices = ti.field(int, num_triangles * 3)
-vertices = ti.Vector.field(3, float, N * N)
+vertices = ti.Vector.field(3, float, n * n)
 
 def init_scene():
-    for i, j in ti.ndrange(N, N):
+    for i, j in ti.ndrange(n, n):
         x[i, j] = [
             i * cell_size - 0.5, 0.7,
             j * cell_size - 0.5
@@ -29,16 +29,16 @@ def init_scene():
 
 @ti.kernel
 def set_indices():
-    for i, j in ti.ndrange(N - 1, N - 1):
-        square_id = (i * (N - 1)) + j
+    for i, j in ti.ndrange(n - 1, n - 1):
+        square_id = (i * (n - 1)) + j
         # 1st triangle of the square
-        indices[square_id * 6 + 0] = i * N + j
-        indices[square_id * 6 + 1] = (i + 1) * N + j
-        indices[square_id * 6 + 2] = i * N + (j + 1)
+        indices[square_id * 6 + 0] = i * n + j
+        indices[square_id * 6 + 1] = (i + 1) * n + j
+        indices[square_id * 6 + 2] = i * n + (j + 1)
         # 2nd triangle of the square
-        indices[square_id * 6 + 3] = (i + 1) * N + j + 1
-        indices[square_id * 6 + 4] = i * N + (j + 1)
-        indices[square_id * 6 + 5] = (i + 1) * N + j
+        indices[square_id * 6 + 3] = (i + 1) * n + j + 1
+        indices[square_id * 6 + 4] = i * n + (j + 1)
+        indices[square_id * 6 + 5] = (i + 1) * n + j
 
 
 links = []
@@ -57,7 +57,7 @@ def step():
     for i in ti.grouped(x):
         force = ti.Vector([0.0, 0.0, 0.0])
         for d in ti.static(links):
-            j = min(max(i + d, 0), [N - 1, N - 1])
+            j = min(max(i + d, 0), [n - 1, n - 1])
             relative_pos = x[j] - x[i]
             current_length = relative_pos.norm()
             original_length = cell_size * float(i - j).norm()
@@ -78,8 +78,8 @@ def step():
 
 @ti.kernel
 def set_vertices():
-    for i, j in ti.ndrange(N, N):
-        vertices[i * N + j] = x[i, j]
+    for i, j in ti.ndrange(n, n):
+        vertices[i * n + j] = x[i, j]
 
 
 init_scene()

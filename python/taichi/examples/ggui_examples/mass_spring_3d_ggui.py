@@ -22,36 +22,46 @@ vertices = ti.Vector.field(3, float, N * N)
 
 def init_scene():
     for i, j in ti.ndrange(N, N):
+        '''
         x[i, j] = ti.Vector([
             i * cell_size, j * cell_size / ti.sqrt(2),
             (N - j) * cell_size / ti.sqrt(2)
         ])
-    ball_center[0] = ti.Vector([0.5, -0.5, -0.0])
+        '''
+        x[i, j] = ti.Vector([
+            i * cell_size, 0.0,
+            (N - j) * cell_size / ti.sqrt(2)
+        ])
+    ball_center[0] = [0, 0, 0]
 
 
 @ti.kernel
 def set_indices():
-    for i, j in ti.ndrange(N, N):
-        if i < N - 1 and j < N - 1:
-            square_id = (i * (N - 1)) + j
-            # 1st triangle of the square
-            indices[square_id * 6 + 0] = i * N + j
-            indices[square_id * 6 + 1] = (i + 1) * N + j
-            indices[square_id * 6 + 2] = i * N + (j + 1)
-            # 2nd triangle of the square
-            indices[square_id * 6 + 3] = (i + 1) * N + j + 1
-            indices[square_id * 6 + 4] = i * N + (j + 1)
-            indices[square_id * 6 + 5] = (i + 1) * N + j
+    for i, j in ti.ndrange(N - 1, N - 1):
+        square_id = (i * (N - 1)) + j
+        # 1st triangle of the square
+        indices[square_id * 6 + 0] = i * N + j
+        indices[square_id * 6 + 1] = (i + 1) * N + j
+        indices[square_id * 6 + 2] = i * N + (j + 1)
+        # 2nd triangle of the square
+        indices[square_id * 6 + 3] = (i + 1) * N + j + 1
+        indices[square_id * 6 + 4] = i * N + (j + 1)
+        indices[square_id * 6 + 5] = (i + 1) * N + j
 
 
-links = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]]
-links = [ti.Vector(v) for v in links]
+links = []
 
+# Link to 8 neighbors
+for i in range(-1, 2):
+    for j in range(-1, 2):
+        if (i, j) != (0, 0):
+            links.append(ti.Vector([i, j]))
 
 @ti.kernel
 def step():
     for i in ti.grouped(x):
         v[i].y -= gravity * dt
+
     for i in ti.grouped(x):
         force = ti.Vector([0.0, 0.0, 0.0])
         for d in ti.static(links):
@@ -63,6 +73,7 @@ def step():
                 force += stiffness * relative_pos.normalized() * (
                     current_length - original_length) / original_length
         v[i] += force * dt
+
     for i in ti.grouped(x):
         v[i] *= ti.exp(-damping * dt)
         if (x[i] - ball_center[0]).norm() <= ball_radius:
@@ -89,8 +100,8 @@ while window.running:
         step()
     set_vertices()
 
-    camera.position(0.5, -0.5, 2)
-    camera.lookat(0.5, -0.5, 0)
+    camera.position(0.0, 0.3, 2)
+    camera.lookat(0.0, 0.3, 0)
     scene.set_camera(camera)
 
     scene.point_light(pos=(0.5, 1, 2), color=(1, 1, 1))

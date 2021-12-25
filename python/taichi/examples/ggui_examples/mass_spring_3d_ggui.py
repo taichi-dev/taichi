@@ -85,7 +85,7 @@ def set_vertices():
 init_scene()
 set_indices()
 
-window = ti.ui.Window("Cloth", (800, 800), vsync=True)
+window = ti.ui.Window("Taichi Cloth Simulation", (800, 800), vsync=True)
 canvas = window.get_canvas()
 scene = ti.ui.Scene()
 camera = ti.ui.make_camera()
@@ -104,6 +104,6 @@ while window.running:
                indices=indices,
                color=(0.5, 0.5, 0.5),
                two_sided=True)
-    scene.particles(ball_center, radius=ball_radius, color=(0.5, 0, 0))
+    scene.particles(ball_center, radius=ball_radius * 0.95, color=(0.5, 0, 0))
     canvas.scene(scene)
     window.show()

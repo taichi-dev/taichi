@@ -968,14 +968,12 @@ class KernelGen : public IRVisitor {
   void gen_array_range(Stmt *stmt) {
     if (auto val = stmt->cast<ExternalTensorShapeAlongAxisStmt>()) {
       val->accept(this);
-    } else if (auto bop = stmt->cast<BinaryOpStmt>()) {
+    } else {
+      TI_ASSERT(stmt->is<BinaryOpStmt>());
+      auto bop = stmt->cast<BinaryOpStmt>();
       gen_array_range(bop->lhs);
       gen_array_range(bop->rhs);
       bop->accept(this);
-    } else if (auto gop = stmt->cast<GlobalLoadStmt>()) {
-      // HACK
-      gop->src->accept(this);
-      gop->accept(this);
     }
   }
   void generate_range_for_kernel(OffloadedStmt *stmt) {

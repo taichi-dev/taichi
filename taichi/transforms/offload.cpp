@@ -520,7 +520,6 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       if (!stmt->const_end) {
         if (stmt->end_stmt) {
           TI_ASSERT(stmt->const_begin);
-          // FIXME: maybe keep end_offset for non-opengl backends.
           stmt->end_offset = 0;
         } else {
           TI_ASSERT(offloaded_ranges_->end_stmts.find(stmt) !=
@@ -654,8 +653,6 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       } else {
         // For other cases like ArgLoadStmt UnaryOpStmt which needs to load.
         auto load = Stmt::make<GlobalLoadStmt>(global_temporary.get());
-        // FIXME: might need update here as well
-        std::cout << "add load " << load.get() << std::endl;
         stmt_to_offloaded_[load.get()] = offloaded;
         stmt->set_operand(index, load.get());
         stmt->insert_before_me(std::move(global_temporary));

@@ -8,7 +8,7 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-void Renderer::init(GLFWwindow *window, const AppConfig &config) {
+void Renderer::init(TaichiWindow *window, const AppConfig &config) {
   app_context_.init(window, config);
   swap_chain_.init(&app_context_);
 }

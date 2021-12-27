@@ -766,7 +766,8 @@ void export_lang(py::module &m) {
       for (int d = 0; d < (int)shape.size(); ++d)
         indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
       current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
-          Expr::make<TensorElementExpression>(var, indices, shape, 1),
+          Expr::make<TensorElementExpression>(var, indices, shape,
+                                              data_type_size(element_type)),
           load_if_ptr(elements.exprs[i])));
     }
     return var;
@@ -816,6 +817,7 @@ void export_lang(py::module &m) {
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
+  m.def("data_type_size", data_type_size);
   m.def("is_custom_type", is_custom_type);
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
@@ -833,28 +835,9 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
-  m.def("global_subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices,
-           const std::vector<int> &shape, bool is_aos) {
-          // TODO: Add test for dimension check
-          if (is_aos)
-            return Expr::make<TensorElementExpression>(var, indices, shape, 1);
-          else {
-            SNode *snode = var.cast<GlobalPtrExpression>()
-                               ->var.cast<GlobalVariableExpression>()
-                               ->snode;
-            return Expr::make<TensorElementExpression>(
-                var, indices, shape,
-                snode->get_total_num_elements_towards_root());
-          }
-        });
-
-  m.def("local_subscript_with_offset",
-        [](const Expr &var, const ExprGroup &indices,
-           const std::vector<int> &shape) {
-          // TODO: Add test for dimension check
-          return Expr::make<TensorElementExpression>(var, indices, shape, 1);
-        });
+  m.def("make_tensor_element_expr",
+        Expr::make<TensorElementExpression, const Expr &, const ExprGroup &,
+                   const std::vector<int> &, int>);
 
   m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
     return Expr::make<GlobalPtrExpression>(snode, indices.loaded());

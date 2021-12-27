@@ -90,6 +90,7 @@ class Struct(TaichiOperations):
 
     @staticmethod
     def make_getter(key):
+
         def getter(self):
             """Get an entry from custom struct by name."""
             _taichi_skip_traceback = 1
@@ -99,6 +100,7 @@ class Struct(TaichiOperations):
 
     @staticmethod
     def make_setter(key):
+
         @python_scope
         def setter(self, value):
             _taichi_skip_traceback = 1
@@ -177,6 +179,7 @@ class Struct(TaichiOperations):
         Args:
             val (Union[int, float]): Value to fill.
         """
+
         def assign_renamed(x, y):
             return ops.assign(x, y)
 
@@ -280,6 +283,7 @@ class _IntermediateStruct(Struct):
     Args:
         entries (Dict[str, Union[Expr, Matrix, Struct]]): keys and values for struct members.
     """
+
     def __init__(self, entries):
         assert isinstance(entries, dict)
         self.entries = entries
@@ -295,6 +299,7 @@ class StructField(Field):
         field_dict (Dict[str, Field]): Struct field members.
         name (string, optional): The custom name of the field.
     """
+
     def __init__(self, field_dict, name=None):
         # will not call Field initializer
         self.field_dict = field_dict
@@ -319,6 +324,7 @@ class StructField(Field):
 
     @staticmethod
     def make_getter(key):
+
         def getter(self):
             """Get an entry from custom struct by name."""
             _taichi_skip_traceback = 1
@@ -328,6 +334,7 @@ class StructField(Field):
 
     @staticmethod
     def make_setter(key):
+
         @python_scope
         def setter(self, value):
             _taichi_skip_traceback = 1
@@ -463,6 +470,7 @@ class StructField(Field):
 
 
 class StructType(CompoundType):
+
     def __init__(self, **kwargs):
         self.members = {}
         for k, dtype in kwargs.items():

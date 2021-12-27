@@ -38,7 +38,6 @@ void mixed_statement_checker(Block *block){
     auto sub_block = for_loops_stmts.top();
     for_loops_stmts.pop();
     int for_loops_num = 0;
-    // TODO: Solve the complier reminder
     for (auto &&s: sub_block->statements) {
       if (s->is<FrontendForStmt>()) {
         has_for = true;
@@ -72,7 +71,6 @@ void reverse_segments(IRNode *root) {
   bool has_for = false;
   bool has_non_for = false;
   for (auto &&s : block->statements) {
-      std::cout << "type!! " << s->type() << std::endl;
       if (s->is<FrontendForStmt>()) {
         has_for = true;
         mixed_statement_checker(static_cast<FrontendForStmt *>(s.get())->body.get());

@@ -2,8 +2,6 @@ import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang.util import python_scope, to_numpy_type, to_pytorch_type
 
-import taichi as ti
-
 
 class Field:
     """Taichi field with SNode implementation.
@@ -232,7 +230,7 @@ class ScalarField(Field):
         import numpy as np  # pylint: disable=C0415
         arr = np.zeros(shape=self.shape, dtype=dtype)
         taichi.lang.meta.tensor_to_ext_arr(self, arr)
-        ti.sync()
+        taichi.lang.runtime_ops.sync()
         return arr
 
     @python_scope
@@ -244,7 +242,7 @@ class ScalarField(Field):
                           dtype=to_pytorch_type(self.dtype),
                           device=device)
         taichi.lang.meta.tensor_to_ext_arr(self, arr)
-        ti.sync()
+        taichi.lang.runtime_ops.sync()
         return arr
 
     @python_scope
@@ -259,7 +257,7 @@ class ScalarField(Field):
         if hasattr(arr, 'contiguous'):
             arr = arr.contiguous()
         taichi.lang.meta.ext_arr_to_tensor(arr, self)
-        ti.sync()
+        taichi.lang.runtime_ops.sync()
 
     @python_scope
     def __setitem__(self, key, value):

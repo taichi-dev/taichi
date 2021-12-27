@@ -1,3 +1,5 @@
+import pytest
+
 import taichi as ti
 
 
@@ -37,7 +39,6 @@ def test_assign2():
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(ti.TaichiCompilationError)
 def test_assign2_mismatch3():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -46,11 +47,11 @@ def test_assign2_mismatch3():
     def func():
         a[None], b[None] = 2, 3, 4
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(ti.TaichiCompilationError)
 def test_assign2_mismatch1():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -59,7 +60,8 @@ def test_assign2_mismatch1():
     def func():
         a[None], b[None] = 2
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
 @ti.test(arch=ti.get_host_arch_list())
@@ -132,7 +134,6 @@ def test_unpack_from_tuple():
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(ti.TaichiCompilationError)
 def test_unpack_mismatch_tuple():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -143,7 +144,8 @@ def test_unpack_mismatch_tuple():
     def func():
         a[None], b[None] = list
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
 @ti.test(arch=ti.get_host_arch_list())
@@ -164,7 +166,6 @@ def test_unpack_from_vector():
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(ti.TaichiCompilationError)
 def test_unpack_mismatch_vector():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -174,11 +175,11 @@ def test_unpack_mismatch_vector():
         vector = ti.Vector([2, 3, 4])
         a[None], b[None] = vector
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(ti.TaichiCompilationError)
 def test_unpack_mismatch_type():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -189,11 +190,11 @@ def test_unpack_mismatch_type():
     def func():
         a[None], b[None] = bad
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
 @ti.test(arch=ti.get_host_arch_list())
-@ti.must_throw(ti.TaichiCompilationError)
 def test_unpack_mismatch_matrix():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
@@ -205,7 +206,8 @@ def test_unpack_mismatch_matrix():
         bad = ti.Matrix([[2, 3], [4, 5]])
         a[None], b[None], c[None], d[None] = bad
 
-    func()
+    with pytest.raises(ti.TaichiCompilationError):
+        func()
 
 
 @ti.test(arch=ti.get_host_arch_list())

@@ -11,7 +11,6 @@ import time
 from contextlib import contextmanager
 from copy import deepcopy as _deepcopy
 from urllib import request
-from urllib.error import HTTPError
 
 import taichi.lang.linalg_impl
 import taichi.lang.meta
@@ -41,7 +40,6 @@ from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
                                      data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, MatrixField, Vector
 from taichi.lang.mesh import Mesh, MeshElementFieldProxy, TetMesh, TriMesh
-from taichi.lang.ndrange import GroupedNDRange, ndrange
 from taichi.lang.ops import *  # pylint: disable=W0622
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
@@ -59,7 +57,6 @@ from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
-from taichi.tools.util import get_traceback
 from taichi.types.annotations import any_arr, ext_arr, template
 from taichi.types.primitive_types import (f16, f32, f64, i32, i64,
                                           integer_types, u32, u64)
@@ -1112,192 +1109,8 @@ def adaptive_arch_select(arch, enable_fallback, use_gles):
     return cpu
 
 
-class _ArchCheckers:
-    def __init__(self):
-        self._checkers = []
-
-    def register(self, c):
-        self._checkers.append(c)
-
-    def __call__(self, arch):
-        assert isinstance(arch, _ti_core.Arch)
-        return all([c(arch) for c in self._checkers])
-
-
-_tests_arch_checkers_argname = '_tests_arch_checkers'
-
-
-def _get_or_make_arch_checkers(kwargs):
-    _k = _tests_arch_checkers_argname
-    if _k not in kwargs:
-        kwargs[_k] = _ArchCheckers()
-    return kwargs[_k]
-
-
-# test with all archs
-def all_archs_with(**kwargs):
-    kwargs = _deepcopy(kwargs)
-
-    def decorator(test):
-        # @pytest.mark.parametrize decorator only knows about regular function args,
-        # without *args or **kwargs. By decorating with @functools.wraps, the
-        # signature of |test| is preserved, so that @ti.all_archs can be used after
-        # the parametrization decorator.
-        #
-        # Full discussion: https://github.com/pytest-dev/pytest/issues/6810
-        @functools.wraps(test)
-        def wrapped(*test_args, **test_kwargs):
-            can_run_on = test_kwargs.pop(_tests_arch_checkers_argname,
-                                         _ArchCheckers())
-            # Filter away archs that don't support 64-bit data.
-            fp = kwargs.get('default_fp', ti.f32)
-            ip = kwargs.get('default_ip', ti.i32)
-            if fp == ti.f64 or ip == ti.i64:
-                can_run_on.register(lambda arch: is_extension_supported(
-                    arch, extension.data64))
-
-            for arch in ti._testing.expected_archs():
-                if can_run_on(arch):
-                    print(f'Running test on arch={arch}')
-                    ti.init(arch=arch, **kwargs)
-                    test(*test_args, **test_kwargs)
-                else:
-                    print(f'Skipped test on arch={arch}')
-
-        return wrapped
-
-    return decorator
-
-
-# test with all archs
-def all_archs(test):
-    return all_archs_with()(test)
-
-
-# Exclude the given archs when running the tests
-#
-# Example usage:
-#
-# @ti.archs_excluding(ti.cuda, ti.metal)
-# def test_xx():
-#   ...
-#
-# @ti.archs_excluding(ti.cuda, default_fp=ti.f64)
-# def test_yy():
-#   ...
-def archs_excluding(*excluded_archs, **kwargs):
-    # |kwargs| will be passed to all_archs_with(**kwargs)
-    assert all([isinstance(a, _ti_core.Arch) for a in excluded_archs])
-    excluded_archs = set(excluded_archs)
-
-    def decorator(test):
-        @functools.wraps(test)
-        def wrapped(*test_args, **test_kwargs):
-            def checker(arch):
-                return arch not in excluded_archs
-
-            _get_or_make_arch_checkers(test_kwargs).register(checker)
-            return all_archs_with(**kwargs)(test)(*test_args, **test_kwargs)
-
-        return wrapped
-
-    return decorator
-
-
-# Specifies the extension features the archs are required to support in order
-# to run the test.
-#
-# Example usage:
-#
-# @ti.require(ti.extension.data64)
-# @ti.all_archs_with(default_fp=ti.f64)
-# def test_xx():
-#   ...
-def require(*exts):
-    # Because this decorator injects an arch checker, its usage must be followed
-    # with all_archs_with(), either directly or indirectly.
-    assert all([isinstance(e, _ti_core.Extension) for e in exts])
-
-    def decorator(test):
-        @functools.wraps(test)
-        def wrapped(*test_args, **test_kwargs):
-            def checker(arch):
-                return all([is_extension_supported(arch, e) for e in exts])
-
-            _get_or_make_arch_checkers(test_kwargs).register(checker)
-            test(*test_args, **test_kwargs)
-
-        return wrapped
-
-    return decorator
-
-
-def archs_support_sparse(test, **kwargs):
-    wrapped = all_archs_with(**kwargs)(test)
-    return require(extension.sparse)(wrapped)
-
-
-def torch_test(_func):
-    if ti.has_pytorch():
-        # OpenGL somehow crashes torch test without a reason, unforturnately
-        return ti.test(exclude=[opengl])(_func)
-    return lambda: None
-
-
 def get_host_arch_list():
     return [_ti_core.host_arch()]
-
-
-# test with host arch only
-def host_arch_only(_func):
-    @functools.wraps(_func)
-    def test(*args, **kwargs):
-        archs = [_ti_core.host_arch()]
-        for arch in archs:
-            ti.init(arch=arch)
-            _func(*args, **kwargs)
-
-    return test
-
-
-def archs_with(archs, **init_kwags):
-    """
-    Run the test on the given archs with the given init args.
-
-    Args:
-      archs: a list of Taichi archs
-      init_kwargs: kwargs passed to ti.init()
-    """
-    def decorator(test):
-        @functools.wraps(test)
-        def wrapped(*test_args, **test_kwargs):
-            for arch in archs:
-                ti.init(arch=arch, **init_kwags)
-                test(*test_args, **test_kwargs)
-
-        return wrapped
-
-    return decorator
-
-
-def must_throw(ex):
-    def decorator(_func):
-        def func__(*args, **kwargs):
-            finishes = False
-            try:
-                _func(*args, **kwargs)
-                finishes = True
-            except ex:
-                # throws. test passed
-                pass
-            except Exception as err_actual:
-                assert False, f'Exception {str(type(err_actual))} instead of {str(ex)} thrown'
-            if finishes:
-                assert False, f'Test successfully finished instead of throwing {str(ex)}'
-
-        return func__
-
-    return decorator
 
 
 __all__ = [s for s in dir() if not s.startswith('_')]

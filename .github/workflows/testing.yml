@@ -369,7 +369,7 @@ jobs:
             cmake_args: ""
             identifier: CPU
           - machine: [self-hosted, windows]
-            wanted_archs: cuda,opengl
+            wanted_archs: cpu,cuda
             cmake_args: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
             identifier: GPU
     runs-on: ${{ matrix.machine }}
@@ -385,6 +385,7 @@ jobs:
 
       - name: Add Visual Studio Shell to ENV
         uses: egor-tensin/vs-shell@v2
+        if: matrix.identifier == 'CPU'
         with:
           arch: x64
 

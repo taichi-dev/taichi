@@ -14,6 +14,7 @@ class Field:
     Args:
         vars (List[Expr]): Field members.
     """
+
     def __init__(self, _vars):
         self.vars = _vars
         self.host_accessors = None
@@ -216,6 +217,7 @@ class ScalarField(Field):
     Args:
         var (Expr): Field member.
     """
+
     def __init__(self, var):
         super().__init__([var])
 
@@ -275,6 +277,7 @@ class ScalarField(Field):
 
 
 class SNodeHostAccessor:
+
     def __init__(self, snode):
         if _ti_core.is_real(snode.data_type()):
 
@@ -306,6 +309,7 @@ class SNodeHostAccessor:
 
 
 class SNodeHostAccess:
+
     def __init__(self, accessor, key):
         self.accessor = accessor
         self.key = key

@@ -549,6 +549,8 @@ class IRPrinter : public IRVisitor {
       }
       if (stmt->const_end) {
         end_str = std::to_string(stmt->end_value);
+      } else if (stmt->end_stmt && !stmt->end_stmt->is<ConstStmt>()) {
+        end_str = stmt->end_stmt->name();
       } else {
         end_str = fmt::format("tmp(offset={}B)", stmt->end_offset);
       }

@@ -240,7 +240,8 @@ RangeForStmt::RangeForStmt(Stmt *begin,
                            int bit_vectorize,
                            int num_cpu_threads,
                            int block_dim,
-                           bool strictly_serialized)
+                           bool strictly_serialized,
+                           bool range_of_array)
     : begin(begin),
       end(end),
       body(std::move(body)),
@@ -248,7 +249,8 @@ RangeForStmt::RangeForStmt(Stmt *begin,
       bit_vectorize(bit_vectorize),
       num_cpu_threads(num_cpu_threads),
       block_dim(block_dim),
-      strictly_serialized(strictly_serialized) {
+      strictly_serialized(strictly_serialized),
+      range_of_array(range_of_array) {
   reversed = false;
   this->body->parent_stmt = this;
   TI_STMT_REG_FIELDS;

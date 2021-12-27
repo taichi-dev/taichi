@@ -95,6 +95,7 @@ jobs:
     needs: check_files
     steps:
       - uses: actions/checkout@v2
+        run: git config --global http.postBuffer 524288000
         with:
           submodules: "recursive"
 

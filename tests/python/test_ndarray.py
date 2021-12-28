@@ -402,7 +402,6 @@ def test_matrix_ndarray_python_scope(layout):
 
 
 def _test_matrix_ndarray_taichi_scope(layout):
-
     @ti.kernel
     def func(a: ti.any_arr()):
         for i in range(5):
@@ -432,7 +431,6 @@ def test_matrix_ndarray_taichi_scope(layout):
 
 
 def _test_matrix_ndarray_taichi_scope_struct_for(layout):
-
     @ti.kernel
     def func(a: ti.any_arr()):
         for i in a:
@@ -494,7 +492,6 @@ def test_vector_ndarray_python_scope(layout):
 @pytest.mark.skipif(not ti.has_pytorch(), reason='Pytorch not installed.')
 @ti.test(arch=[ti.cpu, ti.cuda], ndarray_use_torch=True)
 def test_vector_ndarray_taichi_scope_torch(layout):
-
     @ti.kernel
     def func(a: ti.any_arr()):
         for i in range(5):
@@ -513,7 +510,6 @@ def test_vector_ndarray_taichi_scope_torch(layout):
 @pytest.mark.parametrize('layout', layouts)
 @ti.test(arch=supported_archs_taichi_ndarray)
 def test_vector_ndarray_taichi_scope(layout):
-
     @ti.kernel
     def func(a: ti.any_arr()):
         for i in range(5):
@@ -533,7 +529,6 @@ def test_vector_ndarray_taichi_scope(layout):
 
 
 def _test_compiled_functions():
-
     @ti.kernel
     def func(a: ti.any_arr(element_dim=1)):
         for i in range(5):
@@ -570,7 +565,6 @@ def test_compiled_functions():
 
 
 def _test_arg_not_match():
-
     @ti.kernel
     def func1(a: ti.any_arr(element_dim=1)):
         pass

@@ -124,7 +124,6 @@ def test_python_function():
 
     @ti.data_oriented
     class A:
-
         def __init__(self):
             self.count = ti.field(ti.i32, shape=())
             self.count[None] = 0
@@ -153,7 +152,6 @@ def test_python_function():
 
 @ti.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_default_templates():
-
     @ti.func
     def func1(x: ti.template()):
         x = 1

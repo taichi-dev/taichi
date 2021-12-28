@@ -17,7 +17,6 @@ class Ndarray:
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the torch tensor.
     """
-
     def __init__(self, dtype, shape):
         self.host_accessor = None
         if impl.current_cfg().ndarray_use_torch:
@@ -249,7 +248,6 @@ class ScalarNdarray(Ndarray):
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the ndarray.
     """
-
     @property
     def shape(self):
         return tuple(self.arr.shape)
@@ -295,7 +293,6 @@ class ScalarNdarray(Ndarray):
 
 
 class NdarrayHostAccessor:
-
     def __init__(self, ndarray):
         if _ti_core.is_real(ndarray.dtype):
 
@@ -328,7 +325,6 @@ class NdarrayHostAccess:
         indices_first (Tuple[Int]): Indices of first-level access (coordinates in the field).
         indices_second (Tuple[Int]): Indices of second-level access (indices in the vector/matrix).
     """
-
     def __init__(self, arr, indices_first, indices_second):
         self.ndarr = arr
         self.arr = arr.arr

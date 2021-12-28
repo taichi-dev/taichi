@@ -200,7 +200,6 @@ ENV LANG="C.UTF-8"
 
 
 class Parser(argparse.ArgumentParser):
-
     def error(self, message):
         """Make it print help message by default."""
         sys.stderr.write(f"error: {message}\n")

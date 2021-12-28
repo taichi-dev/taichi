@@ -10,7 +10,6 @@ class ArgAnyArray:
         field_dim (Union[Int, NoneType]): None if not specified, number of field dimensions. This argument is ignored for external arrays for now.
         layout (Union[Layout, NoneType], optional): None if not specified (will be treated as Layout.AOS for external arrays), Layout.AOS or Layout.SOA.
     """
-
     def __init__(self,
                  element_dim=None,
                  element_shape=None,
@@ -101,7 +100,6 @@ class Template:
         tensor (Any): unused
         dim (Any): unused
     """
-
     def __init__(self, tensor=None, dim=None):
         self.tensor = tensor
         self.dim = dim

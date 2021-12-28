@@ -3,7 +3,6 @@ from contextlib import contextmanager
 
 #For declaring IMGUI components in a ti.Window created by the GGUI system.
 class Gui:
-
     def __init__(self, gui) -> None:
         self.gui = gui  #reference to a PyGui
 

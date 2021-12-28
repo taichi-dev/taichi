@@ -7,7 +7,6 @@ import taichi as ti
 
 
 class Case:
-
     def __init__(self, name, func):
         self.name = name
         self.func = func
@@ -26,7 +25,6 @@ class Case:
 
 
 class Suite:
-
     def __init__(self, filename):
         self.cases = []
         print(filename)
@@ -45,7 +43,6 @@ class Suite:
 
 
 class TaichiBenchmark:
-
     def __init__(self):
         self.suites = []
         benchmark_dir = get_benchmark_dir()

@@ -46,7 +46,6 @@ class CuptiMetric:
     Note:
         For details about using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
     """
-
     def __init__(self,
                  name='',
                  header='unnamed_header',

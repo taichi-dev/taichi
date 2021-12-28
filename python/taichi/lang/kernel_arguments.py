@@ -8,7 +8,6 @@ from taichi.types.primitive_types import u64
 
 
 class SparseMatrixEntry:
-
     def __init__(self, ptr, i, j):
         self.ptr = ptr
         self.i = i
@@ -28,7 +27,6 @@ class SparseMatrixEntry:
 
 
 class SparseMatrixProxy:
-
     def __init__(self, ptr):
         self.ptr = ptr
 

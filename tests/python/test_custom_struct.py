@@ -340,7 +340,6 @@ def test_copy_struct_field_element_to_taichi_scope():
 
 @ti.test(debug=True)
 def test_copy_struct_in_taichi_scope():
-
     @ti.kernel
     def test():
         a = ti.Struct({'a': 2, 'b': 3})

@@ -21,7 +21,6 @@ import taichi as ti
 
 def timer(func):
     """Function decorator to benchmark a function runnign time."""
-
     @wraps(func)
     def wrapper(*args, **kwargs):
         start = timeit.default_timer()
@@ -51,7 +50,6 @@ def register(func):
 
 @registerableCLI
 class TaichiMain:
-
     def __init__(self, test_mode: bool = False):
         self.banner = f"\n{'*' * 43}\n**      Taichi Programming Language      **\n{'*' * 43}"
         print(self.banner)
@@ -129,7 +127,6 @@ class TaichiMain:
 
     @staticmethod
     def _example_choices_type(choices):
-
         def support_choice_with_dot_py(choice):
             if choice.endswith('.py') and choice.split('.')[0] in choices:
                 # try to find and remove python file extension
@@ -457,7 +454,6 @@ class TaichiMain:
 
     @staticmethod
     def _display_benchmark_regression(xd, yd, args):
-
         def parse_dat(file):
             _dict = {}
             with open(file) as f:
@@ -750,7 +746,6 @@ class TaichiMain:
     @register
     def repl(arguments: list = sys.argv[2:]):
         """Start Taichi REPL / Python shell with 'import taichi as ti'"""
-
         def local_scope():
 
             try:

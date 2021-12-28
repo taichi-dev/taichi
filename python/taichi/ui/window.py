@@ -16,7 +16,6 @@ class Window(_ti_core.PyWindow):
         res (Tuple[Int]): resolution (width, height) of the window, in pixels.
         layout (vsync): whether or not vertical sync should be enabled.
     """
-
     def __init__(self, name, res, vsync=False, show_window=True):
         package_path = str(pathlib.Path(__file__).parent.parent)
 

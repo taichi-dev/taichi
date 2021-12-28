@@ -9,7 +9,6 @@ import taichi as ti
 
 @ti.test()
 def test_namedexpr():
-
     @ti.kernel
     def foo() -> ti.i32:
         b = 2 + (a := 5)

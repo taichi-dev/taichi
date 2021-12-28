@@ -5,7 +5,6 @@ import taichi as ti
 
 @ti.data_oriented
 class MPMSolver:
-
     def __init__(self, res):
         dim = len(res)
         self.dx = 1 / res[0]

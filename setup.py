@@ -81,13 +81,11 @@ def remove_files_with_extension(dir_name, extension):
 
 
 class CMakeExtension(Extension):
-
     def __init__(self, name):
         Extension.__init__(self, name, sources=[])
 
 
 class EggInfo(egg_info):
-
     def run(self):
         taichi_dir = os.path.join(package_dir, 'taichi')
         remove_tmp(taichi_dir)
@@ -101,7 +99,6 @@ class EggInfo(egg_info):
 #   python setup.py build_py
 #   python setup.py build_ext
 class BuildPy(build_py):
-
     def run(self):
         build_py.run(self)
         taichi_dir = os.path.join(package_dir, 'taichi')
@@ -109,7 +106,6 @@ class BuildPy(build_py):
 
 
 class CMakeBuild(build_ext):
-
     def parse_cmake_args_from_env(self):
         # Source: TAICHI_CMAKE_ARGS=... python setup.py ...
         import shlex
@@ -222,7 +218,6 @@ class CMakeBuild(build_ext):
 
 
 class Clean(clean):
-
     def run(self):
         super().run()
         self.build_temp = os.path.join(root_dir, 'build')

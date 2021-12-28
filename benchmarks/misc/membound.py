@@ -100,7 +100,6 @@ class MemoryBound:
 
 
 class CaseImpl:
-
     def __init__(self, func, arch, test_dtype, test_dsize_list, evaluator):
         self._func = func
         self._name = func.__name__

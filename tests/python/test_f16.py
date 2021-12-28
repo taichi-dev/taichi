@@ -282,7 +282,6 @@ def test_atomic_min_f16():
 
 @ti.test(arch=archs_support_f16)
 def test_cast_f32_to_f16():
-
     @ti.kernel
     def func() -> ti.f16:
         a = ti.cast(23.0, ti.f32)
@@ -294,7 +293,6 @@ def test_cast_f32_to_f16():
 
 @ti.test(arch=archs_support_f16, require=ti.extension.data64)
 def test_cast_f64_to_f16():
-
     @ti.kernel
     def func() -> ti.f16:
         a = ti.cast(23.0, ti.f64)

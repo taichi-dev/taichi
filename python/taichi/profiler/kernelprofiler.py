@@ -13,7 +13,6 @@ class StatisticalResult:
     Profiling records with the same kernel name will be counted in a ``StatisticalResult`` instance via function ``insert_record(time)``.
     Currently, only the kernel elapsed time is counted, other statistics related to the kernel will be added in the feature.
     """
-
     def __init__(self, name):
         self.name = name
         self.counter = 0
@@ -51,7 +50,6 @@ class KernelProfiler:
     Note:
         For details about using CUPTI in Taichi, please visit https://docs.taichi.graphics/docs/lang/articles/misc/profiler#advanced-mode.
     """
-
     def __init__(self):
         self._profiling_mode = False
         self._metric_list = [default_cupti_metrics]

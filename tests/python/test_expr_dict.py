@@ -3,7 +3,6 @@ import taichi as ti
 
 @ti.test(ti.cpu)
 def test_expr_dict_basic():
-
     @ti.kernel
     def func(u: int, v: float) -> float:
         x = {'foo': 2 + u, 'bar': 3 + v}

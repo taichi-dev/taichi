@@ -248,7 +248,6 @@ class Func:
 
 
 class TaichiCallableTemplateMapper:
-
     def __init__(self, annotations, template_slot_locations):
         self.annotations = annotations
         self.num_args = len(annotations)
@@ -328,7 +327,6 @@ class KernelDefError(Exception):
 
 
 class KernelArgError(Exception):
-
     def __init__(self, pos, needed, provided):
         message = f'Argument {pos} (type={provided}) cannot be converted into required type {needed}'
         super().__init__(message)
@@ -540,7 +538,6 @@ class Kernel:
                     else:
 
                         def get_call_back(u, v):
-
                             def call_back():
                                 u.copy_(v)
 
@@ -763,7 +760,6 @@ classkernel = obsolete('@ti.classkernel', '@ti.kernel directly')
 
 
 class _BoundedDifferentiableMethod:
-
     def __init__(self, kernel_owner, wrapped_kernel_func):
         clsobj = type(kernel_owner)
         if not getattr(clsobj, '_data_oriented', False):
@@ -816,7 +812,6 @@ def data_oriented(cls):
     Returns:
         The decorated class.
     """
-
     def _getattr(self, item):
         _taichi_skip_traceback = 1
         method = cls.__dict__.get(item, None)

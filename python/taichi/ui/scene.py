@@ -75,7 +75,6 @@ def gen_normals(vertices, indices):
 class Scene(_ti_core.PyScene):
     """A 3D scene, which can contain meshes and particles, and can be rendered on a canvas
     """
-
     def set_camera(self, camera):
         super().set_camera(camera.ptr)
 

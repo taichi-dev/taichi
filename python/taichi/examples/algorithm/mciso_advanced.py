@@ -438,7 +438,6 @@ class MCISO:
 
 
 class MCISO_Example(MCISO):
-
     @ti.func
     def gauss(self, x):
         return ti.exp(-6 * x**2)

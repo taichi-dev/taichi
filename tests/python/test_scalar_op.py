@@ -101,7 +101,6 @@ def test_python_scope_linalg():
 
 @ti.test(arch=[ti.x64, ti.cuda, ti.metal])
 def test_16_min_max():
-
     @ti.kernel
     def min_u16(a: ti.u16, b: ti.u16) -> ti.u16:
         return ti.min(a, b)
@@ -127,7 +126,6 @@ def test_16_min_max():
 
 @ti.test(exclude=[ti.opengl, ti.cc])
 def test_32_min_max():
-
     @ti.kernel
     def min_u32(a: ti.u32, b: ti.u32) -> ti.u32:
         return ti.min(a, b)
@@ -153,7 +151,6 @@ def test_32_min_max():
 
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_64_min_max():
-
     @ti.kernel
     def min_u64(a: ti.u64, b: ti.u64) -> ti.u64:
         return ti.min(a, b)

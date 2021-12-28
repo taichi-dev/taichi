@@ -54,7 +54,6 @@ def mp4_to_gif(input_fn, output_fn, framerate):
 
 
 class VideoManager:
-
     def __init__(self,
                  output_dir,
                  width=None,

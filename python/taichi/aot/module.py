@@ -11,7 +11,6 @@ from taichi.types.primitive_types import f32
 
 
 class KernelTemplate:
-
     def __init__(self, kernel_fn, aot_module):
         self._kernel_fn = kernel_fn
         self._aot_module = aot_module
@@ -77,7 +76,6 @@ class Module:
         # Now the module file '/path/to/module' contains the Metal kernels
         # for running ``foo`` and ``bar``.
     """
-
     def __init__(self, arch):
         """Creates a new AOT module instance
 

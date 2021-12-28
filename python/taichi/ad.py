@@ -33,7 +33,6 @@ def grad_replaced(func):
         >>> @ti.grad_for(foo)
         >>> def foo_grad(a):
         >>>     multiply_grad(a)"""
-
     def decorated(*args, **kwargs):
         # TODO [#3025]: get rid of circular imports and move this to the top.
         impl.get_runtime().grad_replaced = True
@@ -57,9 +56,7 @@ def grad_for(primal):
 
     Returns:
         Callable: The decorator used to decorate customized gradient function."""
-
     def decorator(func):
-
         def decorated(*args, **kwargs):
             func(*args, **kwargs)
 

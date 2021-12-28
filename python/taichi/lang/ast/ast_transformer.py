@@ -17,7 +17,6 @@ from taichi import linalg
 
 
 class ASTTransformer(Builder):
-
     @staticmethod
     def build_Name(ctx, node):
         node.ptr = ctx.get_var_by_name(node.id)
@@ -579,7 +578,6 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_normal_bool_op(op):
-
         def inner(operands):
             result = op(operands[0].ptr, operands[1].ptr)
             for i in range(2, len(operands)):

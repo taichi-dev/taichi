@@ -3,7 +3,6 @@ import taichi as ti
 
 @ti.test(exclude=[ti.cc])
 def test_sort():
-
     def test_sort_for_dtype(dtype, N):
         keys = ti.field(dtype, N)
         values = ti.field(dtype, N)

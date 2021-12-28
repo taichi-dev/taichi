@@ -8,7 +8,6 @@ import taichi as ti
 
 @ti.data_oriented
 class Cloth:
-
     def __init__(self, N):
         self.N = N
         self.NF = 2 * N**2  # number of faces

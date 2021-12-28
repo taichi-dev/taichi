@@ -3,7 +3,6 @@ import warnings
 
 
 class ComposerBase:
-
     def __init__(self, entries):
         self.entries = entries
         self.current_group = None
@@ -35,7 +34,6 @@ class ComposerBase:
 
 
 class ComposerCC(ComposerBase):
-
     def __init__(self, entries, fout, hdrout, emscripten=False):
         super().__init__(entries)
 

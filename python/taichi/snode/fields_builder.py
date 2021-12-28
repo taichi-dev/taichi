@@ -33,7 +33,6 @@ class FieldsBuilder:
         #  +-- pointer +-- dense +-- place(y)
         fb.finalize()
     """
-
     def __init__(self):
         self._ptr = _snode_registry.create_root()
         self._root = snode.SNode(self._ptr)

@@ -54,7 +54,6 @@ _new_dye_buffer = ti.Vector.field(3, float, shape=(res, res))
 
 
 class TexPair:
-
     def __init__(self, cur, nxt):
         self.cur = cur
         self.nxt = nxt
@@ -291,7 +290,6 @@ def step(mouse_data):
 
 
 class MouseDataGen(object):
-
     def __init__(self):
         self.prev_mouse = None
         self.prev_color = None

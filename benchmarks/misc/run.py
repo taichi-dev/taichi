@@ -11,7 +11,6 @@ benchmark_archs = [ti.x64, ti.cuda]
 
 
 class BenchmarksInfo:
-
     def __init__(self, pull_request_id: str, commit_hash: str):
         """init with commit info"""
         self.pull_request_id = pull_request_id
@@ -27,7 +26,6 @@ class BenchmarksInfo:
 
 
 class BenchmarkSuites:
-
     def __init__(self, arch):
         self._suites = []
         self._arch = arch

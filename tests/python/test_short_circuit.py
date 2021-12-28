@@ -18,7 +18,6 @@ def test_and_shorted():
 
 @ti.test(debug=True, short_circuit_operators=True)
 def test_and_not_shorted():
-
     @ti.kernel
     def func() -> ti.i32:
         return True and False
@@ -43,7 +42,6 @@ def test_or_shorted():
 
 @ti.test(debug=True, short_circuit_operators=True)
 def test_or_not_shorted():
-
     @ti.kernel
     def func() -> ti.i32:
         return False or True

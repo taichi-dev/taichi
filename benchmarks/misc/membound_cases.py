@@ -4,7 +4,6 @@ import taichi as ti
 
 
 def init_const(x, dtype, num_elements):
-
     @ti.kernel
     def init_const(x: ti.template(), n: ti.i32):
         for i in range(n):

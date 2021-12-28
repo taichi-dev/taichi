@@ -26,9 +26,7 @@ def get_rel_eps():
 
 def approx(expected, **kwargs):
     '''Tweaked pytest.approx for OpenGL low precisions'''
-
     class boolean_integer:
-
         def __init__(self, value):
             self.value = value
 
@@ -61,7 +59,6 @@ def make_temp_file(*args, **kwargs):
 
 
 class TestParam:
-
     def __init__(self, value, required_extensions):
         self._value = value
         self._required_extensions = required_extensions
@@ -157,7 +154,6 @@ def test(arch=None, exclude=None, require=None, **options):
         arch = list(filter(lambda x: x in archs_expected, arch))
 
     def decorator(foo):
-
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
             if len(arch) == 0:

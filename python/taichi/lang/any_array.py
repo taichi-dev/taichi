@@ -12,7 +12,6 @@ class AnyArray:
         element_shape (Tuple[Int]): () if scalar elements (default), (n) if vector elements, and (n, m) if matrix elements.
         layout (Layout): Memory layout.
     """
-
     def __init__(self, ptr, element_shape, layout):
         assert ptr.is_external_var()
         self.ptr = ptr
@@ -57,7 +56,6 @@ class AnyArrayAccess:
         arr (AnyArray): See above.
         indices_first (Tuple[Int]): Indices of first-level access.
     """
-
     def __init__(self, arr, indices_first):
         self.arr = arr
         self.indices_first = indices_first

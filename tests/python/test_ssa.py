@@ -49,7 +49,6 @@ def test_random_vector_dup_eval():
 
 @ti.test()
 def test_func_argument_dup_eval():
-
     @ti.func
     def func(a, t):
         return a * t - a
@@ -64,7 +63,6 @@ def test_func_argument_dup_eval():
 
 @ti.test()
 def test_func_random_argument_dup_eval():
-
     @ti.func
     def func(a):
         return ti.Vector([ti.cos(a), ti.sin(a)])

@@ -4,7 +4,6 @@ from .utils import get_field_info
 
 
 class Canvas:
-
     def __init__(self, canvas) -> None:
         self.canvas = canvas  #reference to a PyCanvas
 

@@ -7,7 +7,6 @@ ti.init()
 
 @ti.data_oriented
 class SolarSystem:
-
     def __init__(self, n, dt):  # Initializer of the solar system simulator
         self.n = n
         self.dt = dt

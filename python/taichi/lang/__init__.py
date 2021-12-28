@@ -57,10 +57,10 @@ from taichi.profiler import KernelProfiler, get_default_kernel_profiler
 from taichi.profiler.kernelmetrics import (CuptiMetric, default_cupti_metrics,
                                            get_predefined_cupti_metrics)
 from taichi.snode.fields_builder import FieldsBuilder
+from taichi.tools.util import set_gdb_trigger, warning
 from taichi.types.annotations import any_arr, ext_arr, template
 from taichi.types.primitive_types import (f16, f32, f64, i32, i64,
                                           integer_types, u32, u64)
-from taichi.tools.util import set_gdb_trigger, warning
 
 from taichi import _logging
 
@@ -355,6 +355,7 @@ def reset():
 
 
 class _EnvironmentConfigurator:
+
     def __init__(self, kwargs, _cfg):
         self.cfg = _cfg
         self.kwargs = kwargs
@@ -634,8 +635,7 @@ def init(arch=None,
     if _test_mode:
         return spec_cfg
 
-    get_default_kernel_profiler().set_kernel_profiler_mode(
-        cfg.kernel_profiler)
+    get_default_kernel_profiler().set_kernel_profiler_mode(cfg.kernel_profiler)
 
     # create a new program:
     impl.get_runtime().create_program()
@@ -864,6 +864,7 @@ def deactivate_all_snodes():
 
 
 def benchmark(_func, repeat=300, args=()):
+
     def run_benchmark():
         compile_time = time.time()
         _func(*args)  # compile the kernel first

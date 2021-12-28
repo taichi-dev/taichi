@@ -163,6 +163,7 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
 
 @ti.test()
 def test_matrix_non_constant_index_numpy():
+
     @ti.kernel
     def func1(a: ti.any_arr(element_dim=2)):
         for i in range(5):
@@ -344,6 +345,7 @@ def test_copy_matrix_field_element_to_taichi_scope():
 
 @ti.test(debug=True)
 def test_copy_matrix_in_taichi_scope():
+
     @ti.kernel
     def test():
         a = ti.Vector([1, 2, 3])

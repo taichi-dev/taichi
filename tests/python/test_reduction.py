@@ -117,6 +117,7 @@ def test_reduction_single_f64(op):
 
 @ti.test()
 def test_reduction_different_scale():
+
     @ti.kernel
     def func(n: ti.template()) -> ti.i32:
         x = 0
@@ -132,6 +133,7 @@ def test_reduction_different_scale():
 
 @ti.test()
 def test_reduction_any_arr():
+
     @ti.kernel
     def reduce(a: ti.any_arr()) -> ti.i32:
         s = 0

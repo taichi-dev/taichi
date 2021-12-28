@@ -23,6 +23,7 @@ def test_assert_minimal():
 
 @ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_basic():
+
     @ti.kernel
     def func():
         x = 20
@@ -34,6 +35,7 @@ def test_assert_basic():
 
 @ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_message():
+
     @ti.kernel
     def func():
         x = 20
@@ -72,6 +74,7 @@ def test_assert_message_formatted():
 
 @ti.test(require=ti.extension.assertion, debug=True, gdb_trigger=False)
 def test_assert_ok():
+
     @ti.kernel
     def func():
         x = 20
@@ -82,6 +85,7 @@ def test_assert_ok():
 
 @ti.test(arch=ti.get_host_arch_list())
 def test_static_assert_is_static():
+
     @ti.kernel
     def func():
         x = 0

@@ -12,7 +12,6 @@ endif()
 # 2. Re-implement the legacy CPP tests using googletest
 file(GLOB_RECURSE TAICHI_TESTS_SOURCE
         "tests/cpp/analysis/*.cpp"
-        "tests/cpp/aot/*.cpp"
         "tests/cpp/codegen/*.cpp"
         "tests/cpp/common/*.cpp"
         "tests/cpp/ir/*.cpp"

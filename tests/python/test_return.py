@@ -6,7 +6,6 @@ from taichi import approx
 
 @ti.test()
 def test_return_without_type_hint():
-
     @ti.kernel
     def kernel():
         return 1
@@ -32,7 +31,6 @@ def test_const_func_ret():
 
 @ti.test()
 def _test_binary_func_ret(dt1, dt2, dt3, castor):
-
     @ti.kernel
     def func(a: dt1, b: dt2) -> dt3:
         return a * b
@@ -60,7 +58,6 @@ def test_binary_func_ret():
 
 @ti.test()
 def test_return_in_static_if():
-
     @ti.kernel
     def foo(a: ti.template()) -> ti.i32:
         if ti.static(a == 1):
@@ -76,7 +73,6 @@ def test_return_in_static_if():
 
 @ti.test()
 def test_func_multiple_return():
-
     @ti.func
     def safe_sqrt(a):
         if a > 0:
@@ -96,7 +92,6 @@ def test_func_multiple_return():
 
 @ti.test()
 def test_return_inside_static_for():
-
     @ti.kernel
     def foo() -> ti.i32:
         a = 0

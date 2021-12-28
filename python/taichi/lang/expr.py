@@ -9,7 +9,6 @@ from taichi.lang.util import is_taichi_class
 # Scalar, basic data type
 class Expr(TaichiOperations):
     """A Python-side Expr wrapper, whose member variable `ptr` is an instance of C++ Expr class. A C++ Expr object contains member variable `expr` which holds an instance of C++ Expression class."""
-
     def __init__(self, *args, tb=None):
         _taichi_skip_traceback = 1
         self.tb = tb

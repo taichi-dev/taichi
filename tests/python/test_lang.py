@@ -84,7 +84,6 @@ def test_simple2():
 
 @ti.test()
 def test_recreate():
-
     @ti.kernel
     def test():
         a = 0
@@ -115,7 +114,6 @@ def test_local_atomics():
 
 @ti.test(arch=ti.get_host_arch_list())
 def test_loop_var_life():
-
     @ti.kernel
     def test():
         for i in ti.static(range(8)):
@@ -128,7 +126,6 @@ def test_loop_var_life():
 
 @ti.test(arch=ti.get_host_arch_list())
 def test_loop_var_life_double_iters():
-
     @ti.kernel
     def test():
         for i, v in ti.static(enumerate(range(8))):

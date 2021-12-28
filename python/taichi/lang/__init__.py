@@ -354,7 +354,6 @@ def reset():
 
 
 class _EnvironmentConfigurator:
-
     def __init__(self, kwargs, _cfg):
         self.cfg = _cfg
         self.kwargs = kwargs
@@ -867,7 +866,6 @@ def deactivate_all_snodes():
 
 
 def benchmark(_func, repeat=300, args=()):
-
     def run_benchmark():
         compile_time = time.time()
         _func(*args)  # compile the kernel first
